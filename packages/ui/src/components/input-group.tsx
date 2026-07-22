@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@my-better-t-app/ui/components/button";
-import { Input } from "@my-better-t-app/ui/components/input";
-import { Textarea } from "@my-better-t-app/ui/components/textarea";
-import { cn } from "@my-better-t-app/ui/lib/utils";
+import { Button } from "@yacht-charter/ui/components/button";
+import { Input } from "@yacht-charter/ui/components/input";
+import { Textarea } from "@yacht-charter/ui/components/textarea";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 

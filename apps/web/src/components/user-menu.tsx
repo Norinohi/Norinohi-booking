@@ -1,4 +1,4 @@
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@yacht-charter/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +7,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@my-better-t-app/ui/components/dropdown-menu";
-import { Skeleton } from "@my-better-t-app/ui/components/skeleton";
+} from "@yacht-charter/ui/components/dropdown-menu";
+import { Skeleton } from "@yacht-charter/ui/components/skeleton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 

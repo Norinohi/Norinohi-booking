@@ -1,7 +1,7 @@
-import { createContext } from "@my-better-t-app/api/context";
-import { appRouter } from "@my-better-t-app/api/routers/index";
-import { auth } from "@my-better-t-app/auth";
-import { env } from "@my-better-t-app/env/server";
+import { createContext } from "@yacht-charter/api/context";
+import { appRouter } from "@yacht-charter/api/routers/index";
+import { auth } from "@yacht-charter/auth";
+import { env } from "@yacht-charter/env/server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -14,7 +14,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 initLogger({
-  env: { service: "my-better-t-app-server" },
+  env: { service: "yacht-charter-server" },
 });
 
 const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {

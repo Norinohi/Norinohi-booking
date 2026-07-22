@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@my-better-t-app/ui/*": ["../../packages/ui/src/*"]
+      "@yacht-charter/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [

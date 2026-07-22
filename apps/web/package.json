@@ -8,9 +8,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@my-better-t-app/api": "workspace:*",
-    "@my-better-t-app/env": "workspace:*",
-    "@my-better-t-app/ui": "workspace:*",
+    "@yacht-charter/api": "workspace:*",
+    "@yacht-charter/env": "workspace:*",
+    "@yacht-charter/ui": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/tanstack-query": "^1.14.6",
@@ -30,7 +30,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@my-better-t-app/config": "workspace:*",
+    "@yacht-charter/config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@types/node": "^20",

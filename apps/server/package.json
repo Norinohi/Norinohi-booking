@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.0.8",
-    "@my-better-t-app/api": "workspace:*",
-    "@my-better-t-app/auth": "workspace:*",
-    "@my-better-t-app/db": "workspace:*",
-    "@my-better-t-app/env": "workspace:*",
+    "@yacht-charter/api": "workspace:*",
+    "@yacht-charter/auth": "workspace:*",
+    "@yacht-charter/db": "workspace:*",
+    "@yacht-charter/env": "workspace:*",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
@@ -25,7 +25,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@my-better-t-app/config": "workspace:*",
+    "@yacht-charter/config": "workspace:*",
     "@types/node": "^22.13.14",
     "tsdown": "^0.22.3",
     "tsx": "^4.22.5",

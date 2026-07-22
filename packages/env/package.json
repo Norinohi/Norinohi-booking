@@ -1,5 +1,5 @@
 {
-  "name": "@my-better-t-app/env",
+  "name": "@yacht-charter/env",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@my-better-t-app/config": "workspace:*",
+    "@yacht-charter/config": "workspace:*",
     "@types/node": "^22.13.14",
     "typescript": "catalog:"
   }

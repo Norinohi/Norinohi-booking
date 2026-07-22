@@ -1,5 +1,5 @@
 {
-  "name": "my-better-t-app",
+  "name": "yacht-charter",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -12,23 +12,23 @@
     "check-types": "turbo run check-types",
     "dev:web": "turbo run dev -F web",
     "dev:server": "turbo run dev -F server",
-    "db:push": "turbo run db:push -F @my-better-t-app/db",
-    "db:studio": "turbo run db:studio -F @my-better-t-app/db",
-    "db:generate": "turbo run db:generate -F @my-better-t-app/db",
-    "db:migrate": "turbo run db:migrate -F @my-better-t-app/db",
-    "db:start": "turbo run db:start -F @my-better-t-app/db",
-    "db:watch": "turbo run db:watch -F @my-better-t-app/db",
-    "db:stop": "turbo run db:stop -F @my-better-t-app/db",
-    "db:down": "turbo run db:down -F @my-better-t-app/db",
+    "db:push": "turbo run db:push -F @yacht-charter/db",
+    "db:studio": "turbo run db:studio -F @yacht-charter/db",
+    "db:generate": "turbo run db:generate -F @yacht-charter/db",
+    "db:migrate": "turbo run db:migrate -F @yacht-charter/db",
+    "db:start": "turbo run db:start -F @yacht-charter/db",
+    "db:watch": "turbo run db:watch -F @yacht-charter/db",
+    "db:stop": "turbo run db:stop -F @yacht-charter/db",
+    "db:down": "turbo run db:down -F @yacht-charter/db",
     "check": "oxlint && oxfmt --write"
   },
   "dependencies": {
-    "@my-better-t-app/env": "workspace:*",
+    "@yacht-charter/env": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@my-better-t-app/config": "workspace:*",
+    "@yacht-charter/config": "workspace:*",
     "@types/node": "^22.13.14",
     "oxfmt": "^0.57.0",
     "oxlint": "^1.72.0",

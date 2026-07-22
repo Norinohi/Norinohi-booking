@@ -68,7 +68,7 @@ importers:
 
   .:
     dependencies:
-      '@my-better-t-app/env':
+      '@yacht-charter/env':
         specifier: workspace:*
         version: link:packages/env
       dotenv:
@@ -78,7 +78,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:packages/config
       '@types/node':
@@ -102,16 +102,16 @@ importers:
       '@hono/node-server':
         specifier: ^2.0.8
         version: 2.0.11(hono@4.12.31)
-      '@my-better-t-app/api':
+      '@yacht-charter/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@my-better-t-app/auth':
+      '@yacht-charter/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@my-better-t-app/db':
+      '@yacht-charter/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@my-better-t-app/env':
+      '@yacht-charter/env':
         specifier: workspace:*
         version: link:../../packages/env
       '@orpc/openapi':
@@ -139,7 +139,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -157,13 +157,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@my-better-t-app/api':
+      '@yacht-charter/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@my-better-t-app/env':
+      '@yacht-charter/env':
         specifier: workspace:*
         version: link:../../packages/env
-      '@my-better-t-app/ui':
+      '@yacht-charter/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@orpc/client':
@@ -218,7 +218,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@tailwindcss/postcss':
@@ -245,13 +245,13 @@ importers:
 
   packages/api:
     dependencies:
-      '@my-better-t-app/auth':
+      '@yacht-charter/auth':
         specifier: workspace:*
         version: link:../auth
-      '@my-better-t-app/db':
+      '@yacht-charter/db':
         specifier: workspace:*
         version: link:../db
-      '@my-better-t-app/env':
+      '@yacht-charter/env':
         specifier: workspace:*
         version: link:../env
       '@orpc/client':
@@ -273,7 +273,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../config
       hono:
@@ -285,10 +285,10 @@ importers:
 
   packages/auth:
     dependencies:
-      '@my-better-t-app/db':
+      '@yacht-charter/db':
         specifier: workspace:*
         version: link:../db
-      '@my-better-t-app/env':
+      '@yacht-charter/env':
         specifier: workspace:*
         version: link:../env
       better-auth:
@@ -301,7 +301,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -312,7 +312,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@my-better-t-app/env':
+      '@yacht-charter/env':
         specifier: workspace:*
         version: link:../env
       dotenv:
@@ -328,7 +328,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../config
       '@types/pg':
@@ -356,7 +356,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -405,7 +405,7 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
     devDependencies:
-      '@my-better-t-app/config':
+      '@yacht-charter/config':
         specifier: workspace:*
         version: link:../config
       '@tailwindcss/postcss':

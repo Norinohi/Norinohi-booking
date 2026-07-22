@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@my-better-t-app/ui/components",
-    "utils": "@my-better-t-app/ui/lib/utils",
-    "hooks": "@my-better-t-app/ui/hooks",
-    "lib": "@my-better-t-app/ui/lib",
-    "ui": "@my-better-t-app/ui/components"
+    "components": "@yacht-charter/ui/components",
+    "utils": "@yacht-charter/ui/lib/utils",
+    "hooks": "@yacht-charter/ui/hooks",
+    "lib": "@yacht-charter/ui/lib",
+    "ui": "@yacht-charter/ui/components"
   },
   "menuColor": "default",
   "menuAccent": "subtle",
