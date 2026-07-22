@@ -28,11 +28,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@yacht-charter/config": "workspace:*",
-    "@types/node": "^22.13.14",
-    "oxfmt": "^0.57.0",
-    "oxlint": "^1.72.0",
-    "turbo": "^2.10.2",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "turbo": "^2.10.5",
     "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.31.0"

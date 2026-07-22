@@ -5,24 +5,25 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "check-types": "tsc --noEmit",
     "start": "next start"
   },
   "dependencies": {
+    "@orpc/client": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/tanstack-query": "^1.14.8",
+    "@swc/helpers": "^0.5.23",
+    "@tanstack/react-form": "^1.33.2",
+    "@tanstack/react-query": "^5.101.4",
     "@yacht-charter/api": "workspace:*",
     "@yacht-charter/env": "workspace:*",
     "@yacht-charter/ui": "workspace:*",
-    "@orpc/client": "catalog:",
-    "@orpc/server": "catalog:",
-    "@orpc/tanstack-query": "^1.14.6",
-    "@swc/helpers": "^0.5.23",
-    "@tanstack/react-form": "^1.33.0",
-    "@tanstack/react-query": "^5.101.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "evlog": "catalog:",
     "lucide-react": "catalog:",
-    "next": "^16.2.0",
+    "next": "^16.2.11",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -30,12 +31,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@yacht-charter/config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
-    "@tanstack/react-query-devtools": "^5.101.2",
-    "@types/node": "^20",
+    "@tanstack/react-query-devtools": "^5.101.4",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@yacht-charter/config": "workspace:*",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   }

@@ -10,14 +10,14 @@
     "start": "node dist/index.mjs"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.8",
+    "@hono/node-server": "^2.0.11",
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/zod": "catalog:",
     "@yacht-charter/api": "workspace:*",
     "@yacht-charter/auth": "workspace:*",
     "@yacht-charter/db": "workspace:*",
     "@yacht-charter/env": "workspace:*",
-    "@orpc/openapi": "catalog:",
-    "@orpc/server": "catalog:",
-    "@orpc/zod": "catalog:",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "evlog": "catalog:",
@@ -25,10 +25,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@yacht-charter/config": "workspace:*",
-    "@types/node": "^22.13.14",
-    "tsdown": "^0.22.3",
-    "tsx": "^4.22.5",
+    "tsdown": "^0.22.13",
+    "tsx": "^4.23.1",
     "typescript": "catalog:"
   }
 }

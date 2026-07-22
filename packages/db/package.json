@@ -27,8 +27,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@yacht-charter/config": "workspace:*",
     "@types/pg": "^8.20.0",
+    "@yacht-charter/config": "workspace:*",
     "drizzle-kit": "^0.31.10",
     "typescript": "catalog:"
   }

@@ -11,13 +11,13 @@
   },
   "scripts": {},
   "dependencies": {
-    "@yacht-charter/auth": "workspace:*",
-    "@yacht-charter/db": "workspace:*",
-    "@yacht-charter/env": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "@yacht-charter/auth": "workspace:*",
+    "@yacht-charter/db": "workspace:*",
+    "@yacht-charter/env": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
