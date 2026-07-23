@@ -12,6 +12,8 @@
     "check-types": "turbo run check-types",
     "dev:web": "turbo run dev -F web",
     "dev:server": "turbo run dev -F server",
+    "storybook": "pnpm --filter @yacht-charter/ui storybook",
+    "build-storybook": "pnpm --filter @yacht-charter/ui build-storybook",
     "db:push": "turbo run db:push -F @yacht-charter/db",
     "db:studio": "turbo run db:studio -F @yacht-charter/db",
     "db:generate": "turbo run db:generate -F @yacht-charter/db",

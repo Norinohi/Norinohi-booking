@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/button";
-import { Input } from "@yacht-charter/ui/components/input";
-import { Textarea } from "@yacht-charter/ui/components/textarea";
+import { Button } from "@yacht-charter/ui/components/actions/button";
+import { Input } from "@yacht-charter/ui/components/form/input";
+import { Textarea } from "@yacht-charter/ui/components/form/textarea";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";

@@ -1,12 +1,12 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/button";
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@yacht-charter/ui/components/dropdown-menu";
+} from "@yacht-charter/ui/components/overlay/dropdown-menu";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import * as React from "react";

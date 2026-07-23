@@ -1,6 +1,6 @@
-import { Button } from "@yacht-charter/ui/components/button";
-import { Input } from "@yacht-charter/ui/components/input";
-import { Label } from "@yacht-charter/ui/components/label";
+import { Button } from "@yacht-charter/ui/components/actions/button";
+import { Input } from "@yacht-charter/ui/components/form/input";
+import { Label } from "@yacht-charter/ui/components/form/label";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";

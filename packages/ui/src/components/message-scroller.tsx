@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/button";
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import {
   MessageScroller as MessageScrollerPrimitive,

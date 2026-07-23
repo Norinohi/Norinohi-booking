@@ -1,4 +1,4 @@
-import { Button } from "@yacht-charter/ui/components/button";
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +7,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@yacht-charter/ui/components/dropdown-menu";
-import { Skeleton } from "@yacht-charter/ui/components/skeleton";
+} from "@yacht-charter/ui/components/overlay/dropdown-menu";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
