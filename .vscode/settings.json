@@ -1,0 +1,17 @@
+{
+  // Pin the editor to the workspace TypeScript (6.0.3) instead of the one the
+  // editor bundles, so type-checking matches the CLI on every machine.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Use Oxc (oxlint + oxfmt) for JS/TS. Requires the "oxc.oxc-vscode" extension
+  // (see extensions.json). oxlint diagnostics read .oxlintrc.json at the root.
+  // The formatter provider only appears once that extension is installed & active.
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.codeActionsOnSave": { "source.fixAll.oxc": "always" },
+  "[javascript]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+  "[javascriptreact]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+  "[typescript]": { "editor.defaultFormatter": "oxc.oxc-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "oxc.oxc-vscode" }
+}

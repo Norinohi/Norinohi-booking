@@ -1,0 +1,12 @@
+{
+  // Storybook config files live outside the package `src/**` include, so the
+  // editor would otherwise type-check them as a loose "inferred project" with the
+  // classic JSX runtime — which demands `import React` and errors on <Story />.
+  // This config puts them back under the package settings (jsx: react-jsx) and
+  // re-adds node types for main.ts (`import ... from "node:url"`).
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["./**/*"]
+}
