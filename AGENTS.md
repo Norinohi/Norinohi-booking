@@ -34,7 +34,6 @@ Absent by design or not yet built — do not invent these:
 - **No CI.** There is no `.github/` directory and no pipeline config. `pnpm check`, `pnpm check-types`, and `pnpm build` are the only gates, and they are run manually.
 - **No `lint` script.** `turbo.json` declares a `lint` task, but no workspace defines one, so `turbo run lint` is a no-op. Linting happens only through the root `pnpm check`.
 - **No migrations yet.** `packages/db/src/migrations` does not exist; `db:generate` creates it.
-- **No `.env.example`.** The Zod schemas in `packages/env/src/` are the env contract.
 
 ## Architecture
 
@@ -62,9 +61,9 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 
 ### Env validation
 
-`packages/env` exports two subpaths, `@yacht-charter/env/server` and `@yacht-charter/env/web`, built with `@t3-oss/env-core` and `@t3-oss/env-nextjs`. Server vars: `DATABASE_URL`, `BETTER_AUTH_SECRET` (min 32 chars), `BETTER_AUTH_URL`, `CORS_ORIGIN`, `NODE_ENV`. Web exposes only `NEXT_PUBLIC_SERVER_URL`.
+`packages/env` exports two subpaths, `@yacht-charter/env/server` and `@yacht-charter/env/web`, built with `@t3-oss/env-core` and `@t3-oss/env-nextjs`. Server vars: `DATABASE_URL`, `BETTER_AUTH_SECRET` (min 32 chars), `BETTER_AUTH_URL`, `CORS_ORIGIN`, `NODE_ENV`. Web exposes `NEXT_PUBLIC_SERVER_URL` and `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
 
-`apps/web/next.config.ts` imports `@yacht-charter/env/web` for its validation side effect, so a bad web env fails the build early. Both schemas honour `SKIP_ENV_VALIDATION`. Read env through these modules — do not reach for `process.env` directly in app code.
+`apps/web/next.config.ts` imports `@yacht-charter/env/web` for its validation side effect, so a bad web env fails the build early. Both schemas honour `SKIP_ENV_VALIDATION`. Read env through these modules — do not reach for `process.env` directly in app code. Copy `apps/web/.env.example` → `.env.local` and `apps/server/.env.example` → `.env` to get started; both mirror these schemas.
 
 ### Shared versions and TypeScript config
 
