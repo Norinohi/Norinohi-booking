@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { RangeField, Section, type SectionProps, SelectField } from "../fields";
-import { LENGTH_UNITS, YEARS_FROM, YEARS_TO } from "../filters-options";
+import { LENGTH_UNITS, YEARS_FROM, YEARS_TO } from "../../lib/options";
 import {
   BATHROOMS_LIMITS,
   BERTHS_LIMITS,
@@ -11,7 +11,7 @@ import {
   CABINS_LIMITS,
   LENGTH_LIMITS,
   PRICE_LIMITS,
-} from "../filters-state";
+} from "../../lib/state";
 
 const FEET_TO_METRES = 0.3048;
 

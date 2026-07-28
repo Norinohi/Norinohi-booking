@@ -11,7 +11,7 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { Section, type SectionProps, SelectField } from "../fields";
-import { DATE_FLEXIBILITY, DURATIONS } from "../filters-options";
+import { DATE_FLEXIBILITY, DURATIONS } from "../../lib/options";
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",

@@ -1,20 +1,20 @@
 export type Range = [number, number];
 
 export type FiltersState = {
-  country: string;
-  sailingArea: string;
-  charterCompany: string;
-  marina: string;
+  country: string[];
+  sailingArea: string[];
+  charterCompany: string[];
+  marina: string[];
 
   startDate: Date | null;
   duration: string;
   dateFlexibility: string;
 
-  boatType: string;
-  model: string;
-  crew: string;
-  mainsailType: string;
-  equipment: string;
+  boatType: string[];
+  model: string[];
+  crew: string[];
+  mainsailType: string[];
+  equipment: string[];
 
   length: Range;
   cabins: Range;
@@ -42,20 +42,20 @@ export const BOAT_AGE_LIMITS: Range = [1, 20];
 export const RATING_LIMITS: Range = [0, 5];
 
 export const DEFAULT_FILTERS: FiltersState = {
-  country: "all",
-  sailingArea: "all",
-  charterCompany: "all",
-  marina: "all",
+  country: [],
+  sailingArea: [],
+  charterCompany: [],
+  marina: [],
 
   startDate: null,
   duration: "7",
   dateFlexibility: "on-day",
 
-  boatType: "all",
-  model: "all",
-  crew: "all",
-  mainsailType: "all",
-  equipment: "all",
+  boatType: [],
+  model: [],
+  crew: [],
+  mainsailType: [],
+  equipment: [],
 
   length: LENGTH_LIMITS,
   cabins: CABINS_LIMITS,
@@ -74,7 +74,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   guestRating: RATING_LIMITS,
 };
 
-function isSameValue(a: unknown, b: unknown): boolean {
+export function isSameValue(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.length === b.length && a.every((item, index) => item === b[index]);
   }

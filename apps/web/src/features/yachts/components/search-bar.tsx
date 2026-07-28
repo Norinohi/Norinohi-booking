@@ -2,42 +2,32 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Calendar, type DateRange } from "@yacht-charter/ui/components/form/calendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
+import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
 import { Calendar as CalendarIcon, MapPin, Sailboat, Search } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import type { FormEvent } from "react";
 
-const LOCATIONS = [
-  "Croatia",
-  "Greece",
-  "Italy",
-  "Spain",
-  "France",
-  "Turkey",
-  "Montenegro",
-] as const;
+import {
+  BOAT_TYPES,
+  COUNTRIES,
+  DEFAULT_FILTERS,
+  type FiltersState,
+  orderedValues,
+  useDraft,
+} from "@/components/shared/filters";
 
-const BOATS = [
-  { value: "any", label: "Any boat" },
-  { value: "sailboat", label: "Sailboat" },
-  { value: "catamaran", label: "Catamaran" },
-  { value: "motor-yacht", label: "Motor yacht" },
-  { value: "gulet", label: "Gulet" },
-] as const;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-const BOAT_LABELS: Record<string, string> = Object.fromEntries(
-  BOATS.map(({ value, label }) => [value, label]),
-);
+function toRange(value: FiltersState): DateRange {
+  if (!value.startDate) return { from: undefined, to: undefined };
+  const to = new Date(value.startDate);
+  to.setDate(to.getDate() + Number(value.duration));
+  return { from: value.startDate, to };
+}
 
 const fieldTrigger =
   "group flex h-12 w-full min-w-[200px] items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[popup-open]:border-foreground";
@@ -54,16 +44,29 @@ function formatRange(range: DateRange): string | null {
   return null;
 }
 
-export default function SearchBar() {
-  const [location, setLocation] = useState("");
-  const [boat, setBoat] = useState("any");
-  const [range, setRange] = useState<DateRange>({ from: undefined, to: undefined });
+export type SearchBarProps = {
+  value: FiltersState;
+  onSearch: (next: FiltersState) => void;
+};
 
+export default function SearchBar({ value, onSearch }: SearchBarProps) {
+  const [draft, setDraft] = useDraft(value);
+  const range = toRange(draft);
   const rangeLabel = formatRange(range);
+
+  function handleRange(next: DateRange | undefined) {
+    const from = next?.from ?? null;
+    const nights = from && next?.to ? Math.round((+next.to - +from) / DAY_MS) : 0;
+    setDraft((current) => ({
+      ...current,
+      startDate: from,
+      duration: nights > 0 ? String(nights) : DEFAULT_FILTERS.duration,
+    }));
+  }
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    // TODO: wire to the search query once the backend exists.
+    onSearch(draft);
   }
 
   return (
@@ -73,21 +76,16 @@ export default function SearchBar() {
     >
       {/* Location */}
       <div>
-        <Select value={location || null} onValueChange={(value) => setLocation(value ?? "")}>
-          <SelectTrigger className="h-12 w-full">
-            <span className="flex min-w-0 flex-1 items-center gap-2">
-              <MapPin className="size-6 shrink-0 text-foreground" />
-              <SelectValue placeholder="Location" />
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            {LOCATIONS.map((name) => (
-              <SelectItem key={name} value={name}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          options={COUNTRIES}
+          value={draft.country}
+          onValueChange={(next) =>
+            setDraft((current) => ({ ...current, country: orderedValues(COUNTRIES, next) }))
+          }
+          placeholder="Location"
+          searchPlaceholder="Search Countries..."
+          icon={<MapPin className="size-6 shrink-0 text-foreground" />}
+        />
       </div>
 
       {/* Date range */}
@@ -100,35 +98,22 @@ export default function SearchBar() {
             </span>
           </PopoverTrigger>
           <PopoverContent className="w-(--anchor-width) border-0 bg-transparent p-0 shadow-none">
-            <Calendar
-              className="w-full"
-              mode="range"
-              selected={range}
-              onSelect={(next) => setRange(next ?? { from: undefined, to: undefined })}
-            />
+            <Calendar className="w-full" mode="range" selected={range} onSelect={handleRange} />
           </PopoverContent>
         </Popover>
       </div>
 
       {/* Boat type */}
       <div className="md:col-span-2 xl:col-span-1">
-        <Select value={boat} onValueChange={(value) => setBoat(value ?? "any")}>
-          <SelectTrigger className="h-12 w-full">
-            <span className="flex min-w-0 flex-1 items-center gap-2">
-              <Sailboat className="size-6 shrink-0 text-foreground" />
-              <SelectValue placeholder="Any boat">
-                {(value) => BOAT_LABELS[value as string] ?? "Any boat"}
-              </SelectValue>
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            {BOATS.map(({ value, label }) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          options={BOAT_TYPES}
+          value={draft.boatType}
+          onValueChange={(next) =>
+            setDraft((current) => ({ ...current, boatType: orderedValues(BOAT_TYPES, next) }))
+          }
+          placeholder="Any boat"
+          icon={<Sailboat className="size-6 shrink-0 text-foreground" />}
+        />
       </div>
 
       {/* Submit */}

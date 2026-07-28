@@ -1,32 +1,42 @@
 export type Option = { value: string; label: string };
 
+export function labelOf(options: Option[], value: string): string {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+/** Keeps a selection in option order, so comparing it against a default never depends on click order. */
+export function orderedValues(options: Option[], selected: string[]): string[] {
+  const picked = new Set(selected);
+  return options.filter((option) => picked.has(option.value)).map((option) => option.value);
+}
+
 export const COUNTRIES: Option[] = [
-  { value: "all", label: "All countries" },
+  { value: "egypt", label: "Egypt" },
+  { value: "morocco", label: "Morocco" },
   { value: "croatia", label: "Croatia" },
-  { value: "greece", label: "Greece" },
-  { value: "italy", label: "Italy" },
   { value: "spain", label: "Spain" },
   { value: "france", label: "France" },
+  { value: "italy", label: "Italy" },
+  { value: "portugal", label: "Portugal" },
+  { value: "greece", label: "Greece" },
+  { value: "norway", label: "Norway" },
   { value: "turkey", label: "Turkey" },
   { value: "montenegro", label: "Montenegro" },
 ];
 
 export const SAILING_AREAS: Option[] = [
-  { value: "all", label: "All regions" },
   { value: "dalmatia", label: "Dalmatia" },
   { value: "istria", label: "Istria" },
   { value: "kvarner", label: "Kvarner" },
 ];
 
 export const CHARTER_COMPANIES: Option[] = [
-  { value: "all", label: "All companies" },
   { value: "sunsail", label: "Sunsail" },
   { value: "dream-yacht", label: "Dream Yacht" },
   { value: "navigare", label: "Navigare" },
 ];
 
 export const MARINAS: Option[] = [
-  { value: "all", label: "All marinas" },
   { value: "split", label: "Marina Split" },
   { value: "kastela", label: "Marina Kaštela" },
   { value: "trogir", label: "Marina Trogir" },
@@ -48,15 +58,16 @@ export const DATE_FLEXIBILITY: Option[] = [
 ];
 
 export const BOAT_TYPES: Option[] = [
-  { value: "all", label: "All types" },
-  { value: "sailboat", label: "Sailboat" },
+  { value: "sailing-yacht", label: "Sailing Yacht" },
   { value: "catamaran", label: "Catamaran" },
-  { value: "motor-yacht", label: "Motor yacht" },
   { value: "gulet", label: "Gulet" },
+  { value: "motor-yacht", label: "Motor Yacht" },
+  { value: "power-catamaran", label: "Power Catamaran" },
+  { value: "sailboat", label: "Sailboat" },
+  { value: "motor-boat", label: "Motor Boat" },
 ];
 
 export const MODELS: Option[] = [
-  { value: "all", label: "All models" },
   { value: "bavaria", label: "Bavaria" },
   { value: "beneteau", label: "Beneteau" },
   { value: "jeanneau", label: "Jeanneau" },
@@ -64,20 +75,18 @@ export const MODELS: Option[] = [
 ];
 
 export const CREWS: Option[] = [
-  { value: "all", label: "Full crew" },
+  { value: "full-crew", label: "Full crew" },
   { value: "skipper", label: "Skipper only" },
   { value: "bareboat", label: "Bareboat" },
 ];
 
 export const MAINSAIL_TYPES: Option[] = [
-  { value: "all", label: "All types" },
   { value: "classic", label: "Classic" },
   { value: "furling", label: "Furling" },
   { value: "lazy-bag", label: "Lazy bag" },
 ];
 
 export const EQUIPMENT: Option[] = [
-  { value: "all", label: "Any equipment" },
   { value: "air-conditioning", label: "Air conditioning" },
   { value: "generator", label: "Generator" },
   { value: "bow-thruster", label: "Bow thruster" },

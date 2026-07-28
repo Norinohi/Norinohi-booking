@@ -2,6 +2,7 @@
 
 import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { Field } from "@yacht-charter/ui/components/form/field";
+import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
 import {
   Select,
   SelectContent,
@@ -18,17 +19,13 @@ import {
 } from "@yacht-charter/ui/components/layout/accordion";
 import { type ReactNode, useId } from "react";
 
-import type { Option } from "./filters-options";
-import type { FiltersState, Range } from "./filters-state";
+import { labelOf, type Option, orderedValues } from "../lib/options";
+import type { FiltersState, Range } from "../lib/state";
 
 export type SectionProps = {
   value: FiltersState;
   set: <K extends keyof FiltersState>(key: K, next: FiltersState[K]) => void;
 };
-
-export function labelOf(options: Option[], value: string): string {
-  return options.find((option) => option.value === value)?.label ?? "";
-}
 
 export function Section({
   value,
@@ -48,6 +45,42 @@ export function Section({
         <div className="flex flex-col gap-3 pt-3">{children}</div>
       </AccordionContent>
     </AccordionItem>
+  );
+}
+
+export function MultiSelectField({
+  label,
+  ariaLabel,
+  options,
+  value,
+  onChange,
+  placeholder,
+  searchPlaceholder,
+  className,
+}: {
+  label?: string;
+  ariaLabel?: string;
+  options: Option[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  placeholder: string;
+  searchPlaceholder?: string;
+  className?: string;
+}) {
+  return (
+    <Field label={label} className={className}>
+      <MultiSelect
+        aria-label={ariaLabel}
+        className="min-w-0"
+        options={options}
+        value={value}
+        // Written back in option order so comparing against the defaults never
+        // depends on the order the boxes were ticked.
+        onValueChange={(next) => onChange(orderedValues(options, next))}
+        placeholder={placeholder}
+        searchPlaceholder={searchPlaceholder}
+      />
+    </Field>
   );
 }
 

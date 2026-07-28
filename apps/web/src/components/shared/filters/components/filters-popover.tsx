@@ -10,7 +10,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { Filter } from "lucide-react";
 import { useState } from "react";
 
-import { countActiveFilters, type FiltersState } from "./filters-state";
+import { countActiveFilters, type FiltersState } from "../lib/state";
 import FiltersPanel from "./filters-panel";
 
 export type FiltersPopoverProps = {

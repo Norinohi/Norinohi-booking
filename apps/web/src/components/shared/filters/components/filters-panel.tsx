@@ -4,9 +4,10 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Accordion } from "@yacht-charter/ui/components/layout/accordion";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { type FormEvent, useState } from "react";
+import type { FormEvent } from "react";
 
-import { countActiveFilters, DEFAULT_FILTERS, type FiltersState } from "./filters-state";
+import { countActiveFilters, DEFAULT_FILTERS, type FiltersState } from "../lib/state";
+import { useDraft } from "../hooks/use-draft";
 import AdditionalSection from "./sections/additional-section";
 import BoatSection from "./sections/boat-section";
 import RatingsSection from "./sections/ratings-section";
@@ -29,7 +30,7 @@ export default function FiltersPanel({
   className,
   scrollable = false,
 }: FiltersPanelProps) {
-  const [draft, setDraft] = useState<FiltersState>(value);
+  const [draft, setDraft] = useDraft(value);
   const draftCount = countActiveFilters(draft);
 
   function set<K extends keyof FiltersState>(key: K, next: FiltersState[K]) {

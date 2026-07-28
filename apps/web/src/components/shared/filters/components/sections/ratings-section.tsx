@@ -3,7 +3,7 @@
 import { Star } from "lucide-react";
 
 import { RangeField, Section, type SectionProps } from "../fields";
-import { RATING_LIMITS } from "../filters-state";
+import { RATING_LIMITS } from "../../lib/state";
 
 export default function RatingsSection({ value, set }: SectionProps) {
   return (

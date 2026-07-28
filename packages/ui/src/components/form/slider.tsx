@@ -44,7 +44,10 @@ function Slider({
       )}
       <SliderPrimitive.Control
         data-slot="slider-control"
-        className={cn("flex w-full touch-none items-center px-2 py-0.5 select-none", controlClassName)}
+        className={cn(
+          "flex w-full touch-none items-center px-2 py-0.5 select-none",
+          controlClassName,
+        )}
       >
         <SliderPrimitive.Track className="relative h-3 w-full rounded-full bg-brand-50/50">
           {showTicks && (
