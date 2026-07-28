@@ -1,5 +1,6 @@
 "use client";
 
+import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useState } from "react";
 
 import {
@@ -12,10 +13,13 @@ import {
 import BoatCard from "./components/boat-card";
 import MapCard from "./components/map-card";
 import SearchBar from "./components/search-bar";
-import { SAMPLE_BOAT } from "./lib/sample-boats";
+import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "./lib/sample-boats";
 
 export default function YachtsWrapper() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
+  const [page, setPage] = useState(1);
+
+  const boats = getBoatsPage(page);
 
   return (
     <div className="flex flex-col">
@@ -32,7 +36,18 @@ export default function YachtsWrapper() {
 
           <div className="flex min-w-0 flex-col gap-5">
             <FiltersPopover className="lg:hidden" value={filters} onApply={setFilters} />
-            <BoatCard {...SAMPLE_BOAT} />
+
+            {boats.map(({ id, ...boat }, index) => (
+              <BoatCard key={id} {...boat} priority={index === 0} />
+            ))}
+
+            <PaginationControl
+              className="pt-1"
+              page={page}
+              pageSize={RESULTS_PER_PAGE}
+              total={RESULTS_TOTAL}
+              onPageChange={setPage}
+            />
           </div>
         </div>
       </div>

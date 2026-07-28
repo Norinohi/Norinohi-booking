@@ -35,6 +35,7 @@ export type BoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
+  priority?: boolean;
   className?: string;
 };
 
@@ -42,9 +43,10 @@ function Gallery({
   images,
   imageAlt,
   badges,
-}: Pick<BoatCardProps, "images" | "imageAlt" | "badges">) {
+  priority,
+}: Pick<BoatCardProps, "images" | "imageAlt" | "badges" | "priority">) {
   return (
-    <div className="relative h-64 w-full shrink-0 overflow-hidden rounded-t-2xl xl:h-auto xl:w-[452px] xl:rounded-tr-none xl:rounded-bl-2xl">
+    <div className="relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl">
       <Carousel className="size-full">
         <CarouselViewport>
           {images.map((src, index) => (
@@ -53,8 +55,8 @@ function Gallery({
                 src={src}
                 alt={index === 0 ? (imageAlt ?? "") : ""}
                 fill
-                priority={index === 0}
-                sizes="(min-width: 1280px) 452px, 100vw"
+                priority={priority && index === 0}
+                sizes="(min-width: 1280px) 40vw, 100vw"
                 className="object-cover"
               />
             </CarouselSlide>
@@ -107,21 +109,21 @@ function Details({
   "location" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities"
 >) {
   return (
-    <div className="flex flex-col gap-4 px-4 pt-6 md:px-6 xl:w-83.5 xl:shrink-0 xl:border-r xl:border-natural-50 xl:px-0 xl:pl-0">
+    <div className="flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:border-r xl:border-natural-50 xl:px-0">
       <div className="flex flex-col gap-3">
         <p className="truncate text-base font-bold leading-[1.4] text-foreground underline decoration-dotted">
           {location}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate pb-1 text-[32px] font-medium leading-[1.1] text-foreground">
+          <h3 className="min-w-0 flex-1 truncate pb-1 text-[28px] font-medium leading-[1.1] text-foreground md:flex-none md:text-[32px]">
             {name}
           </h3>
-          <Chip className="bg-transparent p-1.5 text-gold">
+          <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
             <Star className="fill-current" />
             {rating}
           </Chip>
-          <div className="flex items-center gap-1.5 md:ml-2 xl:ml-0 xl:hidden">
+          <div className="flex w-full items-center gap-1.5 md:w-auto xl:hidden">
             <Chip variant="neutral">
               <Sailboat />
               {charterType}
@@ -158,7 +160,7 @@ function Details({
       </div>
 
       {amenities?.length ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pb-6">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pb-3 md:pb-4">
           {amenities.map((amenity) => (
             <div key={amenity.label} className="flex items-center gap-2">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand [&_svg]:size-4">
@@ -184,6 +186,21 @@ function Moment({ moment, className }: { moment: BoatCardMoment; className?: str
   );
 }
 
+function Prepayment({ label, className }: { label: string; className?: string }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "items-center gap-1 whitespace-nowrap text-xs font-semibold leading-[1.3] text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+        className,
+      )}
+    >
+      <Info className="size-4 shrink-0" />
+      {label}
+    </button>
+  );
+}
+
 function Action({
   stats,
   start,
@@ -197,35 +214,34 @@ function Action({
   "stats" | "start" | "end" | "priceLabel" | "price" | "perPerson" | "prepayment"
 >) {
   return (
-    <div className="flex flex-col gap-4 border-t border-natural-50 px-4 pt-6 pb-6 md:grid md:grid-cols-2 md:gap-x-4 md:px-6 xl:flex xl:min-w-0 xl:flex-1 xl:flex-col xl:border-t-0 xl:px-0 xl:pr-6">
+    <div className="flex flex-col gap-3 border-t border-natural-50 px-4 pt-3 pb-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:px-6 md:pt-4 md:pb-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:px-0 xl:pr-6">
       <div className="flex flex-col items-center gap-2 text-sm font-medium leading-[1.3] text-foreground md:items-start">
         {stats?.map((stat) => (
           <p key={stat}>{stat}</p>
         ))}
       </div>
 
-      <div className="flex items-center justify-center gap-3 md:justify-start xl:justify-center">
-        <Moment moment={start} className="items-center md:items-start" />
+      <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
+        <Moment moment={start} className="flex-1 items-center md:flex-none md:items-start" />
         <ArrowRight className="size-4 shrink-0 text-foreground" />
-        <Moment moment={end} className="items-center md:items-start" />
+        <Moment moment={end} className="flex-1 items-center md:flex-none md:items-start" />
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-1.5 md:items-start xl:flex-1">
-        <div className="flex flex-wrap items-center justify-center gap-1 md:justify-start">
-          <span className="text-sm font-medium leading-[1.3] text-natural-500">{priceLabel}</span>
-          <span className="text-[42px] font-bold leading-[1.15] text-black">{price}</span>
+      <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
+        <div className="flex flex-wrap items-center justify-center gap-2 md:flex-col md:items-start md:gap-1">
+          <span className="order-2 text-sm font-medium leading-[1.3] text-natural-500 md:order-1">
+            {priceLabel}
+          </span>
+          <span className="order-1 text-[42px] font-bold leading-[1.15] text-black md:order-2">
+            {price}
+          </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
+        <Prepayment label={prepayment} className="flex md:hidden" />
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        <button
-          type="button"
-          className="flex items-center gap-1 whitespace-nowrap text-xs font-semibold leading-[1.3] text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        >
-          <Info className="size-4 shrink-0" />
-          {prepayment}
-        </button>
+        <Prepayment label={prepayment} className="hidden md:flex" />
         <Button variant="neutral" size="md" className="w-full capitalize">
           View Details
         </Button>
@@ -238,11 +254,16 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
   return (
     <article
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:flex-row xl:items-stretch xl:gap-6",
+        "flex w-full flex-col overflow-hidden rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,208fr)] xl:items-stretch xl:gap-6",
         className,
       )}
     >
-      <Gallery images={boat.images} imageAlt={boat.imageAlt} badges={boat.badges} />
+      <Gallery
+        images={boat.images}
+        imageAlt={boat.imageAlt}
+        badges={boat.badges}
+        priority={boat.priority}
+      />
       <Details
         location={boat.location}
         name={boat.name}
