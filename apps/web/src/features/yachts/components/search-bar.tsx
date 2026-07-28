@@ -35,12 +35,10 @@ const BOATS = [
   { value: "gulet", label: "Gulet" },
 ] as const;
 
-// value → label map so Select renders the label ("Any boat") rather than the raw value ("any").
 const BOAT_LABELS: Record<string, string> = Object.fromEntries(
   BOATS.map(({ value, label }) => [value, label]),
 );
 
-// Trigger shell shared by the date field so it reads identically to SelectTrigger.
 const fieldTrigger =
   "group flex h-12 w-full min-w-[200px] items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[popup-open]:border-foreground";
 
@@ -65,17 +63,16 @@ export default function SearchBar() {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    // TODO: filters are local state while there is no backend. Once the search
-    // endpoint exists, lift them to the URL (nuqs) and drive the query from there.
+    // TODO: wire to the search query once the backend exists.
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:gap-5 max-w-349 mx-auto w-full"
+      className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_248px] xl:gap-5"
     >
       {/* Location */}
-      <div className="flex-1">
+      <div>
         <Select value={location || null} onValueChange={(value) => setLocation(value ?? "")}>
           <SelectTrigger className="h-12 w-full">
             <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -94,7 +91,7 @@ export default function SearchBar() {
       </div>
 
       {/* Date range */}
-      <div className="flex-1">
+      <div>
         <Popover>
           <PopoverTrigger className={fieldTrigger}>
             <CalendarIcon className="size-6 shrink-0 text-foreground" />
@@ -102,7 +99,6 @@ export default function SearchBar() {
               {rangeLabel ?? "Add dates"}
             </span>
           </PopoverTrigger>
-          {/* Match the trigger's width so the calendar lines up with the field above it. */}
           <PopoverContent className="w-(--anchor-width) border-0 bg-transparent p-0 shadow-none">
             <Calendar
               className="w-full"
@@ -115,7 +111,7 @@ export default function SearchBar() {
       </div>
 
       {/* Boat type */}
-      <div className="flex-1">
+      <div className="md:col-span-2 xl:col-span-1">
         <Select value={boat} onValueChange={(value) => setBoat(value ?? "any")}>
           <SelectTrigger className="h-12 w-full">
             <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -136,7 +132,12 @@ export default function SearchBar() {
       </div>
 
       {/* Submit */}
-      <Button type="submit" variant="brand" size="md" className="w-full md:w-[248px]">
+      <Button
+        type="submit"
+        variant="brand"
+        size="md"
+        className="w-full md:col-span-2 xl:col-span-1"
+      >
         <Search />
         Search
       </Button>
