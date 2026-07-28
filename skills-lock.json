@@ -29,6 +29,12 @@
       "skillPath": "skills/shadcn/SKILL.md",
       "computedHash": "d81caa0f86aabab65b25e302d454f23a3328760386ed9078345584c0d5c8058e"
     },
+    "stripe-best-practices": {
+      "source": "stripe/ai",
+      "sourceType": "github",
+      "skillPath": "skills/stripe-best-practices/SKILL.md",
+      "computedHash": "a06bdd7108b561fdeea22afcd6fc42ba4ed1a59b465813d63f9b159b02f9e8b2"
+    },
     "turborepo": {
       "source": "vercel/turborepo",
       "sourceType": "github",
