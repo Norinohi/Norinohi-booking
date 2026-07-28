@@ -46,6 +46,23 @@ export const Placement: Story = {
   ),
 };
 
+export const TallContent: Story = {
+  name: "Tall content scrolls",
+  render: () => (
+    <Popover>
+      <PopoverTrigger render={<Button variant="neutral">Filters (2)</Button>} />
+      <PopoverContent className="w-[334px]">
+        <p className="text-base font-bold text-foreground">All filters (2)</p>
+        {Array.from({ length: 40 }, (_, i) => (
+          <p key={i} className="text-sm text-natural-500">
+            Filter row {i + 1}
+          </p>
+        ))}
+      </PopoverContent>
+    </Popover>
+  ),
+};
+
 export const HostingACalendar: Story = {
   name: "Hosting a card child (Calendar)",
   render: () => (

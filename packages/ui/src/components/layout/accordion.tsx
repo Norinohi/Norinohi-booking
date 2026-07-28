@@ -55,7 +55,7 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
         {...props}
       >
         {children}
-        <ChevronDown className="size-5 shrink-0 transition-transform duration-200 `group-data-panel-open:rotate-180" />
+        <ChevronDown className="size-5 shrink-0 transition-transform duration-200 group-data-panel-open:rotate-180" />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );
