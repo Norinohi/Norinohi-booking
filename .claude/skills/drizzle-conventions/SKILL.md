@@ -18,6 +18,7 @@ Authoritative model: `docs/backend-architecture.md` (§1–§2 entities, Appendi
 8. **Barrel re-export is mandatory.** Every new file MUST be added to `packages/db/src/schema/index.ts` (`export * from "./x"`), or `drizzle({ schema })` can't see it. Forgetting this is the #1 silent bug.
 9. **Never edit `auth.ts`** except via `packages/auth` (better-auth owns its shape). Adding `user.role` for admin is the one sanctioned change — do it in `packages/auth` then `db:push`.
 10. **Provider boundary:** never use a provider's numeric id as a PK. It lives in `provider_record.external_id`, unique on `(provider, resource_type, external_id)`.
+11. **Comments: minimal.** Only the non-obvious "why" (a load-bearing constraint, a gotcha). No per-field/per-line narration, no doc blocks that restate the name. Let naming carry the meaning.
 
 ## Shared primitives — `packages/db/src/schema/_shared.ts`
 ```ts

@@ -38,6 +38,7 @@ Canonical DTOs live in `packages/providers/src/types.ts` as Zod v4 schemas + inf
 8. **Capabilities drive the flow.** The booking state machine reads `capabilities()` — no `createOption` → skip hold; `optionExpiryOwnedByProvider=false` → don't promise a hold.
 9. **Price/availability reconciled live at quote**, never merged across providers. A selected offer has exactly one provider source.
 10. **NauSYS price fields:** `clientPrice` = customer pays, `agencyPrice` = our cost, `priceListPrice` = list. Also `securityDeposit`, `depositWhenInsured`, `paymentPlans`, `obligatoryExtras`, `oneWayPeriods`, `minimumShortPeriodDuration`, status `FREE`/`UNDER_OPTION`.
+11. **Comments: minimal** — only the non-obvious "why" (a mapping quirk, a provider gotcha). No narration.
 
 ## Gates
 `pnpm check-types` + `pnpm build`; `pnpm --filter providers test` (Vitest for mappers). Never leak provider types across the package boundary — the public export surface is DTOs + the interface only.

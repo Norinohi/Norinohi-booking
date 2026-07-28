@@ -14,6 +14,7 @@ Authoritative model: `docs/backend-architecture.md` §5 (contract groups) + Appe
 4. **Errors via `new ORPCError("CODE")`** (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, plus custom like `PRICE_CHANGED`).
 5. **Request-scoped values go in `context.ts`**, not threaded through args.
 6. **No provider shapes.** Handlers call domain services (`packages/api/src/services/*`) that return canonical DTOs; procedures re-validate with `.output()`.
+7. **Comments: minimal** — only the non-obvious "why", no narration of what the code plainly does.
 
 ## The three procedure levels
 ```ts
