@@ -2,7 +2,7 @@
 
 **Owner:** Daria (backend lead) · **Status:** design, pre-implementation · **Scope:** M2 → M6 demo, with clean extension points for live Booking Manager / NauSYS connectors, Stripe live mode, and operator roles after the demo.
 
-**Companion docs:** [`nausys-api-v6-backend-map.md`](./nausys-api-v6-backend-map.md) is the **NauSYS connector-specific reference** (real endpoints, `Rest*` types, page ranges, field groups). This document is the **canonical shared model** — vocabulary and modeling here are authoritative for both providers; the NauSYS map maps its endpoints *into* the names defined here. [`task-breakdown.md`](./task-breakdown.md) is the assignable task list. [`open-questions-and-decisions.md`](./open-questions-and-decisions.md) tracks every open decision, vendor question, and assumption.
+**Companion docs:** [`nausys-api-v6-backend-map.md`](./nausys-api-v6-backend-map.md) is the **NauSYS connector-specific reference** (real endpoints, `Rest*` types, page ranges, field groups). This document is the **canonical shared model** — vocabulary and modeling here are authoritative for both providers; the NauSYS map maps its endpoints *into* the names defined here. [`task-breakdown.md`](./task-breakdown.md) is the assignable task list. [`open-questions-and-decisions.md`](./open-questions-and-decisions.md) tracks every open decision, vendor question, and assumption. [`domain-overview.md`](./domain-overview.md) explains the model in plain language for the whole team.
 
 > Decision-oriented. Concrete recommendations even where inputs are missing; every gap is labelled **[ASSUMPTION]** and collected in §8. Cross-cutting decisions D-MONEY / D-ID / Q-ADMIN / D-TEST and the vocabulary/modeling reconciliation are **decided** (see §8).
 

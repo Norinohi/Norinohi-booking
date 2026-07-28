@@ -88,3 +88,27 @@ We've defaulted these to keep moving; each is labelled `[ASSUMPTION]` in the arc
 | **M4** pricing | D-RULES, referral mechanics, D-MPRICE-SCOPE *(engine unaffected; only scope/semantics)* | ✅ engine yes; finalise rules before locking M4 |
 | **M5** booking + Stripe | D-PAYORDER, and provider answers Q-AVAIL / Q-OPT for the live path *(mock path unaffected)* | ✅ mock path yes; live path needs vendor answers |
 | **live connectors** (post-demo) | provider credentials + all §3 answers | ⛔ needs vendor access |
+
+---
+
+## 6. Admin panel (later)
+
+The admin panel is not in the 1 Sep demo. The sprint board schedules only customer-facing screens, and "Manage Prices" is listed out of scope. The demo runs on seeded mock data, so staff do not import or curate anything by hand. This is the same call as **D-MPRICE-SCOPE** above.
+
+### The backend a panel would sit on is already designed
+Everything below is `adminProcedure` (gated by the staff `role`) and writes `audit_log`. These are extension points, not demo deliverables.
+
+| Admin job | Backend endpoints | Tables |
+|---|---|---|
+| Duplicate review ("is this the same boat?") | `admin.match.queue` / `confirm` / `reject` | `listing_source`, `listing_duplicate_candidate` |
+| Price overrides ("manage price") | `admin.priceRule.*` + pricing engine (M4) | `price_adjustment_rule`, `price_adjustment_target`, `audit_log` |
+| Import control and monitoring | `admin.sync.run` / `status` | `sync_run`, `sync_error`, `provider_record` |
+| Cancel a booking | `admin.booking.cancel` | `booking`, `audit_log` |
+| Access control | `adminProcedure` + `user.role` | `user` (role) |
+
+### What a demo version would cost (frontend, not currently booked)
+These are rough estimates for the team lead to sanity-check, not commitments:
+- A minimal staff-only page (a duplicate-review list and a price-override form) is roughly a few days of frontend work, plus the matching endpoints from backend. It is not on the sprint board, so it would need time carved out.
+- The cheapest way to show price management in the demo is no panel at all: seed a `price_adjustment_rule` and show the discounted quote on a normal yacht page. That costs zero frontend time and still demonstrates the capability.
+
+Decision owner: team lead. If a panel is wanted for the demo, it needs frontend time the board has not allocated; otherwise it stays a clean post-demo add-on.
