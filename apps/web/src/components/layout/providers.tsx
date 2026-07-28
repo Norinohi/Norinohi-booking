@@ -12,7 +12,7 @@ import { ThemeProvider } from "./theme-provider";
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <NuqsAdapter>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
         <QueryClientProvider client={queryClient}>
           {children}
           <ReactQueryDevtools />

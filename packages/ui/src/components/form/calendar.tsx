@@ -107,8 +107,10 @@ function rangeEndpoints(
   return undefined;
 }
 
+// Cells are 36px by default (`w-fit` card) but `grow` lets them share any extra width
+// when the card is stretched, e.g. `<Calendar className="w-full" />` inside a popover.
 const dayBase =
-  "relative flex size-9 items-center justify-center text-center text-sm outline-none transition-colors select-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
+  "relative flex size-9 grow items-center justify-center text-center text-sm outline-none transition-colors select-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
 const dayBrand = "bg-brand font-semibold leading-[1.15] text-brand-foreground hover:bg-brand-hover";
 
 function dayClassName(state: {
@@ -242,7 +244,7 @@ function Calendar(props: CalendarProps) {
               key={i}
               role="columnheader"
               aria-label={label}
-              className="flex h-[21px] w-9 items-center justify-center text-sm font-medium leading-[1.3] text-natural-300"
+              className="flex h-[21px] w-9 grow items-center justify-center text-sm font-medium leading-[1.3] text-natural-300"
             >
               {label}
             </div>
