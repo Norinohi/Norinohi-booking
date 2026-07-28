@@ -29,6 +29,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
+    "yet-another-react-lightbox": "^3.32.1",
     "zod": "catalog:"
   },
   "devDependencies": {

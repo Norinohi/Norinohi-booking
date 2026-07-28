@@ -9,8 +9,10 @@ import {
   type FiltersState,
 } from "@/components/shared/filters";
 
+import BoatCard from "./components/boat-card";
 import MapCard from "./components/map-card";
 import SearchBar from "./components/search-bar";
+import { SAMPLE_BOAT } from "./lib/sample-boats";
 
 export default function YachtsWrapper() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
@@ -28,8 +30,9 @@ export default function YachtsWrapper() {
             <FiltersPanel className="hidden lg:flex" value={filters} onApply={setFilters} />
           </aside>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-5">
             <FiltersPopover className="lg:hidden" value={filters} onApply={setFilters} />
+            <BoatCard {...SAMPLE_BOAT} />
           </div>
         </div>
       </div>
