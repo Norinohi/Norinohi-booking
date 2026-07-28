@@ -23,6 +23,7 @@
     "@yacht-charter/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.2",
+    "nanoid": "^5.0.0",
     "pg": "^8.22.0",
     "zod": "catalog:"
   },
