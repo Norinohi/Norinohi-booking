@@ -31,21 +31,32 @@ pnpm --filter web check-types  # tsc --noEmit
 
 ### Structure
 
+Every subfolder except `components/` and `types.ts` is optional — a feature adds
+`hooks/`, `api/`, and `lib/` only when it needs them.
+
 ```
 src/
-  app/                      # thin routes = composition roots (prefetch + compose features)
-  features/<name>/
-    index.ts                # PUBLIC API — the only thing outside code may import
-    components/             # feature UI (private)
-    types.ts                # feature view-types (inferred from AppRouterClient)
-    hooks/                  # optional — React glue over queries
-    api/                    # optional — queries.ts (isomorphic defs) + server.ts (server-only prefetch)
-    lib/                    # optional — pure helpers: search-params.ts (nuqs), formatters, constants
+  app/                    # routes only — compose features; no business logic
+  features/
+    <feature>/            # one self-contained domain feature
+      index.ts            #   public API — outside code imports ONLY this
+      components/         #   feature UI (private to the feature)
+      types.ts            #   feature view-types (inferred from AppRouterClient)
+      hooks/              #   optional — React hooks over the feature's queries
+      api/                #   optional
+        queries.ts        #     query/mutation option factories (shared by server + client)
+        server.ts         #     server-only data / prefetch helpers
+      lib/                #   optional — pure helpers (search-params, formatters, constants)
   components/
-    shared/                 # cross-feature, Next/app-coupled (image, loader)
-    layout/                 # app chrome (header, providers, theme-provider, mode-toggle, user-menu)
-  lib/ utils/               # inherited integrations (auth-client, evlog, orpc)
+    shared/               # cross-feature components (not owned by one feature)
+    layout/               # app shell / chrome
+  lib/                    # app-wide integrations & clients
+  utils/                  # app-wide helpers
 ```
+
+Data path: a route (server) prefetches through a feature's `api/server.ts`, which reuses
+`api/queries.ts`; client leaves read the **same** `queries.ts` via a `hooks/` wrapper — one
+definition, so server-prefetched and client cache keys always match.
 
 ### Rules
 
