@@ -25,6 +25,7 @@
     "lucide-react": "catalog:",
     "next": "^16.2.11",
     "next-themes": "catalog:",
+    "nuqs": "^2.9.2",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
