@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@yacht-charter/ui/components/actions/button";
+import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
@@ -83,7 +83,9 @@ export default function NavigationBar() {
 
           <div className="hidden items-center gap-3 2xl:flex">
             <Button variant="neutral">{t("helpPlan")}</Button>
-            <Button variant="brand">{t("findYacht")}</Button>
+            <Link href="/yachts" className={buttonVariants({ variant: "brand" })}>
+              {t("findYacht")}
+            </Link>
           </div>
         </div>
       </div>
@@ -115,9 +117,13 @@ export default function NavigationBar() {
             <Button variant="neutral" className="w-full">
               {t("helpPlan")}
             </Button>
-            <Button variant="brand" className="w-full">
+            <Link
+              href="/yachts"
+              onClick={() => setOpen(false)}
+              className={buttonVariants({ variant: "brand", className: "w-full" })}
+            >
               {t("findYacht")}
-            </Button>
+            </Link>
           </div>
         </nav>
       </div>
