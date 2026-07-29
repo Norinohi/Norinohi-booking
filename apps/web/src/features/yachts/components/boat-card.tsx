@@ -11,11 +11,13 @@ import { ArrowRight, Bookmark, Check, Info, Sailboat, Star, Users } from "lucide
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/image";
+import { formatInstant } from "@/lib/date";
 
 export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
-export type BoatCardMoment = { date: string; time: string };
+/** Absolute check-in / check-out instant, displayed on the marina's clock via `timeZone`. */
+export type BoatCardCharterDate = string;
 
 export type BoatCardProps = {
   images: string[];
@@ -29,8 +31,10 @@ export type BoatCardProps = {
   specs: BoatCardSpec[];
   amenities?: BoatCardAmenity[];
   stats?: string[];
-  start: BoatCardMoment;
-  end: BoatCardMoment;
+  start: BoatCardCharterDate;
+  end: BoatCardCharterDate;
+  /** IANA zone of the marina — the clock both instants are shown on. */
+  timeZone: string;
   priceLabel: string;
   price: string;
   perPerson: string;
@@ -177,11 +181,20 @@ function Details({
   );
 }
 
-function Moment({ moment, className }: { moment: BoatCardMoment; className?: string }) {
+function CharterDate({
+  value,
+  timeZone,
+  className,
+}: {
+  value: BoatCardCharterDate;
+  timeZone: string;
+  className?: string;
+}) {
+  const { date, time } = formatInstant(value, timeZone);
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <span className="text-xs font-semibold leading-[1.3] text-foreground">{moment.date}</span>
-      <span className="text-sm font-medium leading-[1.3] text-natural-500">{moment.time}</span>
+      <span className="text-xs font-semibold leading-[1.3] text-foreground">{date}</span>
+      <span className="text-sm font-medium leading-[1.3] text-natural-500">{time}</span>
     </div>
   );
 }
@@ -205,13 +218,14 @@ function Action({
   stats,
   start,
   end,
+  timeZone,
   priceLabel,
   price,
   perPerson,
   prepayment,
 }: Pick<
   BoatCardProps,
-  "stats" | "start" | "end" | "priceLabel" | "price" | "perPerson" | "prepayment"
+  "stats" | "start" | "end" | "timeZone" | "priceLabel" | "price" | "perPerson" | "prepayment"
 >) {
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 px-4 pt-3 pb-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:px-6 md:pt-4 md:pb-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:px-0 xl:pr-6">
@@ -222,9 +236,17 @@ function Action({
       </div>
 
       <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
-        <Moment moment={start} className="flex-1 items-center md:flex-none md:items-start" />
+        <CharterDate
+          value={start}
+          timeZone={timeZone}
+          className="flex-1 items-center md:flex-none md:items-start"
+        />
         <ArrowRight className="size-4 shrink-0 text-foreground" />
-        <Moment moment={end} className="flex-1 items-center md:flex-none md:items-start" />
+        <CharterDate
+          value={end}
+          timeZone={timeZone}
+          className="flex-1 items-center md:flex-none md:items-start"
+        />
       </div>
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
@@ -277,6 +299,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         stats={boat.stats}
         start={boat.start}
         end={boat.end}
+        timeZone={boat.timeZone}
         priceLabel={boat.priceLabel}
         price={boat.price}
         perPerson={boat.perPerson}

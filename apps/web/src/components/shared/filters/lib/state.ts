@@ -6,7 +6,8 @@ export type FiltersState = {
   charterCompany: string[];
   marina: string[];
 
-  startDate: Date | null;
+  /** Plain calendar day, "2026-07-07". */
+  startDate: string | null;
   duration: string;
   dateFlexibility: string;
 
@@ -78,7 +79,6 @@ export function isSameValue(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.length === b.length && a.every((item, index) => item === b[index]);
   }
-  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
   return a === b;
 }
 

@@ -9,38 +9,33 @@ import {
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
 import { Calendar as CalendarIcon, MapPin, Sailboat, Search } from "lucide-react";
-import type { FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 
 import {
   BOAT_TYPES,
   COUNTRIES,
-  DEFAULT_FILTERS,
   type FiltersState,
   orderedValues,
   useDraft,
 } from "@/components/shared/filters";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { addDays, dayFromNative, dayToNative, daysBetween, formatDay } from "@/lib/date";
 
 function toRange(value: FiltersState): DateRange {
   if (!value.startDate) return { from: undefined, to: undefined };
-  const to = new Date(value.startDate);
-  to.setDate(to.getDate() + Number(value.duration));
-  return { from: value.startDate, to };
+  return {
+    from: dayToNative(value.startDate),
+    to: dayToNative(addDays(value.startDate, Number(value.duration))),
+  };
 }
 
 const fieldTrigger =
   "group flex h-12 w-full min-w-[200px] items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[popup-open]:border-foreground";
 
-const dateFmt = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
 function formatRange(range: DateRange): string | null {
-  if (range.from && range.to) return `${dateFmt.format(range.from)} – ${dateFmt.format(range.to)}`;
-  if (range.from) return dateFmt.format(range.from);
+  if (range.from && range.to) {
+    return `${formatDay(dayFromNative(range.from))} – ${formatDay(dayFromNative(range.to))}`;
+  }
+  if (range.from) return formatDay(dayFromNative(range.from));
   return null;
 }
 
@@ -51,16 +46,31 @@ export type SearchBarProps = {
 
 export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const [draft, setDraft] = useDraft(value);
-  const range = toRange(draft);
+  const [pending, setPending] = useState<DateRange | null>(null);
+
+  const range = pending ?? toRange(draft);
   const rangeLabel = formatRange(range);
 
   function handleRange(next: DateRange | undefined) {
-    const from = next?.from ?? null;
-    const nights = from && next?.to ? Math.round((+next.to - +from) / DAY_MS) : 0;
+    const from = next?.from;
+    const to = next?.to;
+
+    if (!from) {
+      setPending(null);
+      setDraft((current) => ({ ...current, startDate: null }));
+      return;
+    }
+
+    if (!to) {
+      setPending({ from, to: undefined });
+      return;
+    }
+
+    setPending(null);
     setDraft((current) => ({
       ...current,
-      startDate: from,
-      duration: nights > 0 ? String(nights) : DEFAULT_FILTERS.duration,
+      startDate: dayFromNative(from),
+      duration: String(daysBetween(from, to)),
     }));
   }
 

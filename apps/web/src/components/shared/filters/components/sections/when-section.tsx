@@ -10,14 +10,10 @@ import {
 } from "@yacht-charter/ui/components/overlay/popover";
 import { Calendar as CalendarIcon } from "lucide-react";
 
+import { dayFromNative, dayToNative, formatDay } from "@/lib/date";
+
 import { Section, type SectionProps, SelectField } from "../fields";
 import { DATE_FLEXIBILITY, DURATIONS } from "../../lib/options";
-
-const dateFmt = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
 
 export default function WhenSection({ value, set }: SectionProps) {
   return (
@@ -27,13 +23,13 @@ export default function WhenSection({ value, set }: SectionProps) {
           <PopoverTrigger className="group flex h-12 w-full items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:border-foreground">
             <CalendarIcon className="size-6 shrink-0 text-foreground" />
             <span className={value.startDate ? "text-foreground" : "text-natural-300"}>
-              {value.startDate ? dateFmt.format(value.startDate) : "Any date"}
+              {value.startDate ? formatDay(value.startDate) : "Any date"}
             </span>
           </PopoverTrigger>
           <PopoverContent className="w-auto border-0 bg-transparent p-0 shadow-none">
             <Calendar
-              selected={value.startDate ?? undefined}
-              onSelect={(next) => set("startDate", next ?? null)}
+              selected={dayToNative(value.startDate)}
+              onSelect={(next) => set("startDate", next ? dayFromNative(next) : null)}
             />
           </PopoverContent>
         </Popover>

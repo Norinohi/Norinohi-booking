@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/tanstack-query": "^1.14.8",
@@ -20,6 +21,7 @@
     "@yacht-charter/ui": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",
+    "date-fns": "^4.4.0",
     "dotenv": "catalog:",
     "evlog": "catalog:",
     "lucide-react": "catalog:",

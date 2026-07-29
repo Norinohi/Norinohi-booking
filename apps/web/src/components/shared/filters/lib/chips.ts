@@ -12,15 +12,11 @@ import {
   type Option,
   SAILING_AREAS,
 } from "./options";
+import { formatDay } from "@/lib/date";
+
 import { DEFAULT_FILTERS, type FiltersState, isSameValue, type Range } from "./state";
 
 export type FilterChip = { id: string; label: string; keys: (keyof FiltersState)[] };
-
-const dateFmt = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
 
 const numberFmt = new Intl.NumberFormat("en-GB");
 
@@ -62,7 +58,7 @@ const CHIP_DEFS: ChipDef[] = [
   {
     id: "startDate",
     keys: ["startDate"],
-    label: (s) => `Start: ${s.startDate ? dateFmt.format(s.startDate) : "—"}`,
+    label: (s) => `Start: ${s.startDate ? formatDay(s.startDate) : "—"}`,
   },
   { id: "duration", keys: ["duration"], label: (s) => `Duration: ${s.duration} days` },
   {
