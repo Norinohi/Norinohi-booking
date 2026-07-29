@@ -41,7 +41,7 @@ function BoatSmallCard({
 }: BoatSmallCardProps) {
   return (
     <Card className={cn("w-[334px] max-w-full", className)} {...props}>
-      <CardMedia>
+      <CardMedia className="aspect-[334/200]">
         <img src={image} alt={imageAlt} />
         <span className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-card/90 text-foreground shadow-sm">
           <Bookmark className="size-5" />
