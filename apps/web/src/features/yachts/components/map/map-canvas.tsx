@@ -2,7 +2,7 @@
 
 import { env } from "@yacht-charter/env/web";
 import type { ReactNode } from "react";
-import Map from "react-map-gl/mapbox";
+import Map, { type MapEvent } from "react-map-gl/mapbox";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -12,9 +12,22 @@ import "mapbox-gl/dist/mapbox-gl.css";
  * through `next/dynamic` with `ssr: false`.
  */
 const MAP_STYLE = "mapbox://styles/mapbox/streets-v12";
+const DIM_LAYER_ID = "design-dim";
+const DIM_OPACITY = 0.4;
 
 /** Replaced by the search bounds once the backend lands. */
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
+
+/* Dims tiles only — markers and cards are DOM above the canvas, so an overlay would catch them too. */
+function dimBasemap({ target: map }: MapEvent) {
+  if (map.getLayer(DIM_LAYER_ID)) return;
+
+  map.addLayer({
+    id: DIM_LAYER_ID,
+    type: "background",
+    paint: { "background-color": "#000000", "background-opacity": DIM_OPACITY },
+  });
+}
 
 export default function MapCanvas({ children }: { children?: ReactNode }) {
   return (
@@ -23,6 +36,7 @@ export default function MapCanvas({ children }: { children?: ReactNode }) {
       initialViewState={DEFAULT_VIEW_STATE}
       mapStyle={MAP_STYLE}
       style={{ width: "100%", height: "100%" }}
+      onLoad={dimBasemap}
     >
       {children}
     </Map>
