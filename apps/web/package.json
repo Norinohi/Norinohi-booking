@@ -24,6 +24,7 @@
     "evlog": "catalog:",
     "lucide-react": "catalog:",
     "next": "^16.2.11",
+    "next-intl": "^4.13.4",
     "next-themes": "catalog:",
     "nuqs": "^2.9.2",
     "react": "catalog:",

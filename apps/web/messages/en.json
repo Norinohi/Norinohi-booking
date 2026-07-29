@@ -1,0 +1,15 @@
+{
+  "Nav": {
+    "destinations": "Destinations",
+    "boatTypes": "Boat types",
+    "findByBudget": "Find by budget",
+    "tryIt": "Try it",
+    "popularRoutes": "Popular routes",
+    "helpPlan": "Help Me Plan My Trip",
+    "findYacht": "Find Yacht",
+    "saved": "Saved",
+    "language": "Language",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  }
+}
