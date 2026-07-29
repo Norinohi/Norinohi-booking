@@ -26,7 +26,13 @@ export default function PreviewPage() {
       <section className="flex flex-col gap-4">
         <h2 className="text-h6">Empty state</h2>
         <div className="rounded-lg border border-border">
-          <EmptyState />
+          <EmptyState
+            title="No yachts found for your filters"
+            description="Try adjusting your dates, budget, or location — we’ll help you find the perfect match."
+          />
+        </div>
+        <div className="rounded-lg border border-border">
+          <EmptyState title="Your wishlist is empty" illustration={null} />
         </div>
       </section>
     </main>

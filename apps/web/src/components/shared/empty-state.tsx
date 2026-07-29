@@ -1,41 +1,54 @@
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@yacht-charter/ui/components/feedback/empty";
-import { Sailboat } from "lucide-react";
+import { cn } from "@yacht-charter/ui/lib/utils";
+import type { ReactNode } from "react";
 
-/*
- * EmptyState — Figma "Empty State Section" (Reusable Sections, nodes 994:79342 desktop&tablet /
- * 994:79682 mobile). Thin app-level wrapper over the shared `feedback/empty` primitive with the
- * yacht-search defaults; identical layout across breakpoints, just narrower.
- */
-type EmptyStateProps = {
-  title?: React.ReactNode;
-  description?: React.ReactNode;
-  media?: React.ReactNode;
-  action?: React.ReactNode;
+import { Image } from "@/components/shared/image";
+
+export type EmptyStateProps = {
+  title: ReactNode;
+  description?: ReactNode;
+  /** Replaces the default artwork; pass `null` to drop it. */
+  illustration?: ReactNode;
+  action?: ReactNode;
   className?: string;
 };
 
 export default function EmptyState({
-  title = "No, we couldn't find any for your filters",
-  description = "Try adjusting or clearing your filters to see more yachts.",
-  media,
+  title,
+  description,
+  illustration,
   action,
   className,
 }: EmptyStateProps) {
   return (
-    <Empty className={className}>
-      <EmptyHeader>
-        <EmptyMedia>{media ?? <Sailboat className="size-12 text-natural-300" />}</EmptyMedia>
-        <EmptyTitle className="text-lg font-semibold">{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-      </EmptyHeader>
-      {action && <EmptyContent>{action}</EmptyContent>}
-    </Empty>
+    <div
+      className={cn(
+        "flex w-full flex-col items-center justify-center gap-4 rounded-2xl bg-card px-5 py-6 md:px-17.5",
+        className,
+      )}
+    >
+      {illustration === undefined ? (
+        <Image
+          src="/assets/illustrations/no-results.svg"
+          alt=""
+          width={128}
+          height={131}
+          unoptimized
+        />
+      ) : (
+        illustration
+      )}
+
+      <h3 className="text-center text-xl font-semibold leading-[1.1] text-black md:text-2xl">
+        {title}
+      </h3>
+
+      {description ? (
+        <p className="text-center text-sm font-medium leading-[1.3] text-natural-500">
+          {description}
+        </p>
+      ) : null}
+
+      {action}
+    </div>
   );
 }

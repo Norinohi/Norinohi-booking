@@ -24,6 +24,8 @@ type BaseProps = {
   sizes?: string;
   priority?: boolean;
   quality?: number;
+  /** Required for SVG — the Next optimizer rejects it without `dangerouslyAllowSVG`. */
+  unoptimized?: boolean;
   className?: string;
 };
 

@@ -12,6 +12,7 @@ import {
   type FiltersState,
   getFilterChips,
 } from "@/components/shared/filters";
+import EmptyState from "@/components/shared/empty-state";
 
 import BoatCard from "./components/boat-card";
 import MapCard from "./components/map-card";
@@ -60,9 +61,16 @@ export default function YachtsWrapper() {
               onSortChange={setSort}
             />
 
-            {boats.map(({ id, ...boat }, index) => (
-              <BoatCard key={id} {...boat} priority={index === 0} />
-            ))}
+            {boats.length === 0 ? (
+              <EmptyState
+                title="No yachts found for your filters"
+                description="Try adjusting your dates, budget, or location — we’ll help you find the perfect match."
+              />
+            ) : (
+              boats.map(({ id, ...boat }, index) => (
+                <BoatCard key={id} {...boat} priority={index === 0} />
+              ))
+            )}
 
             <PaginationControl
               className="pt-1"
