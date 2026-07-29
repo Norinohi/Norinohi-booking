@@ -1,7 +1,7 @@
 "use client";
 
-import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
-import { ArrowLeft } from "lucide-react";
+import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
+import { ArrowLeft, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { DEFAULT_FILTERS, FiltersPanel, type FiltersState } from "@/components/s
 
 import { SAMPLE_BOATS } from "../../lib/sample-boats";
 
+import MapListPanel from "./map-list-panel";
 import MapMarker from "./map-marker";
 
 /*
@@ -21,17 +22,11 @@ const MapCanvas = dynamic(() => import("./map-canvas"), {
   loading: () => <div className="size-full bg-natural-50" />,
 });
 
-/*
- * One pin per marina, not per boat — several yachts share a berth, and stacking
- * identical pins on one coordinate would only hide each other. The search procedure
- * will return the marinas already grouped this way.
- */
 const MARINAS = [...new Map(SAMPLE_BOATS.map((boat) => [boat.marina.id, boat.marina])).values()];
 
 export default function MapScreen() {
-  // Local for now. Moves to the URL alongside the search screen's own state, so that
-  // "Show All List" and "Back To Search" stop dropping whatever was selected.
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
+  const [listOpen, setListOpen] = useState(false);
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -49,8 +44,6 @@ export default function MapScreen() {
           ))}
         </MapCanvas>
 
-        {/* The controls float over the canvas, so the layer itself must stay
-            transparent to the pointer or the map would no longer pan. */}
         <div className="pointer-events-none absolute inset-0 flex items-start gap-5 p-4 md:p-6 2xl:px-[70px] 2xl:pt-6 2xl:pb-[70px]">
           <FiltersPanel
             scrollable
@@ -58,6 +51,31 @@ export default function MapScreen() {
             onApply={setFilters}
             className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 lg:flex"
           />
+
+          {listOpen ? (
+            <>
+              <MapListPanel className="pointer-events-auto max-h-full" />
+              <Button
+                type="button"
+                variant="neutral"
+                size="icon"
+                aria-label="Close list"
+                onClick={() => setListOpen(false)}
+                className="pointer-events-auto size-11 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]"
+              >
+                <X />
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="neutral"
+              onClick={() => setListOpen(true)}
+              className="pointer-events-auto shrink-0 capitalize shadow-[4px_4px_15px_rgba(47,128,237,0.15)]"
+            >
+              Show all list
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ import { Image } from "@/components/shared/image";
 import { formatInstant } from "@/lib/date";
 
 import type { Marina } from "../../types";
-import { MarinaPopover } from "./marina-popover";
+import { MarinaPopover } from "../marina-popover";
 
 export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
 export type BoatCardSpec = { label: string; value: string };
