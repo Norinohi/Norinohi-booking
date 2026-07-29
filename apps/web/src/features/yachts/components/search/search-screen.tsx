@@ -1,8 +1,12 @@
 "use client";
 
+import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
+import { Search } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
+import { Image } from "@/components/shared/image";
 import {
   clearFilterKeys,
   DEFAULT_FILTERS,
@@ -14,13 +18,13 @@ import {
 } from "@/components/shared/filters";
 import EmptyState from "@/components/shared/empty-state";
 
-import BoatCard from "./components/boat-card";
-import MapCard from "./components/map-card";
-import ResultsHeader, { type SortValue } from "./components/results-header";
-import SearchBar from "./components/search-bar";
-import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "./lib/sample-boats";
+import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
 
-export default function YachtsWrapper() {
+import BoatCard from "./boat-card";
+import ResultsHeader, { type SortValue } from "./results-header";
+import SearchBar from "./search-bar";
+
+export default function SearchScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
@@ -46,7 +50,24 @@ export default function YachtsWrapper() {
       <div className=" w-full md:px-13.5 px-4 py-6">
         <div className="max-w-349  mx-auto grid w-full gap-5 lg:grid-cols-[334px_minmax(0,1fr)]">
           <aside className="flex flex-col gap-5">
-            <MapCard />
+            <div className="relative flex h-47.5 items-center justify-center overflow-hidden rounded-2xl border border-border p-6">
+              <Image
+                src="/assets/yachts/world-map.png"
+                alt=""
+                fill
+                priority
+                sizes="(min-width: 1024px) 334px, 100vw"
+                className="object-cover"
+              />
+              <Link
+                href="/yachts/map"
+                className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
+              >
+                <Search />
+                Search by map
+              </Link>
+            </div>
+
             <FiltersPanel className="hidden lg:flex" value={filters} onApply={applyFilters} />
           </aside>
 

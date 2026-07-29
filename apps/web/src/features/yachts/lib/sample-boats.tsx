@@ -10,7 +10,7 @@ import {
   Wrench,
 } from "lucide-react";
 
-import type { BoatCardAmenity, BoatCardProps, BoatCardSpec } from "../components/boat-card";
+import type { BoatCardAmenity, BoatCardProps, BoatCardSpec } from "../components/search/boat-card";
 import { SAMPLE_MARINAS } from "./sample-marinas";
 
 export type SampleBoat = Omit<BoatCardProps, "className" | "priority"> & { id: string };

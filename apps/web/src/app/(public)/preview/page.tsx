@@ -3,7 +3,7 @@ import Sidebar from "@/components/layout/sidebar";
 
 /*
  * Dev-only kitchen-sink for app sections that don't live in Storybook.
- * Global chrome (NavigationBar + Footer) is already visible on every route.
+ * Global chrome (NavigationBar + Footer) is already visible around it.
  */
 export default function PreviewPage() {
   return (

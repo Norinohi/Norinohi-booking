@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/image";
 
-import type { Marina } from "../types";
+import type { Marina } from "../../types";
 
 /*
  * Figma "Boat Card" on the map: 601x236 on tablet and up (960:346608, 966:63624),
