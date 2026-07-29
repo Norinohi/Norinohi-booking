@@ -22,6 +22,7 @@ type TripCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   meta?: { label: string; icon?: React.ReactNode }[];
   actionLabel?: React.ReactNode;
   onAction?: () => void;
+  descriptionClassName?: string;
 };
 
 function TripCard({
@@ -33,18 +34,23 @@ function TripCard({
   actionLabel = "Explore Route",
   onAction,
   className,
+  descriptionClassName,
   ...props
 }: TripCardProps) {
   return (
-    <Card className={cn("w-[452px] max-w-full", className)} {...props}>
-      <CardMedia className="aspect-[16/9]">
+    <Card variant="ghost" className={cn("w-[452px] max-w-full gap-4", className)} {...props}>
+      <CardMedia className="h-[240px] rounded-xl">
         <img src={image} alt={imageAlt} />
       </CardMedia>
-      <CardContent className="gap-2">
-        <CardTitle className="text-2xl">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+      <CardContent className="gap-3 p-0">
+        <CardTitle className="text-2xl leading-[1.1]">{title}</CardTitle>
+        {description && (
+          <CardDescription className={cn("leading-[1.4]", descriptionClassName)}>
+            {description}
+          </CardDescription>
+        )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="p-0">
         {meta.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {meta.map((item, i) => (
