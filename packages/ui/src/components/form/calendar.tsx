@@ -108,7 +108,7 @@ function rangeEndpoints(
 }
 
 const dayBase =
-  "relative flex size-9 grow items-center justify-center text-center text-sm outline-none transition-colors select-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
+  "relative flex size-9 grow cursor-pointer items-center justify-center text-center text-sm outline-none transition-colors select-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
 const dayBrand = "bg-brand font-semibold leading-[1.15] text-brand-foreground hover:bg-brand-hover";
 
 function dayClassName(state: {

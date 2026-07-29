@@ -13,6 +13,9 @@ import type { ReactNode } from "react";
 import { Image } from "@/components/shared/image";
 import { formatInstant } from "@/lib/date";
 
+import type { Marina } from "../types";
+import { MarinaPopover } from "./marina-popover";
+
 export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
@@ -23,7 +26,7 @@ export type BoatCardProps = {
   images: string[];
   imageAlt?: string;
   badges?: BoatCardBadge[];
-  location: string;
+  marina: Marina;
   name: string;
   rating: string;
   charterType: string;
@@ -101,7 +104,7 @@ function Gallery({
 }
 
 function Details({
-  location,
+  marina,
   name,
   rating,
   charterType,
@@ -110,14 +113,12 @@ function Details({
   amenities,
 }: Pick<
   BoatCardProps,
-  "location" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities"
+  "marina" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities"
 >) {
   return (
     <div className="flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:border-r xl:border-natural-50 xl:px-0">
       <div className="flex flex-col gap-3">
-        <p className="truncate text-base font-bold leading-[1.4] text-foreground underline decoration-dotted">
-          {location}
-        </p>
+        <MarinaPopover marina={marina} />
 
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="min-w-0 flex-1 truncate pb-1 text-[28px] font-medium leading-[1.1] text-foreground md:flex-none md:text-[32px]">
@@ -287,7 +288,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         priority={boat.priority}
       />
       <Details
-        location={boat.location}
+        marina={boat.marina}
         name={boat.name}
         rating={boat.rating}
         charterType={boat.charterType}

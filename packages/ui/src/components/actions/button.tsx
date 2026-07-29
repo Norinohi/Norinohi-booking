@@ -11,7 +11,7 @@ import { cva, type VariantProps } from "class-variance-authority";
  * Disabled is uniform across variants (bg natural-100 / text natural-300 / border natural-200).
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-transparent font-semibold whitespace-nowrap leading-[1.25] transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:bg-natural-100 disabled:text-natural-300 disabled:border-natural-200 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-transparent font-semibold whitespace-nowrap leading-[1.25] transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:bg-natural-100 disabled:text-natural-300 disabled:border-natural-200 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
