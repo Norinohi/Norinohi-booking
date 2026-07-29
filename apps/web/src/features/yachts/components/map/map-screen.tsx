@@ -16,8 +16,9 @@ import {
   getFilterChips,
 } from "@/components/shared/filters";
 
-import { SAMPLE_BOATS } from "../../lib/sample-boats";
+import { type SampleBoat, SAMPLE_BOATS } from "../../lib/sample-boats";
 
+import MapBoatPopup from "./map-boat-popup";
 import MapListPanel from "./map-list-panel";
 import MapMarker from "./map-marker";
 
@@ -30,13 +31,19 @@ const MapCanvas = dynamic(() => import("./map-canvas"), {
   loading: () => <div className="size-full bg-natural-50" />,
 });
 
-const MARINAS = [...new Map(SAMPLE_BOATS.map((boat) => [boat.marina.id, boat.marina])).values()];
+/* One pin per marina: several yachts share a berth and stacked pins would hide each other. */
+const BOAT_BY_MARINA = new Map<string, SampleBoat>();
+for (const boat of SAMPLE_BOATS) {
+  if (!BOAT_BY_MARINA.has(boat.marina.id)) BOAT_BY_MARINA.set(boat.marina.id, boat);
+}
 
 export default function MapScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [listOpen, setListOpen] = useState(false);
+  const [selectedMarina, setSelectedMarina] = useState<string | null>(null);
 
   const chips = getFilterChips(filters);
+  const selectedBoat = selectedMarina ? BOAT_BY_MARINA.get(selectedMarina) : undefined;
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys));
@@ -52,10 +59,20 @@ export default function MapScreen() {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <MapCanvas>
-          {MARINAS.map((marina) => (
-            <MapMarker key={marina.id} coordinates={marina.coordinates} />
+        <MapCanvas onBackgroundPress={() => setSelectedMarina(null)}>
+          {[...BOAT_BY_MARINA.values()].map(({ marina }) => (
+            <MapMarker
+              key={marina.id}
+              coordinates={marina.coordinates}
+              label={marina.name}
+              selected={marina.id === selectedMarina}
+              onSelect={() => setSelectedMarina(marina.id)}
+            />
           ))}
+
+          {selectedBoat ? (
+            <MapBoatPopup coordinates={selectedBoat.marina.coordinates} boat={selectedBoat} />
+          ) : null}
         </MapCanvas>
 
         <div className="pointer-events-none absolute inset-0 flex items-start gap-5 p-4 md:p-6 2xl:px-[70px] 2xl:pt-6 2xl:pb-[70px]">

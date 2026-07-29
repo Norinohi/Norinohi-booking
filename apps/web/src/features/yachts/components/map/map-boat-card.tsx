@@ -14,11 +14,14 @@ import { Bookmark, Info, Sailboat, Star, Users } from "lucide-react";
 import { Image } from "@/components/shared/image";
 
 import type { Marina } from "../../types";
-import type { BoatCardBadge } from "../search/boat-card";
 import { MarinaPopover } from "../marina-popover";
+import type { BoatCardBadge } from "../search/boat-card";
 
 /*
- * Figma "Boat Card" on the map list (node 960:346222): 288x468.
+ * Figma "Boat Card" — two variants of one component.
+ * `stacked` (node 960:346222) is 288x468 in the list column.
+ * `row` (node 960:346082) is 601 wide over a marker: image on the left, a step larger
+ * type, and the per-person line moved onto its own row.
  */
 export type MapBoatCardProps = {
   images: string[];
@@ -33,6 +36,7 @@ export type MapBoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
+  layout?: "stacked" | "row";
   className?: string;
 };
 
@@ -49,16 +53,25 @@ export default function MapBoatCard({
   price,
   perPerson,
   prepayment,
+  layout = "stacked",
   className,
 }: MapBoatCardProps) {
+  const isRow = layout === "row";
+
   return (
     <article
       className={cn(
-        "flex w-full flex-col gap-4 overflow-hidden rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)]",
+        "flex rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)]",
+        isRow ? "w-150.25 max-w-[calc(100vw-2rem)] gap-4" : "w-full flex-col gap-4",
         className,
       )}
     >
-      <div className="relative h-45 w-full shrink-0">
+      <div
+        className={cn(
+          "relative shrink-0 overflow-hidden",
+          isRow ? "w-74 rounded-l-2xl" : "h-45 w-full rounded-t-2xl",
+        )}
+      >
         <Carousel className="size-full">
           <CarouselViewport>
             {images.map((src, index) => (
@@ -67,7 +80,7 @@ export default function MapBoatCard({
                   src={src}
                   alt={index === 0 ? (imageAlt ?? "") : ""}
                   fill
-                  sizes="288px"
+                  sizes={isRow ? "296px" : "288px"}
                   className="object-cover"
                 />
               </CarouselSlide>
@@ -105,12 +118,17 @@ export default function MapBoatCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 px-4 pb-4">
+      <div className={cn("flex flex-col gap-4", isRow ? "min-w-0 flex-1 py-6 pr-4" : "px-4 pb-4")}>
         <div className="flex flex-col gap-3">
           <MarinaPopover marina={marina} />
 
           <div className="flex items-center gap-2">
-            <h3 className="min-w-0 truncate text-[22px] font-semibold leading-[1.3] text-foreground">
+            <h3
+              className={cn(
+                "min-w-0 truncate font-semibold leading-[1.3] text-foreground",
+                isRow ? "text-2xl" : "text-[22px]",
+              )}
+            >
               {name}
             </h3>
             <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
@@ -132,14 +150,28 @@ export default function MapBoatCard({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <div className="flex w-full items-center gap-1.5">
+          <div className={cn("flex w-full gap-1.5", isRow ? "flex-col" : "items-center")}>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="text-sm font-medium leading-[1.3] text-natural-500">
                 {priceLabel}
               </span>
-              <span className="text-[22px] font-semibold leading-[1.3] text-black">{price}</span>
+              <span
+                className={cn(
+                  "text-black",
+                  isRow
+                    ? "text-[32px] font-bold leading-[1.1]"
+                    : "text-[22px] font-semibold leading-[1.3]",
+                )}
+              >
+                {price}
+              </span>
             </div>
-            <p className="shrink-0 text-sm font-medium leading-[1.3] text-natural-500">
+            <p
+              className={cn(
+                "text-sm font-medium leading-[1.3] text-natural-500",
+                !isRow && "shrink-0",
+              )}
+            >
               {perPerson}
             </p>
           </div>

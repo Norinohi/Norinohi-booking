@@ -4,8 +4,6 @@ import { env } from "@yacht-charter/env/web";
 import type { ReactNode } from "react";
 import Map, { type MapEvent } from "react-map-gl/mapbox";
 
-import "mapbox-gl/dist/mapbox-gl.css";
-
 /*
  * The live Mapbox canvas. `mapbox-gl` touches `window` while it initialises, so this
  * module must never be imported from a server component — `map-screen` pulls it in
@@ -29,7 +27,18 @@ function dimBasemap({ target: map }: MapEvent) {
   });
 }
 
-export default function MapCanvas({ children }: { children?: ReactNode }) {
+export default function MapCanvas({
+  children,
+  onBackgroundPress,
+}: {
+  children?: ReactNode;
+  onBackgroundPress?: () => void;
+}) {
+  function dismiss(target: EventTarget | null) {
+    if (target instanceof Element && target.closest(".mapboxgl-marker")) return;
+    onBackgroundPress?.();
+  }
+
   return (
     <Map
       mapboxAccessToken={env.NEXT_PUBLIC_MAPBOX_TOKEN}
@@ -37,6 +46,8 @@ export default function MapCanvas({ children }: { children?: ReactNode }) {
       mapStyle={MAP_STYLE}
       style={{ width: "100%", height: "100%" }}
       onLoad={dimBasemap}
+      onMouseDown={(event) => dismiss(event.originalEvent.target)}
+      onTouchStart={(event) => dismiss(event.originalEvent.target)}
     >
       {children}
     </Map>

@@ -1,1 +1,5 @@
 @import "@yacht-charter/ui/globals.css";
+
+/* Layered on purpose: unlayered rules outrank every Tailwind utility, so mapbox's own
+   popup and control styles could not be overridden from a class at all. */
+@import "mapbox-gl/dist/mapbox-gl.css" layer(base);
