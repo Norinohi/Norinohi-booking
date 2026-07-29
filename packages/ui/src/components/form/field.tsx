@@ -24,7 +24,7 @@ function Field({
   return (
     <FieldPrimitive.Root
       data-slot="field"
-      className={cn("flex w-full flex-col items-start gap-1.5", className)}
+      className={cn("flex w-full flex-col gap-1.5", className)}
       {...props}
     >
       {label != null && (

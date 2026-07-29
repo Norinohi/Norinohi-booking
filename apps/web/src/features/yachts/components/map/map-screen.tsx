@@ -1,12 +1,20 @@
 "use client";
 
 import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
+import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { ArrowLeft, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 
-import { DEFAULT_FILTERS, FiltersPanel, type FiltersState } from "@/components/shared/filters";
+import {
+  clearFilterKeys,
+  DEFAULT_FILTERS,
+  type FilterChip,
+  FiltersPanel,
+  type FiltersState,
+  getFilterChips,
+} from "@/components/shared/filters";
 
 import { SAMPLE_BOATS } from "../../lib/sample-boats";
 
@@ -27,6 +35,12 @@ const MARINAS = [...new Map(SAMPLE_BOATS.map((boat) => [boat.marina.id, boat.mar
 export default function MapScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [listOpen, setListOpen] = useState(false);
+
+  const chips = getFilterChips(filters);
+
+  function removeChip(chip: FilterChip) {
+    setFilters(clearFilterKeys(filters, chip.keys));
+  }
 
   return (
     <div className="flex min-h-0 flex-col">
@@ -76,6 +90,19 @@ export default function MapScreen() {
               Show all list
             </Button>
           )}
+
+          <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2 [&>*]:pointer-events-auto">
+            {chips.map((chip) => (
+              <Chip
+                key={chip.id}
+                variant="neutral"
+                onRemove={() => removeChip(chip)}
+                removeLabel={`Remove filter ${chip.label}`}
+              >
+                {chip.label}
+              </Chip>
+            ))}
+          </div>
         </div>
       </div>
     </div>
