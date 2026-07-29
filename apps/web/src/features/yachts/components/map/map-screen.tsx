@@ -60,18 +60,23 @@ export default function MapScreen() {
 
       <div className="relative min-h-0 flex-1">
         <MapCanvas onBackgroundPress={() => setSelectedMarina(null)}>
-          {[...BOAT_BY_MARINA.values()].map(({ marina }) => (
+          {[...BOAT_BY_MARINA.values()].map(({ marina }, index) => (
             <MapMarker
               key={marina.id}
               coordinates={marina.coordinates}
               label={marina.name}
               selected={marina.id === selectedMarina}
+              order={index}
               onSelect={() => setSelectedMarina(marina.id)}
             />
           ))}
 
           {selectedBoat ? (
-            <MapBoatPopup coordinates={selectedBoat.marina.coordinates} boat={selectedBoat} />
+            <MapBoatPopup
+              key={selectedMarina}
+              coordinates={selectedBoat.marina.coordinates}
+              boat={selectedBoat}
+            />
           ) : null}
         </MapCanvas>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { env } from "@yacht-charter/env/web";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import Map, { type MapEvent } from "react-map-gl/mapbox";
 
 /*
@@ -34,6 +34,14 @@ export default function MapCanvas({
   children?: ReactNode;
   onBackgroundPress?: () => void;
 }) {
+  /*
+   * Children wait for `idle` — the point where every visible tile is drawn and the map
+   * has settled. `load` only means the style parsed, which on a slow connection still
+   * leaves them animating over blank canvas. It repeats after every pan, but the state
+   * only ever moves once.
+   */
+  const [ready, setReady] = useState(false);
+
   function dismiss(target: EventTarget | null) {
     if (target instanceof Element && target.closest(".mapboxgl-marker")) return;
     onBackgroundPress?.();
@@ -46,10 +54,11 @@ export default function MapCanvas({
       mapStyle={MAP_STYLE}
       style={{ width: "100%", height: "100%" }}
       onLoad={dimBasemap}
+      onIdle={() => setReady(true)}
       onMouseDown={(event) => dismiss(event.originalEvent.target)}
       onTouchStart={(event) => dismiss(event.originalEvent.target)}
     >
-      {children}
+      {ready ? children : null}
     </Map>
   );
 }

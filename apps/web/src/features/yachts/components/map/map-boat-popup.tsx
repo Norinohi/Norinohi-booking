@@ -27,7 +27,8 @@ export default function MapBoatPopup({ coordinates, boat }: MapBoatPopupProps) {
       maxWidth="none"
       className={RESET_MAPBOX_CHROME}
     >
-      <div className="relative">
+      {/* Animated here rather than on the popup itself, whose transform mapbox owns. */}
+      <div className="relative origin-top duration-200 animate-in fade-in-0 zoom-in-95">
         <span
           aria-hidden
           className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-card"

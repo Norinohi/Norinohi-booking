@@ -15,14 +15,25 @@ import type { Coordinates } from "../../types";
  * press and release — which a trackpad does almost every time — so no click ever arrives.
  * Keyboard is handled separately for the same reason.
  */
+/* Pins land one after another; `fill-mode-backwards` holds each one hidden until its turn. */
+const STAGGER_MS = 50;
+
 export type MapMarkerProps = {
   coordinates: Coordinates;
   label: string;
   selected?: boolean;
+  /** Position in the result set — drives the entrance delay. */
+  order?: number;
   onSelect: () => void;
 };
 
-export default function MapMarker({ coordinates, label, selected, onSelect }: MapMarkerProps) {
+export default function MapMarker({
+  coordinates,
+  label,
+  selected,
+  order = 0,
+  onSelect,
+}: MapMarkerProps) {
   return (
     <Marker longitude={coordinates.lng} latitude={coordinates.lat} anchor="center">
       <button
@@ -34,8 +45,10 @@ export default function MapMarker({ coordinates, label, selected, onSelect }: Ma
           event.preventDefault();
           onSelect();
         }}
+        style={{ animationDelay: `${order * STAGGER_MS}ms` }}
         className={cn(
           "flex size-21 cursor-pointer items-center justify-center rounded-full border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white",
+          "duration-300 animate-in fade-in-0 zoom-in-50 fill-mode-backwards",
           selected ? "border-brand bg-brand/40" : "border-white/50 bg-white/25",
         )}
       >
