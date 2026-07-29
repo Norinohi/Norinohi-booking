@@ -21,6 +21,7 @@ import {
 import { type SampleBoat, SAMPLE_BOATS } from "../../lib/sample-boats";
 
 import MapBoatPopup from "./map-boat-popup";
+import type { MapInstance } from "./map-canvas";
 import MapListPanel from "./map-list-panel";
 import MapMarker from "./map-marker";
 
@@ -61,6 +62,7 @@ export default function MapScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [listOpen, setListOpen] = useState(false);
   const [selectedMarina, setSelectedMarina] = useState<string | null>(null);
+  const [map, setMap] = useState<MapInstance | null>(null);
 
   const chips = getFilterChips(filters);
   const selectedBoat = selectedMarina ? BOAT_BY_MARINA.get(selectedMarina) : undefined;
@@ -79,7 +81,7 @@ export default function MapScreen() {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <MapCanvas onBackgroundPress={() => setSelectedMarina(null)}>
+        <MapCanvas onReady={setMap} onBackgroundPress={() => setSelectedMarina(null)}>
           {[...BOAT_BY_MARINA.values()].map(({ marina }, index) => (
             <MapMarker
               key={marina.id}
@@ -96,6 +98,7 @@ export default function MapScreen() {
               key={selectedMarina}
               coordinates={selectedBoat.marina.coordinates}
               boat={selectedBoat}
+              map={map}
             />
           ) : null}
         </MapCanvas>
@@ -121,7 +124,14 @@ export default function MapScreen() {
 
             {/* On a phone the close button shares this row; from md it moves down beside
               the list itself, which is where the design puts it. */}
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 md:contents">
+            {/* The second track only exists while the close button does — an empty one
+                still eats the column gap and leaves this button short of the edge. */}
+            <div
+              className={cn(
+                "grid items-start gap-4 md:contents",
+                listOpen ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1",
+              )}
+            >
               <Button
                 type="button"
                 variant="neutral"

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Popup, useMap } from "react-map-gl/mapbox";
+import { Popup } from "react-map-gl/mapbox";
 
 import type { Coordinates } from "../../types";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
+import type { MapInstance } from "./map-canvas";
 
 const RESET_MAPBOX_CHROME =
   "[&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:hidden";
@@ -16,10 +17,12 @@ const RECENTRE_MS = 500;
 export type MapBoatPopupProps = {
   coordinates: Coordinates;
   boat: Omit<MapBoatCardProps, "layout" | "className">;
+  /* Handed down rather than pulled from `useMap`, which is the one link in this chain
+     that was never shown to deliver anything. */
+  map: MapInstance | null;
 };
 
-export default function MapBoatPopup({ coordinates, boat }: MapBoatPopupProps) {
-  const { current: map } = useMap();
+export default function MapBoatPopup({ coordinates, boat, map }: MapBoatPopupProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

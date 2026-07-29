@@ -16,22 +16,44 @@ const DIM_OPACITY = 0.4;
 /** Replaced by the search bounds once the backend lands. */
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
 
-/* Dims tiles only — markers and cards are DOM above the canvas, so an overlay would catch them too. */
-function dimBasemap({ target: map }: MapEvent) {
-  if (map.getLayer(DIM_LAYER_ID)) return;
+/*
+ * Nudges Streets towards the Google basemap the mock was screenshotted from. Only two
+ * things actually give it away: Streets paints land cream and motorways orange, where
+ * Google has green land and white roads under a grey casing. Water is left alone — the
+ * two are already within a few points of each other.
+ * Values are sampled from the Figma export with its 40% scrim divided back out.
+ */
+const PALETTE = [
+  ["land", "background-color", "hsl(141, 54%, 87%)"],
+  ["road-motorway-trunk", "line-color", "hsl(0, 0%, 100%)"],
+  ["road-motorway-trunk-case", "line-color", "hsl(220, 20%, 85%)"],
+] as const;
 
-  map.addLayer({
-    id: DIM_LAYER_ID,
-    type: "background",
-    paint: { "background-color": "#000000", "background-opacity": DIM_OPACITY },
-  });
+function styleBasemap({ target: map }: MapEvent) {
+  for (const [layer, property, value] of PALETTE) {
+    if (map.getLayer(layer)) map.setPaintProperty(layer, property, value);
+  }
+
+  /* Dims tiles only — markers and cards are DOM above the canvas, so an overlay would
+     catch them too. */
+  if (!map.getLayer(DIM_LAYER_ID)) {
+    map.addLayer({
+      id: DIM_LAYER_ID,
+      type: "background",
+      paint: { "background-color": "#000000", "background-opacity": DIM_OPACITY },
+    });
+  }
 }
+
+export type MapInstance = MapEvent["target"];
 
 export default function MapCanvas({
   children,
+  onReady,
   onBackgroundPress,
 }: {
   children?: ReactNode;
+  onReady?: (map: MapInstance) => void;
   onBackgroundPress?: () => void;
 }) {
   /*
@@ -53,7 +75,10 @@ export default function MapCanvas({
       initialViewState={DEFAULT_VIEW_STATE}
       mapStyle={MAP_STYLE}
       style={{ width: "100%", height: "100%" }}
-      onLoad={dimBasemap}
+      onLoad={(event) => {
+        styleBasemap(event);
+        onReady?.(event.target);
+      }}
       onIdle={() => setReady(true)}
       onMouseDown={(event) => dismiss(event.originalEvent.target)}
       onTouchStart={(event) => dismiss(event.originalEvent.target)}
