@@ -111,6 +111,27 @@ export const WithIcon: Story = {
   ),
 };
 
+/** The reset button appears once something is selected; `clearable={false}` opts out. */
+export const Clearing: Story = {
+  render: () => (
+    <div className="flex gap-4">
+      <Demo
+        label="Clearable (default)"
+        options={COUNTRIES}
+        placeholder="All countries"
+        initial={["croatia", "italy", "greece"]}
+      />
+      <Demo
+        label="Not clearable"
+        options={COUNTRIES}
+        placeholder="All countries"
+        initial={["croatia", "italy", "greece"]}
+        clearable={false}
+      />
+    </div>
+  ),
+};
+
 export const Disabled: Story = {
   render: () => (
     <Demo label="Boat type" options={BOATS} placeholder="All boats" initial={["gulet"]} disabled />

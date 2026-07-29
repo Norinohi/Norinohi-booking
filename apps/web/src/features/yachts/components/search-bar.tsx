@@ -2,12 +2,14 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Calendar, type DateRange } from "@yacht-charter/ui/components/form/calendar";
+import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { Calendar as CalendarIcon, MapPin, Sailboat, Search } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
@@ -99,11 +101,17 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
       </div>
 
       {/* Date range */}
-      <div>
+      <div className="relative">
         <Popover>
           <PopoverTrigger className={fieldTrigger}>
             <CalendarIcon className="size-6 shrink-0 text-foreground" />
-            <span className={rangeLabel ? "truncate text-foreground" : "truncate text-natural-300"}>
+            <span
+              className={cn(
+                "truncate",
+                rangeLabel ? "text-foreground" : "text-natural-300",
+                rangeLabel && "pr-6",
+              )}
+            >
               {rangeLabel ?? "Add dates"}
             </span>
           </PopoverTrigger>
@@ -111,6 +119,14 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
             <Calendar className="w-full" mode="range" selected={range} onSelect={handleRange} />
           </PopoverContent>
         </Popover>
+
+        {rangeLabel ? (
+          <FieldClear
+            label="Clear dates"
+            className="right-3"
+            onClear={() => handleRange(undefined)}
+          />
+        ) : null}
       </div>
 
       {/* Boat type */}

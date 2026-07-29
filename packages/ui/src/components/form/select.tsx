@@ -1,6 +1,7 @@
 "use client";
 
 import { Select as SelectPrimitive } from "@base-ui/react/select";
+import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 
@@ -22,24 +23,50 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   );
 }
 
-function SelectTrigger({ className, children, ...props }: SelectPrimitive.Trigger.Props) {
+/**
+ * `clearable` shows a reset button once `onClear` is supplied; the trigger is a
+ * `<button>`, so the control is layered over it rather than nested inside — see
+ * `FieldClear`. Unlike MultiSelect this defaults to `false`: an empty array is
+ * always a valid multi-selection, but a single select usually must hold a value.
+ */
+function SelectTrigger({
+  className,
+  children,
+  clearable = false,
+  onClear,
+  clearLabel = "Clear selection",
+  ...props
+}: SelectPrimitive.Trigger.Props & {
+  clearable?: boolean;
+  onClear?: () => void;
+  clearLabel?: string;
+}) {
+  const showClear = clearable && Boolean(onClear) && !props.disabled;
+
+  // No width of its own — as a block it fills a column, and in a flex row it
+  // shrinks to the trigger, so the caller's sizing classes still decide.
   return (
-    <SelectPrimitive.Trigger
-      data-slot="select-trigger"
-      className={cn(
-        "group flex w-full min-w-[200px] items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
-        "hover:border-natural-200 data-[popup-open]:border-foreground",
-        "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <SelectPrimitive.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
-        <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
-      </SelectPrimitive.Icon>
-    </SelectPrimitive.Trigger>
+    <div className="relative">
+      <SelectPrimitive.Trigger
+        data-slot="select-trigger"
+        className={cn(
+          "group flex w-full min-w-[200px] items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+          "hover:border-natural-200 data-[popup-open]:border-foreground",
+          "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          showClear && "[&>[data-slot=select-value]]:pr-6",
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        <SelectPrimitive.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
+          <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
+        </SelectPrimitive.Icon>
+      </SelectPrimitive.Trigger>
+
+      {showClear && onClear ? <FieldClear label={clearLabel} onClear={onClear} /> : null}
+    </div>
   );
 }
 

@@ -47,7 +47,7 @@ export default function ResultsHeader({
     <div
       className={cn("flex flex-col gap-4 md:flex-row md:items-start md:justify-between", className)}
     >
-      <div className="flex min-w-0 flex-col gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
         {chips.length ? (
           <div className="flex flex-wrap items-start gap-2">
             {chips.map((chip) => (
@@ -66,21 +66,25 @@ export default function ResultsHeader({
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{total} yachts found</p>
       </div>
 
-      <Select
-        value={sort}
-        onValueChange={(next) => onSortChange((next ?? "recommended") as SortValue)}
-      >
-        <SelectTrigger className="h-12 w-full md:w-auto md:min-w-57">
-          <SelectValue>{(value) => `Sort by: ${SORT_LABELS[value as string]}`}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {SORT_OPTIONS.map(({ value, label }) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* base-ui renders a hidden input beside the trigger — without this wrapper it
+          becomes a third flex child and `justify-between` pushes it, not the select. */}
+      <div className="md:shrink-0">
+        <Select
+          value={sort}
+          onValueChange={(next) => onSortChange((next ?? "recommended") as SortValue)}
+        >
+          <SelectTrigger className="h-12 w-full md:w-auto md:min-w-57">
+            <SelectValue>{(value) => `Sort by: ${SORT_LABELS[value as string]}`}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }

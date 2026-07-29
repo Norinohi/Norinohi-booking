@@ -90,6 +90,8 @@ export function SelectField({
   options,
   value,
   onChange,
+  clearable = false,
+  clearTo,
   className,
 }: {
   label?: string;
@@ -97,12 +99,24 @@ export function SelectField({
   options: Option[];
   value: string;
   onChange: (value: string) => void;
+  /** Shows a reset button while `value` differs from `clearTo`. */
+  clearable?: boolean;
+  clearTo?: string;
   className?: string;
 }) {
+  const resetTo = clearTo ?? options[0]?.value;
+  const canClear = clearable && resetTo !== undefined && value !== resetTo;
+
   return (
     <Field label={label} className={className}>
       <Select value={value} onValueChange={(next) => onChange((next as string) ?? value)}>
-        <SelectTrigger aria-label={ariaLabel} className="h-12 w-full min-w-0">
+        <SelectTrigger
+          aria-label={ariaLabel}
+          className="h-12 w-full min-w-0"
+          clearable={canClear}
+          clearLabel={label ? `Clear ${label}` : "Clear selection"}
+          onClear={canClear ? () => onChange(resetTo) : undefined}
+        >
           <SelectValue>{(current) => labelOf(options, current as string)}</SelectValue>
         </SelectTrigger>
         <SelectContent>

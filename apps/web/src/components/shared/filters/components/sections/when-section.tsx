@@ -40,6 +40,7 @@ export default function WhenSection({ value, set }: SectionProps) {
         options={DURATIONS}
         value={value.duration}
         onChange={(next) => set("duration", next)}
+        clearable
       />
 
       <Field label="Date flexibility" className="gap-3">

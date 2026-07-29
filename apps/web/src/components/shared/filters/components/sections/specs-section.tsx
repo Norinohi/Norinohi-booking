@@ -71,6 +71,8 @@ export default function SpecsSection({ value, set }: SectionProps) {
         options={YEARS_FROM}
         value={value.yearFrom}
         onChange={(next) => set("yearFrom", next)}
+        clearable
+        clearTo="any"
       />
       <SelectField
         label="Year"
@@ -78,6 +80,8 @@ export default function SpecsSection({ value, set }: SectionProps) {
         options={YEARS_TO}
         value={value.yearTo}
         onChange={(next) => set("yearTo", next)}
+        clearable
+        clearTo="any"
       />
     </Section>
   );

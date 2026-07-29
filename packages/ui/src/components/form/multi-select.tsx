@@ -5,6 +5,8 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
+
 /*
  * MultiSelect — checkbox picker built on base-ui Combobox (`multiple`), so the
  * searchable and plain variants share one primitive: passing `searchPlaceholder`
@@ -22,6 +24,8 @@ export type MultiSelectProps = {
   searchPlaceholder?: string;
   emptyMessage?: string;
   icon?: ReactNode;
+  /** Shows a reset button once something is selected. */
+  clearable?: boolean;
   disabled?: boolean;
   className?: string;
   contentClassName?: string;
@@ -35,12 +39,14 @@ function MultiSelect({
   searchPlaceholder,
   emptyMessage = "No matches",
   icon,
+  clearable = true,
   disabled,
   className,
   contentClassName,
 }: MultiSelectProps) {
   const labels = new Map(options.map((option) => [option.value, option.label]));
   const selected = value.filter((item) => labels.has(item));
+  const showClear = clearable && selected.length > 0 && !disabled;
 
   return (
     <Combobox.Root
@@ -51,28 +57,34 @@ function MultiSelect({
       onValueChange={(next) => onValueChange(next as string[])}
       itemToStringLabel={(item) => labels.get(item as string) ?? String(item)}
     >
-      <Combobox.Trigger
-        data-slot="multi-select-trigger"
-        className={cn(
-          "group flex h-12 w-full min-w-[200px] items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
-          "hover:border-natural-200 data-[popup-open]:border-foreground",
-          "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
-          "disabled:cursor-not-allowed disabled:opacity-50",
-          className,
-        )}
-      >
-        <span className="flex min-w-0 flex-1 items-center gap-2">
-          {icon}
-          <span className={cn("truncate", selected.length === 0 && "text-natural-300")}>
-            {selected.length === 0
-              ? placeholder
-              : selected.map((item) => labels.get(item)).join(", ")}
+      <div className="relative">
+        <Combobox.Trigger
+          data-slot="multi-select-trigger"
+          className={cn(
+            "group flex h-12 w-full min-w-[200px] items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+            "hover:border-natural-200 data-[popup-open]:border-foreground",
+            "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            className,
+          )}
+        >
+          <span className={cn("flex min-w-0 flex-1 items-center gap-2", showClear && "pr-6")}>
+            {icon}
+            <span className={cn("truncate", selected.length === 0 && "text-natural-300")}>
+              {selected.length === 0
+                ? placeholder
+                : selected.map((item) => labels.get(item)).join(", ")}
+            </span>
           </span>
-        </span>
-        <Combobox.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
-          <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
-        </Combobox.Icon>
-      </Combobox.Trigger>
+          <Combobox.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
+            <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
+          </Combobox.Icon>
+        </Combobox.Trigger>
+
+        {showClear ? (
+          <FieldClear label={`Clear ${placeholder}`} onClear={() => onValueChange([])} />
+        ) : null}
+      </div>
 
       <Combobox.Portal>
         <Combobox.Positioner sideOffset={6} align="start" className="z-50 outline-none">
