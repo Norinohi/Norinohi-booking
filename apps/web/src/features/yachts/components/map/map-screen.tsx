@@ -2,6 +2,7 @@
 
 import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowLeft, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import {
   DEFAULT_FILTERS,
   type FilterChip,
   FiltersPanel,
+  FiltersPopover,
   type FiltersState,
   getFilterChips,
 } from "@/components/shared/filters";
@@ -37,6 +39,24 @@ for (const boat of SAMPLE_BOATS) {
   if (!BOAT_BY_MARINA.has(boat.marina.id)) BOAT_BY_MARINA.set(boat.marina.id, boat);
 }
 
+function CloseListButton({ onClick, className }: { onClick: () => void; className?: string }) {
+  return (
+    <Button
+      type="button"
+      variant="neutral"
+      size="icon"
+      aria-label="Close list"
+      onClick={onClick}
+      className={cn(
+        "pointer-events-auto size-12 shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:size-11",
+        className,
+      )}
+    >
+      <X />
+    </Button>
+  );
+}
+
 export default function MapScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [listOpen, setListOpen] = useState(false);
@@ -51,7 +71,7 @@ export default function MapScreen() {
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="px-4 py-3 md:px-6 2xl:px-[70px]">
+      <div className="px-4 py-3 md:px-13.5 2xl:px-[70px]">
         <Link href="/yachts" className={buttonVariants({ variant: "subtle", size: "sm" })}>
           <ArrowLeft />
           Back To Search
@@ -80,51 +100,72 @@ export default function MapScreen() {
           ) : null}
         </MapCanvas>
 
-        <div className="pointer-events-none absolute inset-0 flex items-start gap-5 p-4 md:p-6 2xl:px-[70px] 2xl:pt-6 2xl:pb-[70px]">
-          <FiltersPanel
-            scrollable
-            value={filters}
-            onApply={setFilters}
-            className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 lg:flex"
-          />
+        <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-[70px] 2xl:pb-[70px]">
+          {/* Below 2xl the controls are their own band above the list; at 2xl the wrapper
+              dissolves and every child joins the single row the design draws. */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-5 2xl:contents">
+            {/* The panel only fits from 2xl, the width the design draws it at; below that
+              the same filters open from a trigger, as they do on the results page. */}
+            <FiltersPanel
+              scrollable
+              value={filters}
+              onApply={setFilters}
+              className="pointer-events-auto hidden max-h-full w-83.5 shrink-0 2xl:flex"
+            />
+            <FiltersPopover
+              variant="primary"
+              value={filters}
+              onApply={setFilters}
+              className="pointer-events-auto 2xl:hidden"
+            />
 
-          {listOpen ? (
-            <>
-              <MapListPanel className="pointer-events-auto max-h-full" />
+            {/* On a phone the close button shares this row; from md it moves down beside
+              the list itself, which is where the design puts it. */}
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 md:contents">
               <Button
                 type="button"
                 variant="neutral"
-                size="icon"
-                aria-label="Close list"
-                onClick={() => setListOpen(false)}
-                className="pointer-events-auto size-11 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]"
+                onClick={() => setListOpen((open) => !open)}
+                className={cn(
+                  "pointer-events-auto w-full capitalize shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:w-auto",
+                  listOpen && "2xl:hidden",
+                )}
               >
-                <X />
+                Show all list
               </Button>
-            </>
-          ) : (
-            <Button
-              type="button"
-              variant="neutral"
-              onClick={() => setListOpen(true)}
-              className="pointer-events-auto shrink-0 capitalize shadow-[4px_4px_15px_rgba(47,128,237,0.15)]"
-            >
-              Show all list
-            </Button>
-          )}
+              {listOpen ? (
+                <CloseListButton onClick={() => setListOpen(false)} className="md:hidden" />
+              ) : null}
+            </div>
 
-          <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2 [&>*]:pointer-events-auto">
-            {chips.map((chip) => (
-              <Chip
-                key={chip.id}
-                variant="neutral"
-                onRemove={() => removeChip(chip)}
-                removeLabel={`Remove filter ${chip.label}`}
-              >
-                {chip.label}
-              </Chip>
-            ))}
+            {chips.length > 0 && (
+              <div className="flex flex-wrap items-start justify-end gap-2 md:min-w-0 md:flex-1 2xl:order-last 2xl:justify-start [&>*]:pointer-events-auto">
+                {chips.map((chip) => (
+                  <Chip
+                    key={chip.id}
+                    variant="outline"
+                    onRemove={() => removeChip(chip)}
+                    removeLabel={`Remove filter ${chip.label}`}
+                    className="bg-card"
+                  >
+                    {chip.label}
+                  </Chip>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* `flex-1` is what keeps the list inside the viewport: it takes exactly the
+              height the controls leave, and the panel scrolls within that. */}
+          {listOpen ? (
+            <div className="flex min-h-0 flex-1 items-start gap-4 2xl:contents">
+              <MapListPanel className="pointer-events-auto max-h-full" />
+              <CloseListButton
+                onClick={() => setListOpen(false)}
+                className="hidden md:inline-flex"
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

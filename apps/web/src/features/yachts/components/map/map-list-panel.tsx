@@ -39,7 +39,7 @@ export default function MapListPanel({ className }: MapListPanelProps) {
   return (
     <section
       className={cn(
-        "flex w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card",
+        "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card md:w-80 md:shrink-0",
         className,
       )}
     >

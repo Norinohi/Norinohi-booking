@@ -33,7 +33,7 @@ export default function MapBoatPopup({ coordinates, boat }: MapBoatPopupProps) {
           aria-hidden
           className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-card"
         />
-        <MapBoatCard layout="row" {...boat} className="border-0" />
+        <MapBoatCard layout="popup" {...boat} className="border-0" />
       </div>
     </Popup>
   );

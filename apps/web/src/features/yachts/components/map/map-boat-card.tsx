@@ -18,11 +18,35 @@ import { MarinaPopover } from "../marina-popover";
 import type { BoatCardBadge } from "../search/boat-card";
 
 /*
- * Figma "Boat Card" — two variants of one component.
- * `stacked` (node 960:346222) is 288x468 in the list column.
- * `row` (node 960:346082) is 601 wide over a marker: image on the left, a step larger
- * type, and the per-person line moved onto its own row.
+ * Figma "Boat Card", two of them.
+ * `list` (node 960:346222) is the 288x468 card inside the results column.
+ * `popup` is the one hanging off a marker, and it is responsive in its own right:
+ * 288 stacked with a 20px bold name below md (node 967:67006), 601 wide with the image
+ * on the left and a 24px semibold name above it (node 960:346082). The 32px price is
+ * common to both, which is what separates it from the list card.
  */
+const LAYOUT = {
+  list: {
+    card: "w-full flex-col",
+    image: "h-45 w-full rounded-t-2xl",
+    body: "px-4 pb-4",
+    name: "text-[22px] font-semibold",
+    price: "text-[22px] font-semibold leading-[1.3]",
+    priceRow: "items-center",
+    perPerson: "shrink-0",
+    sizes: "288px",
+  },
+  popup: {
+    card: "w-72 max-w-[calc(100vw-2rem)] flex-col md:w-150.25 md:flex-row",
+    image: "h-45 w-full rounded-t-2xl md:h-auto md:w-74 md:rounded-tr-none md:rounded-bl-2xl",
+    body: "px-4 pb-4 md:min-w-0 md:flex-1 md:py-6 md:pr-4 md:pl-0",
+    name: "text-xl font-bold md:text-2xl md:font-semibold",
+    price: "text-[32px] font-bold leading-[1.1]",
+    priceRow: "items-center md:flex-col md:items-stretch",
+    perPerson: "shrink-0 md:shrink",
+    sizes: "(min-width: 768px) 296px, 288px",
+  },
+} as const;
 export type MapBoatCardProps = {
   images: string[];
   imageAlt?: string;
@@ -36,7 +60,7 @@ export type MapBoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
-  layout?: "stacked" | "row";
+  layout?: keyof typeof LAYOUT;
   className?: string;
 };
 
@@ -53,25 +77,20 @@ export default function MapBoatCard({
   price,
   perPerson,
   prepayment,
-  layout = "stacked",
+  layout = "list",
   className,
 }: MapBoatCardProps) {
-  const isRow = layout === "row";
+  const style = LAYOUT[layout];
 
   return (
     <article
       className={cn(
-        "flex rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)]",
-        isRow ? "w-150.25 max-w-[calc(100vw-2rem)] gap-4" : "w-full flex-col gap-4",
+        "flex gap-4 rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)]",
+        style.card,
         className,
       )}
     >
-      <div
-        className={cn(
-          "relative shrink-0 overflow-hidden",
-          isRow ? "w-74 rounded-l-2xl" : "h-45 w-full rounded-t-2xl",
-        )}
-      >
+      <div className={cn("relative shrink-0 overflow-hidden", style.image)}>
         <Carousel className="size-full">
           <CarouselViewport>
             {images.map((src, index) => (
@@ -80,7 +99,7 @@ export default function MapBoatCard({
                   src={src}
                   alt={index === 0 ? (imageAlt ?? "") : ""}
                   fill
-                  sizes={isRow ? "296px" : "288px"}
+                  sizes={style.sizes}
                   className="object-cover"
                 />
               </CarouselSlide>
@@ -118,17 +137,12 @@ export default function MapBoatCard({
         </div>
       </div>
 
-      <div className={cn("flex flex-col gap-4", isRow ? "min-w-0 flex-1 py-6 pr-4" : "px-4 pb-4")}>
+      <div className={cn("flex flex-col gap-4", style.body)}>
         <div className="flex flex-col gap-3">
           <MarinaPopover marina={marina} />
 
           <div className="flex items-center gap-2">
-            <h3
-              className={cn(
-                "min-w-0 truncate font-semibold leading-[1.3] text-foreground",
-                isRow ? "text-2xl" : "text-[22px]",
-              )}
-            >
+            <h3 className={cn("min-w-0 truncate leading-[1.3] text-foreground", style.name)}>
               {name}
             </h3>
             <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
@@ -150,27 +164,15 @@ export default function MapBoatCard({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <div className={cn("flex w-full gap-1.5", isRow ? "flex-col" : "items-center")}>
+          <div className={cn("flex w-full gap-1.5", style.priceRow)}>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="text-sm font-medium leading-[1.3] text-natural-500">
                 {priceLabel}
               </span>
-              <span
-                className={cn(
-                  "text-black",
-                  isRow
-                    ? "text-[32px] font-bold leading-[1.1]"
-                    : "text-[22px] font-semibold leading-[1.3]",
-                )}
-              >
-                {price}
-              </span>
+              <span className={cn("text-black", style.price)}>{price}</span>
             </div>
             <p
-              className={cn(
-                "text-sm font-medium leading-[1.3] text-natural-500",
-                !isRow && "shrink-0",
-              )}
+              className={cn("text-sm font-medium leading-[1.3] text-natural-500", style.perPerson)}
             >
               {perPerson}
             </p>

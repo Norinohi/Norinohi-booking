@@ -16,10 +16,17 @@ import FiltersPanel from "./filters-panel";
 export type FiltersPopoverProps = {
   value: FiltersState;
   onApply: (next: FiltersState) => void;
+  /** `primary` over a map, where the neutral fill would sink into the tiles. */
+  variant?: React.ComponentProps<typeof Button>["variant"];
   className?: string;
 };
 
-export default function FiltersPopover({ value, onApply, className }: FiltersPopoverProps) {
+export default function FiltersPopover({
+  value,
+  onApply,
+  variant = "neutral",
+  className,
+}: FiltersPopoverProps) {
   const [open, setOpen] = useState(false);
   const appliedCount = countActiveFilters(value);
 
@@ -28,10 +35,13 @@ export default function FiltersPopover({ value, onApply, className }: FiltersPop
       <PopoverTrigger
         render={
           <Button
-            variant="neutral"
+            variant={variant}
             className={cn(
               "w-full capitalize md:w-auto md:self-start",
-              "data-popup-open:border-natural-300 data-popup-open:bg-natural-100",
+              // Open-state fill only makes sense on the neutral button; on any filled
+              // variant it would wash out the colour the variant exists for.
+              variant === "neutral" &&
+                "data-popup-open:border-natural-300 data-popup-open:bg-natural-100",
               className,
             )}
           />
