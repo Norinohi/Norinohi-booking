@@ -32,7 +32,7 @@ export default function NavigationBar() {
 
   return (
     <header className="relative z-40 border-b border-natural-50 bg-background">
-      <div className="flex h-[72px] items-center justify-between gap-4 px-4 md:px-6 2xl:h-20 2xl:px-[70px]">
+      <div className="flex h-[72px] items-center justify-between gap-4 px-4 md:px-[54px] 2xl:h-20 2xl:px-[70px]">
         {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
         <div className="flex items-center gap-4 2xl:gap-16">
           <IconButton
@@ -46,7 +46,7 @@ export default function NavigationBar() {
 
           <Link
             href="/"
-            className="text-xl leading-tight font-bold text-foreground md:text-2xl 2xl:text-[28px]"
+            className="text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]"
           >
             YachtCharter
           </Link>

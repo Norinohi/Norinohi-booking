@@ -84,12 +84,12 @@ export default function Footer() {
                 className="flex flex-col gap-2 md:flex-1 md:gap-4 2xl:w-[216px] 2xl:flex-none"
               >
                 <span className="text-lg leading-[1.4] md:text-xl">{col.title}</span>
-                <ul className="flex flex-col gap-2 md:gap-3">
+                <ul className="flex flex-col gap-2 leading-snug md:gap-3">
                   {col.links.map((link) => (
                     <li key={link}>
                       <a
                         href="#"
-                        className="text-base leading-[1.4] text-natural-100 transition-colors hover:text-white"
+                        className="block text-base leading-snug text-natural-100 transition-colors hover:text-white"
                       >
                         {link}
                       </a>
@@ -102,7 +102,7 @@ export default function Footer() {
         </div>
 
         {/* Legal bar */}
-        <div className="flex flex-col items-center gap-4 text-sm tracking-[0.04em] text-natural-100 uppercase 2xl:flex-row 2xl:justify-between">
+        <div className="flex flex-col items-center gap-4 text-sm leading-[1.3] tracking-[0.04em] text-natural-100 uppercase 2xl:flex-row 2xl:justify-between">
           <div className="flex gap-4">
             <a href="#" className="transition-colors hover:text-white">
               Privacy Policy
