@@ -9,11 +9,6 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { Info } from "lucide-react";
 import { useState } from "react";
 
-/*
- * The prepayment line on a boat card, and the tooltip explaining what the sum is.
- * Held open by state as well as hover: a tooltip alone never opens on a touch screen,
- * where this is the only place the explanation exists.
- */
 const EXPLANATION =
   "This is a refundable deposit held in case of damages during your trip. You'll get it back after check-out if everything is in good condition.";
 
@@ -23,7 +18,6 @@ export default function PrepaymentNote({
   className,
 }: {
   label: string;
-  /** On the map the card floats over tiles, so the tooltip needs the page dimmed behind it. */
   backdrop?: boolean;
   className?: string;
 }) {

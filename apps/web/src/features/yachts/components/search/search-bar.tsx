@@ -86,7 +86,6 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
       onSubmit={handleSubmit}
       className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_248px] xl:gap-5"
     >
-      {/* Location */}
       <div>
         <MultiSelect
           options={COUNTRIES}
@@ -100,7 +99,6 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
         />
       </div>
 
-      {/* Date range */}
       <div className="relative">
         <Popover>
           <PopoverTrigger className={fieldTrigger}>
@@ -129,7 +127,6 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
         ) : null}
       </div>
 
-      {/* Boat type */}
       <div className="md:col-span-2 xl:col-span-1">
         <MultiSelect
           options={BOAT_TYPES}
@@ -142,7 +139,6 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
         />
       </div>
 
-      {/* Submit */}
       <Button
         type="submit"
         variant="brand"

@@ -1,11 +1,5 @@
 import type { Marina } from "../types";
 
-/*
- * Mock catalogue — goes away with the search procedure, like `sample-boats`.
- * Marinas are keyed rather than inlined per boat: several yachts share one marina,
- * and the API will return them normalised too. A couple deliberately lack a website
- * or an email so the card's "hide the missing row" path stays exercised.
- */
 const MAP_THUMB = "/assets/marinas/map-thumb.jpg";
 
 function marina(value: Omit<Marina, "mapImageUrl">): Marina {

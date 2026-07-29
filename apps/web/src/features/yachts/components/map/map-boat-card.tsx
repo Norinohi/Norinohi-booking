@@ -18,14 +18,6 @@ import { MarinaPopover } from "../marina-popover";
 import PrepaymentNote from "../prepayment-note";
 import type { BoatCardBadge } from "../search/boat-card";
 
-/*
- * Figma "Boat Card", two of them.
- * `list` (node 960:346222) is the 288x468 card inside the results column.
- * `popup` is the one hanging off a marker, and it is responsive in its own right:
- * 288 stacked with a 20px bold name below md (node 967:67006), 601 wide with the image
- * on the left and a 24px semibold name above it (node 960:346082). The 32px price is
- * common to both, which is what separates it from the list card.
- */
 const LAYOUT = {
   list: {
     card: "w-full flex-col",

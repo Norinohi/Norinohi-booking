@@ -14,15 +14,6 @@ import { Image } from "@/components/shared/image";
 
 import type { Marina } from "../types";
 
-/*
- * Figma "Boat Card" on the map: 601x236 on tablet and up (960:346608, 966:63624),
- * 358x416 stacked below that (966:57487) — the thumbnail moves from the side to the
- * top and the inner gaps tighten from 8 to 6. Two exports: `MarinaCard` is
- * the surface on its own — the map screen will open it from a marker — and
- * `MarinaPopover` is that surface hung off the marina name as a hover card.
- * The thumbnail is only a backdrop: the pin and its radius ring are our own layers
- * on top, exactly as in the design, so they match the markers on the map screen.
- */
 function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -41,12 +32,6 @@ export type MarinaCardProps = {
 
 export function MarinaCard({ marina, className }: MarinaCardProps) {
   return (
-    // `w-full` is load-bearing: PopoverContent lays its children out with
-    // `items-start`, and the thumbnail is an absolutely positioned `fill` image that
-    // contributes nothing to intrinsic width — so without it the card shrinks to the
-    // longest line of text and the thumbnail shrinks with it.
-    // The card also clips its own corners, because the popup cannot: the arrow has
-    // to escape its bounds.
     <article className={cn("w-full overflow-hidden rounded-2xl", className)}>
       <div className="flex flex-col md:flex-row md:items-stretch md:gap-4">
         <div className="relative h-41 w-full shrink-0 md:h-auto md:w-57">
@@ -61,8 +46,6 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
           ) : null}
           <div aria-hidden className="absolute inset-0 bg-black/30" />
 
-          {/* Radius ring — Figma Ellipse 6: 110.4px, white at 12% with a 2px ring of
-              the same white, which is what gives the disc its edge. */}
           <div
             aria-hidden
             className="absolute top-1/2 left-1/2 flex size-27.6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/12 bg-white/12"
@@ -106,7 +89,6 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
   );
 }
 
-/** "ACI Marina Split, Split, Croatia" */
 function formatLocation(marina: Marina): string {
   return [marina.name, marina.city, marina.country].join(", ");
 }
@@ -116,11 +98,6 @@ export type MarinaPopoverProps = {
   className?: string;
 };
 
-/**
- * The marina name as a hover card. Everything overlay-related lives here so callers
- * only say "show this marina" — the map screen will reuse `MarinaCard` with a marker
- * as its trigger instead. On touch, `openOnHover` is simply inert and a tap opens it.
- */
 export function MarinaPopover({ marina, className }: MarinaPopoverProps) {
   return (
     <Popover>
@@ -139,9 +116,6 @@ export function MarinaPopover({ marina, className }: MarinaPopoverProps) {
         side="bottom"
         align="start"
         sideOffset={12}
-        // The card is exactly `100vw - 2rem` on a phone, so a 16px collision inset
-        // leaves it one possible horizontal position — dead centre. Vertically it
-        // still follows the trigger.
         collisionPadding={16}
         backdrop
         className="w-150.25 max-w-[calc(100vw-2rem)] overflow-visible rounded-2xl border-0 p-0 shadow-[4px_4px_15px_rgba(0,0,0,0.03)]"

@@ -17,8 +17,6 @@ const RECENTRE_MS = 500;
 export type MapBoatPopupProps = {
   coordinates: Coordinates;
   boat: Omit<MapBoatCardProps, "layout" | "className">;
-  /* Handed down rather than pulled from `useMap`, which is the one link in this chain
-     that was never shown to deliver anything. */
   map: MapInstance | null;
 };
 

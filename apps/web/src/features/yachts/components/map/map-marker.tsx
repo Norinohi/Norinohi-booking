@@ -6,23 +6,12 @@ import { Marker } from "react-map-gl/mapbox";
 
 import type { Coordinates } from "../../types";
 
-/*
- * Figma "map-pin" (node 757:29193 + 757:29170): a pin centred in a 69px disc.
- * White disc at 25% with a 1px white-50 edge, scaled 1.22x to 84px/24px.
- *
- * Selection runs on `pointerdown`, not `click`. Mapbox cancels the next click at the
- * window capture phase whenever the cursor drifts past its 3px `clickTolerance` between
- * press and release — which a trackpad does almost every time — so no click ever arrives.
- * Keyboard is handled separately for the same reason.
- */
-/* Pins land one after another; `fill-mode-backwards` holds each one hidden until its turn. */
 const STAGGER_MS = 50;
 
 export type MapMarkerProps = {
   coordinates: Coordinates;
   label: string;
   selected?: boolean;
-  /** Position in the result set — drives the entrance delay. */
   order?: number;
   onSelect: () => void;
 };

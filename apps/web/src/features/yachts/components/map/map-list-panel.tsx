@@ -17,11 +17,6 @@ import { SORT_OPTIONS, type SortValue } from "../search/results-header";
 
 import MapBoatCard from "./map-boat-card";
 
-/*
- * Figma "Filters" (node 960:346215) — what "Show all list" opens: 320x1011, sitting
- * right of the filters panel. A 110px header, the cards, then a 64px pagination bar;
- * header and bar are pinned so paging never means scrolling back up first.
- */
 const SORT_LABELS: Record<string, string> = Object.fromEntries(
   SORT_OPTIONS.map(({ value, label }) => [value, label]),
 );

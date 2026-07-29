@@ -20,7 +20,6 @@ import PrepaymentNote from "../prepayment-note";
 export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
-/** Absolute check-in / check-out instant, displayed on the marina's clock via `timeZone`. */
 export type BoatCardCharterDate = string;
 
 export type BoatCardProps = {
@@ -37,7 +36,6 @@ export type BoatCardProps = {
   stats?: string[];
   start: BoatCardCharterDate;
   end: BoatCardCharterDate;
-  /** IANA zone of the marina — the clock both instants are shown on. */
   timeZone: string;
   priceLabel: string;
   price: string;

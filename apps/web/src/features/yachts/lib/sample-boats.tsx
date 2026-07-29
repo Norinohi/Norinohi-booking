@@ -461,7 +461,6 @@ export const SAMPLE_BOATS: SampleBoat[] = [
 export const RESULTS_TOTAL = 320;
 export const RESULTS_PER_PAGE = 7;
 
-/** The deck is shorter than the pretended total, so it cycles — ids stay unique per page. */
 export function getBoatsPage(page: number): SampleBoat[] {
   const offset = (page - 1) * RESULTS_PER_PAGE;
   const size = Math.min(page * RESULTS_PER_PAGE, RESULTS_TOTAL) - offset;

@@ -66,8 +66,6 @@ export default function ResultsHeader({
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{total} yachts found</p>
       </div>
 
-      {/* base-ui renders a hidden input beside the trigger — without this wrapper it
-          becomes a third flex child and `justify-between` pushes it, not the select. */}
       <div className="md:shrink-0">
         <Select
           value={sort}

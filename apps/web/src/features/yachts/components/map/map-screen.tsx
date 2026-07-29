@@ -25,16 +25,11 @@ import type { MapInstance } from "./map-canvas";
 import MapListPanel from "./map-list-panel";
 import MapMarker from "./map-marker";
 
-/*
- * Figma "Map Preview" (node 960:345971): a 56px bar holding a single back button,
- * then the map bleeding to every edge below it.
- */
 const MapCanvas = dynamic(() => import("./map-canvas"), {
   ssr: false,
   loading: () => <div className="size-full bg-natural-50" />,
 });
 
-/* One pin per marina: several yachts share a berth and stacked pins would hide each other. */
 const BOAT_BY_MARINA = new Map<string, SampleBoat>();
 for (const boat of SAMPLE_BOATS) {
   if (!BOAT_BY_MARINA.has(boat.marina.id)) BOAT_BY_MARINA.set(boat.marina.id, boat);
@@ -104,11 +99,7 @@ export default function MapScreen() {
         </MapCanvas>
 
         <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-[70px] 2xl:pb-[70px]">
-          {/* Below 2xl the controls are their own band above the list; at 2xl the wrapper
-              dissolves and every child joins the single row the design draws. */}
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-5 2xl:contents">
-            {/* The panel only fits from 2xl, the width the design draws it at; below that
-              the same filters open from a trigger, as they do on the results page. */}
             <FiltersPanel
               scrollable
               value={filters}
@@ -122,10 +113,6 @@ export default function MapScreen() {
               className="pointer-events-auto 2xl:hidden"
             />
 
-            {/* On a phone the close button shares this row; from md it moves down beside
-              the list itself, which is where the design puts it. */}
-            {/* The second track only exists while the close button does — an empty one
-                still eats the column gap and leaves this button short of the edge. */}
             <div
               className={cn(
                 "grid items-start gap-4 md:contents",
@@ -165,8 +152,6 @@ export default function MapScreen() {
             )}
           </div>
 
-          {/* `flex-1` is what keeps the list inside the viewport: it takes exactly the
-              height the controls leave, and the panel scrolls within that. */}
           {listOpen ? (
             <div className="flex min-h-0 flex-1 items-start gap-4 2xl:contents">
               <MapListPanel className="pointer-events-auto max-h-full" />
