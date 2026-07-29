@@ -9,12 +9,13 @@ import {
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Bookmark, Info, Sailboat, Star, Users } from "lucide-react";
+import { Bookmark, Sailboat, Star, Users } from "lucide-react";
 
 import { Image } from "@/components/shared/image";
 
 import type { Marina } from "../../types";
 import { MarinaPopover } from "../marina-popover";
+import PrepaymentNote from "../prepayment-note";
 import type { BoatCardBadge } from "../search/boat-card";
 
 /*
@@ -178,13 +179,7 @@ export default function MapBoatCard({
             </p>
           </div>
 
-          <button
-            type="button"
-            className="flex w-fit items-center gap-1 text-xs font-semibold leading-[1.3] text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-          >
-            <Info className="size-4 shrink-0" />
-            {prepayment}
-          </button>
+          <PrepaymentNote backdrop label={prepayment} className="flex w-fit" />
         </div>
 
         <Button variant="neutral" size="md" className="w-full capitalize">

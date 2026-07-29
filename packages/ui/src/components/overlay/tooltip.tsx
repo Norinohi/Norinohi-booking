@@ -26,12 +26,22 @@ function TooltipContent({
   sideOffset = 10,
   align = "center",
   alignOffset = 0,
+  backdrop = false,
   children,
   ...props
 }: TooltipPrimitive.Popup.Props &
-  Pick<TooltipPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset">) {
+  Pick<TooltipPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset"> & {
+    /** Dims the rest of the page, for tooltips that land on busy surfaces like a map. */
+    backdrop?: boolean;
+  }) {
   return (
     <TooltipPrimitive.Portal>
+      {backdrop ? (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-40 bg-overlay/60 duration-200 animate-in fade-in-0"
+        />
+      ) : null}
       <TooltipPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
@@ -48,17 +58,18 @@ function TooltipContent({
           {...props}
         >
           {children}
-          <TooltipPrimitive.Arrow className="data-[side=bottom]:rotate-180 data-[side=left]:-rotate-90 data-[side=right]:rotate-90">
-            <svg
-              viewBox="0 0 20 9"
-              strokeWidth={1}
-              strokeLinejoin="round"
-              className="block h-[9px] w-5 fill-background stroke-border"
-            >
-              {/* open path: two slanted edges only, so the base merges into the popup border */}
-              <path d="M0 0 L10 8 L20 0" />
-            </svg>
-          </TooltipPrimitive.Arrow>
+          {/* Same construction as PopoverArrow: a clipped square rotated 45°, overlapping
+              the popup by a pixel so its fill paints over the border that would otherwise
+              draw a seam across the base of the triangle. */}
+          <TooltipPrimitive.Arrow
+            className={cn(
+              "relative block h-[11px] w-[23px] overflow-clip",
+              "data-[side=bottom]:top-[-10px] data-[side=top]:bottom-[-10px] data-[side=top]:rotate-180",
+              "data-[side=left]:right-[-16px] data-[side=left]:rotate-90",
+              "data-[side=right]:left-[-16px] data-[side=right]:-rotate-90",
+              "before:absolute before:bottom-0 before:left-1/2 before:size-4 before:border before:border-border before:bg-background before:content-[''] before:[transform:translate(-50%,50%)_rotate(45deg)]",
+            )}
+          />
         </TooltipPrimitive.Popup>
       </TooltipPrimitive.Positioner>
     </TooltipPrimitive.Portal>

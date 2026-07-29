@@ -7,7 +7,7 @@ import {
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ArrowRight, Bookmark, Check, Info, Sailboat, Star, Users } from "lucide-react";
+import { ArrowRight, Bookmark, Check, Sailboat, Star, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/image";
@@ -15,6 +15,7 @@ import { formatInstant } from "@/lib/date";
 
 import type { Marina } from "../../types";
 import { MarinaPopover } from "../marina-popover";
+import PrepaymentNote from "../prepayment-note";
 
 export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
 export type BoatCardSpec = { label: string; value: string };
@@ -200,21 +201,6 @@ function CharterDate({
   );
 }
 
-function Prepayment({ label, className }: { label: string; className?: string }) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "items-center gap-1 whitespace-nowrap text-xs font-semibold leading-[1.3] text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-        className,
-      )}
-    >
-      <Info className="size-4 shrink-0" />
-      {label}
-    </button>
-  );
-}
-
 function Action({
   stats,
   start,
@@ -260,11 +246,11 @@ function Action({
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
-        <Prepayment label={prepayment} className="flex md:hidden" />
+        <PrepaymentNote label={prepayment} className="flex md:hidden" />
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        <Prepayment label={prepayment} className="hidden md:flex" />
+        <PrepaymentNote label={prepayment} className="hidden md:flex" />
         <Button variant="neutral" size="md" className="w-full capitalize">
           View Details
         </Button>
