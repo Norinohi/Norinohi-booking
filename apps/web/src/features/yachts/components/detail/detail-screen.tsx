@@ -2,11 +2,13 @@ import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/app-brea
 
 import AmenitiesSection from "./amenities-section";
 import DescriptionSection from "./description-section";
+import FaqSection from "./faq-section";
 import Gallery from "./gallery";
 import ImportantInfoSection from "./important-info-section";
 import MandatoryExtrasSection from "./mandatory-extras-section";
 import OptionalExtrasSection from "./optional-extras-section";
 import OverviewSection from "./overview-section";
+import ReviewSection from "./review-section";
 import SuggestedRouteSection from "./suggested-route-section";
 import TitleBlock, { YACHT_NAME } from "./title-block";
 
@@ -32,6 +34,8 @@ export default function YachtDetailScreen() {
             <DescriptionSection />
             <ImportantInfoSection />
             <SuggestedRouteSection />
+            <ReviewSection />
+            <FaqSection />
           </div>
         </div>
       </div>

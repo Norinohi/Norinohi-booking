@@ -601,6 +601,10 @@
       "paymentMethods": "Payment methods accepted by charter company",
       "marinaInfo": "Information about the marina"
     },
+    "review": {
+      "count": "({count} reviews)",
+      "summary": "Showing {shown} of {total}"
+    },
     "sections": {
       "overview": "Overview",
       "amenities": "Amenities",
@@ -608,7 +612,9 @@
       "optionalExtras": "Optional extras",
       "description": "Description",
       "importantInfo": "Important information",
-      "suggestedRoute": "Suggested route"
+      "suggestedRoute": "Suggested route",
+      "review": "Review",
+      "faq": "FAQ"
     },
     "overview": {
       "location": "Location",

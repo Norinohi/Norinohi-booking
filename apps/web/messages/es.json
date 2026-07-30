@@ -601,6 +601,10 @@
       "paymentMethods": "Métodos de pago aceptados por la empresa",
       "marinaInfo": "Información sobre la marina"
     },
+    "review": {
+      "count": "({count} opiniones)",
+      "summary": "Mostrando {shown} de {total}"
+    },
     "sections": {
       "overview": "Resumen",
       "amenities": "Comodidades",
@@ -608,7 +612,9 @@
       "optionalExtras": "Extras opcionales",
       "description": "Descripción",
       "importantInfo": "Información importante",
-      "suggestedRoute": "Ruta recomendada"
+      "suggestedRoute": "Ruta recomendada",
+      "review": "Opiniones",
+      "faq": "Preguntas frecuentes"
     },
     "overview": {
       "location": "Ubicación",

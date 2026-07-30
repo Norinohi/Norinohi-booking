@@ -9,7 +9,8 @@ import type { ReactNode } from "react";
 
 /*
  * DetailSection — the collapsible section shell every yacht-detail block sits in (Figma section
- * header 967:69735). `id` doubles as the DOM anchor the in-page tabs will scroll to.
+ * header 967:69735). `id` doubles as the DOM anchor the in-page tabs will scroll to. `title` takes
+ * a node because the Review heading carries a rating chip and a count beside it (967:70032).
  */
 export default function DetailSection({
   id,
@@ -17,7 +18,7 @@ export default function DetailSection({
   children,
 }: {
   id: string;
-  title: string;
+  title: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -30,7 +31,9 @@ export default function DetailSection({
             </span>
           }
         >
-          <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
+          <h2 className="flex items-center gap-1 text-2xl font-semibold text-foreground">
+            {title}
+          </h2>
         </AccordionTrigger>
         <AccordionContent>
           <div className="pt-3">{children}</div>

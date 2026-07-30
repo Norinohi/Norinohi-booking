@@ -601,6 +601,10 @@
       "paymentMethods": "Способи оплати чартерної компанії",
       "marinaInfo": "Інформація про марину"
     },
+    "review": {
+      "count": "({count} відгуків)",
+      "summary": "Показано {shown} з {total}"
+    },
     "sections": {
       "overview": "Огляд",
       "amenities": "Зручності",
@@ -608,7 +612,9 @@
       "optionalExtras": "Додаткові опції",
       "description": "Опис",
       "importantInfo": "Важлива інформація",
-      "suggestedRoute": "Рекомендований маршрут"
+      "suggestedRoute": "Рекомендований маршрут",
+      "review": "Відгуки",
+      "faq": "Питання й відповіді"
     },
     "overview": {
       "location": "Локація",
