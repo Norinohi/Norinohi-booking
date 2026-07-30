@@ -32,9 +32,11 @@ function BoatCard({
         <img src={image} alt={imageAlt} />
       </CardMedia>
       <CardContent className="gap-3 p-0">
-        <CardTitle className="text-2xl leading-[1.1]">{title}</CardTitle>
+        <CardTitle className="text-xl leading-[1.1] md:text-2xl">{title}</CardTitle>
         {description && (
-          <CardDescription className="text-xl leading-[1.4]">{description}</CardDescription>
+          <CardDescription className="text-lg leading-[1.4] md:text-xl">
+            {description}
+          </CardDescription>
         )}
       </CardContent>
     </Card>

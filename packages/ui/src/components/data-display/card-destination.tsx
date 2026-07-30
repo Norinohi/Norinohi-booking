@@ -22,7 +22,7 @@ function DestinationCard({
 }: DestinationCardProps) {
   return (
     <Card variant="ghost" className={cn("w-[400px] max-w-full", className)} {...props}>
-      <CardMedia className="aspect-[4/3] rounded-xl">
+      <CardMedia className="aspect-auto h-[300px] rounded-xl md:aspect-[4/3] md:h-auto">
         <img src={image} alt={imageAlt} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-8 text-white">
