@@ -554,7 +554,9 @@
       "light": "Hell",
       "dark": "Dunkel",
       "system": "System"
-    }
+    },
+    "description": "Yacht Charter",
+    "title": "Yacht Charter"
   },
   "PlanMyTrip": {
     "title": "Reise planen lassen",

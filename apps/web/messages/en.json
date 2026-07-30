@@ -554,7 +554,9 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
-    }
+    },
+    "description": "Yacht Charter",
+    "title": "Yacht Charter"
   },
   "PlanMyTrip": {
     "title": "Help me plan my trip",
