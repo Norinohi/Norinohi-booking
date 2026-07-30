@@ -601,6 +601,13 @@
       "paymentMethods": "Payment methods accepted by charter company",
       "marinaInfo": "Information about the marina"
     },
+    "popular": {
+      "from": "From",
+      "perPerson": "/ per person",
+      "seeAll": "See All Yachts",
+      "previous": "Previous yachts",
+      "next": "Next yachts"
+    },
     "review": {
       "count": "({count} reviews)",
       "summary": "Showing {shown} of {total}"
@@ -638,7 +645,8 @@
       "importantInfo": "Important information",
       "suggestedRoute": "Suggested route",
       "review": "Review",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "popularYachts": "Other popular yachts"
     },
     "overview": {
       "location": "Location",

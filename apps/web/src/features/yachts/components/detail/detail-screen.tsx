@@ -9,6 +9,7 @@ import ImportantInfoSection from "./important-info-section";
 import MandatoryExtrasSection from "./mandatory-extras-section";
 import OptionalExtrasSection from "./optional-extras-section";
 import OverviewSection from "./overview-section";
+import PopularYachtsSection from "./popular-yachts-section";
 import ReviewSection from "./review-section";
 import SuggestedRouteSection from "./suggested-route-section";
 import TitleBlock, { YACHT_NAME } from "./title-block";
@@ -37,6 +38,7 @@ export default function YachtDetailScreen() {
             <SuggestedRouteSection />
             <ReviewSection />
             <FaqSection />
+            <PopularYachtsSection />
           </div>
 
           {/* The card is ~2050px against a ~900px viewport, so it is capped to the screen and

@@ -601,6 +601,13 @@
       "paymentMethods": "Способи оплати чартерної компанії",
       "marinaInfo": "Інформація про марину"
     },
+    "popular": {
+      "from": "Від",
+      "perPerson": "/ з особи",
+      "seeAll": "Усі яхти",
+      "previous": "Попередні яхти",
+      "next": "Наступні яхти"
+    },
     "review": {
       "count": "({count} відгуків)",
       "summary": "Показано {shown} з {total}"
@@ -638,7 +645,8 @@
       "importantInfo": "Важлива інформація",
       "suggestedRoute": "Рекомендований маршрут",
       "review": "Відгуки",
-      "faq": "Питання й відповіді"
+      "faq": "Питання й відповіді",
+      "popularYachts": "Інші популярні яхти"
     },
     "overview": {
       "location": "Локація",

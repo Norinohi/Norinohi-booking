@@ -601,6 +601,13 @@
       "paymentMethods": "Métodos de pago aceptados por la empresa",
       "marinaInfo": "Información sobre la marina"
     },
+    "popular": {
+      "from": "Desde",
+      "perPerson": "/ por persona",
+      "seeAll": "Ver todos los yates",
+      "previous": "Yates anteriores",
+      "next": "Yates siguientes"
+    },
     "review": {
       "count": "({count} opiniones)",
       "summary": "Mostrando {shown} de {total}"
@@ -638,7 +645,8 @@
       "importantInfo": "Información importante",
       "suggestedRoute": "Ruta recomendada",
       "review": "Opiniones",
-      "faq": "Preguntas frecuentes"
+      "faq": "Preguntas frecuentes",
+      "popularYachts": "Otros yates populares"
     },
     "overview": {
       "location": "Ubicación",
