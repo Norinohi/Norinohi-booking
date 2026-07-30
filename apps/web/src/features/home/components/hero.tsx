@@ -10,6 +10,7 @@ import {
 } from "@yacht-charter/ui/components/form/select";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { CalendarDays, MapPin, Sailboat, Search, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -21,16 +22,16 @@ import Link from "next/link";
  * the look matches 1-в-1; Search routes to /yachts (real query wiring lands with the search work).
  */
 
-const DESTINATIONS = ["Croatia", "Greece", "Italy", "Turkey", "Caribbean", "Thailand"];
-const BOAT_TYPES = ["Catamaran", "Sailing yacht", "Motor yacht", "Gulet", "Luxury yacht"];
-const CAPTAIN_OPTIONS = ["With captain", "Bareboat", "Skippered"];
+const DESTINATIONS = ["croatia", "greece", "italy", "turkey", "caribbean", "thailand"] as const;
+const BOAT_TYPES = ["catamaran", "sailingYacht", "motorYacht", "gulet", "luxuryYacht"] as const;
+const CAPTAIN_OPTIONS = ["withCaptain", "bareboat", "skippered"] as const;
 
-const STATS: { value: string; label: string }[] = [
-  { value: "30,000+", label: "yachts" },
-  { value: "1,200+", label: "destinations" },
-  { value: "20,000+", label: "happy travelers" },
-  { value: "4.8", label: "average rating" },
-];
+const STATS = ["yachts", "destinations", "travelers", "rating"] as const;
+
+type HeroOptionKey =
+  | (typeof DESTINATIONS)[number]
+  | (typeof BOAT_TYPES)[number]
+  | (typeof CAPTAIN_OPTIONS)[number];
 
 function HeroSelect({
   icon,
@@ -39,8 +40,10 @@ function HeroSelect({
 }: {
   icon: React.ReactNode;
   placeholder: string;
-  options: string[];
+  options: readonly HeroOptionKey[];
 }) {
+  const t = useTranslations("Home.Hero.options");
+
   return (
     <Select>
       <SelectTrigger className="h-12 min-w-0">
@@ -52,7 +55,7 @@ function HeroSelect({
       <SelectContent>
         {options.map((option) => (
           <SelectItem key={option} value={option}>
-            {option}
+            {t(option)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -61,12 +64,14 @@ function HeroSelect({
 }
 
 function SearchCard() {
+  const t = useTranslations("Home.Hero");
+
   return (
     <div className="mx-auto w-full max-w-[489px] shrink-0 rounded-2xl bg-card p-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)] 2xl:mx-0 2xl:w-[438px]">
       <div className="flex flex-col gap-4">
         <HeroSelect
           icon={<MapPin className="size-6 shrink-0 text-foreground" />}
-          placeholder="Where to?"
+          placeholder={t("wherePlaceholder")}
           options={DESTINATIONS}
         />
 
@@ -76,17 +81,17 @@ function SearchCard() {
           className="group flex h-12 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           <CalendarDays className="size-6 shrink-0 text-foreground" />
-          <span className="truncate text-natural-300">Any Dates</span>
+          <span className="truncate text-natural-300">{t("datesPlaceholder")}</span>
         </button>
 
         <HeroSelect
           icon={<Sailboat className="size-6 shrink-0 text-foreground" />}
-          placeholder="Any boat"
+          placeholder={t("boatPlaceholder")}
           options={BOAT_TYPES}
         />
         <HeroSelect
           icon={<Users className="size-6 shrink-0 text-foreground" />}
-          placeholder="With Captain"
+          placeholder={t("captainPlaceholder")}
           options={CAPTAIN_OPTIONS}
         />
 
@@ -98,17 +103,17 @@ function SearchCard() {
           render={<Link href="/yachts" />}
         >
           <Search className="size-5" />
-          Search
+          {t("search")}
         </Button>
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-x-2 gap-y-1 text-base">
-        <span className="text-natural-600">Don't know how to choose?</span>
+        <span className="text-natural-600">{t("dontKnow")}</span>
         <Link
           href="/yachts"
           className="font-medium text-brand underline underline-offset-2 transition-opacity hover:opacity-80"
         >
-          Help Me Plan My Trip
+          {t("helpPlan")}
         </Link>
       </div>
     </div>
@@ -116,19 +121,25 @@ function SearchCard() {
 }
 
 function StatsBar() {
+  const t = useTranslations("Home.Hero.stats");
+
   return (
     <div className="mx-auto w-full max-w-[1160px] rounded-2xl bg-black/15 backdrop-blur-md">
       <div className="grid grid-cols-2 md:grid-cols-4">
         {STATS.map((stat, index) => (
           <div
-            key={stat.label}
+            key={stat}
             className={cn(
               "flex flex-col items-center gap-2 px-2 py-6 2xl:px-6 text-center text-white",
               index > 0 && "md:border-l md:border-white/20",
             )}
           >
-            <span className="text-2xl leading-[1.1] font-medium md:text-[32px]">{stat.value}</span>
-            <span className="text-base leading-[1.1] text-white/90 md:text-xl">{stat.label}</span>
+            <span className="text-2xl leading-[1.1] font-medium md:text-[32px]">
+              {t(`${stat}.value`)}
+            </span>
+            <span className="text-base leading-[1.1] text-white/90 md:text-xl">
+              {t(`${stat}.label`)}
+            </span>
           </div>
         ))}
       </div>
@@ -137,6 +148,8 @@ function StatsBar() {
 }
 
 export default function Hero() {
+  const t = useTranslations("Home.Hero");
+
   return (
     <section className="relative isolate overflow-hidden">
       <Image
@@ -152,11 +165,9 @@ export default function Hero() {
       <div className="relative z-10 mx-auto flex min-h-[560px] max-w-[1536px] flex-col gap-8 px-4 pt-12 pb-[60px] md:px-[54px] md:pt-[70px] md:pb-[65px] 2xl:min-h-[760px] 2xl:gap-10 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[60px]">
         <div className="flex flex-1 flex-col items-center gap-8 2xl:flex-row 2xl:items-start 2xl:justify-between 2xl:gap-10">
           <div className="flex w-full max-w-[659px] flex-col gap-3 text-center text-white 2xl:w-auto 2xl:max-w-[450px] 2xl:text-left">
-            <p className="text-base leading-[1.4] md:text-xl">
-              Over 30,000 yachts in 1,200 destinations. Charters from €120/day
-            </p>
+            <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
             <h1 className="text-4xl leading-[1.1] font-bold md:text-[64px] 2xl:text-[64px]">
-              Explore the world by yacht
+              {t("heading")}
             </h1>
           </div>
 

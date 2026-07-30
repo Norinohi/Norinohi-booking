@@ -8,6 +8,7 @@ import {
 } from "@yacht-charter/ui/components/overlay/popover";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Filter } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { countActiveFilters, type FiltersState } from "../lib/state";
@@ -26,6 +27,7 @@ export default function FiltersPopover({
   variant = "neutral",
   className,
 }: FiltersPopoverProps) {
+  const t = useTranslations("Filters");
   const [open, setOpen] = useState(false);
   const appliedCount = countActiveFilters(value);
 
@@ -45,7 +47,7 @@ export default function FiltersPopover({
         }
       >
         <Filter />
-        Filters ({appliedCount})
+        {t("trigger", { count: appliedCount })}
       </PopoverTrigger>
       <PopoverContent
         side="bottom"

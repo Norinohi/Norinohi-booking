@@ -1,20 +1,11 @@
-import { TZDate } from "@date-fns/tz";
 import { addDays as addDaysFn, differenceInCalendarDays, format, parseISO } from "date-fns";
 
-const DAY_FORMAT = "d MMMM yyyy";
-const TIME_FORMAT = "HH:mm";
 const DAY_KEY = "yyyy-MM-dd";
 
-/** "2026-07-07" → "7 July 2026" */
-export function formatDay(day: string): string {
-  return format(parseISO(day), DAY_FORMAT);
-}
-
-/** An instant rendered on the marina's wall clock, never the visitor's. */
-export function formatInstant(at: string, timeZone: string): { date: string; time: string } {
-  const zoned = new TZDate(at, timeZone);
-  return { date: format(zoned, DAY_FORMAT), time: format(zoned, TIME_FORMAT) };
-}
+/*
+ * Calendar-day arithmetic only. Anything user-facing is formatted through next-intl's
+ * `useFormatter`, so display stays tied to the active locale.
+ */
 
 /** Bridge to the Calendar primitive, which is deliberately native-Date only. */
 export function dayToNative(day: string | null): Date | undefined {

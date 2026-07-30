@@ -22,7 +22,7 @@
     "db:watch": "turbo run db:watch -F @yacht-charter/db",
     "db:stop": "turbo run db:stop -F @yacht-charter/db",
     "db:down": "turbo run db:down -F @yacht-charter/db",
-    "check": "oxlint && oxfmt --write"
+    "check": "oxlint && oxfmt --write && node apps/web/scripts/check-messages.mjs"
   },
   "dependencies": {
     "@yacht-charter/env": "workspace:*",

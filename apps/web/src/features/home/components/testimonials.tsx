@@ -2,6 +2,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { TestimonialCard } from "@yacht-charter/ui/components/data-display/card-testimonial";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 /*
@@ -13,46 +14,17 @@ import Link from "next/link";
  * dedicated reviews route exists (TODO).
  */
 
-type Testimonial = { quote: string; author: string; location: string };
+/* Author names are proper nouns and stay in code; quote and location come from messages. */
+const TESTIMONIALS = [
+  { key: "weber", author: "Daniel Weber" },
+  { key: "martin", author: "Sophie Martin" },
+  { key: "carter", author: "James Carter" },
+  { key: "rossi", author: "Luca Rossi" },
+  { key: "kowalska", author: "Anna Kowalska" },
+  { key: "jensen", author: "Mark Jensen" },
+] as const;
 
-const TESTIMONIALS: Testimonial[] = [
-  {
-    quote:
-      "We booked a yacht in Croatia for the first time and everything just worked. The process was simple, and the boat was exactly what we expected.",
-    author: "Daniel Weber",
-    location: "Germany",
-  },
-  {
-    quote:
-      "I had no sailing experience, but the platform made it easy to find a skipper and plan the whole trip. It felt like a regular holiday, just better.",
-    author: "Sophie Martin",
-    location: "France",
-  },
-  {
-    quote:
-      "The price transparency was the biggest surprise. We could see the full cost upfront and split it between friends — super convenient.",
-    author: "James Carter",
-    location: "United Kingdom",
-  },
-  {
-    quote:
-      "We compared a few yachts and found the perfect one for our group. The route suggestions were really helpful — we didn't have to plan anything.",
-    author: "Luca Rossi",
-    location: "Italy",
-  },
-  {
-    quote:
-      "Great selection of boats and very clear filters. We found exactly what we needed in just a few minutes.",
-    author: "Anna Kowalska",
-    location: "Poland",
-  },
-  {
-    quote:
-      "Everything from booking to boarding felt effortless. Clear communication, no hidden fees, and a boat that looked even better in person.",
-    author: "Mark Jensen",
-    location: "Denmark",
-  },
-];
+type Testimonial = (typeof TESTIMONIALS)[number];
 
 const ROW_ONE = TESTIMONIALS;
 const ROW_TWO = [...TESTIMONIALS.slice(3), ...TESTIMONIALS.slice(0, 3)];
@@ -66,7 +38,15 @@ const MARQUEE_CSS = `
 @media (prefers-reduced-motion: reduce) { .testimonials-track { animation: none; } }
 `;
 
-function MarqueeRow({ items, reverse = false }: { items: Testimonial[]; reverse?: boolean }) {
+function MarqueeRow({
+  items,
+  reverse = false,
+}: {
+  items: readonly Testimonial[];
+  reverse?: boolean;
+}) {
+  const t = useTranslations("Home.Testimonials.items");
+
   return (
     <div className="testimonials-marquee overflow-hidden">
       <div className={cn("testimonials-track flex gap-5", reverse && "testimonials-track-reverse")}>
@@ -75,9 +55,9 @@ function MarqueeRow({ items, reverse = false }: { items: Testimonial[]; reverse?
             key={index}
             aria-hidden={index >= items.length || undefined}
             className="w-[452px] max-w-none shrink-0"
-            quote={item.quote}
+            quote={t(`${item.key}.quote`)}
             author={item.author}
-            location={item.location}
+            location={t(`${item.key}.location`)}
             rating={5}
           />
         ))}
@@ -87,11 +67,13 @@ function MarqueeRow({ items, reverse = false }: { items: Testimonial[]; reverse?
 }
 
 export default function Testimonials() {
+  const t = useTranslations("Home.Testimonials");
+
   return (
     <section className="overflow-hidden bg-background py-[60px] md:pt-[70px] md:pb-[50px] 2xl:pt-[100px] 2xl:pb-[60px]">
       <div className="mx-auto max-w-[1536px] px-4 md:px-[54px] 2xl:px-[70px]">
         <h2 className="text-center text-[32px] leading-[1.1] font-medium md:text-[50px] 2xl:text-[50px]">
-          What Our Customers Say
+          {t("heading")}
         </h2>
       </div>
 
@@ -102,7 +84,7 @@ export default function Testimonials() {
 
       <div className="mx-auto mt-10 flex max-w-[1536px] justify-center px-4 md:mt-8 lg:mt-10">
         <Button variant="neutral" size="md" nativeButton={false} render={<Link href="/yachts" />}>
-          All Reviews
+          {t("allReviews")}
           <ArrowUpRight />
         </Button>
       </div>

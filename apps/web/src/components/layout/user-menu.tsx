@@ -12,6 +12,7 @@ import {
 } from "@yacht-charter/ui/components/overlay/dropdown-menu";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { User } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -21,6 +22,7 @@ import { authClient } from "@/lib/auth-client";
 // auth-aware menu. The theme switcher lives here too (the design has no
 // standalone toggle), so light/dark control isn't lost.
 export default function UserMenu() {
+  const t = useTranslations("Layout.UserMenu");
   const router = useRouter();
   const { setTheme } = useTheme();
   const { data: session, isPending } = authClient.useSession();
@@ -31,7 +33,7 @@ export default function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<IconButton variant="subtle" aria-label="Account" />}>
+      <DropdownMenuTrigger render={<IconButton variant="subtle" aria-label={t("account")} />}>
         <User className="size-6" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-card">
@@ -43,14 +45,14 @@ export default function UserMenu() {
             </DropdownMenuItem>
           </DropdownMenuGroup>
         ) : (
-          <DropdownMenuItem onClick={() => router.push("/login")}>Sign In</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/login")}>{t("signIn")}</DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Theme</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
+          <DropdownMenuLabel>{t("theme")}</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => setTheme("light")}>{t("light")}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("dark")}>{t("dark")}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setTheme("system")}>{t("system")}</DropdownMenuItem>
         </DropdownMenuGroup>
         {session && (
           <>
@@ -63,7 +65,7 @@ export default function UserMenu() {
                 })
               }
             >
-              Sign Out
+              {t("signOut")}
             </DropdownMenuItem>
           </>
         )}

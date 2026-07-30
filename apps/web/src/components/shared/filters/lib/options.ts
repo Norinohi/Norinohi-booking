@@ -1,3 +1,8 @@
+/*
+ * Option *values* only — they are persisted filter state, so they must never change with the UI
+ * language. Labels come from the `Filters.options` namespace via `useFilterOptions`. Keys are
+ * unique across every group, so one flat message namespace covers them all.
+ */
 export type Option = { value: string; label: string };
 
 export function labelOf(options: Option[], value: string): string {
@@ -10,99 +15,63 @@ export function orderedValues(options: Option[], selected: string[]): string[] {
   return options.filter((option) => picked.has(option.value)).map((option) => option.value);
 }
 
-export const COUNTRIES: Option[] = [
-  { value: "egypt", label: "Egypt" },
-  { value: "morocco", label: "Morocco" },
-  { value: "croatia", label: "Croatia" },
-  { value: "spain", label: "Spain" },
-  { value: "france", label: "France" },
-  { value: "italy", label: "Italy" },
-  { value: "portugal", label: "Portugal" },
-  { value: "greece", label: "Greece" },
-  { value: "norway", label: "Norway" },
-  { value: "turkey", label: "Turkey" },
-  { value: "montenegro", label: "Montenegro" },
-];
+export const COUNTRIES = [
+  "egypt",
+  "morocco",
+  "croatia",
+  "spain",
+  "france",
+  "italy",
+  "portugal",
+  "greece",
+  "norway",
+  "turkey",
+  "montenegro",
+] as const;
 
-export const SAILING_AREAS: Option[] = [
-  { value: "dalmatia", label: "Dalmatia" },
-  { value: "istria", label: "Istria" },
-  { value: "kvarner", label: "Kvarner" },
-];
+export const SAILING_AREAS = ["dalmatia", "istria", "kvarner"] as const;
 
-export const CHARTER_COMPANIES: Option[] = [
-  { value: "sunsail", label: "Sunsail" },
-  { value: "dream-yacht", label: "Dream Yacht" },
-  { value: "navigare", label: "Navigare" },
-];
+export const CHARTER_COMPANIES = ["sunsail", "dream-yacht", "navigare"] as const;
 
-export const MARINAS: Option[] = [
-  { value: "split", label: "Marina Split" },
-  { value: "kastela", label: "Marina Kaštela" },
-  { value: "trogir", label: "Marina Trogir" },
-];
+export const MARINAS = ["split", "kastela", "trogir"] as const;
 
-export const DURATIONS: Option[] = [
-  { value: "7", label: "7 days (recommended)" },
-  { value: "3", label: "3 days" },
-  { value: "10", label: "10 days" },
-  { value: "14", label: "14 days" },
-];
+export const DURATIONS = ["7", "3", "10", "14"] as const;
 
-export const DATE_FLEXIBILITY: Option[] = [
-  { value: "on-day", label: "On day" },
-  { value: "1-3-days", label: "In 1–3 days" },
-  { value: "1-week", label: "In 1 week" },
-  { value: "2-weeks", label: "In 2 weeks" },
-  { value: "1-month", label: "In 1 month" },
-];
+export const DATE_FLEXIBILITY = ["on-day", "1-3-days", "1-week", "2-weeks", "1-month"] as const;
 
-export const BOAT_TYPES: Option[] = [
-  { value: "sailing-yacht", label: "Sailing Yacht" },
-  { value: "catamaran", label: "Catamaran" },
-  { value: "gulet", label: "Gulet" },
-  { value: "motor-yacht", label: "Motor Yacht" },
-  { value: "power-catamaran", label: "Power Catamaran" },
-  { value: "sailboat", label: "Sailboat" },
-  { value: "motor-boat", label: "Motor Boat" },
-];
+export const BOAT_TYPES = [
+  "sailing-yacht",
+  "catamaran",
+  "gulet",
+  "motor-yacht",
+  "power-catamaran",
+  "sailboat",
+  "motor-boat",
+] as const;
 
-export const MODELS: Option[] = [
-  { value: "bavaria", label: "Bavaria" },
-  { value: "beneteau", label: "Beneteau" },
-  { value: "jeanneau", label: "Jeanneau" },
-  { value: "lagoon", label: "Lagoon" },
-];
+export const MODELS = ["bavaria", "beneteau", "jeanneau", "lagoon"] as const;
 
-export const CREWS: Option[] = [
-  { value: "full-crew", label: "Full crew" },
-  { value: "skipper", label: "Skipper only" },
-  { value: "bareboat", label: "Bareboat" },
-];
+export const CREWS = ["full-crew", "skipper", "bareboat"] as const;
 
-export const MAINSAIL_TYPES: Option[] = [
-  { value: "classic", label: "Classic" },
-  { value: "furling", label: "Furling" },
-  { value: "lazy-bag", label: "Lazy bag" },
-];
+export const MAINSAIL_TYPES = ["classic", "furling", "lazy-bag"] as const;
 
-export const EQUIPMENT: Option[] = [
-  { value: "air-conditioning", label: "Air conditioning" },
-  { value: "generator", label: "Generator" },
-  { value: "bow-thruster", label: "Bow thruster" },
-  { value: "wifi", label: "Wi-Fi" },
-];
+export const EQUIPMENT = ["air-conditioning", "generator", "bow-thruster", "wifi"] as const;
 
-export const LENGTH_UNITS: Option[] = [
-  { value: "ft", label: "ft" },
-  { value: "m", label: "m" },
-];
+export const LENGTH_UNITS = ["ft", "m"] as const;
 
-const YEARS = ["2015", "2018", "2020", "2022", "2024", "2025"];
+export const YEARS = ["any", "2015", "2018", "2020", "2022", "2024", "2025"] as const;
 
-export const YEARS_FROM: Option[] = [
-  { value: "any", label: "Year" },
-  ...YEARS.map((year) => ({ value: year, label: year })),
-];
-
-export const YEARS_TO: Option[] = YEARS_FROM;
+export type OptionKey =
+  | (typeof COUNTRIES)[number]
+  | (typeof SAILING_AREAS)[number]
+  | (typeof CHARTER_COMPANIES)[number]
+  | (typeof MARINAS)[number]
+  | (typeof DURATIONS)[number]
+  | (typeof DATE_FLEXIBILITY)[number]
+  | (typeof BOAT_TYPES)[number]
+  | (typeof MODELS)[number]
+  | (typeof CREWS)[number]
+  | (typeof MAINSAIL_TYPES)[number]
+  | (typeof EQUIPMENT)[number]
+  | (typeof LENGTH_UNITS)[number]
+  | (typeof YEARS)[number];

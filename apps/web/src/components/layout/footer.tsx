@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 /*
  * Footer — Figma "Footer" (nodes 985:73146 desktop / 985:73145 tablet / 985:73144 mobile).
  * Dark section (#0a0a0a): 28px wordmark, 20px tagline + description, three 20px column
@@ -24,20 +26,20 @@ function YoutubeIcon(props: React.ComponentProps<"svg">) {
   );
 }
 
-const COLUMNS: { title: string; links: string[] }[] = [
+const COLUMNS = [
   {
-    title: "Destinations",
-    links: ["Croatia", "Greece", "Italy", "Turkey", "Caribbean", "Thailand"],
+    title: "destinations",
+    links: ["croatia", "greece", "italy", "turkey", "caribbean", "thailand"],
   },
   {
-    title: "Charter types",
-    links: ["Catamaran", "Sailing yacht", "Motor yacht", "Bareboat", "Skippered"],
+    title: "charterTypes",
+    links: ["catamaran", "sailingYacht", "motorYacht", "bareboat", "skippered"],
   },
   {
-    title: "Explore",
-    links: ["Help me plan my trip", "Popular yachts", "What our customers say", "How it works"],
+    title: "explore",
+    links: ["planTrip", "popularYachts", "customerReviews", "howItWorks"],
   },
-];
+] as const;
 
 const SOCIALS = [
   { label: "Instagram", Icon: InstagramIcon },
@@ -45,6 +47,8 @@ const SOCIALS = [
 ];
 
 export default function Footer() {
+  const t = useTranslations("Layout.Footer");
+
   return (
     <footer className="bg-natural-900 text-white">
       <div className="mx-auto flex max-w-[1536px] flex-col gap-10 px-4 py-[50px] md:px-[54px] 2xl:px-[70px] 2xl:py-[60px]">
@@ -57,9 +61,9 @@ export default function Footer() {
                 YachtCharter
               </span>
               <p className="w-full text-lg leading-[1.4] text-natural-100 md:text-xl">
-                Explore the world by yacht.
+                {t("tagline")}
                 <br />
-                Over 30,000 boats worldwide ready for your next trip.
+                {t("description")}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -83,7 +87,9 @@ export default function Footer() {
                 key={col.title}
                 className="flex flex-col gap-2 md:flex-1 md:gap-4 2xl:w-[216px] 2xl:flex-none"
               >
-                <span className="text-lg leading-[1.4] md:text-xl">{col.title}</span>
+                <span className="text-lg leading-[1.4] md:text-xl">
+                  {t(`columns.${col.title}`)}
+                </span>
                 <ul className="flex flex-col gap-2 leading-snug md:gap-3">
                   {col.links.map((link) => (
                     <li key={link}>
@@ -91,7 +97,7 @@ export default function Footer() {
                         href="#"
                         className="block text-base leading-snug text-natural-100 transition-colors hover:text-white"
                       >
-                        {link}
+                        {t(`links.${link}`)}
                       </a>
                     </li>
                   ))}
@@ -105,13 +111,13 @@ export default function Footer() {
         <div className="flex flex-col items-center gap-4 text-sm leading-[1.3] tracking-[0.04em] text-natural-100 uppercase 2xl:flex-row 2xl:justify-between">
           <div className="flex gap-4">
             <a href="#" className="transition-colors hover:text-white">
-              Privacy Policy
+              {t("privacy")}
             </a>
             <a href="#" className="transition-colors hover:text-white">
-              Terms of Service
+              {t("terms")}
             </a>
           </div>
-          <span className="max-w-full">© 2026 YachtCharter Platform. All rights reserved.</span>
+          <span className="max-w-full">{t("copyright", { year: new Date().getFullYear() })}</span>
         </div>
       </div>
     </footer>

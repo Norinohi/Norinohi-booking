@@ -8,6 +8,7 @@ import {
 } from "@yacht-charter/ui/components/overlay/popover";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight, Globe, Mail, MapPin, Smartphone } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/image";
@@ -31,6 +32,8 @@ export type MarinaCardProps = {
 };
 
 export function MarinaCard({ marina, className }: MarinaCardProps) {
+  const t = useTranslations("Common.marina");
+
   return (
     <article className={cn("w-full overflow-hidden rounded-2xl", className)}>
       <div className="flex flex-col md:flex-row md:items-stretch md:gap-4">
@@ -80,7 +83,7 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
             type="button"
             className="flex w-fit items-center gap-1.5 rounded-lg px-4 py-1.5 text-base font-semibold capitalize leading-[1.25] text-foreground outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40"
           >
-            View Details
+            {t("viewDetails")}
             <ArrowUpRight className="size-4 shrink-0" />
           </button>
         </div>

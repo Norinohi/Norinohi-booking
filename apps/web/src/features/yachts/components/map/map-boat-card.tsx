@@ -10,6 +10,7 @@ import {
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark, Sailboat, Star, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Image } from "@/components/shared/image";
 
@@ -73,6 +74,7 @@ export default function MapBoatCard({
   layout = "list",
   className,
 }: MapBoatCardProps) {
+  const t = useTranslations("Common.boatCard");
   const style = LAYOUT[layout];
 
   return (
@@ -122,7 +124,7 @@ export default function MapBoatCard({
             type="button"
             variant="subtle"
             size="icon-md"
-            aria-label="Save to wishlist"
+            aria-label={t("save")}
             className="shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60"
           >
             <Bookmark />
@@ -175,7 +177,7 @@ export default function MapBoatCard({
         </div>
 
         <Button variant="neutral" size="md" className="w-full capitalize">
-          View Details
+          {t("viewDetails")}
         </Button>
       </div>
     </article>

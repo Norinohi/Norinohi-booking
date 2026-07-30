@@ -4,11 +4,12 @@ import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Bookmark, Globe, Menu, X } from "lucide-react";
+import { Bookmark, Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
 
+import LanguageSwitcher from "./language-switcher";
 import UserMenu from "./user-menu";
 
 /*
@@ -19,15 +20,15 @@ import UserMenu from "./user-menu";
  * wordmark + the three icons — and the links + CTAs move into the sheet. The full desktop
  * spacing needs ~1536px, so it switches on at 2xl rather than xl. Strings: `Nav` namespace.
  */
-const NAV_LINKS: { key: string; chip?: boolean }[] = [
-  { key: "destinations" },
-  { key: "boatTypes" },
+const NAV_LINKS = [
+  { key: "destinations", chip: false },
+  { key: "boatTypes", chip: false },
   { key: "findByBudget", chip: true },
-  { key: "popularRoutes" },
-];
+  { key: "popularRoutes", chip: false },
+] as const;
 
 export default function NavigationBar() {
-  const t = useTranslations("Nav");
+  const t = useTranslations("Layout.Nav");
   const [open, setOpen] = useState(false);
 
   return (
@@ -76,9 +77,7 @@ export default function NavigationBar() {
               <Bookmark className="size-6" />
             </IconButton>
             <UserMenu />
-            <IconButton variant="subtle" aria-label={t("language")} className="rounded-sm">
-              <Globe className="size-6" />
-            </IconButton>
+            <LanguageSwitcher />
           </div>
 
           <div className="hidden items-center gap-3 2xl:flex">

@@ -23,6 +23,8 @@ type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   tags?: { label: string; icon?: React.ReactNode }[];
   price: React.ReactNode;
   priceSuffix?: React.ReactNode;
+  priceLabel?: React.ReactNode;
+  actionLabel?: React.ReactNode;
   onViewDetails?: () => void;
 };
 
@@ -35,6 +37,8 @@ function BoatSmallCard({
   tags = [],
   price,
   priceSuffix = "/ per person",
+  priceLabel = "From",
+  actionLabel = "View Details",
   onViewDetails,
   className,
   ...props
@@ -73,13 +77,13 @@ function BoatSmallCard({
       </CardContent>
       <CardFooter>
         <div className="flex flex-col">
-          <span className="text-sm text-natural-500">From</span>
+          <span className="text-sm text-natural-500">{priceLabel}</span>
           <span className="text-base text-natural-500">
             <span className="text-lg font-bold text-foreground">{price}</span> {priceSuffix}
           </span>
         </div>
         <Button variant="neutral" size="sm" onClick={onViewDetails}>
-          View Details
+          {actionLabel}
         </Button>
       </CardFooter>
     </Card>

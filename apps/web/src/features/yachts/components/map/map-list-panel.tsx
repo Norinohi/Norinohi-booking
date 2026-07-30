@@ -10,26 +10,26 @@ import {
   SelectValue,
 } from "@yacht-charter/ui/components/form/select";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { useBoatCards } from "../../hooks/use-boat-cards";
 import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
 import { SORT_OPTIONS, type SortValue } from "../search/results-header";
 
 import MapBoatCard from "./map-boat-card";
-
-const SORT_LABELS: Record<string, string> = Object.fromEntries(
-  SORT_OPTIONS.map(({ value, label }) => [value, label]),
-);
 
 export type MapListPanelProps = {
   className?: string;
 };
 
 export default function MapListPanel({ className }: MapListPanelProps) {
+  const t = useTranslations("Common");
+  const { toMapCard } = useBoatCards();
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
 
-  const boats = getBoatsPage(page);
+  const boats = getBoatsPage(page).map(toMapCard);
 
   return (
     <section
@@ -40,7 +40,7 @@ export default function MapListPanel({ className }: MapListPanelProps) {
     >
       <div className="flex shrink-0 flex-col gap-3 border-b border-border p-4">
         <p className="text-sm font-medium leading-[1.3] text-natural-500">
-          {RESULTS_TOTAL} yachts found
+          {t("resultsCount", { count: RESULTS_TOTAL })}
         </p>
 
         <Select
@@ -48,12 +48,14 @@ export default function MapListPanel({ className }: MapListPanelProps) {
           onValueChange={(next) => setSort((next ?? "recommended") as SortValue)}
         >
           <SelectTrigger className="h-12 w-full min-w-0">
-            <SelectValue>{(value) => `Sort by: ${SORT_LABELS[value as string]}`}</SelectValue>
+            <SelectValue>
+              {(value) => t("sorting.label", { value: t(`sorting.${value as SortValue}`) })}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {SORT_OPTIONS.map(({ value, label }) => (
+            {SORT_OPTIONS.map((value) => (
               <SelectItem key={value} value={value}>
-                {label}
+                {t(`sorting.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>

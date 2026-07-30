@@ -8,14 +8,19 @@ import {
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Check, Sailboat, Star, Users } from "lucide-react";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/image";
-import { formatInstant } from "@/lib/date";
 
 import type { Marina } from "../../types";
 import { MarinaPopover } from "../marina-popover";
 import PrepaymentNote from "../prepayment-note";
+
+const FORMATS = {
+  day: { day: "numeric", month: "long", year: "numeric" },
+  time: { hour: "2-digit", minute: "2-digit", hour12: false },
+} as const;
 
 export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
 export type BoatCardSpec = { label: string; value: string };
@@ -51,6 +56,8 @@ function Gallery({
   badges,
   priority,
 }: Pick<BoatCardProps, "images" | "imageAlt" | "badges" | "priority">) {
+  const t = useTranslations("Common.boatCard");
+
   return (
     <div className="relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl">
       <Carousel className="size-full">
@@ -92,7 +99,7 @@ function Gallery({
           type="button"
           variant="subtle"
           size="icon-md"
-          aria-label="Save to wishlist"
+          aria-label={t("save")}
           className="shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60"
         >
           <Bookmark />
@@ -190,7 +197,11 @@ function CharterDate({
   timeZone: string;
   className?: string;
 }) {
-  const { date, time } = formatInstant(value, timeZone);
+  const format = useFormatter();
+  const at = new Date(value);
+  const date = format.dateTime(at, { ...FORMATS.day, timeZone });
+  const time = format.dateTime(at, { ...FORMATS.time, timeZone });
+
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       <span className="text-xs font-semibold leading-[1.3] text-foreground">{date}</span>
@@ -212,6 +223,8 @@ function Action({
   BoatCardProps,
   "stats" | "start" | "end" | "timeZone" | "priceLabel" | "price" | "perPerson" | "prepayment"
 >) {
+  const t = useTranslations("Common.boatCard");
+
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 px-4 pt-3 pb-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:px-6 md:pt-4 md:pb-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:px-0 xl:pr-6">
       <div className="flex flex-col items-center gap-2 text-sm font-medium leading-[1.3] text-foreground md:items-start">
@@ -250,7 +263,7 @@ function Action({
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
         <PrepaymentNote label={prepayment} className="hidden md:flex" />
         <Button variant="neutral" size="md" className="w-full capitalize">
-          View Details
+          {t("viewDetails")}
         </Button>
       </div>
     </div>

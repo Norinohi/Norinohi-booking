@@ -7,10 +7,8 @@ import {
 } from "@yacht-charter/ui/components/overlay/tooltip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Info } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
-
-const EXPLANATION =
-  "This is a refundable deposit held in case of damages during your trip. You'll get it back after check-out if everything is in good condition.";
 
 export default function PrepaymentNote({
   label,
@@ -21,6 +19,7 @@ export default function PrepaymentNote({
   backdrop?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("Common.boatCard");
   const [open, setOpen] = useState(false);
 
   return (
@@ -40,7 +39,7 @@ export default function PrepaymentNote({
         <Info className="size-4 shrink-0" />
         {label}
       </TooltipTrigger>
-      <TooltipContent backdrop={backdrop}>{EXPLANATION}</TooltipContent>
+      <TooltipContent backdrop={backdrop}>{t("prepaymentInfo")}</TooltipContent>
     </Tooltip>
   );
 }

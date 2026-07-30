@@ -3,6 +3,7 @@
 import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -14,10 +15,11 @@ import {
   FiltersPanel,
   FiltersPopover,
   type FiltersState,
-  getFilterChips,
+  useFilterChips,
 } from "@/components/shared/filters";
 import EmptyState from "@/components/shared/empty-state";
 
+import { useBoatCards } from "../../hooks/use-boat-cards";
 import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
 
 import BoatCard from "./boat-card";
@@ -29,8 +31,10 @@ export default function SearchScreen() {
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
 
-  const boats = getBoatsPage(page);
-  const chips = getFilterChips(filters);
+  const t = useTranslations("Yachts");
+  const { toSearchCard } = useBoatCards();
+  const boats = getBoatsPage(page).map(toSearchCard);
+  const chips = useFilterChips(filters);
 
   function applyFilters(next: FiltersState) {
     setFilters(next);
@@ -64,7 +68,7 @@ export default function SearchScreen() {
                 className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
               >
                 <Search />
-                Search by map
+                {t("searchByMap")}
               </Link>
             </div>
 
@@ -83,10 +87,7 @@ export default function SearchScreen() {
             />
 
             {boats.length === 0 ? (
-              <EmptyState
-                title="No yachts found for your filters"
-                description="Try adjusting your dates, budget, or location — we’ll help you find the perfect match."
-              />
+              <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
             ) : (
               boats.map(({ id, ...boat }, index) => (
                 <BoatCard key={id} {...boat} priority={index === 0} />

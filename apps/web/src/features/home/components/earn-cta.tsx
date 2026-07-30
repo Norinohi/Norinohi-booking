@@ -1,5 +1,6 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { ArrowUpRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,6 +13,8 @@ import Link from "next/link";
  */
 
 export default function EarnCta() {
+  const t = useTranslations("Home.EarnCta");
+
   return (
     <section className="bg-background">
       <div className="mx-auto max-w-[1536px] px-4 py-[60px] md:px-[54px] md:py-[70px] 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[100px]">
@@ -28,12 +31,10 @@ export default function EarnCta() {
           <div className="relative z-10 flex min-h-[320px] items-center p-8 md:min-h-[291px] md:p-6 2xl:min-h-[391px] 2xl:p-16">
             <div className="flex flex-col items-start gap-4 md:gap-6">
               <h2 className="text-[32px] leading-[1.1] font-medium text-white 2xl:text-[50px] 2xl:whitespace-nowrap">
-                Earn With Your Yacht
+                {t("heading")}
               </h2>
               <p className="max-w-[481px] text-lg leading-[1.4] text-white md:text-xl">
-                List your yacht on our platform and start receiving bookings from travelers
-                worldwide. We handle visibility, demand, and tools — you stay in control of your
-                schedule and pricing.
+                {t("description")}
               </p>
               <Button
                 variant="neutral"
@@ -42,7 +43,7 @@ export default function EarnCta() {
                 render={<Link href="/yachts" />}
                 className="w-fit"
               >
-                List Your Yacht
+                {t("cta")}
                 <ArrowUpRight />
               </Button>
             </div>

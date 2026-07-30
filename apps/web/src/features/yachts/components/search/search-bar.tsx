@@ -11,16 +11,16 @@ import {
 } from "@yacht-charter/ui/components/overlay/popover";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Calendar as CalendarIcon, MapPin, Sailboat, Search } from "lucide-react";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
 import {
-  BOAT_TYPES,
-  COUNTRIES,
   type FiltersState,
   orderedValues,
   useDraft,
+  useFilterOptions,
 } from "@/components/shared/filters";
-import { addDays, dayFromNative, dayToNative, daysBetween, formatDay } from "@/lib/date";
+import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
 
 function toRange(value: FiltersState): DateRange {
   if (!value.startDate) return { from: undefined, to: undefined };
@@ -33,21 +33,25 @@ function toRange(value: FiltersState): DateRange {
 const fieldTrigger =
   "group flex h-12 w-full min-w-[200px] items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[popup-open]:border-foreground";
 
-function formatRange(range: DateRange): string | null {
-  if (range.from && range.to) {
-    return `${formatDay(dayFromNative(range.from))} – ${formatDay(dayFromNative(range.to))}`;
-  }
-  if (range.from) return formatDay(dayFromNative(range.from));
-  return null;
-}
-
 export type SearchBarProps = {
   value: FiltersState;
   onSearch: (next: FiltersState) => void;
 };
 
 export default function SearchBar({ value, onSearch }: SearchBarProps) {
+  const t = useTranslations("Yachts.searchBar");
+  const format = useFormatter();
+  const locale = useLocale();
   const [draft, setDraft] = useDraft(value);
+  const options = useFilterOptions();
+
+  const day = (date: Date) => format.dateTime(date, "day");
+  const formatRange = (range: DateRange) =>
+    range.from && range.to
+      ? `${day(range.from)} – ${day(range.to)}`
+      : range.from
+        ? day(range.from)
+        : null;
   const [pending, setPending] = useState<DateRange | null>(null);
 
   const range = pending ?? toRange(draft);
@@ -88,13 +92,13 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     >
       <div>
         <MultiSelect
-          options={COUNTRIES}
+          options={options.countries}
           value={draft.country}
           onValueChange={(next) =>
-            setDraft((current) => ({ ...current, country: orderedValues(COUNTRIES, next) }))
+            setDraft((current) => ({ ...current, country: orderedValues(options.countries, next) }))
           }
-          placeholder="Location"
-          searchPlaceholder="Search Countries..."
+          placeholder={t("location")}
+          searchPlaceholder={t("searchCountries")}
           icon={<MapPin className="size-6 shrink-0 text-foreground" />}
         />
       </div>
@@ -110,17 +114,23 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
                 rangeLabel && "pr-6",
               )}
             >
-              {rangeLabel ?? "Add dates"}
+              {rangeLabel ?? t("addDates")}
             </span>
           </PopoverTrigger>
           <PopoverContent className="w-(--anchor-width) border-0 bg-transparent p-0 shadow-none">
-            <Calendar className="w-full" mode="range" selected={range} onSelect={handleRange} />
+            <Calendar
+              className="w-full"
+              mode="range"
+              locale={locale}
+              selected={range}
+              onSelect={handleRange}
+            />
           </PopoverContent>
         </Popover>
 
         {rangeLabel ? (
           <FieldClear
-            label="Clear dates"
+            label={t("clearDates")}
             className="right-3"
             onClear={() => handleRange(undefined)}
           />
@@ -129,12 +139,15 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
 
       <div className="md:col-span-2 xl:col-span-1">
         <MultiSelect
-          options={BOAT_TYPES}
+          options={options.boatTypes}
           value={draft.boatType}
           onValueChange={(next) =>
-            setDraft((current) => ({ ...current, boatType: orderedValues(BOAT_TYPES, next) }))
+            setDraft((current) => ({
+              ...current,
+              boatType: orderedValues(options.boatTypes, next),
+            }))
           }
-          placeholder="Any boat"
+          placeholder={t("anyBoat")}
           icon={<Sailboat className="size-6 shrink-0 text-foreground" />}
         />
       </div>
@@ -146,7 +159,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
         className="w-full md:col-span-2 xl:col-span-1"
       >
         <Search />
-        Search
+        {t("search")}
       </Button>
     </form>
   );

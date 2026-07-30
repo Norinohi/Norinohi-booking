@@ -1,24 +1,22 @@
+import { hasLocale } from "next-intl";
 import { getRequestConfig } from "next-intl/server";
 import { cookies } from "next/headers";
 
-/*
- * i18n request config (next-intl, App Router, no i18n routing).
- * Locale comes from a `locale` cookie, defaulting to English — no URL prefix, so the
- * feature-module route groups stay untouched. A language switcher (e.g. behind the nav
- * Globe icon) sets the cookie; add locales by dropping a `messages/<locale>.json` file.
- */
-export const locales = ["en", "uk"] as const;
-export const defaultLocale = "en";
-export type Locale = (typeof locales)[number];
+import { defaultLocale, LOCALE_COOKIE, locales } from "./config";
+import { formats } from "./formats";
 
+/*
+ * Locale comes from a cookie rather than a URL prefix, so the feature-module route groups
+ * stay untouched and no middleware is needed. Add a locale by extending `locales` in
+ * ./config and dropping a matching `messages/<locale>.json`.
+ */
 export default getRequestConfig(async () => {
-  const cookieLocale = (await cookies()).get("locale")?.value;
-  const locale = (locales as readonly string[]).includes(cookieLocale ?? "")
-    ? (cookieLocale as Locale)
-    : defaultLocale;
+  const requested = (await cookies()).get(LOCALE_COOKIE)?.value;
+  const locale = hasLocale(locales, requested) ? requested : defaultLocale;
 
   return {
     locale,
+    formats,
     messages: (await import(`../../messages/${locale}.json`)).default,
   };
 });

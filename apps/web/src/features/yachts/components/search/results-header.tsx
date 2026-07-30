@@ -9,22 +9,14 @@ import {
   SelectValue,
 } from "@yacht-charter/ui/components/form/select";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useTranslations } from "next-intl";
 
 import type { FilterChip } from "@/components/shared/filters";
 
-export const SORT_OPTIONS = [
-  { value: "recommended", label: "Recommended" },
-  { value: "price-asc", label: "Price: low to high" },
-  { value: "price-desc", label: "Price: high to low" },
-  { value: "rating", label: "Guest rating" },
-  { value: "newest", label: "Newest first" },
-] as const;
+/* Values only — sorting is query state, so a language change must never rewrite it. */
+export const SORT_OPTIONS = ["recommended", "price-asc", "price-desc", "rating", "newest"] as const;
 
-export type SortValue = (typeof SORT_OPTIONS)[number]["value"];
-
-const SORT_LABELS: Record<string, string> = Object.fromEntries(
-  SORT_OPTIONS.map(({ value, label }) => [value, label]),
-);
+export type SortValue = (typeof SORT_OPTIONS)[number];
 
 export type ResultsHeaderProps = {
   chips: FilterChip[];
@@ -43,6 +35,8 @@ export default function ResultsHeader({
   onSortChange,
   className,
 }: ResultsHeaderProps) {
+  const t = useTranslations("Common");
+
   return (
     <div
       className={cn("flex flex-col gap-4 md:flex-row md:items-start md:justify-between", className)}
@@ -55,7 +49,7 @@ export default function ResultsHeader({
                 key={chip.id}
                 variant="outline"
                 onRemove={() => onRemoveChip(chip)}
-                removeLabel={`Remove filter ${chip.label}`}
+                removeLabel={t("removeFilter", { label: chip.label })}
               >
                 {chip.label}
               </Chip>
@@ -63,7 +57,9 @@ export default function ResultsHeader({
           </div>
         ) : null}
 
-        <p className="text-sm font-medium leading-[1.3] text-natural-500">{total} yachts found</p>
+        <p className="text-sm font-medium leading-[1.3] text-natural-500">
+          {t("resultsCount", { count: total })}
+        </p>
       </div>
 
       <div className="md:shrink-0">
@@ -72,12 +68,14 @@ export default function ResultsHeader({
           onValueChange={(next) => onSortChange((next ?? "recommended") as SortValue)}
         >
           <SelectTrigger className="h-12 w-full md:w-auto md:min-w-57">
-            <SelectValue>{(value) => `Sort by: ${SORT_LABELS[value as string]}`}</SelectValue>
+            <SelectValue>
+              {(value) => t("sorting.label", { value: t(`sorting.${value as SortValue}`) })}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {SORT_OPTIONS.map(({ value, label }) => (
+            {SORT_OPTIONS.map((value) => (
               <SelectItem key={value} value={value}>
-                {label}
+                {t(`sorting.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>

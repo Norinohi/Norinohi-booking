@@ -4,6 +4,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Accordion } from "@yacht-charter/ui/components/layout/accordion";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useTranslations } from "next-intl";
 import type { FormEvent } from "react";
 
 import { countActiveFilters, DEFAULT_FILTERS, type FiltersState } from "../lib/state";
@@ -30,6 +31,7 @@ export default function FiltersPanel({
   className,
   scrollable = false,
 }: FiltersPanelProps) {
+  const t = useTranslations("Filters");
   const [draft, setDraft] = useDraft(value);
   const draftCount = countActiveFilters(draft);
 
@@ -57,13 +59,13 @@ export default function FiltersPanel({
 
       <div className="flex flex-col items-center justify-center gap-2 bg-natural-50 p-4">
         <p className="w-full text-center text-xl font-bold leading-[1.3] text-foreground">
-          Need help?
+          {t("needHelp")}
         </p>
         <button
           type="button"
           className="w-full rounded-lg px-1 py-1.5 font-bold leading-[1.4] text-natural-500 underline underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
         >
-          Contact a charter expert
+          {t("contactExpert")}
         </button>
       </div>
     </>
@@ -79,14 +81,14 @@ export default function FiltersPanel({
     >
       <div className="flex shrink-0 items-center gap-3 border-b border-border p-4">
         <h2 className="flex-1 text-xl font-bold leading-[1.3] text-natural-700">
-          All filters ({draftCount})
+          {t("title", { count: draftCount })}
         </h2>
         <button
           type="button"
           onClick={() => setDraft(DEFAULT_FILTERS)}
           className="rounded-lg px-1 py-1.5 leading-[1.4] font-bold underline underline-offset-2 outline-none hover:text-natural-500 focus-visible:ring-2 focus-visible:ring-ring/40"
         >
-          Clear all
+          {t("clearAll")}
         </button>
       </div>
 
@@ -94,7 +96,7 @@ export default function FiltersPanel({
 
       <div className="shrink-0 border-t border-border bg-background p-4 shadow-[4px_-4px_10px_rgba(0,0,0,0.1)]">
         <Button type="submit" variant="brand" size="md" className="w-full capitalize">
-          Apply Filters ({draftCount})
+          {t("apply", { count: draftCount })}
         </Button>
       </div>
     </form>

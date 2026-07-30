@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/but
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowLeft, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
@@ -15,9 +16,10 @@ import {
   FiltersPanel,
   FiltersPopover,
   type FiltersState,
-  getFilterChips,
+  useFilterChips,
 } from "@/components/shared/filters";
 
+import { useBoatCards } from "../../hooks/use-boat-cards";
 import { type SampleBoat, SAMPLE_BOATS } from "../../lib/sample-boats";
 
 import MapBoatPopup from "./map-boat-popup";
@@ -35,13 +37,21 @@ for (const boat of SAMPLE_BOATS) {
   if (!BOAT_BY_MARINA.has(boat.marina.id)) BOAT_BY_MARINA.set(boat.marina.id, boat);
 }
 
-function CloseListButton({ onClick, className }: { onClick: () => void; className?: string }) {
+function CloseListButton({
+  onClick,
+  label,
+  className,
+}: {
+  onClick: () => void;
+  label: string;
+  className?: string;
+}) {
   return (
     <Button
       type="button"
       variant="neutral"
       size="icon"
-      aria-label="Close list"
+      aria-label={label}
       onClick={onClick}
       className={cn(
         "pointer-events-auto size-12 shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:size-11",
@@ -59,7 +69,10 @@ export default function MapScreen() {
   const [selectedMarina, setSelectedMarina] = useState<string | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
 
-  const chips = getFilterChips(filters);
+  const t = useTranslations("YachtsMap");
+  const common = useTranslations("Common");
+  const { toMapCard } = useBoatCards();
+  const chips = useFilterChips(filters);
   const selectedBoat = selectedMarina ? BOAT_BY_MARINA.get(selectedMarina) : undefined;
 
   function removeChip(chip: FilterChip) {
@@ -71,7 +84,7 @@ export default function MapScreen() {
       <div className="px-4 py-3 md:px-13.5 2xl:px-[70px]">
         <Link href="/yachts" className={buttonVariants({ variant: "subtle", size: "sm" })}>
           <ArrowLeft />
-          Back To Search
+          {t("backToSearch")}
         </Link>
       </div>
 
@@ -92,7 +105,7 @@ export default function MapScreen() {
             <MapBoatPopup
               key={selectedMarina}
               coordinates={selectedBoat.marina.coordinates}
-              boat={selectedBoat}
+              boat={toMapCard(selectedBoat)}
               map={map}
             />
           ) : null}
@@ -128,10 +141,14 @@ export default function MapScreen() {
                   listOpen && "2xl:hidden",
                 )}
               >
-                Show all list
+                {t("showAllList")}
               </Button>
               {listOpen ? (
-                <CloseListButton onClick={() => setListOpen(false)} className="md:hidden" />
+                <CloseListButton
+                  onClick={() => setListOpen(false)}
+                  label={t("closeList")}
+                  className="md:hidden"
+                />
               ) : null}
             </div>
 
@@ -142,7 +159,7 @@ export default function MapScreen() {
                     key={chip.id}
                     variant="outline"
                     onRemove={() => removeChip(chip)}
-                    removeLabel={`Remove filter ${chip.label}`}
+                    removeLabel={common("removeFilter", { label: chip.label })}
                     className="bg-card"
                   >
                     {chip.label}
@@ -157,6 +174,7 @@ export default function MapScreen() {
               <MapListPanel className="pointer-events-auto max-h-full" />
               <CloseListButton
                 onClick={() => setListOpen(false)}
+                label={t("closeList")}
                 className="hidden md:inline-flex"
               />
             </div>

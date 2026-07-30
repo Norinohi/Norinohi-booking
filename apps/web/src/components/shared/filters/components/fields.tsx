@@ -17,6 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@yacht-charter/ui/components/layout/accordion";
+import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
 import { labelOf, type Option, orderedValues } from "../lib/options";
@@ -104,6 +105,7 @@ export function SelectField({
   clearTo?: string;
   className?: string;
 }) {
+  const t = useTranslations("Filters");
   const resetTo = clearTo ?? options[0]?.value;
   const canClear = clearable && resetTo !== undefined && value !== resetTo;
 
@@ -114,7 +116,7 @@ export function SelectField({
           aria-label={ariaLabel}
           className="h-12 w-full min-w-0"
           clearable={canClear}
-          clearLabel={label ? `Clear ${label}` : "Clear selection"}
+          clearLabel={label ? t("clearField", { label }) : t("clearSelection")}
           onClear={canClear ? () => onChange(resetTo) : undefined}
         >
           <SelectValue>{(current) => labelOf(options, current as string)}</SelectValue>
@@ -184,6 +186,7 @@ export function RangeField({
   icon?: ReactNode;
   showScale?: boolean;
 }) {
+  const t = useTranslations("Filters");
   const show = (n: number) => (format ? format(n) : String(n));
 
   return (
@@ -202,7 +205,7 @@ export function RangeField({
         </span>
         {unit ? (
           <UnitSelect
-            ariaLabel={`${label} unit`}
+            ariaLabel={t("unitAria", { label })}
             value={unit.value}
             options={unit.options}
             onChange={unit.onChange}

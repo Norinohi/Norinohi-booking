@@ -18,9 +18,18 @@ type StepIndicatorProps = Omit<React.ComponentProps<"div">, "children"> & {
   current: number;
   /** Hide the "Step X of Y" label, or pass a render fn to customise it. */
   label?: boolean | ((current: number, total: number) => React.ReactNode);
+  /** Accessible name for the progress bar; defaults to the English "Step X of Y". */
+  progressLabel?: string;
 };
 
-function StepIndicator({ total, current, label = true, className, ...props }: StepIndicatorProps) {
+function StepIndicator({
+  total,
+  current,
+  label = true,
+  progressLabel,
+  className,
+  ...props
+}: StepIndicatorProps) {
   const clamped = Math.max(0, Math.min(current, total));
   return (
     <div
@@ -33,7 +42,7 @@ function StepIndicator({ total, current, label = true, className, ...props }: St
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={clamped}
-        aria-label={`Step ${clamped} of ${total}`}
+        aria-label={progressLabel ?? `Step ${clamped} of ${total}`}
         className="flex w-full gap-4"
       >
         {Array.from({ length: total }, (_, i) => (

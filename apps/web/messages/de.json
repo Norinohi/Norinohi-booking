@@ -1,0 +1,588 @@
+{
+  "Common": {
+    "resultsCount": "{count, plural, one {# Yacht gefunden} other {# Yachten gefunden}}",
+    "removeFilter": "Filter {label} entfernen",
+    "sorting": {
+      "label": "Sortieren nach: {value}",
+      "recommended": "Empfohlen",
+      "price-asc": "Preis: aufsteigend",
+      "price-desc": "Preis: absteigend",
+      "rating": "Gästebewertung",
+      "newest": "Neueste zuerst"
+    },
+    "boatCard": {
+      "save": "Zur Merkliste hinzufügen",
+      "viewDetails": "Details ansehen",
+      "imageAlt": "{name} vertäut in {marina}",
+      "priceFor": "Preis für {days, plural, one {# Tag} other {# Tage}}",
+      "perPerson": "{price} pro Person",
+      "perPersonApprox": "~ {price} pro Person",
+      "prepayment": "Anzahlung: {amount}",
+      "prepaymentInfo": "Dies ist eine erstattungsfähige Kaution für den Fall von Schäden während Ihrer Reise. Sie erhalten sie nach dem Check-out zurück, wenn alles in Ordnung ist.",
+      "specs": {
+        "year": "Baujahr",
+        "people": "Personen",
+        "toilets": "WCs",
+        "baths": "Bäder",
+        "mainsail": "Großsegel-Typ",
+        "cabins": "Kabinen",
+        "length": "Länge"
+      },
+      "battenMainsail": "Lattengroßsegel",
+      "badges": {
+        "bestForFamilies": "Ideal für Familien",
+        "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "new": "Neu",
+        "discount": "{percent}% RABATT"
+      },
+      "stats": {
+        "booked": "{count}-mal diesen Monat gebucht",
+        "viewed": "{count} Personen haben heute angesehen"
+      },
+      "amenities": {
+        "wifi": "Kostenloses WLAN",
+        "solar": "3 Solarpaneele",
+        "paddle": "Kostenloses Stand-up-Paddle",
+        "air": "Klimaanlage",
+        "waterToys": "Wasserspielzeug",
+        "galley": "Voll ausgestattete Pantry",
+        "fridge": "Kühl- und Gefrierschrank",
+        "tender": "Beiboot mit Außenborder"
+      },
+      "charterTypes": {
+        "bareboat": "Bareboat",
+        "bareboatSailingYacht": "Bareboat-Segelyacht",
+        "catamaran": "Katamaran"
+      },
+      "crews": {
+        "fullCrew": "Volle Crew",
+        "skipperOptional": "Skipper optional"
+      }
+    },
+    "marina": {
+      "viewDetails": "Details ansehen"
+    }
+  },
+  "Filters": {
+    "title": "Alle Filter ({count})",
+    "clearAll": "Alle zurücksetzen",
+    "apply": "Filter anwenden ({count})",
+    "trigger": "Filter ({count})",
+    "needHelp": "Brauchen Sie Hilfe?",
+    "contactExpert": "Charter-Experten kontaktieren",
+    "clearField": "{label} zurücksetzen",
+    "clearSelection": "Auswahl zurücksetzen",
+    "unitAria": "Einheit für {label}",
+    "sections": {
+      "where": "Wohin?",
+      "when": "Wann?",
+      "boat": "Boot & Crew",
+      "specs": "Bootsdaten",
+      "additional": "Weitere Filter",
+      "ratings": "Bewertungen"
+    },
+    "labels": {
+      "country": "Land",
+      "sailingArea": "Segelgebiet",
+      "charterCompany": "Charterfirma",
+      "marina": "Marina",
+      "startDate": "Startdatum",
+      "duration": "Dauer",
+      "dateFlexibility": "Datumsflexibilität",
+      "boatType": "Bootstyp",
+      "model": "Modell",
+      "crew": "Crew",
+      "mainsailType": "Großsegel-Typ",
+      "equipment": "Ausstattung",
+      "length": "Länge",
+      "cabins": "Kabinen",
+      "berths": "Kojen (Schlafplätze)",
+      "bathrooms": "Bäder",
+      "price": "Preis (für gewählten Zeitraum)",
+      "boatAge": "Bootsalter",
+      "year": "Baujahr",
+      "guestRating": "Gästebewertung"
+    },
+    "placeholders": {
+      "allCountries": "Alle Länder",
+      "searchCountries": "Länder suchen...",
+      "allRegions": "Alle Regionen",
+      "allCompanies": "Alle Firmen",
+      "allMarinas": "Alle Marinas",
+      "searchMarinas": "Marinas suchen...",
+      "allBoats": "Alle Boote",
+      "allModels": "Alle Modelle",
+      "searchModels": "Modelle suchen...",
+      "anyCrew": "Beliebige Crew",
+      "allTypes": "Alle Typen",
+      "anyEquipment": "Beliebige Ausstattung",
+      "anyDate": "Beliebiges Datum"
+    },
+    "aria": {
+      "builtFrom": "Baujahr von",
+      "builtTo": "Baujahr bis"
+    },
+    "toggles": {
+      "withoutAvailabilityConfirmation": "Yachten ohne Verfügbarkeitsbestätigung anzeigen",
+      "underTemporaryBooking": "Yachten mit vorläufiger Buchung anzeigen",
+      "depositInsurance": "Kautionsversicherung inklusive",
+      "petsAllowed": "Haustiere erlaubt"
+    },
+    "units": {
+      "years": "{count, plural, one {# Jahr} other {# Jahre}}"
+    },
+    "options": {
+      "3": "3 Tage",
+      "7": "7 Tage (empfohlen)",
+      "10": "10 Tage",
+      "14": "14 Tage",
+      "2015": "2015",
+      "2018": "2018",
+      "2020": "2020",
+      "2022": "2022",
+      "2024": "2024",
+      "2025": "2025",
+      "egypt": "Ägypten",
+      "morocco": "Marokko",
+      "croatia": "Kroatien",
+      "spain": "Spanien",
+      "france": "Frankreich",
+      "italy": "Italien",
+      "portugal": "Portugal",
+      "greece": "Griechenland",
+      "norway": "Norwegen",
+      "turkey": "Türkei",
+      "montenegro": "Montenegro",
+      "dalmatia": "Dalmatien",
+      "istria": "Istrien",
+      "kvarner": "Kvarner",
+      "sunsail": "Sunsail",
+      "dream-yacht": "Dream Yacht",
+      "navigare": "Navigare",
+      "split": "Marina Split",
+      "kastela": "Marina Kaštela",
+      "trogir": "Marina Trogir",
+      "on-day": "Am Tag",
+      "1-3-days": "In 1–3 Tagen",
+      "1-week": "In 1 Woche",
+      "2-weeks": "In 2 Wochen",
+      "1-month": "In 1 Monat",
+      "sailing-yacht": "Segelyacht",
+      "catamaran": "Katamaran",
+      "gulet": "Gulet",
+      "motor-yacht": "Motoryacht",
+      "power-catamaran": "Motorkatamaran",
+      "sailboat": "Segelboot",
+      "motor-boat": "Motorboot",
+      "bavaria": "Bavaria",
+      "beneteau": "Beneteau",
+      "jeanneau": "Jeanneau",
+      "lagoon": "Lagoon",
+      "full-crew": "Volle Crew",
+      "skipper": "Nur Skipper",
+      "bareboat": "Bareboat",
+      "classic": "Klassisch",
+      "furling": "Rollsegel",
+      "lazy-bag": "Lazy Bag",
+      "air-conditioning": "Klimaanlage",
+      "generator": "Generator",
+      "bow-thruster": "Bugstrahlruder",
+      "wifi": "WLAN",
+      "ft": "ft",
+      "m": "m",
+      "any": "Baujahr"
+    },
+    "chips": {
+      "more": "{names} +{count}",
+      "none": "—",
+      "any": "beliebig",
+      "country": "Land: {value}",
+      "sailingArea": "Segelgebiet: {value}",
+      "charterCompany": "Charterfirma: {value}",
+      "marina": "Marina: {value}",
+      "startDate": "Start: {value}",
+      "duration": "Dauer: {count, plural, one {# Tag} other {# Tage}}",
+      "dateFlexibility": "Flexibilität: {value}",
+      "boatType": "Bootstyp: {value}",
+      "model": "Modell: {value}",
+      "crew": "Crew: {value}",
+      "mainsailType": "Großsegel: {value}",
+      "equipment": "Ausstattung: {value}",
+      "length": "Länge: {value}",
+      "cabins": "Kabinen: {value}",
+      "berths": "Kojen: {value}",
+      "bathrooms": "Bäder: {value}",
+      "price": "Preis: {value}",
+      "boatAge": "Alter: {value}",
+      "year": "Baujahr: {from}–{to}",
+      "withoutAvailabilityConfirmation": "Ohne Verfügbarkeitsbestätigung",
+      "underTemporaryBooking": "Mit vorläufiger Buchung",
+      "depositInsurance": "Kautionsversicherung",
+      "petsAllowed": "Haustiere erlaubt",
+      "guestRating": "Bewertung: {value}"
+    }
+  },
+  "Home": {
+    "BoatTypes": {
+      "heading": "Wählen Sie Ihren Bootstyp",
+      "items": {
+        "catamaran": {
+          "title": "Katamaran",
+          "description": "Stabil, geräumig und perfekt für Gruppen und Familien, die maximalen Komfort suchen.",
+          "imageAlt": "Katamaran segelt an einer grünen Insel in türkisfarbenem Wasser vorbei"
+        },
+        "sailingYacht": {
+          "title": "Segelyacht",
+          "description": "Das authentische Erlebnis. Ideal für alle, die die Kunst des Segelns lieben.",
+          "imageAlt": "Segelyacht unter vollen Segeln auf offener See"
+        },
+        "motorYacht": {
+          "title": "Motoryacht",
+          "description": "Schnell und luxuriös. Mehr Strecke zurücklegen und stilvoll ankommen.",
+          "imageAlt": "Weiße Motoryacht in voller Fahrt"
+        },
+        "luxuryYacht": {
+          "title": "Luxusyacht",
+          "description": "Schwimmende Villen mit voller Crew für den ultimativen maßgeschneiderten Urlaub.",
+          "imageAlt": "Superyacht vor Anker bei Sonnenuntergang"
+        }
+      }
+    },
+    "BudgetFinder": {
+      "heading": "Yachten nach Ihrem Budget finden",
+      "viewResults": "Ergebnisse ansehen",
+      "labels": {
+        "budget": "Budget pro Person",
+        "people": "Personen",
+        "skipper": "Skipper",
+        "destinations": "Reiseziele (optional)"
+      },
+      "options": {
+        "budget0To300": "0–300 €",
+        "budget300To600": "300–600 €",
+        "budget600To1000": "600–1000 €",
+        "budget1000Plus": "1000 €+",
+        "people1To2": "1-2",
+        "people2To4": "2-4",
+        "people4To6": "4-6",
+        "people6To8": "6-8",
+        "people8Plus": "8+",
+        "skipperYes": "Ja",
+        "skipperNo": "Nein",
+        "skipperOptional": "Optional",
+        "destinationsAll": "Alle Reiseziele",
+        "destinationsCroatia": "Kroatien",
+        "destinationsGreece": "Griechenland",
+        "destinationsItaly": "Italien",
+        "destinationsTurkey": "Türkei",
+        "destinationsCaribbean": "Karibik"
+      }
+    },
+    "EarnCta": {
+      "heading": "Verdienen Sie mit Ihrer Yacht",
+      "description": "Bieten Sie Ihre Yacht auf unserer Plattform an und erhalten Sie Buchungen von Reisenden weltweit. Wir kümmern uns um Sichtbarkeit, Nachfrage und Werkzeuge — Sie behalten die Kontrolle über Ihren Kalender und Ihre Preise.",
+      "cta": "Yacht inserieren"
+    },
+    "Hero": {
+      "tagline": "Über 30.000 Yachten an 1.200 Reisezielen. Charter ab 120 €/Tag",
+      "heading": "Erkunden Sie die Welt per Yacht",
+      "wherePlaceholder": "Wohin?",
+      "datesPlaceholder": "Beliebige Daten",
+      "boatPlaceholder": "Beliebiges Boot",
+      "captainPlaceholder": "Mit Skipper",
+      "search": "Suchen",
+      "dontKnow": "Sie wissen nicht, wie Sie wählen sollen?",
+      "helpPlan": "Reise planen lassen",
+      "options": {
+        "croatia": "Kroatien",
+        "greece": "Griechenland",
+        "italy": "Italien",
+        "turkey": "Türkei",
+        "caribbean": "Karibik",
+        "thailand": "Thailand",
+        "catamaran": "Katamaran",
+        "sailingYacht": "Segelyacht",
+        "motorYacht": "Motoryacht",
+        "gulet": "Gulet",
+        "luxuryYacht": "Luxusyacht",
+        "withCaptain": "Mit Skipper",
+        "bareboat": "Bareboat",
+        "skippered": "Mit Skipper gechartert"
+      },
+      "stats": {
+        "yachts": {
+          "value": "30.000+",
+          "label": "Yachten"
+        },
+        "destinations": {
+          "value": "1.200+",
+          "label": "Reiseziele"
+        },
+        "travelers": {
+          "value": "20.000+",
+          "label": "zufriedene Reisende"
+        },
+        "rating": {
+          "value": "4,8",
+          "label": "Durchschnittsbewertung"
+        }
+      }
+    },
+    "HowItWorks": {
+      "heading": "So funktioniert's",
+      "intro": "Eine Yacht zu buchen ist einfacher, als Sie denken.",
+      "introSecondLine": "Wir begleiten Sie von der Wahl des Reiseziels bis an Bord — ganz ohne Vorerfahrung.",
+      "cta": "Yachten finden",
+      "steps": {
+        "destination": {
+          "title": "Reiseziel wählen",
+          "description": "Entdecken Sie über 1.200 Segelziele weltweit. Von Kroatien bis in die Karibik — wählen Sie den Ort, der zu Ihrer Reise passt."
+        },
+        "yacht": {
+          "title": "Yacht auswählen",
+          "description": "Durchstöbern Sie Yachten nach Gruppengröße, Budget und Vorlieben. Vergleichen Sie Optionen und finden Sie die passende für Ihre Reise."
+        },
+        "book": {
+          "title": "Reise buchen",
+          "description": "Bestätigen Sie Ihre Daten, ergänzen Sie Extras und sichern Sie Ihre Buchung online. Fertig zum Ablegen."
+        }
+      }
+    },
+    "PlanTrip": {
+      "heading": "Unsicher bei der Wahl? Planen Sie Ihre perfekte Yachtreise in 30 Sekunden",
+      "cta": "Reise planen lassen",
+      "checklist": {
+        "questions": "Beantworten Sie ein paar einfache Fragen",
+        "recommendation": "Erhalten Sie eine persönliche Empfehlung",
+        "explore": "Entdecken Sie die besten Yachten für Ihre Reise"
+      },
+      "steps": {
+        "preferences": {
+          "title": "Vorlieben wählen",
+          "description": "Geben Sie Ihre Wunschziele an, von den türkisfarbenen Küsten Palawans bis zu den historischen Häfen von Valletta."
+        },
+        "recommendation": {
+          "title": "Empfehlung erhalten",
+          "description": "Wir schlagen Yachten passend zu den Bedürfnissen Ihrer Gruppe vor. Prüfen Sie unsere Empfehlungen und wählen Sie die perfekte Yacht."
+        },
+        "yachts": {
+          "title": "Yachten ansehen",
+          "description": "Klären Sie die Details, ergänzen Sie Extras und buchen Sie. Nun können Sie sich auf Ihr unvergessliches Yachtabenteuer freuen."
+        }
+      }
+    },
+    "PopularDestinations": {
+      "heading": "Beliebte Reiseziele",
+      "previous": "Vorherige Reiseziele",
+      "next": "Nächste Reiseziele",
+      "seeAll": "Alle Reiseziele ansehen",
+      "fromPerPerson": "Ab {price} / pro Person",
+      "items": {
+        "croatia": {
+          "title": "Kroatien",
+          "imageAlt": "Türkisfarbene, von Klippen gesäumte Bucht an der kroatischen Küste"
+        },
+        "greece": {
+          "title": "Griechenland",
+          "imageAlt": "Buntes Hafendorf auf einer griechischen Insel"
+        },
+        "caribbean": {
+          "title": "Karibik",
+          "imageAlt": "Luftaufnahme eines tropischen Inselstrands in der Karibik"
+        },
+        "italy": {
+          "title": "Italien",
+          "imageAlt": "Klippenstädtchen an der Amalfiküste in Italien"
+        },
+        "montenegro": {
+          "title": "Montenegro",
+          "imageAlt": "Geschützte Adriabucht an der montenegrinischen Küste"
+        }
+      }
+    },
+    "PopularYachts": {
+      "heading": "Beliebte Yachten",
+      "previous": "Vorherige Yachten",
+      "next": "Nächste Yachten",
+      "seeAll": "Alle Yachten ansehen",
+      "from": "Ab",
+      "viewDetails": "Details ansehen",
+      "perDay": "/ pro Tag",
+      "tags": {
+        "bareboat": "Bareboat",
+        "fullCrew": "Volle Crew"
+      },
+      "items": {
+        "lagoon42": {
+          "location": "Split, Kroatien",
+          "imageAlt": "Katamaran Lagoon 42 vor Split vertäut"
+        },
+        "bavariaC42": {
+          "location": "Athen, Griechenland",
+          "imageAlt": "Segelyacht Bavaria C42 nahe Athen"
+        },
+        "sunseeker65": {
+          "location": "Ibiza, Spanien",
+          "imageAlt": "Motoryacht Sunseeker 65 vor Ibiza"
+        },
+        "bali46": {
+          "location": "Palma, Spanien",
+          "imageAlt": "Katamaran Bali 4.6 vor Anker nahe Palma"
+        },
+        "fountainePajot45": {
+          "location": "Dubrovnik, Kroatien",
+          "imageAlt": "Katamaran Fountaine Pajot 45 vor Dubrovnik"
+        }
+      }
+    },
+    "SailingRoutes": {
+      "heading": "Beliebte Segelrouten",
+      "allRoutes": "Alle Routen",
+      "exploreRoute": "Route entdecken",
+      "days": "{count, plural, one {# Tag} other {# Tage}}",
+      "levels": {
+        "easy": "Leicht",
+        "moderate": "Mittel",
+        "advanced": "Anspruchsvoll"
+      },
+      "items": {
+        "dalmatianCoast": {
+          "title": "Dalmatinische Küste",
+          "description": "Entdecken Sie die versteckten Buchten von Brač, das lebendige Nachtleben von Hvar und die stille Schönheit von Vis.",
+          "imageAlt": "Segelyacht ankert in einer bewaldeten dalmatinischen Bucht"
+        },
+        "greekCyclades": {
+          "title": "Griechische Kykladen",
+          "description": "Segeln Sie durch das Herz der Ägäis, vom kosmopolitischen Mykonos bis zum atemberaubenden Santorin.",
+          "imageAlt": "Weiß getünchte Kapelle über einer griechischen Inselbucht"
+        },
+        "amalfiCoast": {
+          "title": "Amalfiküste",
+          "description": "Fahren Sie an den Klippen von Positano und den Grotten von Capri entlang der glamourösesten Küste Italiens.",
+          "imageAlt": "Kuppel der Kathedrale von Positano über der Amalfiküste"
+        }
+      }
+    },
+    "Testimonials": {
+      "heading": "Das sagen unsere Kunden",
+      "allReviews": "Alle Bewertungen",
+      "items": {
+        "weber": {
+          "quote": "Wir haben zum ersten Mal eine Yacht in Kroatien gebucht und alles hat einfach funktioniert. Der Ablauf war unkompliziert und das Boot genau wie erwartet.",
+          "location": "Deutschland"
+        },
+        "martin": {
+          "quote": "Ich hatte keinerlei Segelerfahrung, aber über die Plattform ließen sich Skipper und Reiseplanung ganz leicht organisieren. Es fühlte sich an wie ein normaler Urlaub, nur besser.",
+          "location": "Frankreich"
+        },
+        "carter": {
+          "quote": "Die Preistransparenz war die größte Überraschung. Wir konnten die Gesamtkosten vorab sehen und unter Freunden aufteilen — sehr praktisch.",
+          "location": "Vereinigtes Königreich"
+        },
+        "rossi": {
+          "quote": "Wir haben einige Yachten verglichen und die perfekte für unsere Gruppe gefunden. Die Routenvorschläge waren wirklich hilfreich — wir mussten nichts selbst planen.",
+          "location": "Italien"
+        },
+        "kowalska": {
+          "quote": "Große Bootsauswahl und sehr übersichtliche Filter. Wir haben in wenigen Minuten genau das Passende gefunden.",
+          "location": "Polen"
+        },
+        "jensen": {
+          "quote": "Von der Buchung bis zum Ablegen lief alles mühelos. Klare Kommunikation, keine versteckten Kosten und ein Boot, das in echt noch besser aussah.",
+          "location": "Dänemark"
+        }
+      }
+    }
+  },
+  "Layout": {
+    "Footer": {
+      "tagline": "Erkunden Sie die Welt per Yacht.",
+      "description": "Über 30.000 Boote weltweit warten auf Ihre nächste Reise.",
+      "columns": {
+        "destinations": "Reiseziele",
+        "charterTypes": "Charterarten",
+        "explore": "Entdecken"
+      },
+      "links": {
+        "croatia": "Kroatien",
+        "greece": "Griechenland",
+        "italy": "Italien",
+        "turkey": "Türkei",
+        "caribbean": "Karibik",
+        "thailand": "Thailand",
+        "catamaran": "Katamaran",
+        "sailingYacht": "Segelyacht",
+        "motorYacht": "Motoryacht",
+        "bareboat": "Bareboat",
+        "skippered": "Mit Skipper",
+        "planTrip": "Reise planen lassen",
+        "popularYachts": "Beliebte Yachten",
+        "customerReviews": "Kundenstimmen",
+        "howItWorks": "So funktioniert's"
+      },
+      "privacy": "Datenschutz",
+      "terms": "AGB",
+      "copyright": "© {year} YachtCharter Platform. Alle Rechte vorbehalten."
+    },
+    "Nav": {
+      "destinations": "Reiseziele",
+      "boatTypes": "Bootstypen",
+      "findByBudget": "Nach Budget suchen",
+      "tryIt": "Testen",
+      "popularRoutes": "Beliebte Routen",
+      "helpPlan": "Reise planen lassen",
+      "findYacht": "Yacht finden",
+      "saved": "Gespeichert",
+      "language": "Sprache",
+      "openMenu": "Menü öffnen",
+      "closeMenu": "Menü schließen"
+    },
+    "Sidebar": {
+      "menu": "Kontomenü",
+      "greeting": "Hallo, {name}!",
+      "profile": "Mein Profil",
+      "bookings": "Meine Buchungen",
+      "referrals": "Empfehlungen",
+      "discount": "Rabattverwaltung",
+      "logout": "Abmelden"
+    },
+    "UserMenu": {
+      "account": "Konto",
+      "signIn": "Anmelden",
+      "signOut": "Abmelden",
+      "theme": "Design",
+      "light": "Hell",
+      "dark": "Dunkel",
+      "system": "System"
+    }
+  },
+  "PlanMyTrip": {
+    "title": "Reise planen lassen",
+    "close": "Planer schließen",
+    "progress": "Schritt {current} von {total}",
+    "stepHeading": "Schritt {current}",
+    "placeholder": "Die Frage und ihre Optionen erscheinen hier im nächsten Schritt.",
+    "back": "Zurück",
+    "next": "Weiter"
+  },
+  "Yachts": {
+    "searchByMap": "Auf der Karte suchen",
+    "emptyTitle": "Keine Yachten für Ihre Filter gefunden",
+    "emptyDescription": "Passen Sie Datum, Budget oder Ort an — wir helfen Ihnen, das Passende zu finden.",
+    "searchBar": {
+      "location": "Ort",
+      "searchCountries": "Länder suchen...",
+      "addDates": "Daten wählen",
+      "clearDates": "Daten löschen",
+      "anyBoat": "Beliebiges Boot",
+      "search": "Suchen"
+    }
+  },
+  "YachtsMap": {
+    "title": "Yachten auf der Karte",
+    "backToSearch": "Zurück zur Suche",
+    "showAllList": "Ganze Liste anzeigen",
+    "closeList": "Liste schließen",
+    "marker": "Marina {name}"
+  }
+}

@@ -1,40 +1,45 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { MultiSelectField, Section, type SectionProps } from "../fields";
-import { CHARTER_COMPANIES, COUNTRIES, MARINAS, SAILING_AREAS } from "../../lib/options";
+import { useFilterOptions } from "../../hooks/use-filter-options";
 
 export default function WhereSection({ value, set }: SectionProps) {
+  const t = useTranslations("Filters");
+  const options = useFilterOptions();
+
   return (
-    <Section value="where" title="Where to?">
+    <Section value="where" title={t("sections.where")}>
       <MultiSelectField
-        label="Country"
-        options={COUNTRIES}
+        label={t("labels.country")}
+        options={options.countries}
         value={value.country}
         onChange={(next) => set("country", next)}
-        placeholder="All countries"
-        searchPlaceholder="Search Countries..."
+        placeholder={t("placeholders.allCountries")}
+        searchPlaceholder={t("placeholders.searchCountries")}
       />
       <MultiSelectField
-        label="Sailing Area"
-        options={SAILING_AREAS}
+        label={t("labels.sailingArea")}
+        options={options.sailingAreas}
         value={value.sailingArea}
         onChange={(next) => set("sailingArea", next)}
-        placeholder="All regions"
+        placeholder={t("placeholders.allRegions")}
       />
       <MultiSelectField
-        label="Charter Company"
-        options={CHARTER_COMPANIES}
+        label={t("labels.charterCompany")}
+        options={options.charterCompanies}
         value={value.charterCompany}
         onChange={(next) => set("charterCompany", next)}
-        placeholder="All companies"
+        placeholder={t("placeholders.allCompanies")}
       />
       <MultiSelectField
-        label="Marina"
-        options={MARINAS}
+        label={t("labels.marina")}
+        options={options.marinas}
         value={value.marina}
         onChange={(next) => set("marina", next)}
-        placeholder="All marinas"
-        searchPlaceholder="Search Marinas..."
+        placeholder={t("placeholders.allMarinas")}
+        searchPlaceholder={t("placeholders.searchMarinas")}
       />
     </Section>
   );
