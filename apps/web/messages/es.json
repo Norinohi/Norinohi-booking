@@ -572,6 +572,13 @@
     "back": "Atrás",
     "next": "Siguiente"
   },
+  "YachtDetail": {
+    "backToSearch": "Volver a la búsqueda",
+    "breadcrumbSearch": "Búsqueda",
+    "share": "Compartir",
+    "seeOnMap": "Ver en el mapa",
+    "addToWishlist": "Añadir a favoritos"
+  },
   "Yachts": {
     "searchByMap": "Buscar en el mapa",
     "emptyTitle": "No se han encontrado yates para tus filtros",

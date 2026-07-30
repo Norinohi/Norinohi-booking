@@ -572,6 +572,13 @@
     "back": "Назад",
     "next": "Далі"
   },
+  "YachtDetail": {
+    "backToSearch": "Назад до пошуку",
+    "breadcrumbSearch": "Пошук",
+    "share": "Поділитися",
+    "seeOnMap": "Показати на карті",
+    "addToWishlist": "Додати в обране"
+  },
   "Yachts": {
     "searchByMap": "Пошук на карті",
     "emptyTitle": "За вашими фільтрами яхт не знайдено",

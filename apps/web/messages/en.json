@@ -572,6 +572,13 @@
     "back": "Back",
     "next": "Next"
   },
+  "YachtDetail": {
+    "backToSearch": "Back to search",
+    "breadcrumbSearch": "Search",
+    "share": "Share",
+    "seeOnMap": "See on map",
+    "addToWishlist": "Add to wishlist"
+  },
   "Yachts": {
     "searchByMap": "Search by map",
     "emptyTitle": "No yachts found for your filters",
