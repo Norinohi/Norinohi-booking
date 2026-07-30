@@ -89,6 +89,7 @@ function CarouselNav() {
 
 export default function PopularYachts() {
   const t = useTranslations("Home.PopularYachts");
+  const tCard = useTranslations("Common.boatCard");
   const format = useFormatter();
   const tags = [
     { label: t("tags.bareboat"), icon: <Anchor /> },
@@ -116,6 +117,7 @@ export default function PopularYachts() {
                   className="w-full"
                   image={yacht.image}
                   imageAlt={t(`items.${yacht.key}.imageAlt`)}
+                  saveLabel={tCard("save")}
                   location={t(`items.${yacht.key}.location`)}
                   title={yacht.title}
                   rating={yacht.rating}
