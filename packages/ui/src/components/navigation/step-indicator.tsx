@@ -7,6 +7,9 @@ import { cn } from "@yacht-charter/ui/lib/utils";
  * A full-width segmented progress bar: `total` equal pill segments, the first
  * `current` filled brand (#2f80ed) and the rest natural-100, with a brand
  * "Step X of Y" label (Body xl) below. Used across the multi-step booking flow.
+ * Each segment is a natural-100 track clipping a brand fill that scales from its
+ * left edge, so advancing a step grows only that segment and going back drains it.
+ * The transition never runs on first paint, since the initial scale is already final.
  */
 type StepIndicatorProps = Omit<React.ComponentProps<"div">, "children"> & {
   /** Total number of steps. */
@@ -37,8 +40,10 @@ function StepIndicator({ total, current, label = true, className, ...props }: St
           <span
             key={i}
             data-active={i < clamped || undefined}
-            className={cn("h-1.5 flex-1 rounded-full", i < clamped ? "bg-brand" : "bg-natural-100")}
-          />
+            className="group h-1.5 flex-1 overflow-hidden rounded-full bg-natural-100"
+          >
+            <span className="block h-full origin-left scale-x-0 rounded-full bg-brand transition-transform duration-500 ease-out group-data-active:scale-x-100 motion-reduce:transition-none" />
+          </span>
         ))}
       </div>
       {label !== false && (
