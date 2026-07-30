@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@yacht-charter/ui/components/form/select";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { CalendarDays, MapPin, Sailboat, Search, Users } from "lucide-react";
+import { Calendar, MapPin, Search, Ship, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
@@ -67,7 +67,7 @@ function SearchCard() {
   const t = useTranslations("Home.Hero");
 
   return (
-    <div className="mx-auto w-full max-w-[489px] shrink-0 rounded-2xl bg-card p-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)] 2xl:mx-0 2xl:w-[438px]">
+    <div className="mx-auto w-full max-w-[489px] shrink-0 rounded-2xl bg-card p-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)] xl:mx-0 xl:w-[438px]">
       <div className="flex flex-col gap-4">
         <HeroSelect
           icon={<MapPin className="size-6 shrink-0 text-foreground" />}
@@ -80,12 +80,12 @@ function SearchCard() {
           type="button"
           className="group flex h-12 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         >
-          <CalendarDays className="size-6 shrink-0 text-foreground" />
+          <Calendar className="size-6 shrink-0 text-foreground" />
           <span className="truncate text-natural-300">{t("datesPlaceholder")}</span>
         </button>
 
         <HeroSelect
-          icon={<Sailboat className="size-6 shrink-0 text-foreground" />}
+          icon={<Ship className="size-6 shrink-0 text-foreground" />}
           placeholder={t("boatPlaceholder")}
           options={BOAT_TYPES}
         />
@@ -107,7 +107,7 @@ function SearchCard() {
         </Button>
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center gap-x-2 gap-y-1 text-base">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-base md:justify-start md:text-left">
         <span className="text-natural-600">{t("dontKnow")}</span>
         <Link
           href="/yachts"
@@ -124,20 +124,22 @@ function StatsBar() {
   const t = useTranslations("Home.Hero.stats");
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] rounded-2xl bg-black/15 backdrop-blur-md">
-      <div className="grid grid-cols-2 md:grid-cols-4">
+    <div className="mx-auto w-full max-w-[1160px] rounded-2xl bg-black/15 py-6 backdrop-blur-md md:py-0">
+      <div className="grid grid-cols-2 gap-y-4 md:grid-cols-4 md:gap-y-0">
         {STATS.map((stat, index) => (
           <div
             key={stat}
             className={cn(
-              "flex flex-col items-center gap-2 px-2 py-6 2xl:px-6 text-center text-white",
+              "flex flex-col items-center gap-2 py-0 text-center text-white md:px-2 md:py-6 xl:px-6",
+              index % 2 === 0 ? "pr-2" : "pl-2",
+              index % 2 === 1 && "border-l border-white/20",
               index > 0 && "md:border-l md:border-white/20",
             )}
           >
-            <span className="text-2xl leading-[1.1] font-medium md:text-[32px]">
+            <span className="text-[28px] leading-[1.1] font-medium md:text-[32px]">
               {t(`${stat}.value`)}
             </span>
-            <span className="text-base leading-[1.1] text-white/90 md:text-xl">
+            <span className="text-base leading-[1.4] text-white/90 md:text-xl md:leading-[1.1]">
               {t(`${stat}.label`)}
             </span>
           </div>
@@ -162,11 +164,11 @@ export default function Hero() {
       />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />
 
-      <div className="relative z-10 mx-auto flex min-h-[560px] max-w-[1536px] flex-col gap-8 px-4 pt-12 pb-[60px] md:px-[54px] md:pt-[70px] md:pb-[65px] 2xl:min-h-[760px] 2xl:gap-10 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[60px]">
-        <div className="flex flex-1 flex-col items-center gap-8 2xl:flex-row 2xl:items-start 2xl:justify-between 2xl:gap-10">
-          <div className="flex w-full max-w-[659px] flex-col gap-3 text-center text-white 2xl:w-auto 2xl:max-w-[450px] 2xl:text-left">
+      <div className="relative z-10 mx-auto flex min-h-[560px] flex-col gap-8 px-4 pt-10 pb-10 md:px-[54px] md:pt-[70px] md:pb-[65px] xl:min-h-[760px] xl:gap-10 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
+        <div className="flex flex-1 flex-col items-center gap-8 xl:flex-row xl:items-start xl:justify-between xl:gap-10">
+          <div className="flex w-full max-w-[659px] flex-col gap-3 text-center text-white xl:w-auto xl:max-w-[450px] xl:text-left">
             <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
-            <h1 className="text-4xl leading-[1.1] font-bold md:text-[64px] 2xl:text-[64px]">
+            <h1 className="text-[50px] leading-[1.1] font-bold md:text-[64px] xl:text-[64px]">
               {t("heading")}
             </h1>
           </div>

@@ -97,10 +97,10 @@ export default function PopularYachts() {
 
   return (
     <section className="bg-brand-50">
-      <div className="mx-auto max-w-[1536px] px-4 py-[60px] md:px-[54px] md:pt-[70px] md:pb-[69px] 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[100px]">
+      <div className="mx-auto px-4 pt-10 pb-10 md:px-[54px] md:pt-[70px] md:pb-[69px] xl:px-[70px] xl:pt-[100px] xl:pb-[100px]">
         <Carousel options={{ align: "start", containScroll: "trimSnaps" }}>
-          <div className="mb-8 flex items-center justify-between gap-4 2xl:mb-10">
-            <h2 className="text-[32px] leading-[1.1] font-medium md:text-[50px] 2xl:text-[50px]">
+          <div className="mb-8 flex flex-col items-center gap-4 md:flex-row md:justify-between xl:mb-10">
+            <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px] xl:text-[50px]">
               {t("heading")}
             </h2>
             <CarouselNav />
@@ -110,7 +110,7 @@ export default function PopularYachts() {
             {POPULAR_YACHTS.map((yacht) => (
               <CarouselSlide
                 key={yacht.key}
-                className="basis-[280px] pr-4 md:basis-[354px] md:pr-5 2xl:basis-[354px] 2xl:pr-5"
+                className="basis-[342px] pr-2 md:basis-[354px] md:pr-5 xl:basis-[354px] xl:pr-5"
               >
                 <BoatSmallCard
                   className="w-full"
@@ -130,8 +130,14 @@ export default function PopularYachts() {
           </CarouselViewport>
         </Carousel>
 
-        <div className="mt-8 flex justify-center 2xl:mt-10">
-          <Button variant="neutral" size="md" nativeButton={false} render={<Link href="/yachts" />}>
+        <div className="mt-8 flex justify-center xl:mt-10">
+          <Button
+            variant="neutral"
+            size="md"
+            className="w-full md:w-auto"
+            nativeButton={false}
+            render={<Link href="/yachts" />}
+          >
             {t("seeAll")}
             <ArrowUpRight />
           </Button>

@@ -19,14 +19,17 @@ export default function PlanTrip() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-8 px-4 py-[60px] md:px-[54px] md:pt-[70px] md:pb-[49px] 2xl:flex-row 2xl:items-start 2xl:justify-between 2xl:gap-16 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[60px]">
+      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-[54px] md:pt-[70px] md:pb-[49px] xl:max-w-[1536px] xl:flex-row xl:items-start xl:justify-between xl:gap-16 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
         {/* Left — headline, checklist, CTA */}
-        <div className="flex flex-col gap-6 2xl:max-w-[544px]">
-          <h2 className="text-h2 text-foreground">{t("heading")}</h2>
+        <div className="flex flex-col gap-6 xl:max-w-[544px]">
+          <h2 className="text-h2 text-center text-foreground md:text-left">{t("heading")}</h2>
 
           <ul className="flex flex-col gap-1.5">
             {CHECKLIST.map((item) => (
-              <li key={item} className="flex items-center gap-3 text-body-xl text-foreground">
+              <li
+                key={item}
+                className="flex items-center gap-3 text-base text-foreground md:text-xl"
+              >
                 <Check className="size-6 shrink-0 text-brand" />
                 {t(`checklist.${item}`)}
               </li>
@@ -36,7 +39,7 @@ export default function PlanTrip() {
           <Button
             variant="brand"
             size="md"
-            className="self-start 2xl:mt-2"
+            className="w-full self-start md:w-auto xl:mt-2"
             nativeButton={false}
             render={<Link href="/yachts" />}
           >
@@ -46,23 +49,25 @@ export default function PlanTrip() {
         </div>
 
         {/* Right — vertical timeline */}
-        <ol className="flex flex-col 2xl:mt-[18px] 2xl:w-[568px]">
+        <ol className="flex flex-col xl:mt-[18px] xl:w-[568px]">
           {STEPS.map((step, index) => {
             const isLast = index === STEPS.length - 1;
             return (
-              <li key={step} className="flex gap-6">
+              <li key={step} className="flex gap-4 md:gap-6">
                 <div className="flex flex-col items-center self-stretch">
                   <span className="mt-1.5 size-4 shrink-0 rounded-full bg-brand" />
                   {!isLast && <span className="w-px grow bg-brand-100" />}
                 </div>
                 <div
                   className={cn(
-                    "flex flex-col gap-1.5 2xl:gap-2",
-                    isLast ? "pb-4 2xl:pb-0" : "pb-8 2xl:pb-10",
+                    "flex flex-col gap-1.5 xl:gap-2",
+                    isLast ? "md:pb-4 xl:pb-0" : "pb-8 xl:pb-10",
                   )}
                 >
                   <h3 className="text-h5 text-foreground">{t(`steps.${step}.title`)}</h3>
-                  <p className="text-body-xl text-natural-600">{t(`steps.${step}.description`)}</p>
+                  <p className="text-base leading-[1.4] text-natural-600 md:text-xl">
+                    {t(`steps.${step}.description`)}
+                  </p>
                 </div>
               </li>
             );

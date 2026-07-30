@@ -36,10 +36,10 @@ export default function SailingRoutes() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-10 px-4 py-[60px] md:gap-8 md:px-[54px] md:pt-[70px] md:pb-[69px] lg:gap-10 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[100px]">
+      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-10 md:gap-8 md:px-[54px] md:pt-[70px] md:pb-[69px] lg:gap-10 xl:px-[70px] xl:pt-[100px] xl:pb-[100px]">
         <h2 className="text-h2 text-center text-foreground">{t("heading")}</h2>
 
-        <div className="grid grid-cols-1 items-start gap-5 md:gap-8 lg:grid-cols-3 lg:gap-5">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3 lg:gap-5">
           {ROUTES.map((route, i) => (
             <TripCard
               key={route.key}
@@ -53,19 +53,23 @@ export default function SailingRoutes() {
                 { label: t(`levels.${route.level}`), icon: <Activity /> },
               ]}
               className="w-full"
-              // Tablet mockup (953:207173) inflates card content with uneven trailing
-              // whitespace: outer cards 417px, middle 393px. Reserve description height to
-              // reproduce it (ghost card's natural height is ~383). Tablet-only — reset at lg
-              // where the row goes 3-up. Revisit once real route copy lands.
-              descriptionClassName={
-                i === 1 ? "md:min-h-[55px] lg:min-h-0" : "md:min-h-[79px] lg:min-h-0"
-              }
+              // Mobile + tablet mockups inflate card content with uneven trailing
+              // whitespace: outer cards taller than the middle. Reserve description height to
+              // reproduce it (ghost card's natural height is ~383). Reset at lg where the row
+              // goes 3-up. Revisit once real route copy lands.
+              descriptionClassName={i === 1 ? "min-h-[55px] lg:min-h-0" : "min-h-[79px] lg:min-h-0"}
             />
           ))}
         </div>
 
         <div className="flex justify-center">
-          <Button variant="neutral" size="md" nativeButton={false} render={<Link href="/yachts" />}>
+          <Button
+            variant="neutral"
+            size="md"
+            className="w-full md:w-auto"
+            nativeButton={false}
+            render={<Link href="/yachts" />}
+          >
             {t("allRoutes")}
             <ArrowUpRight />
           </Button>

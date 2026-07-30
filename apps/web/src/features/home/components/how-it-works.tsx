@@ -16,20 +16,20 @@ function Timeline() {
   const t = useTranslations("Home.HowItWorks.steps");
 
   return (
-    <ol className="flex flex-col md:w-[568px] 2xl:w-[568px]">
+    <ol className="flex flex-col md:w-[568px] xl:w-[568px]">
       {STEPS.map((step, index) => {
         const isLast = index === STEPS.length - 1;
         return (
-          <li key={step} className="flex gap-5 md:gap-6 2xl:gap-6">
+          <li key={step} className="flex gap-4 md:gap-6 xl:gap-6">
             <div className="flex flex-col items-center">
               <span className="mt-1.5 size-4 shrink-0 rounded-full bg-brand" />
               {!isLast && <span className="w-0.5 flex-1 bg-brand-100" />}
             </div>
-            <div className={isLast ? "" : "pb-10 md:pb-8 2xl:pb-[42px]"}>
-              <h3 className="text-2xl leading-[1.1] font-semibold text-foreground">
+            <div className={isLast ? "" : "pb-8 xl:pb-[42px]"}>
+              <h3 className="text-xl leading-[1.1] font-semibold text-foreground md:text-2xl">
                 {t(`${step}.title`)}
               </h3>
-              <p className="mt-1.5 text-lg leading-[1.4] text-natural-600 md:text-xl 2xl:text-xl">
+              <p className="mt-1.5 text-base leading-[1.4] text-natural-600 md:text-xl xl:text-xl">
                 {t(`${step}.description`)}
               </p>
             </div>
@@ -45,12 +45,12 @@ export default function HowItWorks() {
 
   return (
     <section className="bg-background">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-10 px-4 py-[60px] md:gap-8 md:px-[54px] md:pt-[70px] md:pb-[49px] 2xl:flex-row 2xl:justify-between 2xl:gap-16 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[60px]">
-        <div className="flex flex-col items-start gap-6 2xl:max-w-[544px] 2xl:justify-center">
-          <h2 className="text-[32px] leading-[1.1] font-medium md:text-[50px] 2xl:text-[50px]">
+      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-[54px] md:pt-[70px] md:pb-[49px] xl:max-w-[1536px] xl:flex-row xl:justify-between xl:gap-16 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
+        <div className="flex flex-col items-center gap-4 text-center md:items-start md:gap-6 md:text-left xl:max-w-[544px] xl:justify-center">
+          <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px] xl:text-[50px]">
             {t("heading")}
           </h2>
-          <p className="max-w-[544px] text-lg leading-[1.4] text-natural-600 md:max-w-none md:text-xl 2xl:text-xl">
+          <p className="max-w-[544px] text-lg leading-[1.4] text-natural-600 md:max-w-none md:text-xl xl:text-xl">
             {t("intro")}
             <br />
             {t("introSecondLine")}
@@ -60,7 +60,7 @@ export default function HowItWorks() {
             size="md"
             nativeButton={false}
             render={<Link href="/yachts" />}
-            className="2xl:mt-2"
+            className="w-full md:w-auto xl:mt-2"
           >
             {t("cta")}
             <ArrowUpRight />

@@ -49,12 +49,17 @@ function MarqueeRow({
 
   return (
     <div className="testimonials-marquee overflow-hidden">
-      <div className={cn("testimonials-track flex gap-5", reverse && "testimonials-track-reverse")}>
+      <div
+        className={cn(
+          "testimonials-track flex gap-2 md:gap-5",
+          reverse && "testimonials-track-reverse",
+        )}
+      >
         {[...items, ...items].map((item, index) => (
           <TestimonialCard
             key={index}
             aria-hidden={index >= items.length || undefined}
-            className="w-[452px] max-w-none shrink-0"
+            className="w-[358px] max-w-none shrink-0 md:w-[452px]"
             quote={t(`${item.key}.quote`)}
             author={item.author}
             location={t(`${item.key}.location`)}
@@ -70,20 +75,26 @@ export default function Testimonials() {
   const t = useTranslations("Home.Testimonials");
 
   return (
-    <section className="overflow-hidden bg-background py-[60px] md:pt-[70px] md:pb-[50px] 2xl:pt-[100px] 2xl:pb-[60px]">
-      <div className="mx-auto max-w-[1536px] px-4 md:px-[54px] 2xl:px-[70px]">
-        <h2 className="text-center text-[32px] leading-[1.1] font-medium md:text-[50px] 2xl:text-[50px]">
+    <section className="overflow-hidden bg-background pt-10 pb-8 md:pt-[70px] md:pb-[50px] xl:pt-[100px] xl:pb-[60px]">
+      <div className="mx-auto px-4 md:px-[54px] xl:px-[70px]">
+        <h2 className="text-center text-[40px] leading-[1.1] font-medium md:text-[50px] xl:text-[50px]">
           {t("heading")}
         </h2>
       </div>
 
-      <div className="mt-10 flex flex-col gap-5 md:mt-8 lg:mt-10 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
+      <div className="mt-8 flex flex-col gap-4 md:gap-5 lg:mt-10 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
         <MarqueeRow items={ROW_ONE} />
         <MarqueeRow items={ROW_TWO} reverse />
       </div>
 
-      <div className="mx-auto mt-10 flex max-w-[1536px] justify-center px-4 md:mt-8 lg:mt-10">
-        <Button variant="neutral" size="md" nativeButton={false} render={<Link href="/yachts" />}>
+      <div className="mx-auto mt-8 flex justify-center px-4 lg:mt-10">
+        <Button
+          variant="neutral"
+          size="md"
+          className="w-full md:w-auto"
+          nativeButton={false}
+          render={<Link href="/yachts" />}
+        >
           {t("allReviews")}
           <ArrowUpRight />
         </Button>

@@ -19,10 +19,10 @@ export default function BoatTypes() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-8 px-4 py-[60px] md:px-[54px] md:pt-[70px] md:pb-[49px] 2xl:gap-10 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[60px]">
-        <h2 className="text-h2 text-center text-foreground">{t("heading")}</h2>
+      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-[54px] md:pt-[70px] md:pb-[49px] xl:gap-10 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
+        <h2 className="text-h2 text-center text-balance text-foreground">{t("heading")}</h2>
 
-        <div className="grid grid-cols-1 items-start gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 items-start gap-x-5 gap-y-4 sm:grid-cols-2 sm:gap-y-8 xl:grid-cols-4">
           {BOAT_TYPES.map((boat) => (
             <BoatCard
               key={boat.key}

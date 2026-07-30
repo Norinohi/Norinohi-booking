@@ -17,7 +17,7 @@ export default function EarnCta() {
 
   return (
     <section className="bg-background">
-      <div className="mx-auto max-w-[1536px] px-4 py-[60px] md:px-[54px] md:py-[70px] 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[100px]">
+      <div className="mx-auto px-4 py-10 md:px-[54px] md:py-[70px] xl:px-[70px] xl:pt-[100px] xl:pb-[100px]">
         <div className="relative isolate overflow-hidden rounded-[20px]">
           <Image
             src="/assets/home/earn/couple-yacht.webp"
@@ -28,9 +28,9 @@ export default function EarnCta() {
           />
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/50 to-transparent" />
 
-          <div className="relative z-10 flex min-h-[320px] items-center p-8 md:min-h-[291px] md:p-6 2xl:min-h-[391px] 2xl:p-16">
-            <div className="flex flex-col items-start gap-4 md:gap-6">
-              <h2 className="text-[32px] leading-[1.1] font-medium text-white 2xl:text-[50px] 2xl:whitespace-nowrap">
+          <div className="relative z-10 flex min-h-[309px] items-center p-6 md:min-h-[291px] xl:min-h-[391px] xl:p-16">
+            <div className="flex flex-col items-center gap-4 text-center md:items-start md:gap-6 md:text-left">
+              <h2 className="text-[28px] leading-[1.1] font-medium text-white md:text-[32px] xl:text-[50px] xl:whitespace-nowrap">
                 {t("heading")}
               </h2>
               <p className="max-w-[481px] text-lg leading-[1.4] text-white md:text-xl">
@@ -41,7 +41,7 @@ export default function EarnCta() {
                 size="md"
                 nativeButton={false}
                 render={<Link href="/yachts" />}
-                className="w-fit"
+                className="w-full md:w-fit"
               >
                 {t("cta")}
                 <ArrowUpRight />

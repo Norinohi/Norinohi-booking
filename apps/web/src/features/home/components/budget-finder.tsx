@@ -58,11 +58,11 @@ export default function BudgetFinder() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-8 px-4 py-[60px] md:px-[54px] md:pt-[70px] md:pb-[48px] 2xl:gap-10 2xl:px-[70px] 2xl:pt-[100px] 2xl:pb-[60px]">
+      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-[54px] md:pt-[70px] md:pb-[48px] xl:gap-10 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
         <h2 className="text-h2 text-center text-foreground">{t("heading")}</h2>
 
-        <div className="flex flex-col gap-8 2xl:gap-6">
-          <div className="grid grid-cols-1 gap-x-5 gap-y-4 rounded-3xl border border-brand-100 bg-brand-50 px-6 pt-6 pb-[30px] md:grid-cols-2 xl:grid-cols-4">
+        <div className="flex flex-col gap-8 xl:gap-6">
+          <div className="grid grid-cols-1 gap-x-5 gap-y-3 rounded-3xl border border-brand-100 bg-brand-50 p-4 md:grid-cols-2 md:gap-y-4 md:px-6 md:pt-6 md:pb-[30px] xl:grid-cols-4">
             {SELECTS.map((select) => (
               <div key={select.key} className="flex flex-col gap-1.5">
                 <span className="text-sm leading-[1.2] font-semibold text-natural-700">
@@ -85,7 +85,13 @@ export default function BudgetFinder() {
           </div>
 
           <div className="flex justify-center">
-            <Button variant="brand" size="md" nativeButton={false} render={<Link href="/yachts" />}>
+            <Button
+              variant="brand"
+              size="md"
+              className="w-full md:w-auto"
+              nativeButton={false}
+              render={<Link href="/yachts" />}
+            >
               {t("viewResults")}
               <ArrowUpRight />
             </Button>
