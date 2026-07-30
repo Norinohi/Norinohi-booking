@@ -577,7 +577,27 @@
     "breadcrumbSearch": "Búsqueda",
     "share": "Compartir",
     "seeOnMap": "Ver en el mapa",
-    "addToWishlist": "Añadir a favoritos"
+    "addToWishlist": "Añadir a favoritos",
+    "included": "Incluido",
+    "sections": {
+      "overview": "Resumen",
+      "amenities": "Comodidades",
+      "description": "Descripción"
+    },
+    "overview": {
+      "location": "Ubicación",
+      "mainsail": "Tipo de mayor",
+      "year": "Año",
+      "draught": "Calado",
+      "boatType": "Tipo de barco",
+      "beam": "Manga",
+      "cabins": "Camarotes",
+      "fuelTank": "Depósito de combustible",
+      "bathrooms": "Baños",
+      "waterTank": "Depósito de agua",
+      "length": "Eslora",
+      "engine": "Motor"
+    }
   },
   "Yachts": {
     "searchByMap": "Buscar en el mapa",

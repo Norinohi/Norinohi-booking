@@ -41,7 +41,12 @@ function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
   );
 }
 
-function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.Trigger.Props) {
+type AccordionTriggerProps = AccordionPrimitive.Trigger.Props & {
+  /** Replaces the default chevron. Style the open state off `group-data-panel-open:` — the group is the trigger. */
+  indicator?: React.ReactNode;
+};
+
+function AccordionTrigger({ className, children, indicator, ...props }: AccordionTriggerProps) {
   return (
     <AccordionPrimitive.Header className="flex w-full">
       <AccordionPrimitive.Trigger
@@ -55,7 +60,9 @@ function AccordionTrigger({ className, children, ...props }: AccordionPrimitive.
         {...props}
       >
         {children}
-        <ChevronDown className="size-5 shrink-0 transition-transform duration-200 group-data-panel-open:rotate-180" />
+        {indicator ?? (
+          <ChevronDown className="size-5 shrink-0 transition-transform duration-200 group-data-panel-open:rotate-180" />
+        )}
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );

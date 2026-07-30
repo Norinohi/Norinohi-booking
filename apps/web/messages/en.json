@@ -573,11 +573,31 @@
     "next": "Next"
   },
   "YachtDetail": {
-    "backToSearch": "Back to search",
+    "backToSearch": "Back To Search",
     "breadcrumbSearch": "Search",
     "share": "Share",
-    "seeOnMap": "See on map",
-    "addToWishlist": "Add to wishlist"
+    "seeOnMap": "See On Map",
+    "addToWishlist": "Add To Wishlist",
+    "included": "Included",
+    "sections": {
+      "overview": "Overview",
+      "amenities": "Amenities",
+      "description": "Description"
+    },
+    "overview": {
+      "location": "Location",
+      "mainsail": "Type Of Mainsail",
+      "year": "Year",
+      "draught": "Draught",
+      "boatType": "Boat Type",
+      "beam": "Beam",
+      "cabins": "Cabins",
+      "fuelTank": "Fuel Tank",
+      "bathrooms": "Bathrooms",
+      "waterTank": "Water Tank",
+      "length": "Length",
+      "engine": "Engine"
+    }
   },
   "Yachts": {
     "searchByMap": "Search by map",

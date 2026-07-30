@@ -52,7 +52,6 @@ export default function AppBreadcrumbs({
             size="sm"
             nativeButton={false}
             render={<Link href={backHref} />}
-            className="capitalize"
           >
             <ArrowLeft />
             {translate(backLabel)}

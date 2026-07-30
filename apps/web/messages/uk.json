@@ -577,7 +577,27 @@
     "breadcrumbSearch": "Пошук",
     "share": "Поділитися",
     "seeOnMap": "Показати на карті",
-    "addToWishlist": "Додати в обране"
+    "addToWishlist": "Додати в обране",
+    "included": "Включено",
+    "sections": {
+      "overview": "Огляд",
+      "amenities": "Зручності",
+      "description": "Опис"
+    },
+    "overview": {
+      "location": "Локація",
+      "mainsail": "Тип грота",
+      "year": "Рік",
+      "draught": "Осадка",
+      "boatType": "Тип човна",
+      "beam": "Ширина",
+      "cabins": "Каюти",
+      "fuelTank": "Паливний бак",
+      "bathrooms": "Санвузли",
+      "waterTank": "Бак для води",
+      "length": "Довжина",
+      "engine": "Двигун"
+    }
   },
   "Yachts": {
     "searchByMap": "Пошук на карті",

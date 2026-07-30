@@ -46,15 +46,15 @@ export default function TitleBlock() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="subtle" className="capitalize">
+        <Button variant="subtle">
           <Share />
           {tDetail("share")}
         </Button>
-        <Button variant="neutral" className="capitalize">
+        <Button variant="neutral">
           <Map />
           {tDetail("seeOnMap")}
         </Button>
-        <Button variant="brand" className="capitalize">
+        <Button variant="brand">
           <Bookmark />
           {tDetail("addToWishlist")}
         </Button>
