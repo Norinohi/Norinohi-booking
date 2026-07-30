@@ -9,6 +9,7 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.url(),
     CORS_ORIGIN: z.url(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    PORT: z.coerce.number().int().positive().default(3000),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
