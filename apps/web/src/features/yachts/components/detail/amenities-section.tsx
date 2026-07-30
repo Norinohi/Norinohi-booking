@@ -23,12 +23,10 @@ export default function AmenitiesSection() {
           >
             {row.map((amenity) => (
               <div key={amenity} className="flex min-w-0 flex-1 items-center gap-2 py-3">
-                <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">
-                  {amenity}
-                </span>
+                <span className="min-w-0 flex-1 text-base text-foreground">{amenity}</span>
                 <div className="flex shrink-0 items-center gap-2 py-1">
                   <CircleCheckBig className="size-5 shrink-0 text-brand" />
-                  <span className="text-sm font-semibold leading-[1.2] tracking-[0.28px] text-foreground">
+                  <span className="text-sm font-semibold tracking-wide text-foreground">
                     {t("included")}
                   </span>
                 </div>

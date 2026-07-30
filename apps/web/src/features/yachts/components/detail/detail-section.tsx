@@ -30,7 +30,7 @@ export default function DetailSection({
             </span>
           }
         >
-          <h2 className="text-2xl font-semibold leading-[1.1] text-foreground">{title}</h2>
+          <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
         </AccordionTrigger>
         <AccordionContent>
           <div className="pt-3">{children}</div>

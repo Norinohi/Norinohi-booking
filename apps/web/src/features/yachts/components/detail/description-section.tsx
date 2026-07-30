@@ -10,7 +10,7 @@ export default function DescriptionSection() {
 
   return (
     <DetailSection id="description" title={t("sections.description")}>
-      <p className="text-xl leading-[1.4] whitespace-pre-line text-foreground">{DESCRIPTION}</p>
+      <p className="text-xl whitespace-pre-line text-foreground">{DESCRIPTION}</p>
     </DetailSection>
   );
 }

@@ -65,10 +65,10 @@ export default function OverviewSection() {
                 )}
               >
                 {item.icon}
-                <span className="shrink-0 text-sm font-semibold leading-[1.2] tracking-[0.28px] text-foreground">
+                <span className="shrink-0 text-sm font-semibold tracking-wide text-foreground">
                   {t(`overview.${item.key}`)}:
                 </span>
-                <span className="min-w-0 flex-1 text-sm font-medium leading-[1.3] text-natural-600">
+                <span className="min-w-0 flex-1 text-sm font-medium text-natural-600">
                   {item.value}
                 </span>
               </div>

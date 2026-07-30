@@ -99,7 +99,11 @@ function CarouselSlide({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CarouselBars({ className, ...props }: React.ComponentProps<"div">) {
+function CarouselBars({
+  className,
+  barClassName,
+  ...props
+}: React.ComponentProps<"div"> & { barClassName?: string }) {
   const { api, selected, snapCount } = useCarousel();
   if (snapCount <= 1) return null;
 
@@ -119,6 +123,7 @@ function CarouselBars({ className, ...props }: React.ComponentProps<"div">) {
           className={cn(
             "h-1 w-4 cursor-pointer rounded-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/70",
             index === selected ? "bg-white" : "bg-white/12 hover:bg-white/40",
+            barClassName,
           )}
         />
       ))}
@@ -161,8 +166,16 @@ function CarouselArrow({
 function CarouselThumbs({
   children,
   className,
+  listClassName,
+  itemClassName,
   ...props
-}: React.ComponentProps<"div"> & { children: React.ReactNode[] }) {
+}: React.ComponentProps<"div"> & {
+  children: React.ReactNode[];
+  /** Styles the strip that holds the thumbs — its `gap` lives here, not on the root. */
+  listClassName?: string;
+  /** Styles each thumb button — width (`basis-*`), radius and the inactive opacity. */
+  itemClassName?: string;
+}) {
   const { api, selected } = useCarousel();
   const [thumbsRef, thumbsApi] = useEmblaCarousel({
     containScroll: "keepSnaps",
@@ -180,7 +193,7 @@ function CarouselThumbs({
       className={cn("overflow-hidden", className)}
       {...props}
     >
-      <div className="flex gap-4">
+      <div className={cn("flex gap-4", listClassName)}>
         {children.map((child, index) => (
           <button
             key={index}
@@ -191,6 +204,7 @@ function CarouselThumbs({
             className={cn(
               "relative min-w-0 shrink-0 grow-0 basis-1/3 overflow-hidden rounded-xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring/40",
               index === selected ? "opacity-100" : "opacity-60 hover:opacity-100",
+              itemClassName,
             )}
           >
             {child}

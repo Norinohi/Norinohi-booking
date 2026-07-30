@@ -579,6 +579,13 @@
     "seeOnMap": "Показати на карті",
     "addToWishlist": "Додати в обране",
     "included": "Включено",
+    "gallery": {
+      "close": "Закрити",
+      "previous": "Назад",
+      "next": "Далі",
+      "zoomIn": "Збільшити",
+      "zoomOut": "Зменшити"
+    },
     "sections": {
       "overview": "Огляд",
       "amenities": "Зручності",
