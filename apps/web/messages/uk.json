@@ -590,12 +590,25 @@
       "payAtCheckIn": "Оплата при заселенні",
       "perBooking": "{price} за бронювання"
     },
+    "importantInfo": {
+      "charterCompany": "Чартерна компанія",
+      "pickUpAddress": "Адреса отримання яхти",
+      "pickUp": "Отримання яхти",
+      "dropOff": "Повернення яхти",
+      "policies": "Умови скасування та оплати",
+      "license": "Потрібні права",
+      "pets": "Тварини",
+      "paymentMethods": "Способи оплати чартерної компанії",
+      "marinaInfo": "Інформація про марину"
+    },
     "sections": {
       "overview": "Огляд",
       "amenities": "Зручності",
       "mandatoryExtras": "Обов'язкові доплати",
       "optionalExtras": "Додаткові опції",
-      "description": "Опис"
+      "description": "Опис",
+      "importantInfo": "Важлива інформація",
+      "suggestedRoute": "Рекомендований маршрут"
     },
     "overview": {
       "location": "Локація",

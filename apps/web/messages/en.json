@@ -590,12 +590,25 @@
       "payAtCheckIn": "Pay at check-in",
       "perBooking": "{price} per booking"
     },
+    "importantInfo": {
+      "charterCompany": "Charter company",
+      "pickUpAddress": "Yacht pick-up address",
+      "pickUp": "Yacht pick-up",
+      "dropOff": "Yacht drop-off",
+      "policies": "Cancellation / Payment policies",
+      "license": "Sailing license require",
+      "pets": "Pets",
+      "paymentMethods": "Payment methods accepted by charter company",
+      "marinaInfo": "Information about the marina"
+    },
     "sections": {
       "overview": "Overview",
       "amenities": "Amenities",
       "mandatoryExtras": "Mandatory extras",
       "optionalExtras": "Optional extras",
-      "description": "Description"
+      "description": "Description",
+      "importantInfo": "Important information",
+      "suggestedRoute": "Suggested route"
     },
     "overview": {
       "location": "Location",

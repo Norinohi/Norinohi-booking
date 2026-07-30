@@ -590,12 +590,25 @@
       "payAtCheckIn": "Pago en la entrega",
       "perBooking": "{price} por reserva"
     },
+    "importantInfo": {
+      "charterCompany": "Empresa de chárter",
+      "pickUpAddress": "Dirección de recogida del yate",
+      "pickUp": "Recogida del yate",
+      "dropOff": "Entrega del yate",
+      "policies": "Condiciones de cancelación y pago",
+      "license": "Licencia de navegación requerida",
+      "pets": "Mascotas",
+      "paymentMethods": "Métodos de pago aceptados por la empresa",
+      "marinaInfo": "Información sobre la marina"
+    },
     "sections": {
       "overview": "Resumen",
       "amenities": "Comodidades",
       "mandatoryExtras": "Extras obligatorios",
       "optionalExtras": "Extras opcionales",
-      "description": "Descripción"
+      "description": "Descripción",
+      "importantInfo": "Información importante",
+      "suggestedRoute": "Ruta recomendada"
     },
     "overview": {
       "location": "Ubicación",
