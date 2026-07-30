@@ -605,6 +605,30 @@
       "count": "({count} reviews)",
       "summary": "Showing {shown} of {total}"
     },
+    "sidebar": {
+      "crew": "Crew",
+      "people": "People",
+      "prepayment": "{percent}% Booking Prepayment For Boat",
+      "boatPrice": "Boat price (full rental price)",
+      "deposit": "Refundable Security Deposit",
+      "howItWorks": "See how it works",
+      "groups": {
+        "mandatory": "Mandatory",
+        "selectedExtras": "Selected extras",
+        "crew": "Crew"
+      },
+      "payNow": "Booking Prepayment For Boat (Pay Now)",
+      "payAt": "Pay at: {date}",
+      "payAtCheckIn": "Pay at check-in: {date}",
+      "firstPayment": "{amount} (1st payment)",
+      "secondPayment": "{amount} (2nd payment)",
+      "extrasPayment": "{amount} (extras)",
+      "depositNote": "+ {amount} (Refundable security deposit)",
+      "totalPrice": "Total Price",
+      "dueNow": "Due Now",
+      "payNowCta": "Pay {amount} Now",
+      "requestQuote": "Request Quote"
+    },
     "sections": {
       "overview": "Overview",
       "amenities": "Amenities",

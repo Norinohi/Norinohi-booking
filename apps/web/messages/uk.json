@@ -605,6 +605,30 @@
       "count": "({count} відгуків)",
       "summary": "Показано {shown} з {total}"
     },
+    "sidebar": {
+      "crew": "Екіпаж",
+      "people": "Осіб",
+      "prepayment": "Передоплата за човен {percent}%",
+      "boatPrice": "Ціна човна (повна вартість оренди)",
+      "deposit": "Поворотна застава",
+      "howItWorks": "Як це працює",
+      "groups": {
+        "mandatory": "Обов'язкові",
+        "selectedExtras": "Вибрані опції",
+        "crew": "Екіпаж"
+      },
+      "payNow": "Передоплата за човен (оплатити зараз)",
+      "payAt": "Оплата: {date}",
+      "payAtCheckIn": "Оплата при заселенні: {date}",
+      "firstPayment": "{amount} (1-й платіж)",
+      "secondPayment": "{amount} (2-й платіж)",
+      "extrasPayment": "{amount} (додаткові опції)",
+      "depositNote": "+ {amount} (поворотна застава)",
+      "totalPrice": "Загальна ціна",
+      "dueNow": "До оплати зараз",
+      "payNowCta": "Оплатити {amount}",
+      "requestQuote": "Запросити пропозицію"
+    },
     "sections": {
       "overview": "Огляд",
       "amenities": "Зручності",

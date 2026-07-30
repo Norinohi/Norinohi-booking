@@ -605,6 +605,30 @@
       "count": "({count} opiniones)",
       "summary": "Mostrando {shown} de {total}"
     },
+    "sidebar": {
+      "crew": "Tripulación",
+      "people": "Personas",
+      "prepayment": "Anticipo del {percent}% por el barco",
+      "boatPrice": "Precio del barco (alquiler completo)",
+      "deposit": "Fianza reembolsable",
+      "howItWorks": "Ver cómo funciona",
+      "groups": {
+        "mandatory": "Obligatorios",
+        "selectedExtras": "Extras seleccionados",
+        "crew": "Tripulación"
+      },
+      "payNow": "Anticipo por el barco (pagar ahora)",
+      "payAt": "Pago: {date}",
+      "payAtCheckIn": "Pago en la entrega: {date}",
+      "firstPayment": "{amount} (1.er pago)",
+      "secondPayment": "{amount} (2.º pago)",
+      "extrasPayment": "{amount} (extras)",
+      "depositNote": "+ {amount} (fianza reembolsable)",
+      "totalPrice": "Precio total",
+      "dueNow": "A pagar ahora",
+      "payNowCta": "Pagar {amount}",
+      "requestQuote": "Solicitar presupuesto"
+    },
     "sections": {
       "overview": "Resumen",
       "amenities": "Comodidades",
