@@ -525,17 +525,22 @@
       "copyright": "© {year} YachtCharter Platform. All rights reserved."
     },
     "Nav": {
-      "destinations": "Destinations",
       "boatTypes": "Boat types",
+      "closeMenu": "Close menu",
+      "destinations": "Destinations",
       "findByBudget": "Find by budget",
-      "tryIt": "Try it",
-      "popularRoutes": "Popular routes",
-      "helpPlan": "Help Me Plan My Trip",
       "findYacht": "Find Yacht",
-      "saved": "Saved",
+      "helpPlan": "Help Me Plan My Trip",
       "language": "Language",
+      "languages": {
+        "en": "English",
+        "es": "Spanish",
+        "uk": "Ukrainian"
+      },
       "openMenu": "Open menu",
-      "closeMenu": "Close menu"
+      "popularRoutes": "Popular routes",
+      "saved": "Saved",
+      "tryIt": "Try it"
     },
     "Sidebar": {
       "menu": "Account menu",
