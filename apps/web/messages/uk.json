@@ -586,9 +586,15 @@
       "zoomIn": "Збільшити",
       "zoomOut": "Зменшити"
     },
+    "extras": {
+      "payAtCheckIn": "Оплата при заселенні",
+      "perBooking": "{price} за бронювання"
+    },
     "sections": {
       "overview": "Огляд",
       "amenities": "Зручності",
+      "mandatoryExtras": "Обов'язкові доплати",
+      "optionalExtras": "Додаткові опції",
       "description": "Опис"
     },
     "overview": {

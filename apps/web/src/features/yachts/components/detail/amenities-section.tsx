@@ -22,7 +22,7 @@ export default function AmenitiesSection() {
             className="flex items-start gap-10 border-b border-dashed border-border"
           >
             {row.map((amenity) => (
-              <div key={amenity} className="flex min-w-0 flex-1 items-center gap-2 py-3">
+              <div key={amenity} className="flex min-w-0 flex-1 items-center gap-2 pt-3 pb-2.75">
                 <span className="min-w-0 flex-1 text-base text-foreground">{amenity}</span>
                 <div className="flex shrink-0 items-center gap-2 py-1">
                   <CircleCheckBig className="size-5 shrink-0 text-brand" />

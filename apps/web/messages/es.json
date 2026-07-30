@@ -586,9 +586,15 @@
       "zoomIn": "Acercar",
       "zoomOut": "Alejar"
     },
+    "extras": {
+      "payAtCheckIn": "Pago en la entrega",
+      "perBooking": "{price} por reserva"
+    },
     "sections": {
       "overview": "Resumen",
       "amenities": "Comodidades",
+      "mandatoryExtras": "Extras obligatorios",
+      "optionalExtras": "Extras opcionales",
       "description": "Descripción"
     },
     "overview": {

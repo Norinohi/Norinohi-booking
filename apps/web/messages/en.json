@@ -586,9 +586,15 @@
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out"
     },
+    "extras": {
+      "payAtCheckIn": "Pay at check-in",
+      "perBooking": "{price} per booking"
+    },
     "sections": {
       "overview": "Overview",
       "amenities": "Amenities",
+      "mandatoryExtras": "Mandatory extras",
+      "optionalExtras": "Optional extras",
       "description": "Description"
     },
     "overview": {
