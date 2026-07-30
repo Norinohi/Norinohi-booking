@@ -16,6 +16,7 @@ A living checklist of everything still to confirm before or during the build —
 | D-ID | Primary keys | `text` IDs with a typed prefix (`ylst_`, `bkg_`, `qte_`…) via a shared `id()` helper. Matches the existing auth tables. |
 | Q-ADMIN | How staff are identified | A `role` column on the `user` table (Better Auth admin plugin left for later). |
 | D-TEST | Testing | Vitest for the risky core only — mapping, pricing math, the booking state machine. |
+| D-MSGS | i18n message payload | Ship the **whole active-locale dictionary** from the root provider — deliberately **no per-segment `pick()`**, and **one file per locale** rather than per-namespace files. Measured at ~6 KB gzip, 5–6% of a page response; only one locale is ever loaded. Narrowing it would move key coverage from compile time to **runtime** (`global.d.ts` types the full dictionary regardless of what the provider actually receives), so a missed namespace becomes a `MISSING_MESSAGE` no gate catches. Revisit both when the bundle passes **~20 KB gzip** (booking + checkout + admin) — they share the same trigger and are cheapest done together. |
 | Vocabulary + modeling | Naming & data model | Reconciled names (`operator`, `amenity`, `booking`, `provider_record` + `listing_source`, `price_adjustment_rule`); generic provenance model; fuller state machine with refund states; `payment_schedule` for deposit + balance; PII controls + explicit MVP exclusions. |
 
 ---
