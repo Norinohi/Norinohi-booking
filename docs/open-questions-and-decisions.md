@@ -24,6 +24,12 @@ A living checklist of everything still to confirm before or during the build —
 
 None are due right now. Each says who decides, when it's needed, and what gets built regardless so nothing stalls.
 
+### Q-LOCALE — Which languages does the product ship in? · **owner: product / client** · **needed by: M3**
+The web app is fully internationalised (next-intl, cookie-based locale, no URL prefix) and currently ships **`en` (default) + `de`**. Neither language was ever specified. `de` was picked from indirect signals — Adriatic inventory (Booking Manager / NauSYS), EUR pricing, and the customer personas in the marketing copy (DE / FR / UK / IT / PL / DK). An earlier `uk` locale was an undocumented developer choice and has been removed.
+- **What ships either way:** the extraction is language-agnostic — namespaces, ICU plurals, currency/date formatting and the `en`↔locale key-parity gate all stand. Adding a locale is one JSON file plus an entry in `src/i18n/config.ts`.
+- **The open question:** the real target markets, and whether a third locale is planned.
+- **Why it matters:** it's ~400 keys per locale to translate, and it's needed by **M3** because `facet_dictionary` is where filter labels stop being hard-coded and start carrying per-locale text. Cheap to answer now, expensive to redo once booking and checkout screens land.
+
 ### D-MPRICE-SCOPE — Is the internal "Manage Price" admin screen part of the 1 Sep demo? · **owner: team lead** · **needed by: M4**
 The client confirmed "Manage Price" is a tool **for us**, not for yacht owners — it lets our team adjust the provider's recommended price (e.g. add a discount to one listing, or a group of listings, for a chosen season period). The team-lead sprint board, however, lists "Manage Prices" as deferred (it was grouped with the owner/operator role, which is out of scope).
 - **What ships either way:** the pricing engine, the `price_adjustment_rule` data model, and the audit trail — so quotes already honour internal price overrides (seeded for the demo).

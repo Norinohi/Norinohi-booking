@@ -17,6 +17,12 @@ export default getRequestConfig(async () => {
   return {
     locale,
     formats,
+    /*
+     * Pinned so output never depends on where the server runs. Every real instant carries its own
+     * zone (a charter time is the marina's wall clock, not the visitor's), and calendar days are
+     * UTC-anchored via `dayToDisplay` — so this is only the fallback, and it must not drift.
+     */
+    timeZone: "UTC",
     messages: (await import(`../../messages/${locale}.json`)).default,
   };
 });

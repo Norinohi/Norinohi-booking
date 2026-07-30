@@ -8,11 +8,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
-import { parseISO } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 
-import { dayFromNative, dayToNative } from "@/lib/date";
+import { dayFromNative, dayToDisplay, dayToNative } from "@/lib/date";
 
 import { Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
@@ -31,7 +30,7 @@ export default function WhenSection({ value, set }: SectionProps) {
             <CalendarIcon className="size-6 shrink-0 text-foreground" />
             <span className={value.startDate ? "text-foreground" : "text-natural-300"}>
               {value.startDate
-                ? format.dateTime(parseISO(value.startDate), "day")
+                ? format.dateTime(dayToDisplay(value.startDate), "day")
                 : t("placeholders.anyDate")}
             </span>
           </PopoverTrigger>

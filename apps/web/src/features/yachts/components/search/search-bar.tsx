@@ -20,7 +20,7 @@ import {
   useDraft,
   useFilterOptions,
 } from "@/components/shared/filters";
-import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
+import { addDays, dayFromNative, dayToDisplay, dayToNative, daysBetween } from "@/lib/date";
 
 function toRange(value: FiltersState): DateRange {
   if (!value.startDate) return { from: undefined, to: undefined };
@@ -45,7 +45,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const [draft, setDraft] = useDraft(value);
   const options = useFilterOptions();
 
-  const day = (date: Date) => format.dateTime(date, "day");
+  const day = (date: Date) => format.dateTime(dayToDisplay(dayFromNative(date)), "day");
   const formatRange = (range: DateRange) =>
     range.from && range.to
       ? `${day(range.from)} – ${day(range.to)}`

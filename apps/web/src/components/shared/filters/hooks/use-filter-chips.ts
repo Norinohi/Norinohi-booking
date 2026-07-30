@@ -1,7 +1,8 @@
 "use client";
 
-import { parseISO } from "date-fns";
 import { useFormatter, useTranslations } from "next-intl";
+
+import { dayToDisplay } from "@/lib/date";
 
 import { type ChipId, CHIP_DEFS, type FilterChip, isFilterKeyActive } from "../lib/chips";
 import { labelOf, type Option } from "../lib/options";
@@ -42,7 +43,9 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
         return t("marina", { value: names(options.marinas, state.marina) });
       case "startDate":
         return t("startDate", {
-          value: state.startDate ? format.dateTime(parseISO(state.startDate), "day") : t("none"),
+          value: state.startDate
+            ? format.dateTime(dayToDisplay(state.startDate), "day")
+            : t("none"),
         });
       case "duration":
         return t("duration", { count: Number(state.duration) });
