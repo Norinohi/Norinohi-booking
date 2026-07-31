@@ -1,9 +1,11 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { Accordion } from "@yacht-charter/ui/components/layout/accordion";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { FormEvent } from "react";
 
@@ -23,6 +25,8 @@ export type FiltersPanelProps = {
   onApply: (next: FiltersState) => void;
   className?: string;
   scrollable?: boolean;
+  /** Adds a close control to the header; omit where the panel is always on screen. */
+  onClose?: () => void;
 };
 
 export default function FiltersPanel({
@@ -30,6 +34,7 @@ export default function FiltersPanel({
   onApply,
   className,
   scrollable = false,
+  onClose,
 }: FiltersPanelProps) {
   const t = useTranslations("Filters");
   const [draft, setDraft] = useDraft(value);
@@ -90,6 +95,11 @@ export default function FiltersPanel({
         >
           {t("clearAll")}
         </button>
+        {onClose ? (
+          <IconButton variant="subtle" size="sm" aria-label={t("close")} onClick={onClose}>
+            <X />
+          </IconButton>
+        ) : null}
       </div>
 
       {scrollable ? <ScrollArea className="min-h-0 flex-1">{body}</ScrollArea> : body}

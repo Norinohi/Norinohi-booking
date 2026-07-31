@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import { Dialog, DialogContent, DialogTrigger } from "@yacht-charter/ui/components/overlay/dialog";
 import {
   Popover,
   PopoverContent,
@@ -28,43 +29,63 @@ export default function FiltersPopover({
   className,
 }: FiltersPopoverProps) {
   const t = useTranslations("Filters");
-  const [open, setOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const appliedCount = countActiveFilters(value);
 
+  const trigger = (visibility: string) => (
+    <Button
+      variant={variant}
+      className={cn(
+        "w-full capitalize md:w-auto md:self-start",
+        variant === "neutral" &&
+          "data-popup-open:border-natural-300 data-popup-open:bg-natural-100",
+        className,
+        visibility,
+      )}
+    />
+  );
+
+  const label = (
+    <>
+      <Filter />
+      {t("trigger", { count: appliedCount })}
+    </>
+  );
+
+  const panel = (close: () => void) => (
+    <FiltersPanel
+      scrollable
+      className="min-h-0 flex-1"
+      value={value}
+      onClose={close}
+      onApply={(next) => {
+        onApply(next);
+        close();
+      }}
+    />
+  );
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant={variant}
-            className={cn(
-              "w-full capitalize md:w-auto md:self-start",
-              variant === "neutral" &&
-                "data-popup-open:border-natural-300 data-popup-open:bg-natural-100",
-              className,
-            )}
-          />
-        }
-      >
-        <Filter />
-        {t("trigger", { count: appliedCount })}
-      </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="start"
-        collisionAvoidance={{ side: "none", align: "shift", fallbackAxisSide: "none" }}
-        className="w-(--anchor-width) overflow-hidden border-0 bg-transparent p-0 shadow-none md:w-[334px]"
-      >
-        <FiltersPanel
-          scrollable
-          className="min-h-0 flex-1"
-          value={value}
-          onApply={(next) => {
-            onApply(next);
-            setOpen(false);
-          }}
-        />
-      </PopoverContent>
-    </Popover>
+    <>
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogTrigger render={trigger("md:hidden")}>{label}</DialogTrigger>
+        <DialogContent className="inset-4 top-4 left-4 h-auto w-auto max-w-none translate-x-0 translate-y-0 items-stretch gap-0 rounded-2xl p-0">
+          {panel(() => setSheetOpen(false))}
+        </DialogContent>
+      </Dialog>
+
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger render={trigger("hidden md:inline-flex")}>{label}</PopoverTrigger>
+        <PopoverContent
+          side="bottom"
+          align="start"
+          collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }}
+          className="h-(--available-height) w-(--anchor-width) overflow-hidden border-0 bg-transparent p-0 shadow-none md:w-83.5"
+        >
+          {panel(() => setPopoverOpen(false))}
+        </PopoverContent>
+      </Popover>
+    </>
   );
 }

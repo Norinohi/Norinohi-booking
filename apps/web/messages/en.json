@@ -66,6 +66,7 @@
   "Filters": {
     "title": "All filters ({count})",
     "clearAll": "Clear all",
+    "close": "Close filters",
     "apply": "Apply Filters ({count})",
     "trigger": "Filters ({count})",
     "needHelp": "Need help?",

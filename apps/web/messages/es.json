@@ -66,6 +66,7 @@
   "Filters": {
     "title": "Todos los filtros ({count})",
     "clearAll": "Borrar todo",
+    "close": "Cerrar filtros",
     "apply": "Aplicar filtros ({count})",
     "trigger": "Filtros ({count})",
     "needHelp": "¿Necesitas ayuda?",

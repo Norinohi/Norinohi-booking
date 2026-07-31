@@ -20,6 +20,7 @@ import {
 import EmptyState from "@/components/shared/empty-state";
 
 import { useBoatCards } from "../../hooks/use-boat-cards";
+import { useFillToFold } from "../../hooks/use-fill-to-fold";
 import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
 
 import BoatCard from "./boat-card";
@@ -30,6 +31,7 @@ export default function SearchScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
+  const filtersRef = useFillToFold();
 
   const t = useTranslations("Yachts");
   const { toSearchCard } = useBoatCards();
@@ -54,7 +56,7 @@ export default function SearchScreen() {
       <div className=" w-full md:px-13.5 px-4 py-6">
         <div className="max-w-349  mx-auto grid w-full gap-5 lg:grid-cols-[334px_minmax(0,1fr)]">
           <aside className="flex flex-col gap-5">
-            <div className="relative flex h-47.5 items-center justify-center overflow-hidden rounded-2xl border border-border p-6">
+            <div className="relative flex h-47.5 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border p-6">
               <Image
                 src="/assets/yachts/world-map.png"
                 alt=""
@@ -72,7 +74,17 @@ export default function SearchScreen() {
               </Link>
             </div>
 
-            <FiltersPanel className="hidden lg:flex" value={filters} onApply={applyFilters} />
+            <div
+              ref={filtersRef}
+              className="hidden lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:flex lg:max-h-[calc(100dvh-var(--header-h)-3rem)] lg:flex-col"
+            >
+              <FiltersPanel
+                scrollable
+                className="min-h-0 flex-1"
+                value={filters}
+                onApply={applyFilters}
+              />
+            </div>
           </aside>
 
           <div className="flex min-w-0 flex-col gap-5">
