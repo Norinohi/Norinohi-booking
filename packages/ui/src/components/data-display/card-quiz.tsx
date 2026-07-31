@@ -25,18 +25,23 @@ function QuizCard({
       aria-pressed={selected}
       data-selected={selected || undefined}
       className={cn(
-        "flex w-[414px] max-w-full flex-col gap-1.5 rounded-xl border p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40",
-        selected ? "border-brand bg-brand-50" : "border-border bg-card hover:bg-natural-50",
+        // Selection is drawn with an inset ring (box-shadow), not a border, so switching states
+        // changes no layout at all — padding stays constant and the option text can never re-wrap
+        // or shift. Default: 1px neutral ring; selected: 2px brand ring + tint.
+        "flex w-[414px] max-w-full flex-col gap-1.5 rounded-lg p-5 text-left ring-inset outline-none transition-[background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring/40",
+        selected
+          ? "bg-brand-50 ring-2 ring-brand"
+          : "bg-card ring-1 ring-border hover:bg-natural-50",
         className,
       )}
       {...props}
     >
-      <span className="flex items-center gap-2 text-lg font-semibold text-foreground">
-        {flag && <span aria-hidden>{flag}</span>}
+      <span className="text-xl leading-[1.3] font-bold text-foreground">
+        {flag && <span aria-hidden>{flag} </span>}
         {title}
       </span>
       {description && (
-        <span className="text-base leading-relaxed text-natural-600">{description}</span>
+        <span className="text-base leading-[1.4] text-natural-500">{description}</span>
       )}
     </button>
   );
