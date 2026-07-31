@@ -53,6 +53,7 @@ export default function SailingRoutes() {
                 title={t(`items.${route.key}.title`)}
                 description={t(`items.${route.key}.description`)}
                 actionLabel={t("exploreRoute")}
+                actionRender={<Link href="/yachts" />}
                 meta={[
                   { label: t("days", { count: route.days }), icon: <Clock /> },
                   { label: t(`levels.${route.level}`), icon: <Activity /> },

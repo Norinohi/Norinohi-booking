@@ -1,3 +1,4 @@
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import {
   Card,
   CardContent,
@@ -21,7 +22,8 @@ type TripCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   description?: React.ReactNode;
   meta?: { label: string; icon?: React.ReactNode }[];
   actionLabel?: React.ReactNode;
-  onAction?: () => void;
+  /** Element the action renders as — pass the app's own link to make it navigate. */
+  actionRender?: ButtonPrimitive.Props["render"];
   descriptionClassName?: string;
 };
 
@@ -32,7 +34,7 @@ function TripCard({
   description,
   meta = [],
   actionLabel = "Explore Route",
-  onAction,
+  actionRender,
   className,
   descriptionClassName,
   ...props
@@ -61,14 +63,14 @@ function TripCard({
             ))}
           </div>
         )}
-        <button
-          type="button"
-          onClick={onAction}
-          className="flex shrink-0 items-center gap-1.5 text-base font-semibold text-foreground outline-none transition-colors hover:text-brand focus-visible:text-brand"
+        <ButtonPrimitive
+          nativeButton={!actionRender}
+          render={actionRender}
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 text-base font-semibold text-foreground outline-none transition-colors hover:text-brand focus-visible:text-brand"
         >
           {actionLabel}
           <ArrowRight className="size-4" />
-        </button>
+        </ButtonPrimitive>
       </CardFooter>
     </Card>
   );

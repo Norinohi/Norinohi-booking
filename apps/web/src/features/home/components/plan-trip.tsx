@@ -44,7 +44,7 @@ export default function PlanTrip() {
             size="md"
             className="w-full self-start md:w-auto xl:mt-2"
             nativeButton={false}
-            render={<Link href="/yachts" />}
+            render={<Link href="/plan-my-trip" />}
           >
             {t("cta")}
             <ArrowUpRight />

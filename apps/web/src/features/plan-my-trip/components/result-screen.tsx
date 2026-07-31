@@ -223,7 +223,8 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
             <Button
               variant="brand"
               className="w-full md:w-auto"
-              onClick={() => router.push("/yachts")}
+              nativeButton={false}
+              render={<Link href={DETAIL_HREF} />}
             >
               {t("viewDetails")}
               <ArrowRight />

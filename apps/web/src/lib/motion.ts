@@ -4,7 +4,8 @@ export const DURATION = 0.6;
 export const COUNT_DURATION = 1.4;
 export const STAGGER = 0.1;
 
-export const VIEWPORT = { once: true, amount: 0.3 };
+/** Offset from the fold, not a share of the element — a share leaves tall sections blank. */
+export const VIEWPORT = { once: true, margin: "0px 0px -100px 0px" } as const;
 
 /** Plain numbers only — these cross the server/client boundary as props. */
 export const GROUP = {
