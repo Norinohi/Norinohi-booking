@@ -5,9 +5,9 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 /*
  * StepIndicator — Figma "Step Indicator" (node 994:79358), Reusable Sections.
  * A full-width segmented progress bar: `total` equal pill segments, the first
- * `current` filled brand (#2f80ed) and the rest natural-100, with a brand
+ * `current` filled brand (#2f80ed) and the rest white, with a brand
  * "Step X of Y" label (Body xl) below. Used across the multi-step booking flow.
- * Each segment is a natural-100 track clipping a brand fill that scales from its
+ * Each segment is a white track clipping a brand fill that scales from its
  * left edge, so advancing a step grows only that segment and going back drains it.
  * The transition never runs on first paint, since the initial scale is already final.
  */
@@ -49,7 +49,7 @@ function StepIndicator({
           <span
             key={i}
             data-active={i < clamped || undefined}
-            className="group h-1.5 flex-1 overflow-hidden rounded-full bg-natural-100"
+            className="group h-1.5 flex-1 overflow-hidden rounded-full bg-white"
           >
             <span className="block h-full origin-left scale-x-0 rounded-full bg-brand transition-transform duration-500 ease-out group-data-active:scale-x-100 motion-reduce:transition-none" />
           </span>
