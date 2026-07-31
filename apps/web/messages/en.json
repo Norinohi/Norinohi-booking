@@ -636,6 +636,10 @@
       "payNowCta": "Pay {amount} Now",
       "requestQuote": "Request Quote"
     },
+    "panels": {
+      "details": "Yacht Details",
+      "booking": "Booking Summary"
+    },
     "tabs": {
       "overview": "Overview",
       "amenities": "Amenities",

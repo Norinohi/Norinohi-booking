@@ -31,7 +31,8 @@ export default function DetailSection({
             </span>
           }
         >
-          <h2 className="flex items-center gap-1 text-2xl font-semibold text-foreground">
+          {/* Headings/h5 — 20/1.1 on the 390 frame, 24/1.1 on both 768 and 1536. */}
+          <h2 className="flex items-center gap-1 text-xl leading-5.5 font-semibold text-foreground md:text-2xl md:leading-6.5">
             {title}
           </h2>
         </AccordionTrigger>

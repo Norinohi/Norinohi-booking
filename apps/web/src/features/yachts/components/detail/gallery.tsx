@@ -38,8 +38,8 @@ export default function Gallery() {
   const [openAt, setOpenAt] = useState<number | null>(null);
 
   return (
-    <Carousel className="flex flex-col gap-6" options={{ loop: true }}>
-      <div className="relative h-100 w-full overflow-hidden rounded-2xl">
+    <Carousel className="flex flex-col gap-4 md:gap-6" options={{ loop: true }}>
+      <div className="relative h-50 w-full overflow-hidden rounded-2xl md:h-100">
         <CarouselViewport>
           {PHOTOS.map((photo, index) => (
             <CarouselSlide key={photo.src}>
@@ -64,27 +64,21 @@ export default function Gallery() {
 
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
 
-        <CarouselArrow direction="prev" className={`left-8 ${ARROW}`} />
-        <CarouselArrow direction="next" className={`right-8 ${ARROW}`} />
+        <CarouselArrow direction="prev" className={`left-4 md:left-8 ${ARROW}`} />
+        <CarouselArrow direction="next" className={`right-4 md:right-8 ${ARROW}`} />
         <CarouselBars
-          className="absolute inset-x-0 bottom-4 mx-auto w-105"
+          className="absolute inset-x-4 bottom-4 mx-auto max-w-105 md:inset-x-0"
           barClassName="w-auto flex-1"
         />
       </div>
 
       <CarouselThumbs
-        listClassName="gap-6"
+        listClassName="gap-4 md:gap-6"
         itemClassName="basis-83.5 rounded-2xl opacity-100"
       >
         {PHOTOS.map((photo) => (
-          <div key={photo.src} className="relative h-50 w-full">
-            <Image
-              src={photo.src}
-              alt=""
-              fill
-              sizes="334px"
-              className="object-cover"
-            />
+          <div key={photo.src} className="relative h-37.5 w-full md:h-50">
+            <Image src={photo.src} alt="" fill sizes="334px" className="object-cover" />
             <div aria-hidden className="absolute inset-0 bg-black/10" />
           </div>
         ))}

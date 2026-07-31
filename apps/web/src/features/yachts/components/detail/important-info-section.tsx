@@ -39,7 +39,7 @@ export default function ImportantInfoSection() {
             <div
               key={row.key}
               className={cn(
-                "flex gap-10 border-b border-dashed border-border",
+                "flex gap-4 border-b border-dashed border-border md:gap-10",
                 hasMap ? "items-start" : "items-center",
               )}
             >
@@ -53,12 +53,7 @@ export default function ImportantInfoSection() {
               </dt>
               <dd className="flex min-w-0 flex-1 flex-col gap-3 pt-3 pb-2.75">
                 <div className="flex flex-col gap-1">
-                  <p
-                    className={cn(
-                      "text-base leading-5.5 text-foreground",
-                      note && "font-bold",
-                    )}
-                  >
+                  <p className={cn("text-base leading-5.5 text-foreground", note && "font-bold")}>
                     {row.value}
                   </p>
                   {note ? (
@@ -74,7 +69,7 @@ export default function ImportantInfoSection() {
                     width={501}
                     height={236}
                     sizes="501px"
-                    className="h-59 w-full rounded-2xl object-cover"
+                    className="h-37 w-full rounded-2xl object-cover md:h-59"
                   />
                 ) : null}
               </dd>

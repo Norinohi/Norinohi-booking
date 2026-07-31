@@ -636,6 +636,10 @@
       "payNowCta": "Оплатити {amount}",
       "requestQuote": "Запросити пропозицію"
     },
+    "panels": {
+      "details": "Деталі яхти",
+      "booking": "Підсумок бронювання"
+    },
     "tabs": {
       "overview": "Огляд",
       "amenities": "Зручності",

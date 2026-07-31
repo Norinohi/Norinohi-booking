@@ -22,7 +22,7 @@ export default function MandatoryExtrasSection() {
         {MANDATORY.map((item) => (
           <div
             key={item.name}
-            className="flex items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
+            className="flex items-start gap-4 border-b border-dashed border-border pt-3 pb-2.75 md:gap-10 xl:gap-2"
           >
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="text-base leading-5.5 text-foreground">{item.name}</p>
@@ -33,7 +33,9 @@ export default function MandatoryExtrasSection() {
               ) : null}
               <p className="text-xs font-semibold text-natural-300">{t("extras.payAtCheckIn")}</p>
             </div>
-            <p className="shrink-0 text-base font-bold text-foreground">
+            {/* The price wraps to two lines in its 72px mobile column, which is what leaves the
+                description the 270px the design gives it. */}
+            <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
               {t("extras.perBooking", { price: item.price })}
             </p>
           </div>

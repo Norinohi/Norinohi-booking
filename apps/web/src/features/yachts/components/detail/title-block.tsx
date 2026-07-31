@@ -8,31 +8,37 @@ import { MarinaPopover } from "../marina-popover";
 
 export const YACHT_NAME = "Lagoon 42";
 
+const ACTION = "w-full md:flex-1 xl:w-auto xl:flex-none";
+
 export default function TitleBlock() {
   const t = useTranslations("Common.boatCard");
   const tDetail = useTranslations("YachtDetail");
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-5">
+    <div className="flex flex-col gap-4 md:gap-6 xl:flex-row xl:flex-wrap xl:items-start xl:justify-between xl:gap-5">
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex flex-wrap items-start gap-1.5">
-          <Chip>{t("badges.bestForFamilies")}</Chip>
-          <Chip>{t("badges.bestValue")}</Chip>
-          <Chip className="bg-brand text-brand-foreground">
-            <Tag />
-            {t("badges.discount", { percent: 15 })}
-          </Chip>
+        {/* Marina and badges share a line on tablet, stack below it on mobile and swap places on
+            desktop, where the badges sit above the marina (Figma 967:69696 / 968:59074 / 969:60272). */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-5 xl:flex-col-reverse xl:items-start xl:gap-4">
+          <MarinaPopover marina={SAMPLE_MARINAS.aciSplit} />
+
+          <div className="flex flex-wrap items-start gap-1.5">
+            <Chip>{t("badges.bestForFamilies")}</Chip>
+            <Chip>{t("badges.bestValue")}</Chip>
+            <Chip className="bg-brand text-brand-foreground">
+              <Tag />
+              {t("badges.discount", { percent: 15 })}
+            </Chip>
+          </div>
         </div>
 
-        <MarinaPopover marina={SAMPLE_MARINAS.aciSplit} />
-
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-4">
           <h1 className="text-[42px] font-bold leading-[1.15] text-foreground">{YACHT_NAME}</h1>
           <Chip className="bg-transparent p-1.5 text-gold">
             <Star className="fill-current" />
             5.9
           </Chip>
-          <div className="flex items-center gap-1.5">
+          <div className="flex basis-full items-center gap-1.5 md:basis-auto">
             <Chip variant="neutral">
               <Sailboat />
               {t("charterTypes.bareboat")}
@@ -45,16 +51,18 @@ export default function TitleBlock() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button variant="subtle">
+      {/* Tablet reverses the desktop order outright; mobile only lifts the wishlist CTA to the top.
+          Share drops its borderless desktop treatment once it becomes a full-width block. */}
+      <div className="flex flex-col gap-2 md:flex-row-reverse md:gap-3 xl:flex-row">
+        <Button variant="subtle" className={`${ACTION} max-xl:border-border max-xl:bg-secondary`}>
           <Share />
           {tDetail("share")}
         </Button>
-        <Button variant="neutral">
+        <Button variant="neutral" className={ACTION}>
           <Map />
           {tDetail("seeOnMap")}
         </Button>
-        <Button variant="brand">
+        <Button variant="brand" className={`${ACTION} max-md:order-first`}>
           <Bookmark />
           {tDetail("addToWishlist")}
         </Button>

@@ -636,6 +636,10 @@
       "payNowCta": "Pagar {amount}",
       "requestQuote": "Solicitar presupuesto"
     },
+    "panels": {
+      "details": "Detalles del yate",
+      "booking": "Resumen de la reserva"
+    },
     "tabs": {
       "overview": "Resumen",
       "amenities": "Comodidades",

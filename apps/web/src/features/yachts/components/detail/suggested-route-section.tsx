@@ -77,10 +77,10 @@ export default function SuggestedRouteSection() {
           width={1042}
           height={435}
           sizes="(min-width: 1280px) 1042px, 100vw"
-          className="h-108.75 w-full rounded-2xl object-cover"
+          className="h-78 w-full rounded-2xl object-cover md:h-108.75"
         />
 
-        <div className="flex items-start gap-10 pt-3">
+        <div className="flex flex-col gap-10 pt-3 md:flex-row md:items-start">
           {COLUMNS.map((column) => (
             <DayList key={column[0]?.title} days={column} />
           ))}
