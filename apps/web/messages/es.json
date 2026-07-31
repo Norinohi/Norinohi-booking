@@ -571,7 +571,148 @@
     "stepHeading": "Paso {current}",
     "placeholder": "La pregunta y sus opciones aparecerán aquí en la siguiente etapa.",
     "back": "Atrás",
-    "next": "Siguiente"
+    "next": "Siguiente",
+    "steps": {
+      "destination": {
+        "question": "¿A dónde te gustaría navegar?",
+        "subtitle": "Elige un destino o deja que te sugiramos la mejor opción",
+        "options": {
+          "croatia": {
+            "label": "Croacia",
+            "description": "Ideal para saltar entre islas y navegar por primera vez. Aguas tranquilas, distancias cortas entre islas y una gran variedad de rutas: perfecto para principiantes y viajes relajados."
+          },
+          "greece": {
+            "label": "Grecia",
+            "description": "Ideal para rutas escénicas y mezcla cultural. Navega entre islas icónicas de aguas cristalinas, pueblos históricos y un equilibrio entre aventura y confort."
+          },
+          "italy": {
+            "label": "Italia",
+            "description": "Ideal para experiencias premium y vistas de la costa. Hermosas rutas costeras, marinas de alta gama y destinos inolvidables como Amalfi: perfecto para un viaje más lujoso."
+          },
+          "spain": {
+            "label": "España",
+            "description": "Ideal para estilo de vida y ambiente social. Buen clima, ambiente vibrante y destinos como Ibiza o Mallorca: perfecto para diversión, grupos y viajes activos."
+          },
+          "notSure": {
+            "label": "No estoy seguro"
+          }
+        }
+      },
+      "groupSize": {
+        "question": "¿Cuántas personas van a bordo?",
+        "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
+        "options": {
+          "twoToFour": {
+            "label": "2–4 personas",
+            "description": "Más privacidad, mayor coste por persona"
+          },
+          "fiveToEight": {
+            "label": "5–8 personas",
+            "description": "El mejor equilibrio entre confort y precio"
+          },
+          "ninePlus": {
+            "label": "9+ personas",
+            "description": "Requiere yates más grandes o varios barcos"
+          },
+          "notSure": {
+            "label": "No estoy seguro"
+          }
+        }
+      },
+      "experience": {
+        "question": "¿Tienes experiencia navegando?",
+        "options": {
+          "none": {
+            "label": "Sin experiencia",
+            "description": "Necesito un patrón para navegar"
+          },
+          "some": {
+            "label": "Algo de experiencia",
+            "description": "He navegado antes, pero necesito un patrón"
+          },
+          "licensed": {
+            "label": "Con licencia",
+            "description": "Tengo licencia válida y navegaré yo mismo"
+          }
+        }
+      },
+      "tripVibe": {
+        "question": "¿Qué tipo de viaje buscas?",
+        "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
+        "options": {
+          "adventure": {
+            "label": "Aventura",
+            "description": "Navegación activa y exploración. Más movimiento, rutas más largas y navegación práctica"
+          },
+          "relax": {
+            "label": "Relax",
+            "description": "Ritmo tranquilo, naturaleza y calas tranquilas. Perfecto para navegar con calma, nadar y desconectar."
+          },
+          "family": {
+            "label": "Familia",
+            "description": "Seguro, cómodo y espacioso. Ideal para niños, estabilidad y rutas fáciles."
+          },
+          "luxury": {
+            "label": "Lujo",
+            "description": "Yates premium y servicio completo. Tripulación, confort y destinos exclusivos."
+          },
+          "party": {
+            "label": "Fiesta",
+            "description": "Música, vida nocturna y ambiente social. Ideal para rutas estilo Ibiza y energía de grupo."
+          }
+        }
+      },
+      "duration": {
+        "question": "¿Cuánto quieres que dure tu viaje?",
+        "subtitle": "Elige la duración que mejor se adapte a tus planes. Nos ayuda a sugerir los yates, las rutas y la experiencia adecuados.",
+        "options": {
+          "week": { "label": "7 días" },
+          "twoWeeks": { "label": "14 días" },
+          "threeWeeks": { "label": "21 días" },
+          "more": { "label": "21+ días" }
+        }
+      },
+      "budget": {
+        "question": "¿Qué presupuesto te resulta cómodo?",
+        "subtitle": "Tu estilo de viaje define el tipo de yate, la ruta y la experiencia a bordo.",
+        "perPersonWeek": "por persona/semana",
+        "options": {
+          "low": { "label": "€300–600" },
+          "mid": { "label": "€600-1000" },
+          "high": { "label": "€1000-1200" },
+          "premium": { "label": "€2000+" }
+        }
+      }
+    },
+    "result": {
+      "title": "Tu viaje en yate perfecto",
+      "subtitle": "Según tus preferencias, esto es lo que recomendamos.",
+      "perPersonWeek": "por persona/semana",
+      "labels": {
+        "yachtType": "Tipo de yate",
+        "skipper": "Patrón",
+        "style": "Estilo",
+        "duration": "Duración",
+        "estPrice": "Precio est."
+      },
+      "yachtType": {
+        "sailing": "Velero",
+        "catamaran": "Catamarán",
+        "gulet": "Gulet"
+      },
+      "skipper": { "yes": "Sí", "no": "No" },
+      "difficulty": { "easy": "Fácil", "moderate": "Moderado", "advanced": "Avanzado" },
+      "getConsultation": "Solicitar asesoría",
+      "viewDetails": "Ver detalles",
+      "boat": {
+        "location": "Aphines, Grecia",
+        "title": "Lagoon 42",
+        "tagBareboat": "Sin tripulación",
+        "tagFullCrew": "Con tripulación",
+        "from": "Desde",
+        "perPerson": "/ por persona"
+      }
+    }
   },
   "YachtDetail": {
     "backToSearch": "Volver a la búsqueda",
