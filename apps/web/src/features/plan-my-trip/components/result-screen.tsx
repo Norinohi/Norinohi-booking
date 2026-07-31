@@ -2,9 +2,12 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
-import { ArrowRight, Anchor, Check, Clock, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, Anchor, Clock, TrendingUp, Users } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+
+import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
 import type { Destination, PlannerAnswers } from "../lib/search-params";
 
@@ -119,16 +122,34 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <motion.div variants={GROUP} initial="hidden" animate="show" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-6">
-        <Check className="size-10 text-brand" strokeWidth={2.5} />
-        <div className="flex flex-col items-center gap-4 text-center">
+        <span className="relative inline-flex">
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="size-10 text-brand"
+          >
+            <motion.path variants={DRAW} d="M4 12l5 5L20 6" />
+          </svg>
+          <Sparkles />
+        </span>
+
+        <motion.div variants={RISE} className="flex flex-col items-center gap-4 text-center">
           <h1 className="text-h4 text-foreground">{t("title")}</h1>
           <p className="text-body-xl text-natural-600">{t("subtitle")}</p>
-        </div>
+        </motion.div>
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 md:flex-row">
+      <motion.div
+        variants={RISE}
+        className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 md:flex-row"
+      >
         {/* Left — darkened destination photo with the recommended boat card floating on top */}
         <div className="relative flex items-center justify-center overflow-hidden p-6 md:w-[652px] md:shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -205,8 +226,31 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Sparkles() {
+  const reduced = useReducedMotion();
+
+  return (
+    <span aria-hidden className="pointer-events-none absolute inset-0">
+      {SPARKS.map((spark) => (
+        <motion.span
+          key={`${spark.x}:${spark.y}`}
+          className="absolute top-1/2 left-1/2 rounded-full bg-brand"
+          style={{ width: spark.size, height: spark.size }}
+          initial={{ x: 0, y: 0, scale: 0, opacity: 0 }}
+          animate={
+            reduced
+              ? { opacity: 0 }
+              : { x: spark.x, y: spark.y, scale: [0, 1, 0], opacity: [0, 1, 0] }
+          }
+          transition={{ duration: 0.6, delay: SPARK_START + spark.delay, ease: "easeOut" }}
+        />
+      ))}
+    </span>
   );
 }
 
