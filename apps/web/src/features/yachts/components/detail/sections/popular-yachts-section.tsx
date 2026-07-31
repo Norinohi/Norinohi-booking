@@ -18,6 +18,9 @@ import Link from "next/link";
 
 import DetailSection from "./detail-section";
 
+/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
+const DETAIL_HREF = "/yachts/lagoon-42";
+
 const YACHTS = [
   {
     name: "Bavaria C42",
@@ -115,6 +118,7 @@ export default function PopularYachtsSection() {
                 priceSuffix={t("popular.perPerson")}
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}
+                actionRender={<Link href={DETAIL_HREF} />}
               />
             </CarouselSlide>
           ))}

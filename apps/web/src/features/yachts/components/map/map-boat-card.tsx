@@ -11,6 +11,7 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 import { Image } from "@/components/shared/image";
 
@@ -18,6 +19,9 @@ import type { Marina } from "../../types";
 import { MarinaPopover } from "../marina-popover";
 import PrepaymentNote from "../prepayment-note";
 import type { BoatCardBadge } from "../search/boat-card";
+
+/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
+const DETAIL_HREF = "/yachts/lagoon-42";
 
 const LAYOUT = {
   list: {
@@ -176,7 +180,13 @@ export default function MapBoatCard({
           <PrepaymentNote backdrop label={prepayment} className="flex w-fit" />
         </div>
 
-        <Button variant="neutral" size="md" className="w-full capitalize">
+        <Button
+          variant="neutral"
+          size="md"
+          nativeButton={false}
+          render={<Link href={DETAIL_HREF} />}
+          className="w-full capitalize"
+        >
           {t("viewDetails")}
         </Button>
       </div>

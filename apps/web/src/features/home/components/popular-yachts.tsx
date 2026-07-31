@@ -17,6 +17,9 @@ import Link from "next/link";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 /* Yacht names are proper nouns and stay in code; every other visible string comes from messages. */
+/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
+const DETAIL_HREF = "/yachts/lagoon-42";
+
 const POPULAR_YACHTS = [
   {
     key: "lagoon42",
@@ -122,6 +125,7 @@ export default function PopularYachts() {
                   priceSuffix={t("perDay")}
                   priceLabel={t("from")}
                   actionLabel={t("viewDetails")}
+                  actionRender={<Link href={DETAIL_HREF} />}
                 />
               </CarouselSlide>
             ))}

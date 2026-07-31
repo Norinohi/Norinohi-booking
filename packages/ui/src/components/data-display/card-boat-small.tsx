@@ -27,10 +27,11 @@ type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   priceSuffix?: React.ReactNode;
   priceLabel?: React.ReactNode;
   actionLabel?: React.ReactNode;
+  /** Element the action renders as — pass the app's own link to make it navigate. */
+  actionRender?: React.ComponentProps<typeof Button>["render"];
   /** Accessible name for the save button — it has no visible text. */
   saveLabel?: string;
   onSave?: () => void;
-  onViewDetails?: () => void;
 };
 
 function BoatSmallCard({
@@ -44,9 +45,9 @@ function BoatSmallCard({
   priceSuffix = "/ per person",
   priceLabel = "From",
   actionLabel = "View Details",
+  actionRender,
   saveLabel = "Save to wishlist",
   onSave,
-  onViewDetails,
   className,
   ...props
 }: BoatSmallCardProps) {
@@ -94,7 +95,7 @@ function BoatSmallCard({
             <span className="text-lg font-bold text-foreground">{price}</span> {priceSuffix}
           </span>
         </div>
-        <Button variant="neutral" size="sm" onClick={onViewDetails}>
+        <Button variant="neutral" size="sm" nativeButton={!actionRender} render={actionRender}>
           {actionLabel}
         </Button>
       </CardFooter>

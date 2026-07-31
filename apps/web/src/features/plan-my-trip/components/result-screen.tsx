@@ -5,6 +5,7 @@ import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-bo
 import { ArrowRight, Anchor, Clock, TrendingUp, Users } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
@@ -20,6 +21,9 @@ import type { Destination, PlannerAnswers } from "../lib/search-params";
  * recommendation-only fields — yacht type, skipper, difficulty, and the specific boat — are
  * heuristics + placeholder data until a recommendation service exists (TODO).
  */
+/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
+const DETAIL_HREF = "/yachts/lagoon-42";
+
 const DESTINATION_FLAGS: Record<Destination, string> = {
   greece: "🇬🇷",
   croatia: "🇭🇷",
@@ -174,7 +178,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
             priceLabel={t("boat.from")}
             priceSuffix={t("boat.perPerson")}
             actionLabel={t("viewDetails")}
-            onViewDetails={() => router.push("/yachts")}
+            actionRender={<Link href={DETAIL_HREF} />}
           />
         </div>
 
