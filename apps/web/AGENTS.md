@@ -50,6 +50,7 @@ src/
   components/
     shared/               # cross-feature components (not owned by one feature)
     layout/               # app shell / chrome
+  hooks/                  # app-wide React hooks, feature-agnostic
   lib/                    # app-wide integrations & clients
   utils/                  # app-wide helpers
 ```
@@ -60,7 +61,7 @@ definition, so server-prefetched and client cache keys always match.
 
 ### Rules
 
-- **Dependencies flow one way:** `app → features → (components/shared, packages/ui, lib, utils)`. Never sideways or up.
+- **Dependencies flow one way:** `app → features → (components/shared, packages/ui, hooks, lib, utils)`. Never sideways or up.
 - **Feature encapsulation:** import a feature only via `@/features/<name>` (its `index.ts`), never a deep path. Feature→feature imports are allowed only through the public index and only as an exception; if something is needed by 2+ features, promote it (framework-agnostic → `packages/ui`, else → `components/shared`).
 - **Cross-feature composition happens in the route** (`app/**`), not inside a feature.
 

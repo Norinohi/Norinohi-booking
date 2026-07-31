@@ -19,8 +19,9 @@ import {
 } from "@/components/shared/filters";
 import EmptyState from "@/components/shared/empty-state";
 
+import { useFillToFold } from "@/hooks/use-fill-to-fold";
+
 import { useBoatCards } from "../../hooks/use-boat-cards";
-import { useFillToFold } from "../../hooks/use-fill-to-fold";
 import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
 
 import BoatCard from "./boat-card";
@@ -31,7 +32,7 @@ export default function SearchScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
-  const filtersRef = useFillToFold();
+  const filtersRef = useFillToFold("64rem");
 
   const t = useTranslations("Yachts");
   const { toSearchCard } = useBoatCards();

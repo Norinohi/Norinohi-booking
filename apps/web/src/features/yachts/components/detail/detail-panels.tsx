@@ -5,6 +5,8 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
+import { useFillToFold } from "@/hooks/use-fill-to-fold";
+
 const PANELS = ["details", "booking"] as const;
 
 export default function DetailPanels({
@@ -16,6 +18,7 @@ export default function DetailPanels({
 }) {
   const t = useTranslations("YachtDetail");
   const [panel, setPanel] = useState<(typeof PANELS)[number]>(PANELS[0]);
+  const bookingRef = useFillToFold<HTMLElement>("80rem");
 
   return (
     <div className="mx-auto flex w-full max-w-349 flex-col gap-6 md:gap-8">
@@ -40,6 +43,7 @@ export default function DetailPanels({
         </div>
 
         <aside
+          ref={bookingRef}
           className={cn(
             "flex xl:sticky xl:top-[calc(var(--header-h)+1.5rem)] xl:max-h-[calc(100dvh-var(--header-h)-3rem)] xl:self-start",
             panel !== "booking" && "max-xl:hidden",

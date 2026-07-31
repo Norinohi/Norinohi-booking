@@ -3,17 +3,19 @@
 import { useEffect, useRef } from "react";
 
 const GUTTER = 24;
-const DESKTOP = "(min-width: 64rem)";
 
-/** Keeps a sticky element's bottom on the fold, whatever its current offset is. Desktop only. */
-export function useFillToFold() {
-  const ref = useRef<HTMLDivElement>(null);
+/**
+ * Keeps a sticky element's bottom on the fold, whatever its current offset is.
+ * `from` must match the breakpoint at which the element becomes sticky.
+ */
+export function useFillToFold<T extends HTMLElement = HTMLDivElement>(from: string) {
+  const ref = useRef<T>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
-    const desktop = window.matchMedia(DESKTOP);
+    const desktop = window.matchMedia(`(min-width: ${from})`);
 
     let frame = 0;
     const measure = () => {
@@ -42,7 +44,7 @@ export function useFillToFold() {
       window.removeEventListener("resize", schedule);
       desktop.removeEventListener("change", schedule);
     };
-  }, []);
+  }, [from]);
 
   return ref;
 }
