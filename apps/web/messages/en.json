@@ -636,6 +636,18 @@
       "payNowCta": "Pay {amount} Now",
       "requestQuote": "Request Quote"
     },
+    "tabs": {
+      "overview": "Overview",
+      "amenities": "Amenities",
+      "mandatory-extras": "Mandatory extras",
+      "optional-extras": "Optional extras",
+      "description": "Description",
+      "important-info": "Important info",
+      "suggested-route": "Suggested route",
+      "review": "Review",
+      "faq": "FAQ",
+      "popular-yachts": "Popular yachts"
+    },
     "sections": {
       "overview": "Overview",
       "amenities": "Amenities",

@@ -9,12 +9,21 @@ const SUBTITLE = "7-day itinerary through the best of Central Dalmatia";
 
 const DAYS = [
   { title: "Day 1 — Split", text: "Check-in and evening in the historic Diocletian's Palace." },
-  { title: "Day 2 — Hvar", text: "Sail to the sunniest island, famous for lavender and nightlife." },
-  { title: "Day 3 — Vis", text: "Explore the remote military tunnels and authentic fishing charm." },
+  {
+    title: "Day 2 — Hvar",
+    text: "Sail to the sunniest island, famous for lavender and nightlife.",
+  },
+  {
+    title: "Day 3 — Vis",
+    text: "Explore the remote military tunnels and authentic fishing charm.",
+  },
   { title: "Day 4 — Blue Cave", text: "A magical natural phenomenon on the island of Biševo." },
   { title: "Day 5 — Korčula", text: "Check-in and evening in the historic Diocletian's Palace." },
   { title: "Day 6 — Bra", text: "Sail to the sunniest island, famous for lavender and nightlife." },
-  { title: "Day 7 — Split", text: "Explore the remote military tunnels and authentic fishing charm." },
+  {
+    title: "Day 7 — Split",
+    text: "Explore the remote military tunnels and authentic fishing charm.",
+  },
 ] as const;
 
 const COLUMNS = [DAYS.slice(0, 4), DAYS.slice(4)];
@@ -27,7 +36,7 @@ const COLUMNS = [DAYS.slice(0, 4), DAYS.slice(4)];
  */
 function DayList({ days }: { days: readonly (typeof DAYS)[number][] }) {
   return (
-    <ol className="relative flex min-w-0 flex-1 flex-col">
+    <ol className="relative flex min-w-0 flex-1 flex-col ">
       <span aria-hidden className="absolute inset-y-2 left-0.5 w-3 rounded-full bg-brand-50/50" />
       <span
         aria-hidden

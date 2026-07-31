@@ -636,6 +636,18 @@
       "payNowCta": "Pagar {amount}",
       "requestQuote": "Solicitar presupuesto"
     },
+    "tabs": {
+      "overview": "Resumen",
+      "amenities": "Comodidades",
+      "mandatory-extras": "Extras obligatorios",
+      "optional-extras": "Extras opcionales",
+      "description": "Descripción",
+      "important-info": "Información importante",
+      "suggested-route": "Ruta",
+      "review": "Opiniones",
+      "faq": "Preguntas",
+      "popular-yachts": "Yates populares"
+    },
     "sections": {
       "overview": "Resumen",
       "amenities": "Comodidades",

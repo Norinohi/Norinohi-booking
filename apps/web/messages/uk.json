@@ -636,6 +636,18 @@
       "payNowCta": "Оплатити {amount}",
       "requestQuote": "Запросити пропозицію"
     },
+    "tabs": {
+      "overview": "Огляд",
+      "amenities": "Зручності",
+      "mandatory-extras": "Обов'язкові доплати",
+      "optional-extras": "Додаткові опції",
+      "description": "Опис",
+      "important-info": "Важлива інформація",
+      "suggested-route": "Маршрут",
+      "review": "Відгуки",
+      "faq": "Питання",
+      "popular-yachts": "Популярні яхти"
+    },
     "sections": {
       "overview": "Огляд",
       "amenities": "Зручності",

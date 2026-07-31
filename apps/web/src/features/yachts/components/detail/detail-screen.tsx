@@ -3,6 +3,7 @@ import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/app-brea
 import AmenitiesSection from "./amenities-section";
 import BookingSidebar from "./booking-sidebar";
 import DescriptionSection from "./description-section";
+import DetailTabs from "./detail-tabs";
 import FaqSection from "./faq-section";
 import Gallery from "./gallery";
 import ImportantInfoSection from "./important-info-section";
@@ -29,6 +30,7 @@ export default function YachtDetailScreen() {
           <div className="flex min-w-0 flex-col gap-6">
             <TitleBlock />
             <Gallery />
+            <DetailTabs />
             <OverviewSection />
             <AmenitiesSection />
             <MandatoryExtrasSection />

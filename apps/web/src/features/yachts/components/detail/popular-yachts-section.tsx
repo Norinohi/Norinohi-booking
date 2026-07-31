@@ -86,7 +86,7 @@ export default function PopularYachtsSection() {
 
   return (
     <DetailSection id="popular-yachts" title={t("sections.popularYachts")}>
-      <Carousel options={{ align: "start", containScroll: "trimSnaps" }}>
+      <Carousel options={{ align: "start", containScroll: "trimSnaps" }} className="mt-4">
         <div className="mb-3 flex items-center justify-between gap-4">
           <CarouselNav />
           <Button
