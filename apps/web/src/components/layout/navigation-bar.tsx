@@ -39,7 +39,7 @@ export default function NavigationBar() {
           <IconButton
             variant="subtle"
             aria-label={open ? t("closeMenu") : t("openMenu")}
-            className="rounded-sm 2xl:hidden"
+            className="rounded-sm min-[1360px]:hidden"
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="size-6" /> : <Menu className="size-6" />}
@@ -52,7 +52,7 @@ export default function NavigationBar() {
             YachtCharter
           </Link>
 
-          <nav className="hidden items-center gap-6 2xl:flex">
+          <nav className="hidden items-center gap-6 min-[1360px]:flex">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.key}
@@ -80,7 +80,7 @@ export default function NavigationBar() {
             <LanguageSwitcher />
           </div>
 
-          <div className="hidden items-center gap-3 2xl:flex">
+          <div className="hidden items-center gap-3 min-[1360px]:flex">
             <Link href="/plan-my-trip" className={buttonVariants({ variant: "neutral" })}>
               {t("helpPlan")}
             </Link>
@@ -94,7 +94,7 @@ export default function NavigationBar() {
       {/* Collapsed sheet (below 2xl) — links + CTAs from the hamburger */}
       <div
         className={cn(
-          "absolute inset-x-0 top-full origin-top border-b border-natural-50 bg-background shadow-[4px_4px_10px_rgba(0,0,0,0.1)] 2xl:hidden",
+          "absolute inset-x-0 top-full origin-top border-b border-natural-50 bg-background shadow-[4px_4px_10px_rgba(0,0,0,0.1)] min-[1360px]:hidden",
           open ? "block" : "hidden",
         )}
       >

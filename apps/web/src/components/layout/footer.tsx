@@ -51,11 +51,11 @@ export default function Footer() {
 
   return (
     <footer className="bg-natural-900 text-white">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-10 px-4 py-[50px] md:px-[54px] 2xl:px-[70px] 2xl:py-[60px]">
+      <div className="mx-auto flex max-w-[1536px] flex-col gap-10 px-4 py-[50px] md:px-[54px] xl:px-[70px] xl:py-[60px]">
         {/* Top block: brand + columns (row on desktop, centred/stacked below 2xl) */}
-        <div className="flex flex-col items-center gap-8 text-center 2xl:flex-row 2xl:items-start 2xl:justify-between 2xl:text-left">
+        <div className="flex flex-col items-center gap-8 text-center xl:flex-row xl:items-start xl:justify-between xl:text-left">
           {/* Brand */}
-          <div className="flex w-full flex-col items-center gap-4 2xl:w-auto 2xl:items-start 2xl:gap-6">
+          <div className="flex w-full flex-col items-center gap-4 xl:w-auto xl:items-start xl:gap-6">
             <div className="flex w-full flex-col gap-4">
               <span className="text-[28px] font-bold leading-[1.2] whitespace-nowrap">
                 YachtCharter
@@ -81,11 +81,11 @@ export default function Footer() {
           </div>
 
           {/* Link columns */}
-          <div className="flex w-full flex-col gap-4 md:flex-row md:justify-center 2xl:w-auto 2xl:gap-5">
+          <div className="flex w-full flex-col gap-4 md:flex-row md:justify-center xl:w-auto xl:gap-5">
             {COLUMNS.map((col) => (
               <div
                 key={col.title}
-                className="flex flex-col gap-2 md:flex-1 md:gap-4 2xl:w-[216px] 2xl:flex-none"
+                className="flex flex-col gap-2 md:flex-1 md:gap-4 xl:w-[216px] xl:flex-none"
               >
                 <span className="text-lg leading-[1.4] md:text-xl">
                   {t(`columns.${col.title}`)}
@@ -108,7 +108,7 @@ export default function Footer() {
         </div>
 
         {/* Legal bar */}
-        <div className="flex flex-col items-center gap-4 text-sm leading-[1.3] tracking-[0.04em] text-natural-100 uppercase 2xl:flex-row 2xl:justify-between">
+        <div className="flex flex-col items-center gap-4 text-sm leading-[1.3] tracking-[0.04em] text-natural-100 uppercase xl:flex-row xl:justify-between">
           <div className="flex gap-4">
             <a href="#" className="transition-colors hover:text-white">
               {t("privacy")}
