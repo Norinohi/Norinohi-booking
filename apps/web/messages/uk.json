@@ -312,19 +312,15 @@
       },
       "stats": {
         "yachts": {
-          "value": "30 000+",
           "label": "яхт"
         },
         "destinations": {
-          "value": "1 200+",
           "label": "напрямків"
         },
         "travelers": {
-          "value": "20 000+",
           "label": "задоволених мандрівників"
         },
         "rating": {
-          "value": "4,8",
           "label": "середня оцінка"
         }
       }

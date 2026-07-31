@@ -312,19 +312,15 @@
       },
       "stats": {
         "yachts": {
-          "value": "30,000+",
           "label": "yachts"
         },
         "destinations": {
-          "value": "1,200+",
           "label": "destinations"
         },
         "travelers": {
-          "value": "20,000+",
           "label": "happy travelers"
         },
         "rating": {
-          "value": "4.8",
           "label": "average rating"
         }
       }

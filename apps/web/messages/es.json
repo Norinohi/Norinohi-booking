@@ -312,19 +312,15 @@
       },
       "stats": {
         "yachts": {
-          "value": "30.000+",
           "label": "yates"
         },
         "destinations": {
-          "value": "1.200+",
           "label": "destinos"
         },
         "travelers": {
-          "value": "20.000+",
           "label": "viajeros satisfechos"
         },
         "rating": {
-          "value": "4,8",
           "label": "valoración media"
         }
       }
