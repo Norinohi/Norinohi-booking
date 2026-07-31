@@ -9,6 +9,7 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Check, Sailboat, Star, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/image";
@@ -26,6 +27,9 @@ export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean }
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
 export type BoatCardCharterDate = string;
+
+/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
+const DETAIL_HREF = "/yachts/lagoon-42";
 
 export type BoatCardProps = {
   images: string[];
@@ -262,7 +266,13 @@ function Action({
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
         <PrepaymentNote label={prepayment} className="hidden md:flex" />
-        <Button variant="neutral" size="md" className="w-full capitalize">
+        <Button
+          variant="neutral"
+          size="md"
+          nativeButton={false}
+          render={<Link href={DETAIL_HREF} />}
+          className="w-full capitalize"
+        >
           {t("viewDetails")}
         </Button>
       </div>
