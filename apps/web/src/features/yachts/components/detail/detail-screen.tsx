@@ -1,19 +1,19 @@
 import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/app-breadcrumbs";
 
-import AmenitiesSection from "./amenities-section";
 import BookingSidebar from "./booking-sidebar";
-import DescriptionSection from "./description-section";
 import DetailPanels from "./detail-panels";
-import DetailTabs from "./detail-tabs";
-import FaqSection from "./faq-section";
 import Gallery from "./gallery";
-import ImportantInfoSection from "./important-info-section";
-import MandatoryExtrasSection from "./mandatory-extras-section";
-import OptionalExtrasSection from "./optional-extras-section";
-import OverviewSection from "./overview-section";
-import PopularYachtsSection from "./popular-yachts-section";
-import ReviewSection from "./review-section";
-import SuggestedRouteSection from "./suggested-route-section";
+import AmenitiesSection from "./sections/amenities-section";
+import DescriptionSection from "./sections/description-section";
+import DetailTabs from "./sections/detail-tabs";
+import FaqSection from "./sections/faq-section";
+import ImportantInfoSection from "./sections/important-info-section";
+import MandatoryExtrasSection from "./sections/mandatory-extras-section";
+import OptionalExtrasSection from "./sections/optional-extras-section";
+import OverviewSection from "./sections/overview-section";
+import PopularYachtsSection from "./sections/popular-yachts-section";
+import ReviewSection from "./sections/review-section";
+import SuggestedRouteSection from "./sections/suggested-route-section";
 import TitleBlock, { YACHT_NAME } from "./title-block";
 
 const CRUMBS: AppBreadcrumb[] = [
