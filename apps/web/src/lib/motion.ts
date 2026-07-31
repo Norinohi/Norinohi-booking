@@ -16,3 +16,12 @@ export const RISE = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: DURATION, ease: EASE } },
 };
+
+export const SLIDE_DURATION = 0.25;
+
+/** `custom` carries the direction: 1 moves forward, -1 back. Client-only — these are functions. */
+export const SLIDE = {
+  enter: (direction: number) => ({ x: direction * 40, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction * -40, opacity: 0 }),
+};

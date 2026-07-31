@@ -5,10 +5,13 @@ import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { StepIndicator } from "@yacht-charter/ui/components/navigation/step-indicator";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { useEffect, useRef } from "react";
+import { useState } from "react";
+
+import { EASE, SLIDE, SLIDE_DURATION } from "@/lib/motion";
 
 import { plannerParsers, TOTAL_STEPS } from "../lib/search-params";
 import { isStepComplete, PlannerSteps } from "./planner-steps";
@@ -29,14 +32,13 @@ export default function PlannerScreen() {
   const isResult = current > TOTAL_STEPS;
   const canProceed = isStepComplete(current, answers);
 
-  // Slide direction for the step transition: forward (Next) enters from the right, back (Back)
-  // enters from the left. Pure CSS via tw-animate-css utilities — no animation runtime. `prevStep`
-  // holds the last committed step so `direction` is correct on the render where the step changes.
-  const prevStep = useRef(current);
-  const direction = current >= prevStep.current ? "forward" : "back";
-  useEffect(() => {
-    prevStep.current = current;
-  }, [current]);
+  const [prevStep, setPrevStep] = useState(current);
+  const [direction, setDirection] = useState(1);
+
+  if (current !== prevStep) {
+    setDirection(current > prevStep ? 1 : -1);
+    setPrevStep(current);
+  }
 
   return (
     <div className="px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5">
@@ -69,16 +71,19 @@ export default function PlannerScreen() {
           <ResultScreen answers={answers} />
         ) : (
           <div className="flex flex-col gap-4 md:gap-8">
-            {/* Re-keyed per step so it re-mounts and plays the enter animation each transition. */}
-            <div
-              key={current}
-              className={cn(
-                "animate-in fade-in-0 duration-500 ease-out motion-reduce:animate-none",
-                direction === "forward" ? "slide-in-from-right-8" : "slide-in-from-left-8",
-              )}
-            >
-              <PlannerSteps current={current} answers={answers} setAnswers={setAnswers} />
-            </div>
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={current}
+                custom={direction}
+                variants={SLIDE}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: SLIDE_DURATION, ease: EASE }}
+              >
+                <PlannerSteps current={current} answers={answers} setAnswers={setAnswers} />
+              </motion.div>
+            </AnimatePresence>
 
             <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
               <Button variant="neutral" onClick={() => router.back()} className="w-full md:w-auto">
