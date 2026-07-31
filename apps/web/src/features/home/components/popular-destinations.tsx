@@ -59,7 +59,7 @@ export default function PopularDestinations() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto pt-10 pb-8 md:pt-17.5 md:pb-12.5 xl:pt-25 xl:pb-15">
+      <div className="mx-auto max-w-384 pt-10 pb-8 md:pt-17.5 md:pb-12.5 xl:pt-25 xl:pb-15">
         <Carousel options={{ align: "start" }} className="flex flex-col gap-8 xl:gap-10">
           <motion.div
             variants={RISE}

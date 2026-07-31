@@ -70,7 +70,7 @@ export default function Testimonials() {
 
   return (
     <section className="overflow-hidden bg-background pt-10 pb-8 md:pt-17.5 md:pb-12.5 xl:pt-25 xl:pb-15">
-      <div className="mx-auto px-4 md:px-13.5 xl:px-17.5">
+      <div className="mx-auto max-w-384 px-4 md:px-13.5 xl:px-17.5">
         <motion.h2
           variants={RISE}
           initial="hidden"
@@ -87,7 +87,7 @@ export default function Testimonials() {
         <MarqueeRow items={ROW_TWO} reverse />
       </div>
 
-      <div className="mx-auto mt-8 flex justify-center px-4 lg:mt-10">
+      <div className="mx-auto mt-8 flex max-w-384 justify-center px-4 lg:mt-10">
         <Button
           variant="neutral"
           size="md"

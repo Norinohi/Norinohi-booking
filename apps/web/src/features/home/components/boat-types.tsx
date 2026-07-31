@@ -21,7 +21,7 @@ export default function BoatTypes() {
         initial="hidden"
         whileInView="show"
         viewport={VIEWPORT}
-        className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-13.5 md:pt-17.5 md:pb-12.25 xl:gap-10 xl:px-17.5 xl:pt-25 xl:pb-15"
+        className="mx-auto flex max-w-384 flex-col gap-8 px-4 pt-10 pb-8 md:px-13.5 md:pt-17.5 md:pb-12.25 xl:gap-10 xl:px-17.5 xl:pt-25 xl:pb-15"
       >
         <motion.h2 variants={RISE} className="text-h2 text-center text-balance text-foreground">
           {t("heading")}

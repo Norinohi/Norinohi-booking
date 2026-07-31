@@ -12,7 +12,7 @@ export default function EarnCta() {
 
   return (
     <section className="bg-background">
-      <div className="mx-auto px-4 py-10 md:px-13.5 md:py-17.5 xl:px-17.5 xl:py-25">
+      <div className="mx-auto max-w-384 px-4 py-10 md:px-13.5 md:py-17.5 xl:px-17.5 xl:py-25">
         <motion.div
           variants={RISE}
           initial="hidden"

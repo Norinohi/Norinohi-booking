@@ -93,7 +93,7 @@ export default function PopularYachts() {
 
   return (
     <section className="bg-brand-50">
-      <div className="mx-auto px-4 pt-10 pb-10 md:px-13.5 md:pt-17.5 md:pb-17.25 xl:px-17.5 xl:pt-25 xl:pb-25">
+      <div className="mx-auto max-w-384 px-4 pt-10 pb-10 md:px-13.5 md:pt-17.5 md:pb-17.25 xl:px-17.5 xl:pt-25 xl:pb-25">
         <Carousel options={{ align: "start", containScroll: "trimSnaps" }}>
           <motion.div
             variants={RISE}

@@ -182,7 +182,7 @@ export default function Hero() {
         variants={GROUP}
         initial="hidden"
         animate="show"
-        className="relative z-10 mx-auto flex min-h-140 flex-col gap-8 px-4 pt-10 pb-10 md:px-13.5 md:pt-17.5 md:pb-16.25 xl:min-h-190 xl:gap-10 xl:px-17.5 xl:pt-25 xl:pb-15"
+        className="relative z-10 mx-auto flex min-h-140 max-w-384 flex-col gap-8 px-4 pt-10 pb-10 md:px-13.5 md:pt-17.5 md:pb-16.25 xl:min-h-190 xl:gap-10 xl:px-17.5 xl:pt-25 xl:pb-15"
       >
         <div className="flex flex-1 flex-col items-center gap-8 xl:flex-row xl:items-start xl:justify-between xl:gap-10">
           <motion.div
