@@ -41,7 +41,7 @@ export default function PlannerScreen() {
   }
 
   return (
-    <div className="px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5">
+    <div className="flex flex-1 flex-col px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5">
       {!isResult && (
         <StepIndicator
           total={TOTAL_STEPS}
@@ -53,7 +53,7 @@ export default function PlannerScreen() {
 
       <div
         className={cn(
-          "relative mx-auto w-full max-w-290 overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10",
+          "relative mx-auto flex w-full max-w-290 flex-1 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10",
           !isResult && "mt-4 md:mt-6",
         )}
       >
@@ -70,7 +70,7 @@ export default function PlannerScreen() {
         {isResult ? (
           <ResultScreen answers={answers} />
         ) : (
-          <div className="flex flex-col gap-4 md:gap-8">
+          <div className="flex flex-1 flex-col gap-4 md:gap-8">
             <AnimatePresence mode="wait" custom={direction} initial={false}>
               <motion.div
                 key={current}
@@ -85,7 +85,7 @@ export default function PlannerScreen() {
               </motion.div>
             </AnimatePresence>
 
-            <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
+            <div className="mt-auto flex flex-col-reverse gap-3 md:flex-row md:justify-end">
               <Button variant="neutral" onClick={() => router.back()} className="w-full md:w-auto">
                 {t("back")}
               </Button>
