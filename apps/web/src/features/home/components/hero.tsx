@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import { type DateRange } from "@yacht-charter/ui/components/form/calendar";
 import {
   Select,
   SelectContent,
@@ -9,10 +10,13 @@ import {
   SelectValue,
 } from "@yacht-charter/ui/components/form/select";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Calendar, MapPin, Search, Ship, Users } from "lucide-react";
+import { MapPin, Search, Ship, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
+
+import DatePicker from "@/components/shared/date-picker";
 
 /*
  * Hero — Figma "Main Page" hero (node 530:3101). Full-bleed sunset photo with a left headline
@@ -65,6 +69,7 @@ function HeroSelect({
 
 function SearchCard() {
   const t = useTranslations("Home.Hero");
+  const [range, setRange] = useState<DateRange | undefined>();
 
   return (
     <div className="mx-auto w-full max-w-[489px] shrink-0 rounded-2xl bg-card p-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)] xl:mx-0 xl:w-[438px]">
@@ -75,14 +80,13 @@ function SearchCard() {
           options={DESTINATIONS}
         />
 
-        {/* Dates — display field; the real date picker lands with search wiring. */}
-        <button
-          type="button"
-          className="group flex h-12 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-        >
-          <Calendar className="size-6 shrink-0 text-foreground" />
-          <span className="truncate text-natural-300">{t("datesPlaceholder")}</span>
-        </button>
+        <DatePicker
+          mode="range"
+          value={range}
+          onValueChange={setRange}
+          placeholder={t("datesPlaceholder")}
+          clearLabel={t("clearDates")}
+        />
 
         <HeroSelect
           icon={<Ship className="size-6 shrink-0 text-foreground" />}

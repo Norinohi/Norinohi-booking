@@ -1,26 +1,20 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { Calendar, type DateRange } from "@yacht-charter/ui/components/form/calendar";
-import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
+import { type DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@yacht-charter/ui/components/overlay/popover";
-import { cn } from "@yacht-charter/ui/lib/utils";
-import { Calendar as CalendarIcon, MapPin, Sailboat, Search } from "lucide-react";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { MapPin, Sailboat, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
+import DatePicker from "@/components/shared/date-picker";
 import {
   type FiltersState,
   orderedValues,
   useDraft,
   useFilterOptions,
 } from "@/components/shared/filters";
-import { addDays, dayFromNative, dayToDisplay, dayToNative, daysBetween } from "@/lib/date";
+import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
 
 function toRange(value: FiltersState): DateRange {
   if (!value.startDate) return { from: undefined, to: undefined };
@@ -30,9 +24,6 @@ function toRange(value: FiltersState): DateRange {
   };
 }
 
-const fieldTrigger =
-  "group flex h-12 w-full min-w-[200px] items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[popup-open]:border-foreground";
-
 export type SearchBarProps = {
   value: FiltersState;
   onSearch: (next: FiltersState) => void;
@@ -40,22 +31,11 @@ export type SearchBarProps = {
 
 export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const t = useTranslations("Yachts.searchBar");
-  const format = useFormatter();
-  const locale = useLocale();
   const [draft, setDraft] = useDraft(value);
   const options = useFilterOptions();
-
-  const day = (date: Date) => format.dateTime(dayToDisplay(dayFromNative(date)), "day");
-  const formatRange = (range: DateRange) =>
-    range.from && range.to
-      ? `${day(range.from)} – ${day(range.to)}`
-      : range.from
-        ? day(range.from)
-        : null;
   const [pending, setPending] = useState<DateRange | null>(null);
 
   const range = pending ?? toRange(draft);
-  const rangeLabel = formatRange(range);
 
   function handleRange(next: DateRange | undefined) {
     const from = next?.from;
@@ -103,39 +83,14 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
         />
       </div>
 
-      <div className="relative">
-        <Popover>
-          <PopoverTrigger className={fieldTrigger}>
-            <CalendarIcon className="size-6 shrink-0 text-foreground" />
-            <span
-              className={cn(
-                "truncate",
-                rangeLabel ? "text-foreground" : "text-natural-300",
-                rangeLabel && "pr-6",
-              )}
-            >
-              {rangeLabel ?? t("addDates")}
-            </span>
-          </PopoverTrigger>
-          <PopoverContent className="w-(--anchor-width) border-0 bg-transparent p-0 shadow-none">
-            <Calendar
-              className="w-full"
-              mode="range"
-              locale={locale}
-              selected={range}
-              onSelect={handleRange}
-            />
-          </PopoverContent>
-        </Popover>
-
-        {rangeLabel ? (
-          <FieldClear
-            label={t("clearDates")}
-            className="right-3"
-            onClear={() => handleRange(undefined)}
-          />
-        ) : null}
-      </div>
+      <DatePicker
+        mode="range"
+        value={range}
+        onValueChange={handleRange}
+        placeholder={t("addDates")}
+        clearLabel={t("clearDates")}
+        triggerClassName="min-w-50"
+      />
 
       <div className="md:col-span-2 xl:col-span-1">
         <MultiSelect
