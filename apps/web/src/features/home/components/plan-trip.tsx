@@ -1,15 +1,12 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight, Check } from "lucide-react";
+import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
-/*
- * PlanTrip — Figma "Main Page" › Not Sure What To Choose… (node 530:3181). Two columns: on the
- * left an H2, a 3-item check-list and a brand CTA; on the right a vertical 3-step timeline
- * (brand dots joined by a hairline). Below 2xl the columns stack. The timeline is local to this
- * file — it is bespoke to this section and not a shared primitive.
- */
+import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
+
 const CHECKLIST = ["questions", "recommendation", "explore"] as const;
 
 const STEPS = ["preferences", "recommendation", "yachts"] as const;
@@ -19,9 +16,15 @@ export default function PlanTrip() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-[54px] md:pt-[70px] md:pb-[49px] xl:max-w-[1536px] xl:flex-row xl:items-start xl:justify-between xl:gap-16 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
+      <motion.div
+        variants={GROUP}
+        initial="hidden"
+        whileInView="show"
+        viewport={VIEWPORT}
+        className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-13.5 md:pt-17.5 md:pb-12.25 xl:max-w-384 xl:flex-row xl:items-start xl:justify-between xl:gap-16 xl:px-17.5 xl:pt-25 xl:pb-15"
+      >
         {/* Left — headline, checklist, CTA */}
-        <div className="flex flex-col gap-6 xl:max-w-[544px]">
+        <motion.div variants={RISE} className="flex flex-col gap-6 xl:max-w-136">
           <h2 className="text-h2 text-center text-foreground md:text-left">{t("heading")}</h2>
 
           <ul className="flex flex-col gap-1.5">
@@ -46,14 +49,14 @@ export default function PlanTrip() {
             {t("cta")}
             <ArrowUpRight />
           </Button>
-        </div>
+        </motion.div>
 
         {/* Right — vertical timeline */}
-        <ol className="flex flex-col xl:mt-[18px] xl:w-[568px]">
+        <motion.ol variants={GROUP} className="flex flex-col xl:mt-4.5 xl:w-142">
           {STEPS.map((step, index) => {
             const isLast = index === STEPS.length - 1;
             return (
-              <li key={step} className="flex gap-4 md:gap-6">
+              <motion.li key={step} variants={RISE} className="flex gap-4 md:gap-6">
                 <div className="flex flex-col items-center self-stretch">
                   <span className="mt-1.5 size-4 shrink-0 rounded-full bg-brand" />
                   {!isLast && <span className="w-px grow bg-brand-100" />}
@@ -69,11 +72,11 @@ export default function PlanTrip() {
                     {t(`steps.${step}.description`)}
                   </p>
                 </div>
-              </li>
+              </motion.li>
             );
           })}
-        </ol>
-      </div>
+        </motion.ol>
+      </motion.div>
     </section>
   );
 }

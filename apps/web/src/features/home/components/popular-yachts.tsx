@@ -10,16 +10,11 @@ import {
   useCarousel,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { motion } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 
-/*
- * PopularYachts — Figma "Main Page" section (node 605:4015). A brand-50 wash band: a large
- * "Popular Yachts" heading with prev/next arrows to its right, a swipeable carousel of five
- * BoatSmallCards (reuses data-display/carousel + data-display/card-boat-small), and a centered
- * "See All Yachts" link (node 845:196378) below. Content is static sample data; View Details
- * has no target yet (TODO: wire to the yacht-detail route once it exists).
- */
+import { RISE, VIEWPORT } from "@/lib/motion";
 
 /* Yacht names are proper nouns and stay in code; every other visible string comes from messages. */
 const POPULAR_YACHTS = [
@@ -98,21 +93,22 @@ export default function PopularYachts() {
 
   return (
     <section className="bg-brand-50">
-      <div className="mx-auto px-4 pt-10 pb-10 md:px-[54px] md:pt-[70px] md:pb-[69px] xl:px-[70px] xl:pt-[100px] xl:pb-[100px]">
+      <div className="mx-auto px-4 pt-10 pb-10 md:px-13.5 md:pt-17.5 md:pb-17.25 xl:px-17.5 xl:pt-25 xl:pb-25">
         <Carousel options={{ align: "start", containScroll: "trimSnaps" }}>
-          <div className="mb-8 flex flex-col items-center gap-4 md:flex-row md:justify-between xl:mb-10">
-            <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px] xl:text-[50px]">
-              {t("heading")}
-            </h2>
+          <motion.div
+            variants={RISE}
+            initial="hidden"
+            whileInView="show"
+            viewport={VIEWPORT}
+            className="mb-8 flex flex-col items-center gap-4 md:flex-row md:justify-between xl:mb-10"
+          >
+            <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px]">{t("heading")}</h2>
             <CarouselNav />
-          </div>
+          </motion.div>
 
           <CarouselViewport>
             {POPULAR_YACHTS.map((yacht) => (
-              <CarouselSlide
-                key={yacht.key}
-                className="basis-[342px] pr-2 md:basis-[354px] md:pr-5 xl:basis-[354px] xl:pr-5"
-              >
+              <CarouselSlide key={yacht.key} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
                 <BoatSmallCard
                   className="w-full"
                   image={yacht.image}

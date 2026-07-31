@@ -1,5 +1,3 @@
-import { stagger } from "motion/react";
-
 export const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export const DURATION = 0.6;
@@ -8,9 +6,10 @@ export const STAGGER = 0.1;
 
 export const VIEWPORT = { once: true, amount: 0.3 };
 
+/** Plain numbers only — these cross the server/client boundary as props. */
 export const GROUP = {
   hidden: {},
-  show: { transition: { delayChildren: stagger(STAGGER) } },
+  show: { transition: { staggerChildren: STAGGER } },
 };
 
 export const RISE = {

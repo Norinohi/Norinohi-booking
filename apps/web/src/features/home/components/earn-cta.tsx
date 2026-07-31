@@ -1,24 +1,25 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { ArrowUpRight } from "lucide-react";
+import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 
-/*
- * EarnCta — Figma "Main Page" section (node 605:4206). A rounded hero banner with a full-bleed
- * photo of a couple at the rail, a left-anchored dark gradient for legibility, and an
- * "Earn With Your Yacht" headline + copy + white "List Your Yacht" link (node 615:8336 family).
- * Text column is 481px (gap 24), H2 Manrope Medium 50/1.1, body Regular 20/1.4, both white.
- * Link points at /yachts until an owner/listing route exists (TODO).
- */
+import { RISE, VIEWPORT } from "@/lib/motion";
 
 export default function EarnCta() {
   const t = useTranslations("Home.EarnCta");
 
   return (
     <section className="bg-background">
-      <div className="mx-auto px-4 py-10 md:px-[54px] md:py-[70px] xl:px-[70px] xl:pt-[100px] xl:pb-[100px]">
-        <div className="relative isolate overflow-hidden rounded-[20px]">
+      <div className="mx-auto px-4 py-10 md:px-13.5 md:py-17.5 xl:px-17.5 xl:py-25">
+        <motion.div
+          variants={RISE}
+          initial="hidden"
+          whileInView="show"
+          viewport={VIEWPORT}
+          className="relative isolate overflow-hidden rounded-3xl"
+        >
           <Image
             src="/assets/home/earn/couple-yacht.webp"
             alt=""
@@ -28,12 +29,12 @@ export default function EarnCta() {
           />
           <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/50 to-transparent" />
 
-          <div className="relative z-10 flex min-h-[309px] items-center p-6 md:min-h-[291px] xl:min-h-[391px] xl:p-16">
+          <div className="relative z-10 flex min-h-77.25 items-center p-6 md:min-h-72.75 xl:min-h-97.75 xl:p-16">
             <div className="flex flex-col items-center gap-4 text-center md:items-start md:gap-6 md:text-left">
               <h2 className="text-[28px] leading-[1.1] font-medium text-white md:text-[32px] xl:text-[50px] xl:whitespace-nowrap">
                 {t("heading")}
               </h2>
-              <p className="max-w-[481px] text-lg leading-[1.4] text-white md:text-xl">
+              <p className="max-w-120.25 text-lg leading-[1.4] text-white md:text-xl">
                 {t("description")}
               </p>
               <Button
@@ -48,7 +49,7 @@ export default function EarnCta() {
               </Button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

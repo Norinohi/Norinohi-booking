@@ -2,17 +2,11 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { TestimonialCard } from "@yacht-charter/ui/components/data-display/card-testimonial";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight } from "lucide-react";
+import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
-/*
- * Testimonials — Figma "Main Page" section (node 605:4132). A centered "What Our Customers Say"
- * heading over two full-bleed rows of brand-50 TestimonialCards. The design offsets the second
- * row; here the rows drift in opposite directions as a slow CSS marquee (pauses on hover, and is
- * disabled under prefers-reduced-motion) with edge fades. A centered "All Reviews" link
- * (node 615:8175) closes the section. Static sample content; the link points at /yachts until a
- * dedicated reviews route exists (TODO).
- */
+import { RISE, VIEWPORT } from "@/lib/motion";
 
 /* Author names are proper nouns and stay in code; quote and location come from messages. */
 const TESTIMONIALS = [
@@ -59,7 +53,7 @@ function MarqueeRow({
           <TestimonialCard
             key={index}
             aria-hidden={index >= items.length || undefined}
-            className="w-[358px] max-w-none shrink-0 md:w-[452px]"
+            className="w-89.5 max-w-none shrink-0 md:w-113"
             quote={t(`${item.key}.quote`)}
             author={item.author}
             location={t(`${item.key}.location`)}
@@ -75,11 +69,17 @@ export default function Testimonials() {
   const t = useTranslations("Home.Testimonials");
 
   return (
-    <section className="overflow-hidden bg-background pt-10 pb-8 md:pt-[70px] md:pb-[50px] xl:pt-[100px] xl:pb-[60px]">
-      <div className="mx-auto px-4 md:px-[54px] xl:px-[70px]">
-        <h2 className="text-center text-[40px] leading-[1.1] font-medium md:text-[50px] xl:text-[50px]">
+    <section className="overflow-hidden bg-background pt-10 pb-8 md:pt-17.5 md:pb-12.5 xl:pt-25 xl:pb-15">
+      <div className="mx-auto px-4 md:px-13.5 xl:px-17.5">
+        <motion.h2
+          variants={RISE}
+          initial="hidden"
+          whileInView="show"
+          viewport={VIEWPORT}
+          className="text-center text-[40px] leading-[1.1] font-medium md:text-[50px]"
+        >
           {t("heading")}
-        </h2>
+        </motion.h2>
       </div>
 
       <div className="mt-8 flex flex-col gap-4 md:gap-5 lg:mt-10 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">

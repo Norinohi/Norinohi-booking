@@ -9,18 +9,13 @@ import {
   SelectValue,
 } from "@yacht-charter/ui/components/form/select";
 import { ArrowUpRight } from "lucide-react";
+import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
-/*
- * BudgetFinder — Figma "Main Page" › Find Yachts By Your Budget (node 530:3117). A centered H2
- * over a brand-tinted bordered panel holding four labelled selectors, with a brand "View Results"
- * button centered underneath. Client component: SelectValue takes a render prop to translate the
- * chosen option, and a function cannot cross the server/client boundary. Real query wiring lands
- * with the search work.
- *
- * Option keys double as the Select's stable `value`, so a language change never rewrites state.
- */
+import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
+
+/* Option keys double as the Select's stable `value`, so a language change never rewrites state. */
 const SELECTS = [
   {
     key: "budget",
@@ -58,11 +53,22 @@ export default function BudgetFinder() {
 
   return (
     <section className="w-full">
-      <div className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-[54px] md:pt-[70px] md:pb-[48px] xl:gap-10 xl:px-[70px] xl:pt-[100px] xl:pb-[60px]">
-        <h2 className="text-h2 text-center text-foreground">{t("heading")}</h2>
+      <motion.div
+        variants={GROUP}
+        initial="hidden"
+        whileInView="show"
+        viewport={VIEWPORT}
+        className="mx-auto flex flex-col gap-8 px-4 pt-10 pb-8 md:px-13.5 md:pt-17.5 md:pb-12 xl:gap-10 xl:px-17.5 xl:pt-25 xl:pb-15"
+      >
+        <motion.h2 variants={RISE} className="text-h2 text-center text-foreground">
+          {t("heading")}
+        </motion.h2>
 
         <div className="flex flex-col gap-8 xl:gap-6">
-          <div className="grid grid-cols-1 gap-x-5 gap-y-3 rounded-3xl border border-brand-100 bg-brand-50 p-4 md:grid-cols-2 md:gap-y-4 md:px-6 md:pt-6 md:pb-[30px] xl:grid-cols-4">
+          <motion.div
+            variants={RISE}
+            className="grid grid-cols-1 gap-x-5 gap-y-3 rounded-3xl border border-brand-100 bg-brand-50 p-4 md:grid-cols-2 md:gap-y-4 md:px-6 md:pt-6 md:pb-7.5 xl:grid-cols-4"
+          >
             {SELECTS.map((select) => (
               <div key={select.key} className="flex flex-col gap-1.5">
                 <span className="text-sm leading-[1.2] font-semibold text-natural-700">
@@ -82,9 +88,9 @@ export default function BudgetFinder() {
                 </Select>
               </div>
             ))}
-          </div>
+          </motion.div>
 
-          <div className="flex justify-center">
+          <motion.div variants={RISE} className="flex justify-center">
             <Button
               variant="brand"
               size="md"
@@ -95,9 +101,9 @@ export default function BudgetFinder() {
               {t("viewResults")}
               <ArrowUpRight />
             </Button>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
