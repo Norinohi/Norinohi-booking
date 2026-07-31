@@ -4,7 +4,6 @@ import { Tabs, TabsList, TabsTab } from "@yacht-charter/ui/components/navigation
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-/* Same ids the sections register as anchors, in page order. */
 const SECTIONS = [
   "overview",
   "amenities",
@@ -18,7 +17,6 @@ const SECTIONS = [
   "popular-yachts",
 ] as const;
 
-/* Keeps the topmost section that reaches the band just under the sticky bar as the active tab. */
 function useActiveSection() {
   const [active, setActive] = useState<string>(SECTIONS[0]);
 
@@ -63,7 +61,7 @@ export default function DetailTabs() {
       variant="lined"
       value={active}
       onValueChange={(value) => goTo(value as string)}
-      className="sticky top-0 z-10 bg-background"
+      className="sticky top-[calc(var(--header-h)+66px)] z-10 bg-background xl:top-(--header-h)"
     >
       <TabsList className="overflow-x-auto">
         {SECTIONS.map((id) => (

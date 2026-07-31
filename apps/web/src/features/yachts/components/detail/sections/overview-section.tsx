@@ -17,10 +17,6 @@ import { useTranslations } from "next-intl";
 
 import DetailSection from "./detail-section";
 
-/*
- * Reading order, matching Figma 967:69738. Two columns fill it row by row from md up; below that
- * the grid collapses to the single column of 969:60304 and the same order reads straight down.
- */
 const ITEMS = [
   { key: "location", icon: <MapPin />, value: "Split, Croatia" },
   { key: "mainsail", icon: <Sailboat />, value: "Classic mainsail" },
@@ -41,8 +37,6 @@ export default function OverviewSection() {
 
   return (
     <DetailSection id="overview" title={t("sections.overview")}>
-      {/* The zebra stripe follows the visual row, so it alternates per item in one column and per
-          pair in two. Cell padding stands in for a column gap to keep each stripe unbroken. */}
       <div className="grid md:grid-cols-2">
         {ITEMS.map((item, index) => (
           <div

@@ -33,8 +33,6 @@ export default function MandatoryExtrasSection() {
               ) : null}
               <p className="text-xs font-semibold text-natural-300">{t("extras.payAtCheckIn")}</p>
             </div>
-            {/* The price wraps to two lines in its 72px mobile column, which is what leaves the
-                description the 270px the design gives it. */}
             <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
               {t("extras.perBooking", { price: item.price })}
             </p>

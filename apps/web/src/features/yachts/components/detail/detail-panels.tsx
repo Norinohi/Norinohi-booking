@@ -7,12 +7,6 @@ import { type ReactNode, useState } from "react";
 
 const PANELS = ["details", "booking"] as const;
 
-/*
- * Below xl the design (Figma 968:57728 tablet, 967:75492 mobile) splits the page into two segmented
- * tabs — the yacht itself and the booking card — because the 334px column has nowhere to sit. From
- * xl both fit side by side, so the bar disappears and the panels become the grid columns; the
- * panels stay in one DOM tree so the section anchors and the in-page tabs keep working.
- */
 export default function DetailPanels({
   details,
   booking,
@@ -29,10 +23,8 @@ export default function DetailPanels({
         variant="segmented"
         value={panel}
         onValueChange={(value) => setPanel(value as (typeof PANELS)[number])}
-        className="xl:hidden"
+        className="sticky top-(--header-h) z-20 bg-background xl:hidden"
       >
-        {/* Figma draws both strokes inside its 66px bar, so the tab padding absorbs the two
-            borders the box model adds on top — otherwise the whole page below sits 4px low. */}
         <TabsList>
           {PANELS.map((id) => (
             <TabsTab key={id} value={id} className="flex-1 py-3.5 leading-5.5">
@@ -47,14 +39,9 @@ export default function DetailPanels({
           {details}
         </div>
 
-        {/* The card is ~2050px against a ~900px viewport, so it is capped to the screen and
-            scrolls internally — a plain sticky would pin it and leave the CTAs unreachable.
-            The cap subtracts the header stack (nav + breadcrumb bar + page padding) on top of the
-            sticky gap, so the card also fits before it pins at the very top of the page. Below xl
-            the card owns the whole tab, so it grows freely instead. */}
         <aside
           className={cn(
-            "flex xl:sticky xl:top-6 xl:max-h-[calc(100dvh-12rem)] xl:self-start",
+            "flex xl:sticky xl:top-[calc(var(--header-h)+1.5rem)] xl:max-h-[calc(100dvh-var(--header-h)-3rem)] xl:self-start",
             panel !== "booking" && "max-xl:hidden",
           )}
         >

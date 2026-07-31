@@ -181,11 +181,6 @@ function PaymentSchedule() {
   );
 }
 
-/*
- * BookingSidebar — Figma "Overview" panel (994:91577 at 50% prepayment, 967:71388 at 100%).
- * The sticky 334px booking card: social proof, charter window, crew and party-size controls, the
- * prepayment banner, price breakdown groups, the payment schedule and the pay / quote actions.
- */
 export default function BookingSidebar() {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
@@ -197,9 +192,6 @@ export default function BookingSidebar() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      {/* Below xl nothing caps the card, so the viewport is a scroll container with nothing to
-          scroll — and its overscroll-contain then swallows the wheel instead of handing it to the
-          page. Only the cap needs the containment. */}
       <ScrollArea className="min-h-0 flex-1 max-xl:[&_[data-slot=scroll-area-viewport]]:overscroll-auto">
         <div className="flex w-full flex-col gap-2 p-4 text-sm leading-4.5 font-medium text-foreground">
           <p>{tCard("stats.booked", { count: 3 })}</p>

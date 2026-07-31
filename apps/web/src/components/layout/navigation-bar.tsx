@@ -32,7 +32,7 @@ export default function NavigationBar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="relative z-40 border-b border-natural-50 bg-background">
+    <header className="sticky top-0 z-40 border-b border-natural-50 bg-background">
       <div className="flex h-[72px] items-center justify-between gap-4 px-4 md:px-[54px] 2xl:h-20 2xl:px-[70px]">
         {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
         <div className="flex items-center gap-4 2xl:gap-16">

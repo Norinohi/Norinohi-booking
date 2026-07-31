@@ -7,11 +7,6 @@ import {
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 
-/*
- * DetailSection — the collapsible section shell every yacht-detail block sits in (Figma section
- * header 967:69735). `id` doubles as the DOM anchor the in-page tabs will scroll to. `title` takes
- * a node because the Review heading carries a rating chip and a count beside it (967:70032).
- */
 export default function DetailSection({
   id,
   title,
@@ -22,7 +17,11 @@ export default function DetailSection({
   children: ReactNode;
 }) {
   return (
-    <Accordion id={id} defaultValue={[id]} className="scroll-mt-24">
+    <Accordion
+      id={id}
+      defaultValue={[id]}
+      className="scroll-mt-[calc(var(--header-h)+7.5rem)] xl:scroll-mt-[calc(var(--header-h)+3.5rem)]"
+    >
       <AccordionItem value={id}>
         <AccordionTrigger
           indicator={
@@ -31,7 +30,6 @@ export default function DetailSection({
             </span>
           }
         >
-          {/* Headings/h5 — 20/1.1 on the 390 frame, 24/1.1 on both 768 and 1536. */}
           <h2 className="flex items-center gap-1 text-xl leading-5.5 font-semibold text-foreground md:text-2xl md:leading-6.5">
             {title}
           </h2>

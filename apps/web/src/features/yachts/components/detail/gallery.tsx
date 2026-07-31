@@ -28,11 +28,6 @@ const PHOTOS = [
 
 const ARROW = "rounded-lg bg-black/12 text-white hover:bg-black/25 hover:text-white";
 
-/*
- * Gallery — Figma node 967:69718. A 400px hero carousel (dark-12 arrows inset 32px, a 420px bar
- * strip pinned to the bottom) over a 334x200 thumbnail strip that overflows the 1042 column and
- * drags. Clicking the hero opens the full-size lightbox.
- */
 export default function Gallery() {
   const t = useTranslations("YachtDetail");
   const [openAt, setOpenAt] = useState<number | null>(null);

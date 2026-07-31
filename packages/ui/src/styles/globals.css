@@ -132,6 +132,8 @@
 
   --radius: 0.5rem; /* base control radius = 8px (Figma "border radius/sm") */
 
+  --header-h: 73px; /* sticky navigation bar, border included */
+
   /* charts */
   --chart-1: var(--brand-500);
   --chart-2: var(--positive-500);
@@ -193,6 +195,12 @@
   --sidebar-accent-foreground: var(--base-white);
   --sidebar-border: var(--base-white-12);
   --sidebar-ring: var(--brand-500);
+}
+
+@media (width >= 96rem) {
+  :root {
+    --header-h: 81px;
+  }
 }
 
 @theme inline {

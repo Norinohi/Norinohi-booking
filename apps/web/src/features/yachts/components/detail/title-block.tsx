@@ -17,8 +17,6 @@ export default function TitleBlock() {
   return (
     <div className="flex flex-col gap-4 md:gap-6 xl:flex-row xl:flex-wrap xl:items-start xl:justify-between xl:gap-5">
       <div className="flex min-w-0 flex-col gap-4">
-        {/* Marina and badges share a line on tablet, stack below it on mobile and swap places on
-            desktop, where the badges sit above the marina (Figma 967:69696 / 968:59074 / 969:60272). */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-5 xl:flex-col-reverse xl:items-start xl:gap-4">
           <MarinaPopover marina={SAMPLE_MARINAS.aciSplit} />
 
@@ -51,8 +49,6 @@ export default function TitleBlock() {
         </div>
       </div>
 
-      {/* Tablet reverses the desktop order outright; mobile only lifts the wishlist CTA to the top.
-          Share drops its borderless desktop treatment once it becomes a full-width block. */}
       <div className="flex flex-col gap-2 md:flex-row-reverse md:gap-3 xl:flex-row">
         <Button variant="subtle" className={`${ACTION} max-xl:border-border max-xl:bg-secondary`}>
           <Share />

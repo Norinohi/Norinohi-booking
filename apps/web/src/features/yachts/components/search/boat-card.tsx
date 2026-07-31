@@ -261,11 +261,11 @@ function Action({
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
-        <PrepaymentNote label={prepayment} className="flex md:hidden" />
+        <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        <PrepaymentNote label={prepayment} className="hidden md:flex" />
+        <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
         <Button
           variant="neutral"
           size="md"

@@ -28,12 +28,6 @@ const DAYS = [
 
 const COLUMNS = [DAYS.slice(0, 4), DAYS.slice(4)];
 
-/*
- * The Figma rail (967:69975) is a 12px brand-50/50 bar with a 5px dotted line inset 8px from each
- * end, drawn behind 16px markers. Here it spans the whole list instead of carrying absolute
- * per-step offsets, so every marker lands on its own heading whatever the description wraps to —
- * in the design the right column's markers drift off their headings.
- */
 function DayList({ days }: { days: readonly (typeof DAYS)[number][] }) {
   return (
     <ol className="relative flex min-w-0 flex-1 flex-col ">

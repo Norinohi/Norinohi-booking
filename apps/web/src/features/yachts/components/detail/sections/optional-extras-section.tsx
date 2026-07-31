@@ -15,7 +15,6 @@ const OPTIONAL = [
   { id: "hot-tub", name: "Hot tub", price: "€100" },
 ] as const;
 
-/* Selection stays local until the booking sidebar needs to read it — it moves up then, not now. */
 export default function OptionalExtrasSection() {
   const t = useTranslations("YachtDetail");
   const [selected, setSelected] = useState<string[]>(["sunbathing"]);
