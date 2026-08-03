@@ -2,15 +2,58 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { Input } from "@yacht-charter/ui/components/form/input";
-import { Label } from "@yacht-charter/ui/components/form/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@yacht-charter/ui/components/form/form";
+import { TextField } from "@yacht-charter/ui/components/form/text-field";
+import { Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { ComponentProps } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
 import Loader from "@/components/shared/feedback/loader";
 import { authClient } from "@/lib/auth-client";
+
+/*
+ * SignInForm — Figma "Sign In" (972:53946 desktop / 973:86586 tablet / 973:86647 mobile).
+ * "Welcome back" heading over a self-contained card (358 → 660 → 451 wide across mobile /
+ * tablet / desktop): centred card title split by a separator, then email + password, the
+ * brand submit, an "Or" divider, the Google button and the switch-to-register link.
+ * Built on the design-system <Form/> primitives (FormItem wires label ⇄ control ⇄ message;
+ * FormControl sets aria-invalid, so TextField paints its own error border).
+ * The Google button is rendered per the design but not wired — social auth isn't configured.
+ */
+
+// Multicolour Google "G" — no lucide equivalent; inlined to match the Figma button.
+function GoogleIcon(props: ComponentProps<"svg">) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden {...props}>
+      <path
+        fill="#4285F4"
+        d="M23.52 12.27c0-.82-.07-1.6-.21-2.36H12v4.47h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.74Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.96-1.08 7.95-2.91l-3.88-3.01c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.79-2.11-6.73-4.96H1.29v3.11A12 12 0 0 0 12 24Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.62H1.29a12 12 0 0 0 0 10.76l3.98-3.11Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.96 1.2 15.24 0 12 0A12 12 0 0 0 1.29 6.62l3.98 3.11C6.21 6.88 8.87 4.77 12 4.77Z"
+      />
+    </svg>
+  );
+}
 
 const schema = z.object({
   email: z.email("Invalid email address"),
@@ -23,13 +66,10 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
   const router = useRouter();
   const { isPending } = authClient.useSession();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({
+  const form = useForm<Values>({
     defaultValues: { email: "", password: "" },
     resolver: zodResolver(schema),
+    mode: "onTouched",
   });
 
   const onSubmit = (value: Values) =>
@@ -48,36 +88,112 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
   }
 
   return (
-    <div className="mx-auto mt-10 w-full max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
+    <section className="px-4 pt-[122px] pb-16 md:pt-[109px] xl:pt-[113px]">
+      <div className="mx-auto flex w-full max-w-[358px] flex-col gap-8 md:max-w-[660px] xl:max-w-[451px]">
+        <h1 className="text-center text-[20px] leading-[1.3] font-bold text-foreground xl:text-[32px] xl:leading-[1.1]">
+          Welcome back
+        </h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...register("email")} />
-          {errors.email ? <p className="text-red-500">{errors.email.message}</p> : null}
-        </div>
+        <Form {...form}>
+          <form
+            noValidate
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="overflow-hidden rounded-2xl border border-natural-100 bg-card"
+          >
+            {/* Card title */}
+            <div className="border-b border-natural-100 px-5 py-5">
+              <h2 className="text-center text-xl leading-[1.3] font-bold text-foreground">
+                Continue planning your trip
+              </h2>
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" {...register("password")} />
-          {errors.password ? <p className="text-red-500">{errors.password.message}</p> : null}
-        </div>
+            {/* Body */}
+            <div className="flex flex-col gap-4 p-5">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <TextField
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="example@gmail.com"
+                        startIcon={<Mail className="size-5!" />}
+                        className="leading-[1.25]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Sign In"}
-        </Button>
-      </form>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <TextField
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="Enter your password"
+                        className="leading-[1.25]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          onClick={onSwitchToSignUp}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Need an account? Sign Up
-        </Button>
+              <Button
+                type="submit"
+                variant="brand"
+                size="md"
+                className="w-full"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? "Signing in…" : "Sign In"}
+              </Button>
+
+              {/* Or divider */}
+              <div className="relative flex justify-center">
+                <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-natural-100" />
+                <span className="relative bg-card px-2 text-sm text-natural-400">Or</span>
+              </div>
+
+              {/* Google — shown per the design, sign-in not wired yet */}
+              <Button
+                type="button"
+                variant="neutral"
+                size="md"
+                className="w-full"
+                onClick={() => toast.info("Google sign-in is coming soon")}
+              >
+                Sign In With Google
+                <GoogleIcon className="size-5" />
+              </Button>
+
+              {/* Switch to register */}
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-base text-natural-400">Have no account?</p>
+                <button
+                  type="button"
+                  onClick={onSwitchToSignUp}
+                  className="py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </form>
+        </Form>
       </div>
-    </div>
+    </section>
   );
 }
