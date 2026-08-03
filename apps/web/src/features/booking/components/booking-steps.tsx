@@ -7,7 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@yacht-charter/ui/components/layout/accordion";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
@@ -43,9 +43,11 @@ export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
+  const [completed, setCompleted] = useState<Set<Step>>(new Set());
 
   async function advance(step: Step, index: number) {
     if (await trigger(step)) {
+      setCompleted((prev) => new Set(prev).add(step));
       setOpen(STEPS[index + 1]?.id ?? null);
       return;
     }
@@ -78,9 +80,15 @@ export default function BookingSteps() {
               }
             >
               <span className="flex min-w-0 items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[22px] leading-[1.3] font-semibold text-foreground">
-                  {index + 1}
-                </span>
+                {completed.has(step) ? (
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground">
+                    <Check className="size-5" />
+                  </span>
+                ) : (
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[22px] leading-[1.3] font-semibold text-foreground">
+                    {index + 1}
+                  </span>
+                )}
                 <span className="truncate text-xl leading-[1.1] font-semibold text-foreground md:text-2xl md:leading-[1.3]">
                   {t(`steps.${step}`)}
                 </span>

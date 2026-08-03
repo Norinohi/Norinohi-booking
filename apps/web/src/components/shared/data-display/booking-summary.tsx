@@ -25,7 +25,9 @@ import {
 } from "@yacht-charter/ui/components/overlay/tooltip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Calendar, ChevronDown, CircleCheckBig, Info } from "lucide-react";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useState } from "react";
 
 /* TODO: temporary until the backend defines the payment data shape. Flip to see the 100% variant
@@ -186,11 +188,14 @@ function PaymentSchedule() {
 export default function BookingSummary({
   actions = true,
   shaded = false,
+  bookingHref,
 }: {
   /** The Pay Now / Request Quote pair. The booking flow has its own CTA, so it hides them. */
   actions?: boolean;
   /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
   shaded?: boolean;
+  /** Where Pay Now leads. Set on the detail page to start the booking flow. */
+  bookingHref?: Route;
 }) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
@@ -347,7 +352,13 @@ export default function BookingSummary({
           </div>
           {actions ? (
             <>
-              <Button variant="brand">{t("sidebar.payNowCta", { amount: dueNow })}</Button>
+              {bookingHref ? (
+                <Button variant="brand" nativeButton={false} render={<Link href={bookingHref} />}>
+                  {t("sidebar.payNowCta", { amount: dueNow })}
+                </Button>
+              ) : (
+                <Button variant="brand">{t("sidebar.payNowCta", { amount: dueNow })}</Button>
+              )}
               <Button variant="neutral">{t("sidebar.requestQuote")}</Button>
             </>
           ) : null}

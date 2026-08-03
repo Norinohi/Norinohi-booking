@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 
 import BookingSummary from "@/components/shared/data-display/booking-summary";
@@ -22,6 +23,9 @@ const CRUMBS: AppBreadcrumb[] = [
   { name: "YachtDetail.breadcrumbSearch", url: "/yachts" },
   { name: YACHT_NAME, dynamic: true },
 ];
+
+/* TODO: hardcoded booking route until listings carry a real id. */
+const BOOKING_HREF = "/yachts/lagoon-42/booking" as Route;
 
 export default function YachtDetailScreen() {
   const t = useTranslations("YachtDetail");
@@ -50,7 +54,7 @@ export default function YachtDetailScreen() {
               <PopularYachtsSection />
             </>
           }
-          aside={<BookingSummary />}
+          aside={<BookingSummary bookingHref={BOOKING_HREF} />}
         />
       </div>
     </div>
