@@ -15,7 +15,7 @@ export const BOOKING_DEFAULTS: BookingValues = {
   guestDetails: { fullName: "", email: "", phone: "", specialRequests: "" },
   /* TODO: mirrors the pre-selected extra in `steps/extras.tsx` until real listing data lands. */
   extras: { optional: ["sunbathing"] },
-  reviewAndBook: {},
+  reviewAndBook: { terms: false, cancellation: false },
   payment: {},
 };
 
@@ -33,7 +33,10 @@ export function useBookingSchema() {
           specialRequests: z.string(),
         }),
         extras: z.object({ optional: z.array(z.string()) }),
-        reviewAndBook: z.object({}),
+        reviewAndBook: z.object({
+          terms: z.boolean().refine((value) => value, t("terms")),
+          cancellation: z.boolean().refine((value) => value, t("cancellation")),
+        }),
         payment: z.object({}),
       }),
     [t],

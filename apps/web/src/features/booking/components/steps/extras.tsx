@@ -22,7 +22,8 @@ const INCLUDED = [
   "Fresh water system",
 ];
 
-const OPTIONAL = [
+/** Read by the Review step to name the picks. */
+export const OPTIONAL = [
   { id: "sunbathing", name: "Spacious sunbathing area", price: "€100" },
   { id: "bbq", name: "Gas BBQ", price: "€200" },
   { id: "wet-bar", name: "Fully stocked wet bar", price: "€150" },

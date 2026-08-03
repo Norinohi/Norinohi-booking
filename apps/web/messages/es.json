@@ -1,5 +1,22 @@
 {
   "Booking": {
+    "confirmBooking": "Confirmar reserva",
+    "review": {
+      "title": "Resumen de la reserva",
+      "yacht": "Yate",
+      "dates": "Fechas",
+      "crew": "Tripulación",
+      "people": "Personas",
+      "extras": "Extras",
+      "noExtras": "Ninguno seleccionado",
+      "boatPrice": "Precio del barco (alquiler completo)",
+      "deposit": "Depósito de seguridad reembolsable",
+      "secondPayment": "2.º pago (a pagar: {date})",
+      "totalPrice": "Precio total",
+      "dueNow": "A pagar ahora",
+      "terms": "Acepto los <b>Términos y Condiciones y el Contrato de Alquiler</b>.",
+      "cancellation": "Acepto la <b>Política de Cancelación</b> (cancelación gratuita hasta el 7 de junio)."
+    },
     "saveAndContinue": "Guardar y continuar",
     "extras": {
       "mandatory": "Obligatorio",
@@ -20,7 +37,9 @@
     "errors": {
       "fullName": "Introduce tu nombre completo",
       "email": "Introduce un correo electrónico válido",
-      "phone": "Introduce un número de teléfono válido"
+      "phone": "Introduce un número de teléfono válido",
+      "terms": "Acepta los términos para continuar",
+      "cancellation": "Acepta la política de cancelación para continuar"
     },
     "backToYacht": "Volver a {name}",
     "panels": { "main": "Detalles de la reserva", "aside": "Resumen de la reserva" },

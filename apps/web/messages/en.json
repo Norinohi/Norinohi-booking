@@ -1,5 +1,22 @@
 {
   "Booking": {
+    "confirmBooking": "Confirm Booking",
+    "review": {
+      "title": "Booking Summary",
+      "yacht": "Yacht",
+      "dates": "Dates",
+      "crew": "Crew",
+      "people": "People",
+      "extras": "Extras",
+      "noExtras": "None selected",
+      "boatPrice": "Boat price (full rental price)",
+      "deposit": "Refundable Security Deposit",
+      "secondPayment": "2nd payment (Pay at: {date})",
+      "totalPrice": "Total Price",
+      "dueNow": "Due now",
+      "terms": "I agree to the <b>Terms & Conditions and the Rental Agreement</b>.",
+      "cancellation": "I accept the <b>Cancellation Policy</b> (Free cancellation until June 7)."
+    },
     "saveAndContinue": "Save & Continue",
     "extras": {
       "mandatory": "Mandatory",
@@ -20,7 +37,9 @@
     "errors": {
       "fullName": "Enter your full name",
       "email": "Enter a valid email address",
-      "phone": "Enter a valid phone number"
+      "phone": "Enter a valid phone number",
+      "terms": "Accept the terms to continue",
+      "cancellation": "Accept the cancellation policy to continue"
     },
     "backToYacht": "Back To {name}",
     "panels": { "main": "Booking Details", "aside": "Booking Summary" },

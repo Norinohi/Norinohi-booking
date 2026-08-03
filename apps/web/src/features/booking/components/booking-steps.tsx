@@ -21,7 +21,7 @@ import ReviewAndBookStep from "./steps/review-and-book";
 const STEPS = [
   { id: "guestDetails", Content: GuestDetailsStep, cta: "continue" },
   { id: "extras", Content: ExtrasStep, cta: "saveAndContinue" },
-  { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "continue" },
+  { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "confirmBooking" },
   { id: "payment", Content: PaymentStep, cta: "continue" },
 ] as const;
 
