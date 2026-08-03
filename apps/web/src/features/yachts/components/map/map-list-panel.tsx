@@ -13,8 +13,8 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { useBoatCards } from "../../hooks/use-boat-cards";
-import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
+import { useBoatCards } from "@/hooks/use-boat-cards";
+import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "@/lib/sample-boats";
 import { SORT_OPTIONS, type SortValue } from "../search/results-header";
 
 import MapBoatCard from "./map-boat-card";

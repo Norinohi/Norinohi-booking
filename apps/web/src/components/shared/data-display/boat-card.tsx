@@ -51,6 +51,8 @@ export type BoatCardProps = {
   perPerson: string;
   prepayment: string;
   priority?: boolean;
+  /** Drops the dates/price/action column — the booking flow only recaps the boat. */
+  summary?: boolean;
   className?: string;
 };
 
@@ -121,12 +123,18 @@ function Details({
   crew,
   specs,
   amenities,
+  summary,
 }: Pick<
   BoatCardProps,
-  "marina" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities"
+  "marina" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities" | "summary"
 >) {
   return (
-    <div className="flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:border-r xl:border-natural-50 xl:px-0">
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:px-0",
+        summary || "xl:border-r xl:border-natural-50",
+      )}
+    >
       <div className="flex flex-col gap-3">
         <MarinaPopover marina={marina} />
 
@@ -284,7 +292,10 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
   return (
     <article
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,208fr)] xl:items-stretch xl:gap-6",
+        "flex w-full flex-col overflow-hidden rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:items-stretch xl:gap-6",
+        boat.summary
+          ? "xl:grid-cols-[minmax(0,452fr)_minmax(0,566fr)]"
+          : "xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,208fr)]",
         className,
       )}
     >
@@ -302,17 +313,20 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         crew={boat.crew}
         specs={boat.specs}
         amenities={boat.amenities}
+        summary={boat.summary}
       />
-      <Action
-        stats={boat.stats}
-        start={boat.start}
-        end={boat.end}
-        timeZone={boat.timeZone}
-        priceLabel={boat.priceLabel}
-        price={boat.price}
-        perPerson={boat.perPerson}
-        prepayment={boat.prepayment}
-      />
+      {boat.summary ? null : (
+        <Action
+          stats={boat.stats}
+          start={boat.start}
+          end={boat.end}
+          timeZone={boat.timeZone}
+          priceLabel={boat.priceLabel}
+          price={boat.price}
+          perPerson={boat.perPerson}
+          prepayment={boat.prepayment}
+        />
+      )}
     </article>
   );
 }

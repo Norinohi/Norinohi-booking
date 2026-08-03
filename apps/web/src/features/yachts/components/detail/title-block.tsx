@@ -3,7 +3,7 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Bookmark, Map, Sailboat, Share, Star, Tag, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { SAMPLE_MARINAS } from "../../lib/sample-marinas";
+import { SAMPLE_MARINAS } from "@/lib/sample-marinas";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
 export const YACHT_NAME = "Lagoon 42";

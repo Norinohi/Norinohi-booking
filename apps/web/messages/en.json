@@ -1,4 +1,16 @@
 {
+  "Booking": {
+    "backToYacht": "Back To {name}",
+    "panels": { "main": "Booking Details", "aside": "Booking Summary" },
+    "continue": "Continue",
+    "steps": {
+      "guestDetails": "Guest Details",
+      "extras": "Extras",
+      "reviewAndBook": "Review & Book",
+      "payment": "Payment"
+    },
+    "stepPlaceholder": "This step is not built yet."
+  },
   "Common": {
     "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
     "removeFilter": "Remove filter {label}",

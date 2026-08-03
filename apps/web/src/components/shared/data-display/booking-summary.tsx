@@ -23,6 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@yacht-charter/ui/components/overlay/tooltip";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Calendar, ChevronDown, CircleCheckBig, Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -181,7 +182,15 @@ function PaymentSchedule() {
   );
 }
 
-export default function BookingSummary() {
+export default function BookingSummary({
+  actions = true,
+  shaded = false,
+}: {
+  /** The Pay Now / Request Quote pair. The booking flow has its own CTA, so it hides them. */
+  actions?: boolean;
+  /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
+  shaded?: boolean;
+}) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
   const [crew, setCrew] = useState<(typeof CREW_OPTIONS)[number]>(CREW_OPTIONS[0]);
@@ -301,7 +310,13 @@ export default function BookingSummary() {
         <Separator />
 
         {GROUPS.map((group) => (
-          <div key={group.key} className="flex w-full flex-col py-4">
+          <div
+            key={group.key}
+            className={cn(
+              "flex w-full flex-col py-4",
+              shaded && "border-b border-border bg-natural-50",
+            )}
+          >
             <PriceGroup group={group} />
           </div>
         ))}
@@ -329,8 +344,12 @@ export default function BookingSummary() {
             </p>
             <p className="text-[42px] leading-14 font-bold text-foreground">{dueNow}</p>
           </div>
-          <Button variant="brand">{t("sidebar.payNowCta", { amount: dueNow })}</Button>
-          <Button variant="neutral">{t("sidebar.requestQuote")}</Button>
+          {actions ? (
+            <>
+              <Button variant="brand">{t("sidebar.payNowCta", { amount: dueNow })}</Button>
+              <Button variant="neutral">{t("sidebar.requestQuote")}</Button>
+            </>
+          ) : null}
         </div>
       </ScrollArea>
     </div>

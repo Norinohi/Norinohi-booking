@@ -22,8 +22,8 @@ import {
 
 import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
-import { useBoatCards } from "../../hooks/use-boat-cards";
-import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
+import { useBoatCards } from "@/hooks/use-boat-cards";
+import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "@/lib/sample-boats";
 
 import ResultsHeader, { type SortValue } from "./results-header";
 import SearchBar from "./search-bar";

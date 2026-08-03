@@ -1,4 +1,16 @@
 {
+  "Booking": {
+    "backToYacht": "Назад до {name}",
+    "panels": { "main": "Деталі бронювання", "aside": "Підсумок бронювання" },
+    "continue": "Продовжити",
+    "steps": {
+      "guestDetails": "Дані гостя",
+      "extras": "Додатково",
+      "reviewAndBook": "Перевірка та бронювання",
+      "payment": "Оплата"
+    },
+    "stepPlaceholder": "Цей крок ще не реалізовано."
+  },
   "Common": {
     "resultsCount": "{count, plural, one {# яхта знайдена} few {# яхти знайдено} many {# яхт знайдено} other {# яхти знайдено}}",
     "removeFilter": "Прибрати фільтр {label}",

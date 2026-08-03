@@ -7,14 +7,13 @@ import type {
   BoatCardProps,
   BoatCardSpec,
 } from "@/components/shared/data-display/boat-card";
-import type { MapBoatCardProps } from "../components/map/map-boat-card";
 import {
   AMENITY_ICONS,
   type AmenityKey,
   DISCOUNT_ICON,
   type SampleBoat,
   type SampleSpec,
-} from "../lib/sample-boats";
+} from "@/lib/sample-boats";
 
 type CardText = Pick<
   BoatCardProps,
@@ -98,7 +97,7 @@ export function useBoatCards() {
     };
   }
 
-  function toMapCard(boat: SampleBoat): MapBoatCardProps & { id: string } {
+  function toMapCard(boat: SampleBoat) {
     return {
       id: boat.id,
       images: boat.images,

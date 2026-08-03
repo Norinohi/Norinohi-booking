@@ -19,8 +19,8 @@ import {
   useFilterChips,
 } from "@/components/shared/form/filters";
 
-import { useBoatCards } from "../../hooks/use-boat-cards";
-import { type SampleBoat, SAMPLE_BOATS } from "../../lib/sample-boats";
+import { useBoatCards } from "@/hooks/use-boat-cards";
+import { type SampleBoat, SAMPLE_BOATS } from "@/lib/sample-boats";
 
 import MapBoatPopup from "./map-boat-popup";
 import type { MapInstance } from "./map-canvas";

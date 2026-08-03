@@ -1,4 +1,16 @@
 {
+  "Booking": {
+    "backToYacht": "Volver a {name}",
+    "panels": { "main": "Detalles de la reserva", "aside": "Resumen de la reserva" },
+    "continue": "Continuar",
+    "steps": {
+      "guestDetails": "Datos del huésped",
+      "extras": "Extras",
+      "reviewAndBook": "Revisar y reservar",
+      "payment": "Pago"
+    },
+    "stepPlaceholder": "Este paso aún no está implementado."
+  },
   "Common": {
     "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
     "removeFilter": "Quitar filtro {label}",

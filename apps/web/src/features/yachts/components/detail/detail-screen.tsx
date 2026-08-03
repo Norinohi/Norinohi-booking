@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import BookingSummary from "@/components/shared/data-display/booking-summary";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/navigation/app-breadcrumbs";
@@ -22,13 +24,16 @@ const CRUMBS: AppBreadcrumb[] = [
 ];
 
 export default function YachtDetailScreen() {
+  const t = useTranslations("YachtDetail");
+
   return (
     <div className="flex flex-col">
       <AppBreadcrumbs items={CRUMBS} backLabel="YachtDetail.backToSearch" backHref="/yachts" />
 
       <div className="w-full px-4 py-6 md:px-13.5">
         <SplitPanels
-          details={
+          labels={{ main: t("panels.details"), aside: t("panels.booking") }}
+          main={
             <>
               <TitleBlock />
               <Gallery />
@@ -45,7 +50,7 @@ export default function YachtDetailScreen() {
               <PopularYachtsSection />
             </>
           }
-          booking={<BookingSummary />}
+          aside={<BookingSummary />}
         />
       </div>
     </div>

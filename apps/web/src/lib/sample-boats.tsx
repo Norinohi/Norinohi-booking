@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { SAMPLE_MARINAS } from "./sample-marinas";
+import { SAMPLE_MARINAS } from "@/lib/sample-marinas";
 
 import type { Marina } from "@/components/shared/overlay/marina-popover";
 
