@@ -19,10 +19,10 @@ import PaymentStep from "./steps/payment";
 import ReviewAndBookStep from "./steps/review-and-book";
 
 const STEPS = [
-  { id: "guestDetails", Content: GuestDetailsStep, cta: "continue" },
-  { id: "extras", Content: ExtrasStep, cta: "saveAndContinue" },
-  { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "confirmBooking" },
-  { id: "payment", Content: PaymentStep, cta: "continue" },
+  { id: "guestDetails", Content: GuestDetailsStep, cta: "continue", ownsFooter: false },
+  { id: "extras", Content: ExtrasStep, cta: "saveAndContinue", ownsFooter: false },
+  { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "confirmBooking", ownsFooter: false },
+  { id: "payment", Content: PaymentStep, cta: "continue", ownsFooter: true },
 ] as const;
 
 type Step = (typeof STEPS)[number]["id"];
@@ -60,7 +60,7 @@ export default function BookingSteps() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {STEPS.map(({ id: step, Content, cta }, index) => (
+      {STEPS.map(({ id: step, Content, cta, ownsFooter }, index) => (
         <Accordion
           key={step}
           multiple={false}
@@ -90,16 +90,20 @@ export default function BookingSteps() {
             <AccordionContent>
               <span aria-hidden className="block h-px w-full bg-border" />
               <Content />
-              <span aria-hidden className="block h-px w-full bg-border" />
-              <div className="p-5">
-                <Button
-                  variant="brand"
-                  className="h-13 w-full"
-                  onClick={() => void advance(step, index)}
-                >
-                  {t(cta)}
-                </Button>
-              </div>
+              {!ownsFooter && (
+                <>
+                  <span aria-hidden className="block h-px w-full bg-border" />
+                  <div className="p-5">
+                    <Button
+                      variant="brand"
+                      className="h-13 w-full"
+                      onClick={() => void advance(step, index)}
+                    >
+                      {t(cta)}
+                    </Button>
+                  </div>
+                </>
+              )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>

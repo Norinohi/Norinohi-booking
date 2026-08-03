@@ -16,7 +16,11 @@ export const BOOKING_DEFAULTS: BookingValues = {
   /* TODO: mirrors the pre-selected extra in `steps/extras.tsx` until real listing data lands. */
   extras: { optional: ["sunbathing"] },
   reviewAndBook: { terms: false, cancellation: false },
-  payment: {},
+  payment: {
+    method: "card",
+    invoice: { email: "", company: "", vat: "" },
+    question: { message: "" },
+  },
 };
 
 /** Built in a hook, not as a constant, so the messages come out of the active locale. */
@@ -37,7 +41,24 @@ export function useBookingSchema() {
           terms: z.boolean().refine((value) => value, t("terms")),
           cancellation: z.boolean().refine((value) => value, t("cancellation")),
         }),
-        payment: z.object({}),
+        payment: z
+          .object({
+            method: z.enum(["card", "invoice", "question"]),
+            invoice: z.object({ email: z.string(), company: z.string(), vat: z.string() }),
+            question: z.object({ message: z.string() }),
+          })
+          .superRefine((value, ctx) => {
+            if (value.method === "invoice" && !z.email().safeParse(value.invoice.email).success) {
+              ctx.addIssue({ code: "custom", path: ["invoice", "email"], message: t("email") });
+            }
+            if (value.method === "question" && value.question.message.trim().length === 0) {
+              ctx.addIssue({
+                code: "custom",
+                path: ["question", "message"],
+                message: t("paymentMessage"),
+              });
+            }
+          }),
       }),
     [t],
   );

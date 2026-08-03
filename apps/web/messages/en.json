@@ -39,7 +39,8 @@
       "email": "Enter a valid email address",
       "phone": "Enter a valid phone number",
       "terms": "Accept the terms to continue",
-      "cancellation": "Accept the cancellation policy to continue"
+      "cancellation": "Accept the cancellation policy to continue",
+      "paymentMessage": "Enter your question or request"
     },
     "backToYacht": "Back To {name}",
     "panels": { "main": "Booking Details", "aside": "Booking Summary" },
@@ -50,7 +51,41 @@
       "reviewAndBook": "Review & Book",
       "payment": "Payment"
     },
-    "stepPlaceholder": "This step is not built yet."
+    "payment": {
+      "heading": "Choose how you'd like to proceed",
+      "tabs": {
+        "card": "Pay by card",
+        "invoice": "Request invoice",
+        "question": "Ask a question"
+      },
+      "card": {
+        "number": "Card Number",
+        "numberPlaceholder": "1234-3233-2332-0021",
+        "expiry": "Expiry Date",
+        "expiryPlaceholder": "01/29",
+        "cvc": "CV",
+        "cvcPlaceholder": "123",
+        "name": "Name on Card",
+        "namePlaceholder": "John Doe",
+        "notice": "Secure your booking instantly with an online payment.",
+        "cta": "Pay {amount}"
+      },
+      "invoice": {
+        "email": "Billing Email",
+        "emailPlaceholder": "billing@gmail.com",
+        "company": "Company Name (Optional)",
+        "companyPlaceholder": "Yachts Adventures",
+        "vat": "VAT Number (Optional)",
+        "vatPlaceholder": "GB12312321321312123",
+        "notice": "Prefer to pay offline? We'll send you an invoice to complete the payment by bank transfer.",
+        "cta": "Request Invoice (For {amount})"
+      },
+      "question": {
+        "label": "Your Question or Request",
+        "placeholder": "Send a request before booking (e.g. license check, special requirements)",
+        "cta": "Send Request"
+      }
+    }
   },
   "Common": {
     "extras": { "payAtCheckIn": "Pay at check-in", "perBooking": "{price} per booking" },

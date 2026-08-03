@@ -39,7 +39,8 @@
       "email": "Introduce un correo electrónico válido",
       "phone": "Introduce un número de teléfono válido",
       "terms": "Acepta los términos para continuar",
-      "cancellation": "Acepta la política de cancelación para continuar"
+      "cancellation": "Acepta la política de cancelación para continuar",
+      "paymentMessage": "Introduce tu pregunta o solicitud"
     },
     "backToYacht": "Volver a {name}",
     "panels": { "main": "Detalles de la reserva", "aside": "Resumen de la reserva" },
@@ -50,7 +51,41 @@
       "reviewAndBook": "Revisar y reservar",
       "payment": "Pago"
     },
-    "stepPlaceholder": "Este paso aún no está implementado."
+    "payment": {
+      "heading": "Elige cómo quieres continuar",
+      "tabs": {
+        "card": "Pagar con tarjeta",
+        "invoice": "Solicitar factura",
+        "question": "Hacer una pregunta"
+      },
+      "card": {
+        "number": "Número de tarjeta",
+        "numberPlaceholder": "1234-3233-2332-0021",
+        "expiry": "Fecha de caducidad",
+        "expiryPlaceholder": "01/29",
+        "cvc": "CV",
+        "cvcPlaceholder": "123",
+        "name": "Nombre en la tarjeta",
+        "namePlaceholder": "Juan Pérez",
+        "notice": "Asegura tu reserva al instante con un pago en línea.",
+        "cta": "Pagar {amount}"
+      },
+      "invoice": {
+        "email": "Correo de facturación",
+        "emailPlaceholder": "billing@gmail.com",
+        "company": "Nombre de la empresa (opcional)",
+        "companyPlaceholder": "Yachts Adventures",
+        "vat": "Número de IVA (opcional)",
+        "vatPlaceholder": "GB12312321321312123",
+        "notice": "¿Prefieres pagar sin conexión? Te enviaremos una factura para completar el pago por transferencia bancaria.",
+        "cta": "Solicitar factura (por {amount})"
+      },
+      "question": {
+        "label": "Tu pregunta o solicitud",
+        "placeholder": "Envía una solicitud antes de reservar (p. ej. verificación de licencia, requisitos especiales)",
+        "cta": "Enviar solicitud"
+      }
+    }
   },
   "Common": {
     "extras": { "payAtCheckIn": "Pago al llegar", "perBooking": "{price} por reserva" },
