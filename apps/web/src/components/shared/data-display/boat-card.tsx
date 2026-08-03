@@ -292,10 +292,10 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
   return (
     <article
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:items-stretch xl:gap-6",
+        "flex w-full flex-col overflow-hidden rounded-2xl border bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:items-stretch xl:gap-6",
         boat.summary
-          ? "xl:grid-cols-[minmax(0,452fr)_minmax(0,566fr)]"
-          : "xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,208fr)]",
+          ? "border-border xl:grid-cols-[minmax(0,452fr)_minmax(0,566fr)]"
+          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,208fr)]",
         className,
       )}
     >
