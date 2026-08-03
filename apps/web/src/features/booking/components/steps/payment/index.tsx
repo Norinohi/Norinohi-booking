@@ -55,9 +55,9 @@ export default function PaymentStep() {
           value={method}
           onValueChange={(value) => setValue("payment.method", value as PaymentMethod)}
         >
-          <TabsList>
+          <TabsList className="max-md:flex-col max-md:items-stretch">
             {TABS.map((id) => (
-              <TabsTab key={id} value={id} className="flex-1">
+              <TabsTab key={id} value={id} className="flex-1 max-md:flex-none">
                 {t(`tabs.${id}`)}
               </TabsTab>
             ))}

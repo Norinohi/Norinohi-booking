@@ -25,7 +25,7 @@ export default function AskQuestion() {
         <FormItem>
           <FormLabel>{t("label")}</FormLabel>
           <FormControl>
-            <TextField multiline placeholder={t("placeholder")} {...field} />
+            <TextField className="h-full" multiline placeholder={t("placeholder")} {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>
