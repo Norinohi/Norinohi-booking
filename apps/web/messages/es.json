@@ -1,5 +1,11 @@
 {
   "Booking": {
+    "saveAndContinue": "Guardar y continuar",
+    "extras": {
+      "mandatory": "Obligatorio",
+      "optional": "Extras opcionales",
+      "included": "Incluido"
+    },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
       "fullName": "Nombre completo",
@@ -28,6 +34,7 @@
     "stepPlaceholder": "Este paso aún no está implementado."
   },
   "Common": {
+    "extras": { "payAtCheckIn": "Pago al llegar", "perBooking": "{price} por reserva" },
     "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
     "removeFilter": "Quitar filtro {label}",
     "sorting": {
@@ -752,10 +759,6 @@
       "next": "Siguiente",
       "zoomIn": "Acercar",
       "zoomOut": "Alejar"
-    },
-    "extras": {
-      "payAtCheckIn": "Pago en la entrega",
-      "perBooking": "{price} por reserva"
     },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",

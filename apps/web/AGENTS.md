@@ -84,4 +84,13 @@ definition, so server-prefetched and client cache keys always match.
 
 ### State
 
-- Server state → TanStack Query. URL state (filters/search/sort/pagination) → **nuqs**, parsers in `features/<name>/lib/search-params.ts` (shared server+client via `createSearchParamsCache` / `useQueryStates`). Flow state (wizards) → scoped React Context + TanStack Form. Ephemeral UI → `useState`. **No global store** — introduce one only when a concrete app-wide need appears.
+- Server state → TanStack Query. URL state (filters/search/sort/pagination) → **nuqs**, parsers in `features/<name>/lib/search-params.ts` (shared server+client via `createSearchParamsCache` / `useQueryStates`). Form and flow state (wizards) → **react-hook-form** (see **Forms** below). Ephemeral UI → `useState`. **No global store** — introduce one only when a concrete app-wide need appears.
+
+### Forms
+
+- **react-hook-form + Zod** is the only form library. It replaced `@tanstack/react-form`, which the Better-T-Stack scaffold shipped and which is no longer a dependency — do not reintroduce it.
+- Compose with the shadcn-shaped primitives from `@yacht-charter/ui/components/form/form`: `Form` (= `FormProvider`) › `FormField` › `FormItem` › `FormLabel` / `FormControl` / `FormDescription` / `FormMessage`. `FormItem` mints the id and wires label ⇄ control ⇄ message through `aria-*`; `FormControl` clones those attributes onto its single child.
+- Validate with `zodResolver` from `@hookform/resolvers/zod`. Build the schema inside a hook when the messages are translated, and memoise it — a new schema identity on every render re-registers the resolver.
+- **Controls paint their error state off `aria-invalid="true"`**, not a `status` prop, because `FormControl` is what sets it. `TextField`, `Select` and `MultiSelect` already do; a new bordered control must too.
+- Reading errors in a child component requires `useFormState({ control, name })` — `formState` off `useFormContext` subscribes the component that called `useForm`, so a nested step would never re-render.
+- Multi-step flows keep **one** form and gate each step with `trigger("<step>")`. `trigger` marks nothing as touched, so a failed step must touch its own fields (`setValue(path, getValues(path), { shouldTouch: true })`) for `mode: "onTouched"` to go live afterwards — see `features/booking`.

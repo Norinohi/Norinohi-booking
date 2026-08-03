@@ -1,5 +1,11 @@
 {
   "Booking": {
+    "saveAndContinue": "Save & Continue",
+    "extras": {
+      "mandatory": "Mandatory",
+      "optional": "Optional extras",
+      "included": "Included"
+    },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
       "fullName": "Full Name",
@@ -28,6 +34,7 @@
     "stepPlaceholder": "This step is not built yet."
   },
   "Common": {
+    "extras": { "payAtCheckIn": "Pay at check-in", "perBooking": "{price} per booking" },
     "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
     "removeFilter": "Remove filter {label}",
     "sorting": {
@@ -752,10 +759,6 @@
       "next": "Next",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out"
-    },
-    "extras": {
-      "payAtCheckIn": "Pay at check-in",
-      "perBooking": "{price} per booking"
     },
     "importantInfo": {
       "charterCompany": "Charter company",

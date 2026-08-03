@@ -95,6 +95,7 @@ function CharterPoint({ point }: { point: { date: string; time: string } }) {
 
 function PriceGroup({ group }: { group: (typeof GROUPS)[number] }) {
   const t = useTranslations("YachtDetail");
+  const tExtras = useTranslations("Common.extras");
 
   return (
     <Accordion defaultValue={[group.key]}>
@@ -118,7 +119,7 @@ function PriceGroup({ group }: { group: (typeof GROUPS)[number] }) {
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="text-base leading-5.5 text-foreground">{item.name}</p>
                     <p className="text-xs font-semibold text-natural-500">
-                      {t("extras.payAtCheckIn")}
+                      {tExtras("payAtCheckIn")}
                     </p>
                   </div>
                   <p className="shrink-0 text-base leading-5.5 font-bold text-foreground">

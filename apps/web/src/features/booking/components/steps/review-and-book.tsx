@@ -7,5 +7,5 @@ import { useTranslations } from "next-intl";
 export default function ReviewAndBookStep() {
   const t = useTranslations("Booking");
 
-  return <p className="text-base leading-[1.4] text-natural-500">{t("stepPlaceholder")}</p>;
+  return <p className="p-5 text-base leading-[1.4] text-natural-500">{t("stepPlaceholder")}</p>;
 }

@@ -19,7 +19,7 @@ export default function GuestDetailsStep() {
   const { control } = useFormContext<BookingValues>();
 
   return (
-    <>
+    <div className="flex flex-col gap-4 p-5">
       <Notification>{t("notice")}</Notification>
 
       <FormField
@@ -79,6 +79,6 @@ export default function GuestDetailsStep() {
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
 }

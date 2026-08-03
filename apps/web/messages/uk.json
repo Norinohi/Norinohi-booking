@@ -1,5 +1,11 @@
 {
   "Booking": {
+    "saveAndContinue": "Зберегти та продовжити",
+    "extras": {
+      "mandatory": "Обов'язкове",
+      "optional": "Додаткові опції",
+      "included": "Включено"
+    },
     "guestDetails": {
       "notice": "Ми використаємо ці дані, щоб підтвердити бронювання та узгодити його з менеджером бази.",
       "fullName": "Повне ім'я",
@@ -28,6 +34,7 @@
     "stepPlaceholder": "Цей крок ще не реалізовано."
   },
   "Common": {
+    "extras": { "payAtCheckIn": "Оплата при заїзді", "perBooking": "{price} за бронювання" },
     "resultsCount": "{count, plural, one {# яхта знайдена} few {# яхти знайдено} many {# яхт знайдено} other {# яхти знайдено}}",
     "removeFilter": "Прибрати фільтр {label}",
     "sorting": {
@@ -752,10 +759,6 @@
       "next": "Далі",
       "zoomIn": "Збільшити",
       "zoomOut": "Зменшити"
-    },
-    "extras": {
-      "payAtCheckIn": "Оплата при заселенні",
-      "perBooking": "{price} за бронювання"
     },
     "importantInfo": {
       "charterCompany": "Чартерна компанія",

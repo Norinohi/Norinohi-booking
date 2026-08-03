@@ -19,10 +19,10 @@ import PaymentStep from "./steps/payment";
 import ReviewAndBookStep from "./steps/review-and-book";
 
 const STEPS = [
-  { id: "guestDetails", Content: GuestDetailsStep },
-  { id: "extras", Content: ExtrasStep },
-  { id: "reviewAndBook", Content: ReviewAndBookStep },
-  { id: "payment", Content: PaymentStep },
+  { id: "guestDetails", Content: GuestDetailsStep, cta: "continue" },
+  { id: "extras", Content: ExtrasStep, cta: "saveAndContinue" },
+  { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "continue" },
+  { id: "payment", Content: PaymentStep, cta: "continue" },
 ] as const;
 
 type Step = (typeof STEPS)[number]["id"];
@@ -30,8 +30,10 @@ type Step = (typeof STEPS)[number]["id"];
 /*
  * BookingSteps — the four-step accordion of the booking flow (Figma 859:33153 /
  * 969:74447 / 969:74929). The `STEPS` list above is the whole flow: order, titles and
- * body component. A step renders its body only — the card, the numbered badge, the
- * chevron toggle, the separators, the padding and Continue all belong here.
+ * body component and CTA label. A step renders its body only — the card, the numbered badge,
+ * the chevron toggle, the separators around the body and the CTA all belong here.
+ * The body owns its own padding, because a step may be one padded block (Guest Details) or
+ * several separated by a full-bleed rule (Extras).
  * Continue runs `trigger(step)`, which validates that branch of the schema and nothing
  * else, and advances only when it passes; the step never touches submission.
  * Every header stays clickable, so a step can be revisited. `multiple={false}` also means
@@ -58,7 +60,7 @@ export default function BookingSteps() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {STEPS.map(({ id: step, Content }, index) => (
+      {STEPS.map(({ id: step, Content, cta }, index) => (
         <Accordion
           key={step}
           multiple={false}
@@ -87,9 +89,7 @@ export default function BookingSteps() {
 
             <AccordionContent>
               <span aria-hidden className="block h-px w-full bg-border" />
-              <div className="flex flex-col gap-4 p-5">
-                <Content />
-              </div>
+              <Content />
               <span aria-hidden className="block h-px w-full bg-border" />
               <div className="p-5">
                 <Button
@@ -97,7 +97,7 @@ export default function BookingSteps() {
                   className="h-13 w-full"
                   onClick={() => void advance(step, index)}
                 >
-                  {t("continue")}
+                  {t(cta)}
                 </Button>
               </div>
             </AccordionContent>

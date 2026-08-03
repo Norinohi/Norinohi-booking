@@ -13,7 +13,8 @@ import z from "zod";
  */
 export const BOOKING_DEFAULTS: BookingValues = {
   guestDetails: { fullName: "", email: "", phone: "", specialRequests: "" },
-  extras: {},
+  /* TODO: mirrors the pre-selected extra in `steps/extras.tsx` until real listing data lands. */
+  extras: { optional: ["sunbathing"] },
   reviewAndBook: {},
   payment: {},
 };
@@ -31,7 +32,7 @@ export function useBookingSchema() {
           phone: z.string().min(6, t("phone")),
           specialRequests: z.string(),
         }),
-        extras: z.object({}),
+        extras: z.object({ optional: z.array(z.string()) }),
         reviewAndBook: z.object({}),
         payment: z.object({}),
       }),

@@ -17,6 +17,7 @@ const OPTIONAL = [
 
 export default function OptionalExtrasSection() {
   const t = useTranslations("YachtDetail");
+  const tExtras = useTranslations("Common.extras");
   const [selected, setSelected] = useState<string[]>(["sunbathing"]);
 
   function toggle(id: string, checked: boolean) {
@@ -37,10 +38,10 @@ export default function OptionalExtrasSection() {
             />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="text-base leading-5.5 text-foreground">{item.name}</p>
-              <p className="text-xs font-semibold text-natural-300">{t("extras.payAtCheckIn")}</p>
+              <p className="text-xs font-semibold text-natural-300">{tExtras("payAtCheckIn")}</p>
             </div>
             <p className="shrink-0 text-base font-bold text-foreground">
-              {t("extras.perBooking", { price: item.price })}
+              {tExtras("perBooking", { price: item.price })}
             </p>
           </label>
         ))}

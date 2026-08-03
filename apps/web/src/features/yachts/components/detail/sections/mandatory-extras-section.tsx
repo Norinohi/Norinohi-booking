@@ -15,6 +15,7 @@ const MANDATORY = [
 
 export default function MandatoryExtrasSection() {
   const t = useTranslations("YachtDetail");
+  const tExtras = useTranslations("Common.extras");
 
   return (
     <DetailSection id="mandatory-extras" title={t("sections.mandatoryExtras")}>
@@ -31,10 +32,10 @@ export default function MandatoryExtrasSection() {
                   {item.description}
                 </p>
               ) : null}
-              <p className="text-xs font-semibold text-natural-300">{t("extras.payAtCheckIn")}</p>
+              <p className="text-xs font-semibold text-natural-300">{tExtras("payAtCheckIn")}</p>
             </div>
             <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
-              {t("extras.perBooking", { price: item.price })}
+              {tExtras("perBooking", { price: item.price })}
             </p>
           </div>
         ))}
