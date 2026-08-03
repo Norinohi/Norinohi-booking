@@ -1,5 +1,21 @@
 {
   "Booking": {
+    "guestDetails": {
+      "notice": "Ми використаємо ці дані, щоб підтвердити бронювання та узгодити його з менеджером бази.",
+      "fullName": "Повне ім'я",
+      "fullNamePlaceholder": "Іван Петренко",
+      "email": "Електронна пошта",
+      "emailPlaceholder": "name@example.com",
+      "phone": "Номер телефону",
+      "phonePlaceholder": "+380 67 123 45 67",
+      "specialRequests": "Особливі побажання (необов'язково)",
+      "specialRequestsPlaceholder": "Прошу ранній заїзд"
+    },
+    "errors": {
+      "fullName": "Вкажіть повне ім'я",
+      "email": "Вкажіть коректну електронну пошту",
+      "phone": "Вкажіть коректний номер телефону"
+    },
     "backToYacht": "Назад до {name}",
     "panels": { "main": "Деталі бронювання", "aside": "Підсумок бронювання" },
     "continue": "Продовжити",

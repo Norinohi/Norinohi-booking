@@ -8,8 +8,10 @@ import * as React from "react";
  * TextField — Figma "Text field" (node 730:9030), part of the Inputs & Selection frame.
  * Composite: Label (14 SemiBold) + bordered Field + Supporting text (12 Regular), 6px gaps.
  * Field: 1px border, 8px radius, 12px padding, 8px gap, 16px Regular text, placeholder natural-300.
- * status default|error|success recolours the label + border (neutral / error-600 / positive-600);
- * supporting text stays foreground in every state, matching the design.
+ * status default|error|success recolours the label, the border and the supporting text
+ * (neutral / error-600 / positive-600), so a validation message reads in the same red as its field.
+ * Under `FormControl` there is no `status` to pass, so `aria-invalid` — which `FormControl`
+ * sets — implies `status="error"` on its own.
  * Runtime states from the design (Empty/Focused/Typing/Filled) are just focus + value.
  * `multiline` renders the "big text field" (textarea); left/right 24px icon slots are optional.
  */
@@ -32,6 +34,17 @@ const fieldVariants = cva(
 );
 
 const labelVariants = cva("text-sm font-semibold leading-[1.2] tracking-[0.02em]", {
+  variants: {
+    status: {
+      default: "text-foreground",
+      error: "text-error-500",
+      success: "text-positive-500",
+    },
+  },
+  defaultVariants: { status: "default" },
+});
+
+const supportVariants = cva("text-xs leading-[1.2] tracking-[0.02em]", {
   variants: {
     status: {
       default: "text-foreground",
@@ -68,7 +81,7 @@ function TextField(props: TextFieldProps) {
   const {
     label,
     supportingText,
-    status = "default",
+    status: statusProp,
     startIcon,
     endIcon,
     containerClassName,
@@ -79,6 +92,9 @@ function TextField(props: TextFieldProps) {
     disabled,
     ...rest
   } = props;
+
+  const invalid = rest["aria-invalid"] === true || rest["aria-invalid"] === "true";
+  const status = statusProp ?? (invalid ? "error" : "default");
 
   const reactId = React.useId();
   const id = idProp ?? reactId;
@@ -138,7 +154,7 @@ function TextField(props: TextFieldProps) {
         )}
       </div>
       {supportingText != null && (
-        <p id={supportId} className="text-xs leading-[1.2] tracking-[0.02em] text-foreground">
+        <p id={supportId} className={supportVariants({ status })}>
           {supportingText}
         </p>
       )}

@@ -1,6 +1,9 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form } from "@yacht-charter/ui/components/form/form";
 import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
 import BookingSummary from "@/components/shared/data-display/booking-summary";
@@ -9,6 +12,7 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useBoatCards } from "@/hooks/use-boat-cards";
 import { SAMPLE_BOATS } from "@/lib/sample-boats";
 
+import { BOOKING_DEFAULTS, type BookingValues, useBookingSchema } from "../lib/booking-form";
 import BookingSteps from "./booking-steps";
 
 /* TODO: the flow always books the first sample boat until listings carry a real id. */
@@ -20,6 +24,14 @@ export default function BookingScreen() {
   const { toSearchCard } = useBoatCards();
   const { id: _id, ...boat } = toSearchCard(BOAT);
 
+  /* onTouched: silent until the first blur, live on every change after it — so a field stops
+   * being red the moment it turns valid, without shouting at someone still typing. */
+  const form = useForm<BookingValues>({
+    defaultValues: BOOKING_DEFAULTS,
+    resolver: zodResolver(useBookingSchema()),
+    mode: "onTouched",
+  });
+
   return (
     <div className="flex flex-col">
       <AppBreadcrumbs
@@ -30,29 +42,19 @@ export default function BookingScreen() {
       />
 
       <div className="w-full px-4 py-6 md:px-13.5">
-        <SplitPanels
-          labels={{ main: t("panels.main"), aside: t("panels.aside") }}
-          main={
-            <>
-              <BoatCard {...boat} summary priority />
-              <BookingSteps
-                guestDetails={<Placeholder />}
-                extras={<Placeholder />}
-                reviewAndBook={<Placeholder />}
-                payment={<Placeholder />}
-              />
-            </>
-          }
-          aside={<BookingSummary actions={false} shaded />}
-        />
+        <Form {...form}>
+          <SplitPanels
+            labels={{ main: t("panels.main"), aside: t("panels.aside") }}
+            main={
+              <>
+                <BoatCard {...boat} summary priority />
+                <BookingSteps />
+              </>
+            }
+            aside={<BookingSummary actions={false} shaded />}
+          />
+        </Form>
       </div>
     </div>
   );
-}
-
-/* TODO: replaced step by step as each screen arrives. */
-function Placeholder() {
-  const t = useTranslations("Booking");
-
-  return <p className="text-base leading-[1.4] text-natural-500">{t("stepPlaceholder")}</p>;
 }

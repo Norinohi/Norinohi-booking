@@ -9,28 +9,56 @@ import {
 } from "@yacht-charter/ui/components/layout/accordion";
 import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import { type Path, useFormContext } from "react-hook-form";
 
-const STEPS = ["guestDetails", "extras", "reviewAndBook", "payment"] as const;
+import type { BookingValues } from "../lib/booking-form";
+import ExtrasStep from "./steps/extras";
+import GuestDetailsStep from "./steps/guest-details";
+import PaymentStep from "./steps/payment";
+import ReviewAndBookStep from "./steps/review-and-book";
 
-type Step = (typeof STEPS)[number];
+const STEPS = [
+  { id: "guestDetails", Content: GuestDetailsStep },
+  { id: "extras", Content: ExtrasStep },
+  { id: "reviewAndBook", Content: ReviewAndBookStep },
+  { id: "payment", Content: PaymentStep },
+] as const;
+
+type Step = (typeof STEPS)[number]["id"];
 
 /*
  * BookingSteps — the four-step accordion of the booking flow (Figma 859:33153 /
- * 969:74447 / 969:74929). It owns the card, the numbered badge, the chevron toggle,
- * the separators and Continue; a step passes only its body content, with no wrapper
- * and no padding of its own — the shell supplies both.
- * Continue advances to the next step and every header stays clickable, so a step can be
- * revisited. `multiple={false}` also means the open step cannot be toggled shut — one is
- * always expanded, except after Continue on the last step.
+ * 969:74447 / 969:74929). The `STEPS` list above is the whole flow: order, titles and
+ * body component. A step renders its body only — the card, the numbered badge, the
+ * chevron toggle, the separators, the padding and Continue all belong here.
+ * Continue runs `trigger(step)`, which validates that branch of the schema and nothing
+ * else, and advances only when it passes; the step never touches submission.
+ * Every header stays clickable, so a step can be revisited. `multiple={false}` also means
+ * the open step cannot be toggled shut — one is always expanded, except after the last Continue.
  */
-export default function BookingSteps(content: Record<Step, ReactNode>) {
+export default function BookingSteps() {
   const t = useTranslations("Booking");
-  const [open, setOpen] = useState<Step | null>(STEPS[0]);
+  const { trigger, getValues, setValue } = useFormContext<BookingValues>();
+  const [open, setOpen] = useState<Step | null>(STEPS[0].id);
+
+  async function advance(step: Step, index: number) {
+    if (await trigger(step)) {
+      setOpen(STEPS[index + 1]?.id ?? null);
+      return;
+    }
+    /* `onTouched` only goes live after a blur, and `trigger` does not touch anything — so a
+     * failed Continue has to touch this step itself, or a corrected field would stay red
+     * until the next Continue. */
+    for (const field of Object.keys(getValues(step))) {
+      const path = `${step}.${field}` as Path<BookingValues>;
+      setValue(path, getValues(path), { shouldTouch: true });
+    }
+  }
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {STEPS.map((step, index) => (
+      {STEPS.map(({ id: step, Content }, index) => (
         <Accordion
           key={step}
           multiple={false}
@@ -59,13 +87,15 @@ export default function BookingSteps(content: Record<Step, ReactNode>) {
 
             <AccordionContent>
               <span aria-hidden className="block h-px w-full bg-border" />
-              <div className="flex flex-col gap-4 p-5">{content[step]}</div>
+              <div className="flex flex-col gap-4 p-5">
+                <Content />
+              </div>
               <span aria-hidden className="block h-px w-full bg-border" />
               <div className="p-5">
                 <Button
                   variant="brand"
                   className="h-13 w-full"
-                  onClick={() => setOpen(STEPS[index + 1] ?? null)}
+                  onClick={() => void advance(step, index)}
                 >
                   {t("continue")}
                 </Button>

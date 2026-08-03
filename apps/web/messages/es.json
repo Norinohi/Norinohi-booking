@@ -1,5 +1,21 @@
 {
   "Booking": {
+    "guestDetails": {
+      "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Juan Pérez",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "name@example.com",
+      "phone": "Número de teléfono",
+      "phonePlaceholder": "+34 612 345 678",
+      "specialRequests": "Peticiones especiales (opcional)",
+      "specialRequestsPlaceholder": "Entrada anticipada, por favor"
+    },
+    "errors": {
+      "fullName": "Introduce tu nombre completo",
+      "email": "Introduce un correo electrónico válido",
+      "phone": "Introduce un número de teléfono válido"
+    },
     "backToYacht": "Volver a {name}",
     "panels": { "main": "Detalles de la reserva", "aside": "Resumen de la reserva" },
     "continue": "Continuar",

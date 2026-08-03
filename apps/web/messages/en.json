@@ -1,5 +1,21 @@
 {
   "Booking": {
+    "guestDetails": {
+      "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
+      "email": "Email Address",
+      "emailPlaceholder": "name@example.com",
+      "phone": "Phone Number",
+      "phonePlaceholder": "+48 536 839 555",
+      "specialRequests": "Special Requests (Optional)",
+      "specialRequestsPlaceholder": "Early check in please"
+    },
+    "errors": {
+      "fullName": "Enter your full name",
+      "email": "Enter a valid email address",
+      "phone": "Enter a valid phone number"
+    },
     "backToYacht": "Back To {name}",
     "panels": { "main": "Booking Details", "aside": "Booking Summary" },
     "continue": "Continue",

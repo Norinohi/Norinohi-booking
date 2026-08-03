@@ -53,6 +53,8 @@ function SelectTrigger({
           "group flex w-full min-w-[200px] cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
           "hover:border-natural-200 data-[popup-open]:border-foreground",
           "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
+          /* `FormControl` sets aria-invalid; it has to beat hover/open/focus too. */
+          "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-[popup-open]:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
           "disabled:cursor-not-allowed disabled:opacity-50",
           showClear && "[&>[data-slot=select-value]]:pr-6",
           className,
