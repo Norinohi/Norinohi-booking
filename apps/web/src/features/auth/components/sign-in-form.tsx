@@ -8,7 +8,7 @@ import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
 
-import Loader from "@/components/shared/loader";
+import Loader from "@/components/shared/feedback/loader";
 
 export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () => void }) {
   const router = useRouter();

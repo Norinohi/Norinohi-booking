@@ -7,13 +7,13 @@ import { MapPin, Sailboat, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
-import DatePicker from "@/components/shared/date-picker";
+import DatePicker from "@/components/shared/form/date-picker";
 import {
   type FiltersState,
   orderedValues,
   useDraft,
   useFilterOptions,
-} from "@/components/shared/filters";
+} from "@/components/shared/form/filters";
 import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
 
 function toRange(value: FiltersState): DateRange {

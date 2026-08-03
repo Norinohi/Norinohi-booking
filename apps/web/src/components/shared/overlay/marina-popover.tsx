@@ -11,9 +11,22 @@ import { ArrowUpRight, Globe, Mail, MapPin, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { Image } from "@/components/shared/image";
+import { Image } from "@/components/shared/data-display/image";
 
-import type { Marina } from "../types";
+export type Coordinates = { lat: number; lng: number };
+
+export type Marina = {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  phone?: string;
+  website?: string;
+  email?: string;
+  coordinates: Coordinates;
+  mapImageUrl?: string;
+};
 
 function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (

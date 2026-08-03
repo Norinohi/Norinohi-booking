@@ -17,8 +17,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-import AnimatedNumber from "@/components/shared/animated-number";
-import DatePicker from "@/components/shared/date-picker";
+import AnimatedNumber from "@/components/shared/data-display/animated-number";
+import DatePicker from "@/components/shared/form/date-picker";
 import { GROUP, RISE } from "@/lib/motion";
 
 const DESTINATIONS = ["croatia", "greece", "italy", "turkey", "caribbean", "thailand"] as const;

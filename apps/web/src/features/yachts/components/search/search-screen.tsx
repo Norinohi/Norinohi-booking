@@ -7,7 +7,9 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
 
-import { Image } from "@/components/shared/image";
+import BoatCard from "@/components/shared/data-display/boat-card";
+import { Image } from "@/components/shared/data-display/image";
+import EmptyState from "@/components/shared/feedback/empty-state";
 import {
   clearFilterKeys,
   DEFAULT_FILTERS,
@@ -16,15 +18,13 @@ import {
   FiltersPopover,
   type FiltersState,
   useFilterChips,
-} from "@/components/shared/filters";
-import EmptyState from "@/components/shared/empty-state";
+} from "@/components/shared/form/filters";
 
 import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
 import { useBoatCards } from "../../hooks/use-boat-cards";
 import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "../../lib/sample-boats";
 
-import BoatCard from "./boat-card";
 import ResultsHeader, { type SortValue } from "./results-header";
 import SearchBar from "./search-bar";
 

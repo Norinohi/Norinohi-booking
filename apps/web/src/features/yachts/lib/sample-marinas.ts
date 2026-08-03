@@ -1,4 +1,4 @@
-import type { Marina } from "../types";
+import type { Marina } from "@/components/shared/overlay/marina-popover";
 
 const MAP_THUMB = "/assets/marinas/map-thumb.jpg";
 

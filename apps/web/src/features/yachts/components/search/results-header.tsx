@@ -11,7 +11,7 @@ import {
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
-import type { FilterChip } from "@/components/shared/filters";
+import type { FilterChip } from "@/components/shared/form/filters";
 
 /* Values only — sorting is query state, so a language change must never rewrite it. */
 export const SORT_OPTIONS = ["recommended", "price-asc", "price-desc", "rating", "newest"] as const;

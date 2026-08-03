@@ -4,7 +4,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { MapPin } from "lucide-react";
 import { Marker } from "react-map-gl/mapbox";
 
-import type { Coordinates } from "../../types";
+import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 const STAGGER_MS = 50;
 

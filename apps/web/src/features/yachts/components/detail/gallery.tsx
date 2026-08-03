@@ -16,7 +16,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 
-import { Image } from "@/components/shared/image";
+import { Image } from "@/components/shared/data-display/image";
 
 const PHOTOS = [
   { src: "/assets/yachts/gallery-1.jpg", alt: "Lagoon 42 anchored in a turquoise bay" },

@@ -1,7 +1,7 @@
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
-import { Image } from "@/components/shared/image";
+import { Image } from "@/components/shared/data-display/image";
 
 import DetailSection from "./detail-section";
 

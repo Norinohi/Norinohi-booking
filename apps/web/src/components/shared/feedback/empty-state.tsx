@@ -1,7 +1,7 @@
 import { cn } from "@yacht-charter/ui/lib/utils";
 import type { ReactNode } from "react";
 
-import { Image } from "@/components/shared/image";
+import { Image } from "@/components/shared/data-display/image";
 
 export type EmptyStateProps = {
   title: ReactNode;

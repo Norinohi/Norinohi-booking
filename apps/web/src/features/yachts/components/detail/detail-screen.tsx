@@ -1,7 +1,7 @@
-import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/app-breadcrumbs";
+import BookingSummary from "@/components/shared/data-display/booking-summary";
+import SplitPanels from "@/components/shared/layout/split-panels";
+import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/navigation/app-breadcrumbs";
 
-import BookingSidebar from "./booking-sidebar";
-import DetailPanels from "./detail-panels";
 import Gallery from "./gallery";
 import AmenitiesSection from "./sections/amenities-section";
 import DescriptionSection from "./sections/description-section";
@@ -27,7 +27,7 @@ export default function YachtDetailScreen() {
       <AppBreadcrumbs items={CRUMBS} backLabel="YachtDetail.backToSearch" backHref="/yachts" />
 
       <div className="w-full px-4 py-6 md:px-13.5">
-        <DetailPanels
+        <SplitPanels
           details={
             <>
               <TitleBlock />
@@ -45,7 +45,7 @@ export default function YachtDetailScreen() {
               <PopularYachtsSection />
             </>
           }
-          booking={<BookingSidebar />}
+          booking={<BookingSummary />}
         />
       </div>
     </div>

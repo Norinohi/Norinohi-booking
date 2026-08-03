@@ -17,7 +17,7 @@ import {
   FiltersPopover,
   type FiltersState,
   useFilterChips,
-} from "@/components/shared/filters";
+} from "@/components/shared/form/filters";
 
 import { useBoatCards } from "../../hooks/use-boat-cards";
 import { type SampleBoat, SAMPLE_BOATS } from "../../lib/sample-boats";

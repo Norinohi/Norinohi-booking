@@ -4,7 +4,7 @@ import { Field } from "@yacht-charter/ui/components/form/field";
 import { Radio, RadioGroup } from "@yacht-charter/ui/components/form/radio";
 import { useTranslations } from "next-intl";
 
-import DatePicker from "@/components/shared/date-picker";
+import DatePicker from "@/components/shared/form/date-picker";
 import { dayFromNative, dayToNative } from "@/lib/date";
 
 import { Section, type SectionProps, SelectField } from "../fields";

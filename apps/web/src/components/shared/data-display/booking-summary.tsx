@@ -181,7 +181,7 @@ function PaymentSchedule() {
   );
 }
 
-export default function BookingSidebar() {
+export default function BookingSummary() {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
   const [crew, setCrew] = useState<(typeof CREW_OPTIONS)[number]>(CREW_OPTIONS[0]);

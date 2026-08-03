@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 
 import { SAMPLE_MARINAS } from "./sample-marinas";
 
-import type { Marina } from "../types";
+import type { Marina } from "@/components/shared/overlay/marina-popover";
 
 /*
  * Placeholder catalogue. Values only — every user-facing string is built from the

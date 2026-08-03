@@ -2,7 +2,11 @@
 
 import { useFormatter, useTranslations } from "next-intl";
 
-import type { BoatCardBadge, BoatCardProps, BoatCardSpec } from "../components/search/boat-card";
+import type {
+  BoatCardBadge,
+  BoatCardProps,
+  BoatCardSpec,
+} from "@/components/shared/data-display/boat-card";
 import type { MapBoatCardProps } from "../components/map/map-boat-card";
 import {
   AMENITY_ICONS,

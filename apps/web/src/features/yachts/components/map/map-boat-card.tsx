@@ -13,12 +13,10 @@ import { Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
-import { Image } from "@/components/shared/image";
-
-import type { Marina } from "../../types";
-import { MarinaPopover } from "../marina-popover";
-import PrepaymentNote from "../prepayment-note";
-import type { BoatCardBadge } from "../search/boat-card";
+import type { BoatCardBadge } from "@/components/shared/data-display/boat-card";
+import { Image } from "@/components/shared/data-display/image";
+import PrepaymentNote from "@/components/shared/data-display/prepayment-note";
+import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
 const DETAIL_HREF = "/yachts/lagoon-42";

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Popup } from "react-map-gl/mapbox";
 
-import type { Coordinates } from "../../types";
+import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
 import type { MapInstance } from "./map-canvas";

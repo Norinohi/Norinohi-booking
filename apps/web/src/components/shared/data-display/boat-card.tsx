@@ -12,11 +12,11 @@ import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Image } from "@/components/shared/image";
+import { Image } from "@/components/shared/data-display/image";
 
-import type { Marina } from "../../types";
-import { MarinaPopover } from "../marina-popover";
-import PrepaymentNote from "../prepayment-note";
+import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
+
+import PrepaymentNote from "./prepayment-note";
 
 const FORMATS = {
   day: { day: "numeric", month: "long", year: "numeric" },

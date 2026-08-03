@@ -47,12 +47,7 @@ export default function AppBreadcrumbs({
     <div className={cn("border-b border-natural-50 px-4 py-3 md:px-13.5", className)}>
       <div className="mx-auto flex max-w-349 items-center gap-5">
         {backLabel && backHref ? (
-          <Button
-            variant="subtle"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={backHref} />}
-          >
+          <Button variant="subtle" size="sm" nativeButton={false} render={<Link href={backHref} />}>
             <ArrowLeft />
             {translate(backLabel)}
           </Button>

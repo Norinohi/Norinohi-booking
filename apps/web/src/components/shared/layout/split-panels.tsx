@@ -9,7 +9,7 @@ import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
 const PANELS = ["details", "booking"] as const;
 
-export default function DetailPanels({
+export default function SplitPanels({
   details,
   booking,
 }: {
