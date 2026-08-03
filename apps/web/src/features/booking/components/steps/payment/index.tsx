@@ -2,10 +2,13 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
+import { useParams, useRouter } from "next/navigation";
 import { type Path, useFormContext, useWatch } from "react-hook-form";
 
 import type { BookingValues } from "../../../lib/booking-form";
+import { serializeConfirmation } from "../../../lib/search-params";
 import AskQuestion from "./ask-question";
 import PayByCard from "./pay-by-card";
 import RequestInvoice from "./request-invoice";
@@ -18,6 +21,8 @@ const TABS: PaymentMethod[] = ["card", "invoice", "question"];
 
 export default function PaymentStep() {
   const t = useTranslations("Booking.payment");
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
   const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
   const method = useWatch({ control, name: "payment.method" });
 
@@ -28,17 +33,16 @@ export default function PaymentStep() {
   }[method];
 
   async function submit() {
-    /* TODO: real card / invoice / enquiry submit lands with M5. */
-    if (method === "card") {
+    if (method !== "card" && !(await trigger("payment"))) {
+      for (const field of Object.keys(getValues(`payment.${method}`))) {
+        const path = `payment.${method}.${field}` as Path<BookingValues>;
+        setValue(path, getValues(path), { shouldTouch: true });
+      }
       return;
     }
-    if (await trigger("payment")) {
-      return;
-    }
-    for (const field of Object.keys(getValues(`payment.${method}`))) {
-      const path = `payment.${method}.${field}` as Path<BookingValues>;
-      setValue(path, getValues(path), { shouldTouch: true });
-    }
+    router.push(
+      serializeConfirmation(`/yachts/${params.id}/booking/confirmation`, { method }) as Route,
+    );
   }
 
   return (

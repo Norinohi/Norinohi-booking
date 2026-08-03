@@ -85,6 +85,29 @@
         "placeholder": "Send a request before booking (e.g. license check, special requirements)",
         "cta": "Send Request"
       }
+    },
+    "confirmation": {
+      "reserved": "Your yacht is reserved!",
+      "remaining": "The remaining {amount} will be paid at check-in.",
+      "emailed": "We've sent a confirmation to your email",
+      "viewBooking": "View Booking",
+      "summaryTitle": "Booking Summary",
+      "quote": "\"This yacht is ideal for island hopping in Croatia — stable, spacious, and perfect for group travel. Your route includes Hvar and Vis, two of the most scenic islands in the Adriatic.\"",
+      "shareTrip": "Share Trip",
+      "downloadReceipt": "Download Receipt",
+      "summary": {
+        "yacht": "Yacht",
+        "dates": "Dates",
+        "crew": "Crew",
+        "mandatory": "Mandatory",
+        "selectedExtras": "Selected extras",
+        "boatPrice": "Boat price (full rental price)",
+        "deposit": "Refundable Security Deposit",
+        "secondPayment": "2nd payment (Pay at: {date})",
+        "totalPrice": "Total Price",
+        "perPerson": "~ {price} for person",
+        "dueNow": "Due now"
+      }
     }
   },
   "Common": {

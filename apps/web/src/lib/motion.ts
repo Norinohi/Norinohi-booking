@@ -18,6 +18,12 @@ export const RISE = {
   show: { opacity: 1, y: 0, transition: { duration: DURATION, ease: EASE } },
 };
 
+/** Scale overshoot for a success icon. Opacity is left to the rising parent, so it can't double-fade. */
+export const POP = {
+  hidden: { scale: 0.4 },
+  show: { scale: [0.4, 1.08, 1], transition: { duration: 0.5, ease: EASE, delay: 0.1 } },
+};
+
 export const DRAW = {
   hidden: { pathLength: 0, opacity: 0 },
   show: { pathLength: 1, opacity: 1, transition: { duration: 0.5, ease: EASE } },

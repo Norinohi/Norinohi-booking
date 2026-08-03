@@ -85,6 +85,29 @@
         "placeholder": "Envía una solicitud antes de reservar (p. ej. verificación de licencia, requisitos especiales)",
         "cta": "Enviar solicitud"
       }
+    },
+    "confirmation": {
+      "reserved": "¡Tu yate está reservado!",
+      "remaining": "Los {amount} restantes se pagarán al check-in.",
+      "emailed": "Hemos enviado una confirmación a tu correo",
+      "viewBooking": "Ver reserva",
+      "summaryTitle": "Resumen de la reserva",
+      "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
+      "shareTrip": "Compartir viaje",
+      "downloadReceipt": "Descargar recibo",
+      "summary": {
+        "yacht": "Yate",
+        "dates": "Fechas",
+        "crew": "Tripulación",
+        "mandatory": "Obligatorio",
+        "selectedExtras": "Extras seleccionados",
+        "boatPrice": "Precio del barco (alquiler completo)",
+        "deposit": "Depósito de seguridad reembolsable",
+        "secondPayment": "2.º pago (a pagar: {date})",
+        "totalPrice": "Precio total",
+        "perPerson": "~ {price} por persona",
+        "dueNow": "A pagar ahora"
+      }
     }
   },
   "Common": {
