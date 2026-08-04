@@ -32,6 +32,116 @@
       "minNights": 7,
       "checkinWeekday": 6,
       "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-sunreef-60-celeste",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 2140000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-oceanis-461-maribel",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 495000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-lagoon-52f-solenne",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "occupied",
+      "priceMinor": 1740000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-lagoon-52f-solenne",
+      "startDate": "2026-08-22",
+      "endDate": "2026-08-29",
+      "status": "available",
+      "priceMinor": 1660000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-bavaria-c38-niki",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 780000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-dufour-470-brisa",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 690000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-elba-45-sabai",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 570000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-sun-odyssey-410-maestral",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 390000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-prestige-520-velvet",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 1260000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-prestige-520-velvet",
+      "startDate": "2026-08-15",
+      "endDate": "2026-08-22",
+      "status": "blocked",
+      "priceMinor": 1320000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
     }
   ],
   "extras": [
@@ -50,9 +160,30 @@
       "obligatory": false
     },
     {
+      "code": "hostess",
+      "name": "Hostess",
+      "priceMinor": 105000,
+      "currency": "EUR",
+      "obligatory": false
+    },
+    {
       "code": "sup",
       "name": "Stand-up paddleboard",
       "priceMinor": 12000,
+      "currency": "EUR",
+      "obligatory": false
+    },
+    {
+      "code": "early-checkin",
+      "name": "Early check-in",
+      "priceMinor": 18000,
+      "currency": "EUR",
+      "obligatory": false
+    },
+    {
+      "code": "safety-net",
+      "name": "Safety net",
+      "priceMinor": 15000,
       "currency": "EUR",
       "obligatory": false
     }

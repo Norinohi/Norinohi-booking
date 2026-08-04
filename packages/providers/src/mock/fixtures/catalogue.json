@@ -5,6 +5,24 @@
       "name": "Adriatic Charter Co.",
       "email": "ops@adriatic.example",
       "phone": "+385 21 000 111"
+    },
+    {
+      "id": "cmp-aegean",
+      "name": "Aegean Blue Yachting",
+      "email": "charters@aegean.example",
+      "phone": "+30 210 000 222"
+    },
+    {
+      "id": "cmp-med",
+      "name": "Mediterranean Premium Fleet",
+      "email": "hello@medpremium.example",
+      "phone": "+39 06 000 333"
+    },
+    {
+      "id": "cmp-island",
+      "name": "Island Route Charters",
+      "email": "routes@island.example",
+      "phone": "+34 971 000 444"
     }
   ],
   "bases": [
@@ -22,8 +40,21 @@
       "checkOutTime": "09:00"
     },
     {
-      "id": "base-athens",
+      "id": "base-dubrovnik",
       "companyId": "cmp-adriatic",
+      "name": "ACI Marina Dubrovnik",
+      "country": "Croatia",
+      "countryCode": "HR",
+      "region": "Dalmatia",
+      "location": "Dubrovnik",
+      "lat": 42.671,
+      "lng": 18.125,
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00"
+    },
+    {
+      "id": "base-athens",
+      "companyId": "cmp-aegean",
       "name": "Alimos Marina",
       "country": "Greece",
       "countryCode": "GR",
@@ -33,19 +64,91 @@
       "lng": 23.704,
       "checkInTime": "17:00",
       "checkOutTime": "09:00"
+    },
+    {
+      "id": "base-mykonos",
+      "companyId": "cmp-aegean",
+      "name": "Mykonos New Port",
+      "country": "Greece",
+      "countryCode": "GR",
+      "region": "Cyclades",
+      "location": "Mykonos",
+      "lat": 37.464,
+      "lng": 25.326,
+      "checkInTime": "16:00",
+      "checkOutTime": "09:00"
+    },
+    {
+      "id": "base-amalfi",
+      "companyId": "cmp-med",
+      "name": "Marina d'Arechi",
+      "country": "Italy",
+      "countryCode": "IT",
+      "region": "Campania",
+      "location": "Amalfi Coast",
+      "lat": 40.644,
+      "lng": 14.823,
+      "checkInTime": "17:00",
+      "checkOutTime": "10:00"
+    },
+    {
+      "id": "base-palma",
+      "companyId": "cmp-island",
+      "name": "La Lonja Marina",
+      "country": "Spain",
+      "countryCode": "ES",
+      "region": "Balearic Islands",
+      "location": "Palma de Mallorca",
+      "lat": 39.568,
+      "lng": 2.642,
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00"
+    },
+    {
+      "id": "base-phuket",
+      "companyId": "cmp-island",
+      "name": "Ao Po Grand Marina",
+      "country": "Thailand",
+      "countryCode": "TH",
+      "region": "Phuket",
+      "location": "Ao Po",
+      "lat": 8.067,
+      "lng": 98.445,
+      "checkInTime": "15:00",
+      "checkOutTime": "10:00"
     }
   ],
   "builders": [
     { "id": "bld-lagoon", "name": "Lagoon" },
-    { "id": "bld-bavaria", "name": "Bavaria" }
+    { "id": "bld-bavaria", "name": "Bavaria" },
+    { "id": "bld-sunreef", "name": "Sunreef" },
+    { "id": "bld-beneteau", "name": "Beneteau" },
+    { "id": "bld-dufour", "name": "Dufour" },
+    { "id": "bld-fountaine-pajot", "name": "Fountaine Pajot" },
+    { "id": "bld-jeanneau", "name": "Jeanneau" },
+    { "id": "bld-prestige", "name": "Prestige" }
   ],
   "models": [
     { "id": "mdl-lagoon-42", "builderId": "bld-lagoon", "name": "Lagoon 42" },
-    { "id": "mdl-bavaria-c45", "builderId": "bld-bavaria", "name": "C45" }
+    { "id": "mdl-bavaria-c45", "builderId": "bld-bavaria", "name": "C45" },
+    { "id": "mdl-sunreef-60", "builderId": "bld-sunreef", "name": "Sunreef 60" },
+    { "id": "mdl-oceanis-461", "builderId": "bld-beneteau", "name": "Oceanis 46.1" },
+    { "id": "mdl-lagoon-52f", "builderId": "bld-lagoon", "name": "Lagoon 52 F" },
+    { "id": "mdl-bavaria-c38", "builderId": "bld-bavaria", "name": "C38" },
+    { "id": "mdl-dufour-470", "builderId": "bld-dufour", "name": "470" },
+    {
+      "id": "mdl-elba-45",
+      "builderId": "bld-fountaine-pajot",
+      "name": "Elba 45"
+    },
+    { "id": "mdl-sun-odyssey-410", "builderId": "bld-jeanneau", "name": "Sun Odyssey 410" },
+    { "id": "mdl-prestige-520", "builderId": "bld-prestige", "name": "520" }
   ],
   "categories": [
     { "id": "cat-catamaran", "code": "catamaran", "name": "Catamaran" },
-    { "id": "cat-sailing", "code": "sailing-yacht", "name": "Sailing yacht" }
+    { "id": "cat-sailing", "code": "sailing-yacht", "name": "Sailing yacht" },
+    { "id": "cat-motor", "code": "motor-yacht", "name": "Motor yacht" },
+    { "id": "cat-luxury", "code": "luxury-yacht", "name": "Luxury yacht" }
   ],
   "amenities": [
     {
@@ -55,7 +158,14 @@
       "name": "Air conditioning"
     },
     { "id": "amn-dinghy", "category": "Equipment", "code": "dinghy", "name": "Dinghy" },
-    { "id": "amn-wifi", "category": "Comfort", "code": "wifi", "name": "Wi-Fi" }
+    { "id": "amn-wifi", "category": "Comfort", "code": "wifi", "name": "Wi-Fi" },
+    { "id": "amn-generator", "category": "Systems", "code": "generator", "name": "Generator" },
+    { "id": "amn-watermaker", "category": "Systems", "code": "watermaker", "name": "Watermaker" },
+    { "id": "amn-solar", "category": "Systems", "code": "solar-panels", "name": "Solar panels" },
+    { "id": "amn-sup", "category": "Leisure", "code": "sup", "name": "Stand-up paddleboard" },
+    { "id": "amn-snorkel", "category": "Leisure", "code": "snorkel", "name": "Snorkeling set" },
+    { "id": "amn-grill", "category": "Comfort", "code": "grill", "name": "Cockpit grill" },
+    { "id": "amn-autopilot", "category": "Navigation", "code": "autopilot", "name": "Autopilot" }
   ],
   "yachts": [
     {
@@ -75,7 +185,7 @@
       "reviewCount": 18,
       "currency": "EUR",
       "priceFromMinor": 420000,
-      "amenityIds": ["amn-ac", "amn-dinghy", "amn-wifi"],
+      "amenityIds": ["amn-ac", "amn-dinghy", "amn-wifi", "amn-solar", "amn-sup"],
       "media": [
         "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a",
         "https://images.unsplash.com/photo-1540946485063-a40da27545f8",
@@ -85,7 +195,7 @@
     {
       "id": "yacht-bavaria-c45-luna",
       "name": "Luna",
-      "companyId": "cmp-adriatic",
+      "companyId": "cmp-aegean",
       "baseId": "base-athens",
       "builderId": "bld-bavaria",
       "modelId": "mdl-bavaria-c45",
@@ -99,10 +209,209 @@
       "reviewCount": 11,
       "currency": "EUR",
       "priceFromMinor": 310000,
-      "amenityIds": ["amn-dinghy", "amn-wifi"],
+      "amenityIds": ["amn-dinghy", "amn-wifi", "amn-autopilot", "amn-solar"],
       "media": [
         "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
         "https://images.unsplash.com/photo-1528154291023-a6525fabe5b4"
+      ]
+    },
+    {
+      "id": "yacht-sunreef-60-celeste",
+      "name": "Celeste",
+      "companyId": "cmp-med",
+      "baseId": "base-amalfi",
+      "builderId": "bld-sunreef",
+      "modelId": "mdl-sunreef-60",
+      "categoryId": "cat-luxury",
+      "yearBuilt": 2023,
+      "lengthM": 18.3,
+      "cabins": 5,
+      "berths": 10,
+      "heads": 5,
+      "rating": 4.9,
+      "reviewCount": 26,
+      "currency": "EUR",
+      "priceFromMinor": 1850000,
+      "amenityIds": [
+        "amn-ac",
+        "amn-generator",
+        "amn-watermaker",
+        "amn-wifi",
+        "amn-sup",
+        "amn-snorkel"
+      ],
+      "media": [
+        "https://images.unsplash.com/photo-1520333789090-1afc82db536a",
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+        "https://images.unsplash.com/photo-1519046904884-53103b34b206"
+      ]
+    },
+    {
+      "id": "yacht-oceanis-461-maribel",
+      "name": "Maribel",
+      "companyId": "cmp-adriatic",
+      "baseId": "base-dubrovnik",
+      "builderId": "bld-beneteau",
+      "modelId": "mdl-oceanis-461",
+      "categoryId": "cat-sailing",
+      "yearBuilt": 2019,
+      "lengthM": 14.6,
+      "cabins": 4,
+      "berths": 10,
+      "heads": 3,
+      "rating": 4.7,
+      "reviewCount": 15,
+      "currency": "EUR",
+      "priceFromMinor": 420000,
+      "amenityIds": ["amn-wifi", "amn-dinghy", "amn-autopilot", "amn-grill"],
+      "media": [
+        "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2",
+        "https://images.unsplash.com/photo-1534008897995-27a23e859048"
+      ]
+    },
+    {
+      "id": "yacht-lagoon-52f-solenne",
+      "name": "Solenne",
+      "companyId": "cmp-adriatic",
+      "baseId": "base-dubrovnik",
+      "builderId": "bld-lagoon",
+      "modelId": "mdl-lagoon-52f",
+      "categoryId": "cat-catamaran",
+      "yearBuilt": 2020,
+      "lengthM": 15.84,
+      "cabins": 6,
+      "berths": 12,
+      "heads": 4,
+      "rating": 4.8,
+      "reviewCount": 22,
+      "currency": "EUR",
+      "priceFromMinor": 1590000,
+      "amenityIds": [
+        "amn-ac",
+        "amn-generator",
+        "amn-watermaker",
+        "amn-wifi",
+        "amn-sup",
+        "amn-grill"
+      ],
+      "media": [
+        "https://images.unsplash.com/photo-1551632811-561732d1e306",
+        "https://images.unsplash.com/photo-1540541338287-41700207dee6"
+      ]
+    },
+    {
+      "id": "yacht-bavaria-c38-niki",
+      "name": "Niki",
+      "companyId": "cmp-aegean",
+      "baseId": "base-mykonos",
+      "builderId": "bld-bavaria",
+      "modelId": "mdl-bavaria-c38",
+      "categoryId": "cat-sailing",
+      "yearBuilt": 2022,
+      "lengthM": 11.31,
+      "cabins": 3,
+      "berths": 8,
+      "heads": 2,
+      "rating": 4.5,
+      "reviewCount": 9,
+      "currency": "EUR",
+      "priceFromMinor": 780000,
+      "amenityIds": ["amn-wifi", "amn-dinghy", "amn-solar", "amn-autopilot"],
+      "media": [
+        "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca",
+        "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429"
+      ]
+    },
+    {
+      "id": "yacht-dufour-470-brisa",
+      "name": "Brisa",
+      "companyId": "cmp-island",
+      "baseId": "base-palma",
+      "builderId": "bld-dufour",
+      "modelId": "mdl-dufour-470",
+      "categoryId": "cat-sailing",
+      "yearBuilt": 2021,
+      "lengthM": 14.85,
+      "cabins": 4,
+      "berths": 10,
+      "heads": 4,
+      "rating": 4.7,
+      "reviewCount": 13,
+      "currency": "EUR",
+      "priceFromMinor": 690000,
+      "amenityIds": ["amn-ac", "amn-wifi", "amn-dinghy", "amn-grill", "amn-autopilot"],
+      "media": [
+        "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
+        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
+      ]
+    },
+    {
+      "id": "yacht-elba-45-sabai",
+      "name": "Sabai",
+      "companyId": "cmp-island",
+      "baseId": "base-phuket",
+      "builderId": "bld-fountaine-pajot",
+      "modelId": "mdl-elba-45",
+      "categoryId": "cat-catamaran",
+      "yearBuilt": 2019,
+      "lengthM": 13.45,
+      "cabins": 4,
+      "berths": 12,
+      "heads": 4,
+      "rating": 4.8,
+      "reviewCount": 19,
+      "currency": "EUR",
+      "priceFromMinor": 570000,
+      "amenityIds": ["amn-ac", "amn-watermaker", "amn-wifi", "amn-sup", "amn-snorkel"],
+      "media": [
+        "https://images.unsplash.com/photo-1537956965359-7573183d1f57",
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e"
+      ]
+    },
+    {
+      "id": "yacht-sun-odyssey-410-maestral",
+      "name": "Maestral",
+      "companyId": "cmp-adriatic",
+      "baseId": "base-split",
+      "builderId": "bld-jeanneau",
+      "modelId": "mdl-sun-odyssey-410",
+      "categoryId": "cat-sailing",
+      "yearBuilt": 2018,
+      "lengthM": 12.35,
+      "cabins": 3,
+      "berths": 8,
+      "heads": 2,
+      "rating": 4.4,
+      "reviewCount": 8,
+      "currency": "EUR",
+      "priceFromMinor": 390000,
+      "amenityIds": ["amn-wifi", "amn-dinghy", "amn-solar", "amn-autopilot"],
+      "media": [
+        "https://images.unsplash.com/photo-1540946485063-a40da27545f8",
+        "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2"
+      ]
+    },
+    {
+      "id": "yacht-prestige-520-velvet",
+      "name": "Velvet",
+      "companyId": "cmp-med",
+      "baseId": "base-amalfi",
+      "builderId": "bld-prestige",
+      "modelId": "mdl-prestige-520",
+      "categoryId": "cat-motor",
+      "yearBuilt": 2022,
+      "lengthM": 16.11,
+      "cabins": 3,
+      "berths": 6,
+      "heads": 2,
+      "rating": 4.9,
+      "reviewCount": 17,
+      "currency": "EUR",
+      "priceFromMinor": 1120000,
+      "amenityIds": ["amn-ac", "amn-generator", "amn-watermaker", "amn-wifi", "amn-snorkel"],
+      "media": [
+        "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13",
+        "https://images.unsplash.com/photo-1520333789090-1afc82db536a"
       ]
     }
   ]
