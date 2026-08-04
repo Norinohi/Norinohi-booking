@@ -9,7 +9,7 @@ import { cva, type VariantProps } from "class-variance-authority";
  * Always pass an aria-label — the button has no visible text.
  */
 const iconButtonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center rounded-full border border-transparent transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:bg-natural-100 disabled:text-natural-300 disabled:border-natural-200 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:bg-natural-100 disabled:text-natural-300 disabled:border-natural-200 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

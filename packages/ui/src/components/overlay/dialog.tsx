@@ -43,7 +43,7 @@ function DialogContent({
         {showClose ? (
           <DialogPrimitive.Close
             aria-label="Close"
-            className="absolute top-4 right-4 text-natural-400 transition-colors hover:text-foreground [&_svg]:size-6"
+            className="absolute top-4 right-4 cursor-pointer text-natural-400 transition-colors hover:text-foreground [&_svg]:size-6"
           >
             <X />
           </DialogPrimitive.Close>

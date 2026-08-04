@@ -1,0 +1,949 @@
+{
+  "Booking": {
+    "confirmBooking": "Confirmar reserva",
+    "review": {
+      "title": "Resumen de la reserva",
+      "yacht": "Yate",
+      "dates": "Fechas",
+      "crew": "Tripulación",
+      "people": "Personas",
+      "extras": "Extras",
+      "noExtras": "Ninguno seleccionado",
+      "boatPrice": "Precio del barco (alquiler completo)",
+      "deposit": "Depósito de seguridad reembolsable",
+      "secondPayment": "2.º pago (a pagar: {date})",
+      "totalPrice": "Precio total",
+      "dueNow": "A pagar ahora",
+      "terms": "Acepto los <b>Términos y Condiciones y el Contrato de Alquiler</b>.",
+      "cancellation": "Acepto la <b>Política de Cancelación</b> (cancelación gratuita hasta el 7 de junio)."
+    },
+    "saveAndContinue": "Guardar y continuar",
+    "extras": {
+      "mandatory": "Obligatorio",
+      "optional": "Extras opcionales",
+      "included": "Incluido"
+    },
+    "guestDetails": {
+      "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Juan Pérez",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "name@example.com",
+      "phone": "Número de teléfono",
+      "phonePlaceholder": "+34 612 345 678",
+      "specialRequests": "Peticiones especiales (opcional)",
+      "specialRequestsPlaceholder": "Entrada anticipada, por favor"
+    },
+    "errors": {
+      "fullName": "Introduce tu nombre completo",
+      "email": "Introduce un correo electrónico válido",
+      "phone": "Introduce un número de teléfono válido",
+      "terms": "Acepta los términos para continuar",
+      "cancellation": "Acepta la política de cancelación para continuar",
+      "paymentMessage": "Introduce tu pregunta o solicitud"
+    },
+    "backToYacht": "Volver a {name}",
+    "panels": { "main": "Detalles de la reserva", "aside": "Resumen de la reserva" },
+    "continue": "Continuar",
+    "steps": {
+      "guestDetails": "Datos del huésped",
+      "extras": "Extras",
+      "reviewAndBook": "Revisar y reservar",
+      "payment": "Pago"
+    },
+    "payment": {
+      "heading": "Elige cómo quieres continuar",
+      "tabs": {
+        "card": "Pagar con tarjeta",
+        "invoice": "Solicitar factura",
+        "question": "Hacer una pregunta"
+      },
+      "card": {
+        "number": "Número de tarjeta",
+        "numberPlaceholder": "1234-3233-2332-0021",
+        "expiry": "Fecha de caducidad",
+        "expiryPlaceholder": "01/29",
+        "cvc": "CV",
+        "cvcPlaceholder": "123",
+        "name": "Nombre en la tarjeta",
+        "namePlaceholder": "Juan Pérez",
+        "notice": "Asegura tu reserva al instante con un pago en línea.",
+        "cta": "Pagar {amount}"
+      },
+      "invoice": {
+        "email": "Correo de facturación",
+        "emailPlaceholder": "billing@gmail.com",
+        "company": "Nombre de la empresa (opcional)",
+        "companyPlaceholder": "Yachts Adventures",
+        "vat": "Número de IVA (opcional)",
+        "vatPlaceholder": "GB12312321321312123",
+        "notice": "¿Prefieres pagar sin conexión? Te enviaremos una factura para completar el pago por transferencia bancaria.",
+        "cta": "Solicitar factura (por {amount})"
+      },
+      "question": {
+        "label": "Tu pregunta o solicitud",
+        "placeholder": "Envía una solicitud antes de reservar (p. ej. verificación de licencia, requisitos especiales)",
+        "cta": "Enviar solicitud"
+      }
+    },
+    "confirmation": {
+      "reserved": "¡Tu yate está reservado!",
+      "remaining": "Los {amount} restantes se pagarán al check-in.",
+      "emailed": "Hemos enviado una confirmación a tu correo",
+      "viewBooking": "Ver reserva",
+      "summaryTitle": "Resumen de la reserva",
+      "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
+      "shareTrip": "Compartir viaje",
+      "downloadReceipt": "Descargar recibo",
+      "summary": {
+        "yacht": "Yate",
+        "dates": "Fechas",
+        "crew": "Tripulación",
+        "mandatory": "Obligatorio",
+        "selectedExtras": "Extras seleccionados",
+        "boatPrice": "Precio del barco (alquiler completo)",
+        "deposit": "Depósito de seguridad reembolsable",
+        "secondPayment": "2.º pago (a pagar: {date})",
+        "totalPrice": "Precio total",
+        "perPerson": "~ {price} por persona",
+        "dueNow": "A pagar ahora"
+      }
+    }
+  },
+  "Common": {
+    "extras": { "payAtCheckIn": "Pago al llegar", "perBooking": "{price} por reserva" },
+    "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
+    "removeFilter": "Quitar filtro {label}",
+    "sorting": {
+      "label": "Ordenar por: {value}",
+      "recommended": "Recomendados",
+      "price-asc": "Precio: de menor a mayor",
+      "price-desc": "Precio: de mayor a menor",
+      "rating": "Valoración de huéspedes",
+      "newest": "Más recientes primero"
+    },
+    "boatCard": {
+      "save": "Guardar en favoritos",
+      "viewDetails": "Ver detalles",
+      "imageAlt": "{name} amarrado en {marina}",
+      "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "perPerson": "{price} por persona",
+      "perPersonApprox": "~ {price} por persona",
+      "prepayment": "Anticipo de reserva: {amount}",
+      "prepaymentInfo": "Es una fianza reembolsable que cubre posibles daños durante el viaje. Se devuelve tras la entrega si todo está en buen estado.",
+      "specs": {
+        "year": "Año",
+        "people": "Personas",
+        "toilets": "Aseos",
+        "baths": "Baños",
+        "mainsail": "Tipo de mayor",
+        "cabins": "Camarotes",
+        "length": "Eslora"
+      },
+      "battenMainsail": "Mayor con sables",
+      "badges": {
+        "bestForFamilies": "Ideal para familias",
+        "bestValue": "Mejor relación calidad-precio",
+        "new": "Nuevo",
+        "discount": "{percent}% DTO."
+      },
+      "stats": {
+        "booked": "{count} reservas este mes",
+        "viewed": "{count} personas lo vieron hoy"
+      },
+      "amenities": {
+        "wifi": "Wi-Fi gratis",
+        "solar": "3 paneles solares",
+        "paddle": "Paddle surf gratis",
+        "air": "Aire acondicionado",
+        "waterToys": "Juguetes acuáticos",
+        "galley": "Cocina completa",
+        "fridge": "Nevera y congelador",
+        "tender": "Auxiliar con fueraborda"
+      },
+      "charterTypes": {
+        "bareboat": "Sin patrón",
+        "bareboatSailingYacht": "Velero sin patrón",
+        "catamaran": "Catamarán"
+      },
+      "crews": {
+        "fullCrew": "Tripulación completa",
+        "skipperOptional": "Patrón opcional"
+      }
+    },
+    "marina": {
+      "viewDetails": "Ver detalles"
+    }
+  },
+  "Filters": {
+    "title": "Todos los filtros ({count})",
+    "clearAll": "Borrar todo",
+    "close": "Cerrar filtros",
+    "apply": "Aplicar filtros ({count})",
+    "trigger": "Filtros ({count})",
+    "needHelp": "¿Necesitas ayuda?",
+    "contactExpert": "Contactar con un experto",
+    "clearField": "Borrar {label}",
+    "clearSelection": "Borrar selección",
+    "unitAria": "Unidad de {label}",
+    "sections": {
+      "where": "¿Adónde?",
+      "when": "¿Cuándo?",
+      "boat": "Barco y tripulación",
+      "specs": "Características del barco",
+      "additional": "Filtros adicionales",
+      "ratings": "Valoraciones"
+    },
+    "labels": {
+      "country": "País",
+      "sailingArea": "Zona de navegación",
+      "charterCompany": "Empresa de chárter",
+      "marina": "Marina",
+      "startDate": "Fecha de inicio",
+      "duration": "Duración",
+      "dateFlexibility": "Flexibilidad de fechas",
+      "boatType": "Tipo de barco",
+      "model": "Modelo",
+      "crew": "Tripulación",
+      "mainsailType": "Tipo de mayor",
+      "equipment": "Equipamiento",
+      "length": "Eslora",
+      "cabins": "Camarotes",
+      "berths": "Literas (plazas para dormir)",
+      "bathrooms": "Baños",
+      "price": "Precio (del periodo elegido)",
+      "boatAge": "Antigüedad del barco",
+      "year": "Año",
+      "guestRating": "Valoración de huéspedes"
+    },
+    "placeholders": {
+      "allCountries": "Todos los países",
+      "searchCountries": "Buscar países...",
+      "allRegions": "Todas las regiones",
+      "allCompanies": "Todas las empresas",
+      "allMarinas": "Todas las marinas",
+      "searchMarinas": "Buscar marinas...",
+      "allBoats": "Todos los barcos",
+      "allModels": "Todos los modelos",
+      "searchModels": "Buscar modelos...",
+      "anyCrew": "Cualquier tripulación",
+      "allTypes": "Todos los tipos",
+      "anyEquipment": "Cualquier equipamiento",
+      "anyDate": "Cualquier fecha"
+    },
+    "aria": {
+      "builtFrom": "Año de construcción desde",
+      "builtTo": "Año de construcción hasta"
+    },
+    "toggles": {
+      "withoutAvailabilityConfirmation": "Mostrar yates sin confirmación de disponibilidad",
+      "underTemporaryBooking": "Mostrar yates con reserva temporal",
+      "depositInsurance": "Seguro de fianza incluido",
+      "petsAllowed": "Se admiten mascotas"
+    },
+    "units": {
+      "years": "{count, plural, one {# año} other {# años}}"
+    },
+    "options": {
+      "3": "3 días",
+      "7": "7 días (recomendado)",
+      "10": "10 días",
+      "14": "14 días",
+      "2015": "2015",
+      "2018": "2018",
+      "2020": "2020",
+      "2022": "2022",
+      "2024": "2024",
+      "2025": "2025",
+      "egypt": "Egipto",
+      "morocco": "Marruecos",
+      "croatia": "Croacia",
+      "spain": "España",
+      "france": "Francia",
+      "italy": "Italia",
+      "portugal": "Portugal",
+      "greece": "Grecia",
+      "norway": "Noruega",
+      "turkey": "Turquía",
+      "montenegro": "Montenegro",
+      "dalmatia": "Dalmacia",
+      "istria": "Istria",
+      "kvarner": "Kvarner",
+      "sunsail": "Sunsail",
+      "dream-yacht": "Dream Yacht",
+      "navigare": "Navigare",
+      "split": "Marina Split",
+      "kastela": "Marina Kaštela",
+      "trogir": "Marina Trogir",
+      "on-day": "El mismo día",
+      "1-3-days": "En 1–3 días",
+      "1-week": "En 1 semana",
+      "2-weeks": "En 2 semanas",
+      "1-month": "En 1 mes",
+      "sailing-yacht": "Velero",
+      "catamaran": "Catamarán",
+      "gulet": "Gulet",
+      "motor-yacht": "Yate a motor",
+      "power-catamaran": "Catamarán a motor",
+      "sailboat": "Barco de vela",
+      "motor-boat": "Lancha motora",
+      "bavaria": "Bavaria",
+      "beneteau": "Beneteau",
+      "jeanneau": "Jeanneau",
+      "lagoon": "Lagoon",
+      "full-crew": "Tripulación completa",
+      "skipper": "Solo patrón",
+      "bareboat": "Sin patrón",
+      "classic": "Clásica",
+      "furling": "Enrollable",
+      "lazy-bag": "Lazy bag",
+      "air-conditioning": "Aire acondicionado",
+      "generator": "Generador",
+      "bow-thruster": "Hélice de proa",
+      "wifi": "Wi-Fi",
+      "ft": "ft",
+      "m": "m",
+      "any": "Año"
+    },
+    "chips": {
+      "more": "{names} +{count}",
+      "none": "—",
+      "any": "cualquiera",
+      "country": "País: {value}",
+      "sailingArea": "Zona: {value}",
+      "charterCompany": "Empresa: {value}",
+      "marina": "Marina: {value}",
+      "startDate": "Inicio: {value}",
+      "duration": "Duración: {count, plural, one {# día} other {# días}}",
+      "dateFlexibility": "Flexibilidad: {value}",
+      "boatType": "Tipo de barco: {value}",
+      "model": "Modelo: {value}",
+      "crew": "Tripulación: {value}",
+      "mainsailType": "Mayor: {value}",
+      "equipment": "Equipamiento: {value}",
+      "length": "Eslora: {value}",
+      "cabins": "Camarotes: {value}",
+      "berths": "Literas: {value}",
+      "bathrooms": "Baños: {value}",
+      "price": "Precio: {value}",
+      "boatAge": "Antigüedad: {value}",
+      "year": "Año: {from}–{to}",
+      "withoutAvailabilityConfirmation": "Sin confirmación de disponibilidad",
+      "underTemporaryBooking": "Con reserva temporal",
+      "depositInsurance": "Seguro de fianza",
+      "petsAllowed": "Se admiten mascotas",
+      "guestRating": "Valoración: {value}"
+    }
+  },
+  "Home": {
+    "BoatTypes": {
+      "heading": "Elige tu tipo de barco",
+      "items": {
+        "catamaran": {
+          "title": "Catamarán",
+          "description": "Estable y espacioso, perfecto para grupos y familias que buscan el máximo confort.",
+          "imageAlt": "Catamarán navegando junto a una isla verde en aguas turquesas"
+        },
+        "sailingYacht": {
+          "title": "Velero",
+          "description": "La experiencia auténtica. Ideal para quienes aman el arte de navegar.",
+          "imageAlt": "Velero a toda vela en mar abierto"
+        },
+        "motorYacht": {
+          "title": "Yate a motor",
+          "description": "Rápido y lujoso. Recorre más distancia y llega con estilo.",
+          "imageAlt": "Yate a motor blanco navegando a gran velocidad"
+        },
+        "luxuryYacht": {
+          "title": "Yate de lujo",
+          "description": "Villas flotantes con tripulación completa para unas vacaciones totalmente a medida.",
+          "imageAlt": "Superyate fondeado al atardecer"
+        }
+      }
+    },
+    "BudgetFinder": {
+      "heading": "Encuentra yates según tu presupuesto",
+      "viewResults": "Ver resultados",
+      "labels": {
+        "budget": "Presupuesto por persona",
+        "people": "Personas",
+        "skipper": "Patrón",
+        "destinations": "Destinos (opcional)"
+      },
+      "options": {
+        "budget0To300": "0–300 €",
+        "budget300To600": "300–600 €",
+        "budget600To1000": "600–1000 €",
+        "budget1000Plus": "1000 €+",
+        "people1To2": "1-2",
+        "people2To4": "2-4",
+        "people4To6": "4-6",
+        "people6To8": "6-8",
+        "people8Plus": "8+",
+        "skipperYes": "Sí",
+        "skipperNo": "No",
+        "skipperOptional": "Opcional",
+        "destinationsAll": "Todos los destinos",
+        "destinationsCroatia": "Croacia",
+        "destinationsGreece": "Grecia",
+        "destinationsItaly": "Italia",
+        "destinationsTurkey": "Turquía",
+        "destinationsCaribbean": "Caribe"
+      }
+    },
+    "EarnCta": {
+      "heading": "Gana con tu yate",
+      "description": "Publica tu yate en nuestra plataforma y empieza a recibir reservas de viajeros de todo el mundo. Nosotros nos ocupamos de la visibilidad, la demanda y las herramientas; tú mantienes el control de tu calendario y tus precios.",
+      "cta": "Publicar mi yate"
+    },
+    "Hero": {
+      "tagline": "Más de 30.000 yates en 1.200 destinos. Chárter desde 120 €/día",
+      "heading": "Explora el mundo en yate",
+      "wherePlaceholder": "¿Adónde?",
+      "datesPlaceholder": "Cualquier fecha",
+      "clearDates": "Borrar fechas",
+      "boatPlaceholder": "Cualquier barco",
+      "captainPlaceholder": "Con patrón",
+      "search": "Buscar",
+      "dontKnow": "¿No sabes cuál elegir?",
+      "helpPlan": "Ayúdame a planificar mi viaje",
+      "options": {
+        "croatia": "Croacia",
+        "greece": "Grecia",
+        "italy": "Italia",
+        "turkey": "Turquía",
+        "caribbean": "Caribe",
+        "thailand": "Tailandia",
+        "catamaran": "Catamarán",
+        "sailingYacht": "Velero",
+        "motorYacht": "Yate a motor",
+        "gulet": "Gulet",
+        "luxuryYacht": "Yate de lujo",
+        "withCaptain": "Con patrón",
+        "bareboat": "Sin patrón",
+        "skippered": "Con patrón incluido"
+      },
+      "stats": {
+        "yachts": {
+          "label": "yates"
+        },
+        "destinations": {
+          "label": "destinos"
+        },
+        "travelers": {
+          "label": "viajeros satisfechos"
+        },
+        "rating": {
+          "label": "valoración media"
+        }
+      }
+    },
+    "HowItWorks": {
+      "heading": "Cómo funciona",
+      "intro": "Reservar un yate es más fácil de lo que crees.",
+      "introSecondLine": "Te acompañamos desde la elección del destino hasta el momento de subir a bordo, sin necesidad de experiencia.",
+      "cta": "Buscar yates",
+      "steps": {
+        "destination": {
+          "title": "Elige el destino",
+          "description": "Explora más de 1.200 destinos de navegación en todo el mundo. De Croacia al Caribe, elige el lugar que encaje con tu viaje."
+        },
+        "yacht": {
+          "title": "Elige tu yate",
+          "description": "Explora yates según el tamaño de tu grupo, tu presupuesto y tus preferencias. Compara opciones y encuentra la mejor."
+        },
+        "book": {
+          "title": "Reserva tu viaje",
+          "description": "Confirma las fechas, añade extras si los necesitas y formaliza la reserva online. Listo para zarpar."
+        }
+      }
+    },
+    "PlanTrip": {
+      "heading": "¿No sabes qué elegir? Planifica tu viaje en yate perfecto en 30 segundos",
+      "cta": "Ayúdame a planificar mi viaje",
+      "checklist": {
+        "questions": "Responde unas preguntas sencillas",
+        "recommendation": "Recibe una recomendación personalizada",
+        "explore": "Descubre los mejores yates para tu viaje"
+      },
+      "steps": {
+        "preferences": {
+          "title": "Elige tus preferencias",
+          "description": "Indica tus destinos ideales, desde las costas turquesas de Palawan hasta los puertos históricos de La Valeta."
+        },
+        "recommendation": {
+          "title": "Recibe la recomendación",
+          "description": "Te sugeriremos yates según las necesidades de tu grupo. Revisa nuestras propuestas y elige el yate perfecto."
+        },
+        "yachts": {
+          "title": "Consulta los yates",
+          "description": "Concreta los detalles, añade extras y reserva. Ya solo queda esperar tu inolvidable aventura náutica."
+        }
+      }
+    },
+    "PopularDestinations": {
+      "heading": "Destinos populares",
+      "previous": "Destinos anteriores",
+      "next": "Destinos siguientes",
+      "seeAll": "Ver todos los destinos",
+      "fromPerPerson": "Desde {price} por persona",
+      "items": {
+        "croatia": {
+          "title": "Croacia",
+          "imageAlt": "Cala turquesa rodeada de acantilados en la costa croata"
+        },
+        "greece": {
+          "title": "Grecia",
+          "imageAlt": "Pueblo portuario de colores en una isla griega"
+        },
+        "caribbean": {
+          "title": "Caribe",
+          "imageAlt": "Vista aérea de una playa de isla tropical en el Caribe"
+        },
+        "italy": {
+          "title": "Italia",
+          "imageAlt": "Pueblo sobre acantilados en la costa de Amalfi, Italia"
+        },
+        "montenegro": {
+          "title": "Montenegro",
+          "imageAlt": "Bahía adriática resguardada en la costa montenegrina"
+        }
+      }
+    },
+    "PopularYachts": {
+      "heading": "Yates populares",
+      "previous": "Yates anteriores",
+      "next": "Yates siguientes",
+      "seeAll": "Ver todos los yates",
+      "from": "Desde",
+      "viewDetails": "Ver detalles",
+      "perDay": "/ por día",
+      "tags": {
+        "bareboat": "Sin patrón",
+        "fullCrew": "Tripulación completa"
+      },
+      "items": {
+        "lagoon42": {
+          "location": "Split, Croacia",
+          "imageAlt": "Catamarán Lagoon 42 amarrado frente a Split"
+        },
+        "bavariaC42": {
+          "location": "Atenas, Grecia",
+          "imageAlt": "Velero Bavaria C42 cerca de Atenas"
+        },
+        "sunseeker65": {
+          "location": "Ibiza, España",
+          "imageAlt": "Yate a motor Sunseeker 65 navegando frente a Ibiza"
+        },
+        "bali46": {
+          "location": "Palma, España",
+          "imageAlt": "Catamarán Bali 4.6 fondeado cerca de Palma"
+        },
+        "fountainePajot45": {
+          "location": "Dubrovnik, Croacia",
+          "imageAlt": "Catamarán Fountaine Pajot 45 frente a Dubrovnik"
+        }
+      }
+    },
+    "SailingRoutes": {
+      "heading": "Rutas de navegación populares",
+      "allRoutes": "Todas las rutas",
+      "exploreRoute": "Explorar ruta",
+      "days": "{count, plural, one {# día} other {# días}}",
+      "levels": {
+        "easy": "Fácil",
+        "moderate": "Media",
+        "advanced": "Avanzada"
+      },
+      "items": {
+        "dalmatianCoast": {
+          "title": "Costa dálmata",
+          "description": "Descubre las calas escondidas de Brač, la vida nocturna de Hvar y la belleza tranquila de Vis.",
+          "imageAlt": "Velero fondeado en una bahía dálmata rodeada de bosque"
+        },
+        "greekCyclades": {
+          "title": "Cícladas griegas",
+          "description": "Navega por el corazón del Egeo, del cosmopolita Miconos a la impresionante Santorini.",
+          "imageAlt": "Capilla encalada sobre una cala de una isla griega"
+        },
+        "amalfiCoast": {
+          "title": "Costa de Amalfi",
+          "description": "Navega junto a los acantilados de Positano y las grutas de Capri por el litoral más glamuroso de Italia.",
+          "imageAlt": "Cúpula de la catedral de Positano sobre la costa de Amalfi"
+        }
+      }
+    },
+    "Testimonials": {
+      "heading": "Lo que dicen nuestros clientes",
+      "allReviews": "Todas las opiniones",
+      "items": {
+        "weber": {
+          "quote": "Reservamos un yate en Croacia por primera vez y todo funcionó sin más. El proceso fue sencillo y el barco era exactamente lo que esperábamos.",
+          "location": "Alemania"
+        },
+        "martin": {
+          "quote": "No tenía experiencia navegando, pero la plataforma facilitó encontrar patrón y planificar todo el viaje. Fue como unas vacaciones normales, pero mejores.",
+          "location": "Francia"
+        },
+        "carter": {
+          "quote": "La transparencia en el precio fue la mayor sorpresa. Vimos el coste total por adelantado y lo repartimos entre amigos: muy cómodo.",
+          "location": "Reino Unido"
+        },
+        "rossi": {
+          "quote": "Comparamos varios yates y encontramos el perfecto para nuestro grupo. Las sugerencias de ruta ayudaron mucho: no tuvimos que planificar nada.",
+          "location": "Italia"
+        },
+        "kowalska": {
+          "quote": "Gran selección de barcos y filtros muy claros. Encontramos justo lo que necesitábamos en pocos minutos.",
+          "location": "Polonia"
+        },
+        "jensen": {
+          "quote": "Desde la reserva hasta el embarque todo fue sencillo. Comunicación clara, sin cargos ocultos y un barco que en persona era aún mejor.",
+          "location": "Dinamarca"
+        }
+      }
+    }
+  },
+  "Layout": {
+    "Footer": {
+      "tagline": "Explora el mundo en yate.",
+      "description": "Más de 30.000 barcos en todo el mundo listos para tu próximo viaje.",
+      "columns": {
+        "destinations": "Destinos",
+        "charterTypes": "Tipos de chárter",
+        "explore": "Descubre"
+      },
+      "links": {
+        "croatia": "Croacia",
+        "greece": "Grecia",
+        "italy": "Italia",
+        "turkey": "Turquía",
+        "caribbean": "Caribe",
+        "thailand": "Tailandia",
+        "catamaran": "Catamarán",
+        "sailingYacht": "Velero",
+        "motorYacht": "Yate a motor",
+        "bareboat": "Sin patrón",
+        "skippered": "Con patrón incluido",
+        "planTrip": "Ayúdame a planificar mi viaje",
+        "popularYachts": "Yates populares",
+        "customerReviews": "Lo que dicen nuestros clientes",
+        "howItWorks": "Cómo funciona"
+      },
+      "privacy": "Política de privacidad",
+      "terms": "Términos del servicio",
+      "copyright": "© {year} YachtCharter Platform. Todos los derechos reservados."
+    },
+    "Nav": {
+      "boatTypes": "Tipos de barco",
+      "closeMenu": "Cerrar menú",
+      "destinations": "Destinos",
+      "findByBudget": "Buscar por presupuesto",
+      "findYacht": "Buscar yate",
+      "helpPlan": "Planificar mi viaje",
+      "language": "Idioma",
+      "languages": {
+        "en": "Inglés",
+        "es": "Español",
+        "uk": "Ucraniano"
+      },
+      "openMenu": "Abrir menú",
+      "popularRoutes": "Rutas populares",
+      "saved": "Guardados",
+      "tryIt": "Pruébalo"
+    },
+    "Sidebar": {
+      "menu": "Menú de la cuenta",
+      "greeting": "¡Hola, {name}!",
+      "profile": "Mi perfil",
+      "bookings": "Mis reservas",
+      "referrals": "Referidos",
+      "discount": "Gestión de descuentos",
+      "logout": "Cerrar sesión"
+    },
+    "UserMenu": {
+      "account": "Cuenta",
+      "signIn": "Iniciar sesión",
+      "signOut": "Cerrar sesión",
+      "theme": "Tema",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    },
+    "description": "Yacht Charter",
+    "title": "Yacht Charter"
+  },
+  "PlanMyTrip": {
+    "title": "Ayúdame a planificar mi viaje",
+    "close": "Cerrar el planificador",
+    "progress": "Paso {current} de {total}",
+    "stepHeading": "Paso {current}",
+    "placeholder": "La pregunta y sus opciones aparecerán aquí en la siguiente etapa.",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "steps": {
+      "destination": {
+        "question": "¿A dónde te gustaría navegar?",
+        "subtitle": "Elige un destino o deja que te sugiramos la mejor opción",
+        "options": {
+          "croatia": {
+            "label": "Croacia",
+            "description": "Ideal para saltar entre islas y navegar por primera vez. Aguas tranquilas, distancias cortas entre islas y una gran variedad de rutas: perfecto para principiantes y viajes relajados."
+          },
+          "greece": {
+            "label": "Grecia",
+            "description": "Ideal para rutas escénicas y mezcla cultural. Navega entre islas icónicas de aguas cristalinas, pueblos históricos y un equilibrio entre aventura y confort."
+          },
+          "italy": {
+            "label": "Italia",
+            "description": "Ideal para experiencias premium y vistas de la costa. Hermosas rutas costeras, marinas de alta gama y destinos inolvidables como Amalfi: perfecto para un viaje más lujoso."
+          },
+          "spain": {
+            "label": "España",
+            "description": "Ideal para estilo de vida y ambiente social. Buen clima, ambiente vibrante y destinos como Ibiza o Mallorca: perfecto para diversión, grupos y viajes activos."
+          },
+          "notSure": {
+            "label": "No estoy seguro"
+          }
+        }
+      },
+      "groupSize": {
+        "question": "¿Cuántas personas van a bordo?",
+        "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
+        "options": {
+          "twoToFour": {
+            "label": "2–4 personas",
+            "description": "Más privacidad, mayor coste por persona"
+          },
+          "fiveToEight": {
+            "label": "5–8 personas",
+            "description": "El mejor equilibrio entre confort y precio"
+          },
+          "ninePlus": {
+            "label": "9+ personas",
+            "description": "Requiere yates más grandes o varios barcos"
+          },
+          "notSure": {
+            "label": "No estoy seguro"
+          }
+        }
+      },
+      "experience": {
+        "question": "¿Tienes experiencia navegando?",
+        "options": {
+          "none": {
+            "label": "Sin experiencia",
+            "description": "Necesito un patrón para navegar"
+          },
+          "some": {
+            "label": "Algo de experiencia",
+            "description": "He navegado antes, pero necesito un patrón"
+          },
+          "licensed": {
+            "label": "Con licencia",
+            "description": "Tengo licencia válida y navegaré yo mismo"
+          }
+        }
+      },
+      "tripVibe": {
+        "question": "¿Qué tipo de viaje buscas?",
+        "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
+        "options": {
+          "adventure": {
+            "label": "Aventura",
+            "description": "Navegación activa y exploración. Más movimiento, rutas más largas y navegación práctica"
+          },
+          "relax": {
+            "label": "Relax",
+            "description": "Ritmo tranquilo, naturaleza y calas tranquilas. Perfecto para navegar con calma, nadar y desconectar."
+          },
+          "family": {
+            "label": "Familia",
+            "description": "Seguro, cómodo y espacioso. Ideal para niños, estabilidad y rutas fáciles."
+          },
+          "luxury": {
+            "label": "Lujo",
+            "description": "Yates premium y servicio completo. Tripulación, confort y destinos exclusivos."
+          },
+          "party": {
+            "label": "Fiesta",
+            "description": "Música, vida nocturna y ambiente social. Ideal para rutas estilo Ibiza y energía de grupo."
+          }
+        }
+      },
+      "duration": {
+        "question": "¿Cuánto quieres que dure tu viaje?",
+        "subtitle": "Elige la duración que mejor se adapte a tus planes. Nos ayuda a sugerir los yates, las rutas y la experiencia adecuados.",
+        "options": {
+          "week": { "label": "7 días" },
+          "twoWeeks": { "label": "14 días" },
+          "threeWeeks": { "label": "21 días" },
+          "more": { "label": "21+ días" }
+        }
+      },
+      "budget": {
+        "question": "¿Qué presupuesto te resulta cómodo?",
+        "subtitle": "Tu estilo de viaje define el tipo de yate, la ruta y la experiencia a bordo.",
+        "perPersonWeek": "por persona/semana",
+        "options": {
+          "low": { "label": "€300–600" },
+          "mid": { "label": "€600-1000" },
+          "high": { "label": "€1000-1200" },
+          "premium": { "label": "€2000+" }
+        }
+      }
+    },
+    "result": {
+      "title": "Tu viaje en yate perfecto",
+      "subtitle": "Según tus preferencias, esto es lo que recomendamos.",
+      "perPersonWeek": "por persona/semana",
+      "labels": {
+        "yachtType": "Tipo de yate",
+        "skipper": "Patrón",
+        "style": "Estilo",
+        "duration": "Duración",
+        "estPrice": "Precio est."
+      },
+      "yachtType": {
+        "sailing": "Velero",
+        "catamaran": "Catamarán",
+        "gulet": "Gulet"
+      },
+      "skipper": { "yes": "Sí", "no": "No" },
+      "difficulty": { "easy": "Fácil", "moderate": "Moderado", "advanced": "Avanzado" },
+      "getConsultation": "Solicitar asesoría",
+      "viewDetails": "Ver detalles",
+      "boat": {
+        "location": "Aphines, Grecia",
+        "title": "Lagoon 42",
+        "tagBareboat": "Sin tripulación",
+        "tagFullCrew": "Con tripulación",
+        "from": "Desde",
+        "perPerson": "/ por persona"
+      }
+    }
+  },
+  "YachtDetail": {
+    "backToSearch": "Volver a la búsqueda",
+    "breadcrumbSearch": "Búsqueda",
+    "share": "Compartir",
+    "seeOnMap": "Ver en el mapa",
+    "addToWishlist": "Añadir a favoritos",
+    "included": "Incluido",
+    "gallery": {
+      "close": "Cerrar",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar"
+    },
+    "importantInfo": {
+      "charterCompany": "Empresa de chárter",
+      "pickUpAddress": "Dirección de recogida del yate",
+      "pickUp": "Recogida del yate",
+      "dropOff": "Entrega del yate",
+      "policies": "Condiciones de cancelación y pago",
+      "license": "Licencia de navegación requerida",
+      "pets": "Mascotas",
+      "paymentMethods": "Métodos de pago aceptados por la empresa",
+      "marinaInfo": "Información sobre la marina"
+    },
+    "popular": {
+      "from": "Desde",
+      "perPerson": "/ por persona",
+      "seeAll": "Ver todos los yates",
+      "previous": "Yates anteriores",
+      "next": "Yates siguientes"
+    },
+    "review": {
+      "count": "({count} opiniones)",
+      "summary": "Mostrando {shown} de {total}"
+    },
+    "sidebar": {
+      "crew": "Tripulación",
+      "people": "Personas",
+      "prepayment": "Anticipo del {percent}% por el barco",
+      "boatPrice": "Precio del barco (alquiler completo)",
+      "deposit": "Fianza reembolsable",
+      "howItWorks": "Ver cómo funciona",
+      "groups": {
+        "mandatory": "Obligatorios",
+        "selectedExtras": "Extras seleccionados",
+        "crew": "Tripulación"
+      },
+      "payNow": "Anticipo por el barco (pagar ahora)",
+      "payAt": "Pago: {date}",
+      "payAtCheckIn": "Pago en la entrega: {date}",
+      "firstPayment": "{amount} (1.er pago)",
+      "secondPayment": "{amount} (2.º pago)",
+      "extrasPayment": "{amount} (extras)",
+      "depositNote": "+ {amount} (fianza reembolsable)",
+      "totalPrice": "Precio total",
+      "dueNow": "A pagar ahora",
+      "payNowCta": "Pagar {amount}",
+      "requestQuote": "Solicitar presupuesto"
+    },
+    "panels": {
+      "details": "Detalles del yate",
+      "booking": "Resumen de la reserva"
+    },
+    "tabs": {
+      "overview": "Resumen",
+      "amenities": "Comodidades",
+      "mandatory-extras": "Extras obligatorios",
+      "optional-extras": "Extras opcionales",
+      "description": "Descripción",
+      "important-info": "Información importante",
+      "suggested-route": "Ruta",
+      "review": "Opiniones",
+      "faq": "Preguntas",
+      "popular-yachts": "Yates populares"
+    },
+    "sections": {
+      "overview": "Resumen",
+      "amenities": "Comodidades",
+      "mandatoryExtras": "Extras obligatorios",
+      "optionalExtras": "Extras opcionales",
+      "description": "Descripción",
+      "importantInfo": "Información importante",
+      "suggestedRoute": "Ruta recomendada",
+      "review": "Opiniones",
+      "faq": "Preguntas frecuentes",
+      "popularYachts": "Otros yates populares"
+    },
+    "overview": {
+      "location": "Ubicación",
+      "mainsail": "Tipo de mayor",
+      "year": "Año",
+      "draught": "Calado",
+      "boatType": "Tipo de barco",
+      "beam": "Manga",
+      "cabins": "Camarotes",
+      "fuelTank": "Depósito de combustible",
+      "bathrooms": "Baños",
+      "waterTank": "Depósito de agua",
+      "length": "Eslora",
+      "engine": "Motor"
+    }
+  },
+  "Yachts": {
+    "searchByMap": "Buscar en el mapa",
+    "emptyTitle": "No se han encontrado yates para tus filtros",
+    "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
+    "searchBar": {
+      "location": "Ubicación",
+      "searchCountries": "Buscar países...",
+      "addDates": "Añadir fechas",
+      "clearDates": "Borrar fechas",
+      "anyBoat": "Cualquier barco",
+      "search": "Buscar"
+    }
+  },
+  "YachtsMap": {
+    "title": "Yates en el mapa",
+    "backToSearch": "Volver a la búsqueda",
+    "showAllList": "Mostrar toda la lista",
+    "closeList": "Cerrar lista",
+    "marker": "Marina {name}"
+  }
+}

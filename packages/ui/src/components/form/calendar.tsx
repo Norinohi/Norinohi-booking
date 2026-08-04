@@ -27,6 +27,10 @@ type CalendarCommonProps = {
   onMonthChange?: (month: Date) => void;
   /** Return true to render a day as non-selectable. */
   disabled?: (date: Date) => boolean;
+  /** BCP 47 tag for month and weekday names. Defaults to the browser's locale. */
+  locale?: string;
+  previousMonthLabel?: string;
+  nextMonthLabel?: string;
 };
 
 type SingleModeProps = {
@@ -49,7 +53,12 @@ type RangeModeProps = {
 
 export type CalendarProps = CalendarCommonProps & (SingleModeProps | RangeModeProps);
 
-const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as const;
+/* 2024-01-07 was a Sunday, so it anchors the weekday walk regardless of `weekStartsOn`. */
+const WEEKDAY_ANCHOR = new Date(2024, 0, 7);
+
+/* Trimmed to two characters to keep the Figma column width — "short" is already two in many
+ * locales (de: "So") and three in others (en: "Sun"). */
+const WEEKDAY_CHARS = 2;
 
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -91,8 +100,13 @@ function buildWeeks(month: Date, weekStartsOn: number): Date[][] {
   return weeks;
 }
 
-function weekdayLabels(weekStartsOn: number): string[] {
-  return Array.from({ length: 7 }, (_, i) => WEEKDAY_LABELS[(weekStartsOn + i) % 7]!);
+function weekdayLabels(weekStartsOn: number, locale?: string): string[] {
+  const format = new Intl.DateTimeFormat(locale, { weekday: "short" });
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(WEEKDAY_ANCHOR);
+    day.setDate(day.getDate() + ((weekStartsOn + i) % 7));
+    return format.format(day).slice(0, WEEKDAY_CHARS);
+  });
 }
 
 /** Inclusive, order-normalised range endpoints (handles reversed input), or undefined. */
@@ -108,7 +122,7 @@ function rangeEndpoints(
 }
 
 const dayBase =
-  "relative flex size-9 grow items-center justify-center text-center text-sm outline-none transition-colors select-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
+  "relative flex size-9 grow cursor-pointer items-center justify-center text-center text-sm outline-none transition-colors select-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
 const dayBrand = "bg-brand font-semibold leading-[1.15] text-brand-foreground hover:bg-brand-hover";
 
 function dayClassName(state: {
@@ -135,7 +149,14 @@ function dayClassName(state: {
 }
 
 function Calendar(props: CalendarProps) {
-  const { className, weekStartsOn = 0, disabled } = props;
+  const {
+    className,
+    weekStartsOn = 0,
+    disabled,
+    locale,
+    previousMonthLabel = "Previous month",
+    nextMonthLabel = "Next month",
+  } = props;
   const isRange = props.mode === "range";
 
   const anchor = isRange
@@ -197,13 +218,13 @@ function Calendar(props: CalendarProps) {
   const display = previewing ? rangeEndpoints(rangeValue?.from, hovered) : committed;
 
   const weeks = React.useMemo(() => buildWeeks(month, weekStartsOn), [month, weekStartsOn]);
-  const labels = React.useMemo(() => weekdayLabels(weekStartsOn), [weekStartsOn]);
+  const labels = React.useMemo(() => weekdayLabels(weekStartsOn, locale), [weekStartsOn, locale]);
   const today = startOfDay(new Date());
-  const monthLabel = new Intl.DateTimeFormat(undefined, {
+  const monthLabel = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
   }).format(month);
-  const dayFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "full" });
+  const dayFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "full" });
 
   return (
     <div
@@ -216,7 +237,7 @@ function Calendar(props: CalendarProps) {
       <div className="flex items-center gap-4">
         <button
           type="button"
-          aria-label="Previous month"
+          aria-label={previousMonthLabel}
           onClick={() => changeMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
           className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/50"
         >
@@ -227,7 +248,7 @@ function Calendar(props: CalendarProps) {
         </div>
         <button
           type="button"
-          aria-label="Next month"
+          aria-label={nextMonthLabel}
           onClick={() => changeMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
           className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/50"
         >

@@ -31,9 +31,8 @@ pnpm db:studio               # drizzle-kit studio
 Absent by design or not yet built — do not invent these:
 
 - **No test runner.** No `test` script exists in any workspace, and no test framework is installed. Do not reference `pnpm test`.
-- **No CI.** There is no `.github/` directory and no pipeline config. `pnpm check`, `pnpm check-types`, and `pnpm build` are the only gates, and they are run manually.
+- **No CI.** There is no `.github/` directory and no pipeline config. `pnpm check`, `pnpm check-types`, and `pnpm build` are the only gates, and they are run manually. A push does trigger a Railway deploy (see `docs/railway-deployment.md`), but that runs no checks — a type error reaches production.
 - **No `lint` script.** `turbo.json` declares a `lint` task, but no workspace defines one, so `turbo run lint` is a no-op. Linting happens only through the root `pnpm check`.
-- **No migrations yet.** `packages/db/src/migrations` does not exist; `db:generate` creates it.
 
 ## Architecture
 
@@ -61,7 +60,7 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 
 ### Env validation
 
-`packages/env` exports two subpaths, `@yacht-charter/env/server` and `@yacht-charter/env/web`, built with `@t3-oss/env-core` and `@t3-oss/env-nextjs`. Server vars: `DATABASE_URL`, `BETTER_AUTH_SECRET` (min 32 chars), `BETTER_AUTH_URL`, `CORS_ORIGIN`, `NODE_ENV`. Web exposes `NEXT_PUBLIC_SERVER_URL` and `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
+`packages/env` exports two subpaths, `@yacht-charter/env/server` and `@yacht-charter/env/web`, built with `@t3-oss/env-core` and `@t3-oss/env-nextjs`. Server vars: `DATABASE_URL`, `BETTER_AUTH_SECRET` (min 32 chars), `BETTER_AUTH_URL`, `CORS_ORIGIN`, `NODE_ENV`, `PORT` (defaults to 3000; hosts inject it). Web exposes `NEXT_PUBLIC_SERVER_URL`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, and `NEXT_PUBLIC_MAPBOX_TOKEN` (must be a `pk.` token).
 
 `apps/web/next.config.ts` imports `@yacht-charter/env/web` for its validation side effect, so a bad web env fails the build early. Both schemas honour `SKIP_ENV_VALIDATION`. Read env through these modules — do not reach for `process.env` directly in app code. Copy `apps/web/.env.example` → `.env.local` and `apps/server/.env.example` → `.env` to get started; both mirror these schemas.
 
@@ -75,6 +74,21 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 
 `evlog` is wired in three places: `initLogger` in `apps/server/src/index.ts`, `createEvlog`/`createInstrumentation` in `apps/web/src/lib/evlog.ts`, and `evlogMiddleware` in `apps/web/src/proxy.ts` (matcher `/api/:path*`). `apps/web/instrumentation.ts` defers to `src/lib/evlog`.
 
+### Deployment
+
+Railway, three services (`Postgres`, `server`, `web`), each app configured by its own
+`apps/*/railway.json` with the repo root as build context. Full runbook and the variables to set:
+`docs/railway-deployment.md`.
+
+Two things constrain code changes here:
+
+- **The server must not hardcode its port.** Railway injects `PORT`; `serve()` reads it through
+  `env.PORT`. The same applies to any future listener.
+- **Schema reaches production only through committed SQL.** `apps/server`'s pre-deploy step runs
+  `node dist/migrate.mjs` (the second `tsdown` entry), which applies `packages/db/src/migrations`
+  via `runMigrations` from `packages/db/src/migrate.ts`. A schema edit that is not accompanied by
+  `pnpm db:generate` output deploys against the old tables. `db:push` is a local-only shortcut.
+
 ## Conventions
 
 - Commit messages follow Conventional Commits, lowercase after the type — `chore: properly name project`. Every commit since the two scaffold commits (`initial commit`, `first commit`) has used `chore:`; no other type has been used yet.
@@ -83,5 +97,5 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 - Add shared shadcn primitives from the repo root with `npx shadcn@latest add <name> -c packages/ui`; run the CLI from `apps/web` only for app-specific blocks.
 - Run `pnpm check` before committing. It rewrites files with `oxfmt --write`, so review the diff afterwards. Oxlint enforces the `correctness` category as errors via `.oxlintrc.json`.
 - The vendored skills under `.agents/skills/` and `.claude/skills/` are tracked in git and hash-locked by `skills-lock.json`. Treat them as vendored — do not edit in place.
-- Ports are fixed: web `3001` (`--port 3001` flag), server `3000` (hardcoded in `apps/server/src/index.ts`). `CORS_ORIGIN` and `NEXT_PUBLIC_SERVER_URL` must agree with them.
+- Ports in development: web `3001` (`--port 3001` flag), server `3000` (the `PORT` default in `packages/env/src/server.ts`). `CORS_ORIGIN` and `NEXT_PUBLIC_SERVER_URL` must agree with them.
 - Scaffolded by Better-T-Stack; `bts.jsonc` records the version and the exact `reproducibleCommand` that generated the project.

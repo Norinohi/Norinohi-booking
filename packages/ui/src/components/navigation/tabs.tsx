@@ -60,7 +60,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
       className={cn(
-        "cursor-default whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50",
+        "cursor-pointer whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50",
         variant === "lined" &&
           "px-0 pt-4 pb-3 text-sm font-medium text-natural-500 data-[active]:font-bold data-[active]:text-foreground",
         variant === "segmented" &&

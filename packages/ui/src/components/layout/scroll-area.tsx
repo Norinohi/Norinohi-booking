@@ -46,7 +46,10 @@ function ScrollArea({ className, children, ...props }: ScrollAreaPrimitive.Root.
         data-slot="scroll-area-viewport"
         className="min-h-0 w-full flex-1 overscroll-contain rounded-[inherit] outline-none"
       >
-        <ScrollAreaPrimitive.Content>{children}</ScrollAreaPrimitive.Content>
+        {/* Undoes base-ui's inline `min-width: fit-content`; only a class would lose to it. */}
+        <ScrollAreaPrimitive.Content className="w-full" style={{ minWidth: 0 }}>
+          {children}
+        </ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
     </ScrollAreaPrimitive.Root>

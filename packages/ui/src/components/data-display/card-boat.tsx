@@ -27,13 +27,17 @@ function BoatCard({
   ...props
 }: BoatCardProps) {
   return (
-    <Card variant="ghost" className={cn("w-[334px] max-w-full", className)} {...props}>
-      <CardMedia className="rounded-xl">
+    <Card variant="ghost" className={cn("w-[334px] max-w-full gap-5", className)} {...props}>
+      <CardMedia className="h-[224px] rounded-xl">
         <img src={image} alt={imageAlt} />
       </CardMedia>
-      <CardContent className="gap-1.5 p-0">
-        <CardTitle className="text-2xl">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+      <CardContent className="gap-3 p-0">
+        <CardTitle className="text-xl leading-[1.1] md:text-2xl">{title}</CardTitle>
+        {description && (
+          <CardDescription className="text-lg leading-[1.4] md:text-xl">
+            {description}
+          </CardDescription>
+        )}
       </CardContent>
     </Card>
   );

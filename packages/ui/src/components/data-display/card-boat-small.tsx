@@ -13,6 +13,8 @@ import { Bookmark, Star } from "lucide-react";
 /*
  * BoatSmallCard — Figma "card/boat-small" (613:7587). Framed listing card: photo (+ save
  * bookmark), location, title + rating, tag chips, and a price / "View Details" footer.
+ * One photo only — the card stays presentational, and the carousels that scroll between cards
+ * live in the sections that use them.
  */
 type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   image: string;
@@ -23,7 +25,13 @@ type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   tags?: { label: string; icon?: React.ReactNode }[];
   price: React.ReactNode;
   priceSuffix?: React.ReactNode;
-  onViewDetails?: () => void;
+  priceLabel?: React.ReactNode;
+  actionLabel?: React.ReactNode;
+  /** Element the action renders as — pass the app's own link to make it navigate. */
+  actionRender?: React.ComponentProps<typeof Button>["render"];
+  /** Accessible name for the save button — it has no visible text. */
+  saveLabel?: string;
+  onSave?: () => void;
 };
 
 function BoatSmallCard({
@@ -35,17 +43,26 @@ function BoatSmallCard({
   tags = [],
   price,
   priceSuffix = "/ per person",
-  onViewDetails,
+  priceLabel = "From",
+  actionLabel = "View Details",
+  actionRender,
+  saveLabel = "Save to wishlist",
+  onSave,
   className,
   ...props
 }: BoatSmallCardProps) {
   return (
     <Card className={cn("w-[334px] max-w-full", className)} {...props}>
-      <CardMedia>
+      <CardMedia className="aspect-[334/200]">
         <img src={image} alt={imageAlt} />
-        <span className="absolute top-3 right-3 flex size-9 items-center justify-center rounded-full bg-card/90 text-foreground shadow-sm">
-          <Bookmark className="size-5" />
-        </span>
+        <button
+          type="button"
+          aria-label={saveLabel}
+          onClick={onSave}
+          className="absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center rounded-lg bg-black/12 text-white outline-none transition-colors hover:bg-black/25 focus-visible:ring-2 focus-visible:ring-white/70"
+        >
+          <Bookmark className="size-4" />
+        </button>
       </CardMedia>
       <CardContent className="gap-3">
         {location && (
@@ -73,13 +90,13 @@ function BoatSmallCard({
       </CardContent>
       <CardFooter>
         <div className="flex flex-col">
-          <span className="text-sm text-natural-500">From</span>
+          <span className="text-sm text-natural-500">{priceLabel}</span>
           <span className="text-base text-natural-500">
             <span className="text-lg font-bold text-foreground">{price}</span> {priceSuffix}
           </span>
         </div>
-        <Button variant="neutral" size="sm" onClick={onViewDetails}>
-          View Details
+        <Button variant="neutral" size="sm" nativeButton={!actionRender} render={actionRender}>
+          {actionLabel}
         </Button>
       </CardFooter>
     </Card>
