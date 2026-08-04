@@ -231,8 +231,8 @@ Plain-object routers on `appRouter`, Zod v4 `.input()/.output()`, `publicProcedu
 
 ### 5.1 `charterSearch` — results, facets, map _(M3)_
 
-- `charterSearch.results({ destination, query, checkIn, checkOut, guests, category, minCabins, maxPriceMinor, currency, sort, page, pageSize }) → { items, pagination }`
-- `charterSearch.results({ ..., cursor, limit }) → { items, nextCursor }` remains available for cursor-based forward browsing. `page` and `cursor` are mutually exclusive.
+- `charterSearch.results({ destination, query, checkIn, checkOut, guests, category, minCabins, maxPriceMinor, currency, sort, page, pageSize }) → { items, pagination }`; page mode is the default (`page=1`, `pageSize=10`).
+- `charterSearch.results({ ..., cursor, limit }) → { items, nextCursor }` remains available for cursor-based forward browsing. When `cursor` is present, cursor mode takes precedence over default page values.
 - `charterSearch.facets(filters) → { destinations, categories, amenities, priceRange }`
 - `charterSearch.mapMarkers(filters) → { markers:{ listingId, slug, title, lat, lng, priceFromMinor, currency }[] }`
 - `charterSearch.suggestions({ query }) → { label, kind }[]`

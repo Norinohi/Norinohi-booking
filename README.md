@@ -95,7 +95,7 @@ Useful backend-only M3 smoke routes:
 
 You do not need to build or run `apps/web` to test these backend endpoints.
 
-`/charter-search/results` supports direct page clicks for the results pagination UI. Use `page` + `pageSize` and read `pagination.startItem`, `pagination.endItem`, and `pagination.totalItems` for labels such as `Showing 311-320 of 320`. Cursor pagination is still supported through `cursor` + `limit`, but do not send `cursor` and `page` together.
+`/charter-search/results` supports direct page clicks for the results pagination UI. Page mode is the default (`page=1`, `pageSize=10`) and returns `pagination.startItem`, `pagination.endItem`, and `pagination.totalItems` for labels such as `Showing 311-320 of 320`. Cursor pagination is still supported through `cursor` + `limit`; when `cursor` is present, cursor mode takes precedence over the default page values.
 
 The Better Auth reference includes sample request bodies for common auth checks such as `POST /sign-up/email`, `POST /sign-in/email`, `POST /sign-out`, password reset, email verification, password change, email change, and `POST /update-user`.
 

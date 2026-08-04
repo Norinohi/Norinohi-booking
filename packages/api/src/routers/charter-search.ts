@@ -5,7 +5,6 @@ import {
   listSearchSuggestions,
   searchListings,
 } from "@yacht-charter/db/search";
-import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 
 import {
@@ -27,7 +26,7 @@ export const charterSearchRouter = {
       operationId: "searchCharterListings",
       summary: "Search available yacht listings",
       description:
-        "Returns listing cards from the database-backed search read model. Use page/pageSize for direct page jumps in the results pager, or cursor/limit for forward cursor pagination. Do not send page and cursor together.",
+        "Returns listing cards from the database-backed search read model. Page pagination is the default for the results pager and returns total/range metadata. Supplying cursor switches to forward cursor pagination.",
       tags: ["Charter Search"],
       successDescription:
         "Matching yacht listings with either page pagination metadata or a next cursor.",
@@ -48,12 +47,6 @@ export const charterSearchRouter = {
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
     .handler(async ({ input }) => {
-      if (input.cursor && input.page) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "Use either cursor pagination or page pagination, not both.",
-        });
-      }
-
       const results = await searchListings(db, input);
       return {
         items: results.items.map((item) => ({

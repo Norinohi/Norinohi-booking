@@ -48,9 +48,9 @@ export const listingSearchInputSchema = z.object({
   maxPriceMinor: z.coerce.number().int().positive().optional(),
   currency: z.string().length(3).default("EUR"),
   cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(12),
-  page: z.coerce.number().int().min(1).optional(),
-  pageSize: z.coerce.number().int().min(1).max(50).optional(),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
   sort: z
     .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
     .default("recommended"),
