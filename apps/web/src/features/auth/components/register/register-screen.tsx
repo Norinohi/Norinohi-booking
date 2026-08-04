@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 
-import { SignUpForm } from "@/features/auth";
+import SignUpForm from "./sign-up-form";
 
-export default function RegisterPage() {
+export default function RegisterScreen() {
   const router = useRouter();
 
   return <SignUpForm onSwitchToSignIn={() => router.push("/login")} />;

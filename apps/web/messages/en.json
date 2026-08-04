@@ -670,8 +670,8 @@
       "dark": "Dark",
       "system": "System"
     },
-    "description": "Yacht Charter",
-    "title": "Yacht Charter"
+    "description": "Charter yachts and catamarans worldwide. Compare boats, dates and prices, and book your next sailing trip in minutes.",
+    "title": "YachtCharter — Yacht & Catamaran Rentals Worldwide"
   },
   "PlanMyTrip": {
     "title": "Help me plan my trip",
@@ -945,5 +945,43 @@
     "showAllList": "Show all list",
     "closeList": "Close list",
     "marker": "Marina {name}"
+  },
+  "Seo": {
+    "Yachts": {
+      "title": "Browse Yachts",
+      "description": "Explore our fleet of yachts and catamarans. Filter by destination, dates, guests and price to find the perfect boat for your trip."
+    },
+    "YachtsMap": {
+      "title": "Yachts on the Map",
+      "description": "Browse available yachts and catamarans on an interactive map. Explore marinas and destinations, then filter by dates, guests and price."
+    },
+    "YachtDetail": {
+      "title": "Yacht Details",
+      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates."
+    },
+    "Booking": {
+      "title": "Book Your Yacht",
+      "description": "Complete your yacht charter booking — guest details, extras and secure payment."
+    },
+    "BookingConfirmation": {
+      "title": "Booking Confirmed",
+      "description": "Your yacht charter booking is confirmed. Review your trip details and next steps."
+    },
+    "PlanMyTrip": {
+      "title": "Plan My Trip",
+      "description": "Tell us about your ideal trip and we'll suggest the right yachts, routes and dates for you."
+    },
+    "Login": {
+      "title": "Sign In",
+      "description": "Sign in to your YachtCharter account to manage bookings and saved yachts."
+    },
+    "Register": {
+      "title": "Create Account",
+      "description": "Create a YachtCharter account to book yachts, save favourites and manage your trips."
+    },
+    "Dashboard": {
+      "title": "Dashboard",
+      "description": "Manage your yacht charter bookings, saved yachts and account settings."
+    }
   }
 }

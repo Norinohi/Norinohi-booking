@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 
-import { SignInForm, SignUpForm } from "@/features/auth";
+import SignUpForm from "../register/sign-up-form";
+import SignInForm from "./sign-in-form";
 
-export default function LoginPage() {
+export default function LoginScreen() {
   const [showSignIn, setShowSignIn] = useState(true);
 
   return showSignIn ? (

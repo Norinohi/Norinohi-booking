@@ -670,8 +670,8 @@
       "dark": "Oscuro",
       "system": "Sistema"
     },
-    "description": "Yacht Charter",
-    "title": "Yacht Charter"
+    "description": "Alquila yates y catamaranes en todo el mundo. Compara barcos, fechas y precios, y reserva tu próxima travesía en minutos.",
+    "title": "YachtCharter — Alquiler de Yates y Catamaranes"
   },
   "PlanMyTrip": {
     "title": "Ayúdame a planificar mi viaje",
@@ -945,5 +945,43 @@
     "showAllList": "Mostrar toda la lista",
     "closeList": "Cerrar lista",
     "marker": "Marina {name}"
+  },
+  "Seo": {
+    "Yachts": {
+      "title": "Explorar Yates",
+      "description": "Explora nuestra flota de yates y catamaranes. Filtra por destino, fechas, huéspedes y precio para encontrar el barco perfecto para tu viaje."
+    },
+    "YachtsMap": {
+      "title": "Yates en el mapa",
+      "description": "Explora yates y catamaranes disponibles en un mapa interactivo. Descubre marinas y destinos, y filtra por fechas, huéspedes y precio."
+    },
+    "YachtDetail": {
+      "title": "Detalles del yate",
+      "description": "Consulta fotos, características, opciones de tripulación y precios de este yate, y comprueba la disponibilidad para tus fechas."
+    },
+    "Booking": {
+      "title": "Reserva tu yate",
+      "description": "Completa la reserva de tu chárter — datos de huéspedes, extras y pago seguro."
+    },
+    "BookingConfirmation": {
+      "title": "Reserva confirmada",
+      "description": "Tu reserva de chárter está confirmada. Revisa los detalles de tu viaje y los siguientes pasos."
+    },
+    "PlanMyTrip": {
+      "title": "Planea mi viaje",
+      "description": "Cuéntanos cómo sería tu viaje ideal y te sugeriremos los yates, rutas y fechas adecuados."
+    },
+    "Login": {
+      "title": "Iniciar sesión",
+      "description": "Inicia sesión en tu cuenta de YachtCharter para gestionar reservas y yates guardados."
+    },
+    "Register": {
+      "title": "Crear cuenta",
+      "description": "Crea una cuenta de YachtCharter para reservar yates, guardar favoritos y gestionar tus viajes."
+    },
+    "Dashboard": {
+      "title": "Panel",
+      "description": "Gestiona tus reservas de chárter, yates guardados y ajustes de la cuenta."
+    }
   }
 }
