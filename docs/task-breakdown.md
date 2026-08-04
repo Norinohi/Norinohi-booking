@@ -111,6 +111,7 @@ Confirm `check-types` + `build` green; share `AppRouterClient` usage with fronte
 - ☑ `charterSearch.results/facets/mapMarkers/suggestions` against read models (`GET /charter-search/results`, `/facets`, `/map-markers`, `/suggestions`).
 - ☑ `availability.calendar` from `availability_slot` cache (`GET /listings/{listingId}/availability-calendar`).
 - ☑ Stable cursor pagination for recommended/rating/newest/price sorts, including nullable price/year values.
+- ☑ Direct page pagination for the Figma results pager (`page`, `pageSize`, `pagination.totalItems`, `startItem`, `endItem`, `totalPages`).
 - ☐ Dedicated `facet_dictionary` table for stable translated labels. Deferred until frontend/admin needs label ownership beyond dynamic facets.
 - ☐ Perf pass against production-scale import volume; local seed is too small for meaningful p95 measurement.
 - **Docs testing:** run `pnpm db:start && pnpm db:migrate && pnpm db:seed && pnpm dev:server`, then open `/api-reference`.

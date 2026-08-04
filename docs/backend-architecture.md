@@ -231,7 +231,8 @@ Plain-object routers on `appRouter`, Zod v4 `.input()/.output()`, `publicProcedu
 
 ### 5.1 `charterSearch` — results, facets, map _(M3)_
 
-- `charterSearch.results({ destination, query, checkIn, checkOut, guests, category, minCabins, maxPriceMinor, currency, sort, limit, cursor }) → { items, nextCursor }`
+- `charterSearch.results({ destination, query, checkIn, checkOut, guests, category, minCabins, maxPriceMinor, currency, sort, page, pageSize }) → { items, pagination }`
+- `charterSearch.results({ ..., cursor, limit }) → { items, nextCursor }` remains available for cursor-based forward browsing. `page` and `cursor` are mutually exclusive.
 - `charterSearch.facets(filters) → { destinations, categories, amenities, priceRange }`
 - `charterSearch.mapMarkers(filters) → { markers:{ listingId, slug, title, lat, lng, priceFromMinor, currency }[] }`
 - `charterSearch.suggestions({ query }) → { label, kind }[]`
@@ -335,7 +336,7 @@ Gates: **`pnpm check-types`** + **`pnpm build`** (non-mutating). Run `pnpm check
 
 `listing_search_doc` + `availability_slot` read models (code-managed rebuild after sync) → `charterSearch.results/facets/mapMarkers/suggestions` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets are dynamic from `listing_search_doc` for M3; `facet_dictionary` is deferred until stable labels/i18n are needed.
 
-- **Acceptance:** results/filters/sort/pins/calendar from real queries on mock data; stable cursor pagination; p95 ≤ **[ASSUMPTION]** 200ms local.
+- **Acceptance:** results/filters/sort/pins/calendar from real queries on mock data; stable cursor pagination; direct page pagination with total counts for the Figma UI; p95 ≤ **[ASSUMPTION]** 200ms local.
 
 ### M4 — Availability & pricing query layer
 

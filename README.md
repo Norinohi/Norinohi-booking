@@ -83,7 +83,8 @@ With `pnpm dev:server` running, test the backend from the Scalar docs:
 
 Useful backend-only M3 smoke routes:
 
-- `GET /charter-search/results?destination=Croatia&currency=EUR&limit=10`
+- `GET /charter-search/results?destination=Croatia&currency=EUR&page=1&pageSize=10`
+- `GET /charter-search/results?currency=EUR&page=32&pageSize=10`
 - `GET /charter-search/facets?currency=EUR`
 - `GET /charter-search/map-markers?currency=EUR&limit=50`
 - `GET /charter-search/suggestions?query=Split`
@@ -93,6 +94,8 @@ Useful backend-only M3 smoke routes:
 - `GET /listings/{listingId}/availability-calendar?from=2026-07-01&to=2026-09-30&currency=EUR`
 
 You do not need to build or run `apps/web` to test these backend endpoints.
+
+`/charter-search/results` supports direct page clicks for the results pagination UI. Use `page` + `pageSize` and read `pagination.startItem`, `pagination.endItem`, and `pagination.totalItems` for labels such as `Showing 311-320 of 320`. Cursor pagination is still supported through `cursor` + `limit`, but do not send `cursor` and `page` together.
 
 ## UI Customization
 
