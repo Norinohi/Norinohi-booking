@@ -1,0 +1,109 @@
+{
+  "companies": [
+    {
+      "id": "cmp-adriatic",
+      "name": "Adriatic Charter Co.",
+      "email": "ops@adriatic.example",
+      "phone": "+385 21 000 111"
+    }
+  ],
+  "bases": [
+    {
+      "id": "base-split",
+      "companyId": "cmp-adriatic",
+      "name": "ACI Marina Split",
+      "country": "Croatia",
+      "countryCode": "HR",
+      "region": "Dalmatia",
+      "location": "Split",
+      "lat": 43.503,
+      "lng": 16.43,
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00"
+    },
+    {
+      "id": "base-athens",
+      "companyId": "cmp-adriatic",
+      "name": "Alimos Marina",
+      "country": "Greece",
+      "countryCode": "GR",
+      "region": "Attica",
+      "location": "Athens",
+      "lat": 37.914,
+      "lng": 23.704,
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00"
+    }
+  ],
+  "builders": [
+    { "id": "bld-lagoon", "name": "Lagoon" },
+    { "id": "bld-bavaria", "name": "Bavaria" }
+  ],
+  "models": [
+    { "id": "mdl-lagoon-42", "builderId": "bld-lagoon", "name": "Lagoon 42" },
+    { "id": "mdl-bavaria-c45", "builderId": "bld-bavaria", "name": "C45" }
+  ],
+  "categories": [
+    { "id": "cat-catamaran", "code": "catamaran", "name": "Catamaran" },
+    { "id": "cat-sailing", "code": "sailing-yacht", "name": "Sailing yacht" }
+  ],
+  "amenities": [
+    {
+      "id": "amn-ac",
+      "category": "Comfort",
+      "code": "air-conditioning",
+      "name": "Air conditioning"
+    },
+    { "id": "amn-dinghy", "category": "Equipment", "code": "dinghy", "name": "Dinghy" },
+    { "id": "amn-wifi", "category": "Comfort", "code": "wifi", "name": "Wi-Fi" }
+  ],
+  "yachts": [
+    {
+      "id": "yacht-lagoon-42-aurora",
+      "name": "Aurora",
+      "companyId": "cmp-adriatic",
+      "baseId": "base-split",
+      "builderId": "bld-lagoon",
+      "modelId": "mdl-lagoon-42",
+      "categoryId": "cat-catamaran",
+      "yearBuilt": 2022,
+      "lengthM": 12.8,
+      "cabins": 4,
+      "berths": 10,
+      "heads": 4,
+      "rating": 4.8,
+      "reviewCount": 18,
+      "currency": "EUR",
+      "priceFromMinor": 420000,
+      "amenityIds": ["amn-ac", "amn-dinghy", "amn-wifi"],
+      "media": [
+        "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a",
+        "https://images.unsplash.com/photo-1540946485063-a40da27545f8",
+        "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13"
+      ]
+    },
+    {
+      "id": "yacht-bavaria-c45-luna",
+      "name": "Luna",
+      "companyId": "cmp-adriatic",
+      "baseId": "base-athens",
+      "builderId": "bld-bavaria",
+      "modelId": "mdl-bavaria-c45",
+      "categoryId": "cat-sailing",
+      "yearBuilt": 2021,
+      "lengthM": 13.98,
+      "cabins": 4,
+      "berths": 8,
+      "heads": 3,
+      "rating": 4.6,
+      "reviewCount": 11,
+      "currency": "EUR",
+      "priceFromMinor": 310000,
+      "amenityIds": ["amn-dinghy", "amn-wifi"],
+      "media": [
+        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+        "https://images.unsplash.com/photo-1528154291023-a6525fabe5b4"
+      ]
+    }
+  ]
+}

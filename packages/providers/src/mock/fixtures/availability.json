@@ -1,0 +1,60 @@
+{
+  "slots": [
+    {
+      "yachtId": "yacht-lagoon-42-aurora",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 540000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-lagoon-42-aurora",
+      "startDate": "2026-08-15",
+      "endDate": "2026-08-22",
+      "status": "option",
+      "priceMinor": 565000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    },
+    {
+      "yachtId": "yacht-bavaria-c45-luna",
+      "startDate": "2026-08-08",
+      "endDate": "2026-08-15",
+      "status": "available",
+      "priceMinor": 390000,
+      "currency": "EUR",
+      "minNights": 7,
+      "checkinWeekday": 6,
+      "checkoutWeekday": 6
+    }
+  ],
+  "extras": [
+    {
+      "code": "transit-log",
+      "name": "Transit log",
+      "priceMinor": 25000,
+      "currency": "EUR",
+      "obligatory": true
+    },
+    {
+      "code": "skipper",
+      "name": "Skipper",
+      "priceMinor": 140000,
+      "currency": "EUR",
+      "obligatory": false
+    },
+    {
+      "code": "sup",
+      "name": "Stand-up paddleboard",
+      "priceMinor": 12000,
+      "currency": "EUR",
+      "obligatory": false
+    }
+  ]
+}

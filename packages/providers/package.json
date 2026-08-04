@@ -1,5 +1,5 @@
 {
-  "name": "@yacht-charter/api",
+  "name": "@yacht-charter/providers",
   "type": "module",
   "exports": {
     ".": {
@@ -10,23 +10,19 @@
     }
   },
   "scripts": {
-    "check-types": "tsc -b"
+    "build": "tsc -b",
+    "check-types": "tsc -b --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@orpc/client": "catalog:",
-    "@orpc/openapi": "catalog:",
-    "@orpc/server": "catalog:",
-    "@orpc/zod": "catalog:",
-    "@yacht-charter/auth": "workspace:*",
     "@yacht-charter/db": "workspace:*",
     "@yacht-charter/env": "workspace:*",
-    "@yacht-charter/providers": "workspace:*",
-    "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@yacht-charter/config": "workspace:*",
-    "hono": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
