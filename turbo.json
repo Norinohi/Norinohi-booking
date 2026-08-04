@@ -22,15 +22,19 @@
       "persistent": true
     },
     "db:push": {
+      "env": ["DATABASE_URL", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "CORS_ORIGIN"],
       "cache": false
     },
     "db:generate": {
+      "env": ["DATABASE_URL", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "CORS_ORIGIN"],
       "cache": false
     },
     "seed": {
+      "env": ["DATABASE_URL", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "CORS_ORIGIN"],
       "cache": false
     },
     "db:migrate": {
+      "env": ["DATABASE_URL", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "CORS_ORIGIN"],
       "cache": false,
       "persistent": true
     },
