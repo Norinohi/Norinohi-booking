@@ -57,11 +57,11 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 
 ### 1.3 Search / read-model entities
 
-| Entity                      | Purpose                                                                                                                                                                    | M   |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `listing_search_doc`        | Denormalised, query-optimised projection of a listing (facets + min price hint + geo) rebuilt on sync. Backs results/facets/map.                                           | M3  |
-| `availability_slot` (cache) | Per-listing bookable weeks: start/end, valid check-in/out weekday, min-duration, price hint, `source`, `freshness_at`. **Cache only — never authoritative at quote time.** | M3  |
-| `facet_dictionary`          | Stable enum values + i18n labels for filters (category, cabins, length bands, amenities) so the web app never hard-codes provider strings.                                 | M3  |
+| Entity                      | Purpose                                                                                                                                                                    | M          |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `listing_search_doc`        | Denormalised, query-optimised projection of a listing (facets + min price hint + geo) rebuilt on sync. Backs results/facets/map.                                           | M3         |
+| `availability_slot` (cache) | Per-listing bookable weeks: start/end, valid check-in/out weekday, min-duration, price hint, `source`, `freshness_at`. **Cache only — never authoritative at quote time.** | M3         |
+| `facet_dictionary`          | Stable enum values + i18n labels for filters (category, cabins, length bands, amenities) so the web app never hard-codes provider strings. Dynamic facets ship first.      | later/M3.5 |
 
 ### 1.4 Customer / account entities
 
@@ -229,24 +229,27 @@ export interface InventoryProvider {
 
 Plain-object routers on `appRouter`, Zod v4 `.input()/.output()`, `publicProcedure` / `protectedProcedure`, plus `adminProcedure`. DTOs are canonical.
 
-### 5.1 `search` — results, facets, map _(M3)_
+### 5.1 `charterSearch` — results, facets, map _(M3)_
 
-- `search.query({ where, filters, sort, page, cursor }) → { items: ListingCard[], total, facets, nextCursor }`
-- `search.facets(filters) → FacetCounts`
-- `search.map({ bbox|region, filters }) → { pins:{listingId,lat,lng,priceHint}[], clusters }`
-- `search.suggest(term) → { destinations, bases, models }`
+- `charterSearch.results({ destination, query, checkIn, checkOut, guests, category, minCabins, maxPriceMinor, currency, sort, limit, cursor }) → { items, nextCursor }`
+- `charterSearch.facets(filters) → { destinations, categories, amenities, priceRange }`
+- `charterSearch.mapMarkers(filters) → { markers:{ listingId, slug, title, lat, lng, priceFromMinor, currency }[] }`
+- `charterSearch.suggestions({ query }) → { label, kind }[]`
+- Public OpenAPI paths: `GET /charter-search/results`, `GET /charter-search/facets`, `GET /charter-search/map-markers`, `GET /charter-search/suggestions`.
 
-### 5.2 `listing` — list & detail _(M3)_
+### 5.2 `listings` — list & detail _(M3)_
 
-- `listing.get(idOrSlug) → ListingDetail` (specs, gallery, amenities, operator, base, FAQ)
-- `listing.reviews({ listingId, page }) → { items, summary }`
-- `listing.similar(listingId) → ListingCard[]`
+- `listings.get({ id }) → ListingDetail` (summary/specs/gallery/amenities/operator/base)
+- `listings.reviews({ listingId }) → { id, rating, author, body }[]`
+- `listings.similar({ listingId }) → ListingCard[]`
+- Public OpenAPI paths: `GET /listings/{id}`, `GET /listings/{listingId}/reviews`, `GET /listings/{listingId}/similar`.
 
 ### 5.3 `availability` — calendar & quote _(M4)_
 
-- `availability.calendar({ listingId, from, to }) → { weeks: Slot[] }` (cache-backed)
+- `availability.calendar({ listingId, from, to }) → { listingId, slots: Slot[] }` (cache-backed)
 - `availability.quote({ listingId, checkIn, checkOut, guests, extras, currency }) → Quote` — **live-revalidated**; creates a `quote` with `expires_at`, breakdown, `payment_policy`
 - `availability.reprice(quoteId) → Quote`
+- Public OpenAPI paths currently include `GET /listings/{listingId}/availability-calendar` and `POST /availability/quote`.
 
 ### 5.4 `wishlist` / `profile` / `referral` — account _(M2, protected)_
 
@@ -323,14 +326,14 @@ Gates: **`pnpm check-types`** + **`pnpm build`** (non-mutating). Run `pnpm check
 1. `packages/db`: schema per §1 (canonical, generic provenance `provider_record`+`listing_source`, account, admin/audit). Conventions in Appendix A. Re-export each file in `schema/index.ts`. `pnpm db:push`.
 2. Shared primitives: `id(prefix)` helper, `timestamps` mixin, `money` (amount-minor + currency) + exact-decimal percentage helper, `pgEnum` set.
 3. `packages/providers`: `InventoryProvider` interface, canonical Zod DTOs, `MockInventoryProvider` + fixtures + mapping skeleton, `sync_run`/`provider_raw_payload` plumbing.
-4. `packages/api`: read contracts (`search`/`listing`/`availability`/`wishlist`/`profile`/`referral`) returning mock-backed canonical DTOs; add `adminProcedure`. Register on `appRouter`.
+4. `packages/api`: read contracts (`charterSearch`/`listings`/`availability`/`wishlist`/`profile`/`referral`) returning mock-backed canonical DTOs; add `adminProcedure`. Register on `appRouter`.
 5. Seed: mock → canonical.
 
 - **Acceptance:** gates green; frontend calls every read contract via `AppRouterClient`; **no provider shapes leak**; `PROVIDER_MODE` swaps adapter only.
 
 ### M3 — Search & availability query endpoints
 
-`listing_search_doc` + `availability_slot` read models (rebuild-on-sync) → `search.query/facets/map/suggest` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets from `facet_dictionary`.
+`listing_search_doc` + `availability_slot` read models (code-managed rebuild after sync) → `charterSearch.results/facets/mapMarkers/suggestions` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets are dynamic from `listing_search_doc` for M3; `facet_dictionary` is deferred until stable labels/i18n are needed.
 
 - **Acceptance:** results/filters/sort/pins/calendar from real queries on mock data; stable cursor pagination; p95 ≤ **[ASSUMPTION]** 200ms local.
 

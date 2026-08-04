@@ -80,7 +80,7 @@ Run mock `syncCatalogue` → populate canonical `listing`/taxonomy/media/`availa
 
 ### M2-11 · oRPC contract stubs (read side)
 
-`adminProcedure` middleware (`requireAdmin` → `ORPCError("FORBIDDEN")`). Procedures with Zod `.input()/.output()` returning mock-backed canonical DTOs: `search.query/facets/map/suggest`, `listing.get/reviews/similar`, `availability.calendar/quote`, `wishlist.*`, `profile.*`, `referral.*`. Register on `appRouter`.
+`adminProcedure` middleware (`requireAdmin` → `ORPCError("FORBIDDEN")`). Procedures with Zod `.input()/.output()` returning mock-backed canonical DTOs: `charterSearch.results/facets/mapMarkers/suggestions`, `listings.get/reviews/similar`, `availability.calendar/quote`, `wishlist.*`, `profile.*`, `referral.*`. Register on `appRouter`.
 
 - **deps:** M2-9, M2-10 · **acceptance:** every procedure callable via `AppRouterClient`; no provider shapes leak; `/api-reference` OpenAPI renders · **skill:** `hono` (repo) · **agent:** _orpc-contract-author_ (new)
 
@@ -106,10 +106,14 @@ Confirm `check-types` + `build` green; share `AppRouterClient` usage with fronte
 
 ## M3 — Search & availability query endpoints
 
-- ☐ `listing_search_doc` + `availability_slot` read-models + rebuild-on-sync hook
-- ☐ `search.query/facets/map/suggest` against read-models (trigram/ILIKE + btree/GiST geo; no PostGIS for demo)
-- ☐ `availability.calendar` from cache; facet dictionaries wired to filters
-- ☐ Perf pass (cursor pagination stable; p95 target)
+- ☑ `listing_search_doc` read model backed by committed Drizzle migrations, seeded mock data, and code-managed rebuild helpers.
+- ☑ Incremental read-model rebuild path for sync workers: call `resolveListingIdsForListingSources(...)`, then `rebuildListingSearchDocsForListings(...)` after source/listing/spec/media/amenity/availability/review upserts.
+- ☑ `charterSearch.results/facets/mapMarkers/suggestions` against read models (`GET /charter-search/results`, `/facets`, `/map-markers`, `/suggestions`).
+- ☑ `availability.calendar` from `availability_slot` cache (`GET /listings/{listingId}/availability-calendar`).
+- ☑ Stable cursor pagination for recommended/rating/newest/price sorts, including nullable price/year values.
+- ☐ Dedicated `facet_dictionary` table for stable translated labels. Deferred until frontend/admin needs label ownership beyond dynamic facets.
+- ☐ Perf pass against production-scale import volume; local seed is too small for meaningful p95 measurement.
+- **Docs testing:** run `pnpm db:start && pnpm db:migrate && pnpm db:seed && pnpm dev:server`, then open `/api-reference`.
 - **skill:** `hono`, `turborepo` (repo) · **agent:** _orpc-contract-author_, `Explore` (built-in) for query hotspots
 
 ## M4 — Availability & pricing query layer
