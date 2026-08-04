@@ -1,2 +1,2 @@
-export { default as LoginScreen } from "./components/login/login-screen";
-export { default as RegisterScreen } from "./components/register/register-screen";
+export { default as SignInForm } from "./components/login/sign-in-form";
+export { default as SignUpForm } from "./components/register/sign-up-form";

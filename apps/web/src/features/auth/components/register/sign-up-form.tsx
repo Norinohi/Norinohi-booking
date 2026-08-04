@@ -66,7 +66,7 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
-export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn?: () => void } = {}) {
+export default function SignUpForm() {
   const router = useRouter();
   const { isPending } = authClient.useSession();
 
@@ -86,7 +86,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn?: ()
           router.push("/dashboard");
           toast.success("Sign up successful");
         },
-        onError: (error) => {
+        onError: (error: any) => {
           const message = error.error.message || error.error.statusText || "";
           if (/exist|registered|taken/i.test(`${error.error.code ?? ""} ${message}`)) {
             form.setError("email", { type: "manual", message: "This email is already registered" });
@@ -247,7 +247,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn?: ()
                 <p className="text-base text-natural-400">Already have an account?</p>
                 <button
                   type="button"
-                  onClick={onSwitchToSignIn ?? (() => router.push("/login"))}
+                  onClick={() => router.push("/login")}
                   className="py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
                 >
                   Sign In To Continue

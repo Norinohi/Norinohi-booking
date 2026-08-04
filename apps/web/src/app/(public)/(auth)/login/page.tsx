@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
-import { LoginScreen } from "@/features/auth";
+import { SignInForm } from "@/features/auth";
 import { buildMetadata } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,5 +15,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function LoginPage() {
-  return <LoginScreen />;
+  return <SignInForm />;
 }

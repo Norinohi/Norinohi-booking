@@ -62,7 +62,7 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
-export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () => void }) {
+export default function SignInForm() {
   const router = useRouter();
   const { isPending } = authClient.useSession();
 
@@ -78,7 +78,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
         router.push("/dashboard");
         toast.success("Sign in successful");
       },
-      onError: (error) => {
+      onError: (error: any) => {
         toast.error(error.error.message || error.error.statusText);
       },
     });
@@ -184,7 +184,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
                 <p className="text-base text-natural-400">Have no account?</p>
                 <button
                   type="button"
-                  onClick={onSwitchToSignUp}
+                  onClick={() => router.push("/register")}
                   className="py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
                 >
                   Create Account
