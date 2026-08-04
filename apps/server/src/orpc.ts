@@ -10,6 +10,9 @@ import { appRouter } from "@yacht-charter/api/routers/index";
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
+      docsProvider: "scalar",
+      docsTitle: "Yacht Charter API Reference",
+      specPath: "/openapi.json",
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
