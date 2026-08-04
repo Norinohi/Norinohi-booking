@@ -22,6 +22,27 @@
       "when": 1785827785067,
       "tag": "0002_fair_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785838023026,
+      "tag": "0003_cynical_juggernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785839766913,
+      "tag": "0004_quiet_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785840047510,
+      "tag": "0005_quiet_terrax",
+      "breakpoints": true
     }
   ]
 }

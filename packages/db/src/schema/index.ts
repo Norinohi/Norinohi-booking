@@ -9,3 +9,4 @@ export * from "./content";
 export * from "./account";
 export * from "./admin";
 export * from "./availability";
+export * from "./search";

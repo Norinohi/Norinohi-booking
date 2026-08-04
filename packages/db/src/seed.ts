@@ -1,4 +1,5 @@
 import { db } from "./index";
+import { rebuildListingSearchDocs } from "./search";
 import {
   amenity,
   amenityCategory,
@@ -897,6 +898,8 @@ async function main() {
       ]),
     )
     .onConflictDoNothing();
+
+  await rebuildListingSearchDocs(db);
 
   console.log(`Seeded ${yachts.length} mock yacht listings across ${countries.length} countries.`);
 }

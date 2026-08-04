@@ -1,0 +1,3 @@
+CREATE INDEX "listing_search_doc_rating_cursor_idx" ON "listing_search_doc" USING btree ("rating" DESC NULLS LAST,"listing_id" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "listing_search_doc_price_cursor_idx" ON "listing_search_doc" USING btree ("price_from_minor","listing_id");--> statement-breakpoint
+CREATE INDEX "listing_search_doc_year_cursor_idx" ON "listing_search_doc" USING btree ("year_built" DESC NULLS LAST,"listing_id" DESC NULLS LAST);
