@@ -11,8 +11,8 @@ export async function rebuildListingSearchDocs(
   db: NodePgDatabase<typeof schema>,
   options: RebuildListingSearchDocsOptions = {},
 ) {
-  const listingIds = uniqueIds(options.listingIds);
-  if (options.listingIds && listingIds.length === 0) return;
+  const listingIds = options.listingIds ? uniqueIds(options.listingIds) : undefined;
+  if (options.listingIds && listingIds?.length === 0) return;
 
   await db.execute(sql`
     insert into listing_search_doc (
