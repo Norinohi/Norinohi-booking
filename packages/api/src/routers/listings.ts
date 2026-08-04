@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { listingSummarySchema } from "../contracts/catalog";
 import { publicProcedure } from "../index";
+import { withParameterExamples } from "./openapi-examples";
 import { presentListingSummary } from "./presenters";
 
 const idInputSchema = z.object({ id: z.string() });
@@ -26,6 +27,9 @@ export const listingsRouter = {
       tags: ["Listings"],
       successDescription:
         "Listing summary with base, specs, media, amenities, rating, and price hint.",
+      spec: withParameterExamples({
+        id: "ylst_yacht-sunreef-60-celeste",
+      }),
     })
     .input(idInputSchema)
     .output(listingSummarySchema)
@@ -46,6 +50,9 @@ export const listingsRouter = {
         "Returns marketplace-owned review content for a listing. Reviews are demo/local content for the current milestone and are ordered newest first.",
       tags: ["Listings"],
       successDescription: "Reviews attached to the requested listing.",
+      spec: withParameterExamples({
+        listingId: "ylst_yacht-sunreef-60-celeste",
+      }),
     })
     .input(listingIdInputSchema)
     .output(
@@ -69,6 +76,9 @@ export const listingsRouter = {
         "Returns a small set of related listings based on category, country, or region. Use this for detail-page recommendations.",
       tags: ["Listings"],
       successDescription: "Similar yacht listing summaries.",
+      spec: withParameterExamples({
+        listingId: "ylst_yacht-sunreef-60-celeste",
+      }),
     })
     .input(listingIdInputSchema)
     .output(z.array(listingSummarySchema))

@@ -7,6 +7,7 @@ import { adminProcedure, protectedProcedure, publicProcedure } from "../index";
 import { availabilityRouter } from "./availability";
 import { charterSearchRouter } from "./charter-search";
 import { listingsRouter } from "./listings";
+import { withJsonBodyExample } from "./openapi-examples";
 
 const provider = createInventoryProvider();
 
@@ -40,6 +41,7 @@ export const appRouter = {
       description: "Returns a simple OK response when the oRPC API process is reachable.",
       tags: ["System"],
       successDescription: "The API process is reachable.",
+      spec: withJsonBodyExample({}),
     })
     .handler(() => {
       return "OK";
@@ -54,6 +56,7 @@ export const appRouter = {
         "Demo protected endpoint that confirms Better Auth session resolution in the oRPC context. Requires an authenticated user session.",
       tags: ["System"],
       successDescription: "Authenticated session data from the current request context.",
+      spec: withJsonBodyExample({}),
     })
     .handler(({ context }) => {
       return {
@@ -75,6 +78,7 @@ export const appRouter = {
           "Returns listing IDs saved by the authenticated user. This milestone uses an in-memory wishlist stub until the persisted wishlist service is wired.",
         tags: ["Wishlist"],
         successDescription: "Wishlist listing IDs saved by the current user.",
+        spec: withJsonBodyExample({}),
       })
       .input(emptyInputSchema)
       .output(z.array(wishlistItemSchema))
@@ -95,6 +99,9 @@ export const appRouter = {
           "Adds a listing ID to the authenticated user's wishlist and returns the updated wishlist state. This milestone uses an in-memory wishlist stub.",
         tags: ["Wishlist"],
         successDescription: "Updated wishlist after adding the listing.",
+        spec: withJsonBodyExample({
+          listingId: "ylst_yacht-sunreef-60-celeste",
+        }),
       })
       .input(listingIdInputSchema)
       .output(z.array(wishlistItemSchema))
@@ -117,6 +124,9 @@ export const appRouter = {
           "Removes a listing ID from the authenticated user's wishlist and returns the updated wishlist state. This milestone uses an in-memory wishlist stub.",
         tags: ["Wishlist"],
         successDescription: "Updated wishlist after removing the listing.",
+        spec: withJsonBodyExample({
+          listingId: "ylst_yacht-sunreef-60-celeste",
+        }),
       })
       .input(listingIdInputSchema)
       .output(z.array(wishlistItemSchema))
@@ -141,6 +151,7 @@ export const appRouter = {
           "Returns the authenticated user's profile-shaped data from the current session plus default app preferences.",
         tags: ["Profile"],
         successDescription: "Profile data for the authenticated user.",
+        spec: withJsonBodyExample({}),
       })
       .input(emptyInputSchema)
       .output(profileSchema)
@@ -163,6 +174,12 @@ export const appRouter = {
           "Accepts editable profile preference fields for the authenticated user and returns the updated profile-shaped response. Persistence is finalized in a later account milestone.",
         tags: ["Profile"],
         successDescription: "Updated profile data for the authenticated user.",
+        spec: withJsonBodyExample({
+          phone: "+380501234567",
+          locale: "en",
+          currency: "EUR",
+          marketingOptIn: true,
+        }),
       })
       .input(
         z.object({
@@ -194,6 +211,7 @@ export const appRouter = {
           "Returns the authenticated user's deterministic demo referral code and registration URL path.",
         tags: ["Referral"],
         successDescription: "Referral code and URL path for the authenticated user.",
+        spec: withJsonBodyExample({}),
       })
       .input(emptyInputSchema)
       .output(z.object({ code: z.string(), urlPath: z.string() }))
@@ -214,6 +232,9 @@ export const appRouter = {
           "Accepts a referral code and returns whether it was accepted. This milestone returns a deterministic demo response before booking-linked redemption is implemented.",
         tags: ["Referral"],
         successDescription: "Referral redemption result.",
+        spec: withJsonBodyExample({
+          code: "NORI-DEMO01",
+        }),
       })
       .input(z.object({ code: z.string().min(1) }))
       .output(z.object({ accepted: z.boolean(), code: z.string() }))
@@ -234,6 +255,7 @@ export const appRouter = {
             "Returns the active inventory provider's supported booking and quote capabilities. Requires an authenticated admin user.",
           tags: ["Admin"],
           successDescription: "Capabilities for the currently configured inventory provider.",
+          spec: withJsonBodyExample({}),
         })
         .input(emptyInputSchema)
         .output(providerCapabilitiesSchema)

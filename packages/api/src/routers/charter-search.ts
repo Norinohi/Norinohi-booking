@@ -16,6 +16,7 @@ import {
   suggestionSchema,
 } from "../contracts/catalog";
 import { publicProcedure } from "../index";
+import { withParameterExamples } from "./openapi-examples";
 import { presentListingSummary } from "./presenters";
 
 export const charterSearchRouter = {
@@ -30,6 +31,19 @@ export const charterSearchRouter = {
       tags: ["Charter Search"],
       successDescription:
         "Matching yacht listings with either page pagination metadata or a next cursor.",
+      spec: withParameterExamples({
+        destination: "Croatia",
+        checkIn: "2026-07-04",
+        checkOut: "2026-07-11",
+        guests: 6,
+        category: "Catamaran",
+        minCabins: 4,
+        maxPriceMinor: 1_200_000,
+        currency: "EUR",
+        page: 1,
+        pageSize: 10,
+        sort: "recommended",
+      }),
     })
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
@@ -61,6 +75,12 @@ export const charterSearchRouter = {
         "Returns dynamic filter values for the current search constraints, including destinations, yacht categories, amenities, and the matching price range.",
       tags: ["Charter Search"],
       successDescription: "Facet values and price range for the supplied search filters.",
+      spec: withParameterExamples({
+        destination: "Croatia",
+        guests: 6,
+        currency: "EUR",
+        sort: "recommended",
+      }),
     })
     .input(listingSearchInputSchema.partial().default({}))
     .output(facetsSchema)
@@ -75,6 +95,11 @@ export const charterSearchRouter = {
         "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, display title, coordinates, and price hint.",
       tags: ["Charter Search"],
       successDescription: "Map markers for listings matching the supplied filters.",
+      spec: withParameterExamples({
+        destination: "Croatia",
+        currency: "EUR",
+        limit: 50,
+      }),
     })
     .input(listingSearchInputSchema.partial().default({}))
     .output(mapResultSchema)
@@ -89,6 +114,9 @@ export const charterSearchRouter = {
         "Returns autocomplete suggestions for destination-style search input. Suggestions are sourced from countries, regions, locations, and bases in the search read model.",
       tags: ["Charter Search"],
       successDescription: "Autocomplete suggestions matching the query.",
+      spec: withParameterExamples({
+        query: "Split",
+      }),
     })
     .input(z.object({ query: z.string().default("") }))
     .output(z.array(suggestionSchema))

@@ -7,6 +7,7 @@ import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth
 import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { generateAuthOpenApiSchema } from "./auth-openapi";
 import { apiHandler, rpcHandler } from "./orpc";
 
 // Transport wiring only — logic lives in packages/api. Middleware order is
@@ -39,6 +40,10 @@ app.use(
     credentials: true,
   }),
 );
+
+app.get("/api/auth/open-api/generate-schema", async (c) => {
+  return c.json(await generateAuthOpenApiSchema(auth));
+});
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
