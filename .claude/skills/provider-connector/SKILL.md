@@ -8,26 +8,30 @@ description: Conventions for building inventory-provider connectors (mock, Booki
 Authoritative model: `docs/backend-architecture.md` §3 (duplicates), §4 (abstraction), §6 (state machine). NauSYS specifics: `docs/nausys-api-v6-backend-map.md`. Booking Manager: Swagger `mmksystems/bm-api` v2.1.4.
 
 ## The prime directive
+
 **Provider payload shapes and provider IDs never leave `packages/providers`.** Every method returns a **canonical DTO** validated with Zod v4. A malformed provider payload must fail here, not in the web app.
 
 ## The interface — `packages/providers/src/provider.ts`
+
 ```ts
 export interface InventoryProvider {
   readonly key: "mock" | "booking_manager" | "nausys";
-  syncCatalogue(cursor?: string): AsyncIterable<RawEntity>;          // writes provider_record + provider_raw_payload + sync_run
+  syncCatalogue(cursor?: string): AsyncIterable<RawEntity>; // writes provider_record + provider_raw_payload + sync_run
   searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]>;
   getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar>;
   getQuote(input: QuoteRequest): Promise<ProviderQuote>;
-  createOption(input: BookingDraft): Promise<ProviderReservation>;   // may throw NotSupported
+  createOption(input: BookingDraft): Promise<ProviderReservation>; // may throw NotSupported
   confirmBooking(input: ConfirmBooking): Promise<ProviderReservation>;
   addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote>;
   cancelOption(ref: ProviderReservationRef): Promise<void>;
   capabilities(): ProviderCapabilities; // { supportsOptions, supportsWebhooks, optionExpiryOwnedByProvider, minHoldMinutes }
 }
 ```
+
 Canonical DTOs live in `packages/providers/src/types.ts` as Zod v4 schemas + inferred types: `AvailabilitySearch`, `AvailableOffer`, `AvailabilityCalendar`, `QuoteRequest`, `ProviderQuote`, `BookingDraft`, `ProviderReservation`, `ProviderCapabilities`.
 
 ## Rules
+
 1. **Mock first.** `MockInventoryProvider` (fixtures under `mock/fixtures/*.json` that mirror real NauSYS/BM shapes) ships in M2 and is the default (`PROVIDER_MODE=mock`). It must exercise the same mapping code as the real adapters.
 2. **Mapping layer is pure.** `mapping/` holds `raw → canonical` functions only — the single place that knows provider field names. Unit-test them (Vitest).
 3. **Retain raw before mapping.** Persist every fetched payload to `provider_raw_payload`; link from `provider_record`. Encrypt payloads containing PII/financials.
@@ -41,4 +45,5 @@ Canonical DTOs live in `packages/providers/src/types.ts` as Zod v4 schemas + inf
 11. **Comments: minimal** — only the non-obvious "why" (a mapping quirk, a provider gotcha). No narration.
 
 ## Gates
+
 `pnpm check-types` + `pnpm build`; `pnpm --filter providers test` (Vitest for mappers). Never leak provider types across the package boundary — the public export surface is DTOs + the interface only.

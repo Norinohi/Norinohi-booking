@@ -25,11 +25,7 @@ export const providerResourceType = pgEnum("provider_resource_type", [
   "amenity",
 ]);
 
-export const syncKind = pgEnum("sync_kind", [
-  "catalogue",
-  "availability",
-  "pricing",
-]);
+export const syncKind = pgEnum("sync_kind", ["catalogue", "availability", "pricing"]);
 
 export const syncStatus = pgEnum("sync_status", [
   "pending",
@@ -76,10 +72,9 @@ export const providerRecord = pgTable(
       .references(() => provider.id, { onDelete: "restrict" }),
     resourceType: providerResourceType("resource_type").notNull(),
     externalId: text("external_id").notNull(),
-    rawPayloadId: text("raw_payload_id").references(
-      () => providerRawPayload.id,
-      { onDelete: "set null" },
-    ),
+    rawPayloadId: text("raw_payload_id").references(() => providerRawPayload.id, {
+      onDelete: "set null",
+    }),
     sourceHash: text("source_hash"),
     sourceModifiedAt: timestamp("source_modified_at"),
     importedAt: timestamp("imported_at").defaultNow().notNull(),
@@ -87,13 +82,7 @@ export const providerRecord = pgTable(
     ...timestamps,
   },
   // Import idempotency key.
-  (t) => [
-    unique("provider_record_external_uq").on(
-      t.providerId,
-      t.resourceType,
-      t.externalId,
-    ),
-  ],
+  (t) => [unique("provider_record_external_uq").on(t.providerId, t.resourceType, t.externalId)],
 );
 
 export const syncRun = pgTable("sync_run", {
@@ -130,15 +119,12 @@ export const providerRelations = relations(provider, ({ many }) => ({
   syncRuns: many(syncRun),
 }));
 
-export const providerRawPayloadRelations = relations(
-  providerRawPayload,
-  ({ one }) => ({
-    provider: one(provider, {
-      fields: [providerRawPayload.providerId],
-      references: [provider.id],
-    }),
+export const providerRawPayloadRelations = relations(providerRawPayload, ({ one }) => ({
+  provider: one(provider, {
+    fields: [providerRawPayload.providerId],
+    references: [provider.id],
   }),
-);
+}));
 
 export const providerRecordRelations = relations(providerRecord, ({ one }) => ({
   provider: one(provider, {

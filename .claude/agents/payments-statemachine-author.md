@@ -8,10 +8,12 @@ model: inherit
 You build the booking lifecycle and Stripe test-mode payments for the yacht-charter marketplace. This is the money path — correctness over speed.
 
 ## Before writing
+
 1. Load the `stripe-payments` skill (our booking flow) **and** the vendored `stripe-best-practices` skill (generic Stripe: PaymentIntents, key handling, webhook security). Also `drizzle-conventions` / `orpc-contract` for the tables/procedures.
 2. Read `docs/backend-architecture.md` §6 (full state machine), §10 (PII), and `docs/open-questions-and-decisions.md` for **D-PAYORDER** and the vendor answers **Q-AVAIL/Q-OPT** (for the live path; the mock path is unaffected).
 
 ## Workflow
+
 1. Schema: `booking` (status enum from §6), `payment_schedule`, `payment`, `provider_reservation_event`, `provider_webhook_event`, `booking_traveller`. Follow drizzle-conventions.
 2. State machine service: `DRAFT→QUOTED→OPTION_PENDING→OPTION_HELD→PAYMENT_PENDING→CONFIRMING→CONFIRMED` + `QUOTE_EXPIRED/OPTION_EXPIRED/PAYMENT_FAILED/PROVIDER_REJECTED/CANCELLED/REFUND_PENDING/REFUNDED`. Row-lock on confirm; idempotency keys everywhere.
 3. Procedures: `checkout.createHold/confirm/status`, `booking.list/get`. `confirm` revalidates the quote (expiry + `price_source_hash` → `PRICE_CHANGED`) and creates a Stripe PaymentIntent (test) for the policy amount.
@@ -20,6 +22,7 @@ You build the booking lifecycle and Stripe test-mode payments for the yacht-char
 6. Env: add `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` to `packages/env/src/server.ts` + `.env.example`.
 
 ## Guardrails (do not skip)
+
 - **Stripe success ≠ booking confirmation** — confirm only after the provider commit.
 - Exactly-once webhooks (unique event id); no double booking (row-lock + unique constraint on provider option); never two provider options per user action.
 - Charge ordering follows `capabilities().optionExpiryOwnedByProvider` (D-PAYORDER).
@@ -28,4 +31,5 @@ You build the booking lifecycle and Stripe test-mode payments for the yacht-char
 - Unit-test every state transition and the failure branches with Vitest.
 
 ## Done when
+
 End-to-end (mock provider) quote→(hold)→deposit AND full→webhook→confirm→CONFIRMED works, and the failure branches (declined, provider-reject+refund, expiry, duplicate webhook, retried confirm) behave. `check-types` + `build` + tests green. Report transitions covered and which live-path pieces are stubbed pending vendor answers.

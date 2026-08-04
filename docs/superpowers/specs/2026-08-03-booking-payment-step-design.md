@@ -15,11 +15,11 @@ no publishable key, no payment procedure in `packages/api`).
 
 ## The three tabs
 
-| Tab | Body fields | Info banner (icon) | CTA |
-|---|---|---|---|
-| **Pay by card** | Card Number (leading card icon), Expiry Date + CV (row), Name on Card | "Secure your booking instantly with an online payment." (Shield) | `Pay €5,000` |
-| **Request invoice** | Billing Email, Company Name *(opt)* + VAT Number *(opt)* (row) | "Prefer to pay offline? We'll send you an invoice to complete the payment by bank transfer." (Info) | `Request invoice (for €5,000)` |
-| **Ask a question** | "Your Question or Request" (multiline, ~173px tall) | — | `Send request` |
+| Tab                 | Body fields                                                           | Info banner (icon)                                                                                  | CTA                            |
+| ------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------ |
+| **Pay by card**     | Card Number (leading card icon), Expiry Date + CV (row), Name on Card | "Secure your booking instantly with an online payment." (Shield)                                    | `Pay €5,000`                   |
+| **Request invoice** | Billing Email, Company Name _(opt)_ + VAT Number _(opt)_ (row)        | "Prefer to pay offline? We'll send you an invoice to complete the payment by bank transfer." (Info) | `Request invoice (for €5,000)` |
+| **Ask a question**  | "Your Question or Request" (multiline, ~173px tall)                   | —                                                                                                   | `Send request`                 |
 
 ## Component mapping — reuse only, no new UI primitives
 

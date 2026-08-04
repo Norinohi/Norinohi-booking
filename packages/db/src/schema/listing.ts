@@ -17,11 +17,7 @@ import { base } from "./geography";
 import { operator } from "./operator";
 import { amenity, builder, yachtCategory, yachtModel } from "./taxonomy";
 
-export const listingStatus = pgEnum("listing_status", [
-  "draft",
-  "published",
-  "hidden",
-]);
+export const listingStatus = pgEnum("listing_status", ["draft", "published", "hidden"]);
 
 export const mediaRole = pgEnum("media_role", ["main", "layout", "gallery"]);
 
@@ -185,15 +181,12 @@ export const listingRelations = relations(listing, ({ one, many }) => ({
   oneWayRules: many(listingOneWayRule),
 }));
 
-export const listingSpecificationRelations = relations(
-  listingSpecification,
-  ({ one }) => ({
-    listing: one(listing, {
-      fields: [listingSpecification.listingId],
-      references: [listing.id],
-    }),
+export const listingSpecificationRelations = relations(listingSpecification, ({ one }) => ({
+  listing: one(listing, {
+    fields: [listingSpecification.listingId],
+    references: [listing.id],
   }),
-);
+}));
 
 export const listingMediaRelations = relations(listingMedia, ({ one }) => ({
   listing: one(listing, {
@@ -213,22 +206,16 @@ export const listingAmenityRelations = relations(listingAmenity, ({ one }) => ({
   }),
 }));
 
-export const listingCheckinRuleRelations = relations(
-  listingCheckinRule,
-  ({ one }) => ({
-    listing: one(listing, {
-      fields: [listingCheckinRule.listingId],
-      references: [listing.id],
-    }),
+export const listingCheckinRuleRelations = relations(listingCheckinRule, ({ one }) => ({
+  listing: one(listing, {
+    fields: [listingCheckinRule.listingId],
+    references: [listing.id],
   }),
-);
+}));
 
-export const listingOneWayRuleRelations = relations(
-  listingOneWayRule,
-  ({ one }) => ({
-    listing: one(listing, {
-      fields: [listingOneWayRule.listingId],
-      references: [listing.id],
-    }),
+export const listingOneWayRuleRelations = relations(listingOneWayRule, ({ one }) => ({
+  listing: one(listing, {
+    fields: [listingOneWayRule.listingId],
+    references: [listing.id],
   }),
-);
+}));

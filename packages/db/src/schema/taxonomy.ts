@@ -69,12 +69,9 @@ export const yachtModelRelations = relations(yachtModel, ({ one }) => ({
   }),
 }));
 
-export const amenityCategoryRelations = relations(
-  amenityCategory,
-  ({ many }) => ({
-    amenities: many(amenity),
-  }),
-);
+export const amenityCategoryRelations = relations(amenityCategory, ({ many }) => ({
+  amenities: many(amenity),
+}));
 
 export const amenityRelations = relations(amenity, ({ one }) => ({
   category: one(amenityCategory, {

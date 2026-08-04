@@ -1,30 +1,13 @@
 import { relations } from "drizzle-orm";
-import {
-  index,
-  jsonb,
-  numeric,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { index, jsonb, numeric, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { id, pct, timestamps } from "./_shared";
 import { listing } from "./listing";
 import { providerRecord } from "./provider";
 
-export const matchStatus = pgEnum("match_status", [
-  "unmatched",
-  "auto",
-  "confirmed",
-  "rejected",
-]);
+export const matchStatus = pgEnum("match_status", ["unmatched", "auto", "confirmed", "rejected"]);
 
-export const duplicateDecision = pgEnum("duplicate_decision", [
-  "pending",
-  "confirmed",
-  "rejected",
-]);
+export const duplicateDecision = pgEnum("duplicate_decision", ["pending", "confirmed", "rejected"]);
 
 export const listingSource = pgTable(
   "listing_source",

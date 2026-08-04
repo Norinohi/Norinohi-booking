@@ -116,7 +116,9 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn?: ()
           >
             {/* Card title */}
             <div className="border-b border-natural-100 px-5 py-5">
-              <h2 className="text-xl leading-[1.3] font-bold text-foreground">Join to get started</h2>
+              <h2 className="text-xl leading-[1.3] font-bold text-foreground">
+                Join to get started
+              </h2>
             </div>
 
             {/* Body */}
@@ -154,7 +156,9 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn?: ()
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="data-[error=true]:text-foreground">Phone number</FormLabel>
+                    <FormLabel className="data-[error=true]:text-foreground">
+                      Phone number
+                    </FormLabel>
                     <FormControl>
                       <TextField
                         type="tel"

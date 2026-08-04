@@ -28,6 +28,7 @@ So NauSYS is the source of truth for availability, the current price, and the ac
 ## The main entities, grouped by job
 
 ### The yacht as a customer sees it
+
 - `listing`: one yacht, our version. The thing people browse and book.
 - `listing_specification`: its details like length, cabins, berths, year.
 - `listing_media`: its photos, in order.
@@ -36,11 +37,13 @@ So NauSYS is the source of truth for availability, the current price, and the ac
 - `review`, `faq`: the text on the yacht page.
 
 ### Where it is and who runs it
+
 - `operator`: the charter company running the yacht. Display only, no login.
 - `country`, `region`, `location`, `base`: where you collect the boat, from country down to the marina.
 - `builder`, `yacht_model`, `yacht_category`: the make, the model, and the type.
 
 ### Where the data came from (the import plumbing)
+
 - `provider`: which outside system a record came from, NauSYS or Booking Manager.
 - `provider_record`: one raw entry from a provider (their version of a yacht, a company, a marina), kept with their own ID.
 - `provider_raw_payload`: the exact untouched data they sent, saved so we can recheck or reimport.
@@ -49,17 +52,20 @@ So NauSYS is the source of truth for availability, the current price, and the ac
 - `sync_run`, `sync_error`: a log of each import and anything that broke.
 
 ### The people
+
 - `user`: a customer, or a staff member marked by a role.
 - `profile`: extra details about a user.
 - `wishlist`: yachts a user saved.
 - `referral`: invite-a-friend.
 
 ### Booking and money (next milestones)
+
 - `quote`: a firm price for exact dates and guests, frozen for a short window.
 - `booking`: a real reservation, with a status as it moves from held to paid to confirmed.
 - `payment`, `payment_schedule`: the money through Stripe, deposit now and balance later.
 
 ### Our internal controls
+
 - `price_adjustment_rule`: the "manage price" tool. Raise or lower a provider's price for one yacht or a group, over a chosen period.
 - `audit_log`: who changed what.
 
