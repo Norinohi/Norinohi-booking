@@ -3,6 +3,7 @@
 import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Search } from "lucide-react";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
@@ -27,6 +28,8 @@ import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "@/lib/sample-boat
 
 import ResultsHeader, { type SortValue } from "./results-header";
 import SearchBar from "./search-bar";
+
+const YACHTS_MAP_HREF = "/yachts/map" as Route;
 
 export default function SearchScreen() {
   const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
@@ -67,7 +70,7 @@ export default function SearchScreen() {
                 className="object-cover"
               />
               <Link
-                href="/yachts/map"
+                href={YACHTS_MAP_HREF}
                 className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
               >
                 <Search />

@@ -1,17 +1,17 @@
+import { serve } from "@hono/node-server";
 import { createContext } from "@yacht-charter/api/context";
-import { appRouter } from "@yacht-charter/api/routers/index";
 import { auth } from "@yacht-charter/auth";
 import { env } from "@yacht-charter/env/server";
-import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { onError } from "@orpc/server";
-import { RPCHandler } from "@orpc/server/fetch";
-import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { initLogger } from "evlog";
 import { createAuthMiddleware, type BetterAuthInstance } from "evlog/better-auth";
 import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { generateAuthOpenApiSchema } from "./auth-openapi";
+import { apiHandler, rpcHandler } from "./orpc";
+
+// Transport wiring only — logic lives in packages/api. Middleware order is
+// load-bearing (see AGENTS.md).
 
 initLogger({
   env: { service: "yacht-charter-server" },
@@ -25,6 +25,7 @@ const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
 const app = new Hono<EvlogVariables>();
 
 app.use(evlog());
+
 app.use("*", async (c, next) => {
   await identifyUser(c.get("log"), c.req.raw.headers, c.req.path);
   await next();
@@ -40,46 +41,22 @@ app.use(
   }),
 );
 
+app.get("/api/auth/open-api/generate-schema", async (c) => {
+  return c.json(await generateAuthOpenApiSchema(auth));
+});
+
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
-export const apiHandler = new OpenAPIHandler(appRouter, {
-  plugins: [
-    new OpenAPIReferencePlugin({
-      schemaConverters: [new ZodToJsonSchemaConverter()],
-    }),
-  ],
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
-});
-
-export const rpcHandler = new RPCHandler(appRouter, {
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
-});
-
+// Try RPC (/rpc), then OpenAPI (/api-reference), else fall through.
 app.use("/*", async (c, next) => {
   const context = await createContext({ context: c });
 
-  const rpcResult = await rpcHandler.handle(c.req.raw, {
-    prefix: "/rpc",
-    context: context,
-  });
-
+  const rpcResult = await rpcHandler.handle(c.req.raw, { prefix: "/rpc", context });
   if (rpcResult.matched) {
     return c.newResponse(rpcResult.response.body, rpcResult.response);
   }
 
-  const apiResult = await apiHandler.handle(c.req.raw, {
-    prefix: "/api-reference",
-    context: context,
-  });
-
+  const apiResult = await apiHandler.handle(c.req.raw, { prefix: "/api-reference", context });
   if (apiResult.matched) {
     return c.newResponse(apiResult.response.body, apiResult.response);
   }
@@ -87,11 +64,7 @@ app.use("/*", async (c, next) => {
   await next();
 });
 
-app.get("/", (c) => {
-  return c.text("OK");
-});
-
-import { serve } from "@hono/node-server";
+app.get("/", (c) => c.text("OK"));
 
 serve(
   {

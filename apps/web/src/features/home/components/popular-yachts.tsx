@@ -11,6 +11,7 @@ import {
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { motion } from "motion/react";
+import type { Route } from "next";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 
@@ -18,7 +19,7 @@ import { RISE, VIEWPORT } from "@/lib/motion";
 
 /* Yacht names are proper nouns and stay in code; every other visible string comes from messages. */
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42";
+const DETAIL_HREF = "/yachts/lagoon-42" as Route;
 
 const POPULAR_YACHTS = [
   {

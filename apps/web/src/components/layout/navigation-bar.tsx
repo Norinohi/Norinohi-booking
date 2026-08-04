@@ -5,6 +5,7 @@ import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark, Menu, X } from "lucide-react";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
@@ -27,13 +28,15 @@ const NAV_LINKS = [
   { key: "popularRoutes", chip: false },
 ] as const;
 
+const PLAN_MY_TRIP_HREF = "/plan-my-trip" as Route;
+
 export default function NavigationBar() {
   const t = useTranslations("Layout.Nav");
   const [open, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-natural-50 bg-background">
-      <div className="flex h-[72px] items-center justify-between gap-4 px-4 md:px-[54px] 2xl:h-20 2xl:px-[70px]">
+      <div className="flex h-18 items-center justify-between gap-4 px-4 md:px-13.5 2xl:h-20 2xl:px-17.5">
         {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
         <div className="flex items-center gap-4 2xl:gap-16">
           <IconButton
@@ -81,7 +84,7 @@ export default function NavigationBar() {
           </div>
 
           <div className="hidden items-center gap-3 min-[1360px]:flex">
-            <Link href="/plan-my-trip" className={buttonVariants({ variant: "neutral" })}>
+            <Link href={PLAN_MY_TRIP_HREF} className={buttonVariants({ variant: "neutral" })}>
               {t("helpPlan")}
             </Link>
             <Link href="/yachts" className={buttonVariants({ variant: "brand" })}>
@@ -116,7 +119,7 @@ export default function NavigationBar() {
           ))}
           <div className="mt-3 flex flex-col gap-3">
             <Link
-              href="/plan-my-trip"
+              href={PLAN_MY_TRIP_HREF}
               onClick={() => setOpen(false)}
               className={buttonVariants({ variant: "neutral", className: "w-full" })}
             >

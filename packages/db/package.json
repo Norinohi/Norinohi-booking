@@ -17,12 +17,14 @@
     "db:start": "docker compose up -d",
     "db:watch": "docker compose up",
     "db:stop": "docker compose stop",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "seed": "node --env-file=../../apps/server/.env --import tsx src/seed.ts"
   },
   "dependencies": {
     "@yacht-charter/env": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.2",
+    "nanoid": "^5.0.0",
     "pg": "^8.22.0",
     "zod": "catalog:"
   },
@@ -30,6 +32,7 @@
     "@types/pg": "^8.20.0",
     "@yacht-charter/config": "workspace:*",
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.4",
     "typescript": "catalog:"
   }
 }

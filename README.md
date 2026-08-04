@@ -29,23 +29,75 @@ pnpm install
 
 This project uses PostgreSQL with Drizzle ORM.
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
-
-```bash
-pnpm run db:push
-```
-
-Then, run the development server:
+1. Copy `apps/server/.env.example` to `apps/server/.env`.
+2. Start the local PostgreSQL container.
+3. Apply committed migrations.
+4. Seed the database with rich mock catalogue data.
 
 ```bash
-pnpm run dev
+pnpm db:start
+pnpm db:migrate
+pnpm db:seed
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+`pnpm db:seed` rebuilds the `listing_search_doc` read model after inserting catalogue, location, media, amenity, availability, review, and provider provenance data.
+
+For local-only schema experiments, you can push the current Drizzle schema directly:
+
+```bash
+pnpm db:push
+```
+
+Committed schema changes should use migrations:
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
+
+## Running Locally
+
+Run both apps:
+
+```bash
+pnpm dev
+```
+
+Run backend only:
+
+```bash
+pnpm dev:server
+```
+
+Open [http://localhost:3001](http://localhost:3001) for the web application.
+The API runs at [http://localhost:3000](http://localhost:3000).
+
+## API References
+
+With `pnpm dev:server` running, test the backend from the Scalar docs:
+
+- oRPC / marketplace API: [http://localhost:3000/api-reference](http://localhost:3000/api-reference)
+- Better Auth API: [http://localhost:3000/api/auth/reference](http://localhost:3000/api/auth/reference)
+- Raw marketplace OpenAPI JSON: [http://localhost:3000/api-reference/openapi.json](http://localhost:3000/api-reference/openapi.json)
+- Raw Better Auth OpenAPI JSON: [http://localhost:3000/api/auth/open-api/generate-schema](http://localhost:3000/api/auth/open-api/generate-schema)
+
+Useful backend-only M3 smoke routes:
+
+- `GET /charter-search/results?destination=Croatia&currency=EUR&page=1&pageSize=10`
+- `GET /charter-search/results?currency=EUR&page=32&pageSize=10`
+- `GET /charter-search/facets?currency=EUR`
+- `GET /charter-search/map-markers?currency=EUR&limit=50`
+- `GET /charter-search/suggestions?query=Split`
+- `GET /listings/{listingId}`
+- `GET /listings/{listingId}/reviews`
+- `GET /listings/{listingId}/similar`
+- `GET /listings/{listingId}/availability-calendar?from=2026-07-01&to=2026-09-30&currency=EUR`
+
+You do not need to build or run `apps/web` to test these backend endpoints.
+
+`/charter-search/results` supports direct page clicks for the results pagination UI. Page mode is the default (`page=1`, `pageSize=10`) and returns `pagination.startItem`, `pagination.endItem`, and `pagination.totalItems` for labels such as `Showing 311-320 of 320`. Cursor pagination is still supported through `cursor` + `limit`; when `cursor` is present, cursor mode takes precedence over the default page values.
+
+The Better Auth reference includes sample request bodies for common auth checks such as `POST /sign-up/email`, `POST /sign-in/email`, `POST /sign-out`, password reset, email verification, password change, email change, and `POST /update-user`.
 
 ## UI Customization
 
@@ -93,15 +145,17 @@ yacht-charter/
 
 ## Available Scripts
 
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run dev:server`: Start only the server
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run check`: Run Oxlint and Oxfmt
-
-# yacht-charter
+- `pnpm dev`: Start all applications in development mode.
+- `pnpm dev:web`: Start only the web application.
+- `pnpm dev:server`: Start only the server.
+- `pnpm build`: Build all applications. For backend-only changes, prefer `pnpm --filter server build`.
+- `pnpm check-types`: Check TypeScript types across all workspaces.
+- `pnpm check`: Run Oxlint and Oxfmt. This can rewrite files.
+- `pnpm db:start`: Start the local PostgreSQL container.
+- `pnpm db:stop`: Stop the local PostgreSQL container.
+- `pnpm db:down`: Remove the local PostgreSQL container.
+- `pnpm db:push`: Push the current schema directly to the local database.
+- `pnpm db:generate`: Generate committed Drizzle migration files.
+- `pnpm db:migrate`: Run committed database migrations.
+- `pnpm db:seed`: Seed local mock backend catalogue data and rebuild search docs.
+- `pnpm db:studio`: Open Drizzle Studio.

@@ -10,6 +10,7 @@ import {
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark, Sailboat, Star, Users } from "lucide-react";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
@@ -19,7 +20,7 @@ import PrepaymentNote from "@/components/shared/data-display/prepayment-note";
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42";
+const DETAIL_HREF = "/yachts/lagoon-42" as Route;
 
 const LAYOUT = {
   list: {

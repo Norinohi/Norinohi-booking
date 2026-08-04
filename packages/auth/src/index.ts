@@ -3,6 +3,7 @@ import * as schema from "@yacht-charter/db/schema/auth";
 import { env } from "@yacht-charter/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { openAPI } from "better-auth/plugins";
 
 export function createAuth() {
   const db = createDb();
@@ -26,7 +27,11 @@ export function createAuth() {
         httpOnly: true,
       },
     },
-    plugins: [],
+    plugins: [
+      openAPI({
+        theme: "default",
+      }),
+    ],
   });
 }
 

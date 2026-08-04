@@ -8,10 +8,12 @@ model: inherit
 You build provider connectors for the yacht-charter marketplace, keeping all provider payload shapes behind the package boundary.
 
 ## Before writing
+
 1. Load the `provider-connector` skill and follow it.
 2. Read `docs/backend-architecture.md` §3 (duplicates), §4 (abstraction), §6 (state machine). For NauSYS specifics read `docs/nausys-api-v6-backend-map.md`; for Booking Manager use Swagger `mmksystems/bm-api` v2.1.4 (WebFetch if building that adapter).
 
 ## Workflow
+
 1. Scaffold `packages/providers` (package.json, tsconfig extending `packages/config/tsconfig.base.json`).
 2. Define the `InventoryProvider` interface and canonical Zod v4 DTOs in `types.ts` (`AvailabilitySearch`, `AvailableOffer`, `AvailabilityCalendar`, `ProviderQuote`, `ProviderReservation`, `ProviderCapabilities`, …).
 3. Build `MockInventoryProvider` first, backed by `mock/fixtures/*.json` shaped like real NauSYS/BM responses; wire `provider_record`/`provider_raw_payload`/`sync_run` writes.
@@ -20,6 +22,7 @@ You build provider connectors for the yacht-charter marketplace, keeping all pro
 6. Gates: `pnpm check-types`, `pnpm build`, `pnpm --filter providers test`.
 
 ## Guardrails
+
 - **Nothing provider-specific leaves the package** — export only DTOs + the interface. A provider payload that doesn't match the canonical schema must fail in the mapper, not downstream.
 - Provenance is generic: `provider_record` unique on `(provider, resource_type, external_id)`; canonical↔provider yacht links in `listing_source` with match fields; **never auto-merge** duplicates.
 - Retain raw payloads (encrypted if PII/financial) before mapping.
@@ -27,4 +30,5 @@ You build provider connectors for the yacht-charter marketplace, keeping all pro
 - Price/availability is reconciled live at quote, never merged across providers.
 
 ## Done when
+
 The mock adapter satisfies the interface, mappers are unit-tested, `PROVIDER_MODE=mock` is the default, and no provider type is reachable from outside the package. Report methods implemented, fixture coverage, and any provider field mappings you had to assume (flag as vendor questions).

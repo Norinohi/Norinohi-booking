@@ -59,20 +59,20 @@ All catalogue calls are POST endpoints under
 `/CBMS-external/rest/catalogue/v6/` and use provider authentication. They feed
 local import tables and canonical read models.
 
-| Vendor endpoint / section | Provider data | Marketplace mapping |
-| --- | --- | --- |
-| `cabins/{charterCompanyId}` | Cabin IDs, position, type | `listing_cabin` only for cabin-charter support; not required for bareboat MVP |
-| `charterBases` | Base, location/company IDs, check-in/out time, coordinates, disabled dates/notes | `base`; map coordinates to map pins and booking handover details |
-| `charterCompanies` | Operator identity, address/contact, tax/bank details | `operator`; retain sensitive financial fields only in encrypted raw payload unless business needs them |
-| `countries`, `countryStates`, `regions`, `locations` | Geographic hierarchy and localized labels | `country`, `region`, `location`; normalize for filters and destination pages |
-| `discountItems` | Provider discount definitions | `provider_discount_definition`; snapshot applied discounts into quotes |
-| `engineBuilders`, `yachtBuilders`, `yachtModels`, `yachtCategories` | Taxonomy/model metadata | normalized lookup tables or provider taxonomies; expose selected names to filters/details |
-| `equipment`, `equipmentCategories` | Amenity taxonomy | `amenity`, `amenity_category`, `listing_amenity` |
-| `leadSources`, `reservationTags`, `users`, `domains` | Provider CRM/operator administration | do not expose; retain only if required for agency reservation attribution or internal support |
-| `packages` | Cabin-charter package metadata | later `charter_package`; out of bareboat MVP unless Figma includes it |
-| `priceLists`, `priceMeasures`, `seasons` | Seasonal list-price configuration and units | `provider_price_list` for audit/import only; live quote is the sellable price source |
-| `sailTypes`, `steeringTypes` | Yacht characteristics | lookup values used by yacht specifications and filters |
-| `yachts/{companyId}` and `yacht/{yachtId}` | Full yacht catalogue record and images | `provider_listing` plus derived canonical `listing`, `listing_media`, specs and constraints |
+| Vendor endpoint / section                                           | Provider data                                                                    | Marketplace mapping                                                                                    |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `cabins/{charterCompanyId}`                                         | Cabin IDs, position, type                                                        | `listing_cabin` only for cabin-charter support; not required for bareboat MVP                          |
+| `charterBases`                                                      | Base, location/company IDs, check-in/out time, coordinates, disabled dates/notes | `base`; map coordinates to map pins and booking handover details                                       |
+| `charterCompanies`                                                  | Operator identity, address/contact, tax/bank details                             | `operator`; retain sensitive financial fields only in encrypted raw payload unless business needs them |
+| `countries`, `countryStates`, `regions`, `locations`                | Geographic hierarchy and localized labels                                        | `country`, `region`, `location`; normalize for filters and destination pages                           |
+| `discountItems`                                                     | Provider discount definitions                                                    | `provider_discount_definition`; snapshot applied discounts into quotes                                 |
+| `engineBuilders`, `yachtBuilders`, `yachtModels`, `yachtCategories` | Taxonomy/model metadata                                                          | normalized lookup tables or provider taxonomies; expose selected names to filters/details              |
+| `equipment`, `equipmentCategories`                                  | Amenity taxonomy                                                                 | `amenity`, `amenity_category`, `listing_amenity`                                                       |
+| `leadSources`, `reservationTags`, `users`, `domains`                | Provider CRM/operator administration                                             | do not expose; retain only if required for agency reservation attribution or internal support          |
+| `packages`                                                          | Cabin-charter package metadata                                                   | later `charter_package`; out of bareboat MVP unless Figma includes it                                  |
+| `priceLists`, `priceMeasures`, `seasons`                            | Seasonal list-price configuration and units                                      | `provider_price_list` for audit/import only; live quote is the sellable price source                   |
+| `sailTypes`, `steeringTypes`                                        | Yacht characteristics                                                            | lookup values used by yacht specifications and filters                                                 |
+| `yachts/{companyId}` and `yacht/{yachtId}`                          | Full yacht catalogue record and images                                           | `provider_listing` plus derived canonical `listing`, `listing_media`, specs and constraints            |
 
 #### Yacht data (`RestYacht`, PDF pages 295-302)
 
@@ -101,17 +101,17 @@ the provider terms confirm it.
 
 All calls are under `/CBMS-external/rest/yachtReservation/v6/`.
 
-| Section | Purpose | Marketplace use |
-| --- | --- | --- |
-| All reservations | Reservations made by the agency/operator; filterable by period, IDs and modification time | reconciliation job, booking status refresh, audit |
-| All options | Provider holds/options and waiting options | reconcile expiring checkout holds |
-| Free yacht / Free yachts search | Date-specific available boats with price, discounts, extras and payment plan | primary live search and quote candidate source |
-| Free-yacht search criteria | Available facets for provider inventory | build filter facets; cache them |
-| Occupancy, Occupancy2, Occupancy3 | Occupied periods by company/year or individual yacht | detail-page calendar and background availability refresh |
-| Free cabin package search criteria/search, Cabin Charter Occupancy | Cabin-charter products | later extension; isolate from yacht booking model |
-| Waiting options | Queue position/count for an unavailable boat | later UX; cannot substitute a confirmed quote |
-| All infos, all stornos, all extras | Reservation lifecycle exports | provider reconciliation and internal support |
-| Reservation exports | CSV-style exports and cancellation exports | finance/support back-office only |
+| Section                                                            | Purpose                                                                                   | Marketplace use                                          |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| All reservations                                                   | Reservations made by the agency/operator; filterable by period, IDs and modification time | reconciliation job, booking status refresh, audit        |
+| All options                                                        | Provider holds/options and waiting options                                                | reconcile expiring checkout holds                        |
+| Free yacht / Free yachts search                                    | Date-specific available boats with price, discounts, extras and payment plan              | primary live search and quote candidate source           |
+| Free-yacht search criteria                                         | Available facets for provider inventory                                                   | build filter facets; cache them                          |
+| Occupancy, Occupancy2, Occupancy3                                  | Occupied periods by company/year or individual yacht                                      | detail-page calendar and background availability refresh |
+| Free cabin package search criteria/search, Cabin Charter Occupancy | Cabin-charter products                                                                    | later extension; isolate from yacht booking model        |
+| Waiting options                                                    | Queue position/count for an unavailable boat                                              | later UX; cannot substitute a confirmed quote            |
+| All infos, all stornos, all extras                                 | Reservation lifecycle exports                                                             | provider reconciliation and internal support             |
+| Reservation exports                                                | CSV-style exports and cancellation exports                                                | finance/support back-office only                         |
 
 #### Availability request requirements
 
@@ -138,25 +138,25 @@ checkout quote re-runs the provider query.
 
 Calls are under `/CBMS-external/rest/booking/v6/`.
 
-| Operation | NauSYS object(s) | Canonical action |
-| --- | --- | --- |
-| Add extras | `RestYachtReservationExtrasAddRequest` | add selectable services/equipment to a provider option/booking |
-| Create booking | `RestYachtReservationBookingRequest` | confirm provider reservation after payment policy permits it |
-| Create cabin booking/info/option | Cabin reservation requests | later cabin-charter flow |
-| Create info | `RestYachtReservationInfoRequest` | create reservation information/draft; provider-specific pre-booking stage |
-| Create option | `RestYachtReservationOptionRequest` | reserve a temporary provider hold with expiry |
-| Online payment / payment plan | online-payment requests/responses | provider payment integration; do not conflate with Stripe until commercial flow is agreed |
-| Storno option | provider option cancellation | release a hold after expiry/customer cancellation |
-| Update extras | extras update request | recalculate quote after selections change |
+| Operation                        | NauSYS object(s)                       | Canonical action                                                                          |
+| -------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Add extras                       | `RestYachtReservationExtrasAddRequest` | add selectable services/equipment to a provider option/booking                            |
+| Create booking                   | `RestYachtReservationBookingRequest`   | confirm provider reservation after payment policy permits it                              |
+| Create cabin booking/info/option | Cabin reservation requests             | later cabin-charter flow                                                                  |
+| Create info                      | `RestYachtReservationInfoRequest`      | create reservation information/draft; provider-specific pre-booking stage                 |
+| Create option                    | `RestYachtReservationOptionRequest`    | reserve a temporary provider hold with expiry                                             |
+| Online payment / payment plan    | online-payment requests/responses      | provider payment integration; do not conflate with Stripe until commercial flow is agreed |
+| Storno option                    | provider option cancellation           | release a hold after expiry/customer cancellation                                         |
+| Update extras                    | extras update request                  | recalculate quote after selections change                                                 |
 
 ### 2.4 Crew, invoices and contacts - PDF pages 134-153
 
-| Area | Use | Data handling |
-| --- | --- | --- |
-| Crew list | Retrieve/set passenger/crew manifest | collect only after booking when provider requires it; restrict access and audit mutations |
-| Invoices/linked documents | Provider invoice and document retrieval | store metadata and provider reference; use object storage for permitted copies |
-| Contacts2 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts |
-| Deprecated Contacts | Legacy contact endpoints | do not implement; use Contacts2 |
+| Area                      | Use                                                    | Data handling                                                                                |
+| ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Crew list                 | Retrieve/set passenger/crew manifest                   | collect only after booking when provider requires it; restrict access and audit mutations    |
+| Invoices/linked documents | Provider invoice and document retrieval                | store metadata and provider reference; use object storage for permitted copies               |
+| Contacts2                 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts |
+| Deprecated Contacts       | Legacy contact endpoints                               | do not implement; use Contacts2                                                              |
 
 Passenger/contact fields can include name, address, birth date, nationality,
 email, telephone, document/passport-related data and crew-specific attributes.

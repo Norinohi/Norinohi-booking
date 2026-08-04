@@ -1,0 +1,28 @@
+{
+  "name": "@yacht-charter/providers",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@yacht-charter/db": "workspace:*",
+    "@yacht-charter/env": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@yacht-charter/config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -8,6 +8,7 @@ import {
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Check, Sailboat, Star, Users } from "lucide-react";
+import type { Route } from "next";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -29,7 +30,7 @@ export type BoatCardAmenity = { icon: ReactNode; label: string };
 export type BoatCardCharterDate = string;
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42";
+const DETAIL_HREF = "/yachts/lagoon-42" as Route;
 
 export type BoatCardProps = {
   images: string[];
