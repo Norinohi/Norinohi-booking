@@ -23,7 +23,13 @@ export const charterSearchRouter = {
     .route({
       method: "GET",
       path: "/charter-search/results",
+      operationId: "searchCharterListings",
       summary: "Search available yacht listings",
+      description:
+        "Returns listing cards from the database-backed search read model. Use page/pageSize for direct page jumps in the results pager, or cursor/limit for forward cursor pagination. Do not send page and cursor together.",
+      tags: ["Charter Search"],
+      successDescription:
+        "Matching yacht listings with either page pagination metadata or a next cursor.",
     })
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
@@ -49,7 +55,12 @@ export const charterSearchRouter = {
     .route({
       method: "GET",
       path: "/charter-search/facets",
+      operationId: "listCharterSearchFacets",
       summary: "List search filter facets",
+      description:
+        "Returns dynamic filter values for the current search constraints, including destinations, yacht categories, amenities, and the matching price range.",
+      tags: ["Charter Search"],
+      successDescription: "Facet values and price range for the supplied search filters.",
     })
     .input(listingSearchInputSchema.partial().default({}))
     .output(facetsSchema)
@@ -58,7 +69,12 @@ export const charterSearchRouter = {
     .route({
       method: "GET",
       path: "/charter-search/map-markers",
+      operationId: "listCharterSearchMapMarkers",
       summary: "List search map markers",
+      description:
+        "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, display title, coordinates, and price hint.",
+      tags: ["Charter Search"],
+      successDescription: "Map markers for listings matching the supplied filters.",
     })
     .input(listingSearchInputSchema.partial().default({}))
     .output(mapResultSchema)
@@ -67,7 +83,12 @@ export const charterSearchRouter = {
     .route({
       method: "GET",
       path: "/charter-search/suggestions",
+      operationId: "suggestCharterSearchDestinations",
       summary: "Suggest destinations and bases",
+      description:
+        "Returns autocomplete suggestions for destination-style search input. Suggestions are sourced from countries, regions, locations, and bases in the search read model.",
+      tags: ["Charter Search"],
+      successDescription: "Autocomplete suggestions matching the query.",
     })
     .input(z.object({ query: z.string().default("") }))
     .output(z.array(suggestionSchema))

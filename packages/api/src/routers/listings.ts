@@ -19,7 +19,13 @@ export const listingsRouter = {
     .route({
       method: "GET",
       path: "/listings/{id}",
+      operationId: "getListing",
       summary: "Get a listing by id or slug",
+      description:
+        "Returns the customer-facing listing summary for a canonical yacht. The id path value can be either the listing ID or its slug.",
+      tags: ["Listings"],
+      successDescription:
+        "Listing summary with base, specs, media, amenities, rating, and price hint.",
     })
     .input(idInputSchema)
     .output(listingSummarySchema)
@@ -34,7 +40,12 @@ export const listingsRouter = {
     .route({
       method: "GET",
       path: "/listings/{listingId}/reviews",
+      operationId: "listListingReviews",
       summary: "List listing reviews",
+      description:
+        "Returns marketplace-owned review content for a listing. Reviews are demo/local content for the current milestone and are ordered newest first.",
+      tags: ["Listings"],
+      successDescription: "Reviews attached to the requested listing.",
     })
     .input(listingIdInputSchema)
     .output(
@@ -52,7 +63,12 @@ export const listingsRouter = {
     .route({
       method: "GET",
       path: "/listings/{listingId}/similar",
+      operationId: "listSimilarListings",
       summary: "List similar listings",
+      description:
+        "Returns a small set of related listings based on category, country, or region. Use this for detail-page recommendations.",
+      tags: ["Listings"],
+      successDescription: "Similar yacht listing summaries.",
     })
     .input(listingIdInputSchema)
     .output(z.array(listingSummarySchema))
