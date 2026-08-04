@@ -5,6 +5,7 @@ import {
   listSearchSuggestions,
   searchListings,
 } from "@yacht-charter/db/search";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 
 import {
@@ -27,6 +28,12 @@ export const charterSearchRouter = {
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
     .handler(async ({ input }) => {
+      if (input.cursor && input.page) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "Use either cursor pagination or page pagination, not both.",
+        });
+      }
+
       const results = await searchListings(db, input);
       return {
         items: results.items.map((item) => ({
@@ -35,6 +42,7 @@ export const charterSearchRouter = {
           checkOut: item.availableTo,
         })),
         nextCursor: results.nextCursor,
+        pagination: results.pagination,
       };
     }),
   facets: publicProcedure

@@ -49,6 +49,8 @@ export const listingSearchInputSchema = z.object({
   currency: z.string().length(3).default("EUR"),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(12),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(50).optional(),
   sort: z
     .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
     .default("recommended"),
@@ -63,6 +65,18 @@ export const searchResultSchema = z.object({
     }),
   ),
   nextCursor: z.string().optional(),
+  pagination: z
+    .object({
+      page: z.number().int(),
+      pageSize: z.number().int(),
+      totalItems: z.number().int(),
+      totalPages: z.number().int(),
+      startItem: z.number().int(),
+      endItem: z.number().int(),
+      hasPreviousPage: z.boolean(),
+      hasNextPage: z.boolean(),
+    })
+    .optional(),
 });
 
 export const facetsSchema = z.object({

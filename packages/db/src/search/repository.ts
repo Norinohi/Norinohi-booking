@@ -10,6 +10,7 @@ import type {
   ListingMapMarker,
   ListingSearchDoc,
   ListingSearchInput,
+  ListingSearchPagination,
   ListingSearchResult,
   ListingSuggestion,
   SearchSort,
@@ -27,6 +28,8 @@ export async function searchListings(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
 ): Promise<ListingSearchResult> {
+  if (input.page) return searchListingsByPage(db, input);
+
   const limit = normalizedLimit(input.limit);
   const rows = await db.execute<SearchRow>(sql`
     select ${searchColumns}
@@ -44,6 +47,40 @@ export async function searchListings(
   return {
     items,
     nextCursor: hasNext && last ? encodeSearchCursor(cursorFor(last, input.sort)) : undefined,
+  };
+}
+
+async function searchListingsByPage(
+  db: NodePgDatabase<typeof schema>,
+  input: ListingSearchInput,
+): Promise<ListingSearchResult> {
+  const page = normalizedPage(input.page);
+  const pageSize = normalizedLimit(input.pageSize ?? input.limit);
+  const offset = (page - 1) * pageSize;
+  const filters = whereClause(input);
+
+  const [rows, countRows] = await Promise.all([
+    db.execute<SearchRow>(sql`
+      select ${searchColumns}
+      from listing_search_doc doc
+      where ${filters}
+      order by ${orderClause(input.sort)}
+      limit ${pageSize}
+      offset ${offset}
+    `),
+    db.execute<{ totalItems: number }>(sql`
+      select count(*)::integer as "totalItems"
+      from listing_search_doc doc
+      where ${filters}
+    `),
+  ]);
+
+  const totalItems = countRows.rows[0]?.totalItems ?? 0;
+  const items = rows.rows.map(normalizeSearchRow);
+
+  return {
+    items,
+    pagination: paginationFor({ page, pageSize, totalItems, itemCount: items.length }),
   };
 }
 
@@ -346,6 +383,32 @@ function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): Se
 
 function normalizedLimit(limit: number | undefined): number {
   return Math.min(Math.max(limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
+}
+
+function normalizedPage(page: number | undefined): number {
+  return Math.max(page ?? 1, 1);
+}
+
+function paginationFor(input: {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  itemCount: number;
+}): ListingSearchPagination {
+  const totalPages = Math.max(Math.ceil(input.totalItems / input.pageSize), 1);
+  const startItem = input.itemCount > 0 ? (input.page - 1) * input.pageSize + 1 : 0;
+  const endItem = input.itemCount > 0 ? startItem + input.itemCount - 1 : 0;
+
+  return {
+    page: input.page,
+    pageSize: input.pageSize,
+    totalItems: input.totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    hasPreviousPage: input.page > 1,
+    hasNextPage: input.page < totalPages,
+  };
 }
 
 function sortedStrings(values: unknown): string[] {

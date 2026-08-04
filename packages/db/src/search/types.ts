@@ -12,6 +12,8 @@ export type ListingSearchInput = {
   currency?: string;
   cursor?: string;
   limit?: number;
+  page?: number;
+  pageSize?: number;
   sort?: SearchSort;
 };
 
@@ -49,6 +51,18 @@ export type ListingSearchDoc = {
 export type ListingSearchResult = {
   items: ListingSearchDoc[];
   nextCursor?: string;
+  pagination?: ListingSearchPagination;
+};
+
+export type ListingSearchPagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  startItem: number;
+  endItem: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 };
 
 export type ListingFacets = {
