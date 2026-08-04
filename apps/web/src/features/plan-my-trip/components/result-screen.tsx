@@ -4,6 +4,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import { ArrowRight, Anchor, Clock, TrendingUp, Users } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,7 +23,7 @@ import type { Destination, PlannerAnswers } from "../lib/search-params";
  * heuristics + placeholder data until a recommendation service exists (TODO).
  */
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42";
+const DETAIL_HREF = "/yachts/lagoon-42" as Route;
 
 const DESTINATION_FLAGS: Record<Destination, string> = {
   greece: "🇬🇷",
@@ -155,7 +156,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
         className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 md:flex-row"
       >
         {/* Left — darkened destination photo with the recommended boat card floating on top */}
-        <div className="relative flex items-center justify-center overflow-hidden p-6 md:w-[652px] md:shrink-0">
+        <div className="relative flex items-center justify-center overflow-hidden p-6 md:w-163 md:shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/home/destinations/greece.webp"
@@ -164,7 +165,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
           />
           <div className="absolute inset-0 bg-black/60" />
           <BoatSmallCard
-            className="relative z-10 w-full max-w-[334px]"
+            className="relative z-10 w-full max-w-83.5"
             image="/assets/home/boat-types/catamaran.webp"
             imageAlt={t("boat.title")}
             location={t("boat.location")}
@@ -271,7 +272,7 @@ function StatCell({ label, value }: { label: React.ReactNode; value: React.React
   return (
     <div className="flex flex-col gap-1.5 rounded-xl bg-card px-4 py-3">
       <StatLabel>{label}</StatLabel>
-      <span className="text-base leading-[1.25] font-semibold text-foreground">{value}</span>
+      <span className="text-base leading-tight font-semibold text-foreground">{value}</span>
     </div>
   );
 }

@@ -13,13 +13,14 @@ import {
   PaginationPrevious,
 } from "@yacht-charter/ui/components/navigation/pagination";
 import { Anchor, Users } from "lucide-react";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import DetailSection from "./detail-section";
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42";
+const DETAIL_HREF = "/yachts/lagoon-42" as Route;
 
 const YACHTS = [
   {
@@ -104,7 +105,7 @@ export default function PopularYachtsSection() {
 
         <CarouselViewport>
           {YACHTS.map((yacht) => (
-            <CarouselSlide key={yacht.name} className="basis-[350px] pr-4">
+            <CarouselSlide key={yacht.name} className="basis-87.5 pr-4">
               <BoatSmallCard
                 className="w-full"
                 image={yacht.image}

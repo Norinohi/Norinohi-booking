@@ -2,6 +2,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight, Check } from "lucide-react";
 import * as motion from "motion/react-client";
+import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
@@ -10,6 +11,7 @@ import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 const CHECKLIST = ["questions", "recommendation", "explore"] as const;
 
 const STEPS = ["preferences", "recommendation", "yachts"] as const;
+const PLAN_MY_TRIP_HREF = "/plan-my-trip" as Route;
 
 export default function PlanTrip() {
   const t = useTranslations("Home.PlanTrip");
@@ -44,7 +46,7 @@ export default function PlanTrip() {
             size="md"
             className="w-full self-start md:w-auto xl:mt-2"
             nativeButton={false}
-            render={<Link href="/plan-my-trip" />}
+            render={<Link href={PLAN_MY_TRIP_HREF} />}
           >
             {t("cta")}
             <ArrowUpRight />
