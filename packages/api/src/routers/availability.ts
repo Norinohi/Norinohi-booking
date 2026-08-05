@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { db } from "@yacht-charter/db";
 import { listAvailabilityCalendar } from "@yacht-charter/db/search";
 import { providerQuoteSchema, quoteRequestSchema } from "@yacht-charter/providers";
@@ -51,5 +52,15 @@ export const availabilityRouter = {
     })
     .input(quoteRequestSchema)
     .output(providerQuoteSchema)
-    .handler(({ input }) => provider.getQuote(input)),
+    .handler(async ({ input }) => {
+      try {
+        return await provider.getQuote(input);
+      } catch (error) {
+        if (error instanceof Error && error.message === "Requested slot is not available") {
+          throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
+        }
+
+        throw error;
+      }
+    }),
 };

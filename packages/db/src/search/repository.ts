@@ -54,7 +54,7 @@ export async function searchListings(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
 ): Promise<ListingSearchResult> {
-  if (!input.cursor && input.page) return searchListingsByPage(db, input);
+  if (!input.cursor) return searchListingsByPage(db, input);
 
   const limit = normalizedLimit(input.limit);
   const rows = await db.execute<SearchRow>(sql`

@@ -199,13 +199,21 @@ export const listingSearchInputSchema = z
     currency: z.string().length(3).default("EUR"),
     cursor: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(500).optional(),
-    page: z.coerce.number().int().min(1).default(1),
+    page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(50).default(10),
     sort: z
       .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
       .default("recommended"),
   })
   .superRefine((input, context) => {
+    if (input.cursor && input.page !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: "Do not combine cursor with page pagination",
+        path: ["page"],
+      });
+    }
+
     if (input.checkIn && input.checkOut && input.checkIn >= input.checkOut) {
       context.addIssue({
         code: "custom",
