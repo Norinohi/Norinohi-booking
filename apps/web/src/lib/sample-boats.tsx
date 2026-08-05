@@ -488,15 +488,3 @@ export const SAMPLE_BOATS: SampleBoat[] = [
     prepayment: 5300,
   },
 ];
-
-export const RESULTS_TOTAL = 320;
-export const RESULTS_PER_PAGE = 10;
-
-export function getBoatsPage(page: number): SampleBoat[] {
-  const offset = (page - 1) * RESULTS_PER_PAGE;
-  const size = Math.min(page * RESULTS_PER_PAGE, RESULTS_TOTAL) - offset;
-  return Array.from({ length: Math.max(size, 0) }, (_, index) => {
-    const boat = SAMPLE_BOATS[(offset + index) % SAMPLE_BOATS.length] as SampleBoat;
-    return { ...boat, id: `${boat.id}-p${page}` };
-  });
-}

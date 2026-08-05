@@ -176,7 +176,11 @@ export default function MapScreen() {
 
           {listOpen ? (
             <div className="flex min-h-0 flex-1 items-start gap-4 2xl:contents">
-              <MapListPanel className="pointer-events-auto max-h-full" />
+              <MapListPanel
+                filters={filters}
+                defaults={defaults}
+                className="pointer-events-auto max-h-full"
+              />
               <CloseListButton
                 onClick={() => setListOpen(false)}
                 label={t("closeList")}

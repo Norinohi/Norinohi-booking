@@ -1,7 +1,5 @@
 "use client";
 
-import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
-import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import {
   Select,
   SelectContent,
@@ -9,27 +7,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@yacht-charter/ui/components/form/select";
+import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
+import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { useBoatCards } from "@/hooks/use-boat-cards";
-import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "@/lib/sample-boats";
-import { SORT_OPTIONS, type SortValue } from "../search/results-header";
+import Loader from "@/components/shared/feedback/loader";
+import type { FiltersState } from "@/components/shared/form/filters";
 
+import { resultsQueryOptions } from "../../api/queries";
+import { useListingCards } from "../../hooks/use-listing-cards";
+import { toSearchInput } from "../../lib/to-search-input";
+import { SORT_OPTIONS, type SortValue } from "../search/results-header";
 import MapBoatCard from "./map-boat-card";
 
 export type MapListPanelProps = {
+  filters: FiltersState;
+  defaults: FiltersState;
   className?: string;
 };
 
-export default function MapListPanel({ className }: MapListPanelProps) {
+export default function MapListPanel({ filters, defaults, className }: MapListPanelProps) {
   const t = useTranslations("Common");
-  const { toMapCard } = useBoatCards();
+  const { toMapCard } = useListingCards();
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
 
-  const boats = getBoatsPage(page).map(toMapCard);
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+  if (appliedFilters !== filters) {
+    setAppliedFilters(filters);
+    setPage(1);
+  }
+
+  const { data, isLoading } = useQuery(
+    resultsQueryOptions(toSearchInput(filters, defaults, { sort, page })),
+  );
+  const boats = data?.items.map(({ listing }) => toMapCard(listing)) ?? [];
+  const pagination = data?.pagination;
 
   return (
     <section
@@ -40,7 +56,7 @@ export default function MapListPanel({ className }: MapListPanelProps) {
     >
       <div className="flex shrink-0 flex-col gap-3 border-b border-border p-4">
         <p className="text-sm font-medium leading-[1.3] text-natural-500">
-          {t("resultsCount", { count: RESULTS_TOTAL })}
+          {t("resultsCount", { count: pagination?.totalItems ?? 0 })}
         </p>
 
         <Select
@@ -64,17 +80,19 @@ export default function MapListPanel({ className }: MapListPanelProps) {
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-3 p-4">
-          {boats.map(({ id, ...boat }) => (
-            <MapBoatCard key={id} {...boat} />
-          ))}
+          {isLoading ? (
+            <Loader />
+          ) : (
+            boats.map(({ id, ...boat }) => <MapBoatCard key={id} {...boat} />)
+          )}
         </div>
       </ScrollArea>
 
       <div className="shrink-0 border-t border-border py-4">
         <PaginationControl
           page={page}
-          pageSize={RESULTS_PER_PAGE}
-          total={RESULTS_TOTAL}
+          pageSize={pagination?.pageSize ?? 10}
+          total={pagination?.totalItems ?? 0}
           onPageChange={setPage}
           summary={false}
           className="justify-center"
