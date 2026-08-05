@@ -1,4 +1,4 @@
-import { date, index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 import { listing } from "./listing";
@@ -24,6 +24,7 @@ export const availabilitySlot = pgTable(
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     status: availabilitySlotStatus("status").notNull(),
+    availabilityConfirmed: boolean("availability_confirmed").default(true).notNull(),
     priceMinor: integer("price_minor"),
     currency: text("currency"),
     minNights: integer("min_nights"),

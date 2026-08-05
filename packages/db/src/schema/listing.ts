@@ -44,6 +44,9 @@ export const listing = pgTable(
     categoryId: text("category_id").references(() => yachtCategory.id, {
       onDelete: "set null",
     }),
+    crewType: text("crew_type"),
+    depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
+    petsAllowed: boolean("pets_allowed").default(false).notNull(),
     defaultCurrency: text("default_currency"),
     status: listingStatus("status").default("draft").notNull(),
     // Winning listing_source for spec resolution; plain text to avoid an FK cycle.

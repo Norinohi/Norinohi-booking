@@ -20,6 +20,7 @@ export async function rebuildListingSearchDocs(
       slug,
       title,
       category,
+      crew_type,
       builder,
       model,
       operator,
@@ -35,6 +36,9 @@ export async function rebuildListingSearchDocs(
       berths,
       heads,
       year_built,
+      sail_type,
+      deposit_insurance_included,
+      pets_allowed,
       rating,
       review_count,
       main_image,
@@ -44,6 +48,8 @@ export async function rebuildListingSearchDocs(
       currency,
       available_from,
       available_to,
+      has_unconfirmed_availability,
+      has_temporary_booking,
       searchable_text,
       created_at,
       updated_at
@@ -53,6 +59,7 @@ export async function rebuildListingSearchDocs(
       l.slug,
       l.title,
       cat.name,
+      l.crew_type,
       bld.name,
       mdl.name,
       op.name,
@@ -68,6 +75,9 @@ export async function rebuildListingSearchDocs(
       spec.berths,
       spec.heads,
       spec.year_built,
+      spec.sail_type,
+      l.deposit_insurance_included,
+      l.pets_allowed,
       coalesce(rev.rating, 0)::numeric(3, 2),
       coalesce(rev.review_count, 0)::integer,
       media.main_image,
@@ -77,10 +87,13 @@ export async function rebuildListingSearchDocs(
       coalesce(avail.currency, l.default_currency),
       avail.available_from,
       avail.available_to,
+      coalesce(avail.has_unconfirmed_availability, false),
+      coalesce(avail.has_temporary_booking, false),
       concat_ws(
         ' ',
         l.title,
         cat.name,
+        l.crew_type,
         bld.name,
         mdl.name,
         op.name,
@@ -88,6 +101,7 @@ export async function rebuildListingSearchDocs(
         loc.name,
         rgn.name,
         cty.name,
+        spec.sail_type,
         amn.amenity_text
       ),
       now(),
@@ -119,12 +133,14 @@ export async function rebuildListingSearchDocs(
     ) amn on true
     left join lateral (
       select
-        min(price_minor) as price_from_minor,
-        min(currency) as currency,
-        min(start_date) as available_from,
-        max(end_date) as available_to
+        min(price_minor) filter (where status = 'available') as price_from_minor,
+        min(currency) filter (where status = 'available') as currency,
+        min(start_date) filter (where status = 'available') as available_from,
+        max(end_date) filter (where status = 'available') as available_to,
+        bool_or(status = 'available' and availability_confirmed = false) as has_unconfirmed_availability,
+        bool_or(status = 'option') as has_temporary_booking
       from availability_slot slot
-      where slot.listing_id = l.id and slot.status = 'available'
+      where slot.listing_id = l.id and slot.status in ('available', 'option')
     ) avail on true
     left join lateral (
       select avg(rating)::numeric(3, 2) as rating, count(*)::integer as review_count
@@ -137,6 +153,7 @@ export async function rebuildListingSearchDocs(
       slug = excluded.slug,
       title = excluded.title,
       category = excluded.category,
+      crew_type = excluded.crew_type,
       builder = excluded.builder,
       model = excluded.model,
       operator = excluded.operator,
@@ -152,6 +169,9 @@ export async function rebuildListingSearchDocs(
       berths = excluded.berths,
       heads = excluded.heads,
       year_built = excluded.year_built,
+      sail_type = excluded.sail_type,
+      deposit_insurance_included = excluded.deposit_insurance_included,
+      pets_allowed = excluded.pets_allowed,
       rating = excluded.rating,
       review_count = excluded.review_count,
       main_image = excluded.main_image,
@@ -161,6 +181,8 @@ export async function rebuildListingSearchDocs(
       currency = excluded.currency,
       available_from = excluded.available_from,
       available_to = excluded.available_to,
+      has_unconfirmed_availability = excluded.has_unconfirmed_availability,
+      has_temporary_booking = excluded.has_temporary_booking,
       searchable_text = excluded.searchable_text,
       updated_at = now()
   `);

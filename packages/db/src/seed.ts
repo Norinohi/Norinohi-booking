@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+
 import { db } from "./index";
 import { rebuildListingSearchDocs } from "./search";
 import {
@@ -654,6 +656,27 @@ const slots = [
   ],
 ] as const;
 
+const crewTypeFor = (categoryId: string) => {
+  if (categoryId === "cat_luxury" || categoryId === "cat_motor") return "full-crew";
+  if (categoryId === "cat_catamaran") return "skipper";
+  return "bareboat";
+};
+
+const sailTypeFor = (categoryId: string, yearBuilt: number) => {
+  if (categoryId === "cat_motor") return null;
+  if (categoryId === "cat_catamaran") return "classic";
+  return yearBuilt >= 2021 ? "furling" : "lazy-bag";
+};
+
+const hasDepositInsurance = (categoryId: string, yearBuilt: number) =>
+  categoryId === "cat_luxury" || yearBuilt >= 2021;
+
+const allowsPets = (baseId: string, categoryId: string) =>
+  categoryId !== "cat_luxury" && (baseId.includes("split") || baseId.includes("palma"));
+
+const hasConfirmedAvailability = (slotId: string, status: string) =>
+  status !== "available" || !slotId.includes("2026_08_08");
+
 const insertStaticData = async () => {
   await db.insert(country).values(countries).onConflictDoNothing();
   await db.insert(region).values(regions).onConflictDoNothing();
@@ -757,13 +780,27 @@ async function main() {
         builderId: item.builderId,
         modelId: item.modelId,
         categoryId: item.categoryId,
+        crewType: crewTypeFor(item.categoryId),
+        depositInsuranceIncluded: hasDepositInsurance(item.categoryId, item.yearBuilt),
+        petsAllowed: allowsPets(item.baseId, item.categoryId),
         defaultCurrency: "EUR",
         status: "published" as const,
         primarySourceId: item.sourceId,
         freshnessAt: new Date(),
       })),
     )
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: listing.id,
+      set: {
+        crewType: sql.raw("excluded.crew_type"),
+        depositInsuranceIncluded: sql.raw("excluded.deposit_insurance_included"),
+        petsAllowed: sql.raw("excluded.pets_allowed"),
+        defaultCurrency: sql.raw("excluded.default_currency"),
+        status: sql.raw("excluded.status"),
+        primarySourceId: sql.raw("excluded.primary_source_id"),
+        freshnessAt: sql.raw("excluded.freshness_at"),
+      },
+    });
 
   await db
     .insert(listingSource)
@@ -798,9 +835,20 @@ async function main() {
         cabins: item.cabins,
         berths: item.berths,
         heads: item.heads,
+        sailType: sailTypeFor(item.categoryId, item.yearBuilt),
       })),
     )
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: listingSpecification.listingId,
+      set: {
+        lengthM: sql.raw("excluded.length_m"),
+        yearBuilt: sql.raw("excluded.year_built"),
+        cabins: sql.raw("excluded.cabins"),
+        berths: sql.raw("excluded.berths"),
+        heads: sql.raw("excluded.heads"),
+        sailType: sql.raw("excluded.sail_type"),
+      },
+    });
 
   await db
     .insert(listingMedia)
@@ -853,6 +901,7 @@ async function main() {
         startDate,
         endDate,
         status,
+        availabilityConfirmed: hasConfirmedAvailability(id, status),
         priceMinor,
         currency: "EUR",
         minNights: 7,
@@ -861,7 +910,19 @@ async function main() {
         sourceHash: `mock-${id}`,
       })),
     )
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [availabilitySlot.listingId, availabilitySlot.startDate, availabilitySlot.endDate],
+      set: {
+        status: sql.raw("excluded.status"),
+        availabilityConfirmed: sql.raw("excluded.availability_confirmed"),
+        priceMinor: sql.raw("excluded.price_minor"),
+        currency: sql.raw("excluded.currency"),
+        minNights: sql.raw("excluded.min_nights"),
+        checkinWeekday: sql.raw("excluded.checkin_weekday"),
+        checkoutWeekday: sql.raw("excluded.checkout_weekday"),
+        sourceHash: sql.raw("excluded.source_hash"),
+      },
+    });
 
   await db
     .insert(review)

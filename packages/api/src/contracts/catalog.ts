@@ -30,6 +30,7 @@ export const listingSummarySchema = z.object({
   slug: z.string(),
   title: z.string(),
   category: z.string(),
+  crewType: z.string().nullable(),
   builder: z.string(),
   model: z.string(),
   operator: z.string(),
@@ -48,6 +49,15 @@ export const listingSummarySchema = z.object({
     berths: z.number().int(),
     heads: z.number().int(),
     yearBuilt: z.number().int(),
+    sailType: z.string().nullable(),
+  }),
+  policies: z.object({
+    depositInsuranceIncluded: z.boolean(),
+    petsAllowed: z.boolean(),
+  }),
+  availability: z.object({
+    hasUnconfirmedAvailability: z.boolean(),
+    hasTemporaryBooking: z.boolean(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),

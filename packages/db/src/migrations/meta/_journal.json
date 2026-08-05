@@ -43,6 +43,13 @@
       "when": 1785840047510,
       "tag": "0005_quiet_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785915446830,
+      "tag": "0006_needy_rick_jones",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
     slug: doc.slug,
     title: doc.title,
     category: doc.category ?? "Yacht",
+    crewType: doc.crewType,
     builder: doc.builder ?? "Unknown builder",
     model: doc.model ?? "Unknown model",
     operator: doc.operator,
@@ -26,6 +27,15 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       berths: doc.berths ?? 0,
       heads: doc.heads ?? 0,
       yearBuilt: doc.yearBuilt ?? 0,
+      sailType: doc.sailType,
+    },
+    policies: {
+      depositInsuranceIncluded: doc.depositInsuranceIncluded,
+      petsAllowed: doc.petsAllowed,
+    },
+    availability: {
+      hasUnconfirmedAvailability: doc.hasUnconfirmedAvailability,
+      hasTemporaryBooking: doc.hasTemporaryBooking,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,

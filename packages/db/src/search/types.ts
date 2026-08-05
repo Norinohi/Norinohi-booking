@@ -52,6 +52,7 @@ export type ListingSearchDoc = {
   slug: string;
   title: string;
   category: string | null;
+  crewType: string | null;
   builder: string | null;
   model: string | null;
   operator: string;
@@ -67,6 +68,9 @@ export type ListingSearchDoc = {
   berths: number | null;
   heads: number | null;
   yearBuilt: number | null;
+  sailType: string | null;
+  depositInsuranceIncluded: boolean;
+  petsAllowed: boolean;
   rating: string;
   reviewCount: number;
   mainImage: string | null;
@@ -76,6 +80,8 @@ export type ListingSearchDoc = {
   currency: string | null;
   availableFrom: string | null;
   availableTo: string | null;
+  hasUnconfirmedAvailability: boolean;
+  hasTemporaryBooking: boolean;
 };
 
 export type ListingSearchResult = {
