@@ -11,12 +11,12 @@ import { useState } from "react";
 
 import {
   clearFilterKeys,
-  DEFAULT_FILTERS,
   type FilterChip,
   FiltersPanel,
   FiltersPopover,
   type FiltersState,
   useFilterChips,
+  useFilterRanges,
 } from "@/components/shared/form/filters";
 
 import { useBoatCards } from "@/hooks/use-boat-cards";
@@ -64,7 +64,8 @@ function CloseListButton({
 }
 
 export default function MapScreen() {
-  const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
+  const { defaults } = useFilterRanges();
+  const [filters, setFilters] = useState<FiltersState>(() => defaults);
   const [listOpen, setListOpen] = useState(false);
   const [selectedMarina, setSelectedMarina] = useState<string | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
@@ -76,7 +77,7 @@ export default function MapScreen() {
   const selectedBoat = selectedMarina ? BOAT_BY_MARINA.get(selectedMarina) : undefined;
 
   function removeChip(chip: FilterChip) {
-    setFilters(clearFilterKeys(filters, chip.keys));
+    setFilters(clearFilterKeys(filters, chip.keys, defaults));
   }
 
   return (

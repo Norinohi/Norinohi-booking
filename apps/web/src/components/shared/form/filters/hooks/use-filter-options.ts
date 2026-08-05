@@ -1,44 +1,42 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useQuery } from "@tanstack/react-query";
 
-import {
-  BOAT_TYPES,
-  CHARTER_COMPANIES,
-  COUNTRIES,
-  CREWS,
-  DATE_FLEXIBILITY,
-  DURATIONS,
-  EQUIPMENT,
-  LENGTH_UNITS,
-  MAINSAIL_TYPES,
-  MARINAS,
-  MODELS,
-  type Option,
-  type OptionKey,
-  SAILING_AREAS,
-  YEARS,
-} from "../lib/options";
+import type { Option } from "../lib/options";
+import { facetsQueryOptions } from "../lib/queries";
 
-/** Pairs each stable option value with its label for the active locale. */
-export function useFilterOptions() {
-  const t = useTranslations("Filters.options");
-  const build = (keys: readonly OptionKey[]): Option[] =>
-    keys.map((value) => ({ value, label: t(value) }));
+type FilterOptions = {
+  countries: Option[];
+  sailingAreas: Option[];
+  charterCompanies: Option[];
+  marinas: Option[];
+  durations: Option[];
+  dateFlexibility: Option[];
+  boatTypes: Option[];
+  models: Option[];
+  crews: Option[];
+  mainsailTypes: Option[];
+  equipment: Option[];
+  lengthUnits: Option[];
+  years: Option[];
+};
 
-  return {
-    countries: build(COUNTRIES),
-    sailingAreas: build(SAILING_AREAS),
-    charterCompanies: build(CHARTER_COMPANIES),
-    marinas: build(MARINAS),
-    durations: build(DURATIONS),
-    dateFlexibility: build(DATE_FLEXIBILITY),
-    boatTypes: build(BOAT_TYPES),
-    models: build(MODELS),
-    crews: build(CREWS),
-    mainsailTypes: build(MAINSAIL_TYPES),
-    equipment: build(EQUIPMENT),
-    lengthUnits: build(LENGTH_UNITS),
-    years: build(YEARS),
-  };
+const EMPTY_OPTIONS: FilterOptions = {
+  countries: [],
+  sailingAreas: [],
+  charterCompanies: [],
+  marinas: [],
+  durations: [],
+  dateFlexibility: [],
+  boatTypes: [],
+  models: [],
+  crews: [],
+  mainsailTypes: [],
+  equipment: [],
+  lengthUnits: [],
+  years: [],
+};
+
+export function useFilterOptions(): FilterOptions {
+  return useQuery(facetsQueryOptions()).data?.options ?? EMPTY_OPTIONS;
 }

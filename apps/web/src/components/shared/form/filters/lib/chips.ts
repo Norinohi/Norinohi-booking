@@ -40,14 +40,22 @@ export const CHIP_DEFS = [
 
 export type ChipId = (typeof CHIP_DEFS)[number]["id"];
 
-export function isFilterKeyActive(state: FiltersState, key: keyof FiltersState): boolean {
-  return !isSameValue(state[key], DEFAULT_FILTERS[key]);
+export function isFilterKeyActive(
+  state: FiltersState,
+  key: keyof FiltersState,
+  defaults: FiltersState = DEFAULT_FILTERS,
+): boolean {
+  return !isSameValue(state[key], defaults[key]);
 }
 
-export function clearFilterKeys(state: FiltersState, keys: (keyof FiltersState)[]): FiltersState {
+export function clearFilterKeys(
+  state: FiltersState,
+  keys: (keyof FiltersState)[],
+  defaults: FiltersState = DEFAULT_FILTERS,
+): FiltersState {
   const next = { ...state };
   for (const key of keys) {
-    (next as Record<string, unknown>)[key] = DEFAULT_FILTERS[key];
+    (next as Record<string, unknown>)[key] = defaults[key];
   }
   return next;
 }

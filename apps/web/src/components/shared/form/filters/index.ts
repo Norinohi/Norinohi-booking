@@ -3,6 +3,7 @@ export { default as FiltersPopover, type FiltersPopoverProps } from "./component
 export { useDraft } from "./hooks/use-draft";
 export { useFilterChips } from "./hooks/use-filter-chips";
 export { useFilterOptions } from "./hooks/use-filter-options";
+export { useFilterRanges } from "./hooks/use-filter-ranges";
 export { clearFilterKeys, type FilterChip } from "./lib/chips";
 export { labelOf, type Option, orderedValues } from "./lib/options";
-export { countActiveFilters, DEFAULT_FILTERS, type FiltersState } from "./lib/state";
+export { countActiveFilters, DEFAULT_FILTERS, type FiltersState, isSameValue } from "./lib/state";

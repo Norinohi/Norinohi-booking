@@ -8,6 +8,7 @@ import { type ChipId, CHIP_DEFS, type FilterChip, isFilterKeyActive } from "../l
 import { labelOf, type Option } from "../lib/options";
 import type { FiltersState, Range } from "../lib/state";
 import { useFilterOptions } from "./use-filter-options";
+import { useFilterRanges } from "./use-filter-ranges";
 
 const SHOWN_LABELS = 2;
 
@@ -15,6 +16,7 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
   const t = useTranslations("Filters.chips");
   const format = useFormatter();
   const options = useFilterOptions();
+  const { defaults } = useFilterRanges();
 
   /** Two names then a counter, so a chip stays readable when many boxes are ticked. */
   function names(from: Option[], values: string[]): string {
@@ -93,7 +95,7 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
     }
   }
 
-  return CHIP_DEFS.filter((def) => def.keys.some((key) => isFilterKeyActive(state, key))).map(
-    (def) => ({ id: def.id, label: label(def.id), keys: [...def.keys] }),
-  );
+  return CHIP_DEFS.filter((def) =>
+    def.keys.some((key) => isFilterKeyActive(state, key, defaults)),
+  ).map((def) => ({ id: def.id, label: label(def.id), keys: [...def.keys] }));
 }

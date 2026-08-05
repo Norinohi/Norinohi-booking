@@ -12,6 +12,7 @@ import { Filter } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { useFilterRanges } from "../hooks/use-filter-ranges";
 import { countActiveFilters, type FiltersState } from "../lib/state";
 import FiltersPanel from "./filters-panel";
 
@@ -29,9 +30,10 @@ export default function FiltersPopover({
   className,
 }: FiltersPopoverProps) {
   const t = useTranslations("Filters");
+  const { defaults } = useFilterRanges();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const appliedCount = countActiveFilters(value);
+  const appliedCount = countActiveFilters(value, defaults);
 
   const trigger = (visibility: string) => (
     <Button

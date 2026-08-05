@@ -5,14 +5,7 @@ import { useState } from "react";
 
 import { RangeField, Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
-import {
-  BATHROOMS_LIMITS,
-  BERTHS_LIMITS,
-  BOAT_AGE_LIMITS,
-  CABINS_LIMITS,
-  LENGTH_LIMITS,
-  PRICE_LIMITS,
-} from "../../lib/state";
+import { useFilterRanges } from "../../hooks/use-filter-ranges";
 
 const FEET_TO_METRES = 0.3048;
 
@@ -20,6 +13,7 @@ export default function SpecsSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
   const format = useFormatter();
   const options = useFilterOptions();
+  const { ranges } = useFilterRanges();
   const [lengthUnit, setLengthUnit] = useState("ft");
 
   const showLength = (feet: number) =>
@@ -29,7 +23,7 @@ export default function SpecsSection({ value, set }: SectionProps) {
     <Section value="specs" title={t("sections.specs")}>
       <RangeField
         label={t("labels.length")}
-        limits={LENGTH_LIMITS}
+        limits={ranges.length}
         value={value.length}
         onChange={(next) => set("length", next)}
         format={showLength}
@@ -37,32 +31,32 @@ export default function SpecsSection({ value, set }: SectionProps) {
       />
       <RangeField
         label={t("labels.cabins")}
-        limits={CABINS_LIMITS}
+        limits={ranges.cabins}
         value={value.cabins}
         onChange={(next) => set("cabins", next)}
       />
       <RangeField
         label={t("labels.berths")}
-        limits={BERTHS_LIMITS}
+        limits={ranges.berths}
         value={value.berths}
         onChange={(next) => set("berths", next)}
       />
       <RangeField
         label={t("labels.bathrooms")}
-        limits={BATHROOMS_LIMITS}
+        limits={ranges.bathrooms}
         value={value.bathrooms}
         onChange={(next) => set("bathrooms", next)}
       />
       <RangeField
         label={t("labels.price")}
-        limits={PRICE_LIMITS}
+        limits={ranges.price}
         value={value.price}
         onChange={(next) => set("price", next)}
         format={(n) => format.number(n, "eur")}
       />
       <RangeField
         label={t("labels.boatAge")}
-        limits={BOAT_AGE_LIMITS}
+        limits={ranges.boatAge}
         value={value.boatAge}
         onChange={(next) => set("boatAge", next)}
         format={(n) => t("units.years", { count: n })}

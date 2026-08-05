@@ -34,13 +34,27 @@ export type FiltersState = {
   guestRating: Range;
 };
 
-export const LENGTH_LIMITS: Range = [0, 120];
-export const CABINS_LIMITS: Range = [0, 12];
-export const BERTHS_LIMITS: Range = [0, 24];
-export const BATHROOMS_LIMITS: Range = [0, 10];
-export const PRICE_LIMITS: Range = [0, 50000];
-export const BOAT_AGE_LIMITS: Range = [1, 20];
-export const RATING_LIMITS: Range = [0, 5];
+export type FilterRanges = {
+  length: Range;
+  cabins: Range;
+  berths: Range;
+  bathrooms: Range;
+  price: Range;
+  boatAge: Range;
+  guestRating: Range;
+};
+
+const EMPTY_RANGE: Range = [0, 0];
+
+export const EMPTY_RANGES: FilterRanges = {
+  length: EMPTY_RANGE,
+  cabins: EMPTY_RANGE,
+  berths: EMPTY_RANGE,
+  bathrooms: EMPTY_RANGE,
+  price: EMPTY_RANGE,
+  boatAge: EMPTY_RANGE,
+  guestRating: EMPTY_RANGE,
+};
 
 export const DEFAULT_FILTERS: FiltersState = {
   country: [],
@@ -58,12 +72,12 @@ export const DEFAULT_FILTERS: FiltersState = {
   mainsailType: [],
   equipment: [],
 
-  length: LENGTH_LIMITS,
-  cabins: CABINS_LIMITS,
-  berths: BERTHS_LIMITS,
-  bathrooms: BATHROOMS_LIMITS,
-  price: PRICE_LIMITS,
-  boatAge: BOAT_AGE_LIMITS,
+  length: EMPTY_RANGE,
+  cabins: EMPTY_RANGE,
+  berths: EMPTY_RANGE,
+  bathrooms: EMPTY_RANGE,
+  price: EMPTY_RANGE,
+  boatAge: EMPTY_RANGE,
   yearFrom: "any",
   yearTo: "any",
 
@@ -72,8 +86,12 @@ export const DEFAULT_FILTERS: FiltersState = {
   depositInsurance: false,
   petsAllowed: false,
 
-  guestRating: RATING_LIMITS,
+  guestRating: EMPTY_RANGE,
 };
+
+export function buildDefaultFilters(ranges: FilterRanges): FiltersState {
+  return { ...DEFAULT_FILTERS, ...ranges };
+}
 
 export function isSameValue(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
@@ -82,7 +100,10 @@ export function isSameValue(a: unknown, b: unknown): boolean {
   return a === b;
 }
 
-export function countActiveFilters(state: FiltersState): number {
+export function countActiveFilters(
+  state: FiltersState,
+  defaults: FiltersState = DEFAULT_FILTERS,
+): number {
   const keys = Object.keys(DEFAULT_FILTERS) as (keyof FiltersState)[];
-  return keys.filter((key) => !isSameValue(state[key], DEFAULT_FILTERS[key])).length;
+  return keys.filter((key) => !isSameValue(state[key], defaults[key])).length;
 }

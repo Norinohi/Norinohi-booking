@@ -6,14 +6,13 @@ import { Search } from "lucide-react";
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useState } from "react";
+import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import {
   clearFilterKeys,
-  DEFAULT_FILTERS,
   type FilterChip,
   FiltersPanel,
   FiltersPopover,
@@ -26,15 +25,19 @@ import { useFillToFold } from "@/hooks/use-fill-to-fold";
 import { useBoatCards } from "@/hooks/use-boat-cards";
 import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "@/lib/sample-boats";
 
-import ResultsHeader, { type SortValue } from "./results-header";
+import { useSearchFilters } from "../../hooks/use-search-filters";
+import ResultsHeader, { SORT_OPTIONS } from "./results-header";
 import SearchBar from "./search-bar";
 
 const YACHTS_MAP_HREF = "/yachts/map" as Route;
 
 export default function SearchScreen() {
-  const [filters, setFilters] = useState<FiltersState>(DEFAULT_FILTERS);
-  const [sort, setSort] = useState<SortValue>("recommended");
-  const [page, setPage] = useState(1);
+  const { filters, setFilters, defaults } = useSearchFilters();
+  const [sort, setSort] = useQueryState(
+    "sort",
+    parseAsStringLiteral(SORT_OPTIONS).withDefault("recommended"),
+  );
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const filtersRef = useFillToFold("64rem");
 
   const t = useTranslations("Yachts");
@@ -48,7 +51,7 @@ export default function SearchScreen() {
   }
 
   function removeChip(chip: FilterChip) {
-    applyFilters(clearFilterKeys(filters, chip.keys));
+    applyFilters(clearFilterKeys(filters, chip.keys, defaults));
   }
 
   return (

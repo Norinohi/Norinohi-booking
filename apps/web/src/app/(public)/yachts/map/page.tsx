@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { Hydrated } from "@/components/layout/hydrated";
 import { MapScreen } from "@/features/yachts";
+import { prefetchSearch } from "@/features/yachts/api/server";
 import { buildMetadata } from "@/lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -13,6 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function YachtsMapPage() {
-  return <MapScreen />;
+export default async function YachtsMapPage() {
+  const state = await prefetchSearch();
+
+  return (
+    <Hydrated state={state}>
+      <MapScreen />
+    </Hydrated>
+  );
 }

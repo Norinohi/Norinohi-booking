@@ -9,8 +9,9 @@ import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { FormEvent } from "react";
 
-import { countActiveFilters, DEFAULT_FILTERS, type FiltersState } from "../lib/state";
+import { countActiveFilters, type FiltersState } from "../lib/state";
 import { useDraft } from "../hooks/use-draft";
+import { useFilterRanges } from "../hooks/use-filter-ranges";
 import AdditionalSection from "./sections/additional-section";
 import BoatSection from "./sections/boat-section";
 import RatingsSection from "./sections/ratings-section";
@@ -37,8 +38,9 @@ export default function FiltersPanel({
   onClose,
 }: FiltersPanelProps) {
   const t = useTranslations("Filters");
+  const { defaults } = useFilterRanges();
   const [draft, setDraft] = useDraft(value);
-  const draftCount = countActiveFilters(draft);
+  const draftCount = countActiveFilters(draft, defaults);
 
   function set<K extends keyof FiltersState>(key: K, next: FiltersState[K]) {
     setDraft((current) => ({ ...current, [key]: next }));
@@ -90,7 +92,7 @@ export default function FiltersPanel({
         </h2>
         <button
           type="button"
-          onClick={() => setDraft(DEFAULT_FILTERS)}
+          onClick={() => setDraft(defaults)}
           className="rounded-lg px-1 py-1.5 leading-[1.4] font-bold underline underline-offset-2 outline-none hover:text-natural-500 focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           {t("clearAll")}
