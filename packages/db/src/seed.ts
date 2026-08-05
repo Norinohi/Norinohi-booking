@@ -42,6 +42,7 @@ const regions = [
   { id: "rgn_dalmatia", countryId: "cty_hr", name: "Dalmatia" },
   { id: "rgn_attica", countryId: "cty_gr", name: "Attica" },
   { id: "rgn_cyclades", countryId: "cty_gr", name: "Cyclades" },
+  { id: "rgn_ionian", countryId: "cty_gr", name: "Ionian Islands" },
   { id: "rgn_campania", countryId: "cty_it", name: "Campania" },
   { id: "rgn_balearics", countryId: "cty_es", name: "Balearic Islands" },
   { id: "rgn_phuket", countryId: "cty_th", name: "Phuket" },
@@ -50,10 +51,13 @@ const regions = [
 const locations = [
   { id: "loc_split", regionId: "rgn_dalmatia", name: "Split" },
   { id: "loc_dubrovnik", regionId: "rgn_dalmatia", name: "Dubrovnik" },
+  { id: "loc_sibenik", regionId: "rgn_dalmatia", name: "Sibenik" },
   { id: "loc_athens", regionId: "rgn_attica", name: "Athens" },
   { id: "loc_mykonos", regionId: "rgn_cyclades", name: "Mykonos" },
+  { id: "loc_lefkada", regionId: "rgn_ionian", name: "Lefkada" },
   { id: "loc_amalfi", regionId: "rgn_campania", name: "Amalfi Coast" },
   { id: "loc_palma", regionId: "rgn_balearics", name: "Palma de Mallorca" },
+  { id: "loc_ibiza", regionId: "rgn_balearics", name: "Ibiza" },
   { id: "loc_phuket", regionId: "rgn_phuket", name: "Ao Po" },
 ];
 
@@ -186,6 +190,48 @@ const bases = [
     checkOutTime: "09:00",
   },
   {
+    id: "base_sibenik",
+    externalId: "base-sibenik",
+    locationId: "loc_sibenik",
+    operatorId: "op_adriatic",
+    name: "D-Marin Mandalina",
+    lat: 43.723,
+    lng: 15.898,
+    email: "mandalina@d-marin.com",
+    phone: "+385 22 312 111",
+    website: "www.d-marin.com",
+    checkInTime: "17:00",
+    checkOutTime: "09:00",
+  },
+  {
+    id: "base_lefkada",
+    externalId: "base-lefkada",
+    locationId: "loc_lefkada",
+    operatorId: "op_aegean",
+    name: "Lefkas Marina",
+    lat: 38.833,
+    lng: 20.712,
+    email: "info@lefkasmarina.gr",
+    phone: "+30 26450 26645",
+    website: "www.lefkasmarina.com",
+    checkInTime: "17:00",
+    checkOutTime: "09:00",
+  },
+  {
+    id: "base_ibiza",
+    externalId: "base-ibiza",
+    locationId: "loc_ibiza",
+    operatorId: "op_island_route",
+    name: "Marina Botafoch",
+    lat: 38.913,
+    lng: 1.446,
+    email: "info@marinabotafoch.com",
+    phone: "+34 971 311 111",
+    website: "www.marinabotafoch.com",
+    checkInTime: "17:00",
+    checkOutTime: "09:00",
+  },
+  {
     id: "base_phuket",
     externalId: "base-phuket",
     locationId: "loc_phuket",
@@ -210,32 +256,404 @@ const builders = [
   { id: "bld_fountaine_pajot", name: "Fountaine Pajot", slug: "fountaine-pajot" },
   { id: "bld_jeanneau", name: "Jeanneau", slug: "jeanneau" },
   { id: "bld_prestige", name: "Prestige", slug: "prestige" },
+  { id: "bld_hanse", name: "Hanse", slug: "hanse" },
+  { id: "bld_elan", name: "Elan", slug: "elan" },
+  { id: "bld_bali", name: "Bali", slug: "bali" },
+  { id: "bld_leopard", name: "Leopard", slug: "leopard" },
+  { id: "bld_nautitech", name: "Nautitech", slug: "nautitech" },
+  { id: "bld_azimut", name: "Azimut", slug: "azimut" },
+  { id: "bld_sunseeker", name: "Sunseeker", slug: "sunseeker" },
+  { id: "bld_ferretti", name: "Ferretti", slug: "ferretti" },
 ];
 
-const models = [
-  { id: "mdl_lagoon_42", builderId: "bld_lagoon", name: "Lagoon 42" },
-  { id: "mdl_bavaria_c45", builderId: "bld_bavaria", name: "C45" },
-  { id: "mdl_sunreef_60", builderId: "bld_sunreef", name: "Sunreef 60" },
+/**
+ * Model catalogue. Every generated yacht is an instance of one of these, so the
+ * per-model figures below are the baseline that the fleet generator varies from.
+ * `weeklyBaseMinor` is a low-season weekly price in EUR minor units.
+ */
+const modelCatalog = [
+  // Catamarans
   {
-    id: "mdl_oceanis_461",
-    builderId: "bld_beneteau",
-    name: "Oceanis 46.1",
+    id: "mdl_lagoon_42",
+    builderId: "bld_lagoon",
+    name: "Lagoon 42",
+    displayName: "Lagoon 42",
+    categoryId: "cat_catamaran",
+    lengthM: 12.8,
+    cabins: 4,
+    berths: 10,
+    heads: 4,
+    weeklyBaseMinor: 540_000,
   },
-  { id: "mdl_lagoon_52f", builderId: "bld_lagoon", name: "Lagoon 52 F" },
-  { id: "mdl_bavaria_c38", builderId: "bld_bavaria", name: "C38" },
-  { id: "mdl_dufour_470", builderId: "bld_dufour", name: "470" },
+  {
+    id: "mdl_lagoon_46",
+    builderId: "bld_lagoon",
+    name: "Lagoon 46",
+    displayName: "Lagoon 46",
+    categoryId: "cat_catamaran",
+    lengthM: 13.99,
+    cabins: 4,
+    berths: 12,
+    heads: 4,
+    weeklyBaseMinor: 690_000,
+  },
+  {
+    id: "mdl_lagoon_52f",
+    builderId: "bld_lagoon",
+    name: "Lagoon 52 F",
+    displayName: "Lagoon 52 F",
+    categoryId: "cat_catamaran",
+    lengthM: 15.84,
+    cabins: 6,
+    berths: 12,
+    heads: 4,
+    weeklyBaseMinor: 1_660_000,
+  },
   {
     id: "mdl_elba_45",
     builderId: "bld_fountaine_pajot",
     name: "Elba 45",
+    displayName: "Fountaine Pajot Elba 45",
+    categoryId: "cat_catamaran",
+    lengthM: 13.45,
+    cabins: 4,
+    berths: 12,
+    heads: 4,
+    weeklyBaseMinor: 570_000,
+  },
+  {
+    id: "mdl_astrea_42",
+    builderId: "bld_fountaine_pajot",
+    name: "Astrea 42",
+    displayName: "Fountaine Pajot Astrea 42",
+    categoryId: "cat_catamaran",
+    lengthM: 12.58,
+    cabins: 4,
+    berths: 10,
+    heads: 4,
+    weeklyBaseMinor: 520_000,
+  },
+  {
+    id: "mdl_bali_4_4",
+    builderId: "bld_bali",
+    name: "Bali 4.4",
+    displayName: "Bali 4.4",
+    categoryId: "cat_catamaran",
+    lengthM: 13.6,
+    cabins: 4,
+    berths: 10,
+    heads: 4,
+    weeklyBaseMinor: 610_000,
+  },
+  {
+    id: "mdl_bali_5_4",
+    builderId: "bld_bali",
+    name: "Bali 5.4",
+    displayName: "Bali 5.4",
+    categoryId: "cat_catamaran",
+    lengthM: 16.2,
+    cabins: 6,
+    berths: 12,
+    heads: 6,
+    weeklyBaseMinor: 1_180_000,
+  },
+  {
+    id: "mdl_leopard_45",
+    builderId: "bld_leopard",
+    name: "Leopard 45",
+    displayName: "Leopard 45",
+    categoryId: "cat_catamaran",
+    lengthM: 13.66,
+    cabins: 4,
+    berths: 10,
+    heads: 4,
+    weeklyBaseMinor: 640_000,
+  },
+  {
+    id: "mdl_nautitech_46",
+    builderId: "bld_nautitech",
+    name: "Nautitech 46 Open",
+    displayName: "Nautitech 46 Open",
+    categoryId: "cat_catamaran",
+    lengthM: 13.99,
+    cabins: 4,
+    berths: 10,
+    heads: 4,
+    weeklyBaseMinor: 660_000,
+  },
+
+  // Sailing yachts
+  {
+    id: "mdl_bavaria_c45",
+    builderId: "bld_bavaria",
+    name: "C45",
+    displayName: "Bavaria C45",
+    categoryId: "cat_sailing",
+    lengthM: 13.98,
+    cabins: 4,
+    berths: 8,
+    heads: 3,
+    weeklyBaseMinor: 390_000,
+  },
+  {
+    id: "mdl_bavaria_c38",
+    builderId: "bld_bavaria",
+    name: "C38",
+    displayName: "Bavaria C38",
+    categoryId: "cat_sailing",
+    lengthM: 11.31,
+    cabins: 3,
+    berths: 8,
+    heads: 2,
+    weeklyBaseMinor: 280_000,
+  },
+  {
+    id: "mdl_bavaria_c50",
+    builderId: "bld_bavaria",
+    name: "C50",
+    displayName: "Bavaria C50",
+    categoryId: "cat_sailing",
+    lengthM: 15.45,
+    cabins: 5,
+    berths: 10,
+    heads: 3,
+    weeklyBaseMinor: 470_000,
+  },
+  {
+    id: "mdl_oceanis_461",
+    builderId: "bld_beneteau",
+    name: "Oceanis 46.1",
+    displayName: "Beneteau Oceanis 46.1",
+    categoryId: "cat_sailing",
+    lengthM: 14.6,
+    cabins: 4,
+    berths: 10,
+    heads: 3,
+    weeklyBaseMinor: 495_000,
+  },
+  {
+    id: "mdl_oceanis_403",
+    builderId: "bld_beneteau",
+    name: "Oceanis 40.1",
+    displayName: "Beneteau Oceanis 40.1",
+    categoryId: "cat_sailing",
+    lengthM: 12.43,
+    cabins: 3,
+    berths: 8,
+    heads: 2,
+    weeklyBaseMinor: 330_000,
+  },
+  {
+    id: "mdl_oceanis_51",
+    builderId: "bld_beneteau",
+    name: "Oceanis 51.1",
+    displayName: "Beneteau Oceanis 51.1",
+    categoryId: "cat_sailing",
+    lengthM: 15.94,
+    cabins: 5,
+    berths: 12,
+    heads: 4,
+    weeklyBaseMinor: 560_000,
+  },
+  {
+    id: "mdl_dufour_470",
+    builderId: "bld_dufour",
+    name: "470",
+    displayName: "Dufour 470",
+    categoryId: "cat_sailing",
+    lengthM: 14.85,
+    cabins: 4,
+    berths: 10,
+    heads: 4,
+    weeklyBaseMinor: 490_000,
+  },
+  {
+    id: "mdl_dufour_430",
+    builderId: "bld_dufour",
+    name: "430",
+    displayName: "Dufour 430",
+    categoryId: "cat_sailing",
+    lengthM: 13.35,
+    cabins: 4,
+    berths: 10,
+    heads: 2,
+    weeklyBaseMinor: 380_000,
   },
   {
     id: "mdl_sun_odyssey_410",
     builderId: "bld_jeanneau",
     name: "Sun Odyssey 410",
+    displayName: "Jeanneau Sun Odyssey 410",
+    categoryId: "cat_sailing",
+    lengthM: 12.35,
+    cabins: 3,
+    berths: 8,
+    heads: 2,
+    weeklyBaseMinor: 320_000,
   },
-  { id: "mdl_prestige_520", builderId: "bld_prestige", name: "520" },
-];
+  {
+    id: "mdl_sun_odyssey_490",
+    builderId: "bld_jeanneau",
+    name: "Sun Odyssey 490",
+    displayName: "Jeanneau Sun Odyssey 490",
+    categoryId: "cat_sailing",
+    lengthM: 14.75,
+    cabins: 5,
+    berths: 10,
+    heads: 3,
+    weeklyBaseMinor: 480_000,
+  },
+  {
+    id: "mdl_hanse_460",
+    builderId: "bld_hanse",
+    name: "Hanse 460",
+    displayName: "Hanse 460",
+    categoryId: "cat_sailing",
+    lengthM: 14.14,
+    cabins: 4,
+    berths: 10,
+    heads: 3,
+    weeklyBaseMinor: 450_000,
+  },
+  {
+    id: "mdl_hanse_418",
+    builderId: "bld_hanse",
+    name: "Hanse 418",
+    displayName: "Hanse 418",
+    categoryId: "cat_sailing",
+    lengthM: 12.4,
+    cabins: 3,
+    berths: 8,
+    heads: 2,
+    weeklyBaseMinor: 330_000,
+  },
+  {
+    id: "mdl_elan_impression_43",
+    builderId: "bld_elan",
+    name: "Impression 43",
+    displayName: "Elan Impression 43",
+    categoryId: "cat_sailing",
+    lengthM: 13.35,
+    cabins: 4,
+    berths: 10,
+    heads: 3,
+    weeklyBaseMinor: 360_000,
+  },
+
+  // Motor yachts
+  {
+    id: "mdl_prestige_520",
+    builderId: "bld_prestige",
+    name: "520",
+    displayName: "Prestige 520",
+    categoryId: "cat_motor",
+    lengthM: 16.11,
+    cabins: 3,
+    berths: 6,
+    heads: 2,
+    weeklyBaseMinor: 1_260_000,
+  },
+  {
+    id: "mdl_prestige_460",
+    builderId: "bld_prestige",
+    name: "460",
+    displayName: "Prestige 460",
+    categoryId: "cat_motor",
+    lengthM: 14.31,
+    cabins: 3,
+    berths: 6,
+    heads: 2,
+    weeklyBaseMinor: 960_000,
+  },
+  {
+    id: "mdl_azimut_55",
+    builderId: "bld_azimut",
+    name: "Azimut 55",
+    displayName: "Azimut 55 Flybridge",
+    categoryId: "cat_motor",
+    lengthM: 16.7,
+    cabins: 3,
+    berths: 6,
+    heads: 3,
+    weeklyBaseMinor: 1_480_000,
+  },
+  {
+    id: "mdl_azimut_43",
+    builderId: "bld_azimut",
+    name: "Azimut 43",
+    displayName: "Azimut 43 Magellano",
+    categoryId: "cat_motor",
+    lengthM: 13.36,
+    cabins: 3,
+    berths: 6,
+    heads: 2,
+    weeklyBaseMinor: 890_000,
+  },
+  {
+    id: "mdl_sunseeker_predator_50",
+    builderId: "bld_sunseeker",
+    name: "Predator 50",
+    displayName: "Sunseeker Predator 50",
+    categoryId: "cat_motor",
+    lengthM: 15.5,
+    cabins: 3,
+    berths: 6,
+    heads: 2,
+    weeklyBaseMinor: 1_390_000,
+  },
+
+  // Luxury
+  {
+    id: "mdl_sunreef_60",
+    builderId: "bld_sunreef",
+    name: "Sunreef 60",
+    displayName: "Sunreef 60",
+    categoryId: "cat_luxury",
+    lengthM: 18.3,
+    cabins: 5,
+    berths: 10,
+    heads: 5,
+    weeklyBaseMinor: 2_140_000,
+  },
+  {
+    id: "mdl_sunreef_80",
+    builderId: "bld_sunreef",
+    name: "Sunreef 80",
+    displayName: "Sunreef 80",
+    categoryId: "cat_luxury",
+    lengthM: 24.0,
+    cabins: 6,
+    berths: 12,
+    heads: 6,
+    weeklyBaseMinor: 4_600_000,
+  },
+  {
+    id: "mdl_ferretti_720",
+    builderId: "bld_ferretti",
+    name: "720",
+    displayName: "Ferretti 720",
+    categoryId: "cat_luxury",
+    lengthM: 21.9,
+    cabins: 4,
+    berths: 8,
+    heads: 4,
+    weeklyBaseMinor: 3_400_000,
+  },
+  {
+    id: "mdl_sunseeker_86",
+    builderId: "bld_sunseeker",
+    name: "86 Yacht",
+    displayName: "Sunseeker 86 Yacht",
+    categoryId: "cat_luxury",
+    lengthM: 26.4,
+    cabins: 5,
+    berths: 10,
+    heads: 5,
+    weeklyBaseMinor: 5_200_000,
+  },
+] as const;
+
+const models = modelCatalog.map(({ id, builderId, name }) => ({ id, builderId, name }));
 
 const categories = [
   { id: "cat_catamaran", code: "catamaran", name: "Catamaran" },
@@ -316,7 +734,33 @@ const amenities = [
   },
 ];
 
-const yachts = [
+type YachtSeed = {
+  externalId: string;
+  listingId: string;
+  sourceId: string;
+  recordId: string;
+  rawPayloadId: string;
+  slug: string;
+  title: string;
+  operatorId: string;
+  baseId: string;
+  builderId: string;
+  modelId: string;
+  categoryId: string;
+  lengthM: string;
+  yearBuilt: number;
+  cabins: number;
+  berths: number;
+  heads: number;
+  amenityIds: string[];
+  media: string[];
+  rating: number;
+  reviewAuthor: string;
+  reviewBody: string;
+};
+
+/** Hand-written listings kept verbatim so their slugs and ids stay stable. */
+const curatedYachts: YachtSeed[] = [
   {
     externalId: "yacht-lagoon-42-aurora",
     listingId: "ylst_yacht-lagoon-42-aurora",
@@ -593,125 +1037,306 @@ const yachts = [
   },
 ];
 
-const slots = [
-  [
-    "lagoon_42_2026_08_08",
-    "ylst_yacht-lagoon-42-aurora",
-    "lsrc_lagoon_42_aurora",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    540000,
-  ],
-  [
-    "lagoon_42_2026_08_15",
-    "ylst_yacht-lagoon-42-aurora",
-    "lsrc_lagoon_42_aurora",
-    "2026-08-15",
-    "2026-08-22",
-    "option",
-    565000,
-  ],
-  [
-    "bavaria_c45_2026_08_08",
-    "ylst_yacht-bavaria-c45-luna",
-    "lsrc_bavaria_c45_luna",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    390000,
-  ],
-  [
-    "sunreef_60_2026_08_08",
-    "ylst_yacht-sunreef-60-celeste",
-    "lsrc_sunreef_60_celeste",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    2140000,
-  ],
-  [
-    "oceanis_461_2026_08_08",
-    "ylst_yacht-oceanis-461-maribel",
-    "lsrc_oceanis_461_maribel",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    495000,
-  ],
-  [
-    "lagoon_52f_2026_08_08",
-    "ylst_yacht-lagoon-52f-solenne",
-    "lsrc_lagoon_52f_solenne",
-    "2026-08-08",
-    "2026-08-15",
-    "occupied",
-    1740000,
-  ],
-  [
-    "lagoon_52f_2026_08_22",
-    "ylst_yacht-lagoon-52f-solenne",
-    "lsrc_lagoon_52f_solenne",
-    "2026-08-22",
-    "2026-08-29",
-    "available",
-    1660000,
-  ],
-  [
-    "bavaria_c38_2026_08_08",
-    "ylst_yacht-bavaria-c38-niki",
-    "lsrc_bavaria_c38_niki",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    780000,
-  ],
-  [
-    "dufour_470_2026_08_08",
-    "ylst_yacht-dufour-470-brisa",
-    "lsrc_dufour_470_brisa",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    690000,
-  ],
-  [
-    "elba_45_2026_08_08",
-    "ylst_yacht-elba-45-sabai",
-    "lsrc_elba_45_sabai",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    570000,
-  ],
-  [
-    "sun_odyssey_410_2026_08_08",
-    "ylst_yacht-sun-odyssey-410-maestral",
-    "lsrc_sun_odyssey_410_maestral",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    390000,
-  ],
-  [
-    "prestige_520_2026_08_08",
-    "ylst_yacht-prestige-520-velvet",
-    "lsrc_prestige_520_velvet",
-    "2026-08-08",
-    "2026-08-15",
-    "available",
-    1260000,
-  ],
-  [
-    "prestige_520_2026_08_15",
-    "ylst_yacht-prestige-520-velvet",
-    "lsrc_prestige_520_velvet",
-    "2026-08-15",
-    "2026-08-22",
-    "blocked",
-    1320000,
-  ],
-] as const;
+const TARGET_FLEET_SIZE = 72;
+
+/** Deterministic PRNG so repeated seeds produce byte-identical fleets. */
+const createRandom = (seed: number) => {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+};
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+const key = (value: string) => value.replaceAll("-", "_");
+
+const yachtNames = [
+  "Alba",
+  "Amaranta",
+  "Anemone",
+  "Arcadia",
+  "Ariadne",
+  "Azzurra",
+  "Bellamare",
+  "Bora",
+  "Calypso",
+  "Caravel",
+  "Cassiopeia",
+  "Cirrus",
+  "Corallia",
+  "Cortona",
+  "Cygnus",
+  "Delphine",
+  "Ember",
+  "Eos",
+  "Esperanza",
+  "Estrella",
+  "Farfalla",
+  "Fiora",
+  "Galatea",
+  "Gaviota",
+  "Halcyon",
+  "Helios",
+  "Iolanda",
+  "Isolde",
+  "Jadran",
+  "Kalypso",
+  "Kestrel",
+  "Levanto",
+  "Liburna",
+  "Lucente",
+  "Marea",
+  "Marisol",
+  "Meltemi",
+  "Mistral",
+  "Nautilus",
+  "Nerea",
+  "Nimbus",
+  "Ondina",
+  "Orsa",
+  "Pelagia",
+  "Perla",
+  "Ponente",
+  "Quilla",
+  "Rialto",
+  "Salina",
+  "Selene",
+  "Serenata",
+  "Sirocco",
+  "Solaris",
+  "Sorrento",
+  "Stellaria",
+  "Talisman",
+  "Tramontana",
+  "Ulisse",
+  "Vela",
+  "Ventura",
+  "Verano",
+  "Vespera",
+  "Zefiro",
+  "Zenobia",
+  "Adriana",
+  "Bellona",
+  "Cyrene",
+  "Dorada",
+  "Elysia",
+  "Fjordana",
+  "Ginestra",
+  "Halia",
+  "Ismera",
+  "Jolanda",
+  "Korcula",
+  "Lisandra",
+  "Marbella",
+  "Nautica",
+  "Oceania",
+  "Primavera",
+];
+
+const mediaPool = [
+  "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a",
+  "https://images.unsplash.com/photo-1540946485063-a40da27545f8",
+  "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13",
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+  "https://images.unsplash.com/photo-1528154291023-a6525fabe5b4",
+  "https://images.unsplash.com/photo-1520333789090-1afc82db536a",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+  "https://images.unsplash.com/photo-1519046904884-53103b34b206",
+  "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2",
+  "https://images.unsplash.com/photo-1534008897995-27a23e859048",
+  "https://images.unsplash.com/photo-1551632811-561732d1e306",
+  "https://images.unsplash.com/photo-1540541338287-41700207dee6",
+  "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca",
+  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
+  "https://images.unsplash.com/photo-1537956965359-7573183d1f57",
+  "https://images.unsplash.com/photo-1544551763-46a013bb70d5",
+];
+
+const featureAmenityIds = [
+  "amn_ac",
+  "amn_dinghy",
+  "amn_wifi",
+  "amn_generator",
+  "amn_watermaker",
+  "amn_solar",
+  "amn_sup",
+  "amn_snorkel",
+  "amn_grill",
+  "amn_autopilot",
+];
+
+const reviewAuthors = [
+  "Marta K.",
+  "Ivan P.",
+  "Sofia R.",
+  "Luka M.",
+  "Nina T.",
+  "Elena D.",
+  "Clara S.",
+  "Anya V.",
+  "Petra B.",
+  "Marco L.",
+  "Tomas H.",
+  "Giulia F.",
+  "Nikos A.",
+  "Lena W.",
+  "Pierre G.",
+  "Ana C.",
+  "David O.",
+  "Marija S.",
+  "Julien R.",
+  "Katrin B.",
+  "Stefano M.",
+  "Hanna L.",
+  "Diego N.",
+  "Irene P.",
+];
+
+const reviewBodies = [
+  "Smooth handover, tidy interior, and a base team that answered on the first call.",
+  "Well maintained for its age and exactly as described in the listing.",
+  "Comfortable layout for two couples, with enough deck space to stay out of each other's way.",
+  "Good sail wardrobe and a briefing that covered the route properly.",
+  "Clean below deck, working electronics, and no surprises at check-in.",
+  "Plenty of shade in the cockpit, which mattered more than we expected in August.",
+  "Handled the afternoon breeze predictably and the fridge kept up all week.",
+  "Roomy cabins, quiet generator, and a fair deposit process at return.",
+];
+
+const pick = <T>(items: readonly T[], index: number) => items[index % items.length] as T;
+
+const generatedYachts: YachtSeed[] = Array.from(
+  { length: Math.max(0, TARGET_FLEET_SIZE - curatedYachts.length) },
+  (_, index) => {
+    const random = createRandom(index * 7919 + 104_729);
+    const model = modelCatalog[(index * 5 + 3) % modelCatalog.length]!;
+    const homeBase = bases[(index * 3 + 1) % bases.length]!;
+    const name = yachtNames[(index * 11 + 5) % yachtNames.length]!;
+
+    const title = `${name} ${model.displayName}`;
+    const location = locations.find((item) => item.id === homeBase.locationId)!;
+    const slug = slugify(`${name}-${model.displayName}-${location.name}`);
+    const externalId = `yacht-${slugify(`${model.displayName}-${name}`)}`;
+    const listingId = `ylst_${externalId}`;
+    const entityKey = key(externalId.replace("yacht-", ""));
+
+    const berthDelta = random() < 0.3 ? -2 : 0;
+    const amenityCount = 3 + Math.floor(random() * 4);
+    const amenityStart = Math.floor(random() * featureAmenityIds.length);
+    const mediaCount = 2 + Math.floor(random() * 3);
+    const mediaStart = Math.floor(random() * mediaPool.length);
+
+    return {
+      externalId,
+      listingId,
+      sourceId: `lsrc_${entityKey}`,
+      recordId: `prec_${entityKey}`,
+      rawPayloadId: `praw_${entityKey}`,
+      slug,
+      title,
+      operatorId: homeBase.operatorId,
+      baseId: homeBase.id,
+      builderId: model.builderId,
+      modelId: model.id,
+      categoryId: model.categoryId,
+      lengthM: model.lengthM.toFixed(2),
+      yearBuilt: 2016 + Math.floor(random() * 10),
+      cabins: model.cabins,
+      berths: Math.max(model.cabins * 2, model.berths + berthDelta),
+      heads: model.heads,
+      amenityIds: Array.from(
+        { length: amenityCount },
+        (__, offset) => featureAmenityIds[(amenityStart + offset) % featureAmenityIds.length]!,
+      ),
+      media: Array.from(
+        { length: mediaCount },
+        (__, offset) => mediaPool[(mediaStart + offset) % mediaPool.length]!,
+      ),
+      rating: random() < 0.7 ? 5 : 4,
+      reviewAuthor: pick(reviewAuthors, index * 5 + 1),
+      reviewBody: pick(reviewBodies, index * 3 + 2),
+    };
+  },
+);
+
+const yachts: YachtSeed[] = [...curatedYachts, ...generatedYachts];
+
+const weeklyBaseFor = (modelId: string) =>
+  modelCatalog.find((item) => item.id === modelId)?.weeklyBaseMinor ?? 450_000;
+
+/** Saturday-to-Saturday charter weeks covered by the mock availability feed. */
+const seasonWeeks = [
+  "2026-06-06",
+  "2026-06-13",
+  "2026-06-20",
+  "2026-06-27",
+  "2026-07-04",
+  "2026-07-11",
+  "2026-07-18",
+  "2026-07-25",
+  "2026-08-01",
+  "2026-08-08",
+  "2026-08-15",
+  "2026-08-22",
+  "2026-08-29",
+  "2026-09-05",
+];
+
+const addWeek = (isoDate: string) => {
+  const next = new Date(`${isoDate}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 7);
+  return next.toISOString().slice(0, 10);
+};
+
+/** July and August carry the peak multiplier; June and September are shoulder. */
+const seasonMultiplier = (startDate: string) => {
+  const month = Number(startDate.slice(5, 7));
+  if (month === 7 || month === 8) return 1.35;
+  if (month === 6 || month === 9) return 1.0;
+  return 0.85;
+};
+
+const slotStatusFor = (roll: number) => {
+  if (roll < 0.62) return "available" as const;
+  if (roll < 0.74) return "option" as const;
+  if (roll < 0.93) return "occupied" as const;
+  return "blocked" as const;
+};
+
+const slots = yachts.flatMap((item) => {
+  const random = createRandom(
+    [...item.externalId].reduce((acc, char) => (acc * 31 + char.charCodeAt(0)) >>> 0, 7),
+  );
+  const weeklyBase = weeklyBaseFor(item.modelId);
+  const conditionPremium = 1 + (item.yearBuilt - 2016) * 0.015;
+
+  return seasonWeeks.map((startDate) => {
+    const priceMinor =
+      Math.round(
+        (weeklyBase * seasonMultiplier(startDate) * conditionPremium * (0.94 + random() * 0.12)) /
+          1000,
+      ) * 1000;
+
+    return {
+      id: `${key(item.externalId.replace("yacht-", ""))}_${key(startDate.replaceAll("-", "_"))}`,
+      listingId: item.listingId,
+      listingSourceId: item.sourceId,
+      startDate,
+      endDate: addWeek(startDate),
+      status: slotStatusFor(random()),
+      priceMinor,
+    };
+  });
+});
 
 const crewTypeFor = (categoryId: string) => {
   if (categoryId === "cat_luxury" || categoryId === "cat_motor") return "full-crew";
@@ -1047,7 +1672,7 @@ async function main() {
   await db
     .insert(availabilitySlot)
     .values(
-      slots.map(([id, listingId, listingSourceId, startDate, endDate, status, priceMinor]) => ({
+      slots.map(({ id, listingId, listingSourceId, startDate, endDate, status, priceMinor }) => ({
         id: `avsl_${id}`,
         listingId,
         listingSourceId,
@@ -1115,7 +1740,9 @@ async function main() {
 
   await rebuildListingSearchDocs(db);
 
-  console.log(`Seeded ${yachts.length} mock yacht listings across ${countries.length} countries.`);
+  console.log(
+    `Seeded ${yachts.length} mock yacht listings and ${slots.length} availability slots across ${countries.length} countries.`,
+  );
 }
 
 main()
