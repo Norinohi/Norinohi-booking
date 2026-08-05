@@ -156,72 +156,91 @@ export const listingDetailSchema = listingSummarySchema.extend({
   popularYachts: z.array(listingSummarySchema),
 });
 
-export const listingSearchInputSchema = z
-  .object({
-    destination: z.string().optional(),
-    query: z.string().optional(),
-    checkIn: dateStringSchema.optional(),
-    checkOut: dateStringSchema.optional(),
-    guests: z.coerce.number().int().positive().optional(),
-    category: z.string().optional(),
-    minCabins: z.coerce.number().int().positive().optional(),
-    maxPriceMinor: z.coerce.number().int().positive().optional(),
-    country: stringArrayParamSchema,
-    sailingArea: stringArrayParamSchema,
-    charterCompany: stringArrayParamSchema,
-    marina: stringArrayParamSchema,
-    boatType: stringArrayParamSchema,
-    model: stringArrayParamSchema,
-    crew: stringArrayParamSchema,
-    mainsailType: stringArrayParamSchema,
-    equipment: stringArrayParamSchema,
-    startDate: dateStringSchema.optional(),
-    duration: z.coerce.number().int().positive().optional(),
-    dateFlexibility: z.enum(["on-day", "1-3-days", "1-week", "2-weeks", "1-month"]).optional(),
-    minLength: z.coerce.number().nonnegative().optional(),
-    maxLength: z.coerce.number().nonnegative().optional(),
-    maxCabins: z.coerce.number().int().nonnegative().optional(),
-    minBerths: z.coerce.number().int().nonnegative().optional(),
-    maxBerths: z.coerce.number().int().nonnegative().optional(),
-    minBathrooms: z.coerce.number().int().nonnegative().optional(),
-    maxBathrooms: z.coerce.number().int().nonnegative().optional(),
-    minPriceMinor: z.coerce.number().int().nonnegative().optional(),
-    minBoatAge: z.coerce.number().int().nonnegative().optional(),
-    maxBoatAge: z.coerce.number().int().nonnegative().optional(),
-    yearFrom: z.coerce.number().int().optional(),
-    yearTo: z.coerce.number().int().optional(),
-    minGuestRating: z.coerce.number().min(0).max(5).optional(),
-    maxGuestRating: z.coerce.number().min(0).max(5).optional(),
-    withoutAvailabilityConfirmation: booleanParamSchema,
-    underTemporaryBooking: booleanParamSchema,
-    depositInsurance: booleanParamSchema,
-    petsAllowed: booleanParamSchema,
-    currency: z.string().length(3).default("EUR"),
-    cursor: z.string().optional(),
-    limit: z.coerce.number().int().min(1).max(500).optional(),
-    page: z.coerce.number().int().min(1).optional(),
-    pageSize: z.coerce.number().int().min(1).max(50).default(10),
-    sort: z
-      .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
-      .default("recommended"),
-  })
-  .superRefine((input, context) => {
-    if (input.cursor && input.page !== undefined) {
-      context.addIssue({
-        code: "custom",
-        message: "Do not combine cursor with page pagination",
-        path: ["page"],
-      });
-    }
+export const listingSearchInputBaseSchema = z.object({
+  destination: z.string().optional(),
+  query: z.string().optional(),
+  checkIn: dateStringSchema.optional(),
+  checkOut: dateStringSchema.optional(),
+  guests: z.coerce.number().int().positive().optional(),
+  category: z.string().optional(),
+  minCabins: z.coerce.number().int().positive().optional(),
+  maxPriceMinor: z.coerce.number().int().positive().optional(),
+  country: stringArrayParamSchema,
+  sailingArea: stringArrayParamSchema,
+  charterCompany: stringArrayParamSchema,
+  marina: stringArrayParamSchema,
+  boatType: stringArrayParamSchema,
+  model: stringArrayParamSchema,
+  crew: stringArrayParamSchema,
+  mainsailType: stringArrayParamSchema,
+  equipment: stringArrayParamSchema,
+  startDate: dateStringSchema.optional(),
+  duration: z.coerce.number().int().positive().optional(),
+  dateFlexibility: z.enum(["on-day", "1-3-days", "1-week", "2-weeks", "1-month"]).optional(),
+  minLength: z.coerce.number().nonnegative().optional(),
+  maxLength: z.coerce.number().nonnegative().optional(),
+  maxCabins: z.coerce.number().int().nonnegative().optional(),
+  minBerths: z.coerce.number().int().nonnegative().optional(),
+  maxBerths: z.coerce.number().int().nonnegative().optional(),
+  minBathrooms: z.coerce.number().int().nonnegative().optional(),
+  maxBathrooms: z.coerce.number().int().nonnegative().optional(),
+  minPriceMinor: z.coerce.number().int().nonnegative().optional(),
+  minBoatAge: z.coerce.number().int().nonnegative().optional(),
+  maxBoatAge: z.coerce.number().int().nonnegative().optional(),
+  yearFrom: z.coerce.number().int().optional(),
+  yearTo: z.coerce.number().int().optional(),
+  minGuestRating: z.coerce.number().min(0).max(5).optional(),
+  maxGuestRating: z.coerce.number().min(0).max(5).optional(),
+  withoutAvailabilityConfirmation: booleanParamSchema,
+  underTemporaryBooking: booleanParamSchema,
+  depositInsurance: booleanParamSchema,
+  petsAllowed: booleanParamSchema,
+  currency: z.string().length(3).default("EUR"),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(500).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+  sort: z
+    .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
+    .default("recommended"),
+});
 
-    if (input.checkIn && input.checkOut && input.checkIn >= input.checkOut) {
-      context.addIssue({
-        code: "custom",
-        message: "checkOut must be after checkIn",
-        path: ["checkOut"],
-      });
-    }
-  });
+type ListingSearchValidationInput = {
+  checkIn?: string;
+  checkOut?: string;
+  cursor?: string;
+  page?: number;
+};
+
+const validateListingSearchInput = (
+  input: ListingSearchValidationInput,
+  context: z.RefinementCtx,
+) => {
+  if (input.cursor && input.page !== undefined) {
+    context.addIssue({
+      code: "custom",
+      message: "Do not combine cursor with page pagination",
+      path: ["page"],
+    });
+  }
+
+  if (input.checkIn && input.checkOut && input.checkIn >= input.checkOut) {
+    context.addIssue({
+      code: "custom",
+      message: "checkOut must be after checkIn",
+      path: ["checkOut"],
+    });
+  }
+};
+
+export const listingSearchInputSchema = listingSearchInputBaseSchema.superRefine(
+  validateListingSearchInput,
+);
+
+export const partialListingSearchInputSchema = listingSearchInputBaseSchema
+  .partial()
+  .default({})
+  .superRefine(validateListingSearchInput);
 
 export const searchResultSchema = z.object({
   items: z.array(

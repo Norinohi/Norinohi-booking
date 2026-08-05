@@ -6,6 +6,7 @@ import {
   facetsSchema,
   listingSearchInputSchema,
   mapResultSchema,
+  partialListingSearchInputSchema,
   searchResultSchema,
   suggestionSchema,
 } from "../contracts/catalog";
@@ -71,7 +72,7 @@ export const charterSearchRouter = {
         sort: "recommended",
       }),
     })
-    .input(listingSearchInputSchema.partial().default({}))
+    .input(partialListingSearchInputSchema)
     .output(facetsSchema)
     .handler(({ input }) => listSearchFacets(db, input)),
   mapMarkers: publicProcedure
@@ -90,7 +91,7 @@ export const charterSearchRouter = {
         limit: 50,
       }),
     })
-    .input(listingSearchInputSchema.partial().default({}))
+    .input(partialListingSearchInputSchema)
     .output(mapResultSchema)
     .handler(async ({ input }) => {
       const results = await searchListings(db, {
