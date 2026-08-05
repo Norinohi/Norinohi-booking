@@ -257,6 +257,42 @@ const amenities = [
     code: "autopilot",
     name: "Autopilot",
   },
+  {
+    id: "amn_cleaning_fee",
+    amenityCategoryId: "amc_comfort",
+    code: "cleaning-fee",
+    name: "Cleaning fee",
+  },
+  {
+    id: "amn_transit_log",
+    amenityCategoryId: "amc_equipment",
+    code: "transit-log",
+    name: "Transit log",
+  },
+  {
+    id: "amn_marina_fees",
+    amenityCategoryId: "amc_equipment",
+    code: "marina-fees",
+    name: "Harbor and marina fees",
+  },
+  {
+    id: "amn_sunbathing_area",
+    amenityCategoryId: "amc_comfort",
+    code: "sunbathing-area",
+    name: "Spacious sunbathing area",
+  },
+  {
+    id: "amn_gas_bbq",
+    amenityCategoryId: "amc_comfort",
+    code: "gas-bbq",
+    name: "Gas BBQ",
+  },
+  {
+    id: "amn_hot_tub",
+    amenityCategoryId: "amc_leisure",
+    code: "hot-tub",
+    name: "Hot tub",
+  },
 ];
 
 const yachts = [
@@ -677,6 +713,49 @@ const allowsPets = (baseId: string, categoryId: string) =>
 const hasConfirmedAvailability = (slotId: string, status: string) =>
   status !== "available" || !slotId.includes("2026_08_08");
 
+const mandatoryExtraIds = ["amn_cleaning_fee", "amn_transit_log", "amn_marina_fees"] as const;
+
+const mandatoryExtraPrice = (amenityId: string) => {
+  switch (amenityId) {
+    case "amn_cleaning_fee":
+      return 15_000;
+    case "amn_transit_log":
+      return 40_000;
+    case "amn_marina_fees":
+      return 15_000;
+    default:
+      return 0;
+  }
+};
+
+const optionalExtraIdsFor = (categoryId: string) => {
+  if (categoryId === "cat_luxury") return ["amn_sunbathing_area", "amn_gas_bbq", "amn_hot_tub"];
+  if (categoryId === "cat_catamaran") return ["amn_sunbathing_area", "amn_gas_bbq"];
+  return ["amn_gas_bbq"];
+};
+
+const optionalExtraPrice = (amenityId: string) => {
+  switch (amenityId) {
+    case "amn_sunbathing_area":
+      return 10_000;
+    case "amn_gas_bbq":
+      return 20_000;
+    case "amn_hot_tub":
+      return 10_000;
+    default:
+      return 0;
+  }
+};
+
+const specDetailsFor = (item: (typeof yachts)[number]) => ({
+  beamM: (Number(item.lengthM) * (item.categoryId === "cat_catamaran" ? 0.58 : 0.28)).toFixed(2),
+  draftM: (item.categoryId === "cat_motor" ? 1.05 : 1.25).toFixed(2),
+  engines: item.categoryId === "cat_catamaran" ? 2 : 1,
+  enginePower: item.categoryId === "cat_motor" ? "2 x 435 hp" : "85 hp",
+  fuelCapacity: item.categoryId === "cat_motor" ? 1300 : 600,
+  waterCapacity: item.categoryId === "cat_catamaran" ? 700 : 360,
+});
+
 const insertStaticData = async () => {
   await db.insert(country).values(countries).onConflictDoNothing();
   await db.insert(region).values(regions).onConflictDoNothing();
@@ -831,10 +910,16 @@ async function main() {
         id: `lspec_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}`,
         listingId: item.listingId,
         lengthM: item.lengthM,
+        beamM: specDetailsFor(item).beamM,
+        draftM: specDetailsFor(item).draftM,
         yearBuilt: item.yearBuilt,
         cabins: item.cabins,
         berths: item.berths,
         heads: item.heads,
+        engines: specDetailsFor(item).engines,
+        enginePower: specDetailsFor(item).enginePower,
+        fuelCapacity: specDetailsFor(item).fuelCapacity,
+        waterCapacity: specDetailsFor(item).waterCapacity,
         sailType: sailTypeFor(item.categoryId, item.yearBuilt),
       })),
     )
@@ -842,10 +927,16 @@ async function main() {
       target: listingSpecification.listingId,
       set: {
         lengthM: sql.raw("excluded.length_m"),
+        beamM: sql.raw("excluded.beam_m"),
+        draftM: sql.raw("excluded.draft_m"),
         yearBuilt: sql.raw("excluded.year_built"),
         cabins: sql.raw("excluded.cabins"),
         berths: sql.raw("excluded.berths"),
         heads: sql.raw("excluded.heads"),
+        engines: sql.raw("excluded.engines"),
+        enginePower: sql.raw("excluded.engine_power"),
+        fuelCapacity: sql.raw("excluded.fuel_capacity"),
+        waterCapacity: sql.raw("excluded.water_capacity"),
         sailType: sql.raw("excluded.sail_type"),
       },
     });
@@ -869,14 +960,43 @@ async function main() {
     .insert(listingAmenity)
     .values(
       yachts.flatMap((item) =>
-        item.amenityIds.map((amenityId) => ({
+        [
+          ...item.amenityIds.map((amenityId) => ({
+            amenityId,
+            obligatory: false,
+            priceMinor: null,
+            priceCurrency: null,
+          })),
+          ...mandatoryExtraIds.map((amenityId) => ({
+            amenityId,
+            obligatory: true,
+            priceMinor: mandatoryExtraPrice(amenityId),
+            priceCurrency: "EUR",
+          })),
+          ...optionalExtraIdsFor(item.categoryId).map((amenityId) => ({
+            amenityId,
+            obligatory: false,
+            priceMinor: optionalExtraPrice(amenityId),
+            priceCurrency: "EUR",
+          })),
+        ].map(({ amenityId, obligatory, priceMinor, priceCurrency }) => ({
           id: `lamn_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${amenityId.replace("amn_", "")}`,
           listingId: item.listingId,
           amenityId,
+          obligatory,
+          priceMinor,
+          priceCurrency,
         })),
       ),
     )
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [listingAmenity.listingId, listingAmenity.amenityId],
+      set: {
+        obligatory: sql.raw("excluded.obligatory"),
+        priceMinor: sql.raw("excluded.price_minor"),
+        priceCurrency: sql.raw("excluded.price_currency"),
+      } as any,
+    });
 
   await db
     .insert(listingCheckinRule)

@@ -125,7 +125,9 @@ export async function rebuildListingSearchDocs(
     ) media on true
     left join lateral (
       select
-        jsonb_agg(a.name order by a.name) as amenities,
+        jsonb_agg(a.name order by a.name) filter (
+          where la.obligatory = false and la.price_minor is null
+        ) as amenities,
         string_agg(a.name, ' ') as amenity_text
       from listing_amenity la
       join amenity a on a.id = la.amenity_id

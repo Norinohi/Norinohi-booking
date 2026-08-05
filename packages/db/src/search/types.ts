@@ -90,6 +90,57 @@ export type ListingSearchResult = {
   pagination?: ListingSearchPagination;
 };
 
+export type ListingDetail = ListingSearchDoc & {
+  description: string;
+  overview: { code: string; label: string; value: string }[];
+  includedAmenities: { code: string; label: string }[];
+  mandatoryExtras: ListingPricedItem[];
+  optionalExtras: ListingPricedItem[];
+  importantInformation: {
+    charterCompany: string;
+    yachtPickupAddress: string;
+    yachtPickup: { date: string | null; time: string | null };
+    yachtDropOff: { date: string | null; time: string | null };
+    cancellationPaymentPolicies: string;
+    sailingLicenseRequired: string;
+    pets: string;
+    paymentMethodsAcceptedByCharterCompany: string[];
+    marinaInformation: string;
+    map: { lat: number; lng: number };
+  };
+  suggestedRoute: {
+    title: string;
+    map: { lat: number; lng: number };
+    stops: {
+      day: number;
+      title: string;
+      description: string;
+      lat: number;
+      lng: number;
+    }[];
+  };
+  reviews: ListingReview[];
+  faq: { id: string; question: string; answer: string }[];
+  popularYachts: ListingSearchDoc[];
+};
+
+export type ListingPricedItem = {
+  code: string;
+  label: string;
+  price: {
+    amountMinor: number;
+    currency: string;
+  };
+  pricingType: "per_booking" | "per_week" | "pay_at_check_in";
+};
+
+export type ListingReview = {
+  id: string;
+  rating: number;
+  author: string;
+  body: string;
+};
+
 export type ListingSearchPagination = {
   page: number;
   pageSize: number;

@@ -25,12 +25,30 @@ const numberRangeSchema = z.object({
   max: z.number(),
 });
 
+const includedItemSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+});
+
+const pricedItemSchema = includedItemSchema.extend({
+  price: moneySchema,
+  pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
+});
+
+const reviewSchema = z.object({
+  id: z.string(),
+  rating: z.number(),
+  author: z.string(),
+  body: z.string(),
+});
+
 export const listingSummarySchema = z.object({
   id: z.string(),
   slug: z.string(),
   title: z.string(),
   category: z.string(),
   crewType: z.string().nullable(),
+  badges: z.array(includedItemSchema),
   builder: z.string(),
   model: z.string(),
   operator: z.string(),
@@ -61,10 +79,73 @@ export const listingSummarySchema = z.object({
   }),
   rating: z.number(),
   reviewCount: z.number().int(),
+  bookingStats: z.object({
+    bookedThisMonth: z.number().int(),
+    viewedToday: z.number().int(),
+  }),
   mainImage: z.string(),
   gallery: z.array(z.string()),
   amenities: z.array(z.string()),
   priceFrom: moneySchema,
+  priceDetails: z.object({
+    periodDays: z.number().int(),
+    perPersonMinor: z.number().int().nullable(),
+    bookingPrepayment: moneySchema,
+  }),
+});
+
+export const listingDetailSchema = listingSummarySchema.extend({
+  description: z.string(),
+  overview: z.array(includedItemSchema.extend({ value: z.string() })),
+  includedAmenities: z.array(includedItemSchema),
+  mandatoryExtras: z.array(pricedItemSchema),
+  optionalExtras: z.array(pricedItemSchema),
+  importantInformation: z.object({
+    charterCompany: z.string(),
+    yachtPickupAddress: z.string(),
+    yachtPickup: z.object({
+      date: z.string().nullable(),
+      time: z.string().nullable(),
+    }),
+    yachtDropOff: z.object({
+      date: z.string().nullable(),
+      time: z.string().nullable(),
+    }),
+    cancellationPaymentPolicies: z.string(),
+    sailingLicenseRequired: z.string(),
+    pets: z.string(),
+    paymentMethodsAcceptedByCharterCompany: z.array(z.string()),
+    marinaInformation: z.string(),
+    map: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }),
+  }),
+  suggestedRoute: z.object({
+    title: z.string(),
+    map: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }),
+    stops: z.array(
+      z.object({
+        day: z.number().int(),
+        title: z.string(),
+        description: z.string(),
+        lat: z.number(),
+        lng: z.number(),
+      }),
+    ),
+  }),
+  reviews: z.array(reviewSchema),
+  faq: z.array(
+    z.object({
+      id: z.string(),
+      question: z.string(),
+      answer: z.string(),
+    }),
+  ),
+  popularYachts: z.array(listingSummarySchema),
 });
 
 export const listingSearchInputSchema = z.object({
@@ -195,6 +276,7 @@ export const mapResultSchema = z.object({
       lng: z.number(),
       priceFromMinor: z.number().int().nullable(),
       currency: z.string().length(3).nullable(),
+      listing: listingSummarySchema,
     }),
   ),
 });

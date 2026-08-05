@@ -1,10 +1,5 @@
 import { db } from "@yacht-charter/db";
-import {
-  listMapMarkers,
-  listSearchFacets,
-  listSearchSuggestions,
-  searchListings,
-} from "@yacht-charter/db/search";
+import { listSearchFacets, listSearchSuggestions, searchListings } from "@yacht-charter/db/search";
 import { z } from "zod";
 
 import {
@@ -85,7 +80,7 @@ export const charterSearchRouter = {
       operationId: "listCharterSearchMapMarkers",
       summary: "List search map markers",
       description:
-        "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, display title, coordinates, and price hint.",
+        "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, coordinates, price hint, and a card-ready listing summary for map popups and side panels.",
       tags: ["Charter Search"],
       successDescription: "Map markers for listings matching the supplied filters.",
       spec: withParameterExamples({
@@ -96,7 +91,27 @@ export const charterSearchRouter = {
     })
     .input(listingSearchInputSchema.partial().default({}))
     .output(mapResultSchema)
-    .handler(async ({ input }) => ({ markers: await listMapMarkers(db, input) })),
+    .handler(async ({ input }) => {
+      const results = await searchListings(db, {
+        ...input,
+        limit: input.limit ?? 50,
+        page: undefined,
+      });
+      return {
+        markers: results.items
+          .filter((item) => item.lat !== null && item.lng !== null)
+          .map((item) => ({
+            listingId: item.listingId,
+            slug: item.slug,
+            title: item.title,
+            lat: item.lat ?? 0,
+            lng: item.lng ?? 0,
+            priceFromMinor: item.priceFromMinor,
+            currency: item.currency,
+            listing: presentListingSummary(item),
+          })),
+      };
+    }),
   suggestions: publicProcedure
     .route({
       method: "GET",

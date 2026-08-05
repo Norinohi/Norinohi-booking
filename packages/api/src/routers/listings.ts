@@ -1,16 +1,16 @@
 import { ORPCError } from "@orpc/server";
 import { db } from "@yacht-charter/db";
 import {
-  getListingByIdOrSlug,
+  getListingDetailByIdOrSlug,
   listListingReviews,
   listSimilarListings,
 } from "@yacht-charter/db/search";
 import { z } from "zod";
 
-import { listingSummarySchema } from "../contracts/catalog";
+import { listingDetailSchema, listingSummarySchema } from "../contracts/catalog";
 import { publicProcedure } from "../index";
 import { withParameterExamples } from "./openapi-examples";
-import { presentListingSummary } from "./presenters";
+import { presentListingDetail, presentListingSummary } from "./presenters";
 
 const idInputSchema = z.object({ id: z.string() });
 const listingIdInputSchema = z.object({ listingId: z.string() });
@@ -26,19 +26,19 @@ export const listingsRouter = {
         "Returns the customer-facing listing summary for a canonical yacht. The id path value can be either the listing ID or its slug.",
       tags: ["Listings"],
       successDescription:
-        "Listing summary with base, specs, media, amenities, rating, and price hint.",
+        "Rich listing detail with summary, specs, media, amenities, extras, policies, route, reviews, FAQ, and popular yachts.",
       spec: withParameterExamples({
         id: "ylst_yacht-sunreef-60-celeste",
       }),
     })
     .input(idInputSchema)
-    .output(listingSummarySchema)
+    .output(listingDetailSchema)
     .handler(async ({ input }) => {
-      const listing = await getListingByIdOrSlug(db, input.id);
+      const listing = await getListingDetailByIdOrSlug(db, input.id);
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
-      return presentListingSummary(listing);
+      return presentListingDetail(listing);
     }),
   reviews: publicProcedure
     .route({

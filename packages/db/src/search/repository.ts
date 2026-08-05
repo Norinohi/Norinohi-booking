@@ -6,9 +6,12 @@ import { decodeSearchCursor, encodeSearchCursor, type SearchCursor } from "./cur
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
+  ListingDetail,
   ListingFacets,
   ListingFacetOption,
   ListingMapMarker,
+  ListingPricedItem,
+  ListingReview,
   ListingSearchDoc,
   ListingSearchInput,
   ListingSearchPagination,
@@ -117,6 +120,119 @@ export async function getListingByIdOrSlug(
     limit 1
   `);
   return rows.rows[0] ? normalizeSearchRow(rows.rows[0]) : undefined;
+}
+
+export async function getListingDetailByIdOrSlug(
+  db: NodePgDatabase<typeof schema>,
+  idOrSlug: string,
+): Promise<ListingDetail | undefined> {
+  const listing = await getListingByIdOrSlug(db, idOrSlug);
+  if (!listing) return undefined;
+
+  const [infoRows, amenityRows, faqRows, reviews, popularYachts] = await Promise.all([
+    db.execute<{
+      beamM: string | null;
+      draftM: string | null;
+      engines: number | null;
+      enginePower: string | null;
+      fuelCapacity: number | null;
+      waterCapacity: number | null;
+      checkInTime: string | null;
+      checkOutTime: string | null;
+    }>(sql`
+      select
+        spec.beam_m as "beamM",
+        spec.draft_m as "draftM",
+        spec.engines,
+        spec.engine_power as "enginePower",
+        spec.fuel_capacity as "fuelCapacity",
+        spec.water_capacity as "waterCapacity",
+        bs.check_in_time as "checkInTime",
+        bs.check_out_time as "checkOutTime"
+      from listing l
+      left join listing_specification spec on spec.listing_id = l.id
+      left join base bs on bs.id = l.home_base_id
+      where l.id = ${listing.listingId}
+      limit 1
+    `),
+    db.execute<{
+      code: string | null;
+      label: string;
+      obligatory: boolean;
+      priceMinor: number | null;
+      priceCurrency: string | null;
+    }>(sql`
+      select
+        a.code,
+        a.name as label,
+        la.obligatory,
+        la.price_minor as "priceMinor",
+        la.price_currency as "priceCurrency"
+      from listing_amenity la
+      join amenity a on a.id = la.amenity_id
+      where la.listing_id = ${listing.listingId}
+      order by la.obligatory desc, la.price_minor nulls first, a.name asc
+    `),
+    db.execute<{ id: string; question: string; answer: string }>(sql`
+      select id, question, answer
+      from faq
+      where listing_id = ${listing.listingId}
+      order by sort_order asc, created_at asc
+    `),
+    listListingReviews(db, listing.listingId),
+    listSimilarListings(db, listing.listingId),
+  ]);
+  const info = infoRows.rows[0];
+  const amenities = amenityRows.rows.map((item) => ({
+    ...item,
+    code: item.code ?? valueForLabel(item.label),
+  }));
+  const includedAmenities = amenities
+    .filter((item) => !item.obligatory && item.priceMinor === null)
+    .map((item) => ({ code: item.code, label: item.label }));
+  const mandatoryExtras = amenities
+    .filter((item) => item.obligatory && item.priceMinor !== null)
+    .map((item) => pricedItem(item, listing.currency));
+  const optionalExtras = amenities
+    .filter((item) => !item.obligatory && item.priceMinor !== null)
+    .map((item) => pricedItem(item, listing.currency));
+
+  return {
+    ...listing,
+    description: descriptionFor(listing),
+    overview: overviewFor(listing, info),
+    includedAmenities,
+    mandatoryExtras,
+    optionalExtras,
+    importantInformation: {
+      charterCompany: listing.operator,
+      yachtPickupAddress: `${listing.baseName}, ${listing.location}, ${listing.country}`,
+      yachtPickup: {
+        date: listing.availableFrom,
+        time: info?.checkInTime ?? null,
+      },
+      yachtDropOff: {
+        date: listing.availableTo,
+        time: info?.checkOutTime ?? null,
+      },
+      cancellationPaymentPolicies:
+        "Cancellation and prepayment policies vary according to your selection. Payment conditions are confirmed during quote and booking.",
+      sailingLicenseRequired:
+        listing.crewType === "bareboat"
+          ? "Valid sailing license or local equivalent required."
+          : "No license is needed when booking with crew or skipper.",
+      pets: listing.petsAllowed
+        ? "Pets are allowed on this yacht with charter company confirmation."
+        : "Pets are not permitted on this yacht.",
+      paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
+      marinaInformation: `${listing.baseName} is located in ${listing.location}, ${listing.country}. Check-in and check-out times are provided by the charter base.`,
+      map: { lat: listing.lat ?? 0, lng: listing.lng ?? 0 },
+    },
+    suggestedRoute: suggestedRouteFor(listing),
+    reviews,
+    faq: faqRows.rows,
+    popularYachts,
+  };
 }
 
 export async function listSearchFacets(
@@ -345,7 +461,10 @@ export async function listAvailabilityCalendar(
   };
 }
 
-export async function listListingReviews(db: NodePgDatabase<typeof schema>, listingId: string) {
+export async function listListingReviews(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+): Promise<ListingReview[]> {
   const rows = await db.execute<{
     id: string;
     rating: number;
@@ -584,6 +703,188 @@ function paginationFor(input: {
     hasPreviousPage: input.page > 1,
     hasNextPage: input.page < totalPages,
   };
+}
+
+function pricedItem(
+  item: {
+    code: string;
+    label: string;
+    priceMinor: number | null;
+    priceCurrency: string | null;
+  },
+  fallbackCurrency: string | null,
+): ListingPricedItem {
+  return {
+    code: item.code,
+    label: item.label,
+    price: {
+      amountMinor: item.priceMinor ?? 0,
+      currency: item.priceCurrency ?? fallbackCurrency ?? "EUR",
+    },
+    pricingType: "pay_at_check_in",
+  };
+}
+
+function descriptionFor(listing: ListingSearchDoc): string {
+  const year = listing.yearBuilt ? `Built in ${listing.yearBuilt}` : "This yacht";
+  const capacity = listing.berths
+    ? `accommodates up to ${listing.berths} guests`
+    : "is ready for a comfortable charter";
+  const layout = [
+    listing.cabins ? `${listing.cabins} cabins` : undefined,
+    listing.heads ? `${listing.heads} bathrooms` : undefined,
+  ]
+    .filter(Boolean)
+    .join(" and ");
+
+  return `${year}, ${listing.title} ${capacity}${layout ? ` with ${layout}` : ""}. Based at ${listing.baseName} in ${listing.location}, this ${listing.category ?? "yacht"} is set up for a smooth charter with ${listing.operator}.`;
+}
+
+function overviewFor(
+  listing: ListingSearchDoc,
+  info:
+    | {
+        beamM: string | null;
+        draftM: string | null;
+        engines: number | null;
+        enginePower: string | null;
+        fuelCapacity: number | null;
+        waterCapacity: number | null;
+      }
+    | undefined,
+): { code: string; label: string; value: string }[] {
+  return [
+    { code: "location", label: "Location", value: `${listing.location}, ${listing.country}` },
+    { code: "year", label: "Year", value: String(listing.yearBuilt ?? "Unknown") },
+    { code: "boat-type", label: "Boat type", value: listing.category ?? "Yacht" },
+    { code: "cabins", label: "Cabins", value: String(listing.cabins ?? 0) },
+    { code: "bathrooms", label: "Bathrooms", value: String(listing.heads ?? 0) },
+    { code: "length", label: "Length", value: metresValue(listing.lengthM) },
+    { code: "mainsail", label: "Type of mainsail", value: listing.sailType ?? "Not specified" },
+    { code: "draught", label: "Draught", value: metresValue(info?.draftM) },
+    { code: "beam", label: "Beam", value: metresValue(info?.beamM) },
+    {
+      code: "fuel-tank",
+      label: "Fuel tank",
+      value: info?.fuelCapacity ? `${info.fuelCapacity} l` : "Not specified",
+    },
+    {
+      code: "water-tank",
+      label: "Water tank",
+      value: info?.waterCapacity ? `${info.waterCapacity} l` : "Not specified",
+    },
+    {
+      code: "engine",
+      label: "Engine",
+      value: [info?.engines, info?.enginePower].filter(Boolean).join(" x ") || "Not specified",
+    },
+  ];
+}
+
+function metresValue(value: string | null | undefined): string {
+  return value ? `${Number(value).toFixed(2)} m` : "Not specified";
+}
+
+function suggestedRouteFor(listing: ListingSearchDoc): ListingDetail["suggestedRoute"] {
+  const lat = listing.lat ?? 0;
+  const lng = listing.lng ?? 0;
+  const places = routePlacesFor(listing.region, listing.location);
+
+  return {
+    title: `7-day itinerary through ${listing.region}`,
+    map: { lat, lng },
+    stops: places.map((place, index) => ({
+      day: index + 1,
+      title: `Day ${index + 1} - ${place.title}`,
+      description: place.description,
+      lat: lat + place.latOffset,
+      lng: lng + place.lngOffset,
+    })),
+  };
+}
+
+function routePlacesFor(region: string, location: string) {
+  if (region.toLowerCase().includes("dalmatia")) {
+    return [
+      {
+        title: location,
+        description: "Check-in and evening in the marina.",
+        latOffset: 0,
+        lngOffset: 0,
+      },
+      {
+        title: "Hvar",
+        description: "Sail to a lively island stop with protected bays.",
+        latOffset: -0.18,
+        lngOffset: 0.15,
+      },
+      {
+        title: "Vis",
+        description: "Continue to clear water and quiet anchorages.",
+        latOffset: -0.38,
+        lngOffset: 0.04,
+      },
+      {
+        title: "Blue Cave",
+        description: "Visit one of the Adriatic's best-known natural sights.",
+        latOffset: -0.47,
+        lngOffset: -0.1,
+      },
+      {
+        title: "Korcula",
+        description: "Explore old-town streets and a sheltered overnight stop.",
+        latOffset: -0.56,
+        lngOffset: 0.42,
+      },
+      {
+        title: "Brac",
+        description: "Return through island beaches and swim stops.",
+        latOffset: -0.26,
+        lngOffset: 0.32,
+      },
+      { title: location, description: "Final morning return to base.", latOffset: 0, lngOffset: 0 },
+    ];
+  }
+
+  return [
+    {
+      title: location,
+      description: "Check-in and provisioning at the charter base.",
+      latOffset: 0,
+      lngOffset: 0,
+    },
+    {
+      title: `${region} coast`,
+      description: "Short sail to a protected anchorage.",
+      latOffset: 0.12,
+      lngOffset: 0.16,
+    },
+    {
+      title: "Island bay",
+      description: "Swimming stop and relaxed overnight.",
+      latOffset: 0.18,
+      lngOffset: -0.12,
+    },
+    {
+      title: "Old town",
+      description: "Harbor visit with restaurants ashore.",
+      latOffset: -0.12,
+      lngOffset: 0.18,
+    },
+    {
+      title: "Quiet cove",
+      description: "Sheltered bay for paddleboarding and snorkeling.",
+      latOffset: -0.18,
+      lngOffset: -0.08,
+    },
+    {
+      title: "Marina approach",
+      description: "Easy sail back toward the base area.",
+      latOffset: 0.08,
+      lngOffset: -0.2,
+    },
+    { title: location, description: "Check-out at the home marina.", latOffset: 0, lngOffset: 0 },
+  ];
 }
 
 function optionsFromStrings(values: string[]): ListingFacetOption[] {
