@@ -813,7 +813,14 @@ const insertStaticData = async () => {
         }),
       ),
     )
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: base.id,
+      set: {
+        email: sql`excluded.email`,
+        phone: sql`excluded.phone`,
+        website: sql`excluded.website`,
+      },
+    });
   await db.insert(builder).values(builders).onConflictDoNothing();
   await db.insert(yachtModel).values(models).onConflictDoNothing();
   await db.insert(yachtCategory).values(categories).onConflictDoNothing();
