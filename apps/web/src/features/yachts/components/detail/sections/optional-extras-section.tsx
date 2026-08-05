@@ -14,7 +14,7 @@ export default function OptionalExtrasSection() {
   const { data } = useListingDetail();
   const [selected, setSelected] = useState<string[]>([]);
 
-  function toggle(id: string, checked: boolean) {
+  function toggleExtra(id: string, checked: boolean) {
     setSelected((current) => (checked ? [...current, id] : current.filter((it) => it !== id)));
   }
 
@@ -30,7 +30,7 @@ export default function OptionalExtrasSection() {
           >
             <Checkbox
               checked={selected.includes(item.code)}
-              onCheckedChange={(checked) => toggle(item.code, checked)}
+              onCheckedChange={(checked) => toggleExtra(item.code, checked)}
             />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="text-base leading-5.5 text-foreground">{item.label}</p>

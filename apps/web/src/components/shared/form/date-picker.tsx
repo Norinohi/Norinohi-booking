@@ -63,7 +63,7 @@ export default function DatePicker({
         ? day(props.value)
         : null;
 
-  function clear() {
+  function clearDates() {
     if (props.mode === "range") props.onValueChange(undefined);
     else props.onValueChange(undefined);
   }
@@ -105,7 +105,7 @@ export default function DatePicker({
       </Popover>
 
       {label && clearLabel ? (
-        <FieldClear label={clearLabel} className="right-3" onClear={clear} />
+        <FieldClear label={clearLabel} className="right-3" onClear={clearDates} />
       ) : null}
     </div>
   );

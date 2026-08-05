@@ -32,7 +32,7 @@ export default function PaymentStep() {
     question: t("question.cta"),
   }[method];
 
-  async function submit() {
+  async function submitPayment() {
     if (method !== "card" && !(await trigger("payment"))) {
       for (const field of Object.keys(getValues(`payment.${method}`))) {
         const path = `payment.${method}.${field}` as Path<BookingValues>;
@@ -78,7 +78,7 @@ export default function PaymentStep() {
       <span aria-hidden className="block h-px w-full bg-border" />
 
       <div className="p-5">
-        <Button variant="brand" className="h-13 w-full" onClick={() => void submit()}>
+        <Button variant="brand" className="h-13 w-full" onClick={() => void submitPayment()}>
           {cta}
         </Button>
       </div>

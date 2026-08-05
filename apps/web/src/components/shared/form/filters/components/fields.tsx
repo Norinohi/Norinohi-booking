@@ -187,7 +187,7 @@ export function RangeField({
   showScale?: boolean;
 }) {
   const t = useTranslations("Filters");
-  const show = (n: number) => (format ? format(n) : String(n));
+  const formatValue = (n: number) => (format ? format(n) : String(n));
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -197,11 +197,11 @@ export function RangeField({
       <div className="flex items-center gap-4">
         <span className="flex min-w-0 flex-1 items-center gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {show(value[0])}
+          {formatValue(value[0])}
         </span>
         <span className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {show(value[1])}
+          {formatValue(value[1])}
         </span>
         {unit ? (
           <UnitSelect

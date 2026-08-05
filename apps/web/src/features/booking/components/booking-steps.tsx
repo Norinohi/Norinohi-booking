@@ -45,7 +45,7 @@ export default function BookingSteps() {
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
 
-  async function advance(step: Step, index: number) {
+  async function advanceStep(step: Step, index: number) {
     if (await trigger(step)) {
       setCompleted((prev) => new Set(prev).add(step));
       setOpen(STEPS[index + 1]?.id ?? null);
@@ -105,7 +105,7 @@ export default function BookingSteps() {
                     <Button
                       variant="brand"
                       className="h-13 w-full"
-                      onClick={() => void advance(step, index)}
+                      onClick={() => void advanceStep(step, index)}
                     >
                       {t(cta)}
                     </Button>

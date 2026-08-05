@@ -25,33 +25,33 @@ export function toSearchInput(
   input.duration = Number(filters.duration);
   input.dateFlexibility = filters.dateFlexibility as ResultsInput["dateFlexibility"];
 
-  const active = (key: keyof FiltersState) => !isSameValue(filters[key], defaults[key]);
+  const isActive = (key: keyof FiltersState) => !isSameValue(filters[key], defaults[key]);
 
-  if (active("length")) {
+  if (isActive("length")) {
     input.minLength = filters.length[0] * FEET_TO_METRES;
     input.maxLength = filters.length[1] * FEET_TO_METRES;
   }
-  if (active("cabins")) {
+  if (isActive("cabins")) {
     input.minCabins = filters.cabins[0];
     input.maxCabins = filters.cabins[1];
   }
-  if (active("berths")) {
+  if (isActive("berths")) {
     input.minBerths = filters.berths[0];
     input.maxBerths = filters.berths[1];
   }
-  if (active("bathrooms")) {
+  if (isActive("bathrooms")) {
     input.minBathrooms = filters.bathrooms[0];
     input.maxBathrooms = filters.bathrooms[1];
   }
-  if (active("price")) {
+  if (isActive("price")) {
     input.minPriceMinor = filters.price[0] * 100;
     input.maxPriceMinor = filters.price[1] * 100;
   }
-  if (active("boatAge")) {
+  if (isActive("boatAge")) {
     input.minBoatAge = filters.boatAge[0];
     input.maxBoatAge = filters.boatAge[1];
   }
-  if (active("guestRating")) {
+  if (isActive("guestRating")) {
     input.minGuestRating = filters.guestRating[0];
     input.maxGuestRating = filters.guestRating[1];
   }

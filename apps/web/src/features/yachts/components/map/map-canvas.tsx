@@ -35,7 +35,7 @@ export default function MapCanvas({
 }) {
   const [ready, setReady] = useState(false);
 
-  function dismiss(target: EventTarget | null) {
+  function dismissPopup(target: EventTarget | null) {
     if (target instanceof Element && target.closest(".mapboxgl-marker")) return;
     onBackgroundPress?.();
   }
@@ -51,8 +51,8 @@ export default function MapCanvas({
         onReady?.(event.target);
       }}
       onIdle={() => setReady(true)}
-      onMouseDown={(event) => dismiss(event.originalEvent.target)}
-      onTouchStart={(event) => dismiss(event.originalEvent.target)}
+      onMouseDown={(event) => dismissPopup(event.originalEvent.target)}
+      onTouchStart={(event) => dismissPopup(event.originalEvent.target)}
     >
       {ready ? children : null}
     </Map>
