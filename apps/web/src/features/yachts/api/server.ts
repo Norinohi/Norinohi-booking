@@ -2,7 +2,7 @@ import "server-only";
 
 import { dehydrate } from "@tanstack/react-query";
 
-import { facetsQueryOptions } from "@/components/shared/form/filters/lib/queries";
+import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getQueryClient } from "@/utils/query-client";
 
 export async function prefetchSearch() {

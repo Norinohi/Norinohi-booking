@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { Option } from "../lib/options";
-import { facetsQueryOptions } from "../lib/queries";
+import { facetsQueryOptions } from "../api/queries";
 
 type FilterOptions = {
   countries: Option[];

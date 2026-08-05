@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { facetsQueryOptions } from "../lib/queries";
+import { facetsQueryOptions } from "../api/queries";
 import {
   buildDefaultFilters,
   EMPTY_RANGES,
