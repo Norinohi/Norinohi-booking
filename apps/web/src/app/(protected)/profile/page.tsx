@@ -2,9 +2,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import Hydrated from "@/components/shared/layout/hydrated";
 import { authClient } from "@/lib/auth-client";
 
-import { ProfileScreen } from "@/features/profile";
+import { prefetchProfile, ProfileScreen } from "@/features/profile";
 
 export async function generateMetadata() {
   const t = await getTranslations("Profile");
@@ -23,5 +24,9 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  return <ProfileScreen user={{ name: session.user.name, email: session.user.email }} />;
+  return (
+    <Hydrated prefetch={prefetchProfile}>
+      <ProfileScreen />
+    </Hydrated>
+  );
 }

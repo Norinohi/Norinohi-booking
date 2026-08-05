@@ -22,6 +22,7 @@
     "@yacht-charter/env": "workspace:*",
     "@yacht-charter/providers": "workspace:*",
     "dotenv": "catalog:",
+    "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

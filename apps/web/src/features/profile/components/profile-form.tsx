@@ -22,54 +22,113 @@ import {
   DialogTrigger,
 } from "@yacht-charter/ui/components/overlay/dialog";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import { authClient } from "@/lib/auth-client";
+
 import deactivateIllustration from "../assets/deactivate-account.png";
+import { useDeactivateProfile, useUpdateProfile } from "../hooks/use-profile";
+import type { Profile } from "../types";
+import ChangePasswordDialog from "./change-password-dialog";
 
 /*
  * ProfileForm — Figma "Your Profile" (972:54538 desktop / 972:70725 tablet / 972:70921 mobile).
  * Card: titled header + a 2-column field grid (First/Last, Email/Phone), a masked password row
  * with a "Change Password" action, then the Save / Deactivate actions.
- * better-auth stores only name + email today, so first/last are split from `name` and phone is
- * UI-only; Change Password and Deactivate are placeholders until their flows exist.
+ * First/last are split from the profile's `name` and re-joined on save; name/phone persist via
+ * profile.update, an email change goes through authClient.changeEmail, and Deactivate calls
+ * profile.deactivate before signing out (reactivation is simply the next sign-in).
  */
 
-const schema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.email("Invalid email address"),
-  phone: z.string(),
-});
+function useProfileSchema() {
+  const t = useTranslations("Profile.errors");
 
-type Values = z.infer<typeof schema>;
+  return useMemo(
+    () =>
+      z.object({
+        firstName: z.string().trim().min(1, t("firstNameRequired")),
+        lastName: z.string().trim().min(1, t("lastNameRequired")),
+        email: z.email(t("emailInvalid")),
+        phone: z.string(),
+      }),
+    [t],
+  );
+}
+
+type Values = z.infer<ReturnType<typeof useProfileSchema>>;
 
 function splitName(full: string) {
   const [first = "", ...rest] = full.trim().split(/\s+/);
   return { firstName: first, lastName: rest.join(" ") };
 }
 
+function toValues(profile: Profile): Values {
+  const { firstName, lastName } = splitName(profile.name ?? "");
+  return { firstName, lastName, email: profile.email, phone: profile.phone ?? "" };
+}
+
 export default function ProfileForm({
-  user,
+  profile,
   onSaved,
 }: {
-  user: { name: string; email: string };
+  profile: Profile;
   onSaved?: () => void;
 }) {
   const t = useTranslations("Profile");
-  const { firstName, lastName } = splitName(user.name);
+  const router = useRouter();
 
+  const updateProfile = useUpdateProfile();
+  const deactivateProfile = useDeactivateProfile();
+
+  const schema = useProfileSchema();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { firstName, lastName, email: user.email, phone: "" },
+    defaultValues: toValues(profile),
     mode: "onTouched",
   });
 
-  // TODO: persist via authClient.updateUser once first/last/phone have backing columns.
-  // Success is surfaced as the top banner owned by ProfileScreen, per the design.
-  const onSubmit = (_values: Values) => {
+  // Re-sync the form whenever fresh profile data lands (e.g. the post-save refetch).
+  // React Query's structural sharing keeps `profile` referentially stable otherwise.
+  useEffect(() => {
+    form.reset(toValues(profile));
+  }, [form, profile]);
+
+  const onSubmit = async (values: Values) => {
+    const name = `${values.firstName} ${values.lastName}`.trim();
+    const phone = values.phone.trim();
+
+    try {
+      await updateProfile.mutateAsync({ name, phone: phone === "" ? null : phone });
+    } catch {
+      toast.error(t("errors.updateFailed"));
+      return;
+    }
+
+    if (values.email !== profile.email) {
+      const { error } = await authClient.changeEmail({ newEmail: values.email });
+      if (error) {
+        toast.error(error.message ?? t("errors.emailChangeFailed"));
+        return;
+      }
+    }
+
     onSaved?.();
+  };
+
+  const onDeactivate = async () => {
+    try {
+      await deactivateProfile.mutateAsync({});
+    } catch {
+      toast.error(t("errors.deactivateFailed"));
+      return;
+    }
+
+    await authClient.signOut();
+    router.push("/");
   };
 
   return (
@@ -166,22 +225,20 @@ export default function ProfileForm({
               className="leading-[1.25]"
             />
             <div className="flex">
-              <Button
-                type="button"
-                variant="neutral"
-                size="md"
-                className="w-full md:w-auto"
-                onClick={() => toast.info(t("changePasswordSoon"))}
-              >
-                {t("changePassword")}
-              </Button>
+              <ChangePasswordDialog />
             </div>
           </div>
         </div>
 
         {/* Actions — own section split by a separator (Figma 972:54562/54563) */}
         <div className="flex flex-col gap-4 border-t border-border p-5 sm:flex-row">
-          <Button type="submit" variant="brand" size="md" className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            variant="brand"
+            size="md"
+            className="w-full sm:w-auto"
+            disabled={form.formState.isSubmitting}
+          >
             {t("save")}
           </Button>
 
@@ -206,8 +263,8 @@ export default function ProfileForm({
                       type="button"
                       variant="destructive"
                       size="md"
-                      // TODO: wire real deactivation once the flow/backend exists.
-                      onClick={() => toast.info(t("deactivateSoon"))}
+                      disabled={deactivateProfile.isPending}
+                      onClick={onDeactivate}
                     >
                       {t("deactivate")}
                     </Button>

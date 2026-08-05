@@ -1025,11 +1025,28 @@
     "save": "Save Changes",
     "deactivate": "Deactivate Account",
     "saved": "Profile Updated Successfully",
-    "changePasswordSoon": "Change password is coming soon",
-    "deactivateSoon": "Account deactivation is coming soon",
     "dismiss": "Dismiss",
     "deactivateTitle": "Deactivate account?",
-    "deactivateDescription": "Temporarily disable your account and hide your profile. You can restore access anytime by logging back in."
+    "deactivateDescription": "Temporarily disable your account and hide your profile. You can restore access anytime by logging back in.",
+    "changePasswordTitle": "Change password",
+    "changePasswordDescription": "Enter your current password and choose a new one. You will be signed out on all other devices.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordChanged": "Password changed successfully",
+    "cancel": "Cancel",
+    "errors": {
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "emailInvalid": "Invalid email address",
+      "currentPasswordRequired": "Enter your current password",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "updateFailed": "Could not update your profile. Please try again.",
+      "emailChangeFailed": "Could not update your email address. Please try again.",
+      "passwordChangeFailed": "Could not change your password. Check your current password and try again.",
+      "deactivateFailed": "Could not deactivate your account. Please try again."
+    }
   },
   "Bookings": {
     "title": "My Bookings",

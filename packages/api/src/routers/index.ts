@@ -3,7 +3,13 @@ import { providerCapabilitiesSchema } from "@yacht-charter/providers";
 import { createInventoryProvider } from "@yacht-charter/providers";
 import { z } from "zod";
 
+import {
+  profileDeactivateOutputSchema,
+  profileSchema,
+  profileUpdateInputSchema,
+} from "../contracts/profile";
 import { adminProcedure, protectedProcedure, publicProcedure } from "../index";
+import { deactivateProfile, getProfile, updateProfile } from "../services/profile";
 import { availabilityRouter } from "./availability";
 import { charterSearchRouter } from "./charter-search";
 import { listingsRouter } from "./listings";
@@ -13,16 +19,6 @@ const provider = createInventoryProvider();
 
 const emptyInputSchema = z.object({}).default({});
 const listingIdInputSchema = z.object({ listingId: z.string() });
-
-const profileSchema = z.object({
-  userId: z.string(),
-  name: z.string().nullable(),
-  email: z.string().email(),
-  phone: z.string().nullable(),
-  locale: z.string(),
-  currency: z.string().length(3),
-  marketingOptIn: z.boolean(),
-});
 
 const wishlistItemSchema = z.object({
   listingId: z.string(),
@@ -148,22 +144,14 @@ export const appRouter = {
         operationId: "getProfile",
         summary: "Get the current user profile",
         description:
-          "Returns the authenticated user's profile-shaped data from the current session plus default app preferences.",
+          "Returns the authenticated user's profile (name, email, phone) read from the database. Preference fields (locale, currency, marketingOptIn) are static defaults until the preference columns land in a later milestone.",
         tags: ["Profile"],
         successDescription: "Profile data for the authenticated user.",
         spec: withJsonBodyExample({}),
       })
       .input(emptyInputSchema)
       .output(profileSchema)
-      .handler(({ context }) => ({
-        userId: context.session.user.id,
-        name: context.session.user.name ?? null,
-        email: context.session.user.email,
-        phone: null,
-        locale: "en",
-        currency: "EUR",
-        marketingOptIn: false,
-      })),
+      .handler(({ context }) => getProfile(context.db, context.session.user.id)),
     update: protectedProcedure
       .route({
         method: "POST",
@@ -171,34 +159,35 @@ export const appRouter = {
         operationId: "updateProfile",
         summary: "Update the current user profile",
         description:
-          "Accepts editable profile preference fields for the authenticated user and returns the updated profile-shaped response. Persistence is finalized in a later account milestone.",
+          "Persists editable profile fields (name, phone) for the authenticated user and returns the updated profile. Email changes go through the Better Auth changeEmail flow, not this endpoint. Preference fields (locale, currency, marketingOptIn) remain static defaults until the preference columns land in a later milestone.",
         tags: ["Profile"],
         successDescription: "Updated profile data for the authenticated user.",
         spec: withJsonBodyExample({
+          name: "Jane Doe",
           phone: "+380501234567",
-          locale: "en",
-          currency: "EUR",
-          marketingOptIn: true,
         }),
       })
-      .input(
-        z.object({
-          phone: z.string().nullable().optional(),
-          locale: z.string().optional(),
-          currency: z.string().length(3).optional(),
-          marketingOptIn: z.boolean().optional(),
-        }),
-      )
+      .input(profileUpdateInputSchema)
       .output(profileSchema)
-      .handler(({ context, input }) => ({
-        userId: context.session.user.id,
-        name: context.session.user.name ?? null,
-        email: context.session.user.email,
-        phone: input.phone ?? null,
-        locale: input.locale ?? "en",
-        currency: input.currency ?? "EUR",
-        marketingOptIn: input.marketingOptIn ?? false,
-      })),
+      .handler(({ context, input }) => updateProfile(context.db, context.session.user.id, input)),
+    deactivate: protectedProcedure
+      .route({
+        method: "POST",
+        path: "/profile/deactivate",
+        operationId: "deactivateProfile",
+        summary: "Deactivate the current user account",
+        description:
+          "Marks the authenticated user's account as deactivated and revokes all of their sessions. The account is reactivated by simply signing in again.",
+        tags: ["Profile"],
+        successDescription: "The account was deactivated and all sessions were revoked.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(profileDeactivateOutputSchema)
+      .handler(async ({ context }) => {
+        await deactivateProfile(context.db, context.session.user.id);
+        return { deactivated: true as const };
+      }),
   },
   referral: {
     myCode: protectedProcedure

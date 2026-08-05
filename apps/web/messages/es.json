@@ -1025,11 +1025,28 @@
     "save": "Guardar cambios",
     "deactivate": "Desactivar cuenta",
     "saved": "Perfil actualizado correctamente",
-    "changePasswordSoon": "El cambio de contraseña estará disponible pronto",
-    "deactivateSoon": "La desactivación de la cuenta estará disponible pronto",
     "dismiss": "Cerrar",
     "deactivateTitle": "¿Desactivar cuenta?",
-    "deactivateDescription": "Desactiva temporalmente tu cuenta y oculta tu perfil. Puedes restaurar el acceso en cualquier momento al volver a iniciar sesión."
+    "deactivateDescription": "Desactiva temporalmente tu cuenta y oculta tu perfil. Puedes restaurar el acceso en cualquier momento al volver a iniciar sesión.",
+    "changePasswordTitle": "Cambiar contraseña",
+    "changePasswordDescription": "Introduce tu contraseña actual y elige una nueva. Se cerrará la sesión en el resto de tus dispositivos.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "passwordChanged": "Contraseña cambiada correctamente",
+    "cancel": "Cancelar",
+    "errors": {
+      "firstNameRequired": "El nombre es obligatorio",
+      "lastNameRequired": "El apellido es obligatorio",
+      "emailInvalid": "Correo electrónico no válido",
+      "currentPasswordRequired": "Introduce tu contraseña actual",
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+      "passwordMismatch": "Las contraseñas no coinciden",
+      "updateFailed": "No se pudo actualizar el perfil. Inténtalo de nuevo.",
+      "emailChangeFailed": "No se pudo actualizar el correo electrónico. Inténtalo de nuevo.",
+      "passwordChangeFailed": "No se pudo cambiar la contraseña. Comprueba tu contraseña actual e inténtalo de nuevo.",
+      "deactivateFailed": "No se pudo desactivar la cuenta. Inténtalo de nuevo."
+    }
   },
   "Bookings": {
     "title": "Mis reservas",
