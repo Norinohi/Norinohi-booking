@@ -21,9 +21,10 @@ import type {
 } from "./types";
 
 type SearchRow = ListingSearchDoc;
+type FacetFilterKey = keyof ListingSearchInput;
 
 const DEFAULT_LIMIT = 12;
-const MAX_LIMIT = 50;
+const MAX_LIMIT = 500;
 const NULL_PRICE_ASC = 2_147_483_647;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
@@ -239,82 +240,75 @@ export async function listSearchFacets(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput = {},
 ): Promise<ListingFacets> {
-  const rows = await db.execute<{
-    countries: string[];
-    sailingAreas: string[];
-    charterCompanies: string[];
-    marinas: string[];
-    boatTypes: string[];
-    models: string[];
-    crews: string[];
-    mainsailTypes: string[];
-    equipment: string[];
-    years: number[];
-    minLength: string | null;
-    maxLength: string | null;
-    minCabins: number | null;
-    maxCabins: number | null;
-    minBerths: number | null;
-    maxBerths: number | null;
-    minBathrooms: number | null;
-    maxBathrooms: number | null;
-    minMinor: number | null;
-    maxMinor: number | null;
-    minYear: number | null;
-    maxYear: number | null;
-    minRating: string | null;
-    maxRating: string | null;
-    hasUnconfirmedAvailability: boolean | null;
-    hasTemporaryBooking: boolean | null;
-    hasDepositInsurance: boolean | null;
-    hasPetsAllowed: boolean | null;
-    currency: string | null;
-  }>(sql`
-    select
-      coalesce(jsonb_agg(distinct doc.country) filter (where doc.country is not null), '[]'::jsonb) as countries,
-      coalesce(jsonb_agg(distinct doc.region) filter (where doc.region is not null), '[]'::jsonb) as "sailingAreas",
-      coalesce(jsonb_agg(distinct doc.operator) filter (where doc.operator is not null), '[]'::jsonb) as "charterCompanies",
-      coalesce(jsonb_agg(distinct doc.base_name) filter (where doc.base_name is not null), '[]'::jsonb) as marinas,
-      coalesce(jsonb_agg(distinct doc.category) filter (where doc.category is not null), '[]'::jsonb) as "boatTypes",
-      coalesce(jsonb_agg(distinct coalesce(doc.model, doc.builder)) filter (where coalesce(doc.model, doc.builder) is not null), '[]'::jsonb) as models,
-      coalesce(jsonb_agg(distinct doc.crew_type) filter (where doc.crew_type is not null), '[]'::jsonb) as crews,
-      coalesce(jsonb_agg(distinct doc.sail_type) filter (where doc.sail_type is not null), '[]'::jsonb) as "mainsailTypes",
-      coalesce(jsonb_agg(distinct amenity.value) filter (where amenity.value is not null), '[]'::jsonb) as equipment,
-      coalesce(jsonb_agg(distinct doc.year_built) filter (where doc.year_built is not null), '[]'::jsonb) as years,
-      min(doc.length_m) as "minLength",
-      max(doc.length_m) as "maxLength",
-      min(doc.cabins) as "minCabins",
-      max(doc.cabins) as "maxCabins",
-      min(doc.berths) as "minBerths",
-      max(doc.berths) as "maxBerths",
-      min(doc.heads) as "minBathrooms",
-      max(doc.heads) as "maxBathrooms",
-      min(doc.price_from_minor) as "minMinor",
-      max(doc.price_from_minor) as "maxMinor",
-      min(doc.year_built) as "minYear",
-      max(doc.year_built) as "maxYear",
-      min(doc.rating) as "minRating",
-      max(doc.rating) as "maxRating",
-      bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
-      bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
-      bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
-      bool_or(doc.pets_allowed) as "hasPetsAllowed",
-      coalesce(min(doc.currency), ${input.currency ?? "EUR"}) as currency
-    from listing_search_doc doc
-    left join lateral jsonb_array_elements_text(doc.amenities) amenity(value) on true
-    where ${whereClause(input)}
-  `);
-  const row = rows.rows[0];
-  const countries = sortedStrings(row?.countries);
-  const sailingAreas = sortedStrings(row?.sailingAreas);
-  const charterCompanies = sortedStrings(row?.charterCompanies);
-  const marinas = sortedStrings(row?.marinas);
-  const boatTypes = sortedStrings(row?.boatTypes);
-  const models = sortedStrings(row?.models);
-  const crews = sortedStrings(row?.crews);
-  const mainsailTypes = sortedStrings(row?.mainsailTypes);
-  const equipment = sortedStrings(row?.equipment);
-  const years = sortedNumbers(row?.years);
+  const [
+    countries,
+    sailingAreas,
+    charterCompanies,
+    marinas,
+    boatTypes,
+    models,
+    crews,
+    mainsailTypes,
+    equipment,
+    years,
+    rangeRows,
+  ] = await Promise.all([
+    listFacetOptions(db, input, sql`doc.country`, ["country", "destination"]),
+    listFacetOptions(db, input, sql`doc.region`, ["sailingArea", "destination"]),
+    listFacetOptions(db, input, sql`doc.operator`, ["charterCompany"]),
+    listFacetOptions(db, input, sql`doc.base_name`, ["marina", "destination"]),
+    listFacetOptions(db, input, sql`doc.category`, ["boatType", "category"]),
+    listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"]),
+    listFacetOptions(db, input, sql`doc.crew_type`, ["crew"]),
+    listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"]),
+    listEquipmentFacetOptions(db, input),
+    listFacetOptions(db, input, sql`doc.year_built::text`, ["yearFrom", "yearTo"]),
+    db.execute<{
+      minLength: string | null;
+      maxLength: string | null;
+      minCabins: number | null;
+      maxCabins: number | null;
+      minBerths: number | null;
+      maxBerths: number | null;
+      minBathrooms: number | null;
+      maxBathrooms: number | null;
+      minMinor: number | null;
+      maxMinor: number | null;
+      minYear: number | null;
+      maxYear: number | null;
+      minRating: string | null;
+      maxRating: string | null;
+      hasUnconfirmedAvailability: boolean | null;
+      hasTemporaryBooking: boolean | null;
+      hasDepositInsurance: boolean | null;
+      hasPetsAllowed: boolean | null;
+      currency: string | null;
+    }>(sql`
+      select
+        min(doc.length_m) as "minLength",
+        max(doc.length_m) as "maxLength",
+        min(doc.cabins) as "minCabins",
+        max(doc.cabins) as "maxCabins",
+        min(doc.berths) as "minBerths",
+        max(doc.berths) as "maxBerths",
+        min(doc.heads) as "minBathrooms",
+        max(doc.heads) as "maxBathrooms",
+        min(doc.price_from_minor) as "minMinor",
+        max(doc.price_from_minor) as "maxMinor",
+        min(doc.year_built) as "minYear",
+        max(doc.year_built) as "maxYear",
+        min(doc.rating) as "minRating",
+        max(doc.rating) as "maxRating",
+        bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
+        bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
+        bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
+        bool_or(doc.pets_allowed) as "hasPetsAllowed",
+        coalesce(min(doc.currency), ${input.currency ?? "EUR"}) as currency
+      from listing_search_doc doc
+      where ${whereClause(input)}
+    `),
+  ]);
+  const row = rangeRows.rows[0];
   const currency = row?.currency ?? input.currency ?? "EUR";
   const priceRange = {
     minMinor: row?.minMinor ?? 0,
@@ -324,26 +318,23 @@ export async function listSearchFacets(
   const yearRange = numberRange(row?.minYear, row?.maxYear);
 
   return {
-    destinations: countries,
-    categories: boatTypes,
-    amenities: equipment,
+    destinations: labelsFromOptions(countries),
+    categories: labelsFromOptions(boatTypes),
+    amenities: labelsFromOptions(equipment),
     options: {
-      countries: optionsFromStrings(countries),
-      sailingAreas: optionsFromStrings(sailingAreas),
-      charterCompanies: optionsFromStrings(charterCompanies),
-      marinas: optionsFromStrings(marinas),
+      countries,
+      sailingAreas,
+      charterCompanies,
+      marinas,
       durations: DEFAULT_DURATIONS,
       dateFlexibility: DEFAULT_DATE_FLEXIBILITY,
-      boatTypes: optionsFromStrings(boatTypes),
-      models: optionsFromStrings(models),
-      crews: optionsFromStrings(crews),
-      mainsailTypes: optionsFromStrings(mainsailTypes),
-      equipment: optionsFromStrings(equipment),
+      boatTypes,
+      models,
+      crews,
+      mainsailTypes,
+      equipment,
       lengthUnits: DEFAULT_LENGTH_UNITS,
-      years: [
-        { value: "any", label: "Any year" },
-        ...years.map((year) => ({ value: String(year), label: String(year) })),
-      ],
+      years: [{ value: "any", label: "Any year" }, ...years],
     },
     ranges: {
       length: numberRange(row?.minLength, row?.maxLength),
@@ -547,9 +538,10 @@ const searchColumns = sql`
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;
 
-function whereClause(input: ListingSearchInput): SQL {
+function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey[] = []): SQL {
+  const skip = new Set<FacetFilterKey>(ignored);
   const parts: SQL[] = [sql`true`];
-  if (input.destination) {
+  if (!skip.has("destination") && input.destination) {
     const pattern = `%${input.destination}%`;
     parts.push(sql`(
       doc.country ilike ${pattern}
@@ -558,29 +550,39 @@ function whereClause(input: ListingSearchInput): SQL {
       or doc.base_name ilike ${pattern}
     )`);
   }
-  if (input.query) parts.push(sql`doc.searchable_text ilike ${`%${input.query}%`}`);
-  if (input.category) parts.push(sql`doc.category = ${input.category}`);
-  if (input.country?.length) parts.push(normalizedIn(sql`doc.country`, input.country));
-  if (input.sailingArea?.length) parts.push(normalizedIn(sql`doc.region`, input.sailingArea));
-  if (input.charterCompany?.length) {
+  if (!skip.has("query") && input.query) {
+    parts.push(sql`doc.searchable_text ilike ${`%${input.query}%`}`);
+  }
+  if (!skip.has("category") && input.category) parts.push(sql`doc.category = ${input.category}`);
+  if (!skip.has("country") && input.country?.length) {
+    parts.push(normalizedIn(sql`doc.country`, input.country));
+  }
+  if (!skip.has("sailingArea") && input.sailingArea?.length) {
+    parts.push(normalizedIn(sql`doc.region`, input.sailingArea));
+  }
+  if (!skip.has("charterCompany") && input.charterCompany?.length) {
     parts.push(normalizedIn(sql`doc.operator`, input.charterCompany));
   }
-  if (input.marina?.length) {
+  if (!skip.has("marina") && input.marina?.length) {
     parts.push(
       sql`(${normalizedIn(sql`doc.base_name`, input.marina)} or ${normalizedIn(sql`doc.base_id`, input.marina)})`,
     );
   }
-  if (input.boatType?.length) parts.push(normalizedIn(sql`doc.category`, input.boatType));
-  if (input.model?.length) {
+  if (!skip.has("boatType") && input.boatType?.length) {
+    parts.push(normalizedIn(sql`doc.category`, input.boatType));
+  }
+  if (!skip.has("model") && input.model?.length) {
     parts.push(
       sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
     );
   }
-  if (input.crew?.length) parts.push(normalizedIn(sql`doc.crew_type`, input.crew));
-  if (input.mainsailType?.length) {
+  if (!skip.has("crew") && input.crew?.length) {
+    parts.push(normalizedIn(sql`doc.crew_type`, input.crew));
+  }
+  if (!skip.has("mainsailType") && input.mainsailType?.length) {
     parts.push(normalizedIn(sql`doc.sail_type`, input.mainsailType));
   }
-  if (input.equipment?.length) {
+  if (!skip.has("equipment") && input.equipment?.length) {
     for (const value of input.equipment) {
       parts.push(sql`exists (
         select 1
@@ -589,34 +591,65 @@ function whereClause(input: ListingSearchInput): SQL {
       )`);
     }
   }
-  if (input.minCabins) parts.push(sql`doc.cabins >= ${input.minCabins}`);
-  if (input.maxCabins !== undefined) parts.push(sql`doc.cabins <= ${input.maxCabins}`);
-  if (input.guests) parts.push(sql`doc.berths >= ${input.guests}`);
-  if (input.minBerths !== undefined) parts.push(sql`doc.berths >= ${input.minBerths}`);
-  if (input.maxBerths !== undefined) parts.push(sql`doc.berths <= ${input.maxBerths}`);
-  if (input.minBathrooms !== undefined) parts.push(sql`doc.heads >= ${input.minBathrooms}`);
-  if (input.maxBathrooms !== undefined) parts.push(sql`doc.heads <= ${input.maxBathrooms}`);
-  if (input.minLength !== undefined) parts.push(sql`doc.length_m >= ${input.minLength}`);
-  if (input.maxLength !== undefined) parts.push(sql`doc.length_m <= ${input.maxLength}`);
-  if (input.minGuestRating !== undefined) parts.push(sql`doc.rating >= ${input.minGuestRating}`);
-  if (input.maxGuestRating !== undefined) parts.push(sql`doc.rating <= ${input.maxGuestRating}`);
-  if (input.yearFrom !== undefined) parts.push(sql`doc.year_built >= ${input.yearFrom}`);
-  if (input.yearTo !== undefined) parts.push(sql`doc.year_built <= ${input.yearTo}`);
-  if (input.minBoatAge !== undefined) {
+  if (!skip.has("minCabins") && input.minCabins) {
+    parts.push(sql`doc.cabins >= ${input.minCabins}`);
+  }
+  if (!skip.has("maxCabins") && input.maxCabins !== undefined) {
+    parts.push(sql`doc.cabins <= ${input.maxCabins}`);
+  }
+  if (!skip.has("guests") && input.guests) parts.push(sql`doc.berths >= ${input.guests}`);
+  if (!skip.has("minBerths") && input.minBerths !== undefined) {
+    parts.push(sql`doc.berths >= ${input.minBerths}`);
+  }
+  if (!skip.has("maxBerths") && input.maxBerths !== undefined) {
+    parts.push(sql`doc.berths <= ${input.maxBerths}`);
+  }
+  if (!skip.has("minBathrooms") && input.minBathrooms !== undefined) {
+    parts.push(sql`doc.heads >= ${input.minBathrooms}`);
+  }
+  if (!skip.has("maxBathrooms") && input.maxBathrooms !== undefined) {
+    parts.push(sql`doc.heads <= ${input.maxBathrooms}`);
+  }
+  if (!skip.has("minLength") && input.minLength !== undefined) {
+    parts.push(sql`doc.length_m >= ${input.minLength}`);
+  }
+  if (!skip.has("maxLength") && input.maxLength !== undefined) {
+    parts.push(sql`doc.length_m <= ${input.maxLength}`);
+  }
+  if (!skip.has("minGuestRating") && input.minGuestRating !== undefined) {
+    parts.push(sql`doc.rating >= ${input.minGuestRating}`);
+  }
+  if (!skip.has("maxGuestRating") && input.maxGuestRating !== undefined) {
+    parts.push(sql`doc.rating <= ${input.maxGuestRating}`);
+  }
+  if (!skip.has("yearFrom") && input.yearFrom !== undefined) {
+    parts.push(sql`doc.year_built >= ${input.yearFrom}`);
+  }
+  if (!skip.has("yearTo") && input.yearTo !== undefined) {
+    parts.push(sql`doc.year_built <= ${input.yearTo}`);
+  }
+  if (!skip.has("minBoatAge") && input.minBoatAge !== undefined) {
     parts.push(sql`doc.year_built <= ${CURRENT_YEAR - input.minBoatAge}`);
   }
-  if (input.maxBoatAge !== undefined) {
+  if (!skip.has("maxBoatAge") && input.maxBoatAge !== undefined) {
     parts.push(sql`doc.year_built >= ${CURRENT_YEAR - input.maxBoatAge}`);
   }
-  if (input.minPriceMinor) parts.push(sql`doc.price_from_minor >= ${input.minPriceMinor}`);
-  if (input.maxPriceMinor) parts.push(sql`doc.price_from_minor <= ${input.maxPriceMinor}`);
-  if (input.withoutAvailabilityConfirmation) {
+  if (!skip.has("minPriceMinor") && input.minPriceMinor) {
+    parts.push(sql`doc.price_from_minor >= ${input.minPriceMinor}`);
+  }
+  if (!skip.has("maxPriceMinor") && input.maxPriceMinor) {
+    parts.push(sql`doc.price_from_minor <= ${input.maxPriceMinor}`);
+  }
+  if (!skip.has("withoutAvailabilityConfirmation") && input.withoutAvailabilityConfirmation) {
     parts.push(sql`doc.has_unconfirmed_availability = true`);
   }
-  if (input.underTemporaryBooking) parts.push(sql`doc.has_temporary_booking = true`);
-  if (input.depositInsurance) parts.push(sql`doc.deposit_insurance_included = true`);
-  if (input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
-  if (input.currency) parts.push(sql`doc.currency = ${input.currency}`);
+  if (!skip.has("underTemporaryBooking") && input.underTemporaryBooking) {
+    parts.push(sql`doc.has_temporary_booking = true`);
+  }
+  if (!skip.has("depositInsurance") && input.depositInsurance) {
+    parts.push(sql`doc.deposit_insurance_included = true`);
+  }
+  if (!skip.has("petsAllowed") && input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
   const availabilityWindow = availabilityWindowFor(input);
   if (availabilityWindow) {
     parts.push(sql`exists (
@@ -703,6 +736,53 @@ function paginationFor(input: {
     hasPreviousPage: input.page > 1,
     hasNextPage: input.page < totalPages,
   };
+}
+
+async function listFacetOptions(
+  db: NodePgDatabase<typeof schema>,
+  input: ListingSearchInput,
+  expression: SQL,
+  ignored: readonly FacetFilterKey[],
+): Promise<ListingFacetOption[]> {
+  const rows = await db.execute<{ label: string; count: number }>(sql`
+    select ${expression} as label, count(*)::integer as count
+    from listing_search_doc doc
+    where ${whereClause(input, ignored)}
+      and ${expression} is not null
+    group by label
+    order by label asc
+  `);
+
+  return rows.rows.map((row) => ({
+    value: valueForLabel(row.label),
+    label: row.label,
+    count: row.count,
+  }));
+}
+
+async function listEquipmentFacetOptions(
+  db: NodePgDatabase<typeof schema>,
+  input: ListingSearchInput,
+): Promise<ListingFacetOption[]> {
+  const rows = await db.execute<{ label: string; count: number }>(sql`
+    select amenity.value as label, count(distinct doc.listing_id)::integer as count
+    from listing_search_doc doc
+    cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
+    where ${whereClause(input, ["equipment"])}
+      and amenity.value is not null
+    group by amenity.value
+    order by amenity.value asc
+  `);
+
+  return rows.rows.map((row) => ({
+    value: valueForLabel(row.label),
+    label: row.label,
+    count: row.count,
+  }));
+}
+
+function labelsFromOptions(options: ListingFacetOption[]): string[] {
+  return options.map((option) => option.label);
 }
 
 function pricedItem(
@@ -887,10 +967,6 @@ function routePlacesFor(region: string, location: string) {
   ];
 }
 
-function optionsFromStrings(values: string[]): ListingFacetOption[] {
-  return values.map((label) => ({ value: valueForLabel(label), label }));
-}
-
 function valueForLabel(label: string): string {
   return label
     .trim()
@@ -965,21 +1041,6 @@ function boatAgeRange(yearRange: { min: number; max: number }): { min: number; m
     min: Math.max(CURRENT_YEAR - yearRange.max, 0),
     max: Math.max(CURRENT_YEAR - yearRange.min, 0),
   };
-}
-
-function sortedNumbers(values: unknown): number[] {
-  return Array.isArray(values)
-    ? values
-        .map((value) => Number(value))
-        .filter((value) => Number.isFinite(value))
-        .sort((a, b) => a - b)
-    : [];
-}
-
-function sortedStrings(values: unknown): string[] {
-  return Array.isArray(values)
-    ? values.filter((value): value is string => typeof value === "string").sort()
-    : [];
 }
 
 function normalizeSearchRow(row: SearchRow): ListingSearchDoc {

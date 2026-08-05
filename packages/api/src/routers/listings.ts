@@ -84,6 +84,6 @@ export const listingsRouter = {
     .output(z.array(listingSummarySchema))
     .handler(async ({ input }) => {
       const listings = await listSimilarListings(db, input.listingId);
-      return listings.map(presentListingSummary);
+      return listings.map((listing) => presentListingSummary(listing));
     }),
 };

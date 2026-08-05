@@ -2,9 +2,19 @@ import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
 const EMPTY_IMAGE = "";
 
-export function presentListingSummary(doc: ListingSearchDoc) {
+export type ListingSummaryOptions = {
+  checkIn?: string | null;
+  checkOut?: string | null;
+  duration?: number | null;
+};
+
+export function presentListingSummary(doc: ListingSearchDoc, options: ListingSummaryOptions = {}) {
   const currency = doc.currency ?? "EUR";
-  const periodDays = daysBetween(doc.availableFrom, doc.availableTo) ?? 7;
+  const periodDays =
+    daysBetween(options.checkIn ?? null, options.checkOut ?? null) ??
+    options.duration ??
+    daysBetween(doc.availableFrom, doc.availableTo) ??
+    7;
   const amountMinor = doc.priceFromMinor ?? 0;
 
   return {
@@ -78,7 +88,7 @@ export function presentListingDetail(detail: ListingDetail) {
     suggestedRoute: detail.suggestedRoute,
     reviews: detail.reviews,
     faq: detail.faq,
-    popularYachts: detail.popularYachts.map(presentListingSummary),
+    popularYachts: detail.popularYachts.map((listing) => presentListingSummary(listing)),
   };
 }
 

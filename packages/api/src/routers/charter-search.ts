@@ -43,11 +43,12 @@ export const charterSearchRouter = {
     .output(searchResultSchema)
     .handler(async ({ input }) => {
       const results = await searchListings(db, input);
+      const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
-          listing: presentListingSummary(item),
-          checkIn: item.availableFrom,
-          checkOut: item.availableTo,
+          listing: presentListingSummary(item, period),
+          checkIn: period.checkIn ?? item.availableFrom,
+          checkOut: period.checkOut ?? item.availableTo,
         })),
         nextCursor: results.nextCursor,
         pagination: results.pagination,
@@ -94,9 +95,10 @@ export const charterSearchRouter = {
     .handler(async ({ input }) => {
       const results = await searchListings(db, {
         ...input,
-        limit: input.limit ?? 50,
+        limit: input.limit ?? 500,
         page: undefined,
       });
+      const period = effectivePeriod(input);
       return {
         markers: results.items
           .filter((item) => item.lat !== null && item.lng !== null)
@@ -108,7 +110,7 @@ export const charterSearchRouter = {
             lng: item.lng ?? 0,
             priceFromMinor: item.priceFromMinor,
             currency: item.currency,
-            listing: presentListingSummary(item),
+            listing: presentListingSummary(item, period),
           })),
       };
     }),
@@ -130,3 +132,26 @@ export const charterSearchRouter = {
     .output(z.array(suggestionSchema))
     .handler(({ input }) => listSearchSuggestions(db, input.query)),
 };
+
+function effectivePeriod(input: {
+  checkIn?: string;
+  checkOut?: string;
+  startDate?: string;
+  duration?: number;
+}) {
+  if (input.checkIn && input.checkOut) {
+    return { checkIn: input.checkIn, checkOut: input.checkOut, duration: undefined };
+  }
+
+  if (input.startDate && input.duration) {
+    const end = new Date(`${input.startDate}T00:00:00.000Z`);
+    end.setUTCDate(end.getUTCDate() + input.duration);
+    return {
+      checkIn: input.startDate,
+      checkOut: end.toISOString().slice(0, 10),
+      duration: input.duration,
+    };
+  }
+
+  return { checkIn: undefined, checkOut: undefined, duration: input.duration };
+}

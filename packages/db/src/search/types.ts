@@ -155,6 +155,7 @@ export type ListingSearchPagination = {
 export type ListingFacetOption = {
   value: string;
   label: string;
+  count?: number;
 };
 
 export type ListingFacets = {

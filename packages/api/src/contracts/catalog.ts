@@ -18,12 +18,20 @@ const booleanParamSchema = z
 const facetOptionSchema = z.object({
   value: z.string(),
   label: z.string(),
+  count: z.number().int().nonnegative().optional(),
 });
 
 const numberRangeSchema = z.object({
   min: z.number(),
   max: z.number(),
 });
+
+const dateStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime()), {
+    message: "Invalid date",
+  });
 
 const includedItemSchema = z.object({
   code: z.string(),
@@ -148,54 +156,64 @@ export const listingDetailSchema = listingSummarySchema.extend({
   popularYachts: z.array(listingSummarySchema),
 });
 
-export const listingSearchInputSchema = z.object({
-  destination: z.string().optional(),
-  query: z.string().optional(),
-  checkIn: z.string().optional(),
-  checkOut: z.string().optional(),
-  guests: z.coerce.number().int().positive().optional(),
-  category: z.string().optional(),
-  minCabins: z.coerce.number().int().positive().optional(),
-  maxPriceMinor: z.coerce.number().int().positive().optional(),
-  country: stringArrayParamSchema,
-  sailingArea: stringArrayParamSchema,
-  charterCompany: stringArrayParamSchema,
-  marina: stringArrayParamSchema,
-  boatType: stringArrayParamSchema,
-  model: stringArrayParamSchema,
-  crew: stringArrayParamSchema,
-  mainsailType: stringArrayParamSchema,
-  equipment: stringArrayParamSchema,
-  startDate: z.string().optional(),
-  duration: z.coerce.number().int().positive().optional(),
-  dateFlexibility: z.enum(["on-day", "1-3-days", "1-week", "2-weeks", "1-month"]).optional(),
-  minLength: z.coerce.number().nonnegative().optional(),
-  maxLength: z.coerce.number().nonnegative().optional(),
-  maxCabins: z.coerce.number().int().nonnegative().optional(),
-  minBerths: z.coerce.number().int().nonnegative().optional(),
-  maxBerths: z.coerce.number().int().nonnegative().optional(),
-  minBathrooms: z.coerce.number().int().nonnegative().optional(),
-  maxBathrooms: z.coerce.number().int().nonnegative().optional(),
-  minPriceMinor: z.coerce.number().int().nonnegative().optional(),
-  minBoatAge: z.coerce.number().int().nonnegative().optional(),
-  maxBoatAge: z.coerce.number().int().nonnegative().optional(),
-  yearFrom: z.coerce.number().int().optional(),
-  yearTo: z.coerce.number().int().optional(),
-  minGuestRating: z.coerce.number().min(0).max(5).optional(),
-  maxGuestRating: z.coerce.number().min(0).max(5).optional(),
-  withoutAvailabilityConfirmation: booleanParamSchema,
-  underTemporaryBooking: booleanParamSchema,
-  depositInsurance: booleanParamSchema,
-  petsAllowed: booleanParamSchema,
-  currency: z.string().length(3).default("EUR"),
-  cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(50).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(10),
-  sort: z
-    .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
-    .default("recommended"),
-});
+export const listingSearchInputSchema = z
+  .object({
+    destination: z.string().optional(),
+    query: z.string().optional(),
+    checkIn: dateStringSchema.optional(),
+    checkOut: dateStringSchema.optional(),
+    guests: z.coerce.number().int().positive().optional(),
+    category: z.string().optional(),
+    minCabins: z.coerce.number().int().positive().optional(),
+    maxPriceMinor: z.coerce.number().int().positive().optional(),
+    country: stringArrayParamSchema,
+    sailingArea: stringArrayParamSchema,
+    charterCompany: stringArrayParamSchema,
+    marina: stringArrayParamSchema,
+    boatType: stringArrayParamSchema,
+    model: stringArrayParamSchema,
+    crew: stringArrayParamSchema,
+    mainsailType: stringArrayParamSchema,
+    equipment: stringArrayParamSchema,
+    startDate: dateStringSchema.optional(),
+    duration: z.coerce.number().int().positive().optional(),
+    dateFlexibility: z.enum(["on-day", "1-3-days", "1-week", "2-weeks", "1-month"]).optional(),
+    minLength: z.coerce.number().nonnegative().optional(),
+    maxLength: z.coerce.number().nonnegative().optional(),
+    maxCabins: z.coerce.number().int().nonnegative().optional(),
+    minBerths: z.coerce.number().int().nonnegative().optional(),
+    maxBerths: z.coerce.number().int().nonnegative().optional(),
+    minBathrooms: z.coerce.number().int().nonnegative().optional(),
+    maxBathrooms: z.coerce.number().int().nonnegative().optional(),
+    minPriceMinor: z.coerce.number().int().nonnegative().optional(),
+    minBoatAge: z.coerce.number().int().nonnegative().optional(),
+    maxBoatAge: z.coerce.number().int().nonnegative().optional(),
+    yearFrom: z.coerce.number().int().optional(),
+    yearTo: z.coerce.number().int().optional(),
+    minGuestRating: z.coerce.number().min(0).max(5).optional(),
+    maxGuestRating: z.coerce.number().min(0).max(5).optional(),
+    withoutAvailabilityConfirmation: booleanParamSchema,
+    underTemporaryBooking: booleanParamSchema,
+    depositInsurance: booleanParamSchema,
+    petsAllowed: booleanParamSchema,
+    currency: z.string().length(3).default("EUR"),
+    cursor: z.string().optional(),
+    limit: z.coerce.number().int().min(1).max(500).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(50).default(10),
+    sort: z
+      .enum(["recommended", "price-asc", "price-desc", "rating", "newest"])
+      .default("recommended"),
+  })
+  .superRefine((input, context) => {
+    if (input.checkIn && input.checkOut && input.checkIn >= input.checkOut) {
+      context.addIssue({
+        code: "custom",
+        message: "checkOut must be after checkIn",
+        path: ["checkOut"],
+      });
+    }
+  });
 
 export const searchResultSchema = z.object({
   items: z.array(
@@ -286,12 +304,22 @@ export const suggestionSchema = z.object({
   kind: z.enum(["country", "region", "location", "base"]),
 });
 
-export const availabilityCalendarInputSchema = z.object({
-  listingId: z.string(),
-  from: z.string(),
-  to: z.string(),
-  currency: z.string().length(3).default("EUR"),
-});
+export const availabilityCalendarInputSchema = z
+  .object({
+    listingId: z.string(),
+    from: dateStringSchema,
+    to: dateStringSchema,
+    currency: z.string().length(3).default("EUR"),
+  })
+  .superRefine((input, context) => {
+    if (input.from >= input.to) {
+      context.addIssue({
+        code: "custom",
+        message: "to must be after from",
+        path: ["to"],
+      });
+    }
+  });
 
 export const availabilityCalendarSchema = z.object({
   listingId: z.string(),
