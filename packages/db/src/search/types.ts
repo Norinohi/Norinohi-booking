@@ -63,6 +63,9 @@ export type ListingSearchDoc = {
   country: string;
   lat: number | null;
   lng: number | null;
+  baseEmail: string | null;
+  basePhone: string | null;
+  baseWebsite: string | null;
   lengthM: string | null;
   cabins: number | null;
   berths: number | null;
@@ -106,6 +109,13 @@ export type ListingDetail = ListingSearchDoc & {
     pets: string;
     paymentMethodsAcceptedByCharterCompany: string[];
     marinaInformation: string;
+    marinaContact: {
+      name: string;
+      address: string;
+      email: string | null;
+      phone: string | null;
+      website: string | null;
+    };
     map: { lat: number; lng: number };
   };
   suggestedRoute: {

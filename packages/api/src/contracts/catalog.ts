@@ -68,6 +68,9 @@ export const listingSummarySchema = z.object({
     country: z.string(),
     lat: z.number(),
     lng: z.number(),
+    email: z.string().nullable(),
+    phone: z.string().nullable(),
+    website: z.string().nullable(),
   }),
   specs: z.object({
     lengthM: z.number(),
@@ -124,6 +127,13 @@ export const listingDetailSchema = listingSummarySchema.extend({
     pets: z.string(),
     paymentMethodsAcceptedByCharterCompany: z.array(z.string()),
     marinaInformation: z.string(),
+    marinaContact: z.object({
+      name: z.string(),
+      address: z.string(),
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+      website: z.string().nullable(),
+    }),
     map: z.object({
       lat: z.number(),
       lng: z.number(),

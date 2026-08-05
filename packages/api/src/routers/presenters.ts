@@ -35,6 +35,9 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
       country: doc.country,
       lat: doc.lat ?? 0,
       lng: doc.lng ?? 0,
+      email: doc.baseEmail,
+      phone: doc.basePhone,
+      website: doc.baseWebsite,
     },
     specs: {
       lengthM: Number(doc.lengthM ?? 0),
