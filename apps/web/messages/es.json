@@ -43,7 +43,10 @@
       "paymentMessage": "Introduce tu pregunta o solicitud"
     },
     "backToYacht": "Volver a {name}",
-    "panels": { "main": "Detalles de la reserva", "aside": "Resumen de la reserva" },
+    "panels": {
+      "main": "Detalles de la reserva",
+      "aside": "Resumen de la reserva"
+    },
     "continue": "Continuar",
     "steps": {
       "guestDetails": "Datos del huésped",
@@ -111,7 +114,10 @@
     }
   },
   "Common": {
-    "extras": { "payAtCheckIn": "Pago al llegar", "perBooking": "{price} por reserva" },
+    "extras": {
+      "payAtCheckIn": "Pago al llegar",
+      "perBooking": "{price} por reserva"
+    },
     "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
     "removeFilter": "Quitar filtro {label}",
     "sorting": {
@@ -665,10 +671,10 @@
       "account": "Cuenta",
       "signIn": "Iniciar sesión",
       "signOut": "Cerrar sesión",
-      "theme": "Tema",
-      "light": "Claro",
-      "dark": "Oscuro",
-      "system": "Sistema"
+      "profile": "Mi perfil",
+      "bookings": "Mis reservas",
+      "referrals": "Referidos",
+      "credits": "Créditos y saldo"
     },
     "description": "Alquila yates y catamaranes en todo el mundo. Compara barcos, fechas y precios, y reserva tu próxima travesía en minutos.",
     "title": "YachtCharter — Alquiler de Yates y Catamaranes"
@@ -775,10 +781,18 @@
         "question": "¿Cuánto quieres que dure tu viaje?",
         "subtitle": "Elige la duración que mejor se adapte a tus planes. Nos ayuda a sugerir los yates, las rutas y la experiencia adecuados.",
         "options": {
-          "week": { "label": "7 días" },
-          "twoWeeks": { "label": "14 días" },
-          "threeWeeks": { "label": "21 días" },
-          "more": { "label": "21+ días" }
+          "week": {
+            "label": "7 días"
+          },
+          "twoWeeks": {
+            "label": "14 días"
+          },
+          "threeWeeks": {
+            "label": "21 días"
+          },
+          "more": {
+            "label": "21+ días"
+          }
         }
       },
       "budget": {
@@ -786,10 +800,18 @@
         "subtitle": "Tu estilo de viaje define el tipo de yate, la ruta y la experiencia a bordo.",
         "perPersonWeek": "por persona/semana",
         "options": {
-          "low": { "label": "€300–600" },
-          "mid": { "label": "€600-1000" },
-          "high": { "label": "€1000-1200" },
-          "premium": { "label": "€2000+" }
+          "low": {
+            "label": "€300–600"
+          },
+          "mid": {
+            "label": "€600-1000"
+          },
+          "high": {
+            "label": "€1000-1200"
+          },
+          "premium": {
+            "label": "€2000+"
+          }
         }
       }
     },
@@ -809,8 +831,15 @@
         "catamaran": "Catamarán",
         "gulet": "Gulet"
       },
-      "skipper": { "yes": "Sí", "no": "No" },
-      "difficulty": { "easy": "Fácil", "moderate": "Moderado", "advanced": "Avanzado" },
+      "skipper": {
+        "yes": "Sí",
+        "no": "No"
+      },
+      "difficulty": {
+        "easy": "Fácil",
+        "moderate": "Moderado",
+        "advanced": "Avanzado"
+      },
       "getConsultation": "Solicitar asesoría",
       "viewDetails": "Ver detalles",
       "boat": {
@@ -983,5 +1012,33 @@
       "title": "Panel",
       "description": "Gestiona tus reservas de chárter, yates guardados y ajustes de la cuenta."
     }
+  },
+  "Profile": {
+    "home": "Inicio",
+    "title": "Tu perfil",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo electrónico",
+    "phone": "Número de teléfono",
+    "password": "Contraseña",
+    "changePassword": "Cambiar contraseña",
+    "save": "Guardar cambios",
+    "deactivate": "Desactivar cuenta",
+    "saved": "Perfil actualizado correctamente",
+    "changePasswordSoon": "El cambio de contraseña estará disponible pronto",
+    "deactivateSoon": "La desactivación de la cuenta estará disponible pronto",
+    "dismiss": "Cerrar",
+    "deactivateTitle": "¿Desactivar cuenta?",
+    "deactivateDescription": "Desactiva temporalmente tu cuenta y oculta tu perfil. Puedes restaurar el acceso en cualquier momento al volver a iniciar sesión."
+  },
+  "Bookings": {
+    "title": "Mis reservas",
+    "history": "Historial",
+    "anyDates": "Cualquier fecha",
+    "clearDates": "Borrar fechas",
+    "emptyTitle": "Aún no hay yates",
+    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí.",
+    "bareboat": "Sin patrón",
+    "fullCrew": "Tripulación completa"
   }
 }

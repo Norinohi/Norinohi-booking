@@ -43,7 +43,10 @@
       "paymentMessage": "Enter your question or request"
     },
     "backToYacht": "Back To {name}",
-    "panels": { "main": "Booking Details", "aside": "Booking Summary" },
+    "panels": {
+      "main": "Booking Details",
+      "aside": "Booking Summary"
+    },
     "continue": "Continue",
     "steps": {
       "guestDetails": "Guest Details",
@@ -111,7 +114,10 @@
     }
   },
   "Common": {
-    "extras": { "payAtCheckIn": "Pay at check-in", "perBooking": "{price} per booking" },
+    "extras": {
+      "payAtCheckIn": "Pay at check-in",
+      "perBooking": "{price} per booking"
+    },
     "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
     "removeFilter": "Remove filter {label}",
     "sorting": {
@@ -664,11 +670,11 @@
     "UserMenu": {
       "account": "Account",
       "signIn": "Sign In",
-      "signOut": "Sign Out",
-      "theme": "Theme",
-      "light": "Light",
-      "dark": "Dark",
-      "system": "System"
+      "signOut": "Log Out",
+      "profile": "My Profile",
+      "bookings": "My Bookings",
+      "referrals": "Referrals",
+      "credits": "Credits & Balance"
     },
     "description": "Charter yachts and catamarans worldwide. Compare boats, dates and prices, and book your next sailing trip in minutes.",
     "title": "YachtCharter — Yacht & Catamaran Rentals Worldwide"
@@ -775,10 +781,18 @@
         "question": "How long would you like your trip to be?",
         "subtitle": "Choose the duration that best fits your plans. This helps us suggest the right yachts, routes, and overall experience.",
         "options": {
-          "week": { "label": "7 days" },
-          "twoWeeks": { "label": "14 days" },
-          "threeWeeks": { "label": "21 days" },
-          "more": { "label": "21+ days" }
+          "week": {
+            "label": "7 days"
+          },
+          "twoWeeks": {
+            "label": "14 days"
+          },
+          "threeWeeks": {
+            "label": "21 days"
+          },
+          "more": {
+            "label": "21+ days"
+          }
         }
       },
       "budget": {
@@ -786,10 +800,18 @@
         "subtitle": "Your trip style defines the type of yacht, route, and onboard experience.",
         "perPersonWeek": "per person/week",
         "options": {
-          "low": { "label": "€300–600" },
-          "mid": { "label": "€600-1000" },
-          "high": { "label": "€1000-1200" },
-          "premium": { "label": "€2000+" }
+          "low": {
+            "label": "€300–600"
+          },
+          "mid": {
+            "label": "€600-1000"
+          },
+          "high": {
+            "label": "€1000-1200"
+          },
+          "premium": {
+            "label": "€2000+"
+          }
         }
       }
     },
@@ -809,8 +831,15 @@
         "catamaran": "Catamaran",
         "gulet": "Gulet"
       },
-      "skipper": { "yes": "Yes", "no": "No" },
-      "difficulty": { "easy": "Easy", "moderate": "Moderate", "advanced": "Advanced" },
+      "skipper": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "difficulty": {
+        "easy": "Easy",
+        "moderate": "Moderate",
+        "advanced": "Advanced"
+      },
       "getConsultation": "Get Consultation",
       "viewDetails": "View Details",
       "boat": {
@@ -983,5 +1012,33 @@
       "title": "Dashboard",
       "description": "Manage your yacht charter bookings, saved yachts and account settings."
     }
+  },
+  "Profile": {
+    "home": "Home",
+    "title": "Your Profile",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "password": "Password",
+    "changePassword": "Change Password",
+    "save": "Save Changes",
+    "deactivate": "Deactivate Account",
+    "saved": "Profile Updated Successfully",
+    "changePasswordSoon": "Change password is coming soon",
+    "deactivateSoon": "Account deactivation is coming soon",
+    "dismiss": "Dismiss",
+    "deactivateTitle": "Deactivate account?",
+    "deactivateDescription": "Temporarily disable your account and hide your profile. You can restore access anytime by logging back in."
+  },
+  "Bookings": {
+    "title": "My Bookings",
+    "history": "History",
+    "anyDates": "Any dates",
+    "clearDates": "Clear dates",
+    "emptyTitle": "No yachts yet",
+    "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here.",
+    "bareboat": "Bareboat",
+    "fullCrew": "Full crew"
   }
 }

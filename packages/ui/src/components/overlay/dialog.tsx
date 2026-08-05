@@ -26,15 +26,22 @@ function DialogContent({
   className,
   children,
   showClose = false,
+  mobileSheet = false,
   ...props
-}: DialogPrimitive.Popup.Props & { showClose?: boolean }) {
+}: DialogPrimitive.Popup.Props & { showClose?: boolean; mobileSheet?: boolean }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-overlay data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-[432px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-6 rounded-lg bg-background p-6 shadow-[4px_4px_20px_rgba(0,0,0,0.1)] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Common surface
+          "fixed z-50 flex flex-col items-center gap-6 bg-background p-6 shadow-[4px_4px_20px_rgba(0,0,0,0.1)] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          // Positioning: `mobileSheet` docks to the bottom as a sheet on mobile and reverts to
+          // the centered dialog from `md` up; the default stays centered at every width.
+          mobileSheet
+            ? "inset-x-0 bottom-0 w-full rounded-t-2xl pb-8 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4 md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:w-[calc(100%-2rem)] md:max-w-[432px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:pb-6 md:data-open:zoom-in-95 md:data-closed:zoom-out-95"
+            : "top-1/2 left-1/2 w-[calc(100%-2rem)] max-w-[432px] -translate-x-1/2 -translate-y-1/2 rounded-lg data-open:zoom-in-95 data-closed:zoom-out-95",
           className,
         )}
         {...props}
