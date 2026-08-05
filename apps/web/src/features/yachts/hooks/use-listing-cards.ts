@@ -20,6 +20,7 @@ import { createElement, type ReactNode } from "react";
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 
 import type { MapBoatCardProps } from "../components/map/map-boat-card";
+import { slugToLabel } from "../lib/slug-to-label";
 import { toMarina } from "../lib/to-marina";
 
 type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["results"]>>;
@@ -48,8 +49,6 @@ const PLACEHOLDER_DATES = {
   timeZone: "Europe/Zagreb",
 };
 
-const prettify = (slug: string) => slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
-
 export function useListingCards() {
   const t = useTranslations("Common.boatCard");
   const format = useFormatter();
@@ -67,7 +66,7 @@ export function useListingCards() {
       name: listing.title,
       rating: String(listing.rating),
       charterType: listing.category,
-      crew: listing.crewType ? prettify(listing.crewType) : "",
+      crew: listing.crewType ? slugToLabel(listing.crewType) : "",
       specs: [
         { label: t("specs.year"), value: String(listing.specs.yearBuilt) },
         { label: t("specs.people"), value: String(listing.specs.berths) },
@@ -75,7 +74,7 @@ export function useListingCards() {
         { label: t("specs.baths"), value: String(listing.specs.heads) },
         {
           label: t("specs.mainsail"),
-          value: listing.specs.sailType ? prettify(listing.specs.sailType) : t("battenMainsail"),
+          value: listing.specs.sailType ? slugToLabel(listing.specs.sailType) : t("battenMainsail"),
         },
         { label: t("specs.cabins"), value: String(listing.specs.cabins) },
         { label: t("specs.length"), value: `${listing.specs.lengthM} m` },

@@ -8,11 +8,10 @@ import { useTranslations } from "next-intl";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
+import { slugToLabel } from "../../lib/slug-to-label";
 import { toMarina } from "../../lib/to-marina";
 
 const ACTION = "w-full md:flex-1 xl:w-auto xl:flex-none";
-
-const prettify = (slug: string) => slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
 
 export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
@@ -47,7 +46,7 @@ export default function TitleBlock() {
             {data.crewType ? (
               <Chip variant="neutral">
                 <Users />
-                {prettify(data.crewType)}
+                {slugToLabel(data.crewType)}
               </Chip>
             ) : null}
           </div>

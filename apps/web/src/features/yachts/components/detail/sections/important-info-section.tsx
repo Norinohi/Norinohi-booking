@@ -8,9 +8,8 @@ import { Image } from "@/components/shared/data-display/image";
 import { staticMapUrl } from "@/lib/mapbox";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
+import { slugToLabel } from "../../../lib/slug-to-label";
 import DetailSection from "./detail-section";
-
-const prettify = (slug: string) => slug.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
 type RowKey =
   | "charterCompany"
@@ -51,7 +50,7 @@ export default function ImportantInfoSection() {
     { key: "pets", value: info.pets },
     {
       key: "paymentMethods",
-      value: info.paymentMethodsAcceptedByCharterCompany.map(prettify).join(", "),
+      value: info.paymentMethodsAcceptedByCharterCompany.map(slugToLabel).join(", "),
     },
     { key: "marinaInfo", value: info.marinaInformation },
   ];
