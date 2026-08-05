@@ -18,25 +18,25 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
 
 import { Image } from "@/components/shared/data-display/image";
 
-const PHOTOS = [
-  { src: "/assets/yachts/gallery-1.jpg", alt: "Lagoon 42 anchored in a turquoise bay" },
-  { src: "/assets/yachts/lagoon-42.jpg", alt: "Lagoon 42 under sail off the Dalmatian coast" },
-  { src: "/assets/yachts/gallery-2.jpg", alt: "Lagoon 42 sailing with the spinnaker up" },
-  { src: "/assets/yachts/gallery-3.jpg", alt: "Guests relaxing in the Lagoon 42 cockpit" },
-  { src: "/assets/hero/hero-yacht.webp", alt: "Lagoon 42 moored at ACI Marina Split" },
-];
+import { useListingDetail } from "../../hooks/use-listing-detail";
 
 const ARROW = "rounded-lg bg-black/12 text-white hover:bg-black/25 hover:text-white";
 
 export default function Gallery() {
   const t = useTranslations("YachtDetail");
+  const { data } = useListingDetail();
   const [openAt, setOpenAt] = useState<number | null>(null);
+
+  if (!data) return null;
+
+  const sources = data.gallery.length ? data.gallery : [data.mainImage];
+  const photos = sources.map((src) => ({ src, alt: data.title }));
 
   return (
     <Carousel className="flex flex-col gap-4 md:gap-6" options={{ loop: true }}>
       <div className="relative h-50 w-full overflow-hidden rounded-2xl md:h-100">
         <CarouselViewport>
-          {PHOTOS.map((photo, index) => (
+          {photos.map((photo, index) => (
             <CarouselSlide key={photo.src}>
               <button
                 type="button"
@@ -71,7 +71,7 @@ export default function Gallery() {
         listClassName="gap-4 md:gap-6"
         itemClassName="basis-83.5 rounded-2xl opacity-100"
       >
-        {PHOTOS.map((photo) => (
+        {photos.map((photo) => (
           <div key={photo.src} className="relative h-37.5 w-full md:h-50">
             <Image src={photo.src} alt="" fill sizes="334px" className="object-cover" />
             <div aria-hidden className="absolute inset-0 bg-black/10" />
@@ -83,7 +83,7 @@ export default function Gallery() {
         open={openAt !== null}
         index={openAt ?? 0}
         close={() => setOpenAt(null)}
-        slides={PHOTOS.map((photo) => ({ src: photo.src, alt: photo.alt }))}
+        slides={photos.map((photo) => ({ src: photo.src, alt: photo.alt }))}
         plugins={[Zoom, Thumbnails]}
         thumbnails={{ imageFit: "cover" }}
         labels={{

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { Hydrated } from "@/components/layout/hydrated";
 import { YachtDetailScreen } from "@/features/yachts";
+import { prefetchListingDetail } from "@/features/yachts/api/server";
 import { buildMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -19,6 +21,13 @@ export async function generateMetadata({
   });
 }
 
-export default function YachtDetailPage() {
-  return <YachtDetailScreen />;
+export default async function YachtDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { state, title } = await prefetchListingDetail(id);
+
+  return (
+    <Hydrated state={state}>
+      <YachtDetailScreen title={title} />
+    </Hydrated>
+  );
 }

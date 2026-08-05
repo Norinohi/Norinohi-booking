@@ -13,13 +13,14 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
+import type { Route } from "next";
 import { useFormatter, useTranslations } from "next-intl";
 import { createElement, type ReactNode } from "react";
 
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
-import type { Marina } from "@/components/shared/overlay/marina-popover";
 
 import type { MapBoatCardProps } from "../components/map/map-boat-card";
+import { toMarina } from "../lib/to-marina";
 
 type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["results"]>>;
 type ResultItem = ResultsOutput["items"][number];
@@ -49,20 +50,6 @@ const PLACEHOLDER_DATES = {
 
 const prettify = (slug: string) => slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
 
-function toMarina(base: Listing["base"]): Marina {
-  return {
-    id: base.id,
-    name: base.name,
-    address: base.region,
-    city: base.location,
-    country: base.country,
-    phone: base.phone ?? undefined,
-    website: base.website ?? undefined,
-    email: base.email ?? undefined,
-    coordinates: { lat: base.lat, lng: base.lng },
-  };
-}
-
 export function useListingCards() {
   const t = useTranslations("Common.boatCard");
   const format = useFormatter();
@@ -72,6 +59,7 @@ export function useListingCards() {
   function toCard(listing: Listing): BoatCardProps & { id: string } {
     return {
       id: listing.id,
+      detailHref: `/yachts/${listing.slug}` as Route,
       images: listing.gallery.length ? listing.gallery : [listing.mainImage],
       imageAlt: t("imageAlt", { name: listing.title, marina: listing.base.name }),
       badges: listing.badges.map((badge) => ({ label: badge.label })),
@@ -119,6 +107,7 @@ export function useListingCards() {
     const card = toCard(listing);
     return {
       id: card.id,
+      detailHref: card.detailHref,
       images: card.images,
       imageAlt: card.imageAlt,
       badges: card.badges,

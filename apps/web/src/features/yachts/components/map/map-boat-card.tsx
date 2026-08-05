@@ -57,6 +57,7 @@ export type MapBoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
+  detailHref?: Route;
   layout?: keyof typeof LAYOUT;
   className?: string;
 };
@@ -74,6 +75,7 @@ export default function MapBoatCard({
   price,
   perPerson,
   prepayment,
+  detailHref,
   layout = "list",
   className,
 }: MapBoatCardProps) {
@@ -183,7 +185,7 @@ export default function MapBoatCard({
           variant="neutral"
           size="md"
           nativeButton={false}
-          render={<Link href={DETAIL_HREF} />}
+          render={<Link href={detailHref ?? DETAIL_HREF} />}
           className="w-full capitalize"
         >
           {t("viewDetails")}

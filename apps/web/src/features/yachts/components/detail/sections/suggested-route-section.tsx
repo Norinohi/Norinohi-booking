@@ -1,34 +1,20 @@
+"use client";
+
 import { cn } from "@yacht-charter/ui/lib/utils";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
-import { Image } from "@/components/shared/data-display/image";
-
+import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
 
-const SUBTITLE = "7-day itinerary through the best of Central Dalmatia";
+const RouteMap = dynamic(() => import("../route-map"), {
+  ssr: false,
+  loading: () => <div className="size-full bg-natural-100" />,
+});
 
-const DAYS = [
-  { title: "Day 1 — Split", text: "Check-in and evening in the historic Diocletian's Palace." },
-  {
-    title: "Day 2 — Hvar",
-    text: "Sail to the sunniest island, famous for lavender and nightlife.",
-  },
-  {
-    title: "Day 3 — Vis",
-    text: "Explore the remote military tunnels and authentic fishing charm.",
-  },
-  { title: "Day 4 — Blue Cave", text: "A magical natural phenomenon on the island of Biševo." },
-  { title: "Day 5 — Korčula", text: "Check-in and evening in the historic Diocletian's Palace." },
-  { title: "Day 6 — Bra", text: "Sail to the sunniest island, famous for lavender and nightlife." },
-  {
-    title: "Day 7 — Split",
-    text: "Explore the remote military tunnels and authentic fishing charm.",
-  },
-] as const;
+type Stop = { title: string; text: string };
 
-const COLUMNS = [DAYS.slice(0, 4), DAYS.slice(4)];
-
-function DayList({ days }: { days: readonly (typeof DAYS)[number][] }) {
+function DayList({ days }: { days: Stop[] }) {
   return (
     <ol className="relative flex min-w-0 flex-1 flex-col ">
       <span aria-hidden className="absolute inset-y-2 left-0.5 w-3 rounded-full bg-brand-50/50" />
@@ -59,24 +45,29 @@ function DayList({ days }: { days: readonly (typeof DAYS)[number][] }) {
 
 export default function SuggestedRouteSection() {
   const t = useTranslations("YachtDetail");
+  const { data } = useListingDetail();
+
+  if (!data) return null;
+
+  const route = data.suggestedRoute;
+  const stops: Stop[] = route.stops.map((stop) => ({ title: stop.title, text: stop.description }));
+  const mid = Math.ceil(stops.length / 2);
+  const columns = [stops.slice(0, mid), stops.slice(mid)];
 
   return (
     <DetailSection id="suggested-route" title={t("sections.suggestedRoute")}>
       <div className="flex flex-col gap-3">
-        <p className="text-xl text-foreground">{SUBTITLE}</p>
+        <p className="text-xl text-foreground">{route.title}</p>
 
-        <Image
-          src="/assets/yachts/route-map.png"
-          alt=""
-          width={1042}
-          height={435}
-          sizes="(min-width: 1280px) 1042px, 100vw"
-          className="h-78 w-full rounded-2xl object-cover md:h-108.75"
-        />
+        {route.stops.length ? (
+          <div className="h-78 w-full overflow-hidden rounded-2xl md:h-108.75">
+            <RouteMap stops={route.stops} />
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-10 pt-3 md:flex-row md:items-start">
-          {COLUMNS.map((column) => (
-            <DayList key={column[0]?.title} days={column} />
+          {columns.map((column, index) => (
+            <DayList key={index} days={column} />
           ))}
         </div>
       </div>

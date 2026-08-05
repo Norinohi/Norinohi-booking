@@ -17,22 +17,22 @@ import OverviewSection from "./sections/overview-section";
 import PopularYachtsSection from "./sections/popular-yachts-section";
 import ReviewSection from "./sections/review-section";
 import SuggestedRouteSection from "./sections/suggested-route-section";
-import TitleBlock, { YACHT_NAME } from "./title-block";
-
-const CRUMBS: AppBreadcrumb[] = [
-  { name: "YachtDetail.breadcrumbSearch", url: "/yachts" },
-  { name: YACHT_NAME, dynamic: true },
-];
+import TitleBlock from "./title-block";
 
 /* TODO: hardcoded booking route until listings carry a real id. */
 const BOOKING_HREF = "/yachts/lagoon-42/booking" as Route;
 
-export default function YachtDetailScreen() {
+export default function YachtDetailScreen({ title }: { title: string }) {
   const t = useTranslations("YachtDetail");
+
+  const breadcrumbs: AppBreadcrumb[] = [
+    { name: "YachtDetail.breadcrumbSearch", url: "/yachts" },
+    { name: title, dynamic: true },
+  ];
 
   return (
     <div className="flex flex-col">
-      <AppBreadcrumbs items={CRUMBS} backLabel="YachtDetail.backToSearch" backHref="/yachts" />
+      <AppBreadcrumbs items={breadcrumbs} backLabel="YachtDetail.backToSearch" backHref="/yachts" />
 
       <div className="w-full px-4 py-6 md:px-13.5">
         <SplitPanels

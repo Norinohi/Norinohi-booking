@@ -4,7 +4,9 @@ import { env } from "@yacht-charter/env/web";
 import { type ReactNode, useState } from "react";
 import Map, { type MapEvent } from "react-map-gl/mapbox";
 
-const MAP_STYLE = "mapbox://styles/testaccfor123098/cmsg01i3v00hn01sf5hecb7kb";
+import { MAP_STYLE_URL } from "@/lib/mapbox";
+
+const MAP_STYLE = MAP_STYLE_URL;
 const DIM_LAYER_ID = "design-dim";
 const DIM_OPACITY = 0.4;
 

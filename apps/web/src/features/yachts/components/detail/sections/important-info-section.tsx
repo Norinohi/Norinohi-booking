@@ -1,81 +1,113 @@
+"use client";
+
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Image } from "@/components/shared/data-display/image";
+import { staticMapUrl } from "@/lib/mapbox";
 
+import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
 
-const ROWS = [
-  { key: "charterCompany", value: "Ambassador Travel" },
-  { key: "pickUpAddress", value: "ACI Marina Split, Split, Croatia", map: true },
-  { key: "pickUp", value: "7 July, 2026", note: "17:00" },
-  { key: "dropOff", value: "14 July, 2026", note: "19:00" },
-  {
-    key: "policies",
-    value:
-      "Cancellation and prepayment policies vary according to your selection. Please check the payment conditions when selecting the price above. Check price",
-  },
-  { key: "license", value: "No license is needed" },
-  { key: "pets", value: "Pets are not permitted on this boat." },
-  { key: "paymentMethods", value: "Cash" },
-  {
-    key: "marinaInfo",
-    value:
-      "Marina Split is situated nearby Split, Croatia. It is located 14.9 miles from the nearest airport and 0.6 miles from Split city center. It also offers a restaurant.",
-  },
-] as const;
+const prettify = (slug: string) => slug.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+
+type RowKey =
+  | "charterCompany"
+  | "pickUpAddress"
+  | "pickUp"
+  | "dropOff"
+  | "policies"
+  | "license"
+  | "pets"
+  | "paymentMethods"
+  | "marinaInfo";
+
+type Row = {
+  key: RowKey;
+  value: string;
+  note?: string;
+  mapPoint?: { lat: number; lng: number };
+};
 
 export default function ImportantInfoSection() {
   const t = useTranslations("YachtDetail");
+  const { data } = useListingDetail();
+
+  if (!data) return null;
+
+  const info = data.importantInformation;
+  const rows: Row[] = [
+    { key: "charterCompany", value: info.charterCompany },
+    { key: "pickUpAddress", value: info.yachtPickupAddress, mapPoint: info.map },
+    { key: "pickUp", value: info.yachtPickup.date ?? "", note: info.yachtPickup.time ?? undefined },
+    {
+      key: "dropOff",
+      value: info.yachtDropOff.date ?? "",
+      note: info.yachtDropOff.time ?? undefined,
+    },
+    { key: "policies", value: info.cancellationPaymentPolicies },
+    { key: "license", value: info.sailingLicenseRequired },
+    { key: "pets", value: info.pets },
+    {
+      key: "paymentMethods",
+      value: info.paymentMethodsAcceptedByCharterCompany.map(prettify).join(", "),
+    },
+    { key: "marinaInfo", value: info.marinaInformation },
+  ];
 
   return (
     <DetailSection id="important-info" title={t("sections.importantInfo")}>
       <dl className="flex flex-col">
-        {ROWS.map((row) => {
-          const hasMap = "map" in row;
-          const note = "note" in row ? row.note : undefined;
-
-          return (
-            <div
-              key={row.key}
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className={cn(
+              "flex gap-4 border-b border-dashed border-border md:gap-10",
+              row.mapPoint ? "items-start" : "items-center",
+            )}
+          >
+            <dt
               className={cn(
-                "flex gap-4 border-b border-dashed border-border md:gap-10",
-                hasMap ? "items-start" : "items-center",
+                "min-w-0 flex-1 text-base font-bold leading-5.5 text-foreground",
+                row.mapPoint ? "pt-3" : "pt-3 pb-2.75",
               )}
             >
-              <dt
-                className={cn(
-                  "min-w-0 flex-1 text-base font-bold leading-5.5 text-foreground",
-                  hasMap ? "pt-3" : "pt-3 pb-2.75",
-                )}
-              >
-                {t(`importantInfo.${row.key}`)}
-              </dt>
-              <dd className="flex min-w-0 flex-1 flex-col gap-3 pt-3 pb-2.75">
-                <div className="flex flex-col gap-1">
-                  <p className={cn("text-base leading-5.5 text-foreground", note && "font-bold")}>
-                    {row.value}
+              {t(`importantInfo.${row.key}`)}
+            </dt>
+            <dd className="flex min-w-0 flex-1 flex-col gap-3 pt-3 pb-2.75">
+              <div className="flex flex-col gap-1">
+                <p className={cn("text-base leading-5.5 text-foreground", row.note && "font-bold")}>
+                  {row.value}
+                </p>
+                {row.note ? (
+                  <p className="text-sm leading-4.5 tracking-wider uppercase text-natural-500">
+                    {row.note}
                   </p>
-                  {note ? (
-                    <p className="text-sm leading-4.5 tracking-wider uppercase text-natural-500">
-                      {note}
-                    </p>
-                  ) : null}
-                </div>
-                {hasMap ? (
-                  <Image
-                    src="/assets/yachts/marina-map.png"
-                    alt=""
-                    width={501}
-                    height={236}
-                    sizes="501px"
-                    className="h-37 w-full rounded-2xl object-cover md:h-59"
-                  />
                 ) : null}
-              </dd>
-            </div>
-          );
-        })}
+              </div>
+              {row.mapPoint ? (
+                <div className="relative h-37 w-full overflow-hidden rounded-2xl md:h-59">
+                  <Image
+                    unoptimized
+                    src={staticMapUrl(row.mapPoint, { zoom: 9, size: "500x236@2x" })}
+                    alt=""
+                    fill
+                    sizes="501px"
+                    className="object-cover"
+                  />
+                  <span aria-hidden className="absolute inset-0 bg-black/40" />
+                  <span
+                    aria-hidden
+                    className="absolute top-1/2 left-1/2 flex size-21 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/25"
+                  >
+                    <MapPin className="size-6 fill-brand text-white" />
+                  </span>
+                </div>
+              ) : null}
+            </dd>
+          </div>
+        ))}
       </dl>
     </DetailSection>
   );

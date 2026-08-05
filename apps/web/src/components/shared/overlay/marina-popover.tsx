@@ -6,13 +6,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
-import { env } from "@yacht-charter/env/web";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight, Globe, Mail, MapPin, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
+import { staticMapUrl } from "@/lib/mapbox";
 
 export type Coordinates = { lat: number; lng: number };
 
@@ -28,14 +28,6 @@ export type Marina = {
   coordinates: Coordinates;
   mapImageUrl?: string;
 };
-
-const MAP_STYLE = "testaccfor123098/cmsg01i3v00hn01sf5hecb7kb";
-const MAP_ZOOM = 13;
-const MAP_SIZE = "480x320@2x";
-
-function staticMapUrl({ lat, lng }: Coordinates): string {
-  return `https://api.mapbox.com/styles/v1/${MAP_STYLE}/static/${lng},${lat},${MAP_ZOOM}/${MAP_SIZE}?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
-}
 
 function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (

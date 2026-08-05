@@ -51,6 +51,7 @@ export type BoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
+  detailHref?: Route;
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
   summary?: boolean;
@@ -232,9 +233,18 @@ function Action({
   price,
   perPerson,
   prepayment,
+  detailHref,
 }: Pick<
   BoatCardProps,
-  "stats" | "start" | "end" | "timeZone" | "priceLabel" | "price" | "perPerson" | "prepayment"
+  | "stats"
+  | "start"
+  | "end"
+  | "timeZone"
+  | "priceLabel"
+  | "price"
+  | "perPerson"
+  | "prepayment"
+  | "detailHref"
 >) {
   const t = useTranslations("Common.boatCard");
 
@@ -279,7 +289,7 @@ function Action({
           variant="neutral"
           size="md"
           nativeButton={false}
-          render={<Link href={DETAIL_HREF} />}
+          render={<Link href={detailHref ?? DETAIL_HREF} />}
           className="w-full capitalize"
         >
           {t("viewDetails")}
@@ -326,6 +336,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           price={boat.price}
           perPerson={boat.perPerson}
           prepayment={boat.prepayment}
+          detailHref={boat.detailHref}
         />
       )}
     </article>
