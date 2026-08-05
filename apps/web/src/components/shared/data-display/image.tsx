@@ -11,7 +11,10 @@ function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
     "c_limit",
     `w_${width}`,
   ].join(",");
-  return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${transforms}/${src}`;
+  const remote = /^https?:\/\//.test(src);
+  const type = remote ? "fetch" : "upload";
+  const asset = remote ? encodeURIComponent(src) : src;
+  return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/${type}/${transforms}/${asset}`;
 }
 
 function isLocal(src: ImageSrc): boolean {

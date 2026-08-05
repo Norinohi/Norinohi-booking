@@ -4,23 +4,13 @@ import { env } from "@yacht-charter/env/web";
 import { type ReactNode, useState } from "react";
 import Map, { type MapEvent } from "react-map-gl/mapbox";
 
-const MAP_STYLE = "mapbox://styles/mapbox/streets-v12";
+const MAP_STYLE = "mapbox://styles/testaccfor123098/cmsg01i3v00hn01sf5hecb7kb";
 const DIM_LAYER_ID = "design-dim";
 const DIM_OPACITY = 0.4;
 
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
 
-const PALETTE = [
-  ["land", "background-color", "hsl(141, 54%, 87%)"],
-  ["road-motorway-trunk", "line-color", "hsl(0, 0%, 100%)"],
-  ["road-motorway-trunk-case", "line-color", "hsl(220, 20%, 85%)"],
-] as const;
-
 function styleBasemap({ target: map }: MapEvent) {
-  for (const [layer, property, value] of PALETTE) {
-    if (map.getLayer(layer)) map.setPaintProperty(layer, property, value);
-  }
-
   if (!map.getLayer(DIM_LAYER_ID)) {
     map.addLayer({
       id: DIM_LAYER_ID,

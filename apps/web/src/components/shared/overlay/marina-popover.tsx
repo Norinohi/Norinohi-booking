@@ -6,6 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
+import { env } from "@yacht-charter/env/web";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight, Globe, Mail, MapPin, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -27,6 +28,14 @@ export type Marina = {
   coordinates: Coordinates;
   mapImageUrl?: string;
 };
+
+const MAP_STYLE = "testaccfor123098/cmsg01i3v00hn01sf5hecb7kb";
+const MAP_ZOOM = 13;
+const MAP_SIZE = "480x320@2x";
+
+function staticMapUrl({ lat, lng }: Coordinates): string {
+  return `https://api.mapbox.com/styles/v1/${MAP_STYLE}/static/${lng},${lat},${MAP_ZOOM}/${MAP_SIZE}?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}`;
+}
 
 function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
@@ -51,16 +60,15 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
     <article className={cn("w-full overflow-hidden rounded-2xl", className)}>
       <div className="flex flex-col md:flex-row md:items-stretch md:gap-4">
         <div className="relative h-41 w-full shrink-0 md:h-auto md:w-57">
-          {marina.mapImageUrl ? (
-            <Image
-              src={marina.mapImageUrl}
-              alt=""
-              fill
-              sizes="(min-width: 768px) 228px, 100vw"
-              className="object-cover"
-            />
-          ) : null}
-          <div aria-hidden className="absolute inset-0 bg-black/30" />
+          <Image
+            src={marina.mapImageUrl ?? staticMapUrl(marina.coordinates)}
+            alt=""
+            fill
+            unoptimized
+            sizes="(min-width: 768px) 228px, 100vw"
+            className="object-cover"
+          />
+          <div aria-hidden className="absolute inset-0 bg-black/40" />
 
           <div
             aria-hidden

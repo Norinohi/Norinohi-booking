@@ -2,6 +2,7 @@
 
 import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
+import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
@@ -11,6 +12,7 @@ import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 import BoatCard from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
+import Loader from "@/components/shared/feedback/loader";
 import {
   clearFilterKeys,
   type FilterChip,
@@ -22,10 +24,10 @@ import {
 
 import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
-import { useBoatCards } from "@/hooks/use-boat-cards";
-import { getBoatsPage, RESULTS_PER_PAGE, RESULTS_TOTAL } from "@/lib/sample-boats";
-
+import { resultsQueryOptions } from "../../api/queries";
+import { useListingCards } from "../../hooks/use-listing-cards";
 import { useSearchFilters } from "../../hooks/use-search-filters";
+import { toSearchInput } from "../../lib/to-search-input";
 import ResultsHeader, { SORT_OPTIONS } from "./results-header";
 import SearchBar from "./search-bar";
 
@@ -41,8 +43,12 @@ export default function SearchScreen() {
   const filtersRef = useFillToFold("64rem");
 
   const t = useTranslations("Yachts");
-  const { toSearchCard } = useBoatCards();
-  const boats = getBoatsPage(page).map(toSearchCard);
+  const { toCard } = useListingCards();
+  const { data, isLoading } = useQuery(
+    resultsQueryOptions(toSearchInput(filters, defaults, { sort, page })),
+  );
+  const boats = data?.items.map(toCard) ?? [];
+  const pagination = data?.pagination;
   const chips = useFilterChips(filters);
 
   function applyFilters(next: FiltersState) {
@@ -100,12 +106,14 @@ export default function SearchScreen() {
             <ResultsHeader
               chips={chips}
               onRemoveChip={removeChip}
-              total={RESULTS_TOTAL}
+              total={pagination?.totalItems ?? 0}
               sort={sort}
               onSortChange={setSort}
             />
 
-            {boats.length === 0 ? (
+            {isLoading ? (
+              <Loader />
+            ) : boats.length === 0 ? (
               <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
             ) : (
               boats.map(({ id, ...boat }, index) => (
@@ -116,8 +124,8 @@ export default function SearchScreen() {
             <PaginationControl
               className="pt-1"
               page={page}
-              pageSize={RESULTS_PER_PAGE}
-              total={RESULTS_TOTAL}
+              pageSize={pagination?.pageSize ?? 10}
+              total={pagination?.totalItems ?? 0}
               onPageChange={setPage}
             />
           </div>
