@@ -5,6 +5,26 @@ export const moneySchema = z.object({
   currency: z.string().length(3),
 });
 
+const stringArrayParamSchema = z
+  .union([z.string(), z.array(z.string())])
+  .transform((value) => (Array.isArray(value) ? value : [value]))
+  .optional();
+
+const booleanParamSchema = z
+  .union([z.boolean(), z.enum(["true", "false"])])
+  .transform((value) => value === true || value === "true")
+  .optional();
+
+const facetOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+});
+
+const numberRangeSchema = z.object({
+  min: z.number(),
+  max: z.number(),
+});
+
 export const listingSummarySchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -46,6 +66,36 @@ export const listingSearchInputSchema = z.object({
   category: z.string().optional(),
   minCabins: z.coerce.number().int().positive().optional(),
   maxPriceMinor: z.coerce.number().int().positive().optional(),
+  country: stringArrayParamSchema,
+  sailingArea: stringArrayParamSchema,
+  charterCompany: stringArrayParamSchema,
+  marina: stringArrayParamSchema,
+  boatType: stringArrayParamSchema,
+  model: stringArrayParamSchema,
+  crew: stringArrayParamSchema,
+  mainsailType: stringArrayParamSchema,
+  equipment: stringArrayParamSchema,
+  startDate: z.string().optional(),
+  duration: z.coerce.number().int().positive().optional(),
+  dateFlexibility: z.enum(["on-day", "1-3-days", "1-week", "2-weeks", "1-month"]).optional(),
+  minLength: z.coerce.number().nonnegative().optional(),
+  maxLength: z.coerce.number().nonnegative().optional(),
+  maxCabins: z.coerce.number().int().nonnegative().optional(),
+  minBerths: z.coerce.number().int().nonnegative().optional(),
+  maxBerths: z.coerce.number().int().nonnegative().optional(),
+  minBathrooms: z.coerce.number().int().nonnegative().optional(),
+  maxBathrooms: z.coerce.number().int().nonnegative().optional(),
+  minPriceMinor: z.coerce.number().int().nonnegative().optional(),
+  minBoatAge: z.coerce.number().int().nonnegative().optional(),
+  maxBoatAge: z.coerce.number().int().nonnegative().optional(),
+  yearFrom: z.coerce.number().int().optional(),
+  yearTo: z.coerce.number().int().optional(),
+  minGuestRating: z.coerce.number().min(0).max(5).optional(),
+  maxGuestRating: z.coerce.number().min(0).max(5).optional(),
+  withoutAvailabilityConfirmation: booleanParamSchema,
+  underTemporaryBooking: booleanParamSchema,
+  depositInsurance: booleanParamSchema,
+  petsAllowed: booleanParamSchema,
   currency: z.string().length(3).default("EUR"),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).optional(),
@@ -83,6 +133,41 @@ export const facetsSchema = z.object({
   destinations: z.array(z.string()),
   categories: z.array(z.string()),
   amenities: z.array(z.string()),
+  options: z.object({
+    countries: z.array(facetOptionSchema),
+    sailingAreas: z.array(facetOptionSchema),
+    charterCompanies: z.array(facetOptionSchema),
+    marinas: z.array(facetOptionSchema),
+    durations: z.array(facetOptionSchema),
+    dateFlexibility: z.array(facetOptionSchema),
+    boatTypes: z.array(facetOptionSchema),
+    models: z.array(facetOptionSchema),
+    crews: z.array(facetOptionSchema),
+    mainsailTypes: z.array(facetOptionSchema),
+    equipment: z.array(facetOptionSchema),
+    lengthUnits: z.array(facetOptionSchema),
+    years: z.array(facetOptionSchema),
+  }),
+  ranges: z.object({
+    length: numberRangeSchema,
+    cabins: numberRangeSchema,
+    berths: numberRangeSchema,
+    bathrooms: numberRangeSchema,
+    price: z.object({
+      minMinor: z.number().int(),
+      maxMinor: z.number().int(),
+      currency: z.string().length(3),
+    }),
+    boatAge: numberRangeSchema,
+    year: numberRangeSchema,
+    guestRating: numberRangeSchema,
+  }),
+  toggles: z.object({
+    withoutAvailabilityConfirmation: z.boolean(),
+    underTemporaryBooking: z.boolean(),
+    depositInsurance: z.boolean(),
+    petsAllowed: z.boolean(),
+  }),
   priceRange: z.object({
     minMinor: z.number().int(),
     maxMinor: z.number().int(),

@@ -7,6 +7,7 @@ import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
   ListingFacets,
+  ListingFacetOption,
   ListingMapMarker,
   ListingSearchDoc,
   ListingSearchInput,
@@ -23,6 +24,39 @@ const MAX_LIMIT = 50;
 const NULL_PRICE_ASC = 2_147_483_647;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
+const CURRENT_YEAR = new Date().getUTCFullYear();
+
+const DEFAULT_DURATIONS: ListingFacetOption[] = [
+  { value: "7", label: "7 days" },
+  { value: "3", label: "3 days" },
+  { value: "10", label: "10 days" },
+  { value: "14", label: "14 days" },
+];
+
+const DEFAULT_DATE_FLEXIBILITY: ListingFacetOption[] = [
+  { value: "on-day", label: "On day" },
+  { value: "1-3-days", label: "In 1-3 days" },
+  { value: "1-week", label: "In 1 week" },
+  { value: "2-weeks", label: "In 2 weeks" },
+  { value: "1-month", label: "In 1 month" },
+];
+
+const DEFAULT_CREWS: ListingFacetOption[] = [
+  { value: "full-crew", label: "Full crew" },
+  { value: "skipper", label: "Skipper" },
+  { value: "bareboat", label: "Bareboat" },
+];
+
+const DEFAULT_MAINSAIL_TYPES: ListingFacetOption[] = [
+  { value: "classic", label: "Classic" },
+  { value: "furling", label: "Furling" },
+  { value: "lazy-bag", label: "Lazy bag" },
+];
+
+const DEFAULT_LENGTH_UNITS: ListingFacetOption[] = [
+  { value: "ft", label: "ft" },
+  { value: "m", label: "m" },
+];
 
 export async function searchListings(
   db: NodePgDatabase<typeof schema>,
@@ -102,35 +136,114 @@ export async function listSearchFacets(
   input: ListingSearchInput = {},
 ): Promise<ListingFacets> {
   const rows = await db.execute<{
-    destinations: string[];
-    categories: string[];
-    amenities: string[];
+    countries: string[];
+    sailingAreas: string[];
+    charterCompanies: string[];
+    marinas: string[];
+    boatTypes: string[];
+    models: string[];
+    equipment: string[];
+    years: number[];
+    minLength: string | null;
+    maxLength: string | null;
+    minCabins: number | null;
+    maxCabins: number | null;
+    minBerths: number | null;
+    maxBerths: number | null;
+    minBathrooms: number | null;
+    maxBathrooms: number | null;
     minMinor: number | null;
     maxMinor: number | null;
+    minYear: number | null;
+    maxYear: number | null;
+    minRating: string | null;
+    maxRating: string | null;
     currency: string | null;
   }>(sql`
     select
-      coalesce(jsonb_agg(distinct doc.country) filter (where doc.country is not null), '[]'::jsonb) as destinations,
-      coalesce(jsonb_agg(distinct doc.category) filter (where doc.category is not null), '[]'::jsonb) as categories,
-      coalesce(jsonb_agg(distinct amenity.value) filter (where amenity.value is not null), '[]'::jsonb) as amenities,
+      coalesce(jsonb_agg(distinct doc.country) filter (where doc.country is not null), '[]'::jsonb) as countries,
+      coalesce(jsonb_agg(distinct doc.region) filter (where doc.region is not null), '[]'::jsonb) as "sailingAreas",
+      coalesce(jsonb_agg(distinct doc.operator) filter (where doc.operator is not null), '[]'::jsonb) as "charterCompanies",
+      coalesce(jsonb_agg(distinct doc.base_name) filter (where doc.base_name is not null), '[]'::jsonb) as marinas,
+      coalesce(jsonb_agg(distinct doc.category) filter (where doc.category is not null), '[]'::jsonb) as "boatTypes",
+      coalesce(jsonb_agg(distinct coalesce(doc.model, doc.builder)) filter (where coalesce(doc.model, doc.builder) is not null), '[]'::jsonb) as models,
+      coalesce(jsonb_agg(distinct amenity.value) filter (where amenity.value is not null), '[]'::jsonb) as equipment,
+      coalesce(jsonb_agg(distinct doc.year_built) filter (where doc.year_built is not null), '[]'::jsonb) as years,
+      min(doc.length_m) as "minLength",
+      max(doc.length_m) as "maxLength",
+      min(doc.cabins) as "minCabins",
+      max(doc.cabins) as "maxCabins",
+      min(doc.berths) as "minBerths",
+      max(doc.berths) as "maxBerths",
+      min(doc.heads) as "minBathrooms",
+      max(doc.heads) as "maxBathrooms",
       min(doc.price_from_minor) as "minMinor",
       max(doc.price_from_minor) as "maxMinor",
+      min(doc.year_built) as "minYear",
+      max(doc.year_built) as "maxYear",
+      min(doc.rating) as "minRating",
+      max(doc.rating) as "maxRating",
       coalesce(min(doc.currency), ${input.currency ?? "EUR"}) as currency
     from listing_search_doc doc
     left join lateral jsonb_array_elements_text(doc.amenities) amenity(value) on true
     where ${whereClause(input)}
   `);
   const row = rows.rows[0];
+  const countries = sortedStrings(row?.countries);
+  const sailingAreas = sortedStrings(row?.sailingAreas);
+  const charterCompanies = sortedStrings(row?.charterCompanies);
+  const marinas = sortedStrings(row?.marinas);
+  const boatTypes = sortedStrings(row?.boatTypes);
+  const models = sortedStrings(row?.models);
+  const equipment = sortedStrings(row?.equipment);
+  const years = sortedNumbers(row?.years);
+  const currency = row?.currency ?? input.currency ?? "EUR";
+  const priceRange = {
+    minMinor: row?.minMinor ?? 0,
+    maxMinor: row?.maxMinor ?? 0,
+    currency,
+  };
+  const yearRange = numberRange(row?.minYear, row?.maxYear);
 
   return {
-    destinations: sortedStrings(row?.destinations),
-    categories: sortedStrings(row?.categories),
-    amenities: sortedStrings(row?.amenities),
-    priceRange: {
-      minMinor: row?.minMinor ?? 0,
-      maxMinor: row?.maxMinor ?? 0,
-      currency: row?.currency ?? input.currency ?? "EUR",
+    destinations: countries,
+    categories: boatTypes,
+    amenities: equipment,
+    options: {
+      countries: optionsFromStrings(countries),
+      sailingAreas: optionsFromStrings(sailingAreas),
+      charterCompanies: optionsFromStrings(charterCompanies),
+      marinas: optionsFromStrings(marinas),
+      durations: DEFAULT_DURATIONS,
+      dateFlexibility: DEFAULT_DATE_FLEXIBILITY,
+      boatTypes: optionsFromStrings(boatTypes),
+      models: optionsFromStrings(models),
+      crews: DEFAULT_CREWS,
+      mainsailTypes: DEFAULT_MAINSAIL_TYPES,
+      equipment: optionsFromStrings(equipment),
+      lengthUnits: DEFAULT_LENGTH_UNITS,
+      years: [
+        { value: "any", label: "Any year" },
+        ...years.map((year) => ({ value: String(year), label: String(year) })),
+      ],
     },
+    ranges: {
+      length: numberRange(row?.minLength, row?.maxLength),
+      cabins: numberRange(row?.minCabins, row?.maxCabins),
+      berths: numberRange(row?.minBerths, row?.maxBerths),
+      bathrooms: numberRange(row?.minBathrooms, row?.maxBathrooms),
+      price: priceRange,
+      boatAge: boatAgeRange(yearRange),
+      year: yearRange,
+      guestRating: numberRange(row?.minRating, row?.maxRating),
+    },
+    toggles: {
+      withoutAvailabilityConfirmation: true,
+      underTemporaryBooking: true,
+      depositInsurance: true,
+      petsAllowed: true,
+    },
+    priceRange,
   };
 }
 
@@ -320,18 +433,58 @@ function whereClause(input: ListingSearchInput): SQL {
   }
   if (input.query) parts.push(sql`doc.searchable_text ilike ${`%${input.query}%`}`);
   if (input.category) parts.push(sql`doc.category = ${input.category}`);
+  if (input.country?.length) parts.push(normalizedIn(sql`doc.country`, input.country));
+  if (input.sailingArea?.length) parts.push(normalizedIn(sql`doc.region`, input.sailingArea));
+  if (input.charterCompany?.length) {
+    parts.push(normalizedIn(sql`doc.operator`, input.charterCompany));
+  }
+  if (input.marina?.length) {
+    parts.push(sql`(${normalizedIn(sql`doc.base_name`, input.marina)} or ${normalizedIn(sql`doc.base_id`, input.marina)})`);
+  }
+  if (input.boatType?.length) parts.push(normalizedIn(sql`doc.category`, input.boatType));
+  if (input.model?.length) {
+    parts.push(sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`);
+  }
+  if (input.equipment?.length) {
+    for (const value of input.equipment) {
+      parts.push(sql`exists (
+        select 1
+        from jsonb_array_elements_text(doc.amenities) amenity(value)
+        where ${normalizedIn(sql`amenity.value`, [value])}
+      )`);
+    }
+  }
   if (input.minCabins) parts.push(sql`doc.cabins >= ${input.minCabins}`);
+  if (input.maxCabins !== undefined) parts.push(sql`doc.cabins <= ${input.maxCabins}`);
   if (input.guests) parts.push(sql`doc.berths >= ${input.guests}`);
+  if (input.minBerths !== undefined) parts.push(sql`doc.berths >= ${input.minBerths}`);
+  if (input.maxBerths !== undefined) parts.push(sql`doc.berths <= ${input.maxBerths}`);
+  if (input.minBathrooms !== undefined) parts.push(sql`doc.heads >= ${input.minBathrooms}`);
+  if (input.maxBathrooms !== undefined) parts.push(sql`doc.heads <= ${input.maxBathrooms}`);
+  if (input.minLength !== undefined) parts.push(sql`doc.length_m >= ${input.minLength}`);
+  if (input.maxLength !== undefined) parts.push(sql`doc.length_m <= ${input.maxLength}`);
+  if (input.minGuestRating !== undefined) parts.push(sql`doc.rating >= ${input.minGuestRating}`);
+  if (input.maxGuestRating !== undefined) parts.push(sql`doc.rating <= ${input.maxGuestRating}`);
+  if (input.yearFrom !== undefined) parts.push(sql`doc.year_built >= ${input.yearFrom}`);
+  if (input.yearTo !== undefined) parts.push(sql`doc.year_built <= ${input.yearTo}`);
+  if (input.minBoatAge !== undefined) {
+    parts.push(sql`doc.year_built <= ${CURRENT_YEAR - input.minBoatAge}`);
+  }
+  if (input.maxBoatAge !== undefined) {
+    parts.push(sql`doc.year_built >= ${CURRENT_YEAR - input.maxBoatAge}`);
+  }
+  if (input.minPriceMinor) parts.push(sql`doc.price_from_minor >= ${input.minPriceMinor}`);
   if (input.maxPriceMinor) parts.push(sql`doc.price_from_minor <= ${input.maxPriceMinor}`);
   if (input.currency) parts.push(sql`doc.currency = ${input.currency}`);
-  if (input.checkIn && input.checkOut) {
+  const availabilityWindow = availabilityWindowFor(input);
+  if (availabilityWindow) {
     parts.push(sql`exists (
       select 1
       from availability_slot slot
       where slot.listing_id = doc.listing_id
         and slot.status = 'available'
-        and slot.start_date <= ${input.checkIn}
-        and slot.end_date >= ${input.checkOut}
+        and slot.start_date <= ${availabilityWindow.checkIn}
+        and slot.end_date >= ${availabilityWindow.checkOut}
     )`);
   }
   return sql.join(parts, sql` and `);
@@ -409,6 +562,95 @@ function paginationFor(input: {
     hasPreviousPage: input.page > 1,
     hasNextPage: input.page < totalPages,
   };
+}
+
+function optionsFromStrings(values: string[]): ListingFacetOption[] {
+  return values.map((label) => ({ value: valueForLabel(label), label }));
+}
+
+function valueForLabel(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function normalizedIn(column: SQL, values: string[]): SQL {
+  const normalizedValues = values.map(normalizedFilterValue).filter(Boolean);
+  if (normalizedValues.length === 0) return sql`false`;
+
+  return sql`${normalizedSql(column)} in (${sql.join(
+    normalizedValues.map((value) => sql`${value}`),
+    sql`, `,
+  )})`;
+}
+
+function normalizedSql(value: SQL): SQL {
+  return sql`regexp_replace(lower(coalesce(${value}, '')), '[^a-z0-9]+', '', 'g')`;
+}
+
+function normalizedFilterValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function availabilityWindowFor(
+  input: ListingSearchInput,
+): { checkIn: string; checkOut: string } | undefined {
+  if (input.checkIn && input.checkOut) {
+    return { checkIn: input.checkIn, checkOut: input.checkOut };
+  }
+
+  if (!input.startDate || !input.duration) return undefined;
+
+  const start = new Date(`${input.startDate}T00:00:00.000Z`);
+  if (Number.isNaN(start.getTime())) return undefined;
+
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + input.duration);
+
+  return {
+    checkIn: start.toISOString().slice(0, 10),
+    checkOut: end.toISOString().slice(0, 10),
+  };
+}
+
+function numberRange(min: unknown, max: unknown): { min: number; max: number } {
+  const normalizedMin = numberOrZero(min);
+  const normalizedMax = numberOrZero(max);
+
+  return {
+    min: Math.min(normalizedMin, normalizedMax),
+    max: Math.max(normalizedMin, normalizedMax),
+  };
+}
+
+function numberOrZero(value: unknown): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function boatAgeRange(yearRange: { min: number; max: number }): { min: number; max: number } {
+  if (yearRange.min === 0 && yearRange.max === 0) return { min: 0, max: 0 };
+
+  return {
+    min: Math.max(CURRENT_YEAR - yearRange.max, 0),
+    max: Math.max(CURRENT_YEAR - yearRange.min, 0),
+  };
+}
+
+function sortedNumbers(values: unknown): number[] {
+  return Array.isArray(values)
+    ? values
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b)
+    : [];
 }
 
 function sortedStrings(values: unknown): string[] {

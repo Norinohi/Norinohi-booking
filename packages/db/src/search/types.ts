@@ -9,6 +9,36 @@ export type ListingSearchInput = {
   category?: string;
   minCabins?: number;
   maxPriceMinor?: number;
+  country?: string[];
+  sailingArea?: string[];
+  charterCompany?: string[];
+  marina?: string[];
+  boatType?: string[];
+  model?: string[];
+  crew?: string[];
+  mainsailType?: string[];
+  equipment?: string[];
+  startDate?: string;
+  duration?: number;
+  dateFlexibility?: "on-day" | "1-3-days" | "1-week" | "2-weeks" | "1-month";
+  minLength?: number;
+  maxLength?: number;
+  maxCabins?: number;
+  minBerths?: number;
+  maxBerths?: number;
+  minBathrooms?: number;
+  maxBathrooms?: number;
+  minPriceMinor?: number;
+  minBoatAge?: number;
+  maxBoatAge?: number;
+  yearFrom?: number;
+  yearTo?: number;
+  minGuestRating?: number;
+  maxGuestRating?: number;
+  withoutAvailabilityConfirmation?: boolean;
+  underTemporaryBooking?: boolean;
+  depositInsurance?: boolean;
+  petsAllowed?: boolean;
   currency?: string;
   cursor?: string;
   limit?: number;
@@ -65,10 +95,50 @@ export type ListingSearchPagination = {
   hasNextPage: boolean;
 };
 
+export type ListingFacetOption = {
+  value: string;
+  label: string;
+};
+
 export type ListingFacets = {
   destinations: string[];
   categories: string[];
   amenities: string[];
+  options: {
+    countries: ListingFacetOption[];
+    sailingAreas: ListingFacetOption[];
+    charterCompanies: ListingFacetOption[];
+    marinas: ListingFacetOption[];
+    durations: ListingFacetOption[];
+    dateFlexibility: ListingFacetOption[];
+    boatTypes: ListingFacetOption[];
+    models: ListingFacetOption[];
+    crews: ListingFacetOption[];
+    mainsailTypes: ListingFacetOption[];
+    equipment: ListingFacetOption[];
+    lengthUnits: ListingFacetOption[];
+    years: ListingFacetOption[];
+  };
+  ranges: {
+    length: { min: number; max: number };
+    cabins: { min: number; max: number };
+    berths: { min: number; max: number };
+    bathrooms: { min: number; max: number };
+    price: {
+      minMinor: number;
+      maxMinor: number;
+      currency: string;
+    };
+    boatAge: { min: number; max: number };
+    year: { min: number; max: number };
+    guestRating: { min: number; max: number };
+  };
+  toggles: {
+    withoutAvailabilityConfirmation: boolean;
+    underTemporaryBooking: boolean;
+    depositInsurance: boolean;
+    petsAllowed: boolean;
+  };
   priceRange: {
     minMinor: number;
     maxMinor: number;
