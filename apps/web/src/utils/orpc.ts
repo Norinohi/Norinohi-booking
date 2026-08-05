@@ -6,8 +6,11 @@ import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+export const QUERY_DEFAULTS = { queries: { staleTime: 60_000 } } as const;
+
 export function createQueryClient() {
   return new QueryClient({
+    defaultOptions: QUERY_DEFAULTS,
     queryCache: new QueryCache({
       onError: (error, query) => {
         toast.error(`Error: ${error.message}`, {
