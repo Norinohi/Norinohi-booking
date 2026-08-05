@@ -2,13 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { type DateRange } from "@yacht-charter/ui/components/form/calendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
+import { Select } from "@yacht-charter/ui/components/form/select";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { MapPin, Search, Ship, Users } from "lucide-react";
 import { motion } from "motion/react";
@@ -19,7 +13,7 @@ import { useState } from "react";
 
 import AnimatedNumber from "@/components/shared/data-display/animated-number";
 import DatePicker from "@/components/shared/form/date-picker";
-import { labelOf, type Option, useFilterOptions } from "@/components/shared/form/filters";
+import { useFilterOptions } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { dayFromNative, daysBetween } from "@/lib/date";
 import { GROUP, RISE } from "@/lib/motion";
@@ -31,43 +25,9 @@ const STATS = [
   { key: "rating", value: 4.8, decimals: 1 },
 ] as const;
 
-function HeroSelect({
-  icon,
-  placeholder,
-  options,
-  value,
-  onValueChange,
-}: {
-  icon: React.ReactNode;
-  placeholder: string;
-  options: Option[];
-  value: string | undefined;
-  onValueChange: (value: string) => void;
-}) {
-  return (
-    <Select value={value} onValueChange={(next) => onValueChange(next as string)}>
-      <SelectTrigger className="h-12 min-w-0">
-        <span className="flex min-w-0 flex-1 items-center gap-2">
-          {icon}
-          <SelectValue placeholder={placeholder}>
-            {(current) => (current ? labelOf(options, current as string) : placeholder)}
-          </SelectValue>
-        </span>
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 function SearchCard() {
   const t = useTranslations("Home.Hero");
-  const options = useFilterOptions();
+  const { options, isPending } = useFilterOptions();
   const [country, setCountry] = useState<string>();
   const [boatType, setBoatType] = useState<string>();
   const [crew, setCrew] = useState<string>();
@@ -87,12 +47,14 @@ function SearchCard() {
       className="mx-auto w-full max-w-122.25 shrink-0 rounded-2xl bg-card p-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)] xl:mx-0 xl:w-109.5"
     >
       <div className="flex flex-col gap-4">
-        <HeroSelect
+        <Select
+          className="h-12 min-w-0"
           icon={<MapPin className="size-6 shrink-0 text-foreground" />}
           placeholder={t("wherePlaceholder")}
           options={options.countries}
           value={country}
           onValueChange={setCountry}
+          isLoading={isPending}
         />
 
         <DatePicker
@@ -103,19 +65,23 @@ function SearchCard() {
           clearLabel={t("clearDates")}
         />
 
-        <HeroSelect
+        <Select
+          className="h-12 min-w-0"
           icon={<Ship className="size-6 shrink-0 text-foreground" />}
           placeholder={t("boatPlaceholder")}
           options={options.boatTypes}
           value={boatType}
           onValueChange={setBoatType}
+          isLoading={isPending}
         />
-        <HeroSelect
+        <Select
+          className="h-12 min-w-0"
           icon={<Users className="size-6 shrink-0 text-foreground" />}
           placeholder={t("captainPlaceholder")}
           options={options.crews}
           value={crew}
           onValueChange={setCrew}
+          isLoading={isPending}
         />
 
         <Button

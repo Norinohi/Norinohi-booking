@@ -15,7 +15,7 @@ const SHOWN_LABELS = 2;
 export function useFilterChips(state: FiltersState): FilterChip[] {
   const t = useTranslations("Filters.chips");
   const format = useFormatter();
-  const options = useFilterOptions();
+  const { options } = useFilterOptions();
   const { defaults } = useFilterRanges();
 
   /** Two names then a counter, so a chip stays readable when many boxes are ticked. */

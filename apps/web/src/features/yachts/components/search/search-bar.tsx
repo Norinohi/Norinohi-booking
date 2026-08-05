@@ -32,7 +32,7 @@ export type SearchBarProps = {
 export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const t = useTranslations("Yachts.searchBar");
   const [draft, setDraft] = useDraft(value);
-  const options = useFilterOptions();
+  const { options } = useFilterOptions();
   const [pending, setPending] = useState<DateRange | null>(null);
 
   const range = pending ?? toRange(draft);

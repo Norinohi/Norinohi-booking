@@ -7,7 +7,7 @@ import { useFilterOptions } from "../../hooks/use-filter-options";
 
 export default function WhereSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
-  const options = useFilterOptions();
+  const { options } = useFilterOptions();
 
   return (
     <Section value="where" title={t("sections.where")}>

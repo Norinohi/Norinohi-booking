@@ -12,7 +12,7 @@ const FEET_TO_METRES = 0.3048;
 export default function SpecsSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
   const format = useFormatter();
-  const options = useFilterOptions();
+  const { options } = useFilterOptions();
   const { ranges } = useFilterRanges();
   const [lengthUnit, setLengthUnit] = useState("ft");
 

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
+import { Select } from "@yacht-charter/ui/components/form/select";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useQuery } from "@tanstack/react-query";
@@ -60,22 +54,12 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
         </p>
 
         <Select
+          className="h-12 w-full min-w-0"
+          options={SORT_OPTIONS.map((value) => ({ value, label: t(`sorting.${value}`) }))}
           value={sort}
           onValueChange={(next) => setSort((next ?? "recommended") as SortValue)}
-        >
-          <SelectTrigger className="h-12 w-full min-w-0">
-            <SelectValue>
-              {(value) => t("sorting.label", { value: t(`sorting.${value as SortValue}`) })}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {t(`sorting.${value}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          renderValue={(value) => t("sorting.label", { value: t(`sorting.${value as SortValue}`) })}
+        />
       </div>
 
       <ScrollArea className="min-h-0 flex-1">

@@ -1,13 +1,7 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
+import { Select } from "@yacht-charter/ui/components/form/select";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
@@ -46,8 +40,6 @@ const SELECTS = [
   },
 ] as const;
 
-type BudgetOptionKey = (typeof SELECTS)[number]["options"][number];
-
 export default function BudgetFinder() {
   const t = useTranslations("Home.BudgetFinder");
 
@@ -74,18 +66,14 @@ export default function BudgetFinder() {
                 <span className="text-sm leading-[1.2] font-semibold text-natural-700">
                   {t(`labels.${select.key}`)}
                 </span>
-                <Select defaultValue={select.defaultValue}>
-                  <SelectTrigger className="h-12 bg-card">
-                    <SelectValue>{(value) => t(`options.${value as BudgetOptionKey}`)}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {select.options.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {t(`options.${option}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Select
+                  className="h-12 bg-card"
+                  defaultValue={select.defaultValue}
+                  options={select.options.map((option) => ({
+                    value: option,
+                    label: t(`options.${option}`),
+                  }))}
+                />
               </div>
             ))}
           </motion.div>

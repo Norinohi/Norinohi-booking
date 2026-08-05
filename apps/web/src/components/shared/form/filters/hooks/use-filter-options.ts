@@ -37,6 +37,7 @@ const EMPTY_OPTIONS: FilterOptions = {
   years: [],
 };
 
-export function useFilterOptions(): FilterOptions {
-  return useQuery(facetsQueryOptions()).data?.options ?? EMPTY_OPTIONS;
+export function useFilterOptions() {
+  const query = useQuery(facetsQueryOptions());
+  return { ...query, options: query.data?.options ?? EMPTY_OPTIONS };
 }

@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
 import {
-  Select,
+  SelectRoot,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -182,7 +182,7 @@ export const WithSelect: Story = {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Crew</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
+                <SelectRoot value={field.value} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Placeholder">
@@ -194,7 +194,7 @@ export const WithSelect: Story = {
                     <SelectItem value="fullCrew">{CREW.fullCrew}</SelectItem>
                     <SelectItem value="skipperOptional">{CREW.skipperOptional}</SelectItem>
                   </SelectContent>
-                </Select>
+                </SelectRoot>
                 <FormMessage />
               </FormItem>
             )}

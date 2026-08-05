@@ -7,7 +7,7 @@ import { useFilterOptions } from "../../hooks/use-filter-options";
 
 export default function BoatSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
-  const options = useFilterOptions();
+  const { options } = useFilterOptions();
 
   return (
     <Section value="boat" title={t("sections.boat")}>

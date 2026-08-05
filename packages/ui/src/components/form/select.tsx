@@ -1,17 +1,25 @@
 "use client";
 
 import { Select as SelectPrimitive } from "@base-ui/react/select";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 /*
  * Select — Figma "Selector" (nodes 733:9616 default / 755:19517 opened), Inputs & Selection.
  * The trigger mirrors the Text field: 1px natural-100 border, 8px radius, 12px padding, 16px
  * placeholder in natural-300, 24px chevron that flips up when open. The popup is a white card
  * with a 1px border and a 4/4/10 shadow; items are 14 SemiBold rows that turn brand when active.
+ *
+ * `SelectRoot` + the parts are the primitives for custom composition; `Select` (below) is the
+ * assembled single-select for the common case — pass it an options list and it wires the trigger,
+ * label resolution, and the async popup states for you.
  */
-const Select = SelectPrimitive.Root;
+const SelectRoot = SelectPrimitive.Root;
+
+export type SelectOption = { value: string; label: string };
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
@@ -120,4 +128,97 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
   );
 }
 
-export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };
+const LOADING_ROWS = 4;
+
+function optionLabel(options: SelectOption[], value: string) {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+/**
+ * Assembled single-select over an options list. The trigger resolves the selected value to its
+ * label with a render function (items live in a closed portal, so Base UI's own resolution falls
+ * back to the raw value), and the popup owns the async lifecycle: Skeleton rows while `isLoading`,
+ * a muted `emptyLabel` when the resolved list is empty, items otherwise. `renderValue` overrides
+ * the trigger display for cases like a "Sort: X" prefix. Texts are props — this package has no i18n.
+ */
+function Select({
+  options,
+  value,
+  defaultValue,
+  onValueChange,
+  placeholder,
+  icon,
+  isLoading = false,
+  emptyLabel = "No options",
+  clearable = false,
+  onClear,
+  clearLabel,
+  renderValue,
+  className,
+  ariaLabel,
+  disabled,
+}: {
+  options: SelectOption[];
+  /** Controlled value; pair with `onValueChange`. Omit both and pass `defaultValue` for uncontrolled. */
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  placeholder?: string;
+  icon?: ReactNode;
+  isLoading?: boolean;
+  emptyLabel?: string;
+  clearable?: boolean;
+  onClear?: () => void;
+  clearLabel?: string;
+  renderValue?: (value: string) => ReactNode;
+  className?: string;
+  ariaLabel?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <SelectRoot
+      value={value}
+      defaultValue={defaultValue}
+      onValueChange={(next) => onValueChange?.(next as string)}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        className={className}
+        aria-label={ariaLabel}
+        clearable={clearable}
+        onClear={onClear}
+        clearLabel={clearLabel}
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          {icon}
+          <SelectValue placeholder={placeholder}>
+            {(current) =>
+              current
+                ? (renderValue?.(current as string) ?? optionLabel(options, current as string))
+                : placeholder
+            }
+          </SelectValue>
+        </span>
+      </SelectTrigger>
+      <SelectContent>
+        {isLoading ? (
+          <div aria-busy="true" className="flex flex-col gap-2 py-1">
+            {Array.from({ length: LOADING_ROWS }, (_, index) => (
+              <Skeleton key={index} className="h-5 w-full rounded-sm" />
+            ))}
+          </div>
+        ) : options.length === 0 ? (
+          <p className="py-2 text-center text-sm font-medium text-natural-500">{emptyLabel}</p>
+        ) : (
+          options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </SelectRoot>
+  );
+}
+
+export { Select, SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue };

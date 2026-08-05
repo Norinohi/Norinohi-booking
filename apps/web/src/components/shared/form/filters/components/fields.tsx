@@ -3,13 +3,7 @@
 import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { Field } from "@yacht-charter/ui/components/form/field";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
+import { Select } from "@yacht-charter/ui/components/form/select";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
 import { Switch } from "@yacht-charter/ui/components/form/switch";
 import {
@@ -20,7 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
-import { labelOf, type Option, orderedValues } from "../lib/options";
+import { type Option, orderedValues } from "../lib/options";
 import type { FiltersState, Range } from "../lib/state";
 
 export type SectionProps = {
@@ -111,24 +105,16 @@ export function SelectField({
 
   return (
     <Field label={label} className={className}>
-      <Select value={value} onValueChange={(next) => onChange((next as string) ?? value)}>
-        <SelectTrigger
-          aria-label={ariaLabel}
-          className="h-12 w-full min-w-0"
-          clearable={canClear}
-          clearLabel={label ? t("clearField", { label }) : t("clearSelection")}
-          onClear={canClear ? () => onChange(resetTo) : undefined}
-        >
-          <SelectValue>{(current) => labelOf(options, current as string)}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Select
+        className="h-12 w-full min-w-0"
+        ariaLabel={ariaLabel}
+        options={options}
+        value={value}
+        onValueChange={(next) => onChange(next ?? value)}
+        clearable={canClear}
+        clearLabel={label ? t("clearField", { label }) : t("clearSelection")}
+        onClear={canClear ? () => onChange(resetTo) : undefined}
+      />
     </Field>
   );
 }
@@ -145,21 +131,13 @@ function UnitSelect({
   ariaLabel: string;
 }) {
   return (
-    <Select value={value} onValueChange={(next) => onChange((next as string) ?? value)}>
-      <SelectTrigger
-        aria-label={ariaLabel}
-        className="h-auto w-auto min-w-0 gap-1 border-0 p-0 text-sm font-medium text-natural-600 [&_svg]:size-4"
-      >
-        <SelectValue>{(current) => labelOf(options, current as string)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Select
+      className="h-auto w-auto min-w-0 gap-1 border-0 p-0 text-sm font-medium text-natural-600 [&_svg]:size-4"
+      ariaLabel={ariaLabel}
+      options={options}
+      value={value}
+      onValueChange={(next) => onChange(next ?? value)}
+    />
   );
 }
 

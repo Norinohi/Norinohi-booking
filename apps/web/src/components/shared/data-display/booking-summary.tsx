@@ -2,13 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
+import { Select } from "@yacht-charter/ui/components/form/select";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
@@ -234,20 +228,14 @@ export default function BookingSummary({
               {t("sidebar.crew")}
             </span>
             <Select
+              className="h-12"
+              options={CREW_OPTIONS.map((option) => ({
+                value: option,
+                label: tCard(`crews.${option}`),
+              }))}
               value={crew}
               onValueChange={(value) => setCrew(value as (typeof CREW_OPTIONS)[number])}
-            >
-              <SelectTrigger className="h-12">
-                <SelectValue>{() => tCard(`crews.${crew}`)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {CREW_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {tCard(`crews.${option}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
