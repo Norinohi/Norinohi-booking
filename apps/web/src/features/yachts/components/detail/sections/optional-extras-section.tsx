@@ -1,8 +1,10 @@
 "use client";
 
 import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+
+import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
@@ -10,7 +12,7 @@ import DetailSection from "./detail-section";
 export default function OptionalExtrasSection() {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
-  const format = useFormatter();
+  const formatMoney = useMoney();
   const { data } = useListingDetail();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -37,7 +39,7 @@ export default function OptionalExtrasSection() {
               <p className="text-xs font-semibold text-natural-300">{tExtras("payAtCheckIn")}</p>
             </div>
             <p className="shrink-0 text-base font-bold text-foreground">
-              {tExtras("perBooking", { price: format.number(item.price.amountMinor / 100, "eur") })}
+              {tExtras("perBooking", { price: formatMoney(item.price.amountMinor) })}
             </p>
           </label>
         ))}

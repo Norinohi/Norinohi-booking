@@ -14,10 +14,11 @@ import {
   Zap,
 } from "lucide-react";
 import type { Route } from "next";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { createElement, type ReactNode } from "react";
 
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
+import { useMoney } from "@/hooks/use-money";
 
 import type { MapBoatCardProps } from "../components/map/map-boat-card";
 import { slugToLabel } from "../lib/slug-to-label";
@@ -51,9 +52,7 @@ const PLACEHOLDER_DATES = {
 
 export function useListingCards() {
   const t = useTranslations("Common.boatCard");
-  const format = useFormatter();
-
-  const eur = (minor: number) => format.number(minor / 100, "eur");
+  const formatMoney = useMoney();
 
   function toCard(listing: Listing): BoatCardProps & { id: string } {
     return {
@@ -91,13 +90,13 @@ export function useListingCards() {
       end: PLACEHOLDER_DATES.end,
       timeZone: PLACEHOLDER_DATES.timeZone,
       priceLabel: t("priceFor", { days: listing.priceDetails.periodDays }),
-      price: eur(listing.priceFrom.amountMinor),
+      price: formatMoney(listing.priceFrom.amountMinor),
       perPerson:
         listing.priceDetails.perPersonMinor != null
-          ? t("perPerson", { price: eur(listing.priceDetails.perPersonMinor) })
+          ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor) })
           : "",
       prepayment: t("prepayment", {
-        amount: eur(listing.priceDetails.bookingPrepayment.amountMinor),
+        amount: formatMoney(listing.priceDetails.bookingPrepayment.amountMinor),
       }),
     };
   }
