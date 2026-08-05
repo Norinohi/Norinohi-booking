@@ -19,11 +19,10 @@ import { useState } from "react";
 
 import AnimatedNumber from "@/components/shared/data-display/animated-number";
 import DatePicker from "@/components/shared/form/date-picker";
+import { labelOf, type Option, useFilterOptions } from "@/components/shared/form/filters";
+import { buildSearchHref } from "@/features/yachts";
+import { dayFromNative, daysBetween } from "@/lib/date";
 import { GROUP, RISE } from "@/lib/motion";
-
-const DESTINATIONS = ["croatia", "greece", "italy", "turkey", "caribbean", "thailand"] as const;
-const BOAT_TYPES = ["catamaran", "sailingYacht", "motorYacht", "gulet", "luxuryYacht"] as const;
-const CAPTAIN_OPTIONS = ["withCaptain", "bareboat", "skippered"] as const;
 
 const STATS = [
   { key: "yachts", value: 30000, suffix: "+" },
@@ -32,34 +31,33 @@ const STATS = [
   { key: "rating", value: 4.8, decimals: 1 },
 ] as const;
 
-type HeroOptionKey =
-  | (typeof DESTINATIONS)[number]
-  | (typeof BOAT_TYPES)[number]
-  | (typeof CAPTAIN_OPTIONS)[number];
-
 function HeroSelect({
   icon,
   placeholder,
   options,
+  value,
+  onValueChange,
 }: {
   icon: React.ReactNode;
   placeholder: string;
-  options: readonly HeroOptionKey[];
+  options: Option[];
+  value: string | undefined;
+  onValueChange: (value: string) => void;
 }) {
-  const t = useTranslations("Home.Hero.options");
-
   return (
-    <Select>
+    <Select value={value} onValueChange={(next) => onValueChange(next as string)}>
       <SelectTrigger className="h-12 min-w-0">
         <span className="flex min-w-0 flex-1 items-center gap-2">
           {icon}
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={placeholder}>
+            {(current) => (current ? labelOf(options, current as string) : placeholder)}
+          </SelectValue>
         </span>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (
-          <SelectItem key={option} value={option}>
-            {t(option)}
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -69,7 +67,19 @@ function HeroSelect({
 
 function SearchCard() {
   const t = useTranslations("Home.Hero");
+  const options = useFilterOptions();
+  const [country, setCountry] = useState<string>();
+  const [boatType, setBoatType] = useState<string>();
+  const [crew, setCrew] = useState<string>();
   const [range, setRange] = useState<DateRange | undefined>();
+
+  const href = buildSearchHref({
+    country: country ? [country] : undefined,
+    boatType: boatType ? [boatType] : undefined,
+    crew: crew ? [crew] : undefined,
+    startDate: range?.from ? dayFromNative(range.from) : undefined,
+    duration: range?.from && range.to ? String(daysBetween(range.from, range.to)) : undefined,
+  });
 
   return (
     <motion.div
@@ -80,7 +90,9 @@ function SearchCard() {
         <HeroSelect
           icon={<MapPin className="size-6 shrink-0 text-foreground" />}
           placeholder={t("wherePlaceholder")}
-          options={DESTINATIONS}
+          options={options.countries}
+          value={country}
+          onValueChange={setCountry}
         />
 
         <DatePicker
@@ -94,12 +106,16 @@ function SearchCard() {
         <HeroSelect
           icon={<Ship className="size-6 shrink-0 text-foreground" />}
           placeholder={t("boatPlaceholder")}
-          options={BOAT_TYPES}
+          options={options.boatTypes}
+          value={boatType}
+          onValueChange={setBoatType}
         />
         <HeroSelect
           icon={<Users className="size-6 shrink-0 text-foreground" />}
           placeholder={t("captainPlaceholder")}
-          options={CAPTAIN_OPTIONS}
+          options={options.crews}
+          value={crew}
+          onValueChange={setCrew}
         />
 
         <Button
@@ -107,7 +123,7 @@ function SearchCard() {
           size="md"
           className="w-full"
           nativeButton={false}
-          render={<Link href="/yachts" />}
+          render={<Link href={href} />}
         >
           <Search className="size-5" />
           {t("search")}
