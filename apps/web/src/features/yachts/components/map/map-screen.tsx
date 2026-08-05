@@ -3,6 +3,7 @@
 import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
@@ -19,9 +20,9 @@ import {
   useFilterRanges,
 } from "@/components/shared/form/filters";
 
-import { useBoatCards } from "@/hooks/use-boat-cards";
-import { type SampleBoat, SAMPLE_BOATS } from "@/lib/sample-boats";
-
+import { mapMarkersQueryOptions } from "../../api/queries";
+import { useListingCards } from "../../hooks/use-listing-cards";
+import { toSearchInput } from "../../lib/to-search-input";
 import MapBoatPopup from "./map-boat-popup";
 import type { MapInstance } from "./map-canvas";
 import MapListPanel from "./map-list-panel";
@@ -31,11 +32,6 @@ const MapCanvas = dynamic(() => import("./map-canvas"), {
   ssr: false,
   loading: () => <div className="size-full bg-natural-50" />,
 });
-
-const BOAT_BY_MARINA = new Map<string, SampleBoat>();
-for (const boat of SAMPLE_BOATS) {
-  if (!BOAT_BY_MARINA.has(boat.marina.id)) BOAT_BY_MARINA.set(boat.marina.id, boat);
-}
 
 function CloseListButton({
   onClick,
@@ -67,14 +63,22 @@ export default function MapScreen() {
   const { defaults } = useFilterRanges();
   const [filters, setFilters] = useState<FiltersState>(() => defaults);
   const [listOpen, setListOpen] = useState(false);
-  const [selectedMarina, setSelectedMarina] = useState<string | null>(null);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
-  const { toMapCard } = useBoatCards();
+  const { toMapCard } = useListingCards();
   const chips = useFilterChips(filters);
-  const selectedBoat = selectedMarina ? BOAT_BY_MARINA.get(selectedMarina) : undefined;
+
+  const { data } = useQuery(
+    mapMarkersQueryOptions(toSearchInput(filters, defaults, { sort: "recommended", page: 1 })),
+  );
+  const markers = data?.markers ?? [];
+
+  const selected = selectedListingId
+    ? markers.find((marker) => marker.listingId === selectedListingId)
+    : undefined;
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -90,23 +94,23 @@ export default function MapScreen() {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <MapCanvas onReady={setMap} onBackgroundPress={() => setSelectedMarina(null)}>
-          {[...BOAT_BY_MARINA.values()].map(({ marina }, index) => (
+        <MapCanvas onReady={setMap} onBackgroundPress={() => setSelectedListingId(null)}>
+          {markers.map((marker, index) => (
             <MapMarker
-              key={marina.id}
-              coordinates={marina.coordinates}
-              label={marina.name}
-              selected={marina.id === selectedMarina}
+              key={marker.listingId}
+              coordinates={{ lat: marker.lat, lng: marker.lng }}
+              label={marker.title}
+              selected={marker.listingId === selectedListingId}
               order={index}
-              onSelect={() => setSelectedMarina(marina.id)}
+              onSelect={() => setSelectedListingId(marker.listingId)}
             />
           ))}
 
-          {selectedBoat ? (
+          {selected ? (
             <MapBoatPopup
-              key={selectedMarina}
-              coordinates={selectedBoat.marina.coordinates}
-              boat={toMapCard(selectedBoat)}
+              key={selected.listingId}
+              coordinates={{ lat: selected.lat, lng: selected.lng }}
+              boat={toMapCard(selected.listing)}
               map={map}
             />
           ) : null}

@@ -19,6 +19,8 @@ import { createElement, type ReactNode } from "react";
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import type { Marina } from "@/components/shared/overlay/marina-popover";
 
+import type { MapBoatCardProps } from "../components/map/map-boat-card";
+
 type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["results"]>>;
 type ResultItem = ResultsOutput["items"][number];
 type Listing = ResultItem["listing"];
@@ -67,7 +69,7 @@ export function useListingCards() {
 
   const eur = (minor: number) => format.number(minor / 100, "eur");
 
-  function toCard({ listing }: ResultItem): BoatCardProps & { id: string } {
+  function toCard(listing: Listing): BoatCardProps & { id: string } {
     return {
       id: listing.id,
       images: listing.gallery.length ? listing.gallery : [listing.mainImage],
@@ -113,5 +115,24 @@ export function useListingCards() {
     };
   }
 
-  return { toCard };
+  function toMapCard(listing: Listing): MapBoatCardProps & { id: string } {
+    const card = toCard(listing);
+    return {
+      id: card.id,
+      images: card.images,
+      imageAlt: card.imageAlt,
+      badges: card.badges,
+      marina: card.marina,
+      name: card.name,
+      rating: card.rating,
+      charterType: card.charterType,
+      crew: card.crew,
+      priceLabel: card.priceLabel,
+      price: card.price,
+      perPerson: card.perPerson,
+      prepayment: card.prepayment,
+    };
+  }
+
+  return { toCard, toMapCard };
 }

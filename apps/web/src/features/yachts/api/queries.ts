@@ -6,3 +6,8 @@ export type ResultsInput = Parameters<AppRouterClient["charterSearch"]["results"
 
 export const resultsQueryOptions = (input: ResultsInput) =>
   orpc.charterSearch.results.queryOptions({ input });
+
+export type MarkersInput = Parameters<AppRouterClient["charterSearch"]["mapMarkers"]>[0];
+
+export const mapMarkersQueryOptions = (input: MarkersInput) =>
+  orpc.charterSearch.mapMarkers.queryOptions({ input });

@@ -47,7 +47,7 @@ export default function SearchScreen() {
   const { data, isLoading } = useQuery(
     resultsQueryOptions(toSearchInput(filters, defaults, { sort, page })),
   );
-  const boats = data?.items.map(toCard) ?? [];
+  const boats = data?.items.map(({ listing }) => toCard(listing)) ?? [];
   const pagination = data?.pagination;
   const chips = useFilterChips(filters);
 
