@@ -17,48 +17,11 @@ import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
+import { useMoney } from "@/hooks/use-money";
+
+import { useListingDetail } from "../../../hooks/use-listing-detail";
+import { slugToLabel } from "../../../lib/slug-to-label";
 import DetailSection from "./detail-section";
-
-/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42" as Route;
-
-const YACHTS = [
-  {
-    name: "Bavaria C42",
-    location: "Split, Croatia",
-    image: "/assets/home/popular/sailing-yacht.webp",
-    rating: 5.9,
-    price: "€350",
-  },
-  {
-    name: "Sunseeker 65",
-    location: "Athens, Greece",
-    image: "/assets/home/popular/motor-yacht.webp",
-    rating: 5.9,
-    price: "€550",
-  },
-  {
-    name: "Bali 4.6",
-    location: "Ibiza, Spain",
-    image: "/assets/home/popular/catamaran-flag.webp",
-    rating: 5.9,
-    price: "€310",
-  },
-  {
-    name: "Fountaine Pajot 45",
-    location: "Palma, Spain",
-    image: "/assets/home/popular/catamaran.webp",
-    rating: 5.8,
-    price: "€410",
-  },
-  {
-    name: "Dufour 470",
-    location: "Göcek, Türkiye",
-    image: "/assets/yachts/gallery-2.jpg",
-    rating: 5.7,
-    price: "€290",
-  },
-] as const;
 
 function CarouselNav() {
   const t = useTranslations("YachtDetail");
@@ -83,10 +46,10 @@ function CarouselNav() {
 export default function PopularYachtsSection() {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
-  const tags = [
-    { label: tCard("charterTypes.bareboat"), icon: <Anchor /> },
-    { label: tCard("crews.fullCrew"), icon: <Users /> },
-  ];
+  const formatMoney = useMoney();
+  const { data } = useListingDetail();
+
+  if (!data) return null;
 
   return (
     <DetailSection id="popular-yachts" title={t("sections.popularYachts")}>
@@ -104,22 +67,27 @@ export default function PopularYachtsSection() {
         </div>
 
         <CarouselViewport>
-          {YACHTS.map((yacht) => (
-            <CarouselSlide key={yacht.name} className="basis-87.5 pr-4">
+          {data.popularYachts.map((yacht) => (
+            <CarouselSlide key={yacht.id} className="basis-87.5 pr-4">
               <BoatSmallCard
                 className="w-full"
-                image={yacht.image}
-                imageAlt={tCard("imageAlt", { name: yacht.name, marina: yacht.location })}
+                image={yacht.mainImage}
+                imageAlt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
                 saveLabel={tCard("save")}
-                location={yacht.location}
-                title={yacht.name}
+                location={`${yacht.base.location}, ${yacht.base.country}`}
+                title={yacht.title}
                 rating={yacht.rating}
-                tags={tags}
-                price={yacht.price}
+                tags={[
+                  { label: yacht.category, icon: <Anchor /> },
+                  ...(yacht.crewType
+                    ? [{ label: slugToLabel(yacht.crewType), icon: <Users /> }]
+                    : []),
+                ]}
+                price={formatMoney(yacht.priceFrom.amountMinor)}
                 priceSuffix={t("popular.perPerson")}
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}
-                actionRender={<Link href={DETAIL_HREF} />}
+                actionRender={<Link href={`/yachts/${yacht.slug}` as Route} />}
               />
             </CarouselSlide>
           ))}
