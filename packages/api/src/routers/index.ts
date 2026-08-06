@@ -15,6 +15,7 @@ import { charterSearchRouter } from "./charter-search";
 import { leadRouter } from "./lead";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
+import { plannerRouter } from "./planner";
 import { referralRouter } from "./referral";
 import { wishlistRouter } from "./wishlist";
 
@@ -54,6 +55,7 @@ export const appRouter = {
       };
     }),
   charterSearch: charterSearchRouter,
+  planner: plannerRouter,
   lead: leadRouter,
   listings: listingsRouter,
   availability: availabilityRouter,
