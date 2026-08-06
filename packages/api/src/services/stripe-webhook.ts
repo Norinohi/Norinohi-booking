@@ -12,6 +12,7 @@ import type Stripe from "stripe";
 
 import type { Database } from "../context";
 import { canTransition, type BookingStatus } from "./booking-state";
+import { awardReferralCredit } from "./loyalty";
 import { stripeClient } from "./payment";
 
 type Db = Database;
@@ -146,6 +147,13 @@ async function onSucceeded(
       provider: row.booking.provider,
       providerReference: reservation.providerReservationId ?? null,
       payload: reservation as unknown as Record<string, unknown>,
+    });
+
+    // "Once they complete their trip, you receive €100 credits." Runs in its own
+    // transaction so a referral bookkeeping problem can never unwind a booking
+    // that is already confirmed and paid for.
+    await db.transaction(async (tx) => {
+      await awardReferralCredit(tx, row.booking.userId, row.booking.id);
     });
   } catch (error) {
     // Charged but the provider refused: the booking owes a refund, and this must

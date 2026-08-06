@@ -16,7 +16,7 @@ import { leadRouter } from "./lead";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
 import { plannerRouter } from "./planner";
-import { referralRouter } from "./referral";
+import { creditRouter, referralRouter } from "./referral";
 import { wishlistRouter } from "./wishlist";
 
 const emptyInputSchema = z.object({}).default({});
@@ -118,6 +118,7 @@ export const appRouter = {
       }),
   },
   referral: referralRouter,
+  credit: creditRouter,
   admin: adminRouter,
 };
 export type AppRouter = typeof appRouter;
