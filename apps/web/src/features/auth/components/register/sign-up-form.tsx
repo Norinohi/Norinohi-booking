@@ -12,8 +12,9 @@ import {
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Mail, Phone } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -57,18 +58,23 @@ function GoogleIcon(props: ComponentProps<"svg">) {
   );
 }
 
-const schema = z.object({
-  email: z.email("Invalid email address"),
-  phone: z.string(),
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-type Values = z.infer<typeof schema>;
+type Values = { email: string; phone: string; name: string; password: string };
 
 export default function SignUpForm() {
+  const t = useTranslations("Auth.SignUp");
   const router = useRouter();
   const { isPending } = authClient.useSession();
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.email(t("errors.emailInvalid")),
+        phone: z.string(),
+        name: z.string().min(2, t("errors.nameMin")),
+        password: z.string().min(8, t("errors.passwordMin")),
+      }),
+    [t],
+  );
 
   const form = useForm<Values>({
     defaultValues: { email: "", phone: "", name: "", password: "" },
@@ -84,12 +90,12 @@ export default function SignUpForm() {
       {
         onSuccess: () => {
           router.push("/dashboard");
-          toast.success("Sign up successful");
+          toast.success(t("success"));
         },
         onError: (error: any) => {
           const message = error.error.message || error.error.statusText || "";
           if (/exist|registered|taken/i.test(`${error.error.code ?? ""} ${message}`)) {
-            form.setError("email", { type: "manual", message: "This email is already registered" });
+            form.setError("email", { type: "manual", message: t("errors.emailRegistered") });
           } else {
             toast.error(message);
           }
@@ -105,7 +111,7 @@ export default function SignUpForm() {
     <section className="px-4 pt-6 pb-16 xl:pt-[69px]">
       <div className="mx-auto flex w-full max-w-[358px] flex-col gap-6 md:max-w-[660px] md:gap-8 xl:max-w-[451px]">
         <h1 className="text-center text-[20px] leading-[1.1] font-semibold text-foreground md:text-[24px] xl:text-[32px] xl:font-bold">
-          Welcome to YachtCharter
+          {t("welcome")}
         </h1>
 
         <Form {...form}>
@@ -116,9 +122,7 @@ export default function SignUpForm() {
           >
             {/* Card title */}
             <div className="border-b border-natural-100 px-5 py-5">
-              <h2 className="text-xl leading-[1.3] font-bold text-foreground">
-                Join to get started
-              </h2>
+              <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("cardTitle")}</h2>
             </div>
 
             {/* Body */}
@@ -128,13 +132,15 @@ export default function SignUpForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="data-[error=true]:text-foreground">Email</FormLabel>
+                    <FormLabel className="data-[error=true]:text-foreground">
+                      {t("email.label")}
+                    </FormLabel>
                     <FormControl>
                       <TextField
                         type="email"
                         inputMode="email"
                         autoComplete="email"
-                        placeholder="example@gmail.com"
+                        placeholder={t("email.placeholder")}
                         startIcon={<Mail className="size-5!" />}
                         className="leading-[1.25]"
                         {...field}
@@ -157,14 +163,14 @@ export default function SignUpForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="data-[error=true]:text-foreground">
-                      Phone number
+                      {t("phone.label")}
                     </FormLabel>
                     <FormControl>
                       <TextField
                         type="tel"
                         inputMode="tel"
                         autoComplete="tel"
-                        placeholder="+48"
+                        placeholder={t("phone.placeholder")}
                         startIcon={<Phone className="size-5!" />}
                         className="leading-[1.25]"
                         {...field}
@@ -180,11 +186,13 @@ export default function SignUpForm() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="data-[error=true]:text-foreground">Full name</FormLabel>
+                    <FormLabel className="data-[error=true]:text-foreground">
+                      {t("name.label")}
+                    </FormLabel>
                     <FormControl>
                       <TextField
                         autoComplete="name"
-                        placeholder="John Doe"
+                        placeholder={t("name.placeholder")}
                         className="leading-[1.25]"
                         {...field}
                       />
@@ -199,12 +207,14 @@ export default function SignUpForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="data-[error=true]:text-foreground">Password</FormLabel>
+                    <FormLabel className="data-[error=true]:text-foreground">
+                      {t("password.label")}
+                    </FormLabel>
                     <FormControl>
                       <TextField
                         type="password"
                         autoComplete="new-password"
-                        placeholder="Enter your password"
+                        placeholder={t("password.placeholder")}
                         className="leading-[1.25]"
                         {...field}
                       />
@@ -221,13 +231,13 @@ export default function SignUpForm() {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Signing up…" : "Sign Up"}
+                {form.formState.isSubmitting ? t("submitting") : t("submit")}
               </Button>
 
               {/* Or divider */}
               <div className="relative flex justify-center">
                 <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-natural-100" />
-                <span className="relative bg-card px-2 text-sm text-natural-400">Or</span>
+                <span className="relative bg-card px-2 text-sm text-natural-400">{t("or")}</span>
               </div>
 
               {/* Google — shown per the design, sign-up not wired yet */}
@@ -236,21 +246,21 @@ export default function SignUpForm() {
                 variant="neutral"
                 size="md"
                 className="w-full"
-                onClick={() => toast.info("Google sign-up is coming soon")}
+                onClick={() => toast.info(t("googleUnavailable"))}
               >
-                Sign Up With Google
+                {t("google")}
                 <GoogleIcon className="size-5" />
               </Button>
 
               {/* Switch to sign in */}
               <div className="flex flex-col items-center gap-1">
-                <p className="text-base text-natural-400">Already have an account?</p>
+                <p className="text-base text-natural-400">{t("haveAccount")}</p>
                 <button
                   type="button"
                   onClick={() => router.push("/login")}
                   className="py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
                 >
-                  Sign In To Continue
+                  {t("signIn")}
                 </button>
               </div>
             </div>

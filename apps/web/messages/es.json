@@ -996,5 +996,65 @@
     "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí.",
     "bareboat": "Sin patrón",
     "fullCrew": "Tripulación completa"
+  },
+  "Auth": {
+    "SignIn": {
+      "welcome": "Bienvenido de nuevo",
+      "cardTitle": "Continúa planificando tu viaje",
+      "email": {
+        "label": "Correo electrónico",
+        "placeholder": "example@gmail.com"
+      },
+      "password": {
+        "label": "Contraseña",
+        "placeholder": "Introduce tu contraseña"
+      },
+      "submit": "Iniciar sesión",
+      "submitting": "Iniciando sesión…",
+      "or": "o",
+      "google": "Iniciar sesión con Google",
+      "googleUnavailable": "El inicio de sesión con Google estará disponible pronto",
+      "noAccount": "¿No tienes una cuenta?",
+      "createAccount": "Crear cuenta",
+      "success": "Sesión iniciada correctamente",
+      "errors": {
+        "emailInvalid": "Dirección de correo no válida",
+        "passwordMin": "La contraseña debe tener al menos 8 caracteres"
+      }
+    },
+    "SignUp": {
+      "welcome": "Bienvenido a YachtCharter",
+      "cardTitle": "Únete para empezar",
+      "email": {
+        "label": "Correo electrónico",
+        "placeholder": "example@gmail.com"
+      },
+      "phone": {
+        "label": "Número de teléfono",
+        "placeholder": "+48"
+      },
+      "name": {
+        "label": "Nombre completo",
+        "placeholder": "Juan Pérez"
+      },
+      "password": {
+        "label": "Contraseña",
+        "placeholder": "Introduce tu contraseña"
+      },
+      "submit": "Registrarse",
+      "submitting": "Registrando…",
+      "or": "o",
+      "google": "Registrarse con Google",
+      "googleUnavailable": "El registro con Google estará disponible pronto",
+      "haveAccount": "¿Ya tienes una cuenta?",
+      "signIn": "Inicia sesión para continuar",
+      "success": "Registro exitoso",
+      "errors": {
+        "emailInvalid": "Dirección de correo no válida",
+        "nameMin": "El nombre debe tener al menos 2 caracteres",
+        "passwordMin": "La contraseña debe tener al menos 8 caracteres",
+        "emailRegistered": "Este correo ya está registrado"
+      }
+    }
   }
 }

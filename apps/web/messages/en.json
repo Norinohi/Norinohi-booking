@@ -996,5 +996,65 @@
     "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here.",
     "bareboat": "Bareboat",
     "fullCrew": "Full crew"
+  },
+  "Auth": {
+    "SignIn": {
+      "welcome": "Welcome back",
+      "cardTitle": "Continue planning your trip",
+      "email": {
+        "label": "Email",
+        "placeholder": "example@gmail.com"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Enter your password"
+      },
+      "submit": "Sign In",
+      "submitting": "Signing in…",
+      "or": "Or",
+      "google": "Sign In With Google",
+      "googleUnavailable": "Google sign-in is coming soon",
+      "noAccount": "Have no account?",
+      "createAccount": "Create Account",
+      "success": "Sign in successful",
+      "errors": {
+        "emailInvalid": "Invalid email address",
+        "passwordMin": "Password must be at least 8 characters"
+      }
+    },
+    "SignUp": {
+      "welcome": "Welcome to YachtCharter",
+      "cardTitle": "Join to get started",
+      "email": {
+        "label": "Email",
+        "placeholder": "example@gmail.com"
+      },
+      "phone": {
+        "label": "Phone number",
+        "placeholder": "+48"
+      },
+      "name": {
+        "label": "Full name",
+        "placeholder": "John Doe"
+      },
+      "password": {
+        "label": "Password",
+        "placeholder": "Enter your password"
+      },
+      "submit": "Sign Up",
+      "submitting": "Signing up…",
+      "or": "Or",
+      "google": "Sign Up With Google",
+      "googleUnavailable": "Google sign-up is coming soon",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign In To Continue",
+      "success": "Sign up successful",
+      "errors": {
+        "emailInvalid": "Invalid email address",
+        "nameMin": "Name must be at least 2 characters",
+        "passwordMin": "Password must be at least 8 characters",
+        "emailRegistered": "This email is already registered"
+      }
+    }
   }
 }

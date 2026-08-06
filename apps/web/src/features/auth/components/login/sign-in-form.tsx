@@ -12,8 +12,9 @@ import {
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -55,16 +56,21 @@ function GoogleIcon(props: ComponentProps<"svg">) {
   );
 }
 
-const schema = z.object({
-  email: z.email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-type Values = z.infer<typeof schema>;
+type Values = { email: string; password: string };
 
 export default function SignInForm() {
+  const t = useTranslations("Auth.SignIn");
   const router = useRouter();
   const { isPending } = authClient.useSession();
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        email: z.email(t("errors.emailInvalid")),
+        password: z.string().min(8, t("errors.passwordMin")),
+      }),
+    [t],
+  );
 
   const form = useForm<Values>({
     defaultValues: { email: "", password: "" },
@@ -76,7 +82,7 @@ export default function SignInForm() {
     authClient.signIn.email(value, {
       onSuccess: () => {
         router.push("/dashboard");
-        toast.success("Sign in successful");
+        toast.success(t("success"));
       },
       onError: (error: any) => {
         toast.error(error.error.message || error.error.statusText);
@@ -91,7 +97,7 @@ export default function SignInForm() {
     <section className="px-4 pt-[122px] pb-16 md:pt-[109px] xl:pt-[113px]">
       <div className="mx-auto flex w-full max-w-[358px] flex-col gap-8 md:max-w-[660px] xl:max-w-[451px]">
         <h1 className="text-center text-[20px] leading-[1.3] font-bold text-foreground xl:text-[32px] xl:leading-[1.1]">
-          Welcome back
+          {t("welcome")}
         </h1>
 
         <Form {...form}>
@@ -103,7 +109,7 @@ export default function SignInForm() {
             {/* Card title */}
             <div className="border-b border-natural-100 px-5 py-5">
               <h2 className="text-center text-xl leading-[1.3] font-bold text-foreground">
-                Continue planning your trip
+                {t("cardTitle")}
               </h2>
             </div>
 
@@ -114,13 +120,13 @@ export default function SignInForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("email.label")}</FormLabel>
                     <FormControl>
                       <TextField
                         type="email"
                         inputMode="email"
                         autoComplete="email"
-                        placeholder="example@gmail.com"
+                        placeholder={t("email.placeholder")}
                         startIcon={<Mail className="size-5!" />}
                         className="leading-[1.25]"
                         {...field}
@@ -136,12 +142,12 @@ export default function SignInForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t("password.label")}</FormLabel>
                     <FormControl>
                       <TextField
                         type="password"
                         autoComplete="current-password"
-                        placeholder="Enter your password"
+                        placeholder={t("password.placeholder")}
                         className="leading-[1.25]"
                         {...field}
                       />
@@ -158,13 +164,13 @@ export default function SignInForm() {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Signing in…" : "Sign In"}
+                {form.formState.isSubmitting ? t("submitting") : t("submit")}
               </Button>
 
               {/* Or divider */}
               <div className="relative flex justify-center">
                 <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-natural-100" />
-                <span className="relative bg-card px-2 text-sm text-natural-400">Or</span>
+                <span className="relative bg-card px-2 text-sm text-natural-400">{t("or")}</span>
               </div>
 
               {/* Google — shown per the design, sign-in not wired yet */}
@@ -173,21 +179,21 @@ export default function SignInForm() {
                 variant="neutral"
                 size="md"
                 className="w-full"
-                onClick={() => toast.info("Google sign-in is coming soon")}
+                onClick={() => toast.info(t("googleUnavailable"))}
               >
-                Sign In With Google
+                {t("google")}
                 <GoogleIcon className="size-5" />
               </Button>
 
               {/* Switch to register */}
               <div className="flex flex-col items-center gap-1">
-                <p className="text-base text-natural-400">Have no account?</p>
+                <p className="text-base text-natural-400">{t("noAccount")}</p>
                 <button
                   type="button"
                   onClick={() => router.push("/register")}
                   className="py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
                 >
-                  Create Account
+                  {t("createAccount")}
                 </button>
               </div>
             </div>

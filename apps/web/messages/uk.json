@@ -996,5 +996,65 @@
     "emptyDescription": "Почніть переглядати яхти та сплануйте першу подорож — ваші бронювання з’являться тут.",
     "bareboat": "Без екіпажу",
     "fullCrew": "Повний екіпаж"
+  },
+  "Auth": {
+    "SignIn": {
+      "welcome": "З поверненням",
+      "cardTitle": "Продовжуйте планувати подорож",
+      "email": {
+        "label": "Електронна пошта",
+        "placeholder": "example@gmail.com"
+      },
+      "password": {
+        "label": "Пароль",
+        "placeholder": "Введіть пароль"
+      },
+      "submit": "Увійти",
+      "submitting": "Вхід…",
+      "or": "або",
+      "google": "Увійти через Google",
+      "googleUnavailable": "Вхід через Google скоро буде доступний",
+      "noAccount": "Немає акаунта?",
+      "createAccount": "Створити акаунт",
+      "success": "Вхід виконано",
+      "errors": {
+        "emailInvalid": "Некоректна електронна пошта",
+        "passwordMin": "Пароль має містити щонайменше 8 символів"
+      }
+    },
+    "SignUp": {
+      "welcome": "Ласкаво просимо до YachtCharter",
+      "cardTitle": "Приєднуйтесь, щоб почати",
+      "email": {
+        "label": "Електронна пошта",
+        "placeholder": "example@gmail.com"
+      },
+      "phone": {
+        "label": "Номер телефону",
+        "placeholder": "+48"
+      },
+      "name": {
+        "label": "Повне ім'я",
+        "placeholder": "Іван Петренко"
+      },
+      "password": {
+        "label": "Пароль",
+        "placeholder": "Введіть пароль"
+      },
+      "submit": "Зареєструватися",
+      "submitting": "Реєстрація…",
+      "or": "або",
+      "google": "Зареєструватися через Google",
+      "googleUnavailable": "Реєстрація через Google скоро буде доступна",
+      "haveAccount": "Вже маєте акаунт?",
+      "signIn": "Увійти, щоб продовжити",
+      "success": "Реєстрація успішна",
+      "errors": {
+        "emailInvalid": "Некоректна електронна пошта",
+        "nameMin": "Ім'я має містити щонайменше 2 символи",
+        "passwordMin": "Пароль має містити щонайменше 8 символів",
+        "emailRegistered": "Ця електронна пошта вже зареєстрована"
+      }
+    }
   }
 }
