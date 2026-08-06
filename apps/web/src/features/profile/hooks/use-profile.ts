@@ -11,7 +11,7 @@ export function useProfile() {
   return useQuery(profileQueryOptions());
 }
 
-/** Persists editable profile fields (name, phone) and refreshes the profile query. */
+/** Persists editable profile fields (first/last name, phone, preferences) and refreshes the profile query. */
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
 

@@ -17,6 +17,10 @@ export const profile = pgTable("profile", {
     .notNull()
     .unique()
     .references(() => user.id, { onDelete: "cascade" }),
+  // The profile form edits first/last name as separate fields; user.name stays the
+  // display name better-auth writes on signup and social sign-in.
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   phone: text("phone"),
   locale: text("locale"),
   currency: text("currency"),

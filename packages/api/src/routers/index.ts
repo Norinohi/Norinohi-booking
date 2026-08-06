@@ -144,7 +144,7 @@ export const appRouter = {
         operationId: "getProfile",
         summary: "Get the current user profile",
         description:
-          "Returns the authenticated user's profile (name, email, phone) read from the database. Preference fields (locale, currency, marketingOptIn) are static defaults until the preference columns land in a later milestone.",
+          "Returns the authenticated user's profile — display name, first/last name, email, phone, and the locale/currency/marketingOptIn preferences. First and last name fall back to a split of the Better Auth display name until the profile row is first saved.",
         tags: ["Profile"],
         successDescription: "Profile data for the authenticated user.",
         spec: withJsonBodyExample({}),
@@ -159,12 +159,14 @@ export const appRouter = {
         operationId: "updateProfile",
         summary: "Update the current user profile",
         description:
-          "Persists editable profile fields (name, phone) for the authenticated user and returns the updated profile. Email changes go through the Better Auth changeEmail flow, not this endpoint. Preference fields (locale, currency, marketingOptIn) remain static defaults until the preference columns land in a later milestone.",
+          "Persists editable profile fields (first/last name, phone, locale, currency, marketing opt-in) for the authenticated user and returns the updated profile. The Better Auth display name is rebuilt from first and last name so the account greeting stays in step. Email changes go through the Better Auth changeEmail flow, not this endpoint.",
         tags: ["Profile"],
         successDescription: "Updated profile data for the authenticated user.",
         spec: withJsonBodyExample({
-          name: "Jane Doe",
+          firstName: "Jane",
+          lastName: "Doe",
           phone: "+380501234567",
+          currency: "EUR",
         }),
       })
       .input(profileUpdateInputSchema)
