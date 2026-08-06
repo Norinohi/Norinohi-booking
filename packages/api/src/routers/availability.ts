@@ -1,11 +1,13 @@
-import { ORPCError } from "@orpc/server";
 import { db } from "@yacht-charter/db";
 import { listAvailabilityCalendar } from "@yacht-charter/db/search";
-import { providerQuoteSchema, quoteRequestSchema } from "@yacht-charter/providers";
+import { quoteRequestSchema } from "@yacht-charter/providers";
 import { createInventoryProvider } from "@yacht-charter/providers";
+import { z } from "zod";
 
 import { availabilityCalendarInputSchema, availabilityCalendarSchema } from "../contracts/catalog";
+import { persistedQuoteSchema } from "../contracts/quote";
 import { publicProcedure } from "../index";
+import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 
 const provider = createInventoryProvider();
@@ -38,7 +40,7 @@ export const availabilityRouter = {
       operationId: "createAvailabilityQuote",
       summary: "Create a live provider quote",
       description:
-        "Creates a live provider-backed quote for exact dates, guests, extras, and currency. In the current milestone this uses the mock provider; M4 will persist immutable quote and pricing snapshots.",
+        "Creates a live provider-backed quote for exact dates, guests, extras, and currency, and persists it as an immutable priced snapshot with an expiry and a price fingerprint. Quoting is public — an anonymous quote is claimed by the first signed-in user to reprice or check out with it.",
       tags: ["Availability"],
       successDescription: "Provider quote with priced offer details and payment policy data.",
       spec: withJsonBodyExample({
@@ -51,16 +53,25 @@ export const availabilityRouter = {
       }),
     })
     .input(quoteRequestSchema)
-    .output(providerQuoteSchema)
-    .handler(async ({ input }) => {
-      try {
-        return await provider.getQuote(input);
-      } catch (error) {
-        if (error instanceof Error && error.message === "Requested slot is not available") {
-          throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
-        }
-
-        throw error;
-      }
-    }),
+    .output(persistedQuoteSchema)
+    .handler(({ context, input }) =>
+      createQuote(context.db, provider, input, context.session?.user.id ?? null),
+    ),
+  reprice: publicProcedure
+    .route({
+      method: "POST",
+      path: "/availability/reprice",
+      operationId: "repriceAvailabilityQuote",
+      summary: "Re-price an existing quote",
+      description:
+        "Re-fetches the live provider price for an existing quote and returns a fresh one. The previous quote is marked consumed and points at its replacement — quotes are immutable, so a changed price always produces a new row rather than editing the old one.",
+      tags: ["Availability"],
+      successDescription: "A new quote superseding the one that was passed in.",
+      spec: withJsonBodyExample({ quoteId: "qte_example" }),
+    })
+    .input(z.object({ quoteId: z.string().min(1) }))
+    .output(persistedQuoteSchema)
+    .handler(({ context, input }) =>
+      repriceQuote(context.db, provider, input.quoteId, context.session?.user.id ?? null),
+    ),
 };
