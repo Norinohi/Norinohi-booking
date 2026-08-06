@@ -12,6 +12,12 @@ export type QuoteLine = {
   label: string;
   amountMinor: number;
   currency: string;
+  /**
+   * When this line is actually collected. The booking sidebar prints "Pay at
+   * check-in" under most extras, and those amounts are excluded from the
+   * prepayment even though they count toward the total.
+   */
+  payWhen: "now" | "at_check_in";
 };
 
 export type QuotePaymentPolicy = {
@@ -50,6 +56,12 @@ export const quote = pgTable(
     lines: jsonb("lines").$type<QuoteLine[]>().default([]).notNull(),
     totalMinor: integer("total_minor").notNull(),
     depositMinor: integer("deposit_minor").notNull(),
+    /**
+     * Refundable security deposit, held at check-in and returned afterwards.
+     * Deliberately NOT part of total_minor — the booking summary shows it as a
+     * separate line and excludes it from "Total Price".
+     */
+    securityDepositMinor: integer("security_deposit_minor"),
     paymentPolicy: jsonb("payment_policy").$type<QuotePaymentPolicy>().notNull(),
     /**
      * Fingerprint of the provider price this quote was built from. Every

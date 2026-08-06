@@ -126,10 +126,19 @@ export const providerQuoteSchema = z.object({
       code: z.string(),
       label: z.string(),
       amount: moneySchema,
+      // Most extras are settled with the base on arrival, not with us. They count
+      // toward the total but never toward the prepayment.
+      payWhen: z.enum(["now", "at_check_in"]).default("now"),
     }),
   ),
   total: moneySchema,
   deposit: moneySchema,
+  /**
+   * Refundable security deposit taken at check-in and returned afterwards.
+   * Excluded from `total` — the booking summary lists it separately and it is not
+   * revenue.
+   */
+  securityDeposit: moneySchema.optional(),
   paymentPolicy: z.object({
     mode: z.enum(["deposit", "full"]),
     depositPct: z.number(),

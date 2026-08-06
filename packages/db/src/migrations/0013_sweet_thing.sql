@@ -1,0 +1,2 @@
+ALTER TABLE "booking" DROP CONSTRAINT "booking_provider_option_uq";--> statement-breakpoint
+CREATE UNIQUE INDEX "booking_provider_option_uq" ON "booking" USING btree ("provider","provider_option_id") WHERE "booking"."status" not in ('CANCELLED', 'REFUNDED', 'OPTION_EXPIRED', 'QUOTE_EXPIRED', 'PROVIDER_REJECTED');

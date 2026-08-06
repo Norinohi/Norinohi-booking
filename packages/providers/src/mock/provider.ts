@@ -135,6 +135,7 @@ export class MockInventoryProvider implements InventoryProvider {
           code: item.code,
           label: item.name,
           amount: { amountMinor: item.priceMinor, currency: parsed.currency },
+          payWhen: item.obligatory ? "at_check_in" : "now",
         })),
         ...(repriceDeltaMinor > 0
           ? [
@@ -148,6 +149,8 @@ export class MockInventoryProvider implements InventoryProvider {
       ],
       total: { amountMinor: totalMinor, currency: parsed.currency },
       deposit: { amountMinor: depositMinor, currency: parsed.currency },
+      // Flat in the mock; real providers return this per yacht.
+      securityDeposit: { amountMinor: 200_000, currency: parsed.currency },
       paymentPolicy: {
         mode: "deposit",
         depositPct: 0.5,

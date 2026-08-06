@@ -30,11 +30,19 @@ export async function createQuote(
  * replacement rather than being edited, so the chain of what was offered when stays
  * intact (§1.5 — immutable, supersede rather than mutate).
  */
+export type RepriceChanges = {
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
+  extras?: string[];
+};
+
 export async function repriceQuote(
   db: Db,
   provider: InventoryProvider,
   quoteId: string,
   userId: string | null,
+  changes: RepriceChanges = {},
 ): Promise<PersistedQuote> {
   const existing = await readQuote(db, quoteId);
 
@@ -45,13 +53,15 @@ export async function repriceQuote(
     throw new ORPCError("FORBIDDEN", { message: "Quote belongs to another user" });
   }
 
-  const requestedExtras = existing.extras;
+  // Anything the caller did not send keeps the previous quote's value, so the
+  // sidebar can change one control at a time without restating the whole trip.
+  const requestedExtras = changes.extras ?? existing.extras;
   const priced = await priceOrConflict(provider, {
     listingId: existing.listingId,
-    checkIn: existing.checkIn,
-    checkOut: existing.checkOut,
-    guests: existing.guests,
-    extras: existing.extras,
+    checkIn: changes.checkIn ?? existing.checkIn,
+    checkOut: changes.checkOut ?? existing.checkOut,
+    guests: changes.guests ?? existing.guests,
+    extras: requestedExtras,
     currency: existing.currency,
   });
 
@@ -141,9 +151,11 @@ async function persist(
         label: line.label,
         amountMinor: line.amount.amountMinor,
         currency: line.amount.currency,
+        payWhen: line.payWhen,
       })),
       totalMinor: priced.total.amountMinor,
       depositMinor: priced.deposit.amountMinor,
+      securityDepositMinor: priced.securityDeposit?.amountMinor ?? null,
       paymentPolicy: {
         mode: priced.paymentPolicy.mode,
         depositPct: priced.paymentPolicy.depositPct,

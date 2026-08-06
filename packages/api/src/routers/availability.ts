@@ -2,10 +2,9 @@ import { db } from "@yacht-charter/db";
 import { listAvailabilityCalendar } from "@yacht-charter/db/search";
 import { quoteRequestSchema } from "@yacht-charter/providers";
 import { createInventoryProvider } from "@yacht-charter/providers";
-import { z } from "zod";
 
 import { availabilityCalendarInputSchema, availabilityCalendarSchema } from "../contracts/catalog";
-import { persistedQuoteSchema } from "../contracts/quote";
+import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
 import { publicProcedure } from "../index";
 import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
@@ -64,14 +63,23 @@ export const availabilityRouter = {
       operationId: "repriceAvailabilityQuote",
       summary: "Re-price an existing quote",
       description:
-        "Re-fetches the live provider price for an existing quote and returns a fresh one. The previous quote is marked consumed and points at its replacement — quotes are immutable, so a changed price always produces a new row rather than editing the old one.",
+        "Re-fetches the live provider price for an existing quote and returns a fresh one. Any of checkIn, checkOut, guests or extras may be changed; whatever is omitted keeps the previous quote's value, so the booking sidebar can move one control at a time. The previous quote is marked consumed and points at its replacement — quotes are immutable, so a changed price always produces a new row rather than editing the old one.",
       tags: ["Availability"],
       successDescription: "A new quote superseding the one that was passed in.",
-      spec: withJsonBodyExample({ quoteId: "qte_example" }),
+      spec: withJsonBodyExample({
+        quoteId: "qte_example",
+        guests: 6,
+        extras: ["skipper", "hostess"],
+      }),
     })
-    .input(z.object({ quoteId: z.string().min(1) }))
+    .input(repriceInputSchema)
     .output(persistedQuoteSchema)
     .handler(({ context, input }) =>
-      repriceQuote(context.db, provider, input.quoteId, context.session?.user.id ?? null),
+      repriceQuote(context.db, provider, input.quoteId, context.session?.user.id ?? null, {
+        checkIn: input.checkIn,
+        checkOut: input.checkOut,
+        guests: input.guests,
+        extras: input.extras,
+      }),
     ),
 };

@@ -2,6 +2,22 @@ import { z } from "zod";
 
 import { moneySchema, paginationSchema } from "./catalog";
 
+export const paymentScheduleKindSchema = z.enum([
+  "deposit",
+  "balance",
+  "full",
+  "checkin_extras",
+  "security_deposit",
+]);
+
+export const paymentStatusSchema = z.enum([
+  "requires_payment",
+  "processing",
+  "succeeded",
+  "failed",
+  "refunded",
+]);
+
 export const bookingStatusSchema = z.enum([
   "DRAFT",
   "QUOTED",
@@ -115,7 +131,7 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   paymentSchedule: z.array(
     z.object({
       id: z.string(),
-      kind: z.enum(["deposit", "balance", "full"]),
+      kind: paymentScheduleKindSchema,
       amount: moneySchema,
       dueAt: z.string().nullable(),
       status: z.enum(["pending", "paid", "cancelled"]),
@@ -124,9 +140,9 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   payments: z.array(
     z.object({
       id: z.string(),
-      kind: z.enum(["deposit", "balance", "full"]),
+      kind: paymentScheduleKindSchema,
       amount: moneySchema,
-      status: z.enum(["requires_payment", "processing", "succeeded", "failed", "refunded"]),
+      status: paymentStatusSchema,
       paidAt: z.string().nullable(),
     }),
   ),
@@ -144,8 +160,28 @@ export const bookingCancelSchema = z.object({
 
 /* ------------------------------------------------------------------ checkout */
 
+/** Step 1 of the accordion, submitted with Confirm Booking rather than on its own. */
+export const guestDetailsSchema = z.object({
+  fullName: z.string().trim().min(1).max(200),
+  email: z.email(),
+  phone: z.string().trim().min(3).max(32),
+  specialRequests: z.string().trim().max(2000).optional(),
+});
+
+/**
+ * The two Review & Book checkboxes. Literal `true` rather than boolean on purpose:
+ * an unticked box is a validation failure server-side, not something the client is
+ * trusted to enforce.
+ */
+export const consentsSchema = z.object({
+  terms: z.literal(true),
+  cancellationPolicy: z.literal(true),
+});
+
 export const checkoutCreateHoldInputSchema = z.object({
   quoteId: z.string().min(1),
+  guest: guestDetailsSchema,
+  consents: consentsSchema,
   /** Supplied by the client so a retried submit cannot create a second booking. */
   idempotencyKey: z.string().trim().min(8).max(128).optional(),
 });
@@ -170,4 +206,96 @@ export const checkoutStatusSchema = z.object({
   providerReservationId: z.string().nullable(),
   /** Set when the booking failed, so the confirmation screen can explain why. */
   failureReason: z.string().nullable(),
+});
+
+/* --------------------------------------------- non-card checkout outcomes */
+
+export const invoiceRequestInputSchema = z.object({
+  bookingId: z.string().min(1),
+  billingEmail: z.email(),
+  companyName: z.string().trim().max(200).optional(),
+  vatNumber: z.string().trim().max(64).optional(),
+});
+
+export const invoiceRequestSchema = z.object({
+  id: z.string(),
+  bookingId: z.string(),
+  billingEmail: z.string(),
+  companyName: z.string().nullable(),
+  vatNumber: z.string().nullable(),
+  amount: moneySchema,
+  status: z.enum(["pending", "sent", "paid", "cancelled"]),
+  bookingStatus: bookingStatusSchema,
+  createdAt: z.string(),
+});
+
+export const enquiryInputSchema = z.object({
+  bookingId: z.string().min(1),
+  question: z.string().trim().min(1).max(2000),
+});
+
+export const enquirySchema = z.object({
+  id: z.string(),
+  bookingId: z.string(),
+  question: z.string(),
+  status: z.enum(["open", "answered", "closed"]),
+  answer: z.string().nullable(),
+  answeredAt: z.string().nullable(),
+  /** Unchanged by asking — a question is not a commitment to pay. */
+  bookingStatus: bookingStatusSchema,
+  createdAt: z.string(),
+});
+
+/** Data for "Download Receipt"; the PDF itself is rendered client-side. */
+export const bookingReceiptSchema = z.object({
+  reference: z.string(),
+  issuedAt: z.string(),
+  status: bookingStatusSchema,
+  guest: z.object({
+    fullName: z.string().nullable(),
+    email: z.string().nullable(),
+  }),
+  listingTitle: z.string(),
+  baseName: z.string(),
+  locationName: z.string(),
+  countryName: z.string(),
+  checkIn: z.string(),
+  checkOut: z.string(),
+  guests: z.number().int(),
+  lines: z.array(
+    z.object({
+      code: z.string(),
+      label: z.string(),
+      amount: moneySchema,
+      payWhen: z.enum(["now", "at_check_in"]),
+    }),
+  ),
+  total: moneySchema,
+  securityDeposit: moneySchema.nullable(),
+  paidTotal: moneySchema,
+  balanceDue: moneySchema,
+  payments: z.array(
+    z.object({
+      kind: paymentScheduleKindSchema,
+      amount: moneySchema,
+      status: paymentStatusSchema,
+      paidAt: z.string().nullable(),
+    }),
+  ),
+});
+
+export const checkoutConfirmInputSchema = z.object({
+  bookingId: z.string().min(1),
+  /** Overrides the quote's own policy when the customer chooses to pay in full. */
+  paymentPreference: z.enum(["deposit", "full"]).default("deposit"),
+});
+
+export const checkoutConfirmSchema = z.object({
+  bookingId: z.string(),
+  status: bookingStatusSchema,
+  paymentId: z.string(),
+  amount: moneySchema,
+  kind: paymentScheduleKindSchema,
+  /** Handed to Stripe Elements in the browser; never stored server-side. */
+  clientSecret: z.string(),
 });

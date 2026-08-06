@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   index,
+  uniqueIndex,
   integer,
   jsonb,
   pgEnum,
@@ -33,7 +34,22 @@ export const bookingStatus = pgEnum("booking_status", [
   "REFUNDED",
 ]);
 
-export const paymentScheduleKind = pgEnum("payment_schedule_kind", ["deposit", "balance", "full"]);
+/**
+ * The booking sidebar shows three legs, not two: prepayment now, a second payment
+ * on a date, then extras plus the refundable security deposit at check-in.
+ * `security_deposit` rows are tracked but never counted as revenue.
+ */
+export const paymentScheduleKind = pgEnum("payment_schedule_kind", [
+  "deposit",
+  "balance",
+  "full",
+  "checkin_extras",
+  "security_deposit",
+]);
+
+export const bookingPaymentMethod = pgEnum("booking_payment_method", ["card", "invoice"]);
+
+export const bookingConsentKind = pgEnum("booking_consent_kind", ["terms", "cancellation_policy"]);
 
 export const paymentScheduleStatus = pgEnum("payment_schedule_status", [
   "pending",
@@ -105,6 +121,15 @@ export const booking = pgTable(
     cancelReason: text("cancel_reason"),
     totalMinor: integer("total_minor").notNull(),
     currency: text("currency").notNull(),
+    // Collected on the Guest Details step. Kept on the booking rather than read
+    // back off the user, because the person chartering is not always the account
+    // holder and these are what the base manager is given.
+    guestFullName: text("guest_full_name"),
+    guestEmail: text("guest_email"),
+    guestPhone: text("guest_phone"),
+    specialRequests: text("special_requests"),
+    /** Null until the Payment step; the flow can also end without either. */
+    paymentMethod: bookingPaymentMethod("payment_method"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),
     /** Unique so a retried checkout cannot create a second booking (§6.2). */
     idempotencyKey: text("idempotency_key").notNull().unique(),
@@ -115,8 +140,14 @@ export const booking = pgTable(
     index("booking_status_idx").on(t.status),
     index("booking_listing_idx").on(t.listingId),
     index("booking_hold_expires_idx").on(t.holdExpiresAt),
-    // Two CONFIRMED bookings must never share one provider option (§6.2).
-    unique("booking_provider_option_uq").on(t.provider, t.providerOptionId),
+    // Two *live* bookings must never share one provider option (§6.2). Partial on
+    // purpose: a cancelled or expired booking has released its option, and a plain
+    // unique index would lock that slot out of ever being booked again.
+    uniqueIndex("booking_provider_option_uq")
+      .on(t.provider, t.providerOptionId)
+      .where(
+        sql`${t.status} not in ('CANCELLED', 'REFUNDED', 'OPTION_EXPIRED', 'QUOTE_EXPIRED', 'PROVIDER_REJECTED')`,
+      ),
   ],
 );
 
@@ -135,6 +166,29 @@ export const bookingExtra = pgTable(
     ...timestamps,
   },
   (t) => [index("booking_extra_booking_idx").on(t.bookingId)],
+);
+
+/**
+ * The two Review & Book checkboxes are a legal record, so each is stored with the
+ * version of the policy that was on screen. Gating them client-side only would
+ * leave nothing to point at in a dispute.
+ */
+export const bookingConsent = pgTable(
+  "booking_consent",
+  {
+    id: id("bkgc"),
+    bookingId: text("booking_id")
+      .notNull()
+      .references(() => booking.id, { onDelete: "cascade" }),
+    kind: bookingConsentKind("kind").notNull(),
+    policyVersion: text("policy_version").notNull(),
+    acceptedAt: timestamp("accepted_at").defaultNow().notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    index("booking_consent_booking_idx").on(t.bookingId),
+    unique("booking_consent_uq").on(t.bookingId, t.kind),
+  ],
 );
 
 /**
@@ -246,6 +300,7 @@ export const bookingRelations = relations(booking, ({ one, many }) => ({
   listing: one(listing, { fields: [booking.listingId], references: [listing.id] }),
   extras: many(bookingExtra),
   travellers: many(bookingTraveller),
+  consents: many(bookingConsent),
   schedules: many(paymentSchedule),
   payments: many(payment),
   events: many(providerReservationEvent),
@@ -257,6 +312,10 @@ export const bookingExtraRelations = relations(bookingExtra, ({ one }) => ({
 
 export const bookingTravellerRelations = relations(bookingTraveller, ({ one }) => ({
   booking: one(booking, { fields: [bookingTraveller.bookingId], references: [booking.id] }),
+}));
+
+export const bookingConsentRelations = relations(bookingConsent, ({ one }) => ({
+  booking: one(booking, { fields: [bookingConsent.bookingId], references: [booking.id] }),
 }));
 
 export const paymentScheduleRelations = relations(paymentSchedule, ({ one, many }) => ({

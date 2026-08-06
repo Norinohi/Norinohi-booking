@@ -12,4 +12,5 @@ export * from "./discount";
 export * from "./availability";
 export * from "./quote";
 export * from "./booking";
+export * from "./checkout";
 export * from "./search";
