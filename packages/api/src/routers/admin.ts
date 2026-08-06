@@ -19,8 +19,15 @@ import {
   yachtOptionsSchema,
 } from "../contracts/admin";
 import { bookingCancelInputSchema, bookingCancelSchema } from "../contracts/booking";
+import {
+  leadListInputSchema,
+  leadListSchema,
+  leadSchema,
+  leadSetStatusInputSchema,
+} from "../contracts/lead";
 import { adminProcedure } from "../index";
 import { cancelBooking } from "../services/booking";
+import { listLeads, setLeadStatus } from "../services/lead";
 import {
   createDiscount,
   getDiscount,
@@ -78,6 +85,40 @@ export const adminRouter = {
           userId: context.session.user.id,
           isAdmin: true,
         }),
+      ),
+  },
+  lead: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/lead/list",
+        operationId: "listLeads",
+        summary: "List pre-booking enquiries",
+        description:
+          "Returns enquiries from Request Quote, Contact a charter expert, and Get Consultation, newest first, filterable by kind and status. This is the only way anyone sees them — nothing is emailed.",
+        tags: ["Admin"],
+        successDescription: "A page of enquiries.",
+        spec: withJsonBodyExample({ status: "new", page: 1, pageSize: 20 }),
+      })
+      .input(leadListInputSchema)
+      .output(leadListSchema)
+      .handler(({ context, input }) => listLeads(context.db, input)),
+    setStatus: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/lead/setStatus",
+        operationId: "setLeadStatus",
+        summary: "Move an enquiry through the pipeline",
+        description:
+          "Marks an enquiry as contacted or closed and records who handled it. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The enquiry with its new status.",
+        spec: withJsonBodyExample({ id: "lead_example", status: "contacted" }),
+      })
+      .input(leadSetStatusInputSchema)
+      .output(leadSchema)
+      .handler(({ context, input }) =>
+        setLeadStatus(context.db, context.session.user.id, input.id, input.status),
       ),
   },
   discount: {

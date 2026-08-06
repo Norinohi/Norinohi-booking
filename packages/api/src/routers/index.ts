@@ -12,6 +12,7 @@ import { adminRouter } from "./admin";
 import { availabilityRouter } from "./availability";
 import { bookingRouter, checkoutRouter } from "./booking";
 import { charterSearchRouter } from "./charter-search";
+import { leadRouter } from "./lead";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
 import { referralRouter } from "./referral";
@@ -53,6 +54,7 @@ export const appRouter = {
       };
     }),
   charterSearch: charterSearchRouter,
+  lead: leadRouter,
   listings: listingsRouter,
   availability: availabilityRouter,
   wishlist: wishlistRouter,

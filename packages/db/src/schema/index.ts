@@ -13,4 +13,5 @@ export * from "./availability";
 export * from "./quote";
 export * from "./booking";
 export * from "./checkout";
+export * from "./lead";
 export * from "./search";
