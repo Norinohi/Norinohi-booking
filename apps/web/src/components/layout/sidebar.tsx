@@ -24,6 +24,7 @@ type SidebarItem = (typeof BASE_ITEMS)[number] | (typeof ADMIN_ITEMS)[number];
 const HREFS: Partial<Record<SidebarItem, Route>> = {
   profile: "/profile",
   bookings: "/profile/bookings",
+  referrals: "/profile/referrals",
 };
 
 type SidebarProps = {
@@ -61,16 +62,20 @@ export default function Sidebar({
       )}
     >
       {/* TODO: swap the wash for the Figma nautical line-art illustration asset. */}
-      <div className="bg-gradient-to-b from-brand-50/70 to-card px-5 pt-14 pb-5">
-        <h2 className="text-2xl font-bold text-foreground">{t("greeting", { name })}</h2>
+      {/* Header — Figma Title frame is 151px tall: greeting sits at y104 over the art, 16px sides/bottom */}
+      <div className="bg-gradient-to-b from-brand-50/70 to-card px-4 pt-26 pb-4">
+        <h2 className="text-2xl leading-[1.3] font-bold text-foreground">
+          {t("greeting", { name })}
+        </h2>
       </div>
 
-      <ul className="flex flex-col pb-2">
+      <ul className="flex flex-col py-4">
         {items.map((item) => {
           const href = HREFS[item];
           const isActive = active === item;
+          /* Menu Item is 54px in Figma: 16px paddings around 16/1.4 text */
           const rowClassName = cn(
-            "block w-full px-5 py-3.5 text-left text-base outline-none transition-colors focus-visible:bg-natural-50",
+            "block w-full px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
             isActive
               ? "bg-brand-50 font-semibold text-brand"
               : "font-medium text-foreground hover:bg-natural-50",
@@ -102,7 +107,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onLogout}
-            className="w-full px-5 py-3.5 text-left text-base font-medium text-error-500 outline-none transition-colors hover:bg-error-50 focus-visible:bg-error-50"
+            className="w-full px-4 py-4 text-left text-base leading-[1.4] font-medium text-error-500 outline-none transition-colors hover:bg-error-50 focus-visible:bg-error-50"
           >
             {t("logout")}
           </button>

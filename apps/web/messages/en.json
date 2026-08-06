@@ -1056,5 +1056,63 @@
         "emailRegistered": "This email is already registered"
       }
     }
+  },
+  "Referrals": {
+    "title": "Your Referrals",
+    "invite": {
+      "heading": "Invite friends. Earn sailing credit.",
+      "description": "Give €100 to your friends for their first booking and get €100 credit for yourself when they sail.",
+      "copy": "Copy referral link",
+      "copied": "Link copied",
+      "generate": "Generate New Code",
+      "generated": "New referral code is coming soon",
+      "information": "Information",
+      "rules": {
+        "minBooking": "Credits are usable for any yacht booking over €1000.",
+        "expiry": "Referral credits expire 12 months after being earned.",
+        "cash": "Credits cannot be withdrawn as cash.",
+        "firstTime": "Only valid for first-time bookings of invited friends."
+      },
+      "stats": {
+        "invited": "Invited users",
+        "completed": "Completed bookings",
+        "earned": "Total earned",
+        "balance": "Available balance"
+      }
+    },
+    "how": {
+      "title": "How It Works",
+      "steps": {
+        "share": {
+          "title": "Share link",
+          "description": "Send your unique referral link to friends who love travel"
+        },
+        "book": {
+          "title": "Friend book",
+          "description": "They get €100 off their first yacht booking over €1000"
+        },
+        "credit": {
+          "title": "You get credit",
+          "description": "Once they complete their trip, you receive €100 credits"
+        }
+      },
+      "level": {
+        "title": "Your Level",
+        "current": "Current:",
+        "next": "Next: {level}",
+        "left": "{count, plural, one {# booking} other {# bookings}} left to next level",
+        "perks": {
+          "extra": "5% extra credit on all referrals",
+          "early": "Early access to luxury deals",
+          "concierge": "Personal concierge service"
+        }
+      }
+    },
+    "history": {
+      "title": "Referral History",
+      "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+      "completed": "Completed",
+      "pending": "Pending"
+    }
   }
 }
