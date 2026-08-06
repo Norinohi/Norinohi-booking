@@ -82,6 +82,7 @@ export const availabilityRouter = {
         guests: input.guests,
         extras: input.extras,
         discountCode: input.discountCode,
+        applyCredit: input.applyCredit,
       }),
     ),
 };

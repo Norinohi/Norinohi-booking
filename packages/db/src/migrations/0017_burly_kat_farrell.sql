@@ -1,0 +1,1 @@
+ALTER TABLE "quote" ADD COLUMN "credit_applied_minor" integer DEFAULT 0 NOT NULL;

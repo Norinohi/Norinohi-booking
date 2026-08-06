@@ -114,6 +114,8 @@ export const quoteRequestSchema = z.object({
 /** What the API accepts — the provider never sees our promo codes. */
 export const quoteRequestWithDiscountSchema = quoteRequestSchema.extend({
   discountCode: z.string().trim().max(64).optional(),
+  /** Spend available referral credit. Ignored for anonymous visitors. */
+  applyCredit: z.boolean().optional(),
 });
 export type QuoteRequest = z.input<typeof quoteRequestSchema>;
 
@@ -139,7 +141,7 @@ export const providerQuoteSchema = z.object({
        * thing internal price rules move, and what the admin Manage Prices screen
        * edits. Adapters must mark exactly one line as `base`.
        */
-      kind: z.enum(["base", "extra", "fee", "adjustment", "discount"]).default("extra"),
+      kind: z.enum(["base", "extra", "fee", "adjustment", "discount", "credit"]).default("extra"),
     }),
   ),
   total: moneySchema,

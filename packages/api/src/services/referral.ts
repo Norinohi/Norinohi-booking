@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import type { ReferralClaimResult, ReferralCode } from "../contracts/referral";
+import { isUniqueViolation } from "./pg-errors";
 
 type Db = Database;
 
@@ -13,7 +14,6 @@ type Db = Database;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 8;
 const CODE_PREFIX = "NORI-";
-const UNIQUE_VIOLATION = "23505";
 
 /** Returns the user's active referral code, minting one on first read. */
 export async function getOrCreateReferralCode(db: Db, userId: string): Promise<ReferralCode> {
@@ -116,12 +116,4 @@ function randomCodeSuffix(): string {
     suffix += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
   }
   return suffix;
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { code?: string }).code === UNIQUE_VIOLATION
-  );
 }

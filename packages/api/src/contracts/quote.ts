@@ -36,6 +36,10 @@ export const persistedQuoteSchema = providerQuoteSchema.extend({
       "not_applicable",
     ])
     .nullable(),
+  /** Referral credit absorbed by this quote, redeemed for real at checkout. */
+  creditApplied: z
+    .object({ amountMinor: z.number().int(), currency: z.string().length(3) })
+    .nullable(),
   /** Every rule and discount that moved the price, in the order applied. */
   adjustments: z.array(appliedAdjustmentSchema),
 });
@@ -55,6 +59,8 @@ export const repriceInputSchema = z
     extras: z.array(z.string().min(1)).optional(),
     /** Pass null to clear a previously applied code. */
     discountCode: z.string().trim().max(64).nullable().optional(),
+    /** Spend available referral credit. Ignored for anonymous visitors. */
+    applyCredit: z.boolean().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.checkIn && value.checkOut && value.checkOut <= value.checkIn) {

@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount";
+import { spendableCreditMinor } from "./loyalty";
 import {
   loadAdjustmentsForListings,
   payableNowMinor,
@@ -28,6 +29,8 @@ export type PersistedQuote = ProviderQuote & {
   discount: { code: string; name: string; amountMinor: number } | null;
   /** Set when a code was supplied but unusable; the quote is priced without it. */
   discountRejected: DiscountRejection | null;
+  /** Referral credit absorbed by this quote, redeemed for real at checkout. */
+  creditApplied: { amountMinor: number; currency: string } | null;
   adjustments: AppliedAdjustment[];
 };
 
@@ -37,6 +40,7 @@ export type RepriceChanges = {
   guests?: number;
   extras?: string[];
   discountCode?: string | null;
+  applyCredit?: boolean;
 };
 
 /**
@@ -48,7 +52,7 @@ export type RepriceChanges = {
 export async function createQuote(
   db: Db,
   provider: InventoryProvider,
-  input: QuoteRequest & { discountCode?: string },
+  input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
   userId: string | null,
 ): Promise<PersistedQuote> {
   const priced = await priceOrConflict(provider, input);
@@ -56,6 +60,7 @@ export async function createQuote(
     userId,
     extras: input.extras ?? [],
     discountCode: input.discountCode ?? null,
+    applyCredit: input.applyCredit ?? false,
   });
 }
 
@@ -100,6 +105,7 @@ export async function repriceQuote(
       userId: userId ?? existing.userId,
       extras: requestedExtras,
       discountCode,
+      applyCredit: changes.applyCredit ?? existing.creditAppliedMinor > 0,
     });
 
     await tx
@@ -171,7 +177,12 @@ async function priceOrConflict(
 async function persistPricedQuote(
   db: Db,
   priced: ProviderQuote,
-  options: { userId: string | null; extras: string[]; discountCode: string | null },
+  options: {
+    userId: string | null;
+    extras: string[];
+    discountCode: string | null;
+    applyCredit: boolean;
+  },
 ): Promise<PersistedQuote> {
   const currency = priced.currency;
   const onDate = priced.checkIn;
@@ -259,7 +270,35 @@ async function persistPricedQuote(
     }
   }
 
-  // 3. Payment policy, then the deposit that follows from it.
+  // 3. Referral credit, last: it is a way of paying rather than a price change,
+  // so it comes off after everything that decides what the trip costs.
+  let creditApplied: PersistedQuote["creditApplied"] = null;
+
+  if (options.applyCredit) {
+    const spendable = await spendableCreditMinor(
+      db,
+      options.userId,
+      totalMinor(lines),
+      payableNowMinor(lines),
+    );
+
+    if (spendable > 0) {
+      lines = [
+        ...lines,
+        {
+          code: "referral-credit",
+          label: "Referral credit",
+          amountMinor: -spendable,
+          currency,
+          payWhen: "now",
+          kind: "credit",
+        },
+      ];
+      creditApplied = { amountMinor: spendable, currency };
+    }
+  }
+
+  // 4. Payment policy, then the deposit that follows from it.
   const [listingRow] = await db
     .select({ paymentPolicy: listing.paymentPolicy })
     .from(listing)
@@ -287,6 +326,7 @@ async function persistPricedQuote(
     extras: options.extras,
     discountId,
     discountCode: appliedDiscount?.code ?? null,
+    creditAppliedMinor: creditApplied?.amountMinor ?? 0,
     applied,
   });
 
@@ -309,6 +349,7 @@ async function persistPricedQuote(
     },
     discount: appliedDiscount,
     discountRejected,
+    creditApplied,
     adjustments: applied,
   };
 }
@@ -325,6 +366,7 @@ async function insertQuote(
     extras: string[];
     discountId: string | null;
     discountCode: string | null;
+    creditAppliedMinor: number;
     applied: AppliedAdjustment[];
   },
 ): Promise<string> {
@@ -348,6 +390,7 @@ async function insertQuote(
       paymentPolicy: input.paymentPolicy,
       discountId: input.discountId,
       discountCode: input.discountCode,
+      creditAppliedMinor: input.creditAppliedMinor,
       priceSourceHash: input.priced.priceSourceHash,
       expiresAt: new Date(input.priced.expiresAt),
     })

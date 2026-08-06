@@ -224,3 +224,66 @@ export async function invitedCount(db: Database, userId: string): Promise<number
 
   return row?.total ?? 0;
 }
+
+/**
+ * "Credits are usable for any yacht booking over €1000." Below that the balance
+ * is untouched rather than partially spent, which is what the rule on the screen
+ * says and keeps small bookings from quietly draining someone's credit.
+ */
+export const MIN_BOOKING_FOR_CREDIT_MINOR = 100_000;
+
+/** How much credit this quote may absorb: never more than the balance or the bill. */
+export async function spendableCreditMinor(
+  db: Database,
+  userId: string | null,
+  bookingTotalMinor: number,
+  payableNowMinor: number,
+): Promise<number> {
+  if (!userId) return 0;
+  if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
+
+  const balance = await creditBalanceMinor(db, userId);
+  return Math.max(Math.min(balance, payableNowMinor), 0);
+}
+
+/**
+ * Spends credit against a confirmed booking, as a negative ledger row.
+ *
+ * Re-reads the balance inside the caller's transaction: the quote may have been
+ * priced minutes ago, and credit could have been spent elsewhere since. Spends
+ * whatever is actually left rather than trusting the quote, and reports it so the
+ * caller can tell the difference.
+ */
+export async function redeemCredit(
+  tx: DatabaseExecutor,
+  input: { userId: string; bookingId: string; amountMinor: number; currency: string },
+): Promise<{ spentMinor: number }> {
+  if (input.amountMinor <= 0) return { spentMinor: 0 };
+
+  const [row] = await tx
+    .select({ total: sum(creditLedger.amountMinor) })
+    .from(creditLedger)
+    .where(
+      and(
+        eq(creditLedger.userId, input.userId),
+        or(isNull(creditLedger.expiresAt), gt(creditLedger.expiresAt, new Date())),
+      ),
+    );
+
+  const available = Number(row?.total ?? 0);
+  const spend = Math.min(input.amountMinor, Math.max(available, 0));
+  if (spend <= 0) return { spentMinor: 0 };
+
+  await tx.insert(creditLedger).values({
+    userId: input.userId,
+    kind: "booking_redemption",
+    amountMinor: -spend,
+    currency: input.currency,
+    bookingId: input.bookingId,
+    // Spending never expires; only earned credit carries a deadline.
+    expiresAt: null,
+    note: "Applied to booking",
+  });
+
+  return { spentMinor: spend };
+}

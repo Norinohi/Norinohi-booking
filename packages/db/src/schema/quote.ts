@@ -29,7 +29,7 @@ export type QuoteLine = {
    */
   payWhen: "now" | "at_check_in";
   /** `base` is the charter price — the only line internal rules move. */
-  kind: "base" | "extra" | "fee" | "adjustment" | "discount";
+  kind: "base" | "extra" | "fee" | "adjustment" | "discount" | "credit";
 };
 
 export type QuotePaymentPolicy = {
@@ -78,6 +78,11 @@ export const quote = pgTable(
     /** The promo code applied, frozen alongside the price it produced. */
     discountId: text("discount_id"),
     discountCode: text("discount_code"),
+    /**
+     * Referral credit spent on this quote. Redeemed for real at checkout, where a
+     * matching negative ledger row is written.
+     */
+    creditAppliedMinor: integer("credit_applied_minor").default(0).notNull(),
     /**
      * Fingerprint of the provider price this quote was built from. Every
      * state-advancing call re-fetches and compares, so a price change cannot pass

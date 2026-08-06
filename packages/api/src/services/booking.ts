@@ -37,6 +37,8 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { redeemDiscount } from "./discount";
+import { isUniqueViolation } from "./pg-errors";
+import { redeemCredit } from "./loyalty";
 import { paginationFor } from "./pagination";
 import { assertQuoteIsFresh } from "./quote";
 
@@ -61,7 +63,6 @@ type BookingRow = typeof booking.$inferSelect;
 
 const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const REFERENCE_LENGTH = 8;
-const UNIQUE_VIOLATION = "23505";
 
 /* --------------------------------------------------------------------- reads */
 
@@ -288,24 +289,14 @@ export async function createHold(
   // Quoting is public and must never consume a code, so the usage limit only
   // becomes binding here. Re-checked under the transaction so two simultaneous
   // checkouts cannot both take the last remaining use.
-  if (priced.discountId) {
-    const discountedMinor = priced.lines
-      .filter((line) => line.kind === "discount")
-      .reduce((total, line) => total + Math.abs(line.amountMinor), 0);
+  const redeem = () => redeemFor(db, created.id, userId, priced);
 
-    await db.transaction(async (tx) => {
-      await redeemDiscount(tx, {
-        discountId: priced.discountId as string,
-        userId,
-        bookingId: created.id,
-        amountMinor: discountedMinor,
-        currency: priced.currency,
-      });
-    });
+  // No option support: nothing to secure, so the booking waits at QUOTED and the
+  // payment is what commits it.
+  if (!provider.capabilities().supportsOptions) {
+    await redeem();
+    return presentHold(created);
   }
-
-  // No option support: the booking waits at QUOTED and payment is what commits it.
-  if (!provider.capabilities().supportsOptions) return presentHold(created);
 
   const pending = await transition(db, created, "OPTION_PENDING");
 
@@ -342,8 +333,15 @@ export async function createHold(
       reservation,
     });
 
+    // Only now that the slot is ours.
+    await redeem();
+
     return presentHold(held);
   } catch (error) {
+    // Already handled and already moved to a terminal state — re-running the
+    // transition here would fail its compare-and-set and mask the real reason.
+    if (error instanceof ORPCError) throw error;
+
     const rejected = await transition(db, pending, "PROVIDER_REJECTED", {
       cancelReason: error instanceof Error ? error.message : "Provider rejected the option",
     });
@@ -405,6 +403,49 @@ export async function cancelBooking(
       throw new ORPCError("CONFLICT", { message: error.message });
     }
     throw error;
+  }
+}
+
+/**
+ * Consumes the promo code and the referral credit the quote was priced with.
+ *
+ * Deliberately called after the provider option is secured: spending a
+ * single-use code, or someone's credit balance, on a booking that then fails to
+ * hold a slot would leave both gone with nothing to show for it.
+ */
+async function redeemFor(
+  db: Db,
+  bookingId: string,
+  userId: string,
+  priced: typeof quote.$inferSelect,
+): Promise<void> {
+  if (priced.discountId) {
+    const discountedMinor = priced.lines
+      .filter((line) => line.kind === "discount")
+      .reduce((total, line) => total + Math.abs(line.amountMinor), 0);
+
+    await db.transaction(async (tx) => {
+      await redeemDiscount(tx, {
+        discountId: priced.discountId as string,
+        userId,
+        bookingId,
+        amountMinor: discountedMinor,
+        currency: priced.currency,
+      });
+    });
+  }
+
+  // Re-checks the balance under the transaction: the quote may be minutes old and
+  // the credit could have been spent elsewhere since.
+  if (priced.creditAppliedMinor > 0) {
+    await db.transaction(async (tx) => {
+      await redeemCredit(tx, {
+        userId,
+        bookingId,
+        amountMinor: priced.creditAppliedMinor,
+        currency: priced.currency,
+      });
+    });
   }
 }
 
@@ -654,12 +695,4 @@ function randomReference(): string {
     suffix += REFERENCE_ALPHABET[randomInt(REFERENCE_ALPHABET.length)];
   }
   return `NB-${suffix}`;
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { code?: string }).code === UNIQUE_VIOLATION
-  );
 }
