@@ -29,6 +29,11 @@ export const env = createEnv({
     // and packages/auth registers the provider only when both are present.
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+    // Optional as a pair, like the Google keys: without both, card checkout
+    // reports NOT_IMPLEMENTED and the webhook route refuses to mount, rather than
+    // the server failing to boot.
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

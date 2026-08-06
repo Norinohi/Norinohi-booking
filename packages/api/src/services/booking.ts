@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { ORPCError } from "@orpc/server";
 import {
   booking,
+  bookingConsent,
   bookingExtra,
   payment,
   paymentSchedule,
@@ -20,6 +21,8 @@ import type { z } from "zod";
 import type { Database, DatabaseExecutor } from "../context";
 import type {
   bookingCancelSchema,
+  consentsSchema,
+  guestDetailsSchema,
   bookingDetailSchema,
   bookingListInputSchema,
   bookingListSchema,
@@ -44,6 +47,14 @@ type Detail = z.infer<typeof bookingDetailSchema>;
 type Hold = z.infer<typeof checkoutHoldSchema>;
 type Status = z.infer<typeof checkoutStatusSchema>;
 type CancelResult = z.infer<typeof bookingCancelSchema>;
+type GuestDetails = z.infer<typeof guestDetailsSchema>;
+type Consents = z.infer<typeof consentsSchema>;
+
+/**
+ * Stamped onto every consent row. Bump this whenever the terms or the cancellation
+ * policy text changes, so an old acceptance is never mistaken for the current one.
+ */
+const POLICY_VERSION = "2026-08-01";
 
 type BookingRow = typeof booking.$inferSelect;
 
@@ -189,6 +200,8 @@ export async function createHold(
   userId: string,
   quoteId: string,
   idempotencyKey: string,
+  guest: GuestDetails,
+  consents: Consents,
 ): Promise<Hold> {
   const existing = await db
     .select()
@@ -220,6 +233,10 @@ export async function createHold(
   const created = await insertBooking(db, {
     quoteId: priced.id,
     status: "QUOTED",
+    guestFullName: guest.fullName,
+    guestEmail: guest.email,
+    guestPhone: guest.phone,
+    specialRequests: guest.specialRequests ?? null,
     userId,
     listingId: priced.listingId,
     provider: priced.provider,
@@ -231,6 +248,22 @@ export async function createHold(
 
   // The quote is now spoken for; a second booking must not be built from it.
   await db.update(quote).set({ userId, status: "consumed" }).where(eq(quote.id, priced.id));
+
+  // Both boxes are required by the contract, so reaching here means both were
+  // ticked. Recorded against a policy version so the acceptance stays meaningful
+  // after the wording changes.
+  void consents;
+  await db
+    .insert(bookingConsent)
+    .values([
+      { bookingId: created.id, kind: "terms" as const, policyVersion: POLICY_VERSION },
+      {
+        bookingId: created.id,
+        kind: "cancellation_policy" as const,
+        policyVersion: POLICY_VERSION,
+      },
+    ])
+    .onConflictDoNothing();
 
   // No option support: the booking waits at QUOTED and payment is what commits it.
   if (!provider.capabilities().supportsOptions) return presentHold(created);
@@ -244,12 +277,27 @@ export async function createHold(
       customer: { name: account.name, email: account.email },
     });
 
-    const held = await transition(db, pending, "OPTION_HELD", {
-      providerOptionId: reservation.providerOptionId ?? null,
-      providerReservationId: reservation.providerReservationId ?? null,
-      providerStatus: reservation.status,
-      holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
-    });
+    let held: BookingRow;
+    try {
+      held = await transition(db, pending, "OPTION_HELD", {
+        providerOptionId: reservation.providerOptionId ?? null,
+        providerReservationId: reservation.providerReservationId ?? null,
+        providerStatus: reservation.status,
+        holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
+      });
+    } catch (error) {
+      // booking_provider_option_uq: someone else already holds this exact option.
+      // Surface it as a conflict rather than leaking the failed statement.
+      if (isUniqueViolation(error)) {
+        await transition(db, pending, "PROVIDER_REJECTED", {
+          cancelReason: "This slot was taken while you were checking out",
+        });
+        throw new ORPCError("CONFLICT", {
+          message: "This slot was taken while you were checking out — please reprice",
+        });
+      }
+      throw error;
+    }
 
     await recordEvent(db, held.id, "option_created", held.provider, reservation.providerOptionId, {
       reservation,

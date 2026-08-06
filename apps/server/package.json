@@ -23,6 +23,7 @@
     "dotenv": "catalog:",
     "evlog": "catalog:",
     "hono": "catalog:",
+    "stripe": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

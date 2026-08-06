@@ -9,10 +9,17 @@ import {
   bookingIdInputSchema,
   bookingListInputSchema,
   bookingListSchema,
+  bookingReceiptSchema,
+  checkoutConfirmInputSchema,
+  checkoutConfirmSchema,
   checkoutCreateHoldInputSchema,
   checkoutHoldSchema,
   checkoutStatusInputSchema,
   checkoutStatusSchema,
+  enquiryInputSchema,
+  enquirySchema,
+  invoiceRequestInputSchema,
+  invoiceRequestSchema,
 } from "../contracts/booking";
 import { protectedProcedure } from "../index";
 import {
@@ -22,6 +29,8 @@ import {
   getCheckoutStatus,
   listBookings,
 } from "../services/booking";
+import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
+import { confirmCheckout } from "../services/payment";
 import { withJsonBodyExample } from "./openapi-examples";
 
 const provider = createInventoryProvider();
@@ -77,6 +86,21 @@ export const bookingRouter = {
         isAdmin: false,
       }),
     ),
+  receipt: protectedProcedure
+    .route({
+      method: "POST",
+      path: "/booking/receipt",
+      operationId: "getBookingReceipt",
+      summary: "Get receipt data for a booking",
+      description:
+        "Returns the figures behind the Download Receipt button: the priced lines with when each is collected, the total, the refundable security deposit, and every payment taken so far. The PDF itself is rendered client-side.",
+      tags: ["Booking"],
+      successDescription: "Receipt data for the requested booking.",
+      spec: withJsonBodyExample({ id: "bkg_example" }),
+    })
+    .input(bookingIdInputSchema)
+    .output(bookingReceiptSchema)
+    .handler(({ context, input }) => getReceipt(context.db, context.session.user.id, input.id)),
 };
 
 export const checkoutRouter = {
@@ -87,11 +111,18 @@ export const checkoutRouter = {
       operationId: "createCheckoutHold",
       summary: "Turn a quote into a held booking",
       description:
-        "Re-validates the quote, creates a booking, and holds a provider option when the active provider supports options. Idempotent on idempotencyKey: retrying the same submit returns the original booking instead of holding a second option. An expired quote is rejected with QUOTE_EXPIRED so the caller reprices first.",
+        "Re-validates the quote, creates a booking with the guest details from step 1, records acceptance of the terms and the cancellation policy, and holds a provider option when the active provider supports options. Both consents must be true — an unticked box fails validation here, not just in the browser. Idempotent on idempotencyKey: retrying the same submit returns the original booking instead of holding a second option. An expired quote is rejected with QUOTE_EXPIRED so the caller reprices first.",
       tags: ["Checkout"],
       successDescription: "The booking created for this quote, with its hold expiry.",
       spec: withJsonBodyExample({
         quoteId: "qte_example",
+        guest: {
+          fullName: "John Doe",
+          email: "john@example.com",
+          phone: "+48536839555",
+          specialRequests: "Early check in please",
+        },
+        consents: { terms: true, cancellationPolicy: true },
         idempotencyKey: "b3f1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
       }),
     })
@@ -106,6 +137,8 @@ export const checkoutRouter = {
         // A client that does not send one still gets single-call safety; only a
         // retry that reuses the key is deduplicated.
         input.idempotencyKey ?? randomUUID(),
+        input.guest,
+        input.consents,
       ),
     ),
   status: protectedProcedure
@@ -125,4 +158,64 @@ export const checkoutRouter = {
     .handler(({ context, input }) =>
       getCheckoutStatus(context.db, context.session.user.id, input.bookingId),
     ),
+  confirm: protectedProcedure
+    .route({
+      method: "POST",
+      path: "/checkout/confirm",
+      operationId: "confirmCheckout",
+      summary: "Start a card payment for a booking",
+      description:
+        "Re-validates the quote, creates the payment schedule and payment rows, and returns a Stripe client secret for the browser to complete with Stripe Elements. paymentPreference chooses between the quote's deposit and paying in full; amounts marked pay-at-check-in are settled with the base and are never charged here. Returns NOT_IMPLEMENTED when STRIPE_SECRET_KEY is unset.",
+      tags: ["Checkout"],
+      successDescription: "The client secret and the amount being charged.",
+      spec: withJsonBodyExample({ bookingId: "bkg_example", paymentPreference: "deposit" }),
+    })
+    .input(checkoutConfirmInputSchema)
+    .output(checkoutConfirmSchema)
+    .handler(({ context, input }) =>
+      confirmCheckout(
+        context.db,
+        context.session.user.id,
+        input.bookingId,
+        input.paymentPreference,
+      ),
+    ),
+  requestInvoice: protectedProcedure
+    .route({
+      method: "POST",
+      path: "/checkout/requestInvoice",
+      operationId: "requestCheckoutInvoice",
+      summary: "Ask for an invoice instead of paying by card",
+      description:
+        "Records that the customer will pay by bank transfer and moves the booking to PAYMENT_PENDING with an unpaid invoice payment. Re-submitting returns the existing request rather than creating a second one. No email is sent — the record is what staff act on until email infrastructure exists.",
+      tags: ["Checkout"],
+      successDescription: "The invoice request and the booking's new status.",
+      spec: withJsonBodyExample({
+        bookingId: "bkg_example",
+        billingEmail: "billing@example.com",
+        companyName: "Yachts Adventures",
+        vatNumber: "GB123123211321312123",
+      }),
+    })
+    .input(invoiceRequestInputSchema)
+    .output(invoiceRequestSchema)
+    .handler(({ context, input }) => requestInvoice(context.db, context.session.user.id, input)),
+  askQuestion: protectedProcedure
+    .route({
+      method: "POST",
+      path: "/checkout/askQuestion",
+      operationId: "askCheckoutQuestion",
+      summary: "Send a question before paying",
+      description:
+        "Records a pre-payment question such as a licence check or a special requirement. The booking deliberately keeps its current status — asking is not a commitment to pay — so the provider hold continues to run down as normal.",
+      tags: ["Checkout"],
+      successDescription: "The recorded question and the booking's unchanged status.",
+      spec: withJsonBodyExample({
+        bookingId: "bkg_example",
+        question: "Do you need to see a sailing licence before departure?",
+      }),
+    })
+    .input(enquiryInputSchema)
+    .output(enquirySchema)
+    .handler(({ context, input }) => askQuestion(context.db, context.session.user.id, input)),
 };
