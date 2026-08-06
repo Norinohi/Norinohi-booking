@@ -18,7 +18,9 @@ import {
   yachtOptionsInputSchema,
   yachtOptionsSchema,
 } from "../contracts/admin";
+import { bookingCancelInputSchema, bookingCancelSchema } from "../contracts/booking";
 import { adminProcedure } from "../index";
+import { cancelBooking } from "../services/booking";
 import {
   createDiscount,
   getDiscount,
@@ -55,6 +57,28 @@ export const adminRouter = {
       .input(emptyInputSchema)
       .output(providerCapabilitiesSchema)
       .handler(() => provider.capabilities()),
+  },
+  booking: {
+    cancel: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/cancel",
+        operationId: "adminCancelBooking",
+        summary: "Cancel any booking",
+        description:
+          "Cancels a booking on behalf of a customer, including a confirmed one — a confirmed booking moves to REFUND_PENDING so the money is returned rather than being silently dropped. Requires an authenticated admin user.",
+        tags: ["Admin"],
+        successDescription: "The booking's status after cancellation.",
+        spec: withJsonBodyExample({ id: "bkg_example", reason: "Operator withdrew the yacht" }),
+      })
+      .input(bookingCancelInputSchema)
+      .output(bookingCancelSchema)
+      .handler(({ context, input }) =>
+        cancelBooking(context.db, input.id, input.reason, {
+          userId: context.session.user.id,
+          isAdmin: true,
+        }),
+      ),
   },
   discount: {
     list: adminProcedure

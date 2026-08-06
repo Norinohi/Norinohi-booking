@@ -10,6 +10,7 @@ import { protectedProcedure, publicProcedure } from "../index";
 import { deactivateProfile, getProfile, updateProfile } from "../services/profile";
 import { adminRouter } from "./admin";
 import { availabilityRouter } from "./availability";
+import { bookingRouter, checkoutRouter } from "./booking";
 import { charterSearchRouter } from "./charter-search";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
@@ -55,6 +56,8 @@ export const appRouter = {
   listings: listingsRouter,
   availability: availabilityRouter,
   wishlist: wishlistRouter,
+  checkout: checkoutRouter,
+  booking: bookingRouter,
   profile: {
     get: protectedProcedure
       .route({
