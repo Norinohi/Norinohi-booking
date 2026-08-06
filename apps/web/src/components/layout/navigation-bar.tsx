@@ -20,6 +20,9 @@ import UserMenu from "./user-menu";
  * 70px side padding. Below 2xl it collapses to the tablet/mobile design — hamburger +
  * wordmark + the three icons — and the links + CTAs move into the sheet. The full desktop
  * spacing needs ~1536px, so it switches on at 2xl rather than xl. Strings: `Nav` namespace.
+ * The inner row caps at the 1536 design frame (like the footer), so past 1536 the bar's
+ * content stays aligned with the page containers (max-w-349 + centered) instead of
+ * stretching full-bleed; the background and border still span the viewport.
  */
 const NAV_LINKS = [
   { key: "destinations", chip: false },
@@ -36,7 +39,7 @@ export default function NavigationBar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-natural-50 bg-background">
-      <div className="flex h-18 items-center justify-between gap-4 px-4 md:px-13.5 2xl:h-20 2xl:px-17.5">
+      <div className="mx-auto flex h-18 max-w-[1536px] items-center justify-between gap-4 px-4 md:px-13.5 2xl:h-20 2xl:px-17.5">
         {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
         <div className="flex items-center gap-4 2xl:gap-16">
           <IconButton
