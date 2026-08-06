@@ -25,6 +25,10 @@ export const env = createEnv({
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
     PROVIDER_MODE: z.enum(["mock", "booking_manager", "nausys"]).default("mock"),
+    // Optional as a pair: the Google sign-in button only works when both are set,
+    // and packages/auth registers the provider only when both are present.
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

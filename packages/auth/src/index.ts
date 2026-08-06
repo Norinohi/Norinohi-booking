@@ -9,6 +9,20 @@ import { openAPI } from "better-auth/plugins";
 export function createAuth() {
   const db = createDb();
 
+  // Registered only when both halves of the credential pair are configured, so a
+  // local `.env` without Google keys still boots. The callback better-auth mounts
+  // is `${BETTER_AUTH_URL}/api/auth/callback/google` — register that exact URI in
+  // the Google console, and keep the `/api/auth` mount identical on both sides.
+  const socialProviders =
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : undefined;
+
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: "pg",
@@ -19,6 +33,7 @@ export function createAuth() {
     emailAndPassword: {
       enabled: true,
     },
+    socialProviders,
     user: {
       additionalFields: {
         phone: {
