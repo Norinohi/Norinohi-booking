@@ -40,6 +40,17 @@ export function createAuth() {
           type: "string",
           required: false,
         },
+        // requireAdmin in packages/api reads session.user.role, and better-auth
+        // only puts declared fields on the session — without this every admin
+        // procedure returns FORBIDDEN even for a staff account.
+        // `input: false` is load-bearing: it stops a signup request from
+        // supplying its own role and self-promoting to admin.
+        role: {
+          type: "string",
+          required: false,
+          input: false,
+          defaultValue: "customer",
+        },
       },
       changeEmail: {
         enabled: true,
