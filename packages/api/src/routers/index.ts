@@ -14,6 +14,7 @@ import { availabilityRouter } from "./availability";
 import { charterSearchRouter } from "./charter-search";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
+import { referralRouter } from "./referral";
 
 const provider = createInventoryProvider();
 
@@ -191,49 +192,7 @@ export const appRouter = {
         return { deactivated: true as const };
       }),
   },
-  referral: {
-    myCode: protectedProcedure
-      .route({
-        method: "POST",
-        path: "/referral/myCode",
-        operationId: "getReferralCode",
-        summary: "Get the current user's referral code",
-        description:
-          "Returns the authenticated user's deterministic demo referral code and registration URL path.",
-        tags: ["Referral"],
-        successDescription: "Referral code and URL path for the authenticated user.",
-        spec: withJsonBodyExample({}),
-      })
-      .input(emptyInputSchema)
-      .output(z.object({ code: z.string(), urlPath: z.string() }))
-      .handler(({ context }) => {
-        const code = `NORI-${context.session.user.id.slice(0, 6).toUpperCase()}`;
-        return {
-          code,
-          urlPath: `/register?ref=${code}`,
-        };
-      }),
-    redeem: protectedProcedure
-      .route({
-        method: "POST",
-        path: "/referral/redeem",
-        operationId: "redeemReferralCode",
-        summary: "Redeem a referral code",
-        description:
-          "Accepts a referral code and returns whether it was accepted. This milestone returns a deterministic demo response before booking-linked redemption is implemented.",
-        tags: ["Referral"],
-        successDescription: "Referral redemption result.",
-        spec: withJsonBodyExample({
-          code: "NORI-DEMO01",
-        }),
-      })
-      .input(z.object({ code: z.string().min(1) }))
-      .output(z.object({ accepted: z.boolean(), code: z.string() }))
-      .handler(({ input }) => ({
-        accepted: true,
-        code: input.code,
-      })),
-  },
+  referral: referralRouter,
   admin: {
     provider: {
       capabilities: adminProcedure
