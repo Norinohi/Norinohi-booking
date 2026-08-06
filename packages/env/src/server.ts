@@ -8,6 +8,19 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url(),
     CORS_ORIGIN: z.url(),
+    // Parent domain shared by the web and API hosts (e.g. ".yachtskanner.com"),
+    // used as the session cookie's Domain attribute. Without it better-auth
+    // writes a host-only cookie that the API subdomain can set but the web
+    // subdomain never receives, so server-side getSession always sees no
+    // session. Leave unset in local dev — web and API share the `localhost`
+    // host, and cookies ignore ports.
+    COOKIE_DOMAIN: z
+      .string()
+      .min(1)
+      .refine((value) => !value.includes("://") && !value.includes("/"), {
+        message: "COOKIE_DOMAIN must be a bare domain (.example.com), not a URL",
+      })
+      .optional(),
     OPENAPI_SERVER_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),

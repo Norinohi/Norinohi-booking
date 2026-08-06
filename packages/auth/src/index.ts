@@ -50,6 +50,15 @@ export function createAuth() {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
+      // The web app and the API live on sibling subdomains in production
+      // (www.* and api.*). better-auth only emits a Domain attribute when
+      // crossSubDomainCookies is enabled; without it the session cookie is
+      // host-only to the API host, so the web host never receives it and every
+      // server-side getSession() reads an empty cookie jar. Unset locally,
+      // where both sides already share the `localhost` cookie host.
+      ...(env.COOKIE_DOMAIN
+        ? { crossSubDomainCookies: { enabled: true, domain: env.COOKIE_DOMAIN } }
+        : {}),
       defaultCookieAttributes: {
         sameSite: "none",
         secure: true,
