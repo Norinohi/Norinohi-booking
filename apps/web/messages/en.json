@@ -993,9 +993,7 @@
     "anyDates": "Any dates",
     "clearDates": "Clear dates",
     "emptyTitle": "No yachts yet",
-    "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here.",
-    "bareboat": "Bareboat",
-    "fullCrew": "Full crew"
+    "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here."
   },
   "Auth": {
     "SignIn": {

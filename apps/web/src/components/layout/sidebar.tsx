@@ -61,10 +61,17 @@ export default function Sidebar({
         className,
       )}
     >
-      {/* TODO: swap the wash for the Figma nautical line-art illustration asset. */}
-      {/* Header — Figma Title frame is 151px tall: greeting sits at y104 over the art, 16px sides/bottom */}
-      <div className="bg-gradient-to-b from-brand-50/70 to-card px-4 pt-26 pb-4">
-        <h2 className="text-2xl leading-[1.3] font-bold text-foreground">
+      {/* Header — Figma Title frame is 151px tall: greeting sits at y104 over the art, 16px sides/bottom.
+          The nautical line art is the Figma Title group (845:206855) cropped to its visible
+          660x151 band via viewBox; a wash fades it out under the greeting like the mock. */}
+      <div className="relative px-4 pt-26 pb-4">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url(/assets/illustrations/sidebar-marine.svg)" }}
+        />
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent to-card" />
+        <h2 className="relative text-2xl leading-[1.3] font-bold text-foreground">
           {t("greeting", { name })}
         </h2>
       </div>

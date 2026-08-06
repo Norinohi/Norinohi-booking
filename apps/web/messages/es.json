@@ -993,9 +993,7 @@
     "anyDates": "Cualquier fecha",
     "clearDates": "Borrar fechas",
     "emptyTitle": "Aún no hay yates",
-    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí.",
-    "bareboat": "Sin patrón",
-    "fullCrew": "Tripulación completa"
+    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí."
   },
   "Auth": {
     "SignIn": {

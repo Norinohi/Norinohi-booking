@@ -20,6 +20,8 @@ type CommonProps = {
   placeholder: string;
   /** Shows a clear control once a day is picked; omit to leave the field uncleanable. */
   clearLabel?: string;
+  /** Lets the trigger hug and grow with its label instead of truncating it. */
+  hugContent?: boolean;
   className?: string;
   triggerClassName?: string;
   contentClassName?: string;
@@ -42,6 +44,7 @@ export type DatePickerProps = CommonProps & (SingleProps | RangeProps);
 export default function DatePicker({
   placeholder,
   clearLabel,
+  hugContent,
   className,
   triggerClassName,
   contentClassName,
@@ -74,7 +77,11 @@ export default function DatePicker({
         <PopoverTrigger className={cn(TRIGGER, triggerClassName)}>
           <CalendarIcon className="size-6 shrink-0 text-foreground" />
           <span
-            className={cn("truncate", !label && "text-natural-300", label && clearLabel && "pr-6")}
+            className={cn(
+              hugContent ? "whitespace-nowrap" : "truncate",
+              !label && "text-natural-300",
+              label && clearLabel && "pr-6",
+            )}
           >
             {label ?? placeholder}
           </span>
