@@ -1,28 +1,62 @@
 import { ORPCError } from "@orpc/server";
-import { quote } from "@yacht-charter/db/schema/quote";
+import { listing } from "@yacht-charter/db/schema/listing";
+import {
+  priceAdjustmentSnapshot,
+  quote,
+  type QuoteLine,
+  type QuotePaymentPolicy,
+} from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
 import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { resolveDiscountForListing, type DiscountRejection } from "./discount";
+import {
+  loadAdjustmentsForListings,
+  payableNowMinor,
+  resolveAdjustedPrice,
+  resolvePaymentPolicy,
+  totalMinor,
+  type AppliedAdjustment,
+} from "./pricing";
 
 type Db = Database;
 
-export type PersistedQuote = ProviderQuote & { quoteId: string };
+export type PersistedQuote = ProviderQuote & {
+  quoteId: string;
+  /** The promo code that was applied, or null. */
+  discount: { code: string; name: string; amountMinor: number } | null;
+  /** Set when a code was supplied but unusable; the quote is priced without it. */
+  discountRejected: DiscountRejection | null;
+  adjustments: AppliedAdjustment[];
+};
+
+export type RepriceChanges = {
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
+  extras?: string[];
+  discountCode?: string | null;
+};
 
 /**
- * Prices a trip live and freezes the result. The provider is the authority on the
- * numbers; our row is the immutable record of what the customer was shown, which
- * checkout re-validates against before taking money (§6.1).
+ * Prices a trip live, runs it through the internal pipeline, and freezes the
+ * result. The provider is the authority on its own numbers; everything after that
+ * — internal rules, promo codes, how much is due up front — is ours, and the row
+ * we write is what checkout re-validates against before taking money (§6.1).
  */
 export async function createQuote(
   db: Db,
   provider: InventoryProvider,
-  input: QuoteRequest,
+  input: QuoteRequest & { discountCode?: string },
   userId: string | null,
 ): Promise<PersistedQuote> {
   const priced = await priceOrConflict(provider, input);
-  const quoteId = await persist(db, priced, userId, input.extras ?? []);
-  return { ...priced, quoteId };
+  return persistPricedQuote(db, priced, {
+    userId,
+    extras: input.extras ?? [],
+    discountCode: input.discountCode ?? null,
+  });
 }
 
 /**
@@ -30,13 +64,6 @@ export async function createQuote(
  * replacement rather than being edited, so the chain of what was offered when stays
  * intact (§1.5 — immutable, supersede rather than mutate).
  */
-export type RepriceChanges = {
-  checkIn?: string;
-  checkOut?: string;
-  guests?: number;
-  extras?: string[];
-};
-
 export async function repriceQuote(
   db: Db,
   provider: InventoryProvider,
@@ -56,6 +83,9 @@ export async function repriceQuote(
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
   const requestedExtras = changes.extras ?? existing.extras;
+  const discountCode =
+    changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
+
   const priced = await priceOrConflict(provider, {
     listingId: existing.listingId,
     checkIn: changes.checkIn ?? existing.checkIn,
@@ -65,22 +95,24 @@ export async function repriceQuote(
     currency: existing.currency,
   });
 
-  const replacementId = await db.transaction(async (tx) => {
-    const newId = await persist(tx, priced, userId ?? existing.userId, requestedExtras);
+  const replacement = await db.transaction(async (tx) => {
+    const result = await persistPricedQuote(tx as unknown as Db, priced, {
+      userId: userId ?? existing.userId,
+      extras: requestedExtras,
+      discountCode,
+    });
+
     await tx
       .update(quote)
-      .set({ status: "consumed", supersededByQuoteId: newId })
+      .set({ status: "consumed", supersededByQuoteId: result.quoteId })
       .where(eq(quote.id, quoteId));
-    return newId;
+
+    return result;
   });
 
-  return {
-    ...priced,
-    quoteId: replacementId,
-    // The caller asked to reprice, so the answer is a reprice regardless of whether
-    // the provider's number happened to move.
-    repriced: true,
-  };
+  // The caller asked to reprice, so the answer is a reprice regardless of whether
+  // the provider's number happened to move.
+  return { ...replacement, repriced: true };
 }
 
 export async function readQuote(db: Db, quoteId: string) {
@@ -127,46 +159,217 @@ async function priceOrConflict(
   }
 }
 
-async function persist(
-  db: DatabaseExecutor,
+/* ------------------------------------------------------------------ pipeline */
+
+/**
+ * provider price → internal rules → discount → payment policy.
+ *
+ * Rules move the charter base only: that is what Manage Prices edits, and
+ * discounting a fee the base collects in cash on arrival would be meaningless.
+ * The promo code then comes off everything payable up front.
+ */
+async function persistPricedQuote(
+  db: Db,
   priced: ProviderQuote,
-  userId: string | null,
-  extras: string[],
+  options: { userId: string | null; extras: string[]; discountCode: string | null },
+): Promise<PersistedQuote> {
+  const currency = priced.currency;
+  const onDate = priced.checkIn;
+
+  let lines: QuoteLine[] = priced.lines.map((line) => ({
+    code: line.code,
+    label: line.label,
+    amountMinor: line.amount.amountMinor,
+    currency: line.amount.currency,
+    payWhen: line.payWhen,
+    kind: line.kind,
+  }));
+
+  const applied: AppliedAdjustment[] = [];
+
+  // 1. Internal price_adjustment_rule, against the charter base.
+  const baseIndex = lines.findIndex((line) => line.kind === "base");
+  const baseLine = baseIndex >= 0 ? lines[baseIndex] : undefined;
+  if (baseLine) {
+    const rules = (await loadAdjustmentsForListings(db, [priced.listingId], onDate)).get(
+      priced.listingId,
+    );
+
+    if (rules && rules.length > 0) {
+      const resolved = resolveAdjustedPrice(baseLine.amountMinor, rules);
+      applied.push(...resolved.applied);
+      lines[baseIndex] = { ...baseLine, amountMinor: resolved.amountMinor };
+    }
+  }
+
+  // 2. Marketing discount, off everything payable now.
+  let discountRejected: DiscountRejection | null = null;
+  let appliedDiscount: PersistedQuote["discount"] = null;
+  let discountId: string | null = null;
+
+  if (options.discountCode) {
+    const outcome = await resolveDiscountForListing(
+      db,
+      options.discountCode,
+      priced.listingId,
+      onDate,
+    );
+
+    if ("rejected" in outcome) {
+      // Price without it rather than failing — a mistyped code should not cost the
+      // visitor the whole quote.
+      discountRejected = outcome.rejected;
+    } else {
+      const payable = payableNowMinor(lines);
+      const off =
+        outcome.discount.type === "percentage"
+          ? Math.round(payable * ((outcome.discount.valuePct ?? 0) / 100))
+          : Math.min(outcome.discount.valueMinor ?? 0, payable);
+
+      if (off > 0) {
+        lines = [
+          ...lines,
+          {
+            code: outcome.discount.code,
+            label: outcome.discount.name,
+            amountMinor: -off,
+            currency,
+            payWhen: "now",
+            kind: "discount",
+          },
+        ];
+
+        applied.push({
+          source: "discount",
+          sourceId: outcome.discount.id,
+          name: outcome.discount.name,
+          type: outcome.discount.type,
+          valuePct: outcome.discount.valuePct,
+          valueMinor: outcome.discount.valueMinor,
+          amountMinor: -off,
+        });
+      }
+
+      discountId = outcome.discount.id;
+      appliedDiscount = {
+        code: outcome.discount.code,
+        name: outcome.discount.name,
+        amountMinor: off,
+      };
+    }
+  }
+
+  // 3. Payment policy, then the deposit that follows from it.
+  const [listingRow] = await db
+    .select({ paymentPolicy: listing.paymentPolicy })
+    .from(listing)
+    .where(eq(listing.id, priced.listingId))
+    .limit(1);
+
+  const paymentPolicy = resolvePaymentPolicy(
+    listingRow?.paymentPolicy ?? null,
+    priced.paymentPolicy,
+    currency,
+  );
+
+  const total = totalMinor(lines);
+  const payable = payableNowMinor(lines);
+  const depositMinor =
+    paymentPolicy.mode === "full" ? payable : Math.round(payable * paymentPolicy.depositPct);
+
+  const quoteId = await insertQuote(db, {
+    priced,
+    lines,
+    total,
+    depositMinor,
+    paymentPolicy,
+    userId: options.userId,
+    extras: options.extras,
+    discountId,
+    discountCode: appliedDiscount?.code ?? null,
+    applied,
+  });
+
+  return {
+    ...priced,
+    quoteId,
+    lines: lines.map((line) => ({
+      code: line.code,
+      label: line.label,
+      amount: { amountMinor: line.amountMinor, currency: line.currency },
+      payWhen: line.payWhen,
+      kind: line.kind,
+    })),
+    total: { amountMinor: total, currency },
+    deposit: { amountMinor: depositMinor, currency },
+    paymentPolicy: {
+      mode: paymentPolicy.mode,
+      depositPct: paymentPolicy.depositPct,
+      balanceDueAt: paymentPolicy.balanceDueAt,
+    },
+    discount: appliedDiscount,
+    discountRejected,
+    adjustments: applied,
+  };
+}
+
+async function insertQuote(
+  db: DatabaseExecutor,
+  input: {
+    priced: ProviderQuote;
+    lines: QuoteLine[];
+    total: number;
+    depositMinor: number;
+    paymentPolicy: QuotePaymentPolicy;
+    userId: string | null;
+    extras: string[];
+    discountId: string | null;
+    discountCode: string | null;
+    applied: AppliedAdjustment[];
+  },
 ): Promise<string> {
   const [row] = await db
     .insert(quote)
     .values({
-      listingId: priced.listingId,
-      userId,
-      provider: priced.provider,
-      providerSourceId: priced.providerSourceId,
-      providerQuoteId: priced.id,
-      checkIn: priced.checkIn,
-      checkOut: priced.checkOut,
-      guests: priced.guests,
-      extras,
-      currency: priced.currency,
-      lines: priced.lines.map((line) => ({
-        code: line.code,
-        label: line.label,
-        amountMinor: line.amount.amountMinor,
-        currency: line.amount.currency,
-        payWhen: line.payWhen,
-      })),
-      totalMinor: priced.total.amountMinor,
-      depositMinor: priced.deposit.amountMinor,
-      securityDepositMinor: priced.securityDeposit?.amountMinor ?? null,
-      paymentPolicy: {
-        mode: priced.paymentPolicy.mode,
-        depositPct: priced.paymentPolicy.depositPct,
-        balanceDueAt: priced.paymentPolicy.balanceDueAt,
-        currency: priced.currency,
-      },
-      priceSourceHash: priced.priceSourceHash,
-      expiresAt: new Date(priced.expiresAt),
+      listingId: input.priced.listingId,
+      userId: input.userId,
+      provider: input.priced.provider,
+      providerSourceId: input.priced.providerSourceId,
+      providerQuoteId: input.priced.id,
+      checkIn: input.priced.checkIn,
+      checkOut: input.priced.checkOut,
+      guests: input.priced.guests,
+      extras: input.extras,
+      currency: input.priced.currency,
+      lines: input.lines,
+      totalMinor: input.total,
+      depositMinor: input.depositMinor,
+      securityDepositMinor: input.priced.securityDeposit?.amountMinor ?? null,
+      paymentPolicy: input.paymentPolicy,
+      discountId: input.discountId,
+      discountCode: input.discountCode,
+      priceSourceHash: input.priced.priceSourceHash,
+      expiresAt: new Date(input.priced.expiresAt),
     })
     .returning({ id: quote.id });
 
   if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not persist quote" });
+
+  if (input.applied.length > 0) {
+    await db.insert(priceAdjustmentSnapshot).values(
+      input.applied.map((adjustment, index) => ({
+        quoteId: row.id,
+        source: adjustment.source,
+        sourceId: adjustment.sourceId,
+        name: adjustment.name,
+        type: adjustment.type,
+        valuePct: adjustment.valuePct === null ? null : adjustment.valuePct.toFixed(4),
+        valueMinor: adjustment.valueMinor,
+        amountMinor: adjustment.amountMinor,
+        sortOrder: index,
+      })),
+    );
+  }
+
   return row.id;
 }

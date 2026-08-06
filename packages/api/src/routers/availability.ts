@@ -1,6 +1,6 @@
 import { db } from "@yacht-charter/db";
 import { listAvailabilityCalendar } from "@yacht-charter/db/search";
-import { quoteRequestSchema } from "@yacht-charter/providers";
+import { quoteRequestWithDiscountSchema } from "@yacht-charter/providers";
 import { createInventoryProvider } from "@yacht-charter/providers";
 
 import { availabilityCalendarInputSchema, availabilityCalendarSchema } from "../contracts/catalog";
@@ -51,7 +51,7 @@ export const availabilityRouter = {
         currency: "EUR",
       }),
     })
-    .input(quoteRequestSchema)
+    .input(quoteRequestWithDiscountSchema)
     .output(persistedQuoteSchema)
     .handler(({ context, input }) =>
       createQuote(context.db, provider, input, context.session?.user.id ?? null),
@@ -70,6 +70,7 @@ export const availabilityRouter = {
         quoteId: "qte_example",
         guests: 6,
         extras: ["skipper", "hostess"],
+        discountCode: "SUMMER2026",
       }),
     })
     .input(repriceInputSchema)
@@ -80,6 +81,7 @@ export const availabilityRouter = {
         checkOut: input.checkOut,
         guests: input.guests,
         extras: input.extras,
+        discountCode: input.discountCode,
       }),
     ),
 };

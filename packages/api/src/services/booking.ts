@@ -36,6 +36,7 @@ import {
   isUserCancellable,
   type BookingStatus,
 } from "./booking-state";
+import { redeemDiscount } from "./discount";
 import { paginationFor } from "./pagination";
 import { assertQuoteIsFresh } from "./quote";
 
@@ -264,6 +265,25 @@ export async function createHold(
       },
     ])
     .onConflictDoNothing();
+
+  // Quoting is public and must never consume a code, so the usage limit only
+  // becomes binding here. Re-checked under the transaction so two simultaneous
+  // checkouts cannot both take the last remaining use.
+  if (priced.discountId) {
+    const discountedMinor = priced.lines
+      .filter((line) => line.kind === "discount")
+      .reduce((total, line) => total + Math.abs(line.amountMinor), 0);
+
+    await db.transaction(async (tx) => {
+      await redeemDiscount(tx, {
+        discountId: priced.discountId as string,
+        userId,
+        bookingId: created.id,
+        amountMinor: discountedMinor,
+        currency: priced.currency,
+      });
+    });
+  }
 
   // No option support: the booking waits at QUOTED and payment is what commits it.
   if (!provider.capabilities().supportsOptions) return presentHold(created);

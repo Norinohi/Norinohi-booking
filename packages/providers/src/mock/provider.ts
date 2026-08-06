@@ -130,12 +130,14 @@ export class MockInventoryProvider implements InventoryProvider {
           code: "base-charter",
           label: "Charter price",
           amount: { amountMinor: slot.priceMinor, currency: parsed.currency },
+          kind: "base",
         },
         ...selectedExtras.map((item) => ({
           code: item.code,
           label: item.name,
           amount: { amountMinor: item.priceMinor, currency: parsed.currency },
           payWhen: item.obligatory ? "at_check_in" : "now",
+          kind: item.obligatory ? "fee" : "extra",
         })),
         ...(repriceDeltaMinor > 0
           ? [
@@ -143,6 +145,7 @@ export class MockInventoryProvider implements InventoryProvider {
                 code: "provider-reprice",
                 label: "Provider reprice adjustment",
                 amount: { amountMinor: repriceDeltaMinor, currency: parsed.currency },
+                kind: "adjustment",
               },
             ]
           : []),

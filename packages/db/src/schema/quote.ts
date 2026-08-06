@@ -1,5 +1,15 @@
 import { relations } from "drizzle-orm";
-import { date, index, integer, jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  date,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 import { user } from "./auth";
@@ -18,6 +28,8 @@ export type QuoteLine = {
    * prepayment even though they count toward the total.
    */
   payWhen: "now" | "at_check_in";
+  /** `base` is the charter price — the only line internal rules move. */
+  kind: "base" | "extra" | "fee" | "adjustment" | "discount";
 };
 
 export type QuotePaymentPolicy = {
@@ -63,6 +75,9 @@ export const quote = pgTable(
      */
     securityDepositMinor: integer("security_deposit_minor"),
     paymentPolicy: jsonb("payment_policy").$type<QuotePaymentPolicy>().notNull(),
+    /** The promo code applied, frozen alongside the price it produced. */
+    discountId: text("discount_id"),
+    discountCode: text("discount_code"),
     /**
      * Fingerprint of the provider price this quote was built from. Every
      * state-advancing call re-fetches and compares, so a price change cannot pass
@@ -82,6 +97,46 @@ export const quote = pgTable(
     index("quote_status_expires_idx").on(t.status, t.expiresAt),
   ],
 );
+
+export const priceAdjustmentSource = pgEnum("price_adjustment_source", ["rule", "discount"]);
+
+/**
+ * Why a quote's price differs from the provider's. One row per rule or discount
+ * that actually moved the number, in the order it was applied.
+ *
+ * Written once alongside the quote and never updated — a quote is immutable, so
+ * this is the audit trail for "why was I charged this", and it has to survive the
+ * rule being edited or deactivated afterwards.
+ */
+export const priceAdjustmentSnapshot = pgTable(
+  "price_adjustment_snapshot",
+  {
+    id: id("pas"),
+    quoteId: text("quote_id")
+      .notNull()
+      .references(() => quote.id, { onDelete: "cascade" }),
+    source: priceAdjustmentSource("source").notNull(),
+    /** The rule or discount id. Plain text: the source may be deleted later. */
+    sourceId: text("source_id").notNull(),
+    /** Copied, not joined — the name at the time is what the customer was shown. */
+    name: text("name").notNull(),
+    type: text("type").notNull(),
+    valuePct: numeric("value_pct", { precision: 8, scale: 4 }),
+    valueMinor: integer("value_minor"),
+    /** The signed delta this step applied, in minor units. Negative reduces. */
+    amountMinor: integer("amount_minor").notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [index("price_adjustment_snapshot_quote_idx").on(t.quoteId)],
+);
+
+export const priceAdjustmentSnapshotRelations = relations(priceAdjustmentSnapshot, ({ one }) => ({
+  quote: one(quote, {
+    fields: [priceAdjustmentSnapshot.quoteId],
+    references: [quote.id],
+  }),
+}));
 
 export const quoteRelations = relations(quote, ({ one }) => ({
   listing: one(listing, {

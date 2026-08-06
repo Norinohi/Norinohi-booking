@@ -6,8 +6,38 @@ import { z } from "zod";
  * `quoteId` is what every later call (reprice, checkout) is keyed on, because only
  * our row is immutable and re-validatable.
  */
+export const appliedAdjustmentSchema = z.object({
+  source: z.enum(["rule", "discount"]),
+  sourceId: z.string(),
+  name: z.string(),
+  type: z.enum(["percentage", "fixed_amount"]),
+  valuePct: z.number().nullable(),
+  valueMinor: z.number().int().nullable(),
+  /** Signed delta in minor units; negative reduced the price. */
+  amountMinor: z.number().int(),
+});
+
 export const persistedQuoteSchema = providerQuoteSchema.extend({
   quoteId: z.string(),
+  discount: z
+    .object({ code: z.string(), name: z.string(), amountMinor: z.number().int() })
+    .nullable(),
+  /**
+   * Why a supplied code was not used. The quote is still priced, just without it,
+   * so the checkout screen can explain rather than error.
+   */
+  discountRejected: z
+    .enum([
+      "unknown_code",
+      "inactive",
+      "not_started",
+      "expired",
+      "usage_limit_reached",
+      "not_applicable",
+    ])
+    .nullable(),
+  /** Every rule and discount that moved the price, in the order applied. */
+  adjustments: z.array(appliedAdjustmentSchema),
 });
 
 export type PersistedQuoteContract = z.infer<typeof persistedQuoteSchema>;
@@ -23,6 +53,8 @@ export const repriceInputSchema = z
     checkOut: z.iso.date().optional(),
     guests: z.coerce.number().int().positive().max(100).optional(),
     extras: z.array(z.string().min(1)).optional(),
+    /** Pass null to clear a previously applied code. */
+    discountCode: z.string().trim().max(64).nullable().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.checkIn && value.checkOut && value.checkOut <= value.checkIn) {

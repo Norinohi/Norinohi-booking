@@ -110,6 +110,11 @@ export const quoteRequestSchema = z.object({
   extras: z.array(z.string()).default([]),
   currency: z.string().length(3).default("EUR"),
 });
+
+/** What the API accepts — the provider never sees our promo codes. */
+export const quoteRequestWithDiscountSchema = quoteRequestSchema.extend({
+  discountCode: z.string().trim().max(64).optional(),
+});
 export type QuoteRequest = z.input<typeof quoteRequestSchema>;
 
 export const providerQuoteSchema = z.object({
@@ -129,6 +134,12 @@ export const providerQuoteSchema = z.object({
       // Most extras are settled with the base on arrival, not with us. They count
       // toward the total but never toward the prepayment.
       payWhen: z.enum(["now", "at_check_in"]).default("now"),
+      /**
+       * What the line represents. `base` is the charter price itself — the only
+       * thing internal price rules move, and what the admin Manage Prices screen
+       * edits. Adapters must mark exactly one line as `base`.
+       */
+      kind: z.enum(["base", "extra", "fee", "adjustment", "discount"]).default("extra"),
     }),
   ),
   total: moneySchema,

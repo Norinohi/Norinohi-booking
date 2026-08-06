@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { priceAdjustmentRule, priceAdjustmentTarget } from "@yacht-charter/db/schema/admin";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
-import { and, asc, count, eq, ilike, inArray, isNotNull, isNull, lte, gte, or } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, isNotNull } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -14,7 +14,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
-import { resolveAdjustedPrice, type PriceAdjustment } from "./pricing";
+import { loadAdjustmentsForListings, resolveAdjustedPrice } from "./pricing";
 
 type ListInput = z.infer<typeof listingPriceListInputSchema>;
 type ListResult = z.infer<typeof listingPriceListSchema>;
@@ -52,7 +52,7 @@ export async function listListingPrices(db: Database, input: ListInput): Promise
     db.select({ totalItems: count() }).from(listingSearchDoc).where(where),
   ]);
 
-  const adjustments = await loadListingAdjustments(
+  const adjustments = await loadAdjustmentsForListings(
     db,
     docs.map((doc) => doc.listingId),
   );
@@ -150,7 +150,7 @@ export async function updateListingPrice(
 
   if (!doc) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
 
-  const previous = await loadListingAdjustments(db, [input.listingId]);
+  const previous = await loadAdjustmentsForListings(db, [input.listingId]);
 
   await db.transaction(async (tx) => {
     const staleIds = (previous.get(input.listingId) ?? [])
@@ -215,7 +215,7 @@ export async function clearListingPrice(
   actorUserId: string,
   listingId: string,
 ): Promise<Row> {
-  const previous = await loadListingAdjustments(db, [listingId]);
+  const previous = await loadAdjustmentsForListings(db, [listingId]);
   const staleIds = (previous.get(listingId) ?? [])
     .filter((rule) => rule.name.startsWith(RULE_NAME_PREFIX))
     .map((rule) => rule.id);
@@ -279,7 +279,7 @@ async function listOne(db: Database, listingId: string): Promise<Row | null> {
     };
   }
 
-  const adjustments = await loadListingAdjustments(db, [listingId]);
+  const adjustments = await loadAdjustmentsForListings(db, [listingId]);
   const resolved = resolveAdjustedPrice(doc.priceFromMinor, adjustments.get(listingId) ?? []);
 
   return {
@@ -293,58 +293,4 @@ async function listOne(db: Database, listingId: string): Promise<Row | null> {
     activeRuleId: resolved.appliedRuleId,
     activeRuleLabel: resolved.appliedRuleLabel,
   };
-}
-
-/**
- * Loads the active, in-window rules scoped to each listing, in one round trip.
- * Rules with no window are always in force; a window is inclusive on both ends.
- */
-async function loadListingAdjustments(
-  db: Database,
-  listingIds: readonly string[],
-): Promise<Map<string, PriceAdjustment[]>> {
-  const byListing = new Map<string, PriceAdjustment[]>();
-  if (listingIds.length === 0) return byListing;
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  const rows = await db
-    .select({
-      listingId: priceAdjustmentTarget.targetId,
-      id: priceAdjustmentRule.id,
-      name: priceAdjustmentRule.name,
-      type: priceAdjustmentRule.type,
-      valuePct: priceAdjustmentRule.valuePct,
-      valueMinor: priceAdjustmentRule.valueMinor,
-      priority: priceAdjustmentRule.priority,
-      stackable: priceAdjustmentRule.stackable,
-    })
-    .from(priceAdjustmentTarget)
-    .innerJoin(priceAdjustmentRule, eq(priceAdjustmentRule.id, priceAdjustmentTarget.ruleId))
-    .where(
-      and(
-        eq(priceAdjustmentTarget.targetType, "listing"),
-        inArray(priceAdjustmentTarget.targetId, [...listingIds]),
-        eq(priceAdjustmentRule.active, true),
-        or(isNull(priceAdjustmentRule.startsAt), lte(priceAdjustmentRule.startsAt, today)),
-        or(isNull(priceAdjustmentRule.endsAt), gte(priceAdjustmentRule.endsAt, today)),
-      ),
-    );
-
-  for (const row of rows) {
-    if (!row.listingId) continue;
-    const list = byListing.get(row.listingId) ?? [];
-    list.push({
-      id: row.id,
-      name: row.name,
-      type: row.type,
-      valuePct: row.valuePct,
-      valueMinor: row.valueMinor,
-      priority: row.priority,
-      stackable: row.stackable,
-    });
-    byListing.set(row.listingId, list);
-  }
-
-  return byListing;
 }
