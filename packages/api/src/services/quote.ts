@@ -409,6 +409,7 @@ async function insertQuote(
         valuePct: adjustment.valuePct === null ? null : adjustment.valuePct.toFixed(4),
         valueMinor: adjustment.valueMinor,
         amountMinor: adjustment.amountMinor,
+        currency: input.priced.currency,
         sortOrder: index,
       })),
     );

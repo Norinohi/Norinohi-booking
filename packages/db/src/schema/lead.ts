@@ -5,16 +5,8 @@ import { id, timestamps } from "./_shared";
 import { user } from "./auth";
 import { listing } from "./listing";
 
-/*
- * Pre-booking enquiries. Three places in the design lead here and they differ only
- * in where the visitor was standing:
- *   quote_request  — "Request Quote" on a yacht page (carries a listing)
- *   charter_expert — "Contact a charter expert" in the search filters and empty state
- *   consultation   — "Get Consultation" on the trip planner results
- *
- * Distinct from booking_enquiry, which hangs off an existing booking. A lead has no
- * booking and usually no account — this is the top of the funnel.
- */
+// Top of the funnel: unlike booking_enquiry, a lead has no booking and usually no
+// account. Only quote_request carries a listing.
 export const leadKind = pgEnum("lead_kind", ["quote_request", "charter_expert", "consultation"]);
 
 export const leadStatus = pgEnum("lead_status", ["new", "contacted", "closed"]);
@@ -24,19 +16,14 @@ export const lead = pgTable(
   {
     id: id("lead"),
     kind: leadKind("kind").notNull(),
-    /** Null for anonymous visitors — none of the three entry points require signing in. */
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
-    /** Set for quote_request; null when the enquiry is not about one yacht. */
     listingId: text("listing_id").references(() => listing.id, { onDelete: "set null" }),
     name: text("name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
     message: text("message"),
-    /**
-     * Whatever the visitor was looking at — search filters, planner answers, or the
-     * dates and guests on the yacht sidebar. Kept as jsonb because each entry point
-     * carries a different shape and staff only ever read it.
-     */
+    // Search filters, planner answers or sidebar dates — shape varies per entry
+    // point and is only ever read back.
     context: jsonb("context"),
     status: leadStatus("status").default("new").notNull(),
     handledByUserId: text("handled_by_user_id").references(() => user.id, {

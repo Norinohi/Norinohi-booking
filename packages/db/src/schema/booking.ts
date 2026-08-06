@@ -49,6 +49,12 @@ export const paymentScheduleKind = pgEnum("payment_schedule_kind", [
 
 export const bookingPaymentMethod = pgEnum("booking_payment_method", ["card", "invoice"]);
 
+export const extraPricingType = pgEnum("extra_pricing_type", [
+  "per_booking",
+  "per_week",
+  "pay_at_check_in",
+]);
+
 export const bookingConsentKind = pgEnum("booking_consent_kind", ["terms", "cancellation_policy"]);
 
 export const paymentScheduleStatus = pgEnum("payment_schedule_status", [
@@ -160,7 +166,7 @@ export const bookingExtra = pgTable(
       .references(() => booking.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
     label: text("label").notNull(),
-    pricingType: text("pricing_type"),
+    pricingType: extraPricingType("pricing_type"),
     amountMinor: integer("amount_minor"),
     currency: text("currency"),
     ...timestamps,

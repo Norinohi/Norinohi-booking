@@ -5,17 +5,8 @@ import { id, timestamps } from "./_shared";
 import { user } from "./auth";
 import { booking } from "./booking";
 
-/*
- * The Payment step offers three ways to proceed, and only one of them takes money:
- * Pay by card, Request invoice, and Ask a question. The two non-card paths end the
- * checkout without a charge, so they get their own records rather than being
- * squeezed into `payment`.
- *
- * Nothing here sends email — there is no email infrastructure in the repo yet, so
- * these rows are the durable record and delivery is a later milestone. Do not add
- * a "sent" side effect without also adding the sender.
- */
-
+// The two non-card outcomes of the Payment step. Nothing here sends email — these
+// rows are the durable record until a sender exists.
 export const invoiceRequestStatus = pgEnum("invoice_request_status", [
   "pending",
   "sent",
@@ -29,7 +20,6 @@ export const bookingEnquiryStatus = pgEnum("booking_enquiry_status", [
   "closed",
 ]);
 
-/** "Request invoice" — the customer intends to pay by bank transfer. */
 export const invoiceRequest = pgTable(
   "invoice_request",
   {
@@ -40,11 +30,10 @@ export const invoiceRequest = pgTable(
     billingEmail: text("billing_email").notNull(),
     companyName: text("company_name"),
     vatNumber: text("vat_number"),
-    /** Frozen at request time so a later reprice cannot change what was asked for. */
+    // Frozen at request time; a later reprice must not change what was invoiced.
     amountMinor: integer("amount_minor").notNull(),
     currency: text("currency").notNull(),
     status: invoiceRequestStatus("status").default("pending").notNull(),
-    /** Set by staff when the transfer lands; there is no screen for this yet. */
     settledAt: timestamp("settled_at"),
     ...timestamps,
   },
@@ -54,7 +43,6 @@ export const invoiceRequest = pgTable(
   ],
 );
 
-/** "Ask a question" — a pre-payment request (licence checks, special requirements). */
 export const bookingEnquiry = pgTable(
   "booking_enquiry",
   {

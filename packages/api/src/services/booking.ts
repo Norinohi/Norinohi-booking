@@ -279,7 +279,8 @@ export async function createHold(
         label: line.label,
         // Mirrors pricedItemSchema in contracts/catalog.ts, which is what the
         // listing page uses for the same items.
-        pricingType: line.payWhen === "at_check_in" ? "pay_at_check_in" : "per_booking",
+        pricingType:
+          line.payWhen === "at_check_in" ? ("pay_at_check_in" as const) : ("per_booking" as const),
         amountMinor: line.amountMinor,
         currency: line.currency,
       })),

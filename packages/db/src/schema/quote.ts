@@ -13,6 +13,7 @@ import {
 
 import { id, timestamps } from "./_shared";
 import { user } from "./auth";
+import { priceAdjustmentType } from "./admin";
 import { listing } from "./listing";
 
 export const quoteStatus = pgEnum("quote_status", ["active", "expired", "consumed"]);
@@ -22,13 +23,9 @@ export type QuoteLine = {
   label: string;
   amountMinor: number;
   currency: string;
-  /**
-   * When this line is actually collected. The booking sidebar prints "Pay at
-   * check-in" under most extras, and those amounts are excluded from the
-   * prepayment even though they count toward the total.
-   */
+  // at_check_in lines count toward the total but never the prepayment.
   payWhen: "now" | "at_check_in";
-  /** `base` is the charter price — the only line internal rules move. */
+  // Exactly one line is `base`, the charter price internal rules move.
   kind: "base" | "extra" | "fee" | "adjustment" | "discount" | "credit";
 };
 
@@ -39,14 +36,9 @@ export type QuotePaymentPolicy = {
   currency: string;
 };
 
-/**
- * An immutable priced snapshot (docs/backend-architecture.md §1.5). Never mutated —
- * a re-price supersedes it with a new row, so a confirmed booking can always be
- * traced to the exact numbers the customer agreed to.
- *
- * `userId` is nullable because quoting is public: an anonymous visitor prices a
- * trip, then signs in at checkout.
- */
+// Immutable priced snapshot (§1.5): a reprice supersedes with a new row rather
+// than mutating, so a booking is always traceable to the numbers agreed to.
+// userId is nullable because quoting is public.
 export const quote = pgTable(
   "quote",
   {
@@ -55,10 +47,8 @@ export const quote = pgTable(
       .notNull()
       .references(() => listing.id, { onDelete: "restrict" }),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
-    /** Which provider's live response this was priced from. */
     provider: text("provider").notNull(),
     providerSourceId: text("provider_source_id").notNull(),
-    /** The provider's own quote id, needed to create the option against it. */
     providerQuoteId: text("provider_quote_id"),
     checkIn: date("check_in").notNull(),
     checkOut: date("check_out").notNull(),
@@ -68,31 +58,19 @@ export const quote = pgTable(
     lines: jsonb("lines").$type<QuoteLine[]>().default([]).notNull(),
     totalMinor: integer("total_minor").notNull(),
     depositMinor: integer("deposit_minor").notNull(),
-    /**
-     * Refundable security deposit, held at check-in and returned afterwards.
-     * Deliberately NOT part of total_minor — the booking summary shows it as a
-     * separate line and excludes it from "Total Price".
-     */
+    // Refundable, taken at check-in: deliberately not part of total_minor.
     securityDepositMinor: integer("security_deposit_minor"),
     paymentPolicy: jsonb("payment_policy").$type<QuotePaymentPolicy>().notNull(),
-    /** The promo code applied, frozen alongside the price it produced. */
     discountId: text("discount_id"),
     discountCode: text("discount_code"),
-    /**
-     * Referral credit spent on this quote. Redeemed for real at checkout, where a
-     * matching negative ledger row is written.
-     */
+    // Redeemed for real at checkout, as a negative credit_ledger row.
     creditAppliedMinor: integer("credit_applied_minor").default(0).notNull(),
-    /**
-     * Fingerprint of the provider price this quote was built from. Every
-     * state-advancing call re-fetches and compares, so a price change cannot pass
-     * silently (§6.2).
-     */
+    // Re-fetched and compared by every state-advancing call, so a moved provider
+    // price cannot pass silently (§6.2).
     priceSourceHash: text("price_source_hash").notNull(),
     status: quoteStatus("status").default("active").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     validatedAt: timestamp("validated_at").defaultNow().notNull(),
-    /** Set when a reprice supersedes this quote, so the chain stays walkable. */
     supersededByQuoteId: text("superseded_by_quote_id"),
     ...timestamps,
   },
@@ -105,14 +83,8 @@ export const quote = pgTable(
 
 export const priceAdjustmentSource = pgEnum("price_adjustment_source", ["rule", "discount"]);
 
-/**
- * Why a quote's price differs from the provider's. One row per rule or discount
- * that actually moved the number, in the order it was applied.
- *
- * Written once alongside the quote and never updated — a quote is immutable, so
- * this is the audit trail for "why was I charged this", and it has to survive the
- * rule being edited or deactivated afterwards.
- */
+// Why a quote's price differs from the provider's. Name and value are copied, not
+// joined, so the record survives the rule being edited or deactivated.
 export const priceAdjustmentSnapshot = pgTable(
   "price_adjustment_snapshot",
   {
@@ -121,15 +93,13 @@ export const priceAdjustmentSnapshot = pgTable(
       .notNull()
       .references(() => quote.id, { onDelete: "cascade" }),
     source: priceAdjustmentSource("source").notNull(),
-    /** The rule or discount id. Plain text: the source may be deleted later. */
     sourceId: text("source_id").notNull(),
-    /** Copied, not joined — the name at the time is what the customer was shown. */
     name: text("name").notNull(),
-    type: text("type").notNull(),
+    type: priceAdjustmentType("type").notNull(),
     valuePct: numeric("value_pct", { precision: 8, scale: 4 }),
     valueMinor: integer("value_minor"),
-    /** The signed delta this step applied, in minor units. Negative reduces. */
     amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
