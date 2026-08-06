@@ -12,8 +12,9 @@ pnpm dev                     # turbo run dev — starts web (:3001) and server (
 pnpm dev:web                 # web only, Next.js on http://localhost:3001
 pnpm dev:server              # server only, Hono on http://localhost:3000
 pnpm build                   # turbo run build — next build + tsdown
-pnpm check-types             # turbo run check-types — 3 tasks: web, server, @yacht-charter/ui
+pnpm check-types             # turbo run check-types — 6 tasks: web, server, api, db, providers, @yacht-charter/ui
 pnpm check                   # oxlint && oxfmt --write — NOTE: --write mutates files
+pnpm test                    # turbo run test — vitest in api, db, providers
 ```
 
 Database tasks all proxy to `@yacht-charter/db`; Postgres runs via `packages/db/docker-compose.yml`:
@@ -30,8 +31,7 @@ pnpm db:studio               # drizzle-kit studio
 
 Absent by design or not yet built — do not invent these:
 
-- **No test runner.** No `test` script exists in any workspace, and no test framework is installed. Do not reference `pnpm test`.
-- **No CI.** There is no `.github/` directory and no pipeline config. `pnpm check`, `pnpm check-types`, and `pnpm build` are the only gates, and they are run manually. A push does trigger a Railway deploy (see `docs/railway-deployment.md`), but that runs no checks — a type error reaches production.
+- **No CI.** There is no `.github/` directory and no pipeline config. `pnpm check`, `pnpm check-types`, `pnpm test`, and `pnpm build` are the only gates, and they are run manually. A push does trigger a Railway deploy (see `docs/railway-deployment.md`), but that runs no checks — a type error reaches production.
 - **No `lint` script.** `turbo.json` declares a `lint` task, but no workspace defines one, so `turbo run lint` is a no-op. Linting happens only through the root `pnpm check`.
 
 ## Architecture

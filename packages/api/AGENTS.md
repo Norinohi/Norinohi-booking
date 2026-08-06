@@ -8,7 +8,12 @@ The oRPC contract shared by the server and the web app — procedures, the route
 
 ## Commands
 
-This package has no scripts of its own (`"scripts": {}`). It is type-checked transitively by its consumers via `pnpm check-types`.
+```bash
+pnpm --filter @yacht-charter/api check-types   # tsc -b
+pnpm --filter @yacht-charter/api test          # vitest run
+```
+
+Tests are co-located as `src/**/*.test.ts`. There is no `vitest.config.ts` anywhere in the repo — the defaults already pick these up, so do not add one. Keep them to pure functions: there is no database harness, and mocking Drizzle's builder chain only tests the mock.
 
 ## Conventions
 

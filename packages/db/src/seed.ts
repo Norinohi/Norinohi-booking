@@ -1216,6 +1216,12 @@ const reviewBodies = [
 
 const pick = <T>(items: readonly T[], index: number) => items[index % items.length] as T;
 
+/** Unlike pick(), a lookup that can genuinely miss — a bad reference must not seed. */
+const required = <T>(item: T | undefined, label: string): T => {
+  if (item === undefined) throw new Error(`Seed fixtures are inconsistent: ${label}`);
+  return item;
+};
+
 const generatedYachts: YachtSeed[] = Array.from(
   { length: Math.max(0, TARGET_FLEET_SIZE - curatedYachts.length) },
   (_, index) => {
@@ -1225,7 +1231,10 @@ const generatedYachts: YachtSeed[] = Array.from(
     const name = yachtNames[(index * 11 + 5) % yachtNames.length]!;
 
     const title = `${name} ${model.displayName}`;
-    const location = locations.find((item) => item.id === homeBase.locationId)!;
+    const location = required(
+      locations.find((item) => item.id === homeBase.locationId),
+      `base ${homeBase.id} points at unknown location ${homeBase.locationId}`,
+    );
     const slug = slugify(`${name}-${model.displayName}-${location.name}`);
     const externalId = `yacht-${slugify(`${model.displayName}-${name}`)}`;
     const listingId = `ylst_${externalId}`;
@@ -1723,7 +1732,7 @@ async function main() {
         obligatory: sql.raw("excluded.obligatory"),
         priceMinor: sql.raw("excluded.price_minor"),
         priceCurrency: sql.raw("excluded.price_currency"),
-      } as any,
+      },
     });
 
   await db
