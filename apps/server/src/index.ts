@@ -1,5 +1,8 @@
+import { timingSafeEqual } from "node:crypto";
+
 import { serve } from "@hono/node-server";
 import { createContext } from "@yacht-charter/api/context";
+import { sweepExpiries } from "@yacht-charter/api/services/expiry";
 import { handleStripeWebhook } from "@yacht-charter/api/services/stripe-webhook";
 import { auth } from "@yacht-charter/auth";
 import { db } from "@yacht-charter/db";
@@ -65,6 +68,23 @@ app.post("/api/stripe/webhook", async (c) => {
   return c.json({ received: true, duplicate: outcome.duplicate });
 });
 
+// Scheduled maintenance. Above the oRPC dispatch for the same reason as the Stripe
+// route: that middleware matches "/*". Guarded by a shared secret rather than a
+// session, because the caller is a scheduler with no user.
+app.post("/api/cron/sweep-expiries", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  // Constant-time compare so a wrong secret cannot be discovered byte by byte.
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await sweepExpiries(db));
+});
+
 // Try RPC (/rpc), then OpenAPI (/api-reference), else fall through.
 app.use("/*", async (c, next) => {
   const context = await createContext({ context: c });
@@ -83,6 +103,14 @@ app.use("/*", async (c, next) => {
 });
 
 app.get("/", (c) => c.text("OK"));
+
+/** Length-safe wrapper: timingSafeEqual throws when the buffers differ in size. */
+function timingSafeEqualString(a: string, b: string): boolean {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
 
 serve(
   {

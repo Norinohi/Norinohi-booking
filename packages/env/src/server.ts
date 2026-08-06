@@ -34,6 +34,9 @@ export const env = createEnv({
     // the server failing to boot.
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    // Shared secret for the scheduled maintenance endpoint. Unset means the route
+    // refuses every request rather than running unauthenticated.
+    CRON_SECRET: z.string().min(16).optional(),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

@@ -19,6 +19,7 @@ import {
   yachtOptionsSchema,
 } from "../contracts/admin";
 import { bookingCancelInputSchema, bookingCancelSchema } from "../contracts/booking";
+import { sweepResultSchema } from "../contracts/maintenance";
 import {
   leadListInputSchema,
   leadListSchema,
@@ -27,6 +28,7 @@ import {
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
 import { cancelBooking } from "../services/booking";
+import { sweepExpiries } from "../services/expiry";
 import { listLeads, setLeadStatus } from "../services/lead";
 import {
   createDiscount,
@@ -86,6 +88,23 @@ export const adminRouter = {
           isAdmin: true,
         }),
       ),
+  },
+  maintenance: {
+    sweepExpiries: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/sweepExpiries",
+        operationId: "sweepExpiries",
+        summary: "Expire stale quotes and provider holds",
+        description:
+          "Runs the expiry sweep by hand. Normally this is driven by the scheduled POST /api/cron/sweep-expiries; this exists so staff can clear a stuck slot without waiting for the next run. Idempotent — running it twice changes nothing the second time.",
+        tags: ["Admin"],
+        successDescription: "What the sweep changed.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(sweepResultSchema)
+      .handler(({ context }) => sweepExpiries(context.db)),
   },
   lead: {
     list: adminProcedure
