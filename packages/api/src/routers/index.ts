@@ -15,18 +15,11 @@ import { charterSearchRouter } from "./charter-search";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
 import { referralRouter } from "./referral";
+import { wishlistRouter } from "./wishlist";
 
 const provider = createInventoryProvider();
 
 const emptyInputSchema = z.object({}).default({});
-const listingIdInputSchema = z.object({ listingId: z.string() });
-
-const wishlistItemSchema = z.object({
-  listingId: z.string(),
-  savedAt: z.string(),
-});
-
-const wishlistState = new Map<string, Set<string>>();
 
 export const appRouter = {
   healthCheck: publicProcedure
@@ -64,79 +57,7 @@ export const appRouter = {
   charterSearch: charterSearchRouter,
   listings: listingsRouter,
   availability: availabilityRouter,
-  wishlist: {
-    list: protectedProcedure
-      .route({
-        method: "POST",
-        path: "/wishlist/list",
-        operationId: "listWishlistItems",
-        summary: "List saved wishlist items",
-        description:
-          "Returns listing IDs saved by the authenticated user. This milestone uses an in-memory wishlist stub until the persisted wishlist service is wired.",
-        tags: ["Wishlist"],
-        successDescription: "Wishlist listing IDs saved by the current user.",
-        spec: withJsonBodyExample({}),
-      })
-      .input(emptyInputSchema)
-      .output(z.array(wishlistItemSchema))
-      .handler(({ context }) => {
-        const saved = wishlistState.get(context.session.user.id) ?? new Set<string>();
-        return [...saved].map((listingId) => ({
-          listingId,
-          savedAt: new Date().toISOString(),
-        }));
-      }),
-    add: protectedProcedure
-      .route({
-        method: "POST",
-        path: "/wishlist/add",
-        operationId: "addWishlistItem",
-        summary: "Add a listing to the wishlist",
-        description:
-          "Adds a listing ID to the authenticated user's wishlist and returns the updated wishlist state. This milestone uses an in-memory wishlist stub.",
-        tags: ["Wishlist"],
-        successDescription: "Updated wishlist after adding the listing.",
-        spec: withJsonBodyExample({
-          listingId: "ylst_yacht-sunreef-60-celeste",
-        }),
-      })
-      .input(listingIdInputSchema)
-      .output(z.array(wishlistItemSchema))
-      .handler(({ context, input }) => {
-        const saved = wishlistState.get(context.session.user.id) ?? new Set<string>();
-        saved.add(input.listingId);
-        wishlistState.set(context.session.user.id, saved);
-        return [...saved].map((listingId) => ({
-          listingId,
-          savedAt: new Date().toISOString(),
-        }));
-      }),
-    remove: protectedProcedure
-      .route({
-        method: "POST",
-        path: "/wishlist/remove",
-        operationId: "removeWishlistItem",
-        summary: "Remove a listing from the wishlist",
-        description:
-          "Removes a listing ID from the authenticated user's wishlist and returns the updated wishlist state. This milestone uses an in-memory wishlist stub.",
-        tags: ["Wishlist"],
-        successDescription: "Updated wishlist after removing the listing.",
-        spec: withJsonBodyExample({
-          listingId: "ylst_yacht-sunreef-60-celeste",
-        }),
-      })
-      .input(listingIdInputSchema)
-      .output(z.array(wishlistItemSchema))
-      .handler(({ context, input }) => {
-        const saved = wishlistState.get(context.session.user.id) ?? new Set<string>();
-        saved.delete(input.listingId);
-        wishlistState.set(context.session.user.id, saved);
-        return [...saved].map((listingId) => ({
-          listingId,
-          savedAt: new Date().toISOString(),
-        }));
-      }),
-  },
+  wishlist: wishlistRouter,
   profile: {
     get: protectedProcedure
       .route({

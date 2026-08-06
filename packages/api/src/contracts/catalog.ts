@@ -252,6 +252,18 @@ export const partialListingSearchInputSchema = listingSearchInputBaseSchema
   .default({})
   .superRefine(validateListingSearchInput);
 
+/** Shared by every numbered pager in the app (search, wishlist, bookings, admin tables). */
+export const paginationSchema = z.object({
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  totalItems: z.number().int(),
+  totalPages: z.number().int(),
+  startItem: z.number().int(),
+  endItem: z.number().int(),
+  hasPreviousPage: z.boolean(),
+  hasNextPage: z.boolean(),
+});
+
 export const searchResultSchema = z.object({
   items: z.array(
     z.object({
@@ -261,18 +273,7 @@ export const searchResultSchema = z.object({
     }),
   ),
   nextCursor: z.string().optional(),
-  pagination: z
-    .object({
-      page: z.number().int(),
-      pageSize: z.number().int(),
-      totalItems: z.number().int(),
-      totalPages: z.number().int(),
-      startItem: z.number().int(),
-      endItem: z.number().int(),
-      hasPreviousPage: z.boolean(),
-      hasNextPage: z.boolean(),
-    })
-    .optional(),
+  pagination: paginationSchema.optional(),
 });
 
 export const facetsSchema = z.object({

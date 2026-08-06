@@ -484,6 +484,32 @@ export async function listListingReviews(
   }));
 }
 
+/**
+ * Hydrates card-ready docs for an explicit id set (wishlist, bookings). Returns them
+ * in the caller's `listingIds` order, and silently drops ids with no search doc —
+ * a listing can be unpublished while it is still saved.
+ */
+export async function listListingsByIds(
+  db: NodePgDatabase<typeof schema>,
+  listingIds: readonly string[],
+): Promise<ListingSearchDoc[]> {
+  if (listingIds.length === 0) return [];
+
+  const rows = await db.execute<SearchRow>(sql`
+    select ${searchColumns}
+    from listing_search_doc doc
+    where doc.listing_id in (${sql.join(
+      listingIds.map((listingId) => sql`${listingId}`),
+      sql`, `,
+    )})
+  `);
+
+  const byId = new Map(rows.rows.map((row) => [row.listingId, normalizeSearchRow(row)]));
+  return listingIds
+    .map((listingId) => byId.get(listingId))
+    .filter((doc): doc is ListingSearchDoc => doc !== undefined);
+}
+
 export async function listSimilarListings(
   db: NodePgDatabase<typeof schema>,
   listingId: string,
