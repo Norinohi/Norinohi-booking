@@ -1,6 +1,4 @@
 import type { RouterClient } from "@orpc/server";
-import { providerCapabilitiesSchema } from "@yacht-charter/providers";
-import { createInventoryProvider } from "@yacht-charter/providers";
 import { z } from "zod";
 
 import {
@@ -8,16 +6,15 @@ import {
   profileSchema,
   profileUpdateInputSchema,
 } from "../contracts/profile";
-import { adminProcedure, protectedProcedure, publicProcedure } from "../index";
+import { protectedProcedure, publicProcedure } from "../index";
 import { deactivateProfile, getProfile, updateProfile } from "../services/profile";
+import { adminRouter } from "./admin";
 import { availabilityRouter } from "./availability";
 import { charterSearchRouter } from "./charter-search";
 import { listingsRouter } from "./listings";
 import { withJsonBodyExample } from "./openapi-examples";
 import { referralRouter } from "./referral";
 import { wishlistRouter } from "./wishlist";
-
-const provider = createInventoryProvider();
 
 const emptyInputSchema = z.object({}).default({});
 
@@ -114,25 +111,7 @@ export const appRouter = {
       }),
   },
   referral: referralRouter,
-  admin: {
-    provider: {
-      capabilities: adminProcedure
-        .route({
-          method: "POST",
-          path: "/admin/provider/capabilities",
-          operationId: "getProviderCapabilities",
-          summary: "Get active provider capabilities",
-          description:
-            "Returns the active inventory provider's supported booking and quote capabilities. Requires an authenticated admin user.",
-          tags: ["Admin"],
-          successDescription: "Capabilities for the currently configured inventory provider.",
-          spec: withJsonBodyExample({}),
-        })
-        .input(emptyInputSchema)
-        .output(providerCapabilitiesSchema)
-        .handler(() => provider.capabilities()),
-    },
-  },
+  admin: adminRouter,
 };
 export type AppRouter = typeof appRouter;
 export type AppRouterClient = RouterClient<typeof appRouter>;
