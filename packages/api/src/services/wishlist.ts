@@ -13,6 +13,7 @@ import type {
   wishlistToggleSchema,
 } from "../contracts/wishlist";
 import { presentListingSummary } from "../routers/presenters";
+import { paginationFor } from "./pagination";
 
 type Db = Database;
 type ListInput = z.infer<typeof wishlistListInputSchema>;
@@ -155,28 +156,4 @@ function emptyPagination(input: ListInput) {
     totalItems: 0,
     itemCount: 0,
   });
-}
-
-// Mirrors paginationFor in packages/db/src/search/repository.ts so both pagers
-// serialise identically for the shared Pagination component.
-function paginationFor(input: {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-  itemCount: number;
-}) {
-  const totalPages = Math.max(Math.ceil(input.totalItems / input.pageSize), 1);
-  const startItem = input.itemCount > 0 ? (input.page - 1) * input.pageSize + 1 : 0;
-  const endItem = input.itemCount > 0 ? startItem + input.itemCount - 1 : 0;
-
-  return {
-    page: input.page,
-    pageSize: input.pageSize,
-    totalItems: input.totalItems,
-    totalPages,
-    startItem,
-    endItem,
-    hasPreviousPage: input.page > 1,
-    hasNextPage: input.page < totalPages,
-  };
 }

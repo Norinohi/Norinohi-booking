@@ -9,6 +9,12 @@ import type { Context as HonoContext } from "hono";
 // of this package cannot name.
 export type Database = NodePgDatabase<typeof dbSchema>;
 
+/**
+ * A `Database` or an open transaction on one. Services that must run inside a
+ * caller-supplied transaction take this so `db` and `tx` are interchangeable.
+ */
+export type DatabaseExecutor = Database | Parameters<Parameters<Database["transaction"]>[0]>[0];
+
 const contextDb: Database = db;
 
 export type CreateContextOptions = {
