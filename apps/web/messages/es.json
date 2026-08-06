@@ -1056,5 +1056,63 @@
         "emailRegistered": "Este correo ya está registrado"
       }
     }
+  },
+  "Referrals": {
+    "title": "Tus referidos",
+    "invite": {
+      "heading": "Invita amigos. Gana crédito de navegación.",
+      "description": "Regala €100 a tus amigos para su primera reserva y recibe €100 de crédito cuando naveguen.",
+      "copy": "Copiar enlace de referido",
+      "copied": "Enlace copiado",
+      "generate": "Generar nuevo código",
+      "generated": "El nuevo código de referido estará disponible pronto",
+      "information": "Información",
+      "rules": {
+        "minBooking": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000.",
+        "expiry": "Los créditos de referido caducan 12 meses después de obtenerse.",
+        "cash": "Los créditos no se pueden retirar en efectivo.",
+        "firstTime": "Solo válido para primeras reservas de amigos invitados."
+      },
+      "stats": {
+        "invited": "Usuarios invitados",
+        "completed": "Reservas completadas",
+        "earned": "Total ganado",
+        "balance": "Saldo disponible"
+      }
+    },
+    "how": {
+      "title": "Cómo funciona",
+      "steps": {
+        "share": {
+          "title": "Comparte el enlace",
+          "description": "Envía tu enlace único de referido a amigos que aman viajar"
+        },
+        "book": {
+          "title": "Tu amigo reserva",
+          "description": "Obtienen €100 de descuento en su primera reserva de yate superior a €1000"
+        },
+        "credit": {
+          "title": "Recibes crédito",
+          "description": "Cuando completan su viaje, recibes €100 en créditos"
+        }
+      },
+      "level": {
+        "title": "Tu nivel",
+        "current": "Actual:",
+        "next": "Siguiente: {level}",
+        "left": "{count, plural, one {Queda # reserva} other {Quedan # reservas}} para el siguiente nivel",
+        "perks": {
+          "extra": "5% de crédito extra en todos los referidos",
+          "early": "Acceso anticipado a ofertas de lujo",
+          "concierge": "Servicio de conserjería personal"
+        }
+      }
+    },
+    "history": {
+      "title": "Historial de referidos",
+      "daysAgo": "{count, plural, one {hace # día} other {hace # días}}",
+      "completed": "Completado",
+      "pending": "Pendiente"
+    }
   }
 }
