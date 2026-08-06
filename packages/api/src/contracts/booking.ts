@@ -299,3 +299,44 @@ export const checkoutConfirmSchema = z.object({
   /** Handed to Stripe Elements in the browser; never stored server-side. */
   clientSecret: z.string(),
 });
+
+/* --------------------------------------------------- invoice administration */
+
+export const invoiceListInputSchema = z
+  .object({
+    status: z.enum(["pending", "sent", "paid", "cancelled"]).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .default({ page: 1, pageSize: 20 });
+
+export const invoiceAdminRowSchema = invoiceRequestSchema.extend({
+  reference: z.string(),
+  guestName: z.string().nullable(),
+  listingTitle: z.string(),
+  settledAt: z.string().nullable(),
+});
+
+export const invoiceListSchema = z.object({
+  items: z.array(invoiceAdminRowSchema),
+  pagination: paginationSchema,
+});
+
+export const invoiceSettleInputSchema = z.object({
+  id: z.string().min(1),
+  /** What actually landed, when it differs from the amount invoiced. */
+  amountMinor: z.number().int().min(0).optional(),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const invoiceSettleSchema = z.object({
+  invoice: invoiceAdminRowSchema,
+  bookingStatus: bookingStatusSchema,
+  /** Set when the provider refused after the money arrived. */
+  providerRejection: z.string().nullable(),
+});
+
+export const invoiceCancelInputSchema = z.object({
+  id: z.string().min(1),
+  reason: z.string().trim().max(500).optional(),
+});

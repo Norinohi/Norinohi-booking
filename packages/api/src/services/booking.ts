@@ -266,6 +266,25 @@ export async function createHold(
     ])
     .onConflictDoNothing();
 
+  // The quote's priced extras, copied onto the booking. booking.get reads this
+  // table, and until now nothing wrote it, so every booking reported no extras.
+  const extraLines = priced.lines.filter((line) => line.kind === "extra" || line.kind === "fee");
+
+  if (extraLines.length > 0) {
+    await db.insert(bookingExtra).values(
+      extraLines.map((line) => ({
+        bookingId: created.id,
+        code: line.code,
+        label: line.label,
+        // Mirrors pricedItemSchema in contracts/catalog.ts, which is what the
+        // listing page uses for the same items.
+        pricingType: line.payWhen === "at_check_in" ? "pay_at_check_in" : "per_booking",
+        amountMinor: line.amountMinor,
+        currency: line.currency,
+      })),
+    );
+  }
+
   // Quoting is public and must never consume a code, so the usage limit only
   // becomes binding here. Re-checked under the transaction so two simultaneous
   // checkouts cannot both take the last remaining use.

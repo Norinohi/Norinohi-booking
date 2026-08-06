@@ -2,7 +2,6 @@ import {
   booking,
   payment,
   paymentSchedule,
-  providerReservationEvent,
   providerWebhookEvent,
 } from "@yacht-charter/db/schema/booking";
 import { env } from "@yacht-charter/env/server";
@@ -11,8 +10,8 @@ import { and, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import type { Database } from "../context";
+import { confirmBookingWithProvider } from "./booking-confirm";
 import { canTransition, type BookingStatus } from "./booking-state";
-import { awardReferralCredit } from "./loyalty";
 import { stripeClient } from "./payment";
 
 type Db = Database;
@@ -112,73 +111,12 @@ async function onSucceeded(
     }
   });
 
-  const current = row.booking.status as BookingStatus;
-  if (!canTransition(current, "CONFIRMING")) return;
+  // Money is in; the provider is the final arbiter of the reservation itself.
+  // Shared with admin invoice settlement so both routes to CONFIRMED behave alike.
+  const outcome = await confirmBookingWithProvider(db, row.booking.id, provider);
 
-  await db
-    .update(booking)
-    .set({ status: "CONFIRMING" })
-    .where(and(eq(booking.id, row.booking.id), eq(booking.status, current)));
-
-  // Money is taken; the provider is the final arbiter of the reservation itself.
-  try {
-    const reservation = await provider.confirmBooking({
-      listingId: row.booking.listingId,
-      quoteId: row.booking.quoteId,
-      customer: {
-        name: row.booking.guestFullName ?? "Guest",
-        email: row.booking.guestEmail ?? "unknown@example.com",
-      },
-    });
-
-    await db
-      .update(booking)
-      .set({
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-        providerReservationId: reservation.providerReservationId ?? null,
-        providerStatus: reservation.status,
-      })
-      .where(and(eq(booking.id, row.booking.id), eq(booking.status, "CONFIRMING")));
-
-    await db.insert(providerReservationEvent).values({
-      bookingId: row.booking.id,
-      kind: "confirm_succeeded",
-      provider: row.booking.provider,
-      providerReference: reservation.providerReservationId ?? null,
-      payload: reservation as unknown as Record<string, unknown>,
-    });
-
-    // "Once they complete their trip, you receive €100 credits." Runs in its own
-    // transaction so a referral bookkeeping problem can never unwind a booking
-    // that is already confirmed and paid for.
-    await db.transaction(async (tx) => {
-      await awardReferralCredit(tx, row.booking.userId, row.booking.id);
-    });
-  } catch (error) {
-    // Charged but the provider refused: the booking owes a refund, and this must
-    // be visible to ops rather than swallowed.
-    const message = error instanceof Error ? error.message : "Provider rejected the booking";
-
-    await db
-      .update(booking)
-      .set({ status: "PROVIDER_REJECTED", cancelReason: message })
-      .where(and(eq(booking.id, row.booking.id), eq(booking.status, "CONFIRMING")));
-
-    await db
-      .update(booking)
-      .set({ status: "REFUND_PENDING" })
-      .where(and(eq(booking.id, row.booking.id), eq(booking.status, "PROVIDER_REJECTED")));
-
-    await db.insert(providerReservationEvent).values({
-      bookingId: row.booking.id,
-      kind: "confirm_failed",
-      provider: row.booking.provider,
-      payload: { message },
-    });
-
-    throw error;
-  }
+  // Surfaces to the webhook caller, which records it against the event row.
+  if (outcome.outcome === "rejected") throw new Error(outcome.message);
 }
 
 async function onFailed(db: Db, intent: Stripe.PaymentIntent): Promise<void> {

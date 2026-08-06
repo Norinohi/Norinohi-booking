@@ -18,7 +18,16 @@ import {
   yachtOptionsInputSchema,
   yachtOptionsSchema,
 } from "../contracts/admin";
-import { bookingCancelInputSchema, bookingCancelSchema } from "../contracts/booking";
+import {
+  bookingCancelInputSchema,
+  bookingCancelSchema,
+  invoiceAdminRowSchema,
+  invoiceCancelInputSchema,
+  invoiceListInputSchema,
+  invoiceListSchema,
+  invoiceSettleInputSchema,
+  invoiceSettleSchema,
+} from "../contracts/booking";
 import { sweepResultSchema } from "../contracts/maintenance";
 import {
   leadListInputSchema,
@@ -28,6 +37,11 @@ import {
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
 import { cancelBooking } from "../services/booking";
+import {
+  cancelInvoiceRequest,
+  listInvoiceRequests,
+  settleInvoiceRequest,
+} from "../services/invoice";
 import { sweepExpiries } from "../services/expiry";
 import { listLeads, setLeadStatus } from "../services/lead";
 import {
@@ -87,6 +101,57 @@ export const adminRouter = {
           userId: context.session.user.id,
           isAdmin: true,
         }),
+      ),
+  },
+  invoice: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/invoice/list",
+        operationId: "listInvoiceRequests",
+        summary: "List bank-transfer invoice requests",
+        description:
+          "Customers who chose Request invoice instead of paying by card. Their bookings sit at PAYMENT_PENDING until someone settles the transfer here — this is the only place those requests are visible.",
+        tags: ["Admin"],
+        successDescription: "A page of invoice requests.",
+        spec: withJsonBodyExample({ status: "pending", page: 1, pageSize: 20 }),
+      })
+      .input(invoiceListInputSchema)
+      .output(invoiceListSchema)
+      .handler(({ context, input }) => listInvoiceRequests(context.db, input)),
+    settle: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/invoice/settle",
+        operationId: "settleInvoiceRequest",
+        summary: "Record a received bank transfer",
+        description:
+          "Marks the transfer as received and then commits the booking with the provider through the same path a card payment takes. Idempotent: settling twice does not re-record the payment or re-confirm. A provider refusal is reported in providerRejection rather than thrown — the money did arrive, so the settlement stands and the booking moves to REFUND_PENDING. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The settled invoice and the booking's resulting status.",
+        spec: withJsonBodyExample({ id: "inv_example", note: "Transfer received" }),
+      })
+      .input(invoiceSettleInputSchema)
+      .output(invoiceSettleSchema)
+      .handler(({ context, input }) =>
+        settleInvoiceRequest(context.db, context.session.user.id, input),
+      ),
+    cancel: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/invoice/cancel",
+        operationId: "cancelInvoiceRequest",
+        summary: "Withdraw an unpaid invoice request",
+        description:
+          "Cancels an invoice that will not be paid and cancels the booking waiting on it, so the provider option is not held for nothing. Refuses once the invoice has been settled — cancel the booking instead, which routes it to a refund. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The cancelled invoice request.",
+        spec: withJsonBodyExample({ id: "inv_example", reason: "No response from customer" }),
+      })
+      .input(invoiceCancelInputSchema)
+      .output(invoiceAdminRowSchema)
+      .handler(({ context, input }) =>
+        cancelInvoiceRequest(context.db, context.session.user.id, input.id, input.reason),
       ),
   },
   maintenance: {
