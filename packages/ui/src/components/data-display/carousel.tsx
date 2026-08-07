@@ -202,7 +202,7 @@ function CarouselThumbs({
             aria-current={index === selected || undefined}
             onClick={() => api?.scrollTo(index)}
             className={cn(
-              "relative min-w-0 shrink-0 grow-0 basis-1/3 overflow-hidden rounded-xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring/40",
+              "relative min-w-0 shrink-0 grow-0 basis-1/3 cursor-pointer overflow-hidden rounded-xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring/40",
               index === selected ? "opacity-100" : "opacity-60 hover:opacity-100",
               itemClassName,
             )}

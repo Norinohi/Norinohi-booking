@@ -72,7 +72,7 @@ export default function Footer() {
                   key={label}
                   href="#"
                   aria-label={label}
-                  className="text-white transition-opacity hover:opacity-70"
+                  className="cursor-pointer text-white transition-opacity hover:opacity-70"
                 >
                   <Icon className="size-6" />
                 </a>
@@ -95,7 +95,7 @@ export default function Footer() {
                     <li key={link}>
                       <a
                         href="#"
-                        className="block text-base leading-snug text-natural-100 transition-colors hover:text-white"
+                        className="block cursor-pointer text-base leading-snug text-natural-100 transition-colors hover:text-white"
                       >
                         {t(`links.${link}`)}
                       </a>
@@ -110,10 +110,10 @@ export default function Footer() {
         {/* Legal bar */}
         <div className="flex flex-col items-center gap-4 text-sm leading-[1.3] tracking-[0.04em] text-natural-100 uppercase xl:flex-row xl:justify-between">
           <div className="flex gap-4">
-            <a href="#" className="transition-colors hover:text-white">
+            <a href="#" className="cursor-pointer transition-colors hover:text-white">
               {t("privacy")}
             </a>
-            <a href="#" className="transition-colors hover:text-white">
+            <a href="#" className="cursor-pointer transition-colors hover:text-white">
               {t("terms")}
             </a>
           </div>

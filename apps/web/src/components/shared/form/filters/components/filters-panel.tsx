@@ -70,7 +70,7 @@ export default function FiltersPanel({
         </p>
         <button
           type="button"
-          className="w-full rounded-lg px-1 py-1.5 font-bold leading-[1.4] text-natural-500 underline underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="w-full cursor-pointer rounded-lg px-1 py-1.5 font-bold leading-[1.4] text-natural-500 underline underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           {t("contactExpert")}
         </button>
@@ -93,7 +93,7 @@ export default function FiltersPanel({
         <button
           type="button"
           onClick={() => setDraft(defaults)}
-          className="rounded-lg px-1 py-1.5 leading-[1.4] font-bold underline underline-offset-2 outline-none hover:text-natural-500 focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="cursor-pointer rounded-lg px-1 py-1.5 leading-[1.4] font-bold underline underline-offset-2 outline-none hover:text-natural-500 focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           {t("clearAll")}
         </button>

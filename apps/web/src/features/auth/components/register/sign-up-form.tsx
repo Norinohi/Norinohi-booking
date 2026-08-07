@@ -274,7 +274,7 @@ export default function SignUpForm() {
                 <button
                   type="button"
                   onClick={() => router.push("/login")}
-                  className="py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
+                  className="cursor-pointer py-1.5 text-base font-bold text-foreground transition-colors hover:text-brand"
                 >
                   {t("signIn")}
                 </button>

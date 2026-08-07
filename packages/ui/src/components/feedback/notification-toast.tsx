@@ -39,7 +39,7 @@ function NotificationToast({
           type="button"
           aria-label="Dismiss"
           onClick={onClose}
-          className="shrink-0 text-brand transition-colors hover:text-brand-hover [&_svg]:size-6"
+          className="shrink-0 cursor-pointer text-brand transition-colors hover:text-brand-hover [&_svg]:size-6"
         >
           <X />
         </button>

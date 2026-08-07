@@ -100,7 +100,7 @@ function SearchCard() {
         <span className="text-natural-600">{t("dontKnow")}</span>
         <Link
           href="/yachts"
-          className="font-medium text-brand underline underline-offset-2 transition-opacity hover:opacity-80"
+          className="cursor-pointer font-medium text-brand underline underline-offset-2 transition-opacity hover:opacity-80"
         >
           {t("helpPlan")}
         </Link>

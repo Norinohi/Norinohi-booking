@@ -57,7 +57,7 @@ export default function NavigationBar() {
 
           <Link
             href="/"
-            className="text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]"
+            className="cursor-pointer text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]"
           >
             YachtCharter
           </Link>
@@ -67,7 +67,7 @@ export default function NavigationBar() {
               <a
                 key={link.key}
                 href="#"
-                className="flex items-center gap-1.5 p-1 text-base font-normal whitespace-nowrap text-foreground transition-colors hover:text-brand"
+                className="flex cursor-pointer items-center gap-1.5 p-1 text-base font-normal whitespace-nowrap text-foreground transition-colors hover:text-brand"
               >
                 {t(link.key)}
                 {link.chip && (
@@ -121,7 +121,7 @@ export default function NavigationBar() {
               key={link.key}
               href="#"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-3 text-base font-normal text-foreground transition-colors hover:bg-natural-50 hover:text-brand"
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-3 text-base font-normal text-foreground transition-colors hover:bg-natural-50 hover:text-brand"
             >
               {t(link.key)}
               {link.chip && (

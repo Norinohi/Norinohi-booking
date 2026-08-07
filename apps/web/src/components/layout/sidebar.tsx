@@ -91,7 +91,7 @@ export default function Sidebar({
           const isActive = active === item;
           /* Menu Item is 54px in Figma: 16px paddings around 16/1.4 text */
           const rowClassName = cn(
-            "block w-full px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
+            "block w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
             isActive
               ? "bg-brand-50 font-semibold text-brand"
               : "font-medium text-foreground hover:bg-natural-50",
@@ -123,7 +123,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onLogout}
-            className="w-full px-4 py-4 text-left text-base leading-[1.4] font-medium text-error-500 outline-none transition-colors hover:bg-error-50 focus-visible:bg-error-50"
+            className="w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] font-medium text-error-500 outline-none transition-colors hover:bg-error-50 focus-visible:bg-error-50"
           >
             {t("logout")}
           </button>

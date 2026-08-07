@@ -239,7 +239,7 @@ function Calendar(props: CalendarProps) {
           type="button"
           aria-label={previousMonthLabel}
           onClick={() => changeMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-          className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <ChevronLeft className="size-5" />
         </button>
@@ -250,7 +250,7 @@ function Calendar(props: CalendarProps) {
           type="button"
           aria-label={nextMonthLabel}
           onClick={() => changeMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-          className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <ChevronRight className="size-5" />
         </button>

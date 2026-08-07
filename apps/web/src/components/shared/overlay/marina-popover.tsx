@@ -94,7 +94,7 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
 
           <button
             type="button"
-            className="flex w-fit items-center gap-1.5 rounded-lg px-4 py-1.5 text-base font-semibold capitalize leading-[1.25] text-foreground outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="flex w-fit cursor-pointer items-center gap-1.5 rounded-lg px-4 py-1.5 text-base font-semibold capitalize leading-[1.25] text-foreground outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40"
           >
             {t("viewDetails")}
             <ArrowUpRight className="size-4 shrink-0" />
