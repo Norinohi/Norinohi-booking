@@ -26,7 +26,21 @@ export function createQueryClient() {
   });
 }
 
-export const queryClient = createQueryClient();
+let browserQueryClient: QueryClient | undefined;
+
+/*
+ * A fresh client per server render, one shared client in the browser.
+ *
+ * A module-level singleton is shared by every SSR request for the life of the process, so
+ * HydrationBoundary finds a route's prefetched queries already present and defers them to
+ * an effect — which never runs on the server. The server then renders with no data while
+ * the browser hydrates with it, which is a mismatch on every prefetched route.
+ */
+export function getQueryClient() {
+  if (typeof window === "undefined") return createQueryClient();
+  browserQueryClient ??= createQueryClient();
+  return browserQueryClient;
+}
 
 function getServerUrl(url: string) {
   const normalized = url.endsWith("/") ? url.slice(0, -1) : url;

@@ -31,10 +31,11 @@ export default function UserMenu() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
-  if (isPending) {
-    return <Skeleton className="size-10 rounded-full" />;
-  }
-
+  /* The trigger is the same icon signed in or out, so it must not wait on the session:
+   * SSR renders with isPending true while the client resolves it from the cookie cache
+   * before hydrating, and swapping a skeleton for the button across that boundary is a
+   * hydration mismatch. Only the items below, which never render until the menu opens,
+   * depend on the session. */
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<IconButton variant="subtle" aria-label={t("account")} />}>
@@ -45,7 +46,9 @@ export default function UserMenu() {
         sideOffset={8}
         className="flex w-[211px] flex-col gap-2 rounded-lg border border-natural-100 bg-card px-4 py-3 shadow-[4px_4px_10px_rgba(0,0,0,0.1)] ring-0"
       >
-        {session ? (
+        {isPending ? (
+          <Skeleton className="h-8 w-full" />
+        ) : session ? (
           <>
             <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile")}>
               {t("profile")}

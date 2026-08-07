@@ -17,6 +17,7 @@ import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 
+import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
@@ -73,7 +74,6 @@ export default function PopularYachtsSection() {
                 className="w-full"
                 image={yacht.mainImage}
                 imageAlt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
-                saveLabel={tCard("save")}
                 location={`${yacht.base.location}, ${yacht.base.country}`}
                 title={yacht.title}
                 rating={yacht.rating}
@@ -88,6 +88,7 @@ export default function PopularYachtsSection() {
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}
                 actionRender={<Link href={`/yachts/${yacht.slug}` as Route} />}
+                saveRender={<WishlistButton listingId={yacht.id} />}
               />
             </CarouselSlide>
           ))}

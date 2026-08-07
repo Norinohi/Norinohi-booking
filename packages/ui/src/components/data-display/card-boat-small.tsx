@@ -8,7 +8,7 @@ import {
 } from "@yacht-charter/ui/components/data-display/card";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Bookmark, Star } from "lucide-react";
+import { Star } from "lucide-react";
 
 /*
  * BoatSmallCard — Figma "card/boat-small" (613:7587). Framed listing card: photo (+ save
@@ -29,9 +29,8 @@ type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   actionLabel?: React.ReactNode;
   /** Element the action renders as — pass the app's own link to make it navigate. */
   actionRender?: React.ComponentProps<typeof Button>["render"];
-  /** Accessible name for the save button — it has no visible text. */
-  saveLabel?: string;
-  onSave?: () => void;
+  /** Save control overlaid on the photo — the app passes its own wishlist button here. */
+  saveRender?: React.ReactNode;
 };
 
 function BoatSmallCard({
@@ -46,8 +45,7 @@ function BoatSmallCard({
   priceLabel = "From",
   actionLabel = "View Details",
   actionRender,
-  saveLabel = "Save to wishlist",
-  onSave,
+  saveRender,
   className,
   ...props
 }: BoatSmallCardProps) {
@@ -55,14 +53,7 @@ function BoatSmallCard({
     <Card className={cn("w-[334px] max-w-full", className)} {...props}>
       <CardMedia className="aspect-[334/200]">
         <img src={image} alt={imageAlt} />
-        <button
-          type="button"
-          aria-label={saveLabel}
-          onClick={onSave}
-          className="absolute top-4 right-4 flex size-8 cursor-pointer items-center justify-center rounded-lg bg-black/12 text-white outline-none transition-colors hover:bg-black/25 focus-visible:ring-2 focus-visible:ring-white/70"
-        >
-          <Bookmark className="size-4" />
-        </button>
+        {saveRender && <div className="absolute top-4 right-4">{saveRender}</div>}
       </CardMedia>
       <CardContent className="gap-3">
         {location && (

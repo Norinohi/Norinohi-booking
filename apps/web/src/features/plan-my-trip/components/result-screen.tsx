@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
+import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
@@ -128,6 +129,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
               priceSuffix={t("boat.perPerson")}
               actionLabel={t("viewDetails")}
               actionRender={<Link href={boatCard.detailHref} />}
+              saveRender={<WishlistButton listingId={boatCard.id} />}
             />
           ) : (
             <div className="relative z-10 flex w-full max-w-83.5 flex-col gap-3 rounded-2xl bg-card p-5 text-center">

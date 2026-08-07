@@ -10,6 +10,7 @@ export function toBoatCardProps(
   formatMoney: (amountMinor: number) => string,
 ) {
   return {
+    id: listing.id,
     image: listing.mainImage,
     imageAlt: listing.title,
     location: `${listing.base.name}, ${listing.base.country}`,

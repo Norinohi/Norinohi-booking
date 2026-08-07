@@ -15,6 +15,7 @@ import type { Route } from "next";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 
+import { WishlistButton } from "@/features/wishlist";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 /* Yacht names are proper nouns and stay in code; every other visible string comes from messages. */
@@ -88,7 +89,6 @@ function CarouselNav() {
 
 export default function PopularYachts() {
   const t = useTranslations("Home.PopularYachts");
-  const tCard = useTranslations("Common.boatCard");
   const format = useFormatter();
   const tags = [
     { label: t("tags.bareboat"), icon: <Anchor /> },
@@ -117,7 +117,6 @@ export default function PopularYachts() {
                   className="w-full"
                   image={yacht.image}
                   imageAlt={t(`items.${yacht.key}.imageAlt`)}
-                  saveLabel={tCard("save")}
                   location={t(`items.${yacht.key}.location`)}
                   title={yacht.title}
                   rating={yacht.rating}
@@ -127,6 +126,7 @@ export default function PopularYachts() {
                   priceLabel={t("from")}
                   actionLabel={t("viewDetails")}
                   actionRender={<Link href={DETAIL_HREF} />}
+                  saveRender={<WishlistButton />}
                 />
               </CarouselSlide>
             ))}
