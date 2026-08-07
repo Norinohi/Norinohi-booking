@@ -13,6 +13,8 @@ export type SearchCriteria = {
   crew?: string[];
   startDate?: string | null;
   duration?: string;
+  price?: [number, number];
+  berths?: [number, number];
 };
 
 export function buildSearchHref(criteria: SearchCriteria): Route {

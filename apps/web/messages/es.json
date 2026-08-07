@@ -310,30 +310,16 @@
       "heading": "Encuentra yates según tu presupuesto",
       "viewResults": "Ver resultados",
       "labels": {
-        "budget": "Presupuesto por persona",
+        "budget": "Presupuesto",
         "people": "Personas",
         "skipper": "Patrón",
         "destinations": "Destinos (opcional)"
       },
       "options": {
-        "budget0To300": "0–300 €",
-        "budget300To600": "300–600 €",
-        "budget600To1000": "600–1000 €",
-        "budget1000Plus": "1000 €+",
-        "people1To2": "1-2",
-        "people2To4": "2-4",
-        "people4To6": "4-6",
-        "people6To8": "6-8",
-        "people8Plus": "8+",
+        "any": "Cualquiera",
         "skipperYes": "Sí",
         "skipperNo": "No",
-        "skipperOptional": "Opcional",
-        "destinationsAll": "Todos los destinos",
-        "destinationsCroatia": "Croacia",
-        "destinationsGreece": "Grecia",
-        "destinationsItaly": "Italia",
-        "destinationsTurkey": "Turquía",
-        "destinationsCaribbean": "Caribe"
+        "destinationsAll": "Todos los destinos"
       }
     },
     "EarnCta": {

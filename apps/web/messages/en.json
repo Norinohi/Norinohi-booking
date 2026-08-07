@@ -310,30 +310,16 @@
       "heading": "Find Yachts By Your Budget",
       "viewResults": "View Results",
       "labels": {
-        "budget": "Budget Per Person",
+        "budget": "Budget",
         "people": "People",
         "skipper": "Skipper",
         "destinations": "Destinations (Optional)"
       },
       "options": {
-        "budget0To300": "€0–300",
-        "budget300To600": "€300–600",
-        "budget600To1000": "€600–1000",
-        "budget1000Plus": "€1000+",
-        "people1To2": "1-2",
-        "people2To4": "2-4",
-        "people4To6": "4-6",
-        "people6To8": "6-8",
-        "people8Plus": "8+",
+        "any": "Any",
         "skipperYes": "Yes",
         "skipperNo": "No",
-        "skipperOptional": "Optional",
-        "destinationsAll": "All Destinations",
-        "destinationsCroatia": "Croatia",
-        "destinationsGreece": "Greece",
-        "destinationsItaly": "Italy",
-        "destinationsTurkey": "Turkey",
-        "destinationsCaribbean": "Caribbean"
+        "destinationsAll": "All Destinations"
       }
     },
     "EarnCta": {

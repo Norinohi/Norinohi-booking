@@ -4,44 +4,119 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
+import { useFilterOptions } from "@/components/shared/form/filters";
+import { buildSearchHref } from "@/features/yachts";
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
-/* Option keys double as the Select's stable `value`, so a language change never rewrites state. */
-const SELECTS = [
-  {
-    key: "budget",
-    defaultValue: "budget300To600",
-    options: ["budget0To300", "budget300To600", "budget600To1000", "budget1000Plus"],
-  },
-  {
-    key: "people",
-    defaultValue: "people2To4",
-    options: ["people1To2", "people2To4", "people4To6", "people6To8", "people8Plus"],
-  },
-  {
-    key: "skipper",
-    defaultValue: "skipperYes",
-    options: ["skipperYes", "skipperNo", "skipperOptional"],
-  },
-  {
-    key: "destinations",
-    defaultValue: "destinationsAll",
-    options: [
-      "destinationsAll",
-      "destinationsCroatia",
-      "destinationsGreece",
-      "destinationsItaly",
-      "destinationsTurkey",
-      "destinationsCaribbean",
-    ],
-  },
-] as const;
+const ANY = "any";
+const ALL = "all";
+const BUDGET_BUCKETS = 5;
+
+/* Skipper Yes → crewed variants, No → bareboat — crew facet codes are bareboat | skipper | full-crew. */
+const CREWED = ["skipper", "full-crew"];
+const BAREBOAT = ["bareboat"];
 
 export default function BudgetFinder() {
   const t = useTranslations("Home.BudgetFinder");
+  const format = useFormatter();
+  const { data, options, isPending } = useFilterOptions();
+
+  const [budget, setBudget] = useState(ANY);
+  const [people, setPeople] = useState(ANY);
+  const [skipper, setSkipper] = useState(ANY);
+  const [destination, setDestination] = useState(ALL);
+
+  const budgetBuckets = useMemo(() => {
+    const range = data?.priceRange;
+    if (!range) return [];
+    const min = Math.floor(range.minMinor / 100);
+    const max = Math.ceil(range.maxMinor / 100);
+    const step = (max - min) / BUDGET_BUCKETS;
+    return Array.from({ length: BUDGET_BUCKETS }, (_, index) => {
+      const lo = Math.round(min + index * step);
+      const hi = index === BUDGET_BUCKETS - 1 ? max : Math.round(min + (index + 1) * step);
+      return {
+        value: `${lo}-${hi}`,
+        label: `${format.number(lo, "eur")} – ${format.number(hi, "eur")}`,
+        price: [lo, hi] as [number, number],
+      };
+    });
+  }, [data?.priceRange, format]);
+
+  const berthsRange = data?.ranges.berths;
+
+  const budgetOptions = [
+    { value: ANY, label: t("options.any") },
+    ...budgetBuckets.map(({ value, label }) => ({ value, label })),
+  ];
+  const peopleOptions = [
+    { value: ANY, label: t("options.any") },
+    ...Array.from(
+      { length: berthsRange ? berthsRange.max - berthsRange.min + 1 : 0 },
+      (_, index) => {
+        const count = String((berthsRange?.min ?? 0) + index);
+        return { value: count, label: count };
+      },
+    ),
+  ];
+  const skipperOptions = [
+    { value: ANY, label: t("options.any") },
+    { value: "yes", label: t("options.skipperYes") },
+    { value: "no", label: t("options.skipperNo") },
+  ];
+  const destinationOptions = [
+    { value: ALL, label: t("options.destinationsAll") },
+    ...options.countries,
+  ];
+
+  const selectedBudget = budgetBuckets.find((bucket) => bucket.value === budget);
+  const href = buildSearchHref({
+    country: destination !== ALL ? [destination] : undefined,
+    crew: skipper === "yes" ? CREWED : skipper === "no" ? BAREBOAT : undefined,
+    price: selectedBudget?.price,
+    berths: people !== ANY && berthsRange ? [Number(people), berthsRange.max] : undefined,
+  });
+
+  const fields: {
+    key: "budget" | "people" | "skipper" | "destinations";
+    options: { value: string; label: string }[];
+    value: string;
+    onValueChange: (value: string) => void;
+    isLoading: boolean;
+  }[] = [
+    {
+      key: "budget",
+      options: budgetOptions,
+      value: budget,
+      onValueChange: setBudget,
+      isLoading: isPending,
+    },
+    {
+      key: "people",
+      options: peopleOptions,
+      value: people,
+      onValueChange: setPeople,
+      isLoading: isPending,
+    },
+    {
+      key: "skipper",
+      options: skipperOptions,
+      value: skipper,
+      onValueChange: setSkipper,
+      isLoading: false,
+    },
+    {
+      key: "destinations",
+      options: destinationOptions,
+      value: destination,
+      onValueChange: setDestination,
+      isLoading: isPending,
+    },
+  ];
 
   return (
     <section className="w-full">
@@ -61,18 +136,17 @@ export default function BudgetFinder() {
             variants={RISE}
             className="grid grid-cols-1 gap-x-5 gap-y-3 rounded-3xl border border-brand-100 bg-brand-50 p-4 md:grid-cols-2 md:gap-y-4 md:px-6 md:pt-6 md:pb-7.5 xl:grid-cols-4"
           >
-            {SELECTS.map((select) => (
-              <div key={select.key} className="flex flex-col gap-1.5">
+            {fields.map((field) => (
+              <div key={field.key} className="flex flex-col gap-1.5">
                 <span className="text-sm leading-[1.2] font-semibold text-natural-700">
-                  {t(`labels.${select.key}`)}
+                  {t(`labels.${field.key}`)}
                 </span>
                 <Select
                   className="h-12 bg-card"
-                  defaultValue={select.defaultValue}
-                  options={select.options.map((option) => ({
-                    value: option,
-                    label: t(`options.${option}`),
-                  }))}
+                  options={field.options}
+                  value={field.value}
+                  onValueChange={field.onValueChange}
+                  isLoading={field.isLoading}
                 />
               </div>
             ))}
@@ -84,7 +158,7 @@ export default function BudgetFinder() {
               size="md"
               className="w-full md:w-auto"
               nativeButton={false}
-              render={<Link href="/yachts" />}
+              render={<Link href={href} />}
             >
               {t("viewResults")}
               <ArrowUpRight />
