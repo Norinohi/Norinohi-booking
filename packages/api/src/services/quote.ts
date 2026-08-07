@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
-import { spendableCreditMinor } from "./loyalty";
+import { spendableCreditMinor, welcomeDiscountMinor } from "./loyalty";
 import {
   loadAdjustmentsForListings,
   payableNowMinor,
@@ -254,7 +254,37 @@ async function applyDiscountCode(
   };
 }
 
-/** Stage 3. Credit is a way of paying, so it never enters `applied`. */
+/**
+ * Stage 3. The invitee's €100 off their first booking. Not an `applied`
+ * adjustment: `price_adjustment_source` is `rule | discount`, and this is
+ * neither a Manage Prices rule nor a row in the `discount` table.
+ */
+async function applyWelcomeDiscount(
+  db: DatabaseExecutor,
+  lines: QuoteLine[],
+  userId: string | null,
+  currency: string,
+): Promise<{ lines: QuoteLine[] }> {
+  const off = await welcomeDiscountMinor(db, userId, totalMinor(lines), payableNowMinor(lines));
+
+  if (off <= 0) return { lines };
+
+  return {
+    lines: [
+      ...lines,
+      {
+        code: "referral-welcome",
+        label: "Referral welcome discount",
+        amountMinor: -off,
+        currency,
+        payWhen: "now",
+        kind: "discount",
+      },
+    ],
+  };
+}
+
+/** Stage 4. Credit is a way of paying, so it never enters `applied`. */
 async function applyReferralCredit(
   db: DatabaseExecutor,
   lines: QuoteLine[],
@@ -286,7 +316,7 @@ async function applyReferralCredit(
   };
 }
 
-/** Stage 4. Reads the listing override, then derives the deposit from the policy. */
+/** Stage 5. Reads the listing override, then derives the deposit from the policy. */
 async function resolveDeposit(
   db: DatabaseExecutor,
   listingId: string,
@@ -317,7 +347,8 @@ async function resolveDeposit(
 }
 
 /**
- * provider price → internal rules → discount → payment policy.
+ * provider price → internal rules → discount → welcome discount → credit →
+ * payment policy.
  *
  * Rules move the charter base only: that is what Manage Prices edits, and
  * discounting a fee the base collects in cash on arrival would be meaningless.
@@ -362,7 +393,11 @@ async function persistPricedQuote(
     applied.push(...promo.applied);
   }
 
-  // 3. Referral credit, last: it is a way of paying rather than a price change,
+  // 3. The invitee's referral welcome discount, if this is their first booking.
+  const welcome = await applyWelcomeDiscount(db, lines, options.userId, currency);
+  lines = welcome.lines;
+
+  // 4. Referral credit, last: it is a way of paying rather than a price change,
   // so it comes off after everything that decides what the trip costs.
   const credit = options.applyCredit
     ? await applyReferralCredit(db, lines, options.userId, currency)
@@ -370,7 +405,7 @@ async function persistPricedQuote(
 
   if (credit) lines = credit.lines;
 
-  // 4. Payment policy, then the deposit that follows from it.
+  // 5. Payment policy, then the deposit that follows from it.
   const { paymentPolicy, total, depositMinor } = await resolveDeposit(
     db,
     priced.listingId,

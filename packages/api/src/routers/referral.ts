@@ -95,7 +95,7 @@ export const referralRouter = {
       operationId: "listReferralHistory",
       summary: "List people who used the referral code",
       description:
-        "Paginated referral history, newest first: who accepted the code, whether the reward has been paid, and how much. The amount is null while a referral is still pending, since nothing has been earned yet.",
+        "Paginated referral history, newest first: who accepted the code, whether the reward has been paid, and how much. A pending referral reports the reward it would pay at the referrer's current tier; only a voided referral reports a null amount.",
       tags: ["Referral"],
       successDescription: "A page of referrals.",
       spec: withJsonBodyExample({ page: 1, pageSize: 10 }),

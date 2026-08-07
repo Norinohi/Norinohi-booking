@@ -1124,7 +1124,8 @@
       "copy": "Copy referral link",
       "copied": "Link copied",
       "generate": "Generate New Code",
-      "generated": "New referral code is coming soon",
+      "generated": "New referral code generated",
+      "generateFailed": "Could not generate a new code. Please try again.",
       "information": "Information",
       "rules": {
         "minBooking": "Credits are usable for any yacht booking over €1000.",
@@ -1169,9 +1170,12 @@
     },
     "history": {
       "title": "Referral History",
+      "today": "Today",
       "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
-      "completed": "Completed",
-      "pending": "Pending"
+      "credited": "Completed",
+      "pending": "Pending",
+      "void": "Cancelled",
+      "empty": "No referrals yet. Share your link to get started."
     }
   },
   "Discounts": {

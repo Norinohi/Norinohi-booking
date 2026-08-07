@@ -194,6 +194,18 @@ export async function awardReferralCredit(
 }
 
 /**
+ * What a referral would pay out if the invitee sailed right now, at the
+ * referrer's current tier. The Referrals screen shows this against pending rows
+ * so the reward is visible before it is earned; the figure actually credited is
+ * recomputed at award time and can be higher if the referrer has levelled up by
+ * then.
+ */
+export async function projectedRewardMinor(db: Database, userId: string): Promise<number> {
+  const bonusPct = await referralBonusPctFor(db, userId);
+  return Math.round(BASE_REWARD_MINOR * (1 + bonusPct));
+}
+
+/**
  * The referrer's bonus rate. Read after the claim, so the referral that tips
  * someone into a new tier already earns that tier's rate — deliberately generous,
  * and it makes the jump visible on the very reward that caused it.
@@ -231,6 +243,47 @@ export async function invitedCount(db: Database, userId: string): Promise<number
  * says and keeps small bookings from quietly draining someone's credit.
  */
 export const MIN_BOOKING_FOR_CREDIT_MINOR = 100_000;
+
+/*
+ * The invitee's half of the referral: "They get €100 off their first yacht
+ * booking over €1000". Same headline figure as the referrer's reward, but a
+ * different rule — no tier bonus applies, since levelling up is the referrer's
+ * perk and the invitee has no tier yet.
+ */
+const INVITEE_WELCOME_MINOR = 10_000;
+
+/**
+ * What the invitee comes off this quote, resolved at pricing time rather than
+ * granted at signup. A share link therefore mints no balance: someone who
+ * registers and never books costs nothing, and the discount cannot be spent on
+ * anything except the booking it was quoted against.
+ *
+ * A pending redemption *is* the eligibility. `awardReferralCredit` flips it to
+ * `credited` when the first booking confirms, so the discount is unavailable on
+ * every booking after that one — which is what "first-time bookings of invited
+ * friends" means.
+ */
+export async function welcomeDiscountMinor(
+  db: DatabaseExecutor,
+  userId: string | null,
+  bookingTotalMinor: number,
+  payableNowMinor: number,
+): Promise<number> {
+  if (!userId) return 0;
+  if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
+
+  const [pending] = await db
+    .select({ id: referralRedemption.id })
+    .from(referralRedemption)
+    .where(
+      and(eq(referralRedemption.referredUserId, userId), eq(referralRedemption.status, "pending")),
+    )
+    .limit(1);
+
+  if (!pending) return 0;
+
+  return Math.max(Math.min(INVITEE_WELCOME_MINOR, payableNowMinor), 0);
+}
 
 /** How much credit this quote may absorb: never more than the balance or the bill. */
 export async function spendableCreditMinor(

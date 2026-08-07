@@ -7,9 +7,13 @@ import {
   TableCell,
   TableRow,
 } from "@yacht-charter/ui/components/data-display/table";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { useTranslations } from "next-intl";
 
-import { SAMPLE_REFERRALS } from "../lib/referrals";
+import { useMoney } from "@/hooks/use-money";
+
+import { useReferralHistory } from "../hooks/use-referrals";
+import { daysSince, referralStatusVariant } from "../lib/referrals";
 
 /*
  * ReferralsHistory — the "Referral History" table of /profile/referrals.
@@ -26,6 +30,8 @@ const cellClass = "h-[50px] py-0 leading-[1.4] whitespace-nowrap";
 
 export default function ReferralsHistory() {
   const t = useTranslations("Referrals");
+  const formatMoney = useMoney();
+  const { data, isPending } = useReferralHistory();
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,28 +39,42 @@ export default function ReferralsHistory() {
         {t("history.title")}
       </h3>
 
-      <Table>
-        <TableBody>
-          {SAMPLE_REFERRALS.map((row) => (
-            <TableRow key={row.id} className="last:[&>td]:border-b-0">
-              <TableCell className={`w-1/4 min-w-[110px] font-medium ${cellClass}`}>
-                {row.name}
-              </TableCell>
-              <TableCell className={`w-1/4 min-w-[110px] ${cellClass}`}>
-                {t("history.daysAgo", { count: row.daysAgo })}
-              </TableCell>
-              <TableCell className={`w-1/4 min-w-[160px] ${cellClass}`}>
-                <Chip variant={row.status === "completed" ? "neutral" : "brand"}>
-                  {t(`history.${row.status}`)}
-                </Chip>
-              </TableCell>
-              <TableCell className={`w-1/4 min-w-[110px] font-bold ${cellClass}`}>
-                {row.amount}
-              </TableCell>
-            </TableRow>
+      {isPending ? (
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2].map((row) => (
+            <Skeleton key={row} className="h-[50px] w-full rounded-sm" />
           ))}
-        </TableBody>
-      </Table>
+        </div>
+      ) : data && data.items.length > 0 ? (
+        <Table>
+          <TableBody>
+            {data.items.map((row) => (
+              <TableRow key={row.id} className="last:[&>td]:border-b-0">
+                <TableCell className={`w-1/4 min-w-[110px] font-medium ${cellClass}`}>
+                  {row.referredUserName}
+                </TableCell>
+                {/* "0 days ago" reads wrong for a referral accepted today. */}
+                <TableCell className={`w-1/4 min-w-[110px] ${cellClass}`}>
+                  {daysSince(row.createdAt) === 0
+                    ? t("history.today")
+                    : t("history.daysAgo", { count: daysSince(row.createdAt) })}
+                </TableCell>
+                <TableCell className={`w-1/4 min-w-[160px] ${cellClass}`}>
+                  <Chip variant={referralStatusVariant(row.status)}>
+                    {t(`history.${row.status}`)}
+                  </Chip>
+                </TableCell>
+                {/* Amount stays blank while pending — nothing has been credited yet. */}
+                <TableCell className={`w-1/4 min-w-[110px] font-bold ${cellClass}`}>
+                  {row.amount ? formatMoney(row.amount.amountMinor) : null}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <p className="text-body-m text-natural-600">{t("history.empty")}</p>
+      )}
     </div>
   );
 }

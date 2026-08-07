@@ -1,14 +1,26 @@
 "use client";
 
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
-import { REFERRAL_LEVEL } from "../lib/referrals";
+import { useReferralSummary } from "../hooks/use-referrals";
 
 /** Step keys under `Referrals.how.steps`, in timeline order. */
 const STEPS = ["share", "book", "credit"] as const;
+
+/*
+ * Seeded loyalty_perk.code values, which double as the keys under
+ * `Referrals.how.level.perks`. A perk added to the database without a matching
+ * message falls back to its stored label rather than blowing up the card.
+ */
+const PERK_KEYS = ["extra", "early", "concierge"] as const;
+
+function isTranslatedPerk(code: string): code is (typeof PERK_KEYS)[number] {
+  return (PERK_KEYS as readonly string[]).includes(code);
+}
 
 /*
  * ReferralsHowItWorks — the "How It Works" stepper + "Your Level" card of /profile/referrals.
@@ -21,6 +33,7 @@ const STEPS = ["share", "book", "credit"] as const;
  */
 export default function ReferralsHowItWorks() {
   const t = useTranslations("Referrals");
+  const { data: summary } = useReferralSummary();
 
   return (
     <div className="grid items-start gap-8 xl:grid-cols-2">
@@ -58,41 +71,58 @@ export default function ReferralsHowItWorks() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-col gap-1.5">
               <span className="text-body-caption-s text-foreground">{t("how.level.current")}</span>
-              <span className="text-h6 text-foreground">{REFERRAL_LEVEL.current}</span>
+              {summary ? (
+                <span className="text-h6 text-foreground">{summary.tier?.name ?? ""}</span>
+              ) : (
+                <Skeleton className="h-5 w-24 rounded-sm" />
+              )}
             </div>
-            <span className="text-input-tag text-natural-600">
-              {t("how.level.next", { level: REFERRAL_LEVEL.next })}
-            </span>
+            {/* Nothing to reach at the top of the ladder, so the caption drops out entirely. */}
+            {summary?.nextTier ? (
+              <span className="text-input-tag text-natural-600">
+                {t("how.level.next", { level: summary.nextTier.name })}
+              </span>
+            ) : null}
           </div>
 
           {/* Progress toward the next level — display-only, full-bleed rail per Figma */}
           <Slider
-            value={REFERRAL_LEVEL.progress}
+            value={summary?.progressPct ?? 0}
             disabled
             controlClassName="px-0"
             className="pointer-events-none"
           />
 
-          <p className="text-input-tag text-natural-600">
-            {t("how.level.left", { count: REFERRAL_LEVEL.bookingsLeft })}
-          </p>
+          {summary?.remainingToNext === null || summary?.remainingToNext === undefined ? null : (
+            <p className="text-input-tag text-natural-600">
+              {t("how.level.left", { count: summary.remainingToNext })}
+            </p>
+          )}
         </div>
 
         <ul className="flex flex-col">
-          {REFERRAL_LEVEL.perks.map((perk) => (
-            <li key={perk.key} className="flex items-center gap-2 py-2">
-              {/* Display-only checkbox: controlled with no handler, out of tab order */}
-              <Checkbox
-                checked={perk.unlocked}
-                tabIndex={-1}
-                className="pointer-events-none cursor-default"
-                aria-label={t(`how.level.perks.${perk.key}`)}
-              />
-              <span className={cn("text-body-s text-foreground", perk.unlocked && "line-through")}>
-                {t(`how.level.perks.${perk.key}`)}
-              </span>
-            </li>
-          ))}
+          {(summary?.perks ?? []).map((perk) => {
+            const label = isTranslatedPerk(perk.code)
+              ? t(`how.level.perks.${perk.code}`)
+              : perk.label;
+
+            return (
+              <li key={perk.code} className="flex items-center gap-2 py-2">
+                {/* Display-only checkbox: controlled with no handler, out of tab order */}
+                <Checkbox
+                  checked={perk.unlocked}
+                  tabIndex={-1}
+                  className="pointer-events-none cursor-default"
+                  aria-label={label}
+                />
+                <span
+                  className={cn("text-body-s text-foreground", perk.unlocked && "line-through")}
+                >
+                  {label}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>

@@ -1124,7 +1124,8 @@
       "copy": "Copiar enlace de referido",
       "copied": "Enlace copiado",
       "generate": "Generar nuevo código",
-      "generated": "El nuevo código de referido estará disponible pronto",
+      "generated": "Nuevo código de referido generado",
+      "generateFailed": "No se pudo generar un nuevo código. Inténtalo de nuevo.",
       "information": "Información",
       "rules": {
         "minBooking": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000.",
@@ -1169,9 +1170,12 @@
     },
     "history": {
       "title": "Historial de referidos",
+      "today": "Hoy",
       "daysAgo": "{count, plural, one {hace # día} other {hace # días}}",
-      "completed": "Completado",
-      "pending": "Pendiente"
+      "credited": "Completado",
+      "pending": "Pendiente",
+      "void": "Cancelado",
+      "empty": "Aún no tienes referidos. Comparte tu enlace para empezar."
     }
   },
   "Discounts": {

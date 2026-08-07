@@ -19,8 +19,8 @@ import { authClient } from "@/lib/auth-client";
  * popover card (8px radius, natural-100 border, 4/4/10 drop shadow, 16/12 padding) listing
  * My Profile / My Bookings / Referrals / Credits & Balance and a red Log Out — SemiBold 14,
  * 8px row gaps. Signed-out visitors get a single Sign In item (the design covers only the
- * signed-in state). Referrals and Credits & Balance are rendered per the design but inert —
- * their pages don't exist yet.
+ * signed-in state). Credits & Balance is rendered per the design but inert — its page
+ * doesn't exist yet.
  */
 
 const ITEM =
@@ -56,8 +56,10 @@ export default function UserMenu() {
             <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/bookings")}>
               {t("bookings")}
             </DropdownMenuItem>
-            {/* TODO: navigate once the referrals / credits pages exist. */}
-            <DropdownMenuItem className={ITEM}>{t("referrals")}</DropdownMenuItem>
+            <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/referrals")}>
+              {t("referrals")}
+            </DropdownMenuItem>
+            {/* TODO: navigate once the credits page exists. */}
             <DropdownMenuItem className={ITEM}>{t("credits")}</DropdownMenuItem>
             <DropdownMenuItem
               className={`${ITEM} text-error-500 focus:text-error-600`}

@@ -2,14 +2,16 @@
 
 import { env } from "@yacht-charter/env/web";
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { CircleCheck, Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { useMoney } from "@/hooks/use-money";
+
 import illustration from "../assets/referral-invite.png";
-import { useReferralCode } from "../hooks/use-referrals";
-import { REFERRAL_STATS } from "../lib/referrals";
+import { useReferralSummary, useRotateReferralCode } from "../hooks/use-referrals";
 
 /*
  * ReferralsInvite — the invite hero of /profile/referrals.
@@ -28,15 +30,29 @@ import { REFERRAL_STATS } from "../lib/referrals";
 
 const RULE_KEYS = ["minBooking", "expiry", "cash", "firstTime"] as const;
 
+/** Stat tiles, in Figma order. Each key resolves under `Referrals.invite.stats`. */
+const STAT_KEYS = ["invited", "completed", "earned", "balance"] as const;
+
 export default function ReferralsInvite() {
   const t = useTranslations("Referrals");
+  const formatMoney = useMoney();
 
-  /* referral.myCode returns a path (/register?ref=CODE); the app origin makes it shareable. */
-  const { data: referral } = useReferralCode();
-  const referralUrl = referral ? new URL(referral.urlPath, env.NEXT_PUBLIC_APP_URL) : undefined;
+  /* referral.summary returns a path (/register?ref=CODE); the app origin makes it shareable. */
+  const { data: summary } = useReferralSummary();
+  const rotate = useRotateReferralCode();
+
+  const referralUrl = summary ? new URL(summary.urlPath, env.NEXT_PUBLIC_APP_URL) : undefined;
   const displayLink = referralUrl
     ? `${referralUrl.host}${referralUrl.pathname}${referralUrl.search}`
     : "";
+
+  /* Values stay null until the summary lands, so each tile keeps its slot and skeletons in place. */
+  const stats: { label: (typeof STAT_KEYS)[number]; value: string | null }[] = [
+    { label: "invited", value: summary ? String(summary.invitedCount) : null },
+    { label: "completed", value: summary ? String(summary.completedBookingsCount) : null },
+    { label: "earned", value: summary ? formatMoney(summary.totalEarned.amountMinor) : null },
+    { label: "balance", value: summary ? formatMoney(summary.availableBalance.amountMinor) : null },
+  ];
 
   const copyLink = () => {
     if (!referralUrl) {
@@ -45,6 +61,16 @@ export default function ReferralsInvite() {
     void navigator.clipboard
       .writeText(referralUrl.href)
       .then(() => toast.success(t("invite.copied")));
+  };
+
+  const generateCode = () => {
+    rotate.mutate(
+      {},
+      {
+        onSuccess: () => toast.success(t("invite.generated")),
+        onError: () => toast.error(t("invite.generateFailed")),
+      },
+    );
   };
 
   return (
@@ -75,7 +101,8 @@ export default function ReferralsInvite() {
               type="button"
               aria-label={t("invite.copy")}
               onClick={copyLink}
-              className="cursor-pointer rounded-sm text-foreground outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/50"
+              disabled={!referralUrl}
+              className="cursor-pointer rounded-sm text-foreground outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-default disabled:opacity-50"
             >
               <Copy />
             </button>
@@ -85,7 +112,8 @@ export default function ReferralsInvite() {
           variant="brand"
           size="md"
           className="w-full shrink-0 md:w-[200px]"
-          onClick={() => toast.info(t("invite.generated"))}
+          onClick={generateCode}
+          disabled={!summary || rotate.isPending}
         >
           {t("invite.generate")}
         </Button>
@@ -106,12 +134,16 @@ export default function ReferralsInvite() {
 
       {/* Stats 972:54816 — 2x2 grid on mobile, 24px-gap row on tablet, pinned bottom-right at the 1536 layout */}
       <div className="relative grid w-full auto-cols-fr grid-flow-col grid-rows-2 gap-1 md:flex md:flex-wrap md:items-start md:gap-6 2xl:absolute 2xl:right-[59px] 2xl:bottom-7 2xl:w-auto">
-        {REFERRAL_STATS.map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.label}
             className="flex flex-col items-start gap-1 p-1 drop-shadow-[4px_4px_10px_rgba(0,0,0,0.1)]"
           >
-            <span className="text-[32px] leading-[1.1] font-bold text-brand">{stat.value}</span>
+            {stat.value === null ? (
+              <Skeleton className="h-9 w-16 rounded-sm" />
+            ) : (
+              <span className="text-[32px] leading-[1.1] font-bold text-brand">{stat.value}</span>
+            )}
             <span className="text-body-caption-s text-foreground underline decoration-dotted [text-decoration-skip-ink:none]">
               {t(`invite.stats.${stat.label}`)}
             </span>

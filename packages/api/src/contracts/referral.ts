@@ -76,6 +76,11 @@ export const referralHistoryRowSchema = z.object({
    */
   referredUserName: z.string(),
   status: z.enum(["pending", "credited", "void"]),
+  /**
+   * What the referral paid, or — while it is still pending — what it would pay
+   * at the referrer's current tier. Null only for a voided referral, which pays
+   * nothing.
+   */
   amount: moneySchema.nullable(),
   createdAt: z.string(),
   creditedAt: z.string().nullable(),

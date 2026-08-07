@@ -13,7 +13,13 @@ import type {
   referralHistorySchema,
   referralSummarySchema,
 } from "../contracts/referral";
-import { creditBalanceMinor, invitedCount, tierProgress, totalEarnedMinor } from "./loyalty";
+import {
+  creditBalanceMinor,
+  invitedCount,
+  projectedRewardMinor,
+  tierProgress,
+  totalEarnedMinor,
+} from "./loyalty";
 import { paginatedQuery, paginationFor, totalFrom } from "./pagination";
 import { getOrCreateReferralCode } from "./referral";
 type Summary = z.infer<typeof referralSummarySchema>;
@@ -94,20 +100,45 @@ export async function referralHistory(
       totalFrom(await db.select({ totalItems: count() }).from(referralRedemption).where(where)),
   });
 
+  /*
+   * A pending referral has no ledger row yet, but the screen still shows what it
+   * is worth. Computed once per page rather than per row — every pending row on
+   * it projects the same reward, since they share one referrer.
+   */
+  const projected = rows.some((row) => row.status === "pending")
+    ? await projectedRewardMinor(db, userId)
+    : 0;
+
   const items = rows.map((row) => ({
     id: row.id,
     referredUserName: row.name,
     status: row.status,
-    // Null while the referral is still pending — nothing has been paid out yet.
-    amount:
-      row.rewardMinor === null
-        ? null
-        : { amountMinor: row.rewardMinor, currency: row.rewardCurrency ?? CURRENCY },
+    amount: amountFor(row, projected),
     createdAt: row.createdAt.toISOString(),
     creditedAt: row.creditedAt?.toISOString() ?? null,
   }));
 
   return { items, pagination };
+}
+
+/**
+ * Credited rows report what the ledger actually paid; pending rows report the
+ * projection. A voided referral pays nothing and never will, so it reports null
+ * rather than dangling an amount the user cannot collect.
+ */
+function amountFor(
+  row: {
+    status: "pending" | "credited" | "void";
+    rewardMinor: number | null;
+    rewardCurrency: string | null;
+  },
+  projectedMinor: number,
+): { amountMinor: number; currency: string } | null {
+  if (row.rewardMinor !== null) {
+    return { amountMinor: row.rewardMinor, currency: row.rewardCurrency ?? CURRENCY };
+  }
+
+  return row.status === "pending" ? { amountMinor: projectedMinor, currency: CURRENCY } : null;
 }
 
 export async function creditBalance(db: Database, userId: string): Promise<Balance> {
