@@ -14,7 +14,7 @@ import type {
 } from "../contracts/booking";
 import { writeAuditLog } from "./audit";
 import { confirmBookingWithProvider } from "./booking-confirm";
-import { paginationFor } from "./pagination";
+import { paginatedQuery, totalFrom } from "./pagination";
 type ListInput = z.infer<typeof invoiceListInputSchema>;
 
 type ListResult = z.infer<typeof invoiceListSchema>;
@@ -29,29 +29,26 @@ type SettleResult = z.infer<typeof invoiceSettleSchema>;
 export async function listInvoiceRequests(db: Database, input: ListInput): Promise<ListResult> {
   const where = input.status ? eq(invoiceRequest.status, input.status) : undefined;
 
-  const [rows, [totals]] = await Promise.all([
-    db
-      .select({ invoice: invoiceRequest, booking, listingTitle: listing.title })
-      .from(invoiceRequest)
-      .innerJoin(booking, eq(booking.id, invoiceRequest.bookingId))
-      .innerJoin(listing, eq(listing.id, booking.listingId))
-      .where(where)
-      .orderBy(desc(invoiceRequest.createdAt), desc(invoiceRequest.id))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize),
-    db.select({ totalItems: count() }).from(invoiceRequest).where(where),
-  ]);
-
-  const items = rows.map((row) => present(row.invoice, row.booking, row.listingTitle));
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select({ invoice: invoiceRequest, booking, listingTitle: listing.title })
+        .from(invoiceRequest)
+        .innerJoin(booking, eq(booking.id, invoiceRequest.bookingId))
+        .innerJoin(listing, eq(listing.id, booking.listingId))
+        .where(where)
+        .orderBy(desc(invoiceRequest.createdAt), desc(invoiceRequest.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () =>
+      totalFrom(await db.select({ totalItems: count() }).from(invoiceRequest).where(where)),
+  });
 
   return {
-    items,
-    pagination: paginationFor({
-      page: input.page,
-      pageSize: input.pageSize,
-      totalItems: totals?.totalItems ?? 0,
-      itemCount: items.length,
-    }),
+    items: rows.map((row) => present(row.invoice, row.booking, row.listingTitle)),
+    pagination,
   };
 }
 

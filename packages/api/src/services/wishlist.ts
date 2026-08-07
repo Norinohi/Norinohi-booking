@@ -28,6 +28,9 @@ export async function listWishlist(
   const wishlistId = await findWishlistId(db, userId);
   if (!wishlistId) return { items: [], pagination: emptyPagination(input) };
 
+  // Not paginatedQuery: itemCount here is the hydrated docs, not the saved rows.
+  // An unpublished listing occupies a slot on its page but does not render, so
+  // the two counts genuinely differ and the helper's rows.length would be wrong.
   const offset = (input.page - 1) * input.pageSize;
 
   const [rows, [totals]] = await Promise.all([

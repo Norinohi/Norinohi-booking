@@ -43,7 +43,8 @@ export async function listDiscounts(db: Database, input: ListInput): Promise<Lis
 
   // Status is derived, so it cannot be filtered in SQL without duplicating the
   // date logic there. The discount table is staff-sized (hundreds, not millions),
-  // so filtering and paging in memory is the honest trade.
+  // so filtering and paging in memory is the honest trade — which is also why
+  // this cannot use paginatedQuery, whose limit/offset run in the database.
   const matching = input.status
     ? hydrated.filter((item) => item.status === input.status)
     : hydrated;

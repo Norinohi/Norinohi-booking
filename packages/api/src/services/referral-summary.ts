@@ -14,7 +14,7 @@ import type {
   referralSummarySchema,
 } from "../contracts/referral";
 import { creditBalanceMinor, invitedCount, tierProgress, totalEarnedMinor } from "./loyalty";
-import { paginationFor } from "./pagination";
+import { paginatedQuery, paginationFor, totalFrom } from "./pagination";
 import { getOrCreateReferralCode } from "./referral";
 type Summary = z.infer<typeof referralSummarySchema>;
 
@@ -69,26 +69,30 @@ export async function referralHistory(
 
   const where = eq(referralRedemption.referralId, own.id);
 
-  const [rows, [totals]] = await Promise.all([
-    db
-      .select({
-        id: referralRedemption.id,
-        status: referralRedemption.status,
-        createdAt: referralRedemption.createdAt,
-        creditedAt: referralRedemption.creditedAt,
-        name: user.name,
-        rewardMinor: creditLedger.amountMinor,
-        rewardCurrency: creditLedger.currency,
-      })
-      .from(referralRedemption)
-      .innerJoin(user, eq(user.id, referralRedemption.referredUserId))
-      .leftJoin(creditLedger, eq(creditLedger.referralRedemptionId, referralRedemption.id))
-      .where(where)
-      .orderBy(desc(referralRedemption.createdAt), desc(referralRedemption.id))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize),
-    db.select({ totalItems: count() }).from(referralRedemption).where(where),
-  ]);
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select({
+          id: referralRedemption.id,
+          status: referralRedemption.status,
+          createdAt: referralRedemption.createdAt,
+          creditedAt: referralRedemption.creditedAt,
+          name: user.name,
+          rewardMinor: creditLedger.amountMinor,
+          rewardCurrency: creditLedger.currency,
+        })
+        .from(referralRedemption)
+        .innerJoin(user, eq(user.id, referralRedemption.referredUserId))
+        .leftJoin(creditLedger, eq(creditLedger.referralRedemptionId, referralRedemption.id))
+        .where(where)
+        .orderBy(desc(referralRedemption.createdAt), desc(referralRedemption.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () =>
+      totalFrom(await db.select({ totalItems: count() }).from(referralRedemption).where(where)),
+  });
 
   const items = rows.map((row) => ({
     id: row.id,
@@ -103,15 +107,7 @@ export async function referralHistory(
     creditedAt: row.creditedAt?.toISOString() ?? null,
   }));
 
-  return {
-    items,
-    pagination: paginationFor({
-      page: input.page,
-      pageSize: input.pageSize,
-      totalItems: totals?.totalItems ?? 0,
-      itemCount: items.length,
-    }),
-  };
+  return { items, pagination };
 }
 
 export async function creditBalance(db: Database, userId: string): Promise<Balance> {
@@ -146,16 +142,20 @@ export async function creditLedgerEntries(
 ): Promise<Ledger> {
   const where = eq(creditLedger.userId, userId);
 
-  const [rows, [totals]] = await Promise.all([
-    db
-      .select()
-      .from(creditLedger)
-      .where(where)
-      .orderBy(desc(creditLedger.createdAt), desc(creditLedger.id))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize),
-    db.select({ totalItems: count() }).from(creditLedger).where(where),
-  ]);
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select()
+        .from(creditLedger)
+        .where(where)
+        .orderBy(desc(creditLedger.createdAt), desc(creditLedger.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () =>
+      totalFrom(await db.select({ totalItems: count() }).from(creditLedger).where(where)),
+  });
 
   const items = rows.map((row) => ({
     id: row.id,
@@ -167,13 +167,5 @@ export async function creditLedgerEntries(
     createdAt: row.createdAt.toISOString(),
   }));
 
-  return {
-    items,
-    pagination: paginationFor({
-      page: input.page,
-      pageSize: input.pageSize,
-      totalItems: totals?.totalItems ?? 0,
-      itemCount: items.length,
-    }),
-  };
+  return { items, pagination };
 }

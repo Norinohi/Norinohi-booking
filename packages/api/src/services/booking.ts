@@ -37,7 +37,7 @@ import {
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
-import { paginationFor } from "./pagination";
+import { paginatedQuery, totalFrom } from "./pagination";
 import { isUniqueViolation } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { assertQuoteIsFresh } from "./quote";
@@ -81,37 +81,36 @@ export async function listBookings(
 
   const where = and(...filters, ...dateFilters);
 
-  const [rows, [totals]] = await Promise.all([
-    db
-      .select({ booking, quote })
-      .from(booking)
-      .innerJoin(quote, eq(quote.id, booking.quoteId))
-      .where(where)
-      .orderBy(desc(booking.createdAt), desc(booking.id))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize),
-    db
-      .select({ totalItems: count() })
-      .from(booking)
-      .innerJoin(quote, eq(quote.id, booking.quoteId))
-      .where(where),
-  ]);
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select({ booking, quote })
+        .from(booking)
+        .innerJoin(quote, eq(quote.id, booking.quoteId))
+        .where(where)
+        .orderBy(desc(booking.createdAt), desc(booking.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () =>
+      totalFrom(
+        await db
+          .select({ totalItems: count() })
+          .from(booking)
+          .innerJoin(quote, eq(quote.id, booking.quoteId))
+          .where(where),
+      ),
+  });
 
-  const ids = rows.map((row) => row.booking.id);
-  const money = await loadMoney(db, ids);
-
-  const items = rows.map((row) =>
-    presentSummary(row.booking, row.quote, money.get(row.booking.id)),
+  const money = await loadMoney(
+    db,
+    rows.map((row) => row.booking.id),
   );
 
   return {
-    items,
-    pagination: paginationFor({
-      page: input.page,
-      pageSize: input.pageSize,
-      totalItems: totals?.totalItems ?? 0,
-      itemCount: items.length,
-    }),
+    items: rows.map((row) => presentSummary(row.booking, row.quote, money.get(row.booking.id))),
+    pagination,
   };
 }
 

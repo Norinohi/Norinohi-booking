@@ -14,7 +14,7 @@ import type {
   leadStatusSchema,
 } from "../contracts/lead";
 import { writeAuditLog } from "./audit";
-import { paginationFor } from "./pagination";
+import { paginatedQuery, totalFrom } from "./pagination";
 type CreateInput = z.infer<typeof leadCreateInputSchema>;
 
 type Created = z.infer<typeof leadCreatedSchema>;
@@ -83,29 +83,22 @@ export async function listLeads(db: Database, input: ListInput): Promise<ListRes
   }
   const where = filters.length > 0 ? and(...filters) : undefined;
 
-  const [rows, [totals]] = await Promise.all([
-    db
-      .select({ lead, listingTitle: listing.title })
-      .from(lead)
-      .leftJoin(listing, eq(listing.id, lead.listingId))
-      .where(where)
-      .orderBy(desc(lead.createdAt), desc(lead.id))
-      .limit(input.pageSize)
-      .offset((input.page - 1) * input.pageSize),
-    db.select({ totalItems: count() }).from(lead).where(where),
-  ]);
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select({ lead, listingTitle: listing.title })
+        .from(lead)
+        .leftJoin(listing, eq(listing.id, lead.listingId))
+        .where(where)
+        .orderBy(desc(lead.createdAt), desc(lead.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () => totalFrom(await db.select({ totalItems: count() }).from(lead).where(where)),
+  });
 
-  const items = rows.map((row) => present(row.lead, row.listingTitle));
-
-  return {
-    items,
-    pagination: paginationFor({
-      page: input.page,
-      pageSize: input.pageSize,
-      totalItems: totals?.totalItems ?? 0,
-      itemCount: items.length,
-    }),
-  };
+  return { items: rows.map((row) => present(row.lead, row.listingTitle)), pagination };
 }
 
 export async function setLeadStatus(

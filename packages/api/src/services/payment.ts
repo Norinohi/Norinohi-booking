@@ -58,29 +58,15 @@ export async function confirmCheckout(
   // it directly rather than through the active-quote guard.
   await assertPriceStillValid(row.quote.expiresAt);
 
+  // The key carries the amount, so a repriced booking gets a new intent rather
+  // than silently reusing one for a figure the customer never saw. Keep this
+  // after amountMinor is computed.
   const amountMinor = amountDue(row.quote, preference);
   const kind = preference === "full" ? ("full" as const) : ("deposit" as const);
   const idempotencyKey = `pay:${bookingId}:${kind}:${amountMinor}`;
 
-  // Reuse the existing intent when the customer retries the same amount, so a
-  // double-click cannot open two charges for one booking.
-  const [existing] = await db
-    .select()
-    .from(payment)
-    .where(eq(payment.idempotencyKey, idempotencyKey))
-    .limit(1);
-
-  if (existing?.stripePaymentIntentId) {
-    const intent = await stripe.paymentIntents.retrieve(existing.stripePaymentIntentId);
-    return {
-      bookingId,
-      status: row.booking.status,
-      paymentId: existing.id,
-      amount: { amountMinor: existing.amountMinor, currency: existing.currency },
-      kind: existing.kind,
-      clientSecret: intent.client_secret ?? "",
-    };
-  }
+  const reused = await reuseIntent(db, stripe, bookingId, current, idempotencyKey);
+  if (reused) return reused;
 
   const intent = await stripe.paymentIntents.create(
     {
@@ -93,48 +79,123 @@ export async function confirmCheckout(
     { idempotencyKey },
   );
 
-  const paymentId = await db.transaction(async (tx) => {
+  const paymentId = await recordIntent(db, {
+    bookingId,
+    from: current,
+    kind,
+    amountMinor,
+    currency: row.booking.currency,
+    stripePaymentIntentId: intent.id,
+    idempotencyKey,
+  });
+
+  if (!paymentId) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+  return present({
+    bookingId,
+    status: "PAYMENT_PENDING",
+    paymentId,
+    amountMinor,
+    currency: row.booking.currency,
+    kind,
+    intent,
+  });
+}
+
+/**
+ * Reuse the existing intent when the customer retries the same amount, so a
+ * double-click cannot open two charges for one booking. The booking's status is
+ * whatever it already was — this path advances nothing.
+ */
+async function reuseIntent(
+  db: Database,
+  stripe: Stripe,
+  bookingId: string,
+  status: ConfirmResult["status"],
+  idempotencyKey: string,
+): Promise<ConfirmResult | null> {
+  const [existing] = await db
+    .select()
+    .from(payment)
+    .where(eq(payment.idempotencyKey, idempotencyKey))
+    .limit(1);
+
+  if (!existing?.stripePaymentIntentId) return null;
+
+  return present({
+    bookingId,
+    status,
+    paymentId: existing.id,
+    amountMinor: existing.amountMinor,
+    currency: existing.currency,
+    kind: existing.kind,
+    intent: await stripe.paymentIntents.retrieve(existing.stripePaymentIntentId),
+  });
+}
+
+/** Schedule, payment and the booking's move to PAYMENT_PENDING, in one transaction. */
+async function recordIntent(
+  db: Database,
+  input: {
+    bookingId: string;
+    from: BookingStatus;
+    kind: "deposit" | "full";
+    amountMinor: number;
+    currency: string;
+    stripePaymentIntentId: string;
+    idempotencyKey: string;
+  },
+): Promise<string | undefined> {
+  return db.transaction(async (tx) => {
     const [schedule] = await tx
       .insert(paymentSchedule)
       .values({
-        bookingId,
-        kind,
-        amountMinor,
-        currency: row.booking.currency,
+        bookingId: input.bookingId,
+        kind: input.kind,
+        amountMinor: input.amountMinor,
+        currency: input.currency,
       })
       .returning({ id: paymentSchedule.id });
 
     const [created] = await tx
       .insert(payment)
       .values({
-        bookingId,
+        bookingId: input.bookingId,
         scheduleId: schedule?.id ?? null,
-        kind,
-        amountMinor,
-        currency: row.booking.currency,
+        kind: input.kind,
+        amountMinor: input.amountMinor,
+        currency: input.currency,
         status: "requires_payment",
-        stripePaymentIntentId: intent.id,
-        idempotencyKey,
+        stripePaymentIntentId: input.stripePaymentIntentId,
+        idempotencyKey: input.idempotencyKey,
       })
       .returning({ id: payment.id });
 
     await tx
       .update(booking)
       .set({ status: "PAYMENT_PENDING", paymentMethod: "card" })
-      .where(and(eq(booking.id, bookingId), eq(booking.status, current)));
+      .where(and(eq(booking.id, input.bookingId), eq(booking.status, input.from)));
 
     return created?.id;
   });
+}
 
-  if (!paymentId) throw new ORPCError("INTERNAL_SERVER_ERROR");
-
+function present(input: {
+  bookingId: string;
+  status: ConfirmResult["status"];
+  paymentId: string;
+  amountMinor: number;
+  currency: string;
+  kind: ConfirmResult["kind"];
+  intent: Stripe.PaymentIntent;
+}): ConfirmResult {
   return {
-    bookingId,
-    status: "PAYMENT_PENDING",
-    paymentId,
-    amount: { amountMinor, currency: row.booking.currency },
-    kind,
-    clientSecret: intent.client_secret ?? "",
+    bookingId: input.bookingId,
+    status: input.status,
+    paymentId: input.paymentId,
+    amount: { amountMinor: input.amountMinor, currency: input.currency },
+    kind: input.kind,
+    clientSecret: input.intent.client_secret ?? "",
   };
 }
 
