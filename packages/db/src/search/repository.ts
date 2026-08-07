@@ -36,6 +36,7 @@ const NULL_PRICE_ASC = 2_147_483_647;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
 const CURRENT_YEAR = new Date().getUTCFullYear();
+const DEFAULT_LOCALE = "en";
 
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   { value: "7", label: "7 days" },
@@ -801,7 +802,7 @@ async function listFacetOptions(
     order by label asc
   `);
 
-  return decorateFacetOptions(db, rows.rows, kind);
+  return decorateFacetOptions(db, rows.rows, kind, input.locale);
 }
 
 async function listEquipmentFacetOptions(
@@ -822,7 +823,7 @@ async function listEquipmentFacetOptions(
     order by amenity.value asc
   `);
 
-  return decorateFacetOptions(db, rows.rows, "equipment");
+  return decorateFacetOptions(db, rows.rows, "equipment", input.locale);
 }
 
 /*
@@ -836,6 +837,7 @@ async function decorateFacetOptions(
   db: NodePgDatabase<typeof schema>,
   rows: FacetOptionRow[],
   kind?: FacetMediaKind,
+  locale?: string,
 ): Promise<ListingFacetOption[]> {
   const options = rows.map((row) => ({
     value: valueForLabel(row.label),
@@ -851,22 +853,33 @@ async function decorateFacetOptions(
     key: string;
     imageUrl: string | null;
     cloudinaryId: string | null;
+    label: string | null;
     description: string | null;
   }>(sql`
     select
       ${normalizedSql(sql`media.value`)} as key,
       media.image_url as "imageUrl",
       media.cloudinary_id as "cloudinaryId",
-      media.description
+      translation.label,
+      coalesce(translation.description, media.description) as description
     from facet_media media
+    left join facet_media_translation translation
+      on translation.facet_media_id = media.id
+      and translation.locale = ${locale ?? DEFAULT_LOCALE}
     where media.kind = ${kind}
   `);
   const byKey = new Map(media.rows.map((row) => [row.key, row]));
 
   return options.map((option) => {
+    /*
+     * Matched on the untranslated label, and `value` above was derived from it too:
+     * `value` is what the search filters compare against doc.country / doc.category,
+     * so only the display label may be swapped for a translation.
+     */
     const match = byKey.get(normalizedFilterValue(option.label));
     return {
       ...option,
+      label: match?.label ?? option.label,
       imageUrl: match?.imageUrl ?? null,
       cloudinaryId: match?.cloudinaryId ?? null,
       description: match?.description ?? null,

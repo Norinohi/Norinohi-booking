@@ -40,6 +40,8 @@ export type ListingSearchInput = {
   depositInsurance?: boolean;
   petsAllowed?: boolean;
   currency?: string;
+  /* Selects facet copy from facet_media_translation; falls back to the default locale. */
+  locale?: string;
   cursor?: string;
   limit?: number;
   page?: number;

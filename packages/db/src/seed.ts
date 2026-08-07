@@ -12,6 +12,7 @@ import {
   builder,
   country,
   facetMedia,
+  facetMediaTranslation,
   faq,
   listing,
   listingAmenity,
@@ -767,6 +768,160 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/sailing-routes/amalfi-coast.webp",
     description: "Capri, Positano, and the Amalfi cliffs from the water.",
     sortOrder: 3,
+  },
+];
+
+/*
+ * uk and es copy for the cards above; en lives on the facet_media row itself.
+ * `label` overrides the display name only — the facet's `value` stays English-derived
+ * because it is what the search filters match on.
+ */
+const facetMediaTranslations = [
+  {
+    facetMediaId: "fcm_country_hr",
+    locale: "uk",
+    label: "Хорватія",
+    description: "Тисяча островів, короткі переходи між ними і марина майже в кожній бухті.",
+  },
+  {
+    facetMediaId: "fcm_country_hr",
+    locale: "es",
+    label: "Croacia",
+    description: "Mil islas, travesías cortas entre ellas y puertos deportivos por todas partes.",
+  },
+  {
+    facetMediaId: "fcm_country_gr",
+    locale: "uk",
+    label: "Греція",
+    description: "Мельтемі на Кікладах, спокій Іонічного моря і таверна на кожній стоянці.",
+  },
+  {
+    facetMediaId: "fcm_country_gr",
+    locale: "es",
+    label: "Grecia",
+    description:
+      "El meltemi de las Cícladas, la calma del Jónico y una taberna en cada fondeadero.",
+  },
+  {
+    facetMediaId: "fcm_country_it",
+    locale: "uk",
+    label: "Італія",
+    description: "Амальфітанське узбережжя, бухти Сардинії та вулканічні острови Сицилії.",
+  },
+  {
+    facetMediaId: "fcm_country_it",
+    locale: "es",
+    label: "Italia",
+    description: "La costa de Amalfi, las calas de Cerdeña y las islas volcánicas de Sicilia.",
+  },
+  {
+    facetMediaId: "fcm_country_es",
+    locale: "uk",
+    label: "Іспанія",
+    description: "Пляжні клуби Балеар і тихі бухти Менорки за один день переходу.",
+  },
+  {
+    facetMediaId: "fcm_country_es",
+    locale: "es",
+    label: "España",
+    description:
+      "Clubes de playa en Baleares y calas tranquilas de Menorca a un día de navegación.",
+  },
+  {
+    facetMediaId: "fcm_country_th",
+    locale: "uk",
+    label: "Таїланд",
+    description: "Вапнякові острови біля Пхукета, тепла вода і сезон цілий рік.",
+  },
+  {
+    facetMediaId: "fcm_country_th",
+    locale: "es",
+    label: "Tailandia",
+    description: "Islas calizas frente a Phuket, agua cálida y navegación todo el año.",
+  },
+  {
+    facetMediaId: "fcm_category_catamaran",
+    locale: "uk",
+    label: "Катамаран",
+    description: "Стійкий, просторий, з малою осадкою. Типовий вибір для сімʼї та компанії.",
+  },
+  {
+    facetMediaId: "fcm_category_catamaran",
+    locale: "es",
+    label: "Catamarán",
+    description: "Estable, amplio y de poco calado. La opción habitual para familias y grupos.",
+  },
+  {
+    facetMediaId: "fcm_category_sailing",
+    locale: "uk",
+    label: "Вітрильна яхта",
+    description: "Класичний однокорпусник. Найкраща ціна за каюту під вітрилами.",
+  },
+  {
+    facetMediaId: "fcm_category_sailing",
+    locale: "es",
+    label: "Velero",
+    description: "El monocasco clásico de alquiler. La mejor relación precio por camarote.",
+  },
+  {
+    facetMediaId: "fcm_category_motor",
+    locale: "uk",
+    label: "Моторна яхта",
+    description: "Більше узбережжя за день, досвід керування вітрилами не потрібен.",
+  },
+  {
+    facetMediaId: "fcm_category_motor",
+    locale: "es",
+    label: "Yate a motor",
+    description: "Más costa por día y sin necesidad de experiencia a vela.",
+  },
+  {
+    facetMediaId: "fcm_category_luxury",
+    locale: "uk",
+    label: "Люкс-яхта",
+    description: "З екіпажем, повним харчуванням і рівнем оснащення готелю.",
+  },
+  {
+    facetMediaId: "fcm_category_luxury",
+    locale: "es",
+    label: "Yate de lujo",
+    description: "Con tripulación, pensión completa y equipamiento de nivel hotelero.",
+  },
+  {
+    facetMediaId: "fcm_region_dalmatia",
+    locale: "uk",
+    label: "Далмація",
+    description: "Спліт, Хвар і Віс за тиждень по колу.",
+  },
+  {
+    facetMediaId: "fcm_region_dalmatia",
+    locale: "es",
+    label: "Dalmacia",
+    description: "Split, Hvar y Vis en un circuito de una semana.",
+  },
+  {
+    facetMediaId: "fcm_region_cyclades",
+    locale: "uk",
+    label: "Кіклади",
+    description: "Відкриті переходи, сильний літній вітер і білені гавані.",
+  },
+  {
+    facetMediaId: "fcm_region_cyclades",
+    locale: "es",
+    label: "Cícladas",
+    description: "Travesías abiertas, viento fuerte en verano y puertos encalados.",
+  },
+  {
+    facetMediaId: "fcm_region_campania",
+    locale: "uk",
+    label: "Кампанія",
+    description: "Капрі, Позітано і скелі Амальфі з боку моря.",
+  },
+  {
+    facetMediaId: "fcm_region_campania",
+    locale: "es",
+    label: "Campania",
+    description: "Capri, Positano y los acantilados de Amalfi desde el agua.",
   },
 ];
 
@@ -1645,6 +1800,16 @@ const insertStaticData = async () => {
         imageUrl: sql`excluded.image_url`,
         description: sql`excluded.description`,
         sortOrder: sql`excluded.sort_order`,
+      },
+    });
+  await db
+    .insert(facetMediaTranslation)
+    .values(facetMediaTranslations)
+    .onConflictDoUpdate({
+      target: [facetMediaTranslation.facetMediaId, facetMediaTranslation.locale],
+      set: {
+        label: sql`excluded.label`,
+        description: sql`excluded.description`,
       },
     });
 };

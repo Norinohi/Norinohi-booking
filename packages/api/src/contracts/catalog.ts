@@ -216,6 +216,8 @@ export const listingSearchInputBaseSchema = z.object({
   depositInsurance: booleanParamSchema,
   petsAllowed: booleanParamSchema,
   currency: currencySchema.default("EUR"),
+  /* Mirrors apps/web/src/i18n/config.ts. Unknown values fall back to the default copy. */
+  locale: z.string().min(2).max(10).default("en"),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(500).optional(),
   page: z.coerce.number().int().min(1).optional(),
