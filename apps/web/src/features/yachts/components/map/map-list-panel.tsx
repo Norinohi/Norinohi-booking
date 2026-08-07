@@ -68,16 +68,18 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
         </div>
       </ScrollArea>
 
-      <div className="shrink-0 border-t border-border py-4">
-        <PaginationControl
-          page={page}
-          pageSize={pagination?.pageSize ?? 10}
-          total={pagination?.totalItems ?? 0}
-          onPageChange={setPage}
-          summary={false}
-          className="justify-center"
-        />
-      </div>
+      {pagination && pagination.totalItems > 0 ? (
+        <div className="shrink-0 border-t border-border py-4">
+          <PaginationControl
+            page={page}
+            pageSize={pagination.pageSize}
+            total={pagination.totalItems}
+            onPageChange={setPage}
+            summary={false}
+            className="justify-center"
+          />
+        </div>
+      ) : null}
     </section>
   );
 }

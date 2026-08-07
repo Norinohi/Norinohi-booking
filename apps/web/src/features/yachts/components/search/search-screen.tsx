@@ -121,13 +121,15 @@ export default function SearchScreen() {
               ))
             )}
 
-            <PaginationControl
-              className="pt-1"
-              page={page}
-              pageSize={pagination?.pageSize ?? 10}
-              total={pagination?.totalItems ?? 0}
-              onPageChange={setPage}
-            />
+            {pagination && pagination.totalItems > 0 ? (
+              <PaginationControl
+                className="pt-1"
+                page={page}
+                pageSize={pagination.pageSize}
+                total={pagination.totalItems}
+                onPageChange={setPage}
+              />
+            ) : null}
           </div>
         </div>
       </div>
