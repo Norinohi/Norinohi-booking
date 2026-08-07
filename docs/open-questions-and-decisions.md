@@ -128,3 +128,86 @@ These are rough estimates for the team lead to sanity-check, not commitments:
 - The cheapest way to show price management in the demo is no panel at all: seed a `price_adjustment_rule` and show the discounted quote on a normal yacht page. That costs zero frontend time and still demonstrates the capability.
 
 Decision owner: team lead. If a panel is wanted for the demo, it needs frontend time the board has not allocated; otherwise it stays a clean post-demo add-on.
+
+---
+
+## 7. Behaviour bugs found during the code-quality refactor (August 2026)
+
+Six findings surfaced while refactoring `packages/api` and `packages/db`. **None were fixed**: every one changes what the product does — what a customer is charged, which requests are rejected, or which writes are allowed — so the code was left as-is and the choice is recorded here. The refactor was structured so that none of them moved by accident.
+
+The first three need a product answer. The last three are ours to decide but still change behaviour.
+
+### F1 — Two formulas for "how much do we charge now" · **owner: product** · **needed by: M5 sign-off**
+
+`payableNowMinor` sums the lines marked `payWhen === "now"`. `amountDue` computes `quote.totalMinor − Σ(at_check_in lines)`. Same concept, two implementations, and different call sites use different ones: the quote pipeline uses the first, checkout and card payment use the second.
+
+They agree only while the stored `totalMinor` equals the unclamped sum of the lines — and `totalMinor` is itself clamped at zero, which is enough to break it. A quote whose lines sum negative (an over-large credit or a discount applied at check-in) stores a total of 0, and `amountDue` then subtracts a negative and bills **double** what `payableNowMinor` says is owed. Nothing recomputes the total from the lines at read time, so any future writer that sets one without the other silently changes what the customer pays.
+
+- [`services/pricing.ts:259`](../packages/api/src/services/pricing.ts) `payableNowMinor`
+- [`services/checkout.ts:189`](../packages/api/src/services/checkout.ts) `amountDue`
+- Both formulas and the exact divergence are pinned in [`services/checkout.test.ts`](../packages/api/src/services/checkout.test.ts) — the tests named `DIVERGE` are the decision.
+
+**Decision needed:** which one is right. Then delete the other and migrate the call sites.
+
+### F2 — Credit and discounts ignore currency · **owner: product** · **needed by: before any non-EUR listing**
+
+`redeemCredit` sums the credit ledger filtered by user and expiry only — there is no currency predicate — so a customer with EUR and USD credit sees one merged balance. Neither `redeemCredit` nor `redeemDiscount` compares the currency it is handed against the booking's, and `discount.currency` is never checked either. Today a EUR credit is spendable against a USD booking at a 1:1 rate.
+
+Harmless while everything is EUR, which is why it has not bitten. It becomes a real loss the day a second currency is listed.
+
+- [`services/loyalty.ts:263`](../packages/api/src/services/loyalty.ts) — the balance query with no currency filter
+- [`services/discount-redemption.ts:114`](../packages/api/src/services/discount-redemption.ts) `redeemDiscount`
+
+**Decision needed:** whether credit is per-currency (a EUR balance and a USD balance) or single-currency with conversion. Fixing it reduces the balance mixed-currency users can currently see, so it is not a silent change.
+
+### F3 — The "cannot both take the last one" guards do not serialize · **owner: team lead** · **needed by: M5**
+
+Two places carry a comment saying the transaction stops two simultaneous checkouts both taking the last remaining use. Neither does. Both read a count and then write, under PostgreSQL's default READ COMMITTED, with no row lock — `for update` appears nowhere in the repository. Two concurrent checkouts can both pass the check and both insert.
+
+Worse, the two are in **separate** transactions: `redeemFor` opens one for the discount and another for the credit, so a booking can consume a discount and then fail to consume credit, or vice versa, with no rollback between them.
+
+- [`services/discount-redemption.ts:114`](../packages/api/src/services/discount-redemption.ts) — usage-limit re-check
+- [`services/loyalty.ts:263`](../packages/api/src/services/loyalty.ts) — balance re-check
+- [`services/booking.ts:461`](../packages/api/src/services/booking.ts) `redeemFor` — the two separate transactions
+
+**Decision needed:** how much overspend is acceptable. `SELECT … FOR UPDATE` on the discount row and the user's ledger, both inside one transaction with the booking, is the straightforward fix; it costs a lock on a hot row at checkout.
+
+### F4 — Five booking-status writes bypass the state machine
+
+`booking-state.ts` says nothing outside it should assign `booking.status`. Five writes do, with no `assertTransition` at all:
+
+- [`services/booking-confirm.ts:102`](../packages/api/src/services/booking-confirm.ts) → `CONFIRMED`
+- [`services/booking-confirm.ts:138`](../packages/api/src/services/booking-confirm.ts) → `PROVIDER_REJECTED`
+- [`services/booking-confirm.ts:143`](../packages/api/src/services/booking-confirm.ts) → `REFUND_PENDING`
+- [`services/expiry.ts:95`](../packages/api/src/services/expiry.ts) → `OPTION_EXPIRED`
+- [`services/expiry.ts:136`](../packages/api/src/services/expiry.ts) → `QUOTE_EXPIRED`
+- [`services/invoice.ts:187`](../packages/api/src/services/invoice.ts) → `CANCELLED`
+
+All six do use a compare-and-set on the previous status, so they are not unguarded against concurrency — but the §6 table is never consulted, so a transition the table forbids goes through anyway. Checking each site's real from-status domain against the table turns up exactly one live case:
+
+**`expireQuotes` sweeps bookings in `["QUOTED", "OPTION_PENDING"]` to `QUOTE_EXPIRED`, and `OPTION_PENDING → QUOTE_EXPIRED` is not in the table.** (`canTransition("OPTION_PENDING", "QUOTE_EXPIRED")` is `false`; the allowed targets are `OPTION_HELD`, `OPTION_EXPIRED`, `PROVIDER_REJECTED`, `CANCELLED`.) The other five are all table-legal today — they only pass unchecked.
+
+So this is two decisions, not one. First: is a booking that is mid-option-request but whose quote has expired supposed to become `QUOTE_EXPIRED` (add the edge to the table) or `OPTION_EXPIRED` (fix the sweeper)? Second: route all six through `assertTransition` so the module's claim to be the only writer becomes true and the next such drift is caught by the type-and-test gate rather than by a reader.
+
+The 14×14 table is pinned in [`services/booking-state.test.ts`](../packages/api/src/services/booking-state.test.ts), so whichever way the first question goes, the change is visible as a test diff.
+
+Related: `assertTransition` throws a plain `InvalidTransitionError`, and only `booking.ts` catches it. The same guard therefore surfaces as a 409 on one path and a 500 on another (`checkout.ts`, `payment.ts`).
+
+### F5 — Search filters treat zero inconsistently
+
+`whereClause` guards its ~30 filters two different ways. Some test truthiness, some test `!== undefined`. So `maxCabins: 0` filters, while `minCabins: 0`, `guests: 0`, `minPriceMinor: 0` and `maxPriceMinor: 0` are silently dropped.
+
+Normalising them all to `!== undefined` is not a no-op: `minPriceMinor: 0` would then emit `price_from_minor >= 0`, which **excludes** listings with a NULL price. That is a visible change to what search returns.
+
+- [`search/repository.ts:577`](../packages/db/src/search/repository.ts) `whereClause`
+
+### F6 — Search cards and checkout quote different prepayments
+
+The search card advertises a flat 25% prepayment. Checkout resolves the real figure per listing through `resolvePaymentPolicy` — a listing override, then the provider's plan, then a 50% marketplace default.
+
+Confirmed in the running app: the card for _Liburna Sunseeker Predator 50_ says a €3,615 prepayment on €14,460 (25%), and its own detail page says **50% Booking Prepayment For Boat**.
+
+- [`presenters/listing.ts:19`](../packages/api/src/presenters/listing.ts) `CARD_PREPAYMENT_PCT`
+- [`services/pricing.ts:240`](../packages/api/src/services/pricing.ts) `resolvePaymentPolicy`
+
+The constant was named during the refactor so the disagreement is visible in the code, but its value was not changed. Fixing it means the card calling the real policy, which changes a number shown on every search result.
