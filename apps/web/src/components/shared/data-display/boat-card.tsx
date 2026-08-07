@@ -140,14 +140,16 @@ function Details({
       <div className="flex flex-col gap-3">
         <MarinaPopover marina={marina} />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="min-w-0 flex-1 truncate pb-1 text-[28px] font-medium leading-[1.1] text-foreground md:flex-none md:text-[32px]">
-            {name}
-          </h3>
-          <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
-            <Star className="fill-current" />
-            {rating}
-          </Chip>
+        <div className="flex flex-wrap items-start gap-2">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <h3 className="min-w-0 line-clamp-2 pb-1 text-[28px] font-medium leading-[1.1] break-words text-foreground md:text-[32px]">
+              {name}
+            </h3>
+            <Chip className="mt-0.5 shrink-0 bg-transparent p-1.5 text-gold">
+              <Star className="fill-current" />
+              {rating}
+            </Chip>
+          </div>
           <div className="flex w-full items-center gap-1.5 md:w-auto xl:hidden">
             <Chip variant="neutral">
               <Sailboat />
