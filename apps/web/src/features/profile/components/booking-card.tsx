@@ -32,7 +32,8 @@ const FORMATS = {
 } as const;
 
 /* TODO: every card opens the same hardcoded detail page until bookings carry a real listing id. */
-const DETAIL_HREF = "/yachts/lagoon-42";
+/* Sample data links to a seeded listing (Aurora Lagoon 42) until the bookings backend exists. */
+const DETAIL_HREF = "/yachts/aurora-lagoon-42-split";
 
 export type BookingCardProps = BoatCardProps;
 
