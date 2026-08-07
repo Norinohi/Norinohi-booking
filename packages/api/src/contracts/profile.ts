@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { currencySchema } from "./primitives";
+
 export const profileSchema = z.object({
   userId: z.string(),
   // Display name as Better Auth stores it, kept for the "Hello, John Doe!" greeting.
@@ -33,7 +35,7 @@ export const profileUpdateInputSchema = z.object({
   lastName: optionalText(100),
   phone: optionalText(32),
   locale: z.string().trim().min(2).max(10).optional(),
-  currency: z.string().trim().length(3).toUpperCase().optional(),
+  currency: currencySchema.optional(),
   marketingOptIn: z.boolean().optional(),
 });
 

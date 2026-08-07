@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { listingSummarySchema, moneySchema } from "./catalog";
+import { listingSummarySchema } from "./catalog";
+import { moneySchema } from "./primitives";
 
 /*
  * The six answers from "Help me plan my trip". Every value mirrors

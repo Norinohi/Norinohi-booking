@@ -1,5 +1,4 @@
-import { createInventoryProvider, providerCapabilitiesSchema } from "@yacht-charter/providers";
-import { z } from "zod";
+import { providerCapabilitiesSchema } from "@yacht-charter/providers";
 
 import {
   discountCreateInputSchema,
@@ -28,6 +27,7 @@ import {
   invoiceSettleInputSchema,
   invoiceSettleSchema,
 } from "../contracts/booking";
+import { emptyInputSchema } from "../contracts/primitives";
 import { sweepResultSchema } from "../contracts/maintenance";
 import {
   leadListInputSchema,
@@ -60,9 +60,6 @@ import {
 } from "../services/listing-price";
 import { withJsonBodyExample } from "./openapi-examples";
 
-const provider = createInventoryProvider();
-const emptyInputSchema = z.object({}).default({});
-
 export const adminRouter = {
   provider: {
     capabilities: adminProcedure
@@ -79,7 +76,7 @@ export const adminRouter = {
       })
       .input(emptyInputSchema)
       .output(providerCapabilitiesSchema)
-      .handler(() => provider.capabilities()),
+      .handler(({ context }) => context.provider.capabilities()),
   },
   booking: {
     cancel: adminProcedure

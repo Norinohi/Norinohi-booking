@@ -1,4 +1,3 @@
-import { db } from "@yacht-charter/db";
 import { listSearchFacets, listSearchSuggestions, searchListings } from "@yacht-charter/db/search";
 import { z } from "zod";
 
@@ -42,8 +41,8 @@ export const charterSearchRouter = {
     })
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
-    .handler(async ({ input }) => {
-      const results = await searchListings(db, input);
+    .handler(async ({ context, input }) => {
+      const results = await searchListings(context.db, input);
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
@@ -74,7 +73,7 @@ export const charterSearchRouter = {
     })
     .input(partialListingSearchInputSchema)
     .output(facetsSchema)
-    .handler(({ input }) => listSearchFacets(db, input)),
+    .handler(({ context, input }) => listSearchFacets(context.db, input)),
   mapMarkers: publicProcedure
     .route({
       method: "GET",
@@ -93,8 +92,8 @@ export const charterSearchRouter = {
     })
     .input(partialListingSearchInputSchema)
     .output(mapResultSchema)
-    .handler(async ({ input }) => {
-      const results = await searchListings(db, {
+    .handler(async ({ context, input }) => {
+      const results = await searchListings(context.db, {
         ...input,
         limit: input.limit ?? 500,
         page: undefined,
@@ -131,7 +130,7 @@ export const charterSearchRouter = {
     })
     .input(z.object({ query: z.string().default("") }))
     .output(z.array(suggestionSchema))
-    .handler(({ input }) => listSearchSuggestions(db, input.query)),
+    .handler(({ context, input }) => listSearchSuggestions(context.db, input.query)),
 };
 
 function effectivePeriod(input: {

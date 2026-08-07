@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-export const moneySchema = z.object({
-  amountMinor: z.number().int(),
-  currency: z.string().length(3),
-});
+import { currencySchema, moneySchema, paginationSchema } from "./primitives";
 
 const stringArrayParamSchema = z
   .union([z.string(), z.array(z.string())])
@@ -205,7 +202,7 @@ export const listingSearchInputBaseSchema = z.object({
   underTemporaryBooking: booleanParamSchema,
   depositInsurance: booleanParamSchema,
   petsAllowed: booleanParamSchema,
-  currency: z.string().length(3).default("EUR"),
+  currency: currencySchema.default("EUR"),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(500).optional(),
   page: z.coerce.number().int().min(1).optional(),
@@ -251,18 +248,6 @@ export const partialListingSearchInputSchema = listingSearchInputBaseSchema
   .partial()
   .default({})
   .superRefine(validateListingSearchInput);
-
-/** Shared by every numbered pager in the app (search, wishlist, bookings, admin tables). */
-export const paginationSchema = z.object({
-  page: z.number().int(),
-  pageSize: z.number().int(),
-  totalItems: z.number().int(),
-  totalPages: z.number().int(),
-  startItem: z.number().int(),
-  endItem: z.number().int(),
-  hasPreviousPage: z.boolean(),
-  hasNextPage: z.boolean(),
-});
 
 export const searchResultSchema = z.object({
   items: z.array(
@@ -347,7 +332,7 @@ export const availabilityCalendarInputSchema = z
     listingId: z.string(),
     from: dateStringSchema,
     to: dateStringSchema,
-    currency: z.string().length(3).default("EUR"),
+    currency: currencySchema.default("EUR"),
   })
   .superRefine((input, context) => {
     if (input.from >= input.to) {

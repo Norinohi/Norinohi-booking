@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { emptyInputSchema } from "../contracts/primitives";
 
 import {
   wishlistIdsSchema,
@@ -46,7 +46,7 @@ export const wishlistRouter = {
       successDescription: "Saved listing IDs for the current user.",
       spec: withJsonBodyExample({}),
     })
-    .input(z.object({}).default({}))
+    .input(emptyInputSchema)
     .output(wishlistIdsSchema)
     .handler(({ context }) => listWishlistIds(context.db, context.session.user.id)),
   add: protectedProcedure

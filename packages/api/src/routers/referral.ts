@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { emptyInputSchema } from "../contracts/primitives";
 
 import {
   creditBalanceSchema,
@@ -38,7 +38,7 @@ export const referralRouter = {
       successDescription: "Referral code and share path for the authenticated user.",
       spec: withJsonBodyExample({}),
     })
-    .input(z.object({}).default({}))
+    .input(emptyInputSchema)
     .output(referralCodeSchema)
     .handler(({ context }) => getOrCreateReferralCode(context.db, context.session.user.id)),
   rotateCode: protectedProcedure
@@ -53,7 +53,7 @@ export const referralRouter = {
       successDescription: "The newly issued referral code and share path.",
       spec: withJsonBodyExample({}),
     })
-    .input(z.object({}).default({}))
+    .input(emptyInputSchema)
     .output(referralCodeSchema)
     .handler(({ context }) => rotateReferralCode(context.db, context.session.user.id)),
   claim: protectedProcedure
@@ -85,7 +85,7 @@ export const referralRouter = {
       successDescription: "Referral stats and loyalty progress for the current user.",
       spec: withJsonBodyExample({}),
     })
-    .input(z.object({}).default({}))
+    .input(emptyInputSchema)
     .output(referralSummarySchema)
     .handler(({ context }) => referralSummary(context.db, context.session.user.id)),
   history: protectedProcedure
@@ -118,7 +118,7 @@ export const creditRouter = {
       successDescription: "Credit balance for the current user.",
       spec: withJsonBodyExample({}),
     })
-    .input(z.object({}).default({}))
+    .input(emptyInputSchema)
     .output(creditBalanceSchema)
     .handler(({ context }) => creditBalance(context.db, context.session.user.id)),
   ledger: protectedProcedure

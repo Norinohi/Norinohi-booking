@@ -1,5 +1,5 @@
 import type { RouterClient } from "@orpc/server";
-import { z } from "zod";
+import { emptyInputSchema } from "../contracts/primitives";
 
 import {
   profileDeactivateOutputSchema,
@@ -18,8 +18,6 @@ import { withJsonBodyExample } from "./openapi-examples";
 import { plannerRouter } from "./planner";
 import { creditRouter, referralRouter } from "./referral";
 import { wishlistRouter } from "./wishlist";
-
-const emptyInputSchema = z.object({}).default({});
 
 export const appRouter = {
   healthCheck: publicProcedure

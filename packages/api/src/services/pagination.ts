@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-import type { paginationSchema } from "../contracts/catalog";
+import type { paginationSchema } from "../contracts/primitives";
 
 type Pagination = z.infer<typeof paginationSchema>;
 

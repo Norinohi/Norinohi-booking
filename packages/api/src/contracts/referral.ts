@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-import { paginationSchema } from "./catalog";
+import {
+  moneySchema,
+  paginatedSchema,
+  paginationInputDefault,
+  paginationInputSchema,
+  paginationSchema,
+} from "./primitives";
 
 export const referralCodeSchema = z.object({
   code: z.string(),
@@ -24,11 +30,6 @@ export const referralClaimResultSchema = z.object({
 export type ReferralClaimResult = z.infer<typeof referralClaimResultSchema>;
 
 /* ------------------------------------------------------- summary and history */
-
-const moneySchema = z.object({
-  amountMinor: z.number().int(),
-  currency: z.string().length(3),
-});
 
 /**
  * Everything the Referrals screen needs above the history table: the four stat
@@ -59,15 +60,13 @@ export const referralSummarySchema = z.object({
   ),
 });
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 
 export const referralHistoryInputSchema = z
   .object({
-    page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
-    pageSize: z.coerce.number().int().min(1).max(50).default(DEFAULT_PAGE_SIZE),
+    ...paginationInputSchema({ maxPageSize: 50, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
-  .default({ page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE });
+  .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
 
 export const referralHistoryRowSchema = z.object({
   id: z.string(),
@@ -82,10 +81,7 @@ export const referralHistoryRowSchema = z.object({
   creditedAt: z.string().nullable(),
 });
 
-export const referralHistorySchema = z.object({
-  items: z.array(referralHistoryRowSchema),
-  pagination: paginationSchema,
-});
+export const referralHistorySchema = paginatedSchema(referralHistoryRowSchema);
 
 /* ------------------------------------------------------------------ credits */
 
@@ -97,10 +93,9 @@ export const creditBalanceSchema = z.object({
 
 export const creditLedgerInputSchema = z
   .object({
-    page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
-    pageSize: z.coerce.number().int().min(1).max(50).default(20),
+    ...paginationInputSchema({ maxPageSize: 50, defaultPageSize: 20 }),
   })
-  .default({ page: DEFAULT_PAGE, pageSize: 20 });
+  .default(paginationInputDefault(20));
 
 export const creditLedgerSchema = z.object({
   items: z.array(

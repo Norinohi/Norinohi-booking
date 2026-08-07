@@ -1,6 +1,8 @@
 import { providerQuoteSchema } from "@yacht-charter/providers";
 import { z } from "zod";
 
+import { dateRangeRefinement, moneySchema } from "./primitives";
+
 /**
  * The provider's quote plus our own id for it. `id` stays the provider's reference;
  * `quoteId` is what every later call (reprice, checkout) is keyed on, because only
@@ -37,9 +39,7 @@ export const persistedQuoteSchema = providerQuoteSchema.extend({
     ])
     .nullable(),
   /** Referral credit absorbed by this quote, redeemed for real at checkout. */
-  creditApplied: z
-    .object({ amountMinor: z.number().int(), currency: z.string().length(3) })
-    .nullable(),
+  creditApplied: moneySchema.nullable(),
   /** Every rule and discount that moved the price, in the order applied. */
   adjustments: z.array(appliedAdjustmentSchema),
 });
@@ -62,12 +62,8 @@ export const repriceInputSchema = z
     /** Spend available referral credit. Ignored for anonymous visitors. */
     applyCredit: z.boolean().optional(),
   })
-  .superRefine((value, ctx) => {
-    if (value.checkIn && value.checkOut && value.checkOut <= value.checkIn) {
-      ctx.addIssue({
-        code: "custom",
-        message: "checkOut must be after checkIn",
-        path: ["checkOut"],
-      });
-    }
-  });
+  .superRefine(
+    dateRangeRefinement("checkIn", "checkOut", "checkOut must be after checkIn", {
+      exclusive: true,
+    }),
+  );

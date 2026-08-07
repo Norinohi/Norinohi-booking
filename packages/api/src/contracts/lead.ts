@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { paginationSchema } from "./catalog";
+import { paginationInputDefault, paginationInputSchema, paginationSchema } from "./primitives";
 
 export const leadKindSchema = z.enum(["quote_request", "charter_expert", "consultation"]);
 export const leadStatusSchema = z.enum(["new", "contacted", "closed"]);
@@ -51,7 +51,6 @@ export const leadSchema = leadCreatedSchema.extend({
   handledAt: z.string().nullable(),
 });
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 
 export const leadListInputSchema = z
@@ -59,10 +58,9 @@ export const leadListInputSchema = z
     kind: leadKindSchema.optional(),
     status: leadStatusSchema.optional(),
     query: z.string().trim().max(200).optional(),
-    page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
-    pageSize: z.coerce.number().int().min(1).max(100).default(DEFAULT_PAGE_SIZE),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
-  .default({ page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE });
+  .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
 
 export const leadListSchema = z.object({
   items: z.array(leadSchema),

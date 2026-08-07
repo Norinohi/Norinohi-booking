@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { moneySchema, paginationSchema } from "./catalog";
+import {
+  dateRangeRefinement,
+  idSchema,
+  moneySchema,
+  paginatedSchema,
+  paginationInputDefault,
+  paginationInputSchema,
+} from "./primitives";
 
 export const paymentScheduleKindSchema = z.enum([
   "deposit",
@@ -71,7 +78,6 @@ export const bookingSummarySchema = z.object({
   createdAt: z.string(),
 });
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 
 export const bookingListInputSchema = z
@@ -80,22 +86,14 @@ export const bookingListInputSchema = z
     from: z.iso.date().optional(),
     to: z.iso.date().optional(),
     status: z.array(bookingStatusSchema).optional(),
-    page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
-    pageSize: z.coerce.number().int().min(1).max(50).default(DEFAULT_PAGE_SIZE),
+    ...paginationInputSchema({ maxPageSize: 50, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
-  .default({ page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE })
-  .superRefine((value, ctx) => {
-    if (value.from && value.to && value.to < value.from) {
-      ctx.addIssue({ code: "custom", message: "to must be on or after from", path: ["to"] });
-    }
-  });
+  .default(paginationInputDefault(DEFAULT_PAGE_SIZE))
+  .superRefine(dateRangeRefinement("from", "to", "to must be on or after from"));
 
-export const bookingListSchema = z.object({
-  items: z.array(bookingSummarySchema),
-  pagination: paginationSchema,
-});
+export const bookingListSchema = paginatedSchema(bookingSummarySchema);
 
-export const bookingIdInputSchema = z.object({ id: z.string().min(1) });
+export const bookingIdInputSchema = z.object({ id: idSchema });
 
 /**
  * Detail for "View Details". Travellers are deliberately absent: §10 forbids
@@ -305,10 +303,9 @@ export const checkoutConfirmSchema = z.object({
 export const invoiceListInputSchema = z
   .object({
     status: z.enum(["pending", "sent", "paid", "cancelled"]).optional(),
-    page: z.coerce.number().int().min(1).default(1),
-    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: 20 }),
   })
-  .default({ page: 1, pageSize: 20 });
+  .default(paginationInputDefault(20));
 
 export const invoiceAdminRowSchema = invoiceRequestSchema.extend({
   reference: z.string(),
@@ -317,10 +314,7 @@ export const invoiceAdminRowSchema = invoiceRequestSchema.extend({
   settledAt: z.string().nullable(),
 });
 
-export const invoiceListSchema = z.object({
-  items: z.array(invoiceAdminRowSchema),
-  pagination: paginationSchema,
-});
+export const invoiceListSchema = paginatedSchema(invoiceAdminRowSchema);
 
 export const invoiceSettleInputSchema = z.object({
   id: z.string().min(1),

@@ -1,5 +1,4 @@
 import { ORPCError } from "@orpc/server";
-import { db } from "@yacht-charter/db";
 import {
   getListingDetailByIdOrSlug,
   listListingReviews,
@@ -33,8 +32,8 @@ export const listingsRouter = {
     })
     .input(idInputSchema)
     .output(listingDetailSchema)
-    .handler(async ({ input }) => {
-      const listing = await getListingDetailByIdOrSlug(db, input.id);
+    .handler(async ({ context, input }) => {
+      const listing = await getListingDetailByIdOrSlug(context.db, input.id);
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
@@ -65,7 +64,7 @@ export const listingsRouter = {
         }),
       ),
     )
-    .handler(({ input }) => listListingReviews(db, input.listingId)),
+    .handler(({ context, input }) => listListingReviews(context.db, input.listingId)),
   similar: publicProcedure
     .route({
       method: "GET",
@@ -82,8 +81,8 @@ export const listingsRouter = {
     })
     .input(listingIdInputSchema)
     .output(z.array(listingSummarySchema))
-    .handler(async ({ input }) => {
-      const listings = await listSimilarListings(db, input.listingId);
+    .handler(async ({ context, input }) => {
+      const listings = await listSimilarListings(context.db, input.listingId);
       return listings.map((listing) => presentListingSummary(listing));
     }),
 };

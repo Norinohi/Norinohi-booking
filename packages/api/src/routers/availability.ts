@@ -1,15 +1,11 @@
-import { db } from "@yacht-charter/db";
 import { listAvailabilityCalendar } from "@yacht-charter/db/search";
 import { quoteRequestWithDiscountSchema } from "@yacht-charter/providers";
-import { createInventoryProvider } from "@yacht-charter/providers";
 
 import { availabilityCalendarInputSchema, availabilityCalendarSchema } from "../contracts/catalog";
 import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
 import { publicProcedure } from "../index";
 import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
-
-const provider = createInventoryProvider();
 
 export const availabilityRouter = {
   calendar: publicProcedure
@@ -31,7 +27,7 @@ export const availabilityRouter = {
     })
     .input(availabilityCalendarInputSchema)
     .output(availabilityCalendarSchema)
-    .handler(({ input }) => listAvailabilityCalendar(db, input)),
+    .handler(({ context, input }) => listAvailabilityCalendar(context.db, input)),
   quote: publicProcedure
     .route({
       method: "POST",
@@ -54,7 +50,7 @@ export const availabilityRouter = {
     .input(quoteRequestWithDiscountSchema)
     .output(persistedQuoteSchema)
     .handler(({ context, input }) =>
-      createQuote(context.db, provider, input, context.session?.user.id ?? null),
+      createQuote(context.db, context.provider, input, context.session?.user.id ?? null),
     ),
   reprice: publicProcedure
     .route({
@@ -76,7 +72,7 @@ export const availabilityRouter = {
     .input(repriceInputSchema)
     .output(persistedQuoteSchema)
     .handler(({ context, input }) =>
-      repriceQuote(context.db, provider, input.quoteId, context.session?.user.id ?? null, {
+      repriceQuote(context.db, context.provider, input.quoteId, context.session?.user.id ?? null, {
         checkIn: input.checkIn,
         checkOut: input.checkOut,
         guests: input.guests,

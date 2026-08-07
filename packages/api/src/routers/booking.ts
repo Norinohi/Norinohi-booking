@@ -1,7 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { createInventoryProvider } from "@yacht-charter/providers";
-
 import {
   bookingCancelInputSchema,
   bookingCancelSchema,
@@ -32,8 +30,6 @@ import {
 import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
 import { confirmCheckout } from "../services/payment";
 import { withJsonBodyExample } from "./openapi-examples";
-
-const provider = createInventoryProvider();
 
 export const bookingRouter = {
   list: protectedProcedure
@@ -131,7 +127,7 @@ export const checkoutRouter = {
     .handler(({ context, input }) =>
       createHold(
         context.db,
-        provider,
+        context.provider,
         context.session.user.id,
         input.quoteId,
         // A client that does not send one still gets single-call safety; only a

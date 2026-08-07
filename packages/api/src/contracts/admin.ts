@@ -1,6 +1,15 @@
 import { z } from "zod";
 
-import { moneySchema, paginationSchema } from "./catalog";
+import {
+  currencySchema,
+  dateRangeRefinement,
+  idSchema,
+  isoDateSchema,
+  moneySchema,
+  paginatedSchema,
+  paginationInputDefault,
+  paginationInputSchema,
+} from "./primitives";
 
 /* ---------------------------------------------------------------- discounts */
 
@@ -43,31 +52,32 @@ export const discountSchema = z.object({
   createdAt: z.string(),
 });
 
-const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 
 export const discountListInputSchema = z
   .object({
     query: z.string().trim().max(200).optional(),
     status: discountStatusSchema.optional(),
-    page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
-    pageSize: z.coerce.number().int().min(1).max(100).default(DEFAULT_PAGE_SIZE),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
-  .default({ page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE });
+  .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
 
-export const discountListSchema = z.object({
-  items: z.array(discountSchema),
-  pagination: paginationSchema,
-});
+export const discountListSchema = paginatedSchema(discountSchema);
 
-export const discountIdInputSchema = z.object({ id: z.string().min(1) });
+export const discountIdInputSchema = z.object({ id: idSchema });
 
 const targetInputSchema = z.object({
   targetType: discountTargetTypeSchema,
   targetId: z.string().min(1).nullable().optional(),
 });
 
-const isoDate = z.iso.date();
+const isoDate = isoDateSchema;
+
+const endsAtNotBeforeStartsAt = dateRangeRefinement(
+  "startsAt",
+  "endsAt",
+  "endsAt must be on or after startsAt",
+);
 
 const discountFieldsSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -83,7 +93,7 @@ const discountFieldsSchema = z.object({
   type: discountTypeSchema,
   valuePct: z.number().min(0).max(100).nullable().optional(),
   valueMinor: z.number().int().min(0).nullable().optional(),
-  currency: z.string().trim().length(3).toUpperCase().optional(),
+  currency: currencySchema.optional(),
   startsAt: isoDate.nullable().optional(),
   endsAt: isoDate.nullable().optional(),
   usageLimit: z.number().int().min(1).nullable().optional(),
@@ -131,13 +141,7 @@ const validateDiscountFields = (
     }
   }
 
-  if (value.startsAt && value.endsAt && value.endsAt < value.startsAt) {
-    ctx.addIssue({
-      code: "custom",
-      message: "endsAt must be on or after startsAt",
-      path: ["endsAt"],
-    });
-  }
+  endsAtNotBeforeStartsAt(value, ctx);
 
   for (const [index, target] of (value.targets ?? []).entries()) {
     const needsId = target.targetType !== "all";
@@ -191,10 +195,9 @@ export const listingPriceListInputSchema = z
     /** Matched against the yacht category name, as stored on the search doc. */
     category: z.string().trim().max(100).optional(),
     location: z.string().trim().max(100).optional(),
-    page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
-    pageSize: z.coerce.number().int().min(1).max(100).default(DEFAULT_PAGE_SIZE),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: DEFAULT_PAGE_SIZE }),
   })
-  .default({ page: DEFAULT_PAGE, pageSize: DEFAULT_PAGE_SIZE });
+  .default(paginationInputDefault(DEFAULT_PAGE_SIZE));
 
 export const listingPriceRowSchema = z.object({
   listingId: z.string(),
@@ -210,10 +213,7 @@ export const listingPriceRowSchema = z.object({
   activeRuleLabel: z.string().nullable(),
 });
 
-export const listingPriceListSchema = z.object({
-  items: z.array(listingPriceRowSchema),
-  pagination: paginationSchema,
-});
+export const listingPriceListSchema = paginatedSchema(listingPriceRowSchema);
 
 export const listingPriceFiltersSchema = z.object({
   categories: z.array(z.object({ value: z.string(), label: z.string() })),
@@ -225,21 +225,13 @@ export const listingPriceUpdateInputSchema = z
     listingId: z.string().min(1),
     /** The absolute price the listing should show, in minor units. */
     newPriceMinor: z.number().int().min(0),
-    currency: z.string().trim().length(3).toUpperCase(),
+    currency: currencySchema,
     // The client wants overrides scoped to part of a season. The Figma modal has no
     // date inputs yet, so both are optional and an open-ended override is valid.
     startsAt: isoDate.nullable().optional(),
     endsAt: isoDate.nullable().optional(),
     note: z.string().trim().max(500).optional(),
   })
-  .superRefine((value, ctx) => {
-    if (value.startsAt && value.endsAt && value.endsAt < value.startsAt) {
-      ctx.addIssue({
-        code: "custom",
-        message: "endsAt must be on or after startsAt",
-        path: ["endsAt"],
-      });
-    }
-  });
+  .superRefine(endsAtNotBeforeStartsAt);
 
-export const listingPriceClearInputSchema = z.object({ listingId: z.string().min(1) });
+export const listingPriceClearInputSchema = z.object({ listingId: idSchema });
