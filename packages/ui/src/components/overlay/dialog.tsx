@@ -27,11 +27,22 @@ function DialogContent({
   children,
   showClose = false,
   mobileSheet = false,
+  backdropClassName,
   ...props
-}: DialogPrimitive.Popup.Props & { showClose?: boolean; mobileSheet?: boolean }) {
+}: DialogPrimitive.Popup.Props & {
+  showClose?: boolean;
+  mobileSheet?: boolean;
+  /** Restyle the dimmed backdrop, e.g. `max-md:bg-transparent` for page-like mobile overlays. */
+  backdropClassName?: string;
+}) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-overlay data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+      <DialogPrimitive.Backdrop
+        className={cn(
+          "fixed inset-0 z-50 bg-overlay data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          backdropClassName,
+        )}
+      />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
@@ -49,6 +60,7 @@ function DialogContent({
         {children}
         {showClose ? (
           <DialogPrimitive.Close
+            data-slot="dialog-close"
             aria-label="Close"
             className="absolute top-4 right-4 cursor-pointer text-natural-400 transition-colors hover:text-foreground [&_svg]:size-6"
           >
