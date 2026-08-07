@@ -130,6 +130,7 @@
     },
     "boatCard": {
       "save": "Guardar en favoritos",
+      "remove": "Quitar de favoritos",
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
@@ -846,6 +847,7 @@
     "share": "Compartir",
     "seeOnMap": "Ver en el mapa",
     "addToWishlist": "Añadir a favoritos",
+    "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
     "gallery": {
       "close": "Cerrar",
@@ -1043,6 +1045,15 @@
     "clearDates": "Borrar fechas",
     "emptyTitle": "Aún no hay yates",
     "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí."
+  },
+  "Wishlist": {
+    "title": "Tus favoritos",
+    "back": "Volver",
+    "emptyTitle": "Aún no hay yates guardados",
+    "emptyDescription": "Empieza a explorar y guarda tus favoritos para más adelante",
+    "someUnavailable": "Algunos de tus yates guardados ya no están disponibles.",
+    "toggleFailed": "No se pudieron actualizar tus favoritos. Inténtalo de nuevo.",
+    "merged": "Se {count, plural, one {añadió # yate guardado} other {añadieron # yates guardados}} a tu cuenta."
   },
   "Auth": {
     "SignIn": {

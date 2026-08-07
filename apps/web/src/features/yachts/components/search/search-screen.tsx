@@ -116,8 +116,8 @@ export default function SearchScreen() {
             ) : boats.length === 0 ? (
               <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
             ) : (
-              boats.map(({ id, ...boat }, index) => (
-                <BoatCard key={id} {...boat} priority={index === 0} />
+              boats.map((boat, index) => (
+                <BoatCard key={boat.id} {...boat} priority={index === 0} />
               ))
             )}
 

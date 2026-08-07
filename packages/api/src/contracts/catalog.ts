@@ -102,6 +102,11 @@ export const listingSummarySchema = z.object({
   }),
 });
 
+export const listingsByIdsInputSchema = z.object({
+  /* Mirrors wishlistMergeInputSchema's cap — this is the guest wishlist's hydration path. */
+  listingIds: z.array(z.string().min(1)).max(50),
+});
+
 export const listingDetailSchema = listingSummarySchema.extend({
   description: z.string(),
   overview: z.array(includedItemSchema.extend({ value: z.string() })),

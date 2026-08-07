@@ -8,6 +8,7 @@ import { Bookmark, Menu, X } from "lucide-react";
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import LanguageSwitcher from "./language-switcher";
@@ -32,10 +33,13 @@ const NAV_LINKS = [
 ] as const;
 
 const PLAN_MY_TRIP_HREF = "/plan-my-trip" as Route;
+const WISHLIST_HREF = "/wishlist" as Route;
 
 export default function NavigationBar() {
   const t = useTranslations("Layout.Nav");
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const onWishlist = pathname === WISHLIST_HREF;
 
   return (
     <header className="sticky top-0 z-40 border-b border-natural-50 bg-background">
@@ -79,8 +83,15 @@ export default function NavigationBar() {
         {/* Right group: icon cluster (always) + CTAs (2xl+) */}
         <div className="flex items-center gap-1.5 2xl:gap-5">
           <div className="flex items-center gap-1.5">
-            <IconButton variant="subtle" aria-label={t("saved")} className="rounded-sm">
-              <Bookmark className="size-6" />
+            <IconButton
+              variant="subtle"
+              nativeButton={false}
+              render={<Link href={WISHLIST_HREF} />}
+              aria-label={t("saved")}
+              aria-current={onWishlist ? "page" : undefined}
+              className={cn("rounded-sm", onWishlist && "text-brand hover:bg-brand-50")}
+            >
+              <Bookmark className={cn("size-6", onWishlist && "fill-current")} />
             </IconButton>
             <UserMenu />
             <LanguageSwitcher />

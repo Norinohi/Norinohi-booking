@@ -9,7 +9,7 @@ import {
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Bookmark, Sailboat, Star, Users } from "lucide-react";
+import { Sailboat, Star, Users } from "lucide-react";
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -18,6 +18,7 @@ import type { BoatCardBadge } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import PrepaymentNote from "@/components/shared/data-display/prepayment-note";
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
+import { WishlistButton } from "@/features/wishlist";
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
 const DETAIL_HREF = "/yachts/lagoon-42" as Route;
@@ -45,6 +46,8 @@ const LAYOUT = {
   },
 } as const;
 export type MapBoatCardProps = {
+  /** Listing id — absent on cards rendering sample data, which leaves the bookmark inert. */
+  id?: string;
   images: string[];
   imageAlt?: string;
   badges?: BoatCardBadge[];
@@ -63,6 +66,7 @@ export type MapBoatCardProps = {
 };
 
 export default function MapBoatCard({
+  id,
   images,
   imageAlt,
   badges,
@@ -125,15 +129,7 @@ export default function MapBoatCard({
               </Chip>
             ))}
           </div>
-          <Button
-            type="button"
-            variant="subtle"
-            size="icon-md"
-            aria-label={t("save")}
-            className="shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60"
-          >
-            <Bookmark />
-          </Button>
+          <WishlistButton listingId={id} />
         </div>
       </div>
 

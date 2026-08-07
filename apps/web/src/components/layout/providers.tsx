@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { MotionConfig } from "motion/react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
+import { WishlistProvider } from "@/features/wishlist";
 import { queryClient } from "@/utils/orpc";
 
 import { ThemeProvider } from "./theme-provider";
@@ -16,7 +17,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <NuqsAdapter>
         <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
           <QueryClientProvider client={queryClient}>
-            {children}
+            <WishlistProvider>{children}</WishlistProvider>
             <ReactQueryDevtools />
           </QueryClientProvider>
           <Toaster richColors />

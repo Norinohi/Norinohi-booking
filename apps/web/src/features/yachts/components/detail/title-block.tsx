@@ -2,10 +2,11 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import { Bookmark, Map, Sailboat, Share, Star, Users } from "lucide-react";
+import { Map, Sailboat, Share, Star, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
+import { WishlistButton } from "@/features/wishlist";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
 import { slugToLabel } from "../../lib/slug-to-label";
@@ -62,10 +63,11 @@ export default function TitleBlock() {
           <Map />
           {tDetail("seeOnMap")}
         </Button>
-        <Button variant="brand" className={`${ACTION} max-md:order-first`}>
-          <Bookmark />
-          {tDetail("addToWishlist")}
-        </Button>
+        <WishlistButton
+          listingId={data.id}
+          variant="detail"
+          className={`${ACTION} max-md:order-first`}
+        />
       </div>
     </div>
   );

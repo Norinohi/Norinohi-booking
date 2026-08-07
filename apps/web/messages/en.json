@@ -130,6 +130,7 @@
     },
     "boatCard": {
       "save": "Save to wishlist",
+      "remove": "Remove from wishlist",
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
@@ -846,6 +847,7 @@
     "share": "Share",
     "seeOnMap": "See On Map",
     "addToWishlist": "Add To Wishlist",
+    "removeFromWishlist": "Remove From Wishlist",
     "included": "Included",
     "gallery": {
       "close": "Close",
@@ -1043,6 +1045,15 @@
     "clearDates": "Clear dates",
     "emptyTitle": "No yachts yet",
     "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here."
+  },
+  "Wishlist": {
+    "title": "Your Wishlist",
+    "back": "Back",
+    "emptyTitle": "No saved yachts yet",
+    "emptyDescription": "Start exploring and save your favorites for later",
+    "someUnavailable": "Some of your saved yachts are no longer available.",
+    "toggleFailed": "Couldn't update your wishlist. Please try again.",
+    "merged": "{count, plural, one {# saved yacht} other {# saved yachts}} added to your account."
   },
   "Auth": {
     "SignIn": {
