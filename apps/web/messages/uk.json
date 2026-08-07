@@ -1113,5 +1113,108 @@
       "completed": "Завершено",
       "pending": "Очікує"
     }
+  },
+  "Discounts": {
+    "title": "Менеджер знижок і цін",
+    "subtitle": "Керуйте промокодами та цінами на яхти.",
+    "create": "Створити знижку",
+    "tabs": {
+      "discounts": "Знижки",
+      "managePrices": "Керування цінами"
+    },
+    "table": {
+      "name": "Назва знижки",
+      "code": "Код",
+      "typeValue": "Тип і значення",
+      "appliesTo": "Застосовується до",
+      "status": "Статус",
+      "usage": "Використання"
+    },
+    "status": {
+      "active": "Активна",
+      "inactive": "Неактивна"
+    },
+    "type": {
+      "percentage": "Відсоток",
+      "fixed": "Фіксована"
+    },
+    "applies": {
+      "allYachts": "Всі яхти",
+      "allCatamarans": "Всі катамарани",
+      "allGullets": "Всі гулети",
+      "allMotorboats": "Всі моторні човни",
+      "allMotorYachts": "Всі моторні яхти",
+      "allSailboats": "Всі вітрильники",
+      "specific": "Окремі яхти"
+    },
+    "yachtTypes": {
+      "catamaran": "Катамаран",
+      "gulet": "Гулет",
+      "motorYacht": "Моторна яхта",
+      "powerCatamaran": "Моторний катамаран",
+      "sailboat": "Вітрильник",
+      "motorBoat": "Моторний човен"
+    },
+    "dialog": {
+      "createTitle": "Створити нову знижку",
+      "editTitle": "Редагувати знижку",
+      "name": {
+        "label": "Назва знижки",
+        "placeholder": "напр. Summer View 2026"
+      },
+      "code": {
+        "label": "Код знижки",
+        "placeholder": "напр. SUMMER2026"
+      },
+      "type": {
+        "label": "Тип знижки"
+      },
+      "price": {
+        "label": "Значення знижки",
+        "placeholder": "10"
+      },
+      "expiration": {
+        "label": "Дата завершення",
+        "placeholder": "Будь-які дати"
+      },
+      "appliesTo": {
+        "label": "Тип знижки"
+      },
+      "search": {
+        "placeholder": "Пошук яхти"
+      },
+      "submitCreate": "Створити знижку",
+      "submitSave": "Зберегти зміни",
+      "created": "Знижку створено",
+      "saved": "Знижку оновлено",
+      "errors": {
+        "nameRequired": "Вкажіть назву знижки",
+        "codeRequired": "Вкажіть код знижки",
+        "priceRequired": "Вкажіть значення знижки"
+      }
+    },
+    "prices": {
+      "search": "Пошук за назвою",
+      "allTypes": "Всі типи",
+      "allLocations": "Всі локації",
+      "table": {
+        "yacht": "Яхта",
+        "location": "Локація",
+        "basePrice": "Базова ціна",
+        "currentPrice": "Поточна ціна",
+        "edit": "Редагувати ціну"
+      },
+      "dialog": {
+        "title": "Редагувати ціну",
+        "basePrice": "Базова ціна",
+        "newPrice": "Нова ціна",
+        "newPricePlaceholder": "напр. €14,539",
+        "submit": "Оновити ціну",
+        "updated": "Ціну оновлено",
+        "errors": {
+          "priceRequired": "Вкажіть нову ціну"
+        }
+      }
+    }
   }
 }
