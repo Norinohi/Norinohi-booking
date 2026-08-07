@@ -4,6 +4,12 @@ import { createInventoryProvider, type InventoryProvider } from "@yacht-charter/
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 
 import type { Database } from "../context";
+import {
+  DEAD_QUOTE_SWEEP,
+  HOLD_SWEEP,
+  assertTransition,
+  type BookingStatus,
+} from "./booking-state";
 
 export type SweepResult = {
   quotesExpired: number;
@@ -69,7 +75,7 @@ async function expireHolds(
     .from(booking)
     .where(
       and(
-        inArray(booking.status, ["OPTION_HELD", "OPTION_PENDING"]),
+        inArray(booking.status, [...HOLD_SWEEP.from]),
         isNotNull(booking.holdExpiresAt),
         lte(booking.holdExpiresAt, now),
       ),
@@ -90,9 +96,11 @@ async function expireHolds(
       }
     }
 
+    assertTransition(candidate.status as BookingStatus, HOLD_SWEEP.to);
+
     const [updated] = await db
       .update(booking)
-      .set({ status: "OPTION_EXPIRED" })
+      .set({ status: HOLD_SWEEP.to })
       .where(and(eq(booking.id, candidate.id), eq(booking.status, candidate.status)))
       .returning({ id: booking.id });
 
@@ -126,14 +134,16 @@ async function expireBookingsWithDeadQuotes(db: Database, now: Date): Promise<nu
     .select({ id: booking.id, status: booking.status })
     .from(booking)
     .innerJoin(quote, eq(quote.id, booking.quoteId))
-    .where(and(inArray(booking.status, ["QUOTED", "OPTION_PENDING"]), lte(quote.expiresAt, now)));
+    .where(and(inArray(booking.status, [...DEAD_QUOTE_SWEEP.from]), lte(quote.expiresAt, now)));
 
   let expired = 0;
 
   for (const candidate of candidates) {
+    assertTransition(candidate.status as BookingStatus, DEAD_QUOTE_SWEEP.to);
+
     const [updated] = await db
       .update(booking)
-      .set({ status: "QUOTE_EXPIRED" })
+      .set({ status: DEAD_QUOTE_SWEEP.to })
       .where(and(eq(booking.id, candidate.id), eq(booking.status, candidate.status)))
       .returning({ id: booking.id });
 

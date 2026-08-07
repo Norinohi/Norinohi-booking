@@ -35,7 +35,18 @@ const PRE_CONFIRMED: readonly BookingStatus[] = [
 const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
   DRAFT: ["QUOTED", "CANCELLED"],
   QUOTED: ["OPTION_PENDING", "PAYMENT_PENDING", "QUOTE_EXPIRED", "CANCELLED"],
-  OPTION_PENDING: ["OPTION_HELD", "OPTION_EXPIRED", "PROVIDER_REJECTED", "CANCELLED"],
+  // QUOTE_EXPIRED covers an option request that never came back — the process died
+  // between asking the provider and hearing an answer. Such a booking holds no
+  // option (provider_option_id and hold_expires_at are both still null), so the
+  // sweeper reaches it through the quote, not the hold, and OPTION_EXPIRED would
+  // claim a hold lapsed that was never obtained.
+  OPTION_PENDING: [
+    "OPTION_HELD",
+    "OPTION_EXPIRED",
+    "QUOTE_EXPIRED",
+    "PROVIDER_REJECTED",
+    "CANCELLED",
+  ],
   OPTION_HELD: ["PAYMENT_PENDING", "OPTION_EXPIRED", "CANCELLED"],
   // A failed payment can be retried, which returns the booking to PAYMENT_PENDING.
   PAYMENT_PENDING: ["CONFIRMING", "PAYMENT_FAILED", "QUOTE_EXPIRED", "OPTION_EXPIRED", "CANCELLED"],
@@ -51,6 +62,26 @@ const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
   REFUND_PENDING: ["REFUNDED"],
   REFUNDED: [],
 };
+
+/*
+ * What the expiry sweeper moves, and to what.
+ *
+ * These live here rather than in expiry.ts because they are claims about
+ * transitions and have to answer to the table above. Kept apart, they drifted:
+ * the sweeper picked OPTION_PENDING with a SQL filter and wrote QUOTE_EXPIRED
+ * with a literal, and neither half was visibly wrong on its own.
+ */
+export const HOLD_SWEEP = {
+  from: ["OPTION_HELD", "OPTION_PENDING"],
+  to: "OPTION_EXPIRED",
+} as const satisfies SweepSpec;
+
+export const DEAD_QUOTE_SWEEP = {
+  from: ["QUOTED", "OPTION_PENDING"],
+  to: "QUOTE_EXPIRED",
+} as const satisfies SweepSpec;
+
+type SweepSpec = { from: readonly BookingStatus[]; to: BookingStatus };
 
 export function canTransition(from: BookingStatus, to: BookingStatus): boolean {
   return TRANSITIONS[from].includes(to);

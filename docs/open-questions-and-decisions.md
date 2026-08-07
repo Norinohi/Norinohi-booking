@@ -172,7 +172,25 @@ Worse, the two are in **separate** transactions: `redeemFor` opens one for the d
 
 **Decision needed:** how much overspend is acceptable. `SELECT … FOR UPDATE` on the discount row and the user's ledger, both inside one transaction with the booking, is the straightforward fix; it costs a lock on a hot row at checkout.
 
-### F4 — Five booking-status writes bypass the state machine
+### F4 — Booking-status writes bypass the state machine · **the illegal transition is FIXED; three writes still unchecked**
+
+**Resolved part.** `expireBookingsWithDeadQuotes` swept bookings in `["QUOTED", "OPTION_PENDING"]` to `QUOTE_EXPIRED`, and `OPTION_PENDING → QUOTE_EXPIRED` was not in the §6 table. The sweeper was right and the table was missing the edge, so the edge was added.
+
+The deciding detail: `hold_expires_at` is only written on the move to `OPTION_HELD`, and `expireHolds` requires it to be non-null. So an `OPTION_PENDING` booking is unreachable from the hold sweep — it holds no option at all (`provider_option_id` and `hold_expires_at` both still null) and is reached only through its quote. Calling that `OPTION_EXPIRED` would claim a hold lapsed that was never obtained; `QUOTE_EXPIRED` is what actually happened. Confirmed live: sweeping such a booking reports `holdsExpired: 0, bookingsQuoteExpired: 1`.
+
+Both expiry sweeps now declare their `from`/`to` pairing as a constant in `booking-state.ts` next to the table, go through `assertTransition`, and are covered by [`services/expiry-sweeps.test.ts`](../packages/api/src/services/expiry-sweeps.test.ts) — which fails with `expected [ 'OPTION_PENDING' ] to deeply equal []` if the edge is removed again. The pairing was invisible before because a SQL status filter in one place and a status literal in another are each individually reasonable.
+
+**Still open.** Three writes remain unchecked against the table, all in the provider-confirmation path. Each is table-legal today and each does compare-and-set on the previous status, so this is drift protection rather than a live bug:
+
+- [`services/booking-confirm.ts:102`](../packages/api/src/services/booking-confirm.ts) → `CONFIRMED`
+- [`services/booking-confirm.ts:138`](../packages/api/src/services/booking-confirm.ts) → `PROVIDER_REJECTED`
+- [`services/booking-confirm.ts:143`](../packages/api/src/services/booking-confirm.ts) → `REFUND_PENDING`
+- [`services/invoice.ts:187`](../packages/api/src/services/invoice.ts) → `CANCELLED`
+
+Routing these through `assertTransition` too would make `booking-state.ts`'s claim to be the only writer finally true. It is deferred only because `booking.ts`'s `transition()` helper should move into `booking-state.ts` at the same time, which touches the checkout path.
+
+<details>
+<summary>Original finding, for context</summary>
 
 `booking-state.ts` says nothing outside it should assign `booking.status`. Five writes do, with no `assertTransition` at all:
 
@@ -191,7 +209,9 @@ So this is two decisions, not one. First: is a booking that is mid-option-reques
 
 The 14×14 table is pinned in [`services/booking-state.test.ts`](../packages/api/src/services/booking-state.test.ts), so whichever way the first question goes, the change is visible as a test diff.
 
-Related: `assertTransition` throws a plain `InvalidTransitionError`, and only `booking.ts` catches it. The same guard therefore surfaces as a 409 on one path and a 500 on another (`checkout.ts`, `payment.ts`).
+</details>
+
+Related and still open: `assertTransition` throws a plain `InvalidTransitionError`, and only `booking.ts` catches it. The same guard therefore surfaces as a 409 on one path and a 500 on another (`checkout.ts`, `payment.ts`).
 
 ### F5 — Search filters treat zero inconsistently
 
