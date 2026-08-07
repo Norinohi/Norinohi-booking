@@ -42,14 +42,9 @@ export async function confirmBookingWithProvider(
     return { outcome: "skipped", reason: `Cannot confirm a booking in ${current}` };
   }
 
-  const [claimed] = await db
-    .update(booking)
-    .set({ status: "CONFIRMING" })
-    .where(and(eq(booking.id, bookingId), eq(booking.status, current)))
-    .returning({ id: booking.id });
-
-  // Compare-and-set: a concurrent webhook got here first.
-  if (!claimed) return { outcome: "skipped", reason: "Booking changed while confirming" };
+  if (!(await claimForConfirming(db, bookingId, current))) {
+    return { outcome: "skipped", reason: "Booking changed while confirming" };
+  }
 
   try {
     const reservation = await provider.confirmBooking({
@@ -61,30 +56,7 @@ export async function confirmBookingWithProvider(
       },
     });
 
-    await db
-      .update(booking)
-      .set({
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-        providerReservationId: reservation.providerReservationId ?? null,
-        providerStatus: reservation.status,
-      })
-      .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
-
-    await db.insert(providerReservationEvent).values({
-      bookingId,
-      kind: "confirm_succeeded",
-      provider: row.provider,
-      providerReference: reservation.providerReservationId ?? null,
-      payload: reservation as unknown as Record<string, unknown>,
-    });
-
-    // "Once they complete their trip, you receive €100 credits." Its own
-    // transaction, so a referral bookkeeping problem can never unwind a booking
-    // that is already confirmed and paid for.
-    await db.transaction(async (tx) => {
-      await awardReferralCredit(tx, row.userId, bookingId);
-    });
+    await markConfirmed(db, bookingId, row.provider, row.userId, reservation);
 
     return {
       outcome: "confirmed",
@@ -92,24 +64,89 @@ export async function confirmBookingWithProvider(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Provider rejected the booking";
-
-    await db
-      .update(booking)
-      .set({ status: "PROVIDER_REJECTED", cancelReason: message })
-      .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
-
-    await db
-      .update(booking)
-      .set({ status: "REFUND_PENDING" })
-      .where(and(eq(booking.id, bookingId), eq(booking.status, "PROVIDER_REJECTED")));
-
-    await db.insert(providerReservationEvent).values({
-      bookingId,
-      kind: "confirm_failed",
-      provider: row.provider,
-      payload: { message },
-    });
+    await markRejected(db, bookingId, row.provider, message);
 
     return { outcome: "rejected", message };
   }
+}
+
+/**
+ * Compare-and-set on the status: whoever wins moves the booking to CONFIRMING and
+ * owns the provider call. A concurrent webhook that got here first loses here
+ * rather than by committing the same booking twice.
+ */
+async function claimForConfirming(
+  db: Database,
+  bookingId: string,
+  from: BookingStatus,
+): Promise<boolean> {
+  const [claimed] = await db
+    .update(booking)
+    .set({ status: "CONFIRMING" })
+    .where(and(eq(booking.id, bookingId), eq(booking.status, from)))
+    .returning({ id: booking.id });
+
+  return Boolean(claimed);
+}
+
+async function markConfirmed(
+  db: Database,
+  bookingId: string,
+  provider: string,
+  userId: string,
+  reservation: Awaited<ReturnType<InventoryProvider["confirmBooking"]>>,
+): Promise<void> {
+  await db
+    .update(booking)
+    .set({
+      status: "CONFIRMED",
+      confirmedAt: new Date(),
+      providerReservationId: reservation.providerReservationId ?? null,
+      providerStatus: reservation.status,
+    })
+    .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
+
+  await db.insert(providerReservationEvent).values({
+    bookingId,
+    kind: "confirm_succeeded",
+    provider,
+    providerReference: reservation.providerReservationId ?? null,
+    payload: reservation as unknown as Record<string, unknown>,
+  });
+
+  // "Once they complete their trip, you receive €100 credits." Its own
+  // transaction, so a referral bookkeeping problem can never unwind a booking
+  // that is already confirmed and paid for.
+  await db.transaction(async (tx) => {
+    await awardReferralCredit(tx, userId, bookingId);
+  });
+}
+
+/**
+ * Straight on to REFUND_PENDING rather than stopping at PROVIDER_REJECTED: we
+ * are holding money for a booking the provider refused, and that debt has to be
+ * visible to ops rather than quietly kept.
+ */
+async function markRejected(
+  db: Database,
+  bookingId: string,
+  provider: string,
+  message: string,
+): Promise<void> {
+  await db
+    .update(booking)
+    .set({ status: "PROVIDER_REJECTED", cancelReason: message })
+    .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
+
+  await db
+    .update(booking)
+    .set({ status: "REFUND_PENDING" })
+    .where(and(eq(booking.id, bookingId), eq(booking.status, "PROVIDER_REJECTED")));
+
+  await db.insert(providerReservationEvent).values({
+    bookingId,
+    kind: "confirm_failed",
+    provider,
+    payload: { message },
+  });
 }

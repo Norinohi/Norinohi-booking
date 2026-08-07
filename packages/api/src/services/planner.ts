@@ -61,6 +61,116 @@ const VIBE_CATEGORY: Record<string, string | null> = {
   party: "Catamaran",
 };
 
+type TripBrief = {
+  destination: Destination;
+  group: (typeof GROUP_SIZES)[keyof typeof GROUP_SIZES] | undefined;
+  budget: (typeof BUDGETS)[keyof typeof BUDGETS] | undefined;
+  category: string | null;
+  style: Recommendation["style"];
+  durationDays: number;
+  weeks: number;
+  guestsForMath: number;
+  crew: string[];
+  skipperRequired: boolean;
+  difficulty: "easy" | "moderate" | "advanced";
+  maxPriceMinor: number | null;
+};
+
+/** Turns the quiz's nine optional answers into a complete brief, defaults filled. */
+function resolveBrief(answers: PlannerAnswers): TripBrief {
+  const destinationKey =
+    answers.destination && answers.destination !== "not-sure"
+      ? answers.destination
+      : DEFAULT_DESTINATION;
+  // The keys are a closed enum and DEFAULT_DESTINATION is one of them, so this
+  // cannot actually miss; the fallback keeps the type honest without a cast.
+  const destination: Destination = COUNTRIES[destinationKey] ??
+    COUNTRIES[DEFAULT_DESTINATION] ?? { country: "Greece", flag: "\u{1F1EC}\u{1F1F7}" };
+
+  const group = answers.groupSize ? GROUP_SIZES[answers.groupSize] : undefined;
+  const durationDays = answers.duration
+    ? (DURATIONS[answers.duration] ?? 21)
+    : DEFAULT_DURATION_DAYS;
+  const style = answers.vibe ?? DEFAULT_STYLE;
+
+  // Licence holders can take the boat themselves; everyone else needs someone aboard.
+  const skipperRequired = answers.experience !== "licensed";
+
+  const budget = answers.budget ? BUDGETS[answers.budget] : undefined;
+  const weeks = Math.max(durationDays / 7, 1);
+  const guestsForMath = group?.guests ?? NEUTRAL_GUESTS;
+
+  return {
+    destination,
+    group,
+    budget,
+    category: VIBE_CATEGORY[style] ?? null,
+    style,
+    durationDays,
+    weeks,
+    guestsForMath,
+    crew: skipperRequired ? ["skipper", "full-crew"] : ["bareboat"],
+    skipperRequired,
+    difficulty:
+      answers.experience === "licensed"
+        ? "advanced"
+        : answers.experience === "some"
+          ? "moderate"
+          : "easy",
+    // The budget is per person per week but listings are priced per boat per
+    // period, so scale it up before filtering.
+    maxPriceMinor:
+      budget?.max === undefined || budget?.max === null
+        ? null
+        : Math.round(budget.max * guestsForMath * weeks),
+  };
+}
+
+/**
+ * Most specific first, widening a step at a time: drop the budget, then the
+ * category the vibe implied, then the group and crew filters entirely. A visitor
+ * always gets a boat rather than an empty result.
+ */
+async function findMatches(
+  db: Database,
+  brief: TripBrief,
+): Promise<Awaited<ReturnType<typeof searchListings>> | null> {
+  const baseFilters = {
+    country: [brief.destination.country],
+    crew: brief.crew,
+    guests: brief.group?.guests,
+    minBerths: brief.group?.minBerths,
+    duration: brief.durationDays,
+    currency: CURRENCY,
+    sort: "recommended" as const,
+    pageSize: 24,
+    page: 1,
+  };
+
+  const attempts = [
+    {
+      ...baseFilters,
+      category: brief.category ?? undefined,
+      maxPriceMinor: brief.maxPriceMinor ?? undefined,
+    },
+    { ...baseFilters, category: brief.category ?? undefined },
+    { ...baseFilters },
+    {
+      country: [brief.destination.country],
+      duration: brief.durationDays,
+      currency: CURRENCY,
+      pageSize: 24,
+    },
+  ];
+
+  for (const attempt of attempts) {
+    const result = await searchListings(db, attempt);
+    if (result.items.length > 0) return result;
+  }
+
+  return null;
+}
+
 /**
  * Turns the six quiz answers into a recommendation backed by real inventory.
  *
@@ -72,73 +182,11 @@ export async function recommendTrip(
   db: Database,
   answers: PlannerAnswers,
 ): Promise<Recommendation> {
-  const destinationKey =
-    answers.destination && answers.destination !== "not-sure"
-      ? answers.destination
-      : DEFAULT_DESTINATION;
-  // The keys are a closed enum and DEFAULT_DESTINATION is one of them, so this
-  // cannot actually miss; the fallback keeps the type honest without a cast.
-  const destination: Destination = COUNTRIES[destinationKey] ??
-    COUNTRIES[DEFAULT_DESTINATION] ?? { country: "Greece", flag: "🇬🇷" };
+  const brief = resolveBrief(answers);
+  const { destination, category, durationDays, crew, style, skipperRequired } = brief;
+  const { difficulty, budget, weeks, guestsForMath, maxPriceMinor, group } = brief;
 
-  const group = answers.groupSize ? GROUP_SIZES[answers.groupSize] : undefined;
-  const durationDays = answers.duration
-    ? (DURATIONS[answers.duration] ?? 21)
-    : DEFAULT_DURATION_DAYS;
-  const style = answers.vibe ?? DEFAULT_STYLE;
-  const category = VIBE_CATEGORY[style] ?? null;
-
-  // Licence holders can take the boat themselves; everyone else needs someone aboard.
-  const skipperRequired = answers.experience !== "licensed";
-  const crew = skipperRequired ? ["skipper", "full-crew"] : ["bareboat"];
-
-  const difficulty =
-    answers.experience === "licensed"
-      ? ("advanced" as const)
-      : answers.experience === "some"
-        ? ("moderate" as const)
-        : ("easy" as const);
-
-  const budget = answers.budget ? BUDGETS[answers.budget] : undefined;
-  const weeks = Math.max(durationDays / 7, 1);
-  const guestsForMath = group?.guests ?? NEUTRAL_GUESTS;
-
-  // The budget is per person per week but listings are priced per boat per period,
-  // so scale it up before filtering.
-  const maxPriceMinor =
-    budget?.max === undefined || budget?.max === null
-      ? null
-      : Math.round(budget.max * guestsForMath * weeks);
-
-  const baseFilters = {
-    country: [destination.country],
-    crew,
-    guests: group?.guests,
-    minBerths: group?.minBerths,
-    duration: durationDays,
-    currency: CURRENCY,
-    sort: "recommended" as const,
-    pageSize: 24,
-    page: 1,
-  };
-
-  // Widen in steps rather than returning nothing.
-  const attempts = [
-    { ...baseFilters, category: category ?? undefined, maxPriceMinor: maxPriceMinor ?? undefined },
-    { ...baseFilters, category: category ?? undefined },
-    { ...baseFilters },
-    { country: [destination.country], duration: durationDays, currency: CURRENCY, pageSize: 24 },
-  ];
-
-  let matched: Awaited<ReturnType<typeof searchListings>> | null = null;
-  for (const attempt of attempts) {
-    const result = await searchListings(db, attempt);
-    if (result.items.length > 0) {
-      matched = result;
-      break;
-    }
-  }
-
+  const matched = await findMatches(db, brief);
   const items = matched?.items ?? [];
   const top = items[0] ?? null;
 

@@ -128,6 +128,38 @@ export async function loadAdjustmentsForListings(
     .from(listing)
     .where(inArray(listing.id, [...listingIds]));
 
+  const rows = await loadRulesTargeting(db, owners, onDate);
+
+  for (const owner of owners) {
+    // One rule can match through two targets; keep it once.
+    const unique = new Map<string, PriceAdjustment>();
+
+    for (const row of rows.filter((row) => targets(row, owner))) {
+      unique.set(row.id, {
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        valuePct: row.valuePct,
+        valueMinor: row.valueMinor,
+        priority: row.priority,
+        stackable: row.stackable,
+      });
+    }
+
+    byListing.set(owner.listingId, [...unique.values()]);
+  }
+
+  return byListing;
+}
+
+type ListingOwner = {
+  listingId: string;
+  operatorId: string | null;
+  categoryId: string | null;
+};
+
+/** Every active, in-window rule pointed at any id these listings answer to. */
+function loadRulesTargeting(db: Database, owners: ListingOwner[], onDate: string) {
   // Every id a rule could legitimately be pointed at for these listings.
   const targetIds = new Set<string>();
   for (const owner of owners) {
@@ -136,7 +168,7 @@ export async function loadAdjustmentsForListings(
     if (owner.categoryId) targetIds.add(owner.categoryId);
   }
 
-  const rows = await db
+  return db
     .select({
       targetType: priceAdjustmentTarget.targetType,
       targetId: priceAdjustmentTarget.targetId,
@@ -164,45 +196,32 @@ export async function loadAdjustmentsForListings(
         ),
       ),
     );
+}
 
-  for (const owner of owners) {
-    const matches = rows.filter((row) => {
-      switch (row.targetType) {
-        case "all":
-          return true;
-        case "listing":
-          return row.targetId === owner.listingId;
-        case "operator":
-          return row.targetId === owner.operatorId;
-        case "category":
-          return row.targetId === owner.categoryId;
-        // Regions hang off the base, which the search doc denormalizes by name.
-        // Matching them needs a base→region join that no caller uses yet.
-        case "region":
-          return false;
-        default:
-          return false;
-      }
-    });
-
-    // One rule can match through two targets; keep it once.
-    const unique = new Map<string, PriceAdjustment>();
-    for (const match of matches) {
-      unique.set(match.id, {
-        id: match.id,
-        name: match.name,
-        type: match.type,
-        valuePct: match.valuePct,
-        valueMinor: match.valueMinor,
-        priority: match.priority,
-        stackable: match.stackable,
-      });
-    }
-
-    byListing.set(owner.listingId, [...unique.values()]);
+/**
+ * The SQL above is deliberately loose — one query for the whole batch — so each
+ * row is re-checked here against the listing it is being attributed to.
+ */
+function targets(
+  row: { targetType: string; targetId: string | null },
+  owner: ListingOwner,
+): boolean {
+  switch (row.targetType) {
+    case "all":
+      return true;
+    case "listing":
+      return row.targetId === owner.listingId;
+    case "operator":
+      return row.targetId === owner.operatorId;
+    case "category":
+      return row.targetId === owner.categoryId;
+    // Regions hang off the base, which the search doc denormalizes by name.
+    // Matching them needs a base→region join that no caller uses yet.
+    case "region":
+      return false;
+    default:
+      return false;
   }
-
-  return byListing;
 }
 
 export type ListingPaymentPolicy = {
