@@ -9,56 +9,18 @@ import {
   CarouselViewport,
   useCarousel,
 } from "@yacht-charter/ui/components/data-display/carousel";
-import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import { WishlistButton } from "@/features/wishlist";
+import { useMoney } from "@/hooks/use-money";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
-/* Yacht names are proper nouns and stay in code; every other visible string comes from messages. */
-/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42" as Route;
-
-const POPULAR_YACHTS = [
-  {
-    key: "lagoon42",
-    image: "/assets/home/popular/catamaran.webp",
-    title: "Lagoon 42",
-    rating: 4.9,
-    price: 350,
-  },
-  {
-    key: "bavariaC42",
-    image: "/assets/home/popular/sailing-yacht.webp",
-    title: "Bavaria C42",
-    rating: 4.8,
-    price: 280,
-  },
-  {
-    key: "sunseeker65",
-    image: "/assets/home/popular/motor-yacht.webp",
-    title: "Sunseeker 65",
-    rating: 5.0,
-    price: 520,
-  },
-  {
-    key: "bali46",
-    image: "/assets/home/popular/catamaran-flag.webp",
-    title: "Bali 4.6",
-    rating: 4.9,
-    price: 410,
-  },
-  {
-    key: "fountainePajot45",
-    image: "/assets/yachts/lagoon-42.jpg",
-    title: "Fountaine Pajot 45",
-    rating: 4.7,
-    price: 390,
-  },
-] as const;
+import { popularYachtsQueryOptions } from "../api/queries";
 
 function CarouselNav() {
   const t = useTranslations("Home.PopularYachts");
@@ -89,11 +51,9 @@ function CarouselNav() {
 
 export default function PopularYachts() {
   const t = useTranslations("Home.PopularYachts");
-  const format = useFormatter();
-  const tags = [
-    { label: t("tags.bareboat"), icon: <Anchor /> },
-    { label: t("tags.fullCrew"), icon: <Users /> },
-  ];
+  const money = useMoney();
+  const { data } = useQuery(popularYachtsQueryOptions());
+  const yachts = data?.items ?? [];
 
   return (
     <section className="bg-brand-50">
@@ -111,22 +71,24 @@ export default function PopularYachts() {
           </motion.div>
 
           <CarouselViewport>
-            {POPULAR_YACHTS.map((yacht) => (
-              <CarouselSlide key={yacht.key} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
+            {yachts.map(({ listing }) => (
+              <CarouselSlide key={listing.id} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
                 <BoatSmallCard
                   className="w-full"
-                  image={yacht.image}
-                  imageAlt={t(`items.${yacht.key}.imageAlt`)}
-                  location={t(`items.${yacht.key}.location`)}
-                  title={yacht.title}
-                  rating={yacht.rating}
-                  tags={tags}
-                  price={format.number(yacht.price, "eur")}
+                  image={listing.gallery[0] ?? listing.mainImage}
+                  imageAlt={listing.title}
+                  location={`${listing.base.location}, ${listing.base.country}`}
+                  title={listing.title}
+                  rating={listing.rating}
+                  tags={[{ label: listing.category, icon: <Anchor /> }]}
+                  price={money(
+                    Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
+                  )}
                   priceSuffix={t("perDay")}
                   priceLabel={t("from")}
                   actionLabel={t("viewDetails")}
-                  actionRender={<Link href={DETAIL_HREF} />}
-                  saveRender={<WishlistButton />}
+                  actionRender={<Link href={`/yachts/${listing.slug}` as Route} />}
+                  saveRender={<WishlistButton listingId={listing.id} />}
                 />
               </CarouselSlide>
             ))}

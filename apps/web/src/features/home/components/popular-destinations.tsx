@@ -10,18 +10,13 @@ import {
 import { DestinationCard } from "@yacht-charter/ui/components/data-display/card-destination";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
+import { useFilterOptions } from "@/components/shared/form/filters";
+import { buildSearchHref } from "@/features/yachts";
+import { useMoney } from "@/hooks/use-money";
 import { RISE, VIEWPORT } from "@/lib/motion";
-
-const DESTINATIONS = [
-  { key: "croatia", image: "/assets/home/destinations/croatia.webp", fromPrice: 350 },
-  { key: "greece", image: "/assets/home/destinations/greece.webp", fromPrice: 500 },
-  { key: "caribbean", image: "/assets/home/destinations/caribbean.webp", fromPrice: 800 },
-  { key: "italy", image: "/assets/home/destinations/italy.webp", fromPrice: 600 },
-  { key: "montenegro", image: "/assets/home/destinations/croatia.webp", fromPrice: 390 },
-] as const;
 
 function NavArrows() {
   const t = useTranslations("Home.PopularDestinations");
@@ -55,7 +50,8 @@ function NavArrows() {
 
 export default function PopularDestinations() {
   const t = useTranslations("Home.PopularDestinations");
-  const format = useFormatter();
+  const money = useMoney();
+  const { options } = useFilterOptions();
 
   return (
     <section className="w-full">
@@ -73,20 +69,26 @@ export default function PopularDestinations() {
           </motion.div>
 
           <CarouselViewport className="pl-4 md:pl-13.5 xl:pl-17.5">
-            {DESTINATIONS.map((destination) => (
+            {options.countries.map((country) => (
               <CarouselSlide
-                key={destination.key}
+                key={country.value}
                 className="basis-[85%] pr-5 sm:basis-1/2 md:basis-105 lg:basis-1/3 xl:basis-105"
               >
-                <DestinationCard
-                  image={destination.image}
-                  imageAlt={t(`items.${destination.key}.imageAlt`)}
-                  title={t(`items.${destination.key}.title`)}
-                  subtitle={t("fromPerPerson", {
-                    price: format.number(destination.fromPrice, "eur"),
-                  })}
-                  className="w-full"
-                />
+                <Link
+                  href={buildSearchHref({ country: [country.value] })}
+                  className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                >
+                  <DestinationCard
+                    image={country.imageUrl ?? ""}
+                    imageAlt={country.label}
+                    title={country.label}
+                    subtitle={t("summary", {
+                      price: money(country.priceFromMinor ?? 0),
+                      count: country.count ?? 0,
+                    })}
+                    className="w-full transition-transform duration-200 group-hover:-translate-y-1"
+                  />
+                </Link>
               </CarouselSlide>
             ))}
           </CarouselViewport>

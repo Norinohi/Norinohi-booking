@@ -283,29 +283,7 @@
   },
   "Home": {
     "BoatTypes": {
-      "heading": "Elige tu tipo de barco",
-      "items": {
-        "catamaran": {
-          "title": "Catamarán",
-          "description": "Estable y espacioso, perfecto para grupos y familias que buscan el máximo confort.",
-          "imageAlt": "Catamarán navegando junto a una isla verde en aguas turquesas"
-        },
-        "sailingYacht": {
-          "title": "Velero",
-          "description": "La experiencia auténtica. Ideal para quienes aman el arte de navegar.",
-          "imageAlt": "Velero a toda vela en mar abierto"
-        },
-        "motorYacht": {
-          "title": "Yate a motor",
-          "description": "Rápido y lujoso. Recorre más distancia y llega con estilo.",
-          "imageAlt": "Yate a motor blanco navegando a gran velocidad"
-        },
-        "luxuryYacht": {
-          "title": "Yate de lujo",
-          "description": "Villas flotantes con tripulación completa para unas vacaciones totalmente a medida.",
-          "imageAlt": "Superyate fondeado al atardecer"
-        }
-      }
+      "heading": "Elige tu tipo de barco"
     },
     "BudgetFinder": {
       "heading": "Encuentra yates según tu presupuesto",
@@ -418,29 +396,7 @@
       "previous": "Destinos anteriores",
       "next": "Destinos siguientes",
       "seeAll": "Ver todos los destinos",
-      "fromPerPerson": "Desde {price} por persona",
-      "items": {
-        "croatia": {
-          "title": "Croacia",
-          "imageAlt": "Cala turquesa rodeada de acantilados en la costa croata"
-        },
-        "greece": {
-          "title": "Grecia",
-          "imageAlt": "Pueblo portuario de colores en una isla griega"
-        },
-        "caribbean": {
-          "title": "Caribe",
-          "imageAlt": "Vista aérea de una playa de isla tropical en el Caribe"
-        },
-        "italy": {
-          "title": "Italia",
-          "imageAlt": "Pueblo sobre acantilados en la costa de Amalfi, Italia"
-        },
-        "montenegro": {
-          "title": "Montenegro",
-          "imageAlt": "Bahía adriática resguardada en la costa montenegrina"
-        }
-      }
+      "summary": "Desde {price} · {count, plural, one {# yate} other {# yates}}"
     },
     "PopularYachts": {
       "heading": "Yates populares",
@@ -449,33 +405,7 @@
       "seeAll": "Ver todos los yates",
       "from": "Desde",
       "viewDetails": "Ver detalles",
-      "perDay": "/ por día",
-      "tags": {
-        "bareboat": "Sin patrón",
-        "fullCrew": "Tripulación completa"
-      },
-      "items": {
-        "lagoon42": {
-          "location": "Split, Croacia",
-          "imageAlt": "Catamarán Lagoon 42 amarrado frente a Split"
-        },
-        "bavariaC42": {
-          "location": "Atenas, Grecia",
-          "imageAlt": "Velero Bavaria C42 cerca de Atenas"
-        },
-        "sunseeker65": {
-          "location": "Ibiza, España",
-          "imageAlt": "Yate a motor Sunseeker 65 navegando frente a Ibiza"
-        },
-        "bali46": {
-          "location": "Palma, España",
-          "imageAlt": "Catamarán Bali 4.6 fondeado cerca de Palma"
-        },
-        "fountainePajot45": {
-          "location": "Dubrovnik, Croacia",
-          "imageAlt": "Catamarán Fountaine Pajot 45 frente a Dubrovnik"
-        }
-      }
+      "perDay": "/ por día"
     },
     "SailingRoutes": {
       "heading": "Rutas de navegación populares",
@@ -792,9 +722,18 @@
         "title": "Solicita una asesoría gratuita",
         "description": "Cuéntanos cómo contactarte y uno de nuestros expertos en chárter te enviará opciones a medida.",
         "fields": {
-          "name": { "label": "Nombre completo", "placeholder": "Jane Doe" },
-          "email": { "label": "Correo electrónico", "placeholder": "jane@example.com" },
-          "phone": { "label": "Teléfono (opcional)", "placeholder": "+1 234 567 8900" },
+          "name": {
+            "label": "Nombre completo",
+            "placeholder": "Jane Doe"
+          },
+          "email": {
+            "label": "Correo electrónico",
+            "placeholder": "jane@example.com"
+          },
+          "phone": {
+            "label": "Teléfono (opcional)",
+            "placeholder": "+1 234 567 8900"
+          },
           "message": {
             "label": "Mensaje (opcional)",
             "placeholder": "¿Algo más que debamos saber sobre tu viaje?"

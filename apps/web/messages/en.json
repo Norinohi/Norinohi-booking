@@ -283,29 +283,7 @@
   },
   "Home": {
     "BoatTypes": {
-      "heading": "Choose Your Boat Type",
-      "items": {
-        "catamaran": {
-          "title": "Catamaran",
-          "description": "Stable, spacious, perfect for groups and families wanting maximum comfort.",
-          "imageAlt": "Catamaran sailing past a green island in turquoise water"
-        },
-        "sailingYacht": {
-          "title": "Sailing yacht",
-          "description": "The authentic experience. Ideal for those who love the art of sailing.",
-          "imageAlt": "Sailing yacht under full sail on the open sea"
-        },
-        "motorYacht": {
-          "title": "Motor yacht",
-          "description": "Fast and luxurious. Cover more ground and arrive in absolute style.",
-          "imageAlt": "White motor yacht cruising at speed"
-        },
-        "luxuryYacht": {
-          "title": "Luxury yacht",
-          "description": "Fully crewed floating villas for the ultimate bespoke holiday experience.",
-          "imageAlt": "Superyacht at anchor at sunset"
-        }
-      }
+      "heading": "Choose Your Boat Type"
     },
     "BudgetFinder": {
       "heading": "Find Yachts By Your Budget",
@@ -418,29 +396,7 @@
       "previous": "Previous destinations",
       "next": "Next destinations",
       "seeAll": "See All Destinations",
-      "fromPerPerson": "From {price} / per person",
-      "items": {
-        "croatia": {
-          "title": "Croatia",
-          "imageAlt": "Turquoise cliff-lined cove on the Croatian coast"
-        },
-        "greece": {
-          "title": "Greece",
-          "imageAlt": "Colourful harbour village on a Greek island"
-        },
-        "caribbean": {
-          "title": "Caribbean",
-          "imageAlt": "Aerial view of a tropical Caribbean island beach"
-        },
-        "italy": {
-          "title": "Italy",
-          "imageAlt": "Cliffside town along the Amalfi Coast in Italy"
-        },
-        "montenegro": {
-          "title": "Montenegro",
-          "imageAlt": "Sheltered Adriatic bay on the Montenegrin coast"
-        }
-      }
+      "summary": "From {price} · {count, plural, one {# yacht} other {# yachts}}"
     },
     "PopularYachts": {
       "heading": "Popular Yachts",
@@ -449,33 +405,7 @@
       "seeAll": "See All Yachts",
       "from": "From",
       "viewDetails": "View Details",
-      "perDay": "/ per day",
-      "tags": {
-        "bareboat": "Bareboat",
-        "fullCrew": "Full crew"
-      },
-      "items": {
-        "lagoon42": {
-          "location": "Split, Croatia",
-          "imageAlt": "Lagoon 42 catamaran moored off Split"
-        },
-        "bavariaC42": {
-          "location": "Athens, Greece",
-          "imageAlt": "Bavaria C42 sailing yacht near Athens"
-        },
-        "sunseeker65": {
-          "location": "Ibiza, Spain",
-          "imageAlt": "Sunseeker 65 motor yacht cruising off Ibiza"
-        },
-        "bali46": {
-          "location": "Palma, Spain",
-          "imageAlt": "Bali 4.6 catamaran anchored near Palma"
-        },
-        "fountainePajot45": {
-          "location": "Dubrovnik, Croatia",
-          "imageAlt": "Fountaine Pajot 45 catamaran off Dubrovnik"
-        }
-      }
+      "perDay": "/ per day"
     },
     "SailingRoutes": {
       "heading": "Popular Sailing Routes",
@@ -792,9 +722,18 @@
         "title": "Get a free consultation",
         "description": "Tell us how to reach you and one of our charter experts will follow up with tailored options.",
         "fields": {
-          "name": { "label": "Full name", "placeholder": "Jane Doe" },
-          "email": { "label": "Email", "placeholder": "jane@example.com" },
-          "phone": { "label": "Phone (optional)", "placeholder": "+1 234 567 8900" },
+          "name": {
+            "label": "Full name",
+            "placeholder": "Jane Doe"
+          },
+          "email": {
+            "label": "Email",
+            "placeholder": "jane@example.com"
+          },
+          "phone": {
+            "label": "Phone (optional)",
+            "placeholder": "+1 234 567 8900"
+          },
           "message": {
             "label": "Message (optional)",
             "placeholder": "Anything else we should know about your trip?"

@@ -50,7 +50,7 @@ function BoatSmallCard({
   ...props
 }: BoatSmallCardProps) {
   return (
-    <Card className={cn("w-[334px] max-w-full", className)} {...props}>
+    <Card className={cn("h-full w-[334px] max-w-full", className)} {...props}>
       <CardMedia className="aspect-[334/200]">
         <img src={image} alt={imageAlt} />
         {saveRender && <div className="absolute top-4 right-4">{saveRender}</div>}
@@ -79,7 +79,7 @@ function BoatSmallCard({
           </div>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="mt-auto">
         <div className="flex flex-col">
           <span className="text-sm text-natural-500">{priceLabel}</span>
           <span className="text-base text-natural-500">
