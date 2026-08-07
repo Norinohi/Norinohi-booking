@@ -16,9 +16,8 @@ import type {
 import { creditBalanceMinor, invitedCount, tierProgress, totalEarnedMinor } from "./loyalty";
 import { paginationFor } from "./pagination";
 import { getOrCreateReferralCode } from "./referral";
-
-type Db = Database;
 type Summary = z.infer<typeof referralSummarySchema>;
+
 type HistoryInput = z.infer<typeof referralHistoryInputSchema>;
 type History = z.infer<typeof referralHistorySchema>;
 type Balance = z.infer<typeof creditBalanceSchema>;
@@ -29,7 +28,7 @@ const CURRENCY = "EUR";
 const EXPIRING_SOON_DAYS = 30;
 
 /** One call for the whole Referrals screen above the history table. */
-export async function referralSummary(db: Db, userId: string): Promise<Summary> {
+export async function referralSummary(db: Database, userId: string): Promise<Summary> {
   const [code, invited, earned, balance, progress] = await Promise.all([
     getOrCreateReferralCode(db, userId),
     invitedCount(db, userId),
@@ -54,7 +53,7 @@ export async function referralSummary(db: Db, userId: string): Promise<Summary> 
 }
 
 export async function referralHistory(
-  db: Db,
+  db: Database,
   userId: string,
   input: HistoryInput,
 ): Promise<History> {
@@ -115,7 +114,7 @@ export async function referralHistory(
   };
 }
 
-export async function creditBalance(db: Db, userId: string): Promise<Balance> {
+export async function creditBalance(db: Database, userId: string): Promise<Balance> {
   const soon = new Date();
   soon.setDate(soon.getDate() + EXPIRING_SOON_DAYS);
 
@@ -141,7 +140,7 @@ export async function creditBalance(db: Db, userId: string): Promise<Balance> {
 }
 
 export async function creditLedgerEntries(
-  db: Db,
+  db: Database,
   userId: string,
   input: LedgerInput,
 ): Promise<Ledger> {

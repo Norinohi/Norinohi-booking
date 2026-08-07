@@ -14,8 +14,6 @@ import { confirmBookingWithProvider } from "./booking-confirm";
 import { canTransition, type BookingStatus } from "./booking-state";
 import { stripeClient } from "./payment";
 
-type Db = Database;
-
 export type WebhookOutcome =
   | { handled: true; eventId: string; duplicate: boolean }
   | { handled: false; reason: string };
@@ -28,7 +26,7 @@ export type WebhookOutcome =
  * recorded first and a repeat is acknowledged without being applied twice (§6.2).
  */
 export async function handleStripeWebhook(
-  db: Db,
+  db: Database,
   rawBody: string,
   signature: string | null,
   // Injectable for tests; apps/server is transport-only and does not depend on
@@ -90,7 +88,7 @@ export async function handleStripeWebhook(
 }
 
 async function onSucceeded(
-  db: Db,
+  db: Database,
   provider: InventoryProvider,
   intent: Stripe.PaymentIntent,
 ): Promise<void> {
@@ -119,7 +117,7 @@ async function onSucceeded(
   if (outcome.outcome === "rejected") throw new Error(outcome.message);
 }
 
-async function onFailed(db: Db, intent: Stripe.PaymentIntent): Promise<void> {
+async function onFailed(db: Database, intent: Stripe.PaymentIntent): Promise<void> {
   const row = await findByIntent(db, intent.id);
   if (!row) return;
 
@@ -142,7 +140,7 @@ async function onFailed(db: Db, intent: Stripe.PaymentIntent): Promise<void> {
     .where(and(eq(booking.id, row.booking.id), eq(booking.status, current)));
 }
 
-async function findByIntent(db: Db, intentId: string) {
+async function findByIntent(db: Database, intentId: string) {
   const [row] = await db
     .select({ payment, booking })
     .from(payment)

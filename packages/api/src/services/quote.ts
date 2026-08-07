@@ -20,9 +20,6 @@ import {
   totalMinor,
   type AppliedAdjustment,
 } from "./pricing";
-
-type Db = Database;
-
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
   /** The promo code that was applied, or null. */
@@ -50,7 +47,7 @@ export type RepriceChanges = {
  * we write is what checkout re-validates against before taking money (§6.1).
  */
 export async function createQuote(
-  db: Db,
+  db: Database,
   provider: InventoryProvider,
   input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
   userId: string | null,
@@ -70,7 +67,7 @@ export async function createQuote(
  * intact (§1.5 — immutable, supersede rather than mutate).
  */
 export async function repriceQuote(
-  db: Db,
+  db: Database,
   provider: InventoryProvider,
   quoteId: string,
   userId: string | null,
@@ -101,7 +98,7 @@ export async function repriceQuote(
   });
 
   const replacement = await db.transaction(async (tx) => {
-    const result = await persistPricedQuote(tx as unknown as Db, priced, {
+    const result = await persistPricedQuote(tx, priced, {
       userId: userId ?? existing.userId,
       extras: requestedExtras,
       discountCode,
@@ -121,7 +118,7 @@ export async function repriceQuote(
   return { ...replacement, repriced: true };
 }
 
-export async function readQuote(db: Db, quoteId: string) {
+export async function readQuote(db: Database, quoteId: string) {
   const [row] = await db.select().from(quote).where(eq(quote.id, quoteId)).limit(1);
   if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown quote" });
   return row;
@@ -131,7 +128,7 @@ export async function readQuote(db: Db, quoteId: string) {
  * Guards every state-advancing call: an expired quote or a moved provider price must
  * not pass silently (§6.2). Returns the row when it is still good to act on.
  */
-export async function assertQuoteIsFresh(db: Db, quoteId: string, now = new Date()) {
+export async function assertQuoteIsFresh(db: Database, quoteId: string, now = new Date()) {
   const row = await readQuote(db, quoteId);
 
   if (row.status === "consumed") {
@@ -175,7 +172,7 @@ async function priceOrConflict(
  * The promo code then comes off everything payable up front.
  */
 async function persistPricedQuote(
-  db: Db,
+  db: DatabaseExecutor,
   priced: ProviderQuote,
   options: {
     userId: string | null;

@@ -1,22 +1,16 @@
-import { randomInt } from "node:crypto";
-
 import { ORPCError } from "@orpc/server";
 import { referral, referralRedemption } from "@yacht-charter/db/schema/account";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import type { ReferralClaimResult, ReferralCode } from "../contracts/referral";
-import { isUniqueViolation } from "./pg-errors";
+import { randomCode, withUniqueRetry } from "./random-code";
 
-type Db = Database;
-
-// Unambiguous alphabet — these codes get read aloud and retyped from a share link.
-const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 8;
 const CODE_PREFIX = "NORI-";
 
 /** Returns the user's active referral code, minting one on first read. */
-export async function getOrCreateReferralCode(db: Db, userId: string): Promise<ReferralCode> {
+export async function getOrCreateReferralCode(db: Database, userId: string): Promise<ReferralCode> {
   const [existing] = await db
     .select({ code: referral.code, active: referral.active })
     .from(referral)
@@ -29,7 +23,7 @@ export async function getOrCreateReferralCode(db: Db, userId: string): Promise<R
 }
 
 /** Issues a fresh code, retiring the previous one so old share links stop crediting. */
-export async function rotateReferralCode(db: Db, userId: string): Promise<ReferralCode> {
+export async function rotateReferralCode(db: Database, userId: string): Promise<ReferralCode> {
   return presentCode(await issueCode(db, userId));
 }
 
@@ -38,7 +32,7 @@ export async function rotateReferralCode(db: Db, userId: string): Promise<Referr
  * crediting happens later, when the referred user's first booking completes.
  */
 export async function claimReferralCode(
-  db: Db,
+  db: Database,
   userId: string,
   code: string,
 ): Promise<ReferralClaimResult> {
@@ -83,37 +77,27 @@ function presentCode(code: string): ReferralCode {
  * unique constraints (user_id, code) route through one statement: user_id conflicts
  * update in place, code conflicts throw and are retried with a new code.
  */
-async function issueCode(db: Db, userId: string): Promise<string> {
+async function issueCode(db: Database, userId: string): Promise<string> {
   // The collision space is 32^8, so a handful of retries is far more than enough.
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const code = `${CODE_PREFIX}${randomCodeSuffix()}`;
+  const row = await withUniqueRetry(5, async () => {
+    const code = `${CODE_PREFIX}${randomCode(CODE_LENGTH)}`;
 
-    try {
-      const [row] = await db
-        .insert(referral)
-        .values({ userId, code, active: true })
-        .onConflictDoUpdate({
-          target: referral.userId,
-          set: { code, active: true, updatedAt: new Date() },
-        })
-        .returning({ code: referral.code });
+    const [inserted] = await db
+      .insert(referral)
+      .values({ userId, code, active: true })
+      .onConflictDoUpdate({
+        target: referral.userId,
+        set: { code, active: true, updatedAt: new Date() },
+      })
+      .returning({ code: referral.code });
 
-      if (row) return row.code;
-    } catch (error) {
-      if (isUniqueViolation(error)) continue;
-      throw error;
-    }
-  }
-
-  throw new ORPCError("INTERNAL_SERVER_ERROR", {
-    message: "Could not allocate a unique referral code",
+    return inserted;
   });
-}
 
-function randomCodeSuffix(): string {
-  let suffix = "";
-  for (let index = 0; index < CODE_LENGTH; index += 1) {
-    suffix += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  if (!row) {
+    throw new ORPCError("INTERNAL_SERVER_ERROR", {
+      message: "Could not allocate a unique referral code",
+    });
   }
-  return suffix;
+  return row.code;
 }

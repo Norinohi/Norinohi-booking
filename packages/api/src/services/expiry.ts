@@ -5,8 +5,6 @@ import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 
 import type { Database } from "../context";
 
-type Db = Database;
-
 export type SweepResult = {
   quotesExpired: number;
   holdsExpired: number;
@@ -28,7 +26,7 @@ export type SweepResult = {
  * webhook that moved a booking first simply wins.
  */
 export async function sweepExpiries(
-  db: Db,
+  db: Database,
   now: Date = new Date(),
   provider: InventoryProvider = createInventoryProvider(),
 ): Promise<SweepResult> {
@@ -40,7 +38,7 @@ export async function sweepExpiries(
 }
 
 /** Active quotes past their expiry. Consumed ones belong to a booking and are left alone. */
-async function expireQuotes(db: Db, now: Date): Promise<number> {
+async function expireQuotes(db: Database, now: Date): Promise<number> {
   const rows = await db
     .update(quote)
     .set({ status: "expired" })
@@ -57,7 +55,7 @@ async function expireQuotes(db: Db, now: Date): Promise<number> {
  * state nothing else can clear.
  */
 async function expireHolds(
-  db: Db,
+  db: Database,
   now: Date,
   provider: InventoryProvider,
 ): Promise<{ holdsExpired: number; releaseFailures: SweepResult["releaseFailures"] }> {
@@ -123,7 +121,7 @@ async function expireHolds(
  * PAYMENT_PENDING is deliberately excluded: money may be in flight, and the Stripe
  * webhook is the authority on how that ends.
  */
-async function expireBookingsWithDeadQuotes(db: Db, now: Date): Promise<number> {
+async function expireBookingsWithDeadQuotes(db: Database, now: Date): Promise<number> {
   const candidates = await db
     .select({ id: booking.id, status: booking.status })
     .from(booking)

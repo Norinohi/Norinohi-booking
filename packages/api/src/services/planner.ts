@@ -4,8 +4,6 @@ import type { z } from "zod";
 import type { Database } from "../context";
 import type { PlannerAnswers, plannerRecommendationSchema } from "../contracts/planner";
 import { presentListingSummary } from "../routers/presenters";
-
-type Db = Database;
 type Recommendation = z.infer<typeof plannerRecommendationSchema>;
 
 const CURRENCY = "EUR";
@@ -70,7 +68,10 @@ const VIBE_CATEGORY: Record<string, string | null> = {
  * the vibe implies, the category is dropped and it runs again, so a visitor always
  * gets a boat rather than an empty result.
  */
-export async function recommendTrip(db: Db, answers: PlannerAnswers): Promise<Recommendation> {
+export async function recommendTrip(
+  db: Database,
+  answers: PlannerAnswers,
+): Promise<Recommendation> {
   const destinationKey =
     answers.destination && answers.destination !== "not-sure"
       ? answers.destination

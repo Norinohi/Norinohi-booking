@@ -15,9 +15,8 @@ import type {
 } from "../contracts/lead";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
-
-type Db = Database;
 type CreateInput = z.infer<typeof leadCreateInputSchema>;
+
 type Created = z.infer<typeof leadCreatedSchema>;
 type ListInput = z.infer<typeof leadListInputSchema>;
 type ListResult = z.infer<typeof leadListSchema>;
@@ -30,7 +29,7 @@ type Status = z.infer<typeof leadStatusSchema>;
  * row is the record and staff read it through admin.lead.list.
  */
 export async function createLead(
-  db: Db,
+  db: Database,
   userId: string | null,
   input: CreateInput,
 ): Promise<Created> {
@@ -74,7 +73,7 @@ export async function createLead(
   };
 }
 
-export async function listLeads(db: Db, input: ListInput): Promise<ListResult> {
+export async function listLeads(db: Database, input: ListInput): Promise<ListResult> {
   const filters = [];
   if (input.kind) filters.push(eq(lead.kind, input.kind));
   if (input.status) filters.push(eq(lead.status, input.status));
@@ -110,7 +109,7 @@ export async function listLeads(db: Db, input: ListInput): Promise<ListResult> {
 }
 
 export async function setLeadStatus(
-  db: Db,
+  db: Database,
   actorUserId: string,
   id: string,
   status: Status,

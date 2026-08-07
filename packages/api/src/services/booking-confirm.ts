@@ -6,8 +6,6 @@ import type { Database } from "../context";
 import { canTransition, type BookingStatus } from "./booking-state";
 import { awardReferralCredit } from "./loyalty";
 
-type Db = Database;
-
 export type ConfirmOutcome =
   | { outcome: "confirmed"; providerReservationId: string | null }
   | { outcome: "rejected"; message: string }
@@ -26,7 +24,7 @@ export type ConfirmOutcome =
  * is visible to ops rather than quietly kept.
  */
 export async function confirmBookingWithProvider(
-  db: Db,
+  db: Database,
   bookingId: string,
   provider: InventoryProvider = createInventoryProvider(),
 ): Promise<ConfirmOutcome> {

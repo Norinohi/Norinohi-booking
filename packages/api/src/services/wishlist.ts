@@ -14,14 +14,17 @@ import type {
 } from "../contracts/wishlist";
 import { presentListingSummary } from "../routers/presenters";
 import { paginationFor } from "./pagination";
-
-type Db = Database;
 type ListInput = z.infer<typeof wishlistListInputSchema>;
+
 type ListResult = z.infer<typeof wishlistListSchema>;
 type ToggleResult = z.infer<typeof wishlistToggleSchema>;
 type IdsResult = z.infer<typeof wishlistIdsSchema>;
 
-export async function listWishlist(db: Db, userId: string, input: ListInput): Promise<ListResult> {
+export async function listWishlist(
+  db: Database,
+  userId: string,
+  input: ListInput,
+): Promise<ListResult> {
   const wishlistId = await findWishlistId(db, userId);
   if (!wishlistId) return { items: [], pagination: emptyPagination(input) };
 
@@ -65,7 +68,7 @@ export async function listWishlist(db: Db, userId: string, input: ListInput): Pr
   };
 }
 
-export async function listWishlistIds(db: Db, userId: string): Promise<IdsResult> {
+export async function listWishlistIds(db: Database, userId: string): Promise<IdsResult> {
   const wishlistId = await findWishlistId(db, userId);
   if (!wishlistId) return { listingIds: [] };
 
@@ -78,7 +81,7 @@ export async function listWishlistIds(db: Db, userId: string): Promise<IdsResult
 }
 
 export async function addWishlistItem(
-  db: Db,
+  db: Database,
   userId: string,
   listingId: string,
 ): Promise<ToggleResult> {
@@ -111,7 +114,7 @@ export async function addWishlistItem(
 }
 
 export async function removeWishlistItem(
-  db: Db,
+  db: Database,
   userId: string,
   listingId: string,
 ): Promise<ToggleResult> {
@@ -125,7 +128,7 @@ export async function removeWishlistItem(
   return { listingId, saved: false, savedAt: null };
 }
 
-async function findWishlistId(db: Db, userId: string): Promise<string | null> {
+async function findWishlistId(db: Database, userId: string): Promise<string | null> {
   const [row] = await db
     .select({ id: wishlist.id })
     .from(wishlist)
@@ -136,7 +139,7 @@ async function findWishlistId(db: Db, userId: string): Promise<string | null> {
 }
 
 /** The default "Saved yachts" list is created lazily, on the first save. */
-async function getOrCreateWishlistId(db: Db, userId: string): Promise<string> {
+async function getOrCreateWishlistId(db: Database, userId: string): Promise<string> {
   const existing = await findWishlistId(db, userId);
   if (existing) return existing;
 

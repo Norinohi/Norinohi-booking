@@ -1,6 +1,5 @@
 import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
-import { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
 import { and, eq } from "drizzle-orm";
 import Stripe from "stripe";
@@ -8,11 +7,11 @@ import type { z } from "zod";
 
 import type { Database } from "../context";
 import type { checkoutConfirmSchema } from "../contracts/booking";
+import { readOwnedBooking } from "./booking-read";
 import { assertTransition, type BookingStatus } from "./booking-state";
 import { amountDue } from "./checkout";
 import { assertQuoteIsFresh } from "./quote";
 
-type Db = Database;
 type ConfirmResult = z.infer<typeof checkoutConfirmSchema>;
 
 let client: Stripe | null = null;
@@ -38,7 +37,7 @@ export function stripeClient(): Stripe | null {
  * never shown (§6.2).
  */
 export async function confirmCheckout(
-  db: Db,
+  db: Database,
   userId: string,
   bookingId: string,
   preference: "deposit" | "full",
@@ -50,14 +49,7 @@ export async function confirmCheckout(
     });
   }
 
-  const [row] = await db
-    .select({ booking, quote })
-    .from(booking)
-    .innerJoin(quote, eq(quote.id, booking.quoteId))
-    .where(and(eq(booking.id, bookingId), eq(booking.userId, userId)))
-    .limit(1);
-
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  const row = await readOwnedBooking(db, userId, bookingId);
 
   const current = row.booking.status as BookingStatus;
   assertTransition(current, "PAYMENT_PENDING");

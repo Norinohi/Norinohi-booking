@@ -15,9 +15,8 @@ import type {
 import { writeAuditLog } from "./audit";
 import { confirmBookingWithProvider } from "./booking-confirm";
 import { paginationFor } from "./pagination";
-
-type Db = Database;
 type ListInput = z.infer<typeof invoiceListInputSchema>;
+
 type ListResult = z.infer<typeof invoiceListSchema>;
 type Row = z.infer<typeof invoiceAdminRowSchema>;
 type SettleResult = z.infer<typeof invoiceSettleSchema>;
@@ -27,7 +26,7 @@ type SettleResult = z.infer<typeof invoiceSettleSchema>;
  * dead-ends: the customer asks for an invoice, the booking sits at PAYMENT_PENDING,
  * and nothing in the system can ever complete it.
  */
-export async function listInvoiceRequests(db: Db, input: ListInput): Promise<ListResult> {
+export async function listInvoiceRequests(db: Database, input: ListInput): Promise<ListResult> {
   const where = input.status ? eq(invoiceRequest.status, input.status) : undefined;
 
   const [rows, [totals]] = await Promise.all([
@@ -65,7 +64,7 @@ export async function listInvoiceRequests(db: Db, input: ListInput): Promise<Lis
  * refund. Throwing would make staff think the transfer was not recorded.
  */
 export async function settleInvoiceRequest(
-  db: Db,
+  db: Database,
   actorUserId: string,
   input: { id: string; amountMinor?: number; note?: string },
 ): Promise<SettleResult> {
@@ -146,7 +145,7 @@ export async function settleInvoiceRequest(
 
 /** Withdraws an invoice request and cancels the booking waiting on it. */
 export async function cancelInvoiceRequest(
-  db: Db,
+  db: Database,
   actorUserId: string,
   id: string,
   reason?: string,

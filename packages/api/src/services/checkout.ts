@@ -11,10 +11,10 @@ import type {
   enquirySchema,
   invoiceRequestSchema,
 } from "../contracts/booking";
+import { readOwnedBooking } from "./booking-read";
 import { assertTransition, type BookingStatus } from "./booking-state";
-
-type Db = Database;
 type InvoiceResult = z.infer<typeof invoiceRequestSchema>;
+
 type EnquiryResult = z.infer<typeof enquirySchema>;
 type Receipt = z.infer<typeof bookingReceiptSchema>;
 
@@ -27,11 +27,11 @@ type Receipt = z.infer<typeof bookingReceiptSchema>;
  * infrastructure exists.
  */
 export async function requestInvoice(
-  db: Db,
+  db: Database,
   userId: string,
   input: { bookingId: string; billingEmail: string; companyName?: string; vatNumber?: string },
 ): Promise<InvoiceResult> {
-  const row = await readOwned(db, userId, input.bookingId);
+  const row = await readOwnedBooking(db, userId, input.bookingId);
   const current = row.booking.status as BookingStatus;
 
   const [existing] = await db
@@ -101,11 +101,11 @@ export async function requestInvoice(
  * the provider option keeps running down as normal.
  */
 export async function askQuestion(
-  db: Db,
+  db: Database,
   userId: string,
   input: { bookingId: string; question: string },
 ): Promise<EnquiryResult> {
-  const row = await readOwned(db, userId, input.bookingId);
+  const row = await readOwnedBooking(db, userId, input.bookingId);
 
   const [created] = await db
     .insert(bookingEnquiry)
@@ -126,8 +126,12 @@ export async function askQuestion(
   };
 }
 
-export async function getReceipt(db: Db, userId: string, bookingId: string): Promise<Receipt> {
-  const row = await readOwned(db, userId, bookingId);
+export async function getReceipt(
+  db: Database,
+  userId: string,
+  bookingId: string,
+): Promise<Receipt> {
+  const row = await readOwnedBooking(db, userId, bookingId);
   const snapshot = row.booking.commercialSnapshot;
 
   const payments = await db
@@ -211,17 +215,4 @@ function present(
     bookingStatus,
     createdAt: row.createdAt.toISOString(),
   };
-}
-
-async function readOwned(db: Db, userId: string, bookingId: string) {
-  const [row] = await db
-    .select({ booking, quote })
-    .from(booking)
-    .innerJoin(quote, eq(quote.id, booking.quoteId))
-    .where(and(eq(booking.id, bookingId), eq(booking.userId, userId)))
-    .limit(1);
-
-  // NOT_FOUND rather than FORBIDDEN so booking ids cannot be probed.
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
-  return row;
 }

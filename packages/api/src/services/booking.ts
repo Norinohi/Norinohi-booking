@@ -1,5 +1,3 @@
-import { randomInt } from "node:crypto";
-
 import { ORPCError } from "@orpc/server";
 import {
   booking,
@@ -36,14 +34,16 @@ import {
   isUserCancellable,
   type BookingStatus,
 } from "./booking-state";
+import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { redeemDiscount } from "./discount";
-import { isUniqueViolation } from "./pg-errors";
 import { redeemCredit } from "./loyalty";
 import { paginationFor } from "./pagination";
+import { isUniqueViolation } from "./pg-errors";
+import { randomCode, withUniqueRetry } from "./random-code";
 import { assertQuoteIsFresh } from "./quote";
 
-type Db = Database;
 type ListInput = z.infer<typeof bookingListInputSchema>;
+
 type ListResult = z.infer<typeof bookingListSchema>;
 type Summary = z.infer<typeof bookingSummarySchema>;
 type Detail = z.infer<typeof bookingDetailSchema>;
@@ -61,12 +61,15 @@ const POLICY_VERSION = "2026-08-01";
 
 type BookingRow = typeof booking.$inferSelect;
 
-const REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const REFERENCE_LENGTH = 8;
 
 /* --------------------------------------------------------------------- reads */
 
-export async function listBookings(db: Db, userId: string, input: ListInput): Promise<ListResult> {
+export async function listBookings(
+  db: Database,
+  userId: string,
+  input: ListInput,
+): Promise<ListResult> {
   const filters = [eq(booking.userId, userId)];
   if (input.status?.length) filters.push(inArray(booking.status, input.status));
 
@@ -112,8 +115,8 @@ export async function listBookings(db: Db, userId: string, input: ListInput): Pr
   };
 }
 
-export async function getBooking(db: Db, userId: string, id: string): Promise<Detail> {
-  const row = await readOwned(db, userId, id);
+export async function getBooking(db: Database, userId: string, id: string): Promise<Detail> {
+  const row = await readOwnedBooking(db, userId, id);
 
   const [extras, schedules, payments, money] = await Promise.all([
     db.select().from(bookingExtra).where(eq(bookingExtra.bookingId, id)),
@@ -168,8 +171,8 @@ export async function getBooking(db: Db, userId: string, id: string): Promise<De
   };
 }
 
-export async function getCheckoutStatus(db: Db, userId: string, id: string): Promise<Status> {
-  const row = await readOwned(db, userId, id);
+export async function getCheckoutStatus(db: Database, userId: string, id: string): Promise<Status> {
+  const row = await readOwnedBooking(db, userId, id);
 
   const [lastFailure] = await db
     .select({ failureReason: payment.failureReason })
@@ -197,7 +200,7 @@ export async function getCheckoutStatus(db: Db, userId: string, id: string): Pro
  * booking the first call created rather than holding a second option (§6.2).
  */
 export async function createHold(
-  db: Db,
+  db: Database,
   provider: InventoryProvider,
   userId: string,
   quoteId: string,
@@ -360,12 +363,14 @@ export async function createHold(
  * booking is admin-only and routes through the refund branch instead.
  */
 export async function cancelBooking(
-  db: Db,
+  db: Database,
   id: string,
   reason: string | undefined,
   actor: { userId: string; isAdmin: boolean },
 ): Promise<CancelResult> {
-  const row = actor.isAdmin ? await readAny(db, id) : await readOwned(db, actor.userId, id);
+  const row = actor.isAdmin
+    ? await readAnyBooking(db, id)
+    : await readOwnedBooking(db, actor.userId, id);
   const current = row.booking.status as BookingStatus;
 
   if (!actor.isAdmin && !isUserCancellable(current)) {
@@ -415,7 +420,7 @@ export async function cancelBooking(
  * hold a slot would leave both gone with nothing to show for it.
  */
 async function redeemFor(
-  db: Db,
+  db: Database,
   bookingId: string,
   userId: string,
   priced: typeof quote.$inferSelect,
@@ -486,23 +491,21 @@ async function transition(
 }
 
 async function insertBooking(
-  db: Db,
+  db: Database,
   values: Omit<typeof booking.$inferInsert, "reference">,
 ): Promise<BookingRow> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      const [row] = await db
-        .insert(booking)
-        .values({ ...values, reference: randomReference() })
-        .returning();
-      if (row) return row;
-    } catch (error) {
-      if (isUniqueViolation(error)) continue;
-      throw error;
-    }
-  }
+  const row = await withUniqueRetry(5, async () => {
+    const [inserted] = await db
+      .insert(booking)
+      .values({ ...values, reference: `NB-${randomCode(REFERENCE_LENGTH)}` })
+      .returning();
+    return inserted;
+  });
 
-  throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not allocate a booking" });
+  if (!row) {
+    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not allocate a booking" });
+  }
+  return row;
 }
 
 async function recordEvent(
@@ -522,37 +525,11 @@ async function recordEvent(
   });
 }
 
-async function readOwned(db: Db, userId: string, id: string) {
-  const [row] = await db
-    .select({ booking, quote })
-    .from(booking)
-    .innerJoin(quote, eq(quote.id, booking.quoteId))
-    .where(and(eq(booking.id, id), eq(booking.userId, userId)))
-    .limit(1);
-
-  // Deliberately NOT_FOUND rather than FORBIDDEN: another user's booking id should
-  // not be confirmable by probing.
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
-  return row;
-}
-
-async function readAny(db: Db, id: string) {
-  const [row] = await db
-    .select({ booking, quote })
-    .from(booking)
-    .innerJoin(quote, eq(quote.id, booking.quoteId))
-    .where(eq(booking.id, id))
-    .limit(1);
-
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
-  return row;
-}
-
 /**
  * Freezes what the customer is looking at. Base check-in/check-out times come from
  * the base itself, since the card renders a datetime, not just a date.
  */
-async function buildSnapshot(db: Db, listingId: string): Promise<CommercialSnapshot> {
+async function buildSnapshot(db: Database, listingId: string): Promise<CommercialSnapshot> {
   const [doc] = await db
     .select({
       title: listingSearchDoc.title,
@@ -598,7 +575,7 @@ async function buildSnapshot(db: Db, listingId: string): Promise<CommercialSnaps
 type MoneyTotals = { paidMinor: number; nextDueAt: Date | null };
 
 /** Paid-to-date and the next instalment, for every booking in one round trip. */
-async function loadMoney(db: Db, bookingIds: string[]): Promise<Map<string, MoneyTotals>> {
+async function loadMoney(db: Database, bookingIds: string[]): Promise<Map<string, MoneyTotals>> {
   const totals = new Map<string, MoneyTotals>();
   if (bookingIds.length === 0) return totals;
 
@@ -688,12 +665,4 @@ function presentHold(row: BookingRow): Hold {
 function combine(date: string, time: string | null): string {
   const clock = time && /^\d{2}:\d{2}/.test(time) ? time.slice(0, 5) : "00:00";
   return `${date}T${clock}:00.000Z`;
-}
-
-function randomReference(): string {
-  let suffix = "";
-  for (let index = 0; index < REFERENCE_LENGTH; index += 1) {
-    suffix += REFERENCE_ALPHABET[randomInt(REFERENCE_ALPHABET.length)];
-  }
-  return `NB-${suffix}`;
 }
