@@ -11,7 +11,7 @@ import {
 import { base } from "@yacht-charter/db/schema/geography";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
-import { quote } from "@yacht-charter/db/schema/quote";
+import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { z } from "zod";
@@ -208,16 +208,8 @@ export async function createHold(
   guest: GuestDetails,
   consents: Consents,
 ): Promise<Hold> {
-  const existing = await db
-    .select()
-    .from(booking)
-    .where(eq(booking.idempotencyKey, idempotencyKey))
-    .limit(1);
-
-  if (existing[0]) {
-    if (existing[0].userId !== userId) throw new ORPCError("FORBIDDEN");
-    return presentHold(existing[0]);
-  }
+  const existing = await findHoldByKey(db, userId, idempotencyKey);
+  if (existing) return presentHold(existing);
 
   const priced = await assertQuoteIsFresh(db, quoteId);
   if (priced.userId && priced.userId !== userId) {
@@ -254,41 +246,8 @@ export async function createHold(
   // The quote is now spoken for; a second booking must not be built from it.
   await db.update(quote).set({ userId, status: "consumed" }).where(eq(quote.id, priced.id));
 
-  // Both boxes are required by the contract, so reaching here means both were
-  // ticked. Recorded against a policy version so the acceptance stays meaningful
-  // after the wording changes.
-  void consents;
-  await db
-    .insert(bookingConsent)
-    .values([
-      { bookingId: created.id, kind: "terms" as const, policyVersion: POLICY_VERSION },
-      {
-        bookingId: created.id,
-        kind: "cancellation_policy" as const,
-        policyVersion: POLICY_VERSION,
-      },
-    ])
-    .onConflictDoNothing();
-
-  // The quote's priced extras, copied onto the booking. booking.get reads this
-  // table, and until now nothing wrote it, so every booking reported no extras.
-  const extraLines = priced.lines.filter((line) => line.kind === "extra" || line.kind === "fee");
-
-  if (extraLines.length > 0) {
-    await db.insert(bookingExtra).values(
-      extraLines.map((line) => ({
-        bookingId: created.id,
-        code: line.code,
-        label: line.label,
-        // Mirrors pricedItemSchema in contracts/catalog.ts, which is what the
-        // listing page uses for the same items.
-        pricingType:
-          line.payWhen === "at_check_in" ? ("pay_at_check_in" as const) : ("per_booking" as const),
-        amountMinor: line.amountMinor,
-        currency: line.currency,
-      })),
-    );
-  }
+  await recordConsents(db, created.id, consents);
+  await copyQuoteExtras(db, created.id, priced.lines);
 
   // Quoting is public and must never consume a code, so the usage limit only
   // becomes binding here. Re-checked under the transaction so two simultaneous
@@ -302,6 +261,87 @@ export async function createHold(
     return presentHold(created);
   }
 
+  return presentHold(await holdOption(db, provider, created, priced, account, redeem));
+}
+
+/**
+ * A retried submit returns the booking the first call created rather than holding
+ * a second option (§6.2). Another user's key is refused outright — the key is
+ * client-supplied, so it must not become a way to read someone else's booking.
+ */
+async function findHoldByKey(
+  db: Database,
+  userId: string,
+  idempotencyKey: string,
+): Promise<BookingRow | undefined> {
+  const [existing] = await db
+    .select()
+    .from(booking)
+    .where(eq(booking.idempotencyKey, idempotencyKey))
+    .limit(1);
+
+  if (!existing) return undefined;
+  if (existing.userId !== userId) throw new ORPCError("FORBIDDEN");
+  return existing;
+}
+
+/**
+ * Both boxes are required by the contract, so reaching here means both were
+ * ticked and the payload itself carries nothing further. Recorded against a
+ * policy version so the acceptance stays meaningful after the wording changes.
+ */
+async function recordConsents(db: Database, bookingId: string, consents: Consents): Promise<void> {
+  void consents;
+
+  await db
+    .insert(bookingConsent)
+    .values([
+      { bookingId, kind: "terms" as const, policyVersion: POLICY_VERSION },
+      { bookingId, kind: "cancellation_policy" as const, policyVersion: POLICY_VERSION },
+    ])
+    .onConflictDoNothing();
+}
+
+/**
+ * The quote's priced extras, copied onto the booking. booking.get reads this
+ * table, and until now nothing wrote it, so every booking reported no extras.
+ */
+async function copyQuoteExtras(
+  db: Database,
+  bookingId: string,
+  lines: readonly QuoteLine[],
+): Promise<void> {
+  const extraLines = lines.filter((line) => line.kind === "extra" || line.kind === "fee");
+  if (extraLines.length === 0) return;
+
+  await db.insert(bookingExtra).values(
+    extraLines.map((line) => ({
+      bookingId,
+      code: line.code,
+      label: line.label,
+      // Mirrors pricedItemSchema in contracts/catalog.ts, which is what the
+      // listing page uses for the same items.
+      pricingType:
+        line.payWhen === "at_check_in" ? ("pay_at_check_in" as const) : ("per_booking" as const),
+      amountMinor: line.amountMinor,
+      currency: line.currency,
+    })),
+  );
+}
+
+/**
+ * Secures the slot with the provider, moving OPTION_PENDING → OPTION_HELD. Any
+ * failure lands the booking in PROVIDER_REJECTED and surfaces as a conflict, so
+ * the customer is told to reprice rather than left holding nothing.
+ */
+async function holdOption(
+  db: Database,
+  provider: InventoryProvider,
+  created: BookingRow,
+  priced: typeof quote.$inferSelect,
+  account: { name: string; email: string },
+  redeem: () => Promise<void>,
+): Promise<BookingRow> {
   const pending = await transition(db, created, "OPTION_PENDING");
 
   try {
@@ -340,7 +380,7 @@ export async function createHold(
     // Only now that the slot is ours.
     await redeem();
 
-    return presentHold(held);
+    return held;
   } catch (error) {
     // Already handled and already moved to a terminal state — re-running the
     // transition here would fail its compare-and-set and mask the real reason.
