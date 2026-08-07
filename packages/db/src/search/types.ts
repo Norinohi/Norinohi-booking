@@ -166,7 +166,24 @@ export type ListingFacetOption = {
   value: string;
   label: string;
   count?: number;
+  /* Editorial fields, present only for facet groups backed by facet_media rows. */
+  imageUrl?: string | null;
+  cloudinaryId?: string | null;
+  description?: string | null;
+  /* Cheapest listing inside the group, so a card can show "from X" without a second query. */
+  priceFromMinor?: number | null;
+  currency?: string | null;
 };
+
+export type FacetMediaKind =
+  | "country"
+  | "region"
+  | "location"
+  | "marina"
+  | "category"
+  | "crew"
+  | "sail_type"
+  | "equipment";
 
 export type ListingFacets = {
   destinations: string[];

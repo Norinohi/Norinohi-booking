@@ -6,6 +6,7 @@ import { decodeSearchCursor, encodeSearchCursor, type SearchCursor } from "./cur
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
+  FacetMediaKind,
   ListingDetail,
   ListingFacets,
   ListingFacetOption,
@@ -22,6 +23,12 @@ import type {
 
 type SearchRow = ListingSearchDoc;
 type FacetFilterKey = keyof ListingSearchInput;
+type FacetOptionRow = {
+  label: string;
+  count: number;
+  priceFromMinor: number | null;
+  currency: string | null;
+};
 
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 500;
@@ -260,14 +267,14 @@ export async function listSearchFacets(
     years,
     rangeRows,
   ] = await Promise.all([
-    listFacetOptions(db, input, sql`doc.country`, ["country", "destination"]),
-    listFacetOptions(db, input, sql`doc.region`, ["sailingArea", "destination"]),
+    listFacetOptions(db, input, sql`doc.country`, ["country", "destination"], "country"),
+    listFacetOptions(db, input, sql`doc.region`, ["sailingArea", "destination"], "region"),
     listFacetOptions(db, input, sql`doc.operator`, ["charterCompany"]),
-    listFacetOptions(db, input, sql`doc.base_name`, ["marina", "destination"]),
-    listFacetOptions(db, input, sql`doc.category`, ["boatType", "category"]),
+    listFacetOptions(db, input, sql`doc.base_name`, ["marina", "destination"], "marina"),
+    listFacetOptions(db, input, sql`doc.category`, ["boatType", "category"], "category"),
     listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"]),
-    listFacetOptions(db, input, sql`doc.crew_type`, ["crew"]),
-    listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"]),
+    listFacetOptions(db, input, sql`doc.crew_type`, ["crew"], "crew"),
+    listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"], "sail_type"),
     listEquipmentFacetOptions(db, input),
     listFacetOptions(db, input, sql`doc.year_built::text`, ["yearFrom", "yearTo"]),
     db.execute<{
@@ -779,9 +786,14 @@ async function listFacetOptions(
   input: ListingSearchInput,
   expression: SQL,
   ignored: readonly FacetFilterKey[],
+  kind?: FacetMediaKind,
 ): Promise<ListingFacetOption[]> {
-  const rows = await db.execute<{ label: string; count: number }>(sql`
-    select ${expression} as label, count(*)::integer as count
+  const rows = await db.execute<FacetOptionRow>(sql`
+    select
+      ${expression} as label,
+      count(*)::integer as count,
+      min(doc.price_from_minor) as "priceFromMinor",
+      min(doc.currency) as currency
     from listing_search_doc doc
     where ${whereClause(input, ignored)}
       and ${expression} is not null
@@ -789,19 +801,19 @@ async function listFacetOptions(
     order by label asc
   `);
 
-  return rows.rows.map((row) => ({
-    value: valueForLabel(row.label),
-    label: row.label,
-    count: row.count,
-  }));
+  return decorateFacetOptions(db, rows.rows, kind);
 }
 
 async function listEquipmentFacetOptions(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
 ): Promise<ListingFacetOption[]> {
-  const rows = await db.execute<{ label: string; count: number }>(sql`
-    select amenity.value as label, count(distinct doc.listing_id)::integer as count
+  const rows = await db.execute<FacetOptionRow>(sql`
+    select
+      amenity.value as label,
+      count(distinct doc.listing_id)::integer as count,
+      min(doc.price_from_minor) as "priceFromMinor",
+      min(doc.currency) as currency
     from listing_search_doc doc
     cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
     where ${whereClause(input, ["equipment"])}
@@ -810,11 +822,56 @@ async function listEquipmentFacetOptions(
     order by amenity.value asc
   `);
 
-  return rows.rows.map((row) => ({
+  return decorateFacetOptions(db, rows.rows, "equipment");
+}
+
+/*
+ * Attaches facet_media copy to grouped facet rows.
+ *
+ * One extra query per decorated group rather than a join per facet query: the media
+ * table is small, and joining inside the grouped query would force the normalization
+ * expression into the group key.
+ */
+async function decorateFacetOptions(
+  db: NodePgDatabase<typeof schema>,
+  rows: FacetOptionRow[],
+  kind?: FacetMediaKind,
+): Promise<ListingFacetOption[]> {
+  const options = rows.map((row) => ({
     value: valueForLabel(row.label),
     label: row.label,
     count: row.count,
+    priceFromMinor: row.priceFromMinor,
+    currency: row.currency,
   }));
+
+  if (!kind || options.length === 0) return options;
+
+  const media = await db.execute<{
+    key: string;
+    imageUrl: string | null;
+    cloudinaryId: string | null;
+    description: string | null;
+  }>(sql`
+    select
+      ${normalizedSql(sql`media.value`)} as key,
+      media.image_url as "imageUrl",
+      media.cloudinary_id as "cloudinaryId",
+      media.description
+    from facet_media media
+    where media.kind = ${kind}
+  `);
+  const byKey = new Map(media.rows.map((row) => [row.key, row]));
+
+  return options.map((option) => {
+    const match = byKey.get(normalizedFilterValue(option.label));
+    return {
+      ...option,
+      imageUrl: match?.imageUrl ?? null,
+      cloudinaryId: match?.cloudinaryId ?? null,
+      description: match?.description ?? null,
+    };
+  });
 }
 
 function labelsFromOptions(options: ListingFacetOption[]): string[] {

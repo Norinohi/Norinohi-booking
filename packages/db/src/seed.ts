@@ -11,6 +11,7 @@ import {
   base,
   builder,
   country,
+  facetMedia,
   faq,
   listing,
   listingAmenity,
@@ -662,6 +663,111 @@ const categories = [
   { id: "cat_sailing", code: "sailing-yacht", name: "Sailing yacht" },
   { id: "cat_motor", code: "motor-yacht", name: "Motor yacht" },
   { id: "cat_luxury", code: "luxury-yacht", name: "Luxury yacht" },
+];
+
+/*
+ * Editorial copy for the home page's destination and boat-type cards.
+ *
+ * Image paths are served by apps/web from public/assets; swap them for absolute CDN
+ * URLs once the assets move off the app.
+ */
+const facetMediaEntries = [
+  {
+    id: "fcm_country_hr",
+    kind: "country" as const,
+    value: "Croatia",
+    imageUrl: "/assets/home/destinations/croatia.webp",
+    description: "A thousand islands, short hops between them, and marinas everywhere you look.",
+    sortOrder: 1,
+  },
+  {
+    id: "fcm_country_gr",
+    kind: "country" as const,
+    value: "Greece",
+    imageUrl: "/assets/home/destinations/greece.webp",
+    description: "Cyclades meltemi sailing, Ionian calm, and a taverna at every anchorage.",
+    sortOrder: 2,
+  },
+  {
+    id: "fcm_country_it",
+    kind: "country" as const,
+    value: "Italy",
+    imageUrl: "/assets/home/destinations/italy.webp",
+    description: "The Amalfi coastline, Sardinia's coves, and Sicily's volcanic islands.",
+    sortOrder: 3,
+  },
+  {
+    id: "fcm_country_es",
+    kind: "country" as const,
+    value: "Spain",
+    imageUrl: "/assets/home/destinations/caribbean.webp",
+    description: "Balearic beach clubs and quiet Menorcan bays within a day's sail.",
+    sortOrder: 4,
+  },
+  {
+    id: "fcm_country_th",
+    kind: "country" as const,
+    value: "Thailand",
+    imageUrl: "/assets/home/destinations/caribbean.webp",
+    description: "Limestone islands off Phuket, warm water, and year-round sailing.",
+    sortOrder: 5,
+  },
+  {
+    id: "fcm_category_catamaran",
+    kind: "category" as const,
+    value: "Catamaran",
+    imageUrl: "/assets/home/boat-types/catamaran.webp",
+    description: "Stable, wide, and shallow-draft. The family and group default.",
+    sortOrder: 1,
+  },
+  {
+    id: "fcm_category_sailing",
+    kind: "category" as const,
+    value: "Sailing yacht",
+    imageUrl: "/assets/home/boat-types/sailing-yacht.webp",
+    description: "The classic monohull charter. Best value per cabin under sail.",
+    sortOrder: 2,
+  },
+  {
+    id: "fcm_category_motor",
+    kind: "category" as const,
+    value: "Motor yacht",
+    imageUrl: "/assets/home/boat-types/motor-yacht.webp",
+    description: "Cover more coast per day, with no sailing experience required.",
+    sortOrder: 3,
+  },
+  {
+    id: "fcm_category_luxury",
+    kind: "category" as const,
+    value: "Luxury yacht",
+    imageUrl: "/assets/home/boat-types/luxury-yacht.webp",
+    description: "Crewed, fully catered, and specified to hotel standard.",
+    sortOrder: 4,
+  },
+  {
+    id: "fcm_region_dalmatia",
+    kind: "region" as const,
+    value: "Dalmatia",
+    imageUrl: "/assets/home/sailing-routes/dalmatian-coast.webp",
+    description: "Split, Hvar, and Vis on a week-long loop.",
+    sortOrder: 1,
+  },
+  {
+    id: "fcm_region_cyclades",
+    kind: "region" as const,
+    value: "Cyclades",
+    imageUrl: "/assets/home/sailing-routes/greek-cyclades.webp",
+    description: "Open passages, strong summer wind, and whitewashed harbours.",
+    sortOrder: 2,
+  },
+  {
+    id: "fcm_region_campania",
+    kind: "region" as const,
+    value: "Campania",
+    imageUrl: "/assets/home/sailing-routes/amalfi-coast.webp",
+    description: "Capri, Positano, and the Amalfi cliffs from the water.",
+    sortOrder: 3,
+  },
 ];
 
 const amenityCategories = [
@@ -1530,6 +1636,17 @@ const insertStaticData = async () => {
   await db.insert(yachtCategory).values(categories).onConflictDoNothing();
   await db.insert(amenityCategory).values(amenityCategories).onConflictDoNothing();
   await db.insert(amenity).values(amenities).onConflictDoNothing();
+  await db
+    .insert(facetMedia)
+    .values(facetMediaEntries)
+    .onConflictDoUpdate({
+      target: facetMedia.id,
+      set: {
+        imageUrl: sql`excluded.image_url`,
+        description: sql`excluded.description`,
+        sortOrder: sql`excluded.sort_order`,
+      },
+    });
 };
 
 async function main() {

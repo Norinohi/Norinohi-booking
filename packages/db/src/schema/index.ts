@@ -2,6 +2,7 @@ export * from "./auth";
 export * from "./operator";
 export * from "./geography";
 export * from "./taxonomy";
+export * from "./facet-media";
 export * from "./provider";
 export * from "./listing";
 export * from "./listing-source";

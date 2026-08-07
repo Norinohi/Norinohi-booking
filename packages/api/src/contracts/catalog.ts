@@ -16,6 +16,14 @@ const facetOptionSchema = z.object({
   value: z.string(),
   label: z.string(),
   count: z.number().int().nonnegative().optional(),
+  /* Editorial fields, populated only for facet groups with facet_media rows. */
+  imageUrl: z.string().nullish(),
+  /* Cloudinary public_id — prefer it over imageUrl and build the delivery URL client-side. */
+  cloudinaryId: z.string().nullish(),
+  description: z.string().nullish(),
+  /* Cheapest listing in the group — what a "from X" card label renders. */
+  priceFromMinor: z.number().int().nullish(),
+  currency: z.string().length(3).nullish(),
 });
 
 const numberRangeSchema = z.object({

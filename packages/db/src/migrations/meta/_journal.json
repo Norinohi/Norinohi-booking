@@ -134,6 +134,13 @@
       "when": 1786048807629,
       "tag": "0018_goofy_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786099801041,
+      "tag": "0019_hard_absorbing_man",
+      "breakpoints": true
     }
   ]
 }
