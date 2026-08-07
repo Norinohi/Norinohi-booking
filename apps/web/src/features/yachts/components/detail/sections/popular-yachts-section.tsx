@@ -13,9 +13,8 @@ import {
   PaginationPrevious,
 } from "@yacht-charter/ui/components/navigation/pagination";
 import { Anchor, Users } from "lucide-react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
@@ -87,7 +86,7 @@ export default function PopularYachtsSection() {
                 priceSuffix={t("popular.perPerson")}
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}
-                actionRender={<Link href={`/yachts/${yacht.slug}` as Route} />}
+                actionRender={<Link href={`/yachts/${yacht.slug}`} />}
                 saveRender={<WishlistButton listingId={yacht.id} />}
               />
             </CarouselSlide>

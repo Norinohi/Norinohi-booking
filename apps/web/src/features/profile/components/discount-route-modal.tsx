@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 import type { Discount, YachtPrice } from "../lib/discounts";
 import DiscountDialog from "./discount-dialog";

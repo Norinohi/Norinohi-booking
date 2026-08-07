@@ -7,7 +7,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
 

@@ -5,7 +5,7 @@ status: accepted
 # Public reads go through a header-free oRPC link and are cached by data kind
 
 `utils/orpc.ts` forwards every incoming request header on server-side calls, which is required for
-session-bearing procedures but makes *all* reads request-dependent — and a `headers()` read is
+session-bearing procedures but makes _all_ reads request-dependent — and a `headers()` read is
 illegal inside `"use cache"`, so no public read could ever be cached. We are splitting the oRPC
 client into a **public link** that forwards no headers and an **authed link** that keeps the current
 behaviour, then wrapping the public prefetch helpers in `"use cache"` with a `cacheLife` chosen by
@@ -33,5 +33,5 @@ at all** for availability, quotes and repricing.
   `staleTime` (currently 60s in `QUERY_DEFAULTS`) should be aligned per query with its server cache
   tier, or hydrated-from-cache data triggers an immediate background refetch and gives back part of
   the saving.
-- Two links exist for one API. This is deliberate: the split *is* the mechanism that makes public
+- Two links exist for one API. This is deliberate: the split _is_ the mechanism that makes public
   reads cacheable. Merging them back re-breaks prerendering.

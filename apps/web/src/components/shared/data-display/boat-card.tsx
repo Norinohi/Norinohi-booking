@@ -8,9 +8,9 @@ import {
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Check, Sailboat, Star, Users } from "lucide-react";
-import type { Route } from "next";
+import type { AppPathname } from "@/i18n/navigation";
 import { useFormatter, useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
@@ -31,7 +31,7 @@ export type BoatCardAmenity = { icon: ReactNode; label: string };
 export type BoatCardCharterDate = string;
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42" as Route;
+const DETAIL_HREF = "/yachts/lagoon-42";
 
 export type BoatCardProps = {
   /** Listing id — absent on cards rendering sample data, which leaves the bookmark inert. */
@@ -54,7 +54,7 @@ export type BoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
-  detailHref?: Route;
+  detailHref?: AppPathname;
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
   summary?: boolean;

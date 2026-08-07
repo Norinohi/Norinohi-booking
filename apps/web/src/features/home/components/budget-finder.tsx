@@ -5,7 +5,7 @@ import { Select } from "@yacht-charter/ui/components/form/select";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useMemo, useState } from "react";
 
 import { useFilterOptions } from "@/components/shared/form/filters";

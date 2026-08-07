@@ -10,7 +10,7 @@ import {
 } from "@yacht-charter/ui/components/overlay/dropdown-menu";
 import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 import { authClient } from "@/lib/auth-client";
 

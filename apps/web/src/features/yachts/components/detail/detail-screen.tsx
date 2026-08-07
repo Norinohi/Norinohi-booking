@@ -1,4 +1,3 @@
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
 
 import BookingSummary from "@/components/shared/data-display/booking-summary";
@@ -20,7 +19,7 @@ import SuggestedRouteSection from "./sections/suggested-route-section";
 import TitleBlock from "./title-block";
 
 /* TODO: hardcoded booking route until listings carry a real id. */
-const BOOKING_HREF = "/yachts/lagoon-42/booking" as Route;
+const BOOKING_HREF = "/yachts/lagoon-42/booking";
 
 export default function YachtDetailScreen({ title }: { title: string }) {
   const t = useTranslations("YachtDetail");

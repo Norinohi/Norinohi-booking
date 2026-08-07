@@ -1,6 +1,6 @@
 "use client";
 
-import type { Route } from "next";
+import type { AppPathname } from "@/i18n/navigation";
 import { createSerializer } from "nuqs";
 
 import { filterParsers } from "./search-params";
@@ -17,6 +17,6 @@ export type SearchCriteria = {
   berths?: [number, number];
 };
 
-export function buildSearchHref(criteria: SearchCriteria): Route {
-  return serialize("/yachts", criteria) as Route;
+export function buildSearchHref(criteria: SearchCriteria): AppPathname {
+  return serialize("/yachts", criteria);
 }

@@ -3,9 +3,8 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Tabs, TabsList, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import { Plus } from "lucide-react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 
 import Sidebar from "@/components/layout/sidebar";
@@ -36,13 +35,11 @@ export default function DiscountManagerScreen({ user }: { user: { name: string; 
 
   const logout = () => authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
 
-  const openCreate = () => router.push("/profile/discounts/create" as Route);
+  const openCreate = () => router.push("/profile/discounts/create");
   /* `edit/[id]`, not `[id]/edit`: Next can't intercept a route whose first intercepted
      segment is dynamic — `(.)[id]` throws "Invalid interception route" at match time. */
-  const openEdit = (discount: Discount) =>
-    router.push(`/profile/discounts/edit/${discount.id}` as Route);
-  const openPriceEdit = (yacht: YachtPrice) =>
-    router.push(`/profile/discounts/prices/${yacht.id}` as Route);
+  const openEdit = (discount: Discount) => router.push(`/profile/discounts/edit/${discount.id}`);
+  const openPriceEdit = (yacht: YachtPrice) => router.push(`/profile/discounts/prices/${yacht.id}`);
 
   return (
     <div className="flex flex-col">

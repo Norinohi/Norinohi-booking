@@ -9,9 +9,8 @@ import {
 } from "@yacht-charter/ui/components/navigation/breadcrumb";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowLeft } from "lucide-react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Fragment } from "react";
 
 /** `name` is a message key, or the literal label when `dynamic` is set. */
@@ -51,12 +50,7 @@ export default function AppBreadcrumbs({
     <div className={cn("border-b border-natural-50 px-4 py-3 md:px-13.5", className)}>
       <div className="mx-auto flex max-w-349 items-center gap-5">
         {backLabel && backHref ? (
-          <Button
-            variant="subtle"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={backHref as Route} />}
-          >
+          <Button variant="subtle" size="sm" nativeButton={false} render={<Link href={backHref} />}>
             <ArrowLeft />
             {translate(backLabel, backValues)}
           </Button>

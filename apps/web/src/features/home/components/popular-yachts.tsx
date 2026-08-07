@@ -12,9 +12,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
@@ -87,7 +86,7 @@ export default function PopularYachts() {
                   priceSuffix={t("perDay")}
                   priceLabel={t("from")}
                   actionLabel={t("viewDetails")}
-                  actionRender={<Link href={`/yachts/${listing.slug}` as Route} />}
+                  actionRender={<Link href={`/yachts/${listing.slug}`} />}
                   saveRender={<WishlistButton listingId={listing.id} />}
                 />
               </CarouselSlide>

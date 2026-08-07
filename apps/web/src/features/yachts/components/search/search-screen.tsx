@@ -4,9 +4,8 @@ import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
@@ -31,7 +30,7 @@ import { toSearchInput } from "../../lib/to-search-input";
 import ResultsHeader, { SORT_OPTIONS } from "./results-header";
 import SearchBar from "./search-bar";
 
-const YACHTS_MAP_HREF = "/yachts/map" as Route;
+const YACHTS_MAP_HREF = "/yachts/map";
 
 export default function SearchScreen() {
   const { filters, setFilters, defaults } = useSearchFilters();
