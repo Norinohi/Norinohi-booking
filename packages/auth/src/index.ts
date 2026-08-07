@@ -25,6 +25,13 @@ export function createAuth() {
           type: "string",
           required: false,
         },
+        // Expose the role column in session payloads (better-auth strips undeclared
+        // fields from responses). `input: false` keeps sign-up from self-assigning it.
+        role: {
+          type: "string",
+          required: false,
+          input: false,
+        },
       },
       changeEmail: {
         enabled: true,
