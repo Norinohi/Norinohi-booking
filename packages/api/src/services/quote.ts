@@ -164,6 +164,158 @@ async function priceOrConflict(
 
 /* ------------------------------------------------------------------ pipeline */
 
+/* ------------------------------------------------------- pipeline stages (1-4) */
+
+/**
+ * Stage 1. Internal rules move the charter base only, so a quote with no base
+ * line — or a listing no rule targets — passes through untouched.
+ */
+async function applyInternalRules(
+  db: DatabaseExecutor,
+  lines: QuoteLine[],
+  listingId: string,
+  onDate: string,
+): Promise<{ lines: QuoteLine[]; applied: AppliedAdjustment[] }> {
+  const baseIndex = lines.findIndex((line) => line.kind === "base");
+  const baseLine = baseIndex >= 0 ? lines[baseIndex] : undefined;
+  if (!baseLine) return { lines, applied: [] };
+
+  const rules = (await loadAdjustmentsForListings(db, [listingId], onDate)).get(listingId);
+  if (!rules || rules.length === 0) return { lines, applied: [] };
+
+  const resolved = resolveAdjustedPrice(baseLine.amountMinor, rules);
+  const next = [...lines];
+  next[baseIndex] = { ...baseLine, amountMinor: resolved.amountMinor };
+
+  return { lines: next, applied: resolved.applied };
+}
+
+/**
+ * Stage 2. A rejected code prices the trip without it and reports why, rather
+ * than failing: a mistyped code should not cost the visitor the whole quote.
+ */
+async function applyDiscountCode(
+  db: DatabaseExecutor,
+  lines: QuoteLine[],
+  code: string,
+  listingId: string,
+  onDate: string,
+  currency: string,
+): Promise<{
+  lines: QuoteLine[];
+  applied: AppliedAdjustment[];
+  discount: PersistedQuote["discount"];
+  discountId: string | null;
+  rejected: DiscountRejection | null;
+}> {
+  const outcome = await resolveDiscountForListing(db, code, listingId, onDate);
+
+  if ("rejected" in outcome) {
+    return { lines, applied: [], discount: null, discountId: null, rejected: outcome.rejected };
+  }
+
+  const payable = payableNowMinor(lines);
+  const off =
+    outcome.discount.type === "percentage"
+      ? Math.round(payable * ((outcome.discount.valuePct ?? 0) / 100))
+      : Math.min(outcome.discount.valueMinor ?? 0, payable);
+
+  // Recorded even at zero: the code was valid and accepted, and the checkout
+  // still redeems it against the booking.
+  const discount = { code: outcome.discount.code, name: outcome.discount.name, amountMinor: off };
+  const base = { discount, discountId: outcome.discount.id, rejected: null };
+
+  if (off <= 0) return { lines, applied: [], ...base };
+
+  return {
+    lines: [
+      ...lines,
+      {
+        code: outcome.discount.code,
+        label: outcome.discount.name,
+        amountMinor: -off,
+        currency,
+        payWhen: "now",
+        kind: "discount",
+      },
+    ],
+    applied: [
+      {
+        source: "discount",
+        sourceId: outcome.discount.id,
+        name: outcome.discount.name,
+        type: outcome.discount.type,
+        valuePct: outcome.discount.valuePct,
+        valueMinor: outcome.discount.valueMinor,
+        amountMinor: -off,
+      },
+    ],
+    ...base,
+  };
+}
+
+/** Stage 3. Credit is a way of paying, so it never enters `applied`. */
+async function applyReferralCredit(
+  db: DatabaseExecutor,
+  lines: QuoteLine[],
+  userId: string | null,
+  currency: string,
+): Promise<{ lines: QuoteLine[]; creditApplied: PersistedQuote["creditApplied"] }> {
+  const spendable = await spendableCreditMinor(
+    db,
+    userId,
+    totalMinor(lines),
+    payableNowMinor(lines),
+  );
+
+  if (spendable <= 0) return { lines, creditApplied: null };
+
+  return {
+    lines: [
+      ...lines,
+      {
+        code: "referral-credit",
+        label: "Referral credit",
+        amountMinor: -spendable,
+        currency,
+        payWhen: "now",
+        kind: "credit",
+      },
+    ],
+    creditApplied: { amountMinor: spendable, currency },
+  };
+}
+
+/** Stage 4. Reads the listing override, then derives the deposit from the policy. */
+async function resolveDeposit(
+  db: DatabaseExecutor,
+  listingId: string,
+  providerPolicy: ProviderQuote["paymentPolicy"],
+  lines: QuoteLine[],
+  currency: string,
+): Promise<{ paymentPolicy: QuotePaymentPolicy; total: number; depositMinor: number }> {
+  const [listingRow] = await db
+    .select({ paymentPolicy: listing.paymentPolicy })
+    .from(listing)
+    .where(eq(listing.id, listingId))
+    .limit(1);
+
+  const paymentPolicy = resolvePaymentPolicy(
+    listingRow?.paymentPolicy ?? null,
+    providerPolicy,
+    currency,
+  );
+
+  const payable = payableNowMinor(lines);
+
+  return {
+    paymentPolicy,
+    total: totalMinor(lines),
+    depositMinor:
+      paymentPolicy.mode === "full" ? payable : Math.round(payable * paymentPolicy.depositPct),
+  };
+}
+
 /**
  * provider price → internal rules → discount → payment policy.
  *
@@ -196,122 +348,40 @@ async function persistPricedQuote(
   const applied: AppliedAdjustment[] = [];
 
   // 1. Internal price_adjustment_rule, against the charter base.
-  const baseIndex = lines.findIndex((line) => line.kind === "base");
-  const baseLine = baseIndex >= 0 ? lines[baseIndex] : undefined;
-  if (baseLine) {
-    const rules = (await loadAdjustmentsForListings(db, [priced.listingId], onDate)).get(
-      priced.listingId,
-    );
-
-    if (rules && rules.length > 0) {
-      const resolved = resolveAdjustedPrice(baseLine.amountMinor, rules);
-      applied.push(...resolved.applied);
-      lines[baseIndex] = { ...baseLine, amountMinor: resolved.amountMinor };
-    }
-  }
+  const rules = await applyInternalRules(db, lines, priced.listingId, onDate);
+  lines = rules.lines;
+  applied.push(...rules.applied);
 
   // 2. Marketing discount, off everything payable now.
-  let discountRejected: DiscountRejection | null = null;
-  let appliedDiscount: PersistedQuote["discount"] = null;
-  let discountId: string | null = null;
+  const promo = options.discountCode
+    ? await applyDiscountCode(db, lines, options.discountCode, priced.listingId, onDate, currency)
+    : null;
 
-  if (options.discountCode) {
-    const outcome = await resolveDiscountForListing(
-      db,
-      options.discountCode,
-      priced.listingId,
-      onDate,
-    );
-
-    if ("rejected" in outcome) {
-      // Price without it rather than failing — a mistyped code should not cost the
-      // visitor the whole quote.
-      discountRejected = outcome.rejected;
-    } else {
-      const payable = payableNowMinor(lines);
-      const off =
-        outcome.discount.type === "percentage"
-          ? Math.round(payable * ((outcome.discount.valuePct ?? 0) / 100))
-          : Math.min(outcome.discount.valueMinor ?? 0, payable);
-
-      if (off > 0) {
-        lines = [
-          ...lines,
-          {
-            code: outcome.discount.code,
-            label: outcome.discount.name,
-            amountMinor: -off,
-            currency,
-            payWhen: "now",
-            kind: "discount",
-          },
-        ];
-
-        applied.push({
-          source: "discount",
-          sourceId: outcome.discount.id,
-          name: outcome.discount.name,
-          type: outcome.discount.type,
-          valuePct: outcome.discount.valuePct,
-          valueMinor: outcome.discount.valueMinor,
-          amountMinor: -off,
-        });
-      }
-
-      discountId = outcome.discount.id;
-      appliedDiscount = {
-        code: outcome.discount.code,
-        name: outcome.discount.name,
-        amountMinor: off,
-      };
-    }
+  if (promo) {
+    lines = promo.lines;
+    applied.push(...promo.applied);
   }
 
   // 3. Referral credit, last: it is a way of paying rather than a price change,
   // so it comes off after everything that decides what the trip costs.
-  let creditApplied: PersistedQuote["creditApplied"] = null;
+  const credit = options.applyCredit
+    ? await applyReferralCredit(db, lines, options.userId, currency)
+    : null;
 
-  if (options.applyCredit) {
-    const spendable = await spendableCreditMinor(
-      db,
-      options.userId,
-      totalMinor(lines),
-      payableNowMinor(lines),
-    );
-
-    if (spendable > 0) {
-      lines = [
-        ...lines,
-        {
-          code: "referral-credit",
-          label: "Referral credit",
-          amountMinor: -spendable,
-          currency,
-          payWhen: "now",
-          kind: "credit",
-        },
-      ];
-      creditApplied = { amountMinor: spendable, currency };
-    }
-  }
+  if (credit) lines = credit.lines;
 
   // 4. Payment policy, then the deposit that follows from it.
-  const [listingRow] = await db
-    .select({ paymentPolicy: listing.paymentPolicy })
-    .from(listing)
-    .where(eq(listing.id, priced.listingId))
-    .limit(1);
-
-  const paymentPolicy = resolvePaymentPolicy(
-    listingRow?.paymentPolicy ?? null,
+  const { paymentPolicy, total, depositMinor } = await resolveDeposit(
+    db,
+    priced.listingId,
     priced.paymentPolicy,
+    lines,
     currency,
   );
 
-  const total = totalMinor(lines);
-  const payable = payableNowMinor(lines);
-  const depositMinor =
-    paymentPolicy.mode === "full" ? payable : Math.round(payable * paymentPolicy.depositPct);
+  const appliedDiscount = promo?.discount ?? null;
+  const discountRejected = promo?.rejected ?? null;
+  const creditApplied = credit?.creditApplied ?? null;
 
   const quoteId = await insertQuote(db, {
     priced,
@@ -321,7 +391,7 @@ async function persistPricedQuote(
     paymentPolicy,
     userId: options.userId,
     extras: options.extras,
-    discountId,
+    discountId: promo?.discountId ?? null,
     discountCode: appliedDiscount?.code ?? null,
     creditAppliedMinor: creditApplied?.amountMinor ?? 0,
     applied,
