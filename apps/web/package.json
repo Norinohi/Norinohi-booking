@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "next build",
-    "build:test": "EXPOSE_TESTING_API=1 next build",
+    "build": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-api.mjs && next build",
+    "build:test": "EXPOSE_TESTING_API=1 pnpm build",
     "check-types": "tsc --noEmit",
     "start": "next start --port 3001",
     "test:e2e": "playwright test"

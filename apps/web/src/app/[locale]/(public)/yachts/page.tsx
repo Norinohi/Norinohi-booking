@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
@@ -6,10 +5,6 @@ import { Hydrated } from "@/components/layout/hydrated";
 import { SearchScreen } from "@/features/yachts";
 import { prefetchSearch } from "@/features/yachts/api/server";
 import { buildMetadata } from "@/lib/seo";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata({
   params,
@@ -29,11 +24,11 @@ export async function generateMetadata({
 export default async function YachtsPage() {
   const state = await prefetchSearch();
 
+  // SearchScreen owns its own boundaries — one per URL-reading region — so the page does not wrap
+  // it in a blanket <Suspense> that would keep the whole screen out of the shell.
   return (
     <Hydrated state={state}>
-      <Suspense fallback={null}>
-        <SearchScreen />
-      </Suspense>
+      <SearchScreen />
     </Hydrated>
   );
 }

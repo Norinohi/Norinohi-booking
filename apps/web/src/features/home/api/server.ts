@@ -4,23 +4,16 @@ import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { cacheLife } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
+import { getFacets } from "@/components/shared/form/filters/api/server";
 import { publicClient } from "@/utils/orpc";
 
 import { POPULAR_YACHTS_INPUT, popularYachtsQueryOptions } from "./queries";
 
 /*
- * The two catalog reads behind the home page, each on its own tier (docs/adr/0002). Keeping them
- * as separate cached functions means the facet taxonomy is not re-fetched from the API just
- * because the listing cards rolled over.
+ * The two catalog reads behind the home page sit on different tiers (docs/adr/0002), so they stay
+ * separate cached functions: the facet taxonomy is not re-fetched just because the listing cards
+ * rolled over. `getFacets` is shared with the search route so both fill one cache entry.
  */
-
-/** Filter taxonomy — countries, boat types, budget bands. Changes when inventory changes. */
-async function getFacets() {
-  "use cache";
-  cacheLife("days");
-
-  return publicClient.charterSearch.facets({});
-}
 
 /** The five highest-rated listings. Catalog data: a slightly stale rating harms nobody. */
 async function getPopularYachts() {
