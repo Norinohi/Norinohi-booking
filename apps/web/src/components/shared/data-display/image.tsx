@@ -1,6 +1,7 @@
 "use client";
 
 import { env } from "@yacht-charter/env/web";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { Loader2 } from "lucide-react";
 import NextImage, { type ImageLoaderProps } from "next/image";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
@@ -46,11 +47,18 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
   const overlay = dynamic && rest.fill === true;
   const ref = useRef<HTMLImageElement>(null);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     const img = ref.current;
     if (img?.complete) setStatus(img.naturalWidth > 0 ? "loaded" : "error");
   }, []);
+
+  useEffect(() => {
+    if (status !== "loaded") return;
+    const frame = requestAnimationFrame(() => setRevealed(true));
+    return () => cancelAnimationFrame(frame);
+  }, [status]);
 
   const handleLoad: ComponentProps<typeof NextImage>["onLoad"] = (event) => {
     setStatus("loaded");
@@ -72,8 +80,14 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
         className={className}
         {...rest}
       />
-      {overlay && status !== "loaded" ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted">
+      {overlay ? (
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-muted transition-opacity duration-500",
+            revealed ? "opacity-0" : "opacity-100",
+          )}
+        >
           {status === "loading" ? (
             <Loader2 className="size-6 animate-spin text-natural-400" />
           ) : null}
