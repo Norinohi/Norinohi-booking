@@ -9,20 +9,23 @@ import PopularYachts from "./components/popular-yachts";
 import SailingRoutes from "./components/sailing-routes";
 import Testimonials from "./components/testimonials";
 
-/*
- * Home landing page — Figma "Main Page" (node 530:3085), composed top-to-bottom.
- * Global chrome (NavigationBar + Footer) comes from the root layout; this renders the
- * body sections only. Content is static placeholder data per section for now.
- */
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <BoatTypes />
-      <BudgetFinder />
+      <div id="boat-types" className="scroll-mt-20">
+        <BoatTypes />
+      </div>
+      <div id="find-by-budget" className="scroll-mt-20">
+        <BudgetFinder />
+      </div>
       <PlanTrip />
-      <PopularDestinations />
-      <SailingRoutes />
+      <div id="destinations" className="scroll-mt-20">
+        <PopularDestinations />
+      </div>
+      <div id="popular-routes" className="scroll-mt-20">
+        <SailingRoutes />
+      </div>
       <PopularYachts />
       <Testimonials />
       <HowItWorks />

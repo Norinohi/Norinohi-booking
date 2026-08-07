@@ -14,22 +14,11 @@ import { useState } from "react";
 import LanguageSwitcher from "./language-switcher";
 import UserMenu from "./user-menu";
 
-/*
- * NavigationBar — Figma "Navigation Bar" (nodes 728:8369 desktop / 953:208061 tablet /
- * 959:318819 mobile). Desktop (2xl, the 1536 design frame): logo (28 Bold) + 64px gap +
- * nav links, then the icon cluster (40px, 4px-radius, 24px glyphs) + neutral & brand CTAs;
- * 70px side padding. Below 2xl it collapses to the tablet/mobile design — hamburger +
- * wordmark + the three icons — and the links + CTAs move into the sheet. The full desktop
- * spacing needs ~1536px, so it switches on at 2xl rather than xl. Strings: `Nav` namespace.
- * The inner row caps at the 1536 design frame (like the footer), so past 1536 the bar's
- * content stays aligned with the page containers (max-w-349 + centered) instead of
- * stretching full-bleed; the background and border still span the viewport.
- */
 const NAV_LINKS = [
-  { key: "destinations", chip: false },
-  { key: "boatTypes", chip: false },
-  { key: "findByBudget", chip: true },
-  { key: "popularRoutes", chip: false },
+  { key: "destinations", hash: "destinations", chip: false },
+  { key: "boatTypes", hash: "boat-types", chip: false },
+  { key: "findByBudget", hash: "find-by-budget", chip: true },
+  { key: "popularRoutes", hash: "popular-routes", chip: false },
 ] as const;
 
 const PLAN_MY_TRIP_HREF = "/plan-my-trip" as Route;
@@ -64,9 +53,9 @@ export default function NavigationBar() {
 
           <nav className="hidden items-center gap-6 min-[1360px]:flex">
             {NAV_LINKS.map((link) => (
-              <a
+              <Link
                 key={link.key}
-                href="#"
+                href={{ pathname: "/", hash: link.hash }}
                 className="flex cursor-pointer items-center gap-1.5 p-1 text-base font-normal whitespace-nowrap text-foreground transition-colors hover:text-brand"
               >
                 {t(link.key)}
@@ -75,7 +64,7 @@ export default function NavigationBar() {
                     {t("tryIt")}
                   </Chip>
                 )}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
@@ -117,9 +106,9 @@ export default function NavigationBar() {
       >
         <nav className="flex flex-col gap-1 p-4">
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.key}
-              href="#"
+              href={{ pathname: "/", hash: link.hash }}
               onClick={() => setOpen(false)}
               className="flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-3 text-base font-normal text-foreground transition-colors hover:bg-natural-50 hover:text-brand"
             >
@@ -129,7 +118,7 @@ export default function NavigationBar() {
                   {t("tryIt")}
                 </Chip>
               )}
-            </a>
+            </Link>
           ))}
           <div className="mt-3 flex flex-col gap-3">
             <Link
