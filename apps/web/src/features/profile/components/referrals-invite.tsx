@@ -1,5 +1,6 @@
 "use client";
 
+import { env } from "@yacht-charter/env/web";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { CircleCheck, Copy } from "lucide-react";
@@ -7,7 +8,8 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 import illustration from "../assets/referral-invite.png";
-import { REFERRAL_LINK, REFERRAL_STATS } from "../lib/referrals";
+import { useReferralCode } from "../hooks/use-referrals";
+import { REFERRAL_STATS } from "../lib/referrals";
 
 /*
  * ReferralsInvite — the invite hero of /profile/referrals.
@@ -29,8 +31,20 @@ const RULE_KEYS = ["minBooking", "expiry", "cash", "firstTime"] as const;
 export default function ReferralsInvite() {
   const t = useTranslations("Referrals");
 
+  /* referral.myCode returns a path (/register?ref=CODE); the app origin makes it shareable. */
+  const { data: referral } = useReferralCode();
+  const referralUrl = referral ? new URL(referral.urlPath, env.NEXT_PUBLIC_APP_URL) : undefined;
+  const displayLink = referralUrl
+    ? `${referralUrl.host}${referralUrl.pathname}${referralUrl.search}`
+    : "";
+
   const copyLink = () => {
-    void navigator.clipboard.writeText(REFERRAL_LINK).then(() => toast.success(t("invite.copied")));
+    if (!referralUrl) {
+      return;
+    }
+    void navigator.clipboard
+      .writeText(referralUrl.href)
+      .then(() => toast.success(t("invite.copied")));
   };
 
   return (
@@ -54,7 +68,7 @@ export default function ReferralsInvite() {
       <div className="relative flex w-full flex-col gap-3 md:flex-row md:items-start lg:max-w-[586px]">
         <TextField
           readOnly
-          value={REFERRAL_LINK}
+          value={displayLink}
           fieldClassName="h-12 bg-card"
           endIcon={
             <button

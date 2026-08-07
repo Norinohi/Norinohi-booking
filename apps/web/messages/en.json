@@ -1052,7 +1052,8 @@
         "nameMin": "Name must be at least 2 characters",
         "passwordMin": "Password must be at least 8 characters",
         "emailRegistered": "This email is already registered"
-      }
+      },
+      "referralApplied": "Referral code applied"
     }
   },
   "Referrals": {

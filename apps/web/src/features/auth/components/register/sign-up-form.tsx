@@ -14,6 +14,7 @@ import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Mail, Phone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useQueryState } from "nuqs";
 import { type ComponentProps, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import z from "zod";
 
 import Loader from "@/components/shared/feedback/loader";
 import { authClient } from "@/lib/auth-client";
+import { client } from "@/utils/orpc";
 
 /*
  * SignUpForm — Figma "Registration" (972:53926 desktop / error variant 972:54137).
@@ -64,6 +66,8 @@ export default function SignUpForm() {
   const t = useTranslations("Auth.SignUp");
   const router = useRouter();
   const { isPending } = authClient.useSession();
+  /* Referral invite links land here as /register?ref=NORI-... (referral.myCode's urlPath). */
+  const [referralCode] = useQueryState("ref");
 
   const schema = useMemo(
     () =>
@@ -89,6 +93,18 @@ export default function SignUpForm() {
       { email, name, password },
       {
         onSuccess: () => {
+          // Sign-up auto-signs the user in, so the protected redeem call is authorized here.
+          // Fire-and-forget: a bad or expired code must not break a successful registration.
+          if (referralCode) {
+            void client.referral
+              .redeem({ code: referralCode })
+              .then(({ accepted }) => {
+                if (accepted) {
+                  toast.success(t("referralApplied"));
+                }
+              })
+              .catch(() => {});
+          }
           router.push("/dashboard");
           toast.success(t("success"));
         },
