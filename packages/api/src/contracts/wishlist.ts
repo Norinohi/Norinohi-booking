@@ -33,3 +33,18 @@ export const wishlistToggleSchema = z.object({
 export const wishlistIdsSchema = z.object({
   listingIds: z.array(z.string()),
 });
+
+/**
+ * The guest wishlist lives in the browser until sign-in, so the cap is the only
+ * thing standing between a scripted client and an unbounded insert.
+ */
+export const wishlistMergeInputSchema = z.object({
+  listingIds: z.array(z.string().min(1)).max(50),
+});
+
+export const wishlistMergeSchema = z.object({
+  listingIds: z.array(z.string()),
+  added: z.number().int(),
+  /** Requested IDs that produced no new save: already saved, or gone. */
+  skipped: z.number().int(),
+});

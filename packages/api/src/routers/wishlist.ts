@@ -4,6 +4,8 @@ import {
   wishlistIdsSchema,
   wishlistListInputSchema,
   wishlistListSchema,
+  wishlistMergeInputSchema,
+  wishlistMergeSchema,
   wishlistToggleInputSchema,
   wishlistToggleSchema,
 } from "../contracts/wishlist";
@@ -12,6 +14,7 @@ import {
   addWishlistItem,
   listWishlist,
   listWishlistIds,
+  mergeWishlist,
   removeWishlistItem,
 } from "../services/wishlist";
 import { withJsonBodyExample } from "./openapi-examples";
@@ -65,6 +68,25 @@ export const wishlistRouter = {
     .output(wishlistToggleSchema)
     .handler(({ context, input }) =>
       addWishlistItem(context.db, context.session.user.id, input.listingId),
+    ),
+  merge: protectedProcedure
+    .route({
+      method: "POST",
+      path: "/wishlist/merge",
+      operationId: "mergeWishlistItems",
+      summary: "Merge a guest wishlist into the account",
+      description:
+        "Folds listings saved in the browser before sign-in into the authenticated user's wishlist, then returns the merged set so the client can clear its local copy. Idempotent: listings already saved keep their original save timestamp. `skipped` counts every ID that produced no new save, whether it was already saved or no longer exists — an unknown ID never fails the call.",
+      tags: ["Wishlist"],
+      successDescription: "The merged wishlist plus how many IDs were added and skipped.",
+      spec: withJsonBodyExample({
+        listingIds: [EXAMPLE_LISTING_ID, "ylst_yacht-lagoon-42-aurora"],
+      }),
+    })
+    .input(wishlistMergeInputSchema)
+    .output(wishlistMergeSchema)
+    .handler(({ context, input }) =>
+      mergeWishlist(context.db, context.session.user.id, input.listingIds),
     ),
   remove: protectedProcedure
     .route({

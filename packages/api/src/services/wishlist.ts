@@ -2,7 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { wishlist, wishlistItem } from "@yacht-charter/db/schema/account";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listListingsByIds } from "@yacht-charter/db/search";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -10,6 +10,7 @@ import type {
   wishlistIdsSchema,
   wishlistListInputSchema,
   wishlistListSchema,
+  wishlistMergeSchema,
   wishlistToggleSchema,
 } from "../contracts/wishlist";
 import { presentListingSummary } from "../presenters/listing";
@@ -19,6 +20,7 @@ type ListInput = z.infer<typeof wishlistListInputSchema>;
 type ListResult = z.infer<typeof wishlistListSchema>;
 type ToggleResult = z.infer<typeof wishlistToggleSchema>;
 type IdsResult = z.infer<typeof wishlistIdsSchema>;
+type MergeResult = z.infer<typeof wishlistMergeSchema>;
 
 export async function listWishlist(
   db: Database,
@@ -114,6 +116,52 @@ export async function addWishlistItem(
     .limit(1);
 
   return { listingId, saved: true, savedAt: existing?.savedAt.toISOString() ?? null };
+}
+
+/**
+ * Folds a guest's browser-held wishlist into the account at sign-in.
+ *
+ * Unknown ids are skipped rather than rejected: the local list can be weeks old,
+ * and one delisted yacht must not cost the user the rest of their saves.
+ */
+export async function mergeWishlist(
+  db: Database,
+  userId: string,
+  listingIds: string[],
+): Promise<MergeResult> {
+  const requested = [...new Set(listingIds)];
+  if (requested.length === 0) {
+    const { listingIds: current } = await listWishlistIds(db, userId);
+    return { listingIds: current, added: 0, skipped: 0 };
+  }
+
+  const known = await db
+    .select({ id: listing.id })
+    .from(listing)
+    .where(inArray(listing.id, requested));
+
+  if (known.length === 0) {
+    const { listingIds: current } = await listWishlistIds(db, userId);
+    return { listingIds: current, added: 0, skipped: requested.length };
+  }
+
+  const wishlistId = await getOrCreateWishlistId(db, userId);
+
+  // onConflictDoNothing keeps the merge idempotent against the (wishlist_id,
+  // listing_id) unique index, and preserves the original savedAt on re-runs.
+  const inserted = await db
+    .insert(wishlistItem)
+    .values(known.map((row) => ({ wishlistId, listingId: row.id })))
+    .onConflictDoNothing()
+    .returning({ listingId: wishlistItem.listingId });
+
+  const { listingIds: current } = await listWishlistIds(db, userId);
+
+  return {
+    listingIds: current,
+    added: inserted.length,
+    skipped: requested.length - inserted.length,
+  };
 }
 
 export async function removeWishlistItem(
