@@ -46,7 +46,7 @@ const SOCIALS = [
   { label: "YouTube", Icon: YoutubeIcon },
 ];
 
-export default function Footer() {
+export default function Footer({ year }: { year: number }) {
   const t = useTranslations("Layout.Footer");
 
   return (
@@ -117,7 +117,7 @@ export default function Footer() {
               {t("terms")}
             </a>
           </div>
-          <span className="max-w-full">{t("copyright", { year: new Date().getFullYear() })}</span>
+          <span className="max-w-full">{t("copyright", { year })}</span>
         </div>
       </div>
     </footer>

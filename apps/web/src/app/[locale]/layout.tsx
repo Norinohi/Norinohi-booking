@@ -10,7 +10,12 @@ import Footer from "@/components/layout/footer";
 import NavigationBar from "@/components/layout/navigation-bar";
 import Providers from "@/components/layout/providers";
 import { routing } from "@/i18n/routing";
+import { getCopyrightYear } from "@/lib/copyright-year";
 import { buildMetadata, SITE_NAME } from "@/lib/seo";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -59,6 +64,9 @@ export default async function RootLayout({
   // known segment instead of a request-time lookup.
   setRequestLocale(locale);
 
+  // Cached, so awaiting it here does not make the layout blocking. See lib/copyright-year.
+  const year = await getCopyrightYear();
+
   return (
     <html lang={locale} suppressHydrationWarning className="motion-safe:scroll-smooth">
       <body className={`${manrope.variable} antialiased`}>
@@ -70,7 +78,7 @@ export default async function RootLayout({
             <div className="grid min-h-svh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-x-clip">
               <NavigationBar />
               {children}
-              <Footer />
+              <Footer year={year} />
             </div>
           </Providers>
         </NextIntlClientProvider>
