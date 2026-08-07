@@ -36,8 +36,8 @@ function QuizCard({
       )}
       {...props}
     >
-      <span className="text-xl leading-[1.3] font-bold text-foreground">
-        {flag && <span aria-hidden>{flag} </span>}
+      <span className="flex items-center gap-2.5 text-xl leading-[1.3] font-bold text-foreground">
+        {flag && <span aria-hidden>{flag}</span>}
         {title}
       </span>
       {description && (

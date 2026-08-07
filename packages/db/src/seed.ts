@@ -5,6 +5,8 @@ import { rebuildListingSearchDocs } from "./search";
 import {
   amenity,
   amenityCategory,
+  loyaltyPerk,
+  loyaltyTier,
   availabilitySlot,
   base,
   builder,
@@ -1214,6 +1216,12 @@ const reviewBodies = [
 
 const pick = <T>(items: readonly T[], index: number) => items[index % items.length] as T;
 
+/** Unlike pick(), a lookup that can genuinely miss — a bad reference must not seed. */
+const required = <T>(item: T | undefined, label: string): T => {
+  if (item === undefined) throw new Error(`Seed fixtures are inconsistent: ${label}`);
+  return item;
+};
+
 const generatedYachts: YachtSeed[] = Array.from(
   { length: Math.max(0, TARGET_FLEET_SIZE - curatedYachts.length) },
   (_, index) => {
@@ -1223,7 +1231,10 @@ const generatedYachts: YachtSeed[] = Array.from(
     const name = yachtNames[(index * 11 + 5) % yachtNames.length]!;
 
     const title = `${name} ${model.displayName}`;
-    const location = locations.find((item) => item.id === homeBase.locationId)!;
+    const location = required(
+      locations.find((item) => item.id === homeBase.locationId),
+      `base ${homeBase.id} points at unknown location ${homeBase.locationId}`,
+    );
     const slug = slugify(`${name}-${model.displayName}-${location.name}`);
     const externalId = `yacht-${slugify(`${model.displayName}-${name}`)}`;
     const listingId = `ylst_${externalId}`;
@@ -1402,7 +1413,75 @@ const specDetailsFor = (item: (typeof yachts)[number]) => ({
   waterCapacity: item.categoryId === "cat_catamaran" ? 700 : 360,
 });
 
+/*
+ * The loyalty ladder behind the "Your Level" card. Thresholds are chosen so the
+ * screen in Figma is reachable: three completed referral bookings puts you in
+ * Navigator with two left to Captain, which is exactly what the design shows.
+ * Marketing owns these numbers — change them here, not in code.
+ */
+const loyaltyTiers = [
+  {
+    id: "tier_sailor",
+    code: "sailor",
+    name: "Sailor",
+    level: 1,
+    requiredBookings: 0,
+    referralBonusPct: "0",
+  },
+  {
+    id: "tier_navigator",
+    code: "navigator",
+    name: "Navigator",
+    level: 2,
+    requiredBookings: 3,
+    referralBonusPct: "0.05",
+  },
+  {
+    id: "tier_captain",
+    code: "captain",
+    name: "Captain",
+    level: 3,
+    requiredBookings: 5,
+    referralBonusPct: "0.10",
+  },
+  {
+    id: "tier_admiral",
+    code: "admiral",
+    name: "Admiral",
+    level: 4,
+    requiredBookings: 10,
+    referralBonusPct: "0.15",
+  },
+];
+
+/** `code` matches the i18n keys under Referrals.how.level.perks. */
+const loyaltyPerks = [
+  {
+    id: "perk_extra",
+    tierId: "tier_navigator",
+    code: "extra",
+    label: "5% extra credit on all referrals",
+    sortOrder: 0,
+  },
+  {
+    id: "perk_early",
+    tierId: "tier_navigator",
+    code: "early",
+    label: "Early access to luxury deals",
+    sortOrder: 1,
+  },
+  {
+    id: "perk_concierge",
+    tierId: "tier_captain",
+    code: "concierge",
+    label: "Personal concierge service",
+    sortOrder: 2,
+  },
+];
+
 const insertStaticData = async () => {
+  await db.insert(loyaltyTier).values(loyaltyTiers).onConflictDoNothing();
+  await db.insert(loyaltyPerk).values(loyaltyPerks).onConflictDoNothing();
   await db.insert(country).values(countries).onConflictDoNothing();
   await db.insert(region).values(regions).onConflictDoNothing();
   await db.insert(location).values(locations).onConflictDoNothing();
@@ -1653,7 +1732,7 @@ async function main() {
         obligatory: sql.raw("excluded.obligatory"),
         priceMinor: sql.raw("excluded.price_minor"),
         priceCurrency: sql.raw("excluded.price_currency"),
-      } as any,
+      },
     });
 
   await db

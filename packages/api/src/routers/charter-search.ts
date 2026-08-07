@@ -1,4 +1,3 @@
-import { db } from "@yacht-charter/db";
 import { listSearchFacets, listSearchSuggestions, searchListings } from "@yacht-charter/db/search";
 import { z } from "zod";
 
@@ -12,7 +11,8 @@ import {
 } from "../contracts/catalog";
 import { publicProcedure } from "../index";
 import { withParameterExamples } from "./openapi-examples";
-import { presentListingSummary } from "./presenters";
+import { effectivePeriod } from "../lib/dates";
+import { presentListingSummary } from "../presenters/listing";
 
 export const charterSearchRouter = {
   results: publicProcedure
@@ -42,8 +42,8 @@ export const charterSearchRouter = {
     })
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
-    .handler(async ({ input }) => {
-      const results = await searchListings(db, input);
+    .handler(async ({ context, input }) => {
+      const results = await searchListings(context.db, input);
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
@@ -74,7 +74,7 @@ export const charterSearchRouter = {
     })
     .input(partialListingSearchInputSchema)
     .output(facetsSchema)
-    .handler(({ input }) => listSearchFacets(db, input)),
+    .handler(({ context, input }) => listSearchFacets(context.db, input)),
   mapMarkers: publicProcedure
     .route({
       method: "GET",
@@ -93,8 +93,8 @@ export const charterSearchRouter = {
     })
     .input(partialListingSearchInputSchema)
     .output(mapResultSchema)
-    .handler(async ({ input }) => {
-      const results = await searchListings(db, {
+    .handler(async ({ context, input }) => {
+      const results = await searchListings(context.db, {
         ...input,
         limit: input.limit ?? 500,
         page: undefined,
@@ -131,28 +131,5 @@ export const charterSearchRouter = {
     })
     .input(z.object({ query: z.string().default("") }))
     .output(z.array(suggestionSchema))
-    .handler(({ input }) => listSearchSuggestions(db, input.query)),
+    .handler(({ context, input }) => listSearchSuggestions(context.db, input.query)),
 };
-
-function effectivePeriod(input: {
-  checkIn?: string;
-  checkOut?: string;
-  startDate?: string;
-  duration?: number;
-}) {
-  if (input.checkIn && input.checkOut) {
-    return { checkIn: input.checkIn, checkOut: input.checkOut, duration: undefined };
-  }
-
-  if (input.startDate && input.duration) {
-    const end = new Date(`${input.startDate}T00:00:00.000Z`);
-    end.setUTCDate(end.getUTCDate() + input.duration);
-    return {
-      checkIn: input.startDate,
-      checkOut: end.toISOString().slice(0, 10),
-      duration: input.duration,
-    };
-  }
-
-  return { checkIn: undefined, checkOut: undefined, duration: input.duration };
-}

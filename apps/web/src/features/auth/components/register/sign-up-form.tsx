@@ -93,11 +93,11 @@ export default function SignUpForm() {
       { email, name, password },
       {
         onSuccess: () => {
-          // Sign-up auto-signs the user in, so the protected redeem call is authorized here.
+          // Sign-up auto-signs the user in, so the protected claim call is authorized here.
           // Fire-and-forget: a bad or expired code must not break a successful registration.
           if (referralCode) {
             void client.referral
-              .redeem({ code: referralCode })
+              .claim({ code: referralCode })
               .then(({ accepted }) => {
                 if (accepted) {
                   toast.success(t("referralApplied"));

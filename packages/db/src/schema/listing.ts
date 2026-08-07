@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  jsonb,
   date,
   index,
   integer,
@@ -48,6 +49,17 @@ export const listing = pgTable(
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),
     defaultCurrency: text("default_currency"),
+    /**
+     * Overrides how much is taken up front for this yacht, e.g.
+     * `{ "mode": "full" }` or `{ "mode": "deposit", "depositPct": 0.3 }`.
+     * Null falls through to the provider's plan, then the marketplace default —
+     * §6.3 is explicit that 50/100 must never be hardcoded.
+     */
+    paymentPolicy: jsonb("payment_policy").$type<{
+      mode: "deposit" | "full";
+      depositPct?: number;
+      balanceDueAt?: string;
+    }>(),
     status: listingStatus("status").default("draft").notNull(),
     // Winning listing_source for spec resolution; plain text to avoid an FK cycle.
     primarySourceId: text("primary_source_id"),

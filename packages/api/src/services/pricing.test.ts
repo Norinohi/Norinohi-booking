@@ -1,0 +1,203 @@
+import type { QuoteLine } from "@yacht-charter/db/schema/quote";
+import { describe, expect, it } from "vitest";
+
+import {
+  type PriceAdjustment,
+  payableNowMinor,
+  resolveAdjustedPrice,
+  resolvePaymentPolicy,
+  totalMinor,
+} from "./pricing";
+
+const rule = (over: Partial<PriceAdjustment> = {}): PriceAdjustment => ({
+  id: "par_1",
+  name: "Rule",
+  type: "percentage",
+  valuePct: 10,
+  valueMinor: null,
+  priority: 0,
+  stackable: true,
+  ...over,
+});
+
+const line = (over: Partial<QuoteLine> = {}): QuoteLine => ({
+  code: "base",
+  label: "Charter",
+  amountMinor: 100_000,
+  currency: "EUR",
+  payWhen: "now",
+  kind: "base",
+  ...over,
+});
+
+describe("resolveAdjustedPrice", () => {
+  it("returns the base untouched when there are no adjustments", () => {
+    expect(resolveAdjustedPrice(100_000, [])).toEqual({
+      amountMinor: 100_000,
+      appliedRuleId: null,
+      appliedRuleLabel: null,
+      applied: [],
+    });
+  });
+
+  it("reads valuePct as a 0-100 percentage off, not a 0-1 ratio", () => {
+    expect(resolveAdjustedPrice(100_000, [rule({ valuePct: 10 })]).amountMinor).toBe(90_000);
+  });
+
+  it("coerces the numeric string drizzle returns for valuePct", () => {
+    expect(resolveAdjustedPrice(100_000, [rule({ valuePct: "10.0000" })]).amountMinor).toBe(90_000);
+  });
+
+  it("rounds rather than truncates", () => {
+    // 33333 * (1 - 0.1) = 29999.7
+    expect(resolveAdjustedPrice(33_333, [rule({ valuePct: 10 })]).amountMinor).toBe(30_000);
+  });
+
+  it("applies highest priority first", () => {
+    const result = resolveAdjustedPrice(100_000, [
+      rule({ id: "low", name: "Low", priority: 1, valuePct: 50 }),
+      rule({ id: "high", name: "High", priority: 9, valuePct: 10 }),
+    ]);
+
+    // 100000 -> 90000 (High) -> 45000 (Low)
+    expect(result.amountMinor).toBe(45_000);
+    expect(result.appliedRuleId).toBe("high");
+    expect(result.appliedRuleLabel).toBe("High");
+    expect(result.applied.map((a) => a.sourceId)).toEqual(["high", "low"]);
+  });
+
+  it("stops the chain at the first non-stackable rule", () => {
+    const result = resolveAdjustedPrice(100_000, [
+      rule({ id: "first", priority: 9, valuePct: 10, stackable: false }),
+      rule({ id: "second", priority: 1, valuePct: 50 }),
+    ]);
+
+    expect(result.amountMinor).toBe(90_000);
+    expect(result.applied.map((a) => a.sourceId)).toEqual(["first"]);
+  });
+
+  it("treats fixed_amount as an absolute replacement price, not a discount", () => {
+    const result = resolveAdjustedPrice(100_000, [
+      rule({ type: "fixed_amount", valuePct: null, valueMinor: 250_000 }),
+    ]);
+
+    expect(result.amountMinor).toBe(250_000);
+    expect(result.applied[0]?.amountMinor).toBe(150_000);
+  });
+
+  it("skips an unparseable percentage and a fixed_amount with no amount", () => {
+    const skipped = [
+      rule({ id: "nan-pct", valuePct: "not a number" }),
+      rule({ id: "no-minor", type: "fixed_amount", valuePct: null, valueMinor: null }),
+    ];
+
+    const result = resolveAdjustedPrice(100_000, skipped);
+    expect(result.amountMinor).toBe(100_000);
+    expect(result.applied).toEqual([]);
+    // A genuinely skipped adjustment never claims the applied-rule slot.
+    expect(result.appliedRuleId).toBeNull();
+  });
+
+  it("treats a null percentage as 0% rather than skipping it", () => {
+    // Number(null) is 0, which is finite, so applyOne succeeds. The price does
+    // not move, but the rule still claims appliedRuleId/Label — so a misconfigured
+    // rule surfaces a label on the admin screen while doing nothing.
+    const result = resolveAdjustedPrice(100_000, [rule({ id: "no-pct", valuePct: null })]);
+
+    expect(result.amountMinor).toBe(100_000);
+    expect(result.applied).toEqual([]);
+    expect(result.appliedRuleId).toBe("no-pct");
+  });
+
+  it("claims the applied-rule slot even when the delta is zero", () => {
+    // applyOne succeeded, so appliedRuleId is set, but nothing is pushed to
+    // `applied` because the price did not move. Both halves are load-bearing:
+    // the label drives the admin screen, the list drives the snapshot rows.
+    const result = resolveAdjustedPrice(100_000, [rule({ id: "zero", valuePct: 0 })]);
+
+    expect(result.appliedRuleId).toBe("zero");
+    expect(result.applied).toEqual([]);
+  });
+
+  it("never returns a negative price", () => {
+    const result = resolveAdjustedPrice(100_000, [rule({ valuePct: 250 })]);
+    expect(result.amountMinor).toBe(0);
+  });
+
+  it("does not mutate the caller's array while sorting by priority", () => {
+    const input = [rule({ id: "a", priority: 1 }), rule({ id: "b", priority: 9 })];
+    resolveAdjustedPrice(100_000, input);
+    expect(input.map((a) => a.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("resolvePaymentPolicy", () => {
+  const provider = { mode: "deposit" as const, depositPct: 0.3 };
+
+  it("expresses depositPct as a 0-1 ratio, unlike PriceAdjustment.valuePct", () => {
+    expect(resolvePaymentPolicy(null, provider, "EUR").depositPct).toBe(0.3);
+  });
+
+  it("prefers an explicit listing override over the provider plan", () => {
+    expect(resolvePaymentPolicy({ mode: "deposit", depositPct: 0.25 }, provider, "EUR")).toEqual({
+      mode: "deposit",
+      depositPct: 0.25,
+      balanceDueAt: undefined,
+      currency: "EUR",
+    });
+  });
+
+  it("forces 100% when the mode is full, whatever depositPct said", () => {
+    const policy = resolvePaymentPolicy({ mode: "full", depositPct: 0.25 }, provider, "EUR");
+    expect(policy).toMatchObject({ mode: "full", depositPct: 1 });
+  });
+
+  it("falls back to the marketplace default of half when nobody specifies", () => {
+    const policy = resolvePaymentPolicy({ mode: "deposit" }, provider, "EUR");
+    expect(policy.depositPct).toBe(0.5);
+  });
+
+  it("inherits balanceDueAt from the provider when the override omits it", () => {
+    const policy = resolvePaymentPolicy(
+      { mode: "deposit", depositPct: 0.25 },
+      { ...provider, balanceDueAt: "2026-07-01" },
+      "EUR",
+    );
+    expect(policy.balanceDueAt).toBe("2026-07-01");
+  });
+
+  it("carries the currency through untouched, including case", () => {
+    expect(resolvePaymentPolicy(null, provider, "usd").currency).toBe("usd");
+  });
+});
+
+describe("payableNowMinor / totalMinor", () => {
+  const lines = [
+    line({ code: "base", amountMinor: 500_000, payWhen: "now" }),
+    line({ code: "skipper", amountMinor: 90_000, payWhen: "now", kind: "extra" }),
+    line({ code: "fuel", amountMinor: 30_000, payWhen: "at_check_in", kind: "extra" }),
+  ];
+
+  it("totals every line regardless of when it is paid", () => {
+    expect(totalMinor(lines)).toBe(620_000);
+  });
+
+  it("counts only the now lines as payable up front", () => {
+    expect(payableNowMinor(lines)).toBe(590_000);
+  });
+
+  it("returns zero for an empty quote", () => {
+    expect(totalMinor([])).toBe(0);
+    expect(payableNowMinor([])).toBe(0);
+  });
+
+  it("clamps a net-negative quote to zero rather than refunding", () => {
+    const overCredited = [
+      line({ amountMinor: 100_000, payWhen: "now" }),
+      line({ code: "credit", amountMinor: -150_000, payWhen: "now", kind: "credit" }),
+    ];
+
+    expect(totalMinor(overCredited)).toBe(0);
+    expect(payableNowMinor(overCredited)).toBe(0);
+  });
+});

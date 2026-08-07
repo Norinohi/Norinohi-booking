@@ -39,9 +39,9 @@ import ChangePasswordDialog from "./change-password-dialog";
  * ProfileForm — Figma "Your Profile" (972:54538 desktop / 972:70725 tablet / 972:70921 mobile).
  * Card: titled header + a 2-column field grid (First/Last, Email/Phone), a masked password row
  * with a "Change Password" action, then the Save / Deactivate actions.
- * First/last are split from the profile's `name` and re-joined on save; name/phone persist via
- * profile.update, an email change goes through authClient.changeEmail, and Deactivate calls
- * profile.deactivate before signing out (reactivation is simply the next sign-in).
+ * First/last name and phone persist via profile.update, an email change goes through
+ * authClient.changeEmail, and Deactivate calls profile.deactivate before signing out
+ * (reactivation is simply the next sign-in).
  */
 
 function useProfileSchema() {
@@ -61,14 +61,13 @@ function useProfileSchema() {
 
 type Values = z.infer<ReturnType<typeof useProfileSchema>>;
 
-function splitName(full: string) {
-  const [first = "", ...rest] = full.trim().split(/\s+/);
-  return { firstName: first, lastName: rest.join(" ") };
-}
-
 function toValues(profile: Profile): Values {
-  const { firstName, lastName } = splitName(profile.name ?? "");
-  return { firstName, lastName, email: profile.email, phone: profile.phone ?? "" };
+  return {
+    firstName: profile.firstName ?? "",
+    lastName: profile.lastName ?? "",
+    email: profile.email,
+    phone: profile.phone ?? "",
+  };
 }
 
 export default function ProfileForm({
@@ -98,11 +97,14 @@ export default function ProfileForm({
   }, [form, profile]);
 
   const onSubmit = async (values: Values) => {
-    const name = `${values.firstName} ${values.lastName}`.trim();
     const phone = values.phone.trim();
 
     try {
-      await updateProfile.mutateAsync({ name, phone: phone === "" ? null : phone });
+      await updateProfile.mutateAsync({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phone: phone === "" ? null : phone,
+      });
     } catch {
       toast.error(t("errors.updateFailed"));
       return;

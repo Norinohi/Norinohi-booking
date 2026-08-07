@@ -7,7 +7,7 @@ import {
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ArrowRight, Bookmark, Check, Sailboat, Star, Users } from "lucide-react";
+import { ArrowRight, Check, Sailboat, Star, Users } from "lucide-react";
 import type { Route } from "next";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { Image } from "@/components/shared/data-display/image";
 
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
+import { WishlistButton } from "@/features/wishlist";
 
 import PrepaymentNote from "./prepayment-note";
 
@@ -33,6 +34,8 @@ export type BoatCardCharterDate = string;
 const DETAIL_HREF = "/yachts/lagoon-42" as Route;
 
 export type BoatCardProps = {
+  /** Listing id — absent on cards rendering sample data, which leaves the bookmark inert. */
+  id?: string;
   images: string[];
   imageAlt?: string;
   badges?: BoatCardBadge[];
@@ -59,13 +62,12 @@ export type BoatCardProps = {
 };
 
 function Gallery({
+  id,
   images,
   imageAlt,
   badges,
   priority,
-}: Pick<BoatCardProps, "images" | "imageAlt" | "badges" | "priority">) {
-  const t = useTranslations("Common.boatCard");
-
+}: Pick<BoatCardProps, "id" | "images" | "imageAlt" | "badges" | "priority">) {
   return (
     <div className="relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl">
       <Carousel className="size-full">
@@ -103,15 +105,7 @@ function Gallery({
             </Chip>
           ))}
         </div>
-        <Button
-          type="button"
-          variant="subtle"
-          size="icon-md"
-          aria-label={t("save")}
-          className="shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60"
-        >
-          <Bookmark />
-        </Button>
+        <WishlistButton listingId={id} />
       </div>
     </div>
   );
@@ -313,6 +307,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
       )}
     >
       <Gallery
+        id={boat.id}
         images={boat.images}
         imageAlt={boat.imageAlt}
         badges={boat.badges}

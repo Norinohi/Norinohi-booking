@@ -130,6 +130,7 @@
     },
     "boatCard": {
       "save": "Save to wishlist",
+      "remove": "Remove from wishlist",
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
@@ -767,6 +768,8 @@
       },
       "getConsultation": "Get Consultation",
       "viewDetails": "View Details",
+      "seeAllMatches": "See all matches",
+      "durationDays": "{days, plural, one {# day} other {# days}}",
       "boat": {
         "location": "Aphines, Greece",
         "title": "Lagoon 42",
@@ -774,6 +777,67 @@
         "tagFullCrew": "Full crew",
         "from": "From",
         "perPerson": "/ per person"
+      },
+      "noMatch": {
+        "title": "No exact match yet",
+        "description": "We couldn't find a yacht that matches every answer, but here's what we'd search for.",
+        "seeAllMatches": "See all yachts"
+      },
+      "error": {
+        "title": "Something went wrong",
+        "description": "We couldn't load your recommendation. Please try again.",
+        "retry": "Try again"
+      },
+      "consultationDialog": {
+        "title": "Get a free consultation",
+        "description": "Tell us how to reach you and one of our charter experts will follow up with tailored options.",
+        "fields": {
+          "name": { "label": "Full name", "placeholder": "Jane Doe" },
+          "email": { "label": "Email", "placeholder": "jane@example.com" },
+          "phone": { "label": "Phone (optional)", "placeholder": "+1 234 567 8900" },
+          "message": {
+            "label": "Message (optional)",
+            "placeholder": "Anything else we should know about your trip?"
+          }
+        },
+        "submit": "Send request",
+        "cancel": "Cancel",
+        "success": "Thanks! We'll be in touch shortly.",
+        "errors": {
+          "nameRequired": "Please enter your name",
+          "emailInvalid": "Please enter a valid email address",
+          "submitFailed": "We couldn't send your request. Please try again."
+        }
+      }
+    },
+    "consultation": {
+      "close": "Close",
+      "title": "Get in touch",
+      "subtitle": "Choose how you'd like to connect with our team.",
+      "back": "Back",
+      "options": {
+        "call": {
+          "title": "Book a quick call",
+          "description": "Pick a time that works for you — a short call with a charter expert."
+        },
+        "message": {
+          "title": "Send a message",
+          "description": "Tell us about your trip and we'll get back to you by email."
+        }
+      },
+      "placeholder": {
+        "title": "Booking is coming soon",
+        "description": "Online scheduling isn't ready yet — send us a message instead and we'll set up a time that works for you.",
+        "cta": "Send a message instead"
+      },
+      "submitted": {
+        "title": "Thanks — we'll be in touch",
+        "description": "One of our charter experts will follow up shortly."
+      },
+      "error": {
+        "title": "Something went wrong",
+        "description": "We couldn't load your trip details. Please try again.",
+        "retry": "Try again"
       }
     }
   },
@@ -783,6 +847,7 @@
     "share": "Share",
     "seeOnMap": "See On Map",
     "addToWishlist": "Add To Wishlist",
+    "removeFromWishlist": "Remove From Wishlist",
     "included": "Included",
     "gallery": {
       "close": "Close",
@@ -980,6 +1045,15 @@
     "clearDates": "Clear dates",
     "emptyTitle": "No yachts yet",
     "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here."
+  },
+  "Wishlist": {
+    "title": "Your Wishlist",
+    "back": "Back",
+    "emptyTitle": "No saved yachts yet",
+    "emptyDescription": "Start exploring and save your favorites for later",
+    "someUnavailable": "Some of your saved yachts are no longer available.",
+    "toggleFailed": "Couldn't update your wishlist. Please try again.",
+    "merged": "{count, plural, one {# saved yacht} other {# saved yachts}} added to your account."
   },
   "Auth": {
     "SignIn": {

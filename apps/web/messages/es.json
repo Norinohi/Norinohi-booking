@@ -130,6 +130,7 @@
     },
     "boatCard": {
       "save": "Guardar en favoritos",
+      "remove": "Quitar de favoritos",
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
@@ -767,6 +768,8 @@
       },
       "getConsultation": "Solicitar asesoría",
       "viewDetails": "Ver detalles",
+      "seeAllMatches": "Ver todas las coincidencias",
+      "durationDays": "{days, plural, one {# día} other {# días}}",
       "boat": {
         "location": "Aphines, Grecia",
         "title": "Lagoon 42",
@@ -774,6 +777,67 @@
         "tagFullCrew": "Con tripulación",
         "from": "Desde",
         "perPerson": "/ por persona"
+      },
+      "noMatch": {
+        "title": "Aún no hay una coincidencia exacta",
+        "description": "No encontramos un yate que coincida con todas tus respuestas, pero esto es lo que buscaríamos.",
+        "seeAllMatches": "Ver todos los yates"
+      },
+      "error": {
+        "title": "Algo salió mal",
+        "description": "No pudimos cargar tu recomendación. Inténtalo de nuevo.",
+        "retry": "Intentar de nuevo"
+      },
+      "consultationDialog": {
+        "title": "Solicita una asesoría gratuita",
+        "description": "Cuéntanos cómo contactarte y uno de nuestros expertos en chárter te enviará opciones a medida.",
+        "fields": {
+          "name": { "label": "Nombre completo", "placeholder": "Jane Doe" },
+          "email": { "label": "Correo electrónico", "placeholder": "jane@example.com" },
+          "phone": { "label": "Teléfono (opcional)", "placeholder": "+1 234 567 8900" },
+          "message": {
+            "label": "Mensaje (opcional)",
+            "placeholder": "¿Algo más que debamos saber sobre tu viaje?"
+          }
+        },
+        "submit": "Enviar solicitud",
+        "cancel": "Cancelar",
+        "success": "¡Gracias! Nos pondremos en contacto pronto.",
+        "errors": {
+          "nameRequired": "Por favor, introduce tu nombre",
+          "emailInvalid": "Por favor, introduce un correo electrónico válido",
+          "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
+        }
+      }
+    },
+    "consultation": {
+      "close": "Cerrar",
+      "title": "Ponte en contacto",
+      "subtitle": "Elige cómo te gustaría conectar con nuestro equipo.",
+      "back": "Atrás",
+      "options": {
+        "call": {
+          "title": "Reservar una llamada rápida",
+          "description": "Elige un horario que te convenga — una breve llamada con un experto en chárter."
+        },
+        "message": {
+          "title": "Enviar un mensaje",
+          "description": "Cuéntanos sobre tu viaje y te responderemos por correo electrónico."
+        }
+      },
+      "placeholder": {
+        "title": "La reserva estará disponible pronto",
+        "description": "La programación en línea aún no está lista — envíanos un mensaje y coordinaremos un horario que te convenga.",
+        "cta": "Enviar un mensaje en su lugar"
+      },
+      "submitted": {
+        "title": "Gracias — nos pondremos en contacto",
+        "description": "Uno de nuestros expertos en chárter te contactará en breve."
+      },
+      "error": {
+        "title": "Algo salió mal",
+        "description": "No pudimos cargar los datos de tu viaje. Inténtalo de nuevo.",
+        "retry": "Intentar de nuevo"
       }
     }
   },
@@ -783,6 +847,7 @@
     "share": "Compartir",
     "seeOnMap": "Ver en el mapa",
     "addToWishlist": "Añadir a favoritos",
+    "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
     "gallery": {
       "close": "Cerrar",
@@ -980,6 +1045,15 @@
     "clearDates": "Borrar fechas",
     "emptyTitle": "Aún no hay yates",
     "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí."
+  },
+  "Wishlist": {
+    "title": "Tus favoritos",
+    "back": "Volver",
+    "emptyTitle": "Aún no hay yates guardados",
+    "emptyDescription": "Empieza a explorar y guarda tus favoritos para más adelante",
+    "someUnavailable": "Algunos de tus yates guardados ya no están disponibles.",
+    "toggleFailed": "No se pudieron actualizar tus favoritos. Inténtalo de nuevo.",
+    "merged": "Se {count, plural, one {añadió # yate guardado} other {añadieron # yates guardados}} a tu cuenta."
   },
   "Auth": {
     "SignIn": {

@@ -1,16 +1,20 @@
 import { ORPCError } from "@orpc/server";
-import { db } from "@yacht-charter/db";
 import {
   getListingDetailByIdOrSlug,
   listListingReviews,
+  listListingsByIds,
   listSimilarListings,
 } from "@yacht-charter/db/search";
 import { z } from "zod";
 
-import { listingDetailSchema, listingSummarySchema } from "../contracts/catalog";
+import {
+  listingDetailSchema,
+  listingSummarySchema,
+  listingsByIdsInputSchema,
+} from "../contracts/catalog";
 import { publicProcedure } from "../index";
-import { withParameterExamples } from "./openapi-examples";
-import { presentListingDetail, presentListingSummary } from "./presenters";
+import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
+import { presentListingDetail, presentListingSummary } from "../presenters/listing";
 
 const idInputSchema = z.object({ id: z.string() });
 const listingIdInputSchema = z.object({ listingId: z.string() });
@@ -33,12 +37,32 @@ export const listingsRouter = {
     })
     .input(idInputSchema)
     .output(listingDetailSchema)
-    .handler(async ({ input }) => {
-      const listing = await getListingDetailByIdOrSlug(db, input.id);
+    .handler(async ({ context, input }) => {
+      const listing = await getListingDetailByIdOrSlug(context.db, input.id);
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
       return presentListingDetail(listing);
+    }),
+  byIds: publicProcedure
+    .route({
+      method: "POST",
+      path: "/listings/by-ids",
+      operationId: "listListingsByIds",
+      summary: "List listing summaries by id",
+      description:
+        "Hydrates card-ready listing summaries for an explicit set of listing IDs, in the order requested. Backs the guest wishlist, which stores only IDs in the browser. IDs that no longer resolve to a published listing are dropped from the response rather than failing the call.",
+      tags: ["Listings"],
+      successDescription: "Listing summaries for the IDs that still resolve, in request order.",
+      spec: withJsonBodyExample({
+        listingIds: ["ylst_yacht-sunreef-60-celeste", "ylst_yacht-lagoon-42-aurora"],
+      }),
+    })
+    .input(listingsByIdsInputSchema)
+    .output(z.array(listingSummarySchema))
+    .handler(async ({ context, input }) => {
+      const docs = await listListingsByIds(context.db, input.listingIds);
+      return docs.map((doc) => presentListingSummary(doc));
     }),
   reviews: publicProcedure
     .route({
@@ -65,7 +89,7 @@ export const listingsRouter = {
         }),
       ),
     )
-    .handler(({ input }) => listListingReviews(db, input.listingId)),
+    .handler(({ context, input }) => listListingReviews(context.db, input.listingId)),
   similar: publicProcedure
     .route({
       method: "GET",
@@ -82,8 +106,8 @@ export const listingsRouter = {
     })
     .input(listingIdInputSchema)
     .output(z.array(listingSummarySchema))
-    .handler(async ({ input }) => {
-      const listings = await listSimilarListings(db, input.listingId);
+    .handler(async ({ context, input }) => {
+      const listings = await listSimilarListings(context.db, input.listingId);
       return listings.map((listing) => presentListingSummary(listing));
     }),
 };

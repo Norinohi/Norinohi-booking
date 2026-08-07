@@ -10,7 +10,8 @@
     }
   },
   "scripts": {
-    "check-types": "tsc -b"
+    "check-types": "tsc -b",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@orpc/client": "catalog:",
@@ -23,11 +24,13 @@
     "@yacht-charter/providers": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
+    "stripe": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@yacht-charter/config": "workspace:*",
     "hono": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
