@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   Popover,
   PopoverArrow,
@@ -13,6 +14,8 @@ import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
 import { staticMapUrl } from "@/lib/mapbox";
+
+const withProtocol = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
 
 export type Coordinates = { lat: number; lng: number };
 
@@ -51,7 +54,7 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
   return (
     <article className={cn("w-full overflow-hidden rounded-2xl", className)}>
       <div className="flex flex-col md:flex-row md:items-stretch md:gap-4">
-        <div className="relative h-41 w-full shrink-0 md:h-auto md:w-57">
+        <div className="relative h-41 w-full shrink-0 overflow-hidden md:h-auto md:w-57">
           <Image
             src={marina.mapImageUrl ?? staticMapUrl(marina.coordinates)}
             alt=""
@@ -61,7 +64,6 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
             className="object-cover"
           />
           <div aria-hidden className="absolute inset-0 bg-black/40" />
-
           <div
             aria-hidden
             className="absolute top-1/2 left-1/2 flex size-27.6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/12 bg-white/12"
@@ -92,13 +94,20 @@ export function MarinaCard({ marina, className }: MarinaCardProps) {
             ) : null}
           </div>
 
-          <button
-            type="button"
-            className="flex w-fit cursor-pointer items-center gap-1.5 rounded-lg px-4 py-1.5 text-base font-semibold capitalize leading-[1.25] text-foreground outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40"
-          >
-            {t("viewDetails")}
-            <ArrowUpRight className="size-4 shrink-0" />
-          </button>
+          {marina.website ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              nativeButton={false}
+              render={
+                <a href={withProtocol(marina.website)} target="_blank" rel="noopener noreferrer" />
+              }
+              className="w-fit capitalize"
+            >
+              {t("viewDetails")}
+              <ArrowUpRight className="size-4 shrink-0" />
+            </Button>
+          ) : null}
         </div>
       </div>
     </article>

@@ -1,6 +1,9 @@
+"use client";
+
 import { env } from "@yacht-charter/env/web";
+import { Loader2 } from "lucide-react";
 import NextImage, { type ImageLoaderProps } from "next/image";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 
 type ImageSrc = ComponentProps<typeof NextImage>["src"];
 
@@ -27,8 +30,9 @@ type BaseProps = {
   sizes?: string;
   priority?: boolean;
   quality?: number;
-  /** Required for SVG — the Next optimizer rejects it without `dangerouslyAllowSVG`. */
   unoptimized?: boolean;
+  onLoad?: ComponentProps<typeof NextImage>["onLoad"];
+  onError?: ComponentProps<typeof NextImage>["onError"];
   className?: string;
 };
 
@@ -37,6 +41,44 @@ type FillProps = BaseProps & { fill: true; width?: never; height?: never };
 
 export type ImageProps = SizedProps | FillProps;
 
-export function Image({ src, ...props }: ImageProps) {
-  return <NextImage src={src} loader={isLocal(src) ? undefined : cloudinaryLoader} {...props} />;
+export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) {
+  const dynamic = !isLocal(src);
+  const overlay = dynamic && rest.fill === true;
+  const ref = useRef<HTMLImageElement>(null);
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+
+  useEffect(() => {
+    const img = ref.current;
+    if (img?.complete) setStatus(img.naturalWidth > 0 ? "loaded" : "error");
+  }, []);
+
+  const handleLoad: ComponentProps<typeof NextImage>["onLoad"] = (event) => {
+    setStatus("loaded");
+    onLoad?.(event);
+  };
+  const handleError: ComponentProps<typeof NextImage>["onError"] = (event) => {
+    setStatus("error");
+    onError?.(event);
+  };
+
+  return (
+    <>
+      <NextImage
+        ref={ref}
+        src={src}
+        loader={dynamic ? cloudinaryLoader : undefined}
+        onLoad={handleLoad}
+        onError={handleError}
+        className={className}
+        {...rest}
+      />
+      {overlay && status !== "loaded" ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted">
+          {status === "loading" ? (
+            <Loader2 className="size-6 animate-spin text-natural-400" />
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
 }
