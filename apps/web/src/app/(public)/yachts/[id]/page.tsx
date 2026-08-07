@@ -1,4 +1,6 @@
+import { ORPCError } from "@orpc/client";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { Hydrated } from "@/components/layout/hydrated";
@@ -23,7 +25,18 @@ export async function generateMetadata({
 
 export default async function YachtDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { state, title } = await prefetchListingDetail(id);
+
+  let detail: Awaited<ReturnType<typeof prefetchListingDetail>>;
+  try {
+    detail = await prefetchListingDetail(id);
+  } catch (error) {
+    // listings.get throws NOT_FOUND for an unknown id/slug — that's a 404, not a 500.
+    if (error instanceof ORPCError && error.code === "NOT_FOUND") {
+      notFound();
+    }
+    throw error;
+  }
+  const { state, title } = detail;
 
   return (
     <Hydrated state={state}>
