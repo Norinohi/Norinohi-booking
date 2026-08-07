@@ -1,6 +1,22 @@
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
+import { daysBetween } from "../lib/dates";
+
 const EMPTY_IMAGE = "";
+
+/**
+ * What a search card quotes as the up-front payment.
+ *
+ * This does NOT agree with the real deposit: checkout resolves it per listing
+ * through resolvePaymentPolicy in services/pricing.ts, which honours a listing
+ * override, then the provider's plan, then a 50% marketplace default. So a card
+ * can advertise 25% on a listing the checkout will ask 50% for.
+ *
+ * Left as-is deliberately -- reconciling them changes a displayed price, which
+ * is a product decision. Naming it is so the disagreement is visible rather
+ * than buried in an expression.
+ */
+const CARD_PREPAYMENT_PCT = 0.25;
 
 export type ListingSummaryOptions = {
   checkIn?: string | null;
@@ -72,7 +88,7 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
       periodDays,
       perPersonMinor: doc.berths ? Math.round(amountMinor / doc.berths) : null,
       bookingPrepayment: {
-        amountMinor: Math.round(amountMinor * 0.25),
+        amountMinor: Math.round(amountMinor * CARD_PREPAYMENT_PCT),
         currency,
       },
     },
@@ -110,13 +126,4 @@ function stableCount(seed: string, min: number, max: number): number {
   const spread = max - min + 1;
   const value = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return min + (value % spread);
-}
-
-function daysBetween(from: string | null, to: string | null): number | null {
-  if (!from || !to) return null;
-  const start = new Date(`${from}T00:00:00.000Z`);
-  const end = new Date(`${to}T00:00:00.000Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
-  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000);
-  return days > 0 ? days : null;
 }

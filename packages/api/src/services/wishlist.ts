@@ -12,7 +12,7 @@ import type {
   wishlistListSchema,
   wishlistToggleSchema,
 } from "../contracts/wishlist";
-import { presentListingSummary } from "../routers/presenters";
+import { presentListingSummary } from "../presenters/listing";
 import { paginationFor } from "./pagination";
 type ListInput = z.infer<typeof wishlistListInputSchema>;
 

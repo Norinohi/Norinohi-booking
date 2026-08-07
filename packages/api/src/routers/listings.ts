@@ -9,7 +9,7 @@ import { z } from "zod";
 import { listingDetailSchema, listingSummarySchema } from "../contracts/catalog";
 import { publicProcedure } from "../index";
 import { withParameterExamples } from "./openapi-examples";
-import { presentListingDetail, presentListingSummary } from "./presenters";
+import { presentListingDetail, presentListingSummary } from "../presenters/listing";
 
 const idInputSchema = z.object({ id: z.string() });
 const listingIdInputSchema = z.object({ listingId: z.string() });

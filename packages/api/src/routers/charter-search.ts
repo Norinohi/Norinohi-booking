@@ -11,7 +11,8 @@ import {
 } from "../contracts/catalog";
 import { publicProcedure } from "../index";
 import { withParameterExamples } from "./openapi-examples";
-import { presentListingSummary } from "./presenters";
+import { effectivePeriod } from "../lib/dates";
+import { presentListingSummary } from "../presenters/listing";
 
 export const charterSearchRouter = {
   results: publicProcedure
@@ -132,26 +133,3 @@ export const charterSearchRouter = {
     .output(z.array(suggestionSchema))
     .handler(({ context, input }) => listSearchSuggestions(context.db, input.query)),
 };
-
-function effectivePeriod(input: {
-  checkIn?: string;
-  checkOut?: string;
-  startDate?: string;
-  duration?: number;
-}) {
-  if (input.checkIn && input.checkOut) {
-    return { checkIn: input.checkIn, checkOut: input.checkOut, duration: undefined };
-  }
-
-  if (input.startDate && input.duration) {
-    const end = new Date(`${input.startDate}T00:00:00.000Z`);
-    end.setUTCDate(end.getUTCDate() + input.duration);
-    return {
-      checkIn: input.startDate,
-      checkOut: end.toISOString().slice(0, 10),
-      duration: input.duration,
-    };
-  }
-
-  return { checkIn: undefined, checkOut: undefined, duration: input.duration };
-}

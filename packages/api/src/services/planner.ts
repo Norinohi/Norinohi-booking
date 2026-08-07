@@ -3,7 +3,7 @@ import type { z } from "zod";
 
 import type { Database } from "../context";
 import type { PlannerAnswers, plannerRecommendationSchema } from "../contracts/planner";
-import { presentListingSummary } from "../routers/presenters";
+import { presentListingSummary } from "../presenters/listing";
 type Recommendation = z.infer<typeof plannerRecommendationSchema>;
 
 const CURRENCY = "EUR";
