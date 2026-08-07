@@ -1115,7 +1115,8 @@
         "nameMin": "El nombre debe tener al menos 2 caracteres",
         "passwordMin": "La contraseña debe tener al menos 8 caracteres",
         "emailRegistered": "Este correo ya está registrado"
-      }
+      },
+      "referralApplied": "Código de referido aplicado"
     }
   },
   "Referrals": {
@@ -1174,6 +1175,109 @@
       "daysAgo": "{count, plural, one {hace # día} other {hace # días}}",
       "completed": "Completado",
       "pending": "Pendiente"
+    }
+  },
+  "Discounts": {
+    "title": "Gestor de descuentos y precios",
+    "subtitle": "Gestiona códigos promocionales y precios de yates.",
+    "create": "Crear descuento",
+    "tabs": {
+      "discounts": "Descuentos",
+      "managePrices": "Gestionar precios"
+    },
+    "table": {
+      "name": "Nombre del descuento",
+      "code": "Código",
+      "typeValue": "Tipo y valor",
+      "appliesTo": "Se aplica a",
+      "status": "Estado",
+      "usage": "Uso"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "type": {
+      "percentage": "Porcentaje",
+      "fixed": "Fijo"
+    },
+    "applies": {
+      "allYachts": "Todos los yates",
+      "allCatamarans": "Todos los catamaranes",
+      "allGullets": "Todas las goletas",
+      "allMotorboats": "Todas las lanchas",
+      "allMotorYachts": "Todos los yates a motor",
+      "allSailboats": "Todos los veleros",
+      "specific": "Yates específicos"
+    },
+    "yachtTypes": {
+      "catamaran": "Catamarán",
+      "gulet": "Goleta",
+      "motorYacht": "Yate a motor",
+      "powerCatamaran": "Catamarán a motor",
+      "sailboat": "Velero",
+      "motorBoat": "Lancha"
+    },
+    "dialog": {
+      "createTitle": "Crear nuevo descuento",
+      "editTitle": "Editar descuento",
+      "name": {
+        "label": "Nombre del descuento",
+        "placeholder": "p. ej. Summer View 2026"
+      },
+      "code": {
+        "label": "Código de descuento",
+        "placeholder": "p. ej. SUMMER2026"
+      },
+      "type": {
+        "label": "Tipo de descuento"
+      },
+      "price": {
+        "label": "Valor del descuento",
+        "placeholder": "10"
+      },
+      "expiration": {
+        "label": "Fecha de expiración",
+        "placeholder": "Cualquier fecha"
+      },
+      "appliesTo": {
+        "label": "Tipo de descuento"
+      },
+      "search": {
+        "placeholder": "Buscar yate"
+      },
+      "submitCreate": "Crear descuento",
+      "submitSave": "Guardar cambios",
+      "created": "Descuento creado",
+      "saved": "Descuento actualizado",
+      "errors": {
+        "nameRequired": "Introduce un nombre",
+        "codeRequired": "Introduce un código",
+        "priceRequired": "Introduce un valor"
+      }
+    },
+    "prices": {
+      "search": "Buscar por nombre",
+      "allTypes": "Todos los tipos",
+      "allLocations": "Todas las ubicaciones",
+      "table": {
+        "yacht": "Yate",
+        "location": "Ubicación",
+        "basePrice": "Precio base",
+        "currentPrice": "Precio actual",
+        "edit": "Editar precio"
+      },
+      "dialog": {
+        "title": "Editar precio",
+        "basePrice": "Precio base",
+        "newPrice": "Nuevo precio",
+        "newPricePlaceholder": "p. ej. €14,539",
+        "submit": "Actualizar precio",
+        "updated": "Precio actualizado",
+        "errors": {
+          "priceRequired": "Introduce un nuevo precio"
+        }
+      }
     }
   }
 }

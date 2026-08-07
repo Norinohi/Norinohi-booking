@@ -1115,7 +1115,8 @@
         "nameMin": "Name must be at least 2 characters",
         "passwordMin": "Password must be at least 8 characters",
         "emailRegistered": "This email is already registered"
-      }
+      },
+      "referralApplied": "Referral code applied"
     }
   },
   "Referrals": {
@@ -1174,6 +1175,109 @@
       "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
       "completed": "Completed",
       "pending": "Pending"
+    }
+  },
+  "Discounts": {
+    "title": "Discount & Price Manager",
+    "subtitle": "Manage promotional codes and yacht pricing.",
+    "create": "Create Discount",
+    "tabs": {
+      "discounts": "Discounts",
+      "managePrices": "Manage Prices"
+    },
+    "table": {
+      "name": "Discount Name",
+      "code": "Code",
+      "typeValue": "Type & Value",
+      "appliesTo": "Applies to",
+      "status": "Status",
+      "usage": "Usage"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "type": {
+      "percentage": "Percentage",
+      "fixed": "Fixed"
+    },
+    "applies": {
+      "allYachts": "All yachts",
+      "allCatamarans": "All Catamarans",
+      "allGullets": "All Guller",
+      "allMotorboats": "All Motorboats",
+      "allMotorYachts": "All Motor yachts",
+      "allSailboats": "All Sailboat",
+      "specific": "Specific Yachts"
+    },
+    "yachtTypes": {
+      "catamaran": "Catamaran",
+      "gulet": "Gulet",
+      "motorYacht": "Motor Yacht",
+      "powerCatamaran": "Power Catamaran",
+      "sailboat": "Sailboat",
+      "motorBoat": "Motor Boat"
+    },
+    "dialog": {
+      "createTitle": "Create new discount",
+      "editTitle": "Edit discount",
+      "name": {
+        "label": "Discount Name",
+        "placeholder": "e.g. Summer View 2026"
+      },
+      "code": {
+        "label": "Discount Code",
+        "placeholder": "e.g. SUMMER2026"
+      },
+      "type": {
+        "label": "Discount Type"
+      },
+      "price": {
+        "label": "Discount Price",
+        "placeholder": "10"
+      },
+      "expiration": {
+        "label": "Expiration Date",
+        "placeholder": "Any dates"
+      },
+      "appliesTo": {
+        "label": "Discount Type"
+      },
+      "search": {
+        "placeholder": "Search Yacht"
+      },
+      "submitCreate": "Create Discount",
+      "submitSave": "Save Changes",
+      "created": "Discount created",
+      "saved": "Discount updated",
+      "errors": {
+        "nameRequired": "Enter a discount name",
+        "codeRequired": "Enter a discount code",
+        "priceRequired": "Enter a discount value"
+      }
+    },
+    "prices": {
+      "search": "Search by name",
+      "allTypes": "All types",
+      "allLocations": "All locations",
+      "table": {
+        "yacht": "Yacht",
+        "location": "Location",
+        "basePrice": "Base Price",
+        "currentPrice": "Current Price",
+        "edit": "Edit price"
+      },
+      "dialog": {
+        "title": "Edit Price",
+        "basePrice": "Base Price",
+        "newPrice": "New Price",
+        "newPricePlaceholder": "e.g. €14,539",
+        "submit": "Update Price",
+        "updated": "Price updated",
+        "errors": {
+          "priceRequired": "Enter a new price"
+        }
+      }
     }
   }
 }

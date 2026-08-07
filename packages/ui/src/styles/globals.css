@@ -333,6 +333,10 @@
   }
   html {
     @apply font-sans;
+    /* Pin the layout viewport to the device width: without this, mobile Chrome expands it
+     * to the page's intrinsic bounds when a dialog's scroll-lock lands on a page with wide
+     * scrollable content (e.g. the admin tables), which blows up every fixed overlay. */
+    overflow-x: clip;
   }
 }
 

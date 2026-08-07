@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { authClient } from "@/lib/auth-client";
+
 /*
  * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
  * Account menu card: a greeting header over a soft wash, then rows with an active highlight
@@ -25,6 +27,7 @@ const HREFS: Partial<Record<SidebarItem, Route>> = {
   profile: "/profile",
   bookings: "/profile/bookings",
   referrals: "/profile/referrals",
+  discount: "/profile/discounts",
 };
 
 type SidebarProps = {
@@ -44,8 +47,14 @@ export default function Sidebar({
 }: SidebarProps) {
   const t = useTranslations("Layout.Sidebar");
   const pathname = usePathname();
-  const items: readonly SidebarItem[] =
-    variant === "admin" ? [...BASE_ITEMS, ...ADMIN_ITEMS] : BASE_ITEMS;
+
+  /* Staff/admin sessions see the admin rows on every profile page, not only where a screen
+   * passes variant="admin". The role column isn't in the auth client's types, hence the cast
+   * (same convention as the API's staffProcedure). */
+  const { data: session } = authClient.useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isStaff = variant === "admin" || role === "staff" || role === "admin";
+  const items: readonly SidebarItem[] = isStaff ? [...BASE_ITEMS, ...ADMIN_ITEMS] : BASE_ITEMS;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
   const activeFromPath = (Object.entries(HREFS) as [SidebarItem, string][])

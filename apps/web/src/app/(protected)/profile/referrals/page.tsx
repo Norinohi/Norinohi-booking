@@ -2,9 +2,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import Hydrated from "@/components/shared/layout/hydrated";
 import { authClient } from "@/lib/auth-client";
 
-import { ReferralsScreen } from "@/features/profile";
+import { prefetchReferrals, ReferralsScreen } from "@/features/profile";
 
 export async function generateMetadata() {
   const t = await getTranslations("Referrals");
@@ -23,5 +24,9 @@ export default async function ReferralsPage() {
     redirect("/login");
   }
 
-  return <ReferralsScreen user={{ name: session.user.name, email: session.user.email }} />;
+  return (
+    <Hydrated prefetch={prefetchReferrals}>
+      <ReferralsScreen user={{ name: session.user.name, email: session.user.email }} />
+    </Hydrated>
+  );
 }

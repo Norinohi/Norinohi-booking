@@ -3,8 +3,6 @@
  * backend exists (mirrors SAMPLE_BOOKINGS for /profile/bookings).
  */
 
-export const REFERRAL_LINK = "yachtcharter.com/ref/roycefeat";
-
 /** Stat tiles in the invite hero. `label` is a key under `Referrals.invite.stats`. */
 export const REFERRAL_STATS = [
   { value: "12", label: "invited" },
