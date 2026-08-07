@@ -2,129 +2,81 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
-import { ArrowRight, Anchor, Clock, TrendingUp, Users } from "lucide-react";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
+import { ArrowRight, Clock, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
+import EmptyState from "@/components/shared/feedback/empty-state";
+import { useMoney } from "@/hooks/use-money";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
-import type { Destination, PlannerAnswers } from "../lib/search-params";
+import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
+import { buildConsultationHref } from "../lib/build-consultation-href";
+import type { PlannerAnswers } from "../lib/search-params";
+import { toBoatCardProps } from "../lib/to-boat-card";
 
-/*
- * Result — "Your perfect yacht trip" (Figma node 959:344654, 3 breakpoints). The terminal screen
- * of the planner: a success check + legend over one recommendation card. The card's left half is a
- * darkened destination photo with a floating BoatSmallCard; the right half summarises the trip.
- *
- * The summary reflects the user's real answers (destination, style, duration, price). The
- * recommendation-only fields — yacht type, skipper, difficulty, and the specific boat — are
- * heuristics + placeholder data until a recommendation service exists (TODO).
- */
-/* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42" as Route;
-
-const DESTINATION_FLAGS: Record<Destination, string> = {
-  greece: "🇬🇷",
-  croatia: "🇭🇷",
-  italy: "🇮🇹",
-  spain: "🇪🇸",
-  "not-sure": "🇬🇷",
+/** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
+const DESTINATION_IMAGES: Record<string, string> = {
+  Croatia: "/assets/home/destinations/croatia.webp",
+  Greece: "/assets/home/destinations/greece.webp",
+  Italy: "/assets/home/destinations/italy.webp",
 };
+const DEFAULT_DESTINATION_IMAGE = DESTINATION_IMAGES.Greece;
 
+/** Result — "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
 export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const t = useTranslations("PlanMyTrip.result");
-  const td = useTranslations("PlanMyTrip.steps.destination");
   const tv = useTranslations("PlanMyTrip.steps.tripVibe");
-  const tdur = useTranslations("PlanMyTrip.steps.duration");
-  const tb = useTranslations("PlanMyTrip.steps.budget");
-  const router = useRouter();
+  const formatMoney = useMoney();
+  const { data: recommendation, isPending, isError, refetch } = usePlannerRecommendation(answers);
 
-  const destinationName = (() => {
-    switch (answers.destination) {
-      case "croatia":
-        return td("options.croatia.label");
-      case "italy":
-        return td("options.italy.label");
-      case "spain":
-        return td("options.spain.label");
-      default:
-        return td("options.greece.label"); // greece / not-sure / null → recommend Greece
-    }
-  })();
-  const destinationFlag = DESTINATION_FLAGS[answers.destination ?? "greece"];
+  if (isPending) {
+    return <ResultSkeleton />;
+  }
 
-  const style = (() => {
-    switch (answers.vibe) {
-      case "adventure":
-        return tv("options.adventure.label");
-      case "relax":
-        return tv("options.relax.label");
-      case "luxury":
-        return tv("options.luxury.label");
-      case "party":
-        return tv("options.party.label");
-      default:
-        return tv("options.family.label"); // family / null
-    }
-  })();
+  if (isError || !recommendation) {
+    return (
+      <EmptyState
+        title={t("error.title")}
+        description={t("error.description")}
+        action={
+          <Button variant="brand" onClick={() => refetch()}>
+            {t("error.retry")}
+          </Button>
+        }
+      />
+    );
+  }
 
-  const duration = (() => {
-    switch (answers.duration) {
-      case "7":
-        return tdur("options.week.label");
-      case "14":
-        return tdur("options.twoWeeks.label");
-      case "21-plus":
-        return tdur("options.more.label");
-      default:
-        return tdur("options.threeWeeks.label"); // 21 / null
-    }
-  })();
+  const style = tv(`options.${recommendation.style}.label`);
+  const difficulty = t(`difficulty.${recommendation.difficulty}`);
+  const skipper = t(recommendation.skipperRequired ? "skipper.yes" : "skipper.no");
+  const duration = t("durationDays", { days: recommendation.durationDays });
 
-  const price = (() => {
-    switch (answers.budget) {
-      case "600-1000":
-        return tb("options.mid.label");
-      case "1000-1200":
-        return tb("options.high.label");
-      case "2000-plus":
-        return tb("options.premium.label");
-      default:
-        return tb("options.low.label"); // 300-600 / null
-    }
-  })();
-
-  // Recommendation-only heuristics (placeholder until a real engine exists).
-  const yachtType = (() => {
-    switch (answers.groupSize) {
-      case "2-4":
-        return t("yachtType.sailing");
-      case "9-plus":
-        return t("yachtType.gulet");
-      default:
-        return t("yachtType.catamaran"); // 5-8 / not-sure / null
-    }
-  })();
-  const skipper = answers.experience === "licensed" ? t("skipper.no") : t("skipper.yes");
-  const difficulty = (() => {
-    switch (answers.experience) {
-      case "some":
-        return t("difficulty.moderate");
-      case "licensed":
-        return t("difficulty.advanced");
-      default:
-        return t("difficulty.easy"); // none / null
-    }
-  })();
+  const { min, max } = recommendation.estimatedPrice;
+  const price =
+    min.amountMinor === max.amountMinor
+      ? formatMoney(min.amountMinor)
+      : `${formatMoney(min.amountMinor)}–${formatMoney(max.amountMinor)}`;
 
   const stats = [
-    { label: t("labels.yachtType"), value: yachtType },
+    { label: t("labels.yachtType"), value: recommendation.yachtType },
     { label: t("labels.skipper"), value: skipper },
     { label: t("labels.style"), value: style },
     { label: t("labels.duration"), value: duration },
   ];
+
+  const boatCard = recommendation.listing
+    ? toBoatCardProps(recommendation.listing, formatMoney)
+    : null;
+  const destinationImage =
+    DESTINATION_IMAGES[recommendation.destination.country] ?? DEFAULT_DESTINATION_IMAGE;
+  // /yachts has no `guests`/`category`/`maxPriceMinor` filters, so only `country` deep-links.
+  const countryHref =
+    `/yachts?country=${encodeURIComponent(recommendation.destination.country)}` as Route;
 
   return (
     <motion.div variants={GROUP} initial="hidden" animate="show" className="flex flex-col gap-6">
@@ -153,42 +105,53 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
 
       <motion.div
         variants={RISE}
-        className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 md:flex-row"
+        className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 lg:flex-row"
       >
-        {/* Left — darkened destination photo with the recommended boat card floating on top */}
-        <div className="relative flex items-center justify-center overflow-hidden p-6 md:w-163 md:shrink-0">
+        {/* Left — darkened destination photo with the recommended boat card floating on top.
+            Below xl the photo takes half the row; the fixed Figma width only applies once
+            there is room for the summary beside it. */}
+        <div className="relative flex items-center justify-center overflow-hidden p-6 lg:w-1/2 lg:shrink xl:w-163">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/assets/home/destinations/greece.webp"
-            alt=""
-            className="absolute inset-0 size-full object-cover"
-          />
+          <img src={destinationImage} alt="" className="absolute inset-0 size-full object-cover" />
           <div className="absolute inset-0 bg-black/60" />
-          <BoatSmallCard
-            className="relative z-10 w-full max-w-83.5"
-            image="/assets/home/boat-types/catamaran.webp"
-            imageAlt={t("boat.title")}
-            location={t("boat.location")}
-            title={t("boat.title")}
-            rating={5.9}
-            tags={[
-              { icon: <Anchor className="size-4" />, label: t("boat.tagBareboat") },
-              { icon: <Users className="size-4" />, label: t("boat.tagFullCrew") },
-            ]}
-            price="€350"
-            priceLabel={t("boat.from")}
-            priceSuffix={t("boat.perPerson")}
-            actionLabel={t("viewDetails")}
-            actionRender={<Link href={DETAIL_HREF} />}
-          />
+          {boatCard ? (
+            <BoatSmallCard
+              className="relative z-10 w-full max-w-83.5"
+              image={boatCard.image}
+              imageAlt={boatCard.imageAlt}
+              location={boatCard.location}
+              title={boatCard.title}
+              rating={boatCard.rating}
+              tags={boatCard.tags}
+              price={boatCard.price}
+              priceLabel={t("boat.from")}
+              priceSuffix={t("boat.perPerson")}
+              actionLabel={t("viewDetails")}
+              actionRender={<Link href={boatCard.detailHref} />}
+            />
+          ) : (
+            <div className="relative z-10 flex w-full max-w-83.5 flex-col gap-3 rounded-2xl bg-card p-5 text-center">
+              <p className="text-base font-semibold text-foreground">{t("noMatch.title")}</p>
+              <p className="text-sm text-natural-600">{t("noMatch.description")}</p>
+              <Button
+                variant="neutral"
+                size="sm"
+                nativeButton={false}
+                render={<Link href={countryHref} />}
+              >
+                {t("noMatch.seeAllMatches")}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Right — trip summary */}
-        <div className="flex flex-1 flex-col gap-6 p-6 md:p-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 p-6 md:p-8">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               <h2 className="text-h4 text-foreground">
-                <span aria-hidden>{destinationFlag}</span> {destinationName}
+                <span aria-hidden>{recommendation.destination.flag}</span>{" "}
+                {recommendation.destination.country}
               </h2>
               <div className="flex flex-wrap gap-3">
                 <SummaryChip icon={<Clock className="size-4" />}>{duration}</SummaryChip>
@@ -213,27 +176,65 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse gap-3 md:flex-row">
+          <div className="flex flex-col-reverse flex-wrap gap-3 md:flex-row">
             <Button
               variant="neutral"
               className="w-full md:w-auto"
-              onClick={() => router.push("/yachts")}
+              nativeButton={false}
+              render={<Link href={buildConsultationHref(answers)} />}
             >
               {t("getConsultation")}
             </Button>
-            <Button
-              variant="brand"
-              className="w-full md:w-auto"
-              nativeButton={false}
-              render={<Link href={DETAIL_HREF} />}
-            >
-              {t("viewDetails")}
-              <ArrowRight />
-            </Button>
+            {boatCard ? (
+              <Button
+                variant="brand"
+                className="w-full md:w-auto"
+                nativeButton={false}
+                render={<Link href={boatCard.detailHref} />}
+              >
+                {t("viewDetails")}
+                <ArrowRight />
+              </Button>
+            ) : null}
           </div>
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+/** Mirrors the loaded layout's shape so reaching step 7 doesn't jump once data arrives. */
+function ResultSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col items-center gap-4">
+        <Skeleton className="size-10 rounded-full" />
+        <Skeleton className="h-8 w-64 max-w-full rounded-lg" />
+        <Skeleton className="h-5 w-80 max-w-full rounded-lg" />
+      </div>
+
+      <div className="flex flex-col overflow-hidden rounded-2xl bg-brand-50 lg:flex-row">
+        <div className="flex items-center justify-center p-6 lg:w-1/2 lg:shrink xl:w-163">
+          <Skeleton className="h-90 w-full max-w-83.5 rounded-2xl" />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-6 p-6 md:p-8">
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-8 w-48 rounded-lg" />
+            <div className="grid grid-cols-2 gap-1.5">
+              {Array.from({ length: 4 }).map((_, index) => (
+                // eslint-disable-next-line react/no-array-index-key -- static skeleton placeholders
+                <Skeleton key={index} className="h-16 rounded-xl" />
+              ))}
+            </div>
+            <Skeleton className="h-16 rounded-xl" />
+          </div>
+          <div className="flex flex-col-reverse gap-3 md:flex-row">
+            <Skeleton className="h-11 w-full rounded-lg md:w-40" />
+            <Skeleton className="h-11 w-full rounded-lg md:w-40" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -270,9 +271,11 @@ function StatLabel({ children }: { children: React.ReactNode }) {
 
 function StatCell({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl bg-card px-4 py-3">
+    <div className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-card px-4 py-3">
       <StatLabel>{label}</StatLabel>
-      <span className="text-base leading-tight font-semibold text-foreground">{value}</span>
+      <span className="text-base leading-tight font-semibold break-words text-foreground">
+        {value}
+      </span>
     </div>
   );
 }
