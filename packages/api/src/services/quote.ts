@@ -10,7 +10,7 @@ import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-char
 import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
-import { resolveDiscountForListing, type DiscountRejection } from "./discount";
+import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
 import { spendableCreditMinor } from "./loyalty";
 import {
   loadAdjustmentsForListings,

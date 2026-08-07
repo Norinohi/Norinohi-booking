@@ -35,7 +35,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
-import { redeemDiscount } from "./discount";
+import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginationFor } from "./pagination";
 import { isUniqueViolation } from "./pg-errors";
