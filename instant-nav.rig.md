@@ -72,3 +72,26 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
    opt-out, `instant()` has nothing to enforce and a navigation test on it passes vacuously. A
    route's guard is only meaningful once its opt-out is removed — which is also the moment the
    build starts reporting its blocking reads.
+
+6. **The build now needs the API server running.** Once a route's catalog reads are cached, those
+   reads execute during prerender to fill the static shell, so `next build` calls the Hono server
+   on :3000. Without it the build dies with a bare `TypeError: fetch failed` that names nothing.
+   Start Postgres and the server first (`pnpm db:start`, `pnpm dev:server`). CI already does this —
+   see the "Start API server" step in `.github/workflows/ci.yml`.
+
+7. **Killing port 3001 kills `pnpm dev` entirely.** Turbo runs web and server as children of one
+   process, so freeing :3001 (WALL 1) also stops the API on :3000. Restart with `pnpm dev`, or run
+   `pnpm dev:server` alone when you only need the API for a build.
+
+8. **`.next/cache` survives rebuilds, so a data fix can look like it did nothing.** `"use cache"`
+   entries persist across `next build`. After changing seed or database content that a cached read
+   returns, a plain rebuild keeps serving the old value until its tier expires — facets are on
+   `days`. Clear it when a data change must show up now:
+   ```bash
+   rm -rf apps/web/.next/cache
+   ```
+
+9. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
+   by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
+   load. That is not a caching bug — measure caching against `build:test` + `start`, where home
+   issues no catalog requests at all.

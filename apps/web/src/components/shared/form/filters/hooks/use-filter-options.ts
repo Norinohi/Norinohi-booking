@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Option } from "../lib/options";
 import { facetsQueryOptions } from "../api/queries";
 
-type FilterOptions = {
+export type FilterOptions = {
   countries: Option[];
   sailingAreas: Option[];
   charterCompanies: Option[];
@@ -21,7 +21,12 @@ type FilterOptions = {
   years: Option[];
 };
 
-const EMPTY_OPTIONS: FilterOptions = {
+/*
+ * The shape a filter-driven control renders before facets arrive. Exported so a Suspense
+ * fallback can render the SAME component in its empty state rather than a hand-built skeleton
+ * that would drift as the control changes.
+ */
+export const EMPTY_OPTIONS: FilterOptions = {
   countries: [],
   sailingAreas: [],
   charterCompanies: [],

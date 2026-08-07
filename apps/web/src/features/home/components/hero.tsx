@@ -9,11 +9,11 @@ import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import AnimatedNumber from "@/components/shared/data-display/animated-number";
 import DatePicker from "@/components/shared/form/date-picker";
-import { useFilterOptions } from "@/components/shared/form/filters";
+import { EMPTY_OPTIONS, type FilterOptions, useFilterOptions } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { dayFromNative, daysBetween } from "@/lib/date";
 import { GROUP, RISE } from "@/lib/motion";
@@ -25,9 +25,14 @@ const STATS = [
   { key: "rating", value: 4.8, decimals: 1 },
 ] as const;
 
-function SearchCard() {
+/*
+ * The card's markup, with its option lists injected. Rendering this directly (with
+ * EMPTY_OPTIONS) is also the Suspense fallback, so the shell and the resolved UI are literally
+ * the same component — there is no separate skeleton to drift out of sync, and it stays correct
+ * at every breakpoint for free.
+ */
+function SearchCardView({ options, isPending }: { options: FilterOptions; isPending: boolean }) {
   const t = useTranslations("Home.Hero");
-  const { options, isPending } = useFilterOptions();
   const [country, setCountry] = useState<string>();
   const [boatType, setBoatType] = useState<string>();
   const [crew, setCrew] = useState<string>();
@@ -109,6 +114,17 @@ function SearchCard() {
   );
 }
 
+/*
+ * Isolated because `useQuery` reads the clock on every render, which bars any component calling
+ * it from the prerendered shell. Keeping that read in this leaf lets everything around it —
+ * heading, imagery, stats — prerender.
+ */
+function SearchCard() {
+  const { options, isPending } = useFilterOptions();
+
+  return <SearchCardView options={options} isPending={isPending} />;
+}
+
 function StatsBar() {
   const t = useTranslations("Home.Hero.stats");
 
@@ -172,10 +188,17 @@ export default function Hero() {
             className="flex w-full max-w-164.75 flex-col gap-3 text-center text-white xl:w-auto xl:max-w-112.5 xl:text-left"
           >
             <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
-            <h1 className="text-[50px] leading-[1.1] font-bold md:text-[64px]">{t("heading")}</h1>
+            <h1
+              data-testid="home-shell-marker"
+              className="text-[50px] leading-[1.1] font-bold md:text-[64px]"
+            >
+              {t("heading")}
+            </h1>
           </motion.div>
 
-          <SearchCard />
+          <Suspense fallback={<SearchCardView options={EMPTY_OPTIONS} isPending />}>
+              <SearchCard />
+            </Suspense>
         </div>
 
         <StatsBar />

@@ -90,3 +90,23 @@ export const link = new RPCLink({
 export const client: AppRouterClient = createORPCClient(link);
 
 export const orpc = createTanstackQueryUtils(client);
+
+/*
+ * The public half of the API, reached without forwarding the incoming request headers.
+ *
+ * The link above forwards every header so session-bearing procedures see the caller's cookies.
+ * That is required for `protectedProcedure`, and fatal for caching: `headers()` may not be read
+ * inside `"use cache"`, so as long as a read goes through it, no public read can ever be cached
+ * and its route cannot prerender. Every read behind the marketing and search routes is a
+ * `publicProcedure` and does not depend on the session, so it uses this client instead.
+ *
+ * Query keys are derived from the procedure path and input alone, not from the client, so options
+ * built here share cache entries with the client-side hooks. See docs/adr/0002.
+ */
+export const publicLink = new RPCLink({
+  url: `${getServerUrl(env.NEXT_PUBLIC_SERVER_URL)}/rpc`,
+});
+
+export const publicClient: AppRouterClient = createORPCClient(publicLink);
+
+export const publicOrpc = createTanstackQueryUtils(publicClient);

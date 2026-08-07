@@ -6,9 +6,13 @@ import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 
-import { useFilterOptions } from "@/components/shared/form/filters";
+import {
+  EMPTY_OPTIONS,
+  type FilterOptions,
+  useFilterOptions,
+} from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
@@ -20,10 +24,25 @@ const BUDGET_BUCKETS = 5;
 const CREWED = ["skipper", "full-crew"];
 const BAREBOAT = ["bareboat"];
 
-export default function BudgetFinder() {
+type Facets = ReturnType<typeof useFilterOptions>["data"];
+
+/*
+ * The form, with its facet-derived inputs injected. Rendering this with no data and `isPending`
+ * is the Suspense fallback, so the shell and the resolved UI are the same component — every
+ * select keeps its label, height and breakpoint behaviour while the facets are still in flight,
+ * and there is no separate skeleton to drift.
+ */
+function BudgetFinderForm({
+  data,
+  options,
+  isPending,
+}: {
+  data: Facets;
+  options: FilterOptions;
+  isPending: boolean;
+}) {
   const t = useTranslations("Home.BudgetFinder");
   const format = useFormatter();
-  const { data, options, isPending } = useFilterOptions();
 
   const [budget, setBudget] = useState(ANY);
   const [people, setPeople] = useState(ANY);
@@ -119,6 +138,54 @@ export default function BudgetFinder() {
   ];
 
   return (
+    <div className="flex flex-col gap-8 xl:gap-6">
+      <motion.div
+        variants={RISE}
+        className="grid grid-cols-1 gap-x-5 gap-y-3 rounded-3xl border border-brand-100 bg-brand-50 p-4 md:grid-cols-2 md:gap-y-4 md:px-6 md:pt-6 md:pb-7.5 xl:grid-cols-4"
+      >
+        {fields.map((field) => (
+          <div key={field.key} className="flex flex-col gap-1.5">
+            <span className="text-sm leading-[1.2] font-semibold text-natural-700">
+              {t(`labels.${field.key}`)}
+            </span>
+            <Select
+              className="h-12 bg-card"
+              options={field.options}
+              value={field.value}
+              onValueChange={field.onValueChange}
+              isLoading={field.isLoading}
+            />
+          </div>
+        ))}
+      </motion.div>
+
+      <motion.div variants={RISE} className="flex justify-center">
+        <Button
+          variant="brand"
+          size="md"
+          className="w-full md:w-auto"
+          nativeButton={false}
+          render={<Link href={href} />}
+        >
+          {t("viewResults")}
+          <ArrowUpRight />
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
+/* Isolated so `useQuery`'s clock read stays out of the prerendered shell. */
+function BudgetFinderFormLive() {
+  const { data, options, isPending } = useFilterOptions();
+
+  return <BudgetFinderForm data={data} options={options} isPending={isPending} />;
+}
+
+export default function BudgetFinder() {
+  const t = useTranslations("Home.BudgetFinder");
+
+  return (
     <section className="w-full">
       <motion.div
         variants={GROUP}
@@ -131,40 +198,11 @@ export default function BudgetFinder() {
           {t("heading")}
         </motion.h2>
 
-        <div className="flex flex-col gap-8 xl:gap-6">
-          <motion.div
-            variants={RISE}
-            className="grid grid-cols-1 gap-x-5 gap-y-3 rounded-3xl border border-brand-100 bg-brand-50 p-4 md:grid-cols-2 md:gap-y-4 md:px-6 md:pt-6 md:pb-7.5 xl:grid-cols-4"
-          >
-            {fields.map((field) => (
-              <div key={field.key} className="flex flex-col gap-1.5">
-                <span className="text-sm leading-[1.2] font-semibold text-natural-700">
-                  {t(`labels.${field.key}`)}
-                </span>
-                <Select
-                  className="h-12 bg-card"
-                  options={field.options}
-                  value={field.value}
-                  onValueChange={field.onValueChange}
-                  isLoading={field.isLoading}
-                />
-              </div>
-            ))}
-          </motion.div>
-
-          <motion.div variants={RISE} className="flex justify-center">
-            <Button
-              variant="brand"
-              size="md"
-              className="w-full md:w-auto"
-              nativeButton={false}
-              render={<Link href={href} />}
-            >
-              {t("viewResults")}
-              <ArrowUpRight />
-            </Button>
-          </motion.div>
-        </div>
+        <Suspense
+          fallback={<BudgetFinderForm data={undefined} options={EMPTY_OPTIONS} isPending />}
+        >
+          <BudgetFinderFormLive />
+        </Suspense>
       </motion.div>
     </section>
   );
