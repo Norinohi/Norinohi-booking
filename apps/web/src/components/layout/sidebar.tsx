@@ -1,10 +1,10 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
-import type { Route } from "next";
+import type { AppPathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { usePathname } from "@/i18n/navigation";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -23,7 +23,7 @@ const ADMIN_ITEMS = ["discount"] as const;
 type SidebarItem = (typeof BASE_ITEMS)[number] | (typeof ADMIN_ITEMS)[number];
 
 /* Only wired pages get an href; the rest stay inert until their routes exist. */
-const HREFS: Partial<Record<SidebarItem, Route>> = {
+const HREFS: Partial<Record<SidebarItem, AppPathname>> = {
   profile: "/profile",
   bookings: "/profile/bookings",
   referrals: "/profile/referrals",

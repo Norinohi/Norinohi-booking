@@ -12,6 +12,8 @@ pnpm dev                     # turbo run dev — starts web (:3001) and server (
 pnpm dev:web                 # web only, Next.js on http://localhost:3001
 pnpm dev:server              # server only, Hono on http://localhost:3000
 pnpm build                   # turbo run build — next build + tsdown
+                             # NOTE: the web build needs Postgres and the API server running.
+                             # `pnpm db:start && pnpm dev:server` first — see below.
 pnpm check-types             # turbo run check-types — 6 tasks: web, server, api, db, providers, @yacht-charter/ui
 pnpm check                   # oxlint && oxfmt --write — NOTE: --write mutates files
 pnpm test                    # turbo run test — vitest in api, db, providers
@@ -20,7 +22,7 @@ pnpm test                    # turbo run test — vitest in api, db, providers
 Database tasks all proxy to `@yacht-charter/db`; Postgres runs via `packages/db/docker-compose.yml`:
 
 ```bash
-pnpm db:start                # docker compose up -d  (postgres:18, host port 5432)
+pnpm db:start                # docker compose up -d  (postgres:18, host port 5434)
 pnpm db:stop                 # docker compose stop
 pnpm db:down                 # docker compose down
 pnpm db:push                 # drizzle-kit push — schema straight to DB, no migration files
@@ -29,9 +31,19 @@ pnpm db:migrate              # drizzle-kit migrate
 pnpm db:studio               # drizzle-kit studio
 ```
 
+**CI** runs on pull requests (`.github/workflows/ci.yml`): `check-types`, `oxlint`, `test`, and the
+instant-navigation e2e guards. A direct push to a Railway-watched branch still deploys without
+those checks, so the gate only protects work that goes through a PR.
+
+**The web build calls the API.** The public catalog routes cache their reads (docs/adr/0002), and a
+cached read executes during prerender to fill the static shell — so `next build` fetches from
+`NEXT_PUBLIC_SERVER_URL`. Start Postgres and the server first, or the build fails. This is
+deliberate: a build that succeeded without data would ship a catalog claiming nothing exists, and
+cache it. `apps/web/scripts/check-api.mjs` runs first and says so plainly rather than letting Next
+fail deep in the prerender with a bare `ECONNREFUSED`.
+
 Absent by design or not yet built — do not invent these:
 
-- **No CI.** There is no `.github/` directory and no pipeline config. `pnpm check`, `pnpm check-types`, `pnpm test`, and `pnpm build` are the only gates, and they are run manually. A push does trigger a Railway deploy (see `docs/railway-deployment.md`), but that runs no checks — a type error reaches production.
 - **No `lint` script.** `turbo.json` declares a `lint` task, but no workspace defines one, so `turbo run lint` is a no-op. Linting happens only through the root `pnpm check`.
 
 ## Architecture
@@ -68,7 +80,7 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 
 - The `catalog:` block in `pnpm-workspace.yaml` is the single source of truth for shared dependency versions. When a manifest says `"react": "catalog:"`, bump the catalog — never pin a version inside a workspace `package.json`.
 - `packages/config/tsconfig.base.json` is extended by every tsconfig **except** `apps/web/tsconfig.json`, which is Next's own standalone config. Compiler-option changes meant for everyone go in the base file.
-- `typescript` is deliberately held at `^6.0.3` while 7.x is published. Next.js 16.2.11 loads the TypeScript compiler API via `typescript/lib/typescript.js`, which TS 7 removed, so `next dev` and `next build` break on TS 7. Do not "fix" this by bumping the catalog.
+- `typescript` is deliberately held at `^6.0.3` while 7.x is published. Next.js loads the TypeScript compiler API via `typescript/lib/typescript.js`, which TS 7 removed, so `next dev` and `next build` break on TS 7. This was verified on 16.2.11 and has not been re-tested since the upgrade to 16.3.0 — treat the pin as binding until someone does. Do not "fix" this by bumping the catalog.
 
 ### Logging
 

@@ -5,10 +5,9 @@ import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark, Menu, X } from "lucide-react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { useState } from "react";
 
 import LanguageSwitcher from "./language-switcher";
@@ -21,8 +20,8 @@ const NAV_LINKS = [
   { key: "popularRoutes", hash: "popular-routes", chip: false },
 ] as const;
 
-const PLAN_MY_TRIP_HREF = "/plan-my-trip" as Route;
-const WISHLIST_HREF = "/wishlist" as Route;
+const PLAN_MY_TRIP_HREF = "/plan-my-trip";
+const WISHLIST_HREF = "/wishlist";
 
 export default function NavigationBar() {
   const t = useTranslations("Layout.Nav");

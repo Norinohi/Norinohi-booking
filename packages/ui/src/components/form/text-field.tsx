@@ -56,7 +56,7 @@ const supportVariants = cva("text-xs leading-[1.2] tracking-[0.02em]", {
 });
 
 const controlClassName =
-  "min-w-0 flex-1 bg-transparent text-base leading-[1.4] text-foreground outline-none placeholder:text-natural-300 disabled:cursor-not-allowed";
+  "min-w-0 flex-1 bg-transparent text-base leading-[1.4] text-foreground outline-none placeholder:text-placeholder-foreground disabled:cursor-not-allowed";
 
 type TextFieldOwnProps = {
   label?: React.ReactNode;

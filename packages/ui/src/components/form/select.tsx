@@ -25,7 +25,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("min-w-0 truncate text-base data-[placeholder]:text-natural-300", className)}
+      className={cn("min-w-0 truncate text-base data-[placeholder]:text-placeholder-foreground", className)}
       {...props}
     />
   );
@@ -184,7 +184,14 @@ function Select({
     >
       <SelectTrigger
         className={className}
-        aria-label={ariaLabel}
+        /*
+         * A `role="combobox"` takes its accessible name from aria-label, never from its content —
+         * the text inside is the *value*, not the name. Without this the trigger is an unnamed
+         * button to a screen reader (and fails Lighthouse's button-name audit). Falling back to
+         * the placeholder gives every select a name; pass `ariaLabel` explicitly wherever a
+         * visible label exists or the placeholder is uninformative.
+         */
+        aria-label={ariaLabel ?? placeholder}
         clearable={clearable}
         onClear={onClear}
         clearLabel={clearLabel}

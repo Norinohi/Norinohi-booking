@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast gates. These are what the repo has been running by hand — a push previously reached
+  # Railway with no checks at all, so a type error could ship.
+  checks:
+    name: types / lint / unit
+    runs-on: ubuntu-latest
+    env:
+      # Type-checking and unit tests need no real credentials. The e2e job deliberately does NOT
+      # set this: it supplies real values, so env validation should run there.
+      SKIP_ENV_VALIDATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type-check all workspaces
+        run: pnpm check-types
+
+      - name: Lint
+        # Not `pnpm check` — that runs `oxfmt --write`, which mutates files (including the
+        # hash-locked vendored skills). CI verifies, it does not rewrite.
+        run: pnpm exec oxlint
+
+      - name: Unit tests
+        run: pnpm test
+
+  # The instant-navigation guards. Needs the whole stack: Postgres, the Hono API, and a
+  # production web build with the testing API exposed. See instant-nav.rig.md.
+  e2e:
+    name: instant-navigation guards
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: yacht-charter
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5434/yacht-charter
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnop
+      BETTER_AUTH_URL: http://localhost:3000
+      CORS_ORIGIN: http://localhost:3001
+      OPENAPI_SERVER_URL: http://localhost:3000/api-reference
+      PROVIDER_MODE: mock
+      NODE_ENV: production
+      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+      # The Cloudinary cloud name is an identifier, not a credential — it already appears in every
+      # image URL the public site serves. Inlining it makes CI render the same images production
+      # does, which matters once shell assertions cover imagery.
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: nrwb8xjz
+      # Deliberately a placeholder, not the real token. This repository is public, and a real
+      # Mapbox `pk.` token is billable per map load — committing one here would put it somewhere
+      # scrapers read far more easily than a JS bundle. Nothing these guards cover needs a working
+      # map: /yachts/map is out of scope, and the only other consumer is RouteMap on
+      # /yachts/[id], which is being moved behind a dynamic import anyway. If a future guard does
+      # need a live map, mint a second Mapbox token restricted to localhost and add it as a
+      # repository secret — do not reuse the production one.
+      NEXT_PUBLIC_MAPBOX_TOKEN: pk.ci-placeholder
+      BASE_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply schema
+        run: pnpm db:push
+
+      - name: Seed
+        run: pnpm --filter @yacht-charter/db seed
+
+      - name: Build API server
+        run: pnpm --filter server build
+
+      - name: Start API server
+        run: |
+          pnpm --filter server start &
+          npx wait-on http://localhost:3000/ --timeout 60000
+
+      - name: Build web with the testing API exposed
+        # Without EXPOSE_TESTING_API=1 the lock no-ops and every guard passes vacuously.
+        run: pnpm --filter web build:test
+
+      - uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Run guards
+        # playwright.config.ts starts `next start` itself (reuseExistingServer is false under CI,
+        # so the artifact under test is unambiguously the one just built).
+        run: pnpm --filter web test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

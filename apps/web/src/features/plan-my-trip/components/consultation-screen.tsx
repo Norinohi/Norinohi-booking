@@ -6,7 +6,7 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Mail, Phone, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
 

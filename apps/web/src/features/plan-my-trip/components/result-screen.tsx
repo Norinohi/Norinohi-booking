@@ -5,9 +5,8 @@ import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-bo
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { ArrowRight, Clock, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
 import { WishlistButton } from "@/features/wishlist";
@@ -76,8 +75,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const destinationImage =
     DESTINATION_IMAGES[recommendation.destination.country] ?? DEFAULT_DESTINATION_IMAGE;
   // /yachts has no `guests`/`category`/`maxPriceMinor` filters, so only `country` deep-links.
-  const countryHref =
-    `/yachts?country=${encodeURIComponent(recommendation.destination.country)}` as Route;
+  const countryHref = `/yachts?country=${encodeURIComponent(recommendation.destination.country)}`;
 
   return (
     <motion.div variants={GROUP} initial="hidden" animate="show" className="flex flex-col gap-6">

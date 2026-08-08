@@ -2,9 +2,9 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { type Path, useFormContext, useWatch } from "react-hook-form";
 
 import type { BookingValues } from "../../../lib/booking-form";
@@ -40,9 +40,7 @@ export default function PaymentStep() {
       }
       return;
     }
-    router.push(
-      serializeConfirmation(`/yachts/${params.id}/booking/confirmation`, { method }) as Route,
-    );
+    router.push(serializeConfirmation(`/yachts/${params.id}/booking/confirmation`, { method }));
   }
 
   return (

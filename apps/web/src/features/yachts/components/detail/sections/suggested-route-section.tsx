@@ -4,6 +4,8 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
+import { useInViewport } from "@/hooks/use-in-viewport";
+
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
 
@@ -11,6 +13,25 @@ const RouteMap = dynamic(() => import("../route-map"), {
   ssr: false,
   loading: () => <div className="size-full bg-natural-100" />,
 });
+
+/*
+ * Mounted only once the map scrolls near the viewport.
+ *
+ * `dynamic(..., { ssr: false })` alone was not enough: it skips server rendering, but the chunk
+ * still downloads and initialises as soon as the component mounts — and this page renders all its
+ * sections at once. Mapbox is ~1.8MB, and initialising it ran forced reflows that tied up the main
+ * thread, which is what made navigating *away* from a listing slow (measured: 767ms to home,
+ * 1493ms to search). Most visitors never scroll this far.
+ */
+function LazyRouteMap({ stops }: { stops: { title: string; description: string; lat: number; lng: number }[] }) {
+  const { ref, entered } = useInViewport<HTMLDivElement>();
+
+  return (
+    <div ref={ref} className="size-full">
+      {entered ? <RouteMap stops={stops} /> : <div className="size-full bg-natural-100" />}
+    </div>
+  );
+}
 
 type Stop = { title: string; text: string };
 
@@ -61,7 +82,7 @@ export default function SuggestedRouteSection() {
 
         {route.stops.length ? (
           <div className="h-78 w-full overflow-hidden rounded-2xl md:h-108.75">
-            <RouteMap stops={route.stops} />
+            <LazyRouteMap stops={route.stops} />
           </div>
         ) : null}
 

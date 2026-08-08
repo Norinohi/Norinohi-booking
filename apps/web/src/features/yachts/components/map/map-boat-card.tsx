@@ -10,9 +10,9 @@ import {
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Sailboat, Star, Users } from "lucide-react";
-import type { Route } from "next";
+import type { AppPathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import type { BoatCardBadge } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
@@ -21,7 +21,7 @@ import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-p
 import { WishlistButton } from "@/features/wishlist";
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
-const DETAIL_HREF = "/yachts/lagoon-42" as Route;
+const DETAIL_HREF = "/yachts/lagoon-42";
 
 const LAYOUT = {
   list: {
@@ -60,7 +60,7 @@ export type MapBoatCardProps = {
   price: string;
   perPerson: string;
   prepayment: string;
-  detailHref?: Route;
+  detailHref?: AppPathname;
   layout?: keyof typeof LAYOUT;
   className?: string;
 };

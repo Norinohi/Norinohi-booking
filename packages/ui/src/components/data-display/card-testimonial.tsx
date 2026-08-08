@@ -24,7 +24,7 @@ function TestimonialCard({
   return (
     <Card variant="filled" className={cn("w-[452px] max-w-full", className)} {...props}>
       <CardContent className="min-h-[300px] gap-4 p-6">
-        <div className="flex gap-1" aria-label={`Rating ${rating} out of 5`}>
+        <div role="img" className="flex gap-1" aria-label={`Rating ${rating} out of 5`}>
           {Array.from({ length: 5 }, (_, i) => (
             <Star
               key={i}

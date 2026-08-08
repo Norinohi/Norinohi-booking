@@ -2,7 +2,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { ArrowUpRight } from "lucide-react";
 import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 

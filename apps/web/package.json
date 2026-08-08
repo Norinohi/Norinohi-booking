@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "next build",
-    "check-types": "tsc --noEmit",
-    "start": "next start"
+    "build": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-api.mjs && next build",
+    "build:test": "EXPOSE_TESTING_API=1 pnpm build",
+    "check-types": "next typegen && tsc --noEmit",
+    "start": "next start --port 3001",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -27,7 +29,7 @@
     "lucide-react": "catalog:",
     "mapbox-gl": "^3.27.0",
     "motion": "^12.43.0",
-    "next": "^16.2.11",
+    "next": "^16.3.0",
     "next-intl": "^4.13.4",
     "next-themes": "catalog:",
     "nuqs": "^2.9.2",
@@ -41,6 +43,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@next/playwright": "^16.3.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@types/node": "catalog:",

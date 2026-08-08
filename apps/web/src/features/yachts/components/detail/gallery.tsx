@@ -8,13 +8,8 @@ import {
   CarouselThumbs,
   CarouselViewport,
 } from "@yacht-charter/ui/components/data-display/carousel";
-import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import Lightbox from "yet-another-react-lightbox";
-import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import "yet-another-react-lightbox/styles.css";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
 
 import { Image } from "@/components/shared/data-display/image";
 
@@ -22,8 +17,14 @@ import { useListingDetail } from "../../hooks/use-listing-detail";
 
 const ARROW = "rounded-lg bg-black/12 text-white hover:bg-black/25 hover:text-white";
 
+/*
+ * The lightbox plus its plugins and stylesheets is a meaningful chunk that most visitors never
+ * open, so it is fetched on the first photo click instead of with the page. `ssr: false` because
+ * it renders nothing until opened — there is no shell content to lose.
+ */
+const GalleryLightbox = dynamic(() => import("./gallery-lightbox"), { ssr: false });
+
 export default function Gallery() {
-  const t = useTranslations("YachtDetail");
   const { data } = useListingDetail();
   const [openAt, setOpenAt] = useState<number | null>(null);
 
@@ -79,21 +80,13 @@ export default function Gallery() {
         ))}
       </CarouselThumbs>
 
-      <Lightbox
-        open={openAt !== null}
-        index={openAt ?? 0}
-        close={() => setOpenAt(null)}
-        slides={photos.map((photo) => ({ src: photo.src, alt: photo.alt }))}
-        plugins={[Zoom, Thumbnails]}
-        thumbnails={{ imageFit: "cover" }}
-        labels={{
-          Close: t("gallery.close"),
-          Previous: t("gallery.previous"),
-          Next: t("gallery.next"),
-          "Zoom in": t("gallery.zoomIn"),
-          "Zoom out": t("gallery.zoomOut"),
-        }}
-      />
+      {openAt !== null && (
+        <GalleryLightbox
+          openAt={openAt}
+          onClose={() => setOpenAt(null)}
+          slides={photos.map((photo) => ({ src: photo.src, alt: photo.alt }))}
+        />
+      )}
     </Carousel>
   );
 }

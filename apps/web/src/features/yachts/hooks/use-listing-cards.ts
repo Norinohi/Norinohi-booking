@@ -13,7 +13,6 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import { createElement, type ReactNode } from "react";
 
@@ -57,7 +56,7 @@ export function useListingCards() {
   function toCard(listing: Listing): BoatCardProps & { id: string } {
     return {
       id: listing.id,
-      detailHref: `/yachts/${listing.slug}` as Route,
+      detailHref: `/yachts/${listing.slug}`,
       images: listing.gallery.length ? listing.gallery : [listing.mainImage],
       imageAlt: t("imageAlt", { name: listing.title, marina: listing.base.name }),
       badges: listing.badges.map((badge) => ({ label: badge.label })),

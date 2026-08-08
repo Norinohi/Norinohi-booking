@@ -11,7 +11,7 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 import BoatCard, { type BoatCardProps } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";

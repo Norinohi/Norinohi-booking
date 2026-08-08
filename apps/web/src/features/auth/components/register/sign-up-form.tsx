@@ -13,7 +13,7 @@ import {
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Mail, Phone } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useQueryState } from "nuqs";
 import { type ComponentProps, useMemo } from "react";
 import { useForm } from "react-hook-form";

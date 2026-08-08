@@ -19,9 +19,9 @@ import {
 } from "@yacht-charter/ui/components/overlay/tooltip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Calendar, ChevronDown, CircleCheckBig, Info } from "lucide-react";
-import type { Route } from "next";
+import type { AppPathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 
 /* TODO: temporary until the backend defines the payment data shape. Flip to see the 100% variant
@@ -189,7 +189,7 @@ export default function BookingSummary({
   /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
   shaded?: boolean;
   /** Where Pay Now leads. Set on the detail page to start the booking flow. */
-  bookingHref?: Route;
+  bookingHref?: AppPathname;
 }) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");

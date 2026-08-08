@@ -50,6 +50,7 @@
   --natural-100: #e2e2e2;
   --natural-200: #bfbfbf;
   --natural-300: #a0a0a0;
+  --placeholder-foreground: #767676;
   --natural-400: #787878;
   --natural-500: #555555;
   --natural-600: #383838;
@@ -259,6 +260,7 @@
   --color-natural-100: var(--natural-100);
   --color-natural-200: var(--natural-200);
   --color-natural-300: var(--natural-300);
+  --color-placeholder-foreground: var(--placeholder-foreground);
   --color-natural-400: var(--natural-400);
   --color-natural-500: var(--natural-500);
   --color-natural-600: var(--natural-600);

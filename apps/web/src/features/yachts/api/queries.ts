@@ -12,5 +12,8 @@ export type MarkersInput = Parameters<AppRouterClient["charterSearch"]["mapMarke
 export const mapMarkersQueryOptions = (input: MarkersInput) =>
   orpc.charterSearch.mapMarkers.queryOptions({ input });
 
+/** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
+const ONE_HOUR = 60 * 60 * 1000;
+
 export const listingDetailQueryOptions = (id: string) =>
-  orpc.listings.get.queryOptions({ input: { id } });
+  orpc.listings.get.queryOptions({ input: { id }, staleTime: ONE_HOUR });

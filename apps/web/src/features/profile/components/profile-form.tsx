@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from "@yacht-charter/ui/components/overlay/dialog";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

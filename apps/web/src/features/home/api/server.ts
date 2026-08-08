@@ -1,18 +1,51 @@
 import "server-only";
 
-import { dehydrate } from "@tanstack/react-query";
+import { dehydrate, QueryClient } from "@tanstack/react-query";
+import { cacheLife } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
-import { getQueryClient } from "@/utils/query-client";
+import { getFacets } from "@/components/shared/form/filters/api/server";
+import { publicClient } from "@/utils/orpc";
 
-import { popularYachtsQueryOptions } from "./queries";
+import { POPULAR_YACHTS_INPUT, popularYachtsQueryOptions } from "./queries";
 
-/** Server prefetch for the home page — facets feed the destination/boat-type/budget sections. */
+/*
+ * The two catalog reads behind the home page sit on different tiers (docs/adr/0002), so they stay
+ * separate cached functions: the facet taxonomy is not re-fetched just because the listing cards
+ * rolled over. `getFacets` is shared with the search route so both fill one cache entry.
+ */
+
+/** The five highest-rated listings. Catalog data: a slightly stale rating harms nobody. */
+async function getPopularYachts() {
+  "use cache";
+  cacheLife("hours");
+
+  return publicClient.charterSearch.results(POPULAR_YACHTS_INPUT);
+}
+
+/**
+ * Server prefetch for the home page — facets feed the destination/boat-type/budget sections.
+ *
+ * The whole dehydrated blob is cached, not just the payloads. `dehydrate()` stamps each entry
+ * with `dataUpdatedAt` from `Date.now()`, and an unstable clock read is exactly what stops a route
+ * from prerendering — dehydrating per request fails the build with
+ * `blocking-prerender-current-time`. Caching the blob freezes those timestamps at cache-fill
+ * time, which is why the client `staleTime` for each of these queries is pinned to its server
+ * tier: without that, every visitor would hydrate with data the client believes is stale and
+ * immediately refetch it, giving back the saving.
+ *
+ * Nothing here is wrapped in `<Suspense>` on purpose. These reads resolve from cache, so they can
+ * live in the prerendered shell; deferring them would push content out of it for no gain.
+ */
 export async function prefetchHome() {
-  const queryClient = getQueryClient();
-  await Promise.all([
-    queryClient.prefetchQuery(facetsQueryOptions()),
-    queryClient.prefetchQuery(popularYachtsQueryOptions()),
-  ]);
+  "use cache";
+  cacheLife("hours");
+
+  const queryClient = new QueryClient();
+  const [facets, popularYachts] = await Promise.all([getFacets(), getPopularYachts()]);
+
+  queryClient.setQueryData(facetsQueryOptions().queryKey, facets);
+  queryClient.setQueryData(popularYachtsQueryOptions().queryKey, popularYachts);
+
   return dehydrate(queryClient);
 }

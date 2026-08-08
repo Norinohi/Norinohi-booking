@@ -1,4 +1,3 @@
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
 
 import BookingSummary from "@/components/shared/data-display/booking-summary";
@@ -20,19 +19,31 @@ import SuggestedRouteSection from "./sections/suggested-route-section";
 import TitleBlock from "./title-block";
 
 /* TODO: hardcoded booking route until listings carry a real id. */
-const BOOKING_HREF = "/yachts/lagoon-42/booking" as Route;
+const BOOKING_HREF = "/yachts/lagoon-42/booking";
 
-export default function YachtDetailScreen({ title }: { title: string }) {
+/*
+ * `title` is absent while the listing is still resolving — this screen is its own Suspense
+ * fallback (see the route), so it must render without one. The frame, breadcrumb trail and panel
+ * labels are identical either way; only the final crumb waits for the listing's name.
+ */
+export default function YachtDetailScreen({ title }: { title?: string }) {
   const t = useTranslations("YachtDetail");
 
   const breadcrumbs: AppBreadcrumb[] = [
     { name: "YachtDetail.breadcrumbSearch", url: "/yachts" },
-    { name: title, dynamic: true },
+    ...(title ? [{ name: title, dynamic: true } as AppBreadcrumb] : []),
   ];
 
   return (
     <div className="flex flex-col">
-      <AppBreadcrumbs items={breadcrumbs} backLabel="YachtDetail.backToSearch" backHref="/yachts" />
+      {/* Static: no listing dependency, so it prerenders and anchors the shell. */}
+      <div data-testid="yacht-detail-shell-marker">
+        <AppBreadcrumbs
+          items={breadcrumbs}
+          backLabel="YachtDetail.backToSearch"
+          backHref="/yachts"
+        />
+      </div>
 
       <div className="w-full px-4 py-6 md:px-13.5">
         <SplitPanels

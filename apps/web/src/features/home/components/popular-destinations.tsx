@@ -11,7 +11,8 @@ import { DestinationCard } from "@yacht-charter/ui/components/data-display/card-
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Suspense } from "react";
+import { Link } from "@/i18n/navigation";
 
 import { useFilterOptions } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
@@ -48,10 +49,46 @@ function NavArrows() {
   );
 }
 
-export default function PopularDestinations() {
+/*
+ * The slides are the only facet-dependent part. Isolated so `useQuery`'s clock read stays out of
+ * the prerendered shell — heading, arrows and the "see all" CTA paint immediately. With no facets
+ * this renders no slides, which is exactly what the carousel showed while the query was pending.
+ */
+function DestinationSlides() {
   const t = useTranslations("Home.PopularDestinations");
   const money = useMoney();
   const { options } = useFilterOptions();
+
+  return (
+    <>
+      {options.countries.map((country) => (
+        <CarouselSlide
+          key={country.value}
+          className="basis-[85%] pr-5 sm:basis-1/2 md:basis-105 lg:basis-1/3 xl:basis-105"
+        >
+          <Link
+            href={buildSearchHref({ country: [country.value] })}
+            className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+          >
+            <DestinationCard
+              image={country.imageUrl ?? undefined}
+              imageAlt={country.label}
+              title={country.label}
+              subtitle={t("summary", {
+                price: money(country.priceFromMinor ?? 0),
+                count: country.count ?? 0,
+              })}
+              className="w-full transition-transform duration-200 group-hover:-translate-y-1"
+            />
+          </Link>
+        </CarouselSlide>
+      ))}
+    </>
+  );
+}
+
+export default function PopularDestinations() {
+  const t = useTranslations("Home.PopularDestinations");
 
   return (
     <section className="w-full">
@@ -69,28 +106,9 @@ export default function PopularDestinations() {
           </motion.div>
 
           <CarouselViewport className="pl-4 md:pl-13.5 xl:pl-17.5">
-            {options.countries.map((country) => (
-              <CarouselSlide
-                key={country.value}
-                className="basis-[85%] pr-5 sm:basis-1/2 md:basis-105 lg:basis-1/3 xl:basis-105"
-              >
-                <Link
-                  href={buildSearchHref({ country: [country.value] })}
-                  className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-                >
-                  <DestinationCard
-                    image={country.imageUrl ?? ""}
-                    imageAlt={country.label}
-                    title={country.label}
-                    subtitle={t("summary", {
-                      price: money(country.priceFromMinor ?? 0),
-                      count: country.count ?? 0,
-                    })}
-                    className="w-full transition-transform duration-200 group-hover:-translate-y-1"
-                  />
-                </Link>
-              </CarouselSlide>
-            ))}
+            <Suspense fallback={null}>
+              <DestinationSlides />
+            </Suspense>
           </CarouselViewport>
 
           <div className="flex justify-center px-4 md:px-13.5 xl:px-17.5">

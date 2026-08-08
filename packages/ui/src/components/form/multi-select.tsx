@@ -72,7 +72,7 @@ function MultiSelect({
         >
           <span className={cn("flex min-w-0 flex-1 items-center gap-2", showClear && "pr-6")}>
             {icon}
-            <span className={cn("truncate", selected.length === 0 && "text-natural-300")}>
+            <span className={cn("truncate", selected.length === 0 && "text-placeholder-foreground")}>
               {selected.length === 0
                 ? placeholder
                 : selected.map((item) => labels.get(item)).join(", ")}
@@ -104,7 +104,7 @@ function MultiSelect({
                   <SearchIcon className="size-6 shrink-0 text-foreground" />
                   <Combobox.Input
                     placeholder={searchPlaceholder}
-                    className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-natural-300"
+                    className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-placeholder-foreground"
                   />
                 </div>
               </div>

@@ -12,9 +12,9 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
-import type { Route } from "next";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Suspense } from "react";
+import { Link } from "@/i18n/navigation";
 
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
@@ -49,11 +49,47 @@ function CarouselNav() {
   );
 }
 
-export default function PopularYachts() {
+/*
+ * The listing cards are the only request-backed part. Isolated so `useQuery`'s clock read stays
+ * out of the prerendered shell — heading, carousel arrows and the "see all" CTA paint
+ * immediately. With no data this renders no slides, matching what the carousel showed while the
+ * query was pending.
+ */
+function PopularYachtSlides() {
   const t = useTranslations("Home.PopularYachts");
   const money = useMoney();
   const { data } = useQuery(popularYachtsQueryOptions());
   const yachts = data?.items ?? [];
+
+  return (
+    <>
+      {yachts.map(({ listing }) => (
+        <CarouselSlide key={listing.id} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
+          <BoatSmallCard
+            className="w-full"
+            image={listing.gallery[0] ?? listing.mainImage}
+            imageAlt={listing.title}
+            location={`${listing.base.location}, ${listing.base.country}`}
+            title={listing.title}
+            rating={listing.rating}
+            tags={[{ label: listing.category, icon: <Anchor /> }]}
+            price={money(
+              Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
+            )}
+            priceSuffix={t("perDay")}
+            priceLabel={t("from")}
+            actionLabel={t("viewDetails")}
+            actionRender={<Link href={`/yachts/${listing.slug}`} />}
+            saveRender={<WishlistButton listingId={listing.id} />}
+          />
+        </CarouselSlide>
+      ))}
+    </>
+  );
+}
+
+export default function PopularYachts() {
+  const t = useTranslations("Home.PopularYachts");
 
   return (
     <section className="bg-brand-50">
@@ -71,27 +107,9 @@ export default function PopularYachts() {
           </motion.div>
 
           <CarouselViewport>
-            {yachts.map(({ listing }) => (
-              <CarouselSlide key={listing.id} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
-                <BoatSmallCard
-                  className="w-full"
-                  image={listing.gallery[0] ?? listing.mainImage}
-                  imageAlt={listing.title}
-                  location={`${listing.base.location}, ${listing.base.country}`}
-                  title={listing.title}
-                  rating={listing.rating}
-                  tags={[{ label: listing.category, icon: <Anchor /> }]}
-                  price={money(
-                    Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
-                  )}
-                  priceSuffix={t("perDay")}
-                  priceLabel={t("from")}
-                  actionLabel={t("viewDetails")}
-                  actionRender={<Link href={`/yachts/${listing.slug}` as Route} />}
-                  saveRender={<WishlistButton listingId={listing.id} />}
-                />
-              </CarouselSlide>
-            ))}
+            <Suspense fallback={null}>
+              <PopularYachtSlides />
+            </Suspense>
           </CarouselViewport>
         </Carousel>
 

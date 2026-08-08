@@ -1,18 +1,18 @@
 import { hasLocale } from "next-intl";
 import { getRequestConfig } from "next-intl/server";
-import { cookies } from "next/headers";
 
-import { defaultLocale, LOCALE_COOKIE, locales } from "./config";
 import { formats } from "./formats";
+import { routing } from "./routing";
 
 /*
- * Locale comes from a cookie rather than a URL prefix, so the feature-module route groups
- * stay untouched and no middleware is needed. Add a locale by extending `locales` in
- * ./config and dropping a matching `messages/<locale>.json`.
+ * Locale comes from the `[locale]` URL segment (docs/adr/0001). `requestLocale` reads that
+ * segment rather than a cookie, which is what lets a route prerender: a cookie read here would
+ * make every layout above it dynamic. Add a locale by extending `locales` in ./config and
+ * dropping a matching `messages/<locale>.json`.
  */
-export default getRequestConfig(async () => {
-  const requested = (await cookies()).get(LOCALE_COOKIE)?.value;
-  const locale = hasLocale(locales, requested) ? requested : defaultLocale;
+export default getRequestConfig(async ({ requestLocale }) => {
+  const requested = await requestLocale;
+  const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
 
   return {
     locale,
