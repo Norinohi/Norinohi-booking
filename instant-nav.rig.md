@@ -111,7 +111,19 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
     rm -f apps/web/next-env.d.ts && rm -rf apps/web/.next
     ```
 
-12. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
+12. **Turborepo strips env vars the task did not declare.** Turbo runs tasks in strict env mode, so
+    an env var exported by a CI job (or your shell) never reaches a task unless it appears in
+    `globalEnv` or that task's `env` in `turbo.json`. CI set `SKIP_ENV_VALIDATION=1` and
+    `next typegen` still died on `Invalid environment variables`, because turbo had removed it.
+    `NEXT_PUBLIC_*` is declared on `build` for the same reason plus cache correctness — those values
+    are inlined into the client bundle, so a build cached under different ones must not be replayed.
+    Reproduce the CI environment exactly with:
+    ```bash
+    mv apps/web/.env /tmp/ && SKIP_ENV_VALIDATION=1 pnpm exec turbo run check-types --force
+    ```
+    `--force` matters: a cache hit replays a previous success and hides the failure.
+
+13. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
    by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
    load. That is not a caching bug — measure caching against `build:test` + `start`, where home
    issues no catalog requests at all.
