@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
-import { useState } from "react";
+import { type ReactNode, Suspense, useState } from "react";
 
 import { EASE, SLIDE, SLIDE_DURATION } from "@/lib/motion";
 
@@ -23,7 +23,43 @@ import { ResultScreen } from "./result-screen";
  * the `step` param, so the browser Back button (and the Back control) walk the steps. Step
  * `TOTAL_STEPS + 1` is the terminal result screen — it drops the indicator and the Back/Next row.
  */
-export default function PlannerScreen() {
+/*
+ * The wizard's frame: the card, its close control, and the page padding around it.
+ *
+ * Nothing here reads the URL, so it prerenders — and it doubles as the Suspense fallback for the
+ * wizard itself, which does. Shell and resolved UI are therefore the same component: the card
+ * never resizes or jumps when the steps arrive, and there is no separate skeleton to drift.
+ */
+function PlannerCard({ compact, children }: { compact?: boolean; children?: ReactNode }) {
+  const t = useTranslations("PlanMyTrip");
+  const router = useRouter();
+
+  return (
+    <div
+      className={cn(
+        "relative mx-auto flex w-full max-w-290 flex-1 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10",
+        compact && "mt-4 md:mt-6",
+      )}
+    >
+      <IconButton
+        variant="subtle"
+        size="sm"
+        aria-label={t("close")}
+        onClick={() => router.push("/")}
+        className="absolute top-6 right-6 md:top-5 md:right-5"
+      >
+        <X />
+      </IconButton>
+      {children}
+    </div>
+  );
+}
+
+/*
+ * Everything below reads `answers` from the query string via nuqs, which bars it from the
+ * prerendered shell — so it sits behind the boundary in PlannerScreen.
+ */
+function PlannerWizard() {
   const t = useTranslations("PlanMyTrip");
   const router = useRouter();
   const [answers, setAnswers] = useQueryStates(plannerParsers);
@@ -41,7 +77,7 @@ export default function PlannerScreen() {
   }
 
   return (
-    <div className="flex flex-1 flex-col px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5">
+    <>
       {!isResult && (
         <StepIndicator
           total={TOTAL_STEPS}
@@ -51,22 +87,7 @@ export default function PlannerScreen() {
         />
       )}
 
-      <div
-        className={cn(
-          "relative mx-auto flex w-full max-w-290 flex-1 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10",
-          !isResult && "mt-4 md:mt-6",
-        )}
-      >
-        <IconButton
-          variant="subtle"
-          size="sm"
-          aria-label={t("close")}
-          onClick={() => router.push("/")}
-          className="absolute top-6 right-6 md:top-5 md:right-5"
-        >
-          <X />
-        </IconButton>
-
+      <PlannerCard compact={!isResult}>
         {isResult ? (
           <ResultScreen answers={answers} />
         ) : (
@@ -101,7 +122,20 @@ export default function PlannerScreen() {
             </div>
           </div>
         )}
-      </div>
+      </PlannerCard>
+    </>
+  );
+}
+
+export default function PlannerScreen() {
+  return (
+    <div
+      data-testid="plan-my-trip-shell-marker"
+      className="flex flex-1 flex-col px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5"
+    >
+      <Suspense fallback={<PlannerCard compact />}>
+        <PlannerWizard />
+      </Suspense>
     </div>
   );
 }
