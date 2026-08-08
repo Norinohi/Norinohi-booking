@@ -91,7 +91,19 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
    rm -rf apps/web/.next/cache
    ```
 
-9. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
+9. **Errors thrown out of a `"use cache"` function are serialized.** The caller receives a plain
+   `Error` with a digest, so `instanceof` checks on the far side silently fail — a cached read that
+   threw `ORPCError(NOT_FOUND)` reached its `catch` as an unrecognised error and became an
+   unhandled render error instead of a 404. Decide inside the cached function and return the
+   outcome as a value (`{ found: false }`), where the real error still exists.
+
+10. **A `◐` route cannot return a non-200 status.** Under partial prerendering the shell is flushed
+    before the dynamic part resolves — the response carries `x-nextjs-postponed: 1` — so a later
+    `notFound()` swaps the UI but the status is already committed as 200. `connection()` in the
+    *page* does not change this, because the *layout's* shell is what flushed. A correct 404 needs
+    the whole route out of prerendering, which today means the root layout too.
+
+11. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
    by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
    load. That is not a caching bug — measure caching against `build:test` + `start`, where home
    issues no catalog requests at all.

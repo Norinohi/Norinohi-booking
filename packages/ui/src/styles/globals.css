@@ -50,6 +50,12 @@
   --natural-100: #e2e2e2;
   --natural-200: #bfbfbf;
   --natural-300: #a0a0a0;
+  /*
+   * Placeholder text specifically. `natural-300` is 2.61:1 on white and fails WCAG AA (4.5:1);
+   * the next step that passes, natural-500, is 7.46:1 and reads far darker than the design
+   * intends. This sits just over the threshold at 4.54:1, so placeholders stay light but legible.
+   */
+  --placeholder-foreground: #767676;
   --natural-400: #787878;
   --natural-500: #555555;
   --natural-600: #383838;
@@ -259,6 +265,7 @@
   --color-natural-100: var(--natural-100);
   --color-natural-200: var(--natural-200);
   --color-natural-300: var(--natural-300);
+  --color-placeholder-foreground: var(--placeholder-foreground);
   --color-natural-400: var(--natural-400);
   --color-natural-500: var(--natural-500);
   --color-natural-600: var(--natural-600);

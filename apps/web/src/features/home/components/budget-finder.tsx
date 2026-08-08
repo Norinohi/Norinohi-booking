@@ -150,6 +150,7 @@ function BudgetFinderForm({
             </span>
             <Select
               className="h-12 bg-card"
+              ariaLabel={t(`labels.${field.key}`)}
               options={field.options}
               value={field.value}
               onValueChange={field.onValueChange}

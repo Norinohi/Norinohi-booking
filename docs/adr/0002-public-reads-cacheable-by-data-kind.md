@@ -12,6 +12,12 @@ behaviour, then wrapping the public prefetch helpers in `"use cache"` with a `ca
 data kind: `days` for facets, `hours` for search results, listing detail and reviews, and **no cache
 at all** for availability, quotes and repricing.
 
+**Tag-based invalidation is deliberately not built.** The catalogue changes only through provider
+sync, so nobody is sitting in an admin screen wondering why their edit has not appeared — the
+windows above simply catch up. Revisit the moment a human can edit a listing or facet image: at
+that point `cacheTag` plus a revalidate webhook from the Hono server stops being optional, because
+"edit, then wait up to a day" is not an acceptable authoring experience.
+
 ## Considered options
 
 - **Add `<Suspense>` but no caching.** Rejected: the shell would paint immediately, but every
@@ -35,3 +41,12 @@ at all** for availability, quotes and repricing.
   the saving.
 - Two links exist for one API. This is deliberate: the split _is_ the mechanism that makes public
   reads cacheable. Merging them back re-breaks prerendering.
+- **Never return a "not found" from a cached function — throw.** Next caches resolved values but
+  not rejections, so a returned `{ found: false }` pins the absence for the whole cache window: a
+  listing created after someone visited its URL would keep 404ing for the rest of the hour. Both
+  halves of this shipped briefly and were caught by measuring API hits per request (a miss must
+  cost one call every time; a hit must cost one call per window).
+- **Match such errors by marker, not `instanceof`.** Errors thrown out of a `"use cache"` function
+  are serialized on the way out, arriving as a plain `Error` with a digest. An `instanceof
+  ORPCError` check on the far side silently fails, which turned a 404 into an unhandled render
+  error. See `isListingNotFound`.
