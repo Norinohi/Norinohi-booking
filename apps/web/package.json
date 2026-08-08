@@ -7,7 +7,7 @@
     "build": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-api.mjs && next build",
     "build:test": "EXPOSE_TESTING_API=1 pnpm build",
     "check-types": "next typegen && tsc --noEmit",
-    "start": "next start --port 3001",
+    "start": "next start",
     "test:e2e": "playwright test"
   },
   "dependencies": {

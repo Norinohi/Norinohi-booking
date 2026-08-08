@@ -123,7 +123,16 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
     ```
     `--force` matters: a cache hit replays a previous success and hides the failure.
 
-13. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
+13. **Never put `--port` in the `start` script.** Railway injects `PORT` and probes that port; a
+    hardcoded `--port 3001` in `apps/web`'s `start` makes the app listen elsewhere and the deploy
+    fails its healthcheck with nothing useful in the logs. The rig pins the port through
+    `playwright.config.ts`'s `webServer.env` instead. Root `AGENTS.md` states this constraint for
+    the API server; it applies to the web app too.
+
+14. **The healthcheck path must not be `/`.** Since locale moved into the URL, `/` is a 307 to
+    `/en`, which does not satisfy a healthcheck. `apps/web/railway.json` probes `/en`.
+
+15. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
    by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
    load. That is not a caching bug — measure caching against `build:test` + `start`, where home
    issues no catalog requests at all.

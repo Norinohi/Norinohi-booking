@@ -38,6 +38,10 @@ export default defineConfig({
 
   webServer: {
     command: "pnpm start",
+    // The port comes from the environment, never from the `start` script: hosts inject `PORT`, and
+    // a hardcoded `--port` there makes the app listen somewhere the platform is not probing, which
+    // fails the deploy healthcheck. The rig pins it here instead.
+    env: { PORT: "3001" },
     url: BASE_URL,
     // Reuse a server you started by hand locally; in CI always start a fresh one so the artifact
     // under test is unambiguously the one just built.
