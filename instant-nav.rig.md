@@ -103,7 +103,15 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
     *page* does not change this, because the *layout's* shell is what flushed. A correct 404 needs
     the whole route out of prerendering, which today means the root layout too.
 
-11. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
+11. **`tsc` passes locally and fails in CI on a fresh clone.** `next-env.d.ts` and `.next/types/*`
+    carry the `*.png` and route-type declarations and are gitignored, so they exist on your machine
+    only as a leftover from a previous build. `check-types` runs `next typegen` first for exactly
+    this reason. Reproduce a CI checkout with:
+    ```bash
+    rm -f apps/web/next-env.d.ts && rm -rf apps/web/.next
+    ```
+
+12. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
    by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
    load. That is not a caching bug — measure caching against `build:test` + `start`, where home
    issues no catalog requests at all.

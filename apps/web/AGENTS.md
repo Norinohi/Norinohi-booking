@@ -22,7 +22,11 @@ pnpm --filter web check-types  # tsc --noEmit
 - Never edit `next-env.d.ts` — Next regenerates it and the file says so.
 - Server data goes through `src/utils/orpc.ts` (`client`, `orpc`, `queryClient`). Do not construct an `RPCLink` or a second `QueryClient` elsewhere; `src/components/layout/providers.tsx` already mounts the singleton (and the `NuqsAdapter`).
 - Auth goes through `src/lib/auth-client.ts` (`authClient`). Preserve the `baseURL` comment there — the `/api/auth` path must match the server mount.
-- `reactCompiler: true` and `typedRoutes: true` are enabled in `next.config.ts`. Route types are generated into `.next/`; standalone `tsc --noEmit` still passes without a build.
+- `reactCompiler: true` and `typedRoutes: true` are enabled in `next.config.ts`. Route types and the
+  `*.png` module declarations come from generated files (`.next/types/*`, `next-env.d.ts`) that are
+  **gitignored**, so a bare `tsc --noEmit` fails on a fresh clone with `TS2307: Cannot find module
+  '…​.png'`. `check-types` therefore runs `next typegen && tsc --noEmit`. On a machine that has built
+  before it looks like `tsc` alone suffices — it does not, and CI proved it.
 - `next.config.ts` imports `@yacht-charter/env/web` purely for its validation side effect — keep that import first.
 - Logging is split across `src/lib/evlog.ts`, `instrumentation.ts`, and `src/proxy.ts`. Edit `src/lib/evlog.ts`; the other two delegate to it.
 
