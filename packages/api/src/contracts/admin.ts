@@ -11,6 +11,46 @@ import {
   paginationInputSchema,
 } from "./primitives";
 
+/* ------------------------------------------------------------ provider sync */
+
+export const providerKeyOutputSchema = z.enum(["mock", "booking_manager", "nausys"]);
+
+/** Returned the moment the run row exists; the work itself outlives the request. */
+export const syncRunStartedSchema = z.object({
+  syncRunId: z.string(),
+  provider: providerKeyOutputSchema,
+  status: z.literal("pending"),
+});
+
+export const syncRunStatusInputSchema = z
+  .object({
+    /** Defaults to the provider's most recent run. */
+    syncRunId: z.string().min(1).optional(),
+    errorLimit: z.number().int().min(1).max(200).optional(),
+  })
+  .default({});
+
+export const syncRunStatusSchema = z.object({
+  syncRunId: z.string(),
+  provider: providerKeyOutputSchema,
+  kind: z.enum(["catalogue", "availability", "pricing"]),
+  status: z.enum(["pending", "running", "success", "failed", "partial"]),
+  createdCount: z.number().int(),
+  updatedCount: z.number().int(),
+  skippedCount: z.number().int(),
+  failedCount: z.number().int(),
+  startedAt: z.string().nullable(),
+  finishedAt: z.string().nullable(),
+  errors: z.array(
+    z.object({
+      id: z.string(),
+      errorType: z.enum(["rate_limited", "transient", "auth", "not_found", "contract"]),
+      message: z.string(),
+      createdAt: z.string(),
+    }),
+  ),
+});
+
 /* ---------------------------------------------------------------- discounts */
 
 export const discountTypeSchema = z.enum(["percentage", "fixed_amount"]);

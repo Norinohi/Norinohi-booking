@@ -1,8 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { serve } from "@hono/node-server";
-import { createContext } from "@yacht-charter/api/context";
+import { createContext, inventoryProvider } from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
+import {
+  startAvailabilitySync,
+  startCatalogueSync,
+} from "@yacht-charter/api/services/provider-sync";
 import { handleStripeWebhook } from "@yacht-charter/api/services/stripe-webhook";
 import { auth } from "@yacht-charter/auth";
 import { db } from "@yacht-charter/db";
@@ -58,6 +62,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 app.post("/api/stripe/webhook", async (c) => {
   const outcome = await handleStripeWebhook(
     db,
+    inventoryProvider,
     await c.req.text(),
     c.req.header("stripe-signature") ?? null,
   );
@@ -82,7 +87,39 @@ app.post("/api/cron/sweep-expiries", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  return c.json(await sweepExpiries(db));
+  return c.json(await sweepExpiries(db, inventoryProvider));
+});
+
+// The vendor asks for one full catalogue dump a day, after 01:00 GMT+1. The run is
+// started and then let go: a full sequential walk takes hours and the platform kills
+// a long request, so progress lives in sync_run / sync_error instead of the response.
+app.post("/api/cron/sync-catalogue", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await startCatalogueSync(db, inventoryProvider));
+});
+
+// The vendor asks for occupancy hourly or every few hours. Started and let go like
+// the catalogue run: the occupancy pass is quick, but the confirmation pass that
+// follows it runs until its own time budget stops it.
+app.post("/api/cron/sync-availability", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await startAvailabilitySync(db, inventoryProvider));
 });
 
 // Try RPC (/rpc), then OpenAPI (/api-reference), else fall through.
