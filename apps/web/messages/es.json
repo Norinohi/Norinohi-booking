@@ -940,6 +940,26 @@
     "Dashboard": {
       "title": "Panel",
       "description": "Gestiona tus reservas de chárter, yates guardados y ajustes de la cuenta."
+    },
+    "Wishlist": {
+      "title": "Tus favoritos",
+      "description": "Los yates y catamaranes que has guardado. Compara tus favoritos y consulta la disponibilidad para tus fechas."
+    },
+    "Profile": {
+      "title": "Tu perfil",
+      "description": "Gestiona los datos de tu cuenta de YachtCharter, tu información de contacto y tus preferencias."
+    },
+    "Bookings": {
+      "title": "Mis reservas",
+      "description": "Consulta tus reservas de chárter, los detalles de cada viaje y tu historial de reservas."
+    },
+    "Referrals": {
+      "title": "Tus referidos",
+      "description": "Sigue a los amigos que has invitado a YachtCharter y las recompensas que has conseguido."
+    },
+    "Discounts": {
+      "title": "Gestor de descuentos y precios",
+      "description": "Gestiona los códigos promocionales y los precios de tus yates."
     }
   },
   "Profile": {

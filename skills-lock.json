@@ -12,6 +12,12 @@
       "skillPath": "better-auth/best-practices/SKILL.md",
       "computedHash": "61ba0ef64ed2e7c424401cc848ca33dd6d790a720c44727717dc0c5cba5fc122"
     },
+    "fixing-metadata": {
+      "source": "ibelick/ui-skills",
+      "sourceType": "github",
+      "skillPath": "skills/fixing-metadata/SKILL.md",
+      "computedHash": "699e13890fb50acffa02dfd2d5b0e719bd916a9e2b7e6035bdc4513fc73d9174"
+    },
     "hono": {
       "source": "yusukebe/hono-skill",
       "sourceType": "github",
@@ -34,6 +40,12 @@
       "source": "evlog.dev",
       "sourceType": "well-known",
       "computedHash": "16e0e91b358067492201f82c113269bc42936a02d1150bece06b106d1601b458"
+    },
+    "seo": {
+      "source": "addyosmani/web-quality-skills",
+      "sourceType": "github",
+      "skillPath": "skills/seo/SKILL.md",
+      "computedHash": "1f1551c898c17a88a976b4f4aa84e17886f115f3887b62d1c4f8a1c040e4d1ef"
     },
     "shadcn": {
       "source": "shadcn/ui",

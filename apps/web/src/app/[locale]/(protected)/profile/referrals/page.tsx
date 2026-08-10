@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { prefetchReferrals, ReferralsScreen } from "@/features/profile";
 
@@ -12,8 +13,15 @@ import { prefetchReferrals, ReferralsScreen } from "@/features/profile";
 export const instant = false;
 
 export async function generateMetadata() {
-  const t = await getTranslations("Referrals");
-  return { title: t("title") };
+  const locale = await getLocale();
+  const t = await getTranslations("Seo.Referrals");
+  return buildMetadata({
+    locale,
+    title: t("title"),
+    description: t("description"),
+    path: "/profile/referrals",
+    noIndex: true,
+  });
 }
 
 export default async function ReferralsPage() {

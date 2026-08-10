@@ -1,8 +1,9 @@
 import { headers } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { WishlistScreen } from "@/features/wishlist";
 import { prefetchWishlist } from "@/features/wishlist/api/server";
@@ -12,8 +13,14 @@ import { prefetchWishlist } from "@/features/wishlist/api/server";
 export const instant = false;
 
 export async function generateMetadata() {
-  const t = await getTranslations("Wishlist");
-  return { title: t("title") };
+  const locale = await getLocale();
+  const t = await getTranslations("Seo.Wishlist");
+  return buildMetadata({
+    locale,
+    title: t("title"),
+    description: t("description"),
+    path: "/wishlist",
+  });
 }
 
 export default async function WishlistPage() {

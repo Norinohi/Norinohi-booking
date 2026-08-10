@@ -25,12 +25,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id, locale } = await params;
   const t = await getTranslations("Seo.YachtDetail");
+
+  /*
+   * Detail pages are indexable, so the title has to name the boat — one shared "Yacht Details"
+   * across every listing reads as duplicate content. The read is the same cached call the page
+   * body makes below, so it costs nothing extra; a miss falls back to the generic title and
+   * lets the body own the 404.
+   */
+  const listing = await prefetchListingDetail(id).catch(() => null);
+
   return buildMetadata({
     locale,
-    title: t("title"),
+    title: listing?.title ?? t("title"),
     description: t("description"),
     path: `/yachts/${id}`,
-    noIndex: true,
   });
 }
 
@@ -72,4 +80,3 @@ export default async function YachtDetailPage({ params }: { params: Promise<{ id
     </Hydrated>
   );
 }
-
