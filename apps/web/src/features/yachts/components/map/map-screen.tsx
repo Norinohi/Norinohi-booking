@@ -5,7 +5,7 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, X } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useState } from "react";
@@ -69,10 +69,13 @@ export default function MapScreen() {
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
   const { toMapCard } = useListingCards();
+  const locale = useLocale();
   const chips = useFilterChips(filters);
 
   const { data } = useQuery(
-    mapMarkersQueryOptions(toSearchInput(filters, defaults, { sort: "recommended", page: 1 })),
+    mapMarkersQueryOptions(
+      toSearchInput(filters, defaults, { sort: "recommended", page: 1, locale }),
+    ),
   );
   const markers = data?.markers ?? [];
 

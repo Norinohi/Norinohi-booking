@@ -1,15 +1,28 @@
 import { type FiltersState, isSameValue } from "@/components/shared/form/filters";
 
+import type { Locale } from "@/i18n/config";
+
 import type { ResultsInput } from "../api/queries";
 
 const FEET_TO_METRES = 0.3048;
 
+/*
+ * `locale` is required rather than optional so a new call site cannot quietly omit it and get
+ * English cards back: the server translates a card's category, crew, sail type, country, region,
+ * location, marina and amenities off this field, and it is part of the query key, so a missing one
+ * both mistranslates and splits the cache.
+ */
 export function toSearchInput(
   filters: FiltersState,
   defaults: FiltersState,
-  opts: { sort: NonNullable<ResultsInput["sort"]>; page: number },
+  opts: { sort: NonNullable<ResultsInput["sort"]>; page: number; locale: Locale },
 ): ResultsInput {
-  const input: ResultsInput = { currency: "EUR", sort: opts.sort, page: opts.page };
+  const input: ResultsInput = {
+    currency: "EUR",
+    sort: opts.sort,
+    page: opts.page,
+    locale: opts.locale,
+  };
 
   if (filters.country.length) input.country = filters.country;
   if (filters.sailingArea.length) input.sailingArea = filters.sailingArea;

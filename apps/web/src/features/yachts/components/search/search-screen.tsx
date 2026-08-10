@@ -4,7 +4,7 @@ import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -89,8 +89,9 @@ function ResultsColumn() {
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
 
   const { toCard } = useListingCards();
+  const locale = useLocale();
   const { data, isLoading } = useQuery(
-    resultsQueryOptions(toSearchInput(filters, defaults, { sort, page })),
+    resultsQueryOptions(toSearchInput(filters, defaults, { sort, page, locale })),
   );
   const boats = data?.items.map(({ listing }) => toCard(listing)) ?? [];
   const pagination = data?.pagination;

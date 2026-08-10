@@ -12,7 +12,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 
@@ -58,7 +58,8 @@ function CarouselNav() {
 function PopularYachtSlides() {
   const t = useTranslations("Home.PopularYachts");
   const money = useMoney();
-  const { data } = useQuery(popularYachtsQueryOptions());
+  const locale = useLocale();
+  const { data } = useQuery(popularYachtsQueryOptions(locale));
   const yachts = data?.items ?? [];
 
   return (
