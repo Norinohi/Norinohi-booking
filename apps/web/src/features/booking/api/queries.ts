@@ -28,3 +28,10 @@ export type CalendarInput = Parameters<AppRouterClient["availability"]["calendar
  */
 export const availabilityCalendarQueryOptions = (input: CalendarInput) =>
   orpc.availability.calendar.queryOptions({ input });
+
+/*
+ * Confirm Booking. Re-validates the quote, records the guest and consents, and holds the provider
+ * option — `protectedProcedure`, so the wizard gates it behind sign-in. Returns the `bookingId` the
+ * payment step and confirmation are keyed on.
+ */
+export const createHoldMutationOptions = () => orpc.checkout.createHold.mutationOptions();

@@ -7,12 +7,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@yacht-charter/ui/components/layout/accordion";
+import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
+import { toast } from "sonner";
 
+import { authClient } from "@/lib/auth-client";
+
+import { createHoldMutationOptions } from "../api/queries";
 import type { BookingValues } from "../lib/booking-form";
+import { serializeBooking } from "../lib/search-params";
+import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
 import GuestDetailsStep from "./steps/guest-details";
 import PaymentStep from "./steps/payment";
@@ -35,15 +43,29 @@ type Step = (typeof STEPS)[number]["id"];
  * The body owns its own padding, because a step may be one padded block (Guest Details) or
  * several separated by a full-bleed rule (Extras).
  * Continue runs `trigger(step)`, which validates that branch of the schema and nothing
- * else, and advances only when it passes; the step never touches submission.
+ * else, and advances only when it passes; the step never touches submission — except
+ * Review, whose Confirm creates the held booking (see `confirmBooking`).
  * Every header stays clickable, so a step can be revisited. `multiple={false}` also means
  * the open step cannot be toggled shut — one is always expanded, except after the last Continue.
  */
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
+  const { quote, slug, setBookingId } = useBooking();
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
+  const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
+
+  /* `onTouched` only goes live after a blur, and `trigger` does not touch anything — so a failed
+   * step has to touch its own fields, or a corrected one stays red until the next attempt. */
+  function touch(step: Step) {
+    for (const field of Object.keys(getValues(step))) {
+      const path = `${step}.${field}` as Path<BookingValues>;
+      setValue(path, getValues(path), { shouldTouch: true });
+    }
+  }
 
   async function advanceStep(step: Step, index: number) {
     if (await trigger(step)) {
@@ -51,12 +73,43 @@ export default function BookingSteps() {
       setOpen(STEPS[index + 1]?.id ?? null);
       return;
     }
-    /* `onTouched` only goes live after a blur, and `trigger` does not touch anything — so a
-     * failed Continue has to touch this step itself, or a corrected field would stay red
-     * until the next Continue. */
-    for (const field of Object.keys(getValues(step))) {
-      const path = `${step}.${field}` as Path<BookingValues>;
-      setValue(path, getValues(path), { shouldTouch: true });
+    touch(step);
+  }
+
+  /*
+   * Confirm gates on sign-in: `checkout.createHold` is a protected procedure, so an anonymous
+   * visitor is sent to sign in with a return link back to this quote, then holds the booking with
+   * the guest details and consents. The `bookingId` lands in the shared context for the payment step.
+   */
+  async function confirmBooking() {
+    if (!session?.user) {
+      const back = serializeBooking(`/yachts/${slug}/booking`, { quoteId: quote?.quoteId ?? null });
+      router.push(`/login?redirect=${encodeURIComponent(back)}`);
+      return;
+    }
+    if (!(await trigger("reviewAndBook"))) {
+      touch("reviewAndBook");
+      return;
+    }
+    if (!quote) return;
+
+    const guest = getValues("guestDetails");
+    try {
+      const hold = await createHold.mutateAsync({
+        quoteId: quote.quoteId,
+        guest: {
+          fullName: guest.fullName,
+          email: guest.email,
+          phone: guest.phone,
+          specialRequests: guest.specialRequests || undefined,
+        },
+        consents: { terms: true, cancellationPolicy: true },
+      });
+      setBookingId(hold.bookingId);
+      setCompleted((prev) => new Set(prev).add("reviewAndBook"));
+      setOpen("payment");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("errors.confirmFailed"));
     }
   }
 
@@ -105,7 +158,10 @@ export default function BookingSteps() {
                     <Button
                       variant="brand"
                       className="h-13 w-full"
-                      onClick={() => void advanceStep(step, index)}
+                      disabled={step === "reviewAndBook" && createHold.isPending}
+                      onClick={() =>
+                        void (step === "reviewAndBook" ? confirmBooking() : advanceStep(step, index))
+                      }
                     >
                       {t(cta)}
                     </Button>

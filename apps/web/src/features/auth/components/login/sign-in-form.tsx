@@ -58,10 +58,14 @@ function GoogleIcon(props: ComponentProps<"svg">) {
 
 type Values = { email: string; password: string };
 
-export default function SignInForm() {
+export default function SignInForm({ redirect }: { redirect?: string }) {
   const t = useTranslations("Auth.SignIn");
   const router = useRouter();
   const { isPending } = authClient.useSession();
+
+  /* A return link from checkout, restricted to same-site paths so it cannot be an open redirect. */
+  const target =
+    redirect && redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/dashboard";
 
   const schema = useMemo(
     () =>
@@ -81,7 +85,7 @@ export default function SignInForm() {
   const onSubmit = (value: Values) =>
     authClient.signIn.email(value, {
       onSuccess: () => {
-        router.push("/dashboard");
+        router.push(target);
         toast.success(t("success"));
       },
       onError: (error: any) => {

@@ -40,7 +40,8 @@
       "phone": "Enter a valid phone number",
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
-      "paymentMessage": "Enter your question or request"
+      "paymentMessage": "Enter your question or request",
+      "confirmFailed": "Could not confirm your booking. Please try again."
     },
     "backToYacht": "Back To {name}",
     "panels": {

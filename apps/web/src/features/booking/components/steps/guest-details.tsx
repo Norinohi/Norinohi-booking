@@ -10,13 +10,25 @@ import {
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
+
+import { authClient } from "@/lib/auth-client";
 
 import type { BookingValues } from "../../lib/booking-form";
 
 export default function GuestDetailsStep() {
   const t = useTranslations("Booking.guestDetails");
-  const { control } = useFormContext<BookingValues>();
+  const { data: session } = authClient.useSession();
+  const { control, getValues, setValue } = useFormContext<BookingValues>();
+
+  /* Prefill from the signed-in user, without clobbering anything already typed. */
+  useEffect(() => {
+    const user = session?.user;
+    if (!user) return;
+    if (!getValues("guestDetails.fullName")) setValue("guestDetails.fullName", user.name ?? "");
+    if (!getValues("guestDetails.email")) setValue("guestDetails.email", user.email ?? "");
+  }, [session, getValues, setValue]);
 
   return (
     <div className="flex flex-col gap-4 p-5">

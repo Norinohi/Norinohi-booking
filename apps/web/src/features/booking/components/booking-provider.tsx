@@ -41,6 +41,9 @@ type BookingContextValue = {
   setGuests: (next: number) => void;
   /** Step 2 hands its selection here — reprices the current quote's extras in place. */
   setExtras: (extras: string[]) => void;
+  /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
+  bookingId: string | null;
+  setBookingId: (id: string | null) => void;
 };
 
 const BookingContext = createContext<BookingContextValue | null>(null);
@@ -65,6 +68,7 @@ export function BookingProvider({
 
   const [crewChoice, setCrewChoice] = useState<CrewType | undefined>();
   const [guests, setGuestsState] = useState(DEFAULT_GUESTS);
+  const [bookingId, setBookingId] = useState<string | null>(null);
   /* Defaulted synchronously off the prefetched listing so the crew Select stays controlled. */
   const crewType = crewChoice ?? listing?.crew.options[0];
 
@@ -149,6 +153,8 @@ export function BookingProvider({
     setCrew,
     setGuests,
     setExtras,
+    bookingId,
+    setBookingId,
   };
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;
