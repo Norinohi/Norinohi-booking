@@ -2,10 +2,11 @@ import { headers } from "next/headers";
 import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import Hydrated from "@/components/shared/layout/hydrated";
 import { authClient } from "@/lib/auth-client";
 import { buildMetadata } from "@/lib/seo";
 
-import { DiscountManagerScreen } from "@/features/profile";
+import { DiscountManagerScreen, prefetchDiscountManager } from "@/features/profile";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -43,5 +44,9 @@ export default async function DiscountsPage() {
     return redirect({ href: "/profile", locale });
   }
 
-  return <DiscountManagerScreen user={{ name: session.user.name, email: session.user.email }} />;
+  return (
+    <Hydrated prefetch={prefetchDiscountManager}>
+      <DiscountManagerScreen user={{ name: session.user.name, email: session.user.email }} />
+    </Hydrated>
+  );
 }

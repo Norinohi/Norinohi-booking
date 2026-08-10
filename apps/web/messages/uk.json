@@ -1151,15 +1151,19 @@
       "typeValue": "Тип і значення",
       "appliesTo": "Застосовується до",
       "status": "Статус",
-      "usage": "Використання"
+      "usage": "Використання",
+      "empty": "Знижок не знайдено",
+      "error": "Не вдалося завантажити знижки"
     },
     "status": {
       "active": "Активна",
-      "inactive": "Неактивна"
+      "inactive": "Неактивна",
+      "scheduled": "Заплановано",
+      "expired": "Завершено"
     },
     "type": {
       "percentage": "Відсоток",
-      "fixed": "Фіксована"
+      "fixed_amount": "Фіксована"
     },
     "applies": {
       "allYachts": "Всі яхти",
@@ -1168,15 +1172,9 @@
       "allMotorboats": "Всі моторні човни",
       "allMotorYachts": "Всі моторні яхти",
       "allSailboats": "Всі вітрильники",
-      "specific": "Окремі яхти"
-    },
-    "yachtTypes": {
-      "catamaran": "Катамаран",
-      "gulet": "Гулет",
-      "motorYacht": "Моторна яхта",
-      "powerCatamaran": "Моторний катамаран",
-      "sailboat": "Вітрильник",
-      "motorBoat": "Моторний човен"
+      "specific": "Окремі яхти",
+      "allSailingYachts": "Всі вітрильні яхти",
+      "allLuxuryYachts": "Всі люксові яхти"
     },
     "dialog": {
       "createTitle": "Створити нову знижку",
@@ -1213,8 +1211,10 @@
       "errors": {
         "nameRequired": "Вкажіть назву знижки",
         "codeRequired": "Вкажіть код знижки",
-        "priceRequired": "Вкажіть значення знижки"
-      }
+        "priceRequired": "Вкажіть значення знижки",
+        "appliesRequired": "Оберіть, до чого застосовується знижка"
+      },
+      "error": "Щось пішло не так. Спробуйте ще раз."
     },
     "prices": {
       "search": "Пошук за назвою",
@@ -1237,7 +1237,9 @@
         "errors": {
           "priceRequired": "Вкажіть нову ціну"
         }
-      }
+      },
+      "empty": "Яхт не знайдено",
+      "error": "Не вдалося завантажити ціни"
     }
   }
 }

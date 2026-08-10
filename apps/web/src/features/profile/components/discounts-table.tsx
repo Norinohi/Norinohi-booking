@@ -9,28 +9,55 @@ import {
   TableHeader,
   TableRow,
 } from "@yacht-charter/ui/components/data-display/table";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { DISCOUNTS_PAGE_COUNT, SAMPLE_DISCOUNTS, type Discount } from "../lib/discounts";
+import { useMoney } from "@/hooks/use-money";
+
+import { useDiscounts } from "../hooks/use-discounts";
+import type { Discount } from "../types";
 
 /*
  * DiscountsTable — the "Discounts" tab table + pagination of /profile/discounts.
  * Figma "Discount & Price Manager": desktop 972:55055 / tablet 973:90636 / mobile 973:99174.
  * Six equal columns (`table-fixed`, min 960px so tablet/mobile scroll horizontally like the
  * frames); header on natural-50, 50px rows, Active as a brand Chip, long names ellipsize.
- * Contract: rows come from SAMPLE_DISCOUNTS; clicking a row calls `onEdit(discount)`.
+ * Contract: rows come from `admin.discount.list` via `useDiscounts({ page })`; clicking a
+ * row calls `onEdit(discount)`. Loading keeps the table silhouette with skeleton rows;
+ * error/empty render a single full-span message row.
  */
+
+const SKELETON_ROWS = 5;
+
+/** Per-column skeleton widths mirroring typical cell content. */
+const SKELETON_WIDTHS = ["w-3/4", "w-24", "w-20", "w-28", "w-16", "w-12"];
+
 export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount) => void }) {
   const t = useTranslations("Discounts");
+  const formatMoney = useMoney();
   const [page, setPage] = useState(1);
 
-  // Design copy: "10% Percentage"; fixed amounts follow the €-prefix convention (referrals).
+  const { data, isPending, isError } = useDiscounts({ page });
+
+  // Percentage discounts show "10%"; fixed amounts the EUR-formatted value (referrals convention).
   const typeValue = (discount: Discount) =>
     discount.type === "percentage"
-      ? `${discount.value}% ${t("type.percentage")}`
-      : `€${discount.value} ${t("type.fixed")}`;
+      ? discount.valuePct !== null
+        ? `${discount.valuePct}%`
+        : "—"
+      : discount.value !== null
+        ? formatMoney(discount.value.amountMinor)
+        : "—";
+
+  const messageRow = (message: string) => (
+    <TableRow>
+      <TableCell colSpan={6} className="text-center text-sm font-medium text-natural-500">
+        {message}
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -48,44 +75,60 @@ export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount
           </TableRow>
         </TableHeader>
         <TableBody>
-          {SAMPLE_DISCOUNTS.map((discount) => (
-            <TableRow
-              key={discount.id}
-              tabIndex={0}
-              onClick={() => onEdit(discount)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onEdit(discount);
-                }
-              }}
-              className="cursor-pointer outline-none transition-colors hover:bg-natural-50 focus-visible:bg-natural-50"
-            >
-              <TableCell className="truncate">{discount.name}</TableCell>
-              <TableCell className="whitespace-nowrap">{discount.code}</TableCell>
-              <TableCell className="whitespace-nowrap">{typeValue(discount)}</TableCell>
-              <TableCell className="whitespace-nowrap">
-                {t(`applies.${discount.appliesTo}`)}
-              </TableCell>
-              <TableCell>
-                <Chip variant={discount.status === "active" ? "brand" : "neutral"}>
-                  {t(`status.${discount.status}`)}
-                </Chip>
-              </TableCell>
-              <TableCell className="whitespace-nowrap">{discount.usage}</TableCell>
-            </TableRow>
-          ))}
+          {isPending
+            ? Array.from({ length: SKELETON_ROWS }, (_, row) => (
+                <TableRow key={row}>
+                  {SKELETON_WIDTHS.map((width) => (
+                    <TableCell key={width}>
+                      <Skeleton className={`h-4 rounded-md ${width}`} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            : isError
+              ? messageRow(t("table.error"))
+              : data.items.length === 0
+                ? messageRow(t("table.empty"))
+                : data.items.map((discount) => (
+                    <TableRow
+                      key={discount.id}
+                      tabIndex={0}
+                      onClick={() => onEdit(discount)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onEdit(discount);
+                        }
+                      }}
+                      className="cursor-pointer outline-none transition-colors hover:bg-natural-50 focus-visible:bg-natural-50"
+                    >
+                      <TableCell className="truncate">{discount.name}</TableCell>
+                      <TableCell className="whitespace-nowrap">{discount.code}</TableCell>
+                      <TableCell className="whitespace-nowrap">{typeValue(discount)}</TableCell>
+                      <TableCell className="truncate">{discount.appliesToLabel}</TableCell>
+                      <TableCell>
+                        <Chip variant={discount.status === "active" ? "brand" : "neutral"}>
+                          {t(`status.${discount.status}`)}
+                        </Chip>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {`${discount.usageCount}/${discount.usageLimit ?? "∞"}`}
+                      </TableCell>
+                    </TableRow>
+                  ))}
         </TableBody>
       </Table>
 
-      <div className="flex justify-center md:justify-start">
-        <PaginationControl
-          page={page}
-          onPageChange={setPage}
-          pageCount={DISCOUNTS_PAGE_COUNT}
-          summary={false}
-        />
-      </div>
+      {data && data.pagination.totalPages > 0 ? (
+        <div className="flex justify-center md:justify-start">
+          <PaginationControl
+            page={page}
+            onPageChange={setPage}
+            pageCount={data.pagination.totalPages}
+            summary={false}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -9,14 +9,18 @@ import {
   TableHeader,
   TableRow,
 } from "@yacht-charter/ui/components/data-display/table";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Search, SquarePen } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { PRICES_PAGE_COUNT, SAMPLE_PRICES, type YachtPrice } from "../lib/discounts";
+import { useMoney } from "@/hooks/use-money";
+
+import { useListingPriceFilters, useListingPrices } from "../hooks/use-discounts";
+import type { ListingPriceRow } from "../types";
 
 /*
  * ManagePricesTable — the "Manage Prices" tab of /profile/discounts: search + type/location
@@ -24,41 +28,72 @@ import { PRICES_PAGE_COUNT, SAMPLE_PRICES, type YachtPrice } from "../lib/discou
  * Figma "Discount & Price Manager / Manage Prices": desktop 972:55440 / tablet 973:103838 /
  * mobile 973:103902.
  * Filter row (48px controls, 16px gaps): search flexes, selects 222px on desktop; below md
- * the search goes full-width with the selects splitting a row underneath. Filters are local
- * state over SAMPLE_PRICES. Table: five equal columns (`table-fixed`, min 960px per tablet
- * metadata so narrow screens scroll), header on natural-50, 50px rows; Current Price stays
- * foreground per the node fill (#0a0a0a). Rows are inert — only the pencil edits.
- * Contract: the row's edit affordance calls `onEdit(yacht)`.
+ * the search goes full-width with the selects splitting a row underneath. Select options come
+ * from `admin.listingPrice.filters`; rows from `admin.listingPrice.list`, with the search
+ * text debounced before it hits the query. Table: five equal columns (`table-fixed`, min
+ * 960px per tablet metadata so narrow screens scroll), header on natural-50, 50px header /
+ * 52px rows; Current Price stays foreground per the node fill (#0a0a0a). Rows are inert —
+ * only the pencil edits. Loading keeps the table silhouette with skeleton rows; error/empty
+ * render a single full-span message row (DiscountsTable convention).
+ * Contract: the row's edit affordance calls `onEdit(row)`.
  */
 
-/** Sentinel for the unfiltered "All …" option — sample values are display strings. */
+/*
+ * Sentinel for the unfiltered "All …" option, mapped to `undefined` in the query input.
+ * A real value (not "") because the Select trigger renders the placeholder for a falsy
+ * selection, which would blank the control.
+ */
 const ALL = "all";
 
-const TYPE_VALUES = [...new Set(SAMPLE_PRICES.map((yacht) => yacht.type))];
-const LOCATION_VALUES = [...new Set(SAMPLE_PRICES.map((yacht) => yacht.location))];
+const SEARCH_DEBOUNCE_MS = 300;
 
-export default function ManagePricesTable({ onEdit }: { onEdit: (yacht: YachtPrice) => void }) {
+const SKELETON_ROWS = 5;
+
+/** Per-column skeleton widths mirroring typical cell content. */
+const SKELETON_WIDTHS = ["w-3/4", "w-2/3", "w-24", "w-28", "w-8"];
+
+export default function ManagePricesTable({ onEdit }: { onEdit: (row: ListingPriceRow) => void }) {
   const t = useTranslations("Discounts");
+  const formatMoney = useMoney();
   const [search, setSearch] = useState("");
-  const [type, setType] = useState(ALL);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [category, setCategory] = useState(ALL);
   const [location, setLocation] = useState(ALL);
   const [page, setPage] = useState(1);
 
+  /* Debounce the search before it becomes query input, so the list doesn't refetch
+   * on every keystroke. */
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [search]);
+
+  const filters = useListingPriceFilters();
+  const { data, isPending, isError } = useListingPrices({
+    query: debouncedSearch.trim() || undefined,
+    category: category === ALL ? undefined : category,
+    location: location === ALL ? undefined : location,
+    page,
+  });
+
   const typeOptions = [
     { value: ALL, label: t("prices.allTypes") },
-    ...TYPE_VALUES.map((value) => ({ value, label: value })),
+    ...(filters.data?.categories ?? []),
   ];
   const locationOptions = [
     { value: ALL, label: t("prices.allLocations") },
-    ...LOCATION_VALUES.map((value) => ({ value, label: value })),
+    ...(filters.data?.locations ?? []),
   ];
 
-  const query = search.trim().toLowerCase();
-  const rows = SAMPLE_PRICES.filter(
-    (yacht) =>
-      (query === "" || yacht.name.toLowerCase().includes(query)) &&
-      (type === ALL || yacht.type === type) &&
-      (location === ALL || yacht.location === location),
+  const price = (money: ListingPriceRow["basePrice"]) =>
+    money ? formatMoney(money.amountMinor) : "—";
+
+  const messageRow = (message: string) => (
+    <TableRow>
+      <TableCell colSpan={5} className="text-center text-sm font-medium text-natural-500">
+        {message}
+      </TableCell>
+    </TableRow>
   );
 
   return (
@@ -83,9 +118,10 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (yacht: YachtPri
               className="h-12 min-w-0"
               ariaLabel={t("prices.allTypes")}
               options={typeOptions}
-              value={type}
+              isLoading={filters.isPending}
+              value={category}
               onValueChange={(next) => {
-                setType(next);
+                setCategory(next);
                 setPage(1);
               }}
             />
@@ -95,6 +131,7 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (yacht: YachtPri
               className="h-12 min-w-0"
               ariaLabel={t("prices.allLocations")}
               options={locationOptions}
+              isLoading={filters.isPending}
               value={location}
               onValueChange={(next) => {
                 setLocation(next);
@@ -119,35 +156,53 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (yacht: YachtPri
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((yacht) => (
-            <TableRow key={yacht.id}>
-              <TableCell className="truncate">{yacht.name}</TableCell>
-              <TableCell className="truncate">{yacht.location}</TableCell>
-              <TableCell className="whitespace-nowrap">{yacht.basePrice}</TableCell>
-              <TableCell className="whitespace-nowrap">{yacht.currentPrice}</TableCell>
-              <TableCell>
-                <IconButton
-                  variant="subtle"
-                  size="sm"
-                  aria-label={t("prices.table.edit")}
-                  onClick={() => onEdit(yacht)}
-                >
-                  <SquarePen className="size-5" />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
+          {isPending
+            ? Array.from({ length: SKELETON_ROWS }, (_, row) => (
+                <TableRow key={row}>
+                  {SKELETON_WIDTHS.map((width) => (
+                    <TableCell key={width}>
+                      <Skeleton className={`h-4 rounded-md ${width}`} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            : isError
+              ? messageRow(t("prices.error"))
+              : data.items.length === 0
+                ? messageRow(t("prices.empty"))
+                : data.items.map((row) => (
+                    <TableRow key={row.listingId}>
+                      <TableCell className="truncate">{row.title}</TableCell>
+                      <TableCell className="truncate">
+                        {`${row.locationName}, ${row.countryName}`}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{price(row.basePrice)}</TableCell>
+                      <TableCell className="whitespace-nowrap">{price(row.currentPrice)}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          variant="subtle"
+                          size="sm"
+                          aria-label={t("prices.table.edit")}
+                          onClick={() => onEdit(row)}
+                        >
+                          <SquarePen className="size-5" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
         </TableBody>
       </Table>
 
-      <div className="flex justify-center md:justify-start">
-        <PaginationControl
-          page={page}
-          onPageChange={setPage}
-          pageCount={PRICES_PAGE_COUNT}
-          summary={false}
-        />
-      </div>
+      {data && data.pagination.totalPages > 0 ? (
+        <div className="flex justify-center md:justify-start">
+          <PaginationControl
+            page={page}
+            onPageChange={setPage}
+            pageCount={data.pagination.totalPages}
+            summary={false}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

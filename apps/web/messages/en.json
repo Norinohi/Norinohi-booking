@@ -1151,15 +1151,19 @@
       "typeValue": "Type & Value",
       "appliesTo": "Applies to",
       "status": "Status",
-      "usage": "Usage"
+      "usage": "Usage",
+      "empty": "No discounts found",
+      "error": "Couldn't load discounts"
     },
     "status": {
       "active": "Active",
-      "inactive": "Inactive"
+      "inactive": "Inactive",
+      "scheduled": "Scheduled",
+      "expired": "Expired"
     },
     "type": {
       "percentage": "Percentage",
-      "fixed": "Fixed"
+      "fixed_amount": "Fixed"
     },
     "applies": {
       "allYachts": "All yachts",
@@ -1168,15 +1172,9 @@
       "allMotorboats": "All Motorboats",
       "allMotorYachts": "All Motor yachts",
       "allSailboats": "All Sailboat",
-      "specific": "Specific Yachts"
-    },
-    "yachtTypes": {
-      "catamaran": "Catamaran",
-      "gulet": "Gulet",
-      "motorYacht": "Motor Yacht",
-      "powerCatamaran": "Power Catamaran",
-      "sailboat": "Sailboat",
-      "motorBoat": "Motor Boat"
+      "specific": "Specific Yachts",
+      "allSailingYachts": "All Sailing yachts",
+      "allLuxuryYachts": "All Luxury yachts"
     },
     "dialog": {
       "createTitle": "Create new discount",
@@ -1213,8 +1211,10 @@
       "errors": {
         "nameRequired": "Enter a discount name",
         "codeRequired": "Enter a discount code",
-        "priceRequired": "Enter a discount value"
-      }
+        "priceRequired": "Enter a discount value",
+        "appliesRequired": "Choose what the discount applies to"
+      },
+      "error": "Something went wrong. Please try again."
     },
     "prices": {
       "search": "Search by name",
@@ -1237,7 +1237,9 @@
         "errors": {
           "priceRequired": "Enter a new price"
         }
-      }
+      },
+      "empty": "No yachts found",
+      "error": "Couldn't load prices"
     }
   }
 }

@@ -28,3 +28,45 @@ export const referralHistoryQueryOptions = (page = 1) =>
     input: { page, pageSize: REFERRAL_HISTORY_PAGE_SIZE },
     staleTime: 30_000,
   });
+
+/* ------------------------- admin Discount & Price Manager ------------------------- */
+
+export const DISCOUNTS_PAGE_SIZE = 10;
+export const PRICES_PAGE_SIZE = 10;
+
+/* page/pageSize stay explicit so each page keeps its own cache key (wishlist convention). */
+export const discountListQueryOptions = (input: {
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.discount.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? DISCOUNTS_PAGE_SIZE },
+    staleTime: 30_000,
+  });
+
+export const discountQueryOptions = (id: string) =>
+  orpc.admin.discount.get.queryOptions({ input: { id }, staleTime: 30_000 });
+
+/** Typeahead behind the "Specific Yachts" picker; empty query lists the first page of yachts. */
+export const discountYachtOptionsQueryOptions = (query: string) =>
+  orpc.admin.discount.yachtOptions.queryOptions({
+    input: { query: query || undefined, limit: 50 },
+    staleTime: 30_000,
+  });
+
+export const listingPriceListQueryOptions = (input: {
+  query?: string;
+  category?: string;
+  location?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.listingPrice.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? PRICES_PAGE_SIZE },
+    staleTime: 30_000,
+  });
+
+/** The catalogue's category/location dropdown options — changes only on catalogue sync. */
+export const listingPriceFiltersQueryOptions = () =>
+  orpc.admin.listingPrice.filters.queryOptions({ input: {}, staleTime: 300_000 });

@@ -1151,15 +1151,19 @@
       "typeValue": "Tipo y valor",
       "appliesTo": "Se aplica a",
       "status": "Estado",
-      "usage": "Uso"
+      "usage": "Uso",
+      "empty": "No se encontraron descuentos",
+      "error": "No se pudieron cargar los descuentos"
     },
     "status": {
       "active": "Activo",
-      "inactive": "Inactivo"
+      "inactive": "Inactivo",
+      "scheduled": "Programado",
+      "expired": "Expirado"
     },
     "type": {
       "percentage": "Porcentaje",
-      "fixed": "Fijo"
+      "fixed_amount": "Fijo"
     },
     "applies": {
       "allYachts": "Todos los yates",
@@ -1168,15 +1172,9 @@
       "allMotorboats": "Todas las lanchas",
       "allMotorYachts": "Todos los yates a motor",
       "allSailboats": "Todos los veleros",
-      "specific": "Yates específicos"
-    },
-    "yachtTypes": {
-      "catamaran": "Catamarán",
-      "gulet": "Goleta",
-      "motorYacht": "Yate a motor",
-      "powerCatamaran": "Catamarán a motor",
-      "sailboat": "Velero",
-      "motorBoat": "Lancha"
+      "specific": "Yates específicos",
+      "allSailingYachts": "Todos los yates de vela",
+      "allLuxuryYachts": "Todos los yates de lujo"
     },
     "dialog": {
       "createTitle": "Crear nuevo descuento",
@@ -1213,8 +1211,10 @@
       "errors": {
         "nameRequired": "Introduce un nombre",
         "codeRequired": "Introduce un código",
-        "priceRequired": "Introduce un valor"
-      }
+        "priceRequired": "Introduce un valor",
+        "appliesRequired": "Elige a qué se aplica el descuento"
+      },
+      "error": "Algo salió mal. Inténtalo de nuevo."
     },
     "prices": {
       "search": "Buscar por nombre",
@@ -1237,7 +1237,9 @@
         "errors": {
           "priceRequired": "Introduce un nuevo precio"
         }
-      }
+      },
+      "empty": "No se encontraron yates",
+      "error": "No se pudieron cargar los precios"
     }
   }
 }

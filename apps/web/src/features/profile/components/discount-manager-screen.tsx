@@ -11,7 +11,7 @@ import Sidebar from "@/components/layout/sidebar";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 
-import type { Discount, YachtPrice } from "../lib/discounts";
+import type { Discount, ListingPriceRow } from "../types";
 import DiscountsTable from "./discounts-table";
 import ManagePricesTable from "./manage-prices-table";
 
@@ -39,7 +39,8 @@ export default function DiscountManagerScreen({ user }: { user: { name: string; 
   /* `edit/[id]`, not `[id]/edit`: Next can't intercept a route whose first intercepted
      segment is dynamic — `(.)[id]` throws "Invalid interception route" at match time. */
   const openEdit = (discount: Discount) => router.push(`/profile/discounts/edit/${discount.id}`);
-  const openPriceEdit = (yacht: YachtPrice) => router.push(`/profile/discounts/prices/${yacht.id}`);
+  const openPriceEdit = (row: ListingPriceRow) =>
+    router.push(`/profile/discounts/prices/${row.listingId}`);
 
   return (
     <div className="flex flex-col">

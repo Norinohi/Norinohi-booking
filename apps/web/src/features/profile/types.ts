@@ -9,3 +9,17 @@ export type ReferralSummary = Awaited<ReturnType<AppRouterClient["referral"]["su
 export type ReferralHistoryRow = Awaited<
   ReturnType<AppRouterClient["referral"]["history"]>
 >["items"][number];
+
+/* Admin Discount & Price Manager view-types, inferred from the oRPC contract. */
+type AdminClient = AppRouterClient["admin"];
+
+export type DiscountList = Awaited<ReturnType<AdminClient["discount"]["list"]>>;
+export type Discount = DiscountList["items"][number];
+export type DiscountStatus = Discount["status"];
+export type YachtOption = Awaited<
+  ReturnType<AdminClient["discount"]["yachtOptions"]>
+>["items"][number];
+
+export type ListingPriceList = Awaited<ReturnType<AdminClient["listingPrice"]["list"]>>;
+export type ListingPriceRow = ListingPriceList["items"][number];
+export type ListingPriceFilters = Awaited<ReturnType<AdminClient["listingPrice"]["filters"]>>;
