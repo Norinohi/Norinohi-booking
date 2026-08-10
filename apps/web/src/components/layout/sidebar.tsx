@@ -5,6 +5,7 @@ import type { AppPathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
+import { useEffect, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
 
@@ -53,7 +54,12 @@ export default function Sidebar({
    * (same convention as the API's staffProcedure). */
   const { data: session } = authClient.useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
-  const isStaff = variant === "admin" || role === "staff" || role === "admin";
+  /* Role-driven rows only after hydration: the session atom is empty during SSR but may
+   * already be filled on the first client render, and that difference is a hydration
+   * mismatch. variant="admin" comes from the server, so it needs no gate. */
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const isStaff = variant === "admin" || (hydrated && (role === "staff" || role === "admin"));
   const items: readonly SidebarItem[] = isStaff ? [...BASE_ITEMS, ...ADMIN_ITEMS] : BASE_ITEMS;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
@@ -66,7 +72,9 @@ export default function Sidebar({
     <nav
       aria-label={t("menu")}
       className={cn(
-        "w-full max-w-[334px] overflow-hidden rounded-lg border border-border bg-card",
+        /* Sticky from lg (where it sits beside the content): pinned 96px below the top —
+           the 72px sticky navbar plus the page's 24px block padding (80px navbar at 2xl). */
+        "w-full max-w-[334px] overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 2xl:top-26",
         className,
       )}
     >
