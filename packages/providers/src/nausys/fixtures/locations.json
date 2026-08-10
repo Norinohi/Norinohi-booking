@@ -1,0 +1,36 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "locations": [
+    {
+      "id": 53271,
+      "regionId": 511,
+      "lat": 43.5081,
+      "lon": 16.4402,
+      "name": {
+        "textEN": "Split",
+        "textDE": "Split",
+        "textHR": "Split"
+      }
+    },
+    {
+      "id": 53272,
+      "regionId": 511,
+      "lat": 43.7292,
+      "lon": 15.9022,
+      "name": {
+        "textEN": "Sibenik",
+        "textHR": "Sibenik"
+      }
+    },
+    {
+      "id": 53401,
+      "regionId": 512,
+      "lat": 45.3271,
+      "lon": 14.4422,
+      "name": {
+        "textHR": "Rijeka"
+      }
+    }
+  ]
+}

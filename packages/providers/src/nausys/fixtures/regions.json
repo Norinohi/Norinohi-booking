@@ -1,0 +1,32 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "regions": [
+    {
+      "id": 511,
+      "countryId": 1,
+      "name": {
+        "textEN": "Dalmatia",
+        "textDE": "Dalmatien",
+        "textHR": "Dalmacija",
+        "textIT": "Dalmazia"
+      }
+    },
+    {
+      "id": 512,
+      "countryId": 1,
+      "name": {
+        "textEN": "Kvarner",
+        "textHR": "Kvarner"
+      }
+    },
+    {
+      "id": 641,
+      "countryId": 2,
+      "name": {
+        "textEN": "Ionian Sea",
+        "textHR": "Jonsko more"
+      }
+    }
+  ]
+}

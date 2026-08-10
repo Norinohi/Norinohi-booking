@@ -1,0 +1,9 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "builders": [
+    { "id": 301, "name": "Bavaria Yachtbau" },
+    { "id": 302, "name": "Beneteau" },
+    { "id": 303, "name": "Lagoon" }
+  ]
+}

@@ -14,6 +14,9 @@ import {
   listingPriceListSchema,
   listingPriceRowSchema,
   listingPriceUpdateInputSchema,
+  syncRunStartedSchema,
+  syncRunStatusInputSchema,
+  syncRunStatusSchema,
   yachtOptionsInputSchema,
   yachtOptionsSchema,
 } from "../contracts/admin";
@@ -53,6 +56,11 @@ import {
 } from "../services/discount-admin";
 import { listYachtOptions } from "../services/listing-options";
 import {
+  getCatalogueSyncStatus,
+  startAvailabilitySync,
+  startCatalogueSync,
+} from "../services/provider-sync";
+import {
   clearListingPrice,
   listListingPriceFilters,
   listListingPrices,
@@ -77,6 +85,51 @@ export const adminRouter = {
       .input(emptyInputSchema)
       .output(providerCapabilitiesSchema)
       .handler(({ context }) => context.provider.capabilities()),
+    syncCatalogue: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/provider/syncCatalogue",
+        operationId: "startProviderCatalogueSync",
+        summary: "Start a provider catalogue sync",
+        description:
+          "Kicks off a full catalogue import for the active inventory provider and returns immediately with the sync run id. A full run can take hours, so it deliberately outlives the request; poll admin.provider.syncStatus to follow it. Normally this is driven by the scheduled POST /api/cron/sync-catalogue.",
+        tags: ["Admin"],
+        successDescription: "The sync run that was opened.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(syncRunStartedSchema)
+      .handler(({ context }) => startCatalogueSync(context.db, context.provider)),
+    syncAvailability: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/provider/syncAvailability",
+        operationId: "startProviderAvailabilitySync",
+        summary: "Start a provider availability sync",
+        description:
+          "Refreshes availability for the active inventory provider and returns immediately with the sync run id. Writes the provider's occupied and option periods, derives the bookable periods around them as unconfirmed availability, and then upgrades as many as its time budget allows to a live confirmed price. Normally driven by the scheduled POST /api/cron/sync-availability; poll admin.provider.syncStatus to follow it.",
+        tags: ["Admin"],
+        successDescription: "The sync run that was opened.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(syncRunStartedSchema)
+      .handler(({ context }) => startAvailabilitySync(context.db, context.provider)),
+    syncStatus: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/provider/syncStatus",
+        operationId: "getProviderSyncStatus",
+        summary: "Read a sync run and its errors",
+        description:
+          "Returns one sync run with its created/updated/skipped/failed counts and its most recent errors. Omit syncRunId for the active provider's latest run.",
+        tags: ["Admin"],
+        successDescription: "The requested sync run.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(syncRunStatusInputSchema)
+      .output(syncRunStatusSchema)
+      .handler(({ context, input }) => getCatalogueSyncStatus(context.db, context.provider, input)),
   },
   booking: {
     cancel: adminProcedure
@@ -94,7 +147,7 @@ export const adminRouter = {
       .input(bookingCancelInputSchema)
       .output(bookingCancelSchema)
       .handler(({ context, input }) =>
-        cancelBooking(context.db, input.id, input.reason, {
+        cancelBooking(context.db, context.provider, input.id, input.reason, {
           userId: context.session.user.id,
           isAdmin: true,
         }),
@@ -131,7 +184,7 @@ export const adminRouter = {
       .input(invoiceSettleInputSchema)
       .output(invoiceSettleSchema)
       .handler(({ context, input }) =>
-        settleInvoiceRequest(context.db, context.session.user.id, input),
+        settleInvoiceRequest(context.db, context.provider, context.session.user.id, input),
       ),
     cancel: adminProcedure
       .route({
@@ -166,7 +219,7 @@ export const adminRouter = {
       })
       .input(emptyInputSchema)
       .output(sweepResultSchema)
-      .handler(({ context }) => sweepExpiries(context.db)),
+      .handler(({ context }) => sweepExpiries(context.db, context.provider)),
   },
   lead: {
     list: adminProcedure

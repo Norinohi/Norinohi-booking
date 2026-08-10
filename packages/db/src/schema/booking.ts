@@ -14,6 +14,7 @@ import {
 import { id, timestamps } from "./_shared";
 import { user } from "./auth";
 import { listing } from "./listing";
+import { provider } from "./provider";
 import { quote } from "./quote";
 
 /** docs/backend-architecture.md §6. Lifecycle is canonical; provider fields mirror. */
@@ -79,6 +80,8 @@ export const providerReservationEventKind = pgEnum("provider_reservation_event_k
   "confirm_failed",
   "cancel_requested",
   "cancel_succeeded",
+  "info_created",
+  "extras_updated",
 ]);
 
 export type CommercialSnapshot = {
@@ -117,9 +120,16 @@ export const booking = pgTable(
     status: bookingStatus("status").default("DRAFT").notNull(),
     /** Human-facing reference shown on the confirmation screen and in emails. */
     reference: text("reference").notNull().unique(),
-    provider: text("provider").notNull(),
+    provider: text("provider")
+      .notNull()
+      .references(() => provider.code, { onDelete: "restrict" }),
     providerReservationId: text("provider_reservation_id"),
     providerOptionId: text("provider_option_id"),
+    /**
+     * NauSYS rotates this per-reservation security token whenever important
+     * reservation data changes, and every subsequent call must send the latest one.
+     */
+    providerReservationUuid: text("provider_reservation_uuid"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
     confirmedAt: timestamp("confirmed_at"),

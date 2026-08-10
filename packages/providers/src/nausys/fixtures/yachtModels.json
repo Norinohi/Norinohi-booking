@@ -1,0 +1,33 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "models": [
+    {
+      "id": 7101,
+      "name": "Bavaria Cruiser 46",
+      "yachtBuilderId": 301,
+      "yachtCategoryId": 51,
+      "loa": 14.27,
+      "beam": 4.35,
+      "draft": 2.1
+    },
+    {
+      "id": 7102,
+      "name": "Oceanis 46.1",
+      "yachtBuilderId": 302,
+      "yachtCategoryId": 51,
+      "loa": 14.6,
+      "beam": 4.5,
+      "draft": 2.35
+    },
+    {
+      "id": 7203,
+      "name": "Lagoon 42",
+      "yachtBuilderId": 303,
+      "yachtCategoryId": 52,
+      "loa": 12.8,
+      "beam": 7.7,
+      "draft": 1.25
+    }
+  ]
+}

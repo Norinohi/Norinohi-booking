@@ -1,0 +1,23 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "id": 55901234,
+  "uuid": "e5417cc0-strn-4d44-84bb-000000000004",
+  "reservationStatus": "STORNO",
+  "yachtId": 4711001,
+  "periodFrom": "04.07.2026",
+  "periodTo": "11.07.2026",
+  "agency": "Yachtskanner d.o.o.",
+  "discounts": [],
+  "additionalEquipment": [],
+  "services": [],
+  "priceListPrice": "3900.00",
+  "agencyPrice": "2839.00",
+  "clientPrice": "3340.00",
+  "currency": "EUR",
+  "paymentCurrency": "EUR",
+  "securityDeposit": "2000.00",
+  "approved": false,
+  "numberOfPayments": 2,
+  "useDepositPayment": false
+}

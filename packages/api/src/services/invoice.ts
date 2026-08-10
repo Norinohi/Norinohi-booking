@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { listing } from "@yacht-charter/db/schema/listing";
+import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, count, desc, eq } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -62,6 +63,7 @@ export async function listInvoiceRequests(db: Database, input: ListInput): Promi
  */
 export async function settleInvoiceRequest(
   db: Database,
+  provider: InventoryProvider,
   actorUserId: string,
   input: { id: string; amountMinor?: number; note?: string },
 ): Promise<SettleResult> {
@@ -121,7 +123,7 @@ export async function settleInvoiceRequest(
     });
   }
 
-  const outcome = await confirmBookingWithProvider(db, found.invoice.bookingId);
+  const outcome = await confirmBookingWithProvider(db, provider, found.invoice.bookingId);
 
   const [after] = await db
     .select({ invoice: invoiceRequest, booking, listingTitle: listing.title })

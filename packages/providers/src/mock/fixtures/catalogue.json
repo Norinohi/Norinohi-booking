@@ -185,6 +185,10 @@
       "reviewCount": 18,
       "currency": "EUR",
       "priceFromMinor": 420000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "oneWayPeriods": [{ "startDate": "2026-06-01", "endDate": "2026-09-30", "isOneWay": true }],
+      "description": { "en": "Aurora is a 2022 Lagoon 42 sleeping 10 in 4 cabins." },
       "amenityIds": ["amn-ac", "amn-dinghy", "amn-wifi", "amn-solar", "amn-sup"],
       "media": [
         "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a",
@@ -209,6 +213,9 @@
       "reviewCount": 11,
       "currency": "EUR",
       "priceFromMinor": 310000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Luna is a 2021 C45 sleeping 8 in 4 cabins." },
       "amenityIds": ["amn-dinghy", "amn-wifi", "amn-autopilot", "amn-solar"],
       "media": [
         "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
@@ -232,6 +239,9 @@
       "reviewCount": 26,
       "currency": "EUR",
       "priceFromMinor": 1850000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Celeste is a 2023 Sunreef 60 sleeping 10 in 5 cabins." },
       "amenityIds": [
         "amn-ac",
         "amn-generator",
@@ -263,6 +273,9 @@
       "reviewCount": 15,
       "currency": "EUR",
       "priceFromMinor": 420000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Maribel is a 2019 Oceanis 46.1 sleeping 10 in 4 cabins." },
       "amenityIds": ["amn-wifi", "amn-dinghy", "amn-autopilot", "amn-grill"],
       "media": [
         "https://images.unsplash.com/photo-1499793983690-e29da59ef1c2",
@@ -286,6 +299,9 @@
       "reviewCount": 22,
       "currency": "EUR",
       "priceFromMinor": 1590000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Solenne is a 2020 Lagoon 52 F sleeping 12 in 6 cabins." },
       "amenityIds": [
         "amn-ac",
         "amn-generator",
@@ -316,6 +332,9 @@
       "reviewCount": 9,
       "currency": "EUR",
       "priceFromMinor": 780000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Niki is a 2022 C38 sleeping 8 in 3 cabins." },
       "amenityIds": ["amn-wifi", "amn-dinghy", "amn-solar", "amn-autopilot"],
       "media": [
         "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca",
@@ -339,6 +358,9 @@
       "reviewCount": 13,
       "currency": "EUR",
       "priceFromMinor": 690000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Brisa is a 2021 470 sleeping 10 in 4 cabins." },
       "amenityIds": ["amn-ac", "amn-wifi", "amn-dinghy", "amn-grill", "amn-autopilot"],
       "media": [
         "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429",
@@ -362,6 +384,10 @@
       "reviewCount": 19,
       "currency": "EUR",
       "priceFromMinor": 570000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "oneWayPeriods": [{ "startDate": "2026-06-01", "endDate": "2026-09-30", "isOneWay": true }],
+      "description": { "en": "Sabai is a 2019 Elba 45 sleeping 12 in 4 cabins." },
       "amenityIds": ["amn-ac", "amn-watermaker", "amn-wifi", "amn-sup", "amn-snorkel"],
       "media": [
         "https://images.unsplash.com/photo-1537956965359-7573183d1f57",
@@ -385,6 +411,9 @@
       "reviewCount": 8,
       "currency": "EUR",
       "priceFromMinor": 390000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Maestral is a 2018 Sun Odyssey 410 sleeping 8 in 3 cabins." },
       "amenityIds": ["amn-wifi", "amn-dinghy", "amn-solar", "amn-autopilot"],
       "media": [
         "https://images.unsplash.com/photo-1540946485063-a40da27545f8",
@@ -408,6 +437,9 @@
       "reviewCount": 17,
       "currency": "EUR",
       "priceFromMinor": 1120000,
+      "securityDepositMinor": 200000,
+      "checkInPeriods": [{ "checkinWeekday": 6, "checkoutWeekday": 6, "minNights": 7 }],
+      "description": { "en": "Velvet is a 2022 520 sleeping 6 in 3 cabins." },
       "amenityIds": ["amn-ac", "amn-generator", "amn-watermaker", "amn-wifi", "amn-snorkel"],
       "media": [
         "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13",

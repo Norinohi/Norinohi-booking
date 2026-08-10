@@ -1,0 +1,43 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "id": 55901234,
+  "uuid": "b93f10ad-book-4c33-91aa-000000000003",
+  "reservationStatus": "RESERVATION",
+  "yachtId": 4711001,
+  "periodFrom": "04.07.2026",
+  "periodTo": "11.07.2026",
+  "agency": "Yachtskanner d.o.o.",
+  "client": {
+    "name": "Ana",
+    "surname": "Horvat",
+    "address": "Ilica 1",
+    "zip": "10000",
+    "city": "Zagreb",
+    "countryId": 1,
+    "email": "ana.horvat@example.com",
+    "phone": "+385 91 000 0000"
+  },
+  "discounts": [{ "discountItemId": 6001, "amount": 10, "type": "PERCENTAGE" }],
+  "additionalEquipment": [],
+  "services": [
+    {
+      "serviceId": 8001,
+      "amount": "150.00",
+      "listPrice": "150.00",
+      "currency": "EUR",
+      "quantity": 1,
+      "priceMeasureId": 1,
+      "calculationType": "SEPARATE_PAYMENT"
+    }
+  ],
+  "priceListPrice": "3900.00",
+  "agencyPrice": "2839.00",
+  "clientPrice": "3340.00",
+  "currency": "EUR",
+  "paymentCurrency": "EUR",
+  "securityDeposit": "2000.00",
+  "approved": true,
+  "numberOfPayments": 2,
+  "useDepositPayment": false
+}

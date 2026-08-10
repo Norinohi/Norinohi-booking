@@ -166,10 +166,35 @@ export type ProviderQuote = z.infer<typeof providerQuoteSchema>;
 export const bookingDraftSchema = z.object({
   listingId: z.string(),
   quoteId: z.string(),
+  /** ISO `yyyy-MM-dd`. The charter period every provider needs to open a reservation. */
+  checkIn: z.string(),
+  checkOut: z.string(),
+  guests: z.number().int().positive(),
+  extras: z.array(z.string()).default([]),
+  /**
+   * The hash of the price the customer agreed to. Adapters re-price before holding
+   * and refuse on a mismatch. For providers whose quote call creates no
+   * provider-side artifact this is the only link between the two moments.
+   */
+  priceSourceHash: z.string(),
   customer: z.object({
     name: z.string(),
+    surname: z.string().optional(),
     email: z.string().email(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    zip: z.string().optional(),
+    city: z.string().optional(),
+    countryCode: z.string().optional(),
   }),
+  /** Carried from the option step: confirming needs the handle it produced. */
+  reservation: z
+    .object({
+      providerReservationId: z.string(),
+      providerOptionId: z.string().optional(),
+      securityToken: z.string().optional(),
+    })
+    .optional(),
 });
 export type BookingDraft = z.infer<typeof bookingDraftSchema>;
 
@@ -181,33 +206,74 @@ export const providerReservationSchema = z.object({
   status: z.enum(["option_held", "confirmed", "cancelled"]),
   providerReservationId: z.string().optional(),
   providerOptionId: z.string().optional(),
+  /**
+   * Rotating per-reservation security token (the NauSYS `uuid`). It changes
+   * whenever important reservation data changes, so the caller must persist the
+   * value returned by every call and send back the latest one.
+   */
+  securityToken: z.string().optional(),
   holdExpiresAt: z.string().optional(),
 });
 export type ProviderReservation = z.infer<typeof providerReservationSchema>;
 
+/** The handle a provider needs to act on a reservation it already owns. */
+export const providerReservationRefSchema = z.object({
+  providerReservationId: z.string(),
+  securityToken: z.string().optional(),
+});
+export type ProviderReservationRef = z.infer<typeof providerReservationRefSchema>;
+
 export const providerExtrasMutationSchema = z.object({
-  reservationId: z.string(),
+  ref: providerReservationRefSchema,
   extras: z.array(z.string()),
 });
 export type ProviderExtrasMutation = z.infer<typeof providerExtrasMutationSchema>;
 
+/** Mirrors the `provider_resource_type` pgEnum, in the same order. */
+export const providerResourceTypeSchema = z.enum([
+  "yacht",
+  "company",
+  "base",
+  "location",
+  "region",
+  "country",
+  "model",
+  "builder",
+  "category",
+  "amenity",
+  "country_state",
+  "equipment_category",
+  "service",
+  "price_measure",
+  "season",
+  "price_list",
+  "discount_item",
+  "sail_type",
+  "steering_type",
+  "engine_builder",
+]);
+export type ProviderResourceType = z.infer<typeof providerResourceTypeSchema>;
+
 export const rawEntitySchema = z.object({
-  resourceType: z.enum([
-    "yacht",
-    "company",
-    "base",
-    "location",
-    "region",
-    "country",
-    "model",
-    "builder",
-    "category",
-    "amenity",
-  ]),
+  resourceType: providerResourceTypeSchema,
   externalId: z.string(),
+  /**
+   * Bounds the removal sweep, e.g. the owning company of a yacht. Without it a
+   * failed fetch of one company's fleet would deactivate every other company's.
+   */
+  scopeKey: z.string().optional(),
   payload: z.unknown(),
 });
 export type RawEntity = z.infer<typeof rawEntitySchema>;
+
+export type ProviderRecordEntry = {
+  externalId: string;
+  scopeKey?: string;
+  payload: unknown;
+};
+
+/** Everything a full catalogue dump ingested, grouped for the projection phase. */
+export type ProviderRecordSet = Map<ProviderResourceType, ProviderRecordEntry[]>;
 
 export const providerCapabilitiesSchema = z.object({
   supportsOptions: z.boolean(),
@@ -215,5 +281,163 @@ export const providerCapabilitiesSchema = z.object({
   optionExpiryOwnedByProvider: z.boolean(),
   supportsExtrasMutation: z.boolean(),
   supportsLiveQuote: z.boolean(),
+  /** Shortest hold the provider grants, when it owns the expiry. */
+  minHoldMinutes: z.number().int().positive().optional(),
 });
 export type ProviderCapabilities = z.infer<typeof providerCapabilitiesSchema>;
+
+/* ------------------------------------------------------ catalogue projection */
+
+/*
+ * The output of the pure projection phase. Every id here is the provider's own
+ * external id: the writer resolves them to ours through `provider_record` and
+ * `listing_source`, which is also what keeps two providers' ids from colliding.
+ */
+
+const canonicalCountrySchema = z.object({
+  externalId: z.string(),
+  code: z.string(),
+  name: z.string(),
+});
+
+const canonicalRegionSchema = z.object({
+  externalId: z.string(),
+  externalCountryId: z.string(),
+  name: z.string(),
+});
+
+const canonicalLocationSchema = z.object({
+  externalId: z.string(),
+  externalRegionId: z.string(),
+  name: z.string(),
+});
+
+const canonicalBaseSchema = z.object({
+  externalId: z.string(),
+  externalLocationId: z.string(),
+  name: z.string(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  website: z.string().optional(),
+  checkInTime: z.string().optional(),
+  checkOutTime: z.string().optional(),
+});
+
+const canonicalOperatorSchema = z.object({
+  externalId: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  country: z.string().optional(),
+  city: z.string().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+});
+
+const canonicalBuilderSchema = z.object({
+  externalId: z.string(),
+  name: z.string(),
+  slug: z.string().optional(),
+});
+
+const canonicalModelSchema = z.object({
+  externalId: z.string(),
+  externalBuilderId: z.string().optional(),
+  name: z.string(),
+});
+
+const canonicalCategorySchema = z.object({
+  externalId: z.string(),
+  code: z.string().optional(),
+  name: z.string(),
+});
+
+const canonicalAmenityCategorySchema = z.object({
+  externalId: z.string(),
+  name: z.string(),
+});
+
+const canonicalAmenitySchema = z.object({
+  externalId: z.string(),
+  externalAmenityCategoryId: z.string(),
+  code: z.string().optional(),
+  name: z.string(),
+});
+
+const canonicalListingSchema = z.object({
+  externalId: z.string(),
+  externalCompanyId: z.string(),
+  externalBaseId: z.string(),
+  externalBuilderId: z.string().optional(),
+  externalModelId: z.string().optional(),
+  externalCategoryId: z.string().optional(),
+  title: z.string(),
+  slug: z.string(),
+  spec: z.object({
+    lengthM: z.number(),
+    beamM: z.number().optional(),
+    draftM: z.number().optional(),
+    cabins: z.number().int(),
+    berths: z.number().int(),
+    heads: z.number().int(),
+    yearBuilt: z.number().int(),
+    engines: z.number().int().optional(),
+    fuelCapacity: z.number().int().optional(),
+    waterCapacity: z.number().int().optional(),
+  }),
+  media: z.array(
+    z.object({
+      externalUrl: z.string(),
+      role: z.enum(["main", "layout", "gallery"]),
+      sortOrder: z.number().int(),
+    }),
+  ),
+  amenities: z.array(z.string()),
+  texts: z.array(
+    z.object({
+      kind: z.enum(["description", "notes", "conditions", "one_way_note"]),
+      locale: z.string(),
+      value: z.string(),
+    }),
+  ),
+  checkinRules: z.array(
+    z.object({
+      checkinWeekday: z.number().int().min(0).max(6).optional(),
+      checkoutWeekday: z.number().int().min(0).max(6).optional(),
+      minNights: z.number().int().positive().optional(),
+      maxNights: z.number().int().positive().optional(),
+    }),
+  ),
+  oneWayRules: z.array(
+    z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      isOneWay: z.boolean(),
+    }),
+  ),
+  defaultCurrency: z.string().length(3),
+  securityDepositMinor: z.number().int().optional(),
+  paymentPolicy: z
+    .object({
+      mode: z.enum(["deposit", "full"]),
+      depositPct: z.number().optional(),
+      balanceDueAt: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const canonicalCatalogueSchema = z.object({
+  countries: z.array(canonicalCountrySchema),
+  regions: z.array(canonicalRegionSchema),
+  locations: z.array(canonicalLocationSchema),
+  bases: z.array(canonicalBaseSchema),
+  operators: z.array(canonicalOperatorSchema),
+  builders: z.array(canonicalBuilderSchema),
+  models: z.array(canonicalModelSchema),
+  categories: z.array(canonicalCategorySchema),
+  amenityCategories: z.array(canonicalAmenityCategorySchema),
+  amenities: z.array(canonicalAmenitySchema),
+  listings: z.array(canonicalListingSchema),
+});
+export type CanonicalCatalogue = z.infer<typeof canonicalCatalogueSchema>;

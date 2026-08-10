@@ -77,7 +77,7 @@ export const bookingRouter = {
     .input(bookingCancelInputSchema)
     .output(bookingCancelSchema)
     .handler(({ context, input }) =>
-      cancelBooking(context.db, input.id, input.reason, {
+      cancelBooking(context.db, context.provider, input.id, input.reason, {
         userId: context.session.user.id,
         isAdmin: false,
       }),

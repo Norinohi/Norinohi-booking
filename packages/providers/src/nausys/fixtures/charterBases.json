@@ -1,0 +1,34 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "bases": [
+    {
+      "id": 900101,
+      "locationId": 53271,
+      "companyId": 102701,
+      "disabled": false,
+      "checkInTime": "17:00",
+      "checkOutTime": "08:00",
+      "lat": 43.5031,
+      "lon": 16.4315
+    },
+    {
+      "id": 900102,
+      "locationId": 53272,
+      "companyId": 102701,
+      "disabled": false,
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "lat": 43.7211,
+      "lon": 15.8891
+    },
+    {
+      "id": 900201,
+      "locationId": 53401,
+      "companyId": 102702,
+      "disabled": true,
+      "checkInTime": "16:00",
+      "checkOutTime": "08:30"
+    }
+  ]
+}

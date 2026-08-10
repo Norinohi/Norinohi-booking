@@ -1,0 +1,27 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "categories": [
+    {
+      "id": 51,
+      "name": {
+        "textEN": "Sailing yacht",
+        "textDE": "Segelyacht",
+        "textHR": "Jedrilica"
+      }
+    },
+    {
+      "id": 52,
+      "name": {
+        "textEN": "Catamaran",
+        "textHR": "Katamaran"
+      }
+    },
+    {
+      "id": 53,
+      "name": {
+        "textHR": "Gliser"
+      }
+    }
+  ]
+}

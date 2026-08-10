@@ -20,8 +20,10 @@ const contextDb: Database = db;
 
 // One adapter for the process, resolved from PROVIDER_MODE. Exposed here rather
 // than built at module scope in each router so handlers take it from context the
-// same way they take db.
-const contextProvider = createInventoryProvider();
+// same way they take db. Exported for the transport entry points that run without
+// a request context (the cron sweep, the Stripe webhook), so they inject this same
+// instance instead of building a second one.
+export const inventoryProvider = createInventoryProvider({ db: contextDb });
 
 export type CreateContextOptions = {
   context: HonoContext;
@@ -34,7 +36,7 @@ export async function createContext({ context }: CreateContextOptions) {
   return {
     auth: null,
     db: contextDb,
-    provider: contextProvider,
+    provider: inventoryProvider,
     session,
   };
 }
