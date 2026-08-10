@@ -46,6 +46,7 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
   const dynamic = !isLocal(src);
   const overlay = dynamic && rest.fill === true;
   const ref = useRef<HTMLImageElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [revealed, setRevealed] = useState(false);
 
@@ -54,10 +55,15 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
     if (img?.complete) setStatus(img.naturalWidth > 0 ? "loaded" : "error");
   }, []);
 
+  /*
+   * Fade the loader out once the image is ready. A cached/priority image flips to loaded
+   * before the browser paints, which skips the opacity transition (the image just pops in).
+   * Reading a layout property flushes the opaque overlay first, so the fade always runs.
+   */
   useEffect(() => {
     if (status !== "loaded") return;
-    const frame = requestAnimationFrame(() => setRevealed(true));
-    return () => cancelAnimationFrame(frame);
+    overlayRef.current?.getBoundingClientRect();
+    setRevealed(true);
   }, [status]);
 
   const handleLoad: ComponentProps<typeof NextImage>["onLoad"] = (event) => {
@@ -82,6 +88,7 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
       />
       {overlay ? (
         <div
+          ref={overlayRef}
           aria-hidden
           className={cn(
             "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-muted transition-opacity duration-500",
