@@ -25,6 +25,7 @@ import { Link } from "@/i18n/navigation";
 import { Image } from "@/components/shared/data-display/image";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
+import { dayToDisplay } from "@/lib/date";
 
 import type { Quote, QuoteLine } from "@/features/booking/api/queries";
 
@@ -82,7 +83,7 @@ function CharterPoint({ date }: { date: string }) {
   const format = useFormatter();
   return (
     <p className="text-base leading-5.5 font-bold whitespace-nowrap text-foreground">
-      {format.dateTime(new Date(date), { day: "numeric", month: "long", year: "numeric" })}
+      {format.dateTime(dayToDisplay(date), "dayShort")}
     </p>
   );
 }
@@ -203,7 +204,7 @@ export default function BookingSummary({
   const money = useMoney();
   const format = useFormatter();
   const slotDay = (date: string) =>
-    format.dateTime(new Date(date), { day: "numeric", month: "short" });
+    format.dateTime(dayToDisplay(date), { day: "numeric", month: "short", timeZone: "UTC" });
 
   const peoplePercent = ((guests - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
 
@@ -352,7 +353,9 @@ export default function BookingSummary({
               );
             })}
 
-            {quote.paymentSchedule.length ? <PaymentSchedule entries={quote.paymentSchedule} /> : null}
+            {quote.paymentSchedule.length ? (
+              <PaymentSchedule entries={quote.paymentSchedule} />
+            ) : null}
 
             <Separator />
 
