@@ -1,5 +1,5 @@
 import { env } from "@yacht-charter/env/web";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Manrope } from "next/font/google";
@@ -43,6 +43,20 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
     title: { default: title, template: `%s | ${SITE_NAME}` },
   };
 }
+
+/*
+ * Split from `generateMetadata` because Next requires it: `themeColor` moved to the `viewport`
+ * export and warns at build time if it is left in metadata. Both entries are needed — a single
+ * value would paint the light chrome behind a dark-mode page.
+ *
+ * The two colours are `--background` resolved per scheme: `--base-white` and `--natural-900`.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
 
 export default async function RootLayout({
   children,

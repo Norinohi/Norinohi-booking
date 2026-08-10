@@ -1,3 +1,4 @@
+import { env } from "@yacht-charter/env/web";
 import type { Metadata } from "next";
 
 import { defaultLocale, type Locale, locales } from "@/i18n/config";
@@ -5,6 +6,36 @@ import { defaultLocale, type Locale, locales } from "@/i18n/config";
 export const SITE_NAME = "YachtCharter";
 
 const DEFAULT_OG_IMAGE = "/seo/og-default.jpg";
+
+/*
+ * Open Graph asks for a territory-qualified locale (`en_US`), not the bare language code the
+ * routes are keyed on. Most scrapers tolerate the short form; Facebook's linter does not.
+ */
+const OG_LOCALES: Record<Locale, string> = {
+  en: "en_US",
+  es: "es_ES",
+  uk: "uk_UA",
+};
+
+function ogLocale(locale: string): string {
+  return OG_LOCALES[locale as Locale] ?? locale;
+}
+
+/**
+ * A 1200×630 social card cut from a Cloudinary asset.
+ *
+ * Mirrors `cloudinaryLoader` in `components/shared/data-display/image`: remote URLs go through
+ * `fetch`, bare public IDs through `upload`. The crop is server-side on purpose — scrapers crop
+ * to the declared ratio regardless, and doing it at the CDN keeps the boat centred instead of
+ * letting Twitter guess.
+ */
+export function socialImage(src: string): string {
+  const remote = /^https?:\/\//.test(src);
+  const type = remote ? "fetch" : "upload";
+  const asset = remote ? encodeURIComponent(src) : src;
+
+  return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/${type}/f_auto,q_auto,c_fill,w_1200,h_630/${asset}`;
+}
 
 export type SeoInput = {
   title: string;
@@ -50,7 +81,8 @@ export function buildMetadata({
       description,
       url: canonical,
       siteName: SITE_NAME,
-      locale,
+      locale: ogLocale(locale),
+      alternateLocale: locales.filter((other) => other !== locale).map(ogLocale),
       type: "website",
       images: [{ url: image, width: 1200, height: 630, alt: title }],
     },

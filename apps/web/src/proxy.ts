@@ -26,5 +26,11 @@ export function proxy(request: NextRequest) {
 export const config = {
   // `/api/:path*` for logging; the negative lookahead covers page routes while skipping Next
   // internals and any path with a file extension (static assets, favicon, images).
-  matcher: ["/api/:path*", "/((?!api|_next|_vercel|.*\\..*).*)"],
+  //
+  // `apple-icon` is named explicitly because it is the one generated metadata route with no file
+  // extension — `robots.txt`, `sitemap.xml` and `favicon.ico` all carry a dot and are already
+  // covered. Without it, `/apple-icon` gets locale-redirected to `/en/apple-icon`, which does not
+  // exist (the file sits above `[locale]`), so the icon 404s. Any future dotless metadata route
+  // — `icon`, `opengraph-image` — has to be added here too.
+  matcher: ["/api/:path*", "/((?!api|_next|_vercel|apple-icon|.*\\..*).*)"],
 };

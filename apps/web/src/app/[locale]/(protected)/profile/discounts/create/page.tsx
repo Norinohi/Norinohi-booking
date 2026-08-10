@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { DiscountRouteModal } from "@/features/profile";
 
@@ -11,8 +12,16 @@ import { DiscountRouteModal } from "@/features/profile";
 export const instant = false;
 
 export async function generateMetadata() {
+  const locale = await getLocale();
   const t = await getTranslations("Discounts");
-  return { title: t("dialog.createTitle") };
+  const seo = await getTranslations("Seo.Discounts");
+  return buildMetadata({
+    locale,
+    title: t("dialog.createTitle"),
+    description: seo("description"),
+    path: "/profile/discounts/create",
+    noIndex: true,
+  });
 }
 
 /* Hard-load fallback of the intercepted /create overlay: same staff/admin gate as the list;

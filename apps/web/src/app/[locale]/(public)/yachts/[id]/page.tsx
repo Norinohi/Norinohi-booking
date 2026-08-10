@@ -5,7 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { Hydrated } from "@/components/layout/hydrated";
 import { YachtDetailScreen } from "@/features/yachts";
 import { isListingNotFound, prefetchListingDetail } from "@/features/yachts/api/server";
-import { buildMetadata } from "@/lib/seo";
+import { breadcrumbNode, JsonLd, listingNode } from "@/lib/json-ld";
+import { buildMetadata, socialImage } from "@/lib/seo";
 
 /*
  * TODO: Cache Components adoption. This route cannot yet drop its opt-out.
@@ -25,12 +26,29 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id, locale } = await params;
   const t = await getTranslations("Seo.YachtDetail");
+
+  /*
+   * Detail pages are indexable, so the head has to describe *this* boat — one shared
+   * "Yacht Details" title and one shared stock card across every listing reads as duplicate
+   * content and makes every shared link look identical. The read is the same cached call the
+   * page body makes below, so it costs nothing extra; a miss falls back to the generic copy and
+   * lets the body own the 404.
+   */
+  const detail = await prefetchListingDetail(id).catch(() => null);
+
+  /*
+   * Canonical is keyed on the slug, never on `id` as typed. `listings.get` resolves either form,
+   * so `/yachts/ylst_yacht-lagoon-42-aurora` and `/yachts/aurora-lagoon-42` are the same boat —
+   * echoing the URL back would let both self-canonicalise and split their own ranking signals.
+   */
+  const path = `/yachts/${detail?.seo.slug ?? id}`;
+
   return buildMetadata({
     locale,
-    title: t("title"),
-    description: t("description"),
-    path: `/yachts/${id}`,
-    noIndex: true,
+    title: detail?.title ?? t("title"),
+    description: detail?.seo.description ?? t("description"),
+    path,
+    image: detail ? socialImage(detail.seo.image) : undefined,
   });
 }
 
@@ -47,8 +65,12 @@ export async function generateMetadata({
  * stream. `YachtDetailScreen` already accepts an absent `title`, so it can serve as its own
  * fallback when that happens.
  */
-export default async function YachtDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function YachtDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+}) {
+  const { id, locale } = await params;
 
   let detail: Awaited<ReturnType<typeof prefetchListingDetail>>;
   try {
@@ -66,10 +88,37 @@ export default async function YachtDetailPage({ params }: { params: Promise<{ id
     throw error;
   }
 
+  /* Mirrors the trail `YachtDetailScreen` renders — the same two crumbs, same order. */
+  const t = await getTranslations("YachtDetail");
+  const path = `/yachts/${detail.seo.slug}`;
+
   return (
-    <Hydrated state={detail.state}>
-      <YachtDetailScreen title={detail.title} />
-    </Hydrated>
+    <>
+      <JsonLd
+        data={[
+          breadcrumbNode(
+            [
+              { name: t("breadcrumbSearch"), path: "/yachts" },
+              { name: detail.title, path },
+            ],
+            locale,
+          ),
+          listingNode({
+            name: detail.title,
+            description: detail.seo.description,
+            /* Absolute and pre-cropped: a bare Cloudinary id is not a resolvable `image`. */
+            image: socialImage(detail.seo.image),
+            builder: detail.seo.builder,
+            model: detail.seo.model,
+            category: detail.seo.category,
+            path,
+            locale,
+          }),
+        ]}
+      />
+      <Hydrated state={detail.state}>
+        <YachtDetailScreen title={detail.title} />
+      </Hydrated>
+    </>
   );
 }
-

@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { BookingsScreen } from "@/features/profile";
 
@@ -11,8 +12,15 @@ import { BookingsScreen } from "@/features/profile";
 export const instant = false;
 
 export async function generateMetadata() {
-  const t = await getTranslations("Bookings");
-  return { title: t("title") };
+  const locale = await getLocale();
+  const t = await getTranslations("Seo.Bookings");
+  return buildMetadata({
+    locale,
+    title: t("title"),
+    description: t("description"),
+    path: "/profile/bookings",
+    noIndex: true,
+  });
 }
 
 export default async function BookingsPage() {

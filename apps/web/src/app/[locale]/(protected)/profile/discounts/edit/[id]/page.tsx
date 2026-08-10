@@ -4,6 +4,7 @@ import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { DiscountRouteModal, findDiscount } from "@/features/profile";
 
@@ -11,9 +12,18 @@ import { DiscountRouteModal, findDiscount } from "@/features/profile";
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
 export const instant = false;
 
-export async function generateMetadata() {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const locale = await getLocale();
   const t = await getTranslations("Discounts");
-  return { title: t("dialog.editTitle") };
+  const seo = await getTranslations("Seo.Discounts");
+  return buildMetadata({
+    locale,
+    title: t("dialog.editTitle"),
+    description: seo("description"),
+    path: `/profile/discounts/edit/${id}`,
+    noIndex: true,
+  });
 }
 
 /* Hard-load fallback of the intercepted /edit/[id] overlay — see ../create/page.tsx. */

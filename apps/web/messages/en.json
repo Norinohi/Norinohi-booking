@@ -940,6 +940,26 @@
     "Dashboard": {
       "title": "Dashboard",
       "description": "Manage your yacht charter bookings, saved yachts and account settings."
+    },
+    "Wishlist": {
+      "title": "Your Wishlist",
+      "description": "The yachts and catamarans you have saved. Compare your favourites and check availability for your dates."
+    },
+    "Profile": {
+      "title": "Your Profile",
+      "description": "Manage your YachtCharter account details, contact information and preferences."
+    },
+    "Bookings": {
+      "title": "My Bookings",
+      "description": "Review your yacht charter bookings, trip details and booking history."
+    },
+    "Referrals": {
+      "title": "Your Referrals",
+      "description": "Track the friends you have invited to YachtCharter and the rewards you have earned."
+    },
+    "Discounts": {
+      "title": "Discount & Price Manager",
+      "description": "Manage promotional codes and yacht pricing for your listings."
     }
   },
   "Profile": {

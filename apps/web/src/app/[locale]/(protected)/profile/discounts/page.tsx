@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { DiscountManagerScreen } from "@/features/profile";
 
@@ -11,8 +12,15 @@ import { DiscountManagerScreen } from "@/features/profile";
 export const instant = false;
 
 export async function generateMetadata() {
-  const t = await getTranslations("Discounts");
-  return { title: t("title") };
+  const locale = await getLocale();
+  const t = await getTranslations("Seo.Discounts");
+  return buildMetadata({
+    locale,
+    title: t("title"),
+    description: t("description"),
+    path: "/profile/discounts",
+    noIndex: true,
+  });
 }
 
 export default async function DiscountsPage() {

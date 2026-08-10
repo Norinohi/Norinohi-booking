@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
 import { authClient } from "@/lib/auth-client";
+import { buildMetadata } from "@/lib/seo";
 
 import { prefetchProfile, ProfileScreen } from "@/features/profile";
 
@@ -12,8 +13,15 @@ import { prefetchProfile, ProfileScreen } from "@/features/profile";
 export const instant = false;
 
 export async function generateMetadata() {
-  const t = await getTranslations("Profile");
-  return { title: t("title") };
+  const locale = await getLocale();
+  const t = await getTranslations("Seo.Profile");
+  return buildMetadata({
+    locale,
+    title: t("title"),
+    description: t("description"),
+    path: "/profile",
+    noIndex: true,
+  });
 }
 
 export default async function ProfilePage() {
