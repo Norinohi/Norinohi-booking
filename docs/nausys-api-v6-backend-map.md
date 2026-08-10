@@ -32,24 +32,46 @@ provider reservation lifecycle.
    provider endpoint URLs, usernames, passwords, commission, agency cost, or raw
    provider errors.
 
-### Recommended connector interface
+### Connector interface
 
-```ts
-interface InventoryProvider {
-  syncCatalogue(cursor?: string): Promise<SyncPage>;
-  searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]>;
-  getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar>;
-  getQuote(input: QuoteRequest): Promise<ProviderQuote>;
-  createOption(input: BookingDraft): Promise<ProviderReservation>;
-  confirmBooking(input: ConfirmBooking): Promise<ProviderReservation>;
-  cancelOption(input: ProviderReservationRef): Promise<void>;
-  addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote>;
-}
-```
+The authoritative definition is `packages/providers/src/provider.ts`; see
+[`backend-architecture.md`](./backend-architecture.md) §4.2 for the annotated
+version. Four things about it are NauSYS-driven and worth stating here:
 
-Implement `MockInventoryProvider` first. `NausysProvider` adapts the endpoints
-below to this interface. A later `BookingManagerProvider` implements the same
-contract. The oRPC layer depends on the interface, never on NauSYS structures.
+- `syncCatalogue` is an `AsyncIterable<RawEntity>`, not a paged `Promise<SyncPage>`.
+  NauSYS catalogue endpoints are full dumps with no cursor, so paging would be a
+  fiction; the stream also carries scope-completion events, which is what makes the
+  removal sweep safe (§4.1 below).
+- `projectCatalogue(records)` is a separate pure pass. A yacht references company,
+  base and equipment records that arrive in earlier batches, so projection cannot
+  run while streaming.
+- `confirmBooking` takes the same `BookingDraft` as `createOption`, with a
+  `reservation` field carrying `{providerReservationId, securityToken}` from the
+  hold. NauSYS `createBooking` needs `{id, uuid}` and nothing else identifies it.
+- `cancelOption(ref)` returns the reservation rather than `void`, and the ref
+  carries the rotating `uuid` (§2.3).
+
+Implement `MockInventoryProvider` first. `NausysInventoryProvider` adapts the
+endpoints below to this interface. A later `BookingManagerProvider` implements the
+same contract. The oRPC layer depends on the interface, never on NauSYS structures.
+
+### Constraints the vendor imposes on any implementation
+
+1. **Calls must be strictly sequential per credential.** The vendor's
+   implementation guidelines state that parallel requests are not allowed. This is
+   contractual, not a tuning knob: the connector serializes every call through a
+   concurrency-1 queue keyed by credential. A multi-hour catalogue sync therefore
+   shares one lane with every live customer quote, which is why a sync-only second
+   credential is the first vendor question (§8).
+2. **Errors arrive as HTTP 200** with `{"status": "<CODE>", "errorCode": <n>}`.
+   HTTP status alone tells you nothing.
+3. **The booking chain is `createInfo` → `createOption` → `createBooking`** and no
+   step may be skipped. `createInfo` does not block the yacht; `createOption` does.
+4. **The reservation `uuid` is a rotating security token**, reissued whenever
+   reservation data changes. Every response must be re-read for it and the new
+   value persisted, or the next call on that booking fails.
+5. **No delta API and no tombstones**, so removals are detected by stamp-and-sweep
+   scoped to a cleanly fetched dump, never on a partial one.
 
 ## 2. API surface map
 

@@ -190,18 +190,19 @@ packages/api                  # oRPC contract + thin handlers → services (exis
 ### 4.2 The interface (provider-neutral — reconciled)
 
 ```ts
-// packages/providers/src/provider.ts  (sketch — Zod v4 DTOs in types.ts)
+// packages/providers/src/provider.ts  (Zod v4 DTOs in types.ts)
 export interface InventoryProvider {
   readonly key: "mock" | "booking_manager" | "nausys";
 
-  syncCatalogue(cursor?: string): AsyncIterable<RawEntity>; // yields raw + resource_type; writes provider_record/raw_payload/sync_run
+  syncCatalogue(cursor?: string): AsyncIterable<RawEntity>; // yields raw + resource_type + scope_key
+  projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue; // pure, no I/O
   searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]>;
   getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar>; // calendar for detail page
   getQuote(input: QuoteRequest): Promise<ProviderQuote>; // firm price for exact dates/extras/guests/currency
   createOption(input: BookingDraft): Promise<ProviderReservation>; // soft hold; may throw NotSupported
-  confirmBooking(input: ConfirmBooking): Promise<ProviderReservation>;
+  confirmBooking(input: BookingDraft): Promise<ProviderReservation>; // draft carries `reservation` from the hold
   addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote>;
-  cancelOption(ref: ProviderReservationRef): Promise<void>;
+  cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation>;
 
   capabilities(): ProviderCapabilities; // { supportsOptions, supportsWebhooks, minHoldMinutes, optionExpiryOwnedByProvider, ... }
 }
@@ -209,6 +210,9 @@ export interface InventoryProvider {
 
 - Return types are **canonical DTOs** validated with Zod v4 at the boundary → a malformed provider payload fails in the connector, not the web app.
 - `capabilities()` lets the state machine degrade gracefully (no `createOption` → skip the hold; `optionExpiryOwnedByProvider=false` → don't promise a hold, §6).
+- **Projection is a second pass** because a yacht cross-references company, base and equipment records that arrive in earlier sync batches, so it cannot be done while streaming. `syncCatalogue` ingests; `projectCatalogue` maps. Only the second is pure, and only the second is fixture-testable.
+- **`ProviderReservationRef` carries a `securityToken`.** NauSYS issues a per-reservation `uuid` that rotates whenever reservation data changes, so a handle is `{providerReservationId, securityToken}`, never a bare id. `cancelOption` returns the reservation rather than `void` so the caller can persist the rotated token and the provider status.
+- **`BookingDraft` carries the period, guests, extras and `priceSourceHash`.** The vendor's booking call needs the dates, and the hash is the only link between the price the customer agreed to and the reservation created seconds later when the provider's quote call creates no server-side artifact.
 
 ### 4.3 Mock provider (ships M2)
 
