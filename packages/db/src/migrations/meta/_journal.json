@@ -148,6 +148,13 @@
       "when": 1786101406223,
       "tag": "0020_glossy_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786287174528,
+      "tag": "0021_marvelous_scalphunter",
+      "breakpoints": true
     }
   ]
 }

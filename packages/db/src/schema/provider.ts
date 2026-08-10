@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -23,6 +24,16 @@ export const providerResourceType = pgEnum("provider_resource_type", [
   "builder",
   "category",
   "amenity",
+  "country_state",
+  "equipment_category",
+  "service",
+  "price_measure",
+  "season",
+  "price_list",
+  "discount_item",
+  "sail_type",
+  "steering_type",
+  "engine_builder",
 ]);
 
 export const syncKind = pgEnum("sync_kind", ["catalogue", "availability", "pricing"]);
@@ -79,10 +90,23 @@ export const providerRecord = pgTable(
     sourceModifiedAt: timestamp("source_modified_at"),
     importedAt: timestamp("imported_at").defaultNow().notNull(),
     active: boolean("active").default(true).notNull(),
+    // Stamp-and-sweep removal detection: the vendors ship full dumps with no
+    // tombstones, so a record absent from a clean dump is deactivated by comparing
+    // lastSeenAt against the run that stamped it.
+    lastSeenAt: timestamp("last_seen_at"),
+    lastSeenSyncRunId: text("last_seen_sync_run_id").references(() => syncRun.id, {
+      onDelete: "set null",
+    }),
+    // Bounds the sweep, e.g. the owning company for a yacht — one company's failed
+    // fetch must never deactivate another company's fleet.
+    scopeKey: text("scope_key"),
     ...timestamps,
   },
-  // Import idempotency key.
-  (t) => [unique("provider_record_external_uq").on(t.providerId, t.resourceType, t.externalId)],
+  (t) => [
+    // Import idempotency key.
+    unique("provider_record_external_uq").on(t.providerId, t.resourceType, t.externalId),
+    index("provider_record_sweep_idx").on(t.providerId, t.resourceType, t.scopeKey, t.lastSeenAt),
+  ],
 );
 
 export const syncRun = pgTable("sync_run", {
@@ -113,10 +137,30 @@ export const syncError = pgTable("sync_error", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+/**
+ * Our own resume marker: no vendor exposes a cursor token, so an aborted long run
+ * restarts from the last position we recorded rather than from zero.
+ */
+export const syncCursor = pgTable(
+  "sync_cursor",
+  {
+    id: id("scur"),
+    providerId: text("provider_id")
+      .notNull()
+      .references(() => provider.id, { onDelete: "restrict" }),
+    kind: syncKind("kind").notNull(),
+    scope: text("scope").notNull(),
+    cursor: text("cursor"),
+    ...timestamps,
+  },
+  (t) => [unique("sync_cursor_scope_uq").on(t.providerId, t.kind, t.scope)],
+);
+
 export const providerRelations = relations(provider, ({ many }) => ({
   records: many(providerRecord),
   rawPayloads: many(providerRawPayload),
   syncRuns: many(syncRun),
+  syncCursors: many(syncCursor),
 }));
 
 export const providerRawPayloadRelations = relations(providerRawPayload, ({ one }) => ({
@@ -135,6 +179,10 @@ export const providerRecordRelations = relations(providerRecord, ({ one }) => ({
     fields: [providerRecord.rawPayloadId],
     references: [providerRawPayload.id],
   }),
+  lastSeenSyncRun: one(syncRun, {
+    fields: [providerRecord.lastSeenSyncRunId],
+    references: [syncRun.id],
+  }),
 }));
 
 export const syncRunRelations = relations(syncRun, ({ one, many }) => ({
@@ -143,6 +191,13 @@ export const syncRunRelations = relations(syncRun, ({ one, many }) => ({
     references: [provider.id],
   }),
   errors: many(syncError),
+}));
+
+export const syncCursorRelations = relations(syncCursor, ({ one }) => ({
+  provider: one(provider, {
+    fields: [syncCursor.providerId],
+    references: [provider.id],
+  }),
 }));
 
 export const syncErrorRelations = relations(syncError, ({ one }) => ({

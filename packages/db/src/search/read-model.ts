@@ -108,7 +108,8 @@ export async function rebuildListingSearchDocs(
         rgn.name,
         cty.name,
         spec.sail_type,
-        amn.amenity_text
+        amn.amenity_text,
+        txt.description
       ),
       now(),
       now()
@@ -150,6 +151,12 @@ export async function rebuildListingSearchDocs(
       from availability_slot slot
       where slot.listing_id = l.id and slot.status in ('available', 'option')
     ) avail on true
+    left join lateral (
+      select lt.value as description
+      from listing_text lt
+      where lt.listing_id = l.id and lt.kind = 'description' and lt.locale = 'en'
+      limit 1
+    ) txt on true
     left join lateral (
       select avg(rating)::numeric(3, 2) as rating, count(*)::integer as review_count
       from review review

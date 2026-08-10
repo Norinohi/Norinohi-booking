@@ -6,6 +6,7 @@ export * from "./facet-media";
 export * from "./provider";
 export * from "./listing";
 export * from "./listing-source";
+export * from "./listing-text";
 export * from "./content";
 export * from "./account";
 export * from "./admin";

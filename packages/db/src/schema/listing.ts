@@ -15,6 +15,9 @@ import {
 
 import { id, money, timestamps } from "./_shared";
 import { base } from "./geography";
+// Cycle with listing-text.ts is safe: both sides only dereference the other inside
+// lazy relation/reference callbacks.
+import { listingText } from "./listing-text";
 import { operator } from "./operator";
 import { amenity, builder, yachtCategory, yachtModel } from "./taxonomy";
 
@@ -190,6 +193,7 @@ export const listingRelations = relations(listing, ({ one, many }) => ({
     references: [yachtCategory.id],
   }),
   specification: one(listingSpecification),
+  texts: many(listingText),
   media: many(listingMedia),
   amenities: many(listingAmenity),
   checkinRules: many(listingCheckinRule),
