@@ -73,5 +73,22 @@ export async function prefetchListingDetail(id: string) {
   const queryClient = new QueryClient();
   queryClient.setQueryData(listingDetailQueryOptions(id).queryKey, listing);
 
-  return { state: dehydrate(queryClient), title: listing.title };
+  /*
+   * `seo` rides along so `generateMetadata` can build the head off this same cached read instead
+   * of fetching the listing a second time. `slug` in particular is what keeps the canonical
+   * stable: `listings.get` accepts an id *or* a slug, so the same boat is reachable at two URLs
+   * and the head has to name one of them.
+   */
+  return {
+    state: dehydrate(queryClient),
+    title: listing.title,
+    seo: {
+      slug: listing.slug,
+      description: listing.description,
+      image: listing.mainImage,
+      builder: listing.builder,
+      model: listing.model,
+      category: listing.category,
+    },
+  };
 }
