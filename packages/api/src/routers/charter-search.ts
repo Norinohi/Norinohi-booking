@@ -14,6 +14,9 @@ import { withParameterExamples } from "./openapi-examples";
 import { effectivePeriod } from "../lib/dates";
 import { presentListingSummary } from "../presenters/listing";
 
+/** A map viewport shows every match at once, so it is not paged like the results list. */
+const MAP_MARKER_LIMIT = 500;
+
 export const charterSearchRouter = {
   results: publicProcedure
     .route({
@@ -96,9 +99,14 @@ export const charterSearchRouter = {
     .input(partialListingSearchInputSchema)
     .output(mapResultSchema)
     .handler(async ({ context, input }) => {
+      const markerLimit = input.limit ?? MAP_MARKER_LIMIT;
       const results = await searchListings(context.db, {
         ...input,
-        limit: input.limit ?? 500,
+        // Both knobs, because the two pagination paths read different ones: the cursor
+        // path takes `limit`, the page path takes `pageSize` and only falls back to
+        // `limit` when it is absent, which it never is once the contract defaults it.
+        limit: markerLimit,
+        pageSize: markerLimit,
         page: undefined,
       });
       const period = effectivePeriod(input);
