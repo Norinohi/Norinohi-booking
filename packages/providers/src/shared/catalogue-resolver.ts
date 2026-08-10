@@ -1,0 +1,240 @@
+import { amenity } from "@yacht-charter/db/schema/taxonomy";
+import { base, country, location, region } from "@yacht-charter/db/schema/geography";
+import { builder, yachtCategory, yachtModel } from "@yacht-charter/db/schema/taxonomy";
+import {
+  listing,
+  listingAmenity,
+  listingMedia,
+  listingSpecification,
+} from "@yacht-charter/db/schema/listing";
+import { listingSource } from "@yacht-charter/db/schema/listing-source";
+import { operator } from "@yacht-charter/db/schema/operator";
+import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
+import { and, asc, eq, inArray } from "drizzle-orm";
+
+import type { Database } from "../registry";
+import type { ListingSummary, ProviderKey } from "../types";
+import { NotFoundError } from "./errors";
+
+export type ExternalListingRef = {
+  externalYachtId: string;
+  externalCompanyId: string | null;
+  externalBaseId: string | null;
+  listingSourceId: string;
+};
+
+/**
+ * Translates between our public `ylst_` ids and a provider's own numeric ids.
+ *
+ * Every real adapter needs this: the marketplace never exposes a provider id, so
+ * a quote or booking call has to walk `listing` → `listing_source` →
+ * `provider_record` to recover the id the vendor expects. The mock sidesteps it
+ * by matching fixture id suffixes, which is why only the real adapters take a db.
+ */
+export interface CatalogueResolver {
+  toExternalListing(listingId: string): Promise<ExternalListingRef>;
+  toListingId(externalYachtId: string): Promise<string | null>;
+  /** Maps our amenity codes to the provider's service/equipment ids for extras. */
+  toExternalAmenityIds(amenityCodes: string[]): Promise<string[]>;
+  /** Hydrates the summary that `AvailableOffer` requires but no provider returns. */
+  loadListingSummary(listingId: string): Promise<ListingSummary | null>;
+  /** Every external company id with an active record, for per-company sync sweeps. */
+  listExternalCompanyIds(): Promise<string[]>;
+}
+
+export function createCatalogueResolver(db: Database, providerKey: ProviderKey): CatalogueResolver {
+  // The provider row is looked up once per resolver rather than per call: the
+  // code → id mapping is immutable for the lifetime of a process.
+  let providerIdPromise: Promise<string> | null = null;
+
+  async function providerId(): Promise<string> {
+    providerIdPromise ??= db
+      .select({ id: provider.id })
+      .from(provider)
+      .where(eq(provider.code, providerKey))
+      .limit(1)
+      .then(([row]) => {
+        if (!row) {
+          throw new NotFoundError(`No provider row registered for "${providerKey}"`, {
+            providerCode: providerKey,
+          });
+        }
+        return row.id;
+      });
+
+    return providerIdPromise;
+  }
+
+  return {
+    async toExternalListing(listingId) {
+      const [row] = await db
+        .select({
+          externalYachtId: listingSource.externalYachtId,
+          externalCompanyId: listingSource.externalCompanyId,
+          externalBaseId: listingSource.externalBaseId,
+          listingSourceId: listingSource.id,
+        })
+        .from(listingSource)
+        .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+        .where(
+          and(
+            eq(listingSource.listingId, listingId),
+            eq(providerRecord.providerId, await providerId()),
+            eq(providerRecord.active, true),
+          ),
+        )
+        .limit(1);
+
+      if (!row) {
+        throw new NotFoundError(`Listing ${listingId} has no active ${providerKey} source`, {
+          providerCode: providerKey,
+        });
+      }
+
+      return row;
+    },
+
+    async toListingId(externalYachtId) {
+      const [row] = await db
+        .select({ listingId: listingSource.listingId })
+        .from(listingSource)
+        .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+        .where(
+          and(
+            eq(listingSource.externalYachtId, externalYachtId),
+            eq(providerRecord.providerId, await providerId()),
+          ),
+        )
+        .limit(1);
+
+      return row?.listingId ?? null;
+    },
+
+    async toExternalAmenityIds(amenityCodes) {
+      if (amenityCodes.length === 0) return [];
+
+      const rows = await db
+        .select({ code: amenity.code })
+        .from(amenity)
+        .where(inArray(amenity.code, amenityCodes));
+
+      // Amenity codes are stored provider-prefixed ("nausys:3"); the vendor id is
+      // the suffix. A code with no prefix belongs to another provider and is skipped
+      // rather than passed through, which would send a foreign id to the vendor.
+      const prefix = `${providerKey}:`;
+      return rows
+        .map((row) => row.code)
+        .filter((code): code is string => Boolean(code?.startsWith(prefix)))
+        .map((code) => code.slice(prefix.length));
+    },
+
+    async loadListingSummary(listingId) {
+      const [row] = await db
+        .select({
+          id: listing.id,
+          slug: listing.slug,
+          title: listing.title,
+          defaultCurrency: listing.defaultCurrency,
+          operatorName: operator.name,
+          category: yachtCategory.name,
+          builder: builder.name,
+          model: yachtModel.name,
+          baseId: base.id,
+          baseName: base.name,
+          baseLat: base.lat,
+          baseLng: base.lng,
+          locationName: location.name,
+          regionName: region.name,
+          countryName: country.name,
+          lengthM: listingSpecification.lengthM,
+          cabins: listingSpecification.cabins,
+          berths: listingSpecification.berths,
+          heads: listingSpecification.heads,
+          yearBuilt: listingSpecification.yearBuilt,
+          externalYachtId: listingSource.externalYachtId,
+        })
+        .from(listing)
+        .innerJoin(operator, eq(operator.id, listing.operatorId))
+        .innerJoin(base, eq(base.id, listing.homeBaseId))
+        .leftJoin(location, eq(location.id, base.locationId))
+        .leftJoin(region, eq(region.id, location.regionId))
+        .leftJoin(country, eq(country.id, region.countryId))
+        .leftJoin(yachtCategory, eq(yachtCategory.id, listing.categoryId))
+        .leftJoin(builder, eq(builder.id, listing.builderId))
+        .leftJoin(yachtModel, eq(yachtModel.id, listing.modelId))
+        .leftJoin(listingSpecification, eq(listingSpecification.listingId, listing.id))
+        .leftJoin(listingSource, eq(listingSource.id, listing.primarySourceId))
+        .where(eq(listing.id, listingId))
+        .limit(1);
+
+      if (!row) return null;
+
+      const [media, amenities] = await Promise.all([
+        db
+          .select({ url: listingMedia.externalUrl, role: listingMedia.role })
+          .from(listingMedia)
+          .where(eq(listingMedia.listingId, listingId))
+          .orderBy(asc(listingMedia.sortOrder)),
+        db
+          .select({ name: amenity.name })
+          .from(listingAmenity)
+          .innerJoin(amenity, eq(amenity.id, listingAmenity.amenityId))
+          .where(eq(listingAmenity.listingId, listingId)),
+      ]);
+
+      const gallery = media.filter((item) => item.role !== "layout").map((item) => item.url);
+      const mainImage = media.find((item) => item.role === "main")?.url ?? gallery[0];
+      if (!mainImage) return null;
+
+      return {
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        category: row.category ?? "",
+        builder: row.builder ?? "",
+        model: row.model ?? "",
+        operator: row.operatorName,
+        base: {
+          id: row.baseId,
+          name: row.baseName,
+          location: row.locationName ?? "",
+          region: row.regionName ?? "",
+          country: row.countryName ?? "",
+          lat: Number(row.baseLat ?? 0),
+          lng: Number(row.baseLng ?? 0),
+        },
+        specs: {
+          lengthM: Number(row.lengthM ?? 0),
+          cabins: row.cabins ?? 0,
+          berths: row.berths ?? 0,
+          heads: row.heads ?? 0,
+          yearBuilt: row.yearBuilt ?? 0,
+        },
+        // Ratings live in the review read model, not the catalogue; the caller
+        // overlays them when it has them.
+        rating: 0,
+        reviewCount: 0,
+        mainImage,
+        gallery,
+        amenities: amenities.map((item) => item.name),
+        priceFrom: { amountMinor: 0, currency: row.defaultCurrency ?? "EUR" },
+        providerSourceId: `${providerKey}:${row.externalYachtId ?? ""}`,
+      } satisfies ListingSummary;
+    },
+
+    async listExternalCompanyIds() {
+      const rows = await db
+        .selectDistinct({ externalId: providerRecord.externalId })
+        .from(providerRecord)
+        .where(
+          and(
+            eq(providerRecord.providerId, await providerId()),
+            eq(providerRecord.resourceType, "company"),
+            eq(providerRecord.active, true),
+          ),
+        );
+
+      return rows.map((row) => row.externalId);
+    },
+  };
+}
