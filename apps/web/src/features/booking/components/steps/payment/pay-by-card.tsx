@@ -2,7 +2,7 @@
 
 import { Notification } from "@yacht-charter/ui/components/feedback/notification";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
-import { CreditCard, Shield } from "lucide-react";
+import { CreditCard, Shield, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 export default function PayByCard() {
@@ -10,6 +10,8 @@ export default function PayByCard() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Notification variant="warning" icon={<TriangleAlert />}>{t("unavailable")}</Notification>
+
       <TextField
         label={t("number")}
         placeholder={t("numberPlaceholder")}

@@ -57,6 +57,7 @@
     },
     "payment": {
       "heading": "Choose how you'd like to proceed",
+      "submitFailed": "Something went wrong. Please try again.",
       "tabs": {
         "card": "Pay by card",
         "invoice": "Request invoice",
@@ -72,6 +73,7 @@
         "name": "Name on Card",
         "namePlaceholder": "John Doe",
         "notice": "Secure your booking instantly with an online payment.",
+        "unavailable": "Online card payment is coming soon. Please use Request invoice or Ask a question.",
         "cta": "Pay {amount}"
       },
       "invoice": {

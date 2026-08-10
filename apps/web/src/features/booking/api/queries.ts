@@ -35,3 +35,9 @@ export const availabilityCalendarQueryOptions = (input: CalendarInput) =>
  * payment step and confirmation are keyed on.
  */
 export const createHoldMutationOptions = () => orpc.checkout.createHold.mutationOptions();
+
+/** Bank-transfer intent for a held booking — no Stripe needed. */
+export const requestInvoiceMutationOptions = () => orpc.checkout.requestInvoice.mutationOptions();
+
+/** A pre-payment question; leaves the booking held. */
+export const askQuestionMutationOptions = () => orpc.checkout.askQuestion.mutationOptions();

@@ -57,6 +57,7 @@
     },
     "payment": {
       "heading": "Elige cómo quieres continuar",
+      "submitFailed": "Algo salió mal. Inténtalo de nuevo.",
       "tabs": {
         "card": "Pagar con tarjeta",
         "invoice": "Solicitar factura",
@@ -72,6 +73,7 @@
         "name": "Nombre en la tarjeta",
         "namePlaceholder": "Juan Pérez",
         "notice": "Asegura tu reserva al instante con un pago en línea.",
+        "unavailable": "El pago con tarjeta estará disponible pronto. Usa Solicitar factura o Hacer una pregunta.",
         "cta": "Pagar {amount}"
       },
       "invoice": {
