@@ -114,6 +114,11 @@
     }
   },
   "Common": {
+    "crewTypes": {
+      "bareboat": "Bareboat",
+      "skipper": "Skipper",
+      "full-crew": "Full crew"
+    },
     "extras": {
       "payAtCheckIn": "Pay at check-in",
       "perBooking": "{price} per booking"
@@ -820,6 +825,8 @@
     "sidebar": {
       "crew": "Crew",
       "people": "People",
+      "datesPlaceholder": "Select dates",
+      "selectDates": "Select your dates to see the price",
       "prepayment": "{percent}% Booking Prepayment For Boat",
       "boatPrice": "Boat price (full rental price)",
       "deposit": "Refundable Security Deposit",

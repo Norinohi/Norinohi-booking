@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 
-import BookingSummary from "@/components/shared/data-display/booking-summary";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/navigation/app-breadcrumbs";
 
@@ -18,15 +18,15 @@ import ReviewSection from "./sections/review-section";
 import SuggestedRouteSection from "./sections/suggested-route-section";
 import TitleBlock from "./title-block";
 
-/* TODO: hardcoded booking route until listings carry a real id. */
-const BOOKING_HREF = "/yachts/lagoon-42/booking";
-
 /*
  * `title` is absent while the listing is still resolving — this screen is its own Suspense
  * fallback (see the route), so it must render without one. The frame, breadcrumb trail and panel
  * labels are identical either way; only the final crumb waits for the listing's name.
+ *
+ * `aside` is the booking sidebar, injected by the route: it belongs to the booking feature, so the
+ * cross-feature composition happens in `app/**`, not here.
  */
-export default function YachtDetailScreen({ title }: { title?: string }) {
+export default function YachtDetailScreen({ title, aside }: { title?: string; aside?: ReactNode }) {
   const t = useTranslations("YachtDetail");
 
   const breadcrumbs: AppBreadcrumb[] = [
@@ -65,7 +65,7 @@ export default function YachtDetailScreen({ title }: { title?: string }) {
               <PopularYachtsSection />
             </>
           }
-          aside={<BookingSummary bookingHref={BOOKING_HREF} />}
+          aside={aside}
         />
       </div>
     </div>

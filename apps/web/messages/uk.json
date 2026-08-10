@@ -114,6 +114,11 @@
     }
   },
   "Common": {
+    "crewTypes": {
+      "bareboat": "Без екіпажу",
+      "skipper": "Зі шкіпером",
+      "full-crew": "Повний екіпаж"
+    },
     "extras": {
       "payAtCheckIn": "Оплата при заїзді",
       "perBooking": "{price} за бронювання"
@@ -820,6 +825,8 @@
     "sidebar": {
       "crew": "Екіпаж",
       "people": "Осіб",
+      "datesPlaceholder": "Оберіть дати",
+      "selectDates": "Оберіть дати, щоб побачити ціну",
       "prepayment": "Передоплата за човен {percent}%",
       "boatPrice": "Ціна човна (повна вартість оренди)",
       "deposit": "Поворотна застава",

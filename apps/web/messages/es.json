@@ -114,6 +114,11 @@
     }
   },
   "Common": {
+    "crewTypes": {
+      "bareboat": "Sin tripulación",
+      "skipper": "Con patrón",
+      "full-crew": "Tripulación completa"
+    },
     "extras": {
       "payAtCheckIn": "Pago al llegar",
       "perBooking": "{price} por reserva"
@@ -820,6 +825,8 @@
     "sidebar": {
       "crew": "Tripulación",
       "people": "Personas",
+      "datesPlaceholder": "Selecciona fechas",
+      "selectDates": "Selecciona tus fechas para ver el precio",
       "prepayment": "Anticipo del {percent}% por el barco",
       "boatPrice": "Precio del barco (alquiler completo)",
       "deposit": "Fianza reembolsable",

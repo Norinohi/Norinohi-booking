@@ -3,16 +3,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@yacht-charter/ui/components/form/form";
 import { useTranslations } from "next-intl";
+import { useQueryStates } from "nuqs";
 import { useForm } from "react-hook-form";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
-import BookingSummary from "@/components/shared/data-display/booking-summary";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useBoatCards } from "@/hooks/use-boat-cards";
 import { SAMPLE_BOATS } from "@/lib/sample-boats";
 
 import { BOOKING_DEFAULTS, type BookingValues, useBookingSchema } from "../lib/booking-form";
+import { bookingParsers } from "../lib/search-params";
+import BookingSidebar from "./booking-sidebar";
 import BookingSteps from "./booking-steps";
 
 /* TODO: the flow always books the first sample boat until listings carry a real id. */
@@ -23,6 +25,7 @@ export default function BookingScreen() {
   const t = useTranslations("Booking");
   const { toSearchCard } = useBoatCards();
   const { id: _id, ...boat } = toSearchCard(BOAT);
+  const [{ quoteId }] = useQueryStates(bookingParsers);
 
   /* onTouched: silent until the first blur, live on every change after it — so a field stops
    * being red the moment it turns valid, without shouting at someone still typing. */
@@ -51,7 +54,7 @@ export default function BookingScreen() {
                 <BookingSteps />
               </>
             }
-            aside={<BookingSummary actions={false} shaded />}
+            aside={<BookingSidebar quoteId={quoteId} actions={false} shaded />}
           />
         </Form>
       </div>

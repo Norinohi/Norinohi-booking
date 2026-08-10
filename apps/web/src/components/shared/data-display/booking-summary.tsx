@@ -4,7 +4,6 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
-import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import {
   Accordion,
@@ -20,106 +19,114 @@ import {
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Calendar, ChevronDown, CircleCheckBig, Info } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { useState } from "react";
 
-/* TODO: temporary until the backend defines the payment data shape. Flip to see the 100% variant
- * (Figma 967:70948) — banner copy, two schedule steps instead of three, Due Now and the CTA. */
-const IS_PREPAYMENT_100 = false;
+import { Image } from "@/components/shared/data-display/image";
+import Loader from "@/components/shared/feedback/loader";
+import { useMoney } from "@/hooks/use-money";
 
-const CHARTER = {
-  start: { date: "7 July, 2026", time: "17:00" },
-  end: { date: "25 July, 2026", time: "22:00" },
-  range: "7 July, 2026 - 25 July, 2026",
-  boatPrice: "€10,000",
-  deposit: "€2,000",
-  total: "€12,500",
-  perPerson: "€3,500",
-  secondPaymentDate: "31.06.2026",
-  checkInDate: "07.07.2026",
-} as const;
+import type { Quote, QuoteLine } from "@/features/booking/api/queries";
 
+export type CrewType = NonNullable<Quote["crewType"]>;
+export type WeekSlot = { checkIn: string; checkOut: string; priceMinor: number };
+
+/** Quote line `group` → the sidebar section it renders under (i18n key on `sidebar.groups`). */
 const GROUPS = [
-  {
-    key: "mandatory",
-    items: [
-      { name: "Cleaning fee", price: "€150" },
-      { name: "Service fee", price: "€150" },
-      { name: "Expansive tanning platform", price: "€150" },
-      { name: "Covered outdoor lounge", price: "€1,150" },
-    ],
-  },
-  {
-    key: "selectedExtras",
-    items: [
-      { name: "Outdoor dining area", price: "€150" },
-      { name: "Helipad", price: "€150" },
-      { name: "Outdoor speakers", price: "€150" },
-      { name: "Covered outdoor lounge", price: "€1,150" },
-    ],
-  },
-  {
-    key: "crew",
-    items: [
-      { name: "Skipper", price: "€150" },
-      { name: "Captain", price: "€150" },
-      { name: "Cook", price: "€150" },
-    ],
-  },
+  { group: "mandatory", labelKey: "mandatory" },
+  { group: "optional", labelKey: "selectedExtras" },
+  { group: "crew", labelKey: "crew" },
 ] as const;
 
-const CREW_OPTIONS = ["fullCrew", "skipperOptional"] as const;
+/** Payment-schedule `kind` → the amount-caption message on `sidebar.*`. */
+const SCHEDULE_AMOUNT_KEY = {
+  deposit: "firstPayment",
+  full: "firstPayment",
+  balance: "secondPayment",
+  checkin_extras: "extrasPayment",
+  security_deposit: "depositNote",
+} as const satisfies Record<Quote["paymentSchedule"][number]["kind"], string>;
 
 const PEOPLE_MIN = 1;
 const PEOPLE_MAX = 20;
+
+export type BookingSummaryProps = {
+  /** The live quote to render, or `null` before a valid selection has been priced. */
+  quote: Quote | null;
+  /** A quote/reprice request is in flight — the breakdown is dimmed under a loader. */
+  loading?: boolean;
+  stats?: { booked: number; viewed: number } | null;
+
+  slots: readonly WeekSlot[];
+  selectedCheckIn: string | undefined;
+  onSlotChange: (checkIn: string) => void;
+  crewType: CrewType | undefined;
+  crewOptions: readonly CrewType[];
+  onCrewChange: (next: CrewType) => void;
+  guests: number;
+  onGuestsChange: (next: number) => void;
+
+  /** The Pay Now / Request Quote pair. The booking flow has its own CTA, so it hides them. */
+  actions?: boolean;
+  /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
+  shaded?: boolean;
+  /** Where Pay Now leads — set once a quote exists so the id can ride along. */
+  payNowHref?: AppPathname;
+};
 
 function Separator() {
   return <span aria-hidden className="h-px w-full shrink-0 bg-border" />;
 }
 
-function CharterPoint({ point }: { point: { date: string; time: string } }) {
+function CharterPoint({ date }: { date: string }) {
+  const format = useFormatter();
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-base leading-5.5 font-bold whitespace-nowrap text-foreground">
-        {point.date}
-      </p>
-      <p className="text-sm leading-4.5 font-medium text-natural-500">{point.time}</p>
-    </div>
+    <p className="text-base leading-5.5 font-bold whitespace-nowrap text-foreground">
+      {format.dateTime(new Date(date), { day: "numeric", month: "long", year: "numeric" })}
+    </p>
   );
 }
 
-function PriceGroup({ group }: { group: (typeof GROUPS)[number] }) {
+function PriceGroup({
+  labelKey,
+  lines,
+}: {
+  labelKey: (typeof GROUPS)[number]["labelKey"];
+  lines: QuoteLine[];
+}) {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
+  const money = useMoney();
 
   return (
-    <Accordion defaultValue={[group.key]}>
-      <AccordionItem value={group.key}>
+    <Accordion defaultValue={[labelKey]}>
+      <AccordionItem value={labelKey}>
         <AccordionTrigger
           className="h-7 px-4"
           indicator={
             <ChevronDown className="size-5 shrink-0 text-foreground transition-transform duration-200 group-data-panel-open:rotate-180" />
           }
         >
-          <span className="text-xl text-foreground">{t(`sidebar.groups.${group.key}`)}</span>
+          <span className="text-xl text-foreground">{t(`sidebar.groups.${labelKey}`)}</span>
         </AccordionTrigger>
         <AccordionContent>
           <div className="flex flex-col pt-3">
-            {group.items.map((item, index) => (
-              <div key={item.name} className="flex flex-col">
+            {lines.map((line, index) => (
+              <div key={line.code} className="flex flex-col">
                 {index > 0 ? (
                   <span aria-hidden className="mt-3 mb-2.75 h-px w-full bg-border" />
                 ) : null}
                 <div className="flex items-start gap-2 px-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="text-base leading-5.5 text-foreground">{item.name}</p>
-                    <p className="text-xs font-semibold text-natural-500">
-                      {tExtras("payAtCheckIn")}
-                    </p>
+                    <p className="text-base leading-5.5 text-foreground">{line.label}</p>
+                    {line.payWhen === "at_check_in" ? (
+                      <p className="text-xs font-semibold text-natural-500">
+                        {tExtras("payAtCheckIn")}
+                      </p>
+                    ) : null}
                   </div>
                   <p className="shrink-0 text-base leading-5.5 font-bold text-foreground">
-                    {item.price}
+                    {money(line.amount.amountMinor)}
                   </p>
                 </div>
               </div>
@@ -131,28 +138,22 @@ function PriceGroup({ group }: { group: (typeof GROUPS)[number] }) {
   );
 }
 
-function PaymentSchedule() {
+function PaymentSchedule({ entries }: { entries: Quote["paymentSchedule"] }) {
   const t = useTranslations("YachtDetail");
-  const first = IS_PREPAYMENT_100 ? CHARTER.boatPrice : "€5,000";
+  const format = useFormatter();
+  const money = useMoney();
 
-  const steps = [
-    { when: t("sidebar.payNow"), amount: t("sidebar.firstPayment", { amount: first }) },
-    ...(IS_PREPAYMENT_100
-      ? []
-      : [
-          {
-            when: t("sidebar.payAt", { date: CHARTER.secondPaymentDate }),
-            amount: t("sidebar.secondPayment", { amount: "€5,000" }),
-            dated: true,
-          },
-        ]),
-    {
-      when: t("sidebar.payAtCheckIn", { date: CHARTER.checkInDate }),
-      amount: t("sidebar.extrasPayment", { amount: "€1,200" }),
-      note: t("sidebar.depositNote", { amount: CHARTER.deposit }),
-      dated: true,
-    },
-  ];
+  const when = (entry: Quote["paymentSchedule"][number]) => {
+    if (!entry.dueAt) return t("sidebar.payNow");
+    const date = format.dateTime(new Date(entry.dueAt), {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    return entry.kind === "checkin_extras" || entry.kind === "security_deposit"
+      ? t("sidebar.payAtCheckIn", { date })
+      : t("sidebar.payAt", { date });
+  };
 
   return (
     <div className="flex gap-3 px-4 py-4">
@@ -162,16 +163,17 @@ function PaymentSchedule() {
       </div>
 
       <ol className="flex min-w-0 flex-1 flex-col gap-12">
-        {steps.map((step) => (
-          <li key={step.amount} className="flex flex-col gap-1">
+        {entries.map((entry) => (
+          <li key={entry.kind} className="flex flex-col gap-1">
             <Chip className="gap-1 bg-transparent p-0 text-sm leading-4.5 font-medium text-natural-500">
-              {"dated" in step ? <Calendar className="shrink-0" /> : null}
-              {step.when}
+              {entry.dueAt ? <Calendar className="shrink-0" /> : null}
+              {when(entry)}
             </Chip>
-            <p className="text-base leading-5.5 font-bold text-foreground">{step.amount}</p>
-            {"note" in step && step.note ? (
-              <p className="text-sm leading-4.5 font-medium text-natural-500">{step.note}</p>
-            ) : null}
+            <p className="text-base leading-5.5 font-bold text-foreground">
+              {t(`sidebar.${SCHEDULE_AMOUNT_KEY[entry.kind]}`, {
+                amount: money(entry.amount.amountMinor),
+              })}
+            </p>
           </li>
         ))}
       </ol>
@@ -180,47 +182,71 @@ function PaymentSchedule() {
 }
 
 export default function BookingSummary({
+  quote,
+  loading = false,
+  stats,
+  slots,
+  selectedCheckIn,
+  onSlotChange,
+  crewType,
+  crewOptions,
+  onCrewChange,
+  guests,
+  onGuestsChange,
   actions = true,
   shaded = false,
-  bookingHref,
-}: {
-  /** The Pay Now / Request Quote pair. The booking flow has its own CTA, so it hides them. */
-  actions?: boolean;
-  /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
-  shaded?: boolean;
-  /** Where Pay Now leads. Set on the detail page to start the booking flow. */
-  bookingHref?: AppPathname;
-}) {
+  payNowHref,
+}: BookingSummaryProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
-  const [crew, setCrew] = useState<(typeof CREW_OPTIONS)[number]>(CREW_OPTIONS[0]);
-  const [people, setPeople] = useState(5);
+  const tCrew = useTranslations("Common.crewTypes");
+  const money = useMoney();
+  const format = useFormatter();
+  const slotDay = (date: string) =>
+    format.dateTime(new Date(date), { day: "numeric", month: "short" });
 
-  const dueNow = IS_PREPAYMENT_100 ? CHARTER.boatPrice : "€5,000";
-  const peoplePercent = ((people - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
+  const peoplePercent = ((guests - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
+
+  const base = quote?.lines.find((line) => line.kind === "base");
+  const rawPct = quote
+    ? quote.paymentPolicy.mode === "full"
+      ? 100
+      : quote.paymentPolicy.depositPct
+    : 0;
+  const prepaymentPercent = rawPct > 1 ? Math.round(rawPct) : Math.round(rawPct * 100);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
       <ScrollArea className="min-h-0 flex-1 max-xl:[&_[data-slot=scroll-area-viewport]]:overscroll-auto">
-        <div className="flex w-full flex-col gap-2 p-4 text-sm leading-4.5 font-medium text-foreground">
-          <p>{tCard("stats.booked", { count: 3 })}</p>
-          <p>{tCard("stats.viewed", { count: 42 })}</p>
-        </div>
-
-        <Separator />
+        {stats ? (
+          <>
+            <div className="flex w-full flex-col gap-2 p-4 text-sm leading-4.5 font-medium text-foreground">
+              <p>{tCard("stats.booked", { count: stats.booked })}</p>
+              <p>{tCard("stats.viewed", { count: stats.viewed })}</p>
+            </div>
+            <Separator />
+          </>
+        ) : null}
 
         <div className="flex w-full flex-col gap-3 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <CharterPoint point={CHARTER.start} />
-            <ArrowRight className="size-4 shrink-0 text-natural-300" />
-            <CharterPoint point={CHARTER.end} />
-          </div>
+          {quote ? (
+            <div className="flex items-center justify-between gap-2">
+              <CharterPoint date={quote.checkIn} />
+              <ArrowRight className="size-4 shrink-0 text-natural-300" />
+              <CharterPoint date={quote.checkOut} />
+            </div>
+          ) : null}
 
-          <TextField
-            readOnly
-            value={CHARTER.range}
-            startIcon={<Calendar />}
-            fieldClassName="h-12"
+          <Select
+            className="h-12"
+            options={slots.map((slot) => ({
+              value: slot.checkIn,
+              label: `${slotDay(slot.checkIn)} – ${slotDay(slot.checkOut)} · ${money(slot.priceMinor)}`,
+            }))}
+            value={selectedCheckIn}
+            onValueChange={onSlotChange}
+            placeholder={t("sidebar.datesPlaceholder")}
+            emptyLabel={t("sidebar.selectDates")}
           />
 
           <div className="flex flex-col gap-1.5">
@@ -229,12 +255,9 @@ export default function BookingSummary({
             </span>
             <Select
               className="h-12"
-              options={CREW_OPTIONS.map((option) => ({
-                value: option,
-                label: tCard(`crews.${option}`),
-              }))}
-              value={crew}
-              onValueChange={(value) => setCrew(value as (typeof CREW_OPTIONS)[number])}
+              options={crewOptions.map((option) => ({ value: option, label: tCrew(option) }))}
+              value={crewType}
+              onValueChange={(value) => onCrewChange(value as CrewType)}
             />
           </div>
 
@@ -249,108 +272,148 @@ export default function BookingSummary({
             <Slider
               min={PEOPLE_MIN}
               max={PEOPLE_MAX}
-              value={people}
-              onValueChange={(value) => setPeople(value as number)}
+              value={guests}
+              onValueChange={(value) => onGuestsChange(value as number)}
             />
             <div className="relative h-4.5">
               <span
                 className="absolute -translate-x-1/2 text-sm font-medium text-foreground"
                 style={{ left: `${peoplePercent}%` }}
               >
-                {people}
+                {guests}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-4 py-3">
-            <CircleCheckBig className="size-4 shrink-0 text-brand" />
-            <span className="text-sm leading-4.5 font-bold text-brand">
-              {t("sidebar.prepayment", { percent: IS_PREPAYMENT_100 ? 100 : 50 })}
-            </span>
-          </div>
-
-          <div className="flex gap-1.5">
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <p className="text-sm leading-4.5 font-medium text-natural-500">
-                {t("sidebar.boatPrice")}
-              </p>
-              <p className="text-2xl leading-8 font-semibold text-foreground">
-                {CHARTER.boatPrice}
-              </p>
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1 text-right">
-              <p className="text-sm leading-4.5 font-medium text-natural-500">
-                {t("sidebar.deposit")}
-              </p>
-              <p className="text-2xl leading-8 font-semibold text-foreground">{CHARTER.deposit}</p>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="flex cursor-pointer items-center justify-end gap-1 text-xs font-semibold text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                    />
-                  }
-                >
-                  <Info className="size-4 shrink-0" />
-                  {t("sidebar.howItWorks")}
-                </TooltipTrigger>
-                <TooltipContent>{tCard("prepaymentInfo")}</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {GROUPS.map((group) => (
-          <div
-            key={group.key}
-            className={cn(
-              "flex w-full flex-col py-4",
-              shaded && "border-b border-border bg-natural-50",
-            )}
-          >
-            <PriceGroup group={group} />
-          </div>
-        ))}
-
-        <PaymentSchedule />
-
-        <Separator />
-
-        <div className="flex w-full flex-col items-center gap-1 p-4">
-          <p className="text-sm leading-4.5 font-medium text-natural-500">
-            {t("sidebar.totalPrice")}
-          </p>
-          <p className="text-[32px] leading-9 font-bold text-foreground">{CHARTER.total}</p>
-          <p className="text-sm leading-4.5 font-medium text-natural-500">
-            {tCard("perPersonApprox", { price: CHARTER.perPerson })}
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="flex w-full flex-col gap-3 p-4">
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-sm leading-4.5 font-medium text-natural-500">
-              {t("sidebar.dueNow")}
-            </p>
-            <p className="text-[42px] leading-14 font-bold text-foreground">{dueNow}</p>
-          </div>
-          {actions ? (
+          {quote ? (
             <>
-              {bookingHref ? (
-                <Button variant="brand" nativeButton={false} render={<Link href={bookingHref} />}>
-                  {t("sidebar.payNowCta", { amount: dueNow })}
-                </Button>
-              ) : (
-                <Button variant="brand">{t("sidebar.payNowCta", { amount: dueNow })}</Button>
-              )}
-              <Button variant="neutral">{t("sidebar.requestQuote")}</Button>
+              <div className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-4 py-3">
+                <CircleCheckBig className="size-4 shrink-0 text-brand" />
+                <span className="text-sm leading-4.5 font-bold text-brand">
+                  {t("sidebar.prepayment", { percent: prepaymentPercent })}
+                </span>
+              </div>
+
+              <div className="flex gap-1.5">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="text-sm leading-4.5 font-medium text-natural-500">
+                    {t("sidebar.boatPrice")}
+                  </p>
+                  <p className="text-2xl leading-8 font-semibold text-foreground">
+                    {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0)}
+                  </p>
+                </div>
+                {quote.securityDeposit ? (
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 text-right">
+                    <p className="text-sm leading-4.5 font-medium text-natural-500">
+                      {t("sidebar.deposit")}
+                    </p>
+                    <p className="text-2xl leading-8 font-semibold text-foreground">
+                      {money(quote.securityDeposit.amountMinor)}
+                    </p>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <button
+                            type="button"
+                            className="flex cursor-pointer items-center justify-end gap-1 text-xs font-semibold text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                          />
+                        }
+                      >
+                        <Info className="size-4 shrink-0" />
+                        {t("sidebar.howItWorks")}
+                      </TooltipTrigger>
+                      <TooltipContent>{tCard("prepaymentInfo")}</TooltipContent>
+                    </Tooltip>
+                  </div>
+                ) : null}
+              </div>
             </>
           ) : null}
         </div>
+
+        {quote ? (
+          <>
+            <Separator />
+
+            {GROUPS.map(({ group, labelKey }) => {
+              const lines = quote.lines.filter((line) => line.group === group);
+              if (lines.length === 0) return null;
+              return (
+                <div
+                  key={group}
+                  className={cn(
+                    "flex w-full flex-col py-4",
+                    shaded && "border-b border-border bg-natural-50",
+                  )}
+                >
+                  <PriceGroup labelKey={labelKey} lines={lines} />
+                </div>
+              );
+            })}
+
+            {quote.paymentSchedule.length ? <PaymentSchedule entries={quote.paymentSchedule} /> : null}
+
+            <Separator />
+
+            <div className="flex w-full flex-col items-center gap-1 p-4">
+              <p className="text-sm leading-4.5 font-medium text-natural-500">
+                {t("sidebar.totalPrice")}
+              </p>
+              <p className="text-[32px] leading-9 font-bold text-foreground">
+                {money(quote.total.amountMinor)}
+              </p>
+              {quote.perPerson ? (
+                <p className="text-sm leading-4.5 font-medium text-natural-500">
+                  {tCard("perPersonApprox", { price: money(quote.perPerson.amountMinor) })}
+                </p>
+              ) : null}
+            </div>
+
+            <Separator />
+
+            <div className="flex w-full flex-col gap-3 p-4">
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-sm leading-4.5 font-medium text-natural-500">
+                  {t("sidebar.dueNow")}
+                </p>
+                <p className="text-[42px] leading-14 font-bold text-foreground">
+                  {money(quote.deposit.amountMinor)}
+                </p>
+              </div>
+              {actions ? (
+                <>
+                  <Button
+                    variant="brand"
+                    disabled={!payNowHref}
+                    nativeButton={payNowHref ? false : undefined}
+                    render={payNowHref ? <Link href={payNowHref} /> : undefined}
+                  >
+                    {t("sidebar.payNowCta", { amount: money(quote.deposit.amountMinor) })}
+                  </Button>
+                  <Button variant="neutral">{t("sidebar.requestQuote")}</Button>
+                </>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <div className="flex min-h-56 flex-col items-center justify-center gap-4 p-6 text-center">
+            {loading ? (
+              <Loader />
+            ) : (
+              <>
+                <Image
+                  src="/assets/illustrations/no-results.svg"
+                  alt=""
+                  width={128}
+                  height={131}
+                  unoptimized
+                />
+                <p className="text-sm font-medium text-natural-500">{t("sidebar.selectDates")}</p>
+              </>
+            )}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );

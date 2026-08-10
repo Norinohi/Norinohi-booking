@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { Hydrated } from "@/components/layout/hydrated";
+import { BookingSidebar } from "@/features/booking";
 import { YachtDetailScreen } from "@/features/yachts";
 import { isListingNotFound, prefetchListingDetail } from "@/features/yachts/api/server";
 import { breadcrumbNode, JsonLd, listingNode } from "@/lib/json-ld";
@@ -117,7 +118,7 @@ export default async function YachtDetailPage({
         ]}
       />
       <Hydrated state={detail.state}>
-        <YachtDetailScreen title={detail.title} />
+        <YachtDetailScreen title={detail.title} aside={<BookingSidebar />} />
       </Hydrated>
     </>
   );
