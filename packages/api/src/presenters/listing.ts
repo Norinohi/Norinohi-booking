@@ -103,6 +103,7 @@ export function presentListingDetail(detail: ListingDetail) {
     includedAmenities: detail.includedAmenities,
     mandatoryExtras: detail.mandatoryExtras,
     optionalExtras: detail.optionalExtras,
+    crew: detail.crew,
     importantInformation: detail.importantInformation,
     suggestedRoute: detail.suggestedRoute,
     reviews: detail.reviews,

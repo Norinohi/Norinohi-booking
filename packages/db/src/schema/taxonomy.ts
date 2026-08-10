@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { index, pgTable, text } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 
@@ -53,6 +53,10 @@ export const amenity = pgTable(
       .references(() => amenityCategory.id, { onDelete: "restrict" }),
     code: text("code").unique(),
     name: text("name").notNull(),
+    // A crew role rather than a thing aboard. Priced like any other extra, but the
+    // booking sidebar offers it through the Crew control instead of the extras
+    // list, and `quote.crew_type` decides which of them a quote includes.
+    crew: boolean("crew").default(false).notNull(),
     ...timestamps,
   },
   (t) => [index("amenity_category_idx").on(t.amenityCategoryId)],

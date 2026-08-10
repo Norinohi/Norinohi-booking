@@ -18,6 +18,9 @@ import {
   enquirySchema,
   invoiceRequestInputSchema,
   invoiceRequestSchema,
+  travellerListInputSchema,
+  travellerListSchema,
+  travellerSaveInputSchema,
 } from "../contracts/booking";
 import { protectedProcedure } from "../index";
 import {
@@ -28,6 +31,7 @@ import {
   listBookings,
 } from "../services/booking";
 import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
+import { listTravellers, saveTravellers } from "../services/traveller";
 import { confirmCheckout } from "../services/payment";
 import { withJsonBodyExample } from "./openapi-examples";
 
@@ -82,6 +86,51 @@ export const bookingRouter = {
         isAdmin: false,
       }),
     ),
+  travellers: {
+    list: protectedProcedure
+      .route({
+        method: "POST",
+        path: "/booking/travellers/list",
+        operationId: "listBookingTravellers",
+        summary: "List the crew and passengers on a booking",
+        description:
+          "Returns the traveller details recorded for one of the authenticated user's bookings. This is the only endpoint that returns them: booking.get and booking.receipt deliberately omit crew and passport data, and the identity-document fields are encrypted at rest. Returns NOT_IMPLEMENTED when ENCRYPTION_KEY is unset.",
+        tags: ["Booking"],
+        successDescription: "The travellers recorded for the booking.",
+        spec: withJsonBodyExample({ bookingId: "bkg_example" }),
+      })
+      .input(travellerListInputSchema)
+      .output(travellerListSchema)
+      .handler(({ context, input }) =>
+        listTravellers(context.db, context.session.user.id, input.bookingId),
+      ),
+    save: protectedProcedure
+      .route({
+        method: "POST",
+        path: "/booking/travellers/save",
+        operationId: "saveBookingTravellers",
+        summary: "Replace the crew list on a booking",
+        description:
+          "Stores the whole crew list for one of the authenticated user's bookings, replacing whatever was there. Submitting the same form twice leaves one list rather than two, and an empty array clears it. Date of birth and document number are encrypted before they are written. Refused once a booking is cancelled, refunded, rejected or expired, when the details would serve no purpose.",
+        tags: ["Booking"],
+        successDescription: "The stored crew list.",
+        spec: withJsonBodyExample({
+          bookingId: "bkg_example",
+          travellers: [
+            {
+              fullName: "John Doe",
+              role: "skipper",
+              dateOfBirth: "1986-04-12",
+              documentNumber: "X1234567",
+              nationality: "GB",
+            },
+          ],
+        }),
+      })
+      .input(travellerSaveInputSchema)
+      .output(travellerListSchema)
+      .handler(({ context, input }) => saveTravellers(context.db, context.session.user.id, input)),
+  },
   receipt: protectedProcedure
     .route({
       method: "POST",
