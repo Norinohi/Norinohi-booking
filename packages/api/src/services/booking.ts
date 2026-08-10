@@ -40,7 +40,7 @@ import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { isUniqueViolation } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
-import { assertQuoteIsFresh } from "./quote";
+import { asCrewType, assertQuoteIsFresh } from "./quote";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
 
@@ -134,10 +134,12 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
     confirmedAt: row.booking.confirmedAt?.toISOString() ?? null,
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
+    crewType: row.quote.crewType,
     priceLines: row.quote.lines.map((line) => ({
       code: line.code,
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
+      group: line.group ?? null,
     })),
     extras: extras.map((extra) => ({
       code: extra.code,
@@ -342,6 +344,7 @@ async function holdOption(
   redeem: () => Promise<void>,
 ): Promise<BookingRow> {
   const pending = await transition(db, created, "OPTION_PENDING");
+  const crewType = asCrewType(priced.crewType);
 
   try {
     const reservation = await provider.createOption({
@@ -351,6 +354,7 @@ async function holdOption(
       checkOut: priced.checkOut,
       guests: priced.guests,
       extras: priced.extras,
+      ...(crewType ? { crewType } : {}),
       // The provider re-prices before holding and refuses if this no longer
       // matches what the customer agreed to.
       priceSourceHash: priced.priceSourceHash,

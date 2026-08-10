@@ -971,6 +971,29 @@ const amenities = [
     code: "transit-log",
     name: "Transit log",
   },
+  // Codes match the crew lines the mock provider prices, so a quote's crew rows
+  // and the listing's crew roles line up by code rather than by label.
+  {
+    id: "amn_skipper",
+    amenityCategoryId: "amc_comfort",
+    code: "skipper",
+    name: "Skipper",
+    crew: true,
+  },
+  {
+    id: "amn_hostess",
+    amenityCategoryId: "amc_comfort",
+    code: "hostess",
+    name: "Hostess",
+    crew: true,
+  },
+  {
+    id: "amn_cook",
+    amenityCategoryId: "amc_comfort",
+    code: "cook",
+    name: "Cook",
+    crew: true,
+  },
   {
     id: "amn_marina_fees",
     amenityCategoryId: "amc_equipment",
@@ -1652,6 +1675,31 @@ const optionalExtraIdsFor = (categoryId: string) => {
   return ["amn_gas_bbq"];
 };
 
+/**
+ * Which crew roles a yacht sells, following how the operator sells the hull: a
+ * bareboat charter can hire a skipper, a skippered one can add service crew, and
+ * a fully crewed yacht comes with all three. `crewOptionsFor` reads these back to
+ * decide what the sidebar's Crew control may offer.
+ */
+const crewRoleIdsFor = (crewType: string) => {
+  if (crewType === "full-crew") return ["amn_skipper", "amn_hostess", "amn_cook"];
+  if (crewType === "skipper") return ["amn_skipper", "amn_hostess"];
+  return ["amn_skipper"];
+};
+
+const crewRolePrice = (amenityId: string) => {
+  switch (amenityId) {
+    case "amn_skipper":
+      return 140_000;
+    case "amn_hostess":
+      return 105_000;
+    case "amn_cook":
+      return 120_000;
+    default:
+      return 0;
+  }
+};
+
 const optionalExtraPrice = (amenityId: string) => {
   switch (amenityId) {
     case "amn_sunbathing_area":
@@ -1790,7 +1838,12 @@ const insertStaticData = async () => {
   await db.insert(yachtModel).values(models).onConflictDoNothing();
   await db.insert(yachtCategory).values(categories).onConflictDoNothing();
   await db.insert(amenityCategory).values(amenityCategories).onConflictDoNothing();
-  await db.insert(amenity).values(amenities).onConflictDoNothing();
+  await db
+    .insert(amenity)
+    .values(amenities)
+    // The crew flag is re-applied on conflict so re-seeding an older database
+    // repairs it; everything else about an amenity is immutable.
+    .onConflictDoUpdate({ target: amenity.id, set: { crew: sql`excluded.crew` } });
   await db
     .insert(facetMedia)
     .values(facetMediaEntries)
@@ -1996,6 +2049,12 @@ async function main() {
             amenityId,
             obligatory: false,
             priceMinor: optionalExtraPrice(amenityId),
+            priceCurrency: "EUR",
+          })),
+          ...crewRoleIdsFor(crewTypeFor(item.categoryId)).map((amenityId) => ({
+            amenityId,
+            obligatory: false,
+            priceMinor: crewRolePrice(amenityId),
             priceCurrency: "EUR",
           })),
         ].map(({ amenityId, obligatory, priceMinor, priceCurrency }) => ({

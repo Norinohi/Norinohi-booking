@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import type { Database } from "../context";
 import { canTransition, type BookingStatus } from "./booking-state";
 import { awardReferralCredit } from "./loyalty";
+import { asCrewType } from "./quote";
 
 export type ConfirmOutcome =
   | { outcome: "confirmed"; providerReservationId: string | null }
@@ -65,6 +66,7 @@ export async function confirmBookingWithProvider(
       checkOut: priced.checkOut,
       guests: priced.guests,
       extras: priced.extras,
+      ...(asCrewType(priced.crewType) ? { crewType: asCrewType(priced.crewType) } : {}),
       priceSourceHash: priced.priceSourceHash,
       customer: {
         name: row.guestFullName ?? "Guest",

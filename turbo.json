@@ -82,6 +82,15 @@
       "cache": false,
       "persistent": true
     },
+    "db:baseline": {
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CORS_ORIGIN"
+      ],
+      "cache": false
+    },
     "db:seed": {
       "cache": false
     },

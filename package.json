@@ -19,6 +19,7 @@
     "db:studio": "turbo run db:studio -F @yacht-charter/db",
     "db:generate": "turbo run db:generate -F @yacht-charter/db",
     "db:migrate": "turbo run db:migrate -F @yacht-charter/db",
+    "db:baseline": "turbo run db:baseline -F @yacht-charter/db --",
     "db:seed": "turbo run seed -F @yacht-charter/db",
     "db:start": "turbo run db:start -F @yacht-charter/db",
     "db:watch": "turbo run db:watch -F @yacht-charter/db",

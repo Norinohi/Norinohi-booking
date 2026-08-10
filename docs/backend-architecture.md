@@ -198,7 +198,7 @@ export interface InventoryProvider {
   projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue; // pure, no I/O
   searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]>;
   getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar>; // calendar for detail page
-  getQuote(input: QuoteRequest): Promise<ProviderQuote>; // firm price for exact dates/extras/guests/currency
+  getQuote(input: QuoteRequest): Promise<ProviderQuote>; // firm price for exact dates/extras/crewType/guests/currency
   createOption(input: BookingDraft): Promise<ProviderReservation>; // soft hold; may throw NotSupported
   confirmBooking(input: BookingDraft): Promise<ProviderReservation>; // draft carries `reservation` from the hold
   addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote>;
@@ -212,7 +212,9 @@ export interface InventoryProvider {
 - `capabilities()` lets the state machine degrade gracefully (no `createOption` → skip the hold; `optionExpiryOwnedByProvider=false` → don't promise a hold, §6).
 - **Projection is a second pass** because a yacht cross-references company, base and equipment records that arrive in earlier sync batches, so it cannot be done while streaming. `syncCatalogue` ingests; `projectCatalogue` maps. Only the second is pure, and only the second is fixture-testable.
 - **`ProviderReservationRef` carries a `securityToken`.** NauSYS issues a per-reservation `uuid` that rotates whenever reservation data changes, so a handle is `{providerReservationId, securityToken}`, never a bare id. `cancelOption` returns the reservation rather than `void` so the caller can persist the rotated token and the provider status.
-- **`BookingDraft` carries the period, guests, extras and `priceSourceHash`.** The vendor's booking call needs the dates, and the hash is the only link between the price the customer agreed to and the reservation created seconds later when the provider's quote call creates no server-side artifact.
+- **`BookingDraft` carries the period, guests, extras, `crewType` and `priceSourceHash`.** The vendor's booking call needs the dates, and the hash is the only link between the price the customer agreed to and the reservation created seconds later when the provider's quote call creates no server-side artifact. `crewType` travels with it for the same reason: an adapter that re-prices before holding has to re-price the trip that was quoted.
+- **`crewType` is a pricing input, not a listing attribute** (`bareboat | skipper | full-crew`). The same hull is offered bareboat or skippered at different prices, so the booking sidebar's Crew control feeds `availability.quote` / `availability.reprice`, is frozen on the quote row, and is part of the price fingerprint. An adapter that does not price crew echoes it back unchanged.
+- **Quote lines carry a `group`** (`mandatory | optional | crew`) alongside `kind`. `kind` is what the pricing pipeline acts on; `group` is how the booking summary sections the line for the customer, which `kind` cannot answer — an unavoidable cleaning fee and an optional hot tub are both charges against the same yacht. Absent on the base, discounts and credit.
 
 ### 4.3 Mock provider (ships M2)
 

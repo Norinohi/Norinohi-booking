@@ -37,6 +37,12 @@ export const env = createEnv({
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),
+    // Base64 of 32 random bytes, encrypting PII at rest (architecture §10) —
+    // today the identity-document fields on booking_traveller. Optional so the
+    // server boots without it; the traveller procedures then refuse rather than
+    // storing readable passport numbers. Generate with:
+    //   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+    ENCRYPTION_KEY: z.string().min(1).optional(),
     NAUSYS_BASE_URL: z.url().default("https://ws.nausys.com"),
     // Optional like the Stripe pair: without both, PROVIDER_MODE=nausys refuses to
     // construct the adapter instead of the server failing to boot.

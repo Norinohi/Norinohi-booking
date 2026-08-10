@@ -1,6 +1,7 @@
-import { providerQuoteSchema } from "@yacht-charter/providers";
+import { crewTypeSchema, providerQuoteSchema } from "@yacht-charter/providers";
 import { z } from "zod";
 
+import { paymentScheduleKindSchema } from "./booking";
 import { dateRangeRefinement, moneySchema } from "./primitives";
 
 /**
@@ -19,8 +20,24 @@ export const appliedAdjustmentSchema = z.object({
   amountMinor: z.number().int(),
 });
 
+/**
+ * What the customer will be asked for and when, derived from the frozen quote.
+ * A booking's own `payment_schedule` rows only exist once a card payment starts,
+ * so until then this is the only thing the booking sidebar can render, and the
+ * `deposit` entry is the same figure `checkout.confirm` charges.
+ */
+export const quotePaymentScheduleEntrySchema = z.object({
+  kind: paymentScheduleKindSchema,
+  amount: moneySchema,
+  /** Null means due now; otherwise an ISO date. */
+  dueAt: z.string().nullable(),
+});
+
 export const persistedQuoteSchema = providerQuoteSchema.extend({
   quoteId: z.string(),
+  /** The total split across the party, for the "~€3,500 for person" line. */
+  perPerson: moneySchema.nullable(),
+  paymentSchedule: z.array(quotePaymentScheduleEntrySchema),
   discount: z
     .object({ code: z.string(), name: z.string(), amountMinor: z.number().int() })
     .nullable(),
@@ -57,6 +74,8 @@ export const repriceInputSchema = z
     checkOut: z.iso.date().optional(),
     guests: z.coerce.number().int().positive().max(100).optional(),
     extras: z.array(z.string().min(1)).optional(),
+    /** The sidebar's Crew control. Omitted keeps the previous quote's choice. */
+    crewType: crewTypeSchema.optional(),
     /** Pass null to clear a previously applied code. */
     discountCode: z.string().trim().max(64).nullable().optional(),
     /** Spend available referral credit. Ignored for anonymous visitors. */

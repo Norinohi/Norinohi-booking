@@ -1,3 +1,5 @@
+import type { CrewType } from "./crew";
+
 export type SearchSort = "recommended" | "price-asc" | "price-desc" | "rating" | "newest";
 
 export type ListingSearchInput = {
@@ -101,6 +103,11 @@ export type ListingDetail = ListingSearchDoc & {
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingPricedItem[];
+  /** What the sidebar's Crew control may offer, and what each role costs. */
+  crew: {
+    options: CrewType[];
+    roles: ListingPricedItem[];
+  };
   importantInformation: {
     charterCompany: string;
     yachtPickupAddress: string;

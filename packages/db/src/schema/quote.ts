@@ -27,6 +27,9 @@ export type QuoteLine = {
   payWhen: "now" | "at_check_in";
   // Exactly one line is `base`, the charter price internal rules move.
   kind: "base" | "extra" | "fee" | "adjustment" | "discount" | "credit";
+  // Which section of the booking summary shows it. Absent on the base, discounts
+  // and credit, which belong to no section.
+  group?: "mandatory" | "optional" | "crew";
 };
 
 export type QuotePaymentPolicy = {
@@ -54,6 +57,9 @@ export const quote = pgTable(
     checkOut: date("check_out").notNull(),
     guests: integer("guests").notNull(),
     extras: jsonb("extras").$type<string[]>().default([]).notNull(),
+    // Null when the customer never touched the crew control; a reprice that omits
+    // it keeps whatever the superseded quote was priced with.
+    crewType: text("crew_type"),
     currency: text("currency").notNull(),
     lines: jsonb("lines").$type<QuoteLine[]>().default([]).notNull(),
     totalMinor: integer("total_minor").notNull(),

@@ -2,6 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
+import { crewOptionsFor } from "./crew";
 import { decodeSearchCursor, encodeSearchCursor, type SearchCursor } from "./cursor";
 import type {
   AvailabilityCalendar,
@@ -168,12 +169,14 @@ export async function getListingDetailByIdOrSlug(
       code: string | null;
       label: string;
       obligatory: boolean;
+      crew: boolean;
       priceMinor: number | null;
       priceCurrency: string | null;
     }>(sql`
       select
         a.code,
         a.name as label,
+        a.crew,
         la.obligatory,
         la.price_minor as "priceMinor",
         la.price_currency as "priceCurrency"
@@ -197,13 +200,19 @@ export async function getListingDetailByIdOrSlug(
     code: item.code ?? valueForLabel(item.label),
   }));
   const includedAmenities = amenities
-    .filter((item) => !item.obligatory && item.priceMinor === null)
+    .filter((item) => !item.crew && !item.obligatory && item.priceMinor === null)
     .map((item) => ({ code: item.code, label: item.label }));
   const mandatoryExtras = amenities
-    .filter((item) => item.obligatory && item.priceMinor !== null)
+    .filter((item) => !item.crew && item.obligatory && item.priceMinor !== null)
     .map((item) => pricedItem(item, listing.currency));
+  // Crew is deliberately not in optionalExtras: the sidebar buys it through the
+  // Crew control, and listing it twice would let the customer add a skipper the
+  // crew type does not include.
   const optionalExtras = amenities
-    .filter((item) => !item.obligatory && item.priceMinor !== null)
+    .filter((item) => !item.crew && !item.obligatory && item.priceMinor !== null)
+    .map((item) => pricedItem(item, listing.currency));
+  const crewRoles = amenities
+    .filter((item) => item.crew && item.priceMinor !== null)
     .map((item) => pricedItem(item, listing.currency));
 
   return {
@@ -213,6 +222,13 @@ export async function getListingDetailByIdOrSlug(
     includedAmenities,
     mandatoryExtras,
     optionalExtras,
+    crew: {
+      options: crewOptionsFor(
+        listing.crewType,
+        crewRoles.map((role) => role.code),
+      ),
+      roles: crewRoles,
+    },
     importantInformation: {
       charterCompany: listing.operator,
       yachtPickupAddress: `${listing.baseName}, ${listing.location}, ${listing.country}`,

@@ -17,6 +17,9 @@ export const paymentScheduleKindSchema = z.enum([
   "security_deposit",
 ]);
 
+/** Mirrors the quote line's `group`: which booking-summary section shows a line. */
+export const lineGroupSchema = z.enum(["mandatory", "optional", "crew"]);
+
 export const paymentStatusSchema = z.enum([
   "requires_payment",
   "processing",
@@ -106,11 +109,15 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   confirmedAt: z.string().nullable(),
   cancelledAt: z.string().nullable(),
   cancelReason: z.string().nullable(),
+  /** How the yacht was crewed, as priced. Null for a quote taken before the ask. */
+  crewType: z.string().nullable(),
   priceLines: z.array(
     z.object({
       code: z.string(),
       label: z.string(),
       amount: moneySchema,
+      /** The summary section this line belongs to; null for the base and discounts. */
+      group: lineGroupSchema.nullable(),
     }),
   ),
   extras: z.array(
@@ -144,6 +151,49 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
       paidAt: z.string().nullable(),
     }),
   ),
+});
+
+/* --------------------------------------------------------------- travellers */
+
+/**
+ * One person aboard. §10 keeps these out of every other procedure and out of the
+ * logs, so they are read and written only through `booking.travellers.*`, and the
+ * identity-document fields are encrypted at rest.
+ */
+export const travellerSchema = z.object({
+  id: z.string(),
+  fullName: z.string(),
+  role: z.string().nullable(),
+  dateOfBirth: z.string().nullable(),
+  documentNumber: z.string().nullable(),
+  nationality: z.string().nullable(),
+});
+
+export const travellerInputSchema = z.object({
+  fullName: z.string().trim().min(1).max(200),
+  /** Free text: "skipper", "guest", whatever the charter base asks for. */
+  role: z.string().trim().max(64).optional(),
+  dateOfBirth: z.iso.date().optional(),
+  documentNumber: z.string().trim().max(64).optional(),
+  /** ISO 3166-1 alpha-2, as the crew list forms want it. */
+  nationality: z.string().trim().length(2).toUpperCase().optional(),
+});
+
+export const travellerListInputSchema = z.object({ bookingId: idSchema });
+
+export const travellerListSchema = z.object({
+  bookingId: z.string(),
+  travellers: z.array(travellerSchema),
+});
+
+/**
+ * The whole crew list in one call. A partial update would need the client to
+ * track row ids across a form that adds and removes people, and a resubmitted
+ * form would duplicate the list; replacing is idempotent.
+ */
+export const travellerSaveInputSchema = z.object({
+  bookingId: idSchema,
+  travellers: z.array(travellerInputSchema).max(50),
 });
 
 export const bookingCancelInputSchema = z.object({
@@ -266,6 +316,7 @@ export const bookingReceiptSchema = z.object({
       label: z.string(),
       amount: moneySchema,
       payWhen: z.enum(["now", "at_check_in"]),
+      group: lineGroupSchema.nullable(),
     }),
   ),
   total: moneySchema,

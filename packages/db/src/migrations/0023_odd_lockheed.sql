@@ -1,0 +1,1 @@
+ALTER TABLE "amenity" ADD COLUMN "crew" boolean DEFAULT false NOT NULL;

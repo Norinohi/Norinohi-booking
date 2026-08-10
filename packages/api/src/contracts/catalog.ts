@@ -1,3 +1,4 @@
+import { crewTypeSchema } from "@yacht-charter/providers";
 import { z } from "zod";
 
 import { currencySchema, moneySchema, paginationSchema } from "./primitives";
@@ -121,6 +122,17 @@ export const listingDetailSchema = listingSummarySchema.extend({
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
   optionalExtras: z.array(pricedItemSchema),
+  /**
+   * What the booking sidebar's Crew control may offer for this yacht, and what
+   * each role costs. `options` is derived from how the operator sells the hull
+   * and which roles it prices, so a crewed yacht never offers bareboat. The roles
+   * are deliberately absent from `optionalExtras`: they are bought by choosing a
+   * crew type on the quote, not by ticking an extra.
+   */
+  crew: z.object({
+    options: z.array(crewTypeSchema),
+    roles: z.array(pricedItemSchema),
+  }),
   importantInformation: z.object({
     charterCompany: z.string(),
     yachtPickupAddress: z.string(),
