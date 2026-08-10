@@ -240,7 +240,7 @@ export default function BookingSummary({
               value: slot.checkIn,
               label: `${slotDay(slot.checkIn)} – ${slotDay(slot.checkOut)} · ${money(slot.priceMinor)}`,
             }))}
-            value={selectedCheckIn}
+            value={selectedCheckIn ?? ""}
             onValueChange={onSlotChange}
             placeholder={t("sidebar.datesPlaceholder")}
             emptyLabel={t("sidebar.selectDates")}
@@ -253,7 +253,7 @@ export default function BookingSummary({
             <Select
               className="h-12"
               options={crewOptions.map((option) => ({ value: option, label: tCrew(option) }))}
-              value={crewType}
+              value={crewType ?? ""}
               onValueChange={(value) => onCrewChange(value as CrewType)}
             />
           </div>
