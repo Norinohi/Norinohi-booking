@@ -14,6 +14,7 @@ import { SAMPLE_BOATS } from "@/lib/sample-boats";
 
 import { BOOKING_DEFAULTS, type BookingValues, useBookingSchema } from "../lib/booking-form";
 import { bookingParsers } from "../lib/search-params";
+import { BookingProvider } from "./booking-provider";
 import BookingSidebar from "./booking-sidebar";
 import BookingSteps from "./booking-steps";
 
@@ -46,16 +47,18 @@ export default function BookingScreen() {
 
       <div className="w-full px-4 py-6 md:px-13.5">
         <Form {...form}>
-          <SplitPanels
-            labels={{ main: t("panels.main"), aside: t("panels.aside") }}
-            main={
-              <>
-                <BoatCard {...boat} summary priority />
-                <BookingSteps />
-              </>
-            }
-            aside={<BookingSidebar quoteId={quoteId} actions={false} shaded />}
-          />
+          <BookingProvider quoteId={quoteId}>
+            <SplitPanels
+              labels={{ main: t("panels.main"), aside: t("panels.aside") }}
+              main={
+                <>
+                  <BoatCard {...boat} summary priority />
+                  <BookingSteps />
+                </>
+              }
+              aside={<BookingSidebar actions={false} shaded />}
+            />
+          </BookingProvider>
         </Form>
       </div>
     </div>

@@ -6,31 +6,10 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
+import { useMoney } from "@/hooks/use-money";
+
 import type { BookingValues } from "../../lib/booking-form";
-
-/* TODO: placeholder catalogue until the listing carries its own extras. The names stand in
- * for provider content, so they live here rather than in the message files. Rendered two-up,
- * so the order reads across rows. */
-const INCLUDED = [
-  "Air conditioning",
-  "Free Wi-Fi",
-  "Fully equipped kitchen",
-  "Bluetooth sound system",
-  "Sun deck with loungers",
-  "Swim platform",
-  "Outdoor dining area",
-  "Fresh water system",
-];
-
-/** Read by the Review step to name the picks. */
-export const OPTIONAL = [
-  { id: "sunbathing", name: "Spacious sunbathing area", price: "€100" },
-  { id: "bbq", name: "Gas BBQ", price: "€200" },
-  { id: "wet-bar", name: "Fully stocked wet bar", price: "€150" },
-  { id: "navigation", name: "Advanced navigation system", price: "€300" },
-  { id: "underwater-lights", name: "Multi-color underwater lights", price: "€120" },
-  { id: "hot-tub", name: "Hot tub", price: "€100" },
-];
+import { useBooking } from "../booking-provider";
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return <h3 className="py-2 text-xl leading-[1.3] font-bold text-foreground">{children}</h3>;
@@ -39,7 +18,12 @@ function SectionTitle({ children }: { children: ReactNode }) {
 export default function ExtrasStep() {
   const t = useTranslations("Booking.extras");
   const tExtras = useTranslations("Common.extras");
+  const money = useMoney();
   const { control } = useFormContext<BookingValues>();
+  const { listing, setExtras } = useBooking();
+
+  const included = listing?.includedAmenities ?? [];
+  const optional = listing?.optionalExtras ?? [];
 
   return (
     <>
@@ -49,12 +33,14 @@ export default function ExtrasStep() {
         {/* Two-up from md, where the column gap also widens. The dashed rule closes the last
             row only when paired — stacked, the design keeps it under every item. */}
         <ul className="grid md:grid-cols-2 md:gap-x-6 xl:gap-x-10">
-          {INCLUDED.map((name) => (
+          {included.map((item) => (
             <li
-              key={name}
+              key={item.code}
               className="flex items-center gap-2 border-b border-dashed border-border py-3 md:last:border-b-0 md:[&:nth-last-child(2)]:border-b-0"
             >
-              <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">{name}</span>
+              <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">
+                {item.label}
+              </span>
               <span className="flex shrink-0 items-center gap-2 py-1">
                 <CircleCheckBig className="size-5 text-brand" />
                 <span className="text-base leading-[1.4] font-bold text-foreground">
@@ -76,30 +62,33 @@ export default function ExtrasStep() {
           name="extras.optional"
           render={({ field }) => (
             <div className="flex flex-col">
-              {OPTIONAL.map((item) => (
+              {optional.map((item) => (
                 <label
-                  key={item.id}
+                  key={item.code}
                   className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border py-3"
                 >
                   <Checkbox
-                    checked={field.value.includes(item.id)}
-                    onCheckedChange={(checked) =>
-                      field.onChange(
-                        checked
-                          ? [...field.value, item.id]
-                          : field.value.filter((id) => id !== item.id),
-                      )
-                    }
+                    checked={field.value.includes(item.code)}
+                    onCheckedChange={(checked) => {
+                      const next = checked
+                        ? [...field.value, item.code]
+                        : field.value.filter((code) => code !== item.code);
+                      field.onChange(next);
+                      /* Repricing here is what makes the sidebar and Review reflect the pick. */
+                      setExtras(next);
+                    }}
                     onBlur={field.onBlur}
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="text-base leading-[1.4] text-foreground">{item.name}</span>
-                    <span className="text-xs leading-[1.3] font-semibold text-natural-300">
-                      {tExtras("payAtCheckIn")}
-                    </span>
+                    <span className="text-base leading-[1.4] text-foreground">{item.label}</span>
+                    {item.pricingType === "pay_at_check_in" ? (
+                      <span className="text-xs leading-[1.3] font-semibold text-natural-300">
+                        {tExtras("payAtCheckIn")}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
-                    {tExtras("perBooking", { price: item.price })}
+                    {tExtras("perBooking", { price: money(item.price.amountMinor) })}
                   </span>
                 </label>
               ))}

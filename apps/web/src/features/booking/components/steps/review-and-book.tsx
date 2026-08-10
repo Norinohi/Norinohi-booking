@@ -2,28 +2,15 @@
 
 import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
+
+import { useMoney } from "@/hooks/use-money";
+import { dayToDisplay } from "@/lib/date";
 
 import type { BookingValues } from "../../lib/booking-form";
-import { OPTIONAL } from "./extras";
-
-/* TODO: placeholder charter until the quote endpoint lands. Mirrors the Figma copy, which
- * quotes a shorter stay than the sidebar — both are mock numbers, not a calculation. */
-const BOOKING = {
-  yacht: 'Lagoon 42 "Jupiter One"',
-  dates: "7 – 14 July, 2026",
-  crew: "Full",
-  people: "6 people",
-  boatPrice: "€10,000",
-  deposit: "€2,000",
-  secondPayment: "€5,000",
-  secondPaymentDate: "31.06.2026",
-  total: "€12,500",
-  perPerson: "€3,500",
-  dueNow: "€5,000",
-};
+import { useBooking } from "../booking-provider";
 
 const CONSENTS = ["terms", "cancellation"] as const;
 
@@ -64,34 +51,51 @@ function Row({ row, last }: { row: SummaryRow; last: boolean }) {
 export default function ReviewAndBookStep() {
   const t = useTranslations("Booking.review");
   const tCard = useTranslations("Common.boatCard");
+  const tCrew = useTranslations("Common.crewTypes");
+  const money = useMoney();
+  const format = useFormatter();
   const { control } = useFormContext<BookingValues>();
+  const { listing, quote } = useBooking();
 
-  /* The one live value on this screen: whatever step 2 left selected. */
-  const selected = useWatch({ control, name: "extras.optional" });
-  const extras = OPTIONAL.filter((item) => selected.includes(item.id))
-    .map((item) => item.name)
+  const day = (date: string) => format.dateTime(dayToDisplay(date), "dayShort");
+
+  const base = quote?.lines.find((line) => line.kind === "base");
+  const optionalNames = (quote?.lines ?? [])
+    .filter((line) => line.group === "optional")
+    .map((line) => line.label)
     .join(", ");
+  const balance = quote?.paymentSchedule.find((entry) => entry.kind === "balance");
 
-  const rows: SummaryRow[] = [
-    { label: t("yacht"), value: BOOKING.yacht },
-    { label: t("dates"), value: BOOKING.dates },
-    { label: t("crew"), value: BOOKING.crew },
-    { label: t("people"), value: BOOKING.people },
-    { label: t("extras"), value: extras || t("noExtras") },
-    { label: t("boatPrice"), value: BOOKING.boatPrice },
-    { label: t("deposit"), value: BOOKING.deposit },
-    {
-      label: t("secondPayment", { date: BOOKING.secondPaymentDate }),
-      value: BOOKING.secondPayment,
-    },
-    {
-      label: t("totalPrice"),
-      value: BOOKING.total,
-      note: tCard("perPersonApprox", { price: BOOKING.perPerson }),
-      strong: true,
-    },
-    { label: t("dueNow"), value: BOOKING.dueNow, strong: true },
-  ];
+  const rows: SummaryRow[] = quote
+    ? [
+        { label: t("yacht"), value: listing?.title ?? "" },
+        { label: t("dates"), value: `${day(quote.checkIn)} → ${day(quote.checkOut)}` },
+        { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
+        { label: t("people"), value: String(quote.guests) },
+        { label: t("extras"), value: optionalNames || t("noExtras") },
+        { label: t("boatPrice"), value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0) },
+        ...(quote.securityDeposit
+          ? [{ label: t("deposit"), value: money(quote.securityDeposit.amountMinor) }]
+          : []),
+        ...(balance
+          ? [
+              {
+                label: t("secondPayment", { date: balance.dueAt ? day(balance.dueAt) : "" }),
+                value: money(balance.amount.amountMinor),
+              },
+            ]
+          : []),
+        {
+          label: t("totalPrice"),
+          value: money(quote.total.amountMinor),
+          note: quote.perPerson
+            ? tCard("perPersonApprox", { price: money(quote.perPerson.amountMinor) })
+            : undefined,
+          strong: true,
+        },
+        { label: t("dueNow"), value: money(quote.deposit.amountMinor), strong: true },
+      ]
+    : [];
 
   return (
     <>

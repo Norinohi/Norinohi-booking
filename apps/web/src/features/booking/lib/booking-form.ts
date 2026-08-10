@@ -13,8 +13,7 @@ import z from "zod";
  */
 export const BOOKING_DEFAULTS: BookingValues = {
   guestDetails: { fullName: "", email: "", phone: "", specialRequests: "" },
-  /* TODO: mirrors the pre-selected extra in `steps/extras.tsx` until real listing data lands. */
-  extras: { optional: ["sunbathing"] },
+  extras: { optional: [] },
   reviewAndBook: { terms: false, cancellation: false },
   payment: {
     method: "card",

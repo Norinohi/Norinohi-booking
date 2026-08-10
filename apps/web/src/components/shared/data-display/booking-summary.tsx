@@ -146,11 +146,7 @@ function PaymentSchedule({ entries }: { entries: Quote["paymentSchedule"] }) {
 
   const when = (entry: Quote["paymentSchedule"][number]) => {
     if (!entry.dueAt) return t("sidebar.payNow");
-    const date = format.dateTime(new Date(entry.dueAt), {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    const date = format.dateTime(dayToDisplay(entry.dueAt), "dayShort");
     return entry.kind === "checkin_extras" || entry.kind === "security_deposit"
       ? t("sidebar.payAtCheckIn", { date })
       : t("sidebar.payAt", { date });
