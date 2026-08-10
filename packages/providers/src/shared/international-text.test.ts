@@ -28,6 +28,63 @@ describe("toLocaleMap", () => {
     expect(toLocaleMap({ textSI: "Slovensko" })).toEqual({ sl: "Slovensko" });
   });
 
+  it("maps the country-code keys that differ from their language tag", () => {
+    // textSE is Swedish; the bare tag `se` means Northern Sami, so passing it
+    // through would mislabel the text rather than merely fail to find it.
+    expect(toLocaleMap({ textCZ: "Cesky", textSE: "Svenska" })).toEqual({
+      cs: "Cesky",
+      sv: "Svenska",
+    });
+  });
+
+  it("carries every language the vendor sends, not just the common five", () => {
+    // RestInternationalText defines 18 languages; the mapper is pattern-based so
+    // a vendor adding a nineteenth needs no code change.
+    const all = toLocaleMap({
+      textHR: "hr",
+      textEN: "en",
+      textDE: "de",
+      textIT: "it",
+      textSI: "si",
+      textRU: "ru",
+      textCZ: "cz",
+      textFR: "fr",
+      textHU: "hu",
+      textPL: "pl",
+      textSK: "sk",
+      textNL: "nl",
+      textTR: "tr",
+      textES: "es",
+      textSE: "se",
+      textNO: "no",
+      textLV: "lv",
+      textLT: "lt",
+    });
+
+    expect(Object.keys(all).sort()).toEqual(
+      [
+        "cs",
+        "de",
+        "en",
+        "es",
+        "fr",
+        "hr",
+        "hu",
+        "it",
+        "lt",
+        "lv",
+        "nl",
+        "no",
+        "pl",
+        "ru",
+        "sk",
+        "sv",
+        "sl",
+        "tr",
+      ].sort(),
+    );
+  });
+
   it("tolerates non-object input", () => {
     expect(toLocaleMap(null)).toEqual({});
     expect(toLocaleMap(undefined)).toEqual({});

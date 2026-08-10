@@ -1,8 +1,9 @@
 const TEXT_KEY_PATTERN = /^text([A-Za-z]{2})$/;
 
-// NauSYS keys the Slovenian text by the country code SI; the BCP 47 language
-// tag is sl. Every other key already matches its language tag once lowercased.
-const LOCALE_OVERRIDES: Record<string, string> = { si: "sl" };
+// Three NauSYS keys are country codes whose BCP 47 language tag differs. SE is
+// the dangerous one: as a language tag it means Northern Sami, not Swedish, so
+// passing it through would mislabel the text rather than merely miss it.
+const LOCALE_OVERRIDES: Record<string, string> = { si: "sl", cz: "cs", se: "sv" };
 
 export const defaultFallbackOrder = ["en", "hr", "de", "it", "sl"];
 
