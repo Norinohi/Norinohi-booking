@@ -17,6 +17,9 @@ export const paymentScheduleKindSchema = z.enum([
   "security_deposit",
 ]);
 
+/** Mirrors the quote line's `group`: which booking-summary section shows a line. */
+export const lineGroupSchema = z.enum(["mandatory", "optional", "crew"]);
+
 export const paymentStatusSchema = z.enum([
   "requires_payment",
   "processing",
@@ -106,11 +109,15 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   confirmedAt: z.string().nullable(),
   cancelledAt: z.string().nullable(),
   cancelReason: z.string().nullable(),
+  /** How the yacht was crewed, as priced. Null for a quote taken before the ask. */
+  crewType: z.string().nullable(),
   priceLines: z.array(
     z.object({
       code: z.string(),
       label: z.string(),
       amount: moneySchema,
+      /** The summary section this line belongs to; null for the base and discounts. */
+      group: lineGroupSchema.nullable(),
     }),
   ),
   extras: z.array(
@@ -266,6 +273,7 @@ export const bookingReceiptSchema = z.object({
       label: z.string(),
       amount: moneySchema,
       payWhen: z.enum(["now", "at_check_in"]),
+      group: lineGroupSchema.nullable(),
     }),
   ),
   total: moneySchema,

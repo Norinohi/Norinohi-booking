@@ -32,6 +32,72 @@ describe("MockInventoryProvider", () => {
     expect(quote.deposit.amountMinor).toBe(353250);
   });
 
+  it("prices only the skipper for a skippered charter, and every role for full crew", async () => {
+    const provider = new MockInventoryProvider();
+    const period = {
+      listingId: "ylst_yacht-lagoon-42-aurora",
+      checkIn: "2026-08-08",
+      checkOut: "2026-08-15",
+      guests: 8,
+      extras: [],
+      currency: "EUR",
+    };
+
+    const bareboat = await provider.getQuote({ ...period, crewType: "bareboat" });
+    const skippered = await provider.getQuote({ ...period, crewType: "skipper" });
+    const fullCrew = await provider.getQuote({ ...period, crewType: "full-crew" });
+
+    const crewCodes = (quote: Awaited<ReturnType<typeof provider.getQuote>>) =>
+      quote.lines.filter((line) => line.group === "crew").map((line) => line.code);
+
+    expect(crewCodes(bareboat)).toEqual([]);
+    expect(crewCodes(skippered)).toEqual(["skipper"]);
+    expect(crewCodes(fullCrew)).toEqual(["skipper", "hostess", "cook"]);
+
+    // Each step up in crew costs strictly more, and the choice is echoed back.
+    expect(skippered.total.amountMinor).toBeGreaterThan(bareboat.total.amountMinor);
+    expect(fullCrew.total.amountMinor).toBeGreaterThan(skippered.total.amountMinor);
+    expect(fullCrew.crewType).toBe("full-crew");
+  });
+
+  it("fingerprints the crew choice, so checkout cannot commit a different one", async () => {
+    const provider = new MockInventoryProvider();
+    const period = {
+      listingId: "ylst_yacht-lagoon-42-aurora",
+      checkIn: "2026-08-08",
+      checkOut: "2026-08-15",
+      guests: 8,
+      extras: [],
+      currency: "EUR",
+    };
+
+    const bareboat = await provider.getQuote({ ...period, crewType: "bareboat" });
+    const fullCrew = await provider.getQuote({ ...period, crewType: "full-crew" });
+
+    expect(bareboat.priceSourceHash).not.toBe(fullCrew.priceSourceHash);
+  });
+
+  it("groups obligatory fees, optional extras and crew apart", async () => {
+    const provider = new MockInventoryProvider();
+    const quote = await provider.getQuote({
+      listingId: "ylst_yacht-lagoon-42-aurora",
+      checkIn: "2026-08-08",
+      checkOut: "2026-08-15",
+      guests: 8,
+      extras: ["sup"],
+      crewType: "skipper",
+      currency: "EUR",
+    });
+
+    const groupOf = (code: string) => quote.lines.find((line) => line.code === code)?.group;
+
+    expect(groupOf("transit-log")).toBe("mandatory");
+    expect(groupOf("sup")).toBe("optional");
+    expect(groupOf("skipper")).toBe("crew");
+    // The charter itself is in no section: it is the price the sections hang off.
+    expect(groupOf("base-charter")).toBeUndefined();
+  });
+
   it("fails a busy period with a typed error rather than a message", async () => {
     const provider = new MockInventoryProvider();
 

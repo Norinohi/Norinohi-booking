@@ -111,6 +111,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
           checkOut: draft.checkOut,
           guests: draft.guests,
           extras: draft.extras,
+          crewType: draft.crewType,
           currency: this.currency,
         });
         return quote.priceSourceHash;

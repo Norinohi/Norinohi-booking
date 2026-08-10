@@ -14,6 +14,7 @@ import {
   type AvailableOffer,
   type BookingDraft,
   type CanonicalCatalogue,
+  type CrewType,
   type ListingPeriod,
   type ProviderCapabilities,
   type ProviderExtrasMutation,
@@ -49,6 +50,20 @@ const extrasMutationGuests = 2;
  */
 const securityTokenFor = (reservationId: string, step: string) =>
   sourceHash({ reservationId, step }).slice(0, 32);
+
+/**
+ * The crew a crew type puts on board, as fixture extra codes. Bareboat and an
+ * unanswered control both mean no crew: a customer who has not chosen must not be
+ * quoted a skipper they never asked for.
+ */
+function crewCodesFor(crewType: CrewType | undefined): Set<string> {
+  if (!crewType || crewType === "bareboat") return new Set();
+
+  const crew = availability.extras.filter((item) => item.crew);
+  const included = crewType === "skipper" ? crew.filter((item) => item.code === "skipper") : crew;
+
+  return new Set(included.map((item) => item.code));
+}
 
 export class MockInventoryProvider implements InventoryProvider {
   readonly key = "mock" as const;
@@ -138,8 +153,9 @@ export class MockInventoryProvider implements InventoryProvider {
       throw new SlotUnavailableError("Requested slot is not available");
     }
 
+    const crewCodes = crewCodesFor(parsed.crewType);
     const selectedExtras = availability.extras.filter(
-      (item) => item.obligatory || parsed.extras.includes(item.code),
+      (item) => item.obligatory || parsed.extras.includes(item.code) || crewCodes.has(item.code),
     );
     const extraTotalMinor = selectedExtras.reduce((total, item) => total + item.priceMinor, 0);
     const repriceDeltaMinor = parsed.extras.length > 0 ? 1500 : 0;
@@ -154,6 +170,7 @@ export class MockInventoryProvider implements InventoryProvider {
       checkIn: parsed.checkIn,
       checkOut: parsed.checkOut,
       guests: parsed.guests,
+      crewType: parsed.crewType ?? null,
       currency: parsed.currency,
       lines: [
         {
@@ -168,6 +185,7 @@ export class MockInventoryProvider implements InventoryProvider {
           amount: { amountMinor: item.priceMinor, currency: parsed.currency },
           payWhen: item.obligatory ? "at_check_in" : "now",
           kind: item.obligatory ? "fee" : "extra",
+          group: item.obligatory ? "mandatory" : item.crew ? "crew" : "optional",
         })),
         ...(repriceDeltaMinor > 0
           ? [
@@ -189,7 +207,14 @@ export class MockInventoryProvider implements InventoryProvider {
         depositPct: 0.5,
         balanceDueAt: parsed.checkIn,
       },
-      priceSourceHash: sourceHash({ slot, extras: parsed.extras, repriceDeltaMinor }),
+      // crewType is part of the fingerprint: two crew choices price differently,
+      // so a hash blind to it would let checkout commit the wrong one.
+      priceSourceHash: sourceHash({
+        slot,
+        extras: parsed.extras,
+        crewType: parsed.crewType ?? null,
+        repriceDeltaMinor,
+      }),
       expiresAt: new Date(Date.now() + quoteTtlMs).toISOString(),
       repriced: repriceDeltaMinor > 0,
     });

@@ -161,6 +161,7 @@ export async function getReceipt(
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       payWhen: line.payWhen ?? "now",
+      group: line.group ?? null,
     })),
     total: { amountMinor: row.booking.totalMinor, currency: row.booking.currency },
     securityDeposit:

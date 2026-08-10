@@ -6,7 +6,13 @@ import {
   type QuoteLine,
   type QuotePaymentPolicy,
 } from "@yacht-charter/db/schema/quote";
-import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
+import { crewTypeSchema } from "@yacht-charter/providers";
+import type {
+  CrewType,
+  InventoryProvider,
+  ProviderQuote,
+  QuoteRequest,
+} from "@yacht-charter/providers";
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
 import { eq } from "drizzle-orm";
 
@@ -14,15 +20,26 @@ import type { Database, DatabaseExecutor } from "../context";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
 import { spendableCreditMinor, welcomeDiscountMinor } from "./loyalty";
 import {
+  buildPaymentSchedulePreview,
   loadAdjustmentsForListings,
   payableNowMinor,
+  perPersonMinor,
   resolveAdjustedPrice,
   resolvePaymentPolicy,
   totalMinor,
   type AppliedAdjustment,
+  type QuotePaymentScheduleEntry,
 } from "./pricing";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
+  /** The trip split across the party; null when the guest count is unusable. */
+  perPerson: { amountMinor: number; currency: string } | null;
+  /** Derived instalments, in the order the customer meets them. */
+  paymentSchedule: {
+    kind: QuotePaymentScheduleEntry["kind"];
+    amount: { amountMinor: number; currency: string };
+    dueAt: string | null;
+  }[];
   /** The promo code that was applied, or null. */
   discount: { code: string; name: string; amountMinor: number } | null;
   /** Set when a code was supplied but unusable; the quote is priced without it. */
@@ -37,6 +54,7 @@ export type RepriceChanges = {
   checkOut?: string;
   guests?: number;
   extras?: string[];
+  crewType?: CrewType;
   discountCode?: string | null;
   applyCredit?: boolean;
 };
@@ -57,6 +75,7 @@ export async function createQuote(
   return persistPricedQuote(db, priced, {
     userId,
     extras: input.extras ?? [],
+    crewType: input.crewType ?? null,
     discountCode: input.discountCode ?? null,
     applyCredit: input.applyCredit ?? false,
   });
@@ -86,6 +105,7 @@ export async function repriceQuote(
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
   const requestedExtras = changes.extras ?? existing.extras;
+  const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
@@ -95,6 +115,7 @@ export async function repriceQuote(
     checkOut: changes.checkOut ?? existing.checkOut,
     guests: changes.guests ?? existing.guests,
     extras: requestedExtras,
+    ...(requestedCrewType ? { crewType: requestedCrewType } : {}),
     currency: existing.currency,
   });
 
@@ -102,6 +123,7 @@ export async function repriceQuote(
     const result = await persistPricedQuote(tx, priced, {
       userId: userId ?? existing.userId,
       extras: requestedExtras,
+      crewType: requestedCrewType ?? null,
       discountCode,
       applyCredit: changes.applyCredit ?? existing.creditAppliedMinor > 0,
     });
@@ -363,6 +385,7 @@ async function persistPricedQuote(
   options: {
     userId: string | null;
     extras: string[];
+    crewType: CrewType | null;
     discountCode: string | null;
     applyCredit: boolean;
   },
@@ -377,6 +400,7 @@ async function persistPricedQuote(
     currency: line.amount.currency,
     payWhen: line.payWhen,
     kind: line.kind,
+    ...(line.group ? { group: line.group } : {}),
   }));
 
   const applied: AppliedAdjustment[] = [];
@@ -421,6 +445,10 @@ async function persistPricedQuote(
   const discountRejected = promo?.rejected ?? null;
   const creditApplied = credit?.creditApplied ?? null;
 
+  // The provider is the authority on what it was asked to price; the request only
+  // fills in for an adapter that does not echo the choice back.
+  const crewType = priced.crewType ?? options.crewType;
+
   const quoteId = await insertQuote(db, {
     priced,
     lines,
@@ -429,24 +457,42 @@ async function persistPricedQuote(
     paymentPolicy,
     userId: options.userId,
     extras: options.extras,
+    crewType,
     discountId: promo?.discountId ?? null,
     discountCode: appliedDiscount?.code ?? null,
     creditAppliedMinor: creditApplied?.amountMinor ?? 0,
     applied,
   });
 
+  const securityDepositMinor = priced.securityDeposit?.amountMinor ?? null;
+
   return {
     ...priced,
     quoteId,
+    crewType,
     lines: lines.map((line) => ({
       code: line.code,
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       payWhen: line.payWhen,
       kind: line.kind,
+      ...(line.group ? { group: line.group } : {}),
     })),
     total: { amountMinor: total, currency },
     deposit: { amountMinor: depositMinor, currency },
+    perPerson: toPerPerson(total, priced.guests, currency),
+    paymentSchedule: buildPaymentSchedulePreview({
+      lines,
+      paymentPolicy,
+      depositMinor,
+      securityDepositMinor,
+      checkIn: priced.checkIn,
+      currency,
+    }).map((entry) => ({
+      kind: entry.kind,
+      amount: { amountMinor: entry.amountMinor, currency: entry.currency },
+      dueAt: entry.dueAt,
+    })),
     paymentPolicy: {
       mode: paymentPolicy.mode,
       depositPct: paymentPolicy.depositPct,
@@ -459,6 +505,24 @@ async function persistPricedQuote(
   };
 }
 
+function toPerPerson(
+  totalMinorAmount: number,
+  guests: number,
+  currency: string,
+): PersistedQuote["perPerson"] {
+  const amountMinor = perPersonMinor(totalMinorAmount, guests);
+  return amountMinor === null ? null : { amountMinor, currency };
+}
+
+/**
+ * `quote.crew_type` is plain text, so a value written before the enum existed, or
+ * by hand, must not be handed back to a provider as if it were valid.
+ */
+export function asCrewType(value: string | null): CrewType | undefined {
+  const parsed = crewTypeSchema.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
+}
+
 async function insertQuote(
   db: DatabaseExecutor,
   input: {
@@ -469,6 +533,7 @@ async function insertQuote(
     paymentPolicy: QuotePaymentPolicy;
     userId: string | null;
     extras: string[];
+    crewType: CrewType | null;
     discountId: string | null;
     discountCode: string | null;
     creditAppliedMinor: number;
@@ -487,6 +552,7 @@ async function insertQuote(
       checkOut: input.priced.checkOut,
       guests: input.priced.guests,
       extras: input.extras,
+      crewType: input.crewType,
       currency: input.priced.currency,
       lines: input.lines,
       totalMinor: input.total,

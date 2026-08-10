@@ -1,0 +1,1 @@
+ALTER TABLE "quote" ADD COLUMN "crew_type" text;

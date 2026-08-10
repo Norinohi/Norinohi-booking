@@ -102,12 +102,22 @@ export const availabilityCalendarSchema = z.object({
 });
 export type AvailabilityCalendar = z.infer<typeof availabilityCalendarSchema>;
 
+/**
+ * How the yacht is crewed for this charter. A pricing input rather than a listing
+ * attribute: the same hull is offered bareboat or skippered at different prices,
+ * and the booking sidebar lets the customer switch between them.
+ */
+export const crewTypeSchema = z.enum(["bareboat", "skipper", "full-crew"]);
+export type CrewType = z.infer<typeof crewTypeSchema>;
+
 export const quoteRequestSchema = z.object({
   listingId: z.string(),
   checkIn: z.string(),
   checkOut: z.string(),
   guests: z.number().int().positive(),
   extras: z.array(z.string()).default([]),
+  /** Omitted means the customer has not chosen; adapters add no crew for it. */
+  crewType: crewTypeSchema.optional(),
   currency: z.string().length(3).default("EUR"),
 });
 
@@ -127,6 +137,8 @@ export const providerQuoteSchema = z.object({
   checkIn: z.string(),
   checkOut: z.string(),
   guests: z.number().int(),
+  /** Echoed from the request so the caller never has to remember what it asked. */
+  crewType: crewTypeSchema.nullable().default(null),
   currency: z.string().length(3),
   lines: z.array(
     z.object({
@@ -142,6 +154,14 @@ export const providerQuoteSchema = z.object({
        * edits. Adapters must mark exactly one line as `base`.
        */
       kind: z.enum(["base", "extra", "fee", "adjustment", "discount", "credit"]).default("extra"),
+      /**
+       * Which section of the booking summary the line belongs to. `kind` says what
+       * a line is to the pricing pipeline; this says how the customer sees it
+       * grouped, which `kind` cannot answer — an unavoidable cleaning fee and an
+       * optional hot tub are both charges against the same yacht. Absent on lines
+       * that belong to no section (the base, discounts, credit).
+       */
+      group: z.enum(["mandatory", "optional", "crew"]).optional(),
     }),
   ),
   total: moneySchema,
@@ -171,6 +191,8 @@ export const bookingDraftSchema = z.object({
   checkOut: z.string(),
   guests: z.number().int().positive(),
   extras: z.array(z.string()).default([]),
+  /** Carried from the quote: re-pricing without it would price a different trip. */
+  crewType: crewTypeSchema.optional(),
   /**
    * The hash of the price the customer agreed to. Adapters re-price before holding
    * and refuse on a mismatch. For providers whose quote call creates no

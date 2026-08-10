@@ -43,7 +43,8 @@ export const availabilityRouter = {
         checkIn: "2026-07-04",
         checkOut: "2026-07-11",
         guests: 6,
-        extras: ["skipper", "hostess"],
+        extras: ["sup"],
+        crewType: "full-crew",
         currency: "EUR",
       }),
     })
@@ -59,13 +60,14 @@ export const availabilityRouter = {
       operationId: "repriceAvailabilityQuote",
       summary: "Re-price an existing quote",
       description:
-        "Re-fetches the live provider price for an existing quote and returns a fresh one. Any of checkIn, checkOut, guests or extras may be changed; whatever is omitted keeps the previous quote's value, so the booking sidebar can move one control at a time. The previous quote is marked consumed and points at its replacement — quotes are immutable, so a changed price always produces a new row rather than editing the old one.",
+        "Re-fetches the live provider price for an existing quote and returns a fresh one. Any of checkIn, checkOut, guests, extras or crewType may be changed; whatever is omitted keeps the previous quote's value, so the booking sidebar can move one control at a time. The previous quote is marked consumed and points at its replacement — quotes are immutable, so a changed price always produces a new row rather than editing the old one.",
       tags: ["Availability"],
       successDescription: "A new quote superseding the one that was passed in.",
       spec: withJsonBodyExample({
         quoteId: "qte_example",
         guests: 6,
-        extras: ["skipper", "hostess"],
+        extras: ["sup"],
+        crewType: "full-crew",
         discountCode: "SUMMER2026",
       }),
     })
@@ -77,6 +79,7 @@ export const availabilityRouter = {
         checkOut: input.checkOut,
         guests: input.guests,
         extras: input.extras,
+        crewType: input.crewType,
         discountCode: input.discountCode,
         applyCredit: input.applyCredit,
       }),

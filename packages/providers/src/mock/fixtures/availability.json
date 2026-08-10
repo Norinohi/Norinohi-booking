@@ -150,42 +150,56 @@
       "name": "Transit log",
       "priceMinor": 25000,
       "currency": "EUR",
-      "obligatory": true
+      "obligatory": true,
+      "crew": false
     },
     {
       "code": "skipper",
       "name": "Skipper",
       "priceMinor": 140000,
       "currency": "EUR",
-      "obligatory": false
+      "obligatory": false,
+      "crew": true
     },
     {
       "code": "hostess",
       "name": "Hostess",
       "priceMinor": 105000,
       "currency": "EUR",
-      "obligatory": false
+      "obligatory": false,
+      "crew": true
+    },
+    {
+      "code": "cook",
+      "name": "Cook",
+      "priceMinor": 120000,
+      "currency": "EUR",
+      "obligatory": false,
+      "crew": true
     },
     {
       "code": "sup",
       "name": "Stand-up paddleboard",
       "priceMinor": 12000,
       "currency": "EUR",
-      "obligatory": false
+      "obligatory": false,
+      "crew": false
     },
     {
       "code": "early-checkin",
       "name": "Early check-in",
       "priceMinor": 18000,
       "currency": "EUR",
-      "obligatory": false
+      "obligatory": false,
+      "crew": false
     },
     {
       "code": "safety-net",
       "name": "Safety net",
       "priceMinor": 15000,
       "currency": "EUR",
-      "obligatory": false
+      "obligatory": false,
+      "crew": false
     }
   ]
 }

@@ -1,9 +1,11 @@
-import type { QuoteLine } from "@yacht-charter/db/schema/quote";
+import type { QuoteLine, QuotePaymentPolicy } from "@yacht-charter/db/schema/quote";
 import { describe, expect, it } from "vitest";
 
 import {
   type PriceAdjustment,
+  buildPaymentSchedulePreview,
   payableNowMinor,
+  perPersonMinor,
   resolveAdjustedPrice,
   resolvePaymentPolicy,
   totalMinor,
@@ -199,5 +201,93 @@ describe("payableNowMinor / totalMinor", () => {
 
     expect(totalMinor(overCredited)).toBe(0);
     expect(payableNowMinor(overCredited)).toBe(0);
+  });
+});
+
+describe("buildPaymentSchedulePreview", () => {
+  const policy = (over: Partial<QuotePaymentPolicy> = {}): QuotePaymentPolicy => ({
+    mode: "deposit",
+    depositPct: 0.5,
+    balanceDueAt: "2026-06-30",
+    currency: "EUR",
+    ...over,
+  });
+
+  const preview = (over: Partial<Parameters<typeof buildPaymentSchedulePreview>[0]> = {}) =>
+    buildPaymentSchedulePreview({
+      lines: [
+        line({ amountMinor: 1_000_000, payWhen: "now" }),
+        line({ code: "cleaning", amountMinor: 15_000, payWhen: "at_check_in", kind: "fee" }),
+      ],
+      paymentPolicy: policy(),
+      depositMinor: 500_000,
+      securityDepositMinor: 200_000,
+      checkIn: "2026-07-07",
+      currency: "EUR",
+      ...over,
+    });
+
+  it("splits a deposit policy into deposit, balance, check-in extras and security deposit", () => {
+    expect(preview()).toEqual([
+      { kind: "deposit", amountMinor: 500_000, currency: "EUR", dueAt: null },
+      { kind: "balance", amountMinor: 500_000, currency: "EUR", dueAt: "2026-06-30" },
+      { kind: "checkin_extras", amountMinor: 15_000, currency: "EUR", dueAt: "2026-07-07" },
+      { kind: "security_deposit", amountMinor: 200_000, currency: "EUR", dueAt: "2026-07-07" },
+    ]);
+  });
+
+  it("opens with a single full payment when the policy takes everything up front", () => {
+    const entries = preview({ paymentPolicy: policy({ mode: "full", depositPct: 1 }) });
+
+    expect(entries[0]).toEqual({
+      kind: "full",
+      amountMinor: 1_000_000,
+      currency: "EUR",
+      dueAt: null,
+    });
+    expect(entries.some((entry) => entry.kind === "balance")).toBe(false);
+  });
+
+  it("keeps an undated balance rather than dropping the instalment", () => {
+    const entries = preview({ paymentPolicy: policy({ balanceDueAt: undefined }) });
+
+    expect(entries[1]).toMatchObject({ kind: "balance", dueAt: null });
+  });
+
+  it("omits a balance the deposit already covers", () => {
+    const entries = preview({ depositMinor: 1_000_000 });
+
+    expect(entries.map((entry) => entry.kind)).toEqual([
+      "deposit",
+      "checkin_extras",
+      "security_deposit",
+    ]);
+  });
+
+  it("omits the security deposit when the yacht asks for none", () => {
+    const entries = preview({ securityDepositMinor: null });
+
+    expect(entries.some((entry) => entry.kind === "security_deposit")).toBe(false);
+  });
+
+  it("charges the same figure checkout.confirm will take", () => {
+    const [first] = preview();
+
+    expect(first?.amountMinor).toBe(500_000);
+    expect(first?.dueAt).toBeNull();
+  });
+});
+
+describe("perPersonMinor", () => {
+  it("splits the total across the party", () => {
+    expect(perPersonMinor(1_200_000, 6)).toBe(200_000);
+  });
+
+  it("rounds to the nearest minor unit", () => {
+    expect(perPersonMinor(1_000_00, 3)).toBe(33_333);
+  });
+
+  it("returns null rather than dividing by zero", () => {
+    expect(perPersonMinor(1_000_000, 0)).toBeNull();
   });
 });

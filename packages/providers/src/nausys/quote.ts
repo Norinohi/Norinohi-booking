@@ -8,6 +8,7 @@ import { stableSourceHash } from "../shared/raw-retention";
 import {
   providerQuoteSchema,
   quoteRequestSchema,
+  type CrewType,
   type Money,
   type ProviderQuote,
   type QuoteRequest,
@@ -152,6 +153,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         checkIn: parsed.checkIn,
         checkOut: parsed.checkOut,
         guests: parsed.guests,
+        crewType: parsed.crewType,
         securityDeposit,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
         labelFor: options.labelFor,
@@ -167,6 +169,12 @@ export interface FreeYachtMapping {
   checkIn: string;
   checkOut: string;
   guests: number;
+  /**
+   * Echoed only. NauSYS prices crew as ordinary services out of the
+   * ADDITIONAL_EXTRAS catalogue, and this adapter does not map optional services
+   * onto lines yet, so a crew choice does not move the vendor's number.
+   */
+  crewType?: CrewType | undefined;
   securityDeposit?: Money | undefined;
   expiresAt: string;
   labelFor?: ((kind: NausysLabelKind, externalId: string) => string | undefined) | undefined;
@@ -217,6 +225,7 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     checkIn: input.checkIn,
     checkOut: input.checkOut,
     guests: input.guests,
+    crewType: input.crewType ?? null,
     currency,
     lines,
     total: { amountMinor: totalMinor, currency },
@@ -324,6 +333,9 @@ function toExtraLine(extra: RestExtra, currency: string, input: FreeYachtMapping
     amount: { amountMinor: decimalStringToMinor(extra.amount, currency), currency },
     payWhen: payWhenFor(extra),
     kind: "extra",
+    // Everything a NauSYS quote returns today is an obligatory extra; optional
+    // services live in ADDITIONAL_EXTRAS and are not mapped onto lines yet.
+    group: "mandatory",
   };
 }
 

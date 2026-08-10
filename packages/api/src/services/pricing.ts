@@ -271,3 +271,89 @@ export function totalMinor(lines: readonly QuoteLine[]): number {
     0,
   );
 }
+
+/** What the base collects on arrival: never part of the prepayment. */
+export function payableAtCheckInMinor(lines: readonly QuoteLine[]): number {
+  return Math.max(
+    lines
+      .filter((line) => line.payWhen === "at_check_in")
+      .reduce((total, line) => total + line.amountMinor, 0),
+    0,
+  );
+}
+
+export type QuotePaymentScheduleEntry = {
+  kind: "deposit" | "balance" | "full" | "checkin_extras" | "security_deposit";
+  amountMinor: number;
+  currency: string;
+  /** Null means due now. */
+  dueAt: string | null;
+};
+
+/**
+ * The instalments implied by a priced quote, in the order the customer meets them.
+ *
+ * Derived rather than stored: quotes are immutable and a booking's real
+ * `payment_schedule` rows are only written when a payment starts, so this is what
+ * the checkout sidebar renders before there is a booking at all. The first entry
+ * is always what `checkout.confirm` will charge, so the two cannot disagree.
+ */
+export function buildPaymentSchedulePreview(input: {
+  lines: readonly QuoteLine[];
+  paymentPolicy: QuotePaymentPolicy;
+  depositMinor: number;
+  securityDepositMinor: number | null;
+  checkIn: string;
+  currency: string;
+}): QuotePaymentScheduleEntry[] {
+  const { currency } = input;
+  const entries: QuotePaymentScheduleEntry[] = [];
+  const payableNow = payableNowMinor(input.lines);
+
+  if (input.paymentPolicy.mode === "full") {
+    entries.push({ kind: "full", amountMinor: payableNow, currency, dueAt: null });
+  } else {
+    entries.push({ kind: "deposit", amountMinor: input.depositMinor, currency, dueAt: null });
+
+    const balanceMinor = payableNow - input.depositMinor;
+    if (balanceMinor > 0) {
+      entries.push({
+        kind: "balance",
+        amountMinor: balanceMinor,
+        currency,
+        // A policy with no balance date still owes the balance; the sidebar shows
+        // it undated rather than dropping the instalment.
+        dueAt: input.paymentPolicy.balanceDueAt ?? null,
+      });
+    }
+  }
+
+  const atCheckIn = payableAtCheckInMinor(input.lines);
+  if (atCheckIn > 0) {
+    entries.push({
+      kind: "checkin_extras",
+      amountMinor: atCheckIn,
+      currency,
+      dueAt: input.checkIn,
+    });
+  }
+
+  // Refundable, so it is not in the total, but the customer is still asked for it
+  // at the base and the summary has to say so.
+  if (input.securityDepositMinor && input.securityDepositMinor > 0) {
+    entries.push({
+      kind: "security_deposit",
+      amountMinor: input.securityDepositMinor,
+      currency,
+      dueAt: input.checkIn,
+    });
+  }
+
+  return entries;
+}
+
+/** Null rather than a division by zero; a quote always has at least one guest. */
+export function perPersonMinor(totalMinorAmount: number, guests: number): number | null {
+  if (!Number.isFinite(guests) || guests <= 0) return null;
+  return Math.round(totalMinorAmount / guests);
+}
