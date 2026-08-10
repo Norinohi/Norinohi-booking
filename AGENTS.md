@@ -25,11 +25,18 @@ Database tasks all proxy to `@yacht-charter/db`; Postgres runs via `packages/db/
 pnpm db:start                # docker compose up -d  (postgres:18, host port 5434)
 pnpm db:stop                 # docker compose stop
 pnpm db:down                 # docker compose down
-pnpm db:push                 # drizzle-kit push — schema straight to DB, no migration files
 pnpm db:generate             # drizzle-kit generate — writes packages/db/src/migrations
-pnpm db:migrate              # drizzle-kit migrate
+pnpm db:migrate              # drizzle-kit migrate — the local loop, same path production takes
+pnpm db:baseline             # repairs a migration ledger left behind by an earlier db:push
 pnpm db:studio               # drizzle-kit studio
+pnpm db:push                 # BROKEN on this schema — see packages/db/AGENTS.md
 ```
+
+`db:push` is listed for completeness only. Drizzle-kit 0.31.10 reads unique-constraint
+columns back in alphabetical order, so it believes nine of our constraints are missing
+and fails trying to re-create them. Use `db:generate` + `db:migrate`. A database that
+was built with `push` before this was understood has an empty migration ledger and
+needs `pnpm db:baseline --apply` once before `db:migrate` will run.
 
 **CI** runs on pull requests (`.github/workflows/ci.yml`): `check-types`, `oxlint`, `test`, and the
 instant-navigation e2e guards. A direct push to a Railway-watched branch still deploys without
