@@ -1,9 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-
 import type { Option } from "../lib/options";
-import { facetsQueryOptions } from "../api/queries";
+import { useFacets } from "./use-facets";
 
 export type FilterOptions = {
   countries: Option[];
@@ -43,6 +41,6 @@ export const EMPTY_OPTIONS: FilterOptions = {
 };
 
 export function useFilterOptions() {
-  const query = useQuery(facetsQueryOptions());
+  const query = useFacets();
   return { ...query, options: query.data?.options ?? EMPTY_OPTIONS };
 }

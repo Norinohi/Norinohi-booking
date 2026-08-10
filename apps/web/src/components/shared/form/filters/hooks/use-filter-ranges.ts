@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { facetsQueryOptions } from "../api/queries";
+import { useFacets } from "./use-facets";
 import {
   buildDefaultFilters,
   EMPTY_RANGES,
@@ -21,7 +20,7 @@ const metresToFeet = (bound: { min: number; max: number }): Range => [
 ];
 
 export function useFilterRanges(): { ranges: FilterRanges; defaults: FiltersState } {
-  const facets = useQuery(facetsQueryOptions()).data;
+  const facets = useFacets().data;
 
   return useMemo(() => {
     const r = facets?.ranges;

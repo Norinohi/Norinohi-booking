@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getFacets } from "@/components/shared/form/filters/api/server";
+import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
 import { POPULAR_YACHTS_INPUT, popularYachtsQueryOptions } from "./queries";
@@ -36,15 +37,28 @@ async function getPopularYachts() {
  *
  * Nothing here is wrapped in `<Suspense>` on purpose. These reads resolve from cache, so they can
  * live in the prerendered shell; deferring them would push content out of it for no gain.
+ *
+ * The locale is read here rather than taken as an argument (see `getRootLocale`), but it is still
+ * needed by name: the facets are seeded under a query key the browser rebuilds from its own
+ * `useLocale()`, and the two have to agree or hydration fills a key nothing reads.
+ *
+ * The root param keys this blob per locale while only the facets inside it actually vary, so the
+ * popular yachts are stored three times. The read itself is not repeated — `getPopularYachts`
+ * takes no arguments and depends on no root param, so all three entries are filled from its single
+ * one — and the duplicate is a dehydrated payload, not an API call.
  */
 export async function prefetchHome() {
   "use cache";
   cacheLife("hours");
 
   const queryClient = new QueryClient();
-  const [facets, popularYachts] = await Promise.all([getFacets(), getPopularYachts()]);
+  const [locale, facets, popularYachts] = await Promise.all([
+    getRootLocale(),
+    getFacets(),
+    getPopularYachts(),
+  ]);
 
-  queryClient.setQueryData(facetsQueryOptions().queryKey, facets);
+  queryClient.setQueryData(facetsQueryOptions(locale).queryKey, facets);
   queryClient.setQueryData(popularYachtsQueryOptions().queryKey, popularYachts);
 
   return dehydrate(queryClient);

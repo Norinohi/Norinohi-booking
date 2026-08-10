@@ -6,6 +6,7 @@ import { cacheLife } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getFacets } from "@/components/shared/form/filters/api/server";
+import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
 import { listingDetailQueryOptions } from "./queries";
@@ -21,13 +22,18 @@ import { listingDetailQueryOptions } from "./queries";
  * The dehydrated blob is cached rather than rebuilt per request because `dehydrate()` stamps
  * `dataUpdatedAt` from `Date.now()`, and that clock read alone would block prerendering. The
  * client `staleTime` on `facetsQueryOptions` matches this tier so hydration does not refetch.
+ *
+ * The locale reaches the cache key through the root param (see `getRootLocale`), but is still read
+ * by name here: the seeded query key has to match the one the client hook rebuilds from its own
+ * locale, or hydration fills an entry nothing reads and the browser refetches on mount.
  */
 export async function prefetchSearch() {
   "use cache";
   cacheLife("days");
 
   const queryClient = new QueryClient();
-  queryClient.setQueryData(facetsQueryOptions().queryKey, await getFacets());
+  const [locale, facets] = await Promise.all([getRootLocale(), getFacets()]);
+  queryClient.setQueryData(facetsQueryOptions(locale).queryKey, facets);
 
   return dehydrate(queryClient);
 }
@@ -42,6 +48,12 @@ export async function prefetchSearch() {
  * The read goes through `publicClient` because `"use cache"` forbids reading request headers, and
  * `listingDetailQueryOptions` is bound to the header-forwarding client. Query keys derive from the
  * procedure path and input alone, so seeding that key by hand still matches the client hook.
+ *
+ * **Not keyed by locale, and correct only while listings are not localized.** Facet copy is the
+ * only translated part of the catalog today (`facet_media_translation`); a listing's own text comes
+ * from `listing_search_doc`, which the read model builds with a hardcoded `locale = 'en'`. The day
+ * that changes, this entry starts serving one language's description to all three — add the locale
+ * to the signature at the same time, not after.
  *
  * **A miss is thrown, never returned.** Returning `{ found: false }` from here would cache the
  * absence for the full hour, so a listing created after someone happened to visit its URL would
