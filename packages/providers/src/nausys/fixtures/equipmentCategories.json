@@ -1,0 +1,27 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "categories": [
+    {
+      "id": 4001,
+      "name": {
+        "textEN": "Navigation",
+        "textDE": "Navigation",
+        "textHR": "Navigacija"
+      }
+    },
+    {
+      "id": 4002,
+      "name": {
+        "textEN": "Comfort",
+        "textHR": "Udobnost"
+      }
+    },
+    {
+      "id": 4003,
+      "name": {
+        "textHR": "Sigurnost"
+      }
+    }
+  ]
+}

@@ -37,6 +37,20 @@ export const env = createEnv({
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),
+    NAUSYS_BASE_URL: z.url().default("https://ws.nausys.com"),
+    // Optional like the Stripe pair: without both, PROVIDER_MODE=nausys refuses to
+    // construct the adapter instead of the server failing to boot.
+    NAUSYS_USERNAME: z.string().min(1).optional(),
+    NAUSYS_PASSWORD: z.string().min(1).optional(),
+    NAUSYS_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    // Idle gap between two calls on the same credential. NauSYS forbids parallel
+    // calls outright; the spacing is our own politeness margin on top of that.
+    NAUSYS_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),
+    // We must release a hold before NauSYS auto-expires it, otherwise we sell a
+    // slot the provider has already dropped.
+    NAUSYS_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
+    // `optionTill` carries no timezone; pending vendor question Q-OPT.
+    NAUSYS_OPTION_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

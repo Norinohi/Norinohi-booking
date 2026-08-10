@@ -1,0 +1,27 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "companies": [
+    {
+      "id": 102701,
+      "name": "Adriatic Sailing d.o.o.",
+      "countryId": 1,
+      "city": "Split",
+      "address": "Uvala Baluni 8",
+      "zip": "21000",
+      "phone": "+385 21 000 000",
+      "email": "charter@example.com",
+      "web": "https://example.com",
+      "vatCode": "HR12345678901"
+    },
+    {
+      "id": 102702,
+      "name": "Ionian Yachting S.A.",
+      "countryId": 2,
+      "city": "Lefkada",
+      "address": "Marina Lefkas",
+      "phone": "+30 264 500 000",
+      "email": "info@example.gr"
+    }
+  ]
+}

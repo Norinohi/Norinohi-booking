@@ -1,0 +1,39 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "services": [
+    {
+      "id": 8001,
+      "priceMeasureId": 1,
+      "name": {
+        "textEN": "Final cleaning",
+        "textDE": "Endreinigung",
+        "textHR": "Zavrsno ciscenje"
+      }
+    },
+    {
+      "id": 8002,
+      "priceMeasureId": 1,
+      "name": {
+        "textEN": "Tourist tax",
+        "textHR": "Boravisna pristojba"
+      }
+    },
+    {
+      "id": 8003,
+      "priceMeasureId": 2,
+      "name": {
+        "textEN": "Skipper",
+        "textDE": "Skipper",
+        "textHR": "Skiper"
+      }
+    },
+    {
+      "id": 8004,
+      "priceMeasureId": 1,
+      "name": {
+        "textHR": "Posteljina"
+      }
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "yachts": [
+    {
+      "id": 4711001,
+      "name": "Marlin",
+      "companyId": 102701,
+      "baseId": 900101,
+      "locationId": 53271,
+      "yachtModelId": 7101,
+      "yachtCategoryId": 51,
+      "cabins": 4,
+      "wc": 3,
+      "berths": 10,
+      "berthsCabin": 8,
+      "buildYear": 2021,
+      "renewYear": 2024,
+      "length": 14.27,
+      "beam": 4.35,
+      "draft": 2.1,
+      "deposit": "2000.00",
+      "depositWhenInsured": "500.00",
+      "commission": 15.0,
+      "charterType": "BAREBOAT",
+      "crewedType": "BAREBOAT",
+      "mainPictureUrl": "https://ws.nausys.com/media/yacht/4711001/main.jpg",
+      "picturesURL": [
+        "https://ws.nausys.com/media/yacht/4711001/main.jpg",
+        "https://ws.nausys.com/media/yacht/4711001/salon.jpg",
+        "https://ws.nausys.com/media/yacht/4711001/cabin.jpg"
+      ],
+      "standardYachtEquipment": [
+        { "id": 991001, "equipmentId": 51001, "quantity": 1 },
+        { "id": 991002, "equipmentId": 51002, "quantity": 1 },
+        { "id": 991003, "equipmentId": 51010, "quantity": 1 }
+      ],
+      "checkInPeriods": [
+        {
+          "dateFrom": "04.04.2026",
+          "dateTo": "31.10.2026",
+          "checkInDay": 6,
+          "checkOutDay": 6,
+          "minimalDays": 7,
+          "checkInTime": "17:00",
+          "checkOutTime": "08:00"
+        }
+      ],
+      "euminia": { "total": 9.2, "reviewsCount": 34 }
+    },
+    {
+      "id": 4711002,
+      "name": "Ariel",
+      "companyId": 102701,
+      "baseId": 900102,
+      "locationId": 53272,
+      "yachtModelId": 7203,
+      "yachtCategoryId": 52,
+      "cabins": 4,
+      "wc": 4,
+      "berths": 12,
+      "berthsCabin": 8,
+      "buildYear": 2019,
+      "length": 12.8,
+      "beam": 7.7,
+      "draft": 1.25,
+      "deposit": "3000.00",
+      "commission": 15.0,
+      "charterType": "BAREBOAT",
+      "mainPictureUrl": "https://ws.nausys.com/media/yacht/4711002/main.jpg",
+      "picturesURL": ["https://ws.nausys.com/media/yacht/4711002/main.jpg"],
+      "standardYachtEquipment": [{ "equipmentId": 51010, "quantity": 2 }],
+      "checkInPeriods": [
+        {
+          "dateFrom": "02.05.2026",
+          "dateTo": "26.09.2026",
+          "checkInDay": 6,
+          "checkOutDay": 6,
+          "minimalDays": 7
+        }
+      ]
+    }
+  ]
+}

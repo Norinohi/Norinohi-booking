@@ -1,0 +1,47 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "equipment": [
+    {
+      "id": 51001,
+      "categoryId": 4001,
+      "name": {
+        "textEN": "Chart plotter",
+        "textDE": "Kartenplotter",
+        "textHR": "Kartplotter"
+      }
+    },
+    {
+      "id": 51002,
+      "categoryId": 4001,
+      "name": {
+        "textEN": "Autopilot",
+        "textHR": "Autopilot"
+      }
+    },
+    {
+      "id": 51010,
+      "categoryId": 4002,
+      "name": {
+        "textEN": "Air conditioning",
+        "textDE": "Klimaanlage",
+        "textHR": "Klima uredaj"
+      }
+    },
+    {
+      "id": 51011,
+      "categoryId": 4002,
+      "name": {
+        "textEN": "Bow thruster",
+        "textHR": "Bocni propeler"
+      }
+    },
+    {
+      "id": 51020,
+      "categoryId": 4003,
+      "name": {
+        "textHR": "Splav za spasavanje"
+      }
+    }
+  ]
+}

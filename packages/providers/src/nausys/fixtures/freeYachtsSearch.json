@@ -1,0 +1,60 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "from": "04.07.2026",
+  "to": "11.07.2026",
+  "totalCount": 23,
+  "totalPages": 3,
+  "currentPage": 1,
+  "resultsPerPage": 10,
+  "startIdx": 0,
+  "endIdx": 9,
+  "freeYachtsInPeriod": [
+    {
+      "yachtId": 4711001,
+      "periodFrom": "04.07.2026",
+      "periodTo": "11.07.2026",
+      "checkIn": "17:00",
+      "checkOut": "08:00",
+      "locationFromId": 53271,
+      "locationToId": 53271,
+      "price": {
+        "priceListPrice": "3900.00",
+        "clientPrice": "3340.00",
+        "currency": "EUR",
+        "discounts": [{ "discountItemId": 6001, "amount": 10, "type": "PERCENTAGE" }]
+      },
+      "paymentPlans": [
+        { "date": "10.02.2026", "percentage": 50 },
+        { "date": "04.06.2026", "percentage": 50 }
+      ],
+      "obligatoryExtras": [
+        {
+          "serviceId": 8001,
+          "amount": "150.00",
+          "listPrice": "150.00",
+          "currency": "EUR",
+          "quantity": 1,
+          "priceMeasureId": 1,
+          "calculationType": "SEPARATE_PAYMENT"
+        }
+      ],
+      "status": "FREE",
+      "totalPriceWithExtras": "3490.00"
+    },
+    {
+      "yachtId": 4711002,
+      "periodFrom": "04.07.2026",
+      "periodTo": "11.07.2026",
+      "locationFromId": 53272,
+      "locationToId": 53272,
+      "price": {
+        "priceListPrice": "6200.00",
+        "clientPrice": "5890.00",
+        "currency": "EUR"
+      },
+      "status": "FREE",
+      "totalPriceWithExtras": "5890.00"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "countries": [
+    {
+      "id": 1,
+      "code": "HRV",
+      "code2": "HR",
+      "name": {
+        "textEN": "Croatia",
+        "textDE": "Kroatien",
+        "textHR": "Hrvatska",
+        "textIT": "Croazia",
+        "textSI": "Hrvaska"
+      }
+    },
+    {
+      "id": 2,
+      "code": "GRC",
+      "code2": "GR",
+      "name": {
+        "textEN": "Greece",
+        "textDE": "Griechenland",
+        "textHR": "Grcka",
+        "textIT": "Grecia"
+      }
+    },
+    {
+      "id": 3,
+      "code": "ITA",
+      "code2": "IT",
+      "name": {
+        "textDE": "Italien",
+        "textHR": "Italija",
+        "textIT": "Italia"
+      }
+    }
+  ]
+}

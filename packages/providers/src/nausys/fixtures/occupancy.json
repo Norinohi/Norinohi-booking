@@ -1,0 +1,42 @@
+{
+  "status": "OK",
+  "errorCode": 0,
+  "companyId": 102701,
+  "year": 2026,
+  "reservations": [
+    {
+      "id": 88001,
+      "yachtId": 4711001,
+      "locationFromId": 53271,
+      "locationToId": 53271,
+      "reservationType": "RESERVATION",
+      "periodFrom": "27.06.2026",
+      "checkInTime": "17:00",
+      "periodTo": "04.07.2026",
+      "checkOutTime": "08:00"
+    },
+    {
+      "id": 88002,
+      "yachtId": 4711001,
+      "locationFromId": 53271,
+      "locationToId": 53271,
+      "reservationType": "OPTION",
+      "periodFrom": "18.07.2026",
+      "checkInTime": "17:00",
+      "periodTo": "25.07.2026",
+      "checkOutTime": "08:00",
+      "optionValidTill": "12.02.2026 18:00"
+    },
+    {
+      "id": 88010,
+      "yachtId": 4711002,
+      "locationFromId": 53272,
+      "locationToId": 53272,
+      "reservationType": "RESERVATION",
+      "periodFrom": "11.07.2026",
+      "checkInTime": "17:00",
+      "periodTo": "18.07.2026",
+      "checkOutTime": "09:00"
+    }
+  ]
+}
