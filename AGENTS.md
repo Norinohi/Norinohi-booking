@@ -33,7 +33,7 @@ pnpm db:push                 # BROKEN on this schema — see packages/db/AGENTS.
 ```
 
 `db:push` is listed for completeness only. Drizzle-kit 0.31.10 reads unique-constraint
-columns back in alphabetical order, so it believes nine of our constraints are missing
+columns back in alphabetical order, so it believes ten of our constraints are missing
 and fails trying to re-create them. Use `db:generate` + `db:migrate`. A database that
 was built with `push` before this was understood has an empty migration ledger and
 needs `pnpm db:baseline --apply` once before `db:migrate` will run.

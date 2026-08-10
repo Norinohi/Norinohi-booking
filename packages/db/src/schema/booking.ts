@@ -147,11 +147,17 @@ export const booking = pgTable(
     /** Null until the Payment step; the flow can also end without either. */
     paymentMethod: bookingPaymentMethod("payment_method"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),
-    /** Unique so a retried checkout cannot create a second booking (§6.2). */
-    idempotencyKey: text("idempotency_key").notNull().unique(),
+    /**
+     * Unique per customer so a retried checkout cannot create a second booking
+     * (§6.2). Scoped to the user rather than globally: the key is chosen by the
+     * client, so any deterministic scheme collides across customers, and a global
+     * constraint would let one customer's key stop another from booking at all.
+     */
+    idempotencyKey: text("idempotency_key").notNull(),
     ...timestamps,
   },
   (t) => [
+    unique("booking_user_idempotency_uq").on(t.userId, t.idempotencyKey),
     index("booking_user_idx").on(t.userId),
     index("booking_status_idx").on(t.status),
     index("booking_listing_idx").on(t.listingId),

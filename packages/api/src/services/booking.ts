@@ -267,8 +267,12 @@ export async function createHold(
 
 /**
  * A retried submit returns the booking the first call created rather than holding
- * a second option (§6.2). Another user's key is refused outright — the key is
- * client-supplied, so it must not become a way to read someone else's booking.
+ * a second option (§6.2).
+ *
+ * Scoped to the customer, because the key comes from the client: two people whose
+ * browsers derive the same key must each get their own booking. Matching globally
+ * meant the second one was refused outright and could not check out at all, and it
+ * made the endpoint an oracle for whether a given key existed.
  */
 async function findHoldByKey(
   db: Database,
@@ -278,11 +282,9 @@ async function findHoldByKey(
   const [existing] = await db
     .select()
     .from(booking)
-    .where(eq(booking.idempotencyKey, idempotencyKey))
+    .where(and(eq(booking.userId, userId), eq(booking.idempotencyKey, idempotencyKey)))
     .limit(1);
 
-  if (!existing) return undefined;
-  if (existing.userId !== userId) throw new ORPCError("FORBIDDEN");
   return existing;
 }
 

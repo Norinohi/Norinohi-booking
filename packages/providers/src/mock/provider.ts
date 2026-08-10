@@ -27,13 +27,8 @@ import {
 } from "../types";
 import type { InventoryProvider } from "../provider";
 import { availability } from "./data";
-import {
-  mapSlotToOffer,
-  projectMockCatalogue,
-  rawEntities,
-  resolveFixtureReference,
-  sourceHash,
-} from "../mapping/mock";
+import { mapSlotToOffer, projectMockCatalogue, rawEntities, sourceHash } from "../mapping/mock";
+import { fixtureInventorySource, resolveReference, type MockInventorySource } from "./inventory";
 import { SlotUnavailableError } from "../shared/errors";
 
 const quoteTtlMs = 15 * 60 * 1000;
@@ -65,8 +60,23 @@ function crewCodesFor(crewType: CrewType | undefined): Set<string> {
   return new Set(included.map((item) => item.code));
 }
 
+export interface MockProviderOptions {
+  /**
+   * Defaults to the fixtures. The registry passes a database-backed source so the
+   * provider quotes the same inventory `availability.calendar` publishes; without
+   * that the two disagree and a bookable-looking week cannot be priced.
+   */
+  inventory?: MockInventorySource;
+}
+
 export class MockInventoryProvider implements InventoryProvider {
   readonly key = "mock" as const;
+
+  private readonly inventory: MockInventorySource;
+
+  constructor(options: MockProviderOptions = {}) {
+    this.inventory = options.inventory ?? fixtureInventorySource();
+  }
 
   async *syncCatalogue(_cursor?: string): AsyncIterable<RawEntity> {
     for (const entity of rawEntities()) {
@@ -118,21 +128,19 @@ export class MockInventoryProvider implements InventoryProvider {
 
   async getAvailability(input: ListingPeriod): Promise<AvailabilityCalendar> {
     const parsed = listingPeriodSchema.parse(input);
-    const slots = availability.slots
-      .filter((slot) => parsed.listingId.endsWith(slot.yachtId))
-      .filter((slot) => slot.startDate >= parsed.from && slot.endDate <= parsed.to)
-      .map((slot) => ({
-        startDate: slot.startDate,
-        endDate: slot.endDate,
-        status: slot.status,
-        price: {
-          amountMinor: slot.priceMinor,
-          currency: slot.currency,
-        },
-        minNights: slot.minNights,
-        checkinWeekday: slot.checkinWeekday,
-        checkoutWeekday: slot.checkoutWeekday,
-      }));
+    const found = await this.inventory.listSlots(parsed.listingId, parsed.from, parsed.to);
+    const slots = found.map((slot) => ({
+      startDate: slot.startDate,
+      endDate: slot.endDate,
+      status: slot.status,
+      price: {
+        amountMinor: slot.priceMinor,
+        currency: slot.currency,
+      },
+      minNights: slot.minNights,
+      checkinWeekday: slot.checkinWeekday,
+      checkoutWeekday: slot.checkoutWeekday,
+    }));
 
     return availabilityCalendarSchema.parse({
       listingId: parsed.listingId,
@@ -142,12 +150,7 @@ export class MockInventoryProvider implements InventoryProvider {
 
   async getQuote(input: QuoteRequest): Promise<ProviderQuote> {
     const parsed = quoteRequestSchema.parse(input);
-    const slot = availability.slots.find(
-      (item) =>
-        parsed.listingId.endsWith(item.yachtId) &&
-        item.startDate === parsed.checkIn &&
-        item.endDate === parsed.checkOut,
-    );
+    const slot = await this.inventory.findSlot(parsed.listingId, parsed.checkIn, parsed.checkOut);
 
     if (!slot || slot.status !== "available") {
       throw new SlotUnavailableError("Requested slot is not available");
@@ -255,7 +258,7 @@ export class MockInventoryProvider implements InventoryProvider {
 
   async cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
     const parsed = providerReservationRefSchema.parse(ref);
-    const located = resolveFixtureReference(parsed.providerReservationId);
+    const located = await resolveReference(parsed.providerReservationId, this.inventory);
 
     return providerReservationSchema.parse({
       id: parsed.providerReservationId,
@@ -269,7 +272,7 @@ export class MockInventoryProvider implements InventoryProvider {
   }
 
   async addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
-    const located = resolveFixtureReference(input.ref.providerReservationId);
+    const located = await resolveReference(input.ref.providerReservationId, this.inventory);
 
     return this.getQuote({
       listingId: located.listingId,

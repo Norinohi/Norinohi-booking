@@ -19,7 +19,7 @@ pnpm db:baseline  # repairs a ledger left behind by db:push (see below)
 
 **`db:push` does not work against this schema** on drizzle-kit 0.31.10, and reordering
 our constraints to make it work would be the wrong trade. Its introspection returns
-unique-constraint columns in alphabetical order rather than index order, so all nine
+unique-constraint columns in alphabetical order rather than index order, so all ten
 of our non-alphabetical unique constraints look absent — `listing_amenity_uq` reads
 back as `(amenity_id, listing_id)` when the database holds `(listing_id, amenity_id)`.
 Push then offers to truncate the table, and adding the constraint fails either way
