@@ -5,7 +5,7 @@ import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import Loader from "@/components/shared/feedback/loader";
@@ -13,7 +13,7 @@ import type { FiltersState } from "@/components/shared/form/filters";
 
 import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
-import { toSearchInput } from "../../lib/to-search-input";
+import { useSearchInput } from "../../hooks/use-search-input";
 import { SORT_OPTIONS, type SortValue } from "../search/results-header";
 import MapBoatCard from "./map-boat-card";
 
@@ -26,7 +26,6 @@ export type MapListPanelProps = {
 export default function MapListPanel({ filters, defaults, className }: MapListPanelProps) {
   const t = useTranslations("Common");
   const { toMapCard } = useListingCards();
-  const locale = useLocale();
   const [sort, setSort] = useState<SortValue>("recommended");
   const [page, setPage] = useState(1);
 
@@ -36,9 +35,8 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
     setPage(1);
   }
 
-  const { data, isLoading } = useQuery(
-    resultsQueryOptions(toSearchInput(filters, defaults, { sort, page, locale })),
-  );
+  const input = useSearchInput(filters, defaults, { sort, page });
+  const { data, isLoading } = useQuery(resultsQueryOptions(input));
   const boats = data?.items.map(({ listing }) => toMapCard(listing)) ?? [];
   const pagination = data?.pagination;
 

@@ -4,7 +4,7 @@ import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -27,7 +27,7 @@ import { useFillToFold } from "@/hooks/use-fill-to-fold";
 import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
 import { useSearchFilters } from "../../hooks/use-search-filters";
-import { toSearchInput } from "../../lib/to-search-input";
+import { useSearchInput } from "../../hooks/use-search-input";
 import ResultsHeader, { SORT_OPTIONS } from "./results-header";
 import SearchBar from "./search-bar";
 
@@ -89,10 +89,8 @@ function ResultsColumn() {
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
 
   const { toCard } = useListingCards();
-  const locale = useLocale();
-  const { data, isLoading } = useQuery(
-    resultsQueryOptions(toSearchInput(filters, defaults, { sort, page, locale })),
-  );
+  const input = useSearchInput(filters, defaults, { sort, page });
+  const { data, isLoading } = useQuery(resultsQueryOptions(input));
   const boats = data?.items.map(({ listing }) => toCard(listing)) ?? [];
   const pagination = data?.pagination;
   const chips = useFilterChips(filters);

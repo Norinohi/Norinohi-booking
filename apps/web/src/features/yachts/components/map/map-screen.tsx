@@ -5,7 +5,7 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, X } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useState } from "react";
@@ -22,7 +22,7 @@ import {
 
 import { mapMarkersQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
-import { toSearchInput } from "../../lib/to-search-input";
+import { useSearchInput } from "../../hooks/use-search-input";
 import MapBoatPopup from "./map-boat-popup";
 import type { MapInstance } from "./map-canvas";
 import MapListPanel from "./map-list-panel";
@@ -69,14 +69,10 @@ export default function MapScreen() {
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
   const { toMapCard } = useListingCards();
-  const locale = useLocale();
   const chips = useFilterChips(filters);
 
-  const { data } = useQuery(
-    mapMarkersQueryOptions(
-      toSearchInput(filters, defaults, { sort: "recommended", page: 1, locale }),
-    ),
-  );
+  const input = useSearchInput(filters, defaults, { sort: "recommended", page: 1 });
+  const { data } = useQuery(mapMarkersQueryOptions(input));
   const markers = data?.markers ?? [];
 
   const selected = selectedListingId
