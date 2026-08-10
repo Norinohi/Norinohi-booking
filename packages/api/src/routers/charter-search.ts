@@ -22,7 +22,7 @@ export const charterSearchRouter = {
       operationId: "searchCharterListings",
       summary: "Search available yacht listings",
       description:
-        "Returns listing cards from the database-backed search read model. Page pagination is the default for the results pager and returns total/range metadata. Supplying cursor switches to forward cursor pagination.",
+        "Returns listing cards from the database-backed search read model. Page pagination is the default for the results pager and returns total/range metadata. Supplying cursor switches to forward cursor pagination. Card labels (category, crew, sail type, country, region, location, marina, amenities) follow locale, falling back to English where a translation is missing.",
       tags: ["Charter Search"],
       successDescription:
         "Matching yacht listings with either page pagination metadata or a next cursor.",
@@ -35,6 +35,7 @@ export const charterSearchRouter = {
         minCabins: 4,
         maxPriceMinor: 1_200_000,
         currency: "EUR",
+        locale: "uk",
         page: 1,
         pageSize: 10,
         sort: "recommended",
@@ -82,12 +83,13 @@ export const charterSearchRouter = {
       operationId: "listCharterSearchMapMarkers",
       summary: "List search map markers",
       description:
-        "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, coordinates, price hint, and a card-ready listing summary for map popups and side panels.",
+        "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, coordinates, price hint, and a card-ready listing summary for map popups and side panels. The summary's labels follow locale, on the same rules as the results endpoint.",
       tags: ["Charter Search"],
       successDescription: "Map markers for listings matching the supplied filters.",
       spec: withParameterExamples({
         destination: "Croatia",
         currency: "EUR",
+        locale: "uk",
         limit: 50,
       }),
     })

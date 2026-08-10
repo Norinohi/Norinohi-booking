@@ -4,6 +4,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../schema";
 import { crewOptionsFor } from "./crew";
 import { decodeSearchCursor, encodeSearchCursor, type SearchCursor } from "./cursor";
+import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
@@ -37,7 +38,6 @@ const NULL_PRICE_ASC = 2_147_483_647;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
 const CURRENT_YEAR = new Date().getUTCFullYear();
-const DEFAULT_LOCALE = "en";
 
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   { value: "7", label: "7 days" },
@@ -75,7 +75,11 @@ export async function searchListings(
     limit ${limit + 1}
   `);
 
-  const items = rows.rows.slice(0, limit).map(normalizeSearchRow);
+  const items = await localizeSearchDocs(
+    db,
+    rows.rows.slice(0, limit).map(normalizeSearchRow),
+    input.locale,
+  );
   const last = items.at(-1);
   const hasNext = rows.rows.length > limit;
 
@@ -111,7 +115,7 @@ async function searchListingsByPage(
   ]);
 
   const totalItems = countRows.rows[0]?.totalItems ?? 0;
-  const items = rows.rows.map(normalizeSearchRow);
+  const items = await localizeSearchDocs(db, rows.rows.map(normalizeSearchRow), input.locale);
 
   return {
     items,
