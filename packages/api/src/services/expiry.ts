@@ -1,6 +1,6 @@
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
-import { createInventoryProvider, type InventoryProvider } from "@yacht-charter/providers";
+import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 
 import type { Database } from "../context";
@@ -33,8 +33,8 @@ export type SweepResult = {
  */
 export async function sweepExpiries(
   db: Database,
+  provider: InventoryProvider,
   now: Date = new Date(),
-  provider: InventoryProvider = createInventoryProvider(),
 ): Promise<SweepResult> {
   const quotesExpired = await expireQuotes(db, now);
   const { holdsExpired, releaseFailures } = await expireHolds(db, now, provider);
@@ -71,6 +71,8 @@ async function expireHolds(
       status: booking.status,
       providerName: booking.provider,
       providerOptionId: booking.providerOptionId,
+      providerReservationId: booking.providerReservationId,
+      providerReservationUuid: booking.providerReservationUuid,
     })
     .from(booking)
     .where(
@@ -89,7 +91,10 @@ async function expireHolds(
 
     if (candidate.providerOptionId) {
       try {
-        await provider.cancelOption(candidate.providerOptionId);
+        await provider.cancelOption({
+          providerReservationId: candidate.providerReservationId ?? candidate.providerOptionId,
+          securityToken: candidate.providerReservationUuid ?? undefined,
+        });
       } catch (error) {
         releaseError = error instanceof Error ? error.message : String(error);
         releaseFailures.push({ bookingId: candidate.id, message: releaseError });

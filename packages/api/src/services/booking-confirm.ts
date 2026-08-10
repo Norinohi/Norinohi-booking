@@ -1,5 +1,6 @@
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
-import { createInventoryProvider, type InventoryProvider } from "@yacht-charter/providers";
+import { quote } from "@yacht-charter/db/schema/quote";
+import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
@@ -25,12 +26,22 @@ export type ConfirmOutcome =
  */
 export async function confirmBookingWithProvider(
   db: Database,
+  provider: InventoryProvider,
   bookingId: string,
-  provider: InventoryProvider = createInventoryProvider(),
 ): Promise<ConfirmOutcome> {
-  const [row] = await db.select().from(booking).where(eq(booking.id, bookingId)).limit(1);
-  if (!row) return { outcome: "skipped", reason: "Unknown booking" };
+  // The quote is joined because committing a reservation needs the charter period
+  // and the price the customer agreed to, not just the booking's own columns.
+  const [found] = await db
+    .select({ booking, quote })
+    .from(booking)
+    .innerJoin(quote, eq(quote.id, booking.quoteId))
+    .where(eq(booking.id, bookingId))
+    .limit(1);
 
+  if (!found) return { outcome: "skipped", reason: "Unknown booking" };
+
+  const row = found.booking;
+  const priced = found.quote;
   const current = row.status as BookingStatus;
 
   // Already done, or moved on by something else — either way, do not re-commit.
@@ -49,11 +60,27 @@ export async function confirmBookingWithProvider(
   try {
     const reservation = await provider.confirmBooking({
       listingId: row.listingId,
-      quoteId: row.quoteId,
+      quoteId: priced.providerQuoteId ?? row.quoteId,
+      checkIn: priced.checkIn,
+      checkOut: priced.checkOut,
+      guests: priced.guests,
+      extras: priced.extras,
+      priceSourceHash: priced.priceSourceHash,
       customer: {
         name: row.guestFullName ?? "Guest",
         email: row.guestEmail ?? "unknown@example.com",
+        phone: row.guestPhone ?? undefined,
       },
+      // The handle the option step produced. Providers that chain their booking
+      // calls need it plus the token it last returned; ours is stale the moment
+      // anything about the reservation changes.
+      reservation: row.providerReservationId
+        ? {
+            providerReservationId: row.providerReservationId,
+            providerOptionId: row.providerOptionId ?? undefined,
+            securityToken: row.providerReservationUuid ?? undefined,
+          }
+        : undefined,
     });
 
     await markConfirmed(db, bookingId, row.provider, row.userId, reservation);
@@ -102,6 +129,9 @@ async function markConfirmed(
       status: "CONFIRMED",
       confirmedAt: new Date(),
       providerReservationId: reservation.providerReservationId ?? null,
+      // Only when the provider issued a new one: a call that returns no token has
+      // not rotated it, and overwriting with null would strand the reservation.
+      ...(reservation.securityToken ? { providerReservationUuid: reservation.securityToken } : {}),
       providerStatus: reservation.status,
     })
     .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));

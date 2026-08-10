@@ -2,27 +2,53 @@ import {
   availabilityCalendarSchema,
   availabilitySearchSchema,
   availableOfferSchema,
+  bookingDraftSchema,
   listingPeriodSchema,
   providerCapabilitiesSchema,
   providerQuoteSchema,
+  providerReservationRefSchema,
+  providerReservationSchema,
   quoteRequestSchema,
   type AvailabilityCalendar,
   type AvailabilitySearch,
   type AvailableOffer,
   type BookingDraft,
+  type CanonicalCatalogue,
   type ListingPeriod,
   type ProviderCapabilities,
   type ProviderExtrasMutation,
   type ProviderQuote,
+  type ProviderRecordSet,
   type ProviderReservation,
+  type ProviderReservationRef,
   type QuoteRequest,
   type RawEntity,
 } from "../types";
 import type { InventoryProvider } from "../provider";
 import { availability } from "./data";
-import { mapSlotToOffer, rawEntities, sourceHash } from "../mapping/mock";
+import {
+  mapSlotToOffer,
+  projectMockCatalogue,
+  rawEntities,
+  resolveFixtureReference,
+  sourceHash,
+} from "../mapping/mock";
+import { SlotUnavailableError } from "../shared/errors";
 
 const quoteTtlMs = 15 * 60 * 1000;
+
+const holdMinutes = 48 * 60;
+
+/** The mock keeps no crew list, so extras are re-priced for a nominal party. */
+const extrasMutationGuests = 2;
+
+/**
+ * Stands in for the rotating per-reservation token real providers issue: it has
+ * to change at every step so a caller that fails to persist the latest one is
+ * caught under PROVIDER_MODE=mock rather than in production.
+ */
+const securityTokenFor = (reservationId: string, step: string) =>
+  sourceHash({ reservationId, step }).slice(0, 32);
 
 export class MockInventoryProvider implements InventoryProvider {
   readonly key = "mock" as const;
@@ -31,6 +57,10 @@ export class MockInventoryProvider implements InventoryProvider {
     for (const entity of rawEntities()) {
       yield entity;
     }
+  }
+
+  projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
+    return projectMockCatalogue(records);
   }
 
   async searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]> {
@@ -105,7 +135,7 @@ export class MockInventoryProvider implements InventoryProvider {
     );
 
     if (!slot || slot.status !== "available") {
-      throw new Error("Requested slot is not available");
+      throw new SlotUnavailableError("Requested slot is not available");
     }
 
     const selectedExtras = availability.extras.filter(
@@ -166,47 +196,61 @@ export class MockInventoryProvider implements InventoryProvider {
   }
 
   async createOption(input: BookingDraft): Promise<ProviderReservation> {
-    return {
-      id: `res_${input.quoteId}`,
+    const draft = bookingDraftSchema.parse(input);
+    const reservationId = `res_${draft.quoteId}`;
+
+    return providerReservationSchema.parse({
+      id: reservationId,
       provider: "mock",
-      listingId: input.listingId,
-      quoteId: input.quoteId,
+      listingId: draft.listingId,
+      quoteId: draft.quoteId,
       status: "option_held",
-      providerOptionId: `opt_${input.quoteId}`,
-      holdExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-    };
+      providerReservationId: reservationId,
+      providerOptionId: `opt_${draft.quoteId}`,
+      securityToken: securityTokenFor(reservationId, "option"),
+      holdExpiresAt: new Date(Date.now() + holdMinutes * 60 * 1000).toISOString(),
+    });
   }
 
   async confirmBooking(input: BookingDraft): Promise<ProviderReservation> {
-    return {
-      id: `res_${input.quoteId}`,
-      provider: "mock",
-      listingId: input.listingId,
-      quoteId: input.quoteId,
-      status: "confirmed",
-      providerReservationId: `mock-booking-${input.quoteId}`,
-    };
-  }
+    const draft = bookingDraftSchema.parse(input);
+    const reservationId = draft.reservation?.providerReservationId ?? `res_${draft.quoteId}`;
 
-  async cancelOption(reservationId: string): Promise<ProviderReservation> {
-    return {
+    return providerReservationSchema.parse({
       id: reservationId,
       provider: "mock",
-      listingId: "unknown",
-      quoteId: "unknown",
+      listingId: draft.listingId,
+      quoteId: draft.quoteId,
+      status: "confirmed",
+      providerReservationId: reservationId,
+      providerOptionId: draft.reservation?.providerOptionId,
+      securityToken: securityTokenFor(reservationId, "booking"),
+    });
+  }
+
+  async cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
+    const parsed = providerReservationRefSchema.parse(ref);
+    const located = resolveFixtureReference(parsed.providerReservationId);
+
+    return providerReservationSchema.parse({
+      id: parsed.providerReservationId,
+      provider: "mock",
+      listingId: located.listingId,
+      quoteId: located.quoteId,
       status: "cancelled",
-    };
+      providerReservationId: parsed.providerReservationId,
+      securityToken: securityTokenFor(parsed.providerReservationId, "storno"),
+    });
   }
 
   async addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
-    const listingId = input.reservationId.includes("lagoon")
-      ? "ylst_yacht-lagoon-42-aurora"
-      : "ylst_yacht-bavaria-c45-luna";
+    const located = resolveFixtureReference(input.ref.providerReservationId);
+
     return this.getQuote({
-      listingId,
-      checkIn: "2026-08-08",
-      checkOut: "2026-08-15",
-      guests: 2,
+      listingId: located.listingId,
+      checkIn: located.checkIn,
+      checkOut: located.checkOut,
+      guests: extrasMutationGuests,
       extras: input.extras,
       currency: "EUR",
     });
@@ -219,6 +263,7 @@ export class MockInventoryProvider implements InventoryProvider {
       optionExpiryOwnedByProvider: true,
       supportsExtrasMutation: true,
       supportsLiveQuote: true,
+      minHoldMinutes: holdMinutes,
     });
   }
 }

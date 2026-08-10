@@ -7,6 +7,7 @@ import {
   type QuotePaymentPolicy,
 } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
+import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
 import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -155,7 +156,9 @@ async function priceOrConflict(
   try {
     return await provider.getQuote(input);
   } catch (error) {
-    if (error instanceof Error && error.message === "Requested slot is not available") {
+    // Matched on the type, not the wording: a provider rephrasing its message must
+    // not silently turn a sold-out week into a 500.
+    if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;

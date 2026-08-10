@@ -5,7 +5,7 @@ import {
   providerWebhookEvent,
 } from "@yacht-charter/db/schema/booking";
 import { env } from "@yacht-charter/env/server";
-import { createInventoryProvider, type InventoryProvider } from "@yacht-charter/providers";
+import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
@@ -27,11 +27,9 @@ export type WebhookOutcome =
  */
 export async function handleStripeWebhook(
   db: Database,
+  provider: InventoryProvider,
   rawBody: string,
   signature: string | null,
-  // Injectable for tests; apps/server is transport-only and does not depend on
-  // the providers package.
-  provider: InventoryProvider = createInventoryProvider(),
 ): Promise<WebhookOutcome> {
   const stripe = stripeClient();
   if (!stripe || !env.STRIPE_WEBHOOK_SECRET) {
@@ -111,7 +109,7 @@ async function onSucceeded(
 
   // Money is in; the provider is the final arbiter of the reservation itself.
   // Shared with admin invoice settlement so both routes to CONFIRMED behave alike.
-  const outcome = await confirmBookingWithProvider(db, row.booking.id, provider);
+  const outcome = await confirmBookingWithProvider(db, provider, row.booking.id);
 
   // Surfaces to the webhook caller, which records it against the event row.
   if (outcome.outcome === "rejected") throw new Error(outcome.message);

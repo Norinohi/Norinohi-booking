@@ -347,7 +347,18 @@ async function holdOption(
     const reservation = await provider.createOption({
       listingId: priced.listingId,
       quoteId: priced.providerQuoteId ?? priced.id,
-      customer: { name: account.name, email: account.email },
+      checkIn: priced.checkIn,
+      checkOut: priced.checkOut,
+      guests: priced.guests,
+      extras: priced.extras,
+      // The provider re-prices before holding and refuses if this no longer
+      // matches what the customer agreed to.
+      priceSourceHash: priced.priceSourceHash,
+      customer: {
+        name: account.name,
+        email: account.email,
+        phone: created.guestPhone ?? undefined,
+      },
     });
 
     let held: BookingRow;
@@ -355,6 +366,9 @@ async function holdOption(
       held = await transition(db, pending, "OPTION_HELD", {
         providerOptionId: reservation.providerOptionId ?? null,
         providerReservationId: reservation.providerReservationId ?? null,
+        // Written with the ids it belongs to: a token persisted separately, or
+        // later, is a token that can already be stale.
+        providerReservationUuid: reservation.securityToken ?? null,
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
       });
@@ -403,6 +417,7 @@ async function holdOption(
  */
 export async function cancelBooking(
   db: Database,
+  provider: InventoryProvider,
   id: string,
   reason: string | undefined,
   actor: { userId: string; isAdmin: boolean },
@@ -440,6 +455,8 @@ export async function cancelBooking(
           reason: reason ?? null,
         },
       );
+
+      await releaseProviderOption(db, provider, row.booking);
     }
 
     return { id: moved.id, status: moved.status };
@@ -448,6 +465,50 @@ export async function cancelBooking(
       throw new ORPCError("CONFLICT", { message: error.message });
     }
     throw error;
+  }
+}
+
+/**
+ * Hands the slot back to the provider. Without this a cancelled booking leaves a
+ * live option on a real yacht, unbookable until the provider expires it.
+ *
+ * Deliberately best-effort and after the local transition: the customer's
+ * cancellation has already succeeded, and a provider that refuses here must not
+ * undo it. The failure is recorded for the reconciliation pass instead.
+ */
+async function releaseProviderOption(
+  db: Database,
+  provider: InventoryProvider,
+  row: BookingRow,
+): Promise<void> {
+  if (!provider.capabilities().supportsOptions || !row.providerOptionId) return;
+
+  const reservationId = row.providerReservationId ?? row.providerOptionId;
+
+  try {
+    const released = await provider.cancelOption({
+      providerReservationId: reservationId,
+      securityToken: row.providerReservationUuid ?? undefined,
+    });
+
+    await db
+      .update(booking)
+      .set({
+        providerReservationUuid: released.securityToken ?? row.providerReservationUuid,
+        providerStatus: released.status,
+      })
+      .where(eq(booking.id, row.id));
+
+    await recordEvent(db, row.id, "cancel_succeeded", row.provider, reservationId, {
+      reservation: released,
+    });
+  } catch (error) {
+    // `provider_reservation_event_kind` has no cancel_failed; the sweeper reports
+    // the same outcome the same way, as an attempted release that did not land.
+    await recordEvent(db, row.id, "option_released", row.provider, reservationId, {
+      released: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
