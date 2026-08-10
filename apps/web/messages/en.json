@@ -94,6 +94,8 @@
     },
     "confirmation": {
       "reserved": "Your yacht is reserved!",
+      "notFound": "Booking not found",
+      "browse": "Browse yachts",
       "remaining": "The remaining {amount} will be paid at check-in.",
       "emailed": "We've sent a confirmation to your email",
       "viewBooking": "View Booking",

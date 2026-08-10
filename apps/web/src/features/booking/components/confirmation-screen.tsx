@@ -2,16 +2,25 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, Share2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { useQueryStates } from "nuqs";
+import { useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
+import EmptyState from "@/components/shared/feedback/empty-state";
+import Loader from "@/components/shared/feedback/loader";
+import { useMoney } from "@/hooks/use-money";
 import { GROUP, POP, RISE } from "@/lib/motion";
+import { client } from "@/utils/orpc";
 
-/* TODO: hardcoded charter mock until the booking record loads from the backend (M5). */
-const AMOUNT = "€5,000";
+import { bookingDetailQueryOptions } from "../api/queries";
+import { confirmationParsers } from "../lib/search-params";
 
+const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
 const CONFETTI_COLORS = ["#2f80ed", "#eab308", "#ec4899", "#22c55e", "#a855f7", "#f97316"];
 
 function noise(seed: number) {
@@ -58,11 +67,7 @@ function Confetti() {
                   duration: piece.duration,
                   delay: piece.delay,
                   ease: "easeIn",
-                  opacity: {
-                    duration: piece.duration,
-                    delay: piece.delay,
-                    times: [0, 0.08, 0.7, 1],
-                  },
+                  opacity: { duration: piece.duration, delay: piece.delay, times: [0, 0.08, 0.7, 1] },
                 }
           }
         />
@@ -71,12 +76,7 @@ function Confetti() {
   );
 }
 
-type SummaryRow = {
-  label: string;
-  value: string;
-  note?: string;
-  emphasis?: "bold" | "strong";
-};
+type SummaryRow = { label: string; value: string; note?: string; emphasis?: "bold" | "strong" };
 
 function Row({ row, last }: { row: SummaryRow; last: boolean }) {
   return (
@@ -121,40 +121,144 @@ function Row({ row, last }: { row: SummaryRow; last: boolean }) {
 
 export default function BookingConfirmationScreen() {
   const t = useTranslations("Booking.confirmation");
+  const tCrew = useTranslations("Common.crewTypes");
+  const money = useMoney();
+  const format = useFormatter();
+  const [{ bookingId }] = useQueryStates(confirmationParsers);
+  const [downloading, setDownloading] = useState(false);
+
+  const { data: booking, isLoading } = useQuery({
+    ...bookingDetailQueryOptions(bookingId ?? ""),
+    enabled: Boolean(bookingId),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-8">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-4 md:p-8">
+        <EmptyState
+          title={t("notFound")}
+          action={
+            <Button variant="brand" nativeButton={false} render={<Link href="/yachts" />}>
+              {t("browse")}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  /* checkIn/checkOut are ISO datetimes, so parse them as instants and render the day in UTC. */
+  const day = (date: string) => format.dateTime(new Date(date), "dayShort");
+  const crewLabel =
+    booking.crewType && (CREW_KEYS as readonly string[]).includes(booking.crewType)
+      ? tCrew(booking.crewType as (typeof CREW_KEYS)[number])
+      : booking.crewType;
+
+  const base = booking.priceLines.find((line) => !line.group && line.amount.amountMinor > 0);
+  const mandatory = booking.priceLines.filter((line) => line.group === "mandatory");
+  /*
+   * `booking.get` carries no `optional` price group, so the picked add-ons and crew come from the
+   * `extras[]` array. Mandatory items are dropped here so they are not repeated in both rows.
+   */
+  const mandatoryCodes = new Set(mandatory.map((line) => line.code));
+  const selectedExtras = booking.extras
+    .filter((extra) => !mandatoryCodes.has(extra.code))
+    .map((extra) => extra.label);
+
+  /*
+   * A booking's `payment_schedule` rows only exist once a card payment starts, so for a held or
+   * invoiced booking the deposit/balance split is derived from the frozen policy and total instead.
+   * The security deposit is not carried on `booking.get`, so it shows only if a schedule row exists.
+   */
+  const security = booking.paymentSchedule.find((entry) => entry.kind === "security_deposit");
+  const depositFraction =
+    booking.paymentPolicy.depositPct > 1
+      ? booking.paymentPolicy.depositPct / 100
+      : booking.paymentPolicy.depositPct;
+  const dueNowMinor =
+    booking.paymentPolicy.mode === "full"
+      ? booking.total.amountMinor
+      : Math.round(booking.total.amountMinor * depositFraction);
+  const balanceMinor = booking.total.amountMinor - dueNowMinor;
+  const balanceDate = booking.paymentPolicy.balanceDueAt ?? booking.nextPaymentDueAt;
 
   const rows: SummaryRow[] = [
-    { label: t("summary.yacht"), value: 'Lagoon 42 "Jupiter One"' },
-    { label: t("summary.dates"), value: "7 – 14 July, 2026" },
-    { label: t("summary.crew"), value: "Full" },
-    { label: t("summary.mandatory"), value: "6 people" },
-    {
-      label: t("summary.selectedExtras"),
-      value:
-        "Inflatable tender garage, Inflatable tender garage, Hot tub, Gas BBQ, Advanced navigation system, Inflatable tender garage, Premium Protection ",
-    },
-    { label: t("summary.boatPrice"), value: "€10,000", emphasis: "bold" },
-    { label: t("summary.deposit"), value: "€2,000", emphasis: "bold" },
-    {
-      label: t("summary.secondPayment", { date: "31.06.2026" }),
-      value: "€5,000",
-      emphasis: "bold",
-    },
+    { label: t("summary.yacht"), value: booking.listing.title },
+    { label: t("summary.dates"), value: `${day(booking.checkIn)} → ${day(booking.checkOut)}` },
+    ...(crewLabel ? [{ label: t("summary.crew"), value: crewLabel }] : []),
+    ...(mandatory.length
+      ? [{ label: t("summary.mandatory"), value: mandatory.map((line) => line.label).join(", ") }]
+      : []),
+    ...(selectedExtras.length
+      ? [{ label: t("summary.selectedExtras"), value: selectedExtras.join(", ") }]
+      : []),
+    ...(base
+      ? [
+          {
+            label: t("summary.boatPrice"),
+            value: money(base.amount.amountMinor),
+            emphasis: "bold" as const,
+          },
+        ]
+      : []),
+    ...(security
+      ? [
+          {
+            label: t("summary.deposit"),
+            value: money(security.amount.amountMinor),
+            emphasis: "bold" as const,
+          },
+        ]
+      : []),
+    ...(balanceMinor > 0
+      ? [
+          {
+            label: t("summary.secondPayment", { date: balanceDate ? day(balanceDate) : "" }),
+            value: money(balanceMinor),
+            emphasis: "bold" as const,
+          },
+        ]
+      : []),
     {
       label: t("summary.totalPrice"),
-      value: "€12,500",
-      note: t("summary.perPerson", { price: "€3,500" }),
+      value: money(booking.total.amountMinor),
+      note: t("summary.perPerson", {
+        price: money(Math.round(booking.total.amountMinor / booking.guests)),
+      }),
       emphasis: "strong",
     },
-    { label: t("summary.dueNow"), value: AMOUNT, emphasis: "strong" },
+    { label: t("summary.dueNow"), value: money(dueNowMinor), emphasis: "strong" },
   ];
+
+  async function downloadReceipt() {
+    if (!bookingId) return;
+    setDownloading(true);
+    try {
+      const receipt = await client.booking.receipt({ id: bookingId });
+      const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-${receipt.reference}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <section className="flex min-h-full justify-center px-4 pt-6 pb-8 md:px-6 md:py-23">
       <article className="relative isolate w-full max-w-201.5 overflow-hidden rounded-2xl border border-border bg-card">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]"
-        >
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]">
           <Image
             src="/assets/illustrations/booking-confetti.svg"
             alt=""
@@ -190,11 +294,16 @@ export default function BookingConfirmationScreen() {
                 {t("reserved")}
               </h1>
               <p className="text-base leading-[1.4] text-foreground opacity-80">
-                {t("remaining", { amount: AMOUNT })}
+                {t("remaining", { amount: money(booking.balanceDue.amountMinor) })}
               </p>
               <p className="text-sm leading-[1.3] font-medium text-natural-600">{t("emailed")}</p>
             </div>
-            <Button variant="neutral" className="w-full md:w-auto">
+            <Button
+              variant="neutral"
+              nativeButton={false}
+              render={<Link href="/profile/bookings" />}
+              className="w-full md:w-auto"
+            >
               {t("viewBooking")}
             </Button>
           </motion.div>
@@ -224,7 +333,12 @@ export default function BookingConfirmationScreen() {
                 <Share2 />
                 {t("shareTrip")}
               </Button>
-              <Button variant="brand" className="w-full md:flex-1">
+              <Button
+                variant="brand"
+                className="w-full md:flex-1"
+                disabled={downloading}
+                onClick={() => void downloadReceipt()}
+              >
                 <FileText />
                 {t("downloadReceipt")}
               </Button>

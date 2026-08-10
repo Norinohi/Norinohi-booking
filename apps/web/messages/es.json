@@ -94,6 +94,8 @@
     },
     "confirmation": {
       "reserved": "¡Tu yate está reservado!",
+      "notFound": "Reserva no encontrada",
+      "browse": "Ver yates",
       "remaining": "Los {amount} restantes se pagarán al check-in.",
       "emailed": "Hemos enviado una confirmación a tu correo",
       "viewBooking": "Ver reserva",

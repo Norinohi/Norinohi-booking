@@ -41,3 +41,13 @@ export const requestInvoiceMutationOptions = () => orpc.checkout.requestInvoice.
 
 /** A pre-payment question; leaves the booking held. */
 export const askQuestionMutationOptions = () => orpc.checkout.askQuestion.mutationOptions();
+
+export type BookingDetail = Awaited<ReturnType<AppRouterClient["booking"]["get"]>>;
+
+/** The held/confirmed booking behind the confirmation screen. `protectedProcedure`. */
+export const bookingDetailQueryOptions = (id: string) =>
+  orpc.booking.get.queryOptions({ input: { id } });
+
+/** The receipt for Download Receipt. `protectedProcedure`. */
+export const bookingReceiptQueryOptions = (id: string) =>
+  orpc.booking.receipt.queryOptions({ input: { id } });
