@@ -3,6 +3,7 @@ import { env } from "@yacht-charter/env/server";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type { InventoryProvider } from "./provider";
+import { databaseInventorySource } from "./mock/inventory";
 import { MockInventoryProvider } from "./mock/provider";
 import { NausysInventoryProvider } from "./nausys/provider";
 import type { NausysConfig } from "./nausys/config";
@@ -33,8 +34,10 @@ export function createInventoryProvider(
 ): InventoryProvider {
   switch (mode) {
     case "mock":
-      // The mock answers from fixtures, so it needs no database handle.
-      return new MockInventoryProvider();
+      // Quotes the same `availability_slot` rows the catalogue publishes. Fixture
+      // inventory covered ten of the seeded listings, so the calendar offered
+      // weeks the quote endpoint then refused.
+      return new MockInventoryProvider({ inventory: databaseInventorySource(deps.db) });
     case "nausys":
       return new NausysInventoryProvider({ db: deps.db, config: deps.nausysConfig });
     case "booking_manager":

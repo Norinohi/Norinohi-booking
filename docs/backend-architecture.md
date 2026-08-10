@@ -218,7 +218,9 @@ export interface InventoryProvider {
 
 ### 4.3 Mock provider (ships M2)
 
-`MockInventoryProvider` reads **provider-shaped fixtures** (mirroring NauSYS/BM shapes so the same mapping code runs). Deterministic seed → stable listings, availability grids (valid weekdays, min duration, occupied/option windows), prices, extras, payment plans, and a "provider re-price on quote" path so revalidation is testable pre-credentials. Default via `PROVIDER_MODE=mock`.
+`MockInventoryProvider` reads **provider-shaped fixtures** (mirroring NauSYS/BM shapes so the same mapping code runs) for the catalogue, extras and payment plans, plus a "provider re-price on quote" path so revalidation is testable pre-credentials. Default via `PROVIDER_MODE=mock`.
+
+**Availability is the exception: it comes from `availability_slot`, not from a fixture.** Under `PROVIDER_MODE=mock` those rows are the vendor's inventory, exactly as a real vendor's would be after a sync, and they are what `availability.calendar` publishes. Quoting from a separate fixture meant the catalogue offered weeks the quote endpoint then refused with a conflict — a slot cannot be bookable and unpriceable at once. The fixture source survives as the default for unit tests, which have no database.
 
 ### 4.4 Connector mechanics (both real providers)
 

@@ -80,8 +80,8 @@ export type AvailableOffer = z.infer<typeof availableOfferSchema>;
 
 export const listingPeriodSchema = z.object({
   listingId: z.string(),
-  from: z.string(),
-  to: z.string(),
+  from: z.iso.date(),
+  to: z.iso.date(),
   currency: z.string().length(3).default("EUR"),
 });
 export type ListingPeriod = z.input<typeof listingPeriodSchema>;
@@ -112,8 +112,10 @@ export type CrewType = z.infer<typeof crewTypeSchema>;
 
 export const quoteRequestSchema = z.object({
   listingId: z.string(),
-  checkIn: z.string(),
-  checkOut: z.string(),
+  // Validated as dates, not merely as strings: these reach a SQL date column, and
+  // an empty one used to surface as a 500 rather than a rejected request.
+  checkIn: z.iso.date(),
+  checkOut: z.iso.date(),
   guests: z.number().int().positive(),
   extras: z.array(z.string()).default([]),
   /** Omitted means the customer has not chosen; adapters add no crew for it. */
@@ -187,8 +189,8 @@ export const bookingDraftSchema = z.object({
   listingId: z.string(),
   quoteId: z.string(),
   /** ISO `yyyy-MM-dd`. The charter period every provider needs to open a reservation. */
-  checkIn: z.string(),
-  checkOut: z.string(),
+  checkIn: z.iso.date(),
+  checkOut: z.iso.date(),
   guests: z.number().int().positive(),
   extras: z.array(z.string()).default([]),
   /** Carried from the quote: re-pricing without it would price a different trip. */
