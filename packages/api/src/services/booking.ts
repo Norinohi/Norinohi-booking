@@ -17,6 +17,7 @@ import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { badgesFor, stableCount } from "../presenters/listing";
 import type {
   bookingCancelSchema,
   consentsSchema,
@@ -649,6 +650,20 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
       crewType: listingSearchDoc.crewType,
       rating: listingSearchDoc.rating,
       reviewCount: listingSearchDoc.reviewCount,
+      lat: listingSearchDoc.lat,
+      lng: listingSearchDoc.lng,
+      baseEmail: listingSearchDoc.baseEmail,
+      basePhone: listingSearchDoc.basePhone,
+      baseWebsite: listingSearchDoc.baseWebsite,
+      depositInsuranceIncluded: listingSearchDoc.depositInsuranceIncluded,
+      petsAllowed: listingSearchDoc.petsAllowed,
+      lengthM: listingSearchDoc.lengthM,
+      cabins: listingSearchDoc.cabins,
+      berths: listingSearchDoc.berths,
+      heads: listingSearchDoc.heads,
+      yearBuilt: listingSearchDoc.yearBuilt,
+      sailType: listingSearchDoc.sailType,
+      amenities: listingSearchDoc.amenities,
     })
     .from(listingSearchDoc)
     .where(eq(listingSearchDoc.listingId, listingId))
@@ -675,6 +690,22 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
     reviewCount: doc.reviewCount,
     checkInTime: baseRow?.checkInTime ?? null,
     checkOutTime: baseRow?.checkOutTime ?? null,
+    baseLat: doc.lat,
+    baseLng: doc.lng,
+    baseEmail: doc.baseEmail,
+    basePhone: doc.basePhone,
+    baseWebsite: doc.baseWebsite,
+    depositInsuranceIncluded: doc.depositInsuranceIncluded,
+    petsAllowed: doc.petsAllowed,
+    specs: {
+      lengthM: Number(doc.lengthM ?? 0),
+      cabins: doc.cabins ?? 0,
+      berths: doc.berths ?? 0,
+      heads: doc.heads ?? 0,
+      yearBuilt: doc.yearBuilt ?? 0,
+      sailType: doc.sailType,
+    },
+    amenities: doc.amenities,
   };
 }
 
@@ -722,6 +753,14 @@ function presentSummary(
 ): Summary {
   const snapshot = row.commercialSnapshot;
   const paidMinor = money?.paidMinor ?? 0;
+  const specs = snapshot.specs ?? {
+    lengthM: 0,
+    cabins: 0,
+    berths: 0,
+    heads: 0,
+    yearBuilt: 0,
+    sailType: null,
+  };
 
   return {
     id: row.id,
@@ -736,18 +775,40 @@ function presentSummary(
       reviewCount: snapshot.reviewCount,
       category: snapshot.category,
       crewType: snapshot.crewType,
+      specs,
+      amenities: snapshot.amenities ?? [],
+      bookingStats: {
+        bookedThisMonth: stableCount(row.listingId, 2, 8),
+        viewedToday: stableCount(row.id, 18, 64),
+      },
+      badges: badgesFor({
+        petsAllowed: snapshot.petsAllowed ?? false,
+        depositInsuranceIncluded: snapshot.depositInsuranceIncluded ?? false,
+        rating: snapshot.rating,
+      }),
     },
     base: {
       name: snapshot.baseName,
       locationName: snapshot.locationName,
       countryName: snapshot.countryName,
+      address: `${snapshot.baseName}, ${snapshot.locationName}, ${snapshot.countryName}`,
+      coordinates: { lat: snapshot.baseLat ?? 0, lng: snapshot.baseLng ?? 0 },
+      timeZone: BASE_TIME_ZONE,
+      phone: snapshot.basePhone ?? null,
+      website: snapshot.baseWebsite ?? null,
+      email: snapshot.baseEmail ?? null,
     },
     checkIn: combine(priced.checkIn, snapshot.checkInTime),
     checkOut: combine(priced.checkOut, snapshot.checkOutTime),
     guests: priced.guests,
     total: { amountMinor: row.totalMinor, currency: row.currency },
+    perPerson: {
+      amountMinor: priced.guests ? Math.round(row.totalMinor / priced.guests) : row.totalMinor,
+      currency: row.currency,
+    },
     paidTotal: { amountMinor: paidMinor, currency: row.currency },
     balanceDue: { amountMinor: Math.max(row.totalMinor - paidMinor, 0), currency: row.currency },
+    prepayment: { amountMinor: priced.depositMinor, currency: row.currency },
     nextPaymentDueAt: money?.nextDueAt?.toISOString() ?? null,
     cancellable: isUserCancellable(row.status as BookingStatus),
     createdAt: row.createdAt.toISOString(),
@@ -763,6 +824,13 @@ function presentHold(row: BookingRow): Hold {
     optionHeld: row.status === "OPTION_HELD",
   };
 }
+
+/**
+ * `combine` below stamps every charter date as UTC without converting it, so
+ * this is the only zone that agrees with checkIn/checkOut today. Bases carry no
+ * real IANA zone yet — swap this out once they do.
+ */
+const BASE_TIME_ZONE = "UTC";
 
 /**
  * The card shows a date and a time, so the base's local check-in/out time is

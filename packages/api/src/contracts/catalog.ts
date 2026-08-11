@@ -39,7 +39,7 @@ const dateStringSchema = z
     message: "Invalid date",
   });
 
-const includedItemSchema = z.object({
+export const includedItemSchema = z.object({
   code: z.string(),
   label: z.string(),
 });
