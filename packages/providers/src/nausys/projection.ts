@@ -34,26 +34,36 @@ import {
 
 const PROVIDER_PREFIX = "nausys";
 
-/**
- * NauSYS does not put a currency on `RestYacht`; the whole Adriatic fleet quotes in
- * EUR and `freeYachts` returns the authoritative currency per period anyway.
- * Vendor question Q-CURRENCY.
- */
-const DEFAULT_CURRENCY = "EUR";
+/** Last resort only: recorded yachts carry `depositCurrency` and priced seasons. */
+const FALLBACK_CURRENCY = "EUR";
 
-const TEXT_FIELDS: { kind: "description" | "notes" | "conditions"; keys: string[] }[] = [
-  // Field naming is a vendor question (Q-YACHT-TEXT): the PDF calls these
-  // "multilingual comments/notes" without naming the JSON keys, so each candidate
-  // the recorded responses might use is accepted.
-  { kind: "description", keys: ["commentary", "comment", "description", "yachtDescription"] },
-  { kind: "notes", keys: ["notes", "note", "yachtNote", "internalNote"] },
-  { kind: "conditions", keys: ["conditions", "charterConditions", "commercialConditions"] },
+/**
+ * `highlights` is the operator's public blurb and `note` its caveat line; there is
+ * no commentary/description/conditions field anywhere in `RestYacht`. Each has an
+ * international sibling plus a single-string form holding the same English text.
+ */
+const TEXT_SOURCES: { kind: "description" | "notes"; intText: string; plain: string }[] = [
+  { kind: "description", intText: "highlightsIntText", plain: "highlights" },
+  { kind: "notes", intText: "noteIntText", plain: "note" },
 ];
 
-const LAYOUT_KEYS = ["yachtLayoutPictureUrl", "layoutPictureUrl", "layoutPictures"];
+/**
+ * The locale filed against the single-string form. In every recorded yacht it
+ * repeats `textEN` verbatim, so English is the reading; flagged as an assumption
+ * rather than a fact the vendor states.
+ */
+const UNLOCALIZED_TEXT_LOCALE = "en";
 
-const FUEL_KEYS = ["fuelCapacity", "fuelTank"];
-const WATER_KEYS = ["waterCapacity", "waterTank"];
+/** JavaScript weekday numbering, 0 Sunday, as `listing_checkin_rule` stores it. */
+const WEEKDAY_FLAGS = [
+  { weekday: 0, checkIn: "checkInSunday", checkOut: "checkOutSunday" },
+  { weekday: 1, checkIn: "checkInMonday", checkOut: "checkOutMonday" },
+  { weekday: 2, checkIn: "checkInTuesday", checkOut: "checkOutTuesday" },
+  { weekday: 3, checkIn: "checkInWednesday", checkOut: "checkOutWednesday" },
+  { weekday: 4, checkIn: "checkInThursday", checkOut: "checkOutThursday" },
+  { weekday: 5, checkIn: "checkInFriday", checkOut: "checkOutFriday" },
+  { weekday: 6, checkIn: "checkInSaturday", checkOut: "checkOutSaturday" },
+] as const;
 
 export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
   const countries = parseAll(records, "country", restCountrySchema);
@@ -170,6 +180,11 @@ function projectYacht(
   yacht: RestYacht,
   context: { modelById: Map<string, RestYachtModel>; knownEquipment: Set<string> },
 ) {
+  // The vendor's own withdrawals. `disabled` is a boat taken out of service and
+  // `internalUse` one the operator books by hand; publishing either would sell
+  // inventory that cannot be reserved.
+  if (yacht.disabled === true || yacht.internalUse === true) return null;
+
   // A yacht with no base cannot become a listing: `listing.home_base_id` is NOT NULL
   // and there is nothing to guess from.
   if (yacht.baseId === undefined) return null;
@@ -179,7 +194,7 @@ function projectYacht(
   const model = modelId === undefined ? undefined : context.modelById.get(modelId);
   const modelName = model?.name ?? "";
   const title = `${yacht.name} ${modelName}`.trim();
-  const currency = currencyOf(yacht.currency);
+  const currency = currencyOf(seasonCurrencyOf(yacht) ?? yacht.depositCurrency);
 
   return {
     externalId,
@@ -190,57 +205,117 @@ function projectYacht(
     externalBuilderId:
       model?.yachtBuilderId === undefined ? undefined : String(model.yachtBuilderId),
     externalModelId: model === undefined ? undefined : modelId,
+    // Category is a property of the model, not of the boat: `RestYacht` has no
+    // category field at all, so an unresolved model also costs the category.
     externalCategoryId:
-      yacht.yachtCategoryId === undefined ? undefined : String(yacht.yachtCategoryId),
+      model?.yachtCategoryId === undefined ? undefined : String(model.yachtCategoryId),
     title,
     // Name plus vendor id: stable across re-syncs, and unique even for a fleet of
     // ten identically named boats.
     slug: `${slugify(title)}-${externalId}`,
     spec: {
-      lengthM: numberOf(yacht.length) ?? numberOf(model?.loa) ?? 0,
-      beamM: numberOf(yacht.beam) ?? numberOf(model?.beam),
+      // Length and beam only ever arrive on the model; the yacht carries neither.
+      lengthM: numberOf(model?.loa) ?? 0,
+      beamM: numberOf(model?.beam),
       draftM: numberOf(yacht.draft) ?? numberOf(model?.draft),
       cabins: yacht.cabins ?? 0,
-      berths: yacht.berths ?? 0,
+      berths: yacht.berthsTotal ?? 0,
       heads: yacht.wc ?? 0,
       yearBuilt: yacht.buildYear ?? 0,
       engines: intOf(yacht.engines),
-      fuelCapacity: firstInt(yacht, FUEL_KEYS),
-      waterCapacity: firstInt(yacht, WATER_KEYS),
+      fuelCapacity: capacityOf(yacht.fuelTank, model?.fuelTank),
+      waterCapacity: capacityOf(yacht.waterTank, model?.waterTank),
     },
     media: mediaOf(yacht),
     amenities: (yacht.standardYachtEquipment ?? [])
       .map((item) => String(item.equipmentId))
       .filter((id) => context.knownEquipment.has(id)),
     texts: textsOf(yacht),
-    checkinRules: (yacht.checkInPeriods ?? [])
-      .map((period) => ({
-        checkinWeekday: weekdayOf(period.checkInDay),
-        checkoutWeekday: weekdayOf(period.checkOutDay),
-        minNights: period.minimalDays === undefined ? undefined : positiveInt(period.minimalDays),
-        maxNights: undefined,
-      }))
-      .filter(
-        (rule) =>
-          rule.checkinWeekday !== undefined ||
-          rule.checkoutWeekday !== undefined ||
-          rule.minNights !== undefined,
-      ),
+    checkinRules: checkinRulesOf(yacht),
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
-    securityDepositMinor: minorOf(yacht.deposit, currency),
+    securityDepositMinor: minorOf(yacht.deposit, currencyOf(yacht.depositCurrency ?? currency)),
     // Payment terms are per period and come from `freeYachts`, never from the
     // catalogue dump.
     paymentPolicy: undefined,
   };
 }
 
+/**
+ * One rule per allowed (check-in, check-out) weekday pair. A period enables seven
+ * named booleans per direction and may enable several at once, which is a genuine
+ * choice of start days rather than one day the vendor happened to list first.
+ *
+ * All seven enabled is no constraint at all, and collapses to an unset weekday:
+ * that is what a null column means downstream, and seven identical rows would only
+ * multiply the availability synthesis by seven for the same answer.
+ *
+ * `dateFrom`/`dateTo` bound each period and are dropped here only because
+ * `listing_checkin_rule` has no date columns to put them in. Every recorded period
+ * spans 1970 to 2099, so nothing is lost today; an operator who changes turnaround
+ * day mid-season will need those columns before this is honest.
+ */
+function checkinRulesOf(yacht: RestYacht) {
+  const rules = new Map<
+    string,
+    {
+      checkinWeekday: number | undefined;
+      checkoutWeekday: number | undefined;
+      minNights: number | undefined;
+      maxNights: undefined;
+    }
+  >();
+
+  for (const period of yacht.checkInPeriods ?? []) {
+    const minNights = positiveInt(period.minimalReservationDuration);
+
+    for (const checkinWeekday of enabledWeekdays(period, "checkIn")) {
+      for (const checkoutWeekday of enabledWeekdays(period, "checkOut")) {
+        if (
+          checkinWeekday === undefined &&
+          checkoutWeekday === undefined &&
+          minNights === undefined
+        )
+          continue;
+        rules.set(`${checkinWeekday}|${checkoutWeekday}|${minNights}`, {
+          checkinWeekday,
+          checkoutWeekday,
+          minNights,
+          maxNights: undefined,
+        });
+      }
+    }
+  }
+
+  return [...rules.values()];
+}
+
+function enabledWeekdays(
+  period: Record<string, unknown>,
+  direction: "checkIn" | "checkOut",
+): (number | undefined)[] {
+  const days = WEEKDAY_FLAGS.filter((day) => period[day[direction]] === true).map(
+    (day) => day.weekday,
+  );
+  return days.length === 0 || days.length === WEEKDAY_FLAGS.length ? [undefined] : days;
+}
+
+type MediaRole = "main" | "layout" | "gallery";
+
+/**
+ * `pictures` is preferred over `picturesURL`: same URLs, but it flags which one is
+ * the main shot and which the accommodation layout. Deduplication is not optional
+ * here, because `mainPictureUrl` repeats an entry of the list almost every time.
+ *
+ * The URLs are model-scoped (`/rest/yachtModel/100239/pictures/main.jpg`), so
+ * sisterships legitimately share media; that is a property of the vendor's data,
+ * not a bug to be filtered out.
+ */
 function mediaOf(yacht: RestYacht) {
-  const media: { externalUrl: string; role: "main" | "layout" | "gallery"; sortOrder: number }[] =
-    [];
+  const media: { externalUrl: string; role: MediaRole; sortOrder: number }[] = [];
   const seen = new Set<string>();
 
-  const push = (value: unknown, role: "main" | "layout" | "gallery") => {
+  const push = (value: unknown, role: MediaRole) => {
     const url = text(value);
     if (!url || seen.has(url)) return;
     seen.add(url);
@@ -248,57 +323,60 @@ function mediaOf(yacht: RestYacht) {
   };
 
   push(yacht.mainPictureUrl, "main");
-  for (const url of yacht.picturesURL ?? []) {
-    push(url, "gallery");
+
+  const pictures = yacht.pictures ?? [];
+  for (const picture of pictures) {
+    push(picture.src, pictureRole(picture));
   }
-  for (const key of LAYOUT_KEYS) {
-    const value = (yacht as Record<string, unknown>)[key];
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        push(
-          typeof entry === "object" && entry !== null ? (entry as { url?: unknown }).url : entry,
-          "layout",
-        );
-      }
-      continue;
+
+  if (pictures.length === 0) {
+    // No roles and no timestamps in this form, so everything lands as gallery.
+    for (const url of yacht.picturesURL ?? []) {
+      push(url, "gallery");
     }
-    push(value, "layout");
   }
 
   return media;
 }
 
+function pictureRole(picture: { mainPicture?: boolean; layoutPicture?: boolean }): MediaRole {
+  if (picture.layoutPicture === true) return "layout";
+  return picture.mainPicture === true ? "main" : "gallery";
+}
+
 function textsOf(yacht: RestYacht) {
-  const texts: { kind: "description" | "notes" | "conditions"; locale: string; value: string }[] =
-    [];
+  const texts: { kind: "description" | "notes"; locale: string; value: string }[] = [];
 
-  for (const field of TEXT_FIELDS) {
-    for (const key of field.keys) {
-      const value = (yacht as Record<string, unknown>)[key];
-      const locales = toLocaleMap(value);
-      const entries = Object.entries(locales);
-      if (entries.length === 0) continue;
+  for (const source of TEXT_SOURCES) {
+    const record = yacht as Record<string, unknown>;
+    const locales = Object.entries(toLocaleMap(record[source.intText]));
 
-      for (const [locale, item] of entries) {
-        texts.push({ kind: field.kind, locale, value: item });
+    if (locales.length > 0) {
+      for (const [locale, value] of locales) {
+        const plain = stripHtml(value);
+        if (plain !== undefined) texts.push({ kind: source.kind, locale, value: plain });
       }
-      break;
+      continue;
+    }
+
+    const plain = stripHtml(text(record[source.plain]));
+    if (plain !== undefined) {
+      texts.push({ kind: source.kind, locale: UNLOCALIZED_TEXT_LOCALE, value: plain });
     }
   }
 
   return texts;
 }
 
+/** Recorded periods use `periodFrom`/`periodTo`; `dateFrom`/`dateTo` is the PDF's spelling. */
 function oneWayRulesOf(yacht: RestYacht) {
-  const periods = (yacht as Record<string, unknown>).oneWayPeriods;
+  const periods = yacht.oneWayPeriods;
   if (!Array.isArray(periods)) return [];
 
   const rules: { startDate: string; endDate: string; isOneWay: boolean }[] = [];
-  for (const period of periods) {
-    if (typeof period !== "object" || period === null) continue;
-    const record = period as Record<string, unknown>;
-    const from = text(record.dateFrom) ?? text(record.periodFrom);
-    const to = text(record.dateTo) ?? text(record.periodTo);
+  for (const record of periods) {
+    const from = text(record.periodFrom) ?? text(record.dateFrom);
+    const to = text(record.periodTo) ?? text(record.dateTo);
     if (!from || !to) continue;
 
     try {
@@ -364,25 +442,42 @@ function positiveInt(value: unknown): number | undefined {
   return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
-function firstInt(source: RestYacht, keys: string[]): number | undefined {
-  for (const key of keys) {
-    const parsed = intOf((source as Record<string, unknown>)[key]);
-    if (parsed !== undefined) return parsed;
+/**
+ * Zero is how the vendor writes a tank it has not measured, on the yacht and on
+ * the model alike, so it falls through to the model and then to unset rather than
+ * publishing a boat that carries no water.
+ */
+function capacityOf(...candidates: unknown[]): number | undefined {
+  for (const candidate of candidates) {
+    const parsed = intOf(candidate);
+    if (parsed !== undefined && parsed > 0) return parsed;
+  }
+  return undefined;
+}
+
+/** The currency the operator prices this season in; the deposit names its own. */
+function seasonCurrencyOf(yacht: RestYacht): string | undefined {
+  for (const season of yacht.seasonSpecificData ?? []) {
+    for (const price of season.prices ?? []) {
+      const code = text(price.currency);
+      if (code !== undefined) return code;
+    }
   }
   return undefined;
 }
 
 function currencyOf(value: unknown): string {
   const code = text(value);
-  return code && code.length === 3 ? code.toUpperCase() : DEFAULT_CURRENCY;
+  return code && code.length === 3 ? code.toUpperCase() : FALLBACK_CURRENCY;
 }
 
 /**
- * Money is a decimal string and stays one until it is an integer of minor units.
- * A malformed amount drops the deposit rather than the yacht.
+ * Amounts stay strings until they are integers of minor units; `RestYacht` sends
+ * bare numbers, which are stringified rather than scaled by floating point. A
+ * malformed amount drops the deposit rather than the yacht.
  */
 function minorOf(value: unknown, currency: string): number | undefined {
-  const amount = text(value);
+  const amount = typeof value === "number" && Number.isFinite(value) ? String(value) : text(value);
   if (amount === undefined) return undefined;
   try {
     return decimalStringToMinor(amount, currency);
@@ -391,13 +486,45 @@ function minorOf(value: unknown, currency: string): number | undefined {
   }
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  amp: "&",
+  apos: "'",
+  gt: ">",
+  lt: "<",
+  nbsp: " ",
+  quot: '"',
+};
+
 /**
- * NauSYS numbers check-in days 1..7 from Monday; our columns use the JavaScript
- * 0..6 from Sunday. Vendor question Q-WEEKDAY: the recorded responses only ever
- * show 6, which is Saturday under either reading.
+ * Yacht text is HTML: `<font color="#89CFF0">`, `<mark>`, inline background
+ * styles. It is untrusted vendor markup that we never render, so it is reduced to
+ * plain text here, once, for both `listing_text` and the search document that
+ * must not index tag soup. Entities are decoded after tags are removed, so an
+ * escaped `&lt;script&gt;` cannot be promoted back into one.
  */
-function weekdayOf(value: unknown): number | undefined {
-  const day = intOf(value);
-  if (day === undefined || day < 0 || day > 7) return undefined;
-  return day % 7;
+function stripHtml(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+
+  const plain = value
+    .replace(/<(?:br|\/p|\/div|\/li|\/tr|\/h[1-6])\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#\d+|#x[\da-f]+|[a-z]+);/gi, decodeEntity)
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return plain === "" ? undefined : plain;
+}
+
+function decodeEntity(match: string, body: string): string {
+  if (body.startsWith("#")) {
+    const hex = body.startsWith("#x") || body.startsWith("#X");
+    const code = Number.parseInt(hex ? body.slice(2) : body.slice(1), hex ? 16 : 10);
+    return Number.isInteger(code) && code > 0 && code <= 0x10_ff_ff
+      ? String.fromCodePoint(code)
+      : match;
+  }
+  return HTML_ENTITIES[body.toLowerCase()] ?? match;
 }

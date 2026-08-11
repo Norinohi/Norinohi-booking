@@ -1,9 +1,29 @@
 {
   "status": "OK",
-  "errorCode": 0,
   "builders": [
-    { "id": 301, "name": "Bavaria Yachtbau" },
-    { "id": 302, "name": "Beneteau" },
-    { "id": 303, "name": "Lagoon" }
+    {
+      "id": 1,
+      "name": "Bavaria Yachtbau"
+    },
+    {
+      "id": 55,
+      "name": "Bénéteau"
+    },
+    {
+      "id": 831117,
+      "name": "Canados International Srl."
+    },
+    {
+      "id": 53,
+      "name": "Fountaine Pajot"
+    },
+    {
+      "id": 104554,
+      "name": "Lagoon-Bénéteau"
+    },
+    {
+      "id": 201,
+      "name": "Sunseeker International"
+    }
   ]
 }

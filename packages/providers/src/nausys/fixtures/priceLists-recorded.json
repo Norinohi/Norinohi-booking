@@ -1,0 +1,389 @@
+{
+  "status": "OK",
+  "priceLists": [
+    {
+      "columns": [
+        {
+          "periods": [
+            {
+              "periodFrom": "01.01.2026",
+              "periodTo": "17.04.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "18.04.2026",
+              "periodTo": "08.05.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "09.05.2026",
+              "periodTo": "29.05.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "30.05.2026",
+              "periodTo": "26.06.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "27.06.2026",
+              "periodTo": "17.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "18.07.2026",
+              "periodTo": "28.08.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "29.08.2026",
+              "periodTo": "16.10.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "17.10.2026",
+              "periodTo": "06.11.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "07.11.2026",
+              "periodTo": "31.12.2026"
+            }
+          ]
+        }
+      ],
+      "currency": "EUR",
+      "id": 60808865,
+      "locationsId": [],
+      "rows": [
+        {
+          "prices": [
+            "1500",
+            "1500",
+            "2500",
+            "2600",
+            "2900",
+            "2800",
+            "3000",
+            "3500",
+            "1500"
+          ],
+          "yachtId": 22287918
+        },
+        {
+          "prices": [
+            "1500",
+            "1500",
+            "1500",
+            "1500",
+            "1500",
+            "1250",
+            "1450",
+            "1350",
+            "1650"
+          ],
+          "yachtId": 479289
+        },
+        {
+          "prices": [
+            "6750",
+            "8400",
+            "9350",
+            "10150",
+            "9350",
+            "10150",
+            "11000",
+            "9350",
+            "6750"
+          ],
+          "yachtId": 103455
+        }
+      ],
+      "seasonId": 50952199,
+      "type": "WEEKLY",
+      "vatInPrice": "I"
+    },
+    {
+      "columns": [
+        {
+          "periods": [
+            {
+              "periodFrom": "01.01.2026",
+              "periodTo": "31.12.2026"
+            }
+          ]
+        }
+      ],
+      "currency": "EUR",
+      "id": 67652329,
+      "locationsId": [],
+      "rows": [
+        {
+          "prices": [
+            "250"
+          ],
+          "yachtId": 67652274
+        }
+      ],
+      "seasonId": 50952199,
+      "type": "DAILY",
+      "vatInPrice": "E"
+    },
+    {
+      "columns": [
+        {
+          "periods": [
+            {
+              "periodFrom": "01.01.2026",
+              "periodTo": "31.12.2026"
+            }
+          ]
+        }
+      ],
+      "currency": "EUR",
+      "id": 73662706,
+      "locationsId": [],
+      "rows": [
+        {
+          "prices": [
+            "1750"
+          ],
+          "yachtId": 67652274
+        }
+      ],
+      "seasonId": 50952199,
+      "type": "WEEKLY",
+      "vatInPrice": "I"
+    },
+    {
+      "columns": [
+        {
+          "periods": [
+            {
+              "periodFrom": "03.07.2026",
+              "periodTo": "03.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "04.07.2026",
+              "periodTo": "04.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "05.07.2026",
+              "periodTo": "05.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "06.07.2026",
+              "periodTo": "06.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "07.07.2026",
+              "periodTo": "07.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "01.07.2026",
+              "periodTo": "01.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "02.07.2026",
+              "periodTo": "02.07.2026"
+            }
+          ]
+        }
+      ],
+      "currency": "EUR",
+      "id": 74041227,
+      "locationsId": [],
+      "rows": [
+        {
+          "prices": [
+            "1000",
+            "1000",
+            "1000",
+            "1000",
+            "1000",
+            "1000",
+            "1000"
+          ],
+          "yachtId": 22291115
+        }
+      ],
+      "seasonId": 50952199,
+      "type": "DAILY",
+      "vatInPrice": "I"
+    },
+    {
+      "columns": [
+        {
+          "periods": [
+            {
+              "periodFrom": "01.01.2026",
+              "periodTo": "17.04.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "18.04.2026",
+              "periodTo": "08.05.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "09.05.2026",
+              "periodTo": "29.05.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "30.05.2026",
+              "periodTo": "26.06.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "27.06.2026",
+              "periodTo": "17.07.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "18.07.2026",
+              "periodTo": "28.08.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "29.08.2026",
+              "periodTo": "16.10.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "17.10.2026",
+              "periodTo": "06.11.2026"
+            }
+          ]
+        },
+        {
+          "periods": [
+            {
+              "periodFrom": "07.11.2026",
+              "periodTo": "31.12.2026"
+            }
+          ]
+        }
+      ],
+      "currency": "EUR",
+      "id": 76510827,
+      "locationsId": [],
+      "rows": [
+        {
+          "prices": [
+            "1500",
+            "1500",
+            "2500",
+            "2600",
+            "2900",
+            "2800",
+            "3000",
+            "3500",
+            "1500"
+          ],
+          "yachtId": 22287918
+        },
+        {
+          "prices": [
+            "1500",
+            "1500",
+            "1500",
+            "1500",
+            "1500",
+            "1250",
+            "1450",
+            "1350",
+            "1650"
+          ],
+          "yachtId": 479289
+        },
+        {
+          "prices": [
+            "6750",
+            "8400",
+            "9350",
+            "10150",
+            "9350",
+            "10150",
+            "11000",
+            "9350",
+            "6750"
+          ],
+          "yachtId": 103455
+        }
+      ],
+      "seasonId": 50952199,
+      "type": "WEEKLY",
+      "vatInPrice": "I"
+    }
+  ]
+}

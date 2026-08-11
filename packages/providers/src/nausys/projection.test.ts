@@ -18,6 +18,13 @@ import yachtModels from "./fixtures/yachtModels.json" with { type: "json" };
 import yachts102701 from "./fixtures/yachts-102701.json" with { type: "json" };
 import { projectNausysCatalogue } from "./projection";
 
+/*
+ * The fixtures are trimmed recordings of the live NauSYS catalogue, so every
+ * assertion below is an assertion about the vendor's real shapes. Where a case
+ * does not occur in the recording (a missing English name, a period that enables
+ * two weekdays) the payload is built by hand and said to be built by hand.
+ */
+
 function recordSet(entries: Partial<Record<ProviderResourceType, unknown[]>>): ProviderRecordSet {
   const records: ProviderRecordSet = new Map();
   for (const [resourceType, payloads] of Object.entries(entries)) {
@@ -32,7 +39,10 @@ function recordSet(entries: Partial<Record<ProviderResourceType, unknown[]>>): P
   return records;
 }
 
-function fixtureRecords(yachts: unknown[] = yachts102701.yachts): ProviderRecordSet {
+function fixtureRecords(
+  yachts: unknown[] = yachts102701.yachts,
+  overrides: Partial<Record<ProviderResourceType, unknown[]>> = {},
+): ProviderRecordSet {
   return recordSet({
     country: countries.countries,
     region: regions.regions,
@@ -42,138 +52,197 @@ function fixtureRecords(yachts: unknown[] = yachts102701.yachts): ProviderRecord
     builder: yachtBuilders.builders,
     model: yachtModels.models,
     category: yachtCategories.categories,
-    equipment_category: equipmentCategories.categories,
+    equipment_category: equipmentCategories.equipmentCategories,
     amenity: equipment.equipment,
     yacht: yachts,
+    ...overrides,
   });
 }
 
-const marlin = () => structuredClone(yachts102701.yachts[0]) as Record<string, unknown>;
+type Yacht = Record<string, unknown>;
+
+/** Sailing yacht, Saturday to Saturday, HTML highlights in three languages. */
+const maria = () => structuredClone(yachts102701.yachts[0]) as Yacht;
+/** Catamaran whose check-in period enables all seven weekdays. */
+const kraken = () => structuredClone(yachts102701.yachts[3]) as Yacht;
+
+const listingOf = (yacht: Yacht) => projectNausysCatalogue(fixtureRecords([yacht])).listings[0];
 
 describe("projectNausysCatalogue", () => {
   it("projects the recorded dump into a valid canonical catalogue", () => {
     const catalogue = projectNausysCatalogue(fixtureRecords());
 
     expect(() => canonicalCatalogueSchema.parse(catalogue)).not.toThrow();
-    expect(catalogue.listings).toHaveLength(2);
-    expect(catalogue.countries.map((item) => item.code)).toEqual(["HR", "GR", "IT"]);
+    expect(catalogue.listings).toHaveLength(6);
+    expect(catalogue.countries[0]).toMatchObject({ code: "HR", name: "Croatia" });
     expect(catalogue.operators[0]).toMatchObject({
       externalId: "102701",
-      slug: "adriatic-sailing-d-o-o-102701",
+      slug: "test-charter-company-102701",
       country: "Croatia",
-      city: "Split",
+      city: "Zagreb",
     });
   });
 
   it("names bases after their operator and location, since the vendor sends none", () => {
     const catalogue = projectNausysCatalogue(fixtureRecords());
 
-    expect(catalogue.bases[0]).toMatchObject({
-      externalId: "900101",
-      externalLocationId: "53271",
-      name: "Adriatic Sailing d.o.o. Split",
-      lat: 43.5031,
-      lng: 16.4315,
+    expect(catalogue.bases.find((item) => item.externalId === "102751")).toMatchObject({
+      externalLocationId: "57",
+      name: "Test Charter Company Dubrovnik, Komolac, ACI Marina Dubrovnik",
+      lat: 42.6697,
+      lng: 18.12461,
       checkInTime: "17:00",
+      checkOutTime: "09:00",
     });
   });
 
   it("falls back from a missing EN text to the next locale the vendor sent", () => {
-    const catalogue = projectNausysCatalogue(fixtureRecords());
+    // Every recorded name carries textEN, so the gap is made rather than found.
+    const [first, ...rest] = structuredClone(locations.locations) as Yacht[];
+    const name = first?.name as Record<string, string>;
+    delete name.textEN;
 
-    // Rijeka carries textHR only; Split carries textEN.
-    expect(catalogue.locations.find((item) => item.externalId === "53401")?.name).toBe("Rijeka");
-    expect(catalogue.locations.find((item) => item.externalId === "53271")?.name).toBe("Split");
-    expect(catalogue.amenities.find((item) => item.externalId === "51020")?.name).toBe(
-      "Splav za spasavanje",
+    const catalogue = projectNausysCatalogue(
+      fixtureRecords(undefined, { location: [first, ...rest] }),
+    );
+
+    expect(catalogue.locations.find((item) => item.externalId === "53")?.name).toBe(
+      "ACI Marina Rovinj",
     );
   });
 
   it("prefixes every external code with the provider key", () => {
     const catalogue = projectNausysCatalogue(fixtureRecords());
 
-    expect(catalogue.amenities.map((item) => item.code)).toContain("nausys:51001");
+    expect(catalogue.amenities.map((item) => item.code)).toContain("nausys:17");
     expect(catalogue.categories.map((item) => item.code)).toContain("nausys:51");
   });
 
+  it("drops equipment the vendor sends without a category", () => {
+    const catalogue = projectNausysCatalogue(fixtureRecords());
+
+    // amenity.amenity_category_id is NOT NULL; two of the recorded rows have none.
+    expect(catalogue.amenities.map((item) => item.externalId)).not.toContain("73900002");
+  });
+
   it("keeps amenity references as vendor ids and drops unknown equipment", () => {
-    const yacht = marlin();
-    yacht.standardYachtEquipment = [{ equipmentId: 51001 }, { equipmentId: 999999 }];
+    const yacht = maria();
+    yacht.standardYachtEquipment = [
+      { equipmentId: 17, quantity: 1, highlight: false, comment: {} },
+      { equipmentId: 999_999, quantity: 1 },
+    ];
 
-    const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
+    expect(listingOf(yacht)?.amenities).toEqual(["17"]);
+  });
 
-    expect(listing?.amenities).toEqual(["51001"]);
+  describe("publication", () => {
+    it("keeps a yacht the vendor has taken out of service out of the catalogue", () => {
+      const yacht = maria();
+      yacht.disabled = true;
+
+      expect(projectNausysCatalogue(fixtureRecords([yacht])).listings).toHaveLength(0);
+    });
+
+    it("keeps a yacht the operator books by hand out of the catalogue", () => {
+      const yacht = maria();
+      yacht.internalUse = true;
+
+      expect(projectNausysCatalogue(fixtureRecords([yacht])).listings).toHaveLength(0);
+    });
+
+    it("publishes a yacht that is not currently discounted", () => {
+      const yacht = maria();
+      yacht.onSale = false;
+
+      expect(listingOf(yacht)?.externalId).toBe("479287");
+    });
+
+    it("drops a yacht with no base rather than inventing one", () => {
+      const yacht = maria();
+      delete yacht.baseId;
+
+      expect(projectNausysCatalogue(fixtureRecords([yacht])).listings).toHaveLength(0);
+    });
+
+    it("drops an unparseable yacht without losing the rest of the dump", () => {
+      const broken = { ...maria(), id: "not-a-number" };
+
+      const catalogue = projectNausysCatalogue(fixtureRecords([broken, kraken()]));
+
+      expect(catalogue.listings.map((item) => item.externalId)).toEqual(["22585866"]);
+    });
   });
 
   describe("money", () => {
-    it("converts decimal strings to minor units without parseFloat", () => {
-      const cases: [string, number][] = [
-        ["2000.00", 200_000],
-        ["0.00", 0],
-        ["3340.5", 334_050],
-        ["3340.999", 334_099],
-      ];
+    it("reads the bare number the vendor sends as a deposit", () => {
+      expect(listingOf(maria())?.securityDepositMinor).toBe(182_500);
+    });
 
-      for (const [deposit, expected] of cases) {
-        const yacht = marlin();
-        yacht.deposit = deposit;
-        const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
-        expect(listing?.securityDepositMinor).toBe(expected);
-      }
+    it("scales the deposit by the currency the yacht names, not by EUR", () => {
+      const yacht = maria();
+      yacht.depositCurrency = "JPY";
+
+      // Zero-exponent currency: 1825 yen is 1825 minor units, not 182 500.
+      expect(listingOf(yacht)?.securityDepositMinor).toBe(1825);
+    });
+
+    it("takes the listing currency from the priced season", () => {
+      const yacht = maria();
+      const [season] = yacht.seasonSpecificData as { prices: { currency: string }[] }[];
+      for (const price of season?.prices ?? []) price.currency = "USD";
+
+      const listing = listingOf(yacht);
+
+      expect(listing?.defaultCurrency).toBe("USD");
+      // The deposit keeps its own currency, which the vendor states separately.
+      expect(listing?.securityDepositMinor).toBe(182_500);
     });
 
     it("drops a malformed deposit instead of the yacht", () => {
-      const yacht = marlin();
+      const yacht = maria();
       yacht.deposit = "2 000,00 EUR";
 
-      const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
+      const listing = listingOf(yacht);
 
-      expect(listing?.externalId).toBe("4711001");
+      expect(listing?.externalId).toBe("479287");
       expect(listing?.securityDepositMinor).toBeUndefined();
     });
+  });
 
-    it("honours a currency the vendor sends and defaults to EUR otherwise", () => {
-      const yacht = marlin();
-      expect(projectNausysCatalogue(fixtureRecords([yacht])).listings[0]?.defaultCurrency).toBe(
-        "EUR",
-      );
-
-      yacht.currency = "hrk";
-      expect(projectNausysCatalogue(fixtureRecords([yacht])).listings[0]?.defaultCurrency).toBe(
-        "HRK",
-      );
+  describe("specification", () => {
+    it("takes length and beam from the model, which is where the vendor keeps them", () => {
+      expect(listingOf(maria())?.spec).toMatchObject({
+        lengthM: 11.6,
+        beamM: 6.3,
+        draftM: 0.95,
+        berths: 10,
+        cabins: 6,
+        heads: 2,
+        yearBuilt: 2003,
+      });
     });
-  });
 
-  it("keeps a yacht that references an unknown model", () => {
-    const yacht = marlin();
-    yacht.yachtModelId = 999_999;
+    it("keeps a yacht that references an unknown model, dimensions and all", () => {
+      const yacht = maria();
+      yacht.yachtModelId = 999_999;
 
-    const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
-
-    expect(listing).toMatchObject({
-      externalId: "4711001",
-      title: "Marlin",
-      externalModelId: undefined,
-      externalBuilderId: undefined,
+      expect(listingOf(yacht)).toMatchObject({
+        externalId: "479287",
+        title: "Maria's Pleasure",
+        externalModelId: undefined,
+        externalBuilderId: undefined,
+        externalCategoryId: undefined,
+        spec: { lengthM: 0 },
+      });
     });
-    // Length falls back to the model's LOA when the yacht has one; here it does.
-    expect(listing?.spec.lengthM).toBe(14.27);
-  });
 
-  it("drops a yacht with no base rather than inventing one", () => {
-    const yacht = marlin();
-    delete yacht.baseId;
+    it("reads a zero tank as unmeasured and falls through to the model", () => {
+      const yacht = kraken();
+      expect(listingOf(yacht)?.spec.fuelCapacity).toBe(300);
 
-    expect(projectNausysCatalogue(fixtureRecords([yacht])).listings).toHaveLength(0);
-  });
-
-  it("drops an unparseable yacht without losing the rest of the dump", () => {
-    const broken = { ...marlin(), id: "not-a-number" };
-
-    const catalogue = projectNausysCatalogue(fixtureRecords([broken, yachts102701.yachts[1]]));
-
-    expect(catalogue.listings.map((item) => item.externalId)).toEqual(["4711002"]);
+      yacht.fuelTank = 0;
+      expect(listingOf(yacht)?.spec.fuelCapacity).toBe(600);
+    });
   });
 
   describe("slugs", () => {
@@ -182,13 +251,13 @@ describe("projectNausysCatalogue", () => {
       const second = projectNausysCatalogue(fixtureRecords()).listings.map((item) => item.slug);
 
       expect(first).toEqual(second);
-      expect(first[0]).toBe("marlin-bavaria-cruiser-46-4711001");
+      expect(first[0]).toBe("maria-s-pleasure-athena-38-479287");
     });
 
     it("stay distinct for identically named yachts", () => {
-      const twin = { ...marlin(), id: 4_711_009 };
+      const twin = { ...maria(), id: 479_288 };
 
-      const slugs = projectNausysCatalogue(fixtureRecords([marlin(), twin])).listings.map(
+      const slugs = projectNausysCatalogue(fixtureRecords([maria(), twin])).listings.map(
         (item) => item.slug,
       );
 
@@ -197,66 +266,196 @@ describe("projectNausysCatalogue", () => {
   });
 
   describe("media", () => {
-    it("assigns roles and keeps array order, deduplicating the main picture", () => {
-      const [listing] = projectNausysCatalogue(fixtureRecords()).listings;
+    it("takes roles from the picture flags and files the main shot once", () => {
+      const listing = listingOf(maria());
 
+      // mainPictureUrl repeats the first entry of `pictures`; it must not be filed twice.
       expect(listing?.media).toEqual([
         {
-          externalUrl: "https://ws.nausys.com/media/yacht/4711001/main.jpg",
+          externalUrl:
+            "https://ws.nausys.com/CBMS-external/rest/yachtModel/100239/pictures/main.jpg",
           role: "main",
           sortOrder: 0,
         },
         {
-          externalUrl: "https://ws.nausys.com/media/yacht/4711001/salon.jpg",
-          role: "gallery",
+          externalUrl:
+            "https://ws.nausys.com/CBMS-external/rest/yachtModel/100239/pictures/layout.jpg",
+          role: "layout",
           sortOrder: 1,
         },
         {
-          externalUrl: "https://ws.nausys.com/media/yacht/4711001/cabin.jpg",
+          externalUrl:
+            "https://ws.nausys.com/CBMS-external/rest/yacht/479287/pictures/10_Avanti.jpg",
           role: "gallery",
           sortOrder: 2,
+        },
+        {
+          externalUrl:
+            "https://ws.nausys.com/CBMS-external/rest/yacht/479287/pictures/Screenshot from 2026-04-24 10-12-07.png",
+          role: "gallery",
+          sortOrder: 3,
+        },
+        {
+          externalUrl:
+            "https://ws.nausys.com/CBMS-external/rest/yacht/479287/pictures/logo.svg.png",
+          role: "gallery",
+          sortOrder: 4,
+        },
+        {
+          externalUrl: "https://ws.nausys.com/CBMS-external/rest/yacht/479287/pictures/summary.png",
+          role: "gallery",
+          sortOrder: 5,
         },
       ]);
     });
 
-    it("maps a layout image to the layout role", () => {
-      const yacht = marlin();
-      yacht.yachtLayoutPictureUrl = "https://ws.nausys.com/media/yacht/4711001/layout.png";
+    it("falls back to picturesURL when the vendor sends no picture objects", () => {
+      const yacht = maria();
+      delete yacht.pictures;
 
-      const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
+      const listing = listingOf(yacht);
 
-      expect(listing?.media.at(-1)).toEqual({
-        externalUrl: "https://ws.nausys.com/media/yacht/4711001/layout.png",
-        role: "layout",
-        sortOrder: 3,
-      });
+      expect(listing?.media).toHaveLength(6);
+      expect(listing?.media.map((item) => item.role)).toEqual([
+        "main",
+        "gallery",
+        "gallery",
+        "gallery",
+        "gallery",
+        "gallery",
+      ]);
+    });
+
+    it("leaves a yacht with no pictures at all without media", () => {
+      // APOLLO carries neither mainPictureUrl nor any picture; it is recorded that way.
+      const apollo = structuredClone(yachts102701.yachts[4]) as Yacht;
+
+      expect(listingOf(apollo)?.media).toEqual([]);
     });
   });
 
-  it("emits multilingual comments as listing texts", () => {
-    const yacht = marlin();
-    yacht.commentary = { textEN: "Well kept cruiser", textHR: "Dobro odrzana jedrilica" };
-    yacht.conditions = { textHR: "Uvjeti najma" };
+  describe("texts", () => {
+    it("strips the vendor's HTML out of every locale of the highlights", () => {
+      expect(listingOf(maria())?.texts).toEqual([
+        { kind: "description", locale: "en", value: "ana banana test\n\nevo baby blue boja" },
+        { kind: "description", locale: "de", value: "ana banana test\n\nevo baby blue boja" },
+        { kind: "description", locale: "hr", value: "ana banana test\n\nevo baby blue boja" },
+      ]);
+    });
 
-    const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
+    it("strips markup out of notes too", () => {
+      // Recorded as "<mark>Yacht note</mark>" in EN, plain text in DE and HR.
+      const kan = structuredClone(yachts102701.yachts[1]) as Yacht;
 
-    expect(listing?.texts).toEqual([
-      { kind: "description", locale: "en", value: "Well kept cruiser" },
-      { kind: "description", locale: "hr", value: "Dobro odrzana jedrilica" },
-      { kind: "conditions", locale: "hr", value: "Uvjeti najma" },
-    ]);
+      expect(listingOf(kan)?.texts).toEqual([
+        { kind: "notes", locale: "en", value: "Yacht note" },
+        { kind: "notes", locale: "de", value: "Jacht bemerkung" },
+        { kind: "notes", locale: "hr", value: "Napomena na plovilu" },
+      ]);
+    });
+
+    it("decodes entities only after the tags are gone", () => {
+      const yacht = maria();
+      yacht.highlightsIntText = { textEN: "<p>Fish &amp; chips</p><p>&lt;script&gt;</p>" };
+
+      expect(listingOf(yacht)?.texts).toEqual([
+        { kind: "description", locale: "en", value: "Fish & chips\n<script>" },
+      ]);
+    });
+
+    it("files the unlocalized highlights string under English", () => {
+      const yacht = maria();
+      delete yacht.highlightsIntText;
+      yacht.highlights = "AC / Winch";
+
+      expect(listingOf(yacht)?.texts).toEqual([
+        { kind: "description", locale: "en", value: "AC / Winch" },
+      ]);
+    });
+
+    it("emits nothing for a yacht whose text is markup and whitespace only", () => {
+      const yacht = maria();
+      yacht.highlightsIntText = { textEN: "<div>  </div>" };
+
+      expect(listingOf(yacht)?.texts).toEqual([]);
+    });
   });
 
-  it("maps check-in periods and one-way periods into rules", () => {
-    const yacht = marlin();
-    yacht.oneWayPeriods = [{ dateFrom: "04.04.2026", dateTo: "31.10.2026" }, { dateFrom: "bad" }];
+  describe("check-in rules", () => {
+    it("maps the named weekday booleans to one rule", () => {
+      expect(listingOf(maria())?.checkinRules).toEqual([
+        { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+      ]);
+    });
 
-    const [listing] = projectNausysCatalogue(fixtureRecords([yacht])).listings;
+    it("keeps a check-out weekday that differs from the check-in weekday", () => {
+      // LeeLaa: Saturday in, Friday out, six nights.
+      const leelaa = structuredClone(yachts102701.yachts[2]) as Yacht;
 
-    expect(listing?.checkinRules).toEqual([
-      { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
-    ]);
-    expect(listing?.oneWayRules).toEqual([
+      expect(listingOf(leelaa)?.checkinRules).toEqual([
+        { checkinWeekday: 6, checkoutWeekday: 5, minNights: 6, maxNights: undefined },
+      ]);
+    });
+
+    it("reads all seven weekdays as no weekday constraint at all", () => {
+      expect(listingOf(kraken())?.checkinRules).toEqual([
+        {
+          checkinWeekday: undefined,
+          checkoutWeekday: undefined,
+          minNights: 3,
+          maxNights: undefined,
+        },
+      ]);
+    });
+
+    it("keeps every weekday a period enables rather than the first one", () => {
+      // No recorded period enables a proper subset; this one is built by hand.
+      const yacht = maria();
+      yacht.checkInPeriods = [
+        {
+          checkInSaturday: true,
+          checkInSunday: true,
+          checkOutSaturday: true,
+          dateFrom: "01.01.1970",
+          dateTo: "31.12.2099",
+          minimalReservationDuration: 7,
+          minimumShortPeriodDuration: 3,
+        },
+      ];
+
+      expect(listingOf(yacht)?.checkinRules).toEqual([
+        { checkinWeekday: 0, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+        { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+      ]);
+    });
+
+    it("collapses two periods that state the same rule over different dates", () => {
+      const yacht = maria();
+      const [period] = yacht.checkInPeriods as Yacht[];
+      yacht.checkInPeriods = [
+        { ...period, dateFrom: "01.01.2026", dateTo: "31.12.2026" },
+        { ...period, dateFrom: "01.01.2027", dateTo: "31.12.2027" },
+      ];
+
+      expect(listingOf(yacht)?.checkinRules).toHaveLength(1);
+    });
+
+    it("emits nothing for a period that constrains nothing", () => {
+      const yacht = maria();
+      yacht.checkInPeriods = [{ dateFrom: "01.01.1970", dateTo: "31.12.2099" }];
+
+      expect(listingOf(yacht)?.checkinRules).toEqual([]);
+    });
+  });
+
+  it("maps one-way periods from the vendor's periodFrom and periodTo", () => {
+    const yacht = maria();
+    yacht.oneWayPeriods = [
+      { baseId: 102_753, locationId: 51, periodFrom: "04.04.2026", periodTo: "31.10.2026" },
+      { baseId: 102_753, periodFrom: "not-a-date", periodTo: "31.10.2026" },
+    ];
+
+    expect(listingOf(yacht)?.oneWayRules).toEqual([
       { startDate: "2026-04-04", endDate: "2026-10-31", isOneWay: true },
     ]);
   });

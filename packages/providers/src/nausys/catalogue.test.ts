@@ -19,16 +19,20 @@ const config: NausysConfig = {
   queueKey: "nausys:agency-user",
 };
 
-/** Endpoints with no recorded fixture yet; an empty dump is a valid response. */
+/**
+ * Endpoints with no committed fixture yet; an empty dump is a valid response.
+ * The keys are the recorded collection names, which twice are not the endpoint's:
+ * `countrystates` answers under `countries` and `discountItems` under `discounts`.
+ */
 const EMPTY_DUMPS: Record<string, unknown> = {
-  countrystates: { status: "OK", countryStates: [] },
+  countrystates: { status: "OK", countries: [] },
   sailTypes: { status: "OK", sailTypes: [] },
   steeringTypes: { status: "OK", steeringTypes: [] },
-  engineBuilders: { status: "OK", engineBuilders: [] },
+  engineBuilders: { status: "OK", builders: [] },
   priceMeasures: { status: "OK", priceMeasures: [] },
   seasons: { status: "OK", seasons: [] },
   priceLists: { status: "OK", priceLists: [] },
-  discountItems: { status: "OK", discountItems: [] },
+  discountItems: { status: "OK", discounts: [] },
 };
 
 function build() {
@@ -36,7 +40,7 @@ function build() {
   for (const [key, body] of Object.entries(EMPTY_DUMPS)) {
     transport.respondWith(key, body);
   }
-  // `yachts/102702` has no fixture of its own and falls back to this key.
+  // A company with no fixture of its own falls back to this key.
   transport.respondWith("yachts", { status: "OK", yachts: [] });
 
   const client = new NausysClient({
@@ -99,7 +103,6 @@ describe("syncNausysCatalogue", () => {
       "priceLists",
       "discountItems",
       "yachts-102701",
-      "yachts",
     ]);
     // The vendor forbids parallel calls; the per-company sweep is the easiest place
     // to break that by reaching for Promise.all.
@@ -114,12 +117,16 @@ describe("syncNausysCatalogue", () => {
     const scoped = entities(events).map((event) => event.entity);
 
     expect(scoped.filter((entity) => entity.resourceType === "yacht")).toEqual([
-      expect.objectContaining({ externalId: "4711001", scopeKey: "102701" }),
-      expect.objectContaining({ externalId: "4711002", scopeKey: "102701" }),
+      expect.objectContaining({ externalId: "479287", scopeKey: "102701" }),
+      expect.objectContaining({ externalId: "481849", scopeKey: "102701" }),
+      expect.objectContaining({ externalId: "73101212", scopeKey: "102701" }),
+      expect.objectContaining({ externalId: "22585866", scopeKey: "102701" }),
+      expect.objectContaining({ externalId: "46799351", scopeKey: "102701" }),
+      expect.objectContaining({ externalId: "103454", scopeKey: "102701" }),
     ]);
-    expect(scoped.find((entity) => entity.externalId === "900201")).toMatchObject({
+    expect(scoped.find((entity) => entity.externalId === "102751")).toMatchObject({
       resourceType: "base",
-      scopeKey: "102702",
+      scopeKey: "102701",
     });
     expect(scoped.find((entity) => entity.resourceType === "country")).toMatchObject({
       scopeKey: undefined,
@@ -137,7 +144,6 @@ describe("syncNausysCatalogue", () => {
     ]);
     expect(done.filter((event) => event.resourceType === "yacht")).toEqual([
       expect.objectContaining({ scopeKey: "102701", cursor: { step: 19, companyIndex: 1 } }),
-      expect.objectContaining({ scopeKey: "102702", cursor: { step: 19, companyIndex: 2 } }),
     ]);
   });
 
@@ -145,15 +151,26 @@ describe("syncNausysCatalogue", () => {
     const { client, transport, reporter } = build();
 
     const events = await collect(
+      syncNausysCatalogue(client, { reporter, resume: { step: 19, companyIndex: 0 } }),
+    );
+
+    // The companies dump is re-read for its ids only, and yields no entities.
+    expect(transport.callSequence()).toEqual(["charterCompanies", "yachts-102701"]);
+    expect(entities(events).every((event) => event.entity.resourceType === "yacht")).toBe(true);
+    expect(completions(events)).toEqual([
+      expect.objectContaining({ resourceType: "yacht", scopeKey: "102701" }),
+    ]);
+  });
+
+  it("resumes past a company fleet it has already swept", async () => {
+    const { client, transport, reporter } = build();
+
+    const events = await collect(
       syncNausysCatalogue(client, { reporter, resume: { step: 19, companyIndex: 1 } }),
     );
 
-    // The companies dump is re-read for its ids only, and yields nothing.
-    expect(transport.callSequence()).toEqual(["charterCompanies", "yachts"]);
-    expect(entities(events)).toEqual([]);
-    expect(completions(events)).toEqual([
-      expect.objectContaining({ resourceType: "yacht", scopeKey: "102702" }),
-    ]);
+    expect(transport.callSequence()).toEqual(["charterCompanies"]);
+    expect(events).toEqual([]);
   });
 
   it("uses supplied company ids instead of re-reading the companies dump", async () => {
@@ -177,9 +194,8 @@ describe("syncNausysCatalogue", () => {
     const events = await collect(syncNausysCatalogue(client, { reporter }));
 
     // Nothing announces 102701, so the runner cannot sweep that fleet.
-    expect(completions(events).filter((event) => event.resourceType === "yacht")).toEqual([
-      expect.objectContaining({ scopeKey: "102702" }),
-    ]);
+    expect(completions(events).filter((event) => event.resourceType === "yacht")).toEqual([]);
+    expect(completions(events).some((event) => event.resourceType === "base")).toBe(true);
     expect(errors).toEqual([
       expect.objectContaining({ resourceType: "yacht", scopeKey: "102701" }),
     ]);
