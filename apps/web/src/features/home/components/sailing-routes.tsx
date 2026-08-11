@@ -1,6 +1,6 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { TripCard } from "@yacht-charter/ui/components/data-display/card-trip";
-import { Activity, ArrowUpRight, Clock } from "lucide-react";
+import { Activity, Clock } from "lucide-react";
 import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -66,15 +66,8 @@ export default function SailingRoutes() {
         </div>
 
         <motion.div variants={RISE} className="flex justify-center">
-          <Button
-            variant="neutral"
-            size="md"
-            className="w-full md:w-auto"
-            nativeButton={false}
-            render={<Link href="/yachts" />}
-          >
-            {t("allRoutes")}
-            <ArrowUpRight />
+          <Button variant="neutral" size="md" className="w-full md:w-auto">
+            Coming Soon
           </Button>
         </motion.div>
       </motion.div>
