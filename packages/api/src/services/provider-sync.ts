@@ -7,6 +7,7 @@ import {
   runAvailabilitySyncJob,
 } from "@yacht-charter/providers/sync/availability-writer";
 import { readSyncCursor } from "@yacht-charter/providers/sync/cursor";
+import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import {
   openCatalogueSyncRun,
   resolveProviderId,
@@ -45,6 +46,10 @@ export async function startCatalogueSync(
 
   // Deliberately not awaited. A failure inside the job is already recorded on the
   // run and its errors, so the only thing left to do here is not crash the process.
+  //
+  // The cache drop rides on the job's completion rather than this request: the
+  // catalog has not moved until the run finishes, and revalidating early would
+  // refill the cache from the state we are about to replace.
   void runCatalogueSyncJob({
     db,
     provider,
@@ -52,7 +57,9 @@ export async function startCatalogueSync(
     syncRunId,
     resume,
     cursorScope: CURSOR_SCOPE,
-  }).catch(() => undefined);
+  })
+    .then(() => revalidateCatalogCache())
+    .catch(() => undefined);
 
   return { syncRunId, status: "pending", provider: provider.key };
 }
@@ -78,9 +85,11 @@ export async function startAvailabilitySync(
     scope: HOT_WINDOW_CURSOR_SCOPE,
   });
 
-  void runAvailabilitySyncJob({ db, provider, providerId, syncRunId, resume }).catch(
-    () => undefined,
-  );
+  // Availability feeds the search cards' price and date window, both of which sit
+  // in the cached catalog tier, so this run invalidates it too.
+  void runAvailabilitySyncJob({ db, provider, providerId, syncRunId, resume })
+    .then(() => revalidateCatalogCache())
+    .catch(() => undefined);
 
   return { syncRunId, status: "pending", provider: provider.key };
 }

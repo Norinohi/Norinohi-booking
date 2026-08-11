@@ -7,6 +7,7 @@ import { NausysClient } from "./client";
 import type { NausysConfig } from "./config";
 import freeYachtsSearchFixture from "./fixtures/freeYachtsSearch.json" with { type: "json" };
 import occupancyFixture from "./fixtures/occupancy.json" with { type: "json" };
+import priceListsFixture from "./fixtures/priceLists-recorded.json" with { type: "json" };
 import {
   createNausysAvailabilitySource,
   fetchNausysFreeYachtsSearch,
@@ -15,6 +16,7 @@ import {
   mapNausysPriceLists,
   mapOccupancyDump,
   mapOccupancyReservation,
+  type NausysPriceListIssue,
   parseNausysHotWindowCursor,
 } from "./occupancy";
 import { FakeNausysTransport } from "./testing/fake-transport";
@@ -63,6 +65,40 @@ function occupancyResponse(): OccupancyResponse {
 
 function searchResponse(): SearchResponse {
   return structuredClone(freeYachtsSearchFixture) as unknown as SearchResponse;
+}
+
+type RecordedPriceList = {
+  id: number;
+  currency: string;
+  type: string;
+  vatInPrice: string;
+  seasonId: number;
+  locationsId: number[];
+  columns: { periods: { periodFrom: string; periodTo: string }[] }[];
+  rows: { yachtId: number | string; prices: (string | number)[] }[];
+};
+
+/** Trimmed rows aside, `fixtures/priceLists-recorded.json` is the live response. */
+const WEEKLY_LIST_ID = 60808865;
+/** The vendor publishes the same nine columns and rows again under a second id. */
+const DUPLICATE_WEEKLY_LIST_ID = 76510827;
+const DAILY_LIST_ID = 74041227;
+
+function recordedPriceList(id: number): RecordedPriceList {
+  const list = (
+    priceListsFixture as unknown as { priceLists: RecordedPriceList[] }
+  ).priceLists.find((entry) => entry.id === id);
+  if (!list) throw new Error(`price list ${id} is not in the recorded fixture`);
+  return structuredClone(list);
+}
+
+function priceListRecord(id: number) {
+  return { externalId: String(id), payload: recordedPriceList(id) };
+}
+
+/** The nine-column WEEKLY list, cloned so a test can bend one field of it. */
+function weeklyList(): RecordedPriceList {
+  return recordedPriceList(WEEKLY_LIST_ID);
 }
 
 function build() {
@@ -348,54 +384,155 @@ describe("parseNausysHotWindowCursor", () => {
 });
 
 describe("mapNausysPriceLists", () => {
-  it("reads nested prices and flat rows alike", () => {
-    const prices = mapNausysPriceLists([
-      {
-        externalId: "9001",
-        payload: {
-          id: 9001,
-          yachtId: 4711001,
-          currency: "EUR",
-          prices: [
-            { dateFrom: "30.05.2026", dateTo: "26.06.2026", price: "3200.00" },
-            { dateFrom: "27.06.2026", dateTo: "29.08.2026", price: "3900.00" },
-          ],
-        },
-      },
-      {
-        externalId: "9002",
-        payload: {
-          id: 9002,
-          yachtId: "4711002",
-          dateFrom: "30.05.2026",
-          dateTo: "29.08.2026",
-          price: 5890,
-          currency: "EUR",
-        },
-      },
-    ]);
+  it("expands the recorded matrix positionally, one entry per column period", () => {
+    const prices = mapNausysPriceLists([priceListRecord(WEEKLY_LIST_ID)]);
 
-    expect(prices.get("4711001")).toEqual([
-      { startDate: "2026-05-30", endDate: "2026-06-26", priceMinor: 320000, currency: "EUR" },
-      { startDate: "2026-06-27", endDate: "2026-08-29", priceMinor: 390000, currency: "EUR" },
+    // Row 22287918 is ["1500","1500","2500","2600","2900","2800","3000","3500","1500"]
+    // against the nine recorded columns, so 2600 belongs to 30.05-26.06 and to
+    // neither of the columns beside it.
+    expect(prices.get("22287918")).toEqual([
+      { startDate: "2026-01-01", endDate: "2026-04-17", priceMinor: 150000, currency: "EUR" },
+      { startDate: "2026-04-18", endDate: "2026-05-08", priceMinor: 150000, currency: "EUR" },
+      { startDate: "2026-05-09", endDate: "2026-05-29", priceMinor: 250000, currency: "EUR" },
+      { startDate: "2026-05-30", endDate: "2026-06-26", priceMinor: 260000, currency: "EUR" },
+      { startDate: "2026-06-27", endDate: "2026-07-17", priceMinor: 290000, currency: "EUR" },
+      { startDate: "2026-07-18", endDate: "2026-08-28", priceMinor: 280000, currency: "EUR" },
+      { startDate: "2026-08-29", endDate: "2026-10-16", priceMinor: 300000, currency: "EUR" },
+      { startDate: "2026-10-17", endDate: "2026-11-06", priceMinor: 350000, currency: "EUR" },
+      { startDate: "2026-11-07", endDate: "2026-12-31", priceMinor: 150000, currency: "EUR" },
     ]);
-    expect(prices.get("4711002")?.[0]?.priceMinor).toBe(589000);
   });
 
-  it("drops an unreadable row rather than the whole list", () => {
-    const prices = mapNausysPriceLists([
+  it("converts the decimal strings on their digits rather than by rounding", () => {
+    const list = weeklyList();
+    list.rows = [
+      { yachtId: 4711001, prices: ["1500", ...list.columns.slice(1).map(() => "1234.567")] },
+    ];
+
+    const prices = mapNausysPriceLists([{ externalId: "9001", payload: list }]);
+
+    expect(prices.get("4711001")?.[0]?.priceMinor).toBe(150000);
+    // Precision beyond the currency's is truncated: rounding a third decimal up
+    // would quietly overcharge by a cent.
+    expect(prices.get("4711001")?.[1]?.priceMinor).toBe(123456);
+  });
+
+  it("gives every period of a multi-period column the same price", () => {
+    const list = weeklyList();
+    // The vendor reuses one rate for two disjoint shoulder ranges by folding them
+    // into a single column, which then still consumes exactly one price. This
+    // company's recorded lists happen to be one period per column, so the shape is
+    // built here out of their own ranges.
+    list.columns = [
       {
-        externalId: "9001",
-        payload: {
-          yachtId: 4711001,
-          prices: [
-            { dateFrom: "not-a-date", dateTo: "26.06.2026", price: "3200.00" },
-            { dateFrom: "27.06.2026", dateTo: "29.08.2026", price: "3900.00", currency: "EUR" },
-          ],
-        },
+        periods: [
+          { periodFrom: "18.04.2026", periodTo: "08.05.2026" },
+          { periodFrom: "17.10.2026", periodTo: "30.10.2026" },
+        ],
+      },
+      { periods: [{ periodFrom: "27.06.2026", periodTo: "17.07.2026" }] },
+    ];
+    list.rows = [{ yachtId: 4711001, prices: ["1500", "2900"] }];
+
+    expect(mapNausysPriceLists([{ externalId: "9001", payload: list }]).get("4711001")).toEqual([
+      { startDate: "2026-04-18", endDate: "2026-05-08", priceMinor: 150000, currency: "EUR" },
+      { startDate: "2026-06-27", endDate: "2026-07-17", priceMinor: 290000, currency: "EUR" },
+      { startDate: "2026-10-17", endDate: "2026-10-30", priceMinor: 150000, currency: "EUR" },
+    ]);
+  });
+
+  it("skips a row whose price count does not match the columns instead of zipping it", () => {
+    const list = weeklyList();
+    const [intact] = list.rows;
+    const short = { yachtId: 4711001, prices: list.columns.slice(1).map(() => "1500") };
+    list.rows = [short, ...(intact ? [intact] : [])];
+
+    const issues: NausysPriceListIssue[] = [];
+    const prices = mapNausysPriceLists([{ externalId: "9001", payload: list }], (issue) =>
+      issues.push(issue),
+    );
+
+    // Zipping the eight prices onto the nine columns would have sold the whole
+    // fleet's August at its April rate, so the row is refused outright.
+    expect(prices.has("4711001")).toBe(false);
+    expect(issues).toEqual([
+      {
+        priceListId: "9001",
+        externalYachtId: "4711001",
+        reason: "column_count_mismatch",
+        detail: "8 prices for 9 columns",
       },
     ]);
+    expect(prices.get("22287918")).toHaveLength(9);
+  });
 
-    expect(prices.get("4711001")).toHaveLength(1);
+  it("takes the currency from the list, not from a default", () => {
+    const list = weeklyList();
+    list.currency = "GBP";
+    list.rows = [{ yachtId: 4711001, prices: list.columns.map(() => "1500") }];
+
+    const prices = mapNausysPriceLists([{ externalId: "9001", payload: list }]);
+
+    expect(prices.get("4711001")?.every((price) => price.currency === "GBP")).toBe(true);
+  });
+
+  it("keeps both lists when the vendor publishes a yacht twice", () => {
+    const prices = mapNausysPriceLists([
+      priceListRecord(WEEKLY_LIST_ID),
+      priceListRecord(DUPLICATE_WEEKLY_LIST_ID),
+    ]);
+
+    // The two recorded lists carry the same rows under different ids. Overwriting
+    // on the second would be invisible here but would drop real seasons for a
+    // yacht that is genuinely priced twice.
+    expect(prices.get("22287918")).toHaveLength(18);
+  });
+
+  it("refuses a daily list rather than pricing a week at a day's rate", () => {
+    const issues: NausysPriceListIssue[] = [];
+    const prices = mapNausysPriceLists([priceListRecord(DAILY_LIST_ID)], (issue) =>
+      issues.push(issue),
+    );
+
+    expect(prices.size).toBe(0);
+    expect(issues).toEqual([
+      { priceListId: String(DAILY_LIST_ID), reason: "unsupported_unit", detail: "DAILY" },
+    ]);
+  });
+
+  it("keeps the remaining columns aligned when one period is malformed", () => {
+    const list = weeklyList();
+    const broken = list.columns[1];
+    if (broken) broken.periods = [{ periodFrom: "31.02.2026", periodTo: "08.05.2026" }];
+    list.rows = [{ yachtId: 4711001, prices: list.columns.map((_, index) => `${index + 1}000`) }];
+
+    const issues: NausysPriceListIssue[] = [];
+    const prices = mapNausysPriceLists([{ externalId: "9001", payload: list }], (issue) =>
+      issues.push(issue),
+    );
+
+    // Column 1 is emptied, not removed, so column 2 still carries "3000".
+    expect(prices.get("4711001")).toHaveLength(8);
+    expect(prices.get("4711001")?.[1]).toEqual({
+      startDate: "2026-05-09",
+      endDate: "2026-05-29",
+      priceMinor: 300000,
+      currency: "EUR",
+    });
+    expect(issues.map((issue) => issue.reason)).toEqual(["malformed_period"]);
+  });
+
+  it("reports a row it cannot read and keeps the rest of the list", () => {
+    const list = weeklyList();
+    list.rows = [{ yachtId: 4711001, prices: list.columns.map(() => 1500) }, ...list.rows];
+
+    const issues: NausysPriceListIssue[] = [];
+    const prices = mapNausysPriceLists([{ externalId: "9001", payload: list }], (issue) =>
+      issues.push(issue),
+    );
+
+    expect(prices.has("4711001")).toBe(false);
+    expect(prices.get("22287918")).toHaveLength(9);
+    expect(issues.map((issue) => issue.reason)).toEqual(["row_unreadable"]);
   });
 });

@@ -1,26 +1,234 @@
 {
   "status": "OK",
-  "errorCode": 0,
-  "categories": [
+  "equipmentCategories": [
     {
-      "id": 4001,
+      "id": 46920490,
       "name": {
-        "textEN": "Navigation",
-        "textDE": "Navigation",
-        "textHR": "Navigacija"
-      }
-    },
-    {
-      "id": 4002,
-      "name": {
+        "textCZ": "Pohodlí",
+        "textDE": "Komfort",
         "textEN": "Comfort",
-        "textHR": "Udobnost"
+        "textES": "Comodidad",
+        "textFR": "Confort",
+        "textHR": "Udobnost",
+        "textHU": "Kényelem",
+        "textIT": "Comfort",
+        "textLT": "Komfortas",
+        "textLV": "Komfortas",
+        "textNL": "Comfort",
+        "textNO": "Komfort",
+        "textPL": "Komfort",
+        "textRU": "Комфорт",
+        "textSE": "Bekvämlighet",
+        "textSI": "Udobje",
+        "textSK": "Pohodlie",
+        "textTR": "Konfor"
       }
     },
     {
-      "id": 4003,
+      "id": 599271,
       "name": {
-        "textHR": "Sigurnost"
+        "textCZ": "Plachty",
+        "textDE": "Segel",
+        "textEN": "Sails",
+        "textES": "Velas",
+        "textFR": "Voiles",
+        "textHR": "Jedrilje",
+        "textHU": "Vitrolák",
+        "textIT": "Vele",
+        "textLT": "Burės",
+        "textLV": "Burės",
+        "textNL": "Zeilen",
+        "textNO": "Seil",
+        "textPL": "Ożaglowanie",
+        "textRU": "Паруса",
+        "textSE": "Segel",
+        "textSI": "Jadra",
+        "textSK": "Plachty",
+        "textTR": "Yelkenler"
+      }
+    },
+    {
+      "id": 599268,
+      "name": {
+        "textCZ": "Navigace",
+        "textDE": "Navigation",
+        "textEN": "Navigation",
+        "textES": "Navegación",
+        "textFR": "Navigation",
+        "textHR": "Navigacija",
+        "textHU": "Navigáció",
+        "textIT": "Navigazione",
+        "textLT": "Navigacija",
+        "textLV": "Navigacija",
+        "textNL": "Navigatie ",
+        "textNO": "Navigasjon",
+        "textPL": "Nawigacja",
+        "textRU": "Навигация",
+        "textSE": "Navigering",
+        "textSI": "Navigacija",
+        "textSK": "Navigácia",
+        "textTR": "Navigasyon"
+      }
+    },
+    {
+      "id": 599272,
+      "name": {
+        "textCZ": "Bezpečnost ",
+        "textDE": "Sicherheitsausrüstung",
+        "textEN": "Safety",
+        "textES": "Seguridad",
+        "textFR": "Sécurité",
+        "textHR": "Sigurnost",
+        "textHU": "Biztonság",
+        "textIT": "Sicurezza",
+        "textLT": "Saugumas",
+        "textLV": "Saugumas",
+        "textNL": "Veiligheid",
+        "textNO": "Sikkerhet",
+        "textPL": "Bezpieczeństwo",
+        "textRU": "Безопасность",
+        "textSE": "Säkerhet",
+        "textSI": "Varnost",
+        "textSK": "Bezpečnosť",
+        "textTR": "Güvenlik"
+      }
+    },
+    {
+      "id": 599275,
+      "name": {
+        "textCZ": "Elektronika ",
+        "textDE": "Yachtelektrik",
+        "textEN": "Yacht electrics",
+        "textES": "Electricidad del yate",
+        "textFR": "Système électrique",
+        "textHR": "Elektrika",
+        "textHU": "Elektronikák",
+        "textIT": "Elettrauto yacht",
+        "textLT": "Jachtos elektra",
+        "textLV": "Jachtos elektra",
+        "textNL": "Boot elektra",
+        "textNO": "Elektrisk",
+        "textPL": "Elektronika",
+        "textRU": "Электрооборудование на яхте",
+        "textSE": "Båtens el",
+        "textSI": "Elektrika",
+        "textSK": "Elektronika ",
+        "textTR": "Tekne elektrik sistemi"
+      }
+    },
+    {
+      "id": 599269,
+      "name": {
+        "textCZ": "Paluba",
+        "textDE": "Deckausrüstung",
+        "textEN": "Deck",
+        "textES": "Cubierta",
+        "textFR": "Pont",
+        "textHR": "Paluba",
+        "textHU": "Fedélzet",
+        "textIT": "Attrezzature di coperta",
+        "textLT": "Denis",
+        "textLV": "Denis",
+        "textNL": "Dek ",
+        "textNO": "Dekk",
+        "textPL": "Pokład",
+        "textRU": "Палуба",
+        "textSE": "Däck",
+        "textSI": "Paluba",
+        "textSK": "Paluba",
+        "textTR": "Güverte"
+      }
+    },
+    {
+      "id": 599273,
+      "name": {
+        "textCZ": "Kuchyňka",
+        "textDE": "Bordküche",
+        "textEN": "Galley",
+        "textES": "Cocina",
+        "textFR": "Cuisine",
+        "textHR": "Kuhinja",
+        "textHU": "Konyha",
+        "textIT": "Cucina",
+        "textLT": "Kambuzas",
+        "textLV": "Kambuzas",
+        "textNL": "Gangpad",
+        "textNO": "Bysse/kjøkken",
+        "textPL": "Kambuz",
+        "textRU": "Камбуз",
+        "textSE": "Pentry",
+        "textSI": "Kuhinja",
+        "textSK": "Lodná kuchyňa",
+        "textTR": "Mutfak"
+      }
+    },
+    {
+      "id": 599276,
+      "name": {
+        "textCZ": "Interiér ",
+        "textDE": "Interieur",
+        "textEN": "Interior",
+        "textES": "Interior",
+        "textFR": "Intérieur",
+        "textHR": "Intererijer",
+        "textHU": "Beltér",
+        "textIT": "Interior",
+        "textLT": "Interjeras",
+        "textLV": "Interjeras",
+        "textNL": "Interieur ",
+        "textNO": "Interiør",
+        "textPL": "Wnętrze",
+        "textRU": "Интерьер",
+        "textSE": "Interiör",
+        "textSI": "Notranjost",
+        "textSK": "Interiér ",
+        "textTR": "İç Mekan"
+      }
+    },
+    {
+      "id": 599270,
+      "name": {
+        "textCZ": "Zábava",
+        "textDE": "Unterhaltung",
+        "textEN": "Entertainment",
+        "textES": "Entretenimiento",
+        "textFR": "Divertissement",
+        "textHR": "Zabava",
+        "textHU": "Szórakozás",
+        "textIT": "l'intrattenimento",
+        "textLT": "Pramogos",
+        "textLV": "Pramogos",
+        "textNL": "Entertainment",
+        "textNO": "Underholdning",
+        "textPL": "Rozrywka",
+        "textRU": "Развлечение",
+        "textSE": "Underhållning",
+        "textSI": "Zabava",
+        "textSK": "Zábava",
+        "textTR": "Eğlence"
+      }
+    },
+    {
+      "id": 46921858,
+      "name": {
+        "textCZ": "Další",
+        "textDE": "Zusätzlich",
+        "textEN": "Additional",
+        "textES": "Adicional",
+        "textFR": "Supplémentaire",
+        "textHR": "Dodatno",
+        "textHU": "További",
+        "textIT": "Ulteriori",
+        "textLT": "Papildomas",
+        "textLV": "Papildomas",
+        "textNL": "Aanvullend",
+        "textNO": "Ytterligere",
+        "textPL": "Dodatkowy",
+        "textRU": "Дополнительный",
+        "textSE": "Ytterligare",
+        "textSI": "Dodatno",
+        "textSK": "Dodatočné",
+        "textTR": "Ek olarak"
       }
     }
   ]

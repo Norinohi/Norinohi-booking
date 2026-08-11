@@ -1,10 +1,11 @@
 import "server-only";
 
 import { dehydrate, QueryClient } from "@tanstack/react-query";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getFacets } from "@/components/shared/form/filters/api/server";
+import { CATALOG_TAG } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
@@ -20,6 +21,7 @@ import { popularYachtsInput, popularYachtsQueryOptions } from "./queries";
 async function getPopularYachts() {
   "use cache";
   cacheLife("hours");
+  cacheTag(CATALOG_TAG);
 
   return publicClient.charterSearch.results(popularYachtsInput(await getRootLocale()));
 }
@@ -49,6 +51,7 @@ async function getPopularYachts() {
 export async function prefetchHome() {
   "use cache";
   cacheLife("hours");
+  cacheTag(CATALOG_TAG);
 
   const queryClient = new QueryClient();
   const [locale, facets, popularYachts] = await Promise.all([

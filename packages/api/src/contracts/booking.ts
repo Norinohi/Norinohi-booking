@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { includedItemSchema } from "./catalog";
 import {
   dateRangeRefinement,
   idSchema,
@@ -63,19 +64,53 @@ export const bookingSummarySchema = z.object({
     reviewCount: z.number().int(),
     category: z.string().nullable(),
     crewType: z.string().nullable(),
+    specs: z.object({
+      lengthM: z.number(),
+      cabins: z.number().int(),
+      berths: z.number().int(),
+      heads: z.number().int(),
+      yearBuilt: z.number().int(),
+      sailType: z.string().nullable(),
+    }),
+    /** The full list — the card takes the first three itself. */
+    amenities: z.array(z.string()),
+    bookingStats: z.object({
+      bookedThisMonth: z.number().int(),
+      viewedToday: z.number().int(),
+    }),
+    badges: z.array(includedItemSchema),
   }),
   base: z.object({
     name: z.string(),
     locationName: z.string(),
     countryName: z.string(),
+    /** Synthesised from name/location/country — the base has no dedicated address field. */
+    address: z.string(),
+    coordinates: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }),
+    /**
+     * Every charter date on a booking is already stored and rendered as UTC
+     * (see `combine` in services/booking.ts), so this is UTC until bases carry
+     * a real IANA zone.
+     */
+    timeZone: z.string(),
+    phone: z.string().nullable(),
+    website: z.string().nullable(),
+    email: z.string().nullable(),
   }),
   /** ISO datetimes — the card shows "7 July, 2026 17:00 → 25 July, 2026 22:00". */
   checkIn: z.string(),
   checkOut: z.string(),
   guests: z.number().int(),
   total: moneySchema,
+  /** total / guests, rounded to the nearest minor unit. */
+  perPerson: moneySchema,
   paidTotal: moneySchema,
   balanceDue: moneySchema,
+  /** What the quote's payment policy asked up front — the quote's `depositMinor`. */
+  prepayment: moneySchema,
   nextPaymentDueAt: z.string().nullable(),
   cancellable: z.boolean(),
   createdAt: z.string(),

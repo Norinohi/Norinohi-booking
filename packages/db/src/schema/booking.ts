@@ -97,6 +97,26 @@ export type CommercialSnapshot = {
   reviewCount: number;
   checkInTime: string | null;
   checkOutTime: string | null;
+  /**
+   * Optional: rows written before these were captured have none of them, so
+   * readers must fall back rather than assume they are present.
+   */
+  baseLat?: number | null;
+  baseLng?: number | null;
+  baseEmail?: string | null;
+  basePhone?: string | null;
+  baseWebsite?: string | null;
+  depositInsuranceIncluded?: boolean;
+  petsAllowed?: boolean;
+  specs?: {
+    lengthM: number;
+    cabins: number;
+    berths: number;
+    heads: number;
+    yearBuilt: number;
+    sailType: string | null;
+  };
+  amenities?: string[];
 };
 
 /**

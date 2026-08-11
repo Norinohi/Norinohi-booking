@@ -198,9 +198,9 @@ describe("NauSYS fixture round trip", () => {
       nausysEndpoints.catalogue.countries,
       restCountriesResponseSchema,
     );
+    expect(countries.countries?.[0]).toMatchObject({ code: "HRV", code2: "HR" });
+    // Recorded countries are translated into 18 languages, English among them.
     expect(countries.countries?.[0]?.name.textEN).toBe("Croatia");
-    // Third country has no EN text, so the locale fallback has something to do.
-    expect(countries.countries?.[2]?.name.textEN).toBeUndefined();
 
     const free = await client.bookingCall(
       nausysEndpoints.availability.freeYachts,

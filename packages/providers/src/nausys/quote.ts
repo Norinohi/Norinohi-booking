@@ -61,9 +61,10 @@ export interface NausysQuoteServiceOptions {
    */
   cacheTtlMs?: number;
   /**
-   * The security deposit is catalogue data (`RestYacht.deposit` /
-   * `depositWhenInsured`), never a `freeYachts` field, so it is read from the
-   * resolved listing rather than from the price response.
+   * Fallback only. Production `freeYachts` does return `price.depositAmount` for
+   * the period, and that is preferred: it is the figure the operator will actually
+   * hold for these dates, where the catalogue value is a yacht-level default. This
+   * covers an offer that omits it.
    */
   loadSecurityDeposit?: (listingId: string) => Promise<Money | undefined>;
   /** Resolves a vendor service or discount id to a customer-facing line label. */
@@ -145,7 +146,16 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         parsed.currency,
       );
 
-      const securityDeposit = await options.loadSecurityDeposit?.(parsed.listingId);
+      // The offer's own deposit wins over the catalogue default; see the option's
+      // docstring. Read before the fallback so a present value costs no extra work.
+      const offered = yacht.price.depositAmount;
+      const securityDeposit =
+        offered === undefined
+          ? await options.loadSecurityDeposit?.(parsed.listingId)
+          : {
+              amountMinor: decimalStringToMinor(offered, yacht.price.currency),
+              currency: yacht.price.currency,
+            };
 
       return mapFreeYachtToProviderQuote({
         yacht,
@@ -318,19 +328,30 @@ function discountAmountMinor(
   );
 }
 
+/** Obligatory extras carry `serviceId`, additional ones `extraId`. */
+function extraKey(extra: RestExtra): string {
+  return String(extra.serviceId ?? extra.extraId ?? "unknown");
+}
+
 function toExtraLine(extra: RestExtra, currency: string, input: FreeYachtMapping): QuoteLine {
   if (extra.currency !== currency) {
     throw new ContractError(
-      `NauSYS service ${extra.serviceId} is priced in ${extra.currency}, the charter in ${currency}`,
+      `NauSYS service ${extraKey(extra)} is priced in ${extra.currency}, the charter in ${currency}`,
     );
   }
 
+  // `amount` is the UNIT price and `totalPrice` the line total. Production sends
+  // `amount: "10.00"`, `quantity: "10.00"`, `totalPrice: "100.00"`, so billing off
+  // `amount` under-charges by the quantity. We take the vendor's own total rather
+  // than multiplying, because rounding of a unit price is theirs to decide, and
+  // fall back to `amount` only when no total is given (where quantity is 1 and the
+  // two are equal anyway).
+  const lineTotal = extra.totalPrice ?? extra.amount;
+
   return {
-    code: `nausys-service-${extra.serviceId}`,
-    label: labelOf(input, "service", String(extra.serviceId), DEFAULT_LABELS.service),
-    // `amount` is the line total; `quantity` is descriptive, and multiplying by it
-    // would double-count (the fixture's 10-unit service still costs `amount`).
-    amount: { amountMinor: decimalStringToMinor(extra.amount, currency), currency },
+    code: `nausys-service-${extraKey(extra)}`,
+    label: labelOf(input, "service", extraKey(extra), DEFAULT_LABELS.service),
+    amount: { amountMinor: decimalStringToMinor(lineTotal, currency), currency },
     payWhen: payWhenFor(extra),
     kind: "extra",
     // Everything a NauSYS quote returns today is an obligatory extra; optional
@@ -355,7 +376,7 @@ function payWhenFor(extra: RestExtra): QuoteLine["payWhen"] {
       return "at_check_in";
     default:
       throw new ContractError(
-        `Unknown NauSYS calculationType ${JSON.stringify(extra.calculationType)} on service ${extra.serviceId}`,
+        `Unknown NauSYS calculationType ${JSON.stringify(extra.calculationType)} on service ${extraKey(extra)}`,
       );
   }
 }
@@ -448,8 +469,8 @@ function priceObservationHash(yacht: RestFreeYacht, securityDeposit: Money | und
     })),
     obligatoryExtras: (yacht.obligatoryExtras ?? [])
       .map((extra) => ({
-        serviceId: extra.serviceId,
-        amount: extra.amount,
+        serviceId: extra.serviceId ?? extra.extraId ?? 0,
+        amount: extra.totalPrice ?? extra.amount,
         currency: extra.currency,
         calculationType: extra.calculationType ?? null,
       }))

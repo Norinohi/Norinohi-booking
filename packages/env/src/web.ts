@@ -2,6 +2,15 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const env = createEnv({
+  server: {
+    /*
+     * Shared with the Hono server, which posts here after a provider sync to drop
+     * the cached catalog reads (docs/adr/0002). Optional like the other secrets:
+     * unset makes the revalidate route refuse every request rather than stopping
+     * the app from booting, and `next.config.ts` validates this module at build.
+     */
+    REVALIDATE_SECRET: z.string().min(16).optional(),
+  },
   client: {
     NEXT_PUBLIC_SERVER_URL: z.url(),
     NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3001"),
@@ -9,6 +18,7 @@ export const env = createEnv({
     NEXT_PUBLIC_MAPBOX_TOKEN: z.string().startsWith("pk."),
   },
   runtimeEnv: {
+    REVALIDATE_SECRET: process.env.REVALIDATE_SECRET,
     NEXT_PUBLIC_SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,

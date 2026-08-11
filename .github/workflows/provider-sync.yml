@@ -1,0 +1,88 @@
+name: Provider sync
+
+# Scheduled NauSYS imports for staging.
+#
+# The cadence comes from the vendor's own implementation guidelines: the catalogue
+# once per day after 01:00 GMT+1, occupancy hourly or every few hours. The
+# catalogue run is scheduled at 02:30 UTC, which is 03:30 CET and 04:30 CEST, so it
+# stays inside their window on both sides of the daylight-saving change.
+#
+# These jobs only *trigger* a sync. Both routes persist a sync_run row and return
+# immediately, because a full catalogue walk is a sequential multi-hour job that no
+# HTTP timeout would survive. So a green tick here means the trigger was accepted,
+# NOT that the import succeeded: it catches a dead service, a wrong secret or an
+# unconfigured CRON_SECRET, and nothing else. Whether the run itself worked is in
+# sync_run / sync_error, or admin.provider.syncStatus.
+
+on:
+  schedule:
+    - cron: "30 2 * * *" # catalogue, daily
+    - cron: "15 * * * *" # availability, hourly
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which sync to run
+        type: choice
+        required: true
+        default: catalogue
+        options: [catalogue, availability, both]
+
+concurrency:
+  # Queued rather than cancelled: cancelling the workflow would not stop a sync that
+  # is already running on the server, it would only hide that we triggered it.
+  group: provider-sync
+  cancel-in-progress: false
+
+jobs:
+  catalogue:
+    name: catalogue sync
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule == '30 2 * * *' ||
+      contains(fromJSON('["catalogue","both"]'), github.event.inputs.job)
+    steps:
+      - name: Trigger catalogue sync
+        env:
+          SERVER_URL: ${{ secrets.STAGING_SERVER_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_URL" || { echo "STAGING_SERVER_URL is not set"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "CRON_SECRET is not set"; exit 1; }
+
+          body=$(curl -sS --fail-with-body --max-time 60 \
+            -X POST "$SERVER_URL/api/cron/sync-catalogue" \
+            -H "Authorization: Bearer $CRON_SECRET")
+
+          echo "$body"
+          echo "### Catalogue sync triggered" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$body" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Progress is in sync_run / sync_error, not in this job." >> "$GITHUB_STEP_SUMMARY"
+
+  availability:
+    name: availability sync
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule == '15 * * * *' ||
+      contains(fromJSON('["availability","both"]'), github.event.inputs.job)
+    steps:
+      - name: Trigger availability sync
+        env:
+          SERVER_URL: ${{ secrets.STAGING_SERVER_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_URL" || { echo "STAGING_SERVER_URL is not set"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "CRON_SECRET is not set"; exit 1; }
+
+          body=$(curl -sS --fail-with-body --max-time 60 \
+            -X POST "$SERVER_URL/api/cron/sync-availability" \
+            -H "Authorization: Bearer $CRON_SECRET")
+
+          echo "$body"
+          echo "### Availability sync triggered" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$body" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

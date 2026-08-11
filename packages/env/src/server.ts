@@ -37,6 +37,13 @@ export const env = createEnv({
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),
+    /*
+     * Shared with the web app's /api/revalidate route, which drops the cached
+     * catalog reads after a provider sync. Unset simply skips the notification:
+     * the cache windows in docs/adr/0002 still catch up on their own, so a sync
+     * must never fail because the web app could not be reached.
+     */
+    REVALIDATE_SECRET: z.string().min(16).optional(),
     // Base64 of 32 random bytes, encrypting PII at rest (architecture §10) —
     // today the identity-document fields on booking_traveller. Optional so the
     // server boots without it; the traveller procedures then refuse rather than

@@ -22,11 +22,23 @@
         "priceListPrice": "3900.00",
         "clientPrice": "3340.00",
         "currency": "EUR",
-        "discounts": [{ "discountItemId": 6001, "amount": 10, "type": "PERCENTAGE" }]
+        "discounts": [
+          {
+            "discountItemId": 6001,
+            "amount": 10,
+            "type": "PERCENTAGE"
+          }
+        ]
       },
       "paymentPlans": [
-        { "date": "10.02.2026", "percentage": 50 },
-        { "date": "04.06.2026", "percentage": 50 }
+        {
+          "date": "10.02.2026",
+          "percentage": 50
+        },
+        {
+          "date": "04.06.2026",
+          "percentage": 50
+        }
       ],
       "obligatoryExtras": [
         {
@@ -34,7 +46,7 @@
           "amount": "150.00",
           "listPrice": "150.00",
           "currency": "EUR",
-          "quantity": 1,
+          "quantity": "1.00",
           "priceMeasureId": 1,
           "calculationType": "SEPARATE_PAYMENT"
         }
