@@ -6,6 +6,7 @@ export default defineConfig({
     "./src/migrate.ts",
     "./src/sync-catalogue.ts",
     "./src/sync-availability.ts",
+    "./src/seed-facets.ts",
   ],
   format: "esm",
   outDir: "./dist",

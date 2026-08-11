@@ -21,7 +21,7 @@
     "db:watch": "docker compose up",
     "db:stop": "docker compose stop",
     "db:down": "docker compose down",
-    "seed": "node --env-file-if-exists=../../apps/server/.env --import tsx src/seed.ts"
+    "seed": "node --env-file-if-exists=../../apps/server/.env --import tsx src/seed-cli.ts"
   },
   "dependencies": {
     "@yacht-charter/env": "workspace:*",

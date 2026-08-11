@@ -1844,6 +1844,27 @@ const insertStaticData = async () => {
     // The crew flag is re-applied on conflict so re-seeding an older database
     // repairs it; everything else about an amenity is immutable.
     .onConflictDoUpdate({ target: amenity.id, set: { crew: sql`excluded.crew` } });
+  await insertFacetMedia();
+};
+
+export interface FacetMediaSeedResult {
+  facetsSeeded: number;
+  translationsSeeded: number;
+}
+
+/**
+ * Editorial images/descriptions for search filter facets (country, category,
+ * region cards). Keyed by (kind, value), not a foreign key against country/
+ * yachtCategory/region — see facet-media.ts — so this is safe to run on its own
+ * against a database whose catalogue came entirely from a provider sync rather
+ * than this file's mock data, without touching anything the sync owns.
+ *
+ * Exported so a compiled ops entry point (apps/server/src/seed-facets.ts) can
+ * call it directly — this file's own CLI path (`pnpm --filter @yacht-charter/db
+ * seed -- --facets-only`) needs `tsx` on the machine running it, which a
+ * production container may not have; the compiled entry doesn't.
+ */
+export async function insertFacetMedia(): Promise<FacetMediaSeedResult> {
   await db
     .insert(facetMedia)
     .values(facetMediaEntries)
@@ -1865,9 +1886,14 @@ const insertStaticData = async () => {
         description: sql`excluded.description`,
       },
     });
-};
 
-async function main() {
+  return {
+    facetsSeeded: facetMediaEntries.length,
+    translationsSeeded: facetMediaTranslations.length,
+  };
+}
+
+export async function main() {
   await db
     .insert(provider)
     .values({
@@ -2164,10 +2190,3 @@ async function main() {
     `Seeded ${yachts.length} mock yacht listings and ${slots.length} availability slots across ${countries.length} countries.`,
   );
 }
-
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(() => process.exit());
