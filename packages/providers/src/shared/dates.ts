@@ -2,6 +2,7 @@ import { ContractError } from "./errors";
 
 const NAUSYS_DATE_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})$/;
 const NAUSYS_DATE_TIME_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
+const HALF_DAY_MS = 12 * 60 * 60 * 1000;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 interface DateParts {
@@ -110,10 +111,12 @@ function zoneOffsetMs(instantMs: number, timeZone: string): number {
 
 /**
  * NauSYS datetimes carry no timezone, so the wall-clock reading is interpreted
- * in `timeZone`. Two passes are needed: the offset at the naive instant can be
- * the wrong side of a DST transition, and the second pass re-reads it at the
- * corrected instant. Non-existent local times (spring forward) shift forward;
- * ambiguous ones (fall back) resolve to the later, standard-time occurrence.
+ * in `timeZone`. Non-existent local times (spring forward) shift forward past
+ * the gap; ambiguous ones (fall back) resolve to the earlier occurrence.
+ *
+ * Note this is for provider *timestamps* only. Base check-in and check-out
+ * times are local to the base rather than CET, per the vendor, so they stay
+ * plain wall-clock strings and must never be run through here.
  */
 export function parseNausysDateTime(value: string, timeZone: string): Date {
   if (typeof value !== "string") {
@@ -137,6 +140,30 @@ export function parseNausysDateTime(value: string, timeZone: string): Date {
   }
 
   const naive = Date.UTC(parts.year, parts.month - 1, parts.day, hours, minutes, seconds);
-  const firstPass = naive - zoneOffsetMs(naive, timeZone);
-  return new Date(naive - zoneOffsetMs(firstPass, timeZone));
+
+  // NauSYS confirmed (Aug 2026) that its datetimes are CET/CEST with daylight
+  // saving applied automatically, so the zone must be a real IANA zone and never
+  // a fixed offset, which would be an hour wrong for half the year.
+  //
+  // On the autumn fall-back an hour repeats and the wall clock is ambiguous. We
+  // resolve to the EARLIER instant, which is the larger offset. These values are
+  // mostly deadlines (optionTill), and reading a deadline late is what lets us
+  // sell a slot the provider has already released; reading it early only costs
+  // us an hour of hold we were not promised.
+  const candidates = [
+    naive - zoneOffsetMs(naive - HALF_DAY_MS, timeZone),
+    naive - zoneOffsetMs(naive + HALF_DAY_MS, timeZone),
+  ];
+  const consistent = candidates.filter(
+    (instant) => naive - zoneOffsetMs(instant, timeZone) === instant,
+  );
+
+  // No consistent reading means the wall clock never happened (spring forward);
+  // the two-pass result lands just after the gap, which is the only sane answer.
+  if (consistent.length === 0) {
+    const firstPass = naive - zoneOffsetMs(naive, timeZone);
+    return new Date(naive - zoneOffsetMs(firstPass, timeZone));
+  }
+
+  return new Date(Math.min(...consistent));
 }

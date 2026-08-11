@@ -1,34 +1,583 @@
 {
   "status": "OK",
-  "errorCode": 0,
   "bases": [
     {
-      "id": 900101,
-      "locationId": 53271,
-      "companyId": 102701,
-      "disabled": false,
-      "checkInTime": "17:00",
-      "checkOutTime": "08:00",
-      "lat": 43.5031,
-      "lon": 16.4315
-    },
-    {
-      "id": 900102,
-      "locationId": 53272,
-      "companyId": 102701,
-      "disabled": false,
+      "baseSign": "Tr",
       "checkInTime": "17:00",
       "checkOutTime": "09:00",
-      "lat": 43.7211,
-      "lon": 15.8891
+      "closedBaseDate": "03.01.2024",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 102755,
+      "lat": 43.51373,
+      "locationId": 55,
+      "lon": 16.24825,
+      "openBaseDate": "01.01.2024",
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
     },
     {
-      "id": 900201,
-      "locationId": 53401,
-      "companyId": 102702,
-      "disabled": true,
-      "checkInTime": "16:00",
-      "checkOutTime": "08:30"
+      "baseSign": "D",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 102751,
+      "lat": 42.6697,
+      "locationId": 57,
+      "lon": 18.12461,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Z",
+      "checkInTime": "15:00",
+      "checkOutTime": "09:30",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 102754,
+      "lat": 44.11937,
+      "locationId": 61,
+      "lon": 15.22993,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Ch",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 44325964,
+      "lat": 41.929543,
+      "locationId": 3476794,
+      "lon": 8.741408,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Pl",
+      "checkInTime": "08:00",
+      "checkOutTime": "18:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 8808727,
+      "lat": 43.16258,
+      "locationId": 5168287,
+      "lon": 16.39334,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "R",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 8808846,
+      "lat": 45.07549,
+      "locationId": 53,
+      "lon": 13.63506,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Fl",
+      "checkInTime": "09:00",
+      "checkOutTime": "16:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 67652168,
+      "lat": 24.56239,
+      "locationId": 836873,
+      "lon": -81.72594,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!",
+        "textIT": "In caso di rientro la sera prima dopo le ore 18:00 contattare la base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!",
+        "textIT": "Il ritorno la sera prima è preferable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Mr",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 10162418,
+      "lat": 36.852,
+      "locationId": 122465,
+      "lon": 28.27992,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "LE",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 13544261,
+      "lat": 38.83009,
+      "locationId": 4013351,
+      "lon": 20.70979,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "LV",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 13544262,
+      "lat": 37.7123,
+      "locationId": 125450,
+      "lon": 24.056,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "GO",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 13544263,
+      "lat": 36.74645,
+      "locationId": 1019744,
+      "lon": 28.942457,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "BVI",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23491068,
+      "lat": 18.46497,
+      "locationId": 8938312,
+      "lon": -64.52407,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "MAR",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23493774,
+      "lat": 36.7559,
+      "locationId": 1317289,
+      "lon": 28.93093,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "GRM",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23497458,
+      "lat": 12.04409,
+      "locationId": 519122,
+      "lon": -61.74933,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "TRG",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23530115,
+      "lat": 43.51566,
+      "locationId": 1016367,
+      "lon": 16.25112,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "SIB",
+      "checkInTime": "17:00",
+      "checkOutTime": "10:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23543400,
+      "lat": 43.78639,
+      "locationId": 517780,
+      "lon": 15.82288,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "ANT",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23620728,
+      "lat": 17.0653,
+      "locationId": 6227290,
+      "lon": -61.88553,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "SMT",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23622855,
+      "lat": 18.11223,
+      "locationId": 519150,
+      "lon": -63.037476,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "NAS",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 23862803,
+      "lat": 25.019833,
+      "locationId": 5421430,
+      "lon": -77.27372,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Sm",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 25194990,
+      "lat": 28.02073,
+      "locationId": 12386909,
+      "lon": -16.6137,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Md",
+      "checkInTime": "09:00",
+      "checkOutTime": "17:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 34933257,
+      "lat": 40.641247,
+      "locationId": 837543,
+      "lon": 14.819468,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "L",
+      "checkInTime": "09:00",
+      "checkOutTime": "19:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 102752,
+      "lat": 44.53603,
+      "locationId": 70,
+      "lon": 14.46558,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Cr",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 1030425,
+      "lat": 44.94488,
+      "locationId": 68,
+      "lon": 14.41406,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "K",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 481550,
+      "lat": 43.54548,
+      "locationId": 54,
+      "lon": 16.4048,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "Cz",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 55984054,
+      "lat": 43.293495,
+      "locationId": 482378,
+      "lon": 5.368897,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "U slučaju povratka večer prije nakon 18:00 sati kontaktirajte bazu!",
+        "textIT": "In caso di rientro la sera prima dopo le ore 18:00 contattare la base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Poželjan povratak u bazu večer prije!",
+        "textIT": "Il ritorno la sera prima è preferable!"
+      },
+      "secondaryBase": false
+    },
+    {
+      "baseSign": "P",
+      "checkInTime": "17:00",
+      "checkOutTime": "09:00",
+      "companyId": 102701,
+      "disabled": false,
+      "id": 102753,
+      "lat": 44.8726,
+      "locationId": 51,
+      "lon": 13.84513,
+      "returnToBaseDelayNote": {
+        "textDE": "Bei einer Rückkehr am Vortag nach 18:00 Uhr bitte den Stützpunkt informieren!",
+        "textEN": "In case of returning on evening before after 18:00 hours contact the base!",
+        "textHR": "In case of returning on evening before after 18:00 hours contact the base!"
+      },
+      "returnToBaseNote": {
+        "textDE": "Rückkehr am Vorabend wünschenswert!",
+        "textEN": "Return on the evening before is desirable!",
+        "textHR": "Return on the evening before is desirable!"
+      },
+      "secondaryBase": false
     }
   ]
 }

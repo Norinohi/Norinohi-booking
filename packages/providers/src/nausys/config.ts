@@ -10,7 +10,16 @@ export interface NausysConfig {
   minIntervalMs: number;
   /** `holdExpiresAt = optionTill − this`, so our sweeper releases first. */
   optionSafetyMarginMinutes: number;
-  /** Zone the vendor's naked `optionTill` wall-clock is read in. */
+  /**
+   * Zone the vendor's naked `optionTill` wall-clock is read in. NauSYS confirmed
+   * (Aug 2026) that API datetimes are CET/CEST with daylight saving applied
+   * automatically, so this must stay a real IANA zone in that offset family; a
+   * fixed "+01:00" would be an hour wrong all summer.
+   *
+   * It does NOT apply to base check-in and check-out times. Those are local to
+   * the base, so a Caribbean base checking in at 10:00 means 10:00 there, not
+   * 10:00 CET. We keep them as plain wall-clock strings and never convert them.
+   */
   optionTimeZone: string;
   /** Serialization key. One lane per credential, never per instance. */
   queueKey: string;

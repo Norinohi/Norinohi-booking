@@ -23,9 +23,11 @@ interface CatalogueStep {
   resourceType: ProviderResourceType;
   endpoint: string;
   /**
-   * Collection keys in preference order. The vendor names them inconsistently
-   * (`companies`, `bases`, `categories`), and several endpoints have no recorded
-   * response yet, so the first array in the body is the documented fallback.
+   * Collection keys in preference order, taken from responses recorded against
+   * production. The vendor names them inconsistently and twice does not name them
+   * after the endpoint at all (`countrystates` answers under `countries`,
+   * `discountItems` under `discounts`), so the first array in the body stays the
+   * fallback for an endpoint that is renamed later.
    */
   collectionKeys: string[];
   scopeKeyOf?: (item: Record<string, unknown>) => string | undefined;
@@ -47,7 +49,7 @@ const CATALOGUE_STEPS: CatalogueStep[] = [
   {
     resourceType: "country_state",
     endpoint: nausysEndpoints.catalogue.countryStates,
-    collectionKeys: ["countryStates", "countrystates"],
+    collectionKeys: ["countries"],
   },
   {
     resourceType: "region",
@@ -103,7 +105,7 @@ const CATALOGUE_STEPS: CatalogueStep[] = [
   {
     resourceType: "equipment_category",
     endpoint: nausysEndpoints.catalogue.equipmentCategories,
-    collectionKeys: ["categories", "equipmentCategories"],
+    collectionKeys: ["equipmentCategories"],
   },
   {
     resourceType: "amenity",
@@ -133,7 +135,7 @@ const CATALOGUE_STEPS: CatalogueStep[] = [
   {
     resourceType: "discount_item",
     endpoint: nausysEndpoints.catalogue.discountItems,
-    collectionKeys: ["discountItems"],
+    collectionKeys: ["discounts"],
   },
 ];
 
@@ -272,6 +274,9 @@ export async function* syncNausysCatalogue(
       continue;
     }
 
+    // Named explicitly, never left to the fallback: this dump also carries
+    // `yachtIDs`, an array of bare numbers that comes first and would be selected
+    // instead, yielding a fleet of zero yachts.
     const items = collectionOf(dump, ["yachts"], endpoint);
     let malformed = 0;
 

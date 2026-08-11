@@ -39,7 +39,11 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
     title: doc.title,
     category: doc.category ?? "Yacht",
     crewType: doc.crewType,
-    badges: badgesFor(doc),
+    badges: badgesFor({
+      petsAllowed: doc.petsAllowed,
+      depositInsuranceIncluded: doc.depositInsuranceIncluded,
+      rating: Number(doc.rating),
+    }),
     builder: doc.builder ?? "Unknown builder",
     model: doc.model ?? "Unknown model",
     operator: doc.operator,
@@ -112,18 +116,25 @@ export function presentListingDetail(detail: ListingDetail) {
   };
 }
 
-function badgesFor(doc: ListingSearchDoc) {
+export type BadgeInput = {
+  petsAllowed: boolean;
+  depositInsuranceIncluded: boolean;
+  rating: number;
+};
+
+/** Shared with the My Bookings card, which badges from a booking's frozen snapshot rather than a live doc. */
+export function badgesFor(input: BadgeInput) {
   const badges = [{ code: "best-value", label: "Best value" }];
-  if (doc.petsAllowed) badges.push({ code: "pets-allowed", label: "Pets allowed" });
-  if (doc.depositInsuranceIncluded) {
+  if (input.petsAllowed) badges.push({ code: "pets-allowed", label: "Pets allowed" });
+  if (input.depositInsuranceIncluded) {
     badges.push({ code: "deposit-insurance", label: "Deposit insurance included" });
   }
-  if (doc.rating && Number(doc.rating) >= 4.8)
-    badges.push({ code: "top-rated", label: "Top rated" });
+  if (input.rating >= 4.8) badges.push({ code: "top-rated", label: "Top rated" });
   return badges;
 }
 
-function stableCount(seed: string, min: number, max: number): number {
+/** Shared with the My Bookings card's bookingStats placeholder. */
+export function stableCount(seed: string, min: number, max: number): number {
   const spread = max - min + 1;
   const value = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return min + (value % spread);
