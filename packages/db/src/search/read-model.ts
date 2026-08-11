@@ -1,7 +1,8 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { sql, type SQL } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
+import { listing } from "../schema/listing";
 
 export type RebuildListingSearchDocsOptions = {
   listingIds?: readonly string[];
@@ -228,6 +229,33 @@ export async function rebuildSearchReadModelsAfterSync(
   options: RebuildListingSearchDocsOptions = {},
 ) {
   await rebuildListingSearchDocs(db, options);
+}
+
+/**
+ * A provider sync deliberately never publishes what it creates — see the
+ * comment in packages/providers/src/sync/catalogue-writer.ts — and this file's
+ * own rebuild only picks up `status = 'published'` listings, so a freshly
+ * synced catalogue stays invisible to search until something publishes it.
+ *
+ * Publishes every listing still in draft and rebuilds their search docs in one
+ * call, so a caller can't publish without also refreshing the read model. No
+ * review criteria: fine for a single-provider environment with no moderation
+ * queue yet; a real one needs actual review before this runs unattended.
+ */
+export async function publishDraftListings(
+  db: NodePgDatabase<typeof schema>,
+): Promise<{ publishedCount: number }> {
+  const published = await db
+    .update(listing)
+    .set({ status: "published" })
+    .where(eq(listing.status, "draft"))
+    .returning({ id: listing.id });
+
+  if (published.length > 0) {
+    await rebuildListingSearchDocs(db, { listingIds: published.map((row) => row.id) });
+  }
+
+  return { publishedCount: published.length };
 }
 
 export async function resolveListingIdsForListingSources(
