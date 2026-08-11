@@ -89,9 +89,11 @@ describe("parseNausysDateTime", () => {
       "2026-03-29T01:30:00.000Z",
     );
 
-    // Fall back: 02:30 local happens twice, we take the later (CET) occurrence.
+    // Fall back: 02:30 local happens twice. We take the EARLIER (CEST)
+    // occurrence, because these are mostly deadlines and reading a deadline an
+    // hour late is what lets us sell a slot the provider already released.
     expect(parseNausysDateTime("25.10.2026 02:30", "Europe/Zagreb").toISOString()).toBe(
-      "2026-10-25T01:30:00.000Z",
+      "2026-10-25T00:30:00.000Z",
     );
     expect(parseNausysDateTime("25.10.2026 01:30", "Europe/Zagreb").toISOString()).toBe(
       "2026-10-24T23:30:00.000Z",
