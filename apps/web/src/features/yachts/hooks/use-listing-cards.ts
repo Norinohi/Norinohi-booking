@@ -20,7 +20,7 @@ import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import { useMoney } from "@/hooks/use-money";
 
 import type { MapBoatCardProps } from "../components/map/map-boat-card";
-import { slugToLabel } from "../lib/slug-to-label";
+import { slugToLabel } from "@/lib/slug-to-label";
 import { toMarina } from "../lib/to-marina";
 
 type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["results"]>>;

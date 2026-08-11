@@ -8,7 +8,7 @@ import { Image } from "@/components/shared/data-display/image";
 import { staticMapUrl } from "@/lib/mapbox";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
-import { slugToLabel } from "../../../lib/slug-to-label";
+import { slugToLabel } from "@/lib/slug-to-label";
 import DetailSection from "./detail-section";
 
 type RowKey =

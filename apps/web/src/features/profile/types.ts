@@ -23,3 +23,8 @@ export type YachtOption = Awaited<
 export type ListingPriceList = Awaited<ReturnType<AdminClient["listingPrice"]["list"]>>;
 export type ListingPriceRow = ListingPriceList["items"][number];
 export type ListingPriceFilters = Awaited<ReturnType<AdminClient["listingPrice"]["filters"]>>;
+
+/* My Bookings view-types, inferred from the oRPC contract. */
+export type BookingList = Awaited<ReturnType<AppRouterClient["booking"]["list"]>>;
+export type BookingSummary = BookingList["items"][number];
+export type BookingStatus = BookingSummary["status"];

@@ -11,7 +11,7 @@ import { WishlistButton } from "@/features/wishlist";
 import { Link } from "@/i18n/navigation";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
-import { slugToLabel } from "../../lib/slug-to-label";
+import { slugToLabel } from "@/lib/slug-to-label";
 import { toMarina } from "../../lib/to-marina";
 
 const ACTION = "w-full md:flex-1 xl:w-auto xl:flex-none";

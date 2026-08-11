@@ -1,5 +1,7 @@
 import { orpc } from "@/utils/orpc";
 
+import type { BookingStatus } from "../types";
+
 /*
  * Isomorphic query option factories — used by both the server prefetch helper
  * (api/server.ts) and the client hooks (hooks/), so cache keys never drift.
@@ -70,3 +72,20 @@ export const listingPriceListQueryOptions = (input: {
 /** The catalogue's category/location dropdown options — changes only on catalogue sync. */
 export const listingPriceFiltersQueryOptions = () =>
   orpc.admin.listingPrice.filters.queryOptions({ input: {}, staleTime: 300_000 });
+
+/* ----------------------------------- My Bookings ----------------------------------- */
+
+export const BOOKINGS_PAGE_SIZE = 10;
+
+/* page/pageSize explicit so each page keeps its own cache key; from/to carry the date-range filter. */
+export const bookingListQueryOptions = (input: {
+  from?: string;
+  to?: string;
+  status?: BookingStatus[];
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.booking.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? BOOKINGS_PAGE_SIZE },
+    staleTime: 30_000,
+  });

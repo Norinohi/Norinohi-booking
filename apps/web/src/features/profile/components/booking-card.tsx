@@ -31,10 +31,6 @@ const FORMATS = {
   time: { hour: "2-digit", minute: "2-digit", hour12: false },
 } as const;
 
-/* TODO: every card opens the same hardcoded detail page until bookings carry a real listing id. */
-/* Sample data links to a seeded listing (Aurora Lagoon 42) until the bookings backend exists. */
-const DETAIL_HREF = "/yachts/aurora-lagoon-42-split";
-
 export type BookingCardProps = BoatCardProps;
 
 function Stamp({ value, timeZone }: { value: string; timeZone: string }) {
@@ -143,8 +139,8 @@ export default function BookingCard({ className, ...booking }: BookingCardProps)
           <Button
             variant="neutral"
             size="md"
-            nativeButton={false}
-            render={<Link href={DETAIL_HREF} />}
+            nativeButton={booking.detailHref ? false : undefined}
+            render={booking.detailHref ? <Link href={booking.detailHref} /> : undefined}
             className="capitalize"
           >
             {t("viewDetails")}
