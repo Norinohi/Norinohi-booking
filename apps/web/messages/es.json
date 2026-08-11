@@ -190,6 +190,31 @@
     },
     "marina": {
       "viewDetails": "Ver detalles"
+    },
+    "leadForm": {
+      "fields": {
+        "name": {
+          "label": "Nombre completo",
+          "placeholder": "Jane Doe"
+        },
+        "email": {
+          "label": "Correo electrónico",
+          "placeholder": "jane@example.com"
+        },
+        "phone": {
+          "label": "Teléfono (opcional)",
+          "placeholder": "+1 234 567 8900"
+        },
+        "message": {
+          "label": "Mensaje (opcional)",
+          "placeholder": "¿Algo más que debamos saber sobre tu viaje?"
+        }
+      },
+      "errors": {
+        "nameRequired": "Por favor, introduce tu nombre",
+        "emailInvalid": "Por favor, introduce un correo electrónico válido",
+        "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
+      }
     }
   },
   "Filters": {
@@ -732,32 +757,9 @@
       "consultationDialog": {
         "title": "Solicita una asesoría gratuita",
         "description": "Cuéntanos cómo contactarte y uno de nuestros expertos en chárter te enviará opciones a medida.",
-        "fields": {
-          "name": {
-            "label": "Nombre completo",
-            "placeholder": "Jane Doe"
-          },
-          "email": {
-            "label": "Correo electrónico",
-            "placeholder": "jane@example.com"
-          },
-          "phone": {
-            "label": "Teléfono (opcional)",
-            "placeholder": "+1 234 567 8900"
-          },
-          "message": {
-            "label": "Mensaje (opcional)",
-            "placeholder": "¿Algo más que debamos saber sobre tu viaje?"
-          }
-        },
         "submit": "Enviar solicitud",
         "cancel": "Cancelar",
-        "success": "¡Gracias! Nos pondremos en contacto pronto.",
-        "errors": {
-          "nameRequired": "Por favor, introduce tu nombre",
-          "emailInvalid": "Por favor, introduce un correo electrónico válido",
-          "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
-        }
+        "success": "¡Gracias! Nos pondremos en contacto pronto."
       }
     },
     "consultation": {
@@ -896,6 +898,12 @@
       "waterTank": "Depósito de agua",
       "length": "Eslora",
       "engine": "Motor"
+    },
+    "quoteDialog": {
+      "title": "Solicita un presupuesto",
+      "description": "Déjanos tus datos y un experto en chárter te enviará un presupuesto a medida para estas fechas.",
+      "submit": "Enviar solicitud",
+      "success": "¡Gracias! Nos pondremos en contacto pronto."
     }
   },
   "Yachts": {

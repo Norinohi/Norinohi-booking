@@ -190,6 +190,31 @@
     },
     "marina": {
       "viewDetails": "View Details"
+    },
+    "leadForm": {
+      "fields": {
+        "name": {
+          "label": "Full name",
+          "placeholder": "Jane Doe"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "jane@example.com"
+        },
+        "phone": {
+          "label": "Phone (optional)",
+          "placeholder": "+1 234 567 8900"
+        },
+        "message": {
+          "label": "Message (optional)",
+          "placeholder": "Anything else we should know about your trip?"
+        }
+      },
+      "errors": {
+        "nameRequired": "Please enter your name",
+        "emailInvalid": "Please enter a valid email address",
+        "submitFailed": "We couldn't send your request. Please try again."
+      }
     }
   },
   "Filters": {
@@ -732,32 +757,9 @@
       "consultationDialog": {
         "title": "Get a free consultation",
         "description": "Tell us how to reach you and one of our charter experts will follow up with tailored options.",
-        "fields": {
-          "name": {
-            "label": "Full name",
-            "placeholder": "Jane Doe"
-          },
-          "email": {
-            "label": "Email",
-            "placeholder": "jane@example.com"
-          },
-          "phone": {
-            "label": "Phone (optional)",
-            "placeholder": "+1 234 567 8900"
-          },
-          "message": {
-            "label": "Message (optional)",
-            "placeholder": "Anything else we should know about your trip?"
-          }
-        },
         "submit": "Send request",
         "cancel": "Cancel",
-        "success": "Thanks! We'll be in touch shortly.",
-        "errors": {
-          "nameRequired": "Please enter your name",
-          "emailInvalid": "Please enter a valid email address",
-          "submitFailed": "We couldn't send your request. Please try again."
-        }
+        "success": "Thanks! We'll be in touch shortly."
       }
     },
     "consultation": {
@@ -896,6 +898,12 @@
       "waterTank": "Water Tank",
       "length": "Length",
       "engine": "Engine"
+    },
+    "quoteDialog": {
+      "title": "Request a quote",
+      "description": "Leave your details and a charter expert will send you a tailored quote for these dates.",
+      "submit": "Send request",
+      "success": "Thanks! We'll be in touch shortly."
     }
   },
   "Yachts": {
