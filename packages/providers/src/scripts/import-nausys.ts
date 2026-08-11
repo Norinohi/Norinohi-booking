@@ -22,6 +22,7 @@ import { NausysInventoryProvider } from "../nausys/provider";
 import { resolveNausysConfig } from "../nausys/config";
 import { openCatalogueSyncRun, runCatalogueSyncJob } from "../sync/runner";
 import { runAvailabilitySyncJob } from "../sync/availability-writer";
+import { revalidateCatalogCache } from "../sync/revalidate";
 import { syncRun } from "@yacht-charter/db/schema/provider";
 
 const args = new Set(process.argv.slice(2));
@@ -128,6 +129,15 @@ async function main(): Promise<void> {
   await db.update(listing).set({ status: "published" }).where(inArray(listing.id, listingIds));
   await rebuildSearchReadModelsAfterSync(db, { listingIds });
   console.log(`\npublished ${listingIds.length} listings and rebuilt the search read model`);
+
+  // The web app caches the catalog for hours to days, so without this the import
+  // is invisible until the window rolls over.
+  const revalidated = await revalidateCatalogCache();
+  console.log(
+    revalidated.ok
+      ? "dropped the cached catalog reads"
+      : `cache not revalidated (${revalidated.reason}); it will catch up on its own window`,
+  );
 }
 
 main()

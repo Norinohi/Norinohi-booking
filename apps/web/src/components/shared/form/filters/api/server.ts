@@ -1,7 +1,8 @@
 import "server-only";
 
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 
+import { CATALOG_TAG } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
@@ -27,6 +28,7 @@ import { publicClient } from "@/utils/orpc";
 export async function getFacets() {
   "use cache";
   cacheLife("days");
+  cacheTag(CATALOG_TAG);
 
   return publicClient.charterSearch.facets({ locale: await getRootLocale() });
 }

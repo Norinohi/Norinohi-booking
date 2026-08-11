@@ -2,10 +2,11 @@ import "server-only";
 
 import { ORPCError } from "@orpc/client";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getFacets } from "@/components/shared/form/filters/api/server";
+import { CATALOG_TAG, listingTag } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
@@ -30,6 +31,7 @@ import { listingDetailQueryOptions } from "./queries";
 export async function prefetchSearch() {
   "use cache";
   cacheLife("days");
+  cacheTag(CATALOG_TAG);
 
   const queryClient = new QueryClient();
   const [locale, facets] = await Promise.all([getRootLocale(), getFacets()]);
@@ -71,6 +73,7 @@ export function isListingNotFound(error: unknown): boolean {
 export async function prefetchListingDetail(id: string) {
   "use cache";
   cacheLife("hours");
+  cacheTag(CATALOG_TAG, listingTag(id));
 
   let listing: Awaited<ReturnType<typeof publicClient.listings.get>>;
   try {
