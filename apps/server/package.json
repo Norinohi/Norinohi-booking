@@ -8,7 +8,9 @@
     "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
     "dev": "tsx watch src/index.ts",
     "migrate": "node dist/migrate.mjs",
-    "start": "node dist/index.mjs"
+    "start": "node dist/index.mjs",
+    "sync:catalogue": "node dist/sync-catalogue.mjs",
+    "sync:availability": "node dist/sync-availability.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",
@@ -19,6 +21,7 @@
     "@yacht-charter/auth": "workspace:*",
     "@yacht-charter/db": "workspace:*",
     "@yacht-charter/env": "workspace:*",
+    "@yacht-charter/providers": "workspace:*",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "evlog": "catalog:",
