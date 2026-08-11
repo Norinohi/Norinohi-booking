@@ -16,6 +16,7 @@ import type {
   OccupiedInterval,
   SeasonalPrice,
 } from "../sync/availability-writer";
+import type { SyncReporter } from "../sync/runner";
 import type { NausysClient } from "./client";
 import {
   nausysEndpoints,
@@ -317,61 +318,174 @@ export function createNausysAvailabilitySource(
 /* -------------------------------------------------------------- price book */
 
 /**
- * VENDOR QUESTION Q-PRICELIST. The `catalogue/v6/priceLists` payload has no
- * recorded response yet, and the PDF names the fields without fixing the nesting,
- * so both documented shapes are accepted: a price list carrying its own `prices[]`,
- * and a flat row that is already one priced period. A row we cannot read is dropped
- * rather than guessed at, which costs the card its "price from" and nothing else.
+ * A `catalogue/v6/priceLists` entry is a MATRIX, not a list of priced periods:
+ * `columns[i]` holds the date ranges and `rows[].prices[i]` the price for them,
+ * joined by position alone. One column may carry several disjoint periods (a
+ * shoulder rate reused), and the currency belongs to the list, not to the row.
+ *
+ * `vatInPrice` ("I" included, "E" excluded) also rides on the list, and it does
+ * vary: the recorded season carries four "I" lists and one "E". Nothing here acts
+ * on it yet, so a mapped amount is whatever the list said it was. Whether a
+ * displayed "from" price is gross or net is an open commercial question.
+ * VENDOR QUESTION Q-PRICELIST-VAT.
  */
-const priceRowSchema = z.looseObject({
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  periodFrom: z.string().optional(),
-  periodTo: z.string().optional(),
-  price: z.union([z.string(), z.number()]).optional(),
-  amount: z.union([z.string(), z.number()]).optional(),
-  currency: z.string().optional(),
+const priceListPeriodSchema = z.looseObject({
+  /** Both ends inclusive, which is what `priceAt` in the writer compares against. */
+  periodFrom: z.string(),
+  periodTo: z.string(),
 });
 
+const priceListColumnSchema = z.looseObject({
+  periods: z.array(priceListPeriodSchema),
+});
+
+const priceListRowSchema = z.looseObject({
+  yachtId: z.union([z.number().int(), z.string()]),
+  prices: z.array(z.string()),
+});
+
+/** Rows stay `unknown` here so one unreadable row costs a row, not the whole list. */
 const priceListSchema = z.looseObject({
-  yachtId: z.union([z.number().int(), z.string()]).optional(),
-  currency: z.string().optional(),
-  prices: z.array(priceRowSchema).optional(),
+  currency: z.string(),
+  type: z.string().optional(),
+  columns: z.array(priceListColumnSchema),
+  rows: z.array(z.unknown()),
 });
 
-const DEFAULT_PRICE_CURRENCY = "EUR";
+/**
+ * `type` is WEEKLY or DAILY. Only the weekly rate is mapped: the writer stamps a
+ * seasonal price onto a whole synthesized charter period, so a daily rate would
+ * price a week at a seventh of its worth. Scaling it by seven is not available
+ * either, since the two are not proportional in the recorded response: yacht
+ * 22291115 is 1000/day against weeks of 3650 to 6000. A list with no `type` is
+ * skipped for the same reason, as an untyped amount could be either.
+ */
+const WEEKLY_PRICE_LIST_TYPE = "WEEKLY";
+
+/** A whole-fleet contract break would otherwise put thousands of rows in one error. */
+const MAX_REPORTED_PRICE_ISSUES = 20;
 
 export interface NausysPriceListRecord {
   externalId: string;
   payload: unknown;
 }
 
+export type NausysPriceListIssueReason =
+  | "list_unreadable"
+  | "unsupported_currency"
+  | "unsupported_unit"
+  | "row_unreadable"
+  | "column_count_mismatch"
+  | "malformed_period"
+  | "malformed_price";
+
+/** What we refused to read, so a missing price can be traced to a decision. */
+export interface NausysPriceListIssue {
+  priceListId: string;
+  externalYachtId?: string;
+  reason: NausysPriceListIssueReason;
+  detail: string;
+}
+
 /** Pure `price_list` records to seasonal prices, keyed by the vendor's yacht id. */
 export function mapNausysPriceLists(
   records: readonly NausysPriceListRecord[],
+  onIssue?: (issue: NausysPriceListIssue) => void,
 ): Map<string, SeasonalPrice[]> {
   const byYacht = new Map<string, SeasonalPrice[]>();
 
   for (const record of records) {
     const parsed = priceListSchema.safeParse(record.payload);
-    if (!parsed.success || parsed.data.yachtId === undefined) continue;
-
-    const yachtId = String(parsed.data.yachtId);
-    const currency = parsed.data.currency;
-    const rows = parsed.data.prices ?? [priceRowSchema.parse(parsed.data)];
-    const prices = byYacht.get(yachtId) ?? [];
-
-    for (const row of rows) {
-      const price = toSeasonalPrice(row, currency);
-      if (price) prices.push(price);
+    if (!parsed.success) {
+      onIssue?.({
+        priceListId: record.externalId,
+        reason: "list_unreadable",
+        detail: parsed.error.issues.map((issue) => issue.path.join(".")).join(", "),
+      });
+      continue;
     }
-    byYacht.set(yachtId, prices);
+
+    const list = parsed.data;
+    const currency = list.currency.trim().toUpperCase();
+    if (currency.length !== 3) {
+      onIssue?.({
+        priceListId: record.externalId,
+        reason: "unsupported_currency",
+        detail: list.currency,
+      });
+      continue;
+    }
+    if (list.type?.trim().toUpperCase() !== WEEKLY_PRICE_LIST_TYPE) {
+      onIssue?.({
+        priceListId: record.externalId,
+        reason: "unsupported_unit",
+        detail: list.type ?? "(missing)",
+      });
+      continue;
+    }
+
+    const columns = list.columns.map((column) =>
+      readColumnPeriods(column.periods, record.externalId, onIssue),
+    );
+
+    for (const raw of list.rows) {
+      const row = priceListRowSchema.safeParse(raw);
+      if (!row.success) {
+        onIssue?.({
+          priceListId: record.externalId,
+          reason: "row_unreadable",
+          detail: row.error.issues.map((issue) => issue.path.join(".")).join(", "),
+        });
+        continue;
+      }
+
+      const externalYachtId = String(row.data.yachtId);
+      // The whole risk of a positional join. A short or long row means we no longer
+      // know which rate belongs to which season, and zipping what we have would
+      // move every later rate one season out. Skip the row instead.
+      if (row.data.prices.length !== columns.length) {
+        onIssue?.({
+          priceListId: record.externalId,
+          externalYachtId,
+          reason: "column_count_mismatch",
+          detail: `${row.data.prices.length} prices for ${columns.length} columns`,
+        });
+        continue;
+      }
+
+      const entries = readRowPrices(row.data.prices, columns, currency);
+      if (entries === null) {
+        onIssue?.({
+          priceListId: record.externalId,
+          externalYachtId,
+          reason: "malformed_price",
+          detail: row.data.prices.join(","),
+        });
+        continue;
+      }
+
+      const existing = byYacht.get(externalYachtId);
+      if (existing) {
+        // One yacht sits in several lists: a list per season and per location set,
+        // and in the recorded response the same 108 rows published twice under two
+        // list ids. Appending keeps them all; the writer picks the entry whose
+        // period covers the date, so an overwrite here would lose whole seasons.
+        existing.push(...entries);
+      } else {
+        byYacht.set(externalYachtId, entries);
+      }
+    }
   }
 
-  // Earliest first, so the writer's "first period covering this date" lookup is
-  // deterministic when the vendor sends overlapping ranges.
+  // Earliest and cheapest first, so the writer's "first period covering this date"
+  // lookup is deterministic and lands on the lower rate when lists overlap.
   for (const prices of byYacht.values()) {
-    prices.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    prices.sort(
+      (a, b) =>
+        a.startDate.localeCompare(b.startDate) ||
+        a.endDate.localeCompare(b.endDate) ||
+        a.priceMinor - b.priceMinor,
+    );
   }
   return byYacht;
 }
@@ -379,6 +493,8 @@ export function mapNausysPriceLists(
 export interface NausysSeasonalPriceLoaderOptions {
   db: Database;
   providerId: string;
+  /** Where skipped rows go; without it a refused row is silent. */
+  reporter?: Pick<SyncReporter, "reportError">;
 }
 
 /**
@@ -407,7 +523,20 @@ export function createNausysSeasonalPriceLoader(
           eq(providerRecord.active, true),
         ),
       )
-      .then(mapNausysPriceLists);
+      .then(async (records) => {
+        const issues: NausysPriceListIssue[] = [];
+        const mapped = mapNausysPriceLists(records, (issue) => issues.push(issue));
+        if (issues.length > 0) {
+          await options.reporter?.reportError(
+            new ContractError(`NauSYS priceLists: ${issues.length} rows skipped`, {
+              endpoint: nausysEndpoints.catalogue.priceLists,
+              payload: issues.slice(0, MAX_REPORTED_PRICE_ISSUES),
+            }),
+            { resourceType: "price_list" },
+          );
+        }
+        return mapped;
+      });
 
     const byYacht = await pricesByYacht;
     if (byYacht.size === 0) return byListing;
@@ -437,26 +566,71 @@ export function createNausysSeasonalPriceLoader(
   };
 }
 
-function toSeasonalPrice(
-  row: z.infer<typeof priceRowSchema>,
-  fallbackCurrency: string | undefined,
-): SeasonalPrice | null {
-  const from = row.dateFrom ?? row.periodFrom;
-  const to = row.dateTo ?? row.periodTo;
-  const amount = row.price ?? row.amount;
-  if (!from || !to || amount === undefined) return null;
+interface PricePeriod {
+  startDate: string;
+  endDate: string;
+}
 
-  const currency = (row.currency ?? fallbackCurrency ?? DEFAULT_PRICE_CURRENCY).toUpperCase();
-  if (currency.length !== 3) return null;
+/**
+ * Dropping an unparseable period keeps the column, and therefore every later
+ * column's position, intact: only the range it named is lost.
+ */
+function readColumnPeriods(
+  periods: readonly { periodFrom: string; periodTo: string }[],
+  priceListId: string,
+  onIssue?: (issue: NausysPriceListIssue) => void,
+): PricePeriod[] {
+  const parsed: PricePeriod[] = [];
 
-  try {
-    return {
-      startDate: parseNausysDate(from),
-      endDate: parseNausysDate(to),
-      priceMinor: decimalStringToMinor(String(amount), currency),
-      currency,
-    };
-  } catch {
-    return null;
+  for (const period of periods) {
+    const range = `${period.periodFrom}-${period.periodTo}`;
+    let startDate: string;
+    let endDate: string;
+    try {
+      startDate = parseNausysDate(period.periodFrom);
+      endDate = parseNausysDate(period.periodTo);
+    } catch (error) {
+      onIssue?.({
+        priceListId,
+        reason: "malformed_period",
+        detail: error instanceof Error ? error.message : range,
+      });
+      continue;
+    }
+
+    if (endDate < startDate) {
+      onIssue?.({
+        priceListId,
+        reason: "malformed_period",
+        detail: `${range} ends before it starts`,
+      });
+      continue;
+    }
+    parsed.push({ startDate, endDate });
   }
+  return parsed;
+}
+
+/** All of the row or none of it: a row with one bad amount is not half trustworthy. */
+function readRowPrices(
+  prices: readonly string[],
+  columns: readonly PricePeriod[][],
+  currency: string,
+): SeasonalPrice[] | null {
+  const entries: SeasonalPrice[] = [];
+
+  for (const [index, price] of prices.entries()) {
+    let priceMinor: number;
+    try {
+      priceMinor = decimalStringToMinor(price, currency);
+    } catch {
+      return null;
+    }
+    if (priceMinor < 0) return null;
+
+    for (const period of columns[index] ?? []) {
+      entries.push({ ...period, priceMinor, currency });
+    }
+  }
+  return entries;
 }
