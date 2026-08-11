@@ -5,7 +5,7 @@ import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useState } from "react";
+import { useQueryStates } from "nuqs";
 
 import Sidebar from "@/components/layout/sidebar";
 import DatePicker from "@/components/shared/form/date-picker";
@@ -13,9 +13,11 @@ import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
+import { dayFromNative, dayToNative } from "@/lib/date";
 
 import { bookingListQueryOptions } from "../api/queries";
 import { useBookingCards } from "../hooks/use-booking-cards";
+import { bookingSearchParsers } from "../lib/bookings-search-params";
 import BookingCard from "./booking-card";
 
 /*
@@ -23,37 +25,35 @@ import BookingCard from "./booking-card";
  * beside a "History" panel. The panel is a titled header (History + a date-range filter) over the
  * booking list and its pager, or the "No yachts yet" empty state. The list is `booking.list`; the
  * card is the shared BoatCard, so the boat spec sheet it shows is still placeholder data (see
- * useBookingCards) until the backend adds those fields. Figma "My bookings" (972:54737).
+ * useBookingCards) until the backend adds those fields. Filter + page live in the URL (nuqs).
+ * Figma "My bookings" (972:54737).
  */
-
-/** DatePicker gives local Date objects; booking.list wants a plain YYYY-MM-DD day. */
-const toISODate = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 export default function BookingsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Bookings");
   const router = useRouter();
   const { toBookingCard } = useBookingCards();
-  const [range, setRange] = useState<DateRange | undefined>(undefined);
-  const [page, setPage] = useState(1);
+  const [{ from, to, page }, setParams] = useQueryStates(bookingSearchParsers);
 
   const logout = () => authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
 
   const { data, isLoading } = useQuery({
-    ...bookingListQueryOptions({
-      page,
-      from: range?.from ? toISODate(range.from) : undefined,
-      to: range?.to ? toISODate(range.to) : undefined,
-    }),
+    ...bookingListQueryOptions({ page, from: from ?? undefined, to: to ?? undefined }),
     placeholderData: keepPreviousData,
   });
 
   const items = data?.items ?? [];
   const totalPages = data?.pagination.totalPages ?? 1;
 
+  const range: DateRange | undefined =
+    from || to ? { from: dayToNative(from), to: dayToNative(to) } : undefined;
+
   const onRangeChange = (next: DateRange | undefined) => {
-    setRange(next);
-    setPage(1);
+    setParams({
+      from: next?.from ? dayFromNative(next.from) : null,
+      to: next?.to ? dayFromNative(next.to) : null,
+      page: 1,
+    });
   };
 
   return (
@@ -94,14 +94,18 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
               <>
                 <div className="flex flex-col gap-4 p-4 md:p-5">
                   {items.map((booking, index) => (
-                    <BookingCard key={booking.id} {...toBookingCard(booking)} priority={index === 0} />
+                    <BookingCard
+                      key={booking.id}
+                      {...toBookingCard(booking)}
+                      priority={index === 0}
+                    />
                   ))}
                 </div>
                 {totalPages > 1 ? (
                   <div className="flex justify-center border-t border-natural-100 px-5 py-5 xl:justify-start">
                     <PaginationControl
                       page={page}
-                      onPageChange={setPage}
+                      onPageChange={(next) => setParams({ page: next })}
                       pageCount={totalPages}
                       summary={false}
                     />

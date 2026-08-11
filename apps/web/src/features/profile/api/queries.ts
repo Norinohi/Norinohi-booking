@@ -75,7 +75,7 @@ export const listingPriceFiltersQueryOptions = () =>
 
 /* ----------------------------------- My Bookings ----------------------------------- */
 
-export const BOOKINGS_PAGE_SIZE = 10;
+export const BOOKINGS_PAGE_SIZE = 3;
 
 /* page/pageSize explicit so each page keeps its own cache key; from/to carry the date-range filter. */
 export const bookingListQueryOptions = (input: {
