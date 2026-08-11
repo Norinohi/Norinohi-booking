@@ -15,13 +15,27 @@
         "clientPrice": "3340.00",
         "currency": "EUR",
         "discounts": [
-          { "discountItemId": 6001, "amount": 10, "type": "PERCENTAGE" },
-          { "discountItemId": 6002, "amount": "170.00", "type": "AMOUNT" }
+          {
+            "discountItemId": 6001,
+            "amount": 10,
+            "type": "PERCENTAGE"
+          },
+          {
+            "discountItemId": 6002,
+            "amount": "170.00",
+            "type": "AMOUNT"
+          }
         ]
       },
       "paymentPlans": [
-        { "date": "10.02.2026", "percentage": 50 },
-        { "date": "04.06.2026", "percentage": 50 }
+        {
+          "date": "10.02.2026",
+          "percentage": 50
+        },
+        {
+          "date": "04.06.2026",
+          "percentage": 50
+        }
       ],
       "obligatoryExtras": [
         {
@@ -29,17 +43,19 @@
           "amount": "150.00",
           "listPrice": "150.00",
           "currency": "EUR",
-          "quantity": 1,
+          "quantity": "1.00",
           "priceMeasureId": 1,
           "calculationType": "SEPARATE_PAYMENT",
-          "condition": "PER_BOOKING"
+          "condition": {
+            "textEN": "PER_BOOKING"
+          }
         },
         {
           "serviceId": 8002,
           "amount": "70.00",
           "listPrice": "70.00",
           "currency": "EUR",
-          "quantity": 10,
+          "quantity": "10.00",
           "priceMeasureId": 1,
           "calculationType": "ADVANCE_PAYMENT"
         }
@@ -50,10 +66,12 @@
           "amount": "1050.00",
           "listPrice": "1050.00",
           "currency": "EUR",
-          "quantity": 1,
+          "quantity": "1.00",
           "priceMeasureId": 2,
           "calculationType": "SEPARATE_PAYMENT",
-          "condition": "PER_DAY"
+          "condition": {
+            "textEN": "PER_DAY"
+          }
         }
       ],
       "status": "FREE",
@@ -73,7 +91,12 @@
         "currency": "EUR",
         "discounts": []
       },
-      "paymentPlans": [{ "date": "10.02.2026", "percentage": 100 }],
+      "paymentPlans": [
+        {
+          "date": "10.02.2026",
+          "percentage": 100
+        }
+      ],
       "obligatoryExtras": [],
       "additionalExtras": [],
       "status": "UNDER_OPTION",

@@ -21,7 +21,13 @@
     "phone": "+385 91 000 0000",
     "mobile": "+385 91 000 0000"
   },
-  "discounts": [{ "discountItemId": 6001, "amount": 10, "type": "PERCENTAGE" }],
+  "discounts": [
+    {
+      "discountItemId": 6001,
+      "amount": 10,
+      "type": "PERCENTAGE"
+    }
+  ],
   "additionalEquipment": [],
   "services": [
     {
@@ -29,7 +35,7 @@
       "amount": "150.00",
       "listPrice": "150.00",
       "currency": "EUR",
-      "quantity": 1,
+      "quantity": "1.00",
       "priceMeasureId": 1,
       "calculationType": "SEPARATE_PAYMENT"
     }

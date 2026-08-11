@@ -491,6 +491,16 @@ export const restPriceSchema = z.looseObject({
   clientPrice: decimal,
   currency: z.string(),
   discounts: z.array(restDiscountSchema).optional(),
+  /** Security deposit for the period, authoritative over the catalogue value. */
+  depositAmount: decimal.optional(),
+  depositWhenInsuredAmount: decimal.optional(),
+  /** "I" included, "E" excluded. Varies per price list; see Q-PRICELIST-VAT. */
+  vatInPrice: z.string().optional(),
+  /**
+   * What we earn, not what the customer pays. Typed so it is named and therefore
+   * greppable, and must never reach a quote line or any oRPC response.
+   */
+  agencyCommission: decimal.optional(),
 });
 
 export const restPaymentPlanSchema = z.looseObject({
@@ -498,15 +508,36 @@ export const restPaymentPlanSchema = z.looseObject({
   percentage: z.number(),
 });
 
+/**
+ * An extra on a `freeYachts` offer, as production actually sends it.
+ *
+ * Two shapes share this schema. An obligatory extra is keyed by `serviceId`; an
+ * additional one is keyed by `extraId` plus `extrasType`, and carries no
+ * `serviceId` at all, so neither id can be required.
+ *
+ * `amount` is the UNIT price and `totalPrice` is the line total: a recorded extra
+ * has `amount: "10.00"`, `quantity: "10.00"`, `totalPrice: "100.00"`. Anything
+ * billing off `amount` under-charges by the quantity, which is why `totalPrice`
+ * is what the quote mapper reads.
+ *
+ * `quantity` is a decimal string, not a number, and `condition` is international
+ * text rather than a string (frequently `{}`).
+ */
 export const restExtraSchema = z.looseObject({
-  serviceId: z.number().int(),
+  /** Present on obligatory extras. */
+  serviceId: z.number().int().optional(),
+  /** Present on additional extras, alongside `extrasType`. */
+  extraId: z.number().int().optional(),
+  extrasType: z.string().optional(),
   amount: decimal,
+  totalPrice: decimal.optional(),
   listPrice: decimal.optional(),
   currency: z.string(),
-  quantity: z.number().optional(),
+  quantity: decimal.optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
-  condition: z.string().optional(),
+  condition: restInternationalTextSchema.optional(),
+  obligatory: z.boolean().optional(),
 });
 
 export const restFreeYachtStatusSchema = z.enum(["FREE", "UNDER_OPTION"]);
