@@ -9,7 +9,7 @@ import { z } from "zod";
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { createCatalogueResolver, type CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
+import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
 
 /* ------------------------------------------------------------ canonical DTOs */
@@ -380,6 +380,13 @@ export interface AvailabilitySyncSummary {
   failedCount: number;
   listingsTouched: number;
   budgetExhausted: boolean;
+  /**
+   * The provider refused the accurate pass outright. Distinct from a failure: the
+   * occupancy pass used the same credential and worked, so this is a permission
+   * scope rather than a broken run, and retrying on the next tick will not change
+   * it. Slots stay unconfirmed until the provider grants the operation.
+   */
+  confirmationUnavailable: boolean;
   aborted: boolean;
 }
 
@@ -432,6 +439,7 @@ export async function runAvailabilitySync(
   let sweptScopes = 0;
   let failedCount = 0;
   let budgetExhausted = false;
+  let confirmationUnavailable = false;
   let aborted = false;
 
   const report = async (error: unknown, context: Record<string, unknown>) => {
@@ -598,7 +606,17 @@ export async function runAvailabilitySync(
       } catch (error) {
         // The cheap pass already landed; losing the accurate one costs precision,
         // not the run. The cursor stays where it is so the next run resumes there.
-        await report(error, { phase: "hot-window" });
+        //
+        // A refusal is not a failure. `AuthError` here means the credential is not
+        // permitted to run the search, which the occupancy pass just disproved as a
+        // credential problem, so it is a standing capability gap. Counting it would
+        // mark every scheduled run `partial` and write an error row every hour,
+        // burying the failures that do matter.
+        if (error instanceof AuthError) {
+          confirmationUnavailable = true;
+        } else {
+          await report(error, { phase: "hot-window" });
+        }
         budgetExhausted = true;
       }
 
@@ -644,6 +662,7 @@ export async function runAvailabilitySync(
     failedCount,
     listingsTouched: touched.size,
     budgetExhausted,
+    confirmationUnavailable,
     aborted,
   };
 }
@@ -969,6 +988,7 @@ export async function runAvailabilitySyncJob(
       failedCount: 0,
       listingsTouched: 0,
       budgetExhausted: false,
+      confirmationUnavailable: false,
       aborted: false,
     };
   }

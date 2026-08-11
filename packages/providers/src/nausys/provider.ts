@@ -59,6 +59,42 @@ export interface NausysProviderOptions {
   hotWindows?: NausysHotWindow[];
   /** Currency the vendor is asked to price in; the quote echoes whatever it returns. */
   currency?: string;
+  /** Injectable clock, so the default hot windows are testable. */
+  now?: Date;
+}
+
+/**
+ * How many upcoming charter weeks the accurate availability pass walks by default.
+ * Each one is a paged `freeYachtsSearch` on the single vendor lane, so this trades
+ * confirmed prices against how long the run occupies it.
+ */
+const DEFAULT_HOT_WINDOW_COUNT = 8;
+
+const SATURDAY = 6;
+const DAY_MS = 86_400_000;
+
+const isoDay = (date: Date): string => date.toISOString().slice(0, 10);
+
+/**
+ * The next N Saturday-to-Saturday weeks.
+ *
+ * Saturday turnaround is the Adriatic bareboat norm and the only check-in day the
+ * recorded NauSYS `checkInPeriods` use, so these windows line up with the periods
+ * the synthesizer generates. A window that matched no synthesized slot would
+ * confirm nothing.
+ */
+function upcomingCharterWeeks(from: Date, count: number): NausysHotWindow[] {
+  const start = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
+  const untilSaturday = (SATURDAY - new Date(start).getUTCDay() + 7) % 7;
+  const first = start + untilSaturday * DAY_MS;
+
+  return Array.from({ length: count }, (_, index) => {
+    const checkIn = new Date(first + index * 7 * DAY_MS);
+    return {
+      periodFrom: isoDay(checkIn),
+      periodTo: isoDay(new Date(checkIn.getTime() + 7 * DAY_MS)),
+    };
+  });
 }
 
 /**
@@ -85,9 +121,13 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     this.client = options.client ?? new NausysClient({ config: this.config });
     this.resolver = createCatalogueResolver(this.db, "nausys");
 
-    const thisYear = new Date().getUTCFullYear();
+    const now = options.now ?? new Date();
+    const thisYear = now.getUTCFullYear();
     this.years = options.years ?? [thisYear, thisYear + 1];
-    this.hotWindows = options.hotWindows ?? [];
+    // Defaulted rather than left empty: an empty list silently skips the pass that
+    // turns a synthesized guess into a vendor-confirmed price, so a scheduled run
+    // would keep every slot unconfirmed and never say why.
+    this.hotWindows = options.hotWindows ?? upcomingCharterWeeks(now, DEFAULT_HOT_WINDOW_COUNT);
     this.currency = options.currency ?? "EUR";
 
     this.quotes = createNausysQuoteService({
