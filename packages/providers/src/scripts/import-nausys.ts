@@ -14,49 +14,24 @@
 import { db } from "@yacht-charter/db";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
-import { provider as providerTable, providerRecord } from "@yacht-charter/db/schema/provider";
+import { providerRecord, syncRun } from "@yacht-charter/db/schema/provider";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { NausysInventoryProvider } from "../nausys/provider";
 import { resolveNausysConfig } from "../nausys/config";
-import { openCatalogueSyncRun, runCatalogueSyncJob } from "../sync/runner";
+import { ensureProviderId, openCatalogueSyncRun, runCatalogueSyncJob } from "../sync/runner";
 import { runAvailabilitySyncJob } from "../sync/availability-writer";
 import { revalidateCatalogCache } from "../sync/revalidate";
-import { syncRun } from "@yacht-charter/db/schema/provider";
 
 const args = new Set(process.argv.slice(2));
 const publish = args.has("--publish");
-
-async function ensureProviderRow(): Promise<string> {
-  const existing = await db
-    .select({ id: providerTable.id })
-    .from(providerTable)
-    .where(eq(providerTable.code, "nausys"))
-    .limit(1);
-
-  if (existing[0]) return existing[0].id;
-
-  const [row] = await db
-    .insert(providerTable)
-    .values({
-      code: "nausys",
-      name: "NauSYS",
-      enabled: true,
-      defaultCurrency: "EUR",
-    })
-    .returning({ id: providerTable.id });
-
-  if (!row) throw new Error("failed to create the nausys provider row");
-  console.log(`created provider row ${row.id}`);
-  return row.id;
-}
 
 async function main(): Promise<void> {
   const config = resolveNausysConfig();
   console.log(`host ${config.baseUrl}  user ${config.username}`);
 
-  const providerId = await ensureProviderRow();
+  const providerId = await ensureProviderId(db, "nausys");
   const provider = new NausysInventoryProvider({ db, config });
 
   const syncRunId = await openCatalogueSyncRun(db, providerId);

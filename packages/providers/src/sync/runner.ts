@@ -469,6 +469,40 @@ export async function resolveProviderId(db: Database, code: string): Promise<str
   return row.id;
 }
 
+/** Display name for a provider row this package bootstraps for the first time. */
+const PROVIDER_DISPLAY_NAME: Record<string, string> = {
+  nausys: "NauSYS",
+  mock: "Mock Inventory Provider",
+  booking_manager: "Booking Manager",
+};
+
+/**
+ * Like `resolveProviderId`, but creates the row (enabled, EUR default) the first
+ * time this provider syncs instead of throwing — for one-off ops scripts run
+ * against a database that has never registered it (e.g. an empty staging DB).
+ * `code` is unique, so a concurrent creator just wins the insert and this reads
+ * its row back rather than erroring.
+ */
+export async function ensureProviderId(db: Database, code: string): Promise<string> {
+  try {
+    return await resolveProviderId(db, code);
+  } catch (error) {
+    if (!(error instanceof NotFoundError)) throw error;
+  }
+
+  await db
+    .insert(providerTable)
+    .values({
+      code,
+      name: PROVIDER_DISPLAY_NAME[code] ?? code,
+      enabled: true,
+      defaultCurrency: "EUR",
+    })
+    .onConflictDoNothing();
+
+  return resolveProviderId(db, code);
+}
+
 /** Created before the work starts so a caller can return the id and walk away. */
 export async function openCatalogueSyncRun(db: Database, providerId: string): Promise<string> {
   const [row] = await db
