@@ -3,7 +3,7 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Map, Sailboat, Share, Star, Users } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
@@ -16,6 +16,7 @@ const ACTION = "w-full md:flex-1 xl:w-auto xl:flex-none";
 
 export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
+  const locale = useLocale();
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -59,7 +60,19 @@ export default function TitleBlock() {
           <Share />
           {tDetail("share")}
         </Button>
-        <Button variant="neutral" className={ACTION}>
+        {/*
+         * Full navigation (plain anchor), NOT the client-side <Link>. The map page mounts an
+         * imperative Mapbox GL instance that can't survive Next's Activity route-retention: on a
+         * second soft-nav the router reconnects a previously-hidden map whose WebGL context was
+         * torn, and react-map-gl's markers crash re-attaching to it. A hard load gives the map a
+         * fresh document every time. Locale is prefixed manually since we bypass the i18n Link.
+         */}
+        <Button
+          variant="neutral"
+          nativeButton={false}
+          render={<a href={`/${locale}/yachts/map?selected=${data.id}`} />}
+          className={ACTION}
+        >
           <Map />
           {tDetail("seeOnMap")}
         </Button>

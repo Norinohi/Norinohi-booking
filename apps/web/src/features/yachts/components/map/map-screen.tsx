@@ -7,8 +7,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   clearFilterKeys,
@@ -60,11 +61,13 @@ function CloseListButton({
 }
 
 export default function MapScreen() {
+  const focusListingId = useSearchParams().get("selected");
   const { defaults } = useFilterRanges();
   const [filters, setFilters] = useState<FiltersState>(() => defaults);
   const [listOpen, setListOpen] = useState(false);
-  const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(focusListingId);
   const [map, setMap] = useState<MapInstance | null>(null);
+  const hasFocused = useRef(false);
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
@@ -78,6 +81,16 @@ export default function MapScreen() {
   const selected = selectedListingId
     ? markers.find((marker) => marker.listingId === selectedListingId)
     : undefined;
+
+  // Deep link from a listing's "See on map": once the map and the target marker are both ready,
+  // recenter on it once. A ref guards it so later marker taps by the user never yank the viewport.
+  useEffect(() => {
+    if (hasFocused.current || !map || !focusListingId) return;
+    const target = markers.find((marker) => marker.listingId === focusListingId);
+    if (!target) return;
+    hasFocused.current = true;
+    map.flyTo({ center: [target.lng, target.lat], zoom: 11 });
+  }, [map, markers, focusListingId]);
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
