@@ -503,6 +503,38 @@ export async function ensureProviderId(db: Database, code: string): Promise<stri
   return resolveProviderId(db, code);
 }
 
+export interface CatalogueSyncProgress {
+  providerRecordTotal: number;
+  syncErrorTotal: number;
+}
+
+/**
+ * Coarse progress for a run in flight. `closeRun` only writes sync_run's own
+ * created/updated/skipped/failed counters once, at the very end, so a caller
+ * watching an in-progress run (an operator tailing a long import, say) has
+ * nothing to poll there — this reads the tables the ingest writes to as it goes
+ * instead.
+ */
+export async function readCatalogueSyncProgress(
+  db: Database,
+  providerId: string,
+  syncRunId: string,
+): Promise<CatalogueSyncProgress> {
+  const [records] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(providerRecord)
+    .where(eq(providerRecord.providerId, providerId));
+  const [errors] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(syncError)
+    .where(eq(syncError.syncRunId, syncRunId));
+
+  return {
+    providerRecordTotal: records?.total ?? 0,
+    syncErrorTotal: errors?.total ?? 0,
+  };
+}
+
 /** Created before the work starts so a caller can return the id and walk away. */
 export async function openCatalogueSyncRun(db: Database, providerId: string): Promise<string> {
   const [row] = await db
