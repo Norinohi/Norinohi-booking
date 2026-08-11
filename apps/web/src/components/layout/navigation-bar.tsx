@@ -47,7 +47,7 @@ export default function NavigationBar() {
             href="/"
             className="cursor-pointer text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]"
           >
-            YachtCharter
+            YachtSkanner
           </Link>
 
           <nav className="hidden items-center gap-6 min-[1360px]:flex">

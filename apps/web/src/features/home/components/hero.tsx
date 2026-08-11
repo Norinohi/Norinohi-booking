@@ -13,7 +13,11 @@ import { Suspense, useState } from "react";
 
 import AnimatedNumber from "@/components/shared/data-display/animated-number";
 import DatePicker from "@/components/shared/form/date-picker";
-import { EMPTY_OPTIONS, type FilterOptions, useFilterOptions } from "@/components/shared/form/filters";
+import {
+  EMPTY_OPTIONS,
+  type FilterOptions,
+  useFilterOptions,
+} from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { dayFromNative, daysBetween } from "@/lib/date";
 import { GROUP, RISE } from "@/lib/motion";
@@ -104,7 +108,7 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
       <div className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-base md:justify-start md:text-left">
         <span className="text-natural-600">{t("dontKnow")}</span>
         <Link
-          href="/yachts"
+          href="/plan-my-trip"
           className="cursor-pointer font-medium text-brand underline underline-offset-2 transition-opacity hover:opacity-80"
         >
           {t("helpPlan")}
@@ -197,8 +201,8 @@ export default function Hero() {
           </motion.div>
 
           <Suspense fallback={<SearchCardView options={EMPTY_OPTIONS} isPending />}>
-              <SearchCard />
-            </Suspense>
+            <SearchCard />
+          </Suspense>
         </div>
 
         <StatsBar />

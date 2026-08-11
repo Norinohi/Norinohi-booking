@@ -1,10 +1,8 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { TestimonialCard } from "@yacht-charter/ui/components/data-display/card-testimonial";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ArrowUpRight } from "lucide-react";
 import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 
 import { RISE, VIEWPORT } from "@/lib/motion";
 
@@ -88,15 +86,8 @@ export default function Testimonials() {
       </div>
 
       <div className="mx-auto mt-8 flex max-w-384 justify-center px-4 lg:mt-10">
-        <Button
-          variant="neutral"
-          size="md"
-          className="w-full md:w-auto"
-          nativeButton={false}
-          render={<Link href="/yachts" />}
-        >
-          {t("allReviews")}
-          <ArrowUpRight />
+        <Button variant="neutral" size="md" className="w-full md:w-auto">
+          Coming Soon
         </Button>
       </div>
 

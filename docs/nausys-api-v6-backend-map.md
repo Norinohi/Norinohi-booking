@@ -6,7 +6,7 @@ Source: `NAUSYSAPIV6-200726-1620-102_Agency.pdf` (358 pages, Agency API edition)
 
 This is an implementation map, not a copy of the vendor PDF. It identifies every
 documented API area and data-structure family, its purpose, and how it maps into
-the Yacht Charter marketplace. The connector must keep all provider payloads and
+the YachtSkanner marketplace. The connector must keep all provider payloads and
 IDs at its boundary; browser-facing oRPC procedures use the canonical contracts
 defined here.
 

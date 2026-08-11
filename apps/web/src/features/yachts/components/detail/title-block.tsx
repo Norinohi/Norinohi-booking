@@ -4,9 +4,11 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Map, Sailboat, Share, Star, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
+import { Link } from "@/i18n/navigation";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
 import { slugToLabel } from "../../lib/slug-to-label";
@@ -19,6 +21,16 @@ export default function TitleBlock() {
   const { data } = useListingDetail();
 
   if (!data) return null;
+
+  const shareListing = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      // Native share sheet on mobile/supported browsers; ignore the reject when the user cancels.
+      void navigator.share({ title: data.title, url }).catch(() => {});
+    } else {
+      void navigator.clipboard.writeText(url).then(() => toast.success(tDetail("linkCopied")));
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 md:gap-6 xl:flex-row xl:flex-wrap xl:items-start xl:justify-between xl:gap-5">
@@ -55,11 +67,20 @@ export default function TitleBlock() {
       </div>
 
       <div className="flex flex-col gap-2 md:flex-row-reverse md:gap-3 xl:flex-row">
-        <Button variant="subtle" className={`${ACTION} max-xl:border-border max-xl:bg-secondary`}>
+        <Button
+          variant="subtle"
+          onClick={shareListing}
+          className={`${ACTION} max-xl:border-border max-xl:bg-secondary`}
+        >
           <Share />
           {tDetail("share")}
         </Button>
-        <Button variant="neutral" className={ACTION}>
+        <Button
+          variant="neutral"
+          nativeButton={false}
+          render={<Link href={`/yachts/map?selected=${data.id}`} />}
+          className={ACTION}
+        >
           <Map />
           {tDetail("seeOnMap")}
         </Button>

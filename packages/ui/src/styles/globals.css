@@ -7,7 +7,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design tokens — source of truth: Figma "Web Yacht Charter" (Colors + Typography pages).
+ * Design tokens — source of truth: Figma "Web Yacht Skanner" (Colors + Typography pages).
  * Primitives are the raw ramps; the shadcn semantic vars below map onto them.
  * NOTE: brand blue (#2f80ed) is a FIRST-CLASS token, separate from --primary (black).
  * --radius is 0.5rem (8px), the base control radius from the Figma "border radius/sm" token.

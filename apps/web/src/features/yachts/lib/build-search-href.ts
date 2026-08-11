@@ -1,14 +1,12 @@
 "use client";
 
 import type { AppPathname } from "@/i18n/navigation";
-import { createSerializer } from "nuqs";
 
-import { filterParsers } from "./search-params";
-
-const serialize = createSerializer(filterParsers);
+import { serializeSearch } from "./search-params";
 
 export type SearchCriteria = {
   country?: string[];
+  sailingArea?: string[];
   boatType?: string[];
   crew?: string[];
   startDate?: string | null;
@@ -18,5 +16,5 @@ export type SearchCriteria = {
 };
 
 export function buildSearchHref(criteria: SearchCriteria): AppPathname {
-  return serialize("/yachts", criteria);
+  return serializeSearch("/yachts", criteria);
 }

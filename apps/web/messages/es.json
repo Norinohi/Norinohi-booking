@@ -190,6 +190,31 @@
     },
     "marina": {
       "viewDetails": "Ver detalles"
+    },
+    "leadForm": {
+      "fields": {
+        "name": {
+          "label": "Nombre completo",
+          "placeholder": "Jane Doe"
+        },
+        "email": {
+          "label": "Correo electrónico",
+          "placeholder": "jane@example.com"
+        },
+        "phone": {
+          "label": "Teléfono (opcional)",
+          "placeholder": "+1 234 567 8900"
+        },
+        "message": {
+          "label": "Mensaje (opcional)",
+          "placeholder": "¿Algo más que debamos saber sobre tu viaje?"
+        }
+      },
+      "errors": {
+        "nameRequired": "Por favor, introduce tu nombre",
+        "emailInvalid": "Por favor, introduce un correo electrónico válido",
+        "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
+      }
     }
   },
   "Filters": {
@@ -448,6 +473,7 @@
     "Testimonials": {
       "heading": "Lo que dicen nuestros clientes",
       "allReviews": "Todas las opiniones",
+      "comingSoon": "Próximamente",
       "items": {
         "weber": {
           "quote": "Reservamos un yate en Croacia por primera vez y todo funcionó sin más. El proceso fue sencillo y el barco era exactamente lo que esperábamos.",
@@ -504,7 +530,7 @@
       },
       "privacy": "Política de privacidad",
       "terms": "Términos del servicio",
-      "copyright": "© {year} YachtCharter Platform. Todos los derechos reservados."
+      "copyright": "© {year} YachtSkanner Platform. Todos los derechos reservados."
     },
     "Nav": {
       "boatTypes": "Tipos de barco",
@@ -543,7 +569,7 @@
       "credits": "Créditos y saldo"
     },
     "description": "Alquila yates y catamaranes en todo el mundo. Compara barcos, fechas y precios, y reserva tu próxima travesía en minutos.",
-    "title": "YachtCharter — Alquiler de Yates y Catamaranes"
+    "title": "YachtSkanner — Alquiler de Yates y Catamaranes"
   },
   "PlanMyTrip": {
     "title": "Ayúdame a planificar mi viaje",
@@ -731,32 +757,9 @@
       "consultationDialog": {
         "title": "Solicita una asesoría gratuita",
         "description": "Cuéntanos cómo contactarte y uno de nuestros expertos en chárter te enviará opciones a medida.",
-        "fields": {
-          "name": {
-            "label": "Nombre completo",
-            "placeholder": "Jane Doe"
-          },
-          "email": {
-            "label": "Correo electrónico",
-            "placeholder": "jane@example.com"
-          },
-          "phone": {
-            "label": "Teléfono (opcional)",
-            "placeholder": "+1 234 567 8900"
-          },
-          "message": {
-            "label": "Mensaje (opcional)",
-            "placeholder": "¿Algo más que debamos saber sobre tu viaje?"
-          }
-        },
         "submit": "Enviar solicitud",
         "cancel": "Cancelar",
-        "success": "¡Gracias! Nos pondremos en contacto pronto.",
-        "errors": {
-          "nameRequired": "Por favor, introduce tu nombre",
-          "emailInvalid": "Por favor, introduce un correo electrónico válido",
-          "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
-        }
+        "success": "¡Gracias! Nos pondremos en contacto pronto."
       }
     },
     "consultation": {
@@ -794,6 +797,7 @@
     "backToSearch": "Volver a la búsqueda",
     "breadcrumbSearch": "Búsqueda",
     "share": "Compartir",
+    "linkCopied": "Enlace copiado",
     "seeOnMap": "Ver en el mapa",
     "addToWishlist": "Añadir a favoritos",
     "removeFromWishlist": "Quitar de favoritos",
@@ -894,6 +898,12 @@
       "waterTank": "Depósito de agua",
       "length": "Eslora",
       "engine": "Motor"
+    },
+    "quoteDialog": {
+      "title": "Solicita un presupuesto",
+      "description": "Déjanos tus datos y un experto en chárter te enviará un presupuesto a medida para estas fechas.",
+      "submit": "Enviar solicitud",
+      "success": "¡Gracias! Nos pondremos en contacto pronto."
     }
   },
   "Yachts": {
@@ -943,11 +953,11 @@
     },
     "Login": {
       "title": "Iniciar sesión",
-      "description": "Inicia sesión en tu cuenta de YachtCharter para gestionar reservas y yates guardados."
+      "description": "Inicia sesión en tu cuenta de YachtSkanner para gestionar reservas y yates guardados."
     },
     "Register": {
       "title": "Crear cuenta",
-      "description": "Crea una cuenta de YachtCharter para reservar yates, guardar favoritos y gestionar tus viajes."
+      "description": "Crea una cuenta de YachtSkanner para reservar yates, guardar favoritos y gestionar tus viajes."
     },
     "Dashboard": {
       "title": "Panel",
@@ -959,7 +969,7 @@
     },
     "Profile": {
       "title": "Tu perfil",
-      "description": "Gestiona los datos de tu cuenta de YachtCharter, tu información de contacto y tus preferencias."
+      "description": "Gestiona los datos de tu cuenta de YachtSkanner, tu información de contacto y tus preferencias."
     },
     "Bookings": {
       "title": "Mis reservas",
@@ -967,7 +977,7 @@
     },
     "Referrals": {
       "title": "Tus referidos",
-      "description": "Sigue a los amigos que has invitado a YachtCharter y las recompensas que has conseguido."
+      "description": "Sigue a los amigos que has invitado a YachtSkanner y las recompensas que has conseguido."
     },
     "Discounts": {
       "title": "Gestor de descuentos y precios",
@@ -1052,7 +1062,7 @@
       }
     },
     "SignUp": {
-      "welcome": "Bienvenido a YachtCharter",
+      "welcome": "Bienvenido a YachtSkanner",
       "cardTitle": "Únete para empezar",
       "email": {
         "label": "Correo electrónico",

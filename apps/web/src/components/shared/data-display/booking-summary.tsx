@@ -73,6 +73,8 @@ export type BookingSummaryProps = {
   shaded?: boolean;
   /** Where Pay Now leads — set once a quote exists so the id can ride along. */
   payNowHref?: AppPathname;
+  /** Opens the Request Quote enquiry dialog — supplied by the sidebar container (detail page only). */
+  onRequestQuote?: () => void;
 };
 
 function Separator() {
@@ -193,6 +195,7 @@ export default function BookingSummary({
   actions = true,
   shaded = false,
   payNowHref,
+  onRequestQuote,
 }: BookingSummaryProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
@@ -390,7 +393,9 @@ export default function BookingSummary({
                   >
                     {t("sidebar.payNowCta", { amount: money(quote.deposit.amountMinor) })}
                   </Button>
-                  <Button variant="neutral">{t("sidebar.requestQuote")}</Button>
+                  <Button variant="neutral" onClick={onRequestQuote}>
+                    {t("sidebar.requestQuote")}
+                  </Button>
                 </>
               ) : null}
             </div>

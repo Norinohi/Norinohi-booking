@@ -1,4 +1,4 @@
-# Yacht Charter Marketplace
+# YachtSkanner Marketplace
 
 A marketplace where visitors browse charter yachts, check availability, and book them. The web app
 is a read-heavy public catalogue in front of a booking flow; the two halves have different

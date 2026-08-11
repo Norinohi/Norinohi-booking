@@ -1,4 +1,10 @@
-import { createParser, parseAsArrayOf, parseAsBoolean, parseAsString } from "nuqs";
+import {
+  createParser,
+  createSerializer,
+  parseAsArrayOf,
+  parseAsBoolean,
+  parseAsString,
+} from "nuqs/server";
 
 import type { Range } from "@/components/shared/form/filters/lib/state";
 
@@ -49,3 +55,11 @@ export const filterParsers = {
 
   guestRating: rangeParser(),
 };
+
+/*
+ * Serializes a subset of the filters into a `/yachts` query string. Built on `nuqs/server`, so it
+ * runs in Server Components too (unlike the `"nuqs"` client entry, which crashes in RSC) — the
+ * footer deep-links into search from server-rendered chrome. Client leaves reach it through the
+ * `buildSearchHref` sugar, so both sides emit the same param encoding as `filterParsers` parses.
+ */
+export const serializeSearch = createSerializer(filterParsers);

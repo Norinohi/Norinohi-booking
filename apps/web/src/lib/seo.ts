@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { defaultLocale, type Locale, locales } from "@/i18n/config";
 
-export const SITE_NAME = "YachtCharter";
+export const SITE_NAME = "YachtSkanner";
 
 const DEFAULT_OG_IMAGE = "/seo/og-default.jpg";
 

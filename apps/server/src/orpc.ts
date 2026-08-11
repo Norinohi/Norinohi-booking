@@ -15,7 +15,7 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
       docsProvider: "scalar",
-      docsTitle: "Yacht Charter API Reference",
+      docsTitle: "YachtSkanner API Reference",
       specPath: "/openapi.json",
       specGenerateOptions: {
         servers: [{ url: openApiServerUrl }],

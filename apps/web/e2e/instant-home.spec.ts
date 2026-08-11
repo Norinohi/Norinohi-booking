@@ -29,7 +29,7 @@ test("initial load: home serves its static shell", async ({ page }) => {
 test("soft navigation: home commits its prefetched shell", async ({ page }) => {
   await page.goto("/en/plan-my-trip");
 
-  const wordmark = page.getByRole("link", { name: "YachtCharter" });
+  const wordmark = page.getByRole("link", { name: "YachtSkanner" });
   await expect(wordmark).toBeVisible();
 
   await instant(page, async () => {
