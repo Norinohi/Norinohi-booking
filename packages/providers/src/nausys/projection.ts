@@ -80,22 +80,27 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
 
   const countryNameById = new Map(countries.map((item) => [String(item.id), name(item.name)]));
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
-  const companyById = new Map(companies.map((item) => [String(item.id), item]));
   const modelById = new Map(models.map((item) => [String(item.id), item]));
   const knownEquipment = new Set(equipment.map((item) => String(item.id)));
 
   const projectedBases = bases.map((item) => {
     const locationId = String(item.locationId);
-    const companyName = companyById.get(String(item.companyId))?.name ?? "";
     const locationName = locationNameById.get(locationId) ?? `Location ${locationId}`;
 
     return {
       externalId: String(item.id),
       externalLocationId: locationId,
-      // `RestCharterBase` carries no name. Two companies operating out of one
-      // location would otherwise resolve to the same base row, so the operator is
-      // part of the name. Vendor question Q-BASE-NAME.
-      name: text(item.name) ?? `${companyName} ${locationName}`.trim(),
+      // `RestCharterBase` carries no name, so the marina's own location name is
+      // the closest thing to one. Deliberately NOT prefixed with the operator: a
+      // base is a physical marina, the operator already hangs off the listing, and
+      // prefixing both fragmented one marina into a copy per operator and rendered
+      // as "Test Charter Company Dubrovnik, Komolac, ACI Marina Dubrovnik".
+      //
+      // The consequence is that two operators working out of one marina now share
+      // a base row, so its check-in and check-out times are last-write-wins. That
+      // is the right trade while those times are also on the listing's check-in
+      // rules, but it needs revisiting if per-operator base detail starts to matter.
+      name: text(item.name) ?? locationName,
       lat: numberOf(item.lat),
       lng: numberOf(item.lon),
       checkInTime: text(item.checkInTime),

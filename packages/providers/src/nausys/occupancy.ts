@@ -85,6 +85,15 @@ export async function fetchNausysOccupancy(
  * a throw as "this company-year was not fetched" and neither synthesizes nor sweeps
  * inside it.
  */
+const OCCUPANCY_STATUS = {
+  RESERVATION: "occupied",
+  OPTION: "option",
+  SERVICE: "blocked",
+} as const satisfies Record<
+  RestOccupancyReservation["reservationType"],
+  OccupiedInterval["status"]
+>;
+
 export function mapOccupancyReservation(reservation: RestOccupancyReservation): OccupiedInterval {
   const startDate = parseNausysDate(reservation.periodFrom);
   const endDate = parseNausysDate(reservation.periodTo);
@@ -101,8 +110,9 @@ export function mapOccupancyReservation(reservation: RestOccupancyReservation): 
     startDate,
     endDate,
     // An OPTION blocks the yacht for as long as it stands, so it is unbookable for
-    // us; it is kept distinct from a RESERVATION because it can lapse.
-    status: reservation.reservationType === "OPTION" ? "option" : "occupied",
+    // us; it is kept distinct from a RESERVATION because it can lapse. SERVICE is a
+    // maintenance or out-of-fleet block, which is never bookable at all.
+    status: OCCUPANCY_STATUS[reservation.reservationType],
     sourceHash: stableSourceHash(reservation),
   };
 }

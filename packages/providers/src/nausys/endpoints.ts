@@ -599,7 +599,9 @@ export const restFreeYachtsSearchResponseSchema = z.looseObject({
   freeYachtsInPeriod: z.array(restFreeYachtSchema).optional(),
 });
 
-export const restOccupancyReservationTypeSchema = z.enum(["RESERVATION", "OPTION"]);
+// SERVICE is undocumented but real: maintenance and out-of-fleet blocks, carrying
+// negative ids and open-ended periods (01.01.2020 to 31.12.2099 in production).
+export const restOccupancyReservationTypeSchema = z.enum(["RESERVATION", "OPTION", "SERVICE"]);
 
 export const restOccupancyReservationSchema = z.looseObject({
   id: z.number().int(),

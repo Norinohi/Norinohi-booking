@@ -143,26 +143,35 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   }
 
   createAvailabilitySource(options: { resume?: unknown }): AvailabilitySource {
-    void options.resume;
-    return createNausysAvailabilitySource({
-      client: this.client,
-      companyIds: [],
-      years: this.years,
-      hotWindows: this.hotWindows,
-      currency: this.currency,
-    });
-  }
+    const build = async (): Promise<AvailabilitySource> =>
+      createNausysAvailabilitySource({
+        client: this.client,
+        // Which companies to sweep is a database read, and the factory is
+        // synchronous, so it is deferred into listScopes rather than passed as an
+        // empty list. Passing [] here would make every availability run a
+        // successful no-op, which is the worst possible failure mode.
+        companyIds: await this.resolver.listExternalCompanyIds(),
+        years: this.years,
+        hotWindows: this.hotWindows,
+        currency: this.currency,
+      });
 
-  /** Resolves the company list lazily; it is a database read, not a vendor call. */
-  async createAvailabilitySourceForRun(options: { resume?: unknown }): Promise<AvailabilitySource> {
-    void options.resume;
-    return createNausysAvailabilitySource({
-      client: this.client,
-      companyIds: await this.resolver.listExternalCompanyIds(),
-      years: this.years,
-      hotWindows: this.hotWindows,
-      currency: this.currency,
-    });
+    let pending: Promise<AvailabilitySource> | null = null;
+    const source = () => (pending ??= build());
+
+    return {
+      async listScopes() {
+        return (await source()).listScopes();
+      },
+      async fetchOccupancy(scope) {
+        return (await source()).fetchOccupancy(scope);
+      },
+      searchConfirmed: async function* (resume) {
+        const inner = await source();
+        if (!inner.searchConfirmed) return;
+        yield* inner.searchConfirmed(resume ?? options.resume);
+      },
+    };
   }
 
   async loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>> {

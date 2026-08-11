@@ -32,7 +32,7 @@ export const occupiedIntervalSchema = z.object({
   externalYachtId: z.string().min(1),
   startDate: isoDateSchema,
   endDate: isoDateSchema,
-  status: z.enum(["occupied", "option"]),
+  status: z.enum(["occupied", "option", "blocked"]),
   sourceHash: z.string().min(1),
 });
 export type OccupiedInterval = z.infer<typeof occupiedIntervalSchema>;
@@ -124,7 +124,7 @@ export interface AvailabilitySlotWrite {
   listingSourceId: string | null;
   startDate: string;
   endDate: string;
-  status: "available" | "option" | "occupied";
+  status: "available" | "option" | "occupied" | "blocked";
   availabilityConfirmed: boolean;
   priceMinor: number | null;
   currency: string | null;
@@ -258,7 +258,13 @@ export function synthesizeAvailableSlots(input: SynthesisInput): SynthesisResult
 
         const key = `${start}|${endDate}`;
         if (!byPeriod.has(key)) {
-          const price = priceAt(start, input.prices);
+          // Seasonal prices come from WEEKLY price lists, so they only describe a
+          // full week. NauSYS publishes daily rates separately and they are not a
+          // seventh of the weekly one, so a shorter or longer period cannot be
+          // derived from this number: pricing a 1-night slot at the week rate
+          // advertises roughly seven times the real price. Leave those unpriced
+          // until a live quote fills them in.
+          const price = nights === WEEKLY_NIGHTS ? priceAt(start, input.prices) : null;
           byPeriod.set(key, {
             startDate: start,
             endDate,
@@ -300,6 +306,8 @@ function overlapsAny(
 ): boolean {
   return intervals.some((interval) => start < interval.endDate && interval.startDate < end);
 }
+
+const WEEKLY_NIGHTS = 7;
 
 function priceAt(date: string, prices: readonly SeasonalPrice[] | undefined) {
   return prices?.find((price) => price.startDate <= date && date <= price.endDate) ?? null;

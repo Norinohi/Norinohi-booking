@@ -83,12 +83,12 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
-  it("names bases after their operator and location, since the vendor sends none", () => {
+  it("names a base after its marina, not its operator, since the vendor sends no name", () => {
     const catalogue = projectNausysCatalogue(fixtureRecords());
 
     expect(catalogue.bases.find((item) => item.externalId === "102751")).toMatchObject({
       externalLocationId: "57",
-      name: "Test Charter Company Dubrovnik, Komolac, ACI Marina Dubrovnik",
+      name: "Dubrovnik, Komolac, ACI Marina Dubrovnik",
       lat: 42.6697,
       lng: 18.12461,
       checkInTime: "17:00",
