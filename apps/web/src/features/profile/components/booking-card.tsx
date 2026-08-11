@@ -12,18 +12,20 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { useState } from "react";
 
 import BoatCard, { type BoatCardProps } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
+import CancelBookingDialog from "./cancel-booking-dialog";
+
 /*
  * BookingCard — Figma "My bookings / Boat Card" (972:54753 desktop, 973:82792 tablet).
  * At xl the history entry is a simplified horizontal card: image (carousel + bookmark on the
  * left) | info (marina, name + rating, charter/crew chips, charter dates, price) | View Details.
- * Below xl the mock reuses the full search Boat Card — specs, amenities, social proof, price
- * breakdown, prepayment note, bookmark in the image's top-right — so we render BoatCard itself
- * there instead of duplicating its sections, and keep bespoke markup only for the desktop cut.
+ * Below xl it renders the full search Boat Card. Booking-only chrome — the "Cancelled" chip and the
+ * Cancel action (no Figma yet) — is added here, never on the shared BoatCard.
  */
 
 const FORMATS = {
@@ -31,7 +33,11 @@ const FORMATS = {
   time: { hour: "2-digit", minute: "2-digit", hour12: false },
 } as const;
 
-export type BookingCardProps = BoatCardProps;
+export type BookingCardProps = BoatCardProps & {
+  bookingId: string;
+  cancellable: boolean;
+  isCancelled: boolean;
+};
 
 function Stamp({ value, timeZone }: { value: string; timeZone: string }) {
   const format = useFormatter();
@@ -49,13 +55,46 @@ function Stamp({ value, timeZone }: { value: string; timeZone: string }) {
   );
 }
 
-export default function BookingCard({ className, ...booking }: BookingCardProps) {
+export default function BookingCard({
+  className,
+  bookingId,
+  cancellable,
+  isCancelled,
+  ...booking
+}: BookingCardProps) {
   const t = useTranslations("Common.boatCard");
+  const tBookings = useTranslations("Bookings");
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  const cancelledChip = isCancelled ? (
+    <Chip variant="neutral" className="shrink-0 bg-error-50 text-error-600">
+      {tBookings("statusCancelled")}
+    </Chip>
+  ) : null;
+
+  const renderCancel = (fullWidth: boolean) =>
+    cancellable ? (
+      <Button
+        variant="subtle"
+        size="md"
+        onClick={() => setCancelOpen(true)}
+        className={cn(
+          "text-error-600 hover:text-error-700",
+          fullWidth ? "w-full border-border" : "hover:border-transparent",
+        )}
+      >
+        {tBookings("cancel.action")}
+      </Button>
+    ) : null;
 
   return (
     <>
-      {/* Tablet/mobile — the full search card, exactly as the mock composes it. */}
-      <BoatCard {...booking} className={cn("xl:hidden", className)} />
+      {/* Tablet/mobile — the full search card; the booking's cancel/status sits inside it (footer slot). */}
+      <BoatCard
+        {...booking}
+        className={cn("xl:hidden", className)}
+        footer={cancellable ? renderCancel(true) : isCancelled ? cancelledChip : null}
+      />
 
       {/* Desktop — the simplified history card. */}
       <article
@@ -111,6 +150,7 @@ export default function BookingCard({ className, ...booking }: BookingCardProps)
                 <Star className="fill-current" />
                 {booking.rating}
               </Chip>
+              {cancelledChip}
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -135,7 +175,7 @@ export default function BookingCard({ className, ...booking }: BookingCardProps)
         </div>
 
         {/* Action */}
-        <div className="flex items-center justify-center py-6 pr-6">
+        <div className="flex flex-col items-center justify-center gap-3 py-6 pr-6">
           <Button
             variant="neutral"
             size="md"
@@ -145,8 +185,11 @@ export default function BookingCard({ className, ...booking }: BookingCardProps)
           >
             {t("viewDetails")}
           </Button>
+          {renderCancel(false)}
         </div>
       </article>
+
+      <CancelBookingDialog bookingId={bookingId} open={cancelOpen} onOpenChange={setCancelOpen} />
     </>
   );
 }

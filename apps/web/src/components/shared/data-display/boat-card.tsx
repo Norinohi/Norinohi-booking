@@ -58,6 +58,8 @@ export type BoatCardProps = {
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
   summary?: boolean;
+  /** Extra content rendered inside the card, under the action button (e.g. My Bookings' Cancel). */
+  footer?: ReactNode;
   className?: string;
 };
 
@@ -230,6 +232,7 @@ function Action({
   perPerson,
   prepayment,
   detailHref,
+  footer,
 }: Pick<
   BoatCardProps,
   | "stats"
@@ -241,6 +244,7 @@ function Action({
   | "perPerson"
   | "prepayment"
   | "detailHref"
+  | "footer"
 >) {
   const t = useTranslations("Common.boatCard");
 
@@ -290,6 +294,7 @@ function Action({
         >
           {t("viewDetails")}
         </Button>
+        {footer}
       </div>
     </div>
   );
@@ -334,6 +339,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           perPerson={boat.perPerson}
           prepayment={boat.prepayment}
           detailHref={boat.detailHref}
+          footer={boat.footer}
         />
       )}
     </article>

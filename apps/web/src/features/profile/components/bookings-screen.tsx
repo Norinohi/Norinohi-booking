@@ -24,10 +24,12 @@ import BookingCard from "./booking-card";
  * BookingsScreen — the /profile/bookings layout: a "← Home" breadcrumb, then the account Sidebar
  * beside a "History" panel. The panel is a titled header (History + a date-range filter) over the
  * booking list and its pager, or the "No yachts yet" empty state. The list is `booking.list`; the
- * card is the shared BoatCard, so the boat spec sheet it shows is still placeholder data (see
- * useBookingCards) until the backend adds those fields. Filter + page live in the URL (nuqs).
+ * card is the shared BoatCard, fed by `booking.list`. Filter + page live in the URL (nuqs).
  * Figma "My bookings" (972:54737).
  */
+
+/** Statuses that read as cancelled on the card (drives the "Cancelled" chip). */
+const CANCELLED_STATUSES = new Set(["CANCELLED", "REFUND_PENDING", "REFUNDED"]);
 
 export default function BookingsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Bookings");
@@ -97,6 +99,9 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                     <BookingCard
                       key={booking.id}
                       {...toBookingCard(booking)}
+                      bookingId={booking.id}
+                      cancellable={booking.cancellable}
+                      isCancelled={CANCELLED_STATUSES.has(booking.status)}
                       priority={index === 0}
                     />
                   ))}
