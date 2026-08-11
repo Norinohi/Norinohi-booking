@@ -1,5 +1,8 @@
 import { useTranslations } from "next-intl";
 
+import { serializeSearch } from "@/features/yachts";
+import { Link } from "@/i18n/navigation";
+
 /*
  * Footer — Figma "Footer" (nodes 985:73146 desktop / 985:73145 tablet / 985:73144 mobile).
  * Dark section (#0a0a0a): 28px wordmark, 20px tagline + description, three 20px column
@@ -29,15 +32,33 @@ function YoutubeIcon(props: React.ComponentProps<"svg">) {
 const COLUMNS = [
   {
     title: "destinations",
-    links: ["croatia", "greece", "italy", "turkey", "caribbean", "thailand"],
+    links: [
+      { key: "croatia", href: serializeSearch("/yachts", { country: ["croatia"] }) },
+      { key: "greece", href: serializeSearch("/yachts", { country: ["greece"] }) },
+      { key: "italy", href: serializeSearch("/yachts", { country: ["italy"] }) },
+      { key: "turkey", href: serializeSearch("/yachts", { country: ["turkey"] }) },
+      { key: "caribbean", href: serializeSearch("/yachts", { sailingArea: ["caribbean"] }) },
+      { key: "thailand", href: serializeSearch("/yachts", { country: ["thailand"] }) },
+    ],
   },
   {
     title: "charterTypes",
-    links: ["catamaran", "sailingYacht", "motorYacht", "bareboat", "skippered"],
+    links: [
+      { key: "catamaran", href: serializeSearch("/yachts", { boatType: ["catamaran"] }) },
+      { key: "sailingYacht", href: serializeSearch("/yachts", { boatType: ["sailing-yacht"] }) },
+      { key: "motorYacht", href: serializeSearch("/yachts", { boatType: ["motor-yacht"] }) },
+      { key: "bareboat", href: serializeSearch("/yachts", { crew: ["bareboat"] }) },
+      { key: "skippered", href: serializeSearch("/yachts", { crew: ["skipper"] }) },
+    ],
   },
   {
     title: "explore",
-    links: ["planTrip", "popularYachts", "customerReviews", "howItWorks"],
+    links: [
+      { key: "planTrip", href: "/plan-my-trip" },
+      { key: "popularYachts", href: "/#popular-yachts" },
+      { key: "customerReviews", href: "/#testimonials" },
+      { key: "howItWorks", href: "/#how-it-works" },
+    ],
   },
 ] as const;
 
@@ -92,13 +113,13 @@ export default function Footer({ year }: { year: number }) {
                 </span>
                 <ul className="flex flex-col gap-2 leading-snug md:gap-3">
                   {col.links.map((link) => (
-                    <li key={link}>
-                      <a
-                        href="#"
+                    <li key={link.key}>
+                      <Link
+                        href={link.href}
                         className="block cursor-pointer text-base leading-snug text-natural-100 transition-colors hover:text-white"
                       >
-                        {t(`links.${link}`)}
-                      </a>
+                        {t(`links.${link.key}`)}
+                      </Link>
                     </li>
                   ))}
                 </ul>

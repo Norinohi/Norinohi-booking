@@ -26,9 +26,15 @@ export default function HomePage() {
       <div id="popular-routes" className="scroll-mt-20">
         <SailingRoutes />
       </div>
-      <PopularYachts />
-      <Testimonials />
-      <HowItWorks />
+      <div id="popular-yachts" className="scroll-mt-20">
+        <PopularYachts />
+      </div>
+      <div id="testimonials" className="scroll-mt-20">
+        <Testimonials />
+      </div>
+      <div id="how-it-works" className="scroll-mt-20">
+        <HowItWorks />
+      </div>
       <EarnCta />
     </>
   );

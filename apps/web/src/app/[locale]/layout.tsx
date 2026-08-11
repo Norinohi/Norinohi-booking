@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 
 import "../../index.css";
 import Footer from "@/components/layout/footer";
+import { FooterGate } from "@/components/layout/footer-gate";
 import NavigationBar from "@/components/layout/navigation-bar";
 import Providers from "@/components/layout/providers";
 import { routing } from "@/i18n/routing";
@@ -88,7 +89,9 @@ export default async function RootLayout({
             <div className="grid min-h-svh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-x-clip">
               <NavigationBar />
               {children}
-              <Footer year={year} />
+              <FooterGate>
+                <Footer year={year} />
+              </FooterGate>
             </div>
           </Providers>
         </NextIntlClientProvider>
