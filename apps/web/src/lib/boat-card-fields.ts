@@ -26,7 +26,7 @@ import { slugToLabel } from "@/lib/slug-to-label";
  * come purely from a listing snapshot are assembled here once. Each source keeps only its own
  * context: the price, the schedule and the marina, which mean different things and come from
  * different shapes in each. The BoatCard prop types are referenced type-only, so this stays a leaf
- * utility (same as sample-boats/sample-marinas here).
+ * utility with no runtime dependency on the component layer.
  */
 
 const AMENITY_ICONS: Record<string, ReactNode> = {
