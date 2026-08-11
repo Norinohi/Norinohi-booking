@@ -26,7 +26,7 @@ import { client } from "@/utils/orpc";
 
 /*
  * SignUpForm — Figma "Registration" (972:53926 desktop / error variant 972:54137).
- * "Welcome to YachtCharter" heading over a self-contained card (358 → 660 → 451 wide across
+ * "Welcome to YachtSkanner" heading over a self-contained card (358 → 660 → 451 wide across
  * mobile / tablet / desktop): a left-aligned card title split by a separator, then the field
  * stack (email + phone + full name + password), the brand submit, an "Or" divider, the Google
  * button and the switch-to-sign-in link. Mirrors SignInForm's structure and design-system

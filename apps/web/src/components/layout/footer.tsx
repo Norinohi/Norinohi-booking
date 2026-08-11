@@ -58,7 +58,7 @@ export default function Footer({ year }: { year: number }) {
           <div className="flex w-full flex-col items-center gap-4 xl:w-auto xl:items-start xl:gap-6">
             <div className="flex w-full flex-col gap-4">
               <span className="text-[28px] font-bold leading-[1.2] whitespace-nowrap">
-                YachtCharter
+                YachtSkanner
               </span>
               <p className="w-full text-lg leading-[1.4] text-natural-100 md:text-xl">
                 {t("tagline")}

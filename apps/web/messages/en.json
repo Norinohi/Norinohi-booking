@@ -504,7 +504,7 @@
       },
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
-      "copyright": "© {year} YachtCharter Platform. All rights reserved."
+      "copyright": "© {year} YachtSkanner Platform. All rights reserved."
     },
     "Nav": {
       "boatTypes": "Boat types",
@@ -543,7 +543,7 @@
       "credits": "Credits & Balance"
     },
     "description": "Charter yachts and catamarans worldwide. Compare boats, dates and prices, and book your next sailing trip in minutes.",
-    "title": "YachtCharter — Yacht & Catamaran Rentals Worldwide"
+    "title": "YachtSkanner — Yacht & Catamaran Rentals Worldwide"
   },
   "PlanMyTrip": {
     "title": "Help me plan my trip",
@@ -943,11 +943,11 @@
     },
     "Login": {
       "title": "Sign In",
-      "description": "Sign in to your YachtCharter account to manage bookings and saved yachts."
+      "description": "Sign in to your YachtSkanner account to manage bookings and saved yachts."
     },
     "Register": {
       "title": "Create Account",
-      "description": "Create a YachtCharter account to book yachts, save favourites and manage your trips."
+      "description": "Create a YachtSkanner account to book yachts, save favourites and manage your trips."
     },
     "Dashboard": {
       "title": "Dashboard",
@@ -959,7 +959,7 @@
     },
     "Profile": {
       "title": "Your Profile",
-      "description": "Manage your YachtCharter account details, contact information and preferences."
+      "description": "Manage your YachtSkanner account details, contact information and preferences."
     },
     "Bookings": {
       "title": "My Bookings",
@@ -967,7 +967,7 @@
     },
     "Referrals": {
       "title": "Your Referrals",
-      "description": "Track the friends you have invited to YachtCharter and the rewards you have earned."
+      "description": "Track the friends you have invited to YachtSkanner and the rewards you have earned."
     },
     "Discounts": {
       "title": "Discount & Price Manager",
@@ -1052,7 +1052,7 @@
       }
     },
     "SignUp": {
-      "welcome": "Welcome to YachtCharter",
+      "welcome": "Welcome to YachtSkanner",
       "cardTitle": "Join to get started",
       "email": {
         "label": "Email",
