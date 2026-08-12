@@ -34,6 +34,11 @@ export const env = createEnv({
     // the server failing to boot.
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    // Optional as a pair: without both, email-sending is skipped rather than
+    // the server failing to boot. EMAIL_FROM must be an address on a domain
+    // verified in Resend (or the sandbox onboarding@resend.dev in dev).
+    RESEND_API_KEY: z.string().min(1).optional(),
+    EMAIL_FROM: z.email().optional(),
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),
