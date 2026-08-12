@@ -49,6 +49,13 @@ export const env = createEnv({
      * must never fail because the web app could not be reached.
      */
     REVALIDATE_SECRET: z.string().min(16).optional(),
+    /*
+     * Provider codes whose listings publish as they import, comma separated
+     * (e.g. "nausys"). Bootstrap only: `provider.config.autoPublish` overrides it
+     * per provider, but that column needs database access, and an operator who
+     * only has the deploy platform still has to be able to turn this on.
+     */
+    PROVIDER_AUTO_PUBLISH: z.string().optional(),
     // Base64 of 32 random bytes, encrypting PII at rest (architecture §10) —
     // today the identity-document fields on booking_traveller. Optional so the
     // server boots without it; the traveller procedures then refuse rather than
