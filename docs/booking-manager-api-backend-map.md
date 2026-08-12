@@ -326,6 +326,12 @@ limits, which implies large single responses rather than paged ones.
 
 ## 9. Open vendor questions
 
+**The sendable list lives in [`booking-manager-vendor-questions.md`](./booking-manager-vendor-questions.md)**,
+which consolidates these, the Booking Manager items from
+`open-questions-and-decisions.md` §3, and every `Q-BM-*` marker in the connector,
+each stated with the assumption we ship so a short answer resolves it. The
+summary below is kept for readers of this document.
+
 Outstanding with MMK. Everything in §5 and the price-duration question in §8b are
 now answered; these are not.
 
