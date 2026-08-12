@@ -2,7 +2,9 @@ import "server-only";
 
 import type { QueryClient } from "@tanstack/react-query";
 
+import type { BookingStatus } from "../types";
 import {
+  bookingListQueryOptions,
   discountListQueryOptions,
   discountQueryOptions,
   listingPriceFiltersQueryOptions,
@@ -15,6 +17,14 @@ import {
 /** Server prefetch for the /profile route — pass to <Hydrated prefetch={...}>. */
 export function prefetchProfile(queryClient: QueryClient) {
   return queryClient.prefetchQuery(profileQueryOptions());
+}
+
+/** Server prefetch for /profile/bookings — the first page for the given date/status filter. */
+export function prefetchBookings(
+  queryClient: QueryClient,
+  input: { from?: string; to?: string; status?: BookingStatus[]; page: number },
+) {
+  return queryClient.prefetchQuery(bookingListQueryOptions(input));
 }
 
 /** Server prefetch for the /profile/referrals route — pass to <Hydrated prefetch={...}>. */

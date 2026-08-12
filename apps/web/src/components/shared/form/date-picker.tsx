@@ -88,7 +88,9 @@ export default function DatePicker({
         </PopoverTrigger>
         <PopoverContent
           className={cn(
-            "w-(--anchor-width) border-0 bg-transparent p-0 shadow-none",
+            // Match the trigger width, but never below the calendar's own size (7 × 36px cells +
+            // padding ≈ 284px) — a narrow trigger would otherwise squash and clip the month grid.
+            "w-(--anchor-width) min-w-72 border-0 bg-transparent p-0 shadow-none",
             contentClassName,
           )}
         >

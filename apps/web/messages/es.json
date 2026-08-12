@@ -1030,7 +1030,19 @@
     "anyDates": "Cualquier fecha",
     "clearDates": "Borrar fechas",
     "emptyTitle": "Aún no hay yates",
-    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí."
+    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí.",
+    "cancel": {
+      "action": "Cancelar reserva",
+      "title": "¿Cancelar esta reserva?",
+      "description": "Esto no se puede deshacer y se notificará a la empresa de chárter.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Cuéntanos por qué cancelas",
+      "confirm": "Cancelar reserva",
+      "keep": "Mantener reserva",
+      "success": "Tu reserva ha sido cancelada.",
+      "error": "No pudimos cancelar tu reserva. Inténtalo de nuevo."
+    },
+    "statusCancelled": "Cancelada"
   },
   "Wishlist": {
     "title": "Tus favoritos",

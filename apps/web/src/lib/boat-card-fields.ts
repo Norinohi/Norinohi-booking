@@ -1,0 +1,120 @@
+import {
+  Anchor,
+  Check,
+  Compass,
+  Droplets,
+  Flame,
+  Snowflake,
+  Sun,
+  Waves,
+  Wifi,
+  Zap,
+} from "lucide-react";
+import type { useTranslations } from "next-intl";
+import { createElement, type ReactNode } from "react";
+
+import type {
+  BoatCardAmenity,
+  BoatCardProps,
+  BoatCardSpec,
+} from "@/components/shared/data-display/boat-card";
+import { slugToLabel } from "@/lib/slug-to-label";
+
+/*
+ * Mapping helpers for the shared BoatCard. Both card sources — the search catalogue
+ * (useListingCards) and My Bookings (useBookingCards) — describe the same boat, so the fields that
+ * come purely from a listing snapshot are assembled here once. Each source keeps only its own
+ * context: the price, the schedule and the marina, which mean different things and come from
+ * different shapes in each. The BoatCard prop types are referenced type-only, so this stays a leaf
+ * utility with no runtime dependency on the component layer.
+ */
+
+const AMENITY_ICONS: Record<string, ReactNode> = {
+  "Air conditioning": createElement(Snowflake),
+  "Wi-Fi": createElement(Wifi),
+  Generator: createElement(Zap),
+  "Solar panels": createElement(Sun),
+  Watermaker: createElement(Droplets),
+  Autopilot: createElement(Compass),
+  "Cockpit grill": createElement(Flame),
+  "Snorkeling set": createElement(Waves),
+  "Stand-up paddleboard": createElement(Waves),
+  Dinghy: createElement(Anchor),
+};
+const FALLBACK_AMENITY_ICON = createElement(Check);
+const AMENITY_LIMIT = 3;
+
+/** The card shows the first three amenities, each with its glyph (or a generic check). */
+export function amenityItems(labels: string[]): BoatCardAmenity[] {
+  return labels.slice(0, AMENITY_LIMIT).map((label) => ({
+    icon: AMENITY_ICONS[label] ?? FALLBACK_AMENITY_ICON,
+    label,
+  }));
+}
+
+export type BoatSpecs = {
+  lengthM: number;
+  cabins: number;
+  berths: number;
+  heads: number;
+  yearBuilt: number;
+  sailType: string | null;
+};
+
+type BoatCardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
+
+export function boatSpecs(t: BoatCardTranslator, specs: BoatSpecs): BoatCardSpec[] {
+  return [
+    { label: t("specs.year"), value: String(specs.yearBuilt) },
+    { label: t("specs.people"), value: String(specs.berths) },
+    { label: t("specs.toilets"), value: String(specs.heads) },
+    { label: t("specs.baths"), value: String(specs.heads) },
+    {
+      label: t("specs.mainsail"),
+      value: specs.sailType ? slugToLabel(specs.sailType) : t("battenMainsail"),
+    },
+    { label: t("specs.cabins"), value: String(specs.cabins) },
+    { label: t("specs.length"), value: `${specs.lengthM} m` },
+  ];
+}
+
+/**
+ * The intersection both card sources satisfy: a boat's listing snapshot. `booking.list.listing`
+ * mirrors the search listing's card fields, so the same identity mapping serves both.
+ */
+export type BoatCardListing = {
+  id: string;
+  title: string;
+  gallery: string[];
+  mainImage: string | null;
+  rating: number;
+  category: string | null;
+  crewType: string | null;
+  specs: BoatSpecs;
+  amenities: string[];
+  bookingStats: { bookedThisMonth: number; viewedToday: number };
+  badges: { label: string }[];
+};
+
+/** The BoatCard fields that depend only on the boat — shared by the catalogue and My Bookings. */
+export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing) {
+  return {
+    id: listing.id,
+    images: listing.gallery.length
+      ? listing.gallery
+      : listing.mainImage
+        ? [listing.mainImage]
+        : [],
+    badges: listing.badges.map((badge) => ({ label: badge.label })),
+    name: listing.title,
+    rating: String(listing.rating),
+    charterType: listing.category ?? "",
+    crew: listing.crewType ? slugToLabel(listing.crewType) : "",
+    specs: boatSpecs(t, listing.specs),
+    amenities: amenityItems(listing.amenities),
+    stats: [
+      t("stats.booked", { count: listing.bookingStats.bookedThisMonth }),
+      t("stats.viewed", { count: listing.bookingStats.viewedToday }),
+    ],
+  } satisfies Partial<BoatCardProps>;
+}
