@@ -34,6 +34,11 @@ export const env = createEnv({
     // the server failing to boot.
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    // Optional as a pair: without both, email-sending is skipped rather than
+    // the server failing to boot. EMAIL_FROM must be an address on a domain
+    // verified in Resend (or the sandbox onboarding@resend.dev in dev).
+    RESEND_API_KEY: z.string().min(1).optional(),
+    EMAIL_FROM: z.email().optional(),
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),
@@ -44,6 +49,13 @@ export const env = createEnv({
      * must never fail because the web app could not be reached.
      */
     REVALIDATE_SECRET: z.string().min(16).optional(),
+    /*
+     * Provider codes whose listings publish as they import, comma separated
+     * (e.g. "nausys"). Bootstrap only: `provider.config.autoPublish` overrides it
+     * per provider, but that column needs database access, and an operator who
+     * only has the deploy platform still has to be able to turn this on.
+     */
+    PROVIDER_AUTO_PUBLISH: z.string().optional(),
     // Base64 of 32 random bytes, encrypting PII at rest (architecture §10) —
     // today the identity-document fields on booking_traveller. Optional so the
     // server boots without it; the traveller procedures then refuse rather than

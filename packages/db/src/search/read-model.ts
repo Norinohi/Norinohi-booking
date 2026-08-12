@@ -85,8 +85,15 @@ export async function rebuildListingSearchDocs(
       spec.sail_type,
       l.deposit_insurance_included,
       l.pets_allowed,
-      coalesce(rev.rating, 0)::numeric(3, 2),
-      coalesce(rev.review_count, 0)::integer,
+      -- Our own reviews win outright; the provider aggregate only fills the gap
+      -- for a listing nobody has reviewed here. The two are never averaged: they
+      -- count different populations of guests.
+      coalesce(
+        case when rev.review_count > 0 then rev.rating end,
+        l.provider_rating,
+        0
+      )::numeric(3, 2),
+      coalesce(nullif(rev.review_count, 0), l.provider_review_count, 0)::integer,
       media.main_image,
       coalesce(media.gallery, '[]'::jsonb),
       coalesce(amn.amenities, '[]'::jsonb),

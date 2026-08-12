@@ -240,6 +240,7 @@ function projectYacht(
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
     securityDepositMinor: minorOf(yacht.deposit, currencyOf(yacht.depositCurrency ?? currency)),
+    ...euminiaOf(yacht),
     // Payment terms are per period and come from `freeYachts`, never from the
     // catalogue dump.
     paymentPolicy: undefined,
@@ -395,6 +396,36 @@ function oneWayRulesOf(yacht: RestYacht) {
     }
   }
   return rules;
+}
+
+/**
+ * Euminia scores, the vendor's third-party review aggregate. The structure is
+ * absent for an unrated yacht, and absent must stay absent: a listing nobody has
+ * rated is not a listing rated zero.
+ *
+ * Only `total` and `reviews` have a canonical home; the sub-scores stay in the
+ * retained raw payload. A score that will not parse, or that lands outside the
+ * 0..5 the vendor scores on, is dropped rather than clamped, and the count is
+ * dropped with it -- a count with no score renders as "0 (6 reviews)".
+ */
+function euminiaOf(yacht: RestYacht): { rating?: number; reviewCount?: number } {
+  const rating = decimalOf(yacht.euminia?.total);
+  if (rating === undefined || rating < 0 || rating > 5) return {};
+
+  const reviews = intOf(decimalOf(yacht.euminia?.reviews));
+  return { rating, reviewCount: reviews !== undefined && reviews >= 0 ? reviews : undefined };
+}
+
+/**
+ * Production sends "4,00" where the vendor PDF prints "4.83", and `parseFloat`
+ * on the comma form returns 4 -- a silent understatement of every rating, not an
+ * error anyone would see.
+ */
+function decimalOf(value: unknown): number | undefined {
+  const raw = text(value);
+  if (raw === undefined) return undefined;
+  const parsed = Number(raw.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 /* ----------------------------------------------------------------- helpers */

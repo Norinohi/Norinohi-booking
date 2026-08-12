@@ -4,6 +4,7 @@ import {
   syncError,
   syncRun,
 } from "@yacht-charter/db/schema/provider";
+import { env } from "@yacht-charter/env/server";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 
 import type { InventoryProvider } from "../provider";
@@ -456,6 +457,46 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
 
 /* -------------------------------------------------------------- entry points */
 
+/**
+ * Whether this provider's listings publish as they import.
+ *
+ * Two sources, in this order. `provider.config.autoPublish` is the real one: it is
+ * per provider, changes without a deploy, and travels with the row between
+ * environments. `PROVIDER_AUTO_PUBLISH` is a comma-separated list of provider
+ * codes that bootstraps it, because the config column needs database access and an
+ * operator who only has the deploy platform still has to be able to turn this on.
+ *
+ * The column wins whenever it says anything at all, including `false`: an explicit
+ * "do not publish" must not be silently overridden by a stale environment variable.
+ * Neither speaking means false, since the safe reading of "no opinion recorded" is
+ * that inventory still needs review.
+ */
+export async function readAutoPublish(
+  db: Database,
+  providerId: string,
+  providerCode?: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ config: providerTable.config, code: providerTable.code })
+    .from(providerTable)
+    .where(eq(providerTable.id, providerId))
+    .limit(1);
+
+  const config = row?.config;
+  if (typeof config === "object" && config !== null) {
+    const flag = (config as { autoPublish?: unknown }).autoPublish;
+    if (typeof flag === "boolean") return flag;
+  }
+
+  const code = providerCode ?? row?.code;
+  if (!code) return false;
+
+  return (env.PROVIDER_AUTO_PUBLISH ?? "")
+    .split(",")
+    .map((item: string) => item.trim())
+    .includes(code);
+}
+
 export async function resolveProviderId(db: Database, code: string): Promise<string> {
   const [row] = await db
     .select({ id: providerTable.id })
@@ -610,6 +651,7 @@ export async function runCatalogueSyncJob(
       providerId,
       providerKey: provider.key,
       catalogue,
+      autoPublish: await readAutoPublish(db, providerId),
       now: now(),
     });
 
