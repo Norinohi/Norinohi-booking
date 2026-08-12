@@ -328,6 +328,13 @@ function discountAmountMinor(
   );
 }
 
+/** `quantity` is a decimal string ("1.00", "10.00"); absent or unreadable is one. */
+function quantityOf(extra: RestExtra): number {
+  if (extra.quantity === undefined) return 1;
+  const parsed = Number(extra.quantity.replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
 /** Obligatory extras carry `serviceId`, additional ones `extraId`. */
 function extraKey(extra: RestExtra): string {
   return String(extra.serviceId ?? extra.extraId ?? "unknown");
@@ -340,18 +347,36 @@ function toExtraLine(extra: RestExtra, currency: string, input: FreeYachtMapping
     );
   }
 
-  // `amount` is the UNIT price and `totalPrice` the line total. Production sends
-  // `amount: "10.00"`, `quantity: "10.00"`, `totalPrice: "100.00"`, so billing off
-  // `amount` under-charges by the quantity. We take the vendor's own total rather
-  // than multiplying, because rounding of a unit price is theirs to decide, and
-  // fall back to `amount` only when no total is given (where quantity is 1 and the
-  // two are equal anyway).
-  const lineTotal = extra.totalPrice ?? extra.amount;
+  // The vendor's own line total, where it exists. Production always sends it, and
+  // rounding a unit price is their decision rather than ours.
+  //
+  // Where it does not, the vendor's two accounts disagree and we refuse to guess.
+  // NauSYS told us (Aug 2026) that `amount` is a unit price "without calculated
+  // quantity", but the example in their own documentation, which this fixture
+  // mirrors, adds a `quantity: 10` extra to `totalPriceWithExtras` at one times
+  // `amount`. Multiplying would overcharge if the documentation is right; not
+  // multiplying would undercharge if the answer is. A quantity of one is the same
+  // number either way, so only a multi-unit extra with no total is ambiguous, and
+  // that fails loudly rather than billing a number nobody can vouch for. This is
+  // the same stance as the unknown `calculationType` below.
+  const amountMinor = decimalStringToMinor(extra.amount, currency);
+  const quantity = quantityOf(extra);
+
+  if (extra.totalPrice === undefined && quantity !== 1) {
+    throw new ContractError(
+      `NauSYS service ${extraKey(extra)} has quantity ${quantity} and no totalPrice, ` +
+        "so the line total is ambiguous",
+      { payload: { amount: extra.amount, quantity: extra.quantity } },
+    );
+  }
+
+  const lineMinor =
+    extra.totalPrice === undefined ? amountMinor : decimalStringToMinor(extra.totalPrice, currency);
 
   return {
     code: `nausys-service-${extraKey(extra)}`,
     label: labelOf(input, "service", extraKey(extra), DEFAULT_LABELS.service),
-    amount: { amountMinor: decimalStringToMinor(lineTotal, currency), currency },
+    amount: { amountMinor: lineMinor, currency },
     payWhen: payWhenFor(extra),
     kind: "extra",
     // Everything a NauSYS quote returns today is an obligatory extra; optional
@@ -470,7 +495,12 @@ function priceObservationHash(yacht: RestFreeYacht, securityDeposit: Money | und
     obligatoryExtras: (yacht.obligatoryExtras ?? [])
       .map((extra) => ({
         serviceId: extra.serviceId ?? extra.extraId ?? 0,
-        amount: extra.totalPrice ?? extra.amount,
+        // Both, not just whichever we billed. A unit price that moves while the
+        // total holds still means the vendor changed something about this line, and
+        // a re-quote is cheap next to serving a stale one.
+        amount: extra.amount,
+        totalPrice: extra.totalPrice ?? null,
+        quantity: extra.quantity ?? null,
         currency: extra.currency,
         calculationType: extra.calculationType ?? null,
       }))

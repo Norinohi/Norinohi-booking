@@ -307,6 +307,58 @@ describe("NauSYS priceSourceHash", () => {
     expect(moved.priceSourceHash).not.toBe((await quote()).priceSourceHash);
   });
 
+  it("refuses to price a multi-unit extra the vendor gave no total for", async () => {
+    // The vendor says `amount` is a unit price; their own documentation example
+    // adds a quantity-10 extra at one times `amount`. Rather than pick a side and
+    // silently over or under bill, an ambiguous line fails.
+    const body = fixtureResponse();
+    const [extra] = firstYacht(body).obligatoryExtras;
+    if (!extra) throw new Error("fixture lost its obligatory extras");
+    extra.quantity = "10.00";
+    delete extra.totalPrice;
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+
+    await expect(service.getNausysQuote(request)).rejects.toThrow(/ambiguous/);
+  });
+
+  it("prices a single-unit extra with no total from its amount", async () => {
+    const body = fixtureResponse();
+    const [extra] = firstYacht(body).obligatoryExtras;
+    if (!extra) throw new Error("fixture lost its obligatory extras");
+    extra.amount = "150.00";
+    extra.quantity = "1.00";
+    delete extra.totalPrice;
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+    const priced = await service.getNausysQuote(request);
+
+    expect(
+      priced.lines.find((item) => item.code === `nausys-service-${extra.serviceId}`)?.amount
+        .amountMinor,
+    ).toBe(15_000);
+  });
+
+  it("prefers the vendor's own line total over the unit amount", async () => {
+    const body = fixtureResponse();
+    const [extra] = firstYacht(body).obligatoryExtras;
+    if (!extra) throw new Error("fixture lost its obligatory extras");
+    extra.amount = "10.00";
+    extra.quantity = "3.00";
+    extra.totalPrice = "29.99";
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+    const priced = await service.getNausysQuote(request);
+
+    expect(
+      priced.lines.find((item) => item.code === `nausys-service-${extra.serviceId}`)?.amount
+        .amountMinor,
+    ).toBe(2_999);
+  });
+
   it("moves when an obligatory extra moves", async () => {
     const body = fixtureResponse();
     const [extra] = firstYacht(body).obligatoryExtras;
