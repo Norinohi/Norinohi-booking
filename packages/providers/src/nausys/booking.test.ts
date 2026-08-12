@@ -492,7 +492,7 @@ describe("reservation events", () => {
 describe("agencyPrice never leaves the adapter", () => {
   it("is absent from every returned DTO and every logged event", async () => {
     const { service, events, transport } = build();
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
 
     const held = await service.createOption(draft);
     const confirmed = await service.confirmBooking(heldDraft);
@@ -516,7 +516,7 @@ describe("agencyPrice never leaves the adapter", () => {
 describe("extras mutation pricing", () => {
   it("re-reads the price from the mutation response", async () => {
     const { service, transport } = build();
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
 
     const quote = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
@@ -542,13 +542,13 @@ describe("extras mutation pricing", () => {
 
   it("produces a hash that ignores the rotating uuid", async () => {
     const { service, transport } = build();
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
     const first = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
     });
 
-    transport.respondWith("updateExtras", fixture("createOption", { uuid: "a-new-token" }));
+    transport.respondWith("addExtras", fixture("createOption", { uuid: "a-new-token" }));
     const second = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
@@ -556,7 +556,7 @@ describe("extras mutation pricing", () => {
 
     expect(second.priceSourceHash).toBe(first.priceSourceHash);
 
-    transport.respondWith("updateExtras", fixture("createOption", { clientPrice: "3540.00" }));
+    transport.respondWith("addExtras", fixture("createOption", { clientPrice: "3540.00" }));
     const third = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
