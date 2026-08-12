@@ -67,7 +67,11 @@ function Confetti() {
                   duration: piece.duration,
                   delay: piece.delay,
                   ease: "easeIn",
-                  opacity: { duration: piece.duration, delay: piece.delay, times: [0, 0.08, 0.7, 1] },
+                  opacity: {
+                    duration: piece.duration,
+                    delay: piece.delay,
+                    times: [0, 0.08, 0.7, 1],
+                  },
                 }
           }
         />
@@ -258,7 +262,10 @@ export default function BookingConfirmationScreen() {
   return (
     <section className="flex min-h-full justify-center px-4 pt-6 pb-8 md:px-6 md:py-23">
       <article className="relative isolate w-full max-w-201.5 overflow-hidden rounded-2xl border border-border bg-card">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]"
+        >
           <Image
             src="/assets/illustrations/booking-confetti.svg"
             alt=""

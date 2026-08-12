@@ -160,7 +160,9 @@ export default function BookingSteps() {
                       className="h-13 w-full"
                       disabled={step === "reviewAndBook" && createHold.isPending}
                       onClick={() =>
-                        void (step === "reviewAndBook" ? confirmBooking() : advanceStep(step, index))
+                        void (step === "reviewAndBook"
+                          ? confirmBooking()
+                          : advanceStep(step, index))
                       }
                     >
                       {t(cta)}

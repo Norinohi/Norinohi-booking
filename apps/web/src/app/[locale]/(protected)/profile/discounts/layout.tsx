@@ -7,15 +7,13 @@
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
 export const instant = false;
 
-export default function DiscountsLayout(
-  {
-    children,
-    modal,
-  }: {
-    children: React.ReactNode;
-    modal: React.ReactNode;
-  }
-) {
+export default function DiscountsLayout({
+  children,
+  modal,
+}: {
+  children: React.ReactNode;
+  modal: React.ReactNode;
+}) {
   return (
     <>
       {children}

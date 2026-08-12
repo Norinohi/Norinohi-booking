@@ -23,7 +23,11 @@ const RouteMap = dynamic(() => import("../route-map"), {
  * thread, which is what made navigating *away* from a listing slow (measured: 767ms to home,
  * 1493ms to search). Most visitors never scroll this far.
  */
-function LazyRouteMap({ stops }: { stops: { title: string; description: string; lat: number; lng: number }[] }) {
+function LazyRouteMap({
+  stops,
+}: {
+  stops: { title: string; description: string; lat: number; lng: number }[];
+}) {
   const { ref, entered } = useInViewport<HTMLDivElement>();
 
   return (
