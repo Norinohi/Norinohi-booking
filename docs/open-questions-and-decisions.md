@@ -58,6 +58,8 @@ Two parts: (1) what's the default payment policy — 50% deposit, 100% prepaymen
 
 These aren't ours to decide — they're to **forward to the providers** so answers land before we build the live connectors. Grouped so they can be pasted into an email. Most apply to **both** providers.
 
+**✅ Answered (Booking Manager, Aug 2026, support@mmksystems.com)** - the date/time & timezone questions: non-`/offers` calls use a **fixed CET clock that observes DST**; requests are `yyyy-MM-ddTHH:mm:ss` with a literal `T` and **mandatory seconds**, responses are space-separated `yyyy-MM-dd HH:mm:ss`; **no offset or `Z` suffix in either direction**, and no per-base zone is exposed. `/offers` takes `00:00:00` and the vendor substitutes the base's real check-in/check-out time. Details in [`booking-manager-api-backend-map.md`](./booking-manager-api-backend-map.md) §5.
+
 ### Highest priority (they shape the booking flow and matching)
 
 1. **Availability & price guarantee** — When your API returns an available yacht with a price, is that price/slot **firm for a period of time**? Do you offer a real **hold/option**, and if so what's its **expiry**? Does placing an option **lock the price and availability**? _(shapes our booking state machine)_

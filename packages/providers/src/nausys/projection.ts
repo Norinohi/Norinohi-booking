@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import { parseNausysDate } from "../shared/dates";
+import { stripHtml } from "../shared/html-text";
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
@@ -520,47 +521,4 @@ function minorOf(value: unknown, currency: string): number | undefined {
   } catch {
     return undefined;
   }
-}
-
-const HTML_ENTITIES: Record<string, string> = {
-  amp: "&",
-  apos: "'",
-  gt: ">",
-  lt: "<",
-  nbsp: " ",
-  quot: '"',
-};
-
-/**
- * Yacht text is HTML: `<font color="#89CFF0">`, `<mark>`, inline background
- * styles. It is untrusted vendor markup that we never render, so it is reduced to
- * plain text here, once, for both `listing_text` and the search document that
- * must not index tag soup. Entities are decoded after tags are removed, so an
- * escaped `&lt;script&gt;` cannot be promoted back into one.
- */
-function stripHtml(value: string | undefined): string | undefined {
-  if (value === undefined) return undefined;
-
-  const plain = value
-    .replace(/<(?:br|\/p|\/div|\/li|\/tr|\/h[1-6])\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(#\d+|#x[\da-f]+|[a-z]+);/gi, decodeEntity)
-    .split("\n")
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  return plain === "" ? undefined : plain;
-}
-
-function decodeEntity(match: string, body: string): string {
-  if (body.startsWith("#")) {
-    const hex = body.startsWith("#x") || body.startsWith("#X");
-    const code = Number.parseInt(hex ? body.slice(2) : body.slice(1), hex ? 16 : 10);
-    return Number.isInteger(code) && code > 0 && code <= 0x10_ff_ff
-      ? String.fromCodePoint(code)
-      : match;
-  }
-  return HTML_ENTITIES[body.toLowerCase()] ?? match;
 }

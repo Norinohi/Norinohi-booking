@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { AuthError, ContractError, TransientError } from "./errors";
-import { createProviderHttpClient, type FetchLike, httpStatusClassifier } from "./http-client";
+import {
+  buildQueryString,
+  createProviderHttpClient,
+  type FetchLike,
+  httpStatusClassifier,
+  type ProviderHttpRequestInit,
+} from "./http-client";
 import { SequentialQueue } from "./queue";
 
 function deferred() {
@@ -176,7 +182,7 @@ describe("createProviderHttpClient", () => {
   });
 
   it("posts JSON to the joined URL", async () => {
-    const captured: { url: string; body: string; method: string }[] = [];
+    const captured: { url: string; body: string | undefined; method: string }[] = [];
     const client = createProviderHttpClient({
       baseUrl: "https://provider.test/",
       queueKey: "k",
@@ -197,6 +203,117 @@ describe("createProviderHttpClient", () => {
         method: "POST",
       },
     ]);
+  });
+
+  function captureRequests() {
+    const captured: (ProviderHttpRequestInit & { url: string })[] = [];
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test/",
+      queueKey: "k",
+      queue: new SequentialQueue(),
+      retry: noRetry,
+      headers: { authorization: "Bearer t0ken" },
+      fetchImpl: (url, init) => {
+        captured.push({ url, ...init });
+        return Promise.resolve(json(200, {}));
+      },
+    });
+    return { captured, client };
+  }
+
+  it("sends a GET with no body and no content-type", async () => {
+    const { captured, client } = captureRequests();
+
+    await client.get("yachts");
+
+    expect(captured[0]?.method).toBe("GET");
+    expect(captured[0]?.url).toBe("https://provider.test/yachts");
+    // A content-type on a bodyless GET invites a 415 from hosts that validate it.
+    expect(captured[0]?.body).toBeUndefined();
+    expect(captured[0]?.headers["content-type"]).toBeUndefined();
+    expect(captured[0]?.headers.authorization).toBe("Bearer t0ken");
+  });
+
+  it("appends query parameters and repeats a key per array element", async () => {
+    const { captured, client } = captureRequests();
+
+    await client.get("offers", {
+      dateFrom: "2026-08-08T00:00:00",
+      yachtId: [1, 2],
+      showOptions: true,
+    });
+
+    expect(captured[0]?.url).toBe(
+      "https://provider.test/offers?dateFrom=2026-08-08T00%3A00%3A00&yachtId=1&yachtId=2&showOptions=true",
+    );
+  });
+
+  it("omits undefined query parameters rather than sending the string", async () => {
+    const { captured, client } = captureRequests();
+
+    await client.get("prices", { currency: undefined, yachtId: 7 });
+
+    expect(captured[0]?.url).toBe("https://provider.test/prices?yachtId=7");
+  });
+
+  it("sends DELETE and bodyless PUT without a body", async () => {
+    const { captured, client } = captureRequests();
+
+    await client.del("reservation/5");
+    await client.put("reservation/5");
+
+    expect(captured.map((c) => [c.method, c.body])).toEqual([
+      ["DELETE", undefined],
+      ["PUT", undefined],
+    ]);
+  });
+
+  it("classifies a GET failure through the same taxonomy as a POST", async () => {
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test",
+      queueKey: "k",
+      queue: new SequentialQueue(),
+      retry: noRetry,
+      fetchImpl: () => Promise.resolve(json(401, { message: "nope" })),
+    });
+
+    await expect(client.get("yachts")).rejects.toBeInstanceOf(AuthError);
+  });
+
+  it("retains the raw body of a GET before classification", async () => {
+    const seen: unknown[] = [];
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test",
+      queueKey: "k",
+      queue: new SequentialQueue(),
+      retry: noRetry,
+      onRawResponse: (event) => {
+        seen.push(event.body);
+      },
+      fetchImpl: () => Promise.resolve(json(404, { message: "gone" })),
+    });
+
+    await expect(client.get("yacht/1")).rejects.toBeInstanceOf(Error);
+
+    // A retained error body is exactly what makes a vendor dispute arguable.
+    expect(seen).toEqual([{ message: "gone" }]);
+  });
+});
+
+describe("buildQueryString", () => {
+  it("returns an empty string when nothing is set", () => {
+    expect(buildQueryString({})).toBe("");
+    expect(buildQueryString({ a: undefined })).toBe("");
+  });
+
+  it("skips an empty array rather than emitting a bare key", () => {
+    expect(buildQueryString({ yachtId: [] })).toBe("");
+  });
+
+  it("percent-encodes reserved characters", () => {
+    expect(buildQueryString({ dateFrom: "2026-08-08T00:00:00" })).toBe(
+      "?dateFrom=2026-08-08T00%3A00%3A00",
+    );
   });
 });
 

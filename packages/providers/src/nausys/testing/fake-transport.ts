@@ -213,7 +213,10 @@ function requireFixture(key: string): unknown {
   return fixture;
 }
 
-function parseBody(body: string): Record<string, unknown> {
+function parseBody(body: string | undefined): Record<string, unknown> {
+  if (body === undefined) {
+    return {};
+  }
   try {
     const parsed: unknown = JSON.parse(body);
     return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)

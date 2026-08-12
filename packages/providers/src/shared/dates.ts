@@ -5,7 +5,7 @@ const NAUSYS_DATE_TIME_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})[ T](\d{2}):(\d{2})(
 const HALF_DAY_MS = 12 * 60 * 60 * 1000;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-interface DateParts {
+export interface DateParts {
   year: number;
   month: number;
   day: number;
@@ -110,9 +110,54 @@ function zoneOffsetMs(instantMs: number, timeZone: string): number {
 }
 
 /**
+ * Reads a naked wall clock in `timeZone`. Non-existent local times (spring
+ * forward) shift forward past the gap; ambiguous ones (fall back) resolve to the
+ * earlier occurrence.
+ *
+ * Both NauSYS and Booking Manager return timestamps with no offset and confirmed
+ * they are CET/CEST with daylight saving applied, so the zone must be a real
+ * IANA zone and never a fixed offset, which would be an hour wrong for half the
+ * year.
+ *
+ * The earlier-instant choice matters because these values are mostly deadlines
+ * (NauSYS `optionTill`, Booking Manager `expirationDate`): reading a deadline
+ * late is what lets us sell a slot the provider has already released, while
+ * reading it early only costs us an hour of hold we were never promised.
+ */
+export function wallClockToInstant(
+  parts: DateParts & { hours: number; minutes: number; seconds: number },
+  timeZone: string,
+): Date {
+  const naive = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hours,
+    parts.minutes,
+    parts.seconds,
+  );
+
+  const candidates = [
+    naive - zoneOffsetMs(naive - HALF_DAY_MS, timeZone),
+    naive - zoneOffsetMs(naive + HALF_DAY_MS, timeZone),
+  ];
+  const consistent = candidates.filter(
+    (instant) => naive - zoneOffsetMs(instant, timeZone) === instant,
+  );
+
+  // No consistent reading means the wall clock never happened (spring forward);
+  // the two-pass result lands just after the gap, which is the only sane answer.
+  if (consistent.length === 0) {
+    const firstPass = naive - zoneOffsetMs(naive, timeZone);
+    return new Date(naive - zoneOffsetMs(firstPass, timeZone));
+  }
+
+  return new Date(Math.min(...consistent));
+}
+
+/**
  * NauSYS datetimes carry no timezone, so the wall-clock reading is interpreted
- * in `timeZone`. Non-existent local times (spring forward) shift forward past
- * the gap; ambiguous ones (fall back) resolve to the earlier occurrence.
+ * in `timeZone`.
  *
  * Note this is for provider *timestamps* only. Base check-in and check-out
  * times are local to the base rather than CET, per the vendor, so they stay
@@ -139,31 +184,5 @@ export function parseNausysDateTime(value: string, timeZone: string): Date {
     throw new ContractError(`Malformed datetime: ${JSON.stringify(value)}`);
   }
 
-  const naive = Date.UTC(parts.year, parts.month - 1, parts.day, hours, minutes, seconds);
-
-  // NauSYS confirmed (Aug 2026) that its datetimes are CET/CEST with daylight
-  // saving applied automatically, so the zone must be a real IANA zone and never
-  // a fixed offset, which would be an hour wrong for half the year.
-  //
-  // On the autumn fall-back an hour repeats and the wall clock is ambiguous. We
-  // resolve to the EARLIER instant, which is the larger offset. These values are
-  // mostly deadlines (optionTill), and reading a deadline late is what lets us
-  // sell a slot the provider has already released; reading it early only costs
-  // us an hour of hold we were not promised.
-  const candidates = [
-    naive - zoneOffsetMs(naive - HALF_DAY_MS, timeZone),
-    naive - zoneOffsetMs(naive + HALF_DAY_MS, timeZone),
-  ];
-  const consistent = candidates.filter(
-    (instant) => naive - zoneOffsetMs(instant, timeZone) === instant,
-  );
-
-  // No consistent reading means the wall clock never happened (spring forward);
-  // the two-pass result lands just after the gap, which is the only sane answer.
-  if (consistent.length === 0) {
-    const firstPass = naive - zoneOffsetMs(naive, timeZone);
-    return new Date(naive - zoneOffsetMs(firstPass, timeZone));
-  }
-
-  return new Date(Math.min(...consistent));
+  return wallClockToInstant({ ...parts, hours, minutes, seconds }, timeZone);
 }

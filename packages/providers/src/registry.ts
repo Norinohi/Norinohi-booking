@@ -7,6 +7,8 @@ import { databaseInventorySource } from "./mock/inventory";
 import { MockInventoryProvider } from "./mock/provider";
 import { NausysInventoryProvider } from "./nausys/provider";
 import type { NausysConfig } from "./nausys/config";
+import { BookingManagerInventoryProvider } from "./booking-manager/provider";
+import type { BookingManagerConfig } from "./booking-manager/config";
 
 // Imported from the schema subpath rather than the package root, which opens a
 // connection pool at import time. Annotated without drizzle's `$client`
@@ -26,6 +28,8 @@ export type ProviderDeps = {
    * (a sync-only account keeps its own serialization lane).
    */
   nausysConfig?: NausysConfig;
+  /** Same escape hatch as `nausysConfig`, for the Booking Manager bearer token. */
+  bookingManagerConfig?: BookingManagerConfig;
 };
 
 export function createInventoryProvider(
@@ -41,6 +45,9 @@ export function createInventoryProvider(
     case "nausys":
       return new NausysInventoryProvider({ db: deps.db, config: deps.nausysConfig });
     case "booking_manager":
-      throw new Error(`Provider mode "${mode}" is not implemented yet`);
+      return new BookingManagerInventoryProvider({
+        db: deps.db,
+        config: deps.bookingManagerConfig,
+      });
   }
 }
