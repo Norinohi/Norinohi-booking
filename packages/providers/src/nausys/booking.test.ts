@@ -240,14 +240,16 @@ describe("the uuid funnel", () => {
   it("rotates on an extras mutation, the one path whose DTO cannot carry the token", async () => {
     const { service, transport, rotations } = build();
     const rotated = "aa11bb22-xtra-4e55-9fcc-000000000005";
-    transport.respondWith("updateExtras", fixture("createOption", { uuid: rotated }));
+    transport.respondWith("addExtras", fixture("createOption", { uuid: rotated }));
 
     await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
     });
 
-    expect(transport.lastBody("updateExtras")).toMatchObject({
+    // A reservation with no extras yet: everything desired is an addition, and
+    // `addExtras` is keyed by the catalogue service id.
+    expect(transport.lastBody("addExtras")).toMatchObject({
       id: 55901234,
       uuid: OPTION_UUID,
       services: [{ serviceId: 8001, quantity: 1 }],
@@ -255,16 +257,59 @@ describe("the uuid funnel", () => {
     expect(rotations).toEqual([{ providerReservationId: RESERVATION_ID, securityToken: rotated }]);
   });
 
-  it("uses updateExtras by default and addExtras only when configured", async () => {
-    const { service, transport } = build({ extrasMode: "add" });
+  it("adds only what the reservation does not already carry", async () => {
+    const { service, transport } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
+        ]),
+    });
     transport.respondWith("addExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["nausys:8001", "nausys:8002"],
     });
 
-    expect(transport.callSequence()).toEqual(["addExtras"]);
+    expect(transport.lastBody("addExtras")).toMatchObject({
+      services: [{ serviceId: 8002, quantity: 1 }],
+    });
+  });
+
+  it("refuses to drop an extra, because the vendor offers no way to remove one", async () => {
+    // updateExtras is a partial update, so a deselected extra would silently stay
+    // on the booking and keep being billed. Failing is the honest outcome.
+    const { service, transport } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
+        ]),
+    });
+
+    await expect(
+      service.addOrUpdateExtras({
+        ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+        extras: [],
+      }),
+    ).rejects.toThrow(/no way to remove/);
+
+    expect(transport.calls).toHaveLength(0);
+  });
+
+  it("refuses to touch a line the operator locked", async () => {
+    const { service } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: false },
+        ]),
+    });
+
+    await expect(
+      service.addOrUpdateExtras({
+        ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+        extras: ["nausys:8001"],
+      }),
+    ).rejects.toThrow(/locked/);
   });
 
   it("refuses to call the vendor with a missing uuid", async () => {

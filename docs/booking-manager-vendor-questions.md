@@ -42,8 +42,15 @@ Ordered by what it costs us to be wrong.
    (rounding at the total rather than per line, or an extra not itemised).
 
 3. **Is an extra's `price` a line total or a unit price?** The payload has `unit`
-   but no quantity.
-   _We assume:_ line total. If it is per unit we under-charge.
+   ("per week", "per person") but no quantity to multiply by.
+   _We assume:_ line total. If it is per unit we under-charge on multi-unit
+   extras.
+   This is worth a precise answer rather than a quick one: we asked NauSYS the
+   same question and their answer contradicted the example in their own
+   documentation, so we now refuse to price an ambiguous extra line rather than
+   bill a figure nobody can vouch for. If Booking Manager can send a per-line
+   total alongside the unit price, that removes the ambiguity entirely and is
+   what we would rather consume.
 
 4. **VAT and currency.** Are returned prices VAT inclusive, and does that vary by
    operator or country? When we pass `currency`, is the conversion yours and at
