@@ -27,9 +27,11 @@ export type MapBoatPopupProps = {
   /** One card for a lone marker; several when a marina's boats share the spot — paged, not stacked. */
   boats: PopupBoat[];
   map: MapInstance | null;
+  /** When set, the open animation also zooms to this level — used by the "See on map" deep link. */
+  focusZoom?: number;
 };
 
-export default function MapBoatPopup({ coordinates, boats, map }: MapBoatPopupProps) {
+export default function MapBoatPopup({ coordinates, boats, map, focusZoom }: MapBoatPopupProps) {
   const t = useTranslations("YachtsMap");
   const cardRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
@@ -52,14 +54,26 @@ export default function MapBoatPopup({ coordinates, boats, map }: MapBoatPopupPr
           ? viewportH - BOTTOM_SAFE - PIN_CLEARANCE - height
           : viewportH / 2 - PIN_CLEARANCE - height / 2;
 
-      map.easeTo({
-        center: [coordinates.lng, coordinates.lat],
-        offset: [0, pinY - viewportH / 2],
-        duration: RECENTRE_MS,
-      });
+      if (focusZoom != null) {
+        // Deep link: the boat is usually far from the default view, so fly (arc + auto-pacing) there.
+        map.flyTo({
+          center: [coordinates.lng, coordinates.lat],
+          offset: [0, pinY - viewportH / 2],
+          zoom: focusZoom,
+        });
+      } else {
+        // A tap on a visible marker only needs a short nudge to clear the pin above the card.
+        map.easeTo({
+          center: [coordinates.lng, coordinates.lat],
+          offset: [0, pinY - viewportH / 2],
+          duration: RECENTRE_MS,
+        });
+      }
     });
 
     return () => cancelAnimationFrame(frame);
+    // focusZoom is read once on open; it must not re-trigger the recenter (that would undo the zoom).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, coordinates.lng, coordinates.lat]);
 
   return (

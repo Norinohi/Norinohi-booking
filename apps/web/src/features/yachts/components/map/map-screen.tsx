@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   clearFilterKeys,
@@ -33,6 +33,9 @@ import MapMarker from "./map-marker";
 
 // Above this expansion zoom a cluster is a single marina whose boats never separate; list them instead.
 const CLUSTER_EXPAND_MAX_ZOOM = 16;
+
+// Zoom the map settles on when arriving from a listing's "See on map" deep link.
+const DETAIL_FOCUS_ZOOM = 11;
 
 type OpenCluster = { lng: number; lat: number; leaves: MapMarkerData[] };
 
@@ -75,7 +78,7 @@ export default function MapScreen() {
   const [selectedListingId, setSelectedListingId] = useState<string | null>(focusListingId);
   const [openCluster, setOpenCluster] = useState<OpenCluster | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
-  const hasFocused = useRef(false);
+  const [focusDone, setFocusDone] = useState(false);
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
@@ -127,15 +130,28 @@ export default function MapScreen() {
     setOpenCluster({ lng, lat, leaves });
   }
 
-  // Deep link from a listing's "See on map": once the map and the target marker are both ready,
-  // recenter on it once. A ref guards it so later marker taps by the user never yank the viewport.
+  // Sync the selection with the deep-link param. On a soft nav back to an already-mounted map (Next 16
+  // keeps the route alive via Activity), the `useState` initializer above does not re-run for the new
+  // URL — so open the target's popup here and re-arm the one-time focus zoom.
   useEffect(() => {
-    if (hasFocused.current || !map || !focusListingId) return;
-    const target = markers.find((marker) => marker.listingId === focusListingId);
-    if (!target) return;
-    hasFocused.current = true;
-    map.flyTo({ center: [target.lng, target.lat], zoom: 11 });
-  }, [map, markers, focusListingId]);
+    if (!focusListingId) return;
+    setSelectedListingId(focusListingId);
+    setOpenCluster(null);
+    setFocusDone(false);
+  }, [focusListingId]);
+
+  // Deep link from a listing's "See on map": the target boat's popup opens (selectedListingId is
+  // seeded from the URL) and, the first time it does, its open animation also zooms in — one motion,
+  // instead of a flyTo that the popup's own recenter would immediately override. Consumed once so a
+  // later tap on the same boat doesn't yank the zoom back out.
+  const detailFocusZoom =
+    !focusDone && focusListingId && selected?.listingId === focusListingId
+      ? DETAIL_FOCUS_ZOOM
+      : undefined;
+
+  useEffect(() => {
+    if (detailFocusZoom != null) setFocusDone(true);
+  }, [detailFocusZoom]);
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -188,6 +204,7 @@ export default function MapScreen() {
               coordinates={{ lat: selected.lat, lng: selected.lng }}
               boats={[toMapCard(selected.listing)]}
               map={map}
+              focusZoom={detailFocusZoom}
             />
           ) : openCluster ? (
             <MapBoatPopup
