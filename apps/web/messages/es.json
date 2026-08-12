@@ -926,7 +926,10 @@
     "backToSearch": "Volver a la búsqueda",
     "showAllList": "Mostrar toda la lista",
     "closeList": "Cerrar lista",
-    "marker": "Marina {name}"
+    "marker": "Marina {name}",
+    "clusterCount": "{count, plural, one {# yate} other {# yates}}",
+    "previousBoat": "Yate anterior",
+    "nextBoat": "Yate siguiente"
   },
   "Seo": {
     "Yachts": {

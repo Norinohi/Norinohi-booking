@@ -926,7 +926,10 @@
     "backToSearch": "Назад до пошуку",
     "showAllList": "Показати весь список",
     "closeList": "Закрити список",
-    "marker": "Марина {name}"
+    "marker": "Марина {name}",
+    "clusterCount": "{count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхт}}",
+    "previousBoat": "Попередня яхта",
+    "nextBoat": "Наступна яхта"
   },
   "Seo": {
     "Yachts": {
