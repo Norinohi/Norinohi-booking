@@ -10,21 +10,25 @@ import { bookingManagerEndpoints, restPriceListSchema, type RestPrice } from "./
 /**
  * Seasonal prices for the slots the availability sync synthesizes.
  *
+ * The vendor's own integration guide prescribes the shape of this sweep: call
+ * `/prices` once per Saturday-to-Saturday pair to build a year's price list, and
+ * send only `dateFrom`/`dateTo` to get every boat back in one response. So this
+ * asks a week at a time for the whole fleet rather than a year at a time for a
+ * batch of yachts, which is the question the endpoint is built to answer.
+ *
+ * That also settles what `price` means. A row is the price of the exact period
+ * requested, so a Saturday-to-Saturday request returns a weekly figure by
+ * construction and nothing has to be inferred from the span.
+ *
  * Booking Manager has no catalogue-wide price dump to read back out of
- * `provider_record`: `/prices` refuses a call without an explicit
- * `dateFrom`/`dateTo`, so this loader is live where the NauSYS one is stored.
- * The vendor lane is sequential, so yacht ids are batched into the array
- * parameter and one call covers a whole year for a whole batch.
+ * `provider_record`, so this loader is live where the NauSYS one is stored. One
+ * sweep per run is memoized: the writer asks scope by scope, and the response is
+ * fleet-wide regardless of who asked.
  */
 
-const WEEK_NIGHTS = 7;
+const SATURDAY = 6;
 const DAY_MS = 86_400_000;
-
-/**
- * Keeps the query string well inside what proxies accept while still collapsing a
- * fleet-sized load into a handful of calls.
- */
-const YACHTS_PER_CALL = 50;
+const WEEK_MS = 7 * DAY_MS;
 
 export interface BookingManagerSeasonalPriceLoaderOptions {
   client: BookingManagerClient;
@@ -39,13 +43,10 @@ export interface BookingManagerSeasonalPriceLoaderOptions {
 export function createBookingManagerSeasonalPriceLoader(
   options: BookingManagerSeasonalPriceLoaderOptions,
 ): (listingIds: string[]) => Promise<Map<string, SeasonalPrice[]>> {
-  const { client, resolver, years } = options;
+  const { client, resolver } = options;
 
-  // Both caches live for the loader instance, which is the sync run: the writer
-  // asks per scope, and a fleet spread over several companies would otherwise
-  // re-resolve and re-fetch the same yachts once per company.
   const yachtByListing = new Map<string, string | null>();
-  const pricesByYacht = new Map<string, SeasonalPrice[]>();
+  let sweep: Promise<Map<string, SeasonalPrice[]>> | null = null;
 
   async function externalYachtId(listingId: string): Promise<string | null> {
     const cached = yachtByListing.get(listingId);
@@ -57,44 +58,42 @@ export function createBookingManagerSeasonalPriceLoader(
     return yachtId;
   }
 
-  async function fetchInto(yachtIds: string[]): Promise<void> {
-    const fetched = new Map<string, SeasonalPrice[]>(yachtIds.map((id) => [id, []]));
+  async function runSweep(): Promise<Map<string, SeasonalPrice[]>> {
+    const byYacht = new Map<string, SeasonalPrice[]>();
 
-    for (const year of years) {
-      for (const batch of chunk(yachtIds, YACHTS_PER_CALL)) {
-        const rows = await client.get(bookingManagerEndpoints.prices, restPriceListSchema, {
-          dateFrom: formatBookingManagerDateTime(`${year}-01-01`),
-          dateTo: formatBookingManagerDateTime(`${year}-12-31`),
-          yachtId: batch,
-          // The response carries no duration field, so asking for more than one
-          // would return rows we could not tell apart. Seven is the only duration
-          // a synthesized slot is ever priced from.
-          tripDuration: [WEEK_NIGHTS],
-          ...(options.currency ? { currency: options.currency } : {}),
-        });
+    for (const checkIn of charterSaturdays(options.years)) {
+      const checkOut = addDays(checkIn, 7);
+      const rows = await client.get(bookingManagerEndpoints.prices, restPriceListSchema, {
+        dateFrom: formatBookingManagerDateTime(checkIn),
+        dateTo: formatBookingManagerDateTime(checkOut),
+        // Deliberately no yachtId: the vendor returns the whole fleet for the
+        // period, which is one call instead of one per batch of boats.
+        ...(options.currency ? { currency: options.currency } : {}),
+      });
 
-        for (const row of rows) {
-          const price = mapBookingManagerPriceRow(row, options.currency);
-          // One unreadable row costs that period, not the fleet's whole price load;
-          // a failure that matters is the client's throw, which passes straight out.
-          if (price) {
-            fetched.get(String(row.yachtId))?.push(price);
-          }
+      for (const row of rows) {
+        // Keyed to the Saturday we asked for rather than the echoed `dateFrom`,
+        // because that is the check-in date the writer looks a price up by. The
+        // vendor substitutes the base's real handover time into what it echoes.
+        const price = mapBookingManagerPriceRow(row, checkIn, options.currency);
+        // One unreadable row costs that boat that week, not the whole sweep; a
+        // failure that matters is the client's throw, which passes straight out.
+        if (!price) continue;
+
+        const yachtId = String(row.yachtId);
+        const existing = byYacht.get(yachtId);
+        if (existing) {
+          existing.push(price);
+        } else {
+          byYacht.set(yachtId, [price]);
         }
       }
     }
 
-    // Merged only once every call landed, so an aborted load leaves no yacht cached
-    // with the half of its calendar that happened to arrive first.
-    for (const [yachtId, prices] of fetched) {
-      prices.sort(
-        (a, b) =>
-          a.startDate.localeCompare(b.startDate) ||
-          a.endDate.localeCompare(b.endDate) ||
-          a.priceMinor - b.priceMinor,
-      );
-      pricesByYacht.set(yachtId, prices);
+    for (const prices of byYacht.values()) {
+      prices.sort((a, b) => a.startDate.localeCompare(b.startDate) || a.priceMinor - b.priceMinor);
     }
+    return byYacht;
   }
 
   return async (listingIds) => {
@@ -110,14 +109,17 @@ export function createBookingManagerSeasonalPriceLoader(
         wanted.set(listingId, yachtId);
       }
     }
+    if (wanted.size === 0) return byListing;
 
-    const missing = [...new Set(wanted.values())].filter((id) => !pricesByYacht.has(id));
-    if (missing.length > 0) {
-      await fetchInto(missing);
-    }
+    // Assigned only after it resolves, so a failed sweep is retried by the next
+    // scope rather than cached as a permanently empty fleet.
+    const priced = await (sweep ??= runSweep()).catch((error: unknown) => {
+      sweep = null;
+      throw error;
+    });
 
     for (const [listingId, yachtId] of wanted) {
-      const prices = pricesByYacht.get(yachtId);
+      const prices = priced.get(yachtId);
       if (prices && prices.length > 0) {
         byListing.set(listingId, prices);
       }
@@ -127,25 +129,17 @@ export function createBookingManagerSeasonalPriceLoader(
 }
 
 /**
- * Pure `RestPrice → SeasonalPrice`, or null for a row this cannot honestly price.
+ * Pure `RestPrice → SeasonalPrice` for one requested week, or null for a row this
+ * cannot honestly price.
  *
- * The writer only ever applies a seasonal price to a seven-night slot, because a
- * weekly figure divided or multiplied into another duration is not what the vendor
- * charges. That constraint is enforced here as well as there:
- *
- * - a row spanning exactly seven nights is one priced week, so it covers that one
- *   start date and nothing else. Widening it to `dateTo` would let the week before
- *   win the lookup for a Saturday that begins the next one;
- * - a row spanning longer is a season block whose figure is the weekly rate inside
- *   it, so it covers every start date in the block, as the NauSYS price lists do;
- * - a row spanning less than seven nights prices a short charter and is dropped.
- *
- * VENDOR QUESTION Q-BM-PRICE-DURATION: is `price` on a multi-week row the weekly
- * rate for that season (assumed, and what `tripDuration=7` is sent to pin down), or
- * the total for the whole span? If it is the total, every long row over-prices.
+ * `startDate === endDate === checkIn`: the writer's lookup is inclusive on both
+ * ends and only ever runs for a seven-night slot, so a week's price must cover
+ * exactly its own check-in date. Widening it to the check-out date would let this
+ * week win the lookup for the Saturday that begins the next one.
  */
 export function mapBookingManagerPriceRow(
   row: RestPrice,
+  checkIn: string,
   fallbackCurrency?: string,
 ): SeasonalPrice | null {
   const currency = row.currency?.trim() || fallbackCurrency;
@@ -154,11 +148,9 @@ export function mapBookingManagerPriceRow(
   }
 
   try {
-    const startDate = parseBookingManagerDate(row.dateFrom);
-    const endDate = parseBookingManagerDate(row.dateTo);
-    const nights =
-      (Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / DAY_MS;
-    if (nights < WEEK_NIGHTS) {
+    // Parsed only to reject a row the vendor answered for a different period; the
+    // value used is the requested check-in.
+    if (row.dateFrom != null && parseBookingManagerDate(row.dateFrom) !== checkIn) {
       return null;
     }
 
@@ -167,15 +159,36 @@ export function mapBookingManagerPriceRow(
       return null;
     }
 
-    return {
-      startDate,
-      endDate: nights === WEEK_NIGHTS ? startDate : endDate,
-      priceMinor,
-      currency,
-    };
+    return { startDate: checkIn, endDate: checkIn, priceMinor, currency };
   } catch {
     return null;
   }
+}
+
+/**
+ * Every Saturday touched by `years`, which is the turnaround day the availability
+ * writer synthesizes weeks on. Runs to the last Saturday whose week still starts
+ * inside the final year.
+ */
+export function charterSaturdays(years: number[]): string[] {
+  if (years.length === 0) return [];
+
+  const first = Math.min(...years);
+  const last = Math.max(...years);
+  const end = Date.UTC(last, 11, 31);
+
+  let cursor = Date.UTC(first, 0, 1);
+  cursor += ((SATURDAY - new Date(cursor).getUTCDay() + 7) % 7) * DAY_MS;
+
+  const saturdays: string[] = [];
+  for (; cursor <= end; cursor += WEEK_MS) {
+    saturdays.push(new Date(cursor).toISOString().slice(0, 10));
+  }
+  return saturdays;
+}
+
+function addDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
 /**
@@ -190,12 +203,4 @@ function numberToMinor(value: number, currency: string, field: string): number {
     );
   }
   return decimalStringToMinor(value.toFixed(currencyExponent(currency)), currency);
-}
-
-function chunk(values: string[], size: number): string[][] {
-  const batches: string[][] = [];
-  for (let index = 0; index < values.length; index += size) {
-    batches.push(values.slice(index, index + size));
-  }
-  return batches;
 }

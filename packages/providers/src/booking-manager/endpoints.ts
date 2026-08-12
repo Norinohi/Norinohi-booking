@@ -232,11 +232,21 @@ export const restShipyardSchema = z.looseObject({
   shortName: optionalText,
 });
 
+/**
+ * Both spellings of the ISO fields are accepted because the two vendor sources
+ * disagree: the Swagger declares `short`/`long`, while the worked example in the
+ * vendor's own integration guide returns `shortName`/`longName`. Reading only one
+ * would not throw, since these schemas are loose. It would silently drop every
+ * country code, and the ISO code is what makes the same country from Booking
+ * Manager and NauSYS one row.
+ */
 export const restCountrySchema = z.looseObject({
   id: numeric,
   name: optionalText,
   short: optionalText,
   long: optionalText,
+  shortName: optionalText,
+  longName: optionalText,
   worldRegion: optionalNumeric,
 });
 

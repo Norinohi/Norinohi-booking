@@ -102,7 +102,7 @@ export function projectBookingManagerCatalogue(records: ProviderRecordSet): Cano
       externalId: String(item.id),
       // ISO-2 first: it is what makes the same country from two providers one row.
       code: countryCodeOf(item),
-      name: text(item.name) ?? text(item.long) ?? `Country ${item.id}`,
+      name: text(item.name) ?? text(item.long) ?? text(item.longName) ?? `Country ${item.id}`,
     })),
     regions: geography.regions,
     locations: geography.locations,
@@ -618,7 +618,9 @@ function coordinateOf(value: unknown): number | undefined {
 }
 
 function countryCodeOf(country: RestCountry): string {
-  const short = text(country.short);
+  // See `restCountrySchema`: the Swagger and the vendor's integration guide
+  // disagree on whether these are `short`/`long` or `shortName`/`longName`.
+  const short = text(country.short) ?? text(country.shortName);
   return short !== undefined && short.length <= 3
     ? short.toUpperCase()
     : `${PROVIDER_PREFIX}-${country.id}`;

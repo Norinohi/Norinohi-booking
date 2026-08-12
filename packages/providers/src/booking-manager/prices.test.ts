@@ -1,0 +1,221 @@
+import { describe, expect, it, vi } from "vitest";
+
+vi.hoisted(() => {
+  process.env.SKIP_ENV_VALIDATION = "1";
+});
+
+import type { CatalogueResolver } from "../shared/catalogue-resolver";
+import type { BookingManagerClient } from "./client";
+import { type BookingManagerConfig, resolveBookingManagerConfig } from "./config";
+import {
+  charterSaturdays,
+  createBookingManagerSeasonalPriceLoader,
+  mapBookingManagerPriceRow,
+} from "./prices";
+
+const config: BookingManagerConfig = resolveBookingManagerConfig({
+  BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
+  BOOKING_MANAGER_API_TOKEN: "t0ken",
+  BOOKING_MANAGER_TIMEOUT_MS: 30_000,
+  BOOKING_MANAGER_MIN_INTERVAL_MS: 0,
+  BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
+  BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
+});
+
+const row = (over: Record<string, unknown> = {}) => ({
+  yachtId: 42,
+  dateFrom: "2027-01-02 17:00:00",
+  dateTo: "2027-01-09 09:00:00",
+  price: 1234.5,
+  currency: "EUR",
+  ...over,
+});
+
+describe("charterSaturdays", () => {
+  it("returns every Saturday in the year", () => {
+    const saturdays = charterSaturdays([2027]);
+
+    // 2027-01-02 is the first Saturday of that year.
+    expect(saturdays[0]).toBe("2027-01-02");
+    expect(saturdays).toHaveLength(52);
+    for (const day of saturdays) {
+      expect(new Date(`${day}T00:00:00Z`).getUTCDay()).toBe(6);
+    }
+  });
+
+  it("spans every requested year without a gap at the boundary", () => {
+    const saturdays = charterSaturdays([2027, 2028]);
+    const gaps = saturdays
+      .slice(1)
+      .map((day, i) => Date.parse(`${day}T00:00:00Z`) - Date.parse(`${saturdays[i]}T00:00:00Z`));
+
+    expect(new Set(gaps)).toEqual(new Set([7 * 86_400_000]));
+  });
+
+  it("returns nothing for no years", () => {
+    expect(charterSaturdays([])).toEqual([]);
+  });
+});
+
+describe("mapBookingManagerPriceRow", () => {
+  it("keys the week to its check-in date on both ends", () => {
+    // priceAt matches startDate <= date <= endDate, so a week must cover exactly
+    // its own check-in or it wins the lookup for the following Saturday too.
+    expect(mapBookingManagerPriceRow(row(), "2027-01-02")).toEqual({
+      startDate: "2027-01-02",
+      endDate: "2027-01-02",
+      priceMinor: 123_450,
+      currency: "EUR",
+    });
+  });
+
+  it("drops a row the vendor answered for a different period", () => {
+    expect(mapBookingManagerPriceRow(row(), "2027-01-09")).toBeNull();
+  });
+
+  it("falls back to the requested currency when the row omits one", () => {
+    expect(mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02", "EUR")).toMatchObject({
+      currency: "EUR",
+    });
+  });
+
+  it.each([null, undefined])("drops a row with price %o", (price) => {
+    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
+  });
+
+  it("drops a row with no usable currency", () => {
+    expect(mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02")).toBeNull();
+  });
+});
+
+describe("createBookingManagerSeasonalPriceLoader", () => {
+  function harness(rows: Record<string, unknown>[]) {
+    const calls: Record<string, unknown>[] = [];
+    const client = {
+      get: (_endpoint: string, _schema: unknown, query: Record<string, unknown>) => {
+        calls.push(query);
+        const checkIn = String(query.dateFrom).slice(0, 10);
+        return Promise.resolve(rows.filter((r) => String(r.dateFrom).startsWith(checkIn)));
+      },
+    } as unknown as BookingManagerClient;
+
+    const resolver = {
+      toExternalListing: (listingId: string) =>
+        listingId === "ylst_unlinked"
+          ? Promise.reject(new Error("no source"))
+          : Promise.resolve({ externalYachtId: "42" }),
+    } as unknown as CatalogueResolver;
+
+    return { calls, client, resolver };
+  }
+
+  it("sweeps a week at a time for the whole fleet, never per yacht", async () => {
+    const { calls, client, resolver } = harness([row()]);
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    await load(["ylst_a"]);
+
+    expect(calls).toHaveLength(52);
+    // The vendor returns every boat when yachtId is omitted, which is one call
+    // per week instead of one per batch of boats.
+    expect(calls.every((q) => q.yachtId === undefined)).toBe(true);
+    expect(calls[0]).toMatchObject({
+      dateFrom: "2027-01-02T00:00:00",
+      dateTo: "2027-01-09T00:00:00",
+    });
+  });
+
+  it("keys results back to the internal listing id", async () => {
+    const { client, resolver } = harness([row()]);
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    expect(await load(["ylst_a"])).toEqual(
+      new Map([
+        [
+          "ylst_a",
+          [
+            {
+              startDate: "2027-01-02",
+              endDate: "2027-01-02",
+              priceMinor: 123_450,
+              currency: "EUR",
+            },
+          ],
+        ],
+      ]),
+    );
+  });
+
+  it("sweeps once across repeated scope calls", async () => {
+    const { calls, client, resolver } = harness([row()]);
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    await load(["ylst_a"]);
+    await load(["ylst_b"]);
+
+    expect(calls).toHaveLength(52);
+  });
+
+  it("never calls the vendor for an empty request", async () => {
+    const { calls, client, resolver } = harness([row()]);
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    expect(await load([])).toEqual(new Map());
+    expect(calls).toHaveLength(0);
+  });
+
+  it("skips a listing with no Booking Manager source rather than failing", async () => {
+    const { client, resolver } = harness([row()]);
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    expect(await load(["ylst_unlinked"])).toEqual(new Map());
+  });
+
+  it("retries the sweep after a failure instead of caching an empty fleet", async () => {
+    let attempts = 0;
+    const client = {
+      get: () => {
+        attempts += 1;
+        return attempts <= 1 ? Promise.reject(new Error("boom")) : Promise.resolve([]);
+      },
+    } as unknown as BookingManagerClient;
+    const resolver = {
+      toExternalListing: () => Promise.resolve({ externalYachtId: "42" }),
+    } as unknown as CatalogueResolver;
+
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    await expect(load(["ylst_a"])).rejects.toThrow("boom");
+    await expect(load(["ylst_a"])).resolves.toEqual(new Map());
+  });
+});

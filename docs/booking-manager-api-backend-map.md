@@ -285,15 +285,58 @@ projected into public tables or oRPC procedures until the product scope includes
 them. Preserving the raw records keeps every one of those a later addition rather
 than a re-sync.
 
+## 8b. The vendor's own integration guide
+
+The knowledge base at `support.booking-manager.com/hc/en-us/sections/360000531632-Rest-API`
+carries four articles. It is worth reading before changing the sync: two of its
+statements are load-bearing and are not in the Swagger. Note the site 403s
+automated fetches and needs a real browser.
+
+**API keys** are generated on the portal at **My Account > API Integration** (on a
+local Booking Manager install, **Preferences > Company > API Integration**). The
+UI calls it an API key; the API consumes it as a Bearer token.
+
+**Prescribed sync shape**, from "How to start the RESTful web service integration":
+
+1. `GET /companies` first, then parse boats company by company with
+   `GET /yachts`, storing everything locally. This is what `catalogue.ts` does.
+2. Store locally everything not related to real-time availability: shipyards,
+   bases, sailing areas, equipment (`equipmentIds`), pictures (`images`), extras.
+3. **`GET /prices` is called once per Saturday-to-Saturday pair** to build a
+   year's price list, and **sending only `dateFrom`/`dateTo`, with no `yachtId`,
+   returns every boat in the system for that period.** `prices.ts` implements
+   exactly this. It also settles Q-BM-PRICE-DURATION: a row prices the period you
+   asked for, so a Saturday-to-Saturday request is a weekly figure by
+   construction and nothing is inferred from the span.
+4. `GET /offers` per Saturday-to-Saturday pair gives real-time availability;
+   `/availability` and `/shortAvailability` give booked/free status across a year.
+5. The base to country and sailing-area chain is reconstructed exactly as §3
+   describes, and the guide's worked example (base "Cala Bitta", `countryId` 380,
+   `sailingAreas` `[19]`) is the shape `projection.ts` rebuilds.
+
+**Field-name discrepancy.** That worked example returns `/countries` rows as
+`{id, worldRegion, name, shortName, longName}`, while the Swagger declares
+`short`/`long`. One of the two is stale. `restCountrySchema` accepts both, because
+the loose schemas mean a mismatch would not throw: it would silently drop every
+ISO country code, which is the field that merges a country across providers.
+
+**No pagination anywhere.** The only volume guidance ("How to manipulate large set
+of data thru API") is SOAP-era and tells the caller to raise its own parser
+limits, which implies large single responses rather than paged ones.
+
 ## 9. Open vendor questions
 
-Outstanding with MMK. Everything in §5 is now answered; these are not.
+Outstanding with MMK. Everything in §5 and the price-duration question in §8b are
+now answered; these are not.
 
-- **Rate limits and pagination.** No documented limit, page size or retry
-  guidance. We currently self-throttle at 250 ms between calls, which is a guess.
+- **Rate limits.** No documented limit or retry guidance. We self-throttle at
+  250 ms between calls, which is a guess. The Saturday sweep is 52 calls per year
+  per sync, so this matters.
 - **Delta sync.** Does `/yachts` support a "changed since" parameter, or is a
   full dump the only option? Determines whether the catalogue sync can ever be
   incremental.
+- **Which `/countries` spelling is current**, `short`/`long` or
+  `shortName`/`longName`. We accept both; confirming lets one be dropped.
 - **Array query-parameter encoding.** Repeat-key (`?id=1&id=2`) or comma-joined
   (`?id=1,2`)? The spec does not say. **We default to repeat-key** and this needs
   confirming before the first live filtered call.
