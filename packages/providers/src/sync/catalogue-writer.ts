@@ -351,6 +351,8 @@ export async function writeCanonicalCatalogue(
         : null,
       defaultCurrency: item.defaultCurrency,
       paymentPolicy: item.paymentPolicy ?? null,
+      providerRating: decimal(item.rating),
+      providerReviewCount: item.reviewCount ?? null,
       freshnessAt: now,
     };
 

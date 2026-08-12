@@ -442,6 +442,9 @@ const canonicalListingSchema = z.object({
   ),
   defaultCurrency: z.string().length(3),
   securityDepositMinor: z.number().int().optional(),
+  /** Provider-side review aggregate. Left unset when the provider has no verdict. */
+  rating: z.number().min(0).max(5).optional(),
+  reviewCount: z.number().int().nonnegative().optional(),
   paymentPolicy: z
     .object({
       mode: z.enum(["deposit", "full"]),

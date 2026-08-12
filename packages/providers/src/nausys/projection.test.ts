@@ -448,6 +448,85 @@ describe("projectNausysCatalogue", () => {
     });
   });
 
+  describe("euminia ratings", () => {
+    /*
+     * No yacht in the recorded company is rated (1 of 109 across the account is),
+     * so every payload here is built by hand from what production sends for yacht
+     * 102761 "Dali" and from the vendor PDF's examples.
+     */
+
+    it("reads the comma decimal separator production actually sends", () => {
+      const yacht = maria();
+      yacht.euminia = { total: "4,83", reviews: "6", recommendation: "100 %" };
+
+      // parseFloat("4,83") is 4, which would understate the rating with no error.
+      expect(listingOf(yacht)).toMatchObject({ rating: 4.83, reviewCount: 6 });
+    });
+
+    it("reads the period separator the vendor documents", () => {
+      const yacht = maria();
+      yacht.euminia = {
+        cleanliness: "4.83",
+        equipment: "4.79",
+        personalService: "4.78",
+        pricePerformance: "4.67",
+        recommendation: "100 %",
+        total: "4.79",
+        reviews: "6",
+      };
+
+      const listing = listingOf(yacht);
+
+      expect(listing).toMatchObject({ rating: 4.79, reviewCount: 6 });
+      // Sub-scores have no canonical home yet; they stay in the retained raw payload.
+      expect(listing).not.toHaveProperty("cleanliness");
+    });
+
+    it("leaves an unrated yacht unrated rather than rated zero", () => {
+      const listing = listingOf(maria());
+
+      expect(listing?.rating).toBeUndefined();
+      expect(listing?.reviewCount).toBeUndefined();
+    });
+
+    it("drops a score outside the vendor's 0..5 scale instead of clamping it", () => {
+      const yacht = maria();
+      yacht.euminia = { total: "48,3", reviews: "6" };
+
+      const listing = listingOf(yacht);
+
+      // A wrong rating is worse than none, and the count goes with it: "0 (6 reviews)"
+      // is a worse answer than silence.
+      expect(listing?.rating).toBeUndefined();
+      expect(listing?.reviewCount).toBeUndefined();
+    });
+
+    it("drops a score that does not parse", () => {
+      const yacht = maria();
+      yacht.euminia = { total: "n/a", reviews: "6" };
+
+      expect(listingOf(yacht)?.rating).toBeUndefined();
+    });
+
+    it("keeps the rating when only the review count is unreadable", () => {
+      const yacht = maria();
+      yacht.euminia = { total: "4,00" };
+
+      const listing = listingOf(yacht);
+
+      expect(listing?.rating).toBe(4);
+      expect(listing?.reviewCount).toBeUndefined();
+    });
+
+    it("keeps the yacht when the vendor changes the shape of the ratings", () => {
+      const yacht = maria();
+      yacht.euminia = { total: 4.79, reviews: 6 };
+
+      expect(listingOf(yacht)).toMatchObject({ title: "Maria's Pleasure Athena 38" });
+      expect(listingOf(yacht)?.rating).toBeUndefined();
+    });
+  });
+
   it("maps one-way periods from the vendor's periodFrom and periodTo", () => {
     const yacht = maria();
     yacht.oneWayPeriods = [

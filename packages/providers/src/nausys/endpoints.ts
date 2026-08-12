@@ -307,6 +307,23 @@ export const restSeasonSpecificDataSchema = z.looseObject({
  */
 const yachtAmount = z.union([decimal, z.number()]);
 
+/**
+ * Aggregate scores from Euminia, the vendor's third-party review platform. Absent
+ * entirely when the yacht has never been rated, and every value is a string: our
+ * account sends "4,00" where the vendor PDF prints "4.83", and `recommendation`
+ * is a percentage with a space ("100 %"). Loose and all-optional because the
+ * vendor keeps adding sub-scores and only `total`/`reviews` have a home today.
+ */
+const euminiaSchema = z.looseObject({
+  total: z.string().optional(),
+  reviews: z.string().optional(),
+  recommendation: z.string().optional(),
+  cleanliness: z.string().optional(),
+  equipment: z.string().optional(),
+  personalService: z.string().optional(),
+  pricePerformance: z.string().optional(),
+});
+
 export const restYachtSchema = z.looseObject({
   id: z.number().int(),
   name: z.string(),
@@ -391,12 +408,10 @@ export const restYachtSchema = z.looseObject({
     )
     .optional(),
   seasonSpecificData: z.array(restSeasonSpecificDataSchema).optional(),
-  euminia: z
-    .looseObject({
-      total: z.number().optional(),
-      reviewsCount: z.number().int().optional(),
-    })
-    .optional(),
+  // Caught rather than required: a vendor that switches these to numbers should
+  // cost us the ratings, not the whole yacht, which is what a parse failure here
+  // would do (see `parseAll` in projection.ts).
+  euminia: euminiaSchema.optional().catch(undefined),
 });
 
 /**

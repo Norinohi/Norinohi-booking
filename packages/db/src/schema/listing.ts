@@ -64,6 +64,10 @@ export const listing = pgTable(
       balanceDueAt?: string;
     }>(),
     status: listingStatus("status").default("draft").notNull(),
+    // Provider-side review aggregate (NauSYS ships Euminia scores). Nullable, never
+    // zero-filled: a yacht nobody has rated is not a yacht rated 0.
+    providerRating: numeric("provider_rating", { precision: 3, scale: 2 }),
+    providerReviewCount: integer("provider_review_count"),
     // Winning listing_source for spec resolution; plain text to avoid an FK cycle.
     primarySourceId: text("primary_source_id"),
     freshnessAt: timestamp("freshness_at"),
