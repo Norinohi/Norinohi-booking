@@ -24,6 +24,7 @@ export function toSearchInput(
     locale: opts.locale,
   };
 
+  if (filters.query) input.query = filters.query;
   if (filters.country.length) input.country = filters.country;
   if (filters.sailingArea.length) input.sailingArea = filters.sailingArea;
   if (filters.charterCompany.length) input.charterCompany = filters.charterCompany;

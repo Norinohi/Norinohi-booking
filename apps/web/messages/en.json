@@ -916,7 +916,9 @@
       "addDates": "Add dates",
       "clearDates": "Clear dates",
       "anyBoat": "Any boat",
-      "search": "Search"
+      "search": "Search",
+      "noLocations": "No matching destinations",
+      "clearLocation": "Clear location"
     }
   },
   "YachtsMap": {

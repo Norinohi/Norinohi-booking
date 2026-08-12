@@ -916,7 +916,9 @@
       "addDates": "Añadir fechas",
       "clearDates": "Borrar fechas",
       "anyBoat": "Cualquier barco",
-      "search": "Buscar"
+      "search": "Buscar",
+      "noLocations": "No hay destinos coincidentes",
+      "clearLocation": "Borrar destino"
     }
   },
   "YachtsMap": {

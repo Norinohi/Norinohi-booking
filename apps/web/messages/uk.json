@@ -916,7 +916,9 @@
       "addDates": "Обрати дати",
       "clearDates": "Очистити дати",
       "anyBoat": "Будь-який човен",
-      "search": "Пошук"
+      "search": "Пошук",
+      "noLocations": "Немає збігів за напрямком",
+      "clearLocation": "Очистити напрямок"
     }
   },
   "YachtsMap": {
