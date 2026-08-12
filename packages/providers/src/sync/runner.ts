@@ -456,6 +456,26 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
 
 /* -------------------------------------------------------------- entry points */
 
+/**
+ * Whether this provider's listings publish as they import.
+ *
+ * Lives in `provider.config` rather than an environment variable so it is set per
+ * provider and changed without a deploy, and so it travels with the provider row
+ * across environments. Absent or unreadable means false: the safe reading of "no
+ * opinion recorded" is that inventory still needs review.
+ */
+export async function readAutoPublish(db: Database, providerId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ config: providerTable.config })
+    .from(providerTable)
+    .where(eq(providerTable.id, providerId))
+    .limit(1);
+
+  const config = row?.config;
+  if (typeof config !== "object" || config === null) return false;
+  return (config as { autoPublish?: unknown }).autoPublish === true;
+}
+
 export async function resolveProviderId(db: Database, code: string): Promise<string> {
   const [row] = await db
     .select({ id: providerTable.id })
@@ -610,6 +630,7 @@ export async function runCatalogueSyncJob(
       providerId,
       providerKey: provider.key,
       catalogue,
+      autoPublish: await readAutoPublish(db, providerId),
       now: now(),
     });
 

@@ -147,12 +147,21 @@ export interface WriteCanonicalCatalogueOptions {
   providerId: string;
   providerKey: ProviderKey;
   catalogue: CanonicalCatalogue;
+  /**
+   * Publish this provider's listings as they import, instead of leaving them for
+   * review. Read from `provider.config.autoPublish` rather than hardcoded, so
+   * trusting a provider is a data decision an operator can reverse without a
+   * deploy, and so a second provider does not inherit the first one's trust.
+   */
+  autoPublish?: boolean;
   now?: Date;
 }
 
 export interface CatalogueWriteSummary {
   listingsCreated: number;
   listingsUpdated: number;
+  /** Drafts promoted by auto-publish, so a surprise is visible in the run counts. */
+  listingsPublished: number;
   listingsSkipped: number;
   listingsHidden: number;
   duplicateCandidates: number;
@@ -304,6 +313,7 @@ export async function writeCanonicalCatalogue(
   const summary: CatalogueWriteSummary = {
     listingsCreated: 0,
     listingsUpdated: 0,
+    listingsPublished: 0,
     listingsSkipped: 0,
     listingsHidden: 0,
     duplicateCandidates: 0,
@@ -364,9 +374,9 @@ export async function writeCanonicalCatalogue(
       const slug = await uniqueSlug(db, item.slug);
       const [created] = await db
         .insert(listing)
-        // Never published by a sync: thousands of unreviewed yachts must not go
-        // live on the first run.
-        .values({ ...columns, slug, status: "draft" })
+        // Draft unless the provider is explicitly trusted: thousands of unreviewed
+        // yachts must not go live on the first run of a new connector.
+        .values({ ...columns, slug, status: options.autoPublish ? "published" : "draft" })
         .returning({ id: listing.id });
       if (!created) {
         summary.listingsSkipped += 1;
@@ -411,8 +421,13 @@ export async function writeCanonicalCatalogue(
   const hidden = await hideOrphanedListings(db, providerId);
   summary.listingsHidden = hidden.length;
 
+  // Promoted ids join the rebuild set below: a draft carried over from an earlier
+  // run may not be in `touchedListingIds`, and without a doc it stays invisible.
+  const published = options.autoPublish ? await publishDrafts(db, providerId) : [];
+  summary.listingsPublished = published.length;
+
   await rebuildSearchReadModelsAfterSync(db, {
-    listingIds: [...new Set([...summary.touchedListingIds, ...hidden])],
+    listingIds: [...new Set([...summary.touchedListingIds, ...hidden, ...published])],
   });
 
   return summary;
@@ -834,6 +849,34 @@ async function recordDuplicateCandidates(
   );
 
   return pending.length;
+}
+
+/**
+ * Promotes this provider's drafts once it is trusted.
+ *
+ * Deliberately `draft` only. A `hidden` listing was withdrawn by a person or by
+ * the orphan sweep above, and auto-publish must not overrule either of them: the
+ * flag says "new inventory needs no review", not "ignore every decision anyone
+ * made". It also runs after the sweep, so a listing hidden in this same run is
+ * not resurrected a few lines later.
+ *
+ * Existing drafts are included, not just this run's inserts, so turning the flag
+ * on releases the backlog that accumulated while it was off.
+ */
+async function publishDrafts(db: Database, providerId: string): Promise<string[]> {
+  const rows = await db.execute<{ id: string }>(sql`
+    update listing
+    set status = 'published', updated_at = now()
+    where listing.status = 'draft'
+      and exists (
+        select 1
+        from listing_source ls
+        join provider_record pr on pr.id = ls.provider_record_id
+        where ls.listing_id = listing.id and pr.provider_id = ${providerId} and pr.active
+      )
+    returning listing.id
+  `);
+  return rows.rows.map((row) => row.id);
 }
 
 /**
