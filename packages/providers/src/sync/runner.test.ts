@@ -1,4 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// runner.ts reads the server env for the auto-publish bootstrap list, and that
+// module validates at import time. Hoisted so it lands before the import runs.
+vi.hoisted(() => {
+  process.env.SKIP_ENV_VALIDATION = "1";
+});
 
 import { AuthError, TransientError } from "../shared/errors";
 import { stableSourceHash } from "../shared/raw-retention";
