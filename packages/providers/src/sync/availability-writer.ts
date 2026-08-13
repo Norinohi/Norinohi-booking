@@ -987,25 +987,27 @@ export async function runAvailabilitySyncJob(
   }
 
   const resolver = createCatalogueResolver(db, provider.key);
-  const store = createDrizzleAvailabilitySyncStore({
+  const storeOptions: DrizzleAvailabilityStoreOptions = {
     db,
     providerId,
     syncRunId,
     resolver,
-    ...(provider.loadSeasonalPrices
-      ? { loadSeasonalPrices: provider.loadSeasonalPrices.bind(provider) }
-      : {}),
-    ...(options.cursorScope ? { cursorScope: options.cursorScope } : {}),
-  });
+  };
+  if (provider.loadSeasonalPrices) {
+    storeOptions.loadSeasonalPrices = provider.loadSeasonalPrices.bind(provider);
+  }
+  if (options.cursorScope) storeOptions.cursorScope = options.cursorScope;
 
-  return runAvailabilitySync({
-    store,
+  const runOptions: RunAvailabilitySyncOptions = {
+    store: createDrizzleAvailabilitySyncStore(storeOptions),
     source: provider.createAvailabilitySource({ resume: options.resume }),
-    ...(options.horizonMonths === undefined ? {} : { horizonMonths: options.horizonMonths }),
-    ...(options.hotWindowBudgetMs === undefined
-      ? {}
-      : { hotWindowBudgetMs: options.hotWindowBudgetMs }),
     resume: options.resume,
     now,
-  });
+  };
+  if (options.horizonMonths !== undefined) runOptions.horizonMonths = options.horizonMonths;
+  if (options.hotWindowBudgetMs !== undefined) {
+    runOptions.hotWindowBudgetMs = options.hotWindowBudgetMs;
+  }
+
+  return runAvailabilitySync(runOptions);
 }

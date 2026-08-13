@@ -86,6 +86,25 @@ export interface BookingManagerBookingService {
   addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote>;
 }
 
+/**
+ * The full `PUT /reservations` body. Every field is sent on every write: the
+ * endpoint replaces the resource, so an omitted field is a cleared field.
+ */
+interface ReservationBody {
+  dateFrom: string;
+  dateTo: string;
+  yachtId: number;
+  status: number;
+  clientName: string;
+  passengersOnBoard: number;
+  currency: string;
+  sendNotification: boolean;
+  productName?: string;
+  baseFromId?: number;
+  baseToId?: number;
+  clientId?: number;
+}
+
 export function createBookingManagerBookingService(
   deps: BookingManagerBookingServiceDeps,
 ): BookingManagerBookingService {
@@ -103,7 +122,7 @@ export function createBookingManagerBookingService(
   async function reservationBody(
     draft: BookingDraft,
     status: number,
-  ): Promise<Record<string, unknown>> {
+  ): Promise<ReservationBody> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
@@ -113,25 +132,27 @@ export function createBookingManagerBookingService(
     const productName = draft.crewType ? deps.productNameFor?.(draft.crewType) : undefined;
     const clientId = deps.clientIdFor?.(draft);
 
-    return {
+    const body: ReservationBody = {
       // Midnight both ends: the vendor owns the base's turnaround times and
       // substitutes them, exactly as it does on `/offers`.
       dateFrom: formatBookingManagerDateTime(draft.checkIn),
       dateTo: formatBookingManagerDateTime(draft.checkOut),
       yachtId,
       status,
-      ...(productName ? { productName } : {}),
-      // One-way charters are not modelled yet, so the start base is also the end
-      // base; a real one-way period would need both ids from the offer.
-      ...(baseId !== undefined && Number.isSafeInteger(baseId)
-        ? { baseFromId: baseId, baseToId: baseId }
-        : {}),
       clientName: fullName(draft.customer),
-      ...(clientId === undefined ? {} : { clientId }),
       passengersOnBoard: draft.guests,
       currency,
       sendNotification,
     };
+    if (productName) body.productName = productName;
+    // One-way charters are not modelled yet, so the start base is also the end
+    // base; a real one-way period would need both ids from the offer.
+    if (baseId !== undefined && Number.isSafeInteger(baseId)) {
+      body.baseFromId = baseId;
+      body.baseToId = baseId;
+    }
+    if (clientId !== undefined) body.clientId = clientId;
+    return body;
   }
 
   async function createOption(draft: BookingDraft): Promise<ProviderReservation> {

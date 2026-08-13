@@ -593,16 +593,17 @@ export function splitCustomerName(
 function toRestClient(customer: BookingDraft["customer"], countryId?: number): RestClient {
   const { name, surname } = splitCustomerName(customer.name, customer.surname);
 
-  return {
-    name,
-    surname,
-    email: customer.email,
-    ...(customer.phone ? { phone: customer.phone, mobile: customer.phone } : {}),
-    ...(customer.address ? { address: customer.address } : {}),
-    ...(customer.zip ? { zip: customer.zip } : {}),
-    ...(customer.city ? { city: customer.city } : {}),
-    ...(countryId === undefined ? {} : { countryId }),
-  };
+  const client: RestClient = { name, surname, email: customer.email };
+  if (customer.phone) {
+    // NauSYS treats the two as separate contact channels; we only ever have one.
+    client.phone = customer.phone;
+    client.mobile = customer.phone;
+  }
+  if (customer.address) client.address = customer.address;
+  if (customer.zip) client.zip = customer.zip;
+  if (customer.city) client.city = customer.city;
+  if (countryId !== undefined) client.countryId = countryId;
+  return client;
 }
 
 /**
