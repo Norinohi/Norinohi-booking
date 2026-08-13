@@ -41,6 +41,8 @@ export default function CharterDateField({
 }) {
   const [pending, setPending] = useState<DateRange | undefined>(undefined);
   const [open, setOpen] = useState(false);
+  /* Read once per mount: a clock read during render would differ between server and client. */
+  const [today] = useState(() => dayFromNative(new Date()));
 
   /* `dayToNative`/`dayFromNative` are the Calendar's matched pair: it is native-Date only. */
   const committed: DateRange | undefined = value
@@ -53,6 +55,12 @@ export default function CharterDateField({
 
   function isDayDisabled(date: Date): boolean {
     const day = dayFromNative(date);
+    /*
+     * The rules are deliberately clock-free, so "not in the past" is decided here. A published
+     * rate can start well before today — a season opened in July is still the rate in August —
+     * and without this the calendar offers days that have already been and gone.
+     */
+    if (day < today) return true;
     /* Keep the chosen check-in clickable so a mis-click can be redone in place. */
     if (checkIn !== null) return day !== checkIn && !canCheckOut(day, checkIn, constraints);
     return !canCheckIn(day, constraints);
