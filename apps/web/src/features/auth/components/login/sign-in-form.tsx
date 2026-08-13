@@ -22,6 +22,8 @@ import z from "zod";
 import Loader from "@/components/shared/feedback/loader";
 import { authClient } from "@/lib/auth-client";
 
+import { signedInTarget } from "../../lib/redirect-target";
+
 /*
  * SignInForm — Figma "Sign In" (972:53946 desktop / 973:86586 tablet / 973:86647 mobile).
  * "Welcome back" heading over a self-contained card (358 → 660 → 451 wide across mobile /
@@ -63,9 +65,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
   const router = useRouter();
   const { isPending } = authClient.useSession();
 
-  /* A return link from checkout, restricted to same-site paths so it cannot be an open redirect. */
-  const target =
-    redirect && redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/dashboard";
+  const target = signedInTarget(redirect);
 
   const schema = useMemo(
     () =>

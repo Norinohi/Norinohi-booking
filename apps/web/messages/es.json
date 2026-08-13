@@ -1057,10 +1057,6 @@
       "title": "Crear cuenta",
       "description": "Crea una cuenta de YachtSkanner para reservar yates, guardar favoritos y gestionar tus viajes."
     },
-    "Dashboard": {
-      "title": "Panel",
-      "description": "Gestiona tus reservas de chárter, yates guardados y ajustes de la cuenta."
-    },
     "Wishlist": {
       "title": "Tus favoritos",
       "description": "Los yates y catamaranes que has guardado. Compara tus favoritos y consulta la disponibilidad para tus fechas."

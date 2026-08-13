@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { headers } from "next/headers";
+import { getLocale, getTranslations } from "next-intl/server";
 
-import { SignInForm } from "@/features/auth";
+import { SignInForm, signedInTarget } from "@/features/auth";
+import { redirect } from "@/i18n/navigation";
+import { authClient } from "@/lib/auth-client";
 import { buildMetadata } from "@/lib/seo";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -29,6 +32,16 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ redirect?: string }>;
 }) {
-  const { redirect } = await searchParams;
-  return <SignInForm redirect={redirect} />;
+  const [locale, { redirect: returnTo }] = await Promise.all([getLocale(), searchParams]);
+
+  /* Already signed in: send them where signing in would have, rather than showing a form
+     whose only outcome is the session they already hold. */
+  const session = await authClient.getSession({
+    fetchOptions: { headers: await headers(), throw: true },
+  });
+  if (session?.user) {
+    return redirect({ href: signedInTarget(returnTo), locale });
+  }
+
+  return <SignInForm redirect={returnTo} />;
 }

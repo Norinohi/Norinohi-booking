@@ -105,7 +105,7 @@ export default function SignUpForm() {
               })
               .catch(() => {});
           }
-          router.push("/dashboard");
+          router.push("/profile/bookings");
           toast.success(t("success"));
         },
         onError: (error: any) => {
