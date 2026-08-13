@@ -557,19 +557,33 @@ export async function listAvailabilityConstraints(
       currency: string;
       confirmed: boolean;
     }>(sql`
+      /*
+       * The provider's published rates, which is what makes a date sellable at all: it does
+       * not publish one for a season it has not opened. Read from the rate list rather than
+       * from priced slots, so the signal covers the season the provider actually priced
+       * instead of only the periods someone enumerated inside it.
+       */
       select
-        slot.start_date as "startDate",
-        slot.end_date as "endDate",
-        slot.price_minor as "priceMinor",
-        slot.currency,
-        slot.availability_confirmed as "confirmed"
-      from availability_slot slot
-      where slot.listing_id = ${input.listingId}
-        and slot.status = 'available'
-        and slot.price_minor is not null
-        and slot.currency = ${input.currency ?? "EUR"}
-        and ${overlapsWindow}
-      order by slot.start_date asc
+        price.start_date as "startDate",
+        price.end_date as "endDate",
+        price.price_minor as "priceMinor",
+        price.currency,
+        exists (
+          select 1
+          from availability_slot slot
+          where slot.listing_id = price.listing_id
+            and slot.status = 'available'
+            and slot.availability_confirmed
+            and slot.start_date >= price.start_date
+            and slot.end_date <= price.end_date
+        ) as "confirmed"
+      from listing_price_period price
+      where price.listing_id = ${input.listingId}
+        and price.kind = 'weekly'
+        and price.currency = ${input.currency ?? "EUR"}
+        and price.start_date < ${input.to}
+        and price.end_date > ${input.from}
+      order by price.start_date asc
     `),
     db.execute<{
       startDate: string | null;
@@ -824,13 +838,22 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("petsAllowed") && input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
   const availabilityWindow = availabilityWindowFor(input);
   if (availabilityWindow) {
+    /*
+     * Containment against one free stretch, not against one enumerated period. The old filter
+     * asked a single availability_slot row to span the whole request, and no synthesized slot ran
+     * longer than a week, so every multi-week search returned nothing at all while dozens of
+     * listings had the consecutive weeks free.
+     *
+     * Deliberately no check-in weekday or minimum stay here. Search is a funnel: it answers
+     * "is this boat free then", and the rules decide the exact charter on the detail page. A
+     * listing should not vanish from results because the visitor's dates start on a Tuesday.
+     */
     parts.push(sql`exists (
       select 1
-      from availability_slot slot
-      where slot.listing_id = doc.listing_id
-        and slot.status = 'available'
-        and slot.start_date <= ${availabilityWindow.checkIn}
-        and slot.end_date >= ${availabilityWindow.checkOut}
+      from listing_free_period free
+      where free.listing_id = doc.listing_id
+        and free.start_date <= ${availabilityWindow.checkIn}
+        and free.end_date >= ${availabilityWindow.checkOut}
     )`);
   }
   return sql.join(parts, sql` and `);

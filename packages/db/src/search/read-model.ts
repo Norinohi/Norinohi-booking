@@ -107,12 +107,12 @@ export async function rebuildListingSearchDocs(
       media.main_image,
       coalesce(media.gallery, '[]'::jsonb),
       coalesce(amn.amenities, '[]'::jsonb),
-      avail.price_from_minor,
-      coalesce(avail.currency, l.default_currency),
+      rate.price_from_minor,
+      coalesce(rate.currency, l.default_currency),
       avail.available_from,
       avail.available_to,
       coalesce(avail.has_unconfirmed_availability, false),
-      coalesce(avail.has_temporary_booking, false),
+      coalesce(held.has_temporary_booking, false),
       concat_ws(
         ' ',
         l.title,
@@ -176,17 +176,45 @@ export async function rebuildListingSearchDocs(
       join amenity a on a.id = la.amenity_id
       where la.listing_id = l.id
     ) amn on true
+    /*
+     * The "from" price is the provider's cheapest published rate, not the cheapest period we
+     * happened to have unsold. Before listing_price_period existed it was the latter, which
+     * made the headline price depend on how the calendar had been cut and left a listing
+     * priceless wherever the cut missed. Weekly only: a daily rate is not comparable to it.
+     */
+    left join lateral (
+      select min(price_minor) as price_from_minor, min(currency) as currency
+      from listing_price_period price
+      where price.listing_id = l.id and price.kind = 'weekly'
+    ) rate on true
+    /*
+     * Availability is the span of the free stretches, which are the complement of occupancy.
+     * A stretch counts as unconfirmed unless the provider priced that exact period on request,
+     * which is what has_unconfirmed_availability has always meant: we inferred this.
+     */
     left join lateral (
       select
-        min(price_minor) filter (where status = 'available') as price_from_minor,
-        min(currency) filter (where status = 'available') as currency,
-        min(start_date) filter (where status = 'available') as available_from,
-        max(end_date) filter (where status = 'available') as available_to,
-        bool_or(status = 'available' and availability_confirmed = false) as has_unconfirmed_availability,
-        bool_or(status = 'option') as has_temporary_booking
-      from availability_slot slot
-      where slot.listing_id = l.id and slot.status in ('available', 'option')
+        min(free.start_date) as available_from,
+        max(free.end_date) as available_to,
+        bool_or(
+          not exists (
+            select 1
+            from availability_slot confirmed
+            where confirmed.listing_id = l.id
+              and confirmed.status = 'available'
+              and confirmed.availability_confirmed
+              and confirmed.start_date <= free.start_date
+              and confirmed.end_date >= free.end_date
+          )
+        ) as has_unconfirmed_availability
+      from listing_free_period free
+      where free.listing_id = l.id
     ) avail on true
+    left join lateral (
+      select bool_or(slot.status = 'option') as has_temporary_booking
+      from availability_slot slot
+      where slot.listing_id = l.id
+    ) held on true
     left join lateral (
       select lt.value as description
       from listing_text lt
