@@ -1,6 +1,10 @@
 import { ORPCError, os } from "@orpc/server";
+import { z } from "zod";
 
 import type { Context } from "./context";
+
+/** better-auth carries `role` as an additional field, outside its own user type. */
+const staffRoleSchema = z.object({ role: z.enum(["staff", "admin"]) });
 
 export const o = os.$context<Context>();
 
@@ -25,8 +29,7 @@ const requireAdmin = o.middleware(async ({ context, next }) => {
     throw new ORPCError("UNAUTHORIZED");
   }
 
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (role !== "staff" && role !== "admin") {
+  if (!staffRoleSchema.safeParse(session.user).success) {
     throw new ORPCError("FORBIDDEN");
   }
 

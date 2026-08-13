@@ -100,6 +100,9 @@ function TextField(props: TextFieldProps) {
   const id = idProp ?? reactId;
   const supportId = supportingText ? `${id}-support` : undefined;
 
+  // SAFETY: `multiline` and `rest` come from the same discriminated union, but
+  // destructuring severs the link, so `rest` stays the union of both prop sets.
+  // Each branch spreads it onto the element its own discriminant selected.
   const control = multiline ? (
     <textarea
       id={id}

@@ -31,6 +31,8 @@
       "emailPlaceholder": "name@example.com",
       "phone": "Phone Number",
       "phonePlaceholder": "+48 536 839 555",
+      "country": "Country",
+      "countryPlaceholder": "Select your country",
       "specialRequests": "Special Requests (Optional)",
       "specialRequestsPlaceholder": "Early check in please"
     },
@@ -38,6 +40,7 @@
       "fullName": "Enter your full name",
       "email": "Enter a valid email address",
       "phone": "Enter a valid phone number",
+      "country": "Select your country",
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",
@@ -557,7 +560,9 @@
       "bookings": "My Bookings",
       "referrals": "Referrals",
       "discount": "Discount Manager",
-      "logout": "Log Out"
+      "logout": "Log Out",
+      "duplicates": "Duplicate Review",
+      "sync": "Sync History"
     },
     "UserMenu": {
       "account": "Account",
@@ -988,6 +993,14 @@
     "Discounts": {
       "title": "Discount & Price Manager",
       "description": "Manage promotional codes and yacht pricing for your listings."
+    },
+    "Duplicates": {
+      "title": "Duplicate Review",
+      "description": "Review and merge look-alike yacht listings proposed by the catalogue sync."
+    },
+    "Sync": {
+      "title": "Sync History",
+      "description": "Catalogue and availability sync runs with their counts and errors."
     }
   },
   "Profile": {
@@ -1280,6 +1293,131 @@
       },
       "empty": "No yachts found",
       "error": "Couldn't load prices"
+    }
+  },
+  "Admin": {
+    "Duplicates": {
+      "title": "Duplicate Review",
+      "subtitle": "Merge the look-alike listings two providers sent for the same yacht.",
+      "filter": {
+        "label": "Decision",
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "rejected": "Rejected"
+      },
+      "empty": {
+        "pending": "Nothing to review. Every duplicate candidate has been resolved.",
+        "confirmed": "No merges have been confirmed yet.",
+        "rejected": "No pairs have been rejected yet."
+      },
+      "error": "Couldn't load the duplicate queue",
+      "confidence": "{value}% match",
+      "confidenceUnknown": "Confidence unknown",
+      "proposed": "Proposed {date}",
+      "reviewed": "Reviewed {date}",
+      "signals": "Matched on {signals}",
+      "sideA": "Side A",
+      "sideB": "Side B",
+      "keep": "Keep this listing",
+      "keeping": "Merging…",
+      "reject": "Not a duplicate",
+      "differs": "differs",
+      "differsLegend": "Highlighted values differ between the two sides.",
+      "noImage": "No image",
+      "unavailable": {
+        "title": "Listing unavailable",
+        "description": "This listing was deleted after the pair was proposed."
+      },
+      "fields": {
+        "provider": "Provider",
+        "externalId": "Provider ID",
+        "status": "Listing status",
+        "matchStatus": "Match status",
+        "operator": "Operator",
+        "model": "Model",
+        "year": "Year built",
+        "length": "Length",
+        "cabins": "Cabins",
+        "berths": "Berths",
+        "base": "Home base",
+        "location": "Location"
+      },
+      "lengthValue": "{value} m",
+      "listingStatus": {
+        "draft": "Draft",
+        "published": "Published",
+        "hidden": "Hidden"
+      },
+      "matchStatus": {
+        "unmatched": "Unmatched",
+        "auto": "Auto-matched",
+        "confirmed": "Confirmed",
+        "rejected": "Rejected"
+      },
+      "toast": {
+        "confirmed": "Merged. {count} provider sources now point at the kept listing.",
+        "rejected": "Recorded as two different yachts.",
+        "conflict": "Someone else already reviewed this pair. Reloading the queue.",
+        "error": "Something went wrong. Please try again."
+      }
+    },
+    "Sync": {
+      "title": "Sync History",
+      "subtitle": "Every catalogue and availability run, newest first.",
+      "filters": {
+        "provider": "Provider",
+        "kind": "Kind",
+        "status": "Status",
+        "allProviders": "All providers",
+        "allKinds": "All kinds",
+        "allStatuses": "All statuses"
+      },
+      "table": {
+        "provider": "Provider",
+        "kind": "Kind",
+        "status": "Status",
+        "results": "Results",
+        "errors": "Errors",
+        "started": "Started",
+        "finished": "Finished",
+        "details": "Details"
+      },
+      "kind": {
+        "catalogue": "Catalogue",
+        "availability": "Availability",
+        "pricing": "Pricing"
+      },
+      "status": {
+        "pending": "Pending",
+        "running": "Running",
+        "success": "Success",
+        "failed": "Failed",
+        "partial": "Partial"
+      },
+      "counts": {
+        "created": "created",
+        "updated": "updated",
+        "skipped": "skipped",
+        "failed": "failed"
+      },
+      "empty": "No sync runs yet",
+      "error": "Couldn't load sync runs",
+      "pending": "Not started",
+      "details": {
+        "show": "Show errors",
+        "hide": "Hide errors",
+        "title": "Errors from this run",
+        "empty": "This run recorded no errors.",
+        "error": "Couldn't load this run",
+        "unavailable": "Error details aren't available for this provider."
+      },
+      "errorType": {
+        "rate_limited": "Rate limited",
+        "transient": "Transient",
+        "auth": "Auth",
+        "not_found": "Not found",
+        "contract": "Contract"
+      }
     }
   }
 }

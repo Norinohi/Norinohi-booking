@@ -14,7 +14,7 @@ import type { FiltersState } from "@/components/shared/form/filters";
 import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
 import { useSearchInput } from "../../hooks/use-search-input";
-import { SORT_OPTIONS, type SortValue } from "../search/results-header";
+import { SORT_OPTIONS, type SortValue, toSortValue } from "../search/results-header";
 import MapBoatCard from "./map-boat-card";
 
 export type MapListPanelProps = {
@@ -56,8 +56,8 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
           className="h-12 w-full min-w-0"
           options={SORT_OPTIONS.map((value) => ({ value, label: t(`sorting.${value}`) }))}
           value={sort}
-          onValueChange={(next) => setSort((next ?? "recommended") as SortValue)}
-          renderValue={(value) => t("sorting.label", { value: t(`sorting.${value as SortValue}`) })}
+          onValueChange={(next) => setSort(toSortValue(next))}
+          renderValue={(value) => t("sorting.label", { value: t(`sorting.${toSortValue(value)}`) })}
         />
       </div>
 

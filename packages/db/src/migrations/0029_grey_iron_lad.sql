@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "sync_run_in_flight_uq" ON "sync_run" USING btree ("provider_id","kind") WHERE "sync_run"."status" in ('pending', 'running');

@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import { ContractError } from "../shared/errors";
+import { looseJsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
 import { occupiedIntervalSchema } from "../sync/availability-writer";
 import { NausysClient } from "./client";
 import type { NausysConfig } from "./config";
+import {
+  restFreeYachtSchema,
+  restFreeYachtsSearchResponseSchema,
+  restOccupancyReservationSchema,
+  restOccupancyResponseSchema,
+} from "./endpoints";
 import freeYachtsSearchFixture from "./fixtures/freeYachtsSearch.json" with { type: "json" };
 import occupancyFixture from "./fixtures/occupancy.json" with { type: "json" };
 import priceListsFixture from "./fixtures/priceLists-recorded.json" with { type: "json" };
@@ -32,51 +40,63 @@ const config: NausysConfig = {
   queueKey: "nausys:agency-user",
 };
 
-type OccupancyResponse = {
-  status: string;
-  companyId: number;
-  year: number;
-  reservations: (Record<string, unknown> & {
-    id: number;
-    yachtId: number;
-    reservationType: string;
-    periodFrom: string;
-    periodTo: string;
-  })[];
-};
+type OccupancyReservation = z.infer<typeof restOccupancyReservationSchema>;
+type FreeYacht = z.infer<typeof restFreeYachtSchema>;
 
-type SearchResponse = {
-  status: string;
-  totalCount: number;
-  totalPages: number;
-  currentPage: number;
-  freeYachtsInPeriod: (Record<string, unknown> & {
-    yachtId: number;
-    periodFrom: string;
-    periodTo: string;
-    status: string;
-    price: Record<string, unknown> & { clientPrice: string; currency: string };
-  })[];
-};
-
-function occupancyResponse(): OccupancyResponse {
-  return structuredClone(occupancyFixture) as unknown as OccupancyResponse;
+/**
+ * Running the recorded responses through the adapter's own schemas is what gives
+ * the fixtures their vendor types, and it fails loudly if a fixture drifts from
+ * the contract the mappers are written against.
+ */
+function occupancyResponse() {
+  return restOccupancyResponseSchema.parse(structuredClone(occupancyFixture));
 }
 
-function searchResponse(): SearchResponse {
-  return structuredClone(freeYachtsSearchFixture) as unknown as SearchResponse;
+function occupancyReservations(): OccupancyReservation[] {
+  return occupancyResponse().reservations ?? [];
 }
 
-type RecordedPriceList = {
-  id: number;
-  currency: string;
-  type: string;
-  vatInPrice: string;
-  seasonId: number;
-  locationsId: number[];
-  columns: { periods: { periodFrom: string; periodTo: string }[] }[];
-  rows: { yachtId: number | string; prices: (string | number)[] }[];
-};
+function firstReservation(): OccupancyReservation {
+  const [reservation] = occupancyReservations();
+  if (!reservation) throw new Error("fixture has no reservations");
+  return reservation;
+}
+
+function searchResponse() {
+  return restFreeYachtsSearchResponseSchema.parse(structuredClone(freeYachtsSearchFixture));
+}
+
+function firstFreeYacht(): FreeYacht {
+  const [yacht] = searchResponse().freeYachtsInPeriod ?? [];
+  if (!yacht) throw new Error("fixture has no results");
+  return yacht;
+}
+
+/**
+ * Only the fields the matrix mapping reads are declared; the catchall keeps the
+ * rest of the recorded entry, including the `type` the mapper branches on.
+ */
+const recordedPriceListSchema = looseJsonObject({
+  id: z.number().int(),
+  currency: z.string(),
+  columns: z.array(
+    looseJsonObject({
+      periods: z.array(looseJsonObject({ periodFrom: z.string(), periodTo: z.string() })),
+    }),
+  ),
+  rows: z.array(
+    looseJsonObject({
+      yachtId: z.union([z.number().int(), z.string()]),
+      prices: z.array(z.union([z.string(), z.number()])),
+    }),
+  ),
+});
+
+type RecordedPriceList = z.infer<typeof recordedPriceListSchema>;
+
+const recordedPriceLists = looseJsonObject({
+  priceLists: z.array(recordedPriceListSchema),
+}).parse(priceListsFixture).priceLists;
 
 /** Trimmed rows aside, `fixtures/priceLists-recorded.json` is the live response. */
 const WEEKLY_LIST_ID = 60808865;
@@ -85,9 +105,7 @@ const DUPLICATE_WEEKLY_LIST_ID = 76510827;
 const DAILY_LIST_ID = 74041227;
 
 function recordedPriceList(id: number): RecordedPriceList {
-  const list = (
-    priceListsFixture as unknown as { priceLists: RecordedPriceList[] }
-  ).priceLists.find((entry) => entry.id === id);
+  const list = recordedPriceLists.find((entry) => entry.id === id);
   if (!list) throw new Error(`price list ${id} is not in the recorded fixture`);
   return structuredClone(list);
 }
@@ -144,7 +162,7 @@ describe("mapOccupancyReservation", () => {
     const intervals = mapOccupancyDump({
       companyId: "102701",
       year: 2026,
-      reservations: occupancyResponse().reservations as never,
+      reservations: occupancyReservations(),
     });
 
     expect(intervals.map((interval) => interval.status)).toEqual([
@@ -165,30 +183,26 @@ describe("mapOccupancyReservation", () => {
   });
 
   it("gives two identical reservations the same source hash", () => {
-    const [reservation] = occupancyResponse().reservations;
-    const first = mapOccupancyReservation(reservation as never);
-    const second = mapOccupancyReservation(structuredClone(reservation) as never);
+    const reservation = firstReservation();
+    const first = mapOccupancyReservation(reservation);
+    const second = mapOccupancyReservation(structuredClone(reservation));
 
     expect(first.sourceHash).toBe(second.sourceHash);
   });
 
   it("throws on a malformed period rather than dropping it", () => {
-    const response = occupancyResponse();
-    const [reservation] = response.reservations;
-    if (!reservation) throw new Error("fixture has no reservations");
+    const reservation = firstReservation();
     reservation.periodTo = "31.02.2026";
 
     // Dropping it would mean advertising a week the vendor has already sold.
-    expect(() => mapOccupancyReservation(reservation as never)).toThrow(ContractError);
+    expect(() => mapOccupancyReservation(reservation)).toThrow(ContractError);
   });
 
   it("throws when a period ends before it starts", () => {
-    const response = occupancyResponse();
-    const [reservation] = response.reservations;
-    if (!reservation) throw new Error("fixture has no reservations");
+    const reservation = firstReservation();
     reservation.periodTo = reservation.periodFrom;
 
-    expect(() => mapOccupancyReservation(reservation as never)).toThrow(ContractError);
+    expect(() => mapOccupancyReservation(reservation)).toThrow(ContractError);
   });
 });
 
@@ -256,9 +270,9 @@ describe("fetchNausysFreeYachtsSearch", () => {
 
 describe("mapFreeYachtToConfirmedOffer", () => {
   it("maps clientPrice to minor units", () => {
-    const [yacht] = searchResponse().freeYachtsInPeriod;
+    const yacht = firstFreeYacht();
 
-    expect(mapFreeYachtToConfirmedOffer(yacht as never)).toMatchObject({
+    expect(mapFreeYachtToConfirmedOffer(yacht)).toMatchObject({
       externalYachtId: "4711001",
       startDate: "2026-07-04",
       endDate: "2026-07-11",
@@ -268,19 +282,17 @@ describe("mapFreeYachtToConfirmedOffer", () => {
   });
 
   it("drops an UNDER_OPTION yacht", () => {
-    const [yacht] = searchResponse().freeYachtsInPeriod;
-    if (!yacht) throw new Error("fixture has no results");
+    const yacht = firstFreeYacht();
     yacht.status = "UNDER_OPTION";
 
-    expect(mapFreeYachtToConfirmedOffer(yacht as never)).toBeNull();
+    expect(mapFreeYachtToConfirmedOffer(yacht)).toBeNull();
   });
 
   it("never carries agencyPrice into the offer", () => {
-    const [yacht] = searchResponse().freeYachtsInPeriod;
-    if (!yacht) throw new Error("fixture has no results");
+    const yacht = firstFreeYacht();
     yacht.price.agencyPrice = "2900.00";
 
-    const offer = mapFreeYachtToConfirmedOffer(yacht as never);
+    const offer = mapFreeYachtToConfirmedOffer(yacht);
 
     expect(JSON.stringify(offer)).not.toContain("2900");
   });

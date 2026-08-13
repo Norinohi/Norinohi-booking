@@ -6,6 +6,8 @@ import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { isBrowser } from "@/utils/runtime";
+
 export const QUERY_DEFAULTS = { queries: { staleTime: 60_000 } } as const;
 
 export function createQueryClient() {
@@ -37,7 +39,7 @@ let browserQueryClient: QueryClient | undefined;
  * the browser hydrates with it, which is a mismatch on every prefetched route.
  */
 export function getQueryClient() {
-  if (typeof window === "undefined") return createQueryClient();
+  if (!isBrowser) return createQueryClient();
   browserQueryClient ??= createQueryClient();
   return browserQueryClient;
 }
@@ -49,15 +51,12 @@ function getServerUrl(url: string) {
     return normalized;
   }
 
-  if (typeof window !== "undefined") {
+  if (isBrowser) {
     return `${window.location.origin}${normalized}`;
   }
 
-  const processEnv = (
-    globalThis as {
-      process?: { env?: Record<string, string | undefined> };
-    }
-  ).process?.env;
+  /* Not every server runtime we deploy to defines `process`, so the access stays optional. */
+  const processEnv = globalThis.process?.env;
   const vercelUrl =
     processEnv?.VERCEL_ENV === "production"
       ? (processEnv?.VERCEL_PROJECT_PRODUCTION_URL ?? processEnv?.VERCEL_URL)
@@ -78,7 +77,7 @@ export const link = new RPCLink({
     });
   },
   headers: async () => {
-    if (typeof window !== "undefined") {
+    if (isBrowser) {
       return {};
     }
 

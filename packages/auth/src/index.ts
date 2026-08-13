@@ -1,7 +1,7 @@
 import { createDb } from "@yacht-charter/db";
 import * as schema from "@yacht-charter/db/schema/auth";
 import { env } from "@yacht-charter/env/server";
-import { betterAuth } from "better-auth";
+import { betterAuth, type BetterAuthAdvancedOptions } from "better-auth";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";
@@ -22,6 +22,23 @@ export function createAuth() {
           },
         }
       : undefined;
+
+  // The web app and the API live on sibling subdomains in production
+  // (www.* and api.*). better-auth only emits a Domain attribute when
+  // crossSubDomainCookies is enabled; without it the session cookie is
+  // host-only to the API host, so the web host never receives it and every
+  // server-side getSession() reads an empty cookie jar. Unset locally,
+  // where both sides already share the `localhost` cookie host.
+  const advanced: BetterAuthAdvancedOptions = {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+      httpOnly: true,
+    },
+  };
+  if (env.COOKIE_DOMAIN) {
+    advanced.crossSubDomainCookies = { enabled: true, domain: env.COOKIE_DOMAIN };
+  }
 
   return betterAuth({
     database: drizzleAdapter(db, {
@@ -71,22 +88,7 @@ export function createAuth() {
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
-    advanced: {
-      // The web app and the API live on sibling subdomains in production
-      // (www.* and api.*). better-auth only emits a Domain attribute when
-      // crossSubDomainCookies is enabled; without it the session cookie is
-      // host-only to the API host, so the web host never receives it and every
-      // server-side getSession() reads an empty cookie jar. Unset locally,
-      // where both sides already share the `localhost` cookie host.
-      ...(env.COOKIE_DOMAIN
-        ? { crossSubDomainCookies: { enabled: true, domain: env.COOKIE_DOMAIN } }
-        : {}),
-      defaultCookieAttributes: {
-        sameSite: "none",
-        secure: true,
-        httpOnly: true,
-      },
-    },
+    advanced,
     plugins: [
       openAPI({
         theme: "default",

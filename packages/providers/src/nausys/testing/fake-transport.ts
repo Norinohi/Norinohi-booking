@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import charterBases from "../fixtures/charterBases.json" with { type: "json" };
 import charterCompanies from "../fixtures/charterCompanies.json" with { type: "json" };
 import countries from "../fixtures/countries.json" with { type: "json" };
@@ -23,8 +25,28 @@ import yachtModels from "../fixtures/yachtModels.json" with { type: "json" };
 import yachts102701 from "../fixtures/yachts-102701.json" with { type: "json" };
 
 import type { FetchLike, ProviderHttpResponseLike } from "../../shared/http-client";
+import type { JsonObject } from "../../shared/json";
 
-export const nausysFixtures: Record<string, unknown> = {
+/**
+ * A recorded fixture as TypeScript sees an imported JSON module. It is `JsonValue`
+ * plus `undefined`: a key that only some records in the file carry is inferred as
+ * an optional property, even though JSON itself has no undefined.
+ */
+type FixtureJson =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | FixtureJson[]
+  | { [key: string]: FixtureJson };
+
+/** Every fixture is a recorded vendor response, so JSON is its real contract. */
+interface NausysFixtureMap {
+  [key: string]: FixtureJson;
+}
+
+export const nausysFixtures: NausysFixtureMap = {
   charterBases,
   charterCompanies,
   countries,
@@ -56,12 +78,12 @@ export interface FakeNausysCall {
   endpoint: string;
   /** Fixture key the endpoint resolved to, e.g. `occupancy`. */
   key: string;
-  body: Record<string, unknown>;
+  body: JsonObject;
   startedAt: number;
 }
 
 interface QueuedResponse {
-  body?: unknown;
+  body?: FixtureJson;
   httpStatus?: number;
   /** Thrown from `fetch`, standing in for DNS/TLS/abort failures. */
   networkError?: Error;
@@ -122,13 +144,13 @@ export class FakeNausysTransport {
   };
 
   /** Replaces the fixture for every call to `key`. */
-  respondWith(key: string, body: unknown, httpStatus = 200): this {
+  respondWith(key: string, body: FixtureJson, httpStatus = 200): this {
     this.persistent.set(key, { body, httpStatus });
     return this;
   }
 
   /** Applies to the next call to `key` only, so retry behaviour is testable. */
-  respondOnceWith(key: string, body: unknown, httpStatus = 200): this {
+  respondOnceWith(key: string, body: FixtureJson, httpStatus = 200): this {
     return this.enqueue(key, { body, httpStatus });
   }
 
@@ -158,7 +180,7 @@ export class FakeNausysTransport {
     return this.calls.filter((call) => call.key === key).length;
   }
 
-  lastBody(key: string): Record<string, unknown> | undefined {
+  lastBody(key: string): JsonObject | undefined {
     return this.calls.findLast((call) => call.key === key)?.body;
   }
 
@@ -197,7 +219,7 @@ export class FakeNausysTransport {
   }
 }
 
-function jsonResponse(status: number, body: unknown): ProviderHttpResponseLike {
+function jsonResponse(status: number, body: FixtureJson): ProviderHttpResponseLike {
   return textResponse(status, JSON.stringify(body));
 }
 
@@ -205,7 +227,7 @@ function textResponse(status: number, text: string): ProviderHttpResponseLike {
   return { status, text: () => Promise.resolve(text) };
 }
 
-function requireFixture(key: string): unknown {
+function requireFixture(key: string): FixtureJson {
   const fixture = nausysFixtures[key];
   if (fixture === undefined) {
     throw new Error(`Unknown NauSYS fixture: ${key}`);
@@ -213,12 +235,15 @@ function requireFixture(key: string): unknown {
   return fixture;
 }
 
-function parseBody(body: string): Record<string, unknown> {
+const requestBodySchema = z.record(z.string(), z.json());
+
+/** A body the vendor client never sent as an object is not a request we can assert on. */
+function parseBody(body: string | undefined): JsonObject {
+  if (body === undefined) {
+    return {};
+  }
   try {
-    const parsed: unknown = JSON.parse(body);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
+    return requestBodySchema.parse(JSON.parse(body));
   } catch {
     return {};
   }

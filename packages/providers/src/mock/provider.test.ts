@@ -126,16 +126,19 @@ describe("MockInventoryProvider", () => {
   it("rotates the security token on every reservation change", async () => {
     const provider = new MockInventoryProvider();
     const option = await provider.createOption(draft);
+    const { providerReservationId } = option;
+    if (!providerReservationId) throw new Error("the mock opened no reservation");
+
     const confirmed = await provider.confirmBooking({
       ...draft,
       reservation: {
-        providerReservationId: option.providerReservationId as string,
+        providerReservationId,
         providerOptionId: option.providerOptionId,
         securityToken: option.securityToken,
       },
     });
     const cancelled = await provider.cancelOption({
-      providerReservationId: option.providerReservationId as string,
+      providerReservationId,
       securityToken: option.securityToken,
     });
 

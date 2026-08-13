@@ -9,8 +9,8 @@ import {
 } from "@yacht-charter/db/schema/listing";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { operator } from "@yacht-charter/db/schema/operator";
-import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { provider, providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
 import type { ListingSummary, ProviderKey } from "../types";
@@ -32,15 +32,28 @@ export type ExternalListingRef = {
  * by matching fixture id suffixes, which is why only the real adapters take a db.
  */
 export interface CatalogueResolver {
+  /**
+   * Our `provider` row id for this adapter. Exposed so every caller classifies a
+   * missing provider row the same way; three private copies used to disagree.
+   */
+  providerId(): Promise<string>;
   toExternalListing(listingId: string): Promise<ExternalListingRef>;
   toListingId(externalYachtId: string): Promise<string | null>;
   /** Maps our amenity codes to the provider's service/equipment ids for extras. */
   toExternalAmenityIds(amenityCodes: string[]): Promise<string[]>;
+  /**
+   * Maps an ISO 3166-1 alpha-2 code to the provider's own country id, which is
+   * what a booking's client payload carries. Null when the provider's catalogue
+   * has no country for that code.
+   */
+  toExternalCountryId(isoCode: string): Promise<string | null>;
   /** Hydrates the summary that `AvailableOffer` requires but no provider returns. */
   loadListingSummary(listingId: string): Promise<ListingSummary | null>;
   /** Every external company id with an active record, for per-company sync sweeps. */
   listExternalCompanyIds(): Promise<string[]>;
 }
+
+type CountryIndex = { byAlpha2: Map<string, string>; byAlpha3: Map<string, string> };
 
 export function createCatalogueResolver(db: Database, providerKey: ProviderKey): CatalogueResolver {
   // The provider row is looked up once per resolver rather than per call: the
@@ -65,7 +78,48 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
     return providerIdPromise;
   }
 
+  // Roughly 250 rows that no sync changes mid-process, and the alternative is a
+  // query on every booking, so the whole index is loaded once and kept.
+  let countryIndexPromise: Promise<CountryIndex> | null = null;
+
+  async function countryIndex(): Promise<CountryIndex> {
+    // Resolved before the memo is written: an await inside the `??=` would let two
+    // concurrent callers both find it unset and both run the query.
+    const owner = await providerId();
+
+    countryIndexPromise ??= db
+      .select({
+        externalId: providerRecord.externalId,
+        alpha2: sql<string | null>`${providerRawPayload.payload}->>'code2'`,
+        alpha3: sql<string | null>`${providerRawPayload.payload}->>'code'`,
+      })
+      .from(providerRecord)
+      .innerJoin(providerRawPayload, eq(providerRawPayload.id, providerRecord.rawPayloadId))
+      .where(
+        and(
+          eq(providerRecord.providerId, owner),
+          eq(providerRecord.resourceType, "country"),
+          eq(providerRecord.active, true),
+        ),
+      )
+      .then((rows) => {
+        const byAlpha2 = new Map<string, string>();
+        const byAlpha3 = new Map<string, string>();
+        for (const row of rows) {
+          // Kept apart rather than in one map: the alpha-3 fallback must never
+          // answer a two-letter lookup that alpha-2 simply does not have.
+          if (row.alpha2) byAlpha2.set(row.alpha2.trim().toUpperCase(), row.externalId);
+          if (row.alpha3) byAlpha3.set(row.alpha3.trim().toUpperCase(), row.externalId);
+        }
+        return { byAlpha2, byAlpha3 };
+      });
+
+    return countryIndexPromise;
+  }
+
   return {
+    providerId,
+
     async toExternalListing(listingId) {
       const [row] = await db
         .select({
@@ -126,6 +180,14 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
         .map((row) => row.code)
         .filter((code): code is string => Boolean(code?.startsWith(prefix)))
         .map((code) => code.slice(prefix.length));
+    },
+
+    async toExternalCountryId(isoCode) {
+      const wanted = isoCode.trim().toUpperCase();
+      if (!wanted) return null;
+
+      const { byAlpha2, byAlpha3 } = await countryIndex();
+      return byAlpha2.get(wanted) ?? byAlpha3.get(wanted) ?? null;
     },
 
     async loadListingSummary(listingId) {

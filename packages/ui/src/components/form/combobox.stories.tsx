@@ -26,12 +26,12 @@ const DESTINATIONS: Destination[] = [
   { label: "Alimos Marina", kind: "base" },
 ];
 
-const KIND_ICON: Record<Destination["kind"], ReactNode> = {
+const KIND_ICON = {
   country: <Globe className="size-5 shrink-0 text-natural-400" />,
   region: <MapIcon className="size-5 shrink-0 text-natural-400" />,
   location: <MapPin className="size-5 shrink-0 text-natural-400" />,
   base: <Anchor className="size-5 shrink-0 text-natural-400" />,
-};
+} satisfies Record<Destination["kind"], ReactNode>;
 
 const meta = {
   title: "Form/Combobox",

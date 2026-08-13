@@ -1,11 +1,16 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { serve } from "@hono/node-server";
-import { createContext, inventoryProvider } from "@yacht-charter/api/context";
+import {
+  createContext,
+  getEnabledInventoryProviders,
+  inventoryProvider,
+} from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
 import {
   startAvailabilitySync,
   startCatalogueSync,
+  startSyncForAll,
 } from "@yacht-charter/api/services/provider-sync";
 import { handleStripeWebhook } from "@yacht-charter/api/services/stripe-webhook";
 import { auth } from "@yacht-charter/auth";
@@ -26,6 +31,10 @@ initLogger({
   env: { service: "yacht-charter-server" },
 });
 
+// SAFETY: evlog only calls `api.getSession`, which this instance has. It types the
+// resolved user and session as `Record<string, unknown>`, and better-auth returns
+// interface-typed objects, which TypeScript refuses to widen to an index signature
+// even though every field is a plain JSON value.
 const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
   exclude: ["/api/auth/**"],
   maskEmail: true,
@@ -103,7 +112,10 @@ app.post("/api/cron/sync-catalogue", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  return c.json(await startCatalogueSync(db, inventoryProvider));
+  const providers = await getEnabledInventoryProviders();
+  return c.json({
+    runs: await startSyncForAll(providers.values(), (provider) => startCatalogueSync(db, provider)),
+  });
 });
 
 // The vendor asks for occupancy hourly or every few hours. Started and let go like
@@ -119,7 +131,12 @@ app.post("/api/cron/sync-availability", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  return c.json(await startAvailabilitySync(db, inventoryProvider));
+  const providers = await getEnabledInventoryProviders();
+  return c.json({
+    runs: await startSyncForAll(providers.values(), (provider) =>
+      startAvailabilitySync(db, provider),
+    ),
+  });
 });
 
 // Try RPC (/rpc), then OpenAPI (/api-reference), else fall through.

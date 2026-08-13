@@ -76,6 +76,21 @@ export const env = createEnv({
     NAUSYS_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
     // `optionTill` carries no timezone; pending vendor question Q-OPT.
     NAUSYS_OPTION_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
+    BOOKING_MANAGER_BASE_URL: z.url().default("https://www.booking-manager.com/api/v2"),
+    // A Bearer token, not an API key - the bm-api spec declares `bearerAuth`.
+    // Optional like the NauSYS pair: without it PROVIDER_MODE=booking_manager
+    // refuses to construct the adapter instead of the server failing to boot.
+    BOOKING_MANAGER_API_TOKEN: z.string().min(1).optional(),
+    BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    // Booking Manager has not published a rate limit; pending vendor answer, this
+    // is our own politeness margin.
+    BOOKING_MANAGER_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),
+    // We must release a hold before the vendor auto-expires it, otherwise we sell
+    // a slot Booking Manager has already dropped.
+    BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
+    // MMK support confirmed (Aug 2026) every non-/offers datetime is a fixed CET
+    // clock that observes daylight saving, so this must stay a real IANA zone.
+    BOOKING_MANAGER_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

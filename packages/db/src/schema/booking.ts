@@ -58,10 +58,16 @@ export const extraPricingType = pgEnum("extra_pricing_type", [
 
 export const bookingConsentKind = pgEnum("booking_consent_kind", ["terms", "cancellation_policy"]);
 
+/**
+ * `refunded` rather than reusing `cancelled`: an installment that was collected and
+ * given back is not the same as one that was never owed, and My Bookings shows this
+ * column to the customer.
+ */
 export const paymentScheduleStatus = pgEnum("payment_schedule_status", [
   "pending",
   "paid",
   "cancelled",
+  "refunded",
 ]);
 
 export const paymentStatus = pgEnum("payment_status", [
@@ -163,6 +169,10 @@ export const booking = pgTable(
     guestFullName: text("guest_full_name"),
     guestEmail: text("guest_email"),
     guestPhone: text("guest_phone"),
+    // ISO 3166-1 alpha-2. NauSYS `createInfo` refuses a client without a country
+    // (INSUFFICIENT_DATA), and the connector maps this to the vendor's own numeric
+    // id. Nullable because bookings taken before checkout collected it have none.
+    guestCountryCode: text("guest_country_code"),
     specialRequests: text("special_requests"),
     /** Null until the Payment step; the flow can also end without either. */
     paymentMethod: bookingPaymentMethod("payment_method"),

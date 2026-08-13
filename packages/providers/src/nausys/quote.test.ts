@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
@@ -6,6 +7,7 @@ import { SequentialQueue } from "../shared/queue";
 import { providerQuoteSchema, type ProviderQuote } from "../types";
 import { NausysClient } from "./client";
 import type { NausysConfig } from "./config";
+import { restFreeYachtsResponseSchema } from "./endpoints";
 import freeYachtsFixture from "./fixtures/freeYachts.json" with { type: "json" };
 import { createNausysQuoteService, type NausysQuoteServiceOptions } from "./quote";
 import { FakeNausysTransport } from "./testing/fake-transport";
@@ -31,40 +33,31 @@ const request = {
   guests: 4,
 };
 
-/** The fixture, loose enough to bend: several tests need a field the schema does not name. */
-type FreeYachtsResponse = {
-  status: string;
-  errorCode: number;
-  freeYachts: (Record<string, unknown> & {
-    yachtId: number;
-    status: string;
-    price: Record<string, unknown> & {
-      priceListPrice: string;
-      clientPrice: string;
-      discounts: { discountItemId: number; amount: string | number; type: string }[];
-    };
-    paymentPlans?: { date: string; percentage: number }[];
-    obligatoryExtras: (Record<string, unknown> & {
-      serviceId: number;
-      amount: string;
-      currency: string;
-      calculationType?: string;
-    })[];
-  })[];
-};
+/**
+ * The adapter's own schema is what types the fixture. It is a loose object, so a
+ * test can still bend a field the schema does not name.
+ */
+type FreeYachtsResponse = z.infer<typeof restFreeYachtsResponseSchema>;
 
 function fixtureResponse(): FreeYachtsResponse {
-  return structuredClone(freeYachtsFixture) as unknown as FreeYachtsResponse;
+  return restFreeYachtsResponseSchema.parse(structuredClone(freeYachtsFixture));
 }
 
 function firstYacht(body: FreeYachtsResponse) {
-  const [yacht] = body.freeYachts;
+  const [yacht] = body.freeYachts ?? [];
   if (!yacht) throw new Error("freeYachts fixture is empty");
   return yacht;
 }
 
+function firstObligatoryExtra(body: FreeYachtsResponse) {
+  const [extra] = firstYacht(body).obligatoryExtras ?? [];
+  if (!extra) throw new Error("fixture lost its obligatory extras");
+  return extra;
+}
+
 function resolverFor(externalYachtId: string): CatalogueResolver {
   return {
+    providerId: () => Promise.resolve("prv_nausys"),
     toExternalListing: () =>
       Promise.resolve({
         externalYachtId,
@@ -74,6 +67,7 @@ function resolverFor(externalYachtId: string): CatalogueResolver {
       }),
     toListingId: () => Promise.resolve(LISTING_ID),
     toExternalAmenityIds: () => Promise.resolve([]),
+    toExternalCountryId: () => Promise.resolve(null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
   };
@@ -177,8 +171,7 @@ describe("NauSYS live quote", () => {
 
   it("rejects an unknown calculationType rather than guessing when payment is due", async () => {
     const body = fixtureResponse();
-    const [extra] = firstYacht(body).obligatoryExtras;
-    if (!extra) throw new Error("fixture lost its obligatory extras");
+    const extra = firstObligatoryExtra(body);
     extra.calculationType = "ON_INVOICE";
 
     const { service, transport } = build();
@@ -307,10 +300,58 @@ describe("NauSYS priceSourceHash", () => {
     expect(moved.priceSourceHash).not.toBe((await quote()).priceSourceHash);
   });
 
+  it("refuses to price a multi-unit extra the vendor gave no total for", async () => {
+    // The vendor says `amount` is a unit price; their own documentation example
+    // adds a quantity-10 extra at one times `amount`. Rather than pick a side and
+    // silently over or under bill, an ambiguous line fails.
+    const body = fixtureResponse();
+    const extra = firstObligatoryExtra(body);
+    extra.quantity = "10.00";
+    delete extra.totalPrice;
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+
+    await expect(service.getNausysQuote(request)).rejects.toThrow(/ambiguous/);
+  });
+
+  it("prices a single-unit extra with no total from its amount", async () => {
+    const body = fixtureResponse();
+    const extra = firstObligatoryExtra(body);
+    extra.amount = "150.00";
+    extra.quantity = "1.00";
+    delete extra.totalPrice;
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+    const priced = await service.getNausysQuote(request);
+
+    expect(
+      priced.lines.find((item) => item.code === `nausys-service-${extra.serviceId}`)?.amount
+        .amountMinor,
+    ).toBe(15_000);
+  });
+
+  it("prefers the vendor's own line total over the unit amount", async () => {
+    const body = fixtureResponse();
+    const extra = firstObligatoryExtra(body);
+    extra.amount = "10.00";
+    extra.quantity = "3.00";
+    extra.totalPrice = "29.99";
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+    const priced = await service.getNausysQuote(request);
+
+    expect(
+      priced.lines.find((item) => item.code === `nausys-service-${extra.serviceId}`)?.amount
+        .amountMinor,
+    ).toBe(2_999);
+  });
+
   it("moves when an obligatory extra moves", async () => {
     const body = fixtureResponse();
-    const [extra] = firstYacht(body).obligatoryExtras;
-    if (!extra) throw new Error("fixture lost its obligatory extras");
+    const extra = firstObligatoryExtra(body);
     extra.amount = "160.00";
 
     const { service, transport } = build();

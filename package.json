@@ -33,10 +33,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@oxlint/plugins": "^1.78.0",
     "@types/node": "catalog:",
     "@yacht-charter/config": "workspace:*",
     "oxfmt": "^0.60.0",
-    "oxlint": "^1.75.0",
+    "oxlint": "^1.78.0",
     "turbo": "^2.10.5",
     "typescript": "catalog:"
   },

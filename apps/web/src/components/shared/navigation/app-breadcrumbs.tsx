@@ -40,8 +40,9 @@ export default function AppBreadcrumbs({
 }: AppBreadcrumbsProps) {
   const t = useTranslations();
 
-  /* next-intl types `t` against the whole message tree; a runtime key can only reach it via a cast. */
   type Key = Parameters<typeof t>[0];
+  /* SAFETY: next-intl types `t` against the whole message tree, so a key assembled at runtime
+     (a crumb names its own message) can only reach it as an asserted key. */
   const translate = (key: string, values?: Record<string, string | number>) =>
     t(key as Key, values);
   const label = (crumb: AppBreadcrumb) => (crumb.dynamic ? crumb.name : translate(crumb.name));

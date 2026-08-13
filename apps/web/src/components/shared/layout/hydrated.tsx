@@ -6,11 +6,11 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
  * it runs against a request-scoped QueryClient whose dehydrated state seeds the client
  * cache, so client hooks reading the same queryOptions render without refetching.
  */
-export default async function Hydrated({
+export default async function Hydrated<TPrefetched>({
   prefetch,
   children,
 }: {
-  prefetch: (queryClient: QueryClient) => Promise<unknown>;
+  prefetch: (queryClient: QueryClient) => Promise<TPrefetched>;
   children: React.ReactNode;
 }) {
   const queryClient = new QueryClient();

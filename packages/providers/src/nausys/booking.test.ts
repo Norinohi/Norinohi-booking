@@ -1,15 +1,18 @@
+import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, NotFoundError } from "../shared/errors";
+import type { JsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
 import type { BookingDraft } from "../types";
+import type { QuoteReservationEventInput } from "../shared/reservation-log";
 import {
   createNausysBookingService,
   splitCustomerName,
   type NausysBookingServiceDeps,
-  type ReservationEventInput,
 } from "./booking";
 import { NausysClient } from "./client";
 import type { NausysConfig } from "./config";
@@ -60,6 +63,7 @@ const heldDraft: BookingDraft = {
 
 function fakeResolver(): CatalogueResolver {
   return {
+    providerId: () => Promise.resolve("prv_nausys"),
     toExternalListing: () =>
       Promise.resolve({
         externalYachtId: "4711001",
@@ -69,16 +73,24 @@ function fakeResolver(): CatalogueResolver {
       }),
     toListingId: () => Promise.resolve("ylst_adriatic_1"),
     toExternalAmenityIds: (codes) => Promise.resolve(codes.map((code) => code.split(":")[1] ?? "")),
+    /* The vendor's real Croatia id, so a mapped payload is recognisable. */
+    toExternalCountryId: (isoCode) => Promise.resolve(isoCode.toUpperCase() === "HR" ? "1" : null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
   };
 }
 
+type ReservationEventRow = typeof providerReservationEvent.$inferInsert;
+type BookingUpdate = Partial<typeof booking.$inferInsert>;
+
 /** Enough of the Drizzle executor for the default recorder and token sink. */
 function fakeDb() {
-  const inserted: Record<string, unknown>[] = [];
-  const updated: Record<string, unknown>[] = [];
-  const db = {
+  const inserted: ReservationEventRow[] = [];
+  const updated: BookingUpdate[] = [];
+  // SAFETY: a stub executor with nothing behind it. Only the three builders the
+  // default recorder and the token sink reach for are implemented, so any other
+  // Drizzle call is a TypeError rather than a quietly wrong answer.
+  const db = Object.assign({} as Database, {
     select: () => ({
       from: () => ({
         where: () => ({
@@ -87,20 +99,20 @@ function fakeDb() {
       }),
     }),
     insert: () => ({
-      values: (value: Record<string, unknown>) => {
+      values: (value: ReservationEventRow) => {
         inserted.push(value);
         return Promise.resolve();
       },
     }),
     update: () => ({
-      set: (value: Record<string, unknown>) => ({
+      set: (value: BookingUpdate) => ({
         where: () => {
           updated.push(value);
           return Promise.resolve();
         },
       }),
     }),
-  } as unknown as Database;
+  });
 
   return { db, inserted, updated };
 }
@@ -114,7 +126,7 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
     retry: { maxAttempts: 1 },
   });
 
-  const events: ReservationEventInput[] = [];
+  const events: QuoteReservationEventInput[] = [];
   const rotations: { providerReservationId: string; securityToken: string }[] = [];
   const { db } = fakeDb();
 
@@ -138,9 +150,11 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
   return { service, transport, events, rotations };
 }
 
+const fixtureBodySchema = z.record(z.string(), z.json());
+
 /** Fixture body with the fields a test wants changed. */
-function fixture(key: string, patch: Record<string, unknown> = {}): Record<string, unknown> {
-  return { ...(nausysFixtures[key] as Record<string, unknown>), ...patch };
+function fixture(key: string, patch: JsonObject = {}): JsonObject {
+  return { ...fixtureBodySchema.parse(nausysFixtures[key]), ...patch };
 }
 
 describe("the mandatory three-step chain", () => {
@@ -240,14 +254,16 @@ describe("the uuid funnel", () => {
   it("rotates on an extras mutation, the one path whose DTO cannot carry the token", async () => {
     const { service, transport, rotations } = build();
     const rotated = "aa11bb22-xtra-4e55-9fcc-000000000005";
-    transport.respondWith("updateExtras", fixture("createOption", { uuid: rotated }));
+    transport.respondWith("addExtras", fixture("createOption", { uuid: rotated }));
 
     await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
     });
 
-    expect(transport.lastBody("updateExtras")).toMatchObject({
+    // A reservation with no extras yet: everything desired is an addition, and
+    // `addExtras` is keyed by the catalogue service id.
+    expect(transport.lastBody("addExtras")).toMatchObject({
       id: 55901234,
       uuid: OPTION_UUID,
       services: [{ serviceId: 8001, quantity: 1 }],
@@ -255,16 +271,59 @@ describe("the uuid funnel", () => {
     expect(rotations).toEqual([{ providerReservationId: RESERVATION_ID, securityToken: rotated }]);
   });
 
-  it("uses updateExtras by default and addExtras only when configured", async () => {
-    const { service, transport } = build({ extrasMode: "add" });
+  it("adds only what the reservation does not already carry", async () => {
+    const { service, transport } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
+        ]),
+    });
     transport.respondWith("addExtras", fixture("createOption"));
 
     await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-      extras: ["nausys:8001"],
+      extras: ["nausys:8001", "nausys:8002"],
     });
 
-    expect(transport.callSequence()).toEqual(["addExtras"]);
+    expect(transport.lastBody("addExtras")).toMatchObject({
+      services: [{ serviceId: 8002, quantity: 1 }],
+    });
+  });
+
+  it("refuses to drop an extra, because the vendor offers no way to remove one", async () => {
+    // updateExtras is a partial update, so a deselected extra would silently stay
+    // on the booking and keep being billed. Failing is the honest outcome.
+    const { service, transport } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
+        ]),
+    });
+
+    await expect(
+      service.addOrUpdateExtras({
+        ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+        extras: [],
+      }),
+    ).rejects.toThrow(/no way to remove/);
+
+    expect(transport.calls).toHaveLength(0);
+  });
+
+  it("refuses to touch a line the operator locked", async () => {
+    const { service } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: false },
+        ]),
+    });
+
+    await expect(
+      service.addOrUpdateExtras({
+        ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+        extras: ["nausys:8001"],
+      }),
+    ).rejects.toThrow(/locked/);
   });
 
   it("refuses to call the vendor with a missing uuid", async () => {
@@ -340,10 +399,9 @@ describe("option expiry", () => {
 
   it("refuses a hold the provider gave no expiry for", async () => {
     const { service, transport } = build();
-    const { optionTill: _dropped, ...withoutExpiry } = nausysFixtures.createOption as Record<
-      string,
-      unknown
-    >;
+    const { optionTill: _dropped, ...withoutExpiry } = fixtureBodySchema.parse(
+      nausysFixtures.createOption,
+    );
     transport.respondWith("createOption", withoutExpiry);
 
     await expect(service.createOption(draft)).rejects.toThrow(/no optionTill/);
@@ -447,7 +505,7 @@ describe("reservation events", () => {
 describe("agencyPrice never leaves the adapter", () => {
   it("is absent from every returned DTO and every logged event", async () => {
     const { service, events, transport } = build();
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
 
     const held = await service.createOption(draft);
     const confirmed = await service.confirmBooking(heldDraft);
@@ -471,7 +529,7 @@ describe("agencyPrice never leaves the adapter", () => {
 describe("extras mutation pricing", () => {
   it("re-reads the price from the mutation response", async () => {
     const { service, transport } = build();
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
 
     const quote = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
@@ -497,13 +555,13 @@ describe("extras mutation pricing", () => {
 
   it("produces a hash that ignores the rotating uuid", async () => {
     const { service, transport } = build();
-    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
     const first = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
     });
 
-    transport.respondWith("updateExtras", fixture("createOption", { uuid: "a-new-token" }));
+    transport.respondWith("addExtras", fixture("createOption", { uuid: "a-new-token" }));
     const second = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
@@ -511,7 +569,7 @@ describe("extras mutation pricing", () => {
 
     expect(second.priceSourceHash).toBe(first.priceSourceHash);
 
-    transport.respondWith("updateExtras", fixture("createOption", { clientPrice: "3540.00" }));
+    transport.respondWith("addExtras", fixture("createOption", { clientPrice: "3540.00" }));
     const third = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
       extras: ["nausys:8001"],
@@ -583,16 +641,28 @@ describe("createInfo client mapping", () => {
     });
   });
 
-  it("omits countryId when the customer's country is an ISO code, not a vendor id", async () => {
+  it("maps the customer's ISO country code to the vendor's countryId", async () => {
     const { service, transport } = build();
 
     await service.createOption({
       ...draft,
-      customer: { ...draft.customer, countryCode: "HR", city: "Zagreb" },
+      customer: { ...draft.customer, countryCode: "hr", city: "Zagreb" },
     });
 
-    const body = transport.lastBody("createInfo") as { client: Record<string, unknown> };
-    expect(body.client).not.toHaveProperty("countryId");
+    const body = z
+      .object({ client: z.record(z.string(), z.json()) })
+      .parse(transport.lastBody("createInfo"));
+    expect(body.client.countryId).toBe(1);
     expect(body.client.city).toBe("Zagreb");
+  });
+
+  it("refuses to open a reservation when the country code resolves to nothing", async () => {
+    const { service, transport } = build();
+
+    await expect(
+      service.createOption({ ...draft, customer: { ...draft.customer, countryCode: "ZZ" } }),
+    ).rejects.toThrow(/ZZ/);
+
+    expect(transport.lastBody("createInfo")).toBeUndefined();
   });
 });

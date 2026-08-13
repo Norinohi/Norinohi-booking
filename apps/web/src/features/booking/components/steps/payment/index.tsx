@@ -48,6 +48,8 @@ export default function PaymentStep() {
     if (method === "card" || !bookingId) return;
     if (!(await trigger("payment"))) {
       for (const field of Object.keys(getValues(`payment.${method}`))) {
+        // SAFETY: the field names are read back off the values at `payment.${method}`, so the
+        // joined path always names a leaf of BookingValues.
         const path = `payment.${method}.${field}` as Path<BookingValues>;
         setValue(path, getValues(path), { shouldTouch: true });
       }
@@ -85,7 +87,10 @@ export default function PaymentStep() {
         <Tabs
           variant="segmented"
           value={method}
-          onValueChange={(value) => setValue("payment.method", value as PaymentMethod)}
+          onValueChange={(value) => {
+            const next = TABS.find((id) => id === value);
+            if (next) setValue("payment.method", next);
+          }}
         >
           <TabsList className="max-md:flex-col max-md:items-stretch">
             {TABS.map((id) => (

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { env } from "@yacht-charter/env/server";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 
 /*
  * Records already-applied migrations in drizzle's ledger without re-running them.
@@ -22,14 +23,17 @@ import { sql } from "drizzle-orm";
  * already honest, and marking a migration applied there would skip it forever.
  */
 
-type JournalEntry = { idx: number; tag: string; when: number };
-type Journal = { entries: JournalEntry[] };
+const journalSchema = z.object({
+  entries: z.array(z.object({ idx: z.number(), tag: z.string(), when: z.number() })),
+});
+
+type JournalEntry = z.infer<typeof journalSchema>["entries"][number];
 
 const migrationsFolder = join(dirname(fileURLToPath(import.meta.url)), "migrations");
 
 async function readJournal(): Promise<JournalEntry[]> {
   const raw = await readFile(join(migrationsFolder, "meta", "_journal.json"), "utf8");
-  return (JSON.parse(raw) as Journal).entries;
+  return journalSchema.parse(JSON.parse(raw)).entries;
 }
 
 /** Drizzle keys the ledger on the sha256 of the migration file, verbatim. */

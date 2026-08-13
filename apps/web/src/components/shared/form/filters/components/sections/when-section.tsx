@@ -36,7 +36,11 @@ export default function WhenSection({ value, set }: SectionProps) {
       <Field label={t("labels.dateFlexibility")} className="gap-3">
         <RadioGroup
           value={value.dateFlexibility}
-          onValueChange={(next) => set("dateFlexibility", next as string)}
+          onValueChange={(next) => {
+            /* Only a rendered radio can be picked, so the value is one of these options. */
+            const option = options.dateFlexibility.find((item) => item.value === next);
+            if (option) set("dateFlexibility", option.value);
+          }}
           className="flex w-full flex-col gap-3"
         >
           {options.dateFlexibility.map((option) => (

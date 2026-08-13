@@ -1,8 +1,18 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
 import { listing } from "../schema/listing";
+
+/**
+ * Booking Manager photographs better than NauSYS, so its rows front a listing
+ * that carries both (architecture §3). Mirrors `pickPrimaryImage` in
+ * packages/api/src/services/match.ts; the two must agree or the search card and
+ * the duplicate-review screen show different boats.
+ */
+const MEDIA_SOURCE_RANK = sql`case lm.source when 'booking_manager' then 0 when 'nausys' then 1 else 2 end`;
+
+const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 1 else 2 end`;
 
 export type RebuildListingSearchDocsOptions = {
   listingIds?: readonly string[];
@@ -131,12 +141,30 @@ export async function rebuildListingSearchDocs(
     left join builder bld on bld.id = l.builder_id
     left join yacht_model mdl on mdl.id = l.model_id
     left join listing_specification spec on spec.listing_id = l.id
+    /*
+     * Media precedence, not alphabetical order. A merged listing carries rows from
+     * every provider linked to it, and architecture section 3 prefers Booking
+     * Manager's photos over NauSYS's. The previous min(external_url) picked
+     * whichever URL sorted first, which is arbitrary and would have let the losing
+     * provider's image front a merged card.
+     *
+     * Identical output for a single-source listing with one main row, which is
+     * every listing until a merge happens.
+     */
     left join lateral (
       select
-        min(external_url) filter (where role = 'main') as main_image,
-        jsonb_agg(external_url order by sort_order) as gallery
-      from listing_media lm
-      where lm.listing_id = l.id
+        (
+          select lm.external_url
+          from listing_media lm
+          where lm.listing_id = l.id
+          order by ${MEDIA_SOURCE_RANK}, ${MEDIA_ROLE_RANK}, lm.sort_order
+          limit 1
+        ) as main_image,
+        (
+          select jsonb_agg(lm.external_url order by ${MEDIA_SOURCE_RANK}, lm.sort_order)
+          from listing_media lm
+          where lm.listing_id = l.id
+        ) as gallery
     ) media on true
     left join lateral (
       select
@@ -246,16 +274,31 @@ export async function rebuildSearchReadModelsAfterSync(
  *
  * Publishes every listing still in draft and rebuilds their search docs in one
  * call, so a caller can't publish without also refreshing the read model. No
- * review criteria: fine for a single-provider environment with no moderation
- * queue yet; a real one needs actual review before this runs unattended.
+ * review criteria: fine for an environment with no moderation queue yet; a real
+ * one needs actual review before this runs unattended.
+ *
+ * `providerCode` narrows it to one provider's drafts. Without it, an operator
+ * publishing a reviewed NauSYS import would also release every unreviewed
+ * Booking Manager draft sitting beside it, which is precisely what the
+ * draft-by-default rule exists to prevent.
  */
 export async function publishDraftListings(
   db: NodePgDatabase<typeof schema>,
+  options: { providerCode?: string } = {},
 ): Promise<{ publishedCount: number }> {
+  const ofProvider = options.providerCode
+    ? sql`exists (
+        select 1 from listing_source ls
+        join provider_record pr on pr.id = ls.provider_record_id
+        join provider p on p.id = pr.provider_id
+        where ls.listing_id = ${listing.id} and p.code = ${options.providerCode}
+      )`
+    : undefined;
+
   const published = await db
     .update(listing)
     .set({ status: "published" })
-    .where(eq(listing.status, "draft"))
+    .where(ofProvider ? and(eq(listing.status, "draft"), ofProvider) : eq(listing.status, "draft"))
     .returning({ id: listing.id });
 
   if (published.length > 0) {

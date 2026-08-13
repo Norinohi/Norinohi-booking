@@ -1,6 +1,15 @@
-import { providerCapabilitiesSchema } from "@yacht-charter/providers";
+import { ORPCError } from "@orpc/server";
+import {
+  type InventoryProvider,
+  providerCapabilitiesSchema,
+  type ProviderKey,
+} from "@yacht-charter/providers";
+
+import { getEnabledInventoryProviders } from "../context";
 
 import {
+  auditListInputSchema,
+  auditListSchema,
   discountCreateInputSchema,
   discountIdInputSchema,
   discountListInputSchema,
@@ -8,21 +17,31 @@ import {
   discountSchema,
   discountSetActiveInputSchema,
   discountUpdateInputSchema,
+  duplicateConfirmInputSchema,
+  duplicateQueueInputSchema,
+  duplicateQueueSchema,
+  duplicateRejectInputSchema,
+  duplicateResolutionSchema,
   listingPriceClearInputSchema,
   listingPriceFiltersSchema,
   listingPriceListInputSchema,
   listingPriceListSchema,
   listingPriceRowSchema,
   listingPriceUpdateInputSchema,
-  syncRunStartedSchema,
+  syncRunListInputSchema,
+  syncRunListSchema,
+  syncRunsStartedSchema,
   syncRunStatusInputSchema,
   syncRunStatusSchema,
+  syncStartInputSchema,
   yachtOptionsInputSchema,
   yachtOptionsSchema,
 } from "../contracts/admin";
 import {
   bookingCancelInputSchema,
   bookingCancelSchema,
+  bookingRefundInputSchema,
+  bookingRefundSchema,
   invoiceAdminRowSchema,
   invoiceCancelInputSchema,
   invoiceListInputSchema,
@@ -39,7 +58,14 @@ import {
   leadSetStatusInputSchema,
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
+import { listAuditLog } from "../services/audit";
+import {
+  confirmDuplicateCandidate,
+  listDuplicateCandidates,
+  rejectDuplicateCandidate,
+} from "../services/match";
 import { cancelBooking } from "../services/booking";
+import { refundBooking } from "../services/refund";
 import {
   cancelInvoiceRequest,
   listInvoiceRequests,
@@ -57,8 +83,10 @@ import {
 import { listYachtOptions } from "../services/listing-options";
 import {
   getCatalogueSyncStatus,
+  listSyncRuns,
   startAvailabilitySync,
   startCatalogueSync,
+  startSyncForAll,
 } from "../services/provider-sync";
 import {
   clearListingPrice,
@@ -67,6 +95,37 @@ import {
   updateListingPrice,
 } from "../services/listing-price";
 import { withJsonBodyExample } from "./openapi-examples";
+
+/**
+ * Which providers a sync request targets: the one named, or every enabled one.
+ *
+ * `context.provider` is not the answer here. It is whichever adapter
+ * `PROVIDER_MODE` selected for quoting and checkout, and importing from a vendor
+ * is a separate question from selling through it.
+ */
+async function resolveSyncTargets(
+  requested: ProviderKey | undefined,
+): Promise<InventoryProvider[]> {
+  const providers = await getEnabledInventoryProviders();
+  if (!requested) return [...providers.values()];
+
+  const target = providers.get(requested);
+  if (!target) {
+    throw new ORPCError("NOT_FOUND", {
+      message: `Provider "${requested}" is not enabled`,
+    });
+  }
+  return [target];
+}
+
+async function resolveSyncProvider(
+  context: { provider: InventoryProvider },
+  requested: ProviderKey | undefined,
+): Promise<InventoryProvider> {
+  if (!requested) return context.provider;
+  const [only] = await resolveSyncTargets(requested);
+  return only ?? context.provider;
+}
 
 export const adminRouter = {
   provider: {
@@ -92,14 +151,18 @@ export const adminRouter = {
         operationId: "startProviderCatalogueSync",
         summary: "Start a provider catalogue sync",
         description:
-          "Kicks off a full catalogue import for the active inventory provider and returns immediately with the sync run id. A full run can take hours, so it deliberately outlives the request; poll admin.provider.syncStatus to follow it. Normally this is driven by the scheduled POST /api/cron/sync-catalogue.",
+          "Kicks off a full catalogue import and returns immediately with the sync run ids. Omit provider to start every enabled connector, or name one to start just it. A full run can take hours, so it deliberately outlives the request; poll admin.provider.syncStatus to follow it. A provider whose run is already in flight is reported as not started rather than failing the call. Normally this is driven by the scheduled POST /api/cron/sync-catalogue.",
         tags: ["Admin"],
-        successDescription: "The sync run that was opened.",
+        successDescription: "The sync runs that were opened.",
         spec: withJsonBodyExample({}),
       })
-      .input(emptyInputSchema)
-      .output(syncRunStartedSchema)
-      .handler(({ context }) => startCatalogueSync(context.db, context.provider)),
+      .input(syncStartInputSchema)
+      .output(syncRunsStartedSchema)
+      .handler(async ({ context, input }) => ({
+        runs: await startSyncForAll(await resolveSyncTargets(input.provider), (provider) =>
+          startCatalogueSync(context.db, provider),
+        ),
+      })),
     syncAvailability: adminProcedure
       .route({
         method: "POST",
@@ -107,14 +170,18 @@ export const adminRouter = {
         operationId: "startProviderAvailabilitySync",
         summary: "Start a provider availability sync",
         description:
-          "Refreshes availability for the active inventory provider and returns immediately with the sync run id. Writes the provider's occupied and option periods, derives the bookable periods around them as unconfirmed availability, and then upgrades as many as its time budget allows to a live confirmed price. Normally driven by the scheduled POST /api/cron/sync-availability; poll admin.provider.syncStatus to follow it.",
+          "Refreshes availability and returns immediately with the sync run ids. Omit provider to refresh every enabled connector, or name one. Writes the provider's occupied and option periods, derives the bookable periods around them as unconfirmed availability, and then upgrades as many as its time budget allows to a live confirmed price. Normally driven by the scheduled POST /api/cron/sync-availability; poll admin.provider.syncStatus to follow it.",
         tags: ["Admin"],
-        successDescription: "The sync run that was opened.",
+        successDescription: "The sync runs that were opened.",
         spec: withJsonBodyExample({}),
       })
-      .input(emptyInputSchema)
-      .output(syncRunStartedSchema)
-      .handler(({ context }) => startAvailabilitySync(context.db, context.provider)),
+      .input(syncStartInputSchema)
+      .output(syncRunsStartedSchema)
+      .handler(async ({ context, input }) => ({
+        runs: await startSyncForAll(await resolveSyncTargets(input.provider), (provider) =>
+          startAvailabilitySync(context.db, provider),
+        ),
+      })),
     syncStatus: adminProcedure
       .route({
         method: "POST",
@@ -122,14 +189,111 @@ export const adminRouter = {
         operationId: "getProviderSyncStatus",
         summary: "Read a sync run and its errors",
         description:
-          "Returns one sync run with its created/updated/skipped/failed counts and its most recent errors. Omit syncRunId for the active provider's latest run.",
+          "Returns one sync run with its created/updated/skipped/failed counts and its most recent errors. Omit syncRunId for a provider's latest run, and pass kind to avoid an availability run answering for the catalogue. Defaults to the transacting provider.",
         tags: ["Admin"],
         successDescription: "The requested sync run.",
         spec: withJsonBodyExample({}),
       })
       .input(syncRunStatusInputSchema)
       .output(syncRunStatusSchema)
-      .handler(({ context, input }) => getCatalogueSyncStatus(context.db, context.provider, input)),
+      .handler(async ({ context, input }) =>
+        getCatalogueSyncStatus(
+          context.db,
+          await resolveSyncProvider(context, input.provider),
+          input,
+        ),
+      ),
+    syncRuns: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/provider/syncRuns",
+        operationId: "listProviderSyncRuns",
+        summary: "List sync run history",
+        description:
+          "Returns past and in-flight sync runs across every provider, newest first, with their created/updated/skipped/failed counts and how many errors each recorded. Filterable by provider, kind and status. syncStatus answers for one run only, so this is where a run that failed overnight and was superseded by the next one is still visible.",
+        tags: ["Admin"],
+        successDescription: "A page of sync runs.",
+        spec: withJsonBodyExample({ kind: "catalogue", page: 1, pageSize: 20 }),
+      })
+      .input(syncRunListInputSchema)
+      .output(syncRunListSchema)
+      .handler(({ context, input }) => listSyncRuns(context.db, input)),
+  },
+  match: {
+    queue: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/queue",
+        operationId: "listDuplicateCandidates",
+        summary: "List duplicate candidates awaiting review",
+        description:
+          "Cross-provider look-alikes proposed by the catalogue sync, highest confidence first. Each row hydrates both sides — provider, operator, model, year, length, cabins, berths, base and primary image — so the pair can be judged without opening two tabs. Nothing merges automatically; until a candidate is resolved the same yacht appears twice in search. Pass decision to read the confirmed or rejected history instead.",
+        tags: ["Admin"],
+        successDescription: "A page of duplicate candidates.",
+        spec: withJsonBodyExample({ decision: "pending", page: 1, pageSize: 20 }),
+      })
+      .input(duplicateQueueInputSchema)
+      .output(duplicateQueueSchema)
+      .handler(({ context, input }) => listDuplicateCandidates(context.db, input)),
+    confirm: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/confirm",
+        operationId: "confirmDuplicateCandidate",
+        summary: "Merge a duplicate pair onto one listing",
+        description:
+          "Merges the pair onto keepListingId: every listing_source of the other listing is repointed at the survivor, both sources are stamped confirmed so the next sync will not undo the verdict, and the losing listing is hidden rather than deleted because bookings still reference it. Rejects a candidate that has already been reviewed with CONFLICT, so a double-click cannot merge twice. Rebuilds the search document afterwards and writes an audit log entry carrying both listing ids.",
+        tags: ["Admin"],
+        successDescription: "Which listing survived and what moved.",
+        spec: withJsonBodyExample({
+          candidateId: "ldup_example",
+          keepListingId: "ylst_yacht-sunreef-60-celeste",
+        }),
+      })
+      .input(duplicateConfirmInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        confirmDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    reject: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/reject",
+        operationId: "rejectDuplicateCandidate",
+        summary: "Record that a duplicate pair is two different yachts",
+        description:
+          "Closes the candidate and moves both sources to rejected, which stops the sync re-proposing the pair and leaves each listing exactly where it is. Rejects an already-reviewed candidate with CONFLICT. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The rejected candidate.",
+        spec: withJsonBodyExample({ candidateId: "ldup_example" }),
+      })
+      .input(duplicateRejectInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        rejectDuplicateCandidate(context.db, context.session.user.id, input.candidateId),
+      ),
+  },
+  audit: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/audit/list",
+        operationId: "listAuditLog",
+        summary: "Read the admin audit log",
+        description:
+          "Returns audit entries newest first with the actor's name and email, filterable by entityType, entityId and action. Every admin mutation writes one; this is the only way to see them after the fact, including which listings a merge combined.",
+        tags: ["Admin"],
+        successDescription: "A page of audit entries.",
+        spec: withJsonBodyExample({
+          entityType: "listing",
+          action: "merge",
+          page: 1,
+          pageSize: 20,
+        }),
+      })
+      .input(auditListInputSchema)
+      .output(auditListSchema)
+      .handler(({ context, input }) => listAuditLog(context.db, input)),
   },
   booking: {
     cancel: adminProcedure
@@ -150,6 +314,27 @@ export const adminRouter = {
         cancelBooking(context.db, context.provider, input.id, input.reason, {
           userId: context.session.user.id,
           isAdmin: true,
+        }),
+      ),
+    refund: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/refund",
+        operationId: "adminRefundBooking",
+        summary: "Return the money on a booking that owes a refund",
+        description:
+          "Refunds every payment collected on a booking sitting at REFUND_PENDING, then moves it to REFUNDED once nothing is outstanding. Card payments go back through Stripe; a bank transfer cannot, so those are reported in requiresManualTransfer and only count as returned when staff resend the money and pass manualTransferSettled. Idempotent and keyed per payment — running it again finishes a partial refund rather than paying twice. A provider rejection refunds itself; this is for the admin-cancelled case and for retries. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "What was returned and the booking's resulting status.",
+        spec: withJsonBodyExample({ id: "bkg_example", reason: "Operator withdrew the yacht" }),
+      })
+      .input(bookingRefundInputSchema)
+      .output(bookingRefundSchema)
+      .handler(({ context, input }) =>
+        refundBooking(context.db, input.id, {
+          reason: input.reason,
+          manualTransferSettled: input.manualTransferSettled,
+          actorUserId: context.session.user.id,
         }),
       ),
   },

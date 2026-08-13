@@ -12,7 +12,7 @@ import { base } from "@yacht-charter/db/schema/geography";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
-import type { InventoryProvider } from "@yacht-charter/providers";
+import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
 import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -235,6 +235,7 @@ export async function createHold(
     guestFullName: guest.fullName,
     guestEmail: guest.email,
     guestPhone: guest.phone,
+    guestCountryCode: guest.countryCode,
     specialRequests: guest.specialRequests ?? null,
     userId,
     listingId: priced.listingId,
@@ -350,14 +351,13 @@ async function holdOption(
   const crewType = asCrewType(priced.crewType);
 
   try {
-    const reservation = await provider.createOption({
+    const draft: Parameters<InventoryProvider["createOption"]>[0] = {
       listingId: priced.listingId,
       quoteId: priced.providerQuoteId ?? priced.id,
       checkIn: priced.checkIn,
       checkOut: priced.checkOut,
       guests: priced.guests,
       extras: priced.extras,
-      ...(crewType ? { crewType } : {}),
       // The provider re-prices before holding and refuses if this no longer
       // matches what the customer agreed to.
       priceSourceHash: priced.priceSourceHash,
@@ -365,8 +365,13 @@ async function holdOption(
         name: account.name,
         email: account.email,
         phone: created.guestPhone ?? undefined,
+        countryCode: created.guestCountryCode ?? undefined,
       },
-    });
+    };
+
+    if (crewType) draft.crewType = crewType;
+
+    const reservation = await provider.createOption(draft);
 
     let held: BookingRow;
     try {
@@ -432,7 +437,7 @@ export async function cancelBooking(
   const row = actor.isAdmin
     ? await readAnyBooking(db, id)
     : await readOwnedBooking(db, actor.userId, id);
-  const current = row.booking.status as BookingStatus;
+  const current = row.booking.status;
 
   if (!actor.isAdmin && !isUserCancellable(current)) {
     throw new ORPCError("CONFLICT", {
@@ -532,14 +537,16 @@ async function redeemFor(
   userId: string,
   priced: typeof quote.$inferSelect,
 ): Promise<void> {
-  if (priced.discountId) {
+  const discountId = priced.discountId;
+
+  if (discountId) {
     const discountedMinor = priced.lines
       .filter((line) => line.kind === "discount")
       .reduce((total, line) => total + Math.abs(line.amountMinor), 0);
 
     await db.transaction(async (tx) => {
       await redeemDiscount(tx, {
-        discountId: priced.discountId as string,
+        discountId,
         userId,
         bookingId,
         amountMinor: discountedMinor,
@@ -572,7 +579,7 @@ async function transition(
   patch: Partial<typeof booking.$inferInsert> = {},
 ): Promise<BookingRow> {
   try {
-    assertTransition(row.status as BookingStatus, to);
+    assertTransition(row.status, to);
   } catch (error) {
     // Reachable when a webhook or a concurrent call already advanced the booking,
     // so this is a conflict for the caller rather than a server fault.
@@ -615,13 +622,20 @@ async function insertBooking(
   return row;
 }
 
+/** The jsonb body of a provider_reservation_event; `kind` says which arm applies. */
+type ProviderEventPayload =
+  | { reservation: ProviderReservation }
+  | { message: string | null }
+  | { reason: string | null }
+  | { released: boolean; error: string };
+
 async function recordEvent(
   db: DatabaseExecutor,
   bookingId: string,
   kind: typeof providerReservationEvent.$inferInsert.kind,
   provider: string,
   providerReference: string | null | undefined,
-  payload: unknown,
+  payload: ProviderEventPayload,
 ): Promise<void> {
   await db.insert(providerReservationEvent).values({
     bookingId,
@@ -810,7 +824,7 @@ function presentSummary(
     balanceDue: { amountMinor: Math.max(row.totalMinor - paidMinor, 0), currency: row.currency },
     prepayment: { amountMinor: priced.depositMinor, currency: row.currency },
     nextPaymentDueAt: money?.nextDueAt?.toISOString() ?? null,
-    cancellable: isUserCancellable(row.status as BookingStatus),
+    cancellable: isUserCancellable(row.status),
     createdAt: row.createdAt.toISOString(),
   };
 }

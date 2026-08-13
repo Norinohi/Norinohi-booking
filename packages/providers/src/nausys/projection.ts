@@ -1,13 +1,23 @@
 import type { z } from "zod";
 
 import { parseNausysDate } from "../shared/dates";
+import { stripHtml } from "../shared/html-text";
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
+import type { JsonField, JsonObject } from "../shared/json";
+import {
+  currencyOf,
+  intOf,
+  numberOf,
+  parseAll,
+  positiveInt,
+  slugify,
+  text,
+} from "../shared/projection-helpers";
 import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
   type ProviderRecordSet,
-  type ProviderResourceType,
 } from "../types";
 import {
   restCharterBaseSchema,
@@ -33,9 +43,6 @@ import {
  */
 
 const PROVIDER_PREFIX = "nausys";
-
-/** Last resort only: recorded yachts carry `depositCurrency` and priced seasons. */
-const FALLBACK_CURRENCY = "EUR";
 
 /**
  * `highlights` is the operator's public blurb and `note` its caveat line; there is
@@ -133,9 +140,12 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
     operators: companies.map((item) => ({
       externalId: String(item.id),
       name: item.name,
-      // Vendor-id suffixed: two companies of the same name are two operators, and a
-      // slug is the only unique key the operator table offers.
-      slug: `${slugify(item.name)}-${item.id}`,
+      // Provider-namespaced and vendor-id suffixed: two companies of the same name
+      // are two operators, and a slug is the only unique key the operator table
+      // offers. The provider prefix matters because the two vendors number their
+      // companies independently, so `sunsail-1234` from each would otherwise be one
+      // row that each sync overwrote with its own contact details.
+      slug: `${PROVIDER_PREFIX}-${slugify(item.name)}-${item.id}`,
       country:
         item.countryId === undefined ? undefined : countryNameById.get(String(item.countryId)),
       city: text(item.city),
@@ -297,7 +307,7 @@ function checkinRulesOf(yacht: RestYacht) {
 }
 
 function enabledWeekdays(
-  period: Record<string, unknown>,
+  period: JsonObject,
   direction: "checkIn" | "checkOut",
 ): (number | undefined)[] {
   const days = WEEKDAY_FLAGS.filter((day) => period[day[direction]] === true).map(
@@ -321,7 +331,7 @@ function mediaOf(yacht: RestYacht) {
   const media: { externalUrl: string; role: MediaRole; sortOrder: number }[] = [];
   const seen = new Set<string>();
 
-  const push = (value: unknown, role: MediaRole) => {
+  const push = (value: JsonField, role: MediaRole) => {
     const url = text(value);
     if (!url || seen.has(url)) return;
     seen.add(url);
@@ -354,7 +364,9 @@ function textsOf(yacht: RestYacht) {
   const texts: { kind: "description" | "notes"; locale: string; value: string }[] = [];
 
   for (const source of TEXT_SOURCES) {
-    const record = yacht as Record<string, unknown>;
+    // SAFETY: TEXT_SOURCES names keys of RestYacht; the record view only exists
+    // because those names are read dynamically rather than as literals.
+    const record = yacht as JsonObject;
     const locales = Object.entries(toLocaleMap(record[source.intText]));
 
     if (locales.length > 0) {
@@ -398,6 +410,11 @@ function oneWayRulesOf(yacht: RestYacht) {
   return rules;
 }
 
+interface EuminiaRating {
+  rating?: number;
+  reviewCount?: number;
+}
+
 /**
  * Euminia scores, the vendor's third-party review aggregate. The structure is
  * absent for an unrated yacht, and absent must stay absent: a listing nobody has
@@ -408,7 +425,7 @@ function oneWayRulesOf(yacht: RestYacht) {
  * 0..5 the vendor scores on, is dropped rather than clamped, and the count is
  * dropped with it -- a count with no score renders as "0 (6 reviews)".
  */
-function euminiaOf(yacht: RestYacht): { rating?: number; reviewCount?: number } {
+function euminiaOf(yacht: RestYacht): EuminiaRating {
   const rating = decimalOf(yacht.euminia?.total);
   if (rating === undefined || rating < 0 || rating > 5) return {};
 
@@ -421,7 +438,7 @@ function euminiaOf(yacht: RestYacht): { rating?: number; reviewCount?: number } 
  * on the comma form returns 4 -- a silent understatement of every rating, not an
  * error anyone would see.
  */
-function decimalOf(value: unknown): number | undefined {
+function decimalOf(value: JsonField): number | undefined {
   const raw = text(value);
   if (raw === undefined) return undefined;
   const parsed = Number(raw.replace(",", "."));
@@ -430,52 +447,10 @@ function decimalOf(value: unknown): number | undefined {
 
 /* ----------------------------------------------------------------- helpers */
 
-function parseAll<TSchema extends z.ZodType>(
-  records: ProviderRecordSet,
-  resourceType: ProviderResourceType,
-  schema: TSchema,
-): z.infer<TSchema>[] {
-  const parsed: z.infer<TSchema>[] = [];
-  for (const entry of records.get(resourceType) ?? []) {
-    const result = schema.safeParse(entry.payload);
-    // One unparseable record is dropped rather than thrown: it is already retained
-    // raw, and the run is worth more than the row.
-    if (result.success) parsed.push(result.data);
-  }
-  return parsed;
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function text(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
 /** English if the vendor has it, otherwise the first locale it does have. */
-function name(value: unknown): string | undefined {
+function name(value: JsonField): string | undefined {
   const locales = toLocaleMap(value);
   return locales.en ?? Object.values(locales)[0];
-}
-
-function numberOf(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function intOf(value: unknown): number | undefined {
-  const parsed = numberOf(value);
-  return parsed === undefined ? undefined : Math.round(parsed);
-}
-
-function positiveInt(value: unknown): number | undefined {
-  const parsed = intOf(value);
-  return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
 /**
@@ -483,7 +458,7 @@ function positiveInt(value: unknown): number | undefined {
  * the model alike, so it falls through to the model and then to unset rather than
  * publishing a boat that carries no water.
  */
-function capacityOf(...candidates: unknown[]): number | undefined {
+function capacityOf(...candidates: JsonField[]): number | undefined {
   for (const candidate of candidates) {
     const parsed = intOf(candidate);
     if (parsed !== undefined && parsed > 0) return parsed;
@@ -502,65 +477,18 @@ function seasonCurrencyOf(yacht: RestYacht): string | undefined {
   return undefined;
 }
 
-function currencyOf(value: unknown): string {
-  const code = text(value);
-  return code && code.length === 3 ? code.toUpperCase() : FALLBACK_CURRENCY;
-}
-
 /**
  * Amounts stay strings until they are integers of minor units; `RestYacht` sends
  * bare numbers, which are stringified rather than scaled by floating point. A
  * malformed amount drops the deposit rather than the yacht.
  */
-function minorOf(value: unknown, currency: string): number | undefined {
-  const amount = typeof value === "number" && Number.isFinite(value) ? String(value) : text(value);
+function minorOf(value: JsonField, currency: string): number | undefined {
+  const numeric = numberOf(value);
+  const amount = numeric === undefined ? text(value) : String(numeric);
   if (amount === undefined) return undefined;
   try {
     return decimalStringToMinor(amount, currency);
   } catch {
     return undefined;
   }
-}
-
-const HTML_ENTITIES: Record<string, string> = {
-  amp: "&",
-  apos: "'",
-  gt: ">",
-  lt: "<",
-  nbsp: " ",
-  quot: '"',
-};
-
-/**
- * Yacht text is HTML: `<font color="#89CFF0">`, `<mark>`, inline background
- * styles. It is untrusted vendor markup that we never render, so it is reduced to
- * plain text here, once, for both `listing_text` and the search document that
- * must not index tag soup. Entities are decoded after tags are removed, so an
- * escaped `&lt;script&gt;` cannot be promoted back into one.
- */
-function stripHtml(value: string | undefined): string | undefined {
-  if (value === undefined) return undefined;
-
-  const plain = value
-    .replace(/<(?:br|\/p|\/div|\/li|\/tr|\/h[1-6])\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(#\d+|#x[\da-f]+|[a-z]+);/gi, decodeEntity)
-    .split("\n")
-    .map((line) => line.replace(/\s+/g, " ").trim())
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  return plain === "" ? undefined : plain;
-}
-
-function decodeEntity(match: string, body: string): string {
-  if (body.startsWith("#")) {
-    const hex = body.startsWith("#x") || body.startsWith("#X");
-    const code = Number.parseInt(hex ? body.slice(2) : body.slice(1), hex ? 16 : 10);
-    return Number.isInteger(code) && code > 0 && code <= 0x10_ff_ff
-      ? String.fromCodePoint(code)
-      : match;
-  }
-  return HTML_ENTITIES[body.toLowerCase()] ?? match;
 }

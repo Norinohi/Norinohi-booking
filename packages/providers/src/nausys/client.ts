@@ -14,7 +14,8 @@ import {
   type ProviderHttpClient,
   type RawResponseEvent,
 } from "../shared/http-client";
-import { SequentialQueue, sharedQueue } from "../shared/queue";
+import type { JsonObject, JsonValue } from "../shared/json";
+import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { NausysConfig } from "./config";
 import { NAUSYS_STATUS_CODES, NAUSYS_STATUS_NAMES, restStatusSchema } from "./endpoints";
@@ -34,32 +35,34 @@ const transientError: ErrorFactory = (message, options) => new TransientError(me
  * a bad yacht id or a permission problem returns the same answer forever, and
  * retrying it only burns the single sequential lane.
  */
-const ERROR_BY_CODE: Record<number, ErrorFactory> = {
-  [NAUSYS_STATUS_CODES.AUTHENTICATION_ERROR]: authError,
-  [NAUSYS_STATUS_CODES.OPERATION_NOT_ALLOWED]: authError,
-  [NAUSYS_STATUS_CODES.INSUFFICIENT_DATA]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_DATE_FORMAT]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_NUMBER_FORMAT]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_EMAIL_FORMAT]: contractError,
-  [NAUSYS_STATUS_CODES.CREW_LIST_LOCKED]: contractError,
-  [NAUSYS_STATUS_CODES.CREW_LIST_VALIDATION_FAILED]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_COUNTRY_ID]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_YACHT_ID]: notFoundError,
+const ERROR_BY_CODE = new Map<number, ErrorFactory>([
+  [NAUSYS_STATUS_CODES.AUTHENTICATION_ERROR, authError],
+  [NAUSYS_STATUS_CODES.OPERATION_NOT_ALLOWED, authError],
+  [NAUSYS_STATUS_CODES.INSUFFICIENT_DATA, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_DATE_FORMAT, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_NUMBER_FORMAT, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_EMAIL_FORMAT, contractError],
+  [NAUSYS_STATUS_CODES.CREW_LIST_LOCKED, contractError],
+  [NAUSYS_STATUS_CODES.CREW_LIST_VALIDATION_FAILED, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_COUNTRY_ID, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_YACHT_ID, notFoundError],
   // Permission and configuration, not authentication, but equally hopeless to
   // retry and equally worth alerting on.
-  [NAUSYS_STATUS_CODES.WRONG_YACHT_OWNERSHIP]: authError,
-  [NAUSYS_STATUS_CODES.NOT_ALLOWED_TO_BOOK_THIS_YACHT]: authError,
-  [NAUSYS_STATUS_CODES.INVALID_PAYMENT_METHOD]: authError,
-  [NAUSYS_STATUS_CODES.INVALID_CURRENCY]: authError,
-  [NAUSYS_STATUS_CODES.UNKNOWN_ERROR]: transientError,
-};
+  [NAUSYS_STATUS_CODES.WRONG_YACHT_OWNERSHIP, authError],
+  [NAUSYS_STATUS_CODES.NOT_ALLOWED_TO_BOOK_THIS_YACHT, authError],
+  [NAUSYS_STATUS_CODES.INVALID_PAYMENT_METHOD, authError],
+  [NAUSYS_STATUS_CODES.INVALID_CURRENCY, authError],
+  [NAUSYS_STATUS_CODES.UNKNOWN_ERROR, transientError],
+]);
+
+const statusCodesByName = new Map<string, number>(Object.entries(NAUSYS_STATUS_CODES));
 
 function statusCodeOf(status: string, errorCode: number | undefined): number | undefined {
   if (errorCode !== undefined) {
     return errorCode;
   }
-  const known = NAUSYS_STATUS_CODES[status as keyof typeof NAUSYS_STATUS_CODES];
-  return known;
+  // The vendor sends status names we do not have a code for; those stay undefined.
+  return statusCodesByName.get(status);
 }
 
 /**
@@ -70,7 +73,7 @@ function statusCodeOf(status: string, errorCode: number | undefined): number | u
  */
 export function classifyNausysResponse(
   httpStatus: number,
-  body: unknown,
+  body: JsonValue,
   context: { endpoint: string },
 ): ProviderError | null {
   const httpError = httpStatusClassifier(httpStatus, body, context);
@@ -97,7 +100,7 @@ export function classifyNausysResponse(
     providerCode: code === undefined ? status : (NAUSYS_STATUS_NAMES[code] ?? status),
     payload: body,
   };
-  const factory = code === undefined ? contractError : (ERROR_BY_CODE[code] ?? contractError);
+  const factory = code === undefined ? contractError : (ERROR_BY_CODE.get(code) ?? contractError);
   return factory(`NauSYS ${context.endpoint} failed with ${status}`, options);
 }
 
@@ -120,7 +123,7 @@ export class NausysClient {
       baseUrl: options.config.baseUrl,
       queueKey: options.config.queueKey,
       timeoutMs: options.config.timeoutMs,
-      queue: options.queue ?? withInterval(options.config.minIntervalMs),
+      queue: options.queue ?? queueForInterval(options.config.minIntervalMs),
       classifyResponse: classifyNausysResponse,
       onRawResponse: options.onRawResponse,
       fetchImpl: options.fetchImpl,
@@ -133,11 +136,11 @@ export class NausysClient {
    * uses this shape too, despite living under `yachtReservation/v6` alongside
    * `freeYachts`, which uses the nested one.
    */
-  catalogueCall<TSchema extends z.ZodType>(
+  catalogueCall<TOut>(
     endpoint: string,
-    schema: TSchema,
-    body: Record<string, unknown> = {},
-  ): Promise<z.output<TSchema>> {
+    schema: z.ZodType<TOut>,
+    body: JsonObject = {},
+  ): Promise<TOut> {
     return this.call(endpoint, schema, {
       username: this.config.username,
       password: this.config.password,
@@ -146,22 +149,22 @@ export class NausysClient {
   }
 
   /** Reservation and booking shape: credentials nested under `credentials`. */
-  bookingCall<TSchema extends z.ZodType>(
+  bookingCall<TOut>(
     endpoint: string,
-    schema: TSchema,
-    body: Record<string, unknown> = {},
-  ): Promise<z.output<TSchema>> {
+    schema: z.ZodType<TOut>,
+    body: JsonObject = {},
+  ): Promise<TOut> {
     return this.call(endpoint, schema, {
       credentials: { username: this.config.username, password: this.config.password },
       ...body,
     });
   }
 
-  private async call<TSchema extends z.ZodType>(
+  private async call<TOut>(
     endpoint: string,
-    schema: TSchema,
-    body: Record<string, unknown>,
-  ): Promise<z.output<TSchema>> {
+    schema: z.ZodType<TOut>,
+    body: JsonObject,
+  ): Promise<TOut> {
     const response = await this.http.post(endpoint, body);
     const parsed = schema.safeParse(response.body);
     if (!parsed.success) {
@@ -170,25 +173,6 @@ export class NausysClient {
         payload: { issues: parsed.error.issues },
       });
     }
-    return parsed.data as z.output<TSchema>;
+    return parsed.data;
   }
-}
-
-// Lanes are per key (the credential), but the spacing setting is per queue
-// instance, so instances are pooled by interval. Module-scoped on purpose: two
-// clients built in one process must share the lane, or the vendor's
-// sequential-only rule is broken by construction.
-const queuesByInterval = new Map<number, SequentialQueue>();
-
-function withInterval(minIntervalMs: number): SequentialQueue {
-  if (minIntervalMs <= 0) {
-    return sharedQueue;
-  }
-  const existing = queuesByInterval.get(minIntervalMs);
-  if (existing) {
-    return existing;
-  }
-  const queue = new SequentialQueue({ minIntervalMs });
-  queuesByInterval.set(minIntervalMs, queue);
-  return queue;
 }

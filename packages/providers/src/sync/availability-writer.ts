@@ -11,6 +11,8 @@ import type { Database } from "../registry";
 import { createCatalogueResolver, type CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
+import { openSyncRun } from "./run";
+import type { SyncErrorContext } from "./runner";
 
 /* ------------------------------------------------------------ canonical DTOs */
 
@@ -112,9 +114,7 @@ export interface AvailabilitySyncProvider {
 export function supportsAvailabilitySync(
   provider: InventoryProvider,
 ): provider is InventoryProvider & AvailabilitySyncProvider {
-  return (
-    typeof (provider as Partial<AvailabilitySyncProvider>).createAvailabilitySource === "function"
-  );
+  return "createAvailabilitySource" in provider;
 }
 
 /* ------------------------------------------------------------------- store */
@@ -399,12 +399,14 @@ export interface RunAvailabilitySyncOptions {
   now?: () => Date;
 }
 
+const thrownStringSchema = z.string();
+
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
-  return typeof error === "string" ? error : "Unknown availability sync failure";
+  return thrownStringSchema.safeParse(error).data ?? "Unknown availability sync failure";
 }
 
-function contextOf(error: unknown, extra: Record<string, unknown> | undefined) {
+function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
   return { ...base, ...extra };
 }
@@ -442,7 +444,7 @@ export async function runAvailabilitySync(
   let confirmationUnavailable = false;
   let aborted = false;
 
-  const report = async (error: unknown, context: Record<string, unknown>) => {
+  const report = async (error: unknown, context: SyncErrorContext) => {
     failedCount += 1;
     await store.recordError({
       errorType: toSyncErrorType(error),
@@ -938,16 +940,8 @@ export function createDrizzleAvailabilitySyncStore(
 /* ------------------------------------------------------------ entry points */
 
 /** Created before the work starts so a caller can return the id and walk away. */
-export async function openAvailabilitySyncRun(db: Database, providerId: string): Promise<string> {
-  const [row] = await db
-    .insert(syncRun)
-    .values({ providerId, kind: "availability", status: "pending" })
-    .returning({ id: syncRun.id });
-
-  if (!row) {
-    throw new Error("sync_run insert returned no row");
-  }
-  return row.id;
+export function openAvailabilitySyncRun(db: Database, providerId: string): Promise<string> {
+  return openSyncRun(db, providerId, "availability");
 }
 
 export interface AvailabilitySyncJobOptions {
@@ -994,25 +988,27 @@ export async function runAvailabilitySyncJob(
   }
 
   const resolver = createCatalogueResolver(db, provider.key);
-  const store = createDrizzleAvailabilitySyncStore({
+  const storeOptions: DrizzleAvailabilityStoreOptions = {
     db,
     providerId,
     syncRunId,
     resolver,
-    ...(provider.loadSeasonalPrices
-      ? { loadSeasonalPrices: provider.loadSeasonalPrices.bind(provider) }
-      : {}),
-    ...(options.cursorScope ? { cursorScope: options.cursorScope } : {}),
-  });
+  };
+  if (provider.loadSeasonalPrices) {
+    storeOptions.loadSeasonalPrices = provider.loadSeasonalPrices.bind(provider);
+  }
+  if (options.cursorScope) storeOptions.cursorScope = options.cursorScope;
 
-  return runAvailabilitySync({
-    store,
+  const runOptions: RunAvailabilitySyncOptions = {
+    store: createDrizzleAvailabilitySyncStore(storeOptions),
     source: provider.createAvailabilitySource({ resume: options.resume }),
-    ...(options.horizonMonths === undefined ? {} : { horizonMonths: options.horizonMonths }),
-    ...(options.hotWindowBudgetMs === undefined
-      ? {}
-      : { hotWindowBudgetMs: options.hotWindowBudgetMs }),
     resume: options.resume,
     now,
-  });
+  };
+  if (options.horizonMonths !== undefined) runOptions.horizonMonths = options.horizonMonths;
+  if (options.hotWindowBudgetMs !== undefined) {
+    runOptions.hotWindowBudgetMs = options.hotWindowBudgetMs;
+  }
+
+  return runAvailabilitySync(runOptions);
 }

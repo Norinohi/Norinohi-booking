@@ -1,12 +1,19 @@
+import { z } from "zod";
+
 import { ContractError } from "./errors";
+import { requireJsonString } from "./json";
 
 const ZERO_EXPONENT_CURRENCIES = new Set(["JPY", "KRW", "VND", "CLP", "ISK"]);
 const THREE_EXPONENT_CURRENCIES = new Set(["BHD", "JOD", "KWD", "OMR", "TND"]);
 
 const DECIMAL_PATTERN = /^[+-]?\d+(?:\.\d+)?$/;
 
+const currencyCodeSchema = z.string().transform((code) => code.trim().toUpperCase());
+
 export function currencyExponent(currency: string): number {
-  const code = typeof currency === "string" ? currency.trim().toUpperCase() : "";
+  // An unreadable code is not worth throwing over: the minor-unit exponent it
+  // falls through to is the one almost every currency uses.
+  const code = currencyCodeSchema.safeParse(currency).data ?? "";
   if (ZERO_EXPONENT_CURRENCIES.has(code)) {
     return 0;
   }
@@ -21,10 +28,7 @@ export function currencyExponent(currency: string): number {
  * end to end: `parseFloat` would silently round values a cent off.
  */
 export function decimalStringToMinor(value: string, currency: string): number {
-  if (typeof value !== "string") {
-    throw new ContractError(`Expected a decimal string amount, received ${typeof value}`);
-  }
-  const trimmed = value.trim();
+  const trimmed = requireJsonString(value, "a decimal string amount").trim();
   if (!DECIMAL_PATTERN.test(trimmed)) {
     throw new ContractError(`Malformed decimal amount: ${JSON.stringify(value)}`);
   }

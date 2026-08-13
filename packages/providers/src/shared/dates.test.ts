@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { contractViolation } from "../testing/contracts";
+
 import { formatNausysDate, parseNausysDate, parseNausysDateTime } from "./dates";
 import { ContractError } from "./errors";
 
@@ -35,7 +37,7 @@ describe("parseNausysDate", () => {
     ]) {
       expect(() => parseNausysDate(value)).toThrow(ContractError);
     }
-    expect(() => parseNausysDate(undefined as unknown as string)).toThrow(ContractError);
+    expect(() => parseNausysDate(contractViolation(undefined))).toThrow(ContractError);
   });
 });
 
@@ -115,7 +117,7 @@ describe("parseNausysDateTime", () => {
     ]) {
       expect(() => parseNausysDateTime(value, "Europe/Zagreb")).toThrow(ContractError);
     }
-    expect(() => parseNausysDateTime(null as unknown as string, "Europe/Zagreb")).toThrow(
+    expect(() => parseNausysDateTime(contractViolation(null), "Europe/Zagreb")).toThrow(
       ContractError,
     );
   });

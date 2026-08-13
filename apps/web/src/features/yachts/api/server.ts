@@ -66,8 +66,8 @@ export async function prefetchSearch() {
  */
 export const LISTING_NOT_FOUND = "LISTING_NOT_FOUND";
 
-export function isListingNotFound(error: unknown): boolean {
-  return error instanceof Error && error.message === LISTING_NOT_FOUND;
+export function isListingNotFound(error: Error): boolean {
+  return error.message === LISTING_NOT_FOUND;
 }
 
 export async function prefetchListingDetail(id: string) {

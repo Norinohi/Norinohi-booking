@@ -28,7 +28,7 @@ export default function SplitPanels({
       <Tabs
         variant="segmented"
         value={panel}
-        onValueChange={(value) => setPanel(value as Panel)}
+        onValueChange={(value) => setPanel(PANELS.find((id) => id === value) ?? PANELS[0])}
         className="sticky top-(--header-h) z-20 bg-background xl:hidden"
       >
         <TabsList>

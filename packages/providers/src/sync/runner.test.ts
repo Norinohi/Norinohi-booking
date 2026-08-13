@@ -6,6 +6,7 @@ vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
+import type { JsonValue } from "../shared/json";
 import { AuthError, TransientError } from "../shared/errors";
 import { stableSourceHash } from "../shared/raw-retention";
 import type { ProviderResourceType, RawEntity } from "../types";
@@ -135,7 +136,7 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
 const entity = (
   resourceType: ProviderResourceType,
   externalId: string,
-  payload: unknown,
+  payload: JsonValue,
   scopeKey?: string,
 ): RawEntity => ({ resourceType, externalId, scopeKey, payload });
 

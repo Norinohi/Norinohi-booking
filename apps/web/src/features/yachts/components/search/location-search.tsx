@@ -17,12 +17,12 @@ import { type ReactNode, useEffect, useState } from "react";
 import { type Suggestion, suggestionsQueryOptions } from "../../api/queries";
 
 /** Destination-kind glyphs, so a suggestion reads at a glance (country vs region vs marina). */
-const KIND_ICON: Record<Suggestion["kind"], ReactNode> = {
+const KIND_ICON = {
   country: <Globe className="size-5 shrink-0 text-natural-400" />,
   region: <MapIcon className="size-5 shrink-0 text-natural-400" />,
   location: <MapPin className="size-5 shrink-0 text-natural-400" />,
   base: <Anchor className="size-5 shrink-0 text-natural-400" />,
-};
+} satisfies Record<Suggestion["kind"], ReactNode>;
 
 /*
  * The search bar's Location field: a searchable single-select (same mechanism as the other search

@@ -32,7 +32,7 @@ const PRE_CONFIRMED: readonly BookingStatus[] = [
   "PAYMENT_FAILED",
 ];
 
-const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
+const TRANSITIONS = {
   DRAFT: ["QUOTED", "CANCELLED"],
   QUOTED: ["OPTION_PENDING", "PAYMENT_PENDING", "QUOTE_EXPIRED", "CANCELLED"],
   // QUOTE_EXPIRED covers an option request that never came back — the process died
@@ -61,7 +61,7 @@ const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
   CANCELLED: [],
   REFUND_PENDING: ["REFUNDED"],
   REFUNDED: [],
-};
+} satisfies Record<BookingStatus, readonly BookingStatus[]>;
 
 /*
  * What the expiry sweeper moves, and to what.
@@ -84,7 +84,8 @@ export const DEAD_QUOTE_SWEEP = {
 type SweepSpec = { from: readonly BookingStatus[]; to: BookingStatus };
 
 export function canTransition(from: BookingStatus, to: BookingStatus): boolean {
-  return TRANSITIONS[from].includes(to);
+  const allowed: readonly BookingStatus[] = TRANSITIONS[from];
+  return allowed.includes(to);
 }
 
 export function isPreConfirmed(status: BookingStatus): boolean {

@@ -19,7 +19,7 @@ const STEPS = ["share", "book", "credit"] as const;
 const PERK_KEYS = ["extra", "early", "concierge"] as const;
 
 function isTranslatedPerk(code: string): code is (typeof PERK_KEYS)[number] {
-  return (PERK_KEYS as readonly string[]).includes(code);
+  return PERK_KEYS.some((key) => key === code);
 }
 
 /*

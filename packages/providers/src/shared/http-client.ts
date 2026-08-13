@@ -8,6 +8,7 @@ import {
   RateLimitedError,
   TransientError,
 } from "./errors";
+import type { JsonValue } from "./json";
 import { type SequentialQueue, sharedQueue } from "./queue";
 import type { RetryPolicy } from "./retry";
 import { withRetry } from "./retry";
@@ -20,7 +21,8 @@ import { withRetry } from "./retry";
 export interface ProviderHttpRequestInit {
   method: string;
   headers: Record<string, string>;
-  body: string;
+  /** Absent on GET: a body would be discarded, and some hosts reject it outright. */
+  body?: string;
   signal: AbortSignal;
 }
 
@@ -35,7 +37,7 @@ export type FetchLike = (
 ) => Promise<ProviderHttpResponseLike>;
 
 export interface ProviderHttpResult {
-  body: unknown;
+  body: JsonValue;
   httpStatus: number;
   durationMs: number;
   /** Identifies one HTTP attempt, so a retried call produces several. */
@@ -54,7 +56,7 @@ export interface RawResponseEvent extends ProviderHttpResult {
  */
 export type ResponseClassifier = (
   httpStatus: number,
-  body: unknown,
+  body: JsonValue,
   context: { endpoint: string },
 ) => ProviderError | null;
 
@@ -73,8 +75,41 @@ export interface ProviderHttpClientOptions {
   newRequestId?: () => string;
 }
 
+export type QueryValue = string | number | boolean | Array<string | number>;
+
 export interface ProviderHttpClient {
-  post(endpoint: string, body: unknown): Promise<ProviderHttpResult>;
+  post(endpoint: string, body: JsonValue): Promise<ProviderHttpResult>;
+  /** Booking Manager serves every read as GET with query parameters. */
+  get(
+    endpoint: string,
+    query?: Record<string, QueryValue | undefined>,
+  ): Promise<ProviderHttpResult>;
+  del(endpoint: string): Promise<ProviderHttpResult>;
+  put(endpoint: string, body?: JsonValue): Promise<ProviderHttpResult>;
+}
+
+/**
+ * Repeats a key per array element (`?yachtId=1&yachtId=2`) rather than joining
+ * with commas. Booking Manager's spec declares these as arrays but does not
+ * document the encoding; this is the single place to switch if the vendor
+ * confirms otherwise.
+ */
+export function buildQueryString(query: Record<string, QueryValue | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, String(item));
+      }
+      continue;
+    }
+    params.append(key, String(value));
+  }
+  const serialized = params.toString();
+  return serialized === "" ? "" : `?${serialized}`;
 }
 
 const defaultFetch: FetchLike = (url, init) => globalThis.fetch(url, init);
@@ -123,19 +158,34 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     ...options.headers,
   };
 
-  async function attempt(endpoint: string, body: unknown): Promise<ProviderHttpResult> {
+  async function attempt(
+    method: string,
+    endpoint: string,
+    body: JsonValue,
+    hasBody: boolean,
+  ): Promise<ProviderHttpResult> {
     const requestId = newRequestId();
     const startedAt = now();
+
+    // A GET carries no content-type: sending one invites a 415 from hosts that
+    // validate it against an absent body.
+    const requestHeaders = hasBody
+      ? headers
+      : Object.fromEntries(
+          Object.entries(headers).filter(([key]) => key.toLowerCase() !== "content-type"),
+        );
+
+    const init: ProviderHttpRequestInit = {
+      method,
+      headers: requestHeaders,
+      signal: AbortSignal.timeout(timeoutMs),
+    };
+    if (hasBody) init.body = JSON.stringify(body);
 
     let response: ProviderHttpResponseLike;
     let text: string;
     try {
-      response = await fetchImpl(joinUrl(baseUrl, endpoint), {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+      response = await fetchImpl(joinUrl(baseUrl, endpoint), init);
       text = await response.text();
     } catch (cause) {
       // withRetry only ever retries a ProviderError, so an unwrapped DNS/abort
@@ -145,7 +195,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
 
     const durationMs = now() - startedAt;
 
-    let parsed: unknown;
+    let parsed: JsonValue;
     try {
       parsed = text.trim() === "" ? null : JSON.parse(text);
     } catch (cause) {
@@ -169,11 +219,32 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     return result;
   }
 
+  // Retry sits outside the queue slot and each attempt inside it: a sleeping
+  // backoff must not hold the single sequential lane the vendor allows us.
+  function send(
+    method: string,
+    endpoint: string,
+    body: JsonValue,
+    hasBody: boolean,
+  ): Promise<ProviderHttpResult> {
+    return withRetry(
+      () => queue.run(queueKey, () => attempt(method, endpoint, body, hasBody)),
+      options.retry,
+    );
+  }
+
   return {
     post(endpoint, body) {
-      // Retry sits outside the queue slot and each attempt inside it: a sleeping
-      // backoff must not hold the single sequential lane the vendor allows us.
-      return withRetry(() => queue.run(queueKey, () => attempt(endpoint, body)), options.retry);
+      return send("POST", endpoint, body, true);
+    },
+    get(endpoint, query) {
+      return send("GET", `${endpoint}${query ? buildQueryString(query) : ""}`, null, false);
+    },
+    del(endpoint) {
+      return send("DELETE", endpoint, null, false);
+    },
+    put(endpoint, body) {
+      return send("PUT", endpoint, body ?? null, body !== undefined);
     },
   };
 }

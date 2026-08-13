@@ -1,0 +1,1 @@
+ALTER TABLE "booking" ADD COLUMN "guest_country_code" text;
