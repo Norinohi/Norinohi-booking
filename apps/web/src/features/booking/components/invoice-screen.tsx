@@ -170,7 +170,9 @@ function CharterSummary({ invoice }: { invoice: InvoiceDocument }) {
     { label: t("summary.yacht"), value: booking.listingTitle },
     {
       label: t("summary.base"),
-      value: [booking.baseName, booking.locationName, booking.countryName]
+      // Deduplicated: NauSYS bases often carry the marina's full name as the location too,
+      // which would otherwise print "Komolac, ACI Marina, Komolac, ACI Marina, Croatia".
+      value: [...new Set([booking.baseName, booking.locationName, booking.countryName])]
         .filter(Boolean)
         .join(", "),
     },

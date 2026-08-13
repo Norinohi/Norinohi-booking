@@ -762,7 +762,12 @@ export const restCreateOptionRequestSchema = z.object({
   credentials: restCredentialsSchema,
   id: z.number().int(),
   uuid: z.string(),
-  createWaitingOption: z.boolean().optional(),
+  /*
+   * A stringified boolean, and only that: the vendor deserializes this field as a String, so a
+   * JSON `false` kills the request inside their JSON-B parser and comes back as an HTML 500
+   * before any handler sees it. Typed here so the shape cannot regress to a boolean.
+   */
+  createWaitingOption: z.enum(["true", "false"]).optional(),
 });
 export type RestCreateOptionRequest = z.infer<typeof restCreateOptionRequestSchema>;
 

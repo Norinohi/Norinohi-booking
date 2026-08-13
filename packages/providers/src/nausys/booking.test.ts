@@ -240,6 +240,15 @@ describe("the uuid funnel", () => {
     expect(confirmed.securityToken).toBe(BOOKING_UUID);
   });
 
+  /* A JSON boolean here is a vendor-side HTTP 500: their DTO deserializes it as a String. */
+  it("sends createWaitingOption as a string, never a boolean", async () => {
+    const { service, transport } = build();
+
+    await service.createOption(draft);
+
+    expect(transport.lastBody("createOption")).toMatchObject({ createWaitingOption: "false" });
+  });
+
   it("hands every refreshed token to the persistence sink", async () => {
     const { service, rotations } = build();
 

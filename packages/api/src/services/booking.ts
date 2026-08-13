@@ -13,7 +13,7 @@ import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -66,13 +66,31 @@ const REFERENCE_LENGTH = 8;
 
 /* --------------------------------------------------------------------- reads */
 
+/*
+ * Never reached the customer as a booking: the provider refused or the hold ran out before
+ * anything was secured, and no money moved. The rows are kept — they carry the consents, the
+ * idempotency key and the vendor's reason — but a failed submit must not leave a card in the
+ * customer's history. Asking for one of these statuses explicitly still returns it, which is
+ * how support and admin see what was attempted.
+ */
+const NEVER_HELD: BookingStatus[] = [
+  "DRAFT",
+  "QUOTE_EXPIRED",
+  "OPTION_EXPIRED",
+  "PROVIDER_REJECTED",
+];
+
 export async function listBookings(
   db: Database,
   userId: string,
   input: ListInput,
 ): Promise<ListResult> {
   const filters = [eq(booking.userId, userId)];
-  if (input.status?.length) filters.push(inArray(booking.status, input.status));
+  if (input.status?.length) {
+    filters.push(inArray(booking.status, input.status));
+  } else {
+    filters.push(notInArray(booking.status, NEVER_HELD));
+  }
 
   // The date filter is on the charter period, which lives on the quote — that is
   // what "Any dates" means on a history screen, not when the booking was made.
