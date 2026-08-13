@@ -419,6 +419,21 @@ export async function listSearchSuggestions(
   db: NodePgDatabase<typeof schema>,
   query: string,
 ): Promise<ListingSuggestion[]> {
+  // Empty field: seed the typeahead with the most-stocked countries so the user has somewhere to
+  // start, instead of an alphabetical slice that means nothing. Data-driven, so it never lists a
+  // country with no listings.
+  if (query.trim() === "") {
+    const popular = await db.execute<ListingSuggestion>(sql`
+      select doc.country as label, 'country' as kind
+      from listing_search_doc doc
+      where doc.country is not null
+      group by doc.country
+      order by count(*) desc, doc.country asc
+      limit 5
+    `);
+    return popular.rows;
+  }
+
   const pattern = `%${query}%`;
   const rows = await db.execute<ListingSuggestion>(sql`
     select distinct label, kind

@@ -72,7 +72,7 @@ export default function LocationSearch({
         {value || <span className="text-placeholder-foreground">{placeholder}</span>}
       </ComboboxTrigger>
       <ComboboxContent>
-        <ComboboxSearch placeholder={placeholder} />
+        <ComboboxSearch placeholder={t("startTyping")} />
         <ComboboxEmpty>{debounced.trim().length >= 1 ? t("noLocations") : ""}</ComboboxEmpty>
         <ComboboxList>
           {(item: Suggestion) => (

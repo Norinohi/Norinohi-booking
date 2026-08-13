@@ -1,4 +1,5 @@
 import type { AppRouterClient } from "@yacht-charter/api/routers/index";
+import { keepPreviousData } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
 
@@ -11,12 +12,17 @@ export type Suggestion = Awaited<
   ReturnType<AppRouterClient["charterSearch"]["suggestions"]>
 >[number];
 
-/** Destination typeahead behind the search bar's Location field; idle until the first character. */
+/**
+ * Destination typeahead behind the search bar's Location field. Fires on the empty query too, where
+ * the server answers with the most-stocked countries as default suggestions.
+ */
 export const suggestionsQueryOptions = (query: string) =>
   orpc.charterSearch.suggestions.queryOptions({
     input: { query },
-    enabled: query.trim().length >= 1,
     staleTime: 5 * 60 * 1000,
+    // Keep the current list on screen while the next query loads, so switching queries never flashes
+    // the "no matches" empty state between the old and new results.
+    placeholderData: keepPreviousData,
   });
 
 export type MarkersInput = Parameters<AppRouterClient["charterSearch"]["mapMarkers"]>[0];

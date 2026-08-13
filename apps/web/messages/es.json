@@ -912,6 +912,7 @@
     "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
     "searchBar": {
       "location": "Ubicación",
+      "startTyping": "Empieza a escribir",
       "searchCountries": "Buscar países...",
       "addDates": "Añadir fechas",
       "clearDates": "Borrar fechas",

@@ -912,6 +912,7 @@
     "emptyDescription": "Try adjusting your dates, budget, or location — we will help you find the perfect match.",
     "searchBar": {
       "location": "Location",
+      "startTyping": "Start Typing",
       "searchCountries": "Search Countries...",
       "addDates": "Add dates",
       "clearDates": "Clear dates",
