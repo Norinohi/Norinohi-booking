@@ -25,6 +25,7 @@
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
+      "guestNotice": "No hace falta cuenta para reservar. Crearemos una para esta reserva y te enviaremos un enlace para elegir contraseña cuando quieras.",
       "fullName": "Nombre completo",
       "fullNamePlaceholder": "Juan Pérez",
       "email": "Correo electrónico",
@@ -118,6 +119,7 @@
       "browse": "Ver yates",
       "remaining": "Los {amount} restantes se pagarán al check-in.",
       "emailed": "Hemos enviado una confirmación a tu correo",
+      "guestEmailed": "Te hemos enviado la confirmación por correo, junto con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
       "viewBooking": "Ver reserva",
       "summaryTitle": "Resumen de la reserva",
       "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
@@ -142,6 +144,7 @@
       "title": "Factura",
       "print": "Imprimir / Guardar como PDF",
       "backToBookings": "Volver a mis reservas",
+      "browse": "Ver yates",
       "issuedOn": "Emitida el {date}",
       "dueOn": "Vence el {date}",
       "status": {

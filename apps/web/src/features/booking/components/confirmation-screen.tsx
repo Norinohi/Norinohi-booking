@@ -8,7 +8,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
@@ -18,6 +18,7 @@ import { GROUP, POP, RISE } from "@/lib/motion";
 import { client } from "@/utils/orpc";
 
 import { bookingDetailQueryOptions } from "../api/queries";
+import { guestAccessFor } from "../lib/guest-access";
 import { confirmationParsers } from "../lib/search-params";
 
 const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
@@ -130,13 +131,22 @@ export default function BookingConfirmationScreen() {
   const format = useFormatter();
   const [{ bookingId, method }] = useQueryStates(confirmationParsers);
   const [downloading, setDownloading] = useState(false);
+  /*
+   * Resolved on the client only — localStorage does not exist during prerender — and the
+   * read has to land before the query runs, or a guest's first request goes out unauthorised.
+   * `null` is "not looked yet"; a guest who set a password since has no token and needs none.
+   */
+  const [access, setAccess] = useState<{ token: string | undefined } | null>(null);
+  useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
+  const isGuest = Boolean(access?.token);
 
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId ?? ""),
-    enabled: Boolean(bookingId),
+    ...bookingDetailQueryOptions(bookingId ?? "", access?.token),
+    enabled: Boolean(bookingId) && access !== null,
   });
 
-  if (isLoading) {
+  /* `access === null` keeps the query disabled, which reads as settled rather than loading. */
+  if (isLoading || access === null) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <Loader />
@@ -244,7 +254,7 @@ export default function BookingConfirmationScreen() {
     if (!bookingId) return;
     setDownloading(true);
     try {
-      const receipt = await client.booking.receipt({ id: bookingId });
+      const receipt = await client.booking.receipt({ id: bookingId, accessToken: access?.token });
       const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -301,16 +311,23 @@ export default function BookingConfirmationScreen() {
               <p className="text-base leading-[1.4] text-foreground opacity-80">
                 {t("remaining", { amount: money(booking.balanceDue.amountMinor) })}
               </p>
-              <p className="text-sm leading-[1.3] font-medium text-natural-600">{t("emailed")}</p>
+              <p className="text-sm leading-[1.3] font-medium text-natural-600">
+                {isGuest ? t("guestEmailed") : t("emailed")}
+              </p>
             </div>
-            <Button
-              variant="neutral"
-              nativeButton={false}
-              render={<Link href="/profile/bookings" />}
-              className="w-full md:w-auto"
-            >
-              {t("viewBooking")}
-            </Button>
+            {/* My Bookings needs an account. A guest has one waiting behind the invitation
+                email, so pointing them at a page that would bounce them to sign in — for a
+                password they were never asked to choose — helps nobody. */}
+            {isGuest || (
+              <Button
+                variant="neutral"
+                nativeButton={false}
+                render={<Link href="/profile/bookings" />}
+                className="w-full md:w-auto"
+              >
+                {t("viewBooking")}
+              </Button>
+            )}
           </motion.div>
 
           <motion.div variants={RISE} className="flex flex-col p-5">
@@ -345,7 +362,7 @@ export default function BookingConfirmationScreen() {
                   variant="brand"
                   className="w-full md:flex-1"
                   nativeButton={false}
-                  render={<Link href={`/profile/bookings/${bookingId}/invoice`} />}
+                  render={<Link href={`/bookings/${bookingId}/invoice`} />}
                 >
                   <FileText />
                   {t("viewInvoice")}

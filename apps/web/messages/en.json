@@ -25,6 +25,7 @@
     },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
+      "guestNotice": "No account needed to book. We'll set one up for this reservation and email you a link to choose a password whenever you like.",
       "fullName": "Full Name",
       "fullNamePlaceholder": "John Doe",
       "email": "Email Address",
@@ -118,6 +119,7 @@
       "browse": "Browse yachts",
       "remaining": "The remaining {amount} will be paid at check-in.",
       "emailed": "We've sent a confirmation to your email",
+      "guestEmailed": "We've sent your confirmation by email, along with a link to set a password and keep this booking in your account",
       "viewBooking": "View Booking",
       "summaryTitle": "Booking Summary",
       "quote": "\"This yacht is ideal for island hopping in Croatia — stable, spacious, and perfect for group travel. Your route includes Hvar and Vis, two of the most scenic islands in the Adriatic.\"",
@@ -142,6 +144,7 @@
       "title": "Invoice",
       "print": "Print / Save as PDF",
       "backToBookings": "Back to bookings",
+      "browse": "Browse yachts",
       "issuedOn": "Issued {date}",
       "dueOn": "Due {date}",
       "status": {

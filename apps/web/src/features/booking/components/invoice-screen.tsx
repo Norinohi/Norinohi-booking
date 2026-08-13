@@ -5,13 +5,14 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Printer } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 
 import { bookingInvoiceQueryOptions, type InvoiceDocument } from "../api/queries";
+import { guestAccessFor } from "../lib/guest-access";
 
 /*
  * The printable invoice. Everything on the page comes from `booking.invoice` — the seller block,
@@ -25,9 +26,25 @@ import { bookingInvoiceQueryOptions, type InvoiceDocument } from "../api/queries
  */
 export default function InvoiceScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.invoice");
-  const { data: invoice, isPending, isError } = useQuery(bookingInvoiceQueryOptions(bookingId));
+  /*
+   * Resolved on the client, so the query waits for it: a guest paying by transfer needs this
+   * document as much as an account holder, and their only proof is the token checkout stored.
+   * `null` means the read has not happened yet, not that there is nothing to find.
+   */
+  const [access, setAccess] = useState<{ token: string | undefined } | null>(null);
+  useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
+  const isGuest = Boolean(access?.token);
 
-  if (isPending) {
+  const {
+    data: invoice,
+    isPending,
+    isError,
+  } = useQuery({
+    ...bookingInvoiceQueryOptions(bookingId, access?.token),
+    enabled: access !== null,
+  });
+
+  if (isPending || access === null) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <Loader />
@@ -42,8 +59,13 @@ export default function InvoiceScreen({ bookingId }: { bookingId: string }) {
           title={t(isError ? "error.title" : "missing.title")}
           description={t(isError ? "error.description" : "missing.description")}
           action={
-            <Button variant="brand" nativeButton={false} render={<Link href="/profile/bookings" />}>
-              {t("backToBookings")}
+            /* My Bookings is an account page; a guest has no password yet and would be bounced. */
+            <Button
+              variant="brand"
+              nativeButton={false}
+              render={<Link href={isGuest ? "/yachts" : "/profile/bookings"} />}
+            >
+              {t(isGuest ? "browse" : "backToBookings")}
             </Button>
           }
         />
@@ -58,8 +80,12 @@ export default function InvoiceScreen({ bookingId }: { bookingId: string }) {
     >
       <div className="flex w-full max-w-201.5 flex-col gap-4">
         <div className="flex flex-col-reverse gap-3 md:flex-row md:items-center md:justify-between print:hidden">
-          <Button variant="neutral" nativeButton={false} render={<Link href="/profile/bookings" />}>
-            {t("backToBookings")}
+          <Button
+            variant="neutral"
+            nativeButton={false}
+            render={<Link href={isGuest ? "/yachts" : "/profile/bookings"} />}
+          >
+            {t(isGuest ? "browse" : "backToBookings")}
           </Button>
           <Button variant="brand" onClick={() => window.print()}>
             <Printer />

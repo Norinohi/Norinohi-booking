@@ -13,6 +13,7 @@ import { useMoney } from "@/hooks/use-money";
 
 import { askQuestionMutationOptions, requestInvoiceMutationOptions } from "../../../api/queries";
 import type { BookingValues } from "../../../lib/booking-form";
+import { guestAccessFor } from "../../../lib/guest-access";
 import { serializeConfirmation } from "../../../lib/search-params";
 import { useBooking } from "../../booking-provider";
 import AskQuestion from "./ask-question";
@@ -29,6 +30,8 @@ export default function PaymentStep() {
   const money = useMoney();
   const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
   const { quote, bookingId } = useBooking();
+  /* Undefined for a signed-in customer, whose session cookie authorises these calls instead. */
+  const accessToken = guestAccessFor(bookingId);
   const requestInvoice = useMutation(requestInvoiceMutationOptions());
   const askQuestion = useMutation(askQuestionMutationOptions());
   const method = useWatch({ control, name: "payment.method" });
@@ -61,6 +64,7 @@ export default function PaymentStep() {
         const invoice = getValues("payment.invoice");
         await requestInvoice.mutateAsync({
           bookingId,
+          accessToken,
           billingEmail: invoice.email,
           billingName: invoice.name,
           addressLine1: invoice.addressLine1,
@@ -75,6 +79,7 @@ export default function PaymentStep() {
       } else {
         await askQuestion.mutateAsync({
           bookingId,
+          accessToken,
           question: getValues("payment.question.message"),
         });
       }

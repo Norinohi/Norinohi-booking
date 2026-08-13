@@ -127,7 +127,17 @@ export const bookingListInputSchema = z
 
 export const bookingListSchema = paginatedSchema(bookingSummarySchema);
 
-export const bookingIdInputSchema = z.object({ id: idSchema });
+/**
+ * The bearer token a guest checkout hands back, carried by every booking-scoped
+ * call a customer can make before they have an account. Absent for a signed-in
+ * caller, whose session says the same thing.
+ */
+export const guestAccessTokenSchema = z.string().trim().min(1).max(200);
+
+export const bookingIdInputSchema = z.object({
+  id: idSchema,
+  accessToken: guestAccessTokenSchema.optional(),
+});
 
 /**
  * Detail for "View Details". Travellers are deliberately absent: §10 forbids
@@ -296,9 +306,22 @@ export const checkoutHoldSchema = z.object({
   holdExpiresAt: z.string().nullable(),
   /** False when the provider has no option support and the hold step was skipped. */
   optionHeld: z.boolean(),
+  /**
+   * Returned once, and only to a guest: the caller must keep it to reach the rest of
+   * its own checkout. Null when the booking was made from a session, which already
+   * authorises those calls.
+   *
+   * Nothing here says whether an account already existed for the email. It would be
+   * the one field in the app that answers "is this address registered?", and the
+   * guest UI has no use for the answer.
+   */
+  accessToken: z.string().nullable(),
 });
 
-export const checkoutStatusInputSchema = z.object({ bookingId: z.string().min(1) });
+export const checkoutStatusInputSchema = z.object({
+  bookingId: z.string().min(1),
+  accessToken: guestAccessTokenSchema.optional(),
+});
 
 export const checkoutStatusSchema = z.object({
   bookingId: z.string(),
@@ -333,6 +356,7 @@ export const billingPartySchema = z.object({
 
 export const invoiceRequestInputSchema = billingPartySchema.extend({
   bookingId: z.string().min(1),
+  accessToken: guestAccessTokenSchema.optional(),
 });
 
 export const invoiceRequestSchema = z.object({
@@ -434,6 +458,7 @@ export const invoiceDocumentSchema = z
 export const enquiryInputSchema = z.object({
   bookingId: z.string().min(1),
   question: z.string().trim().min(1).max(2000),
+  accessToken: guestAccessTokenSchema.optional(),
 });
 
 export const enquirySchema = z.object({
@@ -491,6 +516,7 @@ export const checkoutConfirmInputSchema = z.object({
   bookingId: z.string().min(1),
   /** Overrides the quote's own policy when the customer chooses to pay in full. */
   paymentPreference: z.enum(["deposit", "full"]).default("deposit"),
+  accessToken: guestAccessTokenSchema.optional(),
 });
 
 export const checkoutConfirmSchema = z.object({
