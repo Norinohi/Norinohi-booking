@@ -120,8 +120,8 @@ export type ListingDetail = ListingSearchDoc & {
   importantInformation: {
     charterCompany: string;
     yachtPickupAddress: string;
-    yachtPickup: { date: string | null; time: string | null };
-    yachtDropOff: { date: string | null; time: string | null };
+    yachtPickup: { time: string | null };
+    yachtDropOff: { time: string | null };
     cancellationPaymentPolicies: string;
     sailingLicenseRequired: string;
     pets: string;

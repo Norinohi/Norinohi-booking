@@ -242,14 +242,14 @@ export async function getListingDetailByIdOrSlug(
     importantInformation: {
       charterCompany: listing.operator,
       yachtPickupAddress: `${listing.baseName}, ${listing.location}, ${listing.country}`,
-      yachtPickup: {
-        date: listing.availableFrom,
-        time: info?.checkInTime ?? null,
-      },
-      yachtDropOff: {
-        date: listing.availableTo,
-        time: info?.checkOutTime ?? null,
-      },
+      /*
+       * Times only. These carried `available_from`/`available_to`, which are the first and last
+       * dates the boat is free anywhere in the horizon — not this charter's pickup and drop-off.
+       * A listing page has no charter yet, so it has no date to state; the base's times hold
+       * whatever dates the visitor later picks.
+       */
+      yachtPickup: { time: info?.checkInTime ?? null },
+      yachtDropOff: { time: info?.checkOutTime ?? null },
       cancellationPaymentPolicies:
         "Cancellation and prepayment policies vary according to your selection. Payment conditions are confirmed during quote and booking.",
       sailingLicenseRequired:

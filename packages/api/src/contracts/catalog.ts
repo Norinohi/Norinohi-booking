@@ -151,14 +151,9 @@ export const listingDetailSchema = listingSummarySchema.extend({
   importantInformation: z.object({
     charterCompany: z.string(),
     yachtPickupAddress: z.string(),
-    yachtPickup: z.object({
-      date: z.string().nullable(),
-      time: z.string().nullable(),
-    }),
-    yachtDropOff: z.object({
-      date: z.string().nullable(),
-      time: z.string().nullable(),
-    }),
+    /* Times only: a listing page has no charter, so it has no pickup date to state. */
+    yachtPickup: z.object({ time: z.string().nullable() }),
+    yachtDropOff: z.object({ time: z.string().nullable() }),
     cancellationPaymentPolicies: z.string(),
     sailingLicenseRequired: z.string(),
     pets: z.string(),
