@@ -18,6 +18,7 @@ const ACTION = "w-full md:flex-1 xl:w-auto xl:flex-none";
 
 export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
+  const tCard = useTranslations("Common.boatCard");
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -39,9 +40,12 @@ export default function TitleBlock() {
           <MarinaPopover marina={toMarina(data.base)} />
 
           <div className="flex flex-wrap items-start gap-1.5">
-            {data.badges.map((badge) => (
-              <Chip key={badge.code}>{badge.label}</Chip>
-            ))}
+            {/* Same rule as the search card: an unbookable yacht has nothing to promote. */}
+            {data.availability.hasAvailableDates ? (
+              data.badges.map((badge) => <Chip key={badge.code}>{badge.label}</Chip>)
+            ) : (
+              <Chip variant="neutral">{tCard("badges.unavailable")}</Chip>
+            )}
           </div>
         </div>
 

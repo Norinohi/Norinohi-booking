@@ -25,6 +25,7 @@
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
+      "guestNotice": "No hace falta cuenta para reservar. Crearemos una para esta reserva y te enviaremos un enlace para elegir contraseña cuando quieras.",
       "fullName": "Nombre completo",
       "fullNamePlaceholder": "Juan Pérez",
       "email": "Correo electrónico",
@@ -44,7 +45,10 @@
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
-      "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo."
+      "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo.",
+      "billingName": "Introduce el nombre de facturación",
+      "billingAddress": "Introduce la dirección de facturación",
+      "city": "Introduce la ciudad"
     },
     "backToYacht": "Volver a {name}",
     "panels": {
@@ -87,7 +91,21 @@
         "vat": "Número de IVA (opcional)",
         "vatPlaceholder": "GB12312321321312123",
         "notice": "¿Prefieres pagar sin conexión? Te enviaremos una factura para completar el pago por transferencia bancaria.",
-        "cta": "Solicitar factura (por {amount})"
+        "cta": "Solicitar factura (por {amount})",
+        "name": "Nombre de facturación",
+        "namePlaceholder": "Jane Doe",
+        "addressLine1": "Dirección",
+        "addressLine1Placeholder": "Calle del Puerto 12",
+        "addressLine2": "Dirección línea 2 (opcional)",
+        "addressLine2Placeholder": "Apartamento, piso, planta",
+        "city": "Ciudad",
+        "cityPlaceholder": "Split",
+        "postalCode": "Código postal (opcional)",
+        "postalCodePlaceholder": "21000",
+        "country": "País",
+        "countryPlaceholder": "Selecciona un país",
+        "registration": "Número de registro (opcional)",
+        "registrationPlaceholder": "12345678"
       },
       "question": {
         "label": "Tu pregunta o solicitud",
@@ -101,6 +119,7 @@
       "browse": "Ver yates",
       "remaining": "Los {amount} restantes se pagarán al check-in.",
       "emailed": "Hemos enviado una confirmación a tu correo",
+      "guestEmailed": "Te hemos enviado la confirmación por correo, junto con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
       "viewBooking": "Ver reserva",
       "summaryTitle": "Resumen de la reserva",
       "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
@@ -118,6 +137,67 @@
         "totalPrice": "Precio total",
         "perPerson": "~ {price} por persona",
         "dueNow": "A pagar ahora"
+      },
+      "viewInvoice": "Ver factura"
+    },
+    "invoice": {
+      "title": "Factura",
+      "print": "Imprimir / Guardar como PDF",
+      "backToBookings": "Volver a mis reservas",
+      "browse": "Ver yates",
+      "issuedOn": "Emitida el {date}",
+      "dueOn": "Vence el {date}",
+      "status": {
+        "pending": "Pendiente de pago",
+        "sent": "Enviada",
+        "paid": "Pagada",
+        "cancelled": "Cancelada"
+      },
+      "from": "De",
+      "billTo": "Facturar a",
+      "vat": "NIF/IVA {value}",
+      "registration": "N.º de registro {value}",
+      "summary": {
+        "reference": "Referencia de la reserva",
+        "yacht": "Yate",
+        "base": "Base",
+        "dates": "Fechas del chárter",
+        "guests": "Huéspedes"
+      },
+      "lines": {
+        "description": "Concepto",
+        "collected": "Cobro",
+        "amount": "Importe"
+      },
+      "payWhen": {
+        "now": "Con esta factura",
+        "at_check_in": "En la llegada"
+      },
+      "totals": {
+        "charterTotal": "Total del chárter",
+        "paid": "Ya pagado",
+        "dueNow": "A pagar ahora",
+        "balance": "Saldo pendiente",
+        "securityDeposit": "En la llegada se cobra una fianza reembolsable de {amount} que no forma parte de esta factura."
+      },
+      "payment": {
+        "title": "Datos de pago",
+        "beneficiary": "Beneficiario",
+        "bank": "Banco",
+        "iban": "IBAN",
+        "bic": "BIC / SWIFT",
+        "reference": "Referencia del pago",
+        "amount": "Importe a transferir",
+        "note": "Indica la referencia de pago en la transferencia para que podamos asociarla a tu reserva. La reserva se confirma cuando se reciben los fondos."
+      },
+      "footnote": "Emitida por {company}. Esta factura se ha generado electrónicamente y es válida sin firma.",
+      "error": {
+        "title": "No se pudo cargar la factura",
+        "description": "Inténtalo de nuevo en un momento."
+      },
+      "missing": {
+        "title": "Esta reserva no tiene factura",
+        "description": "Esta reserva no se pagó por transferencia bancaria, por lo que no se emitió ninguna factura."
       }
     }
   },
@@ -147,6 +227,8 @@
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "priceOnRequest": "Bajo petición",
+      "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
       "prepayment": "Anticipo de reserva: {amount}",
@@ -162,6 +244,7 @@
       },
       "battenMainsail": "Mayor con sables",
       "badges": {
+        "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
         "bestValue": "Mejor relación calidad-precio",
         "new": "Nuevo",
@@ -259,6 +342,8 @@
       "price": "Precio (del periodo elegido)",
       "boatAge": "Antigüedad del barco",
       "year": "Año",
+      "yearFrom": "Año desde",
+      "yearTo": "Año hasta",
       "guestRating": "Valoración de huéspedes"
     },
     "placeholders": {
@@ -770,8 +855,7 @@
     "consultation": {
       "close": "Cerrar",
       "title": "Ponte en contacto",
-      "subtitle": "Elige cómo te gustaría conectar con nuestro equipo.",
-      "back": "Atrás",
+      "subtitle": "Reserva una llamada o envíanos un mensaje, lo que prefieras.",
       "options": {
         "call": {
           "title": "Reservar una llamada rápida",
@@ -784,7 +868,7 @@
       },
       "placeholder": {
         "title": "La reserva estará disponible pronto",
-        "description": "La programación en línea aún no está lista — envíanos un mensaje y coordinaremos un horario que te convenga.",
+        "description": "La programación en línea aún no está lista. Envíanos un mensaje y coordinaremos un horario que te convenga.",
         "cta": "Enviar un mensaje en su lugar"
       },
       "submitted": {
@@ -841,6 +925,9 @@
       "people": "Personas",
       "datesPlaceholder": "Selecciona fechas",
       "selectDates": "Selecciona tus fechas para ver el precio",
+      "unavailable": "Este yate no tiene fechas disponibles",
+      "unavailableHint": "Consúltanos por otras fechas o un yate similar.",
+      "slotRefused": "Esas fechas no se pueden reservar. Elige otro periodo.",
       "prepayment": "Anticipo del {percent}% por el barco",
       "boatPrice": "Precio del barco (alquiler completo)",
       "deposit": "Fianza reembolsable",
@@ -970,10 +1057,6 @@
       "title": "Crear cuenta",
       "description": "Crea una cuenta de YachtSkanner para reservar yates, guardar favoritos y gestionar tus viajes."
     },
-    "Dashboard": {
-      "title": "Panel",
-      "description": "Gestiona tus reservas de chárter, yates guardados y ajustes de la cuenta."
-    },
     "Wishlist": {
       "title": "Tus favoritos",
       "description": "Los yates y catamaranes que has guardado. Compara tus favoritos y consulta la disponibilidad para tus fechas."
@@ -1001,6 +1084,10 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Invoice": {
+      "title": "Factura",
+      "description": "La factura de tu reserva de chárter, con los datos de pago."
     }
   },
   "Profile": {

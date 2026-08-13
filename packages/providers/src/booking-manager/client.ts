@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-import { ContractError } from "../shared/errors";
+import { ContractError, describeSchemaIssues } from "../shared/errors";
 import type { JsonValue } from "../shared/json";
 import {
   createProviderHttpClient,
@@ -74,7 +74,7 @@ export class BookingManagerClient {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       throw new ContractError(
-        `Booking Manager response from ${endpoint} did not match the schema`,
+        `Booking Manager response from ${endpoint} did not match the schema — ${describeSchemaIssues(parsed.error.issues)}`,
         { endpoint, payload: { issues: parsed.error.issues } },
       );
     }

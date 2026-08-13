@@ -25,6 +25,7 @@
     },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
+      "guestNotice": "No account needed to book. We'll set one up for this reservation and email you a link to choose a password whenever you like.",
       "fullName": "Full Name",
       "fullNamePlaceholder": "John Doe",
       "email": "Email Address",
@@ -44,7 +45,10 @@
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",
-      "confirmFailed": "Could not confirm your booking. Please try again."
+      "confirmFailed": "Could not confirm your booking. Please try again.",
+      "billingName": "Enter the name to bill",
+      "billingAddress": "Enter the billing address",
+      "city": "Enter the city"
     },
     "backToYacht": "Back To {name}",
     "panels": {
@@ -87,7 +91,21 @@
         "vat": "VAT Number (Optional)",
         "vatPlaceholder": "GB12312321321312123",
         "notice": "Prefer to pay offline? We'll send you an invoice to complete the payment by bank transfer.",
-        "cta": "Request Invoice (For {amount})"
+        "cta": "Request Invoice (For {amount})",
+        "name": "Billing Name",
+        "namePlaceholder": "Jane Doe",
+        "addressLine1": "Address",
+        "addressLine1Placeholder": "12 Harbour Road",
+        "addressLine2": "Address Line 2 (Optional)",
+        "addressLine2Placeholder": "Apartment, suite, floor",
+        "city": "City",
+        "cityPlaceholder": "Split",
+        "postalCode": "Postal Code (Optional)",
+        "postalCodePlaceholder": "21000",
+        "country": "Country",
+        "countryPlaceholder": "Select country",
+        "registration": "Registration Number (Optional)",
+        "registrationPlaceholder": "12345678"
       },
       "question": {
         "label": "Your Question or Request",
@@ -101,6 +119,7 @@
       "browse": "Browse yachts",
       "remaining": "The remaining {amount} will be paid at check-in.",
       "emailed": "We've sent a confirmation to your email",
+      "guestEmailed": "We've sent your confirmation by email, along with a link to set a password and keep this booking in your account",
       "viewBooking": "View Booking",
       "summaryTitle": "Booking Summary",
       "quote": "\"This yacht is ideal for island hopping in Croatia — stable, spacious, and perfect for group travel. Your route includes Hvar and Vis, two of the most scenic islands in the Adriatic.\"",
@@ -118,6 +137,67 @@
         "totalPrice": "Total Price",
         "perPerson": "~ {price} for person",
         "dueNow": "Due now"
+      },
+      "viewInvoice": "View Invoice"
+    },
+    "invoice": {
+      "title": "Invoice",
+      "print": "Print / Save as PDF",
+      "backToBookings": "Back to bookings",
+      "browse": "Browse yachts",
+      "issuedOn": "Issued {date}",
+      "dueOn": "Due {date}",
+      "status": {
+        "pending": "Awaiting payment",
+        "sent": "Sent",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "from": "From",
+      "billTo": "Bill to",
+      "vat": "VAT {value}",
+      "registration": "Reg. no. {value}",
+      "summary": {
+        "reference": "Booking reference",
+        "yacht": "Yacht",
+        "base": "Base",
+        "dates": "Charter dates",
+        "guests": "Guests"
+      },
+      "lines": {
+        "description": "Description",
+        "collected": "Collected",
+        "amount": "Amount"
+      },
+      "payWhen": {
+        "now": "With this invoice",
+        "at_check_in": "At check-in"
+      },
+      "totals": {
+        "charterTotal": "Charter total",
+        "paid": "Already paid",
+        "dueNow": "Due now",
+        "balance": "Remaining balance",
+        "securityDeposit": "A refundable security deposit of {amount} is collected at check-in and is not part of this invoice."
+      },
+      "payment": {
+        "title": "Payment details",
+        "beneficiary": "Beneficiary",
+        "bank": "Bank",
+        "iban": "IBAN",
+        "bic": "BIC / SWIFT",
+        "reference": "Payment reference",
+        "amount": "Amount to transfer",
+        "note": "Quote the payment reference on the transfer so we can match it to your booking. Your reservation is confirmed once the funds clear."
+      },
+      "footnote": "Issued by {company}. This invoice was generated electronically and is valid without a signature.",
+      "error": {
+        "title": "Could not load the invoice",
+        "description": "Please try again in a moment."
+      },
+      "missing": {
+        "title": "No invoice for this booking",
+        "description": "This booking was not paid by bank transfer, so no invoice was issued."
       }
     }
   },
@@ -147,6 +227,8 @@
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
+      "priceOnRequest": "On request",
+      "priceUnavailable": "Unavailable",
       "perPerson": "{price} for person",
       "perPersonApprox": "~ {price} for person",
       "prepayment": "Booking prepayment: {amount}",
@@ -162,6 +244,7 @@
       },
       "battenMainsail": "Batten mainsail",
       "badges": {
+        "unavailable": "Unavailable",
         "bestForFamilies": "Best for families",
         "bestValue": "Best value",
         "new": "New",
@@ -259,6 +342,8 @@
       "price": "Price (for selected period)",
       "boatAge": "Boat age",
       "year": "Year",
+      "yearFrom": "Year from",
+      "yearTo": "Year to",
       "guestRating": "Guest Rating"
     },
     "placeholders": {
@@ -770,8 +855,7 @@
     "consultation": {
       "close": "Close",
       "title": "Get in touch",
-      "subtitle": "Choose how you'd like to connect with our team.",
-      "back": "Back",
+      "subtitle": "Book a call or send us a message, whichever suits you.",
       "options": {
         "call": {
           "title": "Book a quick call",
@@ -784,7 +868,7 @@
       },
       "placeholder": {
         "title": "Booking is coming soon",
-        "description": "Online scheduling isn't ready yet — send us a message instead and we'll set up a time that works for you.",
+        "description": "Online scheduling isn't ready yet. Send us a message and we'll set up a time that works for you.",
         "cta": "Send a message instead"
       },
       "submitted": {
@@ -841,6 +925,9 @@
       "people": "People",
       "datesPlaceholder": "Select dates",
       "selectDates": "Select your dates to see the price",
+      "unavailable": "This yacht has no available dates",
+      "unavailableHint": "Ask us about other dates or a similar yacht.",
+      "slotRefused": "Those dates are not bookable. Please choose another period.",
       "prepayment": "{percent}% Booking Prepayment For Boat",
       "boatPrice": "Boat price (full rental price)",
       "deposit": "Refundable Security Deposit",
@@ -970,10 +1057,6 @@
       "title": "Create Account",
       "description": "Create a YachtSkanner account to book yachts, save favourites and manage your trips."
     },
-    "Dashboard": {
-      "title": "Dashboard",
-      "description": "Manage your yacht charter bookings, saved yachts and account settings."
-    },
     "Wishlist": {
       "title": "Your Wishlist",
       "description": "The yachts and catamarans you have saved. Compare your favourites and check availability for your dates."
@@ -1001,6 +1084,10 @@
     "Sync": {
       "title": "Sync History",
       "description": "Catalogue and availability sync runs with their counts and errors."
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "The invoice for your yacht charter booking, with payment details."
     }
   },
   "Profile": {

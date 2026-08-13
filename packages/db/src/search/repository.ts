@@ -13,6 +13,7 @@ import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
+  AvailabilityConstraints,
   FacetMediaKind,
   ListingDetail,
   ListingFacets,
@@ -241,23 +242,28 @@ export async function getListingDetailByIdOrSlug(
     importantInformation: {
       charterCompany: listing.operator,
       yachtPickupAddress: `${listing.baseName}, ${listing.location}, ${listing.country}`,
-      yachtPickup: {
-        date: listing.availableFrom,
-        time: info?.checkInTime ?? null,
-      },
-      yachtDropOff: {
-        date: listing.availableTo,
-        time: info?.checkOutTime ?? null,
-      },
+      /*
+       * Times only. These carried `available_from`/`available_to`, which are the first and last
+       * dates the boat is free anywhere in the horizon — not this charter's pickup and drop-off.
+       * A listing page has no charter yet, so it has no date to state; the base's times hold
+       * whatever dates the visitor later picks.
+       */
+      yachtPickup: { time: info?.checkInTime ?? null },
+      yachtDropOff: { time: info?.checkOutTime ?? null },
       cancellationPaymentPolicies:
         "Cancellation and prepayment policies vary according to your selection. Payment conditions are confirmed during quote and booking.",
       sailingLicenseRequired:
         listing.crewType === "bareboat"
           ? "Valid sailing license or local equivalent required."
           : "No license is needed when booking with crew or skipper.",
+      /*
+       * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
+       * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"
+       * into "not permitted" on 109 listings. Ask the base instead of inventing its policy.
+       */
       pets: listing.petsAllowed
         ? "Pets are allowed on this yacht with charter company confirmation."
-        : "Pets are not permitted on this yacht.",
+        : "Pet policy is set by the charter base — ask before booking.",
       paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
       marinaInformation: `${listing.baseName} is located in ${listing.location}, ${listing.country}. Check-in and check-out times are provided by the charter base.`,
       marinaContact: {
@@ -472,6 +478,7 @@ export async function listAvailabilityCalendar(
     minNights: number | null;
     checkinWeekday: number | null;
     checkoutWeekday: number | null;
+    availabilityConfirmed: boolean;
   }>(sql`
     select
       slot.start_date as "startDate",
@@ -481,7 +488,8 @@ export async function listAvailabilityCalendar(
       slot.currency,
       slot.min_nights as "minNights",
       slot.checkin_weekday as "checkinWeekday",
-      slot.checkout_weekday as "checkoutWeekday"
+      slot.checkout_weekday as "checkoutWeekday",
+      slot.availability_confirmed as "availabilityConfirmed"
     from availability_slot slot
     where slot.listing_id = ${input.listingId}
       and slot.start_date >= ${input.from}
@@ -503,7 +511,106 @@ export async function listAvailabilityCalendar(
       minNights: slot.minNights,
       checkinWeekday: slot.checkinWeekday,
       checkoutWeekday: slot.checkoutWeekday,
+      availabilityConfirmed: slot.availabilityConfirmed,
     })),
+  };
+}
+
+export async function listAvailabilityConstraints(
+  db: NodePgDatabase<typeof schema>,
+  input: AvailabilityCalendarInput,
+): Promise<AvailabilityConstraints> {
+  /*
+   * Overlap, not containment, unlike the calendar above. A booking that starts before
+   * the window and ends inside it still blocks candidate ranges at this end, and a
+   * containment filter would drop it and let the caller offer a period that is taken.
+   */
+  const overlapsWindow = sql`slot.start_date < ${input.to} and slot.end_date > ${input.from}`;
+
+  const [rules, occupied, priced, oneWay] = await Promise.all([
+    db.execute<{
+      checkinWeekday: number | null;
+      checkoutWeekday: number | null;
+      minNights: number | null;
+      maxNights: number | null;
+    }>(sql`
+      select
+        rule.checkin_weekday as "checkinWeekday",
+        rule.checkout_weekday as "checkoutWeekday",
+        rule.min_nights as "minNights",
+        rule.max_nights as "maxNights"
+      from listing_checkin_rule rule
+      where rule.listing_id = ${input.listingId}
+      order by rule.min_nights asc nulls first, rule.checkin_weekday asc nulls first
+    `),
+    db.execute<{
+      startDate: string;
+      endDate: string;
+      status: "option" | "occupied" | "blocked";
+    }>(sql`
+      select slot.start_date as "startDate", slot.end_date as "endDate", slot.status
+      from availability_slot slot
+      where slot.listing_id = ${input.listingId}
+        and slot.status <> 'available'
+        and ${overlapsWindow}
+      order by slot.start_date asc
+    `),
+    db.execute<{
+      startDate: string;
+      endDate: string;
+      priceMinor: number;
+      currency: string;
+      confirmed: boolean;
+    }>(sql`
+      /*
+       * The provider's published rates, which is what makes a date sellable at all: it does
+       * not publish one for a season it has not opened. Read from the rate list rather than
+       * from priced slots, so the signal covers the season the provider actually priced
+       * instead of only the periods someone enumerated inside it.
+       */
+      select
+        price.start_date as "startDate",
+        price.end_date as "endDate",
+        price.price_minor as "priceMinor",
+        price.currency,
+        exists (
+          select 1
+          from availability_slot slot
+          where slot.listing_id = price.listing_id
+            and slot.status = 'available'
+            and slot.availability_confirmed
+            and slot.start_date >= price.start_date
+            and slot.end_date <= price.end_date
+        ) as "confirmed"
+      from listing_price_period price
+      where price.listing_id = ${input.listingId}
+        and price.kind = 'weekly'
+        and price.currency = ${input.currency ?? "EUR"}
+        and price.start_date < ${input.to}
+        and price.end_date > ${input.from}
+      order by price.start_date asc
+    `),
+    db.execute<{
+      startDate: string | null;
+      endDate: string | null;
+      isOneWay: boolean;
+    }>(sql`
+      select rule.start_date as "startDate", rule.end_date as "endDate", rule.is_one_way as "isOneWay"
+      from listing_one_way_rule rule
+      where rule.listing_id = ${input.listingId}
+        and (rule.start_date is null or rule.start_date < ${input.to})
+        and (rule.end_date is null or rule.end_date > ${input.from})
+      order by rule.start_date asc nulls first
+    `),
+  ]);
+
+  return {
+    listingId: input.listingId,
+    window: { from: input.from, to: input.to },
+    rules: rules.rows,
+    occupied: occupied.rows,
+    priced: priced.rows,
+    oneWay: oneWay.rows,
   };
 }
 
@@ -582,6 +689,34 @@ export async function listSimilarListings(
   return rows.rows.map(normalizeSearchRow);
 }
 
+/*
+ * The two numbers the card and the sidebar show under "booked / viewed". Both are
+ * counted here rather than stored on `listing_search_doc`, because the doc is only
+ * rebuilt on sync or publish and these change by the hour — a stored copy would be
+ * a stale number presented as today's.
+ *
+ * Booked counts bookings that are still standing and were confirmed this month:
+ * one taken and then cancelled or refunded is not a charter the visitor is
+ * competing with, so only `CONFIRMED` counts. Both windows are UTC, matching how
+ * `recordListingView` stamps a view, so neither count shifts with the server's
+ * local timezone.
+ */
+const engagementColumns = sql`
+  (
+    select count(*)::integer
+    from booking b
+    where b.listing_id = doc.listing_id
+      and b.status = 'CONFIRMED'
+      and b.confirmed_at >= date_trunc('month', now() at time zone 'utc')
+  ) as "bookedThisMonth",
+  (
+    select count(*)::integer
+    from listing_view v
+    where v.listing_id = doc.listing_id
+      and v.viewed_on = (now() at time zone 'utc')::date
+  ) as "viewedToday"
+`;
+
 const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
@@ -601,6 +736,8 @@ const searchColumns = sql`
   doc.base_email as "baseEmail",
   doc.base_phone as "basePhone",
   doc.base_website as "baseWebsite",
+  doc.base_check_in_time as "baseCheckInTime",
+  doc.base_check_out_time as "baseCheckOutTime",
   doc.length_m as "lengthM",
   doc.cabins,
   doc.berths,
@@ -611,6 +748,7 @@ const searchColumns = sql`
   doc.pets_allowed as "petsAllowed",
   doc.rating,
   doc.review_count as "reviewCount",
+  ${engagementColumns},
   doc.main_image as "mainImage",
   doc.gallery,
   doc.amenities,
@@ -736,13 +874,45 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("petsAllowed") && input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
   const availabilityWindow = availabilityWindowFor(input);
   if (availabilityWindow) {
+    /*
+     * Containment against one free stretch, not against one enumerated period. The old filter
+     * asked a single availability_slot row to span the whole request, and no synthesized slot ran
+     * longer than a week, so every multi-week search returned nothing at all while dozens of
+     * listings had the consecutive weeks free.
+     *
+     * No check-in weekday here. Search is a funnel: it answers "is this boat free then", and
+     * the rules decide the exact charter on the detail page. A listing should not vanish from
+     * results because the visitor's dates start on a Tuesday, when the honest answer is "free
+     * that week, and it starts on Saturdays".
+     */
     parts.push(sql`exists (
       select 1
-      from availability_slot slot
-      where slot.listing_id = doc.listing_id
-        and slot.status = 'available'
-        and slot.start_date <= ${availabilityWindow.checkIn}
-        and slot.end_date >= ${availabilityWindow.checkOut}
+      from listing_free_period free
+      where free.listing_id = doc.listing_id
+        and free.start_date <= ${availabilityWindow.checkIn}
+        and free.end_date >= ${availabilityWindow.checkOut}
+    )`);
+  }
+  /*
+   * Length is different from the weekday above, and is filtered even with no dates attached.
+   * The weekday is a constraint the visitor never mentioned, so applying it would drop a boat
+   * for a reason they did not ask about. A duration is a constraint they chose: a boat whose
+   * shortest charter is a week cannot serve a three-day trip, and listing it under "3 days"
+   * promises something the quote will refuse.
+   *
+   * A listing with no published rule is kept, matching `availability-rules.ts`: the rules are
+   * what the provider stated, and inventing one here would hide dates it would happily sell.
+   */
+  if (!skip.has("duration") && input.duration) {
+    parts.push(sql`(
+      not exists (select 1 from listing_checkin_rule rule where rule.listing_id = doc.listing_id)
+      or exists (
+        select 1
+        from listing_checkin_rule rule
+        where rule.listing_id = doc.listing_id
+          and (rule.min_nights is null or rule.min_nights <= ${input.duration})
+          and (rule.max_nights is null or rule.max_nights >= ${input.duration})
+      )
     )`);
   }
   return sql.join(parts, sql` and `);

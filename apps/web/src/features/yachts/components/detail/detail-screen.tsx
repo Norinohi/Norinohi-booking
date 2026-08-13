@@ -5,6 +5,7 @@ import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/navigation/app-breadcrumbs";
 
 import Gallery from "./gallery";
+import RecordView from "./record-view";
 import AmenitiesSection from "./sections/amenities-section";
 import DescriptionSection from "./sections/description-section";
 import DetailTabs from "./sections/detail-tabs";
@@ -34,6 +35,7 @@ export default function YachtDetailScreen({ title, aside }: { title?: string; as
 
   return (
     <div className="flex flex-col">
+      <RecordView />
       {/* Static: no listing dependency, so it prerenders and anchors the shell. */}
       <div data-testid="yacht-detail-shell-marker">
         <AppBreadcrumbs

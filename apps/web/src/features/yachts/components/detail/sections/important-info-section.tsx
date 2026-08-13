@@ -39,12 +39,8 @@ export default function ImportantInfoSection() {
   const rows: Row[] = [
     { key: "charterCompany", value: info.charterCompany },
     { key: "pickUpAddress", value: info.yachtPickupAddress, mapPoint: info.map },
-    { key: "pickUp", value: info.yachtPickup.date ?? "", note: info.yachtPickup.time ?? undefined },
-    {
-      key: "dropOff",
-      value: info.yachtDropOff.date ?? "",
-      note: info.yachtDropOff.time ?? undefined,
-    },
+    { key: "pickUp", value: info.yachtPickup.time ?? "" },
+    { key: "dropOff", value: info.yachtDropOff.time ?? "" },
     { key: "policies", value: info.cancellationPaymentPolicies },
     { key: "license", value: info.sailingLicenseRequired },
     { key: "pets", value: info.pets },

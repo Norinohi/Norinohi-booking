@@ -10,6 +10,8 @@ import {
   availabilitySlot,
   base,
   builder,
+  listingFreePeriod,
+  listingPricePeriod,
   country,
   facetMedia,
   facetMediaTranslation,
@@ -1636,6 +1638,47 @@ const slots = yachts.flatMap((item) => {
   });
 });
 
+/*
+ * The mock fleet has to carry the same canonical shapes a real sync writes, or the seeded
+ * catalogue is unbookable: search filters on free periods and the card's price comes from
+ * published rates. Derived from the same weekly slots so the three never disagree.
+ */
+const SEASON_START = seasonWeeks[0] ?? "";
+const SEASON_END = addWeek(seasonWeeks.at(-1) ?? "");
+
+const pricePeriods = slots.map((slot) => ({
+  id: `lpp_${slot.id}`,
+  listingId: slot.listingId,
+  listingSourceId: slot.listingSourceId,
+  startDate: slot.startDate,
+  endDate: slot.endDate,
+  kind: "weekly" as const,
+  priceMinor: slot.priceMinor,
+  currency: "EUR",
+}));
+
+/** The complement of everything sold, exactly as `freePeriodsFrom` computes it after a sync. */
+const freePeriods = yachts.flatMap((item) => {
+  const sold = slots
+    .filter((slot) => slot.listingId === item.listingId && slot.status !== "available")
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  const periods: { startDate: string; endDate: string }[] = [];
+  let cursor = SEASON_START;
+  for (const slot of sold) {
+    if (slot.startDate > cursor) periods.push({ startDate: cursor, endDate: slot.startDate });
+    if (slot.endDate > cursor) cursor = slot.endDate;
+  }
+  if (cursor < SEASON_END) periods.push({ startDate: cursor, endDate: SEASON_END });
+
+  return periods.map((period, index) => ({
+    id: `lfp_${key(item.externalId.replace("yacht-", ""))}_${index}`,
+    listingId: item.listingId,
+    listingSourceId: item.sourceId,
+    ...period,
+  }));
+});
+
 const crewTypeFor = (categoryId: string) => {
   if (categoryId === "cat_luxury" || categoryId === "cat_motor") return "full-crew";
   if (categoryId === "cat_catamaran") return "skipper";
@@ -2150,6 +2193,24 @@ export async function main() {
         sourceHash: sql.raw("excluded.source_hash"),
       },
     });
+
+  await db
+    .insert(listingPricePeriod)
+    .values(pricePeriods)
+    .onConflictDoUpdate({
+      target: [
+        listingPricePeriod.listingId,
+        listingPricePeriod.kind,
+        listingPricePeriod.startDate,
+        listingPricePeriod.endDate,
+      ],
+      set: {
+        priceMinor: sql.raw("excluded.price_minor"),
+        currency: sql.raw("excluded.currency"),
+      },
+    });
+
+  await db.insert(listingFreePeriod).values(freePeriods).onConflictDoNothing();
 
   await db
     .insert(review)

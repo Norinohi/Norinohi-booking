@@ -11,6 +11,9 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+
+import type { BoatCardCharterDate } from "@/components/shared/data-display/boat-card";
+import { dayToDisplay } from "@/lib/date";
 import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 
@@ -39,18 +42,17 @@ export type BookingCardProps = BoatCardProps & {
   isCancelled: boolean;
 };
 
-function Stamp({ value, timeZone }: { value: string; timeZone: string }) {
+function Stamp({ value }: { value: BoatCardCharterDate }) {
   const format = useFormatter();
-  const at = new Date(value);
 
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs font-semibold leading-[1.3] text-foreground">
-        {format.dateTime(at, { ...FORMATS.day, timeZone })}
+        {format.dateTime(dayToDisplay(value.day), FORMATS.day)}
       </span>
-      <span className="text-sm font-medium leading-[1.3] text-natural-500">
-        {format.dateTime(at, { ...FORMATS.time, timeZone })}
-      </span>
+      {value.time ? (
+        <span className="text-sm font-medium leading-[1.3] text-natural-500">{value.time}</span>
+      ) : null}
     </div>
   );
 }
@@ -166,9 +168,9 @@ export default function BookingCard({
           </div>
 
           <div className="flex items-center gap-3">
-            <Stamp value={booking.start} timeZone={booking.timeZone} />
+            {booking.start ? <Stamp value={booking.start} /> : null}
             <ArrowRight className="size-4 shrink-0 text-foreground" />
-            <Stamp value={booking.end} timeZone={booking.timeZone} />
+            {booking.end ? <Stamp value={booking.end} /> : null}
           </div>
 
           <p className="text-[42px] font-bold leading-[1.15] text-black">{booking.price}</p>

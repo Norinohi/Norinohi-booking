@@ -368,6 +368,7 @@ export async function writeCanonicalCatalogue(
         ? (categoryIds.get(item.externalCategoryId) ?? null)
         : null,
       defaultCurrency: item.defaultCurrency,
+      crewType: item.crewType ?? null,
       paymentPolicy: item.paymentPolicy ?? null,
       providerRating: decimal(item.rating),
       providerReviewCount: item.reviewCount ?? null,
@@ -739,6 +740,7 @@ async function writeListingChildren(
       engines: item.spec.engines ?? null,
       fuelCapacity: item.spec.fuelCapacity ?? null,
       waterCapacity: item.spec.waterCapacity ?? null,
+      sailType: item.spec.sailType ?? null,
     })
     .onConflictDoUpdate({
       target: listingSpecification.listingId,
@@ -753,6 +755,7 @@ async function writeListingChildren(
         engines: sql`excluded.engines`,
         fuelCapacity: sql`excluded.fuel_capacity`,
         waterCapacity: sql`excluded.water_capacity`,
+        sailType: sql`excluded.sail_type`,
       },
     });
 

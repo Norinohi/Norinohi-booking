@@ -37,7 +37,7 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
 
   const input = useSearchInput(filters, defaults, { sort, page });
   const { data, isLoading } = useQuery(resultsQueryOptions(input));
-  const boats = data?.items.map(({ listing }) => toMapCard(listing)) ?? [];
+  const boats = data?.items.map((item) => toMapCard(item.listing, item)) ?? [];
   const pagination = data?.pagination;
 
   return (

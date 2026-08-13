@@ -1,8 +1,11 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { headers } from "next/headers";
+import { getLocale, getTranslations } from "next-intl/server";
 
-import { SignUpForm } from "@/features/auth";
+import { DEFAULT_SIGNED_IN_PATH, SignUpForm } from "@/features/auth";
+import { redirect } from "@/i18n/navigation";
+import { authClient } from "@/lib/auth-client";
 import { buildMetadata } from "@/lib/seo";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -25,7 +28,17 @@ export async function generateMetadata({
   });
 }
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const locale = await getLocale();
+
+  /* Signing up while signed in would create nothing, so an account holder is sent on instead. */
+  const session = await authClient.getSession({
+    fetchOptions: { headers: await headers(), throw: true },
+  });
+  if (session?.user) {
+    return redirect({ href: DEFAULT_SIGNED_IN_PATH, locale });
+  }
+
   // nuqs reads the query string, so the screen has to sit behind a boundary to prerender.
   // The real loading skeleton lands with the instant-navigation work.
   return (

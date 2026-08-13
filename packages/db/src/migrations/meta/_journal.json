@@ -211,6 +211,41 @@
       "when": 1786608332009,
       "tag": "0029_grey_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1786638458878,
+      "tag": "0030_curious_texas_twister",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1786643765427,
+      "tag": "0031_rapid_frog_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1786647096906,
+      "tag": "0032_curved_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1786647561666,
+      "tag": "0033_futuristic_doctor_strange",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1786649377756,
+      "tag": "0034_dizzy_ezekiel",
+      "breakpoints": true
     }
   ]
 }

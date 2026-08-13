@@ -19,7 +19,7 @@ import type { ReactNode } from "react";
  */
 const SelectRoot = SelectPrimitive.Root;
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
@@ -223,7 +223,7 @@ function Select({
           <p className="py-2 text-center text-sm font-medium text-natural-500">{emptyLabel}</p>
         ) : (
           options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </SelectItem>
           ))

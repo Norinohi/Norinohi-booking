@@ -11,6 +11,7 @@ import { Link } from "@/i18n/navigation";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
+import { boatCardPrice } from "@/lib/boat-card-fields";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
 import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
@@ -30,6 +31,7 @@ const DESTINATION_IMAGES = new Map<string, string>([
 export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const t = useTranslations("PlanMyTrip.result");
   const tv = useTranslations("PlanMyTrip.steps.tripVibe");
+  const tCard = useTranslations("Common.boatCard");
   const formatMoney = useMoney();
   const { data: recommendation, isPending, isError, refetch } = usePlannerRecommendation(answers);
 
@@ -70,7 +72,10 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   ];
 
   const boatCard = recommendation.listing
-    ? toBoatCardProps(recommendation.listing, formatMoney)
+    ? toBoatCardProps(
+        recommendation.listing,
+        boatCardPrice(tCard, recommendation.listing, formatMoney),
+      )
     : null;
   const destinationImage =
     DESTINATION_IMAGES.get(recommendation.destination.country) ?? DEFAULT_DESTINATION_IMAGE;

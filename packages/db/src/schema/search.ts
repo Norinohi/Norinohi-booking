@@ -37,6 +37,13 @@ export const listingSearchDoc = pgTable(
     baseEmail: text("base_email"),
     basePhone: text("base_phone"),
     baseWebsite: text("base_website"),
+    /*
+     * Wall-clock at the marina, exactly as the provider states it, never an instant. "17:00"
+     * means 17:00 where the boat is, so it is carried as text and rendered without conversion:
+     * turning it into a timestamp would need an IANA zone per base, which no provider sends.
+     */
+    baseCheckInTime: text("base_check_in_time"),
+    baseCheckOutTime: text("base_check_out_time"),
     lengthM: numeric("length_m", { precision: 8, scale: 2 }),
     cabins: integer("cabins"),
     berths: integer("berths"),
