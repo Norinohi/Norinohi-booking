@@ -74,6 +74,7 @@ function resolverFor(externalYachtId: string): CatalogueResolver {
       }),
     toListingId: () => Promise.resolve(LISTING_ID),
     toExternalAmenityIds: () => Promise.resolve([]),
+    toExternalCountryId: () => Promise.resolve(null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
   };

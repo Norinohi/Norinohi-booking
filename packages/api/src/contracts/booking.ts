@@ -248,6 +248,12 @@ export const guestDetailsSchema = z.object({
   fullName: z.string().trim().min(1).max(200),
   email: z.email(),
   phone: z.string().trim().min(3).max(32),
+  /**
+   * ISO 3166-1 alpha-2. Required rather than optional: NauSYS lists country among
+   * the minimum client fields and answers INSUFFICIENT_DATA (201) without one, so
+   * a checkout that omits it only fails once the customer presses pay.
+   */
+  countryCode: z.string().trim().length(2).toUpperCase(),
   specialRequests: z.string().trim().max(2000).optional(),
 });
 

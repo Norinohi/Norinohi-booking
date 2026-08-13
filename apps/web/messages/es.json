@@ -31,6 +31,8 @@
       "emailPlaceholder": "name@example.com",
       "phone": "Número de teléfono",
       "phonePlaceholder": "+34 612 345 678",
+      "country": "País",
+      "countryPlaceholder": "Selecciona tu país",
       "specialRequests": "Peticiones especiales (opcional)",
       "specialRequestsPlaceholder": "Entrada anticipada, por favor"
     },
@@ -38,6 +40,7 @@
       "fullName": "Introduce tu nombre completo",
       "email": "Introduce un correo electrónico válido",
       "phone": "Introduce un número de teléfono válido",
+      "country": "Selecciona tu país",
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",

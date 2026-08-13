@@ -72,6 +72,7 @@ export async function confirmBookingWithProvider(
         name: row.guestFullName ?? "Guest",
         email: row.guestEmail ?? "unknown@example.com",
         phone: row.guestPhone ?? undefined,
+        countryCode: row.guestCountryCode ?? undefined,
       },
       // The handle the option step produced. Providers that chain their booking
       // calls need it plus the token it last returned; ours is stale the moment

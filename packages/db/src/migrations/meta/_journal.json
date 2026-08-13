@@ -183,6 +183,13 @@
       "when": 1786519394586,
       "tag": "0025_motionless_lilith",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786542762547,
+      "tag": "0026_slimy_epoch",
+      "breakpoints": true
     }
   ]
 }

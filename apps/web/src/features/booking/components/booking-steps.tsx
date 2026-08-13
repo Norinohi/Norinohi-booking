@@ -101,6 +101,7 @@ export default function BookingSteps() {
           fullName: guest.fullName,
           email: guest.email,
           phone: guest.phone,
+          countryCode: guest.countryCode,
           specialRequests: guest.specialRequests || undefined,
         },
         consents: { terms: true, cancellationPolicy: true },

@@ -188,9 +188,10 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     }
 
     const yachtId = await externalYachtId(parsed.listingId);
+    const countryId = await externalCountryId(parsed.customer.countryCode);
 
     const info = await withReservation(OPENS_RESERVATION, nausysEndpoints.booking.createInfo, {
-      client: toRestClient(parsed.customer),
+      client: toRestClient(parsed.customer, countryId),
       periodFrom: formatNausysDate(parsed.checkIn),
       periodTo: formatNausysDate(parsed.checkOut),
       yachtID: yachtId,
@@ -346,6 +347,26 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       );
     }
     return yachtId;
+  }
+
+  /**
+   * `countryId` is a NauSYS id, not an ISO code, so checkout's alpha-2 has to go
+   * through the catalogue. An unresolvable code is fatal on purpose: sending the
+   * reservation without it earns INSUFFICIENT_DATA (201) at the till, and sending
+   * a guessed id would file the charter against the wrong country.
+   */
+  async function externalCountryId(isoCode: string | undefined): Promise<number | undefined> {
+    if (!isoCode) return undefined;
+
+    const external = await resolver.toExternalCountryId(isoCode);
+    const numeric = Number(external);
+    if (external === null || !Number.isInteger(numeric)) {
+      throw new ContractError(`No NauSYS country matches the guest country code ${isoCode}`, {
+        endpoint: nausysEndpoints.booking.createInfo,
+        payload: { countryCode: isoCode, resolved: external },
+      });
+    }
+    return numeric;
   }
 
   async function externalServiceIds(amenityCodes: string[]): Promise<number[]> {
@@ -575,11 +596,8 @@ export function splitCustomerName(
   return { name: parts.slice(0, -1).join(" "), surname: parts.at(-1) ?? "" };
 }
 
-function toRestClient(customer: BookingDraft["customer"]): RestClient {
+function toRestClient(customer: BookingDraft["customer"], countryId?: number): RestClient {
   const { name, surname } = splitCustomerName(customer.name, customer.surname);
-  // `countryId` is a NauSYS id, not an ISO code, and nothing resolves one yet;
-  // sending our two-letter code back would return INVALID_COUNTRY_ID (401).
-  const countryId = Number(customer.countryCode);
 
   return {
     name,
@@ -589,7 +607,7 @@ function toRestClient(customer: BookingDraft["customer"]): RestClient {
     ...(customer.address ? { address: customer.address } : {}),
     ...(customer.zip ? { zip: customer.zip } : {}),
     ...(customer.city ? { city: customer.city } : {}),
-    ...(Number.isInteger(countryId) ? { countryId } : {}),
+    ...(countryId === undefined ? {} : { countryId }),
   };
 }
 

@@ -163,6 +163,10 @@ export const booking = pgTable(
     guestFullName: text("guest_full_name"),
     guestEmail: text("guest_email"),
     guestPhone: text("guest_phone"),
+    // ISO 3166-1 alpha-2. NauSYS `createInfo` refuses a client without a country
+    // (INSUFFICIENT_DATA), and the connector maps this to the vendor's own numeric
+    // id. Nullable because bookings taken before checkout collected it have none.
+    guestCountryCode: text("guest_country_code"),
     specialRequests: text("special_requests"),
     /** Null until the Payment step; the flow can also end without either. */
     paymentMethod: bookingPaymentMethod("payment_method"),

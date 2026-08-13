@@ -235,6 +235,7 @@ export async function createHold(
     guestFullName: guest.fullName,
     guestEmail: guest.email,
     guestPhone: guest.phone,
+    guestCountryCode: guest.countryCode,
     specialRequests: guest.specialRequests ?? null,
     userId,
     listingId: priced.listingId,
@@ -365,6 +366,7 @@ async function holdOption(
         name: account.name,
         email: account.email,
         phone: created.guestPhone ?? undefined,
+        countryCode: created.guestCountryCode ?? undefined,
       },
     });
 

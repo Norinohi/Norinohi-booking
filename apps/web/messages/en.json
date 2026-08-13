@@ -31,6 +31,8 @@
       "emailPlaceholder": "name@example.com",
       "phone": "Phone Number",
       "phonePlaceholder": "+48 536 839 555",
+      "country": "Country",
+      "countryPlaceholder": "Select your country",
       "specialRequests": "Special Requests (Optional)",
       "specialRequestsPlaceholder": "Early check in please"
     },
@@ -38,6 +40,7 @@
       "fullName": "Enter your full name",
       "email": "Enter a valid email address",
       "phone": "Enter a valid phone number",
+      "country": "Select your country",
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",

@@ -31,6 +31,8 @@
       "emailPlaceholder": "name@example.com",
       "phone": "Номер телефону",
       "phonePlaceholder": "+380 67 123 45 67",
+      "country": "Країна",
+      "countryPlaceholder": "Оберіть країну",
       "specialRequests": "Особливі побажання (необов'язково)",
       "specialRequestsPlaceholder": "Прошу ранній заїзд"
     },
@@ -38,6 +40,7 @@
       "fullName": "Вкажіть повне ім'я",
       "email": "Вкажіть коректну електронну пошту",
       "phone": "Вкажіть коректний номер телефону",
+      "country": "Оберіть країну",
       "terms": "Прийміть умови, щоб продовжити",
       "cancellation": "Прийміть політику скасування, щоб продовжити",
       "paymentMessage": "Введіть ваше запитання чи прохання",

@@ -69,6 +69,8 @@ function fakeResolver(): CatalogueResolver {
       }),
     toListingId: () => Promise.resolve("ylst_adriatic_1"),
     toExternalAmenityIds: (codes) => Promise.resolve(codes.map((code) => code.split(":")[1] ?? "")),
+    /* The vendor's real Croatia id, so a mapped payload is recognisable. */
+    toExternalCountryId: (isoCode) => Promise.resolve(isoCode.toUpperCase() === "HR" ? "1" : null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
   };
@@ -628,16 +630,26 @@ describe("createInfo client mapping", () => {
     });
   });
 
-  it("omits countryId when the customer's country is an ISO code, not a vendor id", async () => {
+  it("maps the customer's ISO country code to the vendor's countryId", async () => {
     const { service, transport } = build();
 
     await service.createOption({
       ...draft,
-      customer: { ...draft.customer, countryCode: "HR", city: "Zagreb" },
+      customer: { ...draft.customer, countryCode: "hr", city: "Zagreb" },
     });
 
     const body = transport.lastBody("createInfo") as { client: Record<string, unknown> };
-    expect(body.client).not.toHaveProperty("countryId");
+    expect(body.client.countryId).toBe(1);
     expect(body.client.city).toBe("Zagreb");
+  });
+
+  it("refuses to open a reservation when the country code resolves to nothing", async () => {
+    const { service, transport } = build();
+
+    await expect(
+      service.createOption({ ...draft, customer: { ...draft.customer, countryCode: "ZZ" } }),
+    ).rejects.toThrow(/ZZ/);
+
+    expect(transport.lastBody("createInfo")).toBeUndefined();
   });
 });
