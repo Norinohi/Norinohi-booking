@@ -4,6 +4,7 @@ import { parseNausysDate } from "../shared/dates";
 import { stripHtml } from "../shared/html-text";
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
+import type { JsonField, JsonObject } from "../shared/json";
 import {
   currencyOf,
   intOf,
@@ -306,7 +307,7 @@ function checkinRulesOf(yacht: RestYacht) {
 }
 
 function enabledWeekdays(
-  period: Record<string, unknown>,
+  period: JsonObject,
   direction: "checkIn" | "checkOut",
 ): (number | undefined)[] {
   const days = WEEKDAY_FLAGS.filter((day) => period[day[direction]] === true).map(
@@ -330,7 +331,7 @@ function mediaOf(yacht: RestYacht) {
   const media: { externalUrl: string; role: MediaRole; sortOrder: number }[] = [];
   const seen = new Set<string>();
 
-  const push = (value: unknown, role: MediaRole) => {
+  const push = (value: JsonField, role: MediaRole) => {
     const url = text(value);
     if (!url || seen.has(url)) return;
     seen.add(url);
@@ -365,7 +366,7 @@ function textsOf(yacht: RestYacht) {
   for (const source of TEXT_SOURCES) {
     // SAFETY: TEXT_SOURCES names keys of RestYacht; the record view only exists
     // because those names are read dynamically rather than as literals.
-    const record = yacht as Record<string, unknown>;
+    const record = yacht as JsonObject;
     const locales = Object.entries(toLocaleMap(record[source.intText]));
 
     if (locales.length > 0) {
@@ -432,7 +433,7 @@ function euminiaOf(yacht: RestYacht): { rating?: number; reviewCount?: number } 
  * on the comma form returns 4 -- a silent understatement of every rating, not an
  * error anyone would see.
  */
-function decimalOf(value: unknown): number | undefined {
+function decimalOf(value: JsonField): number | undefined {
   const raw = text(value);
   if (raw === undefined) return undefined;
   const parsed = Number(raw.replace(",", "."));
@@ -442,7 +443,7 @@ function decimalOf(value: unknown): number | undefined {
 /* ----------------------------------------------------------------- helpers */
 
 /** English if the vendor has it, otherwise the first locale it does have. */
-function name(value: unknown): string | undefined {
+function name(value: JsonField): string | undefined {
   const locales = toLocaleMap(value);
   return locales.en ?? Object.values(locales)[0];
 }
@@ -452,7 +453,7 @@ function name(value: unknown): string | undefined {
  * the model alike, so it falls through to the model and then to unset rather than
  * publishing a boat that carries no water.
  */
-function capacityOf(...candidates: unknown[]): number | undefined {
+function capacityOf(...candidates: JsonField[]): number | undefined {
   for (const candidate of candidates) {
     const parsed = intOf(candidate);
     if (parsed !== undefined && parsed > 0) return parsed;
@@ -476,7 +477,7 @@ function seasonCurrencyOf(yacht: RestYacht): string | undefined {
  * bare numbers, which are stringified rather than scaled by floating point. A
  * malformed amount drops the deposit rather than the yacht.
  */
-function minorOf(value: unknown, currency: string): number | undefined {
+function minorOf(value: JsonField, currency: string): number | undefined {
   const amount = typeof value === "number" && Number.isFinite(value) ? String(value) : text(value);
   if (amount === undefined) return undefined;
   try {

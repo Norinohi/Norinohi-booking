@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import { AuthError, ContractError } from "../shared/errors";
+import type { JsonObject } from "../shared/json";
+import type { JsonValue } from "../shared/json";
 import { idOf, objectsOf } from "../shared/projection-helpers";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
@@ -30,9 +32,9 @@ import {
 interface CatalogueStep {
   resourceType: ProviderResourceType;
   endpoint: string;
-  fetch: (client: BookingManagerClient) => Promise<unknown[]>;
+  fetch: (client: BookingManagerClient) => Promise<JsonValue[]>;
   /** Defaults to the numeric `id`; `/yachtTypes` has none. */
-  externalIdOf?: (item: Record<string, unknown>) => string | null;
+  externalIdOf?: (item: JsonObject) => string | null;
 }
 
 /**
@@ -149,7 +151,7 @@ export async function* syncBookingManagerCatalogue(
   for (const [index, step] of CATALOGUE_STEPS.entries()) {
     if (index < startStep) continue;
 
-    let items: unknown[];
+    let items: JsonValue[];
     try {
       items = await step.fetch(client);
     } catch (error) {
@@ -211,7 +213,7 @@ export async function* syncBookingManagerCatalogue(
   for (const [index, companyId] of companyIds.entries()) {
     if (index < startCompany) continue;
 
-    let items: unknown[];
+    let items: JsonValue[];
     try {
       // `/yachts` takes a companyId filter, so the fleet is swept one operator at a
       // time and a single operator's failure cannot deactivate anyone else's boats.
@@ -298,6 +300,6 @@ function isFatal(error: unknown): boolean {
   return error instanceof AuthError;
 }
 
-function defaultExternalId(item: Record<string, unknown>): string | null {
+function defaultExternalId(item: JsonObject): string | null {
   return idOf(item.id);
 }

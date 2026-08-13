@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { looseJsonObject } from "../shared/json";
+
 /**
  * The only file that knows Booking Manager path and field names. Every schema is
  * deliberately loose (unknown keys pass through, most fields optional) so an
@@ -66,14 +68,14 @@ const numeric = z.coerce.number();
 const optionalNumeric = numeric.optional().nullable();
 const optionalText = z.string().optional().nullable();
 
-export const restImageSchema = z.looseObject({
+export const restImageSchema = looseJsonObject({
   name: optionalText,
   description: optionalText,
   url: optionalText,
   sortOrder: optionalNumeric,
 });
 
-export const restDocumentSchema = z.looseObject({
+export const restDocumentSchema = looseJsonObject({
   id: optionalNumeric,
   name: optionalText,
   description: optionalText,
@@ -81,12 +83,12 @@ export const restDocumentSchema = z.looseObject({
   sortOrder: optionalNumeric,
 });
 
-export const restValidForBasesSchema = z.looseObject({
+export const restValidForBasesSchema = looseJsonObject({
   from: z.array(numeric).optional().nullable(),
   to: z.array(numeric).optional().nullable(),
 });
 
-export const restExtrasSchema = z.looseObject({
+export const restExtrasSchema = looseJsonObject({
   id: optionalNumeric,
   name: optionalText,
   obligatory: z.boolean().optional().nullable(),
@@ -105,20 +107,20 @@ export const restExtrasSchema = z.looseObject({
   validSailingAreas: z.array(numeric).optional().nullable(),
 });
 
-export const restProductSchema = z.looseObject({
+export const restProductSchema = looseJsonObject({
   name: optionalText,
   crewedByDefault: z.boolean().optional().nullable(),
   isDefaultProduct: z.boolean().optional().nullable(),
   extras: z.array(restExtrasSchema).optional().nullable(),
 });
 
-export const restDescriptionSchema = z.looseObject({
+export const restDescriptionSchema = looseJsonObject({
   category: optionalText,
   text: optionalText,
   document: z.array(restDocumentSchema).optional().nullable(),
 });
 
-export const restCrewSchema = z.looseObject({
+export const restCrewSchema = looseJsonObject({
   name: optionalText,
   description: optionalText,
   age: optionalNumeric,
@@ -129,7 +131,7 @@ export const restCrewSchema = z.looseObject({
   images: z.array(restDocumentSchema).optional().nullable(),
 });
 
-export const restEquipmentItemRawSchema = z.looseObject({
+export const restEquipmentItemRawSchema = looseJsonObject({
   id: optionalNumeric,
   parentId: optionalNumeric,
   name: optionalText,
@@ -143,7 +145,7 @@ export const restEquipmentItemRawSchema = z.looseObject({
  * import drop every listing - do not assume the two providers agree on where a
  * spec lives.
  */
-export const restYachtSchema = z.looseObject({
+export const restYachtSchema = looseJsonObject({
   id: numeric,
   name: optionalText,
   model: optionalText,
@@ -185,7 +187,7 @@ export const restYachtSchema = z.looseObject({
   images: z.array(restImageSchema).optional().nullable(),
   equipmentIds: z.array(numeric).optional().nullable(),
   equipment: z
-    .array(z.looseObject({ id: optionalNumeric, value: optionalText }))
+    .array(looseJsonObject({ id: optionalNumeric, value: optionalText }))
     .optional()
     .nullable(),
   equipmentRaw: z.array(restEquipmentItemRawSchema).optional().nullable(),
@@ -194,7 +196,7 @@ export const restYachtSchema = z.looseObject({
   crew: z.array(restCrewSchema).optional().nullable(),
 });
 
-export const restBaseSchema = z.looseObject({
+export const restBaseSchema = looseJsonObject({
   id: numeric,
   name: optionalText,
   city: optionalText,
@@ -207,7 +209,7 @@ export const restBaseSchema = z.looseObject({
   sailingAreas: z.array(numeric).optional().nullable(),
 });
 
-export const restCompanySchema = z.looseObject({
+export const restCompanySchema = looseJsonObject({
   id: numeric,
   name: optionalText,
   city: optionalText,
@@ -226,7 +228,7 @@ export const restCompanySchema = z.looseObject({
   maxDiscountFromCommissionPercentage: optionalNumeric,
 });
 
-export const restShipyardSchema = z.looseObject({
+export const restShipyardSchema = looseJsonObject({
   id: numeric,
   name: optionalText,
   shortName: optionalText,
@@ -240,7 +242,7 @@ export const restShipyardSchema = z.looseObject({
  * country code, and the ISO code is what makes the same country from Booking
  * Manager and NauSYS one row.
  */
-export const restCountrySchema = z.looseObject({
+export const restCountrySchema = looseJsonObject({
   id: numeric,
   name: optionalText,
   short: optionalText,
@@ -250,20 +252,20 @@ export const restCountrySchema = z.looseObject({
   worldRegion: optionalNumeric,
 });
 
-export const restWorldRegionSchema = z.looseObject({ id: numeric, name: optionalText });
+export const restWorldRegionSchema = looseJsonObject({ id: numeric, name: optionalText });
 
-export const restSailingAreaSchema = z.looseObject({ id: numeric, name: optionalText });
+export const restSailingAreaSchema = looseJsonObject({ id: numeric, name: optionalText });
 
-export const restEquipmentSchema = z.looseObject({ id: numeric, name: optionalText });
+export const restEquipmentSchema = looseJsonObject({ id: numeric, name: optionalText });
 
-export const restYachtTypeSchema = z.looseObject({ name: z.string() });
+export const restYachtTypeSchema = looseJsonObject({ name: z.string() });
 
-export const restPaymentSchema = z.looseObject({
+export const restPaymentSchema = looseJsonObject({
   date: optionalText,
   amount: optionalNumeric,
 });
 
-export const restOfferSchema = z.looseObject({
+export const restOfferSchema = looseJsonObject({
   yachtId: numeric,
   yacht: optionalText,
   startBaseId: optionalNumeric,
@@ -287,7 +289,7 @@ export const restOfferSchema = z.looseObject({
   myReservationId: optionalNumeric,
 });
 
-export const restPriceSchema = z.looseObject({
+export const restPriceSchema = looseJsonObject({
   yachtId: numeric,
   dateFrom: optionalText,
   dateTo: optionalText,
@@ -298,7 +300,7 @@ export const restPriceSchema = z.looseObject({
   discountPercentage: optionalNumeric,
 });
 
-export const restAvailabilitySchema = z.looseObject({
+export const restAvailabilitySchema = looseJsonObject({
   id: optionalNumeric,
   dateFrom: optionalText,
   dateTo: optionalText,
@@ -309,14 +311,14 @@ export const restAvailabilitySchema = z.looseObject({
   optionExpirationDate: optionalText,
 });
 
-export const restShortAvailabilitySchema = z.looseObject({
+export const restShortAvailabilitySchema = looseJsonObject({
   /** Yacht id - abbreviated by the vendor to keep the bulk payload small. */
   y: numeric,
   /** One character per day across the year, encoded per the `format` parameter. */
   bs: optionalText,
 });
 
-export const restInvoiceItemSchema = z.looseObject({
+export const restInvoiceItemSchema = looseJsonObject({
   name: optionalText,
   quantity: optionalNumeric,
   unit: optionalText,
@@ -324,7 +326,7 @@ export const restInvoiceItemSchema = z.looseObject({
   payableInBase: z.boolean().optional().nullable(),
 });
 
-export const restReservationSchema = z.looseObject({
+export const restReservationSchema = looseJsonObject({
   id: numeric,
   /** Present on agency reservations only. */
   charterReservationId: optionalNumeric,

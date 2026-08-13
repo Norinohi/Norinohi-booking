@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { AuthError, ContractError } from "../shared/errors";
+import { looseJsonObject, type JsonObject, type JsonValue } from "../shared/json";
 import { idOf, objectsOf } from "../shared/projection-helpers";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
@@ -13,7 +14,7 @@ import { nausysEndpoints } from "./endpoints";
  * that adds a field to `RestYacht` between minor releases must not stop the
  * nightly sync.
  */
-const dumpSchema = z.looseObject({
+const dumpSchema = looseJsonObject({
   status: z.string(),
   errorCode: z.number().int().optional(),
 });
@@ -31,10 +32,10 @@ interface CatalogueStep {
    * fallback for an endpoint that is renamed later.
    */
   collectionKeys: string[];
-  scopeKeyOf?: (item: Record<string, unknown>) => string | undefined;
+  scopeKeyOf?: (item: JsonObject) => string | undefined;
 }
 
-const companyScope = (item: Record<string, unknown>) => idOf(item.companyId) ?? undefined;
+const companyScope = (item: JsonObject) => idOf(item.companyId) ?? undefined;
 
 /**
  * FK order, not vendor order. Projection cross-references records that arrived in
@@ -351,10 +352,10 @@ function isFatal(error: unknown): boolean {
   return error instanceof AuthError || error instanceof ContractError;
 }
 
-function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<string, unknown>[] {
+function collectionOf(dump: Dump, keys: string[], endpoint: string): JsonObject[] {
   // SAFETY: dumpSchema is a passthrough object, so its inferred type is already a
   // string-keyed record; the assertion only restates that for dynamic key access.
-  const body = dump as Record<string, unknown>;
+  const body = dump as JsonObject;
 
   for (const key of keys) {
     const value = body[key];
@@ -367,7 +368,7 @@ function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<stri
   if (fallback) {
     // SAFETY: the find predicate accepts an entry only when Array.isArray holds
     // for its value; that narrowing does not survive out of the callback.
-    return objectsOf(fallback[1] as unknown[]);
+    return objectsOf(fallback[1] as JsonValue[]);
   }
 
   // An OK response carrying no collection at all is a contract violation, and the

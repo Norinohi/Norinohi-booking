@@ -1,5 +1,6 @@
 import type { z } from "zod";
 
+import type { JsonField } from "../shared/json";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
@@ -553,7 +554,7 @@ function checkinRulesOf(yacht: RestYacht) {
   ];
 }
 
-function weekdayOf(value: unknown): number | undefined {
+function weekdayOf(value: JsonField): number | undefined {
   const parsed = intOf(value);
   if (parsed === undefined || parsed < 0 || parsed > 7) return undefined;
   return parsed % 7;
@@ -562,19 +563,19 @@ function weekdayOf(value: unknown): number | undefined {
 /* ----------------------------------------------------------------- helpers */
 
 /** Turnaround times stay wall-clock strings; only the shape is checked. */
-function clockTime(value: unknown): string | undefined {
+function clockTime(value: JsonField): string | undefined {
   const raw = text(value);
   return raw !== undefined && /^\d{1,2}:\d{2}(:\d{2})?$/.test(raw) ? raw : undefined;
 }
 
 /** Zero is how the vendor writes a tank it has not measured. */
-function capacityOf(value: unknown): number | undefined {
+function capacityOf(value: JsonField): number | undefined {
   const parsed = intOf(value);
   return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
 /** Coordinates arrive as strings, and "0" is the vendor's unset marker, not the Gulf of Guinea. */
-function coordinateOf(value: unknown): number | undefined {
+function coordinateOf(value: JsonField): number | undefined {
   const raw = text(value);
   if (raw === undefined) return undefined;
   const parsed = Number(raw.replace(",", "."));
@@ -595,7 +596,7 @@ function countryCodeOf(country: RestCountry): string {
  * bare numbers, which are stringified rather than scaled by floating point. A
  * malformed amount drops the deposit rather than the yacht.
  */
-function minorOf(value: unknown, currency: string): number | undefined {
+function minorOf(value: JsonField, currency: string): number | undefined {
   const amount = typeof value === "number" && Number.isFinite(value) ? String(value) : text(value);
   if (amount === undefined) return undefined;
   try {

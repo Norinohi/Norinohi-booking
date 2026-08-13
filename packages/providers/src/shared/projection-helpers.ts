@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type { ProviderRecordSet, ProviderResourceType } from "../types";
 import { ContractError } from "./errors";
+import type { JsonField, JsonObject, JsonValue } from "./json";
 
 /** Last resort only when a payload names no currency of its own. */
 const FALLBACK_CURRENCY = "EUR";
@@ -28,40 +29,38 @@ export function slugify(value: string): string {
     .replace(/^-|-$/g, "");
 }
 
-export function text(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
+export function text(value: JsonField): string | undefined {
+  const trimmed = typeof value === "string" ? value.trim() : "";
   return trimmed === "" ? undefined : trimmed;
 }
 
-export function idOf(value: unknown): string | null {
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value === "string" && value.trim() !== "") return value.trim();
-  return null;
+export function idOf(value: JsonField): string | null {
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
+  return text(value) ?? null;
 }
 
-export function objectsOf(items: unknown[]): Record<string, unknown>[] {
+export function objectsOf(items: JsonValue[]): JsonObject[] {
   return items.filter(
-    (item): item is Record<string, unknown> =>
+    (item): item is JsonObject =>
       typeof item === "object" && item !== null && !Array.isArray(item),
   );
 }
 
-export function numberOf(value: unknown): number | undefined {
+export function numberOf(value: JsonField): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-export function intOf(value: unknown): number | undefined {
+export function intOf(value: JsonField): number | undefined {
   const parsed = numberOf(value);
   return parsed === undefined ? undefined : Math.round(parsed);
 }
 
-export function positiveInt(value: unknown): number | undefined {
+export function positiveInt(value: JsonField): number | undefined {
   const parsed = intOf(value);
   return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
-export function currencyOf(value: unknown, fallback: string = FALLBACK_CURRENCY): string {
+export function currencyOf(value: JsonField, fallback: string = FALLBACK_CURRENCY): string {
   const code = text(value);
   return code && code.length === 3 ? code.toUpperCase() : fallback;
 }
