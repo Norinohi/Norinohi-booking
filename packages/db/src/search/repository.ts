@@ -844,9 +844,10 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      * longer than a week, so every multi-week search returned nothing at all while dozens of
      * listings had the consecutive weeks free.
      *
-     * Deliberately no check-in weekday or minimum stay here. Search is a funnel: it answers
-     * "is this boat free then", and the rules decide the exact charter on the detail page. A
-     * listing should not vanish from results because the visitor's dates start on a Tuesday.
+     * No check-in weekday here. Search is a funnel: it answers "is this boat free then", and
+     * the rules decide the exact charter on the detail page. A listing should not vanish from
+     * results because the visitor's dates start on a Tuesday, when the honest answer is "free
+     * that week, and it starts on Saturdays".
      */
     parts.push(sql`exists (
       select 1
@@ -854,6 +855,28 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
       where free.listing_id = doc.listing_id
         and free.start_date <= ${availabilityWindow.checkIn}
         and free.end_date >= ${availabilityWindow.checkOut}
+    )`);
+  }
+  /*
+   * Length is different from the weekday above, and is filtered even with no dates attached.
+   * The weekday is a constraint the visitor never mentioned, so applying it would drop a boat
+   * for a reason they did not ask about. A duration is a constraint they chose: a boat whose
+   * shortest charter is a week cannot serve a three-day trip, and listing it under "3 days"
+   * promises something the quote will refuse.
+   *
+   * A listing with no published rule is kept, matching `availability-rules.ts`: the rules are
+   * what the provider stated, and inventing one here would hide dates it would happily sell.
+   */
+  if (!skip.has("duration") && input.duration) {
+    parts.push(sql`(
+      not exists (select 1 from listing_checkin_rule rule where rule.listing_id = doc.listing_id)
+      or exists (
+        select 1
+        from listing_checkin_rule rule
+        where rule.listing_id = doc.listing_id
+          and (rule.min_nights is null or rule.min_nights <= ${input.duration})
+          and (rule.max_nights is null or rule.max_nights >= ${input.duration})
+      )
     )`);
   }
   return sql.join(parts, sql` and `);
