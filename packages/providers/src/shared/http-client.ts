@@ -174,15 +174,17 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
           Object.entries(headers).filter(([key]) => key.toLowerCase() !== "content-type"),
         );
 
+    const init: ProviderHttpRequestInit = {
+      method,
+      headers: requestHeaders,
+      signal: AbortSignal.timeout(timeoutMs),
+    };
+    if (hasBody) init.body = JSON.stringify(body);
+
     let response: ProviderHttpResponseLike;
     let text: string;
     try {
-      response = await fetchImpl(joinUrl(baseUrl, endpoint), {
-        method,
-        headers: requestHeaders,
-        ...(hasBody ? { body: JSON.stringify(body) } : {}),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+      response = await fetchImpl(joinUrl(baseUrl, endpoint), init);
       text = await response.text();
     } catch (cause) {
       // withRetry only ever retries a ProviderError, so an unwrapped DNS/abort

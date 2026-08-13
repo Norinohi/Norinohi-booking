@@ -56,7 +56,9 @@ export function pickText(
   fallbackOrder: string[] = defaultFallbackOrder,
 ): string | null {
   const map = toLocaleMap(text);
-  const requested = typeof locale === "string" ? locale.trim().toLowerCase() : "";
+  // Callers thread this through from request query strings, which have handed us
+  // undefined despite the type; an absent locale just means "start at fallback".
+  const requested = localeTextSchema.safeParse(locale).data?.toLowerCase() ?? "";
   const candidates = [requested, requested.split("-")[0] ?? "", ...fallbackOrder];
 
   for (const candidate of candidates) {

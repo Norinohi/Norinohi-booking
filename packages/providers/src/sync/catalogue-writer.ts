@@ -70,6 +70,14 @@ export interface ExistingSourceLink {
   matchStatus: MatchStatus;
 }
 
+/** The `listing_source` match columns, written as one group. */
+interface ListingSourceMatchFields {
+  matchStatus: MatchStatus;
+  matchConfidence?: string | null;
+  matchedBy?: string;
+  matchedAt?: Date;
+}
+
 export interface ListingMatchDecision {
   listingId: string | null;
   matchStatus: MatchStatus;
@@ -667,16 +675,14 @@ async function upsertListingSource(
     now: Date;
   },
 ): Promise<string | null> {
-  const matchFields = {
-    matchStatus: input.decision.matchStatus,
-    ...(input.decision.matchedBy
-      ? {
-          matchConfidence: input.decision.matchConfidence?.toFixed(4) ?? null,
-          matchedBy: input.decision.matchedBy,
-          matchedAt: input.now,
-        }
-      : {}),
-  };
+  // An unmatched decision leaves the previous match provenance untouched rather
+  // than blanking it, so those three columns are only written together.
+  const matchFields: ListingSourceMatchFields = { matchStatus: input.decision.matchStatus };
+  if (input.decision.matchedBy) {
+    matchFields.matchConfidence = input.decision.matchConfidence?.toFixed(4) ?? null;
+    matchFields.matchedBy = input.decision.matchedBy;
+    matchFields.matchedAt = input.now;
+  }
 
   if (input.existing) {
     await db

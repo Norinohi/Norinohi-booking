@@ -446,11 +446,9 @@ function toPaymentPolicy(plans: RestFreeYacht["paymentPlans"], yachtId: number):
     return { mode: "full", depositPct: 1 };
   }
 
-  return {
-    mode: "deposit",
-    depositPct,
-    ...(second ? { balanceDueAt: parseNausysDate(second.date) } : {}),
-  };
+  const policy: PaymentPolicy = { mode: "deposit", depositPct };
+  if (second) policy.balanceDueAt = parseNausysDate(second.date);
+  return policy;
 }
 
 function assertEchoedPeriod(yacht: RestFreeYacht, checkIn: string, checkOut: string): void {

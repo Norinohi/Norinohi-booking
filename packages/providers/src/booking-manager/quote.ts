@@ -1,3 +1,5 @@
+import type { z } from "zod";
+
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { toPositiveIntId } from "../shared/projection-helpers";
@@ -225,7 +227,7 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
   const priceSourceHash = priceObservationHash(offer, currency);
   const securityDeposit = securityDepositOf(offer, currency);
 
-  return providerQuoteSchema.parse({
+  const quoteInput: z.input<typeof providerQuoteSchema> = {
     // `/offers` creates nothing provider-side, so there is no vendor quote id to
     // carry: this identifies our observation and is never sent to the vendor.
     id: `bm_${offer.yachtId}_${priceSourceHash.slice(0, 16)}`,
@@ -242,12 +244,14 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
     lines,
     total: { amountMinor: totalMinor, currency },
     deposit: { amountMinor: depositMinor, currency },
-    ...(securityDeposit ? { securityDeposit } : {}),
     paymentPolicy: policy,
     priceSourceHash,
     repriced: false,
     expiresAt: input.expiresAt,
-  });
+  };
+  if (securityDeposit) quoteInput.securityDeposit = securityDeposit;
+
+  return providerQuoteSchema.parse(quoteInput);
 }
 
 /**
@@ -398,14 +402,12 @@ function toPaymentPolicy(
     return { policy: { mode: "full", depositPct: 1 }, depositMinor };
   }
 
-  return {
-    policy: {
-      mode: "deposit",
-      depositPct: depositMinor / planTotalMinor,
-      ...(second?.date ? { balanceDueAt: parseBookingManagerDate(second.date) } : {}),
-    },
-    depositMinor,
+  const policy: PaymentPolicy = {
+    mode: "deposit",
+    depositPct: depositMinor / planTotalMinor,
   };
+  if (second?.date) policy.balanceDueAt = parseBookingManagerDate(second.date);
+  return { policy, depositMinor };
 }
 
 /**
