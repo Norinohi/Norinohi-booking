@@ -1,7 +1,5 @@
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
-import { daysBetween } from "../lib/dates";
-
 const EMPTY_IMAGE = "";
 
 /**
@@ -18,19 +16,22 @@ const EMPTY_IMAGE = "";
  */
 const CARD_PREPAYMENT_PCT = 0.25;
 
-export type ListingSummaryOptions = {
-  checkIn?: string | null;
-  checkOut?: string | null;
-  duration?: number | null;
-};
+/** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
+const WEEKLY_RATE_DAYS = 7;
 
-export function presentListingSummary(doc: ListingSearchDoc, options: ListingSummaryOptions = {}) {
+export function presentListingSummary(doc: ListingSearchDoc) {
   const currency = doc.currency ?? "EUR";
-  const periodDays =
-    daysBetween(options.checkIn ?? null, options.checkOut ?? null) ??
-    options.duration ??
-    daysBetween(doc.availableFrom, doc.availableTo) ??
-    7;
+  /*
+   * The period the "from" price actually covers, which is a week: `price_from_minor` is the
+   * cheapest WEEKLY rate the provider published.
+   *
+   * It used to be the duration the visitor searched for, so a three-day search captioned a
+   * week's rate "Price for 3 days" — an understatement of roughly 2.3x on the trip it was
+   * describing. A weekly rate cannot be prorated into a shorter one either: NauSYS prices
+   * dailies from a separate list precisely because they are not a seventh of the week. The
+   * caption therefore names the rate's own period, and the quote prices the real trip.
+   */
+  const periodDays = WEEKLY_RATE_DAYS;
   // A non-positive price is a provider saying "no price", not "free", so it is
   // treated the same as a missing one rather than quoted as 0.
   const amountMinor =
