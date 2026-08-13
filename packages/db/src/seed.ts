@@ -1498,6 +1498,9 @@ const reviewBodies = [
   "Roomy cabins, quiet generator, and a fair deposit process at return.",
 ];
 
+// SAFETY: every caller passes one of the non-empty fixture arrays above, and
+// `index % items.length` is always inside a non-empty array. noUncheckedIndexedAccess
+// still widens the element to `T | undefined`.
 const pick = <T>(items: readonly T[], index: number) => items[index % items.length] as T;
 
 /** Unlike pick(), a lookup that can genuinely miss — a bad reference must not seed. */

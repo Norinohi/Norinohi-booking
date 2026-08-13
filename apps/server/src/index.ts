@@ -31,6 +31,10 @@ initLogger({
   env: { service: "yacht-charter-server" },
 });
 
+// SAFETY: evlog only calls `api.getSession`, which this instance has. It types the
+// resolved user and session as `Record<string, unknown>`, and better-auth returns
+// interface-typed objects, which TypeScript refuses to widen to an index signature
+// even though every field is a plain JSON value.
 const identifyUser = createAuthMiddleware(auth as BetterAuthInstance, {
   exclude: ["/api/auth/**"],
   maskEmail: true,

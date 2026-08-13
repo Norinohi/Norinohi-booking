@@ -34,8 +34,8 @@ export const States: Story = {
 export const Interactive: Story = {
   parameters: { controls: { disable: true } },
   render: () => {
-    const options = ["Greece", "Croatia", "Italy"];
-    const flags: Record<string, string> = { Greece: "🇬🇷", Croatia: "🇭🇷", Italy: "🇮🇹" };
+    const options = ["Greece", "Croatia", "Italy"] as const;
+    const flags = { Greece: "🇬🇷", Croatia: "🇭🇷", Italy: "🇮🇹" };
     const [picked, setPicked] = React.useState("Greece");
     return (
       <div className="flex flex-col gap-4">

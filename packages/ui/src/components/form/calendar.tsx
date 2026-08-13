@@ -182,17 +182,17 @@ function Calendar(props: CalendarProps) {
   // Day under the cursor while picking the 2nd range endpoint (range mode only).
   const [hovered, setHovered] = React.useState<Date | undefined>(undefined);
 
-  const commit = (next: Date | DateRange | undefined) => {
+  /* Only the uncontrolled half of a commit: `onSelect` is called from the branch
+   * that knows which mode it is in, so each mode reaches its own callback type. */
+  const commitState = (next: Date | DateRange | undefined) => {
     if (props.selected === undefined) setSelectedState(next);
-    if (props.mode === "range") props.onSelect?.(next as DateRange | undefined);
-    else props.onSelect?.(next as Date | undefined);
   };
 
   const handleSelect = (date: Date) => {
     const day = startOfDay(date);
     if (props.mode === "range") {
       setHovered(day); // anchor the preview to the click so no stale range flashes
-      const current = selected as DateRange | undefined;
+      const current = selected instanceof Date ? undefined : selected;
       const from = current?.from;
       const to = current?.to;
       const next: DateRange =
@@ -201,16 +201,18 @@ function Calendar(props: CalendarProps) {
           : day.getTime() < from.getTime()
             ? { from: day, to: from }
             : { from, to: day };
-      commit(next);
+      commitState(next);
+      props.onSelect?.(next);
     } else {
-      commit(day);
+      commitState(day);
+      props.onSelect?.(day);
     }
     if (!isSameMonth(day, month)) changeMonth(day);
   };
 
   // Committed selection endpoints — drive aria + the persisted highlight.
   const singleSelected = !isRange && selected instanceof Date ? selected : undefined;
-  const rangeValue = isRange ? (selected as DateRange | undefined) : undefined;
+  const rangeValue = isRange && !(selected instanceof Date) ? selected : undefined;
   const committed = rangeEndpoints(rangeValue?.from, rangeValue?.to);
   // Between the 1st and 2nd click, extend the highlight to the hovered day as a preview.
   const pendingSecondPick = isRange && !!rangeValue?.from && !rangeValue?.to;

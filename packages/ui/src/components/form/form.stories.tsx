@@ -30,10 +30,10 @@ type Values = { fullName: string; email: string; crew: string };
 
 const DEFAULTS: Values = { fullName: "", email: "", crew: "" };
 
-const CREW: Record<string, string> = {
-  fullCrew: "Full crew",
-  skipperOptional: "Skipper optional",
-};
+const CREW = new Map([
+  ["fullCrew", "Full crew"],
+  ["skipperOptional", "Skipper optional"],
+]);
 
 /* Annotated rather than `satisfies`: `Form` is `FormProvider`, whose props are the whole
  * `useForm` return, so `satisfies` would demand them as story args. Every story builds its
@@ -186,13 +186,13 @@ export const WithSelect: Story = {
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Placeholder">
-                        {() => CREW[field.value] ?? "Placeholder"}
+                        {() => CREW.get(field.value) ?? "Placeholder"}
                       </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="fullCrew">{CREW.fullCrew}</SelectItem>
-                    <SelectItem value="skipperOptional">{CREW.skipperOptional}</SelectItem>
+                    <SelectItem value="fullCrew">{CREW.get("fullCrew")}</SelectItem>
+                    <SelectItem value="skipperOptional">{CREW.get("skipperOptional")}</SelectItem>
                   </SelectContent>
                 </SelectRoot>
                 <FormMessage />

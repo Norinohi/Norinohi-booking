@@ -182,7 +182,11 @@ function Select({
     <SelectRoot
       value={value}
       defaultValue={defaultValue}
-      onValueChange={(next) => onValueChange?.(next as string)}
+      onValueChange={(next) =>
+        // SAFETY: base-ui reports null only when the chosen item's own value is null.
+        // Every item below is rendered from `options`, whose values are strings.
+        onValueChange?.(next as string)
+      }
       disabled={disabled}
     >
       <SelectTrigger
@@ -202,10 +206,8 @@ function Select({
         <span className="flex min-w-0 flex-1 items-center gap-2">
           {icon}
           <SelectValue placeholder={placeholder}>
-            {(current) =>
-              current
-                ? (renderValue?.(current as string) ?? optionLabel(options, current as string))
-                : placeholder
+            {(current: string | null) =>
+              current ? (renderValue?.(current) ?? optionLabel(options, current)) : placeholder
             }
           </SelectValue>
         </span>
