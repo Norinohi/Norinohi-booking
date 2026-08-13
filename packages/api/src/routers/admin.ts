@@ -8,6 +8,8 @@ import {
 import { getEnabledInventoryProviders } from "../context";
 
 import {
+  auditListInputSchema,
+  auditListSchema,
   discountCreateInputSchema,
   discountIdInputSchema,
   discountListInputSchema,
@@ -15,12 +17,19 @@ import {
   discountSchema,
   discountSetActiveInputSchema,
   discountUpdateInputSchema,
+  duplicateConfirmInputSchema,
+  duplicateQueueInputSchema,
+  duplicateQueueSchema,
+  duplicateRejectInputSchema,
+  duplicateResolutionSchema,
   listingPriceClearInputSchema,
   listingPriceFiltersSchema,
   listingPriceListInputSchema,
   listingPriceListSchema,
   listingPriceRowSchema,
   listingPriceUpdateInputSchema,
+  syncRunListInputSchema,
+  syncRunListSchema,
   syncRunsStartedSchema,
   syncRunStatusInputSchema,
   syncRunStatusSchema,
@@ -49,6 +58,12 @@ import {
   leadSetStatusInputSchema,
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
+import { listAuditLog } from "../services/audit";
+import {
+  confirmDuplicateCandidate,
+  listDuplicateCandidates,
+  rejectDuplicateCandidate,
+} from "../services/match";
 import { cancelBooking } from "../services/booking";
 import { refundBooking } from "../services/refund";
 import {
@@ -68,6 +83,7 @@ import {
 import { listYachtOptions } from "../services/listing-options";
 import {
   getCatalogueSyncStatus,
+  listSyncRuns,
   startAvailabilitySync,
   startCatalogueSync,
   startSyncForAll,
@@ -187,6 +203,97 @@ export const adminRouter = {
           input,
         ),
       ),
+    syncRuns: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/provider/syncRuns",
+        operationId: "listProviderSyncRuns",
+        summary: "List sync run history",
+        description:
+          "Returns past and in-flight sync runs across every provider, newest first, with their created/updated/skipped/failed counts and how many errors each recorded. Filterable by provider, kind and status. syncStatus answers for one run only, so this is where a run that failed overnight and was superseded by the next one is still visible.",
+        tags: ["Admin"],
+        successDescription: "A page of sync runs.",
+        spec: withJsonBodyExample({ kind: "catalogue", page: 1, pageSize: 20 }),
+      })
+      .input(syncRunListInputSchema)
+      .output(syncRunListSchema)
+      .handler(({ context, input }) => listSyncRuns(context.db, input)),
+  },
+  match: {
+    queue: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/queue",
+        operationId: "listDuplicateCandidates",
+        summary: "List duplicate candidates awaiting review",
+        description:
+          "Cross-provider look-alikes proposed by the catalogue sync, highest confidence first. Each row hydrates both sides — provider, operator, model, year, length, cabins, berths, base and primary image — so the pair can be judged without opening two tabs. Nothing merges automatically; until a candidate is resolved the same yacht appears twice in search. Pass decision to read the confirmed or rejected history instead.",
+        tags: ["Admin"],
+        successDescription: "A page of duplicate candidates.",
+        spec: withJsonBodyExample({ decision: "pending", page: 1, pageSize: 20 }),
+      })
+      .input(duplicateQueueInputSchema)
+      .output(duplicateQueueSchema)
+      .handler(({ context, input }) => listDuplicateCandidates(context.db, input)),
+    confirm: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/confirm",
+        operationId: "confirmDuplicateCandidate",
+        summary: "Merge a duplicate pair onto one listing",
+        description:
+          "Merges the pair onto keepListingId: every listing_source of the other listing is repointed at the survivor, both sources are stamped confirmed so the next sync will not undo the verdict, and the losing listing is hidden rather than deleted because bookings still reference it. Rejects a candidate that has already been reviewed with CONFLICT, so a double-click cannot merge twice. Rebuilds the search document afterwards and writes an audit log entry carrying both listing ids.",
+        tags: ["Admin"],
+        successDescription: "Which listing survived and what moved.",
+        spec: withJsonBodyExample({
+          candidateId: "ldup_example",
+          keepListingId: "ylst_yacht-sunreef-60-celeste",
+        }),
+      })
+      .input(duplicateConfirmInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        confirmDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    reject: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/reject",
+        operationId: "rejectDuplicateCandidate",
+        summary: "Record that a duplicate pair is two different yachts",
+        description:
+          "Closes the candidate and moves both sources to rejected, which stops the sync re-proposing the pair and leaves each listing exactly where it is. Rejects an already-reviewed candidate with CONFLICT. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The rejected candidate.",
+        spec: withJsonBodyExample({ candidateId: "ldup_example" }),
+      })
+      .input(duplicateRejectInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        rejectDuplicateCandidate(context.db, context.session.user.id, input.candidateId),
+      ),
+  },
+  audit: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/audit/list",
+        operationId: "listAuditLog",
+        summary: "Read the admin audit log",
+        description:
+          "Returns audit entries newest first with the actor's name and email, filterable by entityType, entityId and action. Every admin mutation writes one; this is the only way to see them after the fact, including which listings a merge combined.",
+        tags: ["Admin"],
+        successDescription: "A page of audit entries.",
+        spec: withJsonBodyExample({
+          entityType: "listing",
+          action: "merge",
+          page: 1,
+          pageSize: 20,
+        }),
+      })
+      .input(auditListInputSchema)
+      .output(auditListSchema)
+      .handler(({ context, input }) => listAuditLog(context.db, input)),
   },
   booking: {
     cancel: adminProcedure

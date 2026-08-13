@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { syncError, syncRun } from "@yacht-charter/db/schema/provider";
+import { provider as providerTable, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import {
   HOT_WINDOW_CURSOR_SCOPE,
@@ -14,14 +14,22 @@ import {
   runCatalogueSyncJob,
 } from "@yacht-charter/providers/sync/runner";
 import { SyncAlreadyRunningError, type SyncKind } from "@yacht-charter/providers/sync/run";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
-import type { syncRunStatusSchema, syncRunStartedSchema } from "../contracts/admin";
+import type {
+  syncRunListInputSchema,
+  syncRunListSchema,
+  syncRunStatusSchema,
+  syncRunStartedSchema,
+} from "../contracts/admin";
+import { paginatedQuery, totalFrom } from "./pagination";
 
 type SyncRunStatus = z.infer<typeof syncRunStatusSchema>;
 type SyncRunStarted = z.infer<typeof syncRunStartedSchema>;
+type SyncRunListInput = z.infer<typeof syncRunListInputSchema>;
+type SyncRunList = z.infer<typeof syncRunListSchema>;
 
 const CURSOR_SCOPE = "full";
 
@@ -127,6 +135,69 @@ export async function startSyncForAll(
       }
     }),
   );
+}
+
+/**
+ * Run history, newest first. `getCatalogueSyncStatus` answers "what is happening
+ * now" for one provider; this is the record of what happened before it, which is
+ * the only way to see a run that failed overnight and was superseded by the next.
+ */
+export async function listSyncRuns(db: Database, input: SyncRunListInput): Promise<SyncRunList> {
+  const filters = [];
+  // Filtered by provider code rather than by id: the caller names a connector,
+  // and a code with no provider row should return nothing, not everything.
+  if (input.provider) filters.push(eq(providerTable.code, input.provider));
+  if (input.kind) filters.push(eq(syncRun.kind, input.kind));
+  if (input.status) filters.push(eq(syncRun.status, input.status));
+  const where = filters.length > 0 ? and(...filters) : undefined;
+
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select({
+          run: syncRun,
+          providerCode: providerTable.code,
+          providerName: providerTable.name,
+          errorCount: sql<number>`(
+            select count(*)::int from sync_error se where se.sync_run_id = ${syncRun.id}
+          )`,
+        })
+        .from(syncRun)
+        .innerJoin(providerTable, eq(providerTable.id, syncRun.providerId))
+        .where(where)
+        .orderBy(desc(syncRun.createdAt), desc(syncRun.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () =>
+      totalFrom(
+        await db
+          .select({ totalItems: count() })
+          .from(syncRun)
+          .innerJoin(providerTable, eq(providerTable.id, syncRun.providerId))
+          .where(where),
+      ),
+  });
+
+  return {
+    items: rows.map((row) => ({
+      syncRunId: row.run.id,
+      provider: row.providerCode,
+      providerName: row.providerName,
+      kind: row.run.kind,
+      status: row.run.status,
+      createdCount: row.run.createdCount,
+      updatedCount: row.run.updatedCount,
+      skippedCount: row.run.skippedCount,
+      failedCount: row.run.failedCount,
+      errorCount: Number(row.errorCount),
+      startedAt: row.run.startedAt?.toISOString() ?? null,
+      finishedAt: row.run.finishedAt?.toISOString() ?? null,
+      createdAt: row.run.createdAt.toISOString(),
+    })),
+    pagination,
+  };
 }
 
 export async function getCatalogueSyncStatus(
