@@ -48,9 +48,7 @@ export function idOf(value: JsonField): string | null {
 export function objectsOf(items: JsonValue[]): JsonObject[] {
   // Kept as a filter rather than a schema parse: a catalogue dump runs tens of
   // thousands of records through here, and parsing would copy every one.
-  return items.filter(
-    (item): item is JsonObject => item instanceof Object && !Array.isArray(item),
-  );
+  return items.filter((item): item is JsonObject => item instanceof Object && !Array.isArray(item));
 }
 
 export function numberOf(value: JsonField): number | undefined {

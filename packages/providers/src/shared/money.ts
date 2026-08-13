@@ -8,9 +8,7 @@ const THREE_EXPONENT_CURRENCIES = new Set(["BHD", "JOD", "KWD", "OMR", "TND"]);
 
 const DECIMAL_PATTERN = /^[+-]?\d+(?:\.\d+)?$/;
 
-const currencyCodeSchema = z
-  .string()
-  .transform((code) => code.trim().toUpperCase());
+const currencyCodeSchema = z.string().transform((code) => code.trim().toUpperCase());
 
 export function currencyExponent(currency: string): number {
   // An unreadable code is not worth throwing over: the minor-unit exponent it

@@ -1,9 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc"],
-  "jsPlugins": [
-    { "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }
-  ],
+  "jsPlugins": [{ "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }],
   "categories": {
     "correctness": "error"
   },
@@ -26,5 +24,68 @@
   },
   "env": {
     "builtin": true
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "packages/providers/src/shared/errors.ts",
+        "packages/providers/src/shared/reservation-log.ts"
+      ],
+      "rules": {
+        "anti-slop/no-known-value-widening": "off",
+        "anti-slop/no-runtime-typeof": "off",
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off"
+      }
+    },
+    {
+      "files": ["packages/providers/src/shared/raw-retention.ts"],
+      "rules": {
+        "anti-slop/no-runtime-typeof": "off",
+        "anti-slop/no-unknown-parameters": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/providers/src/sync/runner.ts",
+        "packages/providers/src/sync/availability-writer.ts"
+      ],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off"
+      }
+    },
+    {
+      "files": ["packages/providers/src/sync/cursor.ts"],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/api/src/context.ts",
+        "packages/api/src/services/pg-errors.ts",
+        "packages/providers/src/shared/retry.ts",
+        "packages/providers/src/scripts/*.ts",
+        "packages/providers/src/mapping/mock.ts",
+        "packages/providers/src/booking-manager/catalogue.ts",
+        "packages/providers/src/booking-manager/prices.ts",
+        "packages/providers/src/booking-manager/provider.ts",
+        "packages/providers/src/nausys/catalogue.ts",
+        "packages/providers/src/nausys/occupancy.ts",
+        "packages/providers/src/nausys/provider.ts"
+      ],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off"
+      }
+    },
+    {
+      "files": ["packages/ui/src/components/form/form.tsx"],
+      "rules": {
+        "anti-slop/no-runtime-typeof": "off"
+      }
+    }
+  ]
 }

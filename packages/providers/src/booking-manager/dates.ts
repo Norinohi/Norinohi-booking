@@ -1,9 +1,4 @@
-import {
-  assertRealClock,
-  assertRealDate,
-  pad,
-  wallClockToInstant,
-} from "../shared/dates";
+import { assertRealClock, assertRealDate, pad, wallClockToInstant } from "../shared/dates";
 import { ContractError } from "../shared/errors";
 
 import { requireJsonString, type JsonField } from "../shared/json";
