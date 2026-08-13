@@ -5,6 +5,7 @@ import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 
 import type { Database } from "../context";
 import { DEAD_QUOTE_SWEEP, HOLD_SWEEP, assertTransition } from "./booking-state";
+import { pruneListingViews } from "./listing-view";
 
 export type SweepResult = {
   quotesExpired: number;
@@ -12,6 +13,9 @@ export type SweepResult = {
   bookingsQuoteExpired: number;
   /** Provider releases that failed. The booking still expires; this is for ops. */
   releaseFailures: { bookingId: string; message: string }[];
+  /** View rows dropped past their retention window — unrelated to expiry, but the
+   *  same scheduled call is the only maintenance tick this service has. */
+  viewsPruned: number;
 };
 
 /**
@@ -34,8 +38,9 @@ export async function sweepExpiries(
   const quotesExpired = await expireQuotes(db, now);
   const { holdsExpired, releaseFailures } = await expireHolds(db, now, provider);
   const bookingsQuoteExpired = await expireBookingsWithDeadQuotes(db, now);
+  const { viewsPruned } = await pruneListingViews(db, now);
 
-  return { quotesExpired, holdsExpired, bookingsQuoteExpired, releaseFailures };
+  return { quotesExpired, holdsExpired, bookingsQuoteExpired, releaseFailures, viewsPruned };
 }
 
 /** Active quotes past their expiry. Consumed ones belong to a booking and are left alone. */

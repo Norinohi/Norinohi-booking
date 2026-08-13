@@ -684,6 +684,34 @@ export async function listSimilarListings(
   return rows.rows.map(normalizeSearchRow);
 }
 
+/*
+ * The two numbers the card and the sidebar show under "booked / viewed". Both are
+ * counted here rather than stored on `listing_search_doc`, because the doc is only
+ * rebuilt on sync or publish and these change by the hour — a stored copy would be
+ * a stale number presented as today's.
+ *
+ * Booked counts bookings that are still standing and were confirmed this month:
+ * one taken and then cancelled or refunded is not a charter the visitor is
+ * competing with, so only `CONFIRMED` counts. Both windows are UTC, matching how
+ * `recordListingView` stamps a view, so neither count shifts with the server's
+ * local timezone.
+ */
+const engagementColumns = sql`
+  (
+    select count(*)::integer
+    from booking b
+    where b.listing_id = doc.listing_id
+      and b.status = 'CONFIRMED'
+      and b.confirmed_at >= date_trunc('month', now() at time zone 'utc')
+  ) as "bookedThisMonth",
+  (
+    select count(*)::integer
+    from listing_view v
+    where v.listing_id = doc.listing_id
+      and v.viewed_on = (now() at time zone 'utc')::date
+  ) as "viewedToday"
+`;
+
 const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
@@ -713,6 +741,7 @@ const searchColumns = sql`
   doc.pets_allowed as "petsAllowed",
   doc.rating,
   doc.review_count as "reviewCount",
+  ${engagementColumns},
   doc.main_image as "mainImage",
   doc.gallery,
   doc.amenities,

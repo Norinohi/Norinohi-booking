@@ -83,6 +83,9 @@ export type ListingSearchDoc = {
   petsAllowed: boolean;
   rating: string;
   reviewCount: number;
+  /** Counted live off our own tables, not stored on the doc — see `engagementColumns`. */
+  bookedThisMonth: number;
+  viewedToday: number;
   mainImage: string | null;
   gallery: string[];
   amenities: string[];

@@ -39,3 +39,9 @@ const ONE_HOUR = 60 * 60 * 1000;
 
 export const listingDetailQueryOptions = (id: string) =>
   orpc.listings.get.queryOptions({ input: { id }, staleTime: ONE_HOUR });
+
+/**
+ * Counts this visitor against the listing for today. Fire-and-forget: the detail page
+ * does not read the result, and a failed count must never surface to the visitor.
+ */
+export const recordListingViewMutationOptions = () => orpc.listings.recordView.mutationOptions();

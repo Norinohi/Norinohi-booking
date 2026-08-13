@@ -17,4 +17,6 @@ export const sweepResultSchema = z.object({
       message: z.string(),
     }),
   ),
+  /** Listing view rows deleted past their retention window. */
+  viewsPruned: z.number().int(),
 });

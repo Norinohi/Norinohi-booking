@@ -74,10 +74,6 @@ export const bookingSummarySchema = z.object({
     }),
     /** The full list — the card takes the first three itself. */
     amenities: z.array(z.string()),
-    bookingStats: z.object({
-      bookedThisMonth: z.number().int(),
-      viewedToday: z.number().int(),
-    }),
     badges: z.array(includedItemSchema),
   }),
   base: z.object({

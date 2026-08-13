@@ -113,6 +113,16 @@ export const listingSummarySchema = z.object({
   }),
 });
 
+/**
+ * `viewer` is the browser's own anonymous id, used only to keep one visitor from
+ * counting twice in a day. The server hashes it with the date before storing it,
+ * so a client that sends a stable id still leaves no cross-day trail.
+ */
+export const recordListingViewInputSchema = z.object({
+  id: z.string().min(1),
+  viewer: z.string().min(8).max(128),
+});
+
 export const listingsByIdsInputSchema = z.object({
   /* Mirrors wishlistMergeInputSchema's cap — this is the guest wishlist's hydration path. */
   listingIds: z.array(z.string().min(1)).max(50),

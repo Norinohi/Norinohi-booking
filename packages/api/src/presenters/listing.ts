@@ -84,9 +84,14 @@ export function presentListingSummary(doc: ListingSearchDoc) {
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,
+    /*
+     * Real counts off our own tables: confirmed bookings this month, and distinct
+     * viewers today. Zero is a legitimate answer and is passed through as zero --
+     * the UI drops a line it cannot fill rather than inventing a floor for it.
+     */
     bookingStats: {
-      bookedThisMonth: stableCount(doc.listingId, 2, 8),
-      viewedToday: stableCount(doc.slug, 18, 64),
+      bookedThisMonth: doc.bookedThisMonth,
+      viewedToday: doc.viewedToday,
     },
     mainImage: doc.mainImage ?? doc.gallery[0] ?? EMPTY_IMAGE,
     gallery: doc.gallery,
@@ -136,11 +141,4 @@ export function badgesFor(input: BadgeInput) {
   }
   if (input.rating >= 4.8) badges.push({ code: "top-rated", label: "Top rated" });
   return badges;
-}
-
-/** Shared with the My Bookings card's bookingStats placeholder. */
-export function stableCount(seed: string, min: number, max: number): number {
-  const spread = max - min + 1;
-  const value = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return min + (value % spread);
 }

@@ -42,6 +42,7 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 | `base`, `location`, `region`, `country`          | Canonical geography (marina → location → region → country) with lat/lng for map pins + check-in/out times/handover.                                                                                               | M2        |
 | `operator`                                       | Canonical charter-company identity across providers. **No auth/account** (no owner accounts) — display + attribution only; sensitive financials kept only in encrypted raw payload unless business needs them.    | M2        |
 | `review`, `faq`                                  | Marketplace-owned content on a listing (Figma). Seed-only for demo.                                                                                                                                               | M2 (mock) |
+| `listing_view`                                   | One row per viewer per listing per UTC day, behind the "N people viewed today" line. `viewer_key` is the visitor hashed with the date, so it dedups within a day and links nothing across days; rows are pruned by the sweep cron. The paired "N booked this month" is counted live off `booking`, not stored.                                             | M7        |
 
 ### 1.2 Provider-source & import/provenance entities _(reconciled: generic `provider_record` + `listing_source`)_
 
@@ -261,7 +262,8 @@ Plain-object routers on `appRouter`, Zod v4 `.input()/.output()`, `publicProcedu
 - `listings.get({ id }) → ListingDetail` (summary/specs/gallery/amenities/operator/base)
 - `listings.reviews({ listingId }) → { id, rating, author, body }[]`
 - `listings.similar({ listingId }) → ListingCard[]`
-- Public OpenAPI paths: `GET /listings/{id}`, `GET /listings/{listingId}/reviews`, `GET /listings/{listingId}/similar`.
+- `listings.recordView({ id, viewer }) → { recorded }` — counts one visitor for the day (see `listing_view`). Client-side and fire-and-forget: the detail read is cached, so a server-side count would follow cache misses rather than people.
+- Public OpenAPI paths: `GET /listings/{id}`, `GET /listings/{listingId}/reviews`, `GET /listings/{listingId}/similar`, `POST /listings/{id}/views`.
 
 ### 5.3 `availability` — calendar & quote _(M4)_
 

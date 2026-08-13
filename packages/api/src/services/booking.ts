@@ -17,7 +17,7 @@ import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
-import { badgesFor, stableCount } from "../presenters/listing";
+import { badgesFor } from "../presenters/listing";
 import type {
   bookingCancelSchema,
   consentsSchema,
@@ -809,10 +809,6 @@ function presentSummary(
       crewType: snapshot.crewType,
       specs,
       amenities: snapshot.amenities ?? [],
-      bookingStats: {
-        bookedThisMonth: stableCount(row.listingId, 2, 8),
-        viewedToday: stableCount(row.id, 18, 64),
-      },
       badges: badgesFor({
         petsAllowed: snapshot.petsAllowed ?? false,
         depositInsuranceIncluded: snapshot.depositInsuranceIncluded ?? false,

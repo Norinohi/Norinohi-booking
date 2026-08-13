@@ -233,11 +233,13 @@ export default function BookingSummary({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
       <ScrollArea className="min-h-0 flex-1 max-xl:[&_[data-slot=scroll-area-viewport]]:overscroll-auto">
-        {stats ? (
+        {/* Real counts, so either can be zero — a line with nothing to report is
+            dropped, and the block goes with it when both are. */}
+        {stats && (stats.booked > 0 || stats.viewed > 0) ? (
           <>
             <div className="flex w-full flex-col gap-2 p-4 text-sm leading-4.5 font-medium text-foreground">
-              <p>{tCard("stats.booked", { count: stats.booked })}</p>
-              <p>{tCard("stats.viewed", { count: stats.viewed })}</p>
+              {stats.booked > 0 ? <p>{tCard("stats.booked", { count: stats.booked })}</p> : null}
+              {stats.viewed > 0 ? <p>{tCard("stats.viewed", { count: stats.viewed })}</p> : null}
             </div>
             <Separator />
           </>

@@ -225,6 +225,13 @@
       "when": 1786643765427,
       "tag": "0031_rapid_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1786647096906,
+      "tag": "0032_curved_queen_noir",
+      "breakpoints": true
     }
   ]
 }
