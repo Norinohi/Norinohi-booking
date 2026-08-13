@@ -128,7 +128,7 @@ export default function BookingConfirmationScreen() {
   const tCrew = useTranslations("Common.crewTypes");
   const money = useMoney();
   const format = useFormatter();
-  const [{ bookingId }] = useQueryStates(confirmationParsers);
+  const [{ bookingId, method }] = useQueryStates(confirmationParsers);
   const [downloading, setDownloading] = useState(false);
 
   const { data: booking, isLoading } = useQuery({
@@ -338,15 +338,29 @@ export default function BookingConfirmationScreen() {
                 <Share2 />
                 {t("shareTrip")}
               </Button>
-              <Button
-                variant="brand"
-                className="w-full md:flex-1"
-                disabled={downloading}
-                onClick={() => void downloadReceipt()}
-              >
-                <FileText />
-                {t("downloadReceipt")}
-              </Button>
+              {/* Paying by transfer, the invoice is the document that matters — it carries the
+                  bank details and the amount due, which a receipt of nothing-paid-yet does not. */}
+              {method === "invoice" && bookingId ? (
+                <Button
+                  variant="brand"
+                  className="w-full md:flex-1"
+                  nativeButton={false}
+                  render={<Link href={`/profile/bookings/${bookingId}/invoice`} />}
+                >
+                  <FileText />
+                  {t("viewInvoice")}
+                </Button>
+              ) : (
+                <Button
+                  variant="brand"
+                  className="w-full md:flex-1"
+                  disabled={downloading}
+                  onClick={() => void downloadReceipt()}
+                >
+                  <FileText />
+                  {t("downloadReceipt")}
+                </Button>
+              )}
             </div>
           </motion.div>
         </motion.div>

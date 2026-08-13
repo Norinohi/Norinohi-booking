@@ -139,6 +139,12 @@ function joinUrl(baseUrl: string, endpoint: string): string {
   return `${baseUrl.replace(/\/+$/, "")}/${endpoint.replace(/^\/+/, "")}`;
 }
 
+/** One line of the body, enough to tell an HTML error page from a truncated payload. */
+function preview(text: string, limit = 120): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > limit ? `${flat.slice(0, limit)}…` : flat || "(empty)";
+}
+
 export function createProviderHttpClient(options: ProviderHttpClientOptions): ProviderHttpClient {
   const {
     baseUrl,
@@ -199,11 +205,17 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     try {
       parsed = text.trim() === "" ? null : JSON.parse(text);
     } catch (cause) {
-      throw new ContractError(`Response from ${endpoint} was not JSON`, {
-        endpoint,
-        cause,
-        payload: { httpStatus: response.status, bodyPreview: text.slice(0, 500) },
-      });
+      // The status and the first line of the body are in the payload too, but only the
+      // message survives into a log line or a rejected booking's cancel_reason, and
+      // "not JSON" alone cannot distinguish a vendor 500 from a proxy's HTML error page.
+      throw new ContractError(
+        `Response from ${endpoint} was not JSON — HTTP ${response.status}, body starts: ${preview(text)}`,
+        {
+          endpoint,
+          cause,
+          payload: { httpStatus: response.status, bodyPreview: text.slice(0, 500) },
+        },
+      );
     }
 
     const result = { body: parsed, httpStatus: response.status, durationMs, requestId };

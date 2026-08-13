@@ -44,7 +44,10 @@
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",
-      "confirmFailed": "Could not confirm your booking. Please try again."
+      "confirmFailed": "Could not confirm your booking. Please try again.",
+      "billingName": "Enter the name to bill",
+      "billingAddress": "Enter the billing address",
+      "city": "Enter the city"
     },
     "backToYacht": "Back To {name}",
     "panels": {
@@ -87,7 +90,21 @@
         "vat": "VAT Number (Optional)",
         "vatPlaceholder": "GB12312321321312123",
         "notice": "Prefer to pay offline? We'll send you an invoice to complete the payment by bank transfer.",
-        "cta": "Request Invoice (For {amount})"
+        "cta": "Request Invoice (For {amount})",
+        "name": "Billing Name",
+        "namePlaceholder": "Jane Doe",
+        "addressLine1": "Address",
+        "addressLine1Placeholder": "12 Harbour Road",
+        "addressLine2": "Address Line 2 (Optional)",
+        "addressLine2Placeholder": "Apartment, suite, floor",
+        "city": "City",
+        "cityPlaceholder": "Split",
+        "postalCode": "Postal Code (Optional)",
+        "postalCodePlaceholder": "21000",
+        "country": "Country",
+        "countryPlaceholder": "Select country",
+        "registration": "Registration Number (Optional)",
+        "registrationPlaceholder": "12345678"
       },
       "question": {
         "label": "Your Question or Request",
@@ -118,6 +135,66 @@
         "totalPrice": "Total Price",
         "perPerson": "~ {price} for person",
         "dueNow": "Due now"
+      },
+      "viewInvoice": "View Invoice"
+    },
+    "invoice": {
+      "title": "Invoice",
+      "print": "Print / Save as PDF",
+      "backToBookings": "Back to bookings",
+      "issuedOn": "Issued {date}",
+      "dueOn": "Due {date}",
+      "status": {
+        "pending": "Awaiting payment",
+        "sent": "Sent",
+        "paid": "Paid",
+        "cancelled": "Cancelled"
+      },
+      "from": "From",
+      "billTo": "Bill to",
+      "vat": "VAT {value}",
+      "registration": "Reg. no. {value}",
+      "summary": {
+        "reference": "Booking reference",
+        "yacht": "Yacht",
+        "base": "Base",
+        "dates": "Charter dates",
+        "guests": "Guests"
+      },
+      "lines": {
+        "description": "Description",
+        "collected": "Collected",
+        "amount": "Amount"
+      },
+      "payWhen": {
+        "now": "With this invoice",
+        "at_check_in": "At check-in"
+      },
+      "totals": {
+        "charterTotal": "Charter total",
+        "paid": "Already paid",
+        "dueNow": "Due now",
+        "balance": "Remaining balance",
+        "securityDeposit": "A refundable security deposit of {amount} is collected at check-in and is not part of this invoice."
+      },
+      "payment": {
+        "title": "Payment details",
+        "beneficiary": "Beneficiary",
+        "bank": "Bank",
+        "iban": "IBAN",
+        "bic": "BIC / SWIFT",
+        "reference": "Payment reference",
+        "amount": "Amount to transfer",
+        "note": "Quote the payment reference on the transfer so we can match it to your booking. Your reservation is confirmed once the funds clear."
+      },
+      "footnote": "Issued by {company}. This invoice was generated electronically and is valid without a signature.",
+      "error": {
+        "title": "Could not load the invoice",
+        "description": "Please try again in a moment."
+      },
+      "missing": {
+        "title": "No invoice for this booking",
+        "description": "This booking was not paid by bank transfer, so no invoice was issued."
       }
     }
   },
@@ -1006,6 +1083,10 @@
     "Sync": {
       "title": "Sync History",
       "description": "Catalogue and availability sync runs with their counts and errors."
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "The invoice for your yacht charter booking, with payment details."
     }
   },
   "Profile": {

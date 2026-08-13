@@ -464,3 +464,24 @@
     }
   }
 }
+
+/*
+ * Printing a document page (invoice, receipt). The app chrome lives in the root layout and is
+ * shared by every route, so a page that is meant to be printed marks itself with
+ * `data-print-document` and this hides the surrounding header, footer and any control that would
+ * otherwise land on paper. `print:hidden` handles anything inside the document itself.
+ */
+@media print {
+  body:has([data-print-document]) {
+    background: #fff;
+  }
+
+  body:has([data-print-document]) header,
+  body:has([data-print-document]) footer {
+    display: none !important;
+  }
+
+  @page {
+    margin: 14mm;
+  }
+}

@@ -44,7 +44,10 @@
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
-      "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo."
+      "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo.",
+      "billingName": "Introduce el nombre de facturación",
+      "billingAddress": "Introduce la dirección de facturación",
+      "city": "Introduce la ciudad"
     },
     "backToYacht": "Volver a {name}",
     "panels": {
@@ -87,7 +90,21 @@
         "vat": "Número de IVA (opcional)",
         "vatPlaceholder": "GB12312321321312123",
         "notice": "¿Prefieres pagar sin conexión? Te enviaremos una factura para completar el pago por transferencia bancaria.",
-        "cta": "Solicitar factura (por {amount})"
+        "cta": "Solicitar factura (por {amount})",
+        "name": "Nombre de facturación",
+        "namePlaceholder": "Jane Doe",
+        "addressLine1": "Dirección",
+        "addressLine1Placeholder": "Calle del Puerto 12",
+        "addressLine2": "Dirección línea 2 (opcional)",
+        "addressLine2Placeholder": "Apartamento, piso, planta",
+        "city": "Ciudad",
+        "cityPlaceholder": "Split",
+        "postalCode": "Código postal (opcional)",
+        "postalCodePlaceholder": "21000",
+        "country": "País",
+        "countryPlaceholder": "Selecciona un país",
+        "registration": "Número de registro (opcional)",
+        "registrationPlaceholder": "12345678"
       },
       "question": {
         "label": "Tu pregunta o solicitud",
@@ -118,6 +135,66 @@
         "totalPrice": "Precio total",
         "perPerson": "~ {price} por persona",
         "dueNow": "A pagar ahora"
+      },
+      "viewInvoice": "Ver factura"
+    },
+    "invoice": {
+      "title": "Factura",
+      "print": "Imprimir / Guardar como PDF",
+      "backToBookings": "Volver a mis reservas",
+      "issuedOn": "Emitida el {date}",
+      "dueOn": "Vence el {date}",
+      "status": {
+        "pending": "Pendiente de pago",
+        "sent": "Enviada",
+        "paid": "Pagada",
+        "cancelled": "Cancelada"
+      },
+      "from": "De",
+      "billTo": "Facturar a",
+      "vat": "NIF/IVA {value}",
+      "registration": "N.º de registro {value}",
+      "summary": {
+        "reference": "Referencia de la reserva",
+        "yacht": "Yate",
+        "base": "Base",
+        "dates": "Fechas del chárter",
+        "guests": "Huéspedes"
+      },
+      "lines": {
+        "description": "Concepto",
+        "collected": "Cobro",
+        "amount": "Importe"
+      },
+      "payWhen": {
+        "now": "Con esta factura",
+        "at_check_in": "En la llegada"
+      },
+      "totals": {
+        "charterTotal": "Total del chárter",
+        "paid": "Ya pagado",
+        "dueNow": "A pagar ahora",
+        "balance": "Saldo pendiente",
+        "securityDeposit": "En la llegada se cobra una fianza reembolsable de {amount} que no forma parte de esta factura."
+      },
+      "payment": {
+        "title": "Datos de pago",
+        "beneficiary": "Beneficiario",
+        "bank": "Banco",
+        "iban": "IBAN",
+        "bic": "BIC / SWIFT",
+        "reference": "Referencia del pago",
+        "amount": "Importe a transferir",
+        "note": "Indica la referencia de pago en la transferencia para que podamos asociarla a tu reserva. La reserva se confirma cuando se reciben los fondos."
+      },
+      "footnote": "Emitida por {company}. Esta factura se ha generado electrónicamente y es válida sin firma.",
+      "error": {
+        "title": "No se pudo cargar la factura",
+        "description": "Inténtalo de nuevo en un momento."
+      },
+      "missing": {
+        "title": "Esta reserva no tiene factura",
+        "description": "Esta reserva no se pagó por transferencia bancaria, por lo que no se emitió ninguna factura."
       }
     }
   },
@@ -1006,6 +1083,10 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Invoice": {
+      "title": "Factura",
+      "description": "La factura de tu reserva de chárter, con los datos de pago."
     }
   },
   "Profile": {

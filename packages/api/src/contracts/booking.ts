@@ -317,24 +317,123 @@ export const checkoutStatusSchema = z.object({
 
 /* --------------------------------------------- non-card checkout outcomes */
 
-export const invoiceRequestInputSchema = z.object({
-  bookingId: z.string().min(1),
+/*
+ * Who the invoice is made out to. An invoice is a tax document, so the billed party needs a name
+ * and a postal address whether or not a company is involved; the company block (name, VAT,
+ * registration) is what turns it into a B2B invoice and stays optional.
+ */
+export const billingPartySchema = z.object({
   billingEmail: z.email(),
+  billingName: z.string().trim().min(2).max(200),
+  addressLine1: z.string().trim().min(1).max(200),
+  addressLine2: z.string().trim().max(200).optional(),
+  city: z.string().trim().min(1).max(120).optional(),
+  postalCode: z.string().trim().min(1).max(32).optional(),
+  countryCode: z.string().trim().length(2).toUpperCase(),
   companyName: z.string().trim().max(200).optional(),
   vatNumber: z.string().trim().max(64).optional(),
+  registrationNumber: z.string().trim().max(64).optional(),
+});
+
+export const invoiceRequestInputSchema = billingPartySchema.extend({
+  bookingId: z.string().min(1),
 });
 
 export const invoiceRequestSchema = z.object({
   id: z.string(),
   bookingId: z.string(),
+  number: z.string(),
+  issuedAt: z.string(),
+  dueAt: z.string(),
   billingEmail: z.string(),
+  billingName: z.string().nullable(),
   companyName: z.string().nullable(),
   vatNumber: z.string().nullable(),
+  registrationNumber: z.string().nullable(),
+  addressLine1: z.string().nullable(),
+  addressLine2: z.string().nullable(),
+  city: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  countryCode: z.string().nullable(),
   amount: moneySchema,
   status: z.enum(["pending", "sent", "paid", "cancelled"]),
   bookingStatus: bookingStatusSchema,
   createdAt: z.string(),
 });
+
+/*
+ * Everything the printable invoice renders, assembled server-side so the document is one
+ * authoritative payload: the seller block, the billed party as it was captured, the priced lines
+ * behind the charter, what is due now, and where to wire the money. `null` when the booking has
+ * no invoice request — the customer paid by card.
+ */
+export const invoiceDocumentSchema = z
+  .object({
+    number: z.string(),
+    issuedAt: z.string(),
+    dueAt: z.string(),
+    status: z.enum(["pending", "sent", "paid", "cancelled"]),
+    seller: z.object({
+      legalName: z.string(),
+      tradingName: z.string(),
+      addressLine1: z.string(),
+      addressLine2: z.string().nullable(),
+      city: z.string(),
+      postalCode: z.string(),
+      countryCode: z.string(),
+      vatNumber: z.string(),
+      registrationNumber: z.string(),
+      email: z.string(),
+      phone: z.string(),
+      website: z.string(),
+    }),
+    billTo: z.object({
+      name: z.string(),
+      email: z.string(),
+      companyName: z.string().nullable(),
+      vatNumber: z.string().nullable(),
+      registrationNumber: z.string().nullable(),
+      addressLine1: z.string().nullable(),
+      addressLine2: z.string().nullable(),
+      city: z.string().nullable(),
+      postalCode: z.string().nullable(),
+      countryCode: z.string().nullable(),
+    }),
+    booking: z.object({
+      reference: z.string(),
+      status: bookingStatusSchema,
+      listingTitle: z.string(),
+      baseName: z.string(),
+      locationName: z.string(),
+      countryName: z.string(),
+      checkIn: z.string(),
+      checkOut: z.string(),
+      guests: z.number().int(),
+    }),
+    lines: z.array(
+      z.object({
+        code: z.string(),
+        label: z.string(),
+        amount: moneySchema,
+        payWhen: z.enum(["now", "at_check_in"]),
+        group: lineGroupSchema.nullable(),
+      }),
+    ),
+    total: moneySchema,
+    /** The invoiced figure, frozen when the request was made — not recomputed from the quote. */
+    amountDue: moneySchema,
+    paidTotal: moneySchema,
+    balanceDue: moneySchema,
+    securityDeposit: moneySchema.nullable(),
+    payment: z.object({
+      bankName: z.string(),
+      iban: z.string(),
+      bic: z.string(),
+      /** What the payer must put on the transfer so it can be matched without a human. */
+      reference: z.string(),
+    }),
+  })
+  .nullable();
 
 export const enquiryInputSchema = z.object({
   bookingId: z.string().min(1),

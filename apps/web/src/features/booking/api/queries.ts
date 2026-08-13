@@ -51,3 +51,11 @@ export const bookingDetailQueryOptions = (id: string) =>
 /** The receipt for Download Receipt. `protectedProcedure`. */
 export const bookingReceiptQueryOptions = (id: string) =>
   orpc.booking.receipt.queryOptions({ input: { id } });
+
+export type InvoiceDocument = NonNullable<
+  Awaited<ReturnType<AppRouterClient["booking"]["invoice"]>>
+>;
+
+/** The printable invoice behind /profile/bookings/[id]/invoice. Null for card bookings. */
+export const bookingInvoiceQueryOptions = (id: string) =>
+  orpc.booking.invoice.queryOptions({ input: { id } });

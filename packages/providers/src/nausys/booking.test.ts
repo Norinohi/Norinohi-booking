@@ -15,6 +15,7 @@ import {
   type NausysBookingServiceDeps,
 } from "./booking";
 import { NausysClient } from "./client";
+import { restYachtReservationResponseSchema } from "./endpoints";
 import type { NausysConfig } from "./config";
 import { FakeNausysTransport, nausysFixtures } from "./testing/fake-transport";
 
@@ -664,5 +665,39 @@ describe("createInfo client mapping", () => {
     ).rejects.toThrow(/ZZ/);
 
     expect(transport.lastBody("createInfo")).toBeUndefined();
+  });
+});
+
+describe("blank client fields on a reservation response", () => {
+  /*
+   * Observed live on createInfo: a private booking comes back with `company: false`
+   * rather than "" or an omitted key, which failed the whole response and rejected the
+   * hold. Absent is the only sane reading of it.
+   */
+  const reservation = {
+    status: "OK",
+    id: 55901234,
+    uuid: INFO_UUID,
+    reservationStatus: "INFO",
+    yachtId: 4711001,
+    periodFrom: "04.07.2026",
+    periodTo: "11.07.2026",
+  };
+
+  it("reads a false client field as absent", () => {
+    const parsed = restYachtReservationResponseSchema.parse({
+      ...reservation,
+      client: { name: "Ana", surname: "Horvat", company: false, vatNr: false },
+    });
+
+    expect(parsed.client?.company).toBeUndefined();
+    expect(parsed.client?.vatNr).toBeUndefined();
+    expect(parsed.client?.name).toBe("Ana");
+  });
+
+  it("still rejects a true, which would be a value rather than a blank", () => {
+    expect(() =>
+      restYachtReservationResponseSchema.parse({ ...reservation, client: { company: true } }),
+    ).toThrow();
   });
 });

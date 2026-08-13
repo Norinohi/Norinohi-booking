@@ -62,8 +62,15 @@ export default function PaymentStep() {
         await requestInvoice.mutateAsync({
           bookingId,
           billingEmail: invoice.email,
+          billingName: invoice.name,
+          addressLine1: invoice.addressLine1,
+          addressLine2: invoice.addressLine2 || undefined,
+          city: invoice.city || undefined,
+          postalCode: invoice.postalCode || undefined,
+          countryCode: invoice.countryCode,
           companyName: invoice.company || undefined,
           vatNumber: invoice.vat || undefined,
+          registrationNumber: invoice.registration || undefined,
         });
       } else {
         await askQuestion.mutateAsync({

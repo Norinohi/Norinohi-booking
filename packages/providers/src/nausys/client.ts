@@ -3,6 +3,7 @@ import type { z } from "zod";
 import {
   AuthError,
   ContractError,
+  describeSchemaIssues,
   NotFoundError,
   type ProviderError,
   TransientError,
@@ -168,10 +169,10 @@ export class NausysClient {
     const response = await this.http.post(endpoint, body);
     const parsed = schema.safeParse(response.body);
     if (!parsed.success) {
-      throw new ContractError(`NauSYS response from ${endpoint} did not match the schema`, {
-        endpoint,
-        payload: { issues: parsed.error.issues },
-      });
+      throw new ContractError(
+        `NauSYS response from ${endpoint} did not match the schema — ${describeSchemaIssues(parsed.error.issues)}`,
+        { endpoint, payload: { issues: parsed.error.issues } },
+      );
     }
     return parsed.data;
   }

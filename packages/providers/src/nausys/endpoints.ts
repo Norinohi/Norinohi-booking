@@ -681,18 +681,29 @@ export const restOccupancyResponseSchema = looseJsonObject({
 
 // -- booking -----------------------------------------------------------------
 
+/**
+ * A client field the vendor may answer with `false` instead of omitting it or sending an
+ * empty string — observed on `company` for a private booking, and the same shape is
+ * plausible on every other text field of this block. Read `false` as absent; `true` is
+ * not tolerated, because a boolean-shaped *value* would be new information, not a blank.
+ */
+const blankableString = z
+  .union([z.string(), z.literal(false)])
+  .transform((value) => (value === false ? undefined : value))
+  .optional();
+
 export const restClientSchema = looseJsonObject({
-  name: z.string().optional(),
-  surname: z.string().optional(),
-  company: z.string().optional(),
-  vatNr: z.string().optional(),
-  address: z.string().optional(),
-  zip: z.string().optional(),
-  city: z.string().optional(),
+  name: blankableString,
+  surname: blankableString,
+  company: blankableString,
+  vatNr: blankableString,
+  address: blankableString,
+  zip: blankableString,
+  city: blankableString,
   countryId: z.number().int().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  mobile: z.string().optional(),
+  email: blankableString,
+  phone: blankableString,
+  mobile: blankableString,
 });
 export type RestClient = z.infer<typeof restClientSchema>;
 

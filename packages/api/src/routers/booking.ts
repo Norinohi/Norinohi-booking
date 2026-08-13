@@ -16,6 +16,7 @@ import {
   checkoutStatusSchema,
   enquiryInputSchema,
   enquirySchema,
+  invoiceDocumentSchema,
   invoiceRequestInputSchema,
   invoiceRequestSchema,
   travellerListInputSchema,
@@ -31,6 +32,7 @@ import {
   listBookings,
 } from "../services/booking";
 import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
+import { getInvoiceDocument } from "../services/invoice-document";
 import { listTravellers, saveTravellers } from "../services/traveller";
 import { confirmCheckout } from "../services/payment";
 import { withJsonBodyExample } from "./openapi-examples";
@@ -146,6 +148,23 @@ export const bookingRouter = {
     .input(bookingIdInputSchema)
     .output(bookingReceiptSchema)
     .handler(({ context, input }) => getReceipt(context.db, context.session.user.id, input.id)),
+  invoice: protectedProcedure
+    .route({
+      method: "POST",
+      path: "/booking/invoice",
+      operationId: "getBookingInvoice",
+      summary: "Get the invoice document for a booking",
+      description:
+        "Returns everything the printable invoice renders: the issued number and due date, the seller's legal and tax details, the billed party exactly as it was captured at checkout, the priced lines, what is due now, and the bank details to transfer to. Null when the booking was paid by card and no invoice was ever requested.",
+      tags: ["Booking"],
+      successDescription: "The invoice document, or null when the booking has no invoice.",
+      spec: withJsonBodyExample({ id: "bkg_example" }),
+    })
+    .input(bookingIdInputSchema)
+    .output(invoiceDocumentSchema)
+    .handler(({ context, input }) =>
+      getInvoiceDocument(context.db, context.session.user.id, input.id),
+    ),
 };
 
 export const checkoutRouter = {
@@ -238,6 +257,11 @@ export const checkoutRouter = {
       spec: withJsonBodyExample({
         bookingId: "bkg_example",
         billingEmail: "billing@example.com",
+        billingName: "Jane Doe",
+        addressLine1: "12 Harbour Road",
+        city: "Split",
+        postalCode: "21000",
+        countryCode: "HR",
         companyName: "Yachts Adventures",
         vatNumber: "GB123123211321312123",
       }),
