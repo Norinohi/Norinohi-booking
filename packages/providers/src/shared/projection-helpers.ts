@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 import type { ProviderRecordSet, ProviderResourceType } from "../types";
 import { ContractError } from "./errors";
@@ -29,25 +29,32 @@ export function slugify(value: string): string {
     .replace(/^-|-$/g, "");
 }
 
+/** Blank text is indistinguishable from absent text everywhere downstream. */
+const presentTextSchema = z.string().trim().min(1);
+
+/** Infinity and NaN survive JSON round-trips as nulls, never as usable numbers. */
+const finiteNumberSchema = z.number().finite();
+
 export function text(value: JsonField): string | undefined {
-  const trimmed = typeof value === "string" ? value.trim() : "";
-  return trimmed === "" ? undefined : trimmed;
+  return presentTextSchema.safeParse(value).data;
 }
 
 export function idOf(value: JsonField): string | null {
-  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
+  const numeric = finiteNumberSchema.safeParse(value);
+  if (numeric.success) return String(numeric.data);
   return text(value) ?? null;
 }
 
 export function objectsOf(items: JsonValue[]): JsonObject[] {
+  // Kept as a filter rather than a schema parse: a catalogue dump runs tens of
+  // thousands of records through here, and parsing would copy every one.
   return items.filter(
-    (item): item is JsonObject =>
-      typeof item === "object" && item !== null && !Array.isArray(item),
+    (item): item is JsonObject => item instanceof Object && !Array.isArray(item),
   );
 }
 
 export function numberOf(value: JsonField): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return finiteNumberSchema.safeParse(value).data;
 }
 
 export function intOf(value: JsonField): number | undefined {
