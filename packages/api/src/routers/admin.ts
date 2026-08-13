@@ -23,6 +23,8 @@ import {
 import {
   bookingCancelInputSchema,
   bookingCancelSchema,
+  bookingRefundInputSchema,
+  bookingRefundSchema,
   invoiceAdminRowSchema,
   invoiceCancelInputSchema,
   invoiceListInputSchema,
@@ -40,6 +42,7 @@ import {
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
 import { cancelBooking } from "../services/booking";
+import { refundBooking } from "../services/refund";
 import {
   cancelInvoiceRequest,
   listInvoiceRequests,
@@ -150,6 +153,27 @@ export const adminRouter = {
         cancelBooking(context.db, context.provider, input.id, input.reason, {
           userId: context.session.user.id,
           isAdmin: true,
+        }),
+      ),
+    refund: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/refund",
+        operationId: "adminRefundBooking",
+        summary: "Return the money on a booking that owes a refund",
+        description:
+          "Refunds every payment collected on a booking sitting at REFUND_PENDING, then moves it to REFUNDED once nothing is outstanding. Card payments go back through Stripe; a bank transfer cannot, so those are reported in requiresManualTransfer and only count as returned when staff resend the money and pass manualTransferSettled. Idempotent and keyed per payment — running it again finishes a partial refund rather than paying twice. A provider rejection refunds itself; this is for the admin-cancelled case and for retries. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "What was returned and the booking's resulting status.",
+        spec: withJsonBodyExample({ id: "bkg_example", reason: "Operator withdrew the yacht" }),
+      })
+      .input(bookingRefundInputSchema)
+      .output(bookingRefundSchema)
+      .handler(({ context, input }) =>
+        refundBooking(context.db, input.id, {
+          reason: input.reason,
+          manualTransferSettled: input.manualTransferSettled,
+          actorUserId: context.session.user.id,
         }),
       ),
   },

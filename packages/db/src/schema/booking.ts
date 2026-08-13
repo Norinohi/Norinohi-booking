@@ -58,10 +58,16 @@ export const extraPricingType = pgEnum("extra_pricing_type", [
 
 export const bookingConsentKind = pgEnum("booking_consent_kind", ["terms", "cancellation_policy"]);
 
+/**
+ * `refunded` rather than reusing `cancelled`: an installment that was collected and
+ * given back is not the same as one that was never owed, and My Bookings shows this
+ * column to the customer.
+ */
 export const paymentScheduleStatus = pgEnum("payment_schedule_status", [
   "pending",
   "paid",
   "cancelled",
+  "refunded",
 ]);
 
 export const paymentStatus = pgEnum("payment_status", [

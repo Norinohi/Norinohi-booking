@@ -174,7 +174,7 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
       kind: paymentScheduleKindSchema,
       amount: moneySchema,
       dueAt: z.string().nullable(),
-      status: z.enum(["pending", "paid", "cancelled"]),
+      status: z.enum(["pending", "paid", "cancelled", "refunded"]),
     }),
   ),
   payments: z.array(
@@ -239,6 +239,24 @@ export const bookingCancelInputSchema = z.object({
 export const bookingCancelSchema = z.object({
   id: z.string(),
   status: bookingStatusSchema,
+});
+
+export const bookingRefundInputSchema = z.object({
+  id: z.string().min(1),
+  reason: z.string().trim().max(500).optional(),
+  /**
+   * Staff confirming they have sent the bank transfer back. Nothing else can
+   * evidence it, so the booking cannot reach REFUNDED on that path without it.
+   */
+  manualTransferSettled: z.boolean().optional(),
+});
+
+export const bookingRefundSchema = z.object({
+  bookingId: z.string(),
+  status: bookingStatusSchema,
+  refunded: moneySchema,
+  awaitingSettlement: z.number().int(),
+  requiresManualTransfer: z.number().int(),
 });
 
 /* ------------------------------------------------------------------ checkout */
