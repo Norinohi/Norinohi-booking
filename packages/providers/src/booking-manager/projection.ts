@@ -597,7 +597,8 @@ function countryCodeOf(country: RestCountry): string {
  * malformed amount drops the deposit rather than the yacht.
  */
 function minorOf(value: JsonField, currency: string): number | undefined {
-  const amount = typeof value === "number" && Number.isFinite(value) ? String(value) : text(value);
+  const numeric = numberOf(value);
+  const amount = numeric === undefined ? text(value) : String(numeric);
   if (amount === undefined) return undefined;
   try {
     return decimalStringToMinor(amount, currency);

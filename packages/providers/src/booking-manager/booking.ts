@@ -119,10 +119,7 @@ export function createBookingManagerBookingService(
    * resource and no partial-update semantics, so sending only `{status}` risks
    * the vendor clearing the fields we omitted (Q-BM-PUT).
    */
-  async function reservationBody(
-    draft: BookingDraft,
-    status: number,
-  ): Promise<ReservationBody> {
+  async function reservationBody(draft: BookingDraft, status: number): Promise<ReservationBody> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
@@ -359,7 +356,7 @@ function toCanonicalStatus(
       return "option_held";
     default:
       throw new ContractError(
-        `Booking Manager reservation ${response.id} came back with status ${JSON.stringify(response.status)} (${BM_RESERVATION_STATUS_NAMES[response.status ?? -1] ?? "unknown"})`,
+        `Booking Manager reservation ${response.id} came back with status ${JSON.stringify(response.status)} (${BM_RESERVATION_STATUS_NAMES.get(response.status ?? -1) ?? "unknown"})`,
         { endpoint, payload: { id: response.id, status: response.status } },
       );
   }
@@ -369,7 +366,7 @@ function toCanonicalStatus(
  * `clientName` is PII under §10 and `commission` is our cut rather than the
  * customer's price. The event log is queried freely, so neither is written to it.
  */
-function eventPayload(response: RestReservation): Record<string, unknown> {
+function eventPayload(response: RestReservation) {
   return {
     id: response.id,
     reservationCode: response.reservationCode,

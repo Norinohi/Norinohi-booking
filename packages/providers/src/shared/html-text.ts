@@ -1,11 +1,11 @@
-const HTML_ENTITIES: Record<string, string> = {
-  amp: "&",
-  apos: "'",
-  gt: ">",
-  lt: "<",
-  nbsp: " ",
-  quot: '"',
-};
+const HTML_ENTITIES = new Map([
+  ["amp", "&"],
+  ["apos", "'"],
+  ["gt", ">"],
+  ["lt", "<"],
+  ["nbsp", " "],
+  ["quot", '"'],
+]);
 
 function decodeEntity(match: string, body: string): string {
   if (body.startsWith("#")) {
@@ -15,7 +15,7 @@ function decodeEntity(match: string, body: string): string {
       ? String.fromCodePoint(code)
       : match;
   }
-  return HTML_ENTITIES[body.toLowerCase()] ?? match;
+  return HTML_ENTITIES.get(body.toLowerCase()) ?? match;
 }
 
 /**

@@ -41,12 +41,12 @@ import {
  * `OPTION_IN_EXPIRATION` stays an option: it is still holding the week, and the
  * difference from `OPTION` is a countdown the slot row has nowhere to keep.
  */
-const OCCUPANCY_STATUS: Record<number, OccupiedInterval["status"]> = {
-  [BM_RESERVATION_STATUS.RESERVATION]: "occupied",
-  [BM_RESERVATION_STATUS.OPTION]: "option",
-  [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION]: "option",
-  [BM_RESERVATION_STATUS.SERVICE]: "blocked",
-};
+const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
+  [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
+  [BM_RESERVATION_STATUS.OPTION, "option"],
+  [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
+  [BM_RESERVATION_STATUS.SERVICE, "blocked"],
+]);
 
 /**
  * A status outside the documented four, or a row with none, still arrived in a feed
@@ -119,7 +119,7 @@ export function mapBookingManagerAvailability(
     externalYachtId: String(row.yachtId),
     startDate,
     endDate,
-    status: (status === null ? undefined : OCCUPANCY_STATUS[status]) ?? UNKNOWN_STATUS,
+    status: (status === null ? undefined : OCCUPANCY_STATUS.get(status)) ?? UNKNOWN_STATUS,
     // The expiry is parsed rather than passed through so a malformed one fails the
     // scope here, and it feeds the hash so a shifted deadline restamps the slot
     // even when the dates and status are unchanged.
@@ -129,7 +129,7 @@ export function mapBookingManagerAvailability(
       dateFrom: row.dateFrom,
       dateTo: row.dateTo,
       status,
-      statusName: status === null ? null : (BM_RESERVATION_STATUS_NAMES[status] ?? null),
+      statusName: status === null ? null : (BM_RESERVATION_STATUS_NAMES.get(status) ?? null),
       baseFromId: row.baseFromId,
       baseToId: row.baseToId,
       optionExpiresAt:

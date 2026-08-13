@@ -1,4 +1,3 @@
-import type { QueryValue } from "../shared/http-client";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import type { SeasonalPrice } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
@@ -65,11 +64,13 @@ export function createBookingManagerSeasonalPriceLoader(
       const checkOut = addDays(checkIn, 7);
       // Deliberately no yachtId: the vendor returns the whole fleet for the
       // period, which is one call instead of one per batch of boats.
-      const query: Record<string, QueryValue | undefined> = {
+      const query = {
         dateFrom: formatBookingManagerDateTime(checkIn),
         dateTo: formatBookingManagerDateTime(checkOut),
+        // An undefined value is dropped from the query string, so no currency
+        // asks for the vendor's own default rather than for a blank one.
+        currency: options.currency || undefined,
       };
-      if (options.currency) query.currency = options.currency;
 
       const rows = await client.get(bookingManagerEndpoints.prices, restPriceListSchema, query);
 

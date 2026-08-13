@@ -1,6 +1,5 @@
 import type { z } from "zod";
 
-import type { QueryValue } from "../shared/http-client";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { toPositiveIntId } from "../shared/projection-helpers";
@@ -82,14 +81,16 @@ export function createBookingManagerQuoteService(
       // Midnight is mandatory here, not a placeholder: MMK confirmed the vendor
       // substitutes the base's own check-in/check-out time and returns it on the
       // offer, so sending a time of our own is refused or silently overridden.
-      const offerQuery: Record<string, QueryValue | undefined> = {
+      const offerQuery = {
         dateFrom: formatBookingManagerDateTime(parsed.checkIn),
         dateTo: formatBookingManagerDateTime(parsed.checkOut),
         yachtId: [yachtId],
         currency: parsed.currency,
         passengersOnBoard: parsed.guests,
+        // An undefined value is dropped from the query string, so an unnamed
+        // product asks for the vendor's default rather than for an empty one.
+        productName: productName || undefined,
       };
-      if (productName) offerQuery.productName = productName;
 
       const offers = await client.get(
         bookingManagerEndpoints.offers,
@@ -149,17 +150,18 @@ function selectOffer(
   return candidates.find((offer) => offer.product === productName) ?? candidates[0];
 }
 
-/** The base's own check-in/check-out wall clock, as the vendor substituted it. */
-export function readOfferTimes(offer: RestOffer): {
+export interface OfferTimes {
   checkInTime: string | undefined;
   checkOutTime: string | undefined;
-} {
+}
+
+/** The base's own check-in/check-out wall clock, as the vendor substituted it. */
+export function readOfferTimes(offer: RestOffer): OfferTimes {
   return { checkInTime: timeOf(offer.dateFrom), checkOutTime: timeOf(offer.dateTo) };
 }
 
 function timeOf(value: string | null | undefined): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const time = value.trim().split(/[ T]/)[1];
+  const time = value?.trim().split(/[ T]/)[1];
   return time === undefined || time === "" ? undefined : time;
 }
 
@@ -374,6 +376,11 @@ function securityDepositOf(offer: RestOffer, currency: string): Money | undefine
 
 /* ---------------------------------------------------------------- policies */
 
+interface ResolvedPaymentPolicy {
+  policy: PaymentPolicy;
+  depositMinor: number;
+}
+
 /**
  * Booking Manager schedules instalments as amounts rather than percentages, so
  * the deposit is taken from the plan verbatim and the percentage is derived for
@@ -384,7 +391,7 @@ function toPaymentPolicy(
   offer: RestOffer,
   currency: string,
   payableNowMinor: number,
-): { policy: PaymentPolicy; depositMinor: number } {
+): ResolvedPaymentPolicy {
   const plan = (offer.paymentPlan ?? []).filter((entry) => entry.amount != null);
   const [first, second] = plan;
 

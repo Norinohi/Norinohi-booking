@@ -414,7 +414,9 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         label: `Service ${extra.serviceId}`,
         amount: { amountMinor: decimalStringToMinor(extra.amount, currency), currency },
         payWhen:
-          extra.calculationType === "SEPARATE_PAYMENT" ? ("at_check_in" as const) : ("now" as const),
+          extra.calculationType === "SEPARATE_PAYMENT"
+            ? ("at_check_in" as const)
+            : ("now" as const),
         kind: "extra" as const,
       }),
     );
@@ -558,7 +560,7 @@ function toCanonicalStatus(status: RestYachtReservation["reservationStatus"]) {
  * `agencyPrice` is our cost, not the customer's, and `client` is PII under §10.
  * The event log is queried freely, so neither is written to it.
  */
-function eventPayload(step: ReservationStep): Record<string, unknown> {
+function eventPayload(step: ReservationStep) {
   const { response } = step;
   return {
     id: response.id,
@@ -572,15 +574,17 @@ function eventPayload(step: ReservationStep): Record<string, unknown> {
   };
 }
 
+export interface CustomerName {
+  name: string;
+  surname: string;
+}
+
 /**
  * NauSYS wants a given name and a family name; checkout collects one field. An
  * empty surname is answered with INSUFFICIENT_DATA (201) at the till, so a
  * single-token name is sent in both places rather than half-empty.
  */
-export function splitCustomerName(
-  name: string,
-  surname?: string,
-): { name: string; surname: string } {
+export function splitCustomerName(name: string, surname?: string): CustomerName {
   const given = name.trim();
   if (surname?.trim()) {
     return { name: given, surname: surname.trim() };
@@ -610,15 +614,14 @@ function toRestClient(customer: BookingDraft["customer"], countryId?: number): R
   return client;
 }
 
+type PaymentPolicy = ProviderQuote["paymentPolicy"];
+
 /**
  * The instalment plan lives in `paymentPlans`, which this response does not
  * carry, so an equal split over `numberOfPayments` is the closest honest
  * reading. It is advisory: §6.3 has the listing's own policy override it.
  */
-function paymentPolicyOf(response: RestYachtReservation): {
-  mode: "deposit" | "full";
-  depositPct: number;
-} {
+function paymentPolicyOf(response: RestYachtReservation): PaymentPolicy {
   const payments = response.numberOfPayments ?? 1;
   if (payments <= 1) {
     return { mode: "full", depositPct: 1 };

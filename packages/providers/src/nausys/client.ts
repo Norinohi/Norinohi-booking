@@ -35,25 +35,25 @@ const transientError: ErrorFactory = (message, options) => new TransientError(me
  * a bad yacht id or a permission problem returns the same answer forever, and
  * retrying it only burns the single sequential lane.
  */
-const ERROR_BY_CODE: Record<number, ErrorFactory> = {
-  [NAUSYS_STATUS_CODES.AUTHENTICATION_ERROR]: authError,
-  [NAUSYS_STATUS_CODES.OPERATION_NOT_ALLOWED]: authError,
-  [NAUSYS_STATUS_CODES.INSUFFICIENT_DATA]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_DATE_FORMAT]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_NUMBER_FORMAT]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_EMAIL_FORMAT]: contractError,
-  [NAUSYS_STATUS_CODES.CREW_LIST_LOCKED]: contractError,
-  [NAUSYS_STATUS_CODES.CREW_LIST_VALIDATION_FAILED]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_COUNTRY_ID]: contractError,
-  [NAUSYS_STATUS_CODES.INVALID_YACHT_ID]: notFoundError,
+const ERROR_BY_CODE = new Map<number, ErrorFactory>([
+  [NAUSYS_STATUS_CODES.AUTHENTICATION_ERROR, authError],
+  [NAUSYS_STATUS_CODES.OPERATION_NOT_ALLOWED, authError],
+  [NAUSYS_STATUS_CODES.INSUFFICIENT_DATA, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_DATE_FORMAT, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_NUMBER_FORMAT, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_EMAIL_FORMAT, contractError],
+  [NAUSYS_STATUS_CODES.CREW_LIST_LOCKED, contractError],
+  [NAUSYS_STATUS_CODES.CREW_LIST_VALIDATION_FAILED, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_COUNTRY_ID, contractError],
+  [NAUSYS_STATUS_CODES.INVALID_YACHT_ID, notFoundError],
   // Permission and configuration, not authentication, but equally hopeless to
   // retry and equally worth alerting on.
-  [NAUSYS_STATUS_CODES.WRONG_YACHT_OWNERSHIP]: authError,
-  [NAUSYS_STATUS_CODES.NOT_ALLOWED_TO_BOOK_THIS_YACHT]: authError,
-  [NAUSYS_STATUS_CODES.INVALID_PAYMENT_METHOD]: authError,
-  [NAUSYS_STATUS_CODES.INVALID_CURRENCY]: authError,
-  [NAUSYS_STATUS_CODES.UNKNOWN_ERROR]: transientError,
-};
+  [NAUSYS_STATUS_CODES.WRONG_YACHT_OWNERSHIP, authError],
+  [NAUSYS_STATUS_CODES.NOT_ALLOWED_TO_BOOK_THIS_YACHT, authError],
+  [NAUSYS_STATUS_CODES.INVALID_PAYMENT_METHOD, authError],
+  [NAUSYS_STATUS_CODES.INVALID_CURRENCY, authError],
+  [NAUSYS_STATUS_CODES.UNKNOWN_ERROR, transientError],
+]);
 
 const statusCodesByName = new Map<string, number>(Object.entries(NAUSYS_STATUS_CODES));
 
@@ -100,7 +100,7 @@ export function classifyNausysResponse(
     providerCode: code === undefined ? status : (NAUSYS_STATUS_NAMES[code] ?? status),
     payload: body,
   };
-  const factory = code === undefined ? contractError : (ERROR_BY_CODE[code] ?? contractError);
+  const factory = code === undefined ? contractError : (ERROR_BY_CODE.get(code) ?? contractError);
   return factory(`NauSYS ${context.endpoint} failed with ${status}`, options);
 }
 

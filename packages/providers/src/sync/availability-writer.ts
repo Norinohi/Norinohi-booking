@@ -12,6 +12,7 @@ import { createCatalogueResolver, type CatalogueResolver } from "../shared/catal
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
 import { openSyncRun } from "./run";
+import type { SyncErrorContext } from "./runner";
 
 /* ------------------------------------------------------------ canonical DTOs */
 
@@ -398,12 +399,14 @@ export interface RunAvailabilitySyncOptions {
   now?: () => Date;
 }
 
+const thrownStringSchema = z.string();
+
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
-  return typeof error === "string" ? error : "Unknown availability sync failure";
+  return thrownStringSchema.safeParse(error).data ?? "Unknown availability sync failure";
 }
 
-function contextOf(error: unknown, extra: Record<string, unknown> | undefined) {
+function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
   return { ...base, ...extra };
 }
@@ -441,7 +444,7 @@ export async function runAvailabilitySync(
   let confirmationUnavailable = false;
   let aborted = false;
 
-  const report = async (error: unknown, context: Record<string, unknown>) => {
+  const report = async (error: unknown, context: SyncErrorContext) => {
     failedCount += 1;
     await store.recordError({
       errorType: toSyncErrorType(error),

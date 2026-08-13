@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
+import type { JsonField } from "../shared/json";
 import { retainRawPayload, stableSourceHash } from "../shared/raw-retention";
 import { openSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
@@ -44,6 +45,13 @@ export type CatalogueSyncEvent =
       cursor?: unknown;
     };
 
+/**
+ * Diagnostics a source attaches to a recoverable failure. Values are JSON
+ * because the whole context is merged into the error's own sanitized context
+ * and written to the `sync_error.context` jsonb column.
+ */
+export type SyncErrorContext = Record<string, JsonField>;
+
 /** Lets a source report a recoverable failure instead of ending the stream. */
 export interface SyncReporter {
   reportError(
@@ -51,7 +59,7 @@ export interface SyncReporter {
     scope?: {
       resourceType?: ProviderResourceType;
       scopeKey?: string;
-      context?: Record<string, unknown>;
+      context?: SyncErrorContext;
     },
   ): Promise<void>;
 }
@@ -172,12 +180,14 @@ function scopeId(resourceType: ProviderResourceType, scopeKey: string | undefine
   return `${resourceType}::${scopeKey ?? ""}`;
 }
 
+const thrownStringSchema = z.string();
+
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
-  return typeof error === "string" ? error : "Unknown sync failure";
+  return thrownStringSchema.safeParse(error).data ?? "Unknown sync failure";
 }
 
-function contextOf(error: unknown, extra: Record<string, unknown> | undefined) {
+function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
   return { ...base, ...extra };
 }
@@ -512,11 +522,11 @@ export async function resolveProviderId(db: Database, code: string): Promise<str
 }
 
 /** Display name for a provider row this package bootstraps for the first time. */
-const PROVIDER_DISPLAY_NAME: Record<string, string> = {
-  nausys: "NauSYS",
-  mock: "Mock Inventory Provider",
-  booking_manager: "Booking Manager",
-};
+const PROVIDER_DISPLAY_NAME = new Map([
+  ["nausys", "NauSYS"],
+  ["mock", "Mock Inventory Provider"],
+  ["booking_manager", "Booking Manager"],
+]);
 
 /**
  * Like `resolveProviderId`, but creates the row (enabled, EUR default) the first
@@ -536,7 +546,7 @@ export async function ensureProviderId(db: Database, code: string): Promise<stri
     .insert(providerTable)
     .values({
       code,
-      name: PROVIDER_DISPLAY_NAME[code] ?? code,
+      name: PROVIDER_DISPLAY_NAME.get(code) ?? code,
       enabled: true,
       defaultCurrency: "EUR",
     })

@@ -410,6 +410,11 @@ function oneWayRulesOf(yacht: RestYacht) {
   return rules;
 }
 
+interface EuminiaRating {
+  rating?: number;
+  reviewCount?: number;
+}
+
 /**
  * Euminia scores, the vendor's third-party review aggregate. The structure is
  * absent for an unrated yacht, and absent must stay absent: a listing nobody has
@@ -420,7 +425,7 @@ function oneWayRulesOf(yacht: RestYacht) {
  * 0..5 the vendor scores on, is dropped rather than clamped, and the count is
  * dropped with it -- a count with no score renders as "0 (6 reviews)".
  */
-function euminiaOf(yacht: RestYacht): { rating?: number; reviewCount?: number } {
+function euminiaOf(yacht: RestYacht): EuminiaRating {
   const rating = decimalOf(yacht.euminia?.total);
   if (rating === undefined || rating < 0 || rating > 5) return {};
 
@@ -478,7 +483,8 @@ function seasonCurrencyOf(yacht: RestYacht): string | undefined {
  * malformed amount drops the deposit rather than the yacht.
  */
 function minorOf(value: JsonField, currency: string): number | undefined {
-  const amount = typeof value === "number" && Number.isFinite(value) ? String(value) : text(value);
+  const numeric = numberOf(value);
+  const amount = numeric === undefined ? text(value) : String(numeric);
   if (amount === undefined) return undefined;
   try {
     return decimalStringToMinor(amount, currency);

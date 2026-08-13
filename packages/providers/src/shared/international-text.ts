@@ -36,7 +36,7 @@ export function toLocaleMap(text: JsonField): LocaleMap {
     return {};
   }
 
-  const result: LocaleMap = {};
+  const result = new Map<string, string>();
   for (const [key, value] of Object.entries(payload.data)) {
     const match = TEXT_KEY_PATTERN.exec(key);
     if (!match) {
@@ -47,9 +47,9 @@ export function toLocaleMap(text: JsonField): LocaleMap {
       continue;
     }
     const code = (match[1] ?? "").toLowerCase();
-    result[LOCALE_OVERRIDES.get(code) ?? code] = trimmed.data;
+    result.set(LOCALE_OVERRIDES.get(code) ?? code, trimmed.data);
   }
-  return result;
+  return Object.fromEntries(result);
 }
 
 export function pickText(

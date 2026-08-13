@@ -160,6 +160,14 @@ export function mapSlotToOffer(slot: Slot, guests: number) {
   };
 }
 
+export interface FixtureReference {
+  yachtId: string;
+  listingId: string;
+  quoteId: string;
+  checkIn: string;
+  checkOut: string;
+}
+
 /**
  * Recovers the yacht and the charter period from a mock reservation handle.
  *
@@ -167,13 +175,7 @@ export function mapSlotToOffer(slot: Slot, guests: number) {
  * (`res_qte_mock_<yachtId>_<checkIn>`), so a reservation reference is enough to
  * reach the fixtures a real adapter would look up in the provider.
  */
-export function resolveFixtureReference(reference: string): {
-  yachtId: string;
-  listingId: string;
-  quoteId: string;
-  checkIn: string;
-  checkOut: string;
-} {
+export function resolveFixtureReference(reference: string): FixtureReference {
   const normalized = reference.replaceAll("_", "-");
   const yacht = catalogue.yachts.find((item) => normalized.includes(item.id));
   if (!yacht) {
