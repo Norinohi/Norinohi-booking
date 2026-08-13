@@ -4,7 +4,7 @@ import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import { useTranslations } from "next-intl";
 
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
-import { boatCardIdentity } from "@/lib/boat-card-fields";
+import { boatCardIdentity, boatCardPrice } from "@/lib/boat-card-fields";
 import { useMoney } from "@/hooks/use-money";
 
 import type { MapBoatCardProps } from "../components/map/map-boat-card";
@@ -26,8 +26,14 @@ export function useListingCards() {
   const formatMoney = useMoney();
 
   function toCard(listing: Listing): BoatCardProps & { id: string } {
+    const unavailable = !listing.availability.hasAvailableDates;
+
     return {
       ...boatCardIdentity(t, listing),
+      /* An unbookable yacht has nothing to sell, so the tag replaces the promotional badges. */
+      ...(unavailable
+        ? { unavailable, badges: [{ label: t("badges.unavailable"), muted: true }] }
+        : null),
       imageAlt: t("imageAlt", { name: listing.title, marina: listing.base.name }),
       detailHref: `/yachts/${listing.slug}`,
       marina: toMarina(listing.base),
@@ -35,14 +41,17 @@ export function useListingCards() {
       end: PLACEHOLDER_DATES.end,
       timeZone: PLACEHOLDER_DATES.timeZone,
       priceLabel: t("priceFor", { days: listing.priceDetails.periodDays }),
-      price: formatMoney(listing.priceFrom.amountMinor),
+      price: boatCardPrice(t, listing, formatMoney),
+      priceIsLabel: !listing.priceFrom,
       perPerson:
         listing.priceDetails.perPersonMinor != null
           ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor) })
           : "",
-      prepayment: t("prepayment", {
-        amount: formatMoney(listing.priceDetails.bookingPrepayment.amountMinor),
-      }),
+      prepayment: listing.priceDetails.bookingPrepayment
+        ? t("prepayment", {
+            amount: formatMoney(listing.priceDetails.bookingPrepayment.amountMinor),
+          })
+        : "",
     };
   }
 

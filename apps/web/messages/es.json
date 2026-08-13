@@ -147,6 +147,8 @@
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "priceOnRequest": "Bajo petición",
+      "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
       "prepayment": "Anticipo de reserva: {amount}",
@@ -162,6 +164,7 @@
       },
       "battenMainsail": "Mayor con sables",
       "badges": {
+        "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
         "bestValue": "Mejor relación calidad-precio",
         "new": "Nuevo",
@@ -770,8 +773,7 @@
     "consultation": {
       "close": "Cerrar",
       "title": "Ponte en contacto",
-      "subtitle": "Elige cómo te gustaría conectar con nuestro equipo.",
-      "back": "Atrás",
+      "subtitle": "Reserva una llamada o envíanos un mensaje, lo que prefieras.",
       "options": {
         "call": {
           "title": "Reservar una llamada rápida",
@@ -784,7 +786,7 @@
       },
       "placeholder": {
         "title": "La reserva estará disponible pronto",
-        "description": "La programación en línea aún no está lista — envíanos un mensaje y coordinaremos un horario que te convenga.",
+        "description": "La programación en línea aún no está lista. Envíanos un mensaje y coordinaremos un horario que te convenga.",
         "cta": "Enviar un mensaje en su lugar"
       },
       "submitted": {
@@ -841,6 +843,9 @@
       "people": "Personas",
       "datesPlaceholder": "Selecciona fechas",
       "selectDates": "Selecciona tus fechas para ver el precio",
+      "unavailable": "Este yate no tiene fechas disponibles",
+      "unavailableHint": "Consúltanos por otras fechas o un yate similar.",
+      "slotRefused": "Esas fechas no se pueden reservar. Elige otro periodo.",
       "prepayment": "Anticipo del {percent}% por el barco",
       "boatPrice": "Precio del barco (alquiler completo)",
       "deposit": "Fianza reembolsable",

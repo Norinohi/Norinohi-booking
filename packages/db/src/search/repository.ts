@@ -472,6 +472,7 @@ export async function listAvailabilityCalendar(
     minNights: number | null;
     checkinWeekday: number | null;
     checkoutWeekday: number | null;
+    availabilityConfirmed: boolean;
   }>(sql`
     select
       slot.start_date as "startDate",
@@ -481,7 +482,8 @@ export async function listAvailabilityCalendar(
       slot.currency,
       slot.min_nights as "minNights",
       slot.checkin_weekday as "checkinWeekday",
-      slot.checkout_weekday as "checkoutWeekday"
+      slot.checkout_weekday as "checkoutWeekday",
+      slot.availability_confirmed as "availabilityConfirmed"
     from availability_slot slot
     where slot.listing_id = ${input.listingId}
       and slot.start_date >= ${input.from}
@@ -503,6 +505,7 @@ export async function listAvailabilityCalendar(
       minNights: slot.minNights,
       checkinWeekday: slot.checkinWeekday,
       checkoutWeekday: slot.checkoutWeekday,
+      availabilityConfirmed: slot.availabilityConfirmed,
     })),
   };
 }

@@ -3,10 +3,7 @@ import type { PlannerRecommendation } from "../types";
 export type RecommendedListing = NonNullable<PlannerRecommendation["listing"]>;
 
 /** Maps the recommended listing onto `BoatSmallCard`'s props — real inventory, not a placeholder. */
-export function toBoatCardProps(
-  listing: RecommendedListing,
-  formatMoney: (amountMinor: number) => string,
-) {
+export function toBoatCardProps(listing: RecommendedListing, priceText: string) {
   return {
     id: listing.id,
     image: listing.mainImage,
@@ -15,7 +12,7 @@ export function toBoatCardProps(
     title: listing.title,
     rating: listing.rating,
     tags: listing.badges.slice(0, 2).map((badge) => ({ label: badge.label })),
-    price: formatMoney(listing.priceFrom.amountMinor),
+    price: priceText,
     detailHref: `/yachts/${listing.slug}`,
   };
 }

@@ -97,15 +97,30 @@ export type BoatCardListing = {
   badges: { label: string }[];
 };
 
+type PricedListing = {
+  priceFrom: { amountMinor: number } | null;
+  availability: { hasAvailableDates: boolean };
+};
+
+/**
+ * What a card shows where the amount goes. A listing with no bookable slot reads as
+ * unavailable; one with dates but no price is quotable, so it reads as on request.
+ * Callers pair this with `priceIsLabel` so the slot drops to text size for both.
+ */
+export function boatCardPrice(
+  t: BoatCardTranslator,
+  listing: PricedListing,
+  formatMoney: (amountMinor: number) => string,
+) {
+  if (listing.priceFrom) return formatMoney(listing.priceFrom.amountMinor);
+  return listing.availability.hasAvailableDates ? t("priceOnRequest") : t("priceUnavailable");
+}
+
 /** The BoatCard fields that depend only on the boat — shared by the catalogue and My Bookings. */
 export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing) {
   return {
     id: listing.id,
-    images: listing.gallery.length
-      ? listing.gallery
-      : listing.mainImage
-        ? [listing.mainImage]
-        : [],
+    images: listing.gallery.length ? listing.gallery : listing.mainImage ? [listing.mainImage] : [],
     badges: listing.badges.map((badge) => ({ label: badge.label })),
     name: listing.title,
     rating: String(listing.rating),

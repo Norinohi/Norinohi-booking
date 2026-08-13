@@ -147,6 +147,8 @@
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
+      "priceOnRequest": "On request",
+      "priceUnavailable": "Unavailable",
       "perPerson": "{price} for person",
       "perPersonApprox": "~ {price} for person",
       "prepayment": "Booking prepayment: {amount}",
@@ -162,6 +164,7 @@
       },
       "battenMainsail": "Batten mainsail",
       "badges": {
+        "unavailable": "Unavailable",
         "bestForFamilies": "Best for families",
         "bestValue": "Best value",
         "new": "New",
@@ -770,8 +773,7 @@
     "consultation": {
       "close": "Close",
       "title": "Get in touch",
-      "subtitle": "Choose how you'd like to connect with our team.",
-      "back": "Back",
+      "subtitle": "Book a call or send us a message, whichever suits you.",
       "options": {
         "call": {
           "title": "Book a quick call",
@@ -784,7 +786,7 @@
       },
       "placeholder": {
         "title": "Booking is coming soon",
-        "description": "Online scheduling isn't ready yet — send us a message instead and we'll set up a time that works for you.",
+        "description": "Online scheduling isn't ready yet. Send us a message and we'll set up a time that works for you.",
         "cta": "Send a message instead"
       },
       "submitted": {
@@ -841,6 +843,9 @@
       "people": "People",
       "datesPlaceholder": "Select dates",
       "selectDates": "Select your dates to see the price",
+      "unavailable": "This yacht has no available dates",
+      "unavailableHint": "Ask us about other dates or a similar yacht.",
+      "slotRefused": "Those dates are not bookable. Please choose another period.",
       "prepayment": "{percent}% Booking Prepayment For Boat",
       "boatPrice": "Boat price (full rental price)",
       "deposit": "Refundable Security Deposit",

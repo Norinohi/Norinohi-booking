@@ -92,6 +92,7 @@ export const listingSummarySchema = z.object({
   }),
   availability: z.object({
     hasUnconfirmedAvailability: z.boolean(),
+    hasAvailableDates: z.boolean(),
     hasTemporaryBooking: z.boolean(),
   }),
   rating: z.number(),
@@ -103,11 +104,12 @@ export const listingSummarySchema = z.object({
   mainImage: z.string(),
   gallery: z.array(z.string()),
   amenities: z.array(z.string()),
-  priceFrom: moneySchema,
+  /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
+  priceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
     perPersonMinor: z.number().int().nullable(),
-    bookingPrepayment: moneySchema,
+    bookingPrepayment: moneySchema.nullable(),
   }),
 });
 
@@ -382,6 +384,7 @@ export const availabilityCalendarSchema = z.object({
       minNights: z.number().int().nullable(),
       checkinWeekday: z.number().int().nullable(),
       checkoutWeekday: z.number().int().nullable(),
+      availabilityConfirmed: z.boolean(),
     }),
   ),
 });

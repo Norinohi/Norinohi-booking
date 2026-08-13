@@ -31,7 +31,10 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
     options.duration ??
     daysBetween(doc.availableFrom, doc.availableTo) ??
     7;
-  const amountMinor = doc.priceFromMinor ?? 0;
+  // A non-positive price is a provider saying "no price", not "free", so it is
+  // treated the same as a missing one rather than quoted as 0.
+  const amountMinor =
+    doc.priceFromMinor !== null && doc.priceFromMinor > 0 ? doc.priceFromMinor : null;
 
   return {
     id: doc.listingId,
@@ -74,6 +77,9 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
     availability: {
       hasUnconfirmedAvailability: doc.hasUnconfirmedAvailability,
       hasTemporaryBooking: doc.hasTemporaryBooking,
+      // No projected window means the listing has no bookable slot at all, which
+      // is a different state from having dates but no price.
+      hasAvailableDates: doc.availableFrom !== null,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,
@@ -84,17 +90,15 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
     mainImage: doc.mainImage ?? doc.gallery[0] ?? EMPTY_IMAGE,
     gallery: doc.gallery,
     amenities: doc.amenities,
-    priceFrom: {
-      amountMinor,
-      currency,
-    },
+    priceFrom: amountMinor === null ? null : { amountMinor, currency },
     priceDetails: {
       periodDays,
-      perPersonMinor: doc.berths ? Math.round(amountMinor / doc.berths) : null,
-      bookingPrepayment: {
-        amountMinor: Math.round(amountMinor * CARD_PREPAYMENT_PCT),
-        currency,
-      },
+      perPersonMinor:
+        amountMinor !== null && doc.berths ? Math.round(amountMinor / doc.berths) : null,
+      bookingPrepayment:
+        amountMinor === null
+          ? null
+          : { amountMinor: Math.round(amountMinor * CARD_PREPAYMENT_PCT), currency },
     },
   };
 }

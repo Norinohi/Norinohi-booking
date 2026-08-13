@@ -25,7 +25,13 @@ const FORMATS = {
   time: { hour: "2-digit", minute: "2-digit", hour12: false },
 } as const;
 
-export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
+export type BoatCardBadge = {
+  label: string;
+  icon?: ReactNode;
+  solid?: boolean;
+  /** Neutral grey instead of brand blue — used by the unavailable tag. */
+  muted?: boolean;
+};
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
 export type BoatCardCharterDate = string;
@@ -52,6 +58,10 @@ export type BoatCardProps = {
   timeZone: string;
   priceLabel: string;
   price: string;
+  /** The price slot holds words ("On request", "Unavailable") rather than an amount, so it drops to text size. */
+  priceIsLabel?: boolean;
+  /** The listing has no bookable dates — the photo desaturates and the copy dims. */
+  unavailable?: boolean;
   perPerson: string;
   prepayment: string;
   detailHref?: AppPathname;
@@ -69,9 +79,15 @@ function Gallery({
   imageAlt,
   badges,
   priority,
-}: Pick<BoatCardProps, "id" | "images" | "imageAlt" | "badges" | "priority">) {
+  unavailable,
+}: Pick<BoatCardProps, "id" | "images" | "imageAlt" | "badges" | "priority" | "unavailable">) {
   return (
-    <div className="relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl">
+    <div
+      className={cn(
+        "relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl",
+        unavailable && "[&_img]:opacity-60 [&_img]:grayscale",
+      )}
+    >
       <Carousel className="size-full">
         <CarouselViewport>
           {images.map((src, index) => (
@@ -96,7 +112,7 @@ function Gallery({
           {badges?.map((badge) => (
             <Chip
               key={badge.label}
-              variant={badge.solid ? undefined : "brand"}
+              variant={badge.muted ? "neutral" : badge.solid ? undefined : "brand"}
               className={cn(
                 "shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
                 badge.solid && "bg-brand text-brand-foreground",
@@ -122,15 +138,25 @@ function Details({
   specs,
   amenities,
   summary,
+  unavailable,
 }: Pick<
   BoatCardProps,
-  "marina" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities" | "summary"
+  | "marina"
+  | "name"
+  | "rating"
+  | "charterType"
+  | "crew"
+  | "specs"
+  | "amenities"
+  | "summary"
+  | "unavailable"
 >) {
   return (
     <div
       className={cn(
         "flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:px-0",
         summary || "xl:border-r xl:border-natural-50",
+        unavailable && "opacity-70",
       )}
     >
       <div className="flex flex-col gap-3">
@@ -229,6 +255,7 @@ function Action({
   timeZone,
   priceLabel,
   price,
+  priceIsLabel,
   perPerson,
   prepayment,
   detailHref,
@@ -241,6 +268,7 @@ function Action({
   | "timeZone"
   | "priceLabel"
   | "price"
+  | "priceIsLabel"
   | "perPerson"
   | "prepayment"
   | "detailHref"
@@ -275,16 +303,25 @@ function Action({
           <span className="order-2 text-sm font-medium leading-[1.3] text-natural-500 md:order-1">
             {priceLabel}
           </span>
-          <span className="order-1 text-[42px] font-bold leading-[1.15] text-black md:order-2">
+          <span
+            className={cn(
+              "order-1 font-bold leading-[1.15] text-black md:order-2",
+              priceIsLabel ? "text-xl" : "text-[42px]",
+            )}
+          >
             {price}
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
-        <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
+        {prepayment ? (
+          <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
+        ) : null}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
+        {prepayment ? (
+          <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
+        ) : null}
         <Button
           variant="neutral"
           size="md"
@@ -317,6 +354,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         imageAlt={boat.imageAlt}
         badges={boat.badges}
         priority={boat.priority}
+        unavailable={boat.unavailable}
       />
       <Details
         marina={boat.marina}
@@ -327,6 +365,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         specs={boat.specs}
         amenities={boat.amenities}
         summary={boat.summary}
+        unavailable={boat.unavailable}
       />
       {boat.summary ? null : (
         <Action
@@ -336,6 +375,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           timeZone={boat.timeZone}
           priceLabel={boat.priceLabel}
           price={boat.price}
+          priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
           prepayment={boat.prepayment}
           detailHref={boat.detailHref}

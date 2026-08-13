@@ -276,6 +276,11 @@ export type AvailabilityCalendarSlot = {
   minNights: number | null;
   checkinWeekday: number | null;
   checkoutWeekday: number | null;
+  /**
+   * False when the slot is our synthesis rather than the provider's word. A live
+   * quote can still refuse it, so the picker must not offer it as bookable.
+   */
+  availabilityConfirmed: boolean;
 };
 
 export type AvailabilityCalendar = {
