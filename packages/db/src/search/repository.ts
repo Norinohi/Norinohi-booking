@@ -13,6 +13,7 @@ import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
+  AvailabilityConstraints,
   FacetMediaKind,
   ListingDetail,
   ListingFacets,
@@ -507,6 +508,90 @@ export async function listAvailabilityCalendar(
       checkoutWeekday: slot.checkoutWeekday,
       availabilityConfirmed: slot.availabilityConfirmed,
     })),
+  };
+}
+
+export async function listAvailabilityConstraints(
+  db: NodePgDatabase<typeof schema>,
+  input: AvailabilityCalendarInput,
+): Promise<AvailabilityConstraints> {
+  /*
+   * Overlap, not containment, unlike the calendar above. A booking that starts before
+   * the window and ends inside it still blocks candidate ranges at this end, and a
+   * containment filter would drop it and let the caller offer a period that is taken.
+   */
+  const overlapsWindow = sql`slot.start_date < ${input.to} and slot.end_date > ${input.from}`;
+
+  const [rules, occupied, priced, oneWay] = await Promise.all([
+    db.execute<{
+      checkinWeekday: number | null;
+      checkoutWeekday: number | null;
+      minNights: number | null;
+      maxNights: number | null;
+    }>(sql`
+      select
+        rule.checkin_weekday as "checkinWeekday",
+        rule.checkout_weekday as "checkoutWeekday",
+        rule.min_nights as "minNights",
+        rule.max_nights as "maxNights"
+      from listing_checkin_rule rule
+      where rule.listing_id = ${input.listingId}
+      order by rule.min_nights asc nulls first, rule.checkin_weekday asc nulls first
+    `),
+    db.execute<{
+      startDate: string;
+      endDate: string;
+      status: "option" | "occupied" | "blocked";
+    }>(sql`
+      select slot.start_date as "startDate", slot.end_date as "endDate", slot.status
+      from availability_slot slot
+      where slot.listing_id = ${input.listingId}
+        and slot.status <> 'available'
+        and ${overlapsWindow}
+      order by slot.start_date asc
+    `),
+    db.execute<{
+      startDate: string;
+      endDate: string;
+      priceMinor: number;
+      currency: string;
+      confirmed: boolean;
+    }>(sql`
+      select
+        slot.start_date as "startDate",
+        slot.end_date as "endDate",
+        slot.price_minor as "priceMinor",
+        slot.currency,
+        slot.availability_confirmed as "confirmed"
+      from availability_slot slot
+      where slot.listing_id = ${input.listingId}
+        and slot.status = 'available'
+        and slot.price_minor is not null
+        and slot.currency = ${input.currency ?? "EUR"}
+        and ${overlapsWindow}
+      order by slot.start_date asc
+    `),
+    db.execute<{
+      startDate: string | null;
+      endDate: string | null;
+      isOneWay: boolean;
+    }>(sql`
+      select rule.start_date as "startDate", rule.end_date as "endDate", rule.is_one_way as "isOneWay"
+      from listing_one_way_rule rule
+      where rule.listing_id = ${input.listingId}
+        and (rule.start_date is null or rule.start_date < ${input.to})
+        and (rule.end_date is null or rule.end_date > ${input.from})
+      order by rule.start_date asc nulls first
+    `),
+  ]);
+
+  return {
+    listingId: input.listingId,
+    window: { from: input.from, to: input.to },
+    rules: rules.rows,
+    occupied: occupied.rows,
+    priced: priced.rows,
+    oneWay: oneWay.rows,
   };
 }
 

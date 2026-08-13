@@ -388,3 +388,39 @@ export const availabilityCalendarSchema = z.object({
     }),
   ),
 });
+
+export const availabilityConstraintsSchema = z.object({
+  listingId: z.string(),
+  window: z.object({ from: z.string(), to: z.string() }),
+  rules: z.array(
+    z.object({
+      checkinWeekday: z.number().int().min(0).max(6).nullable(),
+      checkoutWeekday: z.number().int().min(0).max(6).nullable(),
+      minNights: z.number().int().nullable(),
+      maxNights: z.number().int().nullable(),
+    }),
+  ),
+  occupied: z.array(
+    z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      status: z.enum(["option", "occupied", "blocked"]),
+    }),
+  ),
+  priced: z.array(
+    z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      priceMinor: z.number().int(),
+      currency: currencySchema,
+      confirmed: z.boolean(),
+    }),
+  ),
+  oneWay: z.array(
+    z.object({
+      startDate: z.string().nullable(),
+      endDate: z.string().nullable(),
+      isOneWay: z.boolean(),
+    }),
+  ),
+});

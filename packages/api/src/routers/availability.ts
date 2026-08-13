@@ -1,7 +1,11 @@
-import { listAvailabilityCalendar } from "@yacht-charter/db/search";
+import { listAvailabilityCalendar, listAvailabilityConstraints } from "@yacht-charter/db/search";
 import { quoteRequestWithDiscountSchema } from "@yacht-charter/providers";
 
-import { availabilityCalendarInputSchema, availabilityCalendarSchema } from "../contracts/catalog";
+import {
+  availabilityCalendarInputSchema,
+  availabilityCalendarSchema,
+  availabilityConstraintsSchema,
+} from "../contracts/catalog";
 import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
 import { publicProcedure } from "../index";
 import { createQuote, repriceQuote } from "../services/quote";
@@ -28,6 +32,26 @@ export const availabilityRouter = {
     .input(availabilityCalendarInputSchema)
     .output(availabilityCalendarSchema)
     .handler(({ context, input }) => listAvailabilityCalendar(context.db, input)),
+  constraints: publicProcedure
+    .route({
+      method: "GET",
+      path: "/listings/{listingId}/availability-constraints",
+      operationId: "listListingAvailabilityConstraints",
+      summary: "List what a listing will sell, as constraints",
+      description:
+        "Returns the rules a charter period must satisfy for one listing over a date window: the allowed check-in/check-out weekdays and night counts, the periods the provider says are taken, the periods carrying a published rate, and any one-way drop-off windows. Unlike the availability calendar, which lists the periods we have enumerated, this describes the whole legal space, so a caller can evaluate a range nobody pre-cut. Final price and bookability are still settled by the quote endpoint.",
+      tags: ["Availability"],
+      successDescription: "Charter constraints for the requested listing and date range.",
+      spec: withParameterExamples({
+        listingId: "ylst_yacht-sunreef-60-celeste",
+        from: "2026-07-01",
+        to: "2026-09-30",
+        currency: "EUR",
+      }),
+    })
+    .input(availabilityCalendarInputSchema)
+    .output(availabilityConstraintsSchema)
+    .handler(({ context, input }) => listAvailabilityConstraints(context.db, input)),
   quote: publicProcedure
     .route({
       method: "POST",

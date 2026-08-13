@@ -287,3 +287,50 @@ export type AvailabilityCalendar = {
   listingId: string;
   slots: AvailabilityCalendarSlot[];
 };
+
+/**
+ * What a listing will sell, as constraints rather than as an enumeration of offers.
+ *
+ * `availability_slot` answers "is this exact period on our list"; this answers "is any
+ * period the visitor might ask for legal". The difference matters because the list is
+ * synthesized: the sync walks one interpretation of the check-in rule and discards the
+ * rest, so a listing that allows a 3-night charter on any day is published as 3-night
+ * blocks every 7 days. Given the rules and the occupancy, a caller can decide a range
+ * we never enumerated. See docs on `synthesizeAvailableSlots`.
+ */
+export type AvailabilityConstraints = {
+  listingId: string;
+  window: { from: string; to: string };
+  /** Allowed charter shapes. Empty when the provider published none. */
+  rules: {
+    /** 0 Sunday to 6 Saturday, matching `listing_checkin_rule`. Null means any day. */
+    checkinWeekday: number | null;
+    checkoutWeekday: number | null;
+    minNights: number | null;
+    maxNights: number | null;
+  }[];
+  /** Periods the provider says are taken. Half-open: `endDate` is the turnaround day. */
+  occupied: {
+    startDate: string;
+    endDate: string;
+    status: "option" | "occupied" | "blocked";
+  }[];
+  /**
+   * Periods carrying a published rate. Absence is meaningful: the provider does not
+   * price a season it has not opened, so a date no entry covers is not sellable yet.
+   */
+  priced: {
+    startDate: string;
+    endDate: string;
+    priceMinor: number;
+    currency: string;
+    /** The provider priced this exact period on request, rather than us inferring it. */
+    confirmed: boolean;
+  }[];
+  /** Periods the boat may be dropped at a different base. Null dates mean "always". */
+  oneWay: {
+    startDate: string | null;
+    endDate: string | null;
+    isOneWay: boolean;
+  }[];
+};
