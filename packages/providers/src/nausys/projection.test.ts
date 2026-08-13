@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
+import { looseJsonObject } from "../shared/json";
 import {
   canonicalCatalogueSchema,
   type ProviderRecordSet,
@@ -25,13 +27,39 @@ import { projectNausysCatalogue } from "./projection";
  * two weekdays) the payload is built by hand and said to be built by hand.
  */
 
-function recordSet(entries: Partial<Record<ProviderResourceType, unknown[]>>): ProviderRecordSet {
+/**
+ * Every recorded entity is a JSON object keyed by the vendor's own field names,
+ * and the projection reads it field by field. Parsing the imported modules here
+ * is the boundary that gives the fixtures that type.
+ */
+const payloadSchema = z.record(z.string(), z.json());
+const payloadsSchema = z.array(payloadSchema);
+
+type Payload = z.infer<typeof payloadSchema>;
+
+const recorded = {
+  country: payloadsSchema.parse(countries.countries),
+  region: payloadsSchema.parse(regions.regions),
+  location: payloadsSchema.parse(locations.locations),
+  company: payloadsSchema.parse(charterCompanies.companies),
+  base: payloadsSchema.parse(charterBases.bases),
+  builder: payloadsSchema.parse(yachtBuilders.builders),
+  model: payloadsSchema.parse(yachtModels.models),
+  category: payloadsSchema.parse(yachtCategories.categories),
+  equipment_category: payloadsSchema.parse(equipmentCategories.equipmentCategories),
+  amenity: payloadsSchema.parse(equipment.equipment),
+  yacht: payloadsSchema.parse(yachts102701.yachts),
+};
+
+function recordSet(entries: Partial<Record<ProviderResourceType, Payload[]>>): ProviderRecordSet {
   const records: ProviderRecordSet = new Map();
   for (const [resourceType, payloads] of Object.entries(entries)) {
     records.set(
+      // SAFETY: Object.entries widens the key to string, and the parameter type
+      // admits no key that is not a ProviderResourceType.
       resourceType as ProviderResourceType,
       (payloads ?? []).map((payload) => ({
-        externalId: String((payload as { id?: unknown }).id),
+        externalId: String(payload.id),
         payload,
       })),
     );
@@ -40,33 +68,24 @@ function recordSet(entries: Partial<Record<ProviderResourceType, unknown[]>>): P
 }
 
 function fixtureRecords(
-  yachts: unknown[] = yachts102701.yachts,
-  overrides: Partial<Record<ProviderResourceType, unknown[]>> = {},
+  yachts: Payload[] = recorded.yacht,
+  overrides: Partial<Record<ProviderResourceType, Payload[]>> = {},
 ): ProviderRecordSet {
-  return recordSet({
-    country: countries.countries,
-    region: regions.regions,
-    location: locations.locations,
-    company: charterCompanies.companies,
-    base: charterBases.bases,
-    builder: yachtBuilders.builders,
-    model: yachtModels.models,
-    category: yachtCategories.categories,
-    equipment_category: equipmentCategories.equipmentCategories,
-    amenity: equipment.equipment,
-    yacht: yachts,
-    ...overrides,
-  });
+  return recordSet({ ...recorded, yacht: yachts, ...overrides });
 }
 
-type Yacht = Record<string, unknown>;
+function recordedYacht(index: number): Payload {
+  const yacht = recorded.yacht[index];
+  if (!yacht) throw new Error(`the recorded fleet has no yacht ${index}`);
+  return structuredClone(yacht);
+}
 
 /** Sailing yacht, Saturday to Saturday, HTML highlights in three languages. */
-const maria = () => structuredClone(yachts102701.yachts[0]) as Yacht;
+const maria = () => recordedYacht(0);
 /** Catamaran whose check-in period enables all seven weekdays. */
-const kraken = () => structuredClone(yachts102701.yachts[3]) as Yacht;
+const kraken = () => recordedYacht(3);
 
-const listingOf = (yacht: Yacht) => projectNausysCatalogue(fixtureRecords([yacht])).listings[0];
+const listingOf = (yacht: Payload) => projectNausysCatalogue(fixtureRecords([yacht])).listings[0];
 
 describe("projectNausysCatalogue", () => {
   it("projects the recorded dump into a valid canonical catalogue", () => {
@@ -101,9 +120,11 @@ describe("projectNausysCatalogue", () => {
 
   it("falls back from a missing EN text to the next locale the vendor sent", () => {
     // Every recorded name carries textEN, so the gap is made rather than found.
-    const [first, ...rest] = structuredClone(locations.locations) as Yacht[];
-    const name = first?.name as Record<string, string>;
+    const [first, ...rest] = payloadsSchema.parse(structuredClone(locations.locations));
+    if (!first) throw new Error("the recording has no locations");
+    const name = z.record(z.string(), z.string()).parse(first.name);
     delete name.textEN;
+    first.name = name;
 
     const catalogue = projectNausysCatalogue(
       fixtureRecords(undefined, { location: [first, ...rest] }),
@@ -191,8 +212,11 @@ describe("projectNausysCatalogue", () => {
 
     it("takes the listing currency from the priced season", () => {
       const yacht = maria();
-      const [season] = yacht.seasonSpecificData as { prices: { currency: string }[] }[];
-      for (const price of season?.prices ?? []) price.currency = "USD";
+      const seasons = z
+        .array(looseJsonObject({ prices: z.array(looseJsonObject({ currency: z.string() })) }))
+        .parse(yacht.seasonSpecificData);
+      for (const price of seasons[0]?.prices ?? []) price.currency = "USD";
+      yacht.seasonSpecificData = seasons;
 
       const listing = listingOf(yacht);
 
@@ -331,7 +355,7 @@ describe("projectNausysCatalogue", () => {
 
     it("leaves a yacht with no pictures at all without media", () => {
       // APOLLO carries neither mainPictureUrl nor any picture; it is recorded that way.
-      const apollo = structuredClone(yachts102701.yachts[4]) as Yacht;
+      const apollo = recordedYacht(4);
 
       expect(listingOf(apollo)?.media).toEqual([]);
     });
@@ -348,7 +372,7 @@ describe("projectNausysCatalogue", () => {
 
     it("strips markup out of notes too", () => {
       // Recorded as "<mark>Yacht note</mark>" in EN, plain text in DE and HR.
-      const kan = structuredClone(yachts102701.yachts[1]) as Yacht;
+      const kan = recordedYacht(1);
 
       expect(listingOf(kan)?.texts).toEqual([
         { kind: "notes", locale: "en", value: "Yacht note" },
@@ -393,7 +417,7 @@ describe("projectNausysCatalogue", () => {
 
     it("keeps a check-out weekday that differs from the check-in weekday", () => {
       // LeeLaa: Saturday in, Friday out, six nights.
-      const leelaa = structuredClone(yachts102701.yachts[2]) as Yacht;
+      const leelaa = recordedYacht(2);
 
       expect(listingOf(leelaa)?.checkinRules).toEqual([
         { checkinWeekday: 6, checkoutWeekday: 5, minNights: 6, maxNights: undefined },
@@ -434,7 +458,7 @@ describe("projectNausysCatalogue", () => {
 
     it("collapses two periods that state the same rule over different dates", () => {
       const yacht = maria();
-      const [period] = yacht.checkInPeriods as Yacht[];
+      const [period] = payloadsSchema.parse(yacht.checkInPeriods);
       yacht.checkInPeriods = [
         { ...period, dateFrom: "01.01.2026", dateTo: "31.12.2026" },
         { ...period, dateFrom: "01.01.2027", dateTo: "31.12.2027" },

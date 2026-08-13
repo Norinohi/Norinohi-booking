@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { contractViolation } from "../testing/contracts";
+
 import { ContractError } from "./errors";
 import { currencyExponent, decimalStringToMinor, minorToDecimalString } from "./money";
 
@@ -56,8 +58,8 @@ describe("decimalStringToMinor", () => {
     for (const value of ["", " ", "abc", "3,340.00", "3340.", ".5", "1e3", "3 340", "NaN", "--1"]) {
       expect(() => decimalStringToMinor(value, "EUR")).toThrow(ContractError);
     }
-    expect(() => decimalStringToMinor(null as unknown as string, "EUR")).toThrow(ContractError);
-    expect(() => decimalStringToMinor(3340 as unknown as string, "EUR")).toThrow(ContractError);
+    expect(() => decimalStringToMinor(contractViolation(null), "EUR")).toThrow(ContractError);
+    expect(() => decimalStringToMinor(contractViolation(3340), "EUR")).toThrow(ContractError);
     expect(() => decimalStringToMinor("999999999999999999.00", "EUR")).toThrow(ContractError);
   });
 });

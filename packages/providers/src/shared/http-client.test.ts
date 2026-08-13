@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import { AuthError, ContractError, TransientError } from "./errors";
 import {
@@ -8,7 +9,9 @@ import {
   httpStatusClassifier,
   type ProviderHttpRequestInit,
 } from "./http-client";
+import type { JsonValue } from "./json";
 import { SequentialQueue } from "./queue";
+import { providerRejection } from "../testing/contracts";
 
 function deferred() {
   let resolve!: () => void;
@@ -18,12 +21,14 @@ function deferred() {
   return { promise, resolve };
 }
 
-const json = (status: number, body: unknown) => ({
+const json = (status: number, body: JsonValue) => ({
   status,
   text: () => Promise.resolve(JSON.stringify(body)),
 });
 
 const noRetry = { maxAttempts: 1 };
+
+const vendorStatusSchema = z.object({ status: z.string() });
 
 describe("createProviderHttpClient", () => {
   it("runs each attempt inside the queue slot and the backoff sleep outside it", async () => {
@@ -90,9 +95,9 @@ describe("createProviderHttpClient", () => {
         Promise.reject(Object.assign(new Error("fetch failed"), { code: "EAI_AGAIN" })),
     });
 
-    const error = await client.post("/x", {}).catch((err: unknown) => err);
+    const error = await providerRejection(client.post("/x", {}));
     expect(error).toBeInstanceOf(TransientError);
-    expect((error as TransientError).retryable).toBe(true);
+    expect(error.retryable).toBe(true);
   });
 
   it("retries a transient failure and returns the later success", async () => {
@@ -125,9 +130,9 @@ describe("createProviderHttpClient", () => {
         Promise.resolve({ status: 200, text: () => Promise.resolve("<html>503</html>") }),
     });
 
-    const error = await client.post("/x", {}).catch((err: unknown) => err);
+    const error = await providerRejection(client.post("/x", {}));
     expect(error).toBeInstanceOf(ContractError);
-    expect((error as ContractError).endpoint).toBe("/x");
+    expect(error.endpoint).toBe("/x");
   });
 
   it("treats an empty body as null rather than a parse failure", async () => {
@@ -170,7 +175,7 @@ describe("createProviderHttpClient", () => {
       fetchImpl: () =>
         Promise.resolve(json(200, { status: "AUTHENTICATION_ERROR", errorCode: 100 })),
       classifyResponse: (_httpStatus, body) =>
-        (body as { status: string }).status === "OK" ? null : new AuthError("rejected"),
+        vendorStatusSchema.safeParse(body).data?.status === "OK" ? null : new AuthError("rejected"),
       onRawResponse: (event) => {
         seen.push(event.body);
       },

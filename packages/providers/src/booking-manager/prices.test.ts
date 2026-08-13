@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
+import type { z } from "zod";
 
 vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
-import type { CatalogueResolver } from "../shared/catalogue-resolver";
+import type { CatalogueResolver, ExternalListingRef } from "../shared/catalogue-resolver";
+import type { QueryValue } from "../shared/http-client";
 import type { BookingManagerClient } from "./client";
 import { type BookingManagerConfig, resolveBookingManagerConfig } from "./config";
+import type { RestPrice } from "./endpoints";
 import {
   charterSaturdays,
   createBookingManagerSeasonalPriceLoader,
@@ -22,7 +25,7 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
 
-const row = (over: Record<string, unknown> = {}) => ({
+const row = (over: Partial<RestPrice> = {}): RestPrice => ({
   yachtId: 42,
   dateFrom: "2027-01-02 17:00:00",
   dateTo: "2027-01-09 09:00:00",
@@ -30,6 +33,42 @@ const row = (over: Record<string, unknown> = {}) => ({
   currency: "EUR",
   ...over,
 });
+
+type PriceQuery = Record<string, QueryValue | undefined>;
+
+/**
+ * The loader only ever calls `get`, and only for the price list. Everything the
+ * real client does around that call (auth, retries, parsing) is covered by
+ * `client.test.ts`, so the stub answers the query directly.
+ */
+function fakeClient(get: (query: PriceQuery) => Promise<RestPrice[]>): BookingManagerClient {
+  // SAFETY: a stub with nothing behind it; any method the loader does not use is
+  // absent, so reaching for one is a TypeError rather than a wrong answer.
+  return Object.assign({} as BookingManagerClient, {
+    get: (_endpoint: string, _schema: z.ZodType<RestPrice[]>, query: PriceQuery = {}) => get(query),
+  });
+}
+
+const listingRef: ExternalListingRef = {
+  externalYachtId: "42",
+  externalCompanyId: null,
+  externalBaseId: null,
+  listingSourceId: "lsrc_1",
+};
+
+function fakeResolver(
+  toExternalListing: CatalogueResolver["toExternalListing"],
+): CatalogueResolver {
+  return {
+    providerId: () => Promise.resolve("prv_booking_manager"),
+    toExternalListing,
+    toListingId: () => Promise.resolve(null),
+    toExternalAmenityIds: () => Promise.resolve([]),
+    toExternalCountryId: () => Promise.resolve(null),
+    loadListingSummary: () => Promise.resolve(null),
+    listExternalCompanyIds: () => Promise.resolve([]),
+  };
+}
 
 describe("charterSaturdays", () => {
   it("returns every Saturday in the year", () => {
@@ -89,22 +128,19 @@ describe("mapBookingManagerPriceRow", () => {
 });
 
 describe("createBookingManagerSeasonalPriceLoader", () => {
-  function harness(rows: Record<string, unknown>[]) {
-    const calls: Record<string, unknown>[] = [];
-    const client = {
-      get: (_endpoint: string, _schema: unknown, query: Record<string, unknown>) => {
-        calls.push(query);
-        const checkIn = String(query.dateFrom).slice(0, 10);
-        return Promise.resolve(rows.filter((r) => String(r.dateFrom).startsWith(checkIn)));
-      },
-    } as unknown as BookingManagerClient;
+  function harness(rows: RestPrice[]) {
+    const calls: PriceQuery[] = [];
+    const client = fakeClient((query) => {
+      calls.push(query);
+      const checkIn = String(query.dateFrom).slice(0, 10);
+      return Promise.resolve(rows.filter((r) => String(r.dateFrom).startsWith(checkIn)));
+    });
 
-    const resolver = {
-      toExternalListing: (listingId: string) =>
-        listingId === "ylst_unlinked"
-          ? Promise.reject(new Error("no source"))
-          : Promise.resolve({ externalYachtId: "42" }),
-    } as unknown as CatalogueResolver;
+    const resolver = fakeResolver((listingId) =>
+      listingId === "ylst_unlinked"
+        ? Promise.reject(new Error("no source"))
+        : Promise.resolve(listingRef),
+    );
 
     return { calls, client, resolver };
   }
@@ -198,15 +234,11 @@ describe("createBookingManagerSeasonalPriceLoader", () => {
 
   it("retries the sweep after a failure instead of caching an empty fleet", async () => {
     let attempts = 0;
-    const client = {
-      get: () => {
-        attempts += 1;
-        return attempts <= 1 ? Promise.reject(new Error("boom")) : Promise.resolve([]);
-      },
-    } as unknown as BookingManagerClient;
-    const resolver = {
-      toExternalListing: () => Promise.resolve({ externalYachtId: "42" }),
-    } as unknown as CatalogueResolver;
+    const client = fakeClient(() => {
+      attempts += 1;
+      return attempts <= 1 ? Promise.reject(new Error("boom")) : Promise.resolve([]);
+    });
+    const resolver = fakeResolver(() => Promise.resolve(listingRef));
 
     const load = createBookingManagerSeasonalPriceLoader({
       client,

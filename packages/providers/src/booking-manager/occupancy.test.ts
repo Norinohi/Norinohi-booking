@@ -5,8 +5,9 @@ vi.hoisted(() => {
 });
 
 import { ContractError } from "../shared/errors";
+import type { BookingManagerClient } from "./client";
 import { type BookingManagerConfig, resolveBookingManagerConfig } from "./config";
-import { BM_RESERVATION_STATUS } from "./endpoints";
+import { BM_RESERVATION_STATUS, type RestAvailability } from "./endpoints";
 import {
   createBookingManagerAvailabilitySource,
   mapBookingManagerAvailability,
@@ -22,7 +23,7 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
 
-const row = (over: Record<string, unknown> = {}) => ({
+const row = (over: Partial<RestAvailability> = {}): RestAvailability => ({
   id: 1,
   yachtId: 42,
   dateFrom: "2026-08-08 17:00:00",
@@ -115,7 +116,9 @@ describe("mapBookingManagerOccupancyDump", () => {
 });
 
 describe("createBookingManagerAvailabilitySource", () => {
-  const client = {} as never;
+  // SAFETY: listScopes only multiplies the configured companies by the configured
+  // years, so the source never reaches the transport on this path.
+  const client = {} as BookingManagerClient;
 
   it("produces one scope per company and year", async () => {
     const source = createBookingManagerAvailabilitySource({

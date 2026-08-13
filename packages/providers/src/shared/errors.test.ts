@@ -12,6 +12,12 @@ import {
   toSyncErrorType,
 } from "./errors";
 
+/** A payload that points at itself, which is what the cycle guard exists for. */
+interface CyclicRecord {
+  id: number;
+  self?: CyclicRecord;
+}
+
 describe("provider error taxonomy", () => {
   it("assigns each subclass its sync_error_type and retry flag", () => {
     const cases = [
@@ -70,7 +76,7 @@ describe("redactSecrets", () => {
       yachtName: "Aurora",
     };
 
-    const redacted = redactSecrets(input) as Record<string, unknown>;
+    const redacted = redactSecrets(input);
 
     expect(redacted).toEqual({
       credentials: "[redacted]",
@@ -83,7 +89,7 @@ describe("redactSecrets", () => {
   });
 
   it("survives cycles and passes primitives through", () => {
-    const cyclic: Record<string, unknown> = { id: 1 };
+    const cyclic: CyclicRecord = { id: 1 };
     cyclic.self = cyclic;
 
     expect(redactSecrets(cyclic)).toEqual({ id: 1, self: "[circular]" });

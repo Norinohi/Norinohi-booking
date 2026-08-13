@@ -1,8 +1,11 @@
+import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, NotFoundError } from "../shared/errors";
+import type { JsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
 import type { BookingDraft } from "../types";
 import type { QuoteReservationEventInput } from "../shared/reservation-log";
@@ -77,11 +80,17 @@ function fakeResolver(): CatalogueResolver {
   };
 }
 
+type ReservationEventRow = typeof providerReservationEvent.$inferInsert;
+type BookingUpdate = Partial<typeof booking.$inferInsert>;
+
 /** Enough of the Drizzle executor for the default recorder and token sink. */
 function fakeDb() {
-  const inserted: Record<string, unknown>[] = [];
-  const updated: Record<string, unknown>[] = [];
-  const db = {
+  const inserted: ReservationEventRow[] = [];
+  const updated: BookingUpdate[] = [];
+  // SAFETY: a stub executor with nothing behind it. Only the three builders the
+  // default recorder and the token sink reach for are implemented, so any other
+  // Drizzle call is a TypeError rather than a quietly wrong answer.
+  const db = Object.assign({} as Database, {
     select: () => ({
       from: () => ({
         where: () => ({
@@ -90,20 +99,20 @@ function fakeDb() {
       }),
     }),
     insert: () => ({
-      values: (value: Record<string, unknown>) => {
+      values: (value: ReservationEventRow) => {
         inserted.push(value);
         return Promise.resolve();
       },
     }),
     update: () => ({
-      set: (value: Record<string, unknown>) => ({
+      set: (value: BookingUpdate) => ({
         where: () => {
           updated.push(value);
           return Promise.resolve();
         },
       }),
     }),
-  } as unknown as Database;
+  });
 
   return { db, inserted, updated };
 }
@@ -141,9 +150,11 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
   return { service, transport, events, rotations };
 }
 
+const fixtureBodySchema = z.record(z.string(), z.json());
+
 /** Fixture body with the fields a test wants changed. */
-function fixture(key: string, patch: Record<string, unknown> = {}): Record<string, unknown> {
-  return { ...(nausysFixtures[key] as Record<string, unknown>), ...patch };
+function fixture(key: string, patch: JsonObject = {}): JsonObject {
+  return { ...fixtureBodySchema.parse(nausysFixtures[key]), ...patch };
 }
 
 describe("the mandatory three-step chain", () => {
@@ -388,10 +399,9 @@ describe("option expiry", () => {
 
   it("refuses a hold the provider gave no expiry for", async () => {
     const { service, transport } = build();
-    const { optionTill: _dropped, ...withoutExpiry } = nausysFixtures.createOption as Record<
-      string,
-      unknown
-    >;
+    const { optionTill: _dropped, ...withoutExpiry } = fixtureBodySchema.parse(
+      nausysFixtures.createOption,
+    );
     transport.respondWith("createOption", withoutExpiry);
 
     await expect(service.createOption(draft)).rejects.toThrow(/no optionTill/);
@@ -639,7 +649,9 @@ describe("createInfo client mapping", () => {
       customer: { ...draft.customer, countryCode: "hr", city: "Zagreb" },
     });
 
-    const body = transport.lastBody("createInfo") as { client: Record<string, unknown> };
+    const body = z
+      .object({ client: z.record(z.string(), z.json()) })
+      .parse(transport.lastBody("createInfo"));
     expect(body.client.countryId).toBe(1);
     expect(body.client.city).toBe("Zagreb");
   });

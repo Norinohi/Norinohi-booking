@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { contractViolation } from "../testing/contracts";
+
 import { pickText, toLocaleMap } from "./international-text";
 
 const restInternationalText = {
@@ -121,6 +123,6 @@ describe("pickText", () => {
     expect(pickText(undefined, "en")).toBeNull();
     expect(pickText({}, "en")).toBeNull();
     expect(pickText({ textFR: "   " }, "fr")).toBeNull();
-    expect(pickText(restInternationalText, undefined as unknown as string, [])).toBeNull();
+    expect(pickText(restInternationalText, contractViolation(undefined), [])).toBeNull();
   });
 });

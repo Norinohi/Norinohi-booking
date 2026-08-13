@@ -15,7 +15,7 @@ import { AuthError } from "./shared/errors";
 import type { Database } from "./registry";
 import { createInventoryProvider } from "./registry";
 
-// The registry only stores the handle; nothing here reaches the database.
+// SAFETY: the registry only stores the handle; nothing here reaches the database.
 const db = {} as Database;
 
 const testConfig = resolveNausysConfig({

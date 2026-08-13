@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { AuthError } from "../shared/errors";
+import type { JsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
 import type { CatalogueSyncEvent, SyncReporter } from "../sync/runner";
 import { NausysClient } from "./client";
@@ -24,7 +25,11 @@ const config: NausysConfig = {
  * The keys are the recorded collection names, which twice are not the endpoint's:
  * `countrystates` answers under `countries` and `discountItems` under `discounts`.
  */
-const EMPTY_DUMPS: Record<string, unknown> = {
+interface EmptyDumpMap {
+  [key: string]: JsonObject;
+}
+
+const EMPTY_DUMPS: EmptyDumpMap = {
   countrystates: { status: "OK", countries: [] },
   sailTypes: { status: "OK", sailTypes: [] },
   steeringTypes: { status: "OK", steeringTypes: [] },

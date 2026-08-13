@@ -7,6 +7,14 @@ import {
   stableSourceHash,
 } from "./raw-retention";
 
+type RawPayloadRow = Parameters<ReturnType<RawPayloadWriter["insert"]>["values"]>[0];
+
+/** A payload that points at itself, which is what the cycle guard exists for. */
+interface CyclicRecord {
+  id: number;
+  self?: CyclicRecord;
+}
+
 describe("stableSourceHash", () => {
   it("ignores key order at every depth", () => {
     const a = {
@@ -43,7 +51,7 @@ describe("stableSourceHash", () => {
     expect(stableSourceHash({ a: null })).not.toBe(stableSourceHash({ a: 1 }));
     expect(stableSourceHash(undefined)).toBe(stableSourceHash(null));
 
-    const cyclic: Record<string, unknown> = { id: 1 };
+    const cyclic: CyclicRecord = { id: 1 };
     cyclic.self = cyclic;
     expect(() => stableSourceHash(cyclic)).not.toThrow();
   });
@@ -57,15 +65,15 @@ describe("stableSourceHash", () => {
 
 describe("retainRawPayload", () => {
   function fakeWriter() {
-    const values: unknown[] = [];
-    const db = {
+    const values: RawPayloadRow[] = [];
+    const db: RawPayloadWriter = {
       insert: () => ({
-        values: (value: unknown) => {
+        values: (value) => {
           values.push(value);
           return { returning: () => Promise.resolve([{ id: "praw_1" }]) };
         },
       }),
-    } as unknown as RawPayloadWriter;
+    };
     return { db, values };
   }
 

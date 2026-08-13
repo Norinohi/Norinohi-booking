@@ -21,6 +21,7 @@ import {
   restOccupancyResponseSchema,
   restYachtReservationResponseSchema,
 } from "./endpoints";
+import { providerRejection } from "../testing/contracts";
 import { FakeNausysTransport } from "./testing/fake-transport";
 
 const config: NausysConfig = {
@@ -66,22 +67,22 @@ const EXPECTED_ERRORS: [NausysStatusName, ErrorCtor][] = [
 
 describe("NauSYS error classification", () => {
   it("covers every documented status code", () => {
-    const mapped = new Set(EXPECTED_ERRORS.map(([name]) => name));
+    const mapped = new Set<string>(EXPECTED_ERRORS.map(([name]) => name));
     const documented = Object.keys(NAUSYS_STATUS_CODES).filter((name) => name !== "OK");
-    expect([...documented].filter((name) => !mapped.has(name as NausysStatusName))).toEqual([]);
+    expect([...documented].filter((name) => !mapped.has(name))).toEqual([]);
   });
 
   it.each(EXPECTED_ERRORS)("maps %s to the right error class", async (name, ctor) => {
     const { client, transport } = build();
     transport.respondWith("countries", { status: name, errorCode: NAUSYS_STATUS_CODES[name] });
 
-    const error = await client
-      .catalogueCall(nausysEndpoints.catalogue.countries, restCountriesResponseSchema)
-      .catch((err: unknown) => err);
+    const error = await providerRejection(
+      client.catalogueCall(nausysEndpoints.catalogue.countries, restCountriesResponseSchema),
+    );
 
     expect(error).toBeInstanceOf(ctor);
-    expect((error as ProviderError).providerCode).toBe(name);
-    expect((error as ProviderError).endpoint).toBe(nausysEndpoints.catalogue.countries);
+    expect(error.providerCode).toBe(name);
+    expect(error.endpoint).toBe(nausysEndpoints.catalogue.countries);
   });
 
   it("retries only UNKNOWN_ERROR out of the whole table", () => {
@@ -122,14 +123,14 @@ describe("NauSYS error classification", () => {
     const { client, transport } = build();
     transport.failWith("createOption", "error-100");
 
-    const error = await client
-      .bookingCall(nausysEndpoints.booking.createOption, restYachtReservationResponseSchema, {
+    const error = await providerRejection(
+      client.bookingCall(nausysEndpoints.booking.createOption, restYachtReservationResponseSchema, {
         id: 55901234,
         uuid: "0f1b7d4c",
-      })
-      .catch((err: unknown) => err);
+      }),
+    );
 
-    const serialized = JSON.stringify((error as ProviderError).sanitizedContext());
+    const serialized = JSON.stringify(error.sanitizedContext());
     expect(serialized).not.toContain("hunter2");
     expect(serialized).not.toContain("agency-user");
   });
