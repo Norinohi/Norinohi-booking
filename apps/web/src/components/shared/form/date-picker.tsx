@@ -16,6 +16,8 @@ import { dayFromNative, dayToDisplay } from "@/lib/date";
 const TRIGGER =
   "group flex h-12 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:border-foreground";
 
+type DayFormat = "day" | "dayShort" | "dayCompact";
+
 type CommonProps = {
   placeholder: string;
   /** Shows a clear control once a day is picked; omit to leave the field uncleanable. */
@@ -27,6 +29,8 @@ type CommonProps = {
   /** Controls the calendar popup; pair with `onOpenChange`. Omit both to leave it uncontrolled. */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
+  /** `dayShort` for a narrow trigger; the default spells the month out in full. */
+  dateFormat?: DayFormat;
   className?: string;
   triggerClassName?: string;
   contentClassName?: string;
@@ -53,6 +57,7 @@ export default function DatePicker({
   disabled,
   open,
   onOpenChange,
+  dateFormat = "day",
   className,
   triggerClassName,
   contentClassName,
@@ -61,13 +66,24 @@ export default function DatePicker({
   const format = useFormatter();
   const locale = useLocale();
 
-  const day = (date: Date) => format.dateTime(dayToDisplay(dayFromNative(date)), "day");
+  const day = (date: Date, style: DayFormat = dateFormat) =>
+    format.dateTime(dayToDisplay(dayFromNative(date)), style);
+
+  /*
+   * A range repeats the year on both ends, which is what overflows a narrow trigger. Where the
+   * two ends share a year, the near one drops it: "10 Oct – 17 Oct 2026" says the same thing and
+   * fits. Only offered on the compact format, so the wider fields keep the full date they show today.
+   */
+  function rangeLabel(from: Date, to: Date): string {
+    const yearless = dateFormat === "dayShort" && from.getFullYear() === to.getFullYear();
+    return `${day(from, yearless ? "dayCompact" : dateFormat)} – ${day(to)}`;
+  }
 
   const label =
     props.mode === "range"
       ? props.value?.from
         ? props.value.to
-          ? `${day(props.value.from)} – ${day(props.value.to)}`
+          ? rangeLabel(props.value.from, props.value.to)
           : day(props.value.from)
         : null
       : props.value

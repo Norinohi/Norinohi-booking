@@ -77,6 +77,7 @@ export default function CharterDateField({
       disabled={disabled ? alwaysDisabled : isDayDisabled}
       open={open}
       onOpenChange={setOpen}
+      dateFormat="dayShort"
       placeholder={placeholder}
       className={className}
       triggerClassName={triggerClassName}
