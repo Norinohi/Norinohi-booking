@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   clearFilterKeys,
@@ -21,13 +21,23 @@ import {
   useFilterRanges,
 } from "@/components/shared/form/filters";
 
-import { mapMarkersQueryOptions } from "../../api/queries";
+import { type MapMarkerData, mapMarkersQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
+import { useMapClusters } from "../../hooks/use-map-clusters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import MapBoatPopup from "./map-boat-popup";
 import type { MapInstance } from "./map-canvas";
+import MapClusterMarker from "./map-cluster-marker";
 import MapListPanel from "./map-list-panel";
 import MapMarker from "./map-marker";
+
+// Above this expansion zoom a cluster is a single marina whose boats never separate; list them instead.
+const CLUSTER_EXPAND_MAX_ZOOM = 16;
+
+// Zoom the map settles on when arriving from a listing's "See on map" deep link.
+const DETAIL_FOCUS_ZOOM = 11;
+
+type OpenCluster = { lng: number; lat: number; leaves: MapMarkerData[] };
 
 const MapCanvas = dynamic(() => import("./map-canvas"), {
   ssr: false,
@@ -66,8 +76,9 @@ export default function MapScreen() {
   const [filters, setFilters] = useState<FiltersState>(() => defaults);
   const [listOpen, setListOpen] = useState(false);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(focusListingId);
+  const [openCluster, setOpenCluster] = useState<OpenCluster | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
-  const hasFocused = useRef(false);
+  const [focusDone, setFocusDone] = useState(false);
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
@@ -78,19 +89,69 @@ export default function MapScreen() {
   const { data } = useQuery(mapMarkersQueryOptions(input));
   const markers = data?.markers ?? [];
 
+  const { clusters, supercluster } = useMapClusters(markers, map);
+
   const selected = selectedListingId
     ? markers.find((marker) => marker.listingId === selectedListingId)
     : undefined;
 
-  // Deep link from a listing's "See on map": once the map and the target marker are both ready,
-  // recenter on it once. A ref guards it so later marker taps by the user never yank the viewport.
+  // A popup covers the top-left controls on small screens, so we fade them out while one is open.
+  const popupOpen = Boolean(selected || openCluster);
+
+  function selectListing(listingId: string) {
+    setOpenCluster(null);
+    setSelectedListingId(listingId);
+  }
+
+  function dismissOverlays() {
+    setSelectedListingId(null);
+    setOpenCluster(null);
+  }
+
+  // Clicking a cluster: zoom in to split it, unless its boats sit on one marina (expansion zoom past
+  // the cap) and can never separate — then list them in a popup instead of flying into empty water.
+  function pressCluster(clusterId: number, lng: number, lat: number) {
+    setSelectedListingId(null);
+    const expansionZoom = supercluster.getClusterExpansionZoom(clusterId);
+    if (map && expansionZoom <= CLUSTER_EXPAND_MAX_ZOOM) {
+      setOpenCluster(null);
+      // At low zoom a spread cluster's split point can sit only a fraction above the current zoom,
+      // so easeTo(expansionZoom) alone barely moves. Zoom in by a decisive step so the cluster
+      // visibly breaks apart. Called from the marker's onClick (after touchend), so mapbox no longer
+      // cancels the animation mid-flight.
+      const targetZoom = Math.min(
+        Math.max(expansionZoom, Math.floor(map.getZoom()) + 2),
+        CLUSTER_EXPAND_MAX_ZOOM,
+      );
+      map.easeTo({ center: [lng, lat], zoom: targetZoom });
+      return;
+    }
+    const leaves = supercluster.getLeaves(clusterId, Infinity).map((leaf) => leaf.properties);
+    setOpenCluster({ lng, lat, leaves });
+  }
+
+  // Sync the selection with the deep-link param. On a soft nav back to an already-mounted map (Next 16
+  // keeps the route alive via Activity), the `useState` initializer above does not re-run for the new
+  // URL — so open the target's popup here and re-arm the one-time focus zoom.
   useEffect(() => {
-    if (hasFocused.current || !map || !focusListingId) return;
-    const target = markers.find((marker) => marker.listingId === focusListingId);
-    if (!target) return;
-    hasFocused.current = true;
-    map.flyTo({ center: [target.lng, target.lat], zoom: 11 });
-  }, [map, markers, focusListingId]);
+    if (!focusListingId) return;
+    setSelectedListingId(focusListingId);
+    setOpenCluster(null);
+    setFocusDone(false);
+  }, [focusListingId]);
+
+  // Deep link from a listing's "See on map": the target boat's popup opens (selectedListingId is
+  // seeded from the URL) and, the first time it does, its open animation also zooms in — one motion,
+  // instead of a flyTo that the popup's own recenter would immediately override. Consumed once so a
+  // later tap on the same boat doesn't yank the zoom back out.
+  const detailFocusZoom =
+    !focusDone && focusListingId && selected?.listingId === focusListingId
+      ? DETAIL_FOCUS_ZOOM
+      : undefined;
+
+  useEffect(() => {
+    if (detailFocusZoom != null) setFocusDone(true);
+  }, [detailFocusZoom]);
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -106,30 +167,64 @@ export default function MapScreen() {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <MapCanvas onReady={setMap} onBackgroundPress={() => setSelectedListingId(null)}>
-          {markers.map((marker, index) => (
-            <MapMarker
-              key={marker.listingId}
-              coordinates={{ lat: marker.lat, lng: marker.lng }}
-              label={marker.title}
-              selected={marker.listingId === selectedListingId}
-              order={index}
-              onSelect={() => setSelectedListingId(marker.listingId)}
-            />
-          ))}
+        <MapCanvas onReady={setMap} onBackgroundPress={dismissOverlays}>
+          {clusters.map((feature, index) => {
+            const [lng, lat] = feature.geometry.coordinates;
+
+            if ("cluster" in feature.properties && feature.properties.cluster) {
+              const { cluster_id: clusterId, point_count: count } = feature.properties;
+              return (
+                <MapClusterMarker
+                  key={`cluster-${clusterId}`}
+                  coordinates={{ lat, lng }}
+                  count={count}
+                  label={t("clusterCount", { count })}
+                  order={index}
+                  onSelect={() => pressCluster(clusterId, lng, lat)}
+                />
+              );
+            }
+
+            const marker = feature.properties;
+            return (
+              <MapMarker
+                key={marker.listingId}
+                coordinates={{ lat, lng }}
+                label={marker.title}
+                selected={marker.listingId === selectedListingId}
+                order={index}
+                onSelect={() => selectListing(marker.listingId)}
+              />
+            );
+          })}
 
           {selected ? (
             <MapBoatPopup
               key={selected.listingId}
               coordinates={{ lat: selected.lat, lng: selected.lng }}
-              boat={toMapCard(selected.listing)}
+              boats={[toMapCard(selected.listing)]}
+              map={map}
+              focusZoom={detailFocusZoom}
+            />
+          ) : openCluster ? (
+            <MapBoatPopup
+              key={openCluster.leaves[0]?.listingId}
+              coordinates={{ lat: openCluster.lat, lng: openCluster.lng }}
+              boats={openCluster.leaves.map((leaf) => toMapCard(leaf.listing))}
               map={map}
             />
           ) : null}
         </MapCanvas>
 
         <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-[70px] 2xl:pb-[70px]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-5 2xl:contents">
+          <div
+            className={cn(
+              "flex flex-col gap-4 transition-opacity duration-200 md:flex-row md:items-start md:gap-5 2xl:contents",
+              // Popup covers these on phones (< 768px): fade out and disable there, keep them from md up.
+              popupOpen &&
+                "pointer-events-none opacity-0 [&_*]:pointer-events-none md:pointer-events-auto md:opacity-100 md:[&_*]:pointer-events-auto",
+            )}
+          >
             <FiltersPanel
               scrollable
               value={filters}

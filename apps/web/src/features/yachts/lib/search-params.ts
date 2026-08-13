@@ -26,6 +26,8 @@ const rangeParser = () =>
 const multi = () => parseAsArrayOf(parseAsString).withDefault([]);
 
 export const filterParsers = {
+  /** Free-text destination search (the location typeahead). */
+  query: parseAsString.withDefault(""),
   country: multi(),
   sailingArea: multi(),
   charterCompany: multi(),

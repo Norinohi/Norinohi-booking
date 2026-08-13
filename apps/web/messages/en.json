@@ -917,11 +917,14 @@
     "emptyDescription": "Try adjusting your dates, budget, or location — we will help you find the perfect match.",
     "searchBar": {
       "location": "Location",
+      "startTyping": "Start Typing",
       "searchCountries": "Search Countries...",
       "addDates": "Add dates",
       "clearDates": "Clear dates",
       "anyBoat": "Any boat",
-      "search": "Search"
+      "search": "Search",
+      "noLocations": "No matching destinations",
+      "clearLocation": "Clear location"
     }
   },
   "YachtsMap": {
@@ -929,7 +932,10 @@
     "backToSearch": "Back To Search",
     "showAllList": "Show all list",
     "closeList": "Close list",
-    "marker": "Marina {name}"
+    "marker": "Marina {name}",
+    "clusterCount": "{count, plural, one {# yacht} other {# yachts}}",
+    "previousBoat": "Previous yacht",
+    "nextBoat": "Next yacht"
   },
   "Seo": {
     "Yachts": {
@@ -1038,7 +1044,19 @@
     "anyDates": "Any dates",
     "clearDates": "Clear dates",
     "emptyTitle": "No yachts yet",
-    "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here."
+    "emptyDescription": "Start exploring yachts and plan your first trip — your bookings will appear here.",
+    "cancel": {
+      "action": "Cancel booking",
+      "title": "Cancel this booking?",
+      "description": "This can't be undone, and the charter company will be notified.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Tell us why you're cancelling",
+      "confirm": "Cancel booking",
+      "keep": "Keep booking",
+      "success": "Your booking has been cancelled.",
+      "error": "We couldn't cancel your booking. Please try again."
+    },
+    "statusCancelled": "Cancelled"
   },
   "Wishlist": {
     "title": "Your Wishlist",

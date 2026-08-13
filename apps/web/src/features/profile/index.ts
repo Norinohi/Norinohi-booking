@@ -1,5 +1,6 @@
 export { default as ProfileScreen } from "./components/profile-screen";
 export {
+  prefetchBookings,
   prefetchDiscount,
   prefetchDiscountManager,
   prefetchListingPrices,

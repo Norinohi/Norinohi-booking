@@ -917,11 +917,14 @@
     "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
     "searchBar": {
       "location": "Ubicación",
+      "startTyping": "Empieza a escribir",
       "searchCountries": "Buscar países...",
       "addDates": "Añadir fechas",
       "clearDates": "Borrar fechas",
       "anyBoat": "Cualquier barco",
-      "search": "Buscar"
+      "search": "Buscar",
+      "noLocations": "No hay destinos coincidentes",
+      "clearLocation": "Borrar destino"
     }
   },
   "YachtsMap": {
@@ -929,7 +932,10 @@
     "backToSearch": "Volver a la búsqueda",
     "showAllList": "Mostrar toda la lista",
     "closeList": "Cerrar lista",
-    "marker": "Marina {name}"
+    "marker": "Marina {name}",
+    "clusterCount": "{count, plural, one {# yate} other {# yates}}",
+    "previousBoat": "Yate anterior",
+    "nextBoat": "Yate siguiente"
   },
   "Seo": {
     "Yachts": {
@@ -1038,7 +1044,19 @@
     "anyDates": "Cualquier fecha",
     "clearDates": "Borrar fechas",
     "emptyTitle": "Aún no hay yates",
-    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí."
+    "emptyDescription": "Empieza a explorar yates y planifica tu primer viaje: tus reservas aparecerán aquí.",
+    "cancel": {
+      "action": "Cancelar reserva",
+      "title": "¿Cancelar esta reserva?",
+      "description": "Esto no se puede deshacer y se notificará a la empresa de chárter.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Cuéntanos por qué cancelas",
+      "confirm": "Cancelar reserva",
+      "keep": "Mantener reserva",
+      "success": "Tu reserva ha sido cancelada.",
+      "error": "No pudimos cancelar tu reserva. Inténtalo de nuevo."
+    },
+    "statusCancelled": "Cancelada"
   },
   "Wishlist": {
     "title": "Tus favoritos",

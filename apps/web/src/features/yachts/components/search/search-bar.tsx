@@ -3,7 +3,7 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { type DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
-import { MapPin, Sailboat, Search } from "lucide-react";
+import { Sailboat, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
@@ -15,6 +15,8 @@ import {
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
+
+import LocationSearch from "./location-search";
 
 function toRange(value: FiltersState): DateRange {
   if (!value.startDate) return { from: undefined, to: undefined };
@@ -71,15 +73,10 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
       className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_248px] xl:gap-5"
     >
       <div>
-        <MultiSelect
-          options={options.countries}
-          value={draft.country}
-          onValueChange={(next) =>
-            setDraft((current) => ({ ...current, country: orderedValues(options.countries, next) }))
-          }
+        <LocationSearch
+          value={draft.query}
+          onValueChange={(next) => setDraft((current) => ({ ...current, query: next }))}
           placeholder={t("location")}
-          searchPlaceholder={t("searchCountries")}
-          icon={<MapPin className="size-6 shrink-0 text-foreground" />}
         />
       </div>
 

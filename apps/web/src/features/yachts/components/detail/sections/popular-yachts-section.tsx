@@ -20,7 +20,7 @@ import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
-import { slugToLabel } from "../../../lib/slug-to-label";
+import { slugToLabel } from "@/lib/slug-to-label";
 import DetailSection from "./detail-section";
 
 function CarouselNav() {
