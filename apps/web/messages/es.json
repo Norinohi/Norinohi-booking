@@ -339,6 +339,8 @@
       "price": "Precio (del periodo elegido)",
       "boatAge": "Antigüedad del barco",
       "year": "Año",
+      "yearFrom": "Año desde",
+      "yearTo": "Año hasta",
       "guestRating": "Valoración de huéspedes"
     },
     "placeholders": {

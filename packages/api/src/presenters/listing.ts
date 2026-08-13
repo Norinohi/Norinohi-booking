@@ -1,20 +1,21 @@
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
+import { MARKETPLACE_DEFAULT } from "../services/pricing";
+
 const EMPTY_IMAGE = "";
 
 /**
  * What a search card quotes as the up-front payment.
  *
- * This does NOT agree with the real deposit: checkout resolves it per listing
- * through resolvePaymentPolicy in services/pricing.ts, which honours a listing
- * override, then the provider's plan, then a 50% marketplace default. So a card
- * can advertise 25% on a listing the checkout will ask 50% for.
+ * A card has no quote, so it cannot know the real figure: checkout resolves it per listing
+ * through `resolvePaymentPolicy`, honouring a listing override, then the provider's plan,
+ * then the marketplace default. The card therefore shows that same default, which is the
+ * only number it can state without guessing.
  *
- * Left as-is deliberately -- reconciling them changes a displayed price, which
- * is a product decision. Naming it is so the disagreement is visible rather
- * than buried in an expression.
+ * It used to hardcode 25% against a 50% default, so a card advertised half of what checkout
+ * would ask for on every listing that fell through to it.
  */
-const CARD_PREPAYMENT_PCT = 0.25;
+const CARD_PREPAYMENT_PCT = MARKETPLACE_DEFAULT.depositPct;
 
 /** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
 const WEEKLY_RATE_DAYS = 7;

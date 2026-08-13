@@ -339,6 +339,8 @@
       "price": "Price (for selected period)",
       "boatAge": "Boat age",
       "year": "Year",
+      "yearFrom": "Year from",
+      "yearTo": "Year to",
       "guestRating": "Guest Rating"
     },
     "placeholders": {

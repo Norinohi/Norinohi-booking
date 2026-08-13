@@ -256,9 +256,14 @@ export async function getListingDetailByIdOrSlug(
         listing.crewType === "bareboat"
           ? "Valid sailing license or local equivalent required."
           : "No license is needed when booking with crew or skipper.",
+      /*
+       * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
+       * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"
+       * into "not permitted" on 109 listings. Ask the base instead of inventing its policy.
+       */
       pets: listing.petsAllowed
         ? "Pets are allowed on this yacht with charter company confirmation."
-        : "Pets are not permitted on this yacht.",
+        : "Pet policy is set by the charter base — ask before booking.",
       paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
       marinaInformation: `${listing.baseName} is located in ${listing.location}, ${listing.country}. Check-in and check-out times are provided by the charter base.`,
       marinaContact: {

@@ -339,6 +339,8 @@
       "price": "Ціна (за обраний період)",
       "boatAge": "Вік човна",
       "year": "Рік",
+      "yearFrom": "Рік від",
+      "yearTo": "Рік до",
       "guestRating": "Оцінка гостей"
     },
     "placeholders": {
