@@ -161,10 +161,8 @@ export default function BookingConfirmationScreen() {
 
   /* checkIn/checkOut are ISO datetimes, so parse them as instants and render the day in UTC. */
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
-  const crewLabel =
-    booking.crewType && (CREW_KEYS as readonly string[]).includes(booking.crewType)
-      ? tCrew(booking.crewType as (typeof CREW_KEYS)[number])
-      : booking.crewType;
+  const crewKey = CREW_KEYS.find((key) => key === booking.crewType);
+  const crewLabel = crewKey ? tCrew(crewKey) : booking.crewType;
 
   const base = booking.priceLines.find((line) => !line.group && line.amount.amountMinor > 0);
   const mandatory = booking.priceLines.filter((line) => line.group === "mandatory");

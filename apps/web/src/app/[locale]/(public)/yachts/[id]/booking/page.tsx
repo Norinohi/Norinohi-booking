@@ -35,7 +35,7 @@ export default async function YachtBookingPage({ params }: { params: Promise<{ i
   try {
     detail = await prefetchListingDetail(id);
   } catch (error) {
-    if (isListingNotFound(error)) {
+    if (error instanceof Error && isListingNotFound(error)) {
       notFound();
     }
     throw error;

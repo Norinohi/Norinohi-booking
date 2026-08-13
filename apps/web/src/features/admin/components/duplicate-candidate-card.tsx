@@ -15,6 +15,10 @@ import {
 import type { DuplicateCandidate } from "../types";
 import DuplicateSide from "./duplicate-side";
 
+/* The two comparison rows whose raw value is a code with a translated label. */
+const LISTING_STATUSES = ["draft", "published", "hidden"] as const;
+const MATCH_STATUSES = ["unmatched", "auto", "confirmed", "rejected"] as const;
+
 /*
  * DuplicateCandidateCard — one proposed pair: a header carrying the matcher's confidence and
  * signals, the two sides side by side (stacked below lg), and the verdicts. Confirming names
@@ -37,9 +41,13 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
 
   const value = (key: ComparisonKey, raw: string | number | null): string => {
     if (raw === null) return EMPTY_VALUE;
-    if (key === "status") return t(`listingStatus.${raw as "draft" | "published" | "hidden"}`);
+    if (key === "status") {
+      const status = LISTING_STATUSES.find((option) => option === raw);
+      return status ? t(`listingStatus.${status}`) : String(raw);
+    }
     if (key === "matchStatus") {
-      return t(`matchStatus.${raw as "unmatched" | "auto" | "confirmed" | "rejected"}`);
+      const status = MATCH_STATUSES.find((option) => option === raw);
+      return status ? t(`matchStatus.${status}`) : String(raw);
     }
     if (key === "length") return t("lengthValue", { value: raw });
     return String(raw);
@@ -49,7 +57,7 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
   const signals = formatSignals(candidate.signals);
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
 
-  const onError = (error: unknown) => {
+  const onError = (error: Error) => {
     toast.error(isResolvedElsewhere(error) ? t("toast.conflict") : t("toast.error"));
   };
 

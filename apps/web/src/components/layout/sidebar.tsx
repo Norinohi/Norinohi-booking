@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 
-import { authClient } from "@/lib/auth-client";
+import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
 
 /*
  * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
@@ -25,15 +25,15 @@ const ADMIN_ITEMS = ["discount", "duplicates", "sync"] as const;
 type SidebarItem = (typeof BASE_ITEMS)[number] | (typeof ADMIN_ITEMS)[number];
 
 /* Only wired pages get an href; the rest stay inert until their routes exist. */
-const HREFS: Partial<Record<SidebarItem, AppPathname>> = {
-  profile: "/profile",
-  bookings: "/profile/bookings",
-  referrals: "/profile/referrals",
-  discount: "/profile/discounts",
+const HREFS = new Map<SidebarItem, AppPathname>([
+  ["profile", "/profile"],
+  ["bookings", "/profile/bookings"],
+  ["referrals", "/profile/referrals"],
+  ["discount", "/profile/discounts"],
   /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
-  duplicates: "/duplicates",
-  sync: "/sync",
-};
+  ["duplicates", "/duplicates"],
+  ["sync", "/sync"],
+]);
 
 type SidebarProps = {
   name?: string;
@@ -54,20 +54,19 @@ export default function Sidebar({
   const pathname = usePathname();
 
   /* Staff/admin sessions see the admin rows on every profile page, not only where a screen
-   * passes variant="admin". The role column isn't in the auth client's types, hence the cast
-   * (same convention as the API's staffProcedure). */
+   * passes variant="admin". */
   const { data: session } = authClient.useSession();
-  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isStaffUser = isStaffRole(userRole(session?.user));
   /* Role-driven rows only after hydration: the session atom is empty during SSR but may
    * already be filled on the first client render, and that difference is a hydration
    * mismatch. variant="admin" comes from the server, so it needs no gate. */
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-  const isStaff = variant === "admin" || (hydrated && (role === "staff" || role === "admin"));
+  const isStaff = variant === "admin" || (hydrated && isStaffUser);
   const items: readonly SidebarItem[] = isStaff ? [...BASE_ITEMS, ...ADMIN_ITEMS] : BASE_ITEMS;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
-  const activeFromPath = (Object.entries(HREFS) as [SidebarItem, string][])
+  const activeFromPath = [...HREFS]
     .filter(([, href]) => pathname === href || pathname.startsWith(`${href}/`))
     .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
   const active = activeFromPath ?? defaultActive;
@@ -99,7 +98,7 @@ export default function Sidebar({
 
       <ul className="flex flex-col py-4">
         {items.map((item) => {
-          const href = HREFS[item];
+          const href = HREFS.get(item);
           const isActive = active === item;
           /* Menu Item is 54px in Figma: 16px paddings around 16/1.4 text */
           const rowClassName = cn(

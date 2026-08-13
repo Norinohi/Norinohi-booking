@@ -6,6 +6,15 @@ import type { ResultsInput } from "../api/queries";
 
 const FEET_TO_METRES = 0.3048;
 
+/* The filter state keeps flexibility as a plain string; only these reach the contract. */
+const DATE_FLEXIBILITY: readonly NonNullable<ResultsInput["dateFlexibility"]>[] = [
+  "on-day",
+  "1-3-days",
+  "1-week",
+  "2-weeks",
+  "1-month",
+];
+
 /*
  * `locale` is required rather than optional so a new call site cannot quietly omit it and get
  * English cards back: the server translates a card's category, crew, sail type, country, region,
@@ -36,7 +45,7 @@ export function toSearchInput(
 
   if (filters.startDate) input.startDate = filters.startDate;
   input.duration = Number(filters.duration);
-  input.dateFlexibility = filters.dateFlexibility as ResultsInput["dateFlexibility"];
+  input.dateFlexibility = DATE_FLEXIBILITY.find((option) => option === filters.dateFlexibility);
 
   const isActive = (key: keyof FiltersState) => !isSameValue(filters[key], defaults[key]);
 

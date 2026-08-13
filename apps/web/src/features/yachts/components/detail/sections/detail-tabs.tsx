@@ -60,7 +60,10 @@ export default function DetailTabs() {
     <Tabs
       variant="lined"
       value={active}
-      onValueChange={(value) => goTo(value as string)}
+      onValueChange={(value) => {
+        const next = SECTIONS.find((id) => id === value);
+        if (next) goTo(next);
+      }}
       className="sticky top-[calc(var(--header-h)+66px)] z-10 bg-background xl:top-(--header-h)"
     >
       <TabsList className="overflow-x-auto">

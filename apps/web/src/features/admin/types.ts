@@ -6,6 +6,8 @@ type AdminClient = AppRouterClient["admin"];
 export type DuplicateQueue = Awaited<ReturnType<AdminClient["match"]["queue"]>>;
 export type DuplicateCandidate = DuplicateQueue["items"][number];
 export type DuplicateDecision = DuplicateCandidate["decision"];
+/** Whatever the matcher recorded on the candidate, as the contract hands it over. */
+export type DuplicateSignals = NonNullable<DuplicateCandidate["signals"]>;
 export type DuplicateSide = DuplicateCandidate["sideA"];
 export type DuplicateSideListing = NonNullable<DuplicateSide["listing"]>;
 
@@ -18,7 +20,7 @@ export type SyncRunStatus = Awaited<ReturnType<AdminClient["provider"]["syncStat
 /** The connector keys the provider procedures accept, as the contract spells them. */
 export type ProviderKey = SyncRunStatus["provider"];
 
-const PROVIDER_KEYS: readonly string[] = ["mock", "booking_manager", "nausys"];
+const PROVIDER_KEYS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 
 /**
  * `SyncRunRow.provider` is the stored provider code, deliberately a plain string so a run
@@ -26,5 +28,5 @@ const PROVIDER_KEYS: readonly string[] = ["mock", "booking_manager", "nausys"];
  * three it knows, so a row has to be narrowed before its errors can be fetched.
  */
 export function toProviderKey(code: string): ProviderKey | undefined {
-  return PROVIDER_KEYS.includes(code) ? (code as ProviderKey) : undefined;
+  return PROVIDER_KEYS.find((key) => key === code);
 }

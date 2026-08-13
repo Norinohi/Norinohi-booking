@@ -58,10 +58,11 @@ function BudgetFinderForm({
     return Array.from({ length: BUDGET_BUCKETS }, (_, index) => {
       const lo = Math.round(min + index * step);
       const hi = index === BUDGET_BUCKETS - 1 ? max : Math.round(min + (index + 1) * step);
+      const price: [number, number] = [lo, hi];
       return {
         value: `${lo}-${hi}`,
         label: `${format.number(lo, "eur")} – ${format.number(hi, "eur")}`,
-        price: [lo, hi] as [number, number],
+        price,
       };
     });
   }, [data?.priceRange, format]);

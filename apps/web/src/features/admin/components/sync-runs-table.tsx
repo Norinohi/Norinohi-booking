@@ -72,9 +72,10 @@ export default function SyncRunsTable() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const { data, isPending, isError } = useSyncRuns({
-    provider: provider === ALL ? undefined : (provider as ProviderKey),
-    kind: kind === ALL ? undefined : (kind as SyncRunKind),
-    status: status === ALL ? undefined : (status as SyncRunState),
+    /* The ALL sentinel is in none of the three lists, so it drops out as `undefined`. */
+    provider: PROVIDERS.find((option) => option === provider),
+    kind: KINDS.find((option) => option === kind),
+    status: STATUSES.find((option) => option === status),
     page,
   });
 

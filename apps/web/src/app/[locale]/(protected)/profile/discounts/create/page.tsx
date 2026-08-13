@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
-import { authClient } from "@/lib/auth-client";
+import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
 import { buildMetadata } from "@/lib/seo";
 
 import { DiscountRouteModal } from "@/features/profile";
@@ -36,8 +36,8 @@ export default async function CreateDiscountPage() {
     return redirect({ href: "/login", locale });
   }
 
-  const role = (session.user as { role?: string }).role;
-  if (role !== "staff" && role !== "admin") {
+  /* Platform-staff page: same staff/admin gate as the API's staffProcedure. */
+  if (!isStaffRole(userRole(session.user))) {
     return redirect({ href: "/profile", locale });
   }
 

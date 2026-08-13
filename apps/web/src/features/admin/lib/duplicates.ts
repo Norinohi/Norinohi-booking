@@ -1,4 +1,4 @@
-import type { DuplicateCandidate, DuplicateSide } from "../types";
+import type { DuplicateCandidate, DuplicateSide, DuplicateSignals } from "../types";
 
 /**
  * One row of the side-by-side comparison. `a`/`b` are already display strings so the two
@@ -77,7 +77,7 @@ export function comparisonRows(
 }
 
 /** `{ matchedOn: "model+yearBuilt", yearBuilt: 2019 }` → `matchedOn: model+yearBuilt, yearBuilt: 2019`. */
-export function formatSignals(signals: Record<string, unknown> | null): string | null {
+export function formatSignals(signals: DuplicateSignals | null): string | null {
   if (!signals) return null;
 
   const parts = Object.entries(signals)

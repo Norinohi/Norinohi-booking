@@ -36,13 +36,17 @@ export default function BookingScreen() {
 
   const boat = listing ? toCard(listing) : null;
 
+  /* SAFETY: /yachts/[id] is a real route; typedRoutes only recognises it when the segment is a
+     literal, and the slug is only known at request time. */
+  const backHref = `/yachts/${slug}` as AppPathname;
+
   return (
     <div className="flex flex-col">
       <AppBreadcrumbs
         items={[]}
         backLabel="Booking.backToYacht"
         backValues={{ name: listing?.title ?? "" }}
-        backHref={`/yachts/${slug}` as AppPathname}
+        backHref={backHref}
       />
 
       <div className="w-full px-4 py-6 md:px-13.5">

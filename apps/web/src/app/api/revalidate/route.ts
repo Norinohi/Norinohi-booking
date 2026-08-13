@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { env } from "@yacht-charter/env/web";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { isKnownCacheTag } from "@/lib/cache-tags";
 
@@ -16,6 +17,8 @@ import { isKnownCacheTag } from "@/lib/cache-tags";
  * a bearer header, compared in constant time, and refusing outright when unset
  * rather than running open.
  */
+
+const revalidateBodySchema = z.object({ tags: z.array(z.string()) });
 
 function timingSafeEqualString(a: string, b: string): boolean {
   const left = Buffer.from(a);
@@ -34,20 +37,21 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let tags: unknown;
+  let body: unknown;
   try {
-    tags = ((await request.json()) as { tags?: unknown }).tags;
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: "Expected a JSON body" }, { status: 400 });
   }
 
-  if (!Array.isArray(tags) || tags.some((tag) => typeof tag !== "string")) {
+  const parsed = revalidateBodySchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json({ error: "Expected { tags: string[] }" }, { status: 400 });
   }
 
   // An allow-list rather than a passthrough: a caller that could name any tag
   // could drop cache entries this route has no business touching.
-  const accepted = (tags as string[]).filter(isKnownCacheTag);
+  const accepted = parsed.data.tags.filter(isKnownCacheTag);
   for (const tag of accepted) {
     // `{ expire: 0 }` rather than a named profile: the point of this call is that
     // an operator has just run a sync and wants to see it, so any tolerated

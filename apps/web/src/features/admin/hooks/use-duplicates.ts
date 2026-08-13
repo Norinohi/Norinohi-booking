@@ -21,7 +21,7 @@ export function useDuplicateQueue(input: { decision: DuplicateDecision; page: nu
  * A candidate someone else already resolved comes back as CONFLICT. That is not a failure
  * worth showing as one: the queue is simply out of date, so callers refetch and say so.
  */
-export function isResolvedElsewhere(error: unknown): boolean {
+export function isResolvedElsewhere(error: Error): boolean {
   return error instanceof ORPCError && error.code === "CONFLICT";
 }
 

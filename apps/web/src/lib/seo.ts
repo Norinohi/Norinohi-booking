@@ -11,14 +11,16 @@ const DEFAULT_OG_IMAGE = "/seo/og-default.jpg";
  * Open Graph asks for a territory-qualified locale (`en_US`), not the bare language code the
  * routes are keyed on. Most scrapers tolerate the short form; Facebook's linter does not.
  */
-const OG_LOCALES: Record<Locale, string> = {
-  en: "en_US",
-  es: "es_ES",
-  uk: "uk_UA",
-};
+const OG_LOCALES = new Map<string, string>(
+  Object.entries({
+    en: "en_US",
+    es: "es_ES",
+    uk: "uk_UA",
+  } satisfies Record<Locale, string>),
+);
 
 function ogLocale(locale: string): string {
-  return OG_LOCALES[locale as Locale] ?? locale;
+  return OG_LOCALES.get(locale) ?? locale;
 }
 
 /**

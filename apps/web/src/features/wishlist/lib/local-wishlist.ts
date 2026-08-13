@@ -1,3 +1,7 @@
+import { z } from "zod";
+
+import { isBrowser } from "@/utils/runtime";
+
 const STORAGE_KEY = "yc.wishlist.v1";
 /* Matches wishlistMergeInputSchema.max(50) so a merge never trips input validation. */
 const MAX_ITEMS = 50;
@@ -20,8 +24,17 @@ let cachedIds: readonly string[] = EMPTY;
 /* Set when localStorage throws (private mode, blocked context, quota): degrade to memory. */
 let memoryFallback: readonly string[] | null = null;
 
+/*
+ * Whatever sits under the key was written by an older build or hand-edited: keep the entries
+ * that still read as ids and drop the rest, rather than throwing the whole list away.
+ */
+const storedIdsSchema = z
+  .array(z.string().min(1).nullable().catch(null))
+  .catch([])
+  .transform((entries) => entries.filter((entry) => entry !== null));
+
 function storage(): Storage | null {
-  if (typeof window === "undefined") return null;
+  if (!isBrowser) return null;
   try {
     return window.localStorage;
   } catch {
@@ -29,13 +42,11 @@ function storage(): Storage | null {
   }
 }
 
-function normalize(value: unknown): readonly string[] {
-  if (!Array.isArray(value)) return EMPTY;
-
+function normalize(ids: readonly string[]): readonly string[] {
   const seen = new Set<string>();
-  for (const entry of value) {
-    if (typeof entry !== "string" || entry.length === 0) continue;
-    seen.add(entry);
+  for (const id of ids) {
+    if (id.length === 0) continue;
+    seen.add(id);
     if (seen.size >= MAX_ITEMS) break;
   }
 
@@ -68,7 +79,7 @@ export function read(): readonly string[] {
   }
 
   try {
-    cachedIds = normalize(JSON.parse(raw));
+    cachedIds = normalize(storedIdsSchema.parse(JSON.parse(raw)));
   } catch {
     cachedIds = EMPTY;
     try {
@@ -96,11 +107,11 @@ export function write(ids: readonly string[]): void {
     } catch {
       memoryFallback = next;
     }
-  } else if (typeof window !== "undefined") {
+  } else if (isBrowser) {
     memoryFallback = next;
   }
 
-  if (typeof window !== "undefined") {
+  if (isBrowser) {
     window.dispatchEvent(new Event(SAME_TAB_EVENT));
   }
   notify();
@@ -145,7 +156,7 @@ export function clear(): void {
   cachedIds = EMPTY;
   memoryFallback = null;
 
-  if (typeof window !== "undefined") {
+  if (isBrowser) {
     window.dispatchEvent(new Event(SAME_TAB_EVENT));
   }
   notify();

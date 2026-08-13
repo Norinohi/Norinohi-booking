@@ -12,6 +12,11 @@ export const SORT_OPTIONS = ["recommended", "price-asc", "price-desc", "rating",
 
 export type SortValue = (typeof SORT_OPTIONS)[number];
 
+/** The Select hands back a bare string; only the values it was given name a sort. */
+export function toSortValue(value: string | null): SortValue {
+  return SORT_OPTIONS.find((option) => option === value) ?? "recommended";
+}
+
 export type ResultsHeaderProps = {
   chips: FilterChip[];
   onRemoveChip: (chip: FilterChip) => void;
@@ -61,8 +66,8 @@ export default function ResultsHeader({
           className="h-12 w-full md:w-auto md:min-w-57"
           options={SORT_OPTIONS.map((value) => ({ value, label: t(`sorting.${value}`) }))}
           value={sort}
-          onValueChange={(next) => onSortChange((next ?? "recommended") as SortValue)}
-          renderValue={(value) => t("sorting.label", { value: t(`sorting.${value as SortValue}`) })}
+          onValueChange={(next) => onSortChange(toSortValue(next))}
+          renderValue={(value) => t("sorting.label", { value: t(`sorting.${toSortValue(value)}`) })}
         />
       </div>
     </div>

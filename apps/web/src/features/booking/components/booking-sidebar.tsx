@@ -35,6 +35,8 @@ export default function BookingSidebar({
   } = useBooking();
   const [quoteRequestOpen, setQuoteRequestOpen] = useState(false);
 
+  /* SAFETY: /yachts/[id]/booking is a real route; typedRoutes only recognises it when the
+     segment is a literal, and nuqs serializes the query string back to a plain string. */
   const payNowHref =
     actions && quote
       ? (serializeBooking(`/yachts/${slug}/booking`, { quoteId: quote.quoteId }) as AppPathname)

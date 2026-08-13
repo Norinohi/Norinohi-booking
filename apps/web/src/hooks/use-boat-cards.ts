@@ -11,6 +11,7 @@ import {
   AMENITY_ICONS,
   type AmenityKey,
   DISCOUNT_ICON,
+  isBadgeKey,
   type SampleBoat,
   type SampleSpec,
 } from "@/lib/sample-boats";
@@ -50,7 +51,7 @@ export function useBoatCards() {
 
   function badges(boat: SampleBoat): BoatCardBadge[] | undefined {
     return boat.badges?.map((badge) =>
-      typeof badge === "string"
+      isBadgeKey(badge)
         ? { label: t(`badges.${badge}`) }
         : {
             label: t("badges.discount", { percent: badge.discount }),

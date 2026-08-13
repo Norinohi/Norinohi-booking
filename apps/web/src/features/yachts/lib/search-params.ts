@@ -15,7 +15,9 @@ const rangeParser = () =>
       if (parts.length !== 2) return null;
       const min = Number(parts[0]);
       const max = Number(parts[1]);
-      return Number.isFinite(min) && Number.isFinite(max) ? ([min, max] as Range) : null;
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+      const range: Range = [min, max];
+      return range;
     },
     serialize: (value: Range) => `${value[0]},${value[1]}`,
     eq: (a: Range, b: Range) => a[0] === b[0] && a[1] === b[1],

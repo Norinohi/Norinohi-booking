@@ -21,20 +21,22 @@ import type { ReactNode } from "react";
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
 
-const OVERVIEW_ICON: Record<string, ReactNode> = {
-  location: <MapPin />,
-  mainsail: <Sailboat />,
-  year: <Calendar />,
-  draught: <MoveVertical />,
-  "boat-type": <Ship />,
-  beam: <MoveHorizontal />,
-  cabins: <DoorClosed />,
-  "fuel-tank": <Fuel />,
-  bathrooms: <Bath />,
-  "water-tank": <Droplets />,
-  length: <MoveDiagonal />,
-  engine: <Cog />,
-};
+const OVERVIEW_ICON = new Map<string, ReactNode>(
+  Object.entries({
+    location: <MapPin />,
+    mainsail: <Sailboat />,
+    year: <Calendar />,
+    draught: <MoveVertical />,
+    "boat-type": <Ship />,
+    beam: <MoveHorizontal />,
+    cabins: <DoorClosed />,
+    "fuel-tank": <Fuel />,
+    bathrooms: <Bath />,
+    "water-tank": <Droplets />,
+    length: <MoveDiagonal />,
+    engine: <Cog />,
+  }),
+);
 
 export default function OverviewSection() {
   const t = useTranslations("YachtDetail");
@@ -55,7 +57,7 @@ export default function OverviewSection() {
               Math.floor(index / 2) % 2 === 1 && "md:bg-natural-50",
             )}
           >
-            {OVERVIEW_ICON[item.code]}
+            {OVERVIEW_ICON.get(item.code)}
             <span className="shrink-0 text-sm font-semibold tracking-wide text-foreground">
               {item.label}:
             </span>

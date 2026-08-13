@@ -194,7 +194,11 @@ export function RangeField({
         min={limits[0]}
         max={limits[1]}
         value={value}
-        onValueChange={(next) => onChange(next as Range)}
+        onValueChange={(next) => {
+          // SAFETY: the slider is given a Range, so it renders two thumbs and reports the
+          // same pair back; only a scalar value would make this a number.
+          onChange(next as Range);
+        }}
         aria-label={label}
         showTicks
       />

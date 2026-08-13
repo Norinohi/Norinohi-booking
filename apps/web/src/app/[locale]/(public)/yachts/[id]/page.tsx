@@ -83,7 +83,7 @@ export default async function YachtDetailPage({
      * instead of 404ing for the rest of the hour. Matched by marker, not `instanceof`: errors are
      * serialized out of a cached function and lose their class.
      */
-    if (isListingNotFound(error)) {
+    if (error instanceof Error && isListingNotFound(error)) {
       notFound();
     }
     throw error;

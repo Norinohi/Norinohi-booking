@@ -10,6 +10,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { z } from "zod";
 
 import { SAMPLE_MARINAS } from "@/lib/sample-marinas";
 
@@ -29,8 +30,16 @@ export type AmenityKey =
   | "fridge"
   | "tender";
 
-export type BadgeKey = "bestForFamilies" | "bestValue" | "new";
-export type SampleBadge = BadgeKey | { discount: number };
+const badgeKeySchema = z.enum(["bestForFamilies", "bestValue", "new"]);
+
+export type BadgeKey = z.infer<typeof badgeKeySchema>;
+export type DiscountBadge = { discount: number };
+export type SampleBadge = BadgeKey | DiscountBadge;
+
+/** Splits the badge union for callers that render the two halves differently. */
+export function isBadgeKey(badge: SampleBadge): badge is BadgeKey {
+  return badgeKeySchema.safeParse(badge).success;
+}
 
 export type CharterTypeKey = "bareboat" | "bareboatSailingYacht" | "catamaran";
 export type CrewKey = "fullCrew" | "skipperOptional";
@@ -67,7 +76,7 @@ export type SampleBoat = {
   prepayment: number;
 };
 
-export const AMENITY_ICONS: Record<AmenityKey, ReactNode> = {
+export const AMENITY_ICONS = {
   wifi: <Wifi />,
   solar: <Sun />,
   paddle: <Wrench />,
@@ -76,7 +85,7 @@ export const AMENITY_ICONS: Record<AmenityKey, ReactNode> = {
   galley: <Utensils />,
   fridge: <Refrigerator />,
   tender: <Anchor />,
-};
+} satisfies Record<AmenityKey, ReactNode>;
 
 export const DISCOUNT_ICON: ReactNode = <Tag />;
 

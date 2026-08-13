@@ -3,7 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
-import { authClient } from "@/lib/auth-client";
+import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
 import { buildMetadata } from "@/lib/seo";
 
 import { DiscountManagerScreen, prefetchDiscountManager } from "@/features/profile";
@@ -37,10 +37,8 @@ export default async function DiscountsPage() {
     return redirect({ href: "/login", locale });
   }
 
-  /* Platform-staff page: same staff/admin gate as the API's staffProcedure. The role
-   * column isn't in the auth client's types, hence the cast (packages/api convention). */
-  const role = (session.user as { role?: string }).role;
-  if (role !== "staff" && role !== "admin") {
+  /* Platform-staff page: same staff/admin gate as the API's staffProcedure. */
+  if (!isStaffRole(userRole(session.user))) {
     return redirect({ href: "/profile", locale });
   }
 

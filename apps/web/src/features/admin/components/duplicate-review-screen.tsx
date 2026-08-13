@@ -66,7 +66,7 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
               <Tabs
                 value={decision}
                 onValueChange={(next) => {
-                  setDecision(next as DuplicateDecision);
+                  setDecision(DECISIONS.find((option) => option === next) ?? "pending");
                   setPage(1);
                 }}
               >

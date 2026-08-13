@@ -16,7 +16,37 @@ import { SITE_NAME } from "@/lib/seo";
  * than first-party verified reviews. Add `aggregateRating` once that provenance is settled.
  */
 
-type Node = Record<string, unknown>;
+type OrganizationNode = {
+  "@type": "Organization";
+  name: string;
+  url: string;
+  logo: string;
+};
+
+type BreadcrumbItemNode = {
+  "@type": "ListItem";
+  position: number;
+  name: string;
+  item: string;
+};
+
+type BreadcrumbListNode = {
+  "@type": "BreadcrumbList";
+  itemListElement: BreadcrumbItemNode[];
+};
+
+type ProductNode = {
+  "@type": "Product";
+  name: string;
+  description: string;
+  image: string;
+  url: string;
+  category: string;
+  brand: { "@type": "Brand"; name: string };
+  model: string;
+};
+
+type Node = BreadcrumbListNode | OrganizationNode | ProductNode;
 
 function absolute(path: string) {
   return new URL(path, env.NEXT_PUBLIC_APP_URL).toString();
@@ -47,7 +77,7 @@ export function JsonLd({ data }: { data: Node | Node[] }) {
 }
 
 /** Site identity. Only name, URL and logo — anything richer would be invented. */
-export function organizationNode(): Node {
+export function organizationNode(): OrganizationNode {
   return {
     "@type": "Organization",
     name: SITE_NAME,
@@ -56,7 +86,10 @@ export function organizationNode(): Node {
   };
 }
 
-export function breadcrumbNode(items: { name: string; path: string }[], locale: string): Node {
+export function breadcrumbNode(
+  items: { name: string; path: string }[],
+  locale: string,
+): BreadcrumbListNode {
   return {
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({
@@ -86,7 +119,7 @@ export type ListingNodeInput = {
  * server`), and the detail page renders no figure of its own. Marking up a price the page never
  * shows is the kind of mismatch that gets structured data ignored at best.
  */
-export function listingNode(listing: ListingNodeInput): Node {
+export function listingNode(listing: ListingNodeInput): ProductNode {
   return {
     "@type": "Product",
     name: listing.name,

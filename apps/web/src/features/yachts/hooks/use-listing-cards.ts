@@ -27,18 +27,18 @@ type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["result
 type ResultItem = ResultsOutput["items"][number];
 type Listing = ResultItem["listing"];
 
-const AMENITY_ICON: Record<string, ReactNode> = {
-  "Air conditioning": createElement(Snowflake),
-  "Wi-Fi": createElement(Wifi),
-  Generator: createElement(Zap),
-  "Solar panels": createElement(Sun),
-  Watermaker: createElement(Droplets),
-  Autopilot: createElement(Compass),
-  "Cockpit grill": createElement(Flame),
-  "Snorkeling set": createElement(Waves),
-  "Stand-up paddleboard": createElement(Waves),
-  Dinghy: createElement(Anchor),
-};
+const AMENITY_ICON = new Map<string, ReactNode>([
+  ["Air conditioning", createElement(Snowflake)],
+  ["Wi-Fi", createElement(Wifi)],
+  ["Generator", createElement(Zap)],
+  ["Solar panels", createElement(Sun)],
+  ["Watermaker", createElement(Droplets)],
+  ["Autopilot", createElement(Compass)],
+  ["Cockpit grill", createElement(Flame)],
+  ["Snorkeling set", createElement(Waves)],
+  ["Stand-up paddleboard", createElement(Waves)],
+  ["Dinghy", createElement(Anchor)],
+]);
 const FALLBACK_AMENITY_ICON = createElement(Check);
 const AMENITY_LIMIT = 3;
 
@@ -78,7 +78,7 @@ export function useListingCards() {
         { label: t("specs.length"), value: `${listing.specs.lengthM} m` },
       ],
       amenities: listing.amenities.slice(0, AMENITY_LIMIT).map((amenity) => ({
-        icon: AMENITY_ICON[amenity] ?? FALLBACK_AMENITY_ICON,
+        icon: AMENITY_ICON.get(amenity) ?? FALLBACK_AMENITY_ICON,
         label: amenity,
       })),
       stats: [

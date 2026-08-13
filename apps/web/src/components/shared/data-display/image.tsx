@@ -5,8 +5,11 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { Loader2 } from "lucide-react";
 import NextImage, { type ImageLoaderProps } from "next/image";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 
 type ImageSrc = ComponentProps<typeof NextImage>["src"];
+
+const srcUrlSchema = z.string();
 
 function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
   const transforms = [
@@ -21,8 +24,10 @@ function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
   return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/${type}/${transforms}/${asset}`;
 }
 
+/** Anything that is not a URL is a bundled static import, which Next already serves locally. */
 function isLocal(src: ImageSrc): boolean {
-  return typeof src === "object" || src.startsWith("/");
+  const url = srcUrlSchema.safeParse(src);
+  return !url.success || url.data.startsWith("/");
 }
 
 type BaseProps = {
