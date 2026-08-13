@@ -37,7 +37,7 @@ const ALL: readonly BookingStatus[] = [
   "REFUNDED",
 ];
 
-const ALLOWED: Record<BookingStatus, readonly BookingStatus[]> = {
+const ALLOWED = {
   DRAFT: ["QUOTED", "CANCELLED"],
   QUOTED: ["OPTION_PENDING", "PAYMENT_PENDING", "QUOTE_EXPIRED", "CANCELLED"],
   OPTION_PENDING: [
@@ -58,7 +58,7 @@ const ALLOWED: Record<BookingStatus, readonly BookingStatus[]> = {
   CANCELLED: [],
   REFUND_PENDING: ["REFUNDED"],
   REFUNDED: [],
-};
+} satisfies Record<BookingStatus, readonly BookingStatus[]>;
 
 const PRE_CONFIRMED: readonly BookingStatus[] = [
   "DRAFT",
@@ -136,11 +136,11 @@ describe("assertTransition", () => {
       expect.unreachable("should have thrown");
     } catch (error) {
       expect(error).toBeInstanceOf(InvalidTransitionError);
-      const invalid = error as InvalidTransitionError;
-      expect(invalid.from).toBe("CONFIRMED");
-      expect(invalid.to).toBe("QUOTED");
-      expect(invalid.name).toBe("InvalidTransitionError");
-      expect(invalid.message).toBe("Cannot move a booking from CONFIRMED to QUOTED");
+      if (!(error instanceof InvalidTransitionError)) throw error;
+      expect(error.from).toBe("CONFIRMED");
+      expect(error.to).toBe("QUOTED");
+      expect(error.name).toBe("InvalidTransitionError");
+      expect(error.message).toBe("Cannot move a booking from CONFIRMED to QUOTED");
     }
   });
 

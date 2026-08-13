@@ -48,6 +48,18 @@ export function isFilterKeyActive(
   return !isSameValue(state[key], defaults[key]);
 }
 
+/*
+ * A key-by-key copy through a type parameter. Writing `next[key] = defaults[key]` inline fails:
+ * with `key` a union, TypeScript demands a value valid for every member of it at once.
+ */
+function restoreKey<TKey extends keyof FiltersState>(
+  target: FiltersState,
+  key: TKey,
+  value: FiltersState[TKey],
+): void {
+  target[key] = value;
+}
+
 export function clearFilterKeys(
   state: FiltersState,
   keys: (keyof FiltersState)[],
@@ -55,7 +67,7 @@ export function clearFilterKeys(
 ): FiltersState {
   const next = { ...state };
   for (const key of keys) {
-    (next as Record<string, unknown>)[key] = defaults[key];
+    restoreKey(next, key, defaults[key]);
   }
   return next;
 }

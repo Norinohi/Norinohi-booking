@@ -145,6 +145,12 @@ export interface NausysSearchPage {
   offers: ConfirmedOffer[];
 }
 
+// Hoisted out of the paging loop: the omit rebuilds the schema on every call.
+const freeYachtsSearchRequestSchema = restFreeYachtsSearchRequestSchema.omit({
+  credentials: true,
+});
+type FreeYachtsSearchRequestInput = z.input<typeof freeYachtsSearchRequestSchema>;
+
 const DEFAULT_RESULTS_PER_PAGE = 50;
 /** A vendor `totalPages` we cannot trust must not turn into an unbounded walk. */
 const DEFAULT_MAX_PAGES = 200;
@@ -169,17 +175,19 @@ export async function* fetchNausysFreeYachtsSearch(
   let totalPages = firstPage;
 
   while (page <= totalPages && page < firstPage + maxPages) {
-    const request = restFreeYachtsSearchRequestSchema.omit({ credentials: true }).parse({
+    const requestInput: FreeYachtsSearchRequestInput = {
       periodFrom: formatNausysDate(criteria.periodFrom),
       periodTo: formatNausysDate(criteria.periodTo),
-      ...(criteria.countries ? { countries: criteria.countries } : {}),
-      ...(criteria.regions ? { regions: criteria.regions } : {}),
-      ...(criteria.locations ? { locations: criteria.locations } : {}),
-      ...(criteria.charterCompanies ? { charterCompanies: criteria.charterCompanies } : {}),
-      ...(criteria.currency ? { currency: criteria.currency } : {}),
       resultsPerPage,
       resultsPage: page,
-    });
+    };
+    if (criteria.countries) requestInput.countries = criteria.countries;
+    if (criteria.regions) requestInput.regions = criteria.regions;
+    if (criteria.locations) requestInput.locations = criteria.locations;
+    if (criteria.charterCompanies) requestInput.charterCompanies = criteria.charterCompanies;
+    if (criteria.currency) requestInput.currency = criteria.currency;
+
+    const request = freeYachtsSearchRequestSchema.parse(requestInput);
 
     const response = await client.bookingCall(
       nausysEndpoints.availability.freeYachtsSearch,
@@ -302,16 +310,18 @@ export function createNausysAvailabilitySource(
         if (windowIndex < from.windowIndex) continue;
         const startPage = windowIndex === from.windowIndex ? from.page : 1;
 
-        for await (const page of fetchNausysFreeYachtsSearch(client, {
+        const criteria: NausysSearchCriteria = {
           periodFrom: window.periodFrom,
           periodTo: window.periodTo,
-          ...(window.countries ? { countries: window.countries } : {}),
-          ...(window.regions ? { regions: window.regions } : {}),
-          ...(window.locations ? { locations: window.locations } : {}),
-          ...(options.currency ? { currency: options.currency } : {}),
-          ...(options.resultsPerPage ? { resultsPerPage: options.resultsPerPage } : {}),
           startPage,
-        })) {
+        };
+        if (window.countries) criteria.countries = window.countries;
+        if (window.regions) criteria.regions = window.regions;
+        if (window.locations) criteria.locations = window.locations;
+        if (options.currency) criteria.currency = options.currency;
+        if (options.resultsPerPage) criteria.resultsPerPage = options.resultsPerPage;
+
+        for await (const page of fetchNausysFreeYachtsSearch(client, criteria)) {
           const more = page.page < page.totalPages;
           yield {
             offers: page.offers,

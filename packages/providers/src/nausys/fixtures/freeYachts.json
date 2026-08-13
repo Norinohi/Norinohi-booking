@@ -48,16 +48,18 @@
           "calculationType": "SEPARATE_PAYMENT",
           "condition": {
             "textEN": "PER_BOOKING"
-          }
+          },
+          "totalPrice": "150.00"
         },
         {
           "serviceId": 8002,
           "amount": "70.00",
           "listPrice": "70.00",
           "currency": "EUR",
-          "quantity": "10.00",
+          "quantity": "1.00",
           "priceMeasureId": 1,
-          "calculationType": "ADVANCE_PAYMENT"
+          "calculationType": "ADVANCE_PAYMENT",
+          "totalPrice": "70.00"
         }
       ],
       "additionalExtras": [
@@ -71,7 +73,8 @@
           "calculationType": "SEPARATE_PAYMENT",
           "condition": {
             "textEN": "PER_DAY"
-          }
+          },
+          "totalPrice": "1050.00"
         }
       ],
       "status": "FREE",

@@ -1,3 +1,4 @@
+import { providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,16 +7,18 @@ import {
   sanitizeReservationPayload,
 } from "./reservation-log";
 
+type ReservationEventRow = typeof providerReservationEvent.$inferInsert;
+
 function fakeWriter() {
-  const rows: Record<string, unknown>[] = [];
-  const db = {
+  const rows: ReservationEventRow[] = [];
+  const db: ReservationEventWriter = {
     insert: () => ({
-      values: (value: Record<string, unknown>) => {
+      values: (value) => {
         rows.push(value);
         return Promise.resolve();
       },
     }),
-  } as unknown as ReservationEventWriter;
+  };
   return { db, rows };
 }
 

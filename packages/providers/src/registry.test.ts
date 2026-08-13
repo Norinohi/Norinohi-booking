@@ -9,11 +9,13 @@ vi.hoisted(() => {
 import { MockInventoryProvider } from "./mock/provider";
 import { NausysInventoryProvider } from "./nausys/provider";
 import { resolveNausysConfig } from "./nausys/config";
+import { BookingManagerInventoryProvider } from "./booking-manager/provider";
+import { resolveBookingManagerConfig } from "./booking-manager/config";
 import { AuthError } from "./shared/errors";
 import type { Database } from "./registry";
 import { createInventoryProvider } from "./registry";
 
-// The registry only stores the handle; nothing here reaches the database.
+// SAFETY: the registry only stores the handle; nothing here reaches the database.
 const db = {} as Database;
 
 const testConfig = resolveNausysConfig({
@@ -24,6 +26,15 @@ const testConfig = resolveNausysConfig({
   NAUSYS_MIN_INTERVAL_MS: 250,
   NAUSYS_OPTION_SAFETY_MARGIN_MINUTES: 15,
   NAUSYS_OPTION_TIMEZONE: "Europe/Zagreb",
+});
+
+const testBookingManagerConfig = resolveBookingManagerConfig({
+  BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
+  BOOKING_MANAGER_API_TOKEN: "t0ken",
+  BOOKING_MANAGER_TIMEOUT_MS: 30_000,
+  BOOKING_MANAGER_MIN_INTERVAL_MS: 250,
+  BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
+  BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
 
 describe("createInventoryProvider", () => {
@@ -41,8 +52,41 @@ describe("createInventoryProvider", () => {
     expect(provider.key).toBe("nausys");
   });
 
-  it("still refuses booking_manager", () => {
-    expect(() => createInventoryProvider({ db }, "booking_manager")).toThrow(/not implemented/i);
+  it("returns the Booking Manager adapter in booking_manager mode", () => {
+    const provider = createInventoryProvider(
+      { db, bookingManagerConfig: testBookingManagerConfig },
+      "booking_manager",
+    );
+
+    expect(provider).toBeInstanceOf(BookingManagerInventoryProvider);
+    expect(provider.key).toBe("booking_manager");
+  });
+
+  it("refuses booking_manager mode without a token instead of calling unauthenticated", () => {
+    // The env schema keeps the token optional so a missing secret cannot stop the
+    // server booting, which makes construction the only place that can refuse.
+    process.env.BOOKING_MANAGER_API_TOKEN = "";
+    expect(() => createInventoryProvider({ db }, "booking_manager")).toThrow(AuthError);
+  });
+});
+
+describe("booking manager capabilities", () => {
+  it("advertises provider-owned option expiry but no extras mutation", () => {
+    const provider = new BookingManagerInventoryProvider({
+      db,
+      config: testBookingManagerConfig,
+    });
+
+    expect(provider.capabilities()).toEqual({
+      supportsOptions: true,
+      supportsWebhooks: false,
+      optionExpiryOwnedByProvider: true,
+      // bm-api v2.1.4 exposes no reservation-extras endpoint, so the booking
+      // service refuses rather than pretending.
+      supportsExtrasMutation: false,
+      supportsLiveQuote: true,
+      minHoldMinutes: 15,
+    });
   });
 });
 

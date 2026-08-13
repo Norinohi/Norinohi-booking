@@ -1,8 +1,6 @@
-import { provider } from "@yacht-charter/db/schema/provider";
-import { eq } from "drizzle-orm";
-
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { createCatalogueResolver } from "../shared/catalogue-resolver";
+import { createReservationEventRecorder } from "../shared/reservation-log";
 import { ContractError } from "../shared/errors";
 import type { Database } from "../registry";
 import type { InventoryProvider } from "../provider";
@@ -44,11 +42,9 @@ import {
 } from "./occupancy";
 import { projectNausysCatalogue } from "./projection";
 import { createNausysQuoteService } from "./quote";
-import {
-  createNausysBookingService,
-  createReservationEventRecorder,
-  createSecurityTokenSink,
-} from "./booking";
+import { createNausysBookingService, createSecurityTokenSink } from "./booking";
+
+import type { JsonField } from "../shared/json";
 
 export interface NausysProviderOptions {
   db: Database;
@@ -156,7 +152,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
         });
         return quote.priceSourceHash;
       },
-      recordEvent: createReservationEventRecorder(this.db),
+      recordEvent: createReservationEventRecorder(this.db, "nausys"),
       persistSecurityToken: createSecurityTokenSink(this.db),
     });
   }
@@ -172,7 +168,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     );
   }
 
-  createCatalogueSyncSource(options: { resume?: unknown }): CatalogueSyncSource {
+  createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return nausysCatalogueSource(this.client, {
       resume: parseResume(options.resume),
     });
@@ -182,7 +178,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     return projectNausysCatalogue(records);
   }
 
-  createAvailabilitySource(options: { resume?: unknown }): AvailabilitySource {
+  createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
     const build = async (): Promise<AvailabilitySource> =>
       createNausysAvailabilitySource({
         client: this.client,
@@ -215,7 +211,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   }
 
   async loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>> {
-    const providerId = await this.resolveProviderId();
+    const providerId = await this.resolver.providerId();
     return createNausysSeasonalPriceLoader({ db: this.db, providerId })(listingIds);
   }
 
@@ -268,26 +264,6 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       supportsLiveQuote: true,
       minHoldMinutes: this.config.optionSafetyMarginMinutes,
     };
-  }
-
-  private providerIdPromise: Promise<string> | null = null;
-
-  private resolveProviderId(): Promise<string> {
-    this.providerIdPromise ??= this.db
-      .select({ id: provider.id })
-      .from(provider)
-      .where(eq(provider.code, "nausys"))
-      .limit(1)
-      .then(([row]) => {
-        if (!row) {
-          throw new ContractError('No provider row registered for "nausys"', {
-            providerCode: "nausys",
-          });
-        }
-        return row.id;
-      });
-
-    return this.providerIdPromise;
   }
 }
 

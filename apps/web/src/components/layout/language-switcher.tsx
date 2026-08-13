@@ -12,6 +12,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { locales } from "@/i18n/config";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { isBrowser } from "@/utils/runtime";
 
 /*
  * LanguageSwitcher — Figma "Menu Item" (node 972:54534). A white 8px-radius card with a 1px
@@ -35,7 +36,7 @@ export default function LanguageSwitcher() {
    * Suspense boundary around the nav bar. Filters on /yachts therefore survive the switch.
    */
   function switchTo(locale: (typeof locales)[number]) {
-    const search = typeof window === "undefined" ? "" : window.location.search;
+    const search = isBrowser ? window.location.search : "";
     router.replace(`${pathname}${search}`, { locale });
   }
 

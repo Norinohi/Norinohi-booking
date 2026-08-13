@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import { AuthError, ContractError } from "../shared/errors";
+import { looseJsonObject, type JsonObject, type JsonValue } from "../shared/json";
+import { idOf, objectsOf } from "../shared/projection-helpers";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
 import type { NausysClient } from "./client";
@@ -12,7 +14,7 @@ import { nausysEndpoints } from "./endpoints";
  * that adds a field to `RestYacht` between minor releases must not stop the
  * nightly sync.
  */
-const dumpSchema = z.looseObject({
+const dumpSchema = looseJsonObject({
   status: z.string(),
   errorCode: z.number().int().optional(),
 });
@@ -30,10 +32,10 @@ interface CatalogueStep {
    * fallback for an endpoint that is renamed later.
    */
   collectionKeys: string[];
-  scopeKeyOf?: (item: Record<string, unknown>) => string | undefined;
+  scopeKeyOf?: (item: JsonObject) => string | undefined;
 }
 
-const companyScope = (item: Record<string, unknown>) => idOf(item.companyId) ?? undefined;
+const companyScope = (item: JsonObject) => idOf(item.companyId) ?? undefined;
 
 /**
  * FK order, not vendor order. Projection cross-references records that arrived in
@@ -350,15 +352,10 @@ function isFatal(error: unknown): boolean {
   return error instanceof AuthError || error instanceof ContractError;
 }
 
-/** Vendor ids are numeric; everything downstream keys on the string form. */
-function idOf(value: unknown): string | null {
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value === "string" && value.trim() !== "") return value.trim();
-  return null;
-}
-
-function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<string, unknown>[] {
-  const body = dump as Record<string, unknown>;
+function collectionOf(dump: Dump, keys: string[], endpoint: string): JsonObject[] {
+  // SAFETY: dumpSchema is a passthrough object, so its inferred type is already a
+  // string-keyed record; the assertion only restates that for dynamic key access.
+  const body = dump as JsonObject;
 
   for (const key of keys) {
     const value = body[key];
@@ -368,7 +365,11 @@ function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<stri
   const fallback = Object.entries(body).find(
     ([key, value]) => key !== "status" && Array.isArray(value),
   );
-  if (fallback) return objectsOf(fallback[1] as unknown[]);
+  if (fallback) {
+    // SAFETY: the find predicate accepts an entry only when Array.isArray holds
+    // for its value; that narrowing does not survive out of the callback.
+    return objectsOf(fallback[1] as JsonValue[]);
+  }
 
   // An OK response carrying no collection at all is a contract violation, and the
   // only reading that is definitely wrong is "the vendor has nothing" — which would
@@ -377,11 +378,4 @@ function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<stri
     endpoint,
     payload: { keys: Object.keys(body) },
   });
-}
-
-function objectsOf(items: unknown[]): Record<string, unknown>[] {
-  return items.filter(
-    (item): item is Record<string, unknown> =>
-      typeof item === "object" && item !== null && !Array.isArray(item),
-  );
 }

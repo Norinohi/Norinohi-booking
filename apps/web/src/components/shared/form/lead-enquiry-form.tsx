@@ -22,7 +22,10 @@ import z from "zod";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
-type LeadKind = Parameters<AppRouterClient["lead"]["create"]>[0]["kind"];
+type LeadInput = Parameters<AppRouterClient["lead"]["create"]>[0];
+type LeadKind = LeadInput["kind"];
+/** Whatever the visitor was looking at, exactly as the contract accepts it. */
+type LeadContext = NonNullable<LeadInput["context"]>;
 
 function useLeadSchema() {
   const t = useTranslations("Common.leadForm.errors");
@@ -58,7 +61,7 @@ export function LeadEnquiryForm({
 }: {
   kind: LeadKind;
   listingId?: string;
-  context?: Record<string, unknown>;
+  context?: LeadContext;
   submitLabel: string;
   successMessage: string;
   submitClassName?: string;

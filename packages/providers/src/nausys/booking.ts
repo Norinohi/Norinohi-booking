@@ -1,5 +1,8 @@
 import { booking } from "@yacht-charter/db/schema/booking";
 import { and, eq } from "drizzle-orm";
+import type { z } from "zod";
+
+import type { JsonObject } from "../shared/json";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
@@ -7,7 +10,11 @@ import { formatNausysDate, parseNausysDate, parseNausysDateTime } from "../share
 import { ContractError } from "../shared/errors";
 import { decimalStringToMinor } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
-import { recordReservationEvent, type ReservationEventKind } from "../shared/reservation-log";
+import {
+  createReservationEventRecorder,
+  type ReservationEventKind,
+  type ReservationEventRecorder,
+} from "../shared/reservation-log";
 import {
   bookingDraftSchema,
   providerExtrasMutationSchema,
@@ -39,16 +46,6 @@ const PROVIDER = "nausys" as const;
  */
 export type VerifyPrice = (draft: BookingDraft) => Promise<string>;
 
-export interface ReservationEventInput {
-  /** Our quote id; `booking.quote_id` is what ties an event back to a booking. */
-  quoteId: string;
-  kind: ReservationEventKind;
-  providerReference?: string | null;
-  payload?: unknown;
-}
-
-export type ReservationEventRecorder = (event: ReservationEventInput) => Promise<void>;
-
 /**
  * Receives every refreshed uuid. `addOrUpdateExtras` returns a `ProviderQuote`,
  * which has nowhere to carry a security token, so without this the rotation on
@@ -68,12 +65,23 @@ export interface NausysBookingServiceDeps {
   recordEvent?: ReservationEventRecorder;
   persistSecurityToken?: SecurityTokenSink;
   /**
-   * `addExtras` appends, `updateExtras` replaces. Our `extras` array is the full
-   * desired set rather than a delta, so replacing is the only retry-safe call and
-   * is the default; the append path stays reachable for a vendor account whose
-   * update call is refused on a reservation that has no extras yet (Q-COMPLY).
+   * Reads the reservation's current extras so a desired set can be diffed against
+   * them. Supplied by the caller because there is no single-reservation read
+   * endpoint: the only source is the response of the last mutation, which the
+   * booking flow already persists.
    */
-  extrasMode?: "add" | "update";
+  loadReservationExtras?: (ref: ProviderReservationRef) => Promise<ReservationExtra[]>;
+}
+
+/** One extra already on the reservation, as the vendor's own response describes it. */
+export interface ReservationExtra {
+  /** The reservation line id, which is what `updateExtras` addresses. */
+  yachtReservationServiceId: number;
+  /** The catalogue service the line was created from. */
+  serviceId: number;
+  quantity: number;
+  /** False when the operator has locked the line; we cannot change it. */
+  editable: boolean;
 }
 
 export interface NausysBookingService {
@@ -100,9 +108,8 @@ const OPENS_RESERVATION = "opens-reservation" as const;
 
 export function createNausysBookingService(deps: NausysBookingServiceDeps): NausysBookingService {
   const { client, resolver, config, db, verifyPrice } = deps;
-  const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db);
+  const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const persistSecurityToken = deps.persistSecurityToken ?? createSecurityTokenSink(db);
-  const extrasMode = deps.extrasMode ?? "update";
 
   /**
    * The uuid funnel: the only way this file issues a booking call.
@@ -122,7 +129,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
   async function withReservation(
     ref: ProviderReservationRef | typeof OPENS_RESERVATION,
     endpoint: string,
-    body: Record<string, unknown> = {},
+    body: JsonObject = {},
   ): Promise<ReservationStep> {
     const current = ref === OPENS_RESERVATION ? null : requireHandle(ref, endpoint);
 
@@ -178,9 +185,10 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     }
 
     const yachtId = await externalYachtId(parsed.listingId);
+    const countryId = await externalCountryId(parsed.customer.countryCode);
 
     const info = await withReservation(OPENS_RESERVATION, nausysEndpoints.booking.createInfo, {
-      client: toRestClient(parsed.customer),
+      client: toRestClient(parsed.customer, countryId),
       periodFrom: formatNausysDate(parsed.checkIn),
       periodTo: formatNausysDate(parsed.checkOut),
       yachtID: yachtId,
@@ -259,17 +267,65 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     });
   }
 
+  /**
+   * Reconciles the reservation's extras with the set the customer chose.
+   *
+   * NauSYS confirmed (Aug 2026) that `updateExtras` is a PARTIAL update: "only
+   * extra id that you send in the request will be updated, others will remain the
+   * same". Sending the desired set therefore does not remove anything, which is
+   * how a deselected extra would have stayed on the booking and kept being billed.
+   *
+   * So the set is diffed instead. Additions go through `addExtras` keyed by
+   * catalogue `serviceId`; quantity changes go through `updateExtras` keyed by the
+   * reservation line's own `yachtReservationServiceId`, which is the id semantic
+   * the vendor confirmed for each call.
+   *
+   * Removal has no endpoint. Rather than drop it silently and bill the customer
+   * for something they deselected, a required removal fails here and the operator
+   * settles it out of band. The same goes for a line the operator has locked
+   * (`editable: false`).
+   */
   async function addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     const parsed = providerExtrasMutationSchema.parse(input);
-    const serviceIds = await externalServiceIds(parsed.extras);
+    const desired = new Set(await externalServiceIds(parsed.extras));
+    const current = (await deps.loadReservationExtras?.(parsed.ref)) ?? [];
 
-    const endpoint =
-      extrasMode === "add"
-        ? nausysEndpoints.booking.addExtras
-        : nausysEndpoints.booking.updateExtras;
+    const currentByService = new Map(current.map((item) => [item.serviceId, item]));
 
-    const step = await withReservation(parsed.ref, endpoint, {
-      services: serviceIds.map((serviceId) => ({ serviceId, quantity: 1 })),
+    const removals = current.filter((item) => !desired.has(item.serviceId));
+    if (removals.length > 0) {
+      throw new ContractError(
+        `NauSYS offers no way to remove an extra; reservation ${parsed.ref.providerReservationId} ` +
+          `would need ${removals.map((item) => item.serviceId).join(", ")} removed`,
+        { payload: { removals: removals.map((item) => item.yachtReservationServiceId) } },
+      );
+    }
+
+    const locked = current.filter((item) => !item.editable && desired.has(item.serviceId));
+    if (locked.length > 0) {
+      throw new ContractError(
+        `NauSYS reservation ${parsed.ref.providerReservationId} has extras the operator locked`,
+        { payload: { locked: locked.map((item) => item.yachtReservationServiceId) } },
+      );
+    }
+
+    const additions = [...desired].filter((serviceId) => !currentByService.has(serviceId));
+
+    // Nothing to do rather than an empty mutation: the vendor would answer the
+    // whole reservation either way, but a call that changes nothing is still a
+    // call on the one lane it allows us.
+    if (additions.length === 0) {
+      const unchanged = await withReservation(parsed.ref, nausysEndpoints.booking.updateExtras, {
+        services: current.map((item) => ({
+          yachtReservationServiceId: item.yachtReservationServiceId,
+          quantity: item.quantity,
+        })),
+      });
+      return await toProviderQuote(unchanged.response);
+    }
+
+    const step = await withReservation(parsed.ref, nausysEndpoints.booking.addExtras, {
+      services: additions.map((serviceId) => ({ serviceId, quantity: 1 })),
     });
 
     await logEventForReservation(parsed.ref.providerReservationId, "extras_updated", step);
@@ -288,6 +344,26 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       );
     }
     return yachtId;
+  }
+
+  /**
+   * `countryId` is a NauSYS id, not an ISO code, so checkout's alpha-2 has to go
+   * through the catalogue. An unresolvable code is fatal on purpose: sending the
+   * reservation without it earns INSUFFICIENT_DATA (201) at the till, and sending
+   * a guessed id would file the charter against the wrong country.
+   */
+  async function externalCountryId(isoCode: string | undefined): Promise<number | undefined> {
+    if (!isoCode) return undefined;
+
+    const external = await resolver.toExternalCountryId(isoCode);
+    const numeric = Number(external);
+    if (external === null || !Number.isInteger(numeric)) {
+      throw new ContractError(`No NauSYS country matches the guest country code ${isoCode}`, {
+        endpoint: nausysEndpoints.booking.createInfo,
+        payload: { countryCode: isoCode, resolved: external },
+      });
+    }
+    return numeric;
   }
 
   async function externalServiceIds(amenityCodes: string[]): Promise<number[]> {
@@ -337,7 +413,10 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         code: `${PROVIDER}:${extra.serviceId}`,
         label: `Service ${extra.serviceId}`,
         amount: { amountMinor: decimalStringToMinor(extra.amount, currency), currency },
-        payWhen: extra.calculationType === "SEPARATE_PAYMENT" ? "at_check_in" : "now",
+        payWhen:
+          extra.calculationType === "SEPARATE_PAYMENT"
+            ? ("at_check_in" as const)
+            : ("now" as const),
         kind: "extra" as const,
       }),
     );
@@ -345,7 +424,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     const totalMinor = extraLines.reduce((sum, line) => sum + line.amount.amountMinor, baseMinor);
     const policy = paymentPolicyOf(response);
 
-    return providerQuoteSchema.parse({
+    const quoteInput: z.input<typeof providerQuoteSchema> = {
       id: `qte_${PROVIDER}_${response.id}`,
       provider: PROVIDER,
       listingId: (await resolver.toListingId(String(response.yachtId))) ?? "",
@@ -370,14 +449,6 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
           policy.mode === "full" ? totalMinor : Math.round(totalMinor * policy.depositPct),
         currency,
       },
-      ...(response.securityDeposit
-        ? {
-            securityDeposit: {
-              amountMinor: decimalStringToMinor(response.securityDeposit, currency),
-              currency,
-            },
-          }
-        : {}),
       paymentPolicy: policy,
       // Deliberately not hashing the whole response: the uuid rotates on every
       // mutation and would make an unchanged price look like a new one.
@@ -394,7 +465,15 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         : // A committed reservation's price stands to the charter itself.
           `${checkIn}T00:00:00.000Z`,
       repriced: true,
-    });
+    };
+    if (response.securityDeposit) {
+      quoteInput.securityDeposit = {
+        amountMinor: decimalStringToMinor(response.securityDeposit, currency),
+        currency,
+      };
+    }
+
+    return providerQuoteSchema.parse(quoteInput);
   }
 
   async function logEvent(
@@ -481,7 +560,7 @@ function toCanonicalStatus(status: RestYachtReservation["reservationStatus"]) {
  * `agencyPrice` is our cost, not the customer's, and `client` is PII under §10.
  * The event log is queried freely, so neither is written to it.
  */
-function eventPayload(step: ReservationStep): Record<string, unknown> {
+function eventPayload(step: ReservationStep) {
   const { response } = step;
   return {
     id: response.id,
@@ -495,15 +574,17 @@ function eventPayload(step: ReservationStep): Record<string, unknown> {
   };
 }
 
+export interface CustomerName {
+  name: string;
+  surname: string;
+}
+
 /**
  * NauSYS wants a given name and a family name; checkout collects one field. An
  * empty surname is answered with INSUFFICIENT_DATA (201) at the till, so a
  * single-token name is sent in both places rather than half-empty.
  */
-export function splitCustomerName(
-  name: string,
-  surname?: string,
-): { name: string; surname: string } {
+export function splitCustomerName(name: string, surname?: string): CustomerName {
   const given = name.trim();
   if (surname?.trim()) {
     return { name: given, surname: surname.trim() };
@@ -517,33 +598,30 @@ export function splitCustomerName(
   return { name: parts.slice(0, -1).join(" "), surname: parts.at(-1) ?? "" };
 }
 
-function toRestClient(customer: BookingDraft["customer"]): RestClient {
+function toRestClient(customer: BookingDraft["customer"], countryId?: number): RestClient {
   const { name, surname } = splitCustomerName(customer.name, customer.surname);
-  // `countryId` is a NauSYS id, not an ISO code, and nothing resolves one yet;
-  // sending our two-letter code back would return INVALID_COUNTRY_ID (401).
-  const countryId = Number(customer.countryCode);
 
-  return {
-    name,
-    surname,
-    email: customer.email,
-    ...(customer.phone ? { phone: customer.phone, mobile: customer.phone } : {}),
-    ...(customer.address ? { address: customer.address } : {}),
-    ...(customer.zip ? { zip: customer.zip } : {}),
-    ...(customer.city ? { city: customer.city } : {}),
-    ...(Number.isInteger(countryId) ? { countryId } : {}),
-  };
+  const client: RestClient = { name, surname, email: customer.email };
+  if (customer.phone) {
+    // NauSYS treats the two as separate contact channels; we only ever have one.
+    client.phone = customer.phone;
+    client.mobile = customer.phone;
+  }
+  if (customer.address) client.address = customer.address;
+  if (customer.zip) client.zip = customer.zip;
+  if (customer.city) client.city = customer.city;
+  if (countryId !== undefined) client.countryId = countryId;
+  return client;
 }
+
+type PaymentPolicy = ProviderQuote["paymentPolicy"];
 
 /**
  * The instalment plan lives in `paymentPlans`, which this response does not
  * carry, so an equal split over `numberOfPayments` is the closest honest
  * reading. It is advisory: §6.3 has the listing's own policy override it.
  */
-function paymentPolicyOf(response: RestYachtReservation): {
-  mode: "deposit" | "full";
-  depositPct: number;
-} {
+function paymentPolicyOf(response: RestYachtReservation): PaymentPolicy {
   const payments = response.numberOfPayments ?? 1;
   if (payments <= 1) {
     return { mode: "full", depositPct: 1 };
@@ -564,33 +642,6 @@ async function quoteIdForReservation(
     .limit(1);
 
   return row?.quoteId ?? null;
-}
-
-/**
- * `provider_reservation_event` is keyed by booking, and a `BookingDraft` carries
- * the quote instead. For NauSYS `freeYachts` produces no provider quote id, so
- * `draft.quoteId` is always ours and the join is exact.
- */
-export function createReservationEventRecorder(db: Database): ReservationEventRecorder {
-  return async ({ quoteId, kind, providerReference, payload }) => {
-    const [row] = await db
-      .select({ id: booking.id })
-      .from(booking)
-      .where(eq(booking.quoteId, quoteId))
-      .limit(1);
-
-    // Reconciliation and admin tooling can drive these calls with no booking
-    // behind them; that is not a reason to fail the provider call.
-    if (!row) return;
-
-    await recordReservationEvent(db, {
-      bookingId: row.id,
-      kind,
-      provider: PROVIDER,
-      providerReference,
-      payload,
-    });
-  };
 }
 
 export function createSecurityTokenSink(db: Database): SecurityTokenSink {

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 /**
  * Provider-neutral error taxonomy. `errorType` intentionally mirrors the
  * `sync_error_type` pgEnum literals so a sync run can persist any failure.
@@ -52,6 +54,21 @@ function redactValue(value: unknown, seen: WeakSet<object>): unknown {
   return result;
 }
 
+/**
+ * The persisted shape of a failure: what `sync_error` stores and what Sentry
+ * receives. Named rather than an open dictionary so a new field has to be added
+ * here before a call site can rely on reading it back.
+ */
+export interface SanitizedErrorContext {
+  errorType: SyncErrorType;
+  retryable: boolean;
+  message: string;
+  endpoint?: string;
+  providerCode?: string;
+  payload?: unknown;
+  retryAfterMs?: number;
+}
+
 export abstract class ProviderError extends Error {
   abstract readonly errorType: SyncErrorType;
   abstract readonly retryable: boolean;
@@ -69,8 +86,8 @@ export abstract class ProviderError extends Error {
   }
 
   /** Safe to persist in `sync_error` or ship to Sentry: carries no credentials. */
-  sanitizedContext(): Record<string, unknown> {
-    const context: Record<string, unknown> = {
+  sanitizedContext(): SanitizedErrorContext {
+    const context: SanitizedErrorContext = {
       errorType: this.errorType,
       retryable: this.retryable,
       message: this.message,
@@ -102,7 +119,7 @@ export class RateLimitedError extends ProviderError {
     this.retryAfterMs = options.retryAfterMs;
   }
 
-  override sanitizedContext(): Record<string, unknown> {
+  override sanitizedContext(): SanitizedErrorContext {
     const context = super.sanitizedContext();
     if (this.retryAfterMs !== undefined) {
       context.retryAfterMs = this.retryAfterMs;
@@ -158,24 +175,35 @@ const NETWORK_ERROR_CODES = new Set([
 const NETWORK_MESSAGE_PATTERN =
   /fetch failed|network|socket hang up|premature close|terminated|aborted|timed? ?out/i;
 
+/**
+ * The fields a thrown value has to carry before it can be classified. Anything
+ * that fails this parse is not something we can call a network error, including
+ * strings, numbers and null.
+ */
+const networkErrorCandidateSchema = z.object({
+  name: z.string().optional().catch(undefined),
+  message: z.string().optional().catch(undefined),
+  code: z.string().optional().catch(undefined),
+  cause: z.unknown().optional(),
+});
+
 function isNetworkError(err: unknown): boolean {
-  if (typeof err !== "object" || err === null) {
+  const candidate = networkErrorCandidateSchema.safeParse(err);
+  if (!candidate.success) {
     return false;
   }
-  const candidate = err as { name?: unknown; message?: unknown; code?: unknown; cause?: unknown };
-  if (typeof candidate.name === "string" && NETWORK_ERROR_NAMES.has(candidate.name)) {
+  const { name, code, message, cause } = candidate.data;
+  if (name !== undefined && NETWORK_ERROR_NAMES.has(name)) {
     return true;
   }
-  if (typeof candidate.code === "string" && NETWORK_ERROR_CODES.has(candidate.code)) {
+  if (code !== undefined && NETWORK_ERROR_CODES.has(code)) {
     return true;
   }
-  if (typeof candidate.message === "string" && NETWORK_MESSAGE_PATTERN.test(candidate.message)) {
+  if (message !== undefined && NETWORK_MESSAGE_PATTERN.test(message)) {
     return true;
   }
   // undici wraps the real cause one level down ("fetch failed" -> ECONNREFUSED).
-  return (
-    candidate.cause !== undefined && candidate.cause !== err && isNetworkError(candidate.cause)
-  );
+  return cause !== undefined && cause !== err && isNetworkError(cause);
 }
 
 /**

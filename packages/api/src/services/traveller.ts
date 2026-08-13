@@ -66,7 +66,7 @@ export async function saveTravellers(
 ): Promise<ListResult> {
   const { booking: row } = await readOwnedBooking(db, userId, input.bookingId);
 
-  if (CLOSED.includes(row.status as BookingStatus)) {
+  if (CLOSED.includes(row.status)) {
     throw new ORPCError("CONFLICT", {
       message: `Cannot edit the crew list of a booking in ${row.status}`,
     });

@@ -36,9 +36,11 @@ interface FakeStoreSeed {
  * in the SQL: which scopes may be swept, what synthesis is allowed to assert, and
  * that a budget stop leaves a cursor behind.
  */
+type RecordedError = Parameters<AvailabilitySyncStore["recordError"]>[0];
+
 function fakeStore(seed: FakeStoreSeed = {}) {
   const slots = new Map<string, StoredSlot>();
-  const errors: { errorType: string; message: string; context: Record<string, unknown> }[] = [];
+  const errors: RecordedError[] = [];
   const cursors: unknown[] = [];
   const rebuilt: string[][] = [];
   const closed: {
@@ -160,11 +162,14 @@ function fakeStore(seed: FakeStoreSeed = {}) {
 
 function source(overrides: Partial<AvailabilitySource> & { scopes?: AvailabilityScope[] } = {}) {
   const scopes = overrides.scopes ?? [{ scopeKey: "102701", year: 2026 }];
-  return {
+  const built: AvailabilitySource = {
     listScopes: overrides.listScopes ?? (() => Promise.resolve(scopes)),
     fetchOccupancy: overrides.fetchOccupancy ?? (() => Promise.resolve([])),
-    ...(overrides.searchConfirmed ? { searchConfirmed: overrides.searchConfirmed } : {}),
-  } satisfies AvailabilitySource;
+  };
+  // A source with no hot window must not carry the key at all: the writer branches
+  // on its presence, not on whether it is defined.
+  if (overrides.searchConfirmed) built.searchConfirmed = overrides.searchConfirmed;
+  return built;
 }
 
 const MARLIN: ListingRef = { listingId: "ylst_marlin", listingSourceId: "lsrc_marlin" };

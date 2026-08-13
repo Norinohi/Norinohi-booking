@@ -78,10 +78,12 @@ async function listingPaths(): Promise<string[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
 
-  const listings = await listingPaths().catch((error: unknown) => {
+  let listings: string[] = [];
+  try {
+    listings = await listingPaths();
+  } catch (error) {
     console.error("[sitemap] listing enumeration failed, emitting static routes only", error);
-    return [] as string[];
-  });
+  }
 
   return [...STATIC_PATHS, ...listings].flatMap((path) => entriesFor(path, lastModified));
 }

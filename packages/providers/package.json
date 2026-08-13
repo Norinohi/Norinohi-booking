@@ -14,6 +14,7 @@
     "check-types": "tsc -b --noEmit",
     "test": "vitest run",
     "import:nausys": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-nausys.ts",
+    "import:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-booking-manager.ts",
     "listings:visibility": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/set-provider-visibility.ts",
     "listings:purge": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/purge-provider-data.ts"
   },
@@ -26,8 +27,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@yacht-charter/config": "workspace:*",
+    "tsx": "^4.22.4",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "tsx": "^4.22.4"
+    "vitest": "catalog:"
   }
 }

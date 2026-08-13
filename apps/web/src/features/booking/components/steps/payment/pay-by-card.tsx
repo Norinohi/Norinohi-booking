@@ -10,7 +10,9 @@ export default function PayByCard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Notification variant="warning" icon={<TriangleAlert />}>{t("unavailable")}</Notification>
+      <Notification variant="warning" icon={<TriangleAlert />}>
+        {t("unavailable")}
+      </Notification>
 
       <TextField
         label={t("number")}

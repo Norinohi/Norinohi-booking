@@ -109,15 +109,18 @@ export async function repriceQuote(
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
-  const priced = await priceOrConflict(provider, {
+  const request: Parameters<typeof priceOrConflict>[1] = {
     listingId: existing.listingId,
     checkIn: changes.checkIn ?? existing.checkIn,
     checkOut: changes.checkOut ?? existing.checkOut,
     guests: changes.guests ?? existing.guests,
     extras: requestedExtras,
-    ...(requestedCrewType ? { crewType: requestedCrewType } : {}),
     currency: existing.currency,
-  });
+  };
+
+  if (requestedCrewType) request.crewType = requestedCrewType;
+
+  const priced = await priceOrConflict(provider, request);
 
   const replacement = await db.transaction(async (tx) => {
     const result = await persistPricedQuote(tx, priced, {
@@ -393,15 +396,18 @@ async function persistPricedQuote(
   const currency = priced.currency;
   const onDate = priced.checkIn;
 
-  let lines: QuoteLine[] = priced.lines.map((line) => ({
-    code: line.code,
-    label: line.label,
-    amountMinor: line.amount.amountMinor,
-    currency: line.amount.currency,
-    payWhen: line.payWhen,
-    kind: line.kind,
-    ...(line.group ? { group: line.group } : {}),
-  }));
+  let lines: QuoteLine[] = priced.lines.map((line) => {
+    const mapped: QuoteLine = {
+      code: line.code,
+      label: line.label,
+      amountMinor: line.amount.amountMinor,
+      currency: line.amount.currency,
+      payWhen: line.payWhen,
+      kind: line.kind,
+    };
+    if (line.group) mapped.group = line.group;
+    return mapped;
+  });
 
   const applied: AppliedAdjustment[] = [];
 
@@ -470,14 +476,17 @@ async function persistPricedQuote(
     ...priced,
     quoteId,
     crewType,
-    lines: lines.map((line) => ({
-      code: line.code,
-      label: line.label,
-      amount: { amountMinor: line.amountMinor, currency: line.currency },
-      payWhen: line.payWhen,
-      kind: line.kind,
-      ...(line.group ? { group: line.group } : {}),
-    })),
+    lines: lines.map((line) => {
+      const mapped: PersistedQuote["lines"][number] = {
+        code: line.code,
+        label: line.label,
+        amount: { amountMinor: line.amountMinor, currency: line.currency },
+        payWhen: line.payWhen,
+        kind: line.kind,
+      };
+      if (line.group) mapped.group = line.group;
+      return mapped;
+    }),
     total: { amountMinor: total, currency },
     deposit: { amountMinor: depositMinor, currency },
     perPerson: toPerPerson(total, priced.guests, currency),

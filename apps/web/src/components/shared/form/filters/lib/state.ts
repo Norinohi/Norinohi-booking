@@ -1,6 +1,8 @@
 export type Range = [number, number];
 
 export type FiltersState = {
+  /** Free-text destination search, matched server-side against country/region/location/base. */
+  query: string;
   country: string[];
   sailingArea: string[];
   charterCompany: string[];
@@ -57,6 +59,7 @@ export const EMPTY_RANGES: FilterRanges = {
 };
 
 export const DEFAULT_FILTERS: FiltersState = {
+  query: "",
   country: [],
   sailingArea: [],
   charterCompany: [],
@@ -93,7 +96,9 @@ export function buildDefaultFilters(ranges: FilterRanges): FiltersState {
   return { ...DEFAULT_FILTERS, ...ranges };
 }
 
-export function isSameValue(a: unknown, b: unknown): boolean {
+export type FilterValue = FiltersState[keyof FiltersState];
+
+export function isSameValue(a: FilterValue, b: FilterValue): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.length === b.length && a.every((item, index) => item === b[index]);
   }
@@ -104,6 +109,8 @@ export function countActiveFilters(
   state: FiltersState,
   defaults: FiltersState = DEFAULT_FILTERS,
 ): number {
+  // SAFETY: the keys come from DEFAULT_FILTERS, which is a complete FiltersState, so each one
+  // is a key of it; Object.keys only ever reports them as bare strings.
   const keys = Object.keys(DEFAULT_FILTERS) as (keyof FiltersState)[];
   return keys.filter((key) => !isSameValue(state[key], defaults[key])).length;
 }

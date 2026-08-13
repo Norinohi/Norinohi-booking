@@ -81,7 +81,10 @@ export default function DiscountManagerScreen({ user }: { user: { name: string; 
 
             {/* Tab bar + active tab's content share the 20px section padding, 16px apart. */}
             <div className="flex flex-col gap-4 p-5">
-              <Tabs value={tab} onValueChange={(value) => setTab(value as ManagerTab)}>
+              <Tabs
+                value={tab}
+                onValueChange={(value) => setTab(value === "manage-prices" ? value : "discounts")}
+              >
                 <TabsList>
                   <TabsTab value="discounts">{t("tabs.discounts")}</TabsTab>
                   <TabsTab value="manage-prices">{t("tabs.managePrices")}</TabsTab>

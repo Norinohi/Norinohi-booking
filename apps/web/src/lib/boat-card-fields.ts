@@ -29,25 +29,26 @@ import { slugToLabel } from "@/lib/slug-to-label";
  * utility with no runtime dependency on the component layer.
  */
 
-const AMENITY_ICONS: Record<string, ReactNode> = {
-  "Air conditioning": createElement(Snowflake),
-  "Wi-Fi": createElement(Wifi),
-  Generator: createElement(Zap),
-  "Solar panels": createElement(Sun),
-  Watermaker: createElement(Droplets),
-  Autopilot: createElement(Compass),
-  "Cockpit grill": createElement(Flame),
-  "Snorkeling set": createElement(Waves),
-  "Stand-up paddleboard": createElement(Waves),
-  Dinghy: createElement(Anchor),
-};
+// Keyed by the amenity label the provider sent, so the key domain is open.
+const AMENITY_ICONS = new Map<string, ReactNode>([
+  ["Air conditioning", createElement(Snowflake)],
+  ["Wi-Fi", createElement(Wifi)],
+  ["Generator", createElement(Zap)],
+  ["Solar panels", createElement(Sun)],
+  ["Watermaker", createElement(Droplets)],
+  ["Autopilot", createElement(Compass)],
+  ["Cockpit grill", createElement(Flame)],
+  ["Snorkeling set", createElement(Waves)],
+  ["Stand-up paddleboard", createElement(Waves)],
+  ["Dinghy", createElement(Anchor)],
+]);
 const FALLBACK_AMENITY_ICON = createElement(Check);
 const AMENITY_LIMIT = 3;
 
 /** The card shows the first three amenities, each with its glyph (or a generic check). */
 export function amenityItems(labels: string[]): BoatCardAmenity[] {
   return labels.slice(0, AMENITY_LIMIT).map((label) => ({
-    icon: AMENITY_ICONS[label] ?? FALLBACK_AMENITY_ICON,
+    icon: AMENITY_ICONS.get(label) ?? FALLBACK_AMENITY_ICON,
     label,
   }));
 }

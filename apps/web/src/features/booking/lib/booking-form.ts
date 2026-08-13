@@ -12,7 +12,7 @@ import z from "zod";
  * and nothing else. Add a field to the schema here first, then register it.
  */
 export const BOOKING_DEFAULTS: BookingValues = {
-  guestDetails: { fullName: "", email: "", phone: "", specialRequests: "" },
+  guestDetails: { fullName: "", email: "", phone: "", countryCode: "", specialRequests: "" },
   extras: { optional: [] },
   reviewAndBook: { terms: false, cancellation: false },
   payment: {
@@ -33,6 +33,8 @@ export function useBookingSchema() {
           fullName: z.string().min(2, t("fullName")),
           email: z.email(t("email")),
           phone: z.string().min(6, t("phone")),
+          /* ISO 3166-1 alpha-2; the provider refuses a client without a country. */
+          countryCode: z.string().length(2, t("country")),
           specialRequests: z.string(),
         }),
         extras: z.object({ optional: z.array(z.string()) }),

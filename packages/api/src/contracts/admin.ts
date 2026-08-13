@@ -22,11 +22,35 @@ export const syncRunStartedSchema = z.object({
   status: z.literal("pending"),
 });
 
+/** Omit `provider` to start every enabled connector; name one to start just it. */
+export const syncStartInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema.optional(),
+  })
+  .default({});
+
+/** One provider's outcome in a fan-out. A run already in flight is not an error. */
+export const syncRunOutcomeSchema = z.discriminatedUnion("started", [
+  syncRunStartedSchema.extend({ started: z.literal(true) }),
+  z.object({
+    started: z.literal(false),
+    provider: z.string(),
+    reason: z.enum(["already_running", "failed"]),
+    message: z.string(),
+  }),
+]);
+
+export const syncRunsStartedSchema = z.object({ runs: z.array(syncRunOutcomeSchema) });
+
 export const syncRunStatusInputSchema = z
   .object({
     /** Defaults to the provider's most recent run. */
     syncRunId: z.string().min(1).optional(),
     errorLimit: z.number().int().min(1).max(200).optional(),
+    /** Without it, "latest" spans kinds and an availability run answers for the catalogue. */
+    kind: z.enum(["catalogue", "availability", "pricing"]).optional(),
+    /** Defaults to the transacting provider, which is the one PROVIDER_MODE names. */
+    provider: providerKeyOutputSchema.optional(),
   })
   .default({});
 
@@ -50,6 +74,163 @@ export const syncRunStatusSchema = z.object({
     }),
   ),
 });
+
+export const syncRunKindSchema = z.enum(["catalogue", "availability", "pricing"]);
+
+export const syncRunStateSchema = z.enum(["pending", "running", "success", "failed", "partial"]);
+
+const SYNC_RUN_PAGE_SIZE = 20;
+
+export const syncRunListInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema.optional(),
+    kind: syncRunKindSchema.optional(),
+    status: syncRunStateSchema.optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: SYNC_RUN_PAGE_SIZE }),
+  })
+  .default(paginationInputDefault(SYNC_RUN_PAGE_SIZE));
+
+export const syncRunRowSchema = z.object({
+  syncRunId: z.string(),
+  /**
+   * The `provider.code` as stored, not the connector enum: the table can hold a
+   * code for a connector this build does not ship, and history must still list.
+   */
+  provider: z.string(),
+  providerName: z.string(),
+  kind: syncRunKindSchema,
+  status: syncRunStateSchema,
+  createdCount: z.number().int(),
+  updatedCount: z.number().int(),
+  skippedCount: z.number().int(),
+  failedCount: z.number().int(),
+  errorCount: z.number().int(),
+  startedAt: z.string().nullable(),
+  finishedAt: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const syncRunListSchema = paginatedSchema(syncRunRowSchema);
+
+/* ------------------------------------------------------ duplicate review */
+
+export const matchStatusSchema = z.enum(["unmatched", "auto", "confirmed", "rejected"]);
+
+export const duplicateDecisionSchema = z.enum(["pending", "confirmed", "rejected"]);
+
+export const listingStatusSchema = z.enum(["draft", "published", "hidden"]);
+
+/** Null throughout when the side's listing was deleted out from under the pair. */
+export const duplicateSideListingSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  status: listingStatusSchema,
+  operatorName: z.string().nullable(),
+  modelName: z.string().nullable(),
+  yearBuilt: z.number().int().nullable(),
+  lengthM: z.number().nullable(),
+  cabins: z.number().int().nullable(),
+  berths: z.number().int().nullable(),
+  baseName: z.string().nullable(),
+  locationName: z.string().nullable(),
+  // Verbatim vendor URL rather than z.url(): these are stored exactly as the
+  // provider shipped them, and one malformed row must not fail the whole page.
+  primaryImageUrl: z.string().nullable(),
+});
+
+export const duplicateSideSchema = z.object({
+  sourceId: z.string(),
+  provider: z.string(),
+  externalYachtId: z.string(),
+  matchStatus: matchStatusSchema,
+  listing: duplicateSideListingSchema.nullable(),
+});
+
+/** Whatever the matcher recorded, e.g. `{ matchedOn: "model+yearBuilt" }`. */
+export const duplicateSignalsSchema = z.record(z.string(), z.unknown()).nullable();
+
+export const duplicateCandidateSchema = z.object({
+  id: z.string(),
+  decision: duplicateDecisionSchema,
+  confidence: z.number().nullable(),
+  signals: duplicateSignalsSchema,
+  createdAt: z.string(),
+  reviewedAt: z.string().nullable(),
+  sideA: duplicateSideSchema,
+  sideB: duplicateSideSchema,
+});
+
+const DUPLICATE_PAGE_SIZE = 20;
+
+export const duplicateQueueInputSchema = z
+  .object({
+    decision: duplicateDecisionSchema.default("pending"),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: DUPLICATE_PAGE_SIZE }),
+  })
+  .default({ ...paginationInputDefault(DUPLICATE_PAGE_SIZE), decision: "pending" });
+
+export const duplicateQueueSchema = paginatedSchema(duplicateCandidateSchema);
+
+/** The reviewer picks the survivor; the pair's other listing is the one hidden. */
+export const duplicateConfirmInputSchema = z.object({
+  candidateId: idSchema,
+  keepListingId: idSchema,
+});
+
+export const duplicateRejectInputSchema = z.object({ candidateId: idSchema });
+
+export const duplicateResolutionSchema = z.object({
+  candidateId: z.string(),
+  decision: duplicateDecisionSchema,
+  keptListingId: z.string().nullable(),
+  hiddenListingId: z.string().nullable(),
+  /** How many `listing_source` rows were repointed at the survivor. */
+  movedSourceCount: z.number().int(),
+});
+
+/* ---------------------------------------------------------------- audit log */
+
+export const auditActionSchema = z.enum([
+  "create",
+  "update",
+  "delete",
+  "sync",
+  "merge",
+  "price_adjustment",
+]);
+
+const AUDIT_PAGE_SIZE = 20;
+
+export const auditListInputSchema = z
+  .object({
+    entityType: z.string().trim().max(100).optional(),
+    entityId: z.string().trim().max(200).optional(),
+    action: auditActionSchema.optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: AUDIT_PAGE_SIZE }),
+  })
+  .default(paginationInputDefault(AUDIT_PAGE_SIZE));
+
+export const auditRowSchema = z.object({
+  id: z.string(),
+  action: auditActionSchema,
+  entityType: z.string(),
+  entityId: z.string().nullable(),
+  before: z.unknown(),
+  after: z.unknown(),
+  metadata: z.unknown(),
+  createdAt: z.string(),
+  /** Null once the actor's account is gone: audit_log.actor_user_id is set null. */
+  actor: z
+    .object({
+      id: z.string(),
+      name: z.string().nullable(),
+      email: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export const auditListSchema = paginatedSchema(auditRowSchema);
 
 /* ---------------------------------------------------------------- discounts */
 

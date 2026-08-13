@@ -1,4 +1,5 @@
 import { Card, CardMedia } from "@yacht-charter/ui/components/data-display/card";
+import { ImageWithFallback } from "@yacht-charter/ui/components/data-display/image-with-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 
 /*
@@ -24,8 +25,7 @@ function DestinationCard({
   return (
     <Card variant="ghost" className={cn("w-[400px] max-w-full", className)} {...props}>
       <CardMedia className="aspect-auto h-[300px] rounded-xl md:aspect-[4/3] md:h-auto">
-        {/* An empty src would make the browser re-request the page; render nothing instead. */}
-        {image ? <img src={image} alt={imageAlt} /> : <div className="size-full bg-natural-200" />}
+        <ImageWithFallback src={image} alt={imageAlt} fallbackClassName="bg-natural-200" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-8 text-white">
           <span className="text-2xl font-semibold">{title}</span>

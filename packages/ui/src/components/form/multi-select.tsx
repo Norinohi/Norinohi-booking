@@ -54,8 +54,8 @@ function MultiSelect({
       disabled={disabled}
       items={options.map((option) => option.value)}
       value={selected}
-      onValueChange={(next) => onValueChange(next as string[])}
-      itemToStringLabel={(item) => labels.get(item as string) ?? String(item)}
+      onValueChange={(next) => onValueChange(next)}
+      itemToStringLabel={(item) => labels.get(item) ?? item}
     >
       <div className="relative">
         <Combobox.Trigger
@@ -72,7 +72,9 @@ function MultiSelect({
         >
           <span className={cn("flex min-w-0 flex-1 items-center gap-2", showClear && "pr-6")}>
             {icon}
-            <span className={cn("truncate", selected.length === 0 && "text-placeholder-foreground")}>
+            <span
+              className={cn("truncate", selected.length === 0 && "text-placeholder-foreground")}
+            >
               {selected.length === 0
                 ? placeholder
                 : selected.map((item) => labels.get(item)).join(", ")}

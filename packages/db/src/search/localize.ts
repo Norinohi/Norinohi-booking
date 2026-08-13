@@ -58,14 +58,17 @@ export async function localizeSearchDocs<T extends ListingSearchDoc>(
   if (rows.rows.length === 0) return docs;
 
   const byKindValue = new Map(rows.rows.map((row) => [`${row.kind}:${row.key}`, row.label]));
-  const translate = <V extends string | null>(kind: FacetMediaKind, value: V): V =>
-    value === null ? value : ((byKindValue.get(`${kind}:${normalizedKey(value)}`) ?? value) as V);
+  const translate = (kind: FacetMediaKind, value: string): string =>
+    byKindValue.get(`${kind}:${normalizedKey(value)}`) ?? value;
+  /* Nullable columns keep their null: an absent label has nothing to translate. */
+  const translateOptional = (kind: FacetMediaKind, value: string | null): string | null =>
+    value === null ? null : translate(kind, value);
 
   return docs.map((doc) => ({
     ...doc,
-    category: translate("category", doc.category),
-    crewType: translate("crew", doc.crewType),
-    sailType: translate("sail_type", doc.sailType),
+    category: translateOptional("category", doc.category),
+    crewType: translateOptional("crew", doc.crewType),
+    sailType: translateOptional("sail_type", doc.sailType),
     country: translate("country", doc.country),
     region: translate("region", doc.region),
     location: translate("location", doc.location),

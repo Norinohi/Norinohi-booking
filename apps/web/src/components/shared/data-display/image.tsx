@@ -2,11 +2,15 @@
 
 import { env } from "@yacht-charter/env/web";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { Loader2 } from "lucide-react";
 import NextImage, { type ImageLoaderProps } from "next/image";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 
 type ImageSrc = ComponentProps<typeof NextImage>["src"];
+
+const srcUrlSchema = z.string();
 
 function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
   const transforms = [
@@ -21,8 +25,10 @@ function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
   return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/${type}/${transforms}/${asset}`;
 }
 
+/** Anything that is not a URL is a bundled static import, which Next already serves locally. */
 function isLocal(src: ImageSrc): boolean {
-  return typeof src === "object" || src.startsWith("/");
+  const url = srcUrlSchema.safeParse(src);
+  return !url.success || url.data.startsWith("/");
 }
 
 type BaseProps = {
@@ -91,13 +97,19 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
           ref={overlayRef}
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-muted transition-opacity duration-500",
+            "pointer-events-none absolute inset-0 z-10 transition-opacity duration-500",
             revealed ? "opacity-0" : "opacity-100",
           )}
         >
-          {status === "loading" ? (
-            <Loader2 className="size-6 animate-spin text-natural-400" />
-          ) : null}
+          {status === "error" ? (
+            <ImageFallback />
+          ) : (
+            <div className="flex size-full items-center justify-center bg-muted">
+              {status === "loading" ? (
+                <Loader2 className="size-6 animate-spin text-natural-400" />
+              ) : null}
+            </div>
+          )}
         </div>
       ) : null}
     </>

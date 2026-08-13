@@ -62,6 +62,8 @@ export default function BookingSteps() {
    * step has to touch its own fields, or a corrected one stays red until the next attempt. */
   function touch(step: Step) {
     for (const field of Object.keys(getValues(step))) {
+      // SAFETY: the field names are read back off the step's own values, so the joined path
+      // always names a leaf of BookingValues.
       const path = `${step}.${field}` as Path<BookingValues>;
       setValue(path, getValues(path), { shouldTouch: true });
     }
@@ -101,6 +103,7 @@ export default function BookingSteps() {
           fullName: guest.fullName,
           email: guest.email,
           phone: guest.phone,
+          countryCode: guest.countryCode,
           specialRequests: guest.specialRequests || undefined,
         },
         consents: { terms: true, cancellationPolicy: true },
@@ -160,7 +163,9 @@ export default function BookingSteps() {
                       className="h-13 w-full"
                       disabled={step === "reviewAndBook" && createHold.isPending}
                       onClick={() =>
-                        void (step === "reviewAndBook" ? confirmBooking() : advanceStep(step, index))
+                        void (step === "reviewAndBook"
+                          ? confirmBooking()
+                          : advanceStep(step, index))
                       }
                     >
                       {t(cta)}

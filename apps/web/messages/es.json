@@ -31,6 +31,8 @@
       "emailPlaceholder": "name@example.com",
       "phone": "Número de teléfono",
       "phonePlaceholder": "+34 612 345 678",
+      "country": "País",
+      "countryPlaceholder": "Selecciona tu país",
       "specialRequests": "Peticiones especiales (opcional)",
       "specialRequestsPlaceholder": "Entrada anticipada, por favor"
     },
@@ -38,6 +40,7 @@
       "fullName": "Introduce tu nombre completo",
       "email": "Introduce un correo electrónico válido",
       "phone": "Introduce un número de teléfono válido",
+      "country": "Selecciona tu país",
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
@@ -557,7 +560,9 @@
       "bookings": "Mis reservas",
       "referrals": "Referidos",
       "discount": "Gestión de descuentos",
-      "logout": "Cerrar sesión"
+      "logout": "Cerrar sesión",
+      "duplicates": "Revisión de duplicados",
+      "sync": "Historial de sincronización"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -912,11 +917,14 @@
     "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
     "searchBar": {
       "location": "Ubicación",
+      "startTyping": "Empieza a escribir",
       "searchCountries": "Buscar países...",
       "addDates": "Añadir fechas",
       "clearDates": "Borrar fechas",
       "anyBoat": "Cualquier barco",
-      "search": "Buscar"
+      "search": "Buscar",
+      "noLocations": "No hay destinos coincidentes",
+      "clearLocation": "Borrar destino"
     }
   },
   "YachtsMap": {
@@ -924,7 +932,10 @@
     "backToSearch": "Volver a la búsqueda",
     "showAllList": "Mostrar toda la lista",
     "closeList": "Cerrar lista",
-    "marker": "Marina {name}"
+    "marker": "Marina {name}",
+    "clusterCount": "{count, plural, one {# yate} other {# yates}}",
+    "previousBoat": "Yate anterior",
+    "nextBoat": "Yate siguiente"
   },
   "Seo": {
     "Yachts": {
@@ -982,6 +993,14 @@
     "Discounts": {
       "title": "Gestor de descuentos y precios",
       "description": "Gestiona los códigos promocionales y los precios de tus yates."
+    },
+    "Duplicates": {
+      "title": "Revisión de duplicados",
+      "description": "Revisa y fusiona los anuncios de yates propuestos por la sincronización del catálogo."
+    },
+    "Sync": {
+      "title": "Historial de sincronización",
+      "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
     }
   },
   "Profile": {
@@ -1274,6 +1293,131 @@
       },
       "empty": "No se encontraron yates",
       "error": "No se pudieron cargar los precios"
+    }
+  },
+  "Admin": {
+    "Duplicates": {
+      "title": "Revisión de duplicados",
+      "subtitle": "Fusiona los anuncios que dos proveedores enviaron para el mismo yate.",
+      "filter": {
+        "label": "Decisión",
+        "pending": "Pendientes",
+        "confirmed": "Confirmados",
+        "rejected": "Rechazados"
+      },
+      "empty": {
+        "pending": "Nada que revisar. Todos los duplicados están resueltos.",
+        "confirmed": "Todavía no se ha confirmado ninguna fusión.",
+        "rejected": "Todavía no se ha rechazado ningún par."
+      },
+      "error": "No se pudo cargar la cola de duplicados",
+      "confidence": "{value}% de coincidencia",
+      "confidenceUnknown": "Confianza desconocida",
+      "proposed": "Propuesto el {date}",
+      "reviewed": "Revisado el {date}",
+      "signals": "Coincide por {signals}",
+      "sideA": "Lado A",
+      "sideB": "Lado B",
+      "keep": "Conservar este anuncio",
+      "keeping": "Fusionando…",
+      "reject": "No es un duplicado",
+      "differs": "difiere",
+      "differsLegend": "Los valores resaltados difieren entre los dos lados.",
+      "noImage": "Sin imagen",
+      "unavailable": {
+        "title": "Anuncio no disponible",
+        "description": "Este anuncio se eliminó después de proponerse el par."
+      },
+      "fields": {
+        "provider": "Proveedor",
+        "externalId": "ID del proveedor",
+        "status": "Estado del anuncio",
+        "matchStatus": "Estado de coincidencia",
+        "operator": "Operador",
+        "model": "Modelo",
+        "year": "Año de construcción",
+        "length": "Eslora",
+        "cabins": "Camarotes",
+        "berths": "Literas",
+        "base": "Base",
+        "location": "Ubicación"
+      },
+      "lengthValue": "{value} m",
+      "listingStatus": {
+        "draft": "Borrador",
+        "published": "Publicado",
+        "hidden": "Oculto"
+      },
+      "matchStatus": {
+        "unmatched": "Sin coincidencia",
+        "auto": "Coincidencia automática",
+        "confirmed": "Confirmada",
+        "rejected": "Rechazada"
+      },
+      "toast": {
+        "confirmed": "Fusionado. {count} fuentes ahora apuntan al anuncio conservado.",
+        "rejected": "Registrado como dos yates diferentes.",
+        "conflict": "Otra persona ya revisó este par. Recargando la cola.",
+        "error": "Algo salió mal. Inténtalo de nuevo."
+      }
+    },
+    "Sync": {
+      "title": "Historial de sincronización",
+      "subtitle": "Todas las ejecuciones de catálogo y disponibilidad, de la más reciente a la más antigua.",
+      "filters": {
+        "provider": "Proveedor",
+        "kind": "Tipo",
+        "status": "Estado",
+        "allProviders": "Todos los proveedores",
+        "allKinds": "Todos los tipos",
+        "allStatuses": "Todos los estados"
+      },
+      "table": {
+        "provider": "Proveedor",
+        "kind": "Tipo",
+        "status": "Estado",
+        "results": "Resultados",
+        "errors": "Errores",
+        "started": "Inicio",
+        "finished": "Fin",
+        "details": "Detalles"
+      },
+      "kind": {
+        "catalogue": "Catálogo",
+        "availability": "Disponibilidad",
+        "pricing": "Precios"
+      },
+      "status": {
+        "pending": "Pendiente",
+        "running": "En curso",
+        "success": "Correcta",
+        "failed": "Fallida",
+        "partial": "Parcial"
+      },
+      "counts": {
+        "created": "creados",
+        "updated": "actualizados",
+        "skipped": "omitidos",
+        "failed": "fallidos"
+      },
+      "empty": "Todavía no hay sincronizaciones",
+      "error": "No se pudieron cargar las sincronizaciones",
+      "pending": "Sin iniciar",
+      "details": {
+        "show": "Ver errores",
+        "hide": "Ocultar errores",
+        "title": "Errores de esta ejecución",
+        "empty": "Esta ejecución no registró errores.",
+        "error": "No se pudo cargar esta ejecución",
+        "unavailable": "Los detalles de error no están disponibles para este proveedor."
+      },
+      "errorType": {
+        "rate_limited": "Límite de peticiones",
+        "transient": "Transitorio",
+        "auth": "Autenticación",
+        "not_found": "No encontrado",
+        "contract": "Contrato"
+      }
     }
   }
 }

@@ -12,8 +12,9 @@ import { useFormatter } from "next-intl";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { COUNT_DURATION, EASE, VIEWPORT } from "@/lib/motion";
+import { isBrowser } from "@/utils/runtime";
 
-const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+const useIsomorphicLayoutEffect = isBrowser ? useLayoutEffect : useEffect;
 
 export type AnimatedNumberProps = {
   value: number;

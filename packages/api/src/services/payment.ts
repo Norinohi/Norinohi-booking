@@ -51,7 +51,7 @@ export async function confirmCheckout(
 
   const row = await readOwnedBooking(db, userId, bookingId);
 
-  const current = row.booking.status as BookingStatus;
+  const current = row.booking.status;
   assertTransition(current, "PAYMENT_PENDING");
 
   // Throws QUOTE_EXPIRED when stale; the quote was consumed by createHold, so read

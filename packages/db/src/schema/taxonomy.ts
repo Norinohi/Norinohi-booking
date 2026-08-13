@@ -1,5 +1,5 @@
-import { relations } from "drizzle-orm";
-import { boolean, index, pgTable, text } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import { boolean, index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 
@@ -24,7 +24,24 @@ export const yachtModel = pgTable(
     name: text("name").notNull(),
     ...timestamps,
   },
-  (t) => [index("yacht_model_builder_idx").on(t.builderId)],
+  /*
+   * `(builder_id, name)` is the natural key the catalogue writer resolves by, and
+   * it carries more weight than the other taxonomy keys: cross-provider duplicate
+   * detection joins listings on `model_id`, so a race that splits one model into
+   * two rows means the duplicate is never proposed and the review queue looks
+   * clean rather than broken.
+   *
+   * Two indexes because `builder_id` is nullable and Postgres treats NULLs as
+   * distinct, so the composite alone would let unattributed models duplicate
+   * freely.
+   */
+  (t) => [
+    index("yacht_model_builder_idx").on(t.builderId),
+    uniqueIndex("yacht_model_builder_name_uq").on(t.builderId, t.name),
+    uniqueIndex("yacht_model_name_no_builder_uq")
+      .on(t.name)
+      .where(sql`${t.builderId} is null`),
+  ],
 );
 
 export const yachtCategory = pgTable(
@@ -38,11 +55,15 @@ export const yachtCategory = pgTable(
   (t) => [index("yacht_category_name_idx").on(t.name)],
 );
 
-export const amenityCategory = pgTable("amenity_category", {
-  id: id("amc"),
-  name: text("name").notNull(),
-  ...timestamps,
-});
+export const amenityCategory = pgTable(
+  "amenity_category",
+  {
+    id: id("amc"),
+    name: text("name").notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("amenity_category_name_uq").on(t.name)],
+);
 
 export const amenity = pgTable(
   "amenity",

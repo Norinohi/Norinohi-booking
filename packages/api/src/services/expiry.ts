@@ -4,12 +4,7 @@ import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
 
 import type { Database } from "../context";
-import {
-  DEAD_QUOTE_SWEEP,
-  HOLD_SWEEP,
-  assertTransition,
-  type BookingStatus,
-} from "./booking-state";
+import { DEAD_QUOTE_SWEEP, HOLD_SWEEP, assertTransition } from "./booking-state";
 
 export type SweepResult = {
   quotesExpired: number;
@@ -101,7 +96,7 @@ async function expireHolds(
       }
     }
 
-    assertTransition(candidate.status as BookingStatus, HOLD_SWEEP.to);
+    assertTransition(candidate.status, HOLD_SWEEP.to);
 
     const [updated] = await db
       .update(booking)
@@ -144,7 +139,7 @@ async function expireBookingsWithDeadQuotes(db: Database, now: Date): Promise<nu
   let expired = 0;
 
   for (const candidate of candidates) {
-    assertTransition(candidate.status as BookingStatus, DEAD_QUOTE_SWEEP.to);
+    assertTransition(candidate.status, DEAD_QUOTE_SWEEP.to);
 
     const [updated] = await db
       .update(booking)

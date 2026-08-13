@@ -1,7 +1,11 @@
 import { auth } from "@yacht-charter/auth";
 import { db } from "@yacht-charter/db";
 import type * as dbSchema from "@yacht-charter/db/schema/index";
-import { createInventoryProvider } from "@yacht-charter/providers";
+import {
+  createEnabledInventoryProviders,
+  createInventoryProvider,
+  type InventoryProvider,
+} from "@yacht-charter/providers";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Context as HonoContext } from "hono";
 
@@ -24,6 +28,27 @@ const contextDb: Database = db;
 // a request context (the cron sweep, the Stripe webhook), so they inject this same
 // instance instead of building a second one.
 export const inventoryProvider = createInventoryProvider({ db: contextDb });
+
+/**
+ * Every enabled provider, for the paths that import rather than transact.
+ *
+ * Resolved lazily and memoized: it reads the `provider` table, and the module is
+ * imported at server boot before the database is necessarily reachable. Callers
+ * await it; `inventoryProvider` above stays synchronous because checkout cannot
+ * wait on a query to know who it is selling through.
+ */
+let enabledProviders: Promise<Map<string, InventoryProvider>> | null = null;
+
+export function getEnabledInventoryProviders(): Promise<Map<string, InventoryProvider>> {
+  // Reset on failure so a boot-time database blip is retried rather than cached
+  // as an empty fleet that silently syncs nothing.
+  return (enabledProviders ??= createEnabledInventoryProviders({ db: contextDb }).catch(
+    (error: unknown) => {
+      enabledProviders = null;
+      throw error;
+    },
+  ));
+}
 
 export type CreateContextOptions = {
   context: HonoContext;

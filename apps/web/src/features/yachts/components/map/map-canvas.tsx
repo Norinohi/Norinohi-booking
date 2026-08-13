@@ -81,7 +81,10 @@ function RoutedMap(props: MapCanvasProps) {
  * fresh map (a new `key` resets RoutedMap). Capped so a genuinely broken map settles on a static panel
  * rather than looping. Shared by the full map page and the detail route map.
  */
-export default class MapCanvas extends Component<MapCanvasProps, { epoch: number; crashed: boolean }> {
+export default class MapCanvas extends Component<
+  MapCanvasProps,
+  { epoch: number; crashed: boolean }
+> {
   state = { epoch: 0, crashed: false };
 
   static getDerivedStateFromError() {

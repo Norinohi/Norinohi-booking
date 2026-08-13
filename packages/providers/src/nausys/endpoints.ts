@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { looseJsonObject } from "../shared/json";
+
 /**
  * The only file that names NauSYS paths or payload fields. Everything else in
  * `nausys/` composes these, so a vendor rename is a one-file change.
@@ -94,14 +96,20 @@ export type NausysStatusName = keyof typeof NAUSYS_STATUS_CODES;
 export type NausysStatusCode = (typeof NAUSYS_STATUS_CODES)[NausysStatusName];
 
 export const NAUSYS_STATUS_NAMES: Record<number, NausysStatusName> = Object.fromEntries(
-  Object.entries(NAUSYS_STATUS_CODES).map(([name, code]) => [code, name as NausysStatusName]),
+  Object.entries(NAUSYS_STATUS_CODES).map(([name, code]) => [
+    code,
+    // SAFETY: NausysStatusName is keyof typeof NAUSYS_STATUS_CODES, so every key
+    // Object.entries yields is one by construction; entries only widens it to
+    // string because it cannot express that.
+    name as NausysStatusName,
+  ]),
 );
 
 /**
  * Every NauSYS response, including failures, arrives as HTTP 200 with this
  * envelope. `errorCode` is omitted on some successful catalogue dumps.
  */
-export const restStatusSchema = z.looseObject({
+export const restStatusSchema = looseJsonObject({
   status: z.string(),
   errorCode: z.number().int().optional(),
 });
@@ -114,7 +122,7 @@ const decimal = z.string();
 const nausysDate = z.string();
 const nausysDateTime = z.string();
 
-export const restInternationalTextSchema = z.looseObject({
+export const restInternationalTextSchema = looseJsonObject({
   textEN: z.string().optional(),
   textDE: z.string().optional(),
   textHR: z.string().optional(),
@@ -130,14 +138,14 @@ export type RestCredentials = z.infer<typeof restCredentialsSchema>;
 
 // -- catalogue ---------------------------------------------------------------
 
-export const restCountrySchema = z.looseObject({
+export const restCountrySchema = looseJsonObject({
   id: z.number().int(),
   code: z.string().optional(),
   code2: z.string().optional(),
   name: restInternationalTextSchema,
 });
 
-export const restCountryStateSchema = z.looseObject({
+export const restCountryStateSchema = looseJsonObject({
   id: z.number().int(),
   countryId: z.number().int(),
   // The only catalogue name the vendor does not translate: recorded states carry
@@ -145,13 +153,13 @@ export const restCountryStateSchema = z.looseObject({
   name: z.string(),
 });
 
-export const restRegionSchema = z.looseObject({
+export const restRegionSchema = looseJsonObject({
   id: z.number().int(),
   countryId: z.number().int(),
   name: restInternationalTextSchema,
 });
 
-export const restLocationSchema = z.looseObject({
+export const restLocationSchema = looseJsonObject({
   id: z.number().int(),
   regionId: z.number().int(),
   name: restInternationalTextSchema,
@@ -159,7 +167,7 @@ export const restLocationSchema = z.looseObject({
   lon: z.number().optional(),
 });
 
-export const restCharterCompanySchema = z.looseObject({
+export const restCharterCompanySchema = looseJsonObject({
   id: z.number().int(),
   name: z.string(),
   companyName: z.string().optional(),
@@ -174,7 +182,7 @@ export const restCharterCompanySchema = z.looseObject({
   vatcode: z.string().optional(),
 });
 
-export const restCharterBaseSchema = z.looseObject({
+export const restCharterBaseSchema = looseJsonObject({
   id: z.number().int(),
   locationId: z.number().int(),
   companyId: z.number().int(),
@@ -185,7 +193,7 @@ export const restCharterBaseSchema = z.looseObject({
   lon: z.number().optional(),
 });
 
-export const restEquipmentCategorySchema = z.looseObject({
+export const restEquipmentCategorySchema = looseJsonObject({
   id: z.number().int(),
   name: restInternationalTextSchema,
 });
@@ -195,18 +203,18 @@ export const restEquipmentCategorySchema = z.looseObject({
  * `amenity.amenity_category_id` is NOT NULL, so those rows have nowhere to go and
  * are better dropped at the parse than carried as an orphan.
  */
-export const restEquipmentSchema = z.looseObject({
+export const restEquipmentSchema = looseJsonObject({
   id: z.number().int(),
   categoryId: z.number().int(),
   name: restInternationalTextSchema,
 });
 
-export const restYachtBuilderSchema = z.looseObject({
+export const restYachtBuilderSchema = looseJsonObject({
   id: z.number().int(),
   name: z.string(),
 });
 
-export const restYachtCategorySchema = z.looseObject({
+export const restYachtCategorySchema = looseJsonObject({
   id: z.number().int(),
   name: restInternationalTextSchema,
 });
@@ -215,7 +223,7 @@ export const restYachtCategorySchema = z.looseObject({
  * The hull dimensions and the category live here, not on `RestYacht`: the vendor
  * models them as properties of the model, so two sisterships share them.
  */
-export const restYachtModelSchema = z.looseObject({
+export const restYachtModelSchema = looseJsonObject({
   id: z.number().int(),
   name: z.string(),
   yachtBuilderId: z.number().int().optional(),
@@ -232,7 +240,7 @@ export const restYachtModelSchema = z.looseObject({
   waterTank: z.number().optional(),
 });
 
-export const restServiceSchema = z.looseObject({
+export const restServiceSchema = looseJsonObject({
   id: z.number().int(),
   name: restInternationalTextSchema,
   depositInsurance: z.boolean().optional(),
@@ -244,7 +252,7 @@ export const restServiceSchema = z.looseObject({
  * `minimumShortPeriodDuration` is the floor for short-break offers, which is a
  * different product from `minimalReservationDuration`.
  */
-export const restCheckInPeriodSchema = z.looseObject({
+export const restCheckInPeriodSchema = looseJsonObject({
   dateFrom: nausysDate.optional(),
   dateTo: nausysDate.optional(),
   checkInMonday: z.boolean().optional(),
@@ -267,7 +275,7 @@ export const restCheckInPeriodSchema = z.looseObject({
   checkOutTime: z.string().optional(),
 });
 
-export const restYachtPictureSchema = z.looseObject({
+export const restYachtPictureSchema = looseJsonObject({
   src: z.string(),
   description: restInternationalTextSchema.optional(),
   isGenuine: z.boolean().optional(),
@@ -282,14 +290,14 @@ export const restYachtPictureSchema = z.looseObject({
  * currency has a canonical home today; the rest is read from the retained raw
  * payload by the availability and quote paths.
  */
-export const restSeasonSpecificDataSchema = z.looseObject({
+export const restSeasonSpecificDataSchema = looseJsonObject({
   seasonId: z.number().int().optional(),
   baseId: z.number().int().optional(),
   locationId: z.number().int().optional(),
   agencyVisible: z.boolean().optional(),
   prices: z
     .array(
-      z.looseObject({
+      looseJsonObject({
         dateFrom: nausysDate.optional(),
         dateTo: nausysDate.optional(),
         price: z.union([decimal, z.number()]).optional(),
@@ -314,7 +322,7 @@ const yachtAmount = z.union([decimal, z.number()]);
  * is a percentage with a space ("100 %"). Loose and all-optional because the
  * vendor keeps adding sub-scores and only `total`/`reviews` have a home today.
  */
-const euminiaSchema = z.looseObject({
+const euminiaSchema = looseJsonObject({
   total: z.string().optional(),
   reviews: z.string().optional(),
   recommendation: z.string().optional(),
@@ -324,7 +332,7 @@ const euminiaSchema = z.looseObject({
   pricePerformance: z.string().optional(),
 });
 
-export const restYachtSchema = z.looseObject({
+export const restYachtSchema = looseJsonObject({
   id: z.number().int(),
   name: z.string(),
   companyId: z.number().int(),
@@ -380,7 +388,7 @@ export const restYachtSchema = z.looseObject({
   pictures: z.array(restYachtPictureSchema).optional(),
   standardYachtEquipment: z
     .array(
-      z.looseObject({
+      looseJsonObject({
         id: z.number().int().optional(),
         equipmentId: z.number().int(),
         quantity: z.number().optional(),
@@ -393,12 +401,12 @@ export const restYachtSchema = z.looseObject({
    * Populated for one yacht in 109 and in a different id space from
    * `standardYachtEquipment`; amenities are read from the latter.
    */
-  yachtAmenities: z.array(z.looseObject({ amenityId: z.number().int() })).optional(),
-  yachtCabinDetails: z.array(z.looseObject({ id: z.number().int().optional() })).optional(),
+  yachtAmenities: z.array(looseJsonObject({ amenityId: z.number().int() })).optional(),
+  yachtCabinDetails: z.array(looseJsonObject({ id: z.number().int().optional() })).optional(),
   checkInPeriods: z.array(restCheckInPeriodSchema).optional(),
   oneWayPeriods: z
     .array(
-      z.looseObject({
+      looseJsonObject({
         id: z.number().int().optional(),
         baseId: z.number().int().optional(),
         locationId: z.number().int().optional(),
@@ -424,67 +432,67 @@ const statusFields = {
   errorCode: z.number().int().optional(),
 };
 
-export const restCountriesResponseSchema = z.looseObject({
+export const restCountriesResponseSchema = looseJsonObject({
   ...statusFields,
   countries: z.array(restCountrySchema).optional(),
 });
 
-export const restCountryStatesResponseSchema = z.looseObject({
+export const restCountryStatesResponseSchema = looseJsonObject({
   ...statusFields,
   countries: z.array(restCountryStateSchema).optional(),
 });
 
-export const restRegionsResponseSchema = z.looseObject({
+export const restRegionsResponseSchema = looseJsonObject({
   ...statusFields,
   regions: z.array(restRegionSchema).optional(),
 });
 
-export const restLocationsResponseSchema = z.looseObject({
+export const restLocationsResponseSchema = looseJsonObject({
   ...statusFields,
   locations: z.array(restLocationSchema).optional(),
 });
 
-export const restCharterCompaniesResponseSchema = z.looseObject({
+export const restCharterCompaniesResponseSchema = looseJsonObject({
   ...statusFields,
   companies: z.array(restCharterCompanySchema).optional(),
 });
 
-export const restCharterBasesResponseSchema = z.looseObject({
+export const restCharterBasesResponseSchema = looseJsonObject({
   ...statusFields,
   bases: z.array(restCharterBaseSchema).optional(),
 });
 
-export const restEquipmentResponseSchema = z.looseObject({
+export const restEquipmentResponseSchema = looseJsonObject({
   ...statusFields,
   equipment: z.array(restEquipmentSchema).optional(),
 });
 
-export const restEquipmentCategoriesResponseSchema = z.looseObject({
+export const restEquipmentCategoriesResponseSchema = looseJsonObject({
   ...statusFields,
   equipmentCategories: z.array(restEquipmentCategorySchema).optional(),
 });
 
-export const restYachtBuildersResponseSchema = z.looseObject({
+export const restYachtBuildersResponseSchema = looseJsonObject({
   ...statusFields,
   builders: z.array(restYachtBuilderSchema).optional(),
 });
 
-export const restYachtCategoriesResponseSchema = z.looseObject({
+export const restYachtCategoriesResponseSchema = looseJsonObject({
   ...statusFields,
   categories: z.array(restYachtCategorySchema).optional(),
 });
 
-export const restYachtModelsResponseSchema = z.looseObject({
+export const restYachtModelsResponseSchema = looseJsonObject({
   ...statusFields,
   models: z.array(restYachtModelSchema).optional(),
 });
 
-export const restServicesResponseSchema = z.looseObject({
+export const restServicesResponseSchema = looseJsonObject({
   ...statusFields,
   services: z.array(restServiceSchema).optional(),
 });
 
-export const restYachtsResponseSchema = z.looseObject({
+export const restYachtsResponseSchema = looseJsonObject({
   ...statusFields,
   /** Bare ids, sent before `yachts` and easy to mistake for the collection. */
   yachtIDs: z.array(z.number().int()).optional(),
@@ -493,7 +501,7 @@ export const restYachtsResponseSchema = z.looseObject({
 
 // -- availability ------------------------------------------------------------
 
-export const restDiscountSchema = z.looseObject({
+export const restDiscountSchema = looseJsonObject({
   discountItemId: z.number().int(),
   // `type: "PERCENTAGE"` sends a number, `"AMOUNT"` a decimal string. Vendor
   // question: whether both shapes really occur on the same field.
@@ -501,7 +509,7 @@ export const restDiscountSchema = z.looseObject({
   type: z.string(),
 });
 
-export const restPriceSchema = z.looseObject({
+export const restPriceSchema = looseJsonObject({
   priceListPrice: decimal,
   clientPrice: decimal,
   currency: z.string(),
@@ -518,7 +526,7 @@ export const restPriceSchema = z.looseObject({
   agencyCommission: decimal.optional(),
 });
 
-export const restPaymentPlanSchema = z.looseObject({
+export const restPaymentPlanSchema = looseJsonObject({
   date: nausysDate,
   percentage: z.number(),
 });
@@ -538,7 +546,7 @@ export const restPaymentPlanSchema = z.looseObject({
  * `quantity` is a decimal string, not a number, and `condition` is international
  * text rather than a string (frequently `{}`).
  */
-export const restExtraSchema = z.looseObject({
+export const restExtraSchema = looseJsonObject({
   /** Present on obligatory extras. */
   serviceId: z.number().int().optional(),
   /** Present on additional extras, alongside `extrasType`. */
@@ -557,7 +565,7 @@ export const restExtraSchema = z.looseObject({
 
 export const restFreeYachtStatusSchema = z.enum(["FREE", "UNDER_OPTION"]);
 
-export const restFreeYachtSchema = z.looseObject({
+export const restFreeYachtSchema = looseJsonObject({
   yachtId: z.number().int(),
   periodFrom: nausysDate,
   periodTo: nausysDate,
@@ -587,7 +595,7 @@ export const restFreeYachtsRequestSchema = z.object({
 });
 export type RestFreeYachtsRequest = z.infer<typeof restFreeYachtsRequestSchema>;
 
-export const restFreeYachtsResponseSchema = z.looseObject({
+export const restFreeYachtsResponseSchema = looseJsonObject({
   status: z.string(),
   errorCode: z.number().int().optional(),
   freeYachts: z.array(restFreeYachtSchema).optional(),
@@ -630,7 +638,7 @@ export const restFreeYachtsSearchRequestSchema = z.object({
 });
 export type RestFreeYachtsSearchRequest = z.infer<typeof restFreeYachtsSearchRequestSchema>;
 
-export const restFreeYachtsSearchResponseSchema = z.looseObject({
+export const restFreeYachtsSearchResponseSchema = looseJsonObject({
   status: z.string(),
   errorCode: z.number().int().optional(),
   from: nausysDate.optional(),
@@ -649,7 +657,7 @@ export const restFreeYachtsSearchResponseSchema = z.looseObject({
 // negative ids and open-ended periods (01.01.2020 to 31.12.2099 in production).
 export const restOccupancyReservationTypeSchema = z.enum(["RESERVATION", "OPTION", "SERVICE"]);
 
-export const restOccupancyReservationSchema = z.looseObject({
+export const restOccupancyReservationSchema = looseJsonObject({
   id: z.number().int(),
   yachtId: z.number().int(),
   locationFromId: z.number().int().optional(),
@@ -662,7 +670,7 @@ export const restOccupancyReservationSchema = z.looseObject({
   optionValidTill: nausysDateTime.optional(),
 });
 
-export const restOccupancyResponseSchema = z.looseObject({
+export const restOccupancyResponseSchema = looseJsonObject({
   status: z.string(),
   errorCode: z.number().int().optional(),
   companyId: z.number().int().optional(),
@@ -673,7 +681,7 @@ export const restOccupancyResponseSchema = z.looseObject({
 
 // -- booking -----------------------------------------------------------------
 
-export const restClientSchema = z.looseObject({
+export const restClientSchema = looseJsonObject({
   name: z.string().optional(),
   surname: z.string().optional(),
   company: z.string().optional(),
@@ -695,7 +703,7 @@ export const restReservationStatusSchema = z.enum(["INFO", "OPTION", "RESERVATIO
  * important reservation data changes, so it is required on every response: a
  * call made with a stale uuid fails, and the failure only surfaces later.
  */
-export const restYachtReservationSchema = z.looseObject({
+export const restYachtReservationSchema = looseJsonObject({
   id: z.number().int(),
   uuid: z.string(),
   reservationStatus: restReservationStatusSchema,

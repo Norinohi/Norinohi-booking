@@ -67,7 +67,11 @@ function Confetti() {
                   duration: piece.duration,
                   delay: piece.delay,
                   ease: "easeIn",
-                  opacity: { duration: piece.duration, delay: piece.delay, times: [0, 0.08, 0.7, 1] },
+                  opacity: {
+                    duration: piece.duration,
+                    delay: piece.delay,
+                    times: [0, 0.08, 0.7, 1],
+                  },
                 }
           }
         />
@@ -157,10 +161,8 @@ export default function BookingConfirmationScreen() {
 
   /* checkIn/checkOut are ISO datetimes, so parse them as instants and render the day in UTC. */
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
-  const crewLabel =
-    booking.crewType && (CREW_KEYS as readonly string[]).includes(booking.crewType)
-      ? tCrew(booking.crewType as (typeof CREW_KEYS)[number])
-      : booking.crewType;
+  const crewKey = CREW_KEYS.find((key) => key === booking.crewType);
+  const crewLabel = crewKey ? tCrew(crewKey) : booking.crewType;
 
   const base = booking.priceLines.find((line) => !line.group && line.amount.amountMinor > 0);
   const mandatory = booking.priceLines.filter((line) => line.group === "mandatory");
@@ -258,7 +260,10 @@ export default function BookingConfirmationScreen() {
   return (
     <section className="flex min-h-full justify-center px-4 pt-6 pb-8 md:px-6 md:py-23">
       <article className="relative isolate w-full max-w-201.5 overflow-hidden rounded-2xl border border-border bg-card">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]"
+        >
           <Image
             src="/assets/illustrations/booking-confetti.svg"
             alt=""

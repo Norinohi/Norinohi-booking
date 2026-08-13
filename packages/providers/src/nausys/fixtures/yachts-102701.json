@@ -1,13 +1,6 @@
 {
   "status": "OK",
-  "yachtIDs": [
-    479287,
-    481849,
-    73101212,
-    22585866,
-    46799351,
-    103454
-  ],
+  "yachtIDs": [479287, 481849, 73101212, 22585866, 46799351, 103454],
   "yachts": [
     {
       "baseId": 102751,
@@ -757,9 +750,7 @@
               "price": "300.00",
               "priceMeasureId": 54,
               "serviceId": 494531,
-              "validForBases": [
-                102753
-              ],
+              "validForBases": [102753],
               "vatInPrice": "I"
             },
             {
@@ -1390,9 +1381,7 @@
               "price": "300.00",
               "priceMeasureId": 54,
               "serviceId": 494531,
-              "validForBases": [
-                102753
-              ],
+              "validForBases": [102753],
               "vatInPrice": "I"
             },
             {
@@ -2053,9 +2042,7 @@
               "price": "300.00",
               "priceMeasureId": 54,
               "serviceId": 494531,
-              "validForBases": [
-                102753
-              ],
+              "validForBases": [102753],
               "vatInPrice": "I"
             },
             {
@@ -2841,9 +2828,7 @@
               "price": "300.00",
               "priceMeasureId": 54,
               "serviceId": 494531,
-              "validForBases": [
-                102753
-              ],
+              "validForBases": [102753],
               "vatInPrice": "I"
             },
             {
@@ -2961,9 +2946,7 @@
       "engineBuilderId": 120888,
       "enginePower": 1200,
       "engines": 2,
-      "flagsId": [
-        1
-      ],
+      "flagsId": [1],
       "fourStarCharter": false,
       "fuelConsumption": 260,
       "fuelTank": 4000,
@@ -3463,9 +3446,7 @@
               "price": "300.00",
               "priceMeasureId": 54,
               "serviceId": 494531,
-              "validForBases": [
-                102753
-              ],
+              "validForBases": [102753],
               "vatInPrice": "I"
             },
             {
@@ -4323,9 +4304,7 @@
               "price": "300.00",
               "priceMeasureId": 54,
               "serviceId": 494531,
-              "validForBases": [
-                102753
-              ],
+              "validForBases": [102753],
               "vatInPrice": "I"
             },
             {

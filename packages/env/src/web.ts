@@ -16,6 +16,9 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3001"),
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().min(1),
     NEXT_PUBLIC_MAPBOX_TOKEN: z.string().startsWith("pk."),
+    // Scheduling link for the Calendly embed on /plan-my-trip/consultation. Optional —
+    // without it, the "book a call" option falls back to the send-a-message form.
+    NEXT_PUBLIC_CALENDLY_URL: z.url().optional(),
   },
   runtimeEnv: {
     REVALIDATE_SECRET: process.env.REVALIDATE_SECRET,
@@ -23,6 +26,7 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
     NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
+    NEXT_PUBLIC_CALENDLY_URL: process.env.NEXT_PUBLIC_CALENDLY_URL,
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,

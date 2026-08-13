@@ -32,6 +32,9 @@ export const money = <Name extends string>(name: Name) => {
   const minor = integer(`${name}_minor`);
   const currency = text(`${name}_currency`);
 
+  // SAFETY: the two computed keys are built from the same `name` the mapped type
+  // interpolates, so the literal holds exactly `${Name}Minor` and `${Name}Currency`.
+  // TypeScript types a computed key as a plain `string` index and cannot see that.
   return { [`${name}Minor`]: minor, [`${name}Currency`]: currency } as {
     [K in `${Name}Minor`]: typeof minor;
   } & { [K in `${Name}Currency`]: typeof currency };

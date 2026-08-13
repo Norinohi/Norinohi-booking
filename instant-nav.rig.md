@@ -7,7 +7,7 @@ reads this instead of rediscovering. Decision record: `docs/adr/0003`.
   `pnpm --filter web start` on **:3001**. Never `next dev` — it does not prefetch, so a verdict
   taken there is invalid. The app calls the Hono API, so a run also needs Postgres up
   (`pnpm db:start`) and the server on **:3000** (`pnpm dev:server`, or built + `pnpm --filter
-  server start`).
+server start`).
 - **EXPOSE**: `experimental.exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1"`
   in `apps/web/next.config.ts`. Set only by `build:test` and by CI. **Never true in a production
   deploy** — Railway does not set it. Without it `instant()` silently no-ops and the suite passes
@@ -47,9 +47,11 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
    `reuseExistingServer: !CI`, so anything already listening on :3001 is reused — including a
    server left over from an earlier build. This produced two contradictory verdicts before it was
    spotted. Always free the port first and confirm it is empty:
+
    ```bash
    lsof -ti:3001 | xargs kill -9 2>/dev/null; sleep 1; lsof -ti:3001   # must print nothing
    ```
+
    `pkill -f "next start"` is not reliable here — it missed three live processes.
 
 2. **A stale `next dev` server breaks `tsc`.** `apps/web/tsconfig.json` includes
@@ -64,6 +66,7 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
 4. **`pnpm check` rewrites the vendored skills.** `oxfmt --write` reformats the markdown under
    `.agents/skills/` and `.claude/skills/`, which `skills-lock.json` hash-locks and `AGENTS.md`
    says not to edit. Revert those paths after running it:
+
    ```bash
    git checkout -- .agents/skills .claude/skills
    ```
@@ -87,6 +90,7 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
    entries persist across `next build`. After changing seed or database content that a cached read
    returns, a plain rebuild keeps serving the old value until its tier expires — facets are on
    `days`. Clear it when a data change must show up now:
+
    ```bash
    rm -rf apps/web/.next/cache
    ```
@@ -100,13 +104,14 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
 10. **A `◐` route cannot return a non-200 status.** Under partial prerendering the shell is flushed
     before the dynamic part resolves — the response carries `x-nextjs-postponed: 1` — so a later
     `notFound()` swaps the UI but the status is already committed as 200. `connection()` in the
-    *page* does not change this, because the *layout's* shell is what flushed. A correct 404 needs
+    _page_ does not change this, because the _layout's_ shell is what flushed. A correct 404 needs
     the whole route out of prerendering, which today means the root layout too.
 
 11. **`tsc` passes locally and fails in CI on a fresh clone.** `next-env.d.ts` and `.next/types/*`
     carry the `*.png` and route-type declarations and are gitignored, so they exist on your machine
     only as a leftover from a previous build. `check-types` runs `next typegen` first for exactly
     this reason. Reproduce a CI checkout with:
+
     ```bash
     rm -f apps/web/next-env.d.ts && rm -rf apps/web/.next
     ```
@@ -118,9 +123,11 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
     `NEXT_PUBLIC_*` is declared on `build` for the same reason plus cache correctness — those values
     are inlined into the client bundle, so a build cached under different ones must not be replayed.
     Reproduce the CI environment exactly with:
+
     ```bash
     mv apps/web/.env /tmp/ && SKIP_ENV_VALIDATION=1 pnpm exec turbo run check-types --force
     ```
+
     `--force` matters: a cache hit replays a previous success and hides the failure.
 
 13. **Never put `--port` in the `start` script.** Railway injects `PORT` and probes that port; a
@@ -133,6 +140,6 @@ Project-specific obstacles, each hit for real. Read before debugging a strange v
     `/en`, which does not satisfy a healthcheck. `apps/web/railway.json` probes `/en`.
 
 15. **Dev mode re-fetches what production serves from cache.** `"use cache"` entries are invalidated
-   by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
-   load. That is not a caching bug — measure caching against `build:test` + `start`, where home
-   issues no catalog requests at all.
+    by every HMR recompile, so `pnpm dev` shows repeated `/rpc/charterSearch/*` calls on each page
+    load. That is not a caching bug — measure caching against `build:test` + `start`, where home
+    issues no catalog requests at all.

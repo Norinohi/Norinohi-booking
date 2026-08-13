@@ -77,3 +77,23 @@ export class SequentialQueue {
  * serialize against the same credential.
  */
 export const sharedQueue = new SequentialQueue();
+
+// Lanes are per key (the credential), but the spacing setting is per queue
+// instance, so instances are pooled by interval. Module-scoped on purpose: two
+// clients built in one process must share the lane, or the vendor's
+// sequential-only rule is broken by construction. Sharing this pool across
+// providers is safe because queue keys are already provider-namespaced.
+const queuesByInterval = new Map<number, SequentialQueue>();
+
+export function queueForInterval(minIntervalMs: number): SequentialQueue {
+  if (minIntervalMs <= 0) {
+    return sharedQueue;
+  }
+  const existing = queuesByInterval.get(minIntervalMs);
+  if (existing) {
+    return existing;
+  }
+  const queue = new SequentialQueue({ minIntervalMs });
+  queuesByInterval.set(minIntervalMs, queue);
+  return queue;
+}

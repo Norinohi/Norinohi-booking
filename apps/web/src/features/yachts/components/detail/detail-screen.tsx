@@ -29,10 +29,8 @@ import TitleBlock from "./title-block";
 export default function YachtDetailScreen({ title, aside }: { title?: string; aside?: ReactNode }) {
   const t = useTranslations("YachtDetail");
 
-  const breadcrumbs: AppBreadcrumb[] = [
-    { name: "YachtDetail.breadcrumbSearch", url: "/yachts" },
-    ...(title ? [{ name: title, dynamic: true } as AppBreadcrumb] : []),
-  ];
+  const breadcrumbs: AppBreadcrumb[] = [{ name: "YachtDetail.breadcrumbSearch", url: "/yachts" }];
+  if (title) breadcrumbs.push({ name: title, dynamic: true });
 
   return (
     <div className="flex flex-col">

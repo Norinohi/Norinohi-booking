@@ -57,7 +57,7 @@ function StepIndicator({
       </div>
       {label !== false && (
         <span className="text-body-xl text-brand">
-          {typeof label === "function" ? label(clamped, total) : `Step ${clamped} of ${total}`}
+          {label === true ? `Step ${clamped} of ${total}` : label(clamped, total)}
         </span>
       )}
     </div>

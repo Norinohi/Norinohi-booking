@@ -19,12 +19,12 @@ import type { PlannerAnswers } from "../lib/search-params";
 import { toBoatCardProps } from "../lib/to-boat-card";
 
 /** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
-const DESTINATION_IMAGES: Record<string, string> = {
-  Croatia: "/assets/home/destinations/croatia.webp",
-  Greece: "/assets/home/destinations/greece.webp",
-  Italy: "/assets/home/destinations/italy.webp",
-};
-const DEFAULT_DESTINATION_IMAGE = DESTINATION_IMAGES.Greece;
+const DEFAULT_DESTINATION_IMAGE = "/assets/home/destinations/greece.webp";
+const DESTINATION_IMAGES = new Map<string, string>([
+  ["Croatia", "/assets/home/destinations/croatia.webp"],
+  ["Greece", DEFAULT_DESTINATION_IMAGE],
+  ["Italy", "/assets/home/destinations/italy.webp"],
+]);
 
 /** Result — "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
 export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
@@ -73,7 +73,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
     ? toBoatCardProps(recommendation.listing, formatMoney)
     : null;
   const destinationImage =
-    DESTINATION_IMAGES[recommendation.destination.country] ?? DEFAULT_DESTINATION_IMAGE;
+    DESTINATION_IMAGES.get(recommendation.destination.country) ?? DEFAULT_DESTINATION_IMAGE;
   // /yachts has no `guests`/`category`/`maxPriceMinor` filters, so only `country` deep-links.
   const countryHref = `/yachts?country=${encodeURIComponent(recommendation.destination.country)}`;
 

@@ -174,7 +174,7 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
       kind: paymentScheduleKindSchema,
       amount: moneySchema,
       dueAt: z.string().nullable(),
-      status: z.enum(["pending", "paid", "cancelled"]),
+      status: z.enum(["pending", "paid", "cancelled", "refunded"]),
     }),
   ),
   payments: z.array(
@@ -241,6 +241,24 @@ export const bookingCancelSchema = z.object({
   status: bookingStatusSchema,
 });
 
+export const bookingRefundInputSchema = z.object({
+  id: z.string().min(1),
+  reason: z.string().trim().max(500).optional(),
+  /**
+   * Staff confirming they have sent the bank transfer back. Nothing else can
+   * evidence it, so the booking cannot reach REFUNDED on that path without it.
+   */
+  manualTransferSettled: z.boolean().optional(),
+});
+
+export const bookingRefundSchema = z.object({
+  bookingId: z.string(),
+  status: bookingStatusSchema,
+  refunded: moneySchema,
+  awaitingSettlement: z.number().int(),
+  requiresManualTransfer: z.number().int(),
+});
+
 /* ------------------------------------------------------------------ checkout */
 
 /** Step 1 of the accordion, submitted with Confirm Booking rather than on its own. */
@@ -248,6 +266,12 @@ export const guestDetailsSchema = z.object({
   fullName: z.string().trim().min(1).max(200),
   email: z.email(),
   phone: z.string().trim().min(3).max(32),
+  /**
+   * ISO 3166-1 alpha-2. Required rather than optional: NauSYS lists country among
+   * the minimum client fields and answers INSUFFICIENT_DATA (201) without one, so
+   * a checkout that omits it only fails once the customer presses pay.
+   */
+  countryCode: z.string().trim().length(2).toUpperCase(),
   specialRequests: z.string().trim().max(2000).optional(),
 });
 

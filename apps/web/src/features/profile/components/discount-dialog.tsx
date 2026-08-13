@@ -325,7 +325,10 @@ export default function DiscountDialog({
                           <FormControl>
                             <RadioGroup
                               value={field.value}
-                              onValueChange={(value) => field.onChange(value as Values["type"])}
+                              onValueChange={(value) => {
+                                const next = DISCOUNT_TYPES.find((option) => option === value);
+                                if (next) field.onChange(next);
+                              }}
                               className="gap-3"
                             >
                               {DISCOUNT_TYPES.map((option) => (

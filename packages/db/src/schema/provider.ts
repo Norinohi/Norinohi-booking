@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -9,6 +9,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
@@ -109,22 +110,41 @@ export const providerRecord = pgTable(
   ],
 );
 
-export const syncRun = pgTable("sync_run", {
-  id: id("sync"),
-  providerId: text("provider_id")
-    .notNull()
-    .references(() => provider.id, { onDelete: "restrict" }),
-  kind: syncKind("kind").notNull(),
-  status: syncStatus("status").default("pending").notNull(),
-  cursor: text("cursor"),
-  createdCount: integer("created_count").default(0).notNull(),
-  updatedCount: integer("updated_count").default(0).notNull(),
-  skippedCount: integer("skipped_count").default(0).notNull(),
-  failedCount: integer("failed_count").default(0).notNull(),
-  startedAt: timestamp("started_at"),
-  finishedAt: timestamp("finished_at"),
-  ...timestamps,
-});
+export const syncRun = pgTable(
+  "sync_run",
+  {
+    id: id("sync"),
+    providerId: text("provider_id")
+      .notNull()
+      .references(() => provider.id, { onDelete: "restrict" }),
+    kind: syncKind("kind").notNull(),
+    status: syncStatus("status").default("pending").notNull(),
+    cursor: text("cursor"),
+    createdCount: integer("created_count").default(0).notNull(),
+    updatedCount: integer("updated_count").default(0).notNull(),
+    skippedCount: integer("skipped_count").default(0).notNull(),
+    failedCount: integer("failed_count").default(0).notNull(),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+    ...timestamps,
+  },
+  /*
+   * At most one run in flight per provider and kind. This is the lock: the nightly
+   * cron and an operator pressing the admin button five minutes later used to
+   * start two full walks over the same records and the same cursor row, with
+   * nothing anywhere to stop them.
+   *
+   * Expressed as a constraint rather than an advisory lock so it is visible in the
+   * schema and so a double start fails cleanly at the insert, where the caller can
+   * report it, rather than silently interleaving. Different providers are
+   * unaffected and still sync concurrently, which is the point.
+   */
+  (t) => [
+    uniqueIndex("sync_run_in_flight_uq")
+      .on(t.providerId, t.kind)
+      .where(sql`${t.status} in ('pending', 'running')`),
+  ],
+);
 
 export const syncError = pgTable("sync_error", {
   id: id("serr"),

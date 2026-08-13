@@ -47,10 +47,10 @@ function FormField<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >(props: ControllerProps<TFieldValues, TName>) {
-  const value = React.useMemo(() => ({ name: props.name }), [props.name]);
+  const value = React.useMemo<FormFieldContextValue>(() => ({ name: props.name }), [props.name]);
 
   return (
-    <FormFieldContext.Provider value={value as FormFieldContextValue}>
+    <FormFieldContext.Provider value={value}>
       <Controller {...props} />
     </FormFieldContext.Provider>
   );
@@ -136,7 +136,12 @@ function FormLabel({
   );
 }
 
-function FormControl({ children }: { children: React.ReactElement }) {
+/** The attributes `FormControl` writes onto its child, and the only ones it reads back. */
+type FormControlAttributes = Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid"> & {
+  id?: string;
+};
+
+function FormControl({ children }: { children: React.ReactElement<FormControlAttributes> }) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
   /* No `data-slot` here — a control spreads unknown props onto its inner input, so setting one
@@ -145,8 +150,8 @@ function FormControl({ children }: { children: React.ReactElement }) {
     id: formItemId,
     "aria-describedby": error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId,
     "aria-invalid": error ? true : undefined,
-    ...(children.props as Record<string, unknown>),
-  } as Partial<unknown>);
+    ...children.props,
+  });
 }
 
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {

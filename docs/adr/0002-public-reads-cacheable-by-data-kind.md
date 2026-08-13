@@ -48,5 +48,5 @@ that point `cacheTag` plus a revalidate webhook from the Hono server stops being
   cost one call every time; a hit must cost one call per window).
 - **Match such errors by marker, not `instanceof`.** Errors thrown out of a `"use cache"` function
   are serialized on the way out, arriving as a plain `Error` with a digest. An `instanceof
-  ORPCError` check on the far side silently fails, which turned a 404 into an unhandled render
+ORPCError` check on the far side silently fails, which turned a 404 into an unhandled render
   error. See `isListingNotFound`.

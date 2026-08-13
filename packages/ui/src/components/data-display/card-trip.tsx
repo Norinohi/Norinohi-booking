@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@yacht-charter/ui/components/data-display/card";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { ImageWithFallback } from "@yacht-charter/ui/components/data-display/image-with-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight } from "lucide-react";
 
@@ -42,7 +43,7 @@ function TripCard({
   return (
     <Card variant="ghost" className={cn("w-[452px] max-w-full gap-4", className)} {...props}>
       <CardMedia className="h-[240px] rounded-xl">
-        <img src={image} alt={imageAlt} />
+        <ImageWithFallback src={image} alt={imageAlt} />
       </CardMedia>
       <CardContent className="gap-3 p-0">
         <CardTitle className="text-xl leading-[1.1] md:text-2xl">{title}</CardTitle>

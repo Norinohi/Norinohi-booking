@@ -1,0 +1,1 @@
+ALTER TYPE "public"."payment_schedule_status" ADD VALUE 'refunded';

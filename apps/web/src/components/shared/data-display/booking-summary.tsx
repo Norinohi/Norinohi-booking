@@ -257,7 +257,10 @@ export default function BookingSummary({
               className="h-12"
               options={crewOptions.map((option) => ({ value: option, label: tCrew(option) }))}
               value={crewType ?? ""}
-              onValueChange={(value) => onCrewChange(value as CrewType)}
+              onValueChange={(value) => {
+                const next = crewOptions.find((option) => option === value);
+                if (next) onCrewChange(next);
+              }}
             />
           </div>
 
@@ -273,7 +276,11 @@ export default function BookingSummary({
               min={PEOPLE_MIN}
               max={PEOPLE_MAX}
               value={guests}
-              onValueChange={(value) => onGuestsChange(value as number)}
+              onValueChange={(value) => {
+                // SAFETY: the slider is given a scalar `value`, so it renders one thumb and
+                // reports a scalar back; only a tuple value would make this an array.
+                onGuestsChange(value as number);
+              }}
             />
             <div className="relative h-4.5">
               <span

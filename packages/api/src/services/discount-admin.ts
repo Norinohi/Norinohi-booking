@@ -315,8 +315,11 @@ async function resolveTargetLabels(
 
 function idsOfType(targets: TargetRow[], type: TargetRow["targetType"]): string[] {
   return targets
-    .filter((target) => target.targetType === type && target.targetId !== null)
-    .map((target) => target.targetId as string);
+    .filter(
+      (target): target is TargetRow & { targetId: string } =>
+        target.targetType === type && target.targetId !== null,
+    )
+    .map((target) => target.targetId);
 }
 
 async function assertCodeIsFree(db: Database, code: string, exceptId: string | null) {

@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { syncError, syncRun } from "@yacht-charter/db/schema/provider";
+import { provider as providerTable, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import {
   HOT_WINDOW_CURSOR_SCOPE,
@@ -13,14 +13,23 @@ import {
   resolveProviderId,
   runCatalogueSyncJob,
 } from "@yacht-charter/providers/sync/runner";
-import { desc, eq } from "drizzle-orm";
+import { SyncAlreadyRunningError, type SyncKind } from "@yacht-charter/providers/sync/run";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
-import type { syncRunStatusSchema, syncRunStartedSchema } from "../contracts/admin";
+import type {
+  syncRunListInputSchema,
+  syncRunListSchema,
+  syncRunStatusSchema,
+  syncRunStartedSchema,
+} from "../contracts/admin";
+import { paginatedQuery, totalFrom } from "./pagination";
 
 type SyncRunStatus = z.infer<typeof syncRunStatusSchema>;
 type SyncRunStarted = z.infer<typeof syncRunStartedSchema>;
+type SyncRunListInput = z.infer<typeof syncRunListInputSchema>;
+type SyncRunList = z.infer<typeof syncRunListSchema>;
 
 const CURSOR_SCOPE = "full";
 
@@ -94,17 +103,121 @@ export async function startAvailabilitySync(
   return { syncRunId, status: "pending", provider: provider.key };
 }
 
+/** One provider's outcome when a fan-out asked every enabled provider to sync. */
+export type ProviderSyncOutcome =
+  | (SyncRunStarted & { started: true })
+  | { started: false; provider: string; reason: "already_running" | "failed"; message: string };
+
+/**
+ * Starts `start` for every provider, and never lets one provider's failure stop
+ * another's.
+ *
+ * A provider already mid-run is reported rather than raised: the nightly cron
+ * firing while a long catalogue walk is still going is expected operation, not an
+ * incident, and returning 500 for it would page someone every night.
+ */
+export async function startSyncForAll(
+  providers: Iterable<InventoryProvider>,
+  start: (provider: InventoryProvider) => Promise<SyncRunStarted>,
+): Promise<ProviderSyncOutcome[]> {
+  return Promise.all(
+    [...providers].map(async (provider) => {
+      try {
+        return { ...(await start(provider)), started: true as const };
+      } catch (error) {
+        const alreadyRunning = error instanceof SyncAlreadyRunningError;
+        return {
+          started: false as const,
+          provider: provider.key,
+          reason: alreadyRunning ? ("already_running" as const) : ("failed" as const),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }),
+  );
+}
+
+/**
+ * Run history, newest first. `getCatalogueSyncStatus` answers "what is happening
+ * now" for one provider; this is the record of what happened before it, which is
+ * the only way to see a run that failed overnight and was superseded by the next.
+ */
+export async function listSyncRuns(db: Database, input: SyncRunListInput): Promise<SyncRunList> {
+  const filters = [];
+  // Filtered by provider code rather than by id: the caller names a connector,
+  // and a code with no provider row should return nothing, not everything.
+  if (input.provider) filters.push(eq(providerTable.code, input.provider));
+  if (input.kind) filters.push(eq(syncRun.kind, input.kind));
+  if (input.status) filters.push(eq(syncRun.status, input.status));
+  const where = filters.length > 0 ? and(...filters) : undefined;
+
+  const { rows, pagination } = await paginatedQuery({
+    page: input.page,
+    pageSize: input.pageSize,
+    rows: (limit, offset) =>
+      db
+        .select({
+          run: syncRun,
+          providerCode: providerTable.code,
+          providerName: providerTable.name,
+          errorCount: sql<number>`(
+            select count(*)::int from sync_error se where se.sync_run_id = ${syncRun.id}
+          )`,
+        })
+        .from(syncRun)
+        .innerJoin(providerTable, eq(providerTable.id, syncRun.providerId))
+        .where(where)
+        .orderBy(desc(syncRun.createdAt), desc(syncRun.id))
+        .limit(limit)
+        .offset(offset),
+    total: async () =>
+      totalFrom(
+        await db
+          .select({ totalItems: count() })
+          .from(syncRun)
+          .innerJoin(providerTable, eq(providerTable.id, syncRun.providerId))
+          .where(where),
+      ),
+  });
+
+  return {
+    items: rows.map((row) => ({
+      syncRunId: row.run.id,
+      provider: row.providerCode,
+      providerName: row.providerName,
+      kind: row.run.kind,
+      status: row.run.status,
+      createdCount: row.run.createdCount,
+      updatedCount: row.run.updatedCount,
+      skippedCount: row.run.skippedCount,
+      failedCount: row.run.failedCount,
+      errorCount: Number(row.errorCount),
+      startedAt: row.run.startedAt?.toISOString() ?? null,
+      finishedAt: row.run.finishedAt?.toISOString() ?? null,
+      createdAt: row.run.createdAt.toISOString(),
+    })),
+    pagination,
+  };
+}
+
 export async function getCatalogueSyncStatus(
   db: Database,
   provider: InventoryProvider,
-  input: { syncRunId?: string; errorLimit?: number } = {},
+  input: { syncRunId?: string; errorLimit?: number; kind?: SyncKind } = {},
 ): Promise<SyncRunStatus> {
   const providerId = await resolveProviderId(db, provider.key);
+
+  // Without the kind filter, asking for catalogue status right after an
+  // availability run returned the availability run, because "latest for this
+  // provider" spans both.
+  const latest = input.kind
+    ? and(eq(syncRun.providerId, providerId), eq(syncRun.kind, input.kind))
+    : eq(syncRun.providerId, providerId);
 
   const [run] = await db
     .select()
     .from(syncRun)
-    .where(input.syncRunId ? eq(syncRun.id, input.syncRunId) : eq(syncRun.providerId, providerId))
+    .where(input.syncRunId ? eq(syncRun.id, input.syncRunId) : latest)
     .orderBy(desc(syncRun.createdAt))
     .limit(1);
 

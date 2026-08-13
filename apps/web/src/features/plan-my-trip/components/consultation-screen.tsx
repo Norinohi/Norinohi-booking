@@ -4,6 +4,7 @@ import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { QuizCard } from "@yacht-charter/ui/components/data-display/card-quiz";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import { env } from "@yacht-charter/env/web";
 import { Mail, Phone, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -13,7 +14,9 @@ import { useState } from "react";
 import EmptyState from "@/components/shared/feedback/empty-state";
 
 import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
+import { buildCalendlyUrl } from "../lib/build-calendly-url";
 import { plannerParsers } from "../lib/search-params";
+import { CalendlyWidget } from "./calendly-widget";
 import { ConsultationForm } from "./consultation-form";
 import { StepLegend } from "./step-legend";
 
@@ -86,19 +89,23 @@ export function ConsultationScreen() {
 
               {choice === "call" && (
                 <div className="flex flex-col items-start gap-4">
-                  <div className="flex w-full flex-col gap-2 rounded-2xl bg-brand-50 p-6">
-                    <p className="text-base font-semibold text-foreground">
-                      {t("placeholder.title")}
-                    </p>
-                    <p className="text-sm text-natural-600">{t("placeholder.description")}</p>
-                    <Button
-                      variant="brand"
-                      className="mt-2 w-full md:w-auto"
-                      onClick={() => setChoice("message")}
-                    >
-                      {t("placeholder.cta")}
-                    </Button>
-                  </div>
+                  {env.NEXT_PUBLIC_CALENDLY_URL ? (
+                    <CalendlyWidget url={buildCalendlyUrl(env.NEXT_PUBLIC_CALENDLY_URL, answers)} />
+                  ) : (
+                    <div className="flex w-full flex-col gap-2 rounded-2xl bg-brand-50 p-6">
+                      <p className="text-base font-semibold text-foreground">
+                        {t("placeholder.title")}
+                      </p>
+                      <p className="text-sm text-natural-600">{t("placeholder.description")}</p>
+                      <Button
+                        variant="brand"
+                        className="mt-2 w-full md:w-auto"
+                        onClick={() => setChoice("message")}
+                      >
+                        {t("placeholder.cta")}
+                      </Button>
+                    </div>
+                  )}
                   <Button variant="neutral" size="sm" onClick={() => setChoice(null)}>
                     {t("back")}
                   </Button>

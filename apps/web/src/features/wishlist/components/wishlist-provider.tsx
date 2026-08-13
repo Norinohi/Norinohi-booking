@@ -33,6 +33,11 @@ type WishlistContextValue = {
   /** False until the session resolves and the saved set is known — gate counts on this. */
   isReady: boolean;
   savedIds: ReadonlySet<string>;
+  /** Size of the saved set — drives the header count badge. */
+  savedCount: number;
+  /** Bumped once per user-initiated add (never on remove, merge, or load) so the header can
+   * play its "added" animation exactly when a listing enters the wishlist. */
+  addSignal: number;
   isSaved: (listingId: string) => boolean;
   isPending: (listingId: string) => boolean;
   toggle: (listingId: string) => void;
@@ -72,6 +77,9 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
 
   /* Per-listing, so one card's in-flight toggle never disables its neighbours. */
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  /* Monotonic tick the header watches to animate its icon on each add. */
+  const [addSignal, setAddSignal] = useState(0);
 
   const markPending = useCallback((listingId: string, pending: boolean) => {
     setPendingIds((current) => {
@@ -193,6 +201,9 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
        * wishlist.add answers `saved: true` for an already-saved listing. */
       const saved = savedIds.has(listingId);
 
+      /* Add-only pulse: the header animates when something enters the wishlist, not when it leaves. */
+      if (!saved) setAddSignal((tick) => tick + 1);
+
       if (mode === "guest") {
         if (saved) localWishlist.remove(listingId);
         else localWishlist.add(listingId);
@@ -210,11 +221,13 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
       mode,
       isReady: !sessionPending && (mode === "guest" || !idsQuery.isPending),
       savedIds,
+      savedCount: savedIds.size,
+      addSignal,
       isSaved: (listingId) => savedIds.has(listingId),
       isPending: (listingId) => pendingIds.has(listingId),
       toggle,
     }),
-    [idsQuery.isPending, mode, pendingIds, savedIds, sessionPending, toggle],
+    [addSignal, idsQuery.isPending, mode, pendingIds, savedIds, sessionPending, toggle],
   );
 
   return <WishlistContext value={value}>{children}</WishlistContext>;

@@ -6,11 +6,14 @@ import {
 } from "@yacht-charter/db/schema/provider";
 import { env } from "@yacht-charter/env/server";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { z } from "zod";
 
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
+import type { JsonField } from "../shared/json";
 import { retainRawPayload, stableSourceHash } from "../shared/raw-retention";
+import { openSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
 import { loadProviderRecordSet, writeCanonicalCatalogue } from "./catalogue-writer";
@@ -42,6 +45,13 @@ export type CatalogueSyncEvent =
       cursor?: unknown;
     };
 
+/**
+ * Diagnostics a source attaches to a recoverable failure. Values are JSON
+ * because the whole context is merged into the error's own sanitized context
+ * and written to the `sync_error.context` jsonb column.
+ */
+export type SyncErrorContext = Record<string, JsonField>;
+
 /** Lets a source report a recoverable failure instead of ending the stream. */
 export interface SyncReporter {
   reportError(
@@ -49,7 +59,7 @@ export interface SyncReporter {
     scope?: {
       resourceType?: ProviderResourceType;
       scopeKey?: string;
-      context?: Record<string, unknown>;
+      context?: SyncErrorContext;
     },
   ): Promise<void>;
 }
@@ -64,9 +74,7 @@ export interface ScopedCatalogueProvider {
 export function supportsScopedCatalogueSync(
   provider: InventoryProvider,
 ): provider is InventoryProvider & ScopedCatalogueProvider {
-  return (
-    typeof (provider as Partial<ScopedCatalogueProvider>).createCatalogueSyncSource === "function"
-  );
+  return "createCatalogueSyncSource" in provider;
 }
 
 /**
@@ -172,12 +180,14 @@ function scopeId(resourceType: ProviderResourceType, scopeKey: string | undefine
   return `${resourceType}::${scopeKey ?? ""}`;
 }
 
+const thrownStringSchema = z.string();
+
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
-  return typeof error === "string" ? error : "Unknown sync failure";
+  return thrownStringSchema.safeParse(error).data ?? "Unknown sync failure";
 }
 
-function contextOf(error: unknown, extra: Record<string, unknown> | undefined) {
+function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
   return { ...base, ...extra };
 }
@@ -471,6 +481,8 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
  * Neither speaking means false, since the safe reading of "no opinion recorded" is
  * that inventory still needs review.
  */
+const providerConfigSchema = z.object({ autoPublish: z.boolean() });
+
 export async function readAutoPublish(
   db: Database,
   providerId: string,
@@ -482,11 +494,10 @@ export async function readAutoPublish(
     .where(eq(providerTable.id, providerId))
     .limit(1);
 
-  const config = row?.config;
-  if (typeof config === "object" && config !== null) {
-    const flag = (config as { autoPublish?: unknown }).autoPublish;
-    if (typeof flag === "boolean") return flag;
-  }
+  // `provider.config` is jsonb, so the column type tells us nothing; an explicit
+  // flag wins over the per-provider default below, anything else falls through.
+  const configured = providerConfigSchema.safeParse(row?.config);
+  if (configured.success) return configured.data.autoPublish;
 
   const code = providerCode ?? row?.code;
   if (!code) return false;
@@ -511,11 +522,11 @@ export async function resolveProviderId(db: Database, code: string): Promise<str
 }
 
 /** Display name for a provider row this package bootstraps for the first time. */
-const PROVIDER_DISPLAY_NAME: Record<string, string> = {
-  nausys: "NauSYS",
-  mock: "Mock Inventory Provider",
-  booking_manager: "Booking Manager",
-};
+const PROVIDER_DISPLAY_NAME = new Map([
+  ["nausys", "NauSYS"],
+  ["mock", "Mock Inventory Provider"],
+  ["booking_manager", "Booking Manager"],
+]);
 
 /**
  * Like `resolveProviderId`, but creates the row (enabled, EUR default) the first
@@ -535,7 +546,7 @@ export async function ensureProviderId(db: Database, code: string): Promise<stri
     .insert(providerTable)
     .values({
       code,
-      name: PROVIDER_DISPLAY_NAME[code] ?? code,
+      name: PROVIDER_DISPLAY_NAME.get(code) ?? code,
       enabled: true,
       defaultCurrency: "EUR",
     })
@@ -577,16 +588,15 @@ export async function readCatalogueSyncProgress(
 }
 
 /** Created before the work starts so a caller can return the id and walk away. */
-export async function openCatalogueSyncRun(db: Database, providerId: string): Promise<string> {
-  const [row] = await db
-    .insert(syncRun)
-    .values({ providerId, kind: "catalogue", status: "pending" })
-    .returning({ id: syncRun.id });
-
-  if (!row) {
-    throw new Error("sync_run insert returned no row");
-  }
-  return row.id;
+/**
+ * Raised when a run of the same provider and kind is already pending or running.
+ *
+ * Separate from `ProviderError` on purpose: nothing went wrong with the vendor,
+ * so this must not reach `sync_error` or a retry. It is a scheduling collision,
+ * and the caller's job is to report it rather than start a second walk.
+ */
+export function openCatalogueSyncRun(db: Database, providerId: string): Promise<string> {
+  return openSyncRun(db, providerId, "catalogue");
 }
 
 export interface CatalogueSyncJobOptions {

@@ -3,7 +3,12 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
 import { crewOptionsFor } from "./crew";
-import { decodeSearchCursor, encodeSearchCursor, type SearchCursor } from "./cursor";
+import {
+  decodeSearchCursor,
+  encodeSearchCursor,
+  type DecodedSearchCursor,
+  type SearchCursor,
+} from "./cursor";
 import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
 import type {
   AvailabilityCalendar,
@@ -419,6 +424,21 @@ export async function listSearchSuggestions(
   db: NodePgDatabase<typeof schema>,
   query: string,
 ): Promise<ListingSuggestion[]> {
+  // Empty field: seed the typeahead with the most-stocked countries so the user has somewhere to
+  // start, instead of an alphabetical slice that means nothing. Data-driven, so it never lists a
+  // country with no listings.
+  if (query.trim() === "") {
+    const popular = await db.execute<ListingSuggestion>(sql`
+      select doc.country as label, 'country' as kind
+      from listing_search_doc doc
+      where doc.country is not null
+      group by doc.country
+      order by count(*) desc, doc.country asc
+      limit 5
+    `);
+    return popular.rows;
+  }
+
   const pattern = `%${query}%`;
   const rows = await db.execute<ListingSuggestion>(sql`
     select distinct label, kind
@@ -728,7 +748,10 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   return sql.join(parts, sql` and `);
 }
 
-function cursorClause(sort: SearchSort = "recommended", cursor: SearchCursor | undefined): SQL {
+function cursorClause(
+  sort: SearchSort = "recommended",
+  cursor: DecodedSearchCursor | undefined,
+): SQL {
   if (!cursor) return sql`true`;
 
   switch (sort) {
@@ -1145,7 +1168,13 @@ function availabilityWindowFor(
   };
 }
 
-function numberRange(min: unknown, max: unknown): { min: number; max: number } {
+/** An aggregate bound as it leaves pg: numeric columns arrive as strings, and an
+ * aggregate over no rows arrives as null. */
+type AggregateBound = number | string | null | undefined;
+
+type NumericRange = { min: number; max: number };
+
+function numberRange(min: AggregateBound, max: AggregateBound): NumericRange {
   const normalizedMin = numberOrZero(min);
   const normalizedMax = numberOrZero(max);
 
@@ -1155,12 +1184,12 @@ function numberRange(min: unknown, max: unknown): { min: number; max: number } {
   };
 }
 
-function numberOrZero(value: unknown): number {
-  const parsed = typeof value === "number" ? value : Number(value);
+function numberOrZero(value: AggregateBound): number {
+  const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function boatAgeRange(yearRange: { min: number; max: number }): { min: number; max: number } {
+function boatAgeRange(yearRange: NumericRange): NumericRange {
   if (yearRange.min === 0 && yearRange.max === 0) return { min: 0, max: 0 };
 
   return {
