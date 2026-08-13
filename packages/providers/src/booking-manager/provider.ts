@@ -40,6 +40,8 @@ import { projectBookingManagerCatalogue } from "./projection";
 import { createBookingManagerQuoteService } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
 
+import type { JsonField } from "../shared/json";
+
 export interface BookingManagerProviderOptions {
   db: Database;
   config?: BookingManagerConfig;
@@ -133,7 +135,7 @@ export class BookingManagerInventoryProvider
     );
   }
 
-  createCatalogueSyncSource(options: { resume?: unknown }): CatalogueSyncSource {
+  createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return bookingManagerCatalogueSource(this.client, {
       resume: parseResume(options.resume),
     });
@@ -143,7 +145,7 @@ export class BookingManagerInventoryProvider
     return projectBookingManagerCatalogue(records);
   }
 
-  createAvailabilitySource(options: { resume?: unknown }): AvailabilitySource {
+  createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
     void options;
     const build = async (): Promise<AvailabilitySource> =>
       createBookingManagerAvailabilitySource({

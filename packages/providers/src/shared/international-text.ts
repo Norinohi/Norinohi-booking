@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { JsonField } from "./json";
+
 const TEXT_KEY_PATTERN = /^text([A-Za-z]{2})$/;
 
 // Three NauSYS keys are country codes whose BCP 47 language tag differs. SE is
@@ -28,7 +30,7 @@ const localeTextSchema = z.string().trim().min(1);
  * Missing, blank and non-string values are dropped rather than surfaced as
  * empty strings, so `pickText` can fall through to the next locale.
  */
-export function toLocaleMap(text: unknown): LocaleMap {
+export function toLocaleMap(text: JsonField): LocaleMap {
   const payload = internationalTextSchema.safeParse(text);
   if (!payload.success) {
     return {};
@@ -51,7 +53,7 @@ export function toLocaleMap(text: unknown): LocaleMap {
 }
 
 export function pickText(
-  text: unknown,
+  text: JsonField,
   locale: string,
   fallbackOrder: string[] = defaultFallbackOrder,
 ): string | null {

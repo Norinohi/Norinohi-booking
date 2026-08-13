@@ -44,6 +44,8 @@ import { projectNausysCatalogue } from "./projection";
 import { createNausysQuoteService } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
 
+import type { JsonField } from "../shared/json";
+
 export interface NausysProviderOptions {
   db: Database;
   config?: NausysConfig;
@@ -166,7 +168,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     );
   }
 
-  createCatalogueSyncSource(options: { resume?: unknown }): CatalogueSyncSource {
+  createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return nausysCatalogueSource(this.client, {
       resume: parseResume(options.resume),
     });
@@ -176,7 +178,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     return projectNausysCatalogue(records);
   }
 
-  createAvailabilitySource(options: { resume?: unknown }): AvailabilitySource {
+  createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
     const build = async (): Promise<AvailabilitySource> =>
       createNausysAvailabilitySource({
         client: this.client,

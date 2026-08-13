@@ -1,6 +1,8 @@
 import { assertRealClock, assertRealDate, pad, wallClockToInstant } from "../shared/dates";
 import { ContractError } from "../shared/errors";
 
+import type { JsonField } from "../shared/json";
+
 /**
  * MMK support confirmed (Aug 2026) the asymmetry: we must send `T` between date
  * and time, and the vendor answers with a space. Neither direction ever carries
@@ -14,7 +16,7 @@ const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
  * Ambiguous fall-back clocks resolve to the earlier instant - see
  * `wallClockToInstant`.
  */
-export function parseBookingManagerDateTime(value: unknown, timeZone: string): Date {
+export function parseBookingManagerDateTime(value: JsonField, timeZone: string): Date {
   if (typeof value !== "string") {
     throw new ContractError(
       `Expected a yyyy-MM-dd HH:mm:ss datetime string, received ${typeof value}`,
@@ -39,7 +41,7 @@ export function parseBookingManagerDateTime(value: unknown, timeZone: string): D
 }
 
 /** The calendar date only, as the vendor wrote it: `"2026-08-08 17:00:00"` -> `"2026-08-08"`. */
-export function parseBookingManagerDate(value: unknown): string {
+export function parseBookingManagerDate(value: JsonField): string {
   if (typeof value !== "string") {
     throw new ContractError(`Expected a yyyy-MM-dd date string, received ${typeof value}`);
   }
