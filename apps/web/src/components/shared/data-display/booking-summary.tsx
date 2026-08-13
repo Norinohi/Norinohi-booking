@@ -3,6 +3,7 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Select } from "@yacht-charter/ui/components/form/select";
+import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import {
@@ -234,6 +235,14 @@ export default function BookingSummary({
   };
 
   const peoplePercent = ((guests - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
+  /*
+   * A reprice keeps the previous quote on screen while the new one is in flight, so
+   * every amount below is stale until it lands. Headline figures become skeletons and
+   * the breakdown dims: without it a changed date looks like it did nothing.
+   */
+  const repricing = loading && quote !== null;
+  /* Never hand Pay Now a live link over a stale amount. */
+  const payNowReady = payNowHref !== undefined && !repricing;
 
   const base = quote?.lines.find((line) => line.kind === "base");
   const rawPct = quote
@@ -339,18 +348,26 @@ export default function BookingSummary({
                   <p className="text-sm leading-4.5 font-medium text-natural-500">
                     {t("sidebar.boatPrice")}
                   </p>
-                  <p className="text-2xl leading-8 font-semibold text-foreground">
-                    {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0)}
-                  </p>
+                  {repricing ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <p className="text-2xl leading-8 font-semibold text-foreground">
+                      {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0)}
+                    </p>
+                  )}
                 </div>
                 {quote.securityDeposit ? (
                   <div className="flex min-w-0 flex-1 flex-col gap-1 text-right">
                     <p className="text-sm leading-4.5 font-medium text-natural-500">
                       {t("sidebar.deposit")}
                     </p>
-                    <p className="text-2xl leading-8 font-semibold text-foreground">
-                      {money(quote.securityDeposit.amountMinor)}
-                    </p>
+                    {repricing ? (
+                      <Skeleton className="h-8 w-24 self-end" />
+                    ) : (
+                      <p className="text-2xl leading-8 font-semibold text-foreground">
+                        {money(quote.securityDeposit.amountMinor)}
+                      </p>
+                    )}
                     <Tooltip>
                       <TooltipTrigger
                         render={
@@ -383,9 +400,11 @@ export default function BookingSummary({
                 <div
                   key={group}
                   className={cn(
-                    "flex w-full flex-col py-4",
+                    "flex w-full flex-col py-4 transition-opacity",
                     shaded && "border-b border-border bg-natural-50",
+                    repricing && "opacity-40",
                   )}
+                  aria-busy={repricing}
                 >
                   <PriceGroup labelKey={labelKey} lines={lines} />
                 </div>
@@ -393,7 +412,9 @@ export default function BookingSummary({
             })}
 
             {quote.paymentSchedule.length ? (
-              <PaymentSchedule entries={quote.paymentSchedule} />
+              <div className={cn("transition-opacity", repricing && "opacity-40")}>
+                <PaymentSchedule entries={quote.paymentSchedule} />
+              </div>
             ) : null}
 
             <Separator />
@@ -402,9 +423,13 @@ export default function BookingSummary({
               <p className="text-sm leading-4.5 font-medium text-natural-500">
                 {t("sidebar.totalPrice")}
               </p>
-              <p className="text-[32px] leading-9 font-bold text-foreground">
-                {money(quote.total.amountMinor)}
-              </p>
+              {repricing ? (
+                <Skeleton className="h-9 w-32" />
+              ) : (
+                <p className="text-[32px] leading-9 font-bold text-foreground">
+                  {money(quote.total.amountMinor)}
+                </p>
+              )}
               {quote.perPerson ? (
                 <p className="text-sm leading-4.5 font-medium text-natural-500">
                   {tCard("perPersonApprox", { price: money(quote.perPerson.amountMinor) })}
@@ -419,17 +444,21 @@ export default function BookingSummary({
                 <p className="text-sm leading-4.5 font-medium text-natural-500">
                   {t("sidebar.dueNow")}
                 </p>
-                <p className="text-[42px] leading-14 font-bold text-foreground">
-                  {money(quote.deposit.amountMinor)}
-                </p>
+                {repricing ? (
+                  <Skeleton className="h-14 w-40" />
+                ) : (
+                  <p className="text-[42px] leading-14 font-bold text-foreground">
+                    {money(quote.deposit.amountMinor)}
+                  </p>
+                )}
               </div>
               {actions ? (
                 <>
                   <Button
                     variant="brand"
-                    disabled={!payNowHref}
-                    nativeButton={payNowHref ? false : undefined}
-                    render={payNowHref ? <Link href={payNowHref} /> : undefined}
+                    disabled={!payNowReady}
+                    nativeButton={payNowReady ? false : undefined}
+                    render={payNowReady ? <Link href={payNowHref} /> : undefined}
                   >
                     {t("sidebar.payNowCta", { amount: money(quote.deposit.amountMinor) })}
                   </Button>
