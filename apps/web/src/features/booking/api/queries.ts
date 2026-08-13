@@ -21,13 +21,17 @@ export const repriceMutationOptions = () => orpc.availability.reprice.mutationOp
 
 export type CalendarInput = Parameters<AppRouterClient["availability"]["calendar"]>[0];
 
-/*
- * The week-slot calendar behind the sidebar's date control. Charters sell in fixed weekly slots
- * (Sat→Sat), so the date field offers whole available weeks rather than a free range — a range the
- * provider cannot honour just fails the quote with "slot not available".
- */
+/** The enumerated slot list. Still read by callers that want the periods we pre-cut. */
 export const availabilityCalendarQueryOptions = (input: CalendarInput) =>
   orpc.availability.calendar.queryOptions({ input });
+
+/*
+ * What the listing will actually sell, as constraints. The sidebar's calendar decides from these
+ * rather than from the enumerated slots, which are a lossy projection of the same rules: a listing
+ * that sells any three nights from any day is enumerated as three-night blocks once a week.
+ */
+export const availabilityConstraintsQueryOptions = (input: CalendarInput) =>
+  orpc.availability.constraints.queryOptions({ input });
 
 /*
  * Confirm Booking. Re-validates the quote, records the guest and consents, and holds the provider

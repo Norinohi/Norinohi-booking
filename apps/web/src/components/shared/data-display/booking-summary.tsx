@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import type { CharterConstraints } from "@yacht-charter/api/lib/availability-rules";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
@@ -24,6 +25,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import { Image } from "@/components/shared/data-display/image";
+import CharterDateField, { type CharterPeriod } from "@/components/shared/form/charter-date-field";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 import { dayToDisplay } from "@/lib/date";
@@ -31,22 +33,6 @@ import { dayToDisplay } from "@/lib/date";
 import type { Quote, QuoteLine } from "@/features/booking/api/queries";
 
 export type CrewType = NonNullable<Quote["crewType"]>;
-/** `priceMinor` is null when no seasonal price covers the period; the quote prices it on selection. */
-export type WeekSlot = {
-  checkIn: string;
-  checkOut: string;
-  priceMinor: number | null;
-  /** False for a synthesized slot, or for one a live quote has since refused. */
-  bookable: boolean;
-};
-
-/**
- * A listing can offer several durations from the same check-in day, so the period,
- * not the start date, is what identifies a slot in the picker.
- */
-export function slotKey(slot: { checkIn: string; checkOut: string }) {
-  return `${slot.checkIn}_${slot.checkOut}`;
-}
 
 /** Quote line `group` → the sidebar section it renders under (i18n key on `sidebar.groups`). */
 const GROUPS = [
@@ -74,9 +60,9 @@ export type BookingSummaryProps = {
   loading?: boolean;
   stats?: { booked: number; viewed: number } | null;
 
-  slots: readonly WeekSlot[];
-  selectedSlot: { checkIn: string; checkOut: string } | undefined;
-  onSlotChange: (key: string) => void;
+  constraints: CharterConstraints;
+  selectedPeriod: CharterPeriod | undefined;
+  onPeriodSelect: (period: CharterPeriod) => void;
   /** The provider refused the last pick — shown under the date control. */
   slotError?: boolean;
   crewType: CrewType | undefined;
@@ -207,9 +193,9 @@ export default function BookingSummary({
   quote,
   loading = false,
   stats,
-  slots,
-  selectedSlot,
-  onSlotChange,
+  constraints,
+  selectedPeriod,
+  onPeriodSelect,
   slotError = false,
   crewType,
   crewOptions,
@@ -226,14 +212,6 @@ export default function BookingSummary({
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
   const money = useMoney();
-  const format = useFormatter();
-  const slotDay = (date: string) =>
-    format.dateTime(dayToDisplay(date), { day: "numeric", month: "short", timeZone: "UTC" });
-  const slotLabel = (slot: WeekSlot) => {
-    const period = `${slotDay(slot.checkIn)} – ${slotDay(slot.checkOut)}`;
-    return slot.priceMinor === null ? period : `${period} · ${money(slot.priceMinor)}`;
-  };
-
   const peoplePercent = ((guests - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
   /*
    * A reprice keeps the previous quote on screen while the new one is in flight, so
@@ -274,18 +252,13 @@ export default function BookingSummary({
             </div>
           ) : null}
 
-          <Select
-            className="h-12"
-            options={slots.map((slot) => ({
-              value: slotKey(slot),
-              label: slotLabel(slot),
-              disabled: !slot.bookable,
-            }))}
-            value={selectedSlot ? slotKey(selectedSlot) : ""}
-            onValueChange={onSlotChange}
+          <CharterDateField
+            constraints={constraints}
+            value={selectedPeriod}
+            onSelect={onPeriodSelect}
             disabled={unavailable}
             placeholder={t("sidebar.datesPlaceholder")}
-            emptyLabel={t("sidebar.selectDates")}
+            triggerClassName="h-12"
           />
           {slotError ? (
             <p className="text-sm font-medium text-error-600">{t("sidebar.slotRefused")}</p>

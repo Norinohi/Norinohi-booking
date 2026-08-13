@@ -24,13 +24,13 @@ export default function BookingSidebar({
     slug,
     listing,
     quote,
-    slots,
+    constraints,
     crewType,
     crewOptions,
     guests,
     isPending,
     slotError,
-    selectSlot,
+    selectPeriod,
     setCrew,
     setGuests,
   } = useBooking();
@@ -56,9 +56,9 @@ export default function BookingSidebar({
               }
             : null
         }
-        slots={slots}
-        selectedSlot={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
-        onSlotChange={selectSlot}
+        constraints={constraints}
+        selectedPeriod={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
+        onPeriodSelect={selectPeriod}
         slotError={slotError}
         crewType={crewType}
         crewOptions={crewOptions}

@@ -22,6 +22,11 @@ type CommonProps = {
   clearLabel?: string;
   /** Lets the trigger hug and grow with its label instead of truncating it. */
   hugContent?: boolean;
+  /** Greys out days the caller will not accept; re-read on every render, so it may depend on `value`. */
+  disabled?: (date: Date) => boolean;
+  /** Controls the calendar popup; pair with `onOpenChange`. Omit both to leave it uncontrolled. */
+  open?: boolean;
+  onOpenChange?: (next: boolean) => void;
   className?: string;
   triggerClassName?: string;
   contentClassName?: string;
@@ -45,6 +50,9 @@ export default function DatePicker({
   placeholder,
   clearLabel,
   hugContent,
+  disabled,
+  open,
+  onOpenChange,
   className,
   triggerClassName,
   contentClassName,
@@ -73,7 +81,7 @@ export default function DatePicker({
 
   return (
     <div className={cn("relative", className)}>
-      <Popover>
+      <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger className={cn(TRIGGER, triggerClassName)}>
           <CalendarIcon className="size-6 shrink-0 text-foreground" />
           <span
@@ -99,6 +107,7 @@ export default function DatePicker({
               className="w-full"
               mode="range"
               locale={locale}
+              disabled={disabled}
               selected={props.value}
               onSelect={props.onValueChange}
             />
@@ -106,6 +115,7 @@ export default function DatePicker({
             <Calendar
               className="w-full"
               locale={locale}
+              disabled={disabled}
               selected={props.value}
               onSelect={props.onValueChange}
             />
