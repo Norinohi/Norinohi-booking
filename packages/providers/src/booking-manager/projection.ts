@@ -3,10 +3,19 @@ import type { z } from "zod";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
+  currencyOf,
+  idOf,
+  intOf,
+  numberOf,
+  parseAll,
+  positiveInt,
+  slugify,
+  text,
+} from "../shared/projection-helpers";
+import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
   type ProviderRecordSet,
-  type ProviderResourceType,
 } from "../types";
 import {
   restBaseSchema,
@@ -29,8 +38,6 @@ import {
  */
 
 const PROVIDER_PREFIX = "booking_manager";
-
-const FALLBACK_CURRENCY = "EUR";
 
 /**
  * Booking Manager returns one language per request and the catalogue sync asks
@@ -119,9 +126,12 @@ export function projectBookingManagerCatalogue(records: ProviderRecordSet): Cano
       return {
         externalId: String(item.id),
         name,
-        // Vendor-id suffixed: two companies of the same name are two operators, and
-        // a slug is the only unique key the operator table offers.
-        slug: `${slugify(name)}-${item.id}`,
+        // Provider-namespaced and vendor-id suffixed: two companies of the same
+        // name are two operators, and a slug is the only unique key the operator
+        // table offers. The provider prefix matters because the two vendors number
+        // their companies independently, so `sunsail-1234` from each would
+        // otherwise be one row that each sync overwrote with its own details.
+        slug: `${PROVIDER_PREFIX}-${slugify(name)}-${item.id}`,
         country: text(item.country),
         city: text(item.city),
         email: text(item.email),
@@ -549,58 +559,10 @@ function weekdayOf(value: unknown): number | undefined {
 
 /* ----------------------------------------------------------------- helpers */
 
-function parseAll<TSchema extends z.ZodType>(
-  records: ProviderRecordSet,
-  resourceType: ProviderResourceType,
-  schema: TSchema,
-): z.infer<TSchema>[] {
-  const parsed: z.infer<TSchema>[] = [];
-  for (const entry of records.get(resourceType) ?? []) {
-    const result = schema.safeParse(entry.payload);
-    // One unparseable record is dropped rather than thrown: it is already retained
-    // raw, and the run is worth more than the row.
-    if (result.success) parsed.push(result.data);
-  }
-  return parsed;
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function text(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
 /** Turnaround times stay wall-clock strings; only the shape is checked. */
 function clockTime(value: unknown): string | undefined {
   const raw = text(value);
   return raw !== undefined && /^\d{1,2}:\d{2}(:\d{2})?$/.test(raw) ? raw : undefined;
-}
-
-function idOf(value: unknown): string | null {
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value === "string" && value.trim() !== "") return value.trim();
-  return null;
-}
-
-function numberOf(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function intOf(value: unknown): number | undefined {
-  const parsed = numberOf(value);
-  return parsed === undefined ? undefined : Math.round(parsed);
-}
-
-function positiveInt(value: unknown): number | undefined {
-  const parsed = intOf(value);
-  return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
 /** Zero is how the vendor writes a tank it has not measured. */
@@ -624,11 +586,6 @@ function countryCodeOf(country: RestCountry): string {
   return short !== undefined && short.length <= 3
     ? short.toUpperCase()
     : `${PROVIDER_PREFIX}-${country.id}`;
-}
-
-function currencyOf(value: unknown): string {
-  const code = text(value);
-  return code && code.length === 3 ? code.toUpperCase() : FALLBACK_CURRENCY;
 }
 
 /**

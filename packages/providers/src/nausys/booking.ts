@@ -7,7 +7,11 @@ import { formatNausysDate, parseNausysDate, parseNausysDateTime } from "../share
 import { ContractError } from "../shared/errors";
 import { decimalStringToMinor } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
-import { recordReservationEvent, type ReservationEventKind } from "../shared/reservation-log";
+import {
+  createReservationEventRecorder,
+  type ReservationEventKind,
+  type ReservationEventRecorder,
+} from "../shared/reservation-log";
 import {
   bookingDraftSchema,
   providerExtrasMutationSchema,
@@ -38,16 +42,6 @@ const PROVIDER = "nausys" as const;
  * second endpoint in play.
  */
 export type VerifyPrice = (draft: BookingDraft) => Promise<string>;
-
-export interface ReservationEventInput {
-  /** Our quote id; `booking.quote_id` is what ties an event back to a booking. */
-  quoteId: string;
-  kind: ReservationEventKind;
-  providerReference?: string | null;
-  payload?: unknown;
-}
-
-export type ReservationEventRecorder = (event: ReservationEventInput) => Promise<void>;
 
 /**
  * Receives every refreshed uuid. `addOrUpdateExtras` returns a `ProviderQuote`,
@@ -111,7 +105,7 @@ const OPENS_RESERVATION = "opens-reservation" as const;
 
 export function createNausysBookingService(deps: NausysBookingServiceDeps): NausysBookingService {
   const { client, resolver, config, db, verifyPrice } = deps;
-  const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db);
+  const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const persistSecurityToken = deps.persistSecurityToken ?? createSecurityTokenSink(db);
 
   /**
@@ -640,33 +634,6 @@ async function quoteIdForReservation(
     .limit(1);
 
   return row?.quoteId ?? null;
-}
-
-/**
- * `provider_reservation_event` is keyed by booking, and a `BookingDraft` carries
- * the quote instead. For NauSYS `freeYachts` produces no provider quote id, so
- * `draft.quoteId` is always ours and the join is exact.
- */
-export function createReservationEventRecorder(db: Database): ReservationEventRecorder {
-  return async ({ quoteId, kind, providerReference, payload }) => {
-    const [row] = await db
-      .select({ id: booking.id })
-      .from(booking)
-      .where(eq(booking.quoteId, quoteId))
-      .limit(1);
-
-    // Reconciliation and admin tooling can drive these calls with no booking
-    // behind them; that is not a reason to fail the provider call.
-    if (!row) return;
-
-    await recordReservationEvent(db, {
-      bookingId: row.id,
-      kind,
-      provider: PROVIDER,
-      providerReference,
-      payload,
-    });
-  };
 }
 
 export function createSecurityTokenSink(db: Database): SecurityTokenSink {

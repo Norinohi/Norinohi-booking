@@ -77,7 +77,10 @@ describe("projectNausysCatalogue", () => {
     expect(catalogue.countries[0]).toMatchObject({ code: "HR", name: "Croatia" });
     expect(catalogue.operators[0]).toMatchObject({
       externalId: "102701",
-      slug: "test-charter-company-102701",
+      // Provider-prefixed: the two vendors number their companies independently,
+      // so an unprefixed `slug-1234` would collide with Booking Manager's company
+      // 1234 and collapse two operators into one row.
+      slug: "nausys-test-charter-company-102701",
       country: "Croatia",
       city: "Zagreb",
     });

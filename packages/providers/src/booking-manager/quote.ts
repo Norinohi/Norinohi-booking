@@ -1,6 +1,6 @@
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
-import { currencyExponent, decimalStringToMinor } from "../shared/money";
+import { toPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
   providerQuoteSchema,
@@ -13,6 +13,7 @@ import {
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
+import { numberToMinor } from "./money";
 import {
   bookingManagerEndpoints,
   restOfferListSchema,
@@ -69,7 +70,10 @@ export function createBookingManagerQuoteService(
     async getBookingManagerQuote(input: QuoteRequest): Promise<ProviderQuote> {
       const parsed = quoteRequestSchema.parse(input);
       const ref = await resolver.toExternalListing(parsed.listingId);
-      const yachtId = toNumericYachtId(ref.externalYachtId);
+      const yachtId = toPositiveIntId(ref.externalYachtId, {
+        provider: "Booking Manager",
+        what: "the yacht id",
+      });
       const productName = parsed.crewType ? options.productNameFor?.(parsed.crewType) : undefined;
 
       const offers = await client.get(bookingManagerEndpoints.offers, restOfferListSchema, {
@@ -402,31 +406,6 @@ function toPaymentPolicy(
     },
     depositMinor,
   };
-}
-
-function toNumericYachtId(externalYachtId: string): number {
-  const yachtId = Number(externalYachtId);
-  if (!Number.isSafeInteger(yachtId) || yachtId <= 0) {
-    throw new ContractError(
-      `Booking Manager yacht id is not a positive integer: ${JSON.stringify(externalYachtId)}`,
-    );
-  }
-  return yachtId;
-}
-
-/**
- * Booking Manager ships money as JSON numbers, which are binary floats: 1234.35
- * is already not exactly 1234.35 by the time Zod has it. Pinning the precision at
- * the currency's own exponent is the only honest place to collapse that, and the
- * decimal string then goes through the shared converter like every other adapter.
- */
-function numberToMinor(value: number, currency: string, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new ContractError(
-      `Booking Manager ${field} is not a finite number: ${JSON.stringify(value)}`,
-    );
-  }
-  return decimalStringToMinor(value.toFixed(currencyExponent(currency)), currency);
 }
 
 /**

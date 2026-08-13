@@ -1,10 +1,9 @@
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import { ContractError } from "../shared/errors";
-import { currencyExponent, decimalStringToMinor } from "../shared/money";
 import type { SeasonalPrice } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
+import { numberToMinor } from "./money";
 import { bookingManagerEndpoints, restPriceListSchema, type RestPrice } from "./endpoints";
 
 /**
@@ -189,18 +188,4 @@ export function charterSaturdays(years: number[]): string[] {
 
 function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
-}
-
-/**
- * Booking Manager ships money as JSON numbers, which are binary floats. Pinned to
- * the currency's own exponent before the shared string converter sees it, exactly
- * as `quote.ts` does; the two must agree or a slot and its quote disagree by a cent.
- */
-function numberToMinor(value: number, currency: string, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new ContractError(
-      `Booking Manager ${field} is not a finite number: ${JSON.stringify(value)}`,
-    );
-  }
-  return decimalStringToMinor(value.toFixed(currencyExponent(currency)), currency);
 }

@@ -1,5 +1,5 @@
+import { assertRealClock, assertRealDate, pad, wallClockToInstant } from "../shared/dates";
 import { ContractError } from "../shared/errors";
-import { wallClockToInstant } from "../shared/dates";
 
 /**
  * MMK support confirmed (Aug 2026) the asymmetry: we must send `T` between date
@@ -8,20 +8,6 @@ import { wallClockToInstant } from "../shared/dates";
  */
 const BM_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-function pad(value: number, length: number): string {
-  return value.toString().padStart(length, "0");
-}
-
-function assertRealDate(year: number, month: number, day: number, raw: string): void {
-  if (month < 1 || month > 12 || day < 1) {
-    throw new ContractError(`Malformed date: ${JSON.stringify(raw)}`);
-  }
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  if (day > daysInMonth) {
-    throw new ContractError(`Malformed date: ${JSON.stringify(raw)}`);
-  }
-}
 
 /**
  * Reads `"2026-08-08 17:00:00"` (the response shape) or the `T` variant we send.
@@ -39,14 +25,12 @@ export function parseBookingManagerDateTime(value: unknown, timeZone: string): D
     throw new ContractError(`Malformed datetime: ${JSON.stringify(value)}`);
   }
   const [, year = "", month = "", day = "", hour = "", minute = "", second = "0"] = match;
-  assertRealDate(Number(year), Number(month), Number(day), value);
+  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, value);
 
   const hours = Number(hour);
   const minutes = Number(minute);
   const seconds = Number(second);
-  if (hours > 23 || minutes > 59 || seconds > 59) {
-    throw new ContractError(`Malformed datetime: ${JSON.stringify(value)}`);
-  }
+  assertRealClock({ hours, minutes, seconds }, `Malformed datetime: ${JSON.stringify(value)}`);
 
   return wallClockToInstant(
     { year: Number(year), month: Number(month), day: Number(day), hours, minutes, seconds },
@@ -65,7 +49,7 @@ export function parseBookingManagerDate(value: unknown): string {
     throw new ContractError(`Malformed date: ${JSON.stringify(value)}`);
   }
   const [, year = "", month = "", day = ""] = match;
-  assertRealDate(Number(year), Number(month), Number(day), value);
+  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, value);
   return `${year}-${month}-${day}`;
 }
 
@@ -86,15 +70,16 @@ export function formatBookingManagerDateTime(date: string, time = "00:00:00"): s
     throw new ContractError(`Malformed ISO date: ${JSON.stringify(date)}`);
   }
   const [, year = "", month = "", day = ""] = match;
-  assertRealDate(Number(year), Number(month), Number(day), date);
+  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, date);
 
   const timeMatch = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(time.trim());
   if (!timeMatch) {
     throw new ContractError(`Malformed time: ${JSON.stringify(time)}`);
   }
   const [, hour = "", minute = "", second = "00"] = timeMatch;
-  if (Number(hour) > 23 || Number(minute) > 59 || Number(second) > 59) {
-    throw new ContractError(`Malformed time: ${JSON.stringify(time)}`);
-  }
+  assertRealClock(
+    { hours: Number(hour), minutes: Number(minute), seconds: Number(second) },
+    `Malformed time: ${JSON.stringify(time)}`,
+  );
   return `${year}-${month}-${day}T${hour}:${minute}:${pad(Number(second), 2)}`;
 }

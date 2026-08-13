@@ -4,6 +4,7 @@ import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { decimalStringToMinor } from "../shared/money";
+import { toPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
   providerQuoteSchema,
@@ -137,7 +138,10 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
     async getNausysQuote(input: QuoteRequest): Promise<ProviderQuote> {
       const parsed = quoteRequestSchema.parse(input);
       const ref = await resolver.toExternalListing(parsed.listingId);
-      const yachtId = toNumericYachtId(ref.externalYachtId);
+      const yachtId = toPositiveIntId(ref.externalYachtId, {
+        provider: "NauSYS",
+        what: "the yacht id",
+      });
 
       const yacht = await readFreeYacht(
         yachtId,
@@ -458,16 +462,6 @@ function assertEchoedPeriod(yacht: RestFreeYacht, checkIn: string, checkOut: str
       { endpoint: nausysEndpoints.availability.freeYachts },
     );
   }
-}
-
-function toNumericYachtId(externalYachtId: string): number {
-  const yachtId = Number(externalYachtId);
-  if (!Number.isSafeInteger(yachtId) || yachtId <= 0) {
-    throw new ContractError(
-      `NauSYS yacht id is not a positive integer: ${JSON.stringify(externalYachtId)}`,
-    );
-  }
-  return yachtId;
 }
 
 /**

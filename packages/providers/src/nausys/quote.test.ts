@@ -65,6 +65,7 @@ function firstYacht(body: FreeYachtsResponse) {
 
 function resolverFor(externalYachtId: string): CatalogueResolver {
   return {
+    providerId: () => Promise.resolve("prv_nausys"),
     toExternalListing: () =>
       Promise.resolve({
         externalYachtId,

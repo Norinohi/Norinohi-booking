@@ -32,6 +32,11 @@ export type ExternalListingRef = {
  * by matching fixture id suffixes, which is why only the real adapters take a db.
  */
 export interface CatalogueResolver {
+  /**
+   * Our `provider` row id for this adapter. Exposed so every caller classifies a
+   * missing provider row the same way; three private copies used to disagree.
+   */
+  providerId(): Promise<string>;
   toExternalListing(listingId: string): Promise<ExternalListingRef>;
   toListingId(externalYachtId: string): Promise<string | null>;
   /** Maps our amenity codes to the provider's service/equipment ids for extras. */
@@ -113,6 +118,8 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
   }
 
   return {
+    providerId,
+
     async toExternalListing(listingId) {
       const [row] = await db
         .select({

@@ -371,13 +371,12 @@ export async function writeCanonicalCatalogue(
       await db.update(listing).set(columns).where(eq(listing.id, listingId));
       summary.listingsUpdated += 1;
     } else {
-      const slug = await uniqueSlug(db, item.slug);
-      const [created] = await db
-        .insert(listing)
+      const created = await insertListingWithFreeSlug(db, item.slug, {
+        ...columns,
         // Draft unless the provider is explicitly trusted: thousands of unreviewed
         // yachts must not go live on the first run of a new connector.
-        .values({ ...columns, slug, status: options.autoPublish ? "published" : "draft" })
-        .returning({ id: listing.id });
+        status: options.autoPublish ? "published" : "draft",
+      });
       if (!created) {
         summary.listingsSkipped += 1;
         continue;
@@ -443,24 +442,32 @@ function slugify(value: string): string {
 }
 
 /*
- * Region, location, base, model and amenity_category have no unique constraint to
- * conflict on, so each is resolved by select-then-insert against its natural key.
- * Adding those constraints is a migration in someone else's package.
+ * Region, location, base, model and amenity_category are resolved by their natural
+ * key rather than by a provider-scoped id, because two providers describing the
+ * same marina must land on one row.
+ *
+ * Each insert names its conflict target and re-selects on a no-op conflict rather
+ * than reading first. The read-then-insert this replaces raced: with two providers
+ * importing the same geography, both missed and both inserted, and the duplicate
+ * was invisible - half a fleet hanging off one `base` row and half off its twin.
+ * `yacht_model` mattered most, because cross-provider duplicate detection joins on
+ * `model_id` and a split model silently stops proposing merges.
  */
 
 async function ensureRegion(db: Database, countryId: string, name: string): Promise<string | null> {
+  const [created] = await db
+    .insert(region)
+    .values({ countryId, name })
+    .onConflictDoNothing({ target: [region.countryId, region.name] })
+    .returning({ id: region.id });
+  if (created) return created.id;
+
   const [found] = await db
     .select({ id: region.id })
     .from(region)
     .where(and(eq(region.countryId, countryId), eq(region.name, name)))
     .limit(1);
-  if (found) return found.id;
-
-  const [created] = await db
-    .insert(region)
-    .values({ countryId, name })
-    .returning({ id: region.id });
-  return created?.id ?? null;
+  return found?.id ?? null;
 }
 
 async function ensureLocation(
@@ -468,34 +475,30 @@ async function ensureLocation(
   regionId: string,
   name: string,
 ): Promise<string | null> {
+  const [created] = await db
+    .insert(location)
+    .values({ regionId, name })
+    .onConflictDoNothing({ target: [location.regionId, location.name] })
+    .returning({ id: location.id });
+  if (created) return created.id;
+
   const [found] = await db
     .select({ id: location.id })
     .from(location)
     .where(and(eq(location.regionId, regionId), eq(location.name, name)))
     .limit(1);
-  if (found) return found.id;
-
-  const [created] = await db
-    .insert(location)
-    .values({ regionId, name })
-    .returning({ id: location.id });
-  return created?.id ?? null;
+  return found?.id ?? null;
 }
 
 async function ensureBase(db: Database, values: typeof base.$inferInsert): Promise<string | null> {
-  const [found] = await db
-    .select({ id: base.id })
-    .from(base)
-    .where(and(eq(base.locationId, values.locationId), eq(base.name, values.name)))
-    .limit(1);
-
-  if (found) {
-    await db.update(base).set(values).where(eq(base.id, found.id));
-    return found.id;
-  }
-
-  const [created] = await db.insert(base).values(values).returning({ id: base.id });
-  return created?.id ?? null;
+  // Updates on conflict, unlike its siblings, because a base carries mutable
+  // detail (coordinates, contact, handover times) rather than only a name.
+  const [upserted] = await db
+    .insert(base)
+    .values(values)
+    .onConflictDoUpdate({ target: [base.locationId, base.name], set: values })
+    .returning({ id: base.id });
+  return upserted?.id ?? null;
 }
 
 async function ensureModel(
@@ -503,6 +506,20 @@ async function ensureModel(
   builderId: string | null,
   name: string,
 ): Promise<string | null> {
+  // Two constraints back this: the composite, and a partial index covering the
+  // unattributed case, because Postgres treats NULL builder ids as distinct and
+  // the composite alone would let those duplicate freely.
+  const [created] = await db
+    .insert(yachtModel)
+    .values({ builderId, name })
+    .onConflictDoNothing(
+      builderId === null
+        ? { target: yachtModel.name, where: isNull(yachtModel.builderId) }
+        : { target: [yachtModel.builderId, yachtModel.name] },
+    )
+    .returning({ id: yachtModel.id });
+  if (created) return created.id;
+
   const [found] = await db
     .select({ id: yachtModel.id })
     .from(yachtModel)
@@ -513,43 +530,56 @@ async function ensureModel(
       ),
     )
     .limit(1);
-  if (found) return found.id;
-
-  const [created] = await db
-    .insert(yachtModel)
-    .values({ builderId, name })
-    .returning({ id: yachtModel.id });
-  return created?.id ?? null;
+  return found?.id ?? null;
 }
 
 async function ensureAmenityCategory(db: Database, name: string): Promise<string | null> {
+  const [created] = await db
+    .insert(amenityCategory)
+    .values({ name })
+    .onConflictDoNothing({ target: amenityCategory.name })
+    .returning({ id: amenityCategory.id });
+  if (created) return created.id;
+
   const [found] = await db
     .select({ id: amenityCategory.id })
     .from(amenityCategory)
     .where(eq(amenityCategory.name, name))
     .limit(1);
-  if (found) return found.id;
-
-  const [created] = await db
-    .insert(amenityCategory)
-    .values({ name })
-    .returning({ id: amenityCategory.id });
-  return created?.id ?? null;
+  return found?.id ?? null;
 }
 
-/** Two providers can both mint `bora-2019`; the first one there keeps it. */
-async function uniqueSlug(db: Database, candidate: string): Promise<string> {
+/**
+ * Two providers can both mint `bora-2019`; the first one there keeps it.
+ *
+ * The insert is part of the search rather than a step after it. `listing.slug` is
+ * unique, so checking and then inserting is a race, and losing it used to raise
+ * out of the per-listing loop and fail the entire projection over one collision.
+ * Here a taken slug is just the signal to try the next suffix.
+ */
+async function insertListingWithFreeSlug(
+  db: Database,
+  candidate: string,
+  columns: Omit<typeof listing.$inferInsert, "slug">,
+): Promise<{ id: string } | null> {
   const seed = candidate === "" ? "listing" : candidate;
+
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const slug = attempt === 0 ? seed : `${seed}-${attempt + 1}`;
-    const [taken] = await db
-      .select({ id: listing.id })
-      .from(listing)
-      .where(eq(listing.slug, slug))
-      .limit(1);
-    if (!taken) return slug;
+    const [created] = await db
+      .insert(listing)
+      .values({ ...columns, slug })
+      .onConflictDoNothing({ target: listing.slug })
+      .returning({ id: listing.id });
+    if (created) return created;
   }
-  return `${seed}-${Date.now()}`;
+
+  const [fallback] = await db
+    .insert(listing)
+    .values({ ...columns, slug: `${seed}-${Date.now()}` })
+    .onConflictDoNothing({ target: listing.slug })
+    .returning({ id: listing.id });
+  return fallback ?? null;
 }
 
 async function loadYachtRecordIds(db: Database, providerId: string) {

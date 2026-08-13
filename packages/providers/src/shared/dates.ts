@@ -11,7 +11,7 @@ export interface DateParts {
   day: number;
 }
 
-function assertRealDate(parts: DateParts, raw: string): void {
+export function assertRealDate(parts: DateParts, raw: string): void {
   const { year, month, day } = parts;
   if (month < 1 || month > 12 || day < 1) {
     throw new ContractError(`Malformed date: ${JSON.stringify(raw)}`);
@@ -22,8 +22,21 @@ function assertRealDate(parts: DateParts, raw: string): void {
   }
 }
 
-function pad(value: number, length: number): string {
+export function pad(value: number, length: number): string {
   return value.toString().padStart(length, "0");
+}
+
+export interface ClockParts {
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+/** The message differs per call site, so the caller owns it. */
+export function assertRealClock(parts: ClockParts, message: string): void {
+  if (parts.hours > 23 || parts.minutes > 59 || parts.seconds > 59) {
+    throw new ContractError(message);
+  }
 }
 
 function readNausysDateParts(value: unknown, raw: string): DateParts {
@@ -180,9 +193,7 @@ export function parseNausysDateTime(value: string, timeZone: string): Date {
   const hours = Number(hour);
   const minutes = Number(minute);
   const seconds = Number(second);
-  if (hours > 23 || minutes > 59 || seconds > 59) {
-    throw new ContractError(`Malformed datetime: ${JSON.stringify(value)}`);
-  }
+  assertRealClock({ hours, minutes, seconds }, `Malformed datetime: ${JSON.stringify(value)}`);
 
   return wallClockToInstant({ ...parts, hours, minutes, seconds }, timeZone);
 }

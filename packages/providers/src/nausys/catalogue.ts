@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { AuthError, ContractError } from "../shared/errors";
+import { idOf, objectsOf } from "../shared/projection-helpers";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
 import type { NausysClient } from "./client";
@@ -350,13 +351,6 @@ function isFatal(error: unknown): boolean {
   return error instanceof AuthError || error instanceof ContractError;
 }
 
-/** Vendor ids are numeric; everything downstream keys on the string form. */
-function idOf(value: unknown): string | null {
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value === "string" && value.trim() !== "") return value.trim();
-  return null;
-}
-
 function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<string, unknown>[] {
   const body = dump as Record<string, unknown>;
 
@@ -377,11 +371,4 @@ function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<stri
     endpoint,
     payload: { keys: Object.keys(body) },
   });
-}
-
-function objectsOf(items: unknown[]): Record<string, unknown>[] {
-  return items.filter(
-    (item): item is Record<string, unknown> =>
-      typeof item === "object" && item !== null && !Array.isArray(item),
-  );
 }

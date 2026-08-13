@@ -5,11 +5,11 @@ import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, NotFoundError } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
 import type { BookingDraft } from "../types";
+import type { QuoteReservationEventInput } from "../shared/reservation-log";
 import {
   createNausysBookingService,
   splitCustomerName,
   type NausysBookingServiceDeps,
-  type ReservationEventInput,
 } from "./booking";
 import { NausysClient } from "./client";
 import type { NausysConfig } from "./config";
@@ -60,6 +60,7 @@ const heldDraft: BookingDraft = {
 
 function fakeResolver(): CatalogueResolver {
   return {
+    providerId: () => Promise.resolve("prv_nausys"),
     toExternalListing: () =>
       Promise.resolve({
         externalYachtId: "4711001",
@@ -116,7 +117,7 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
     retry: { maxAttempts: 1 },
   });
 
-  const events: ReservationEventInput[] = [];
+  const events: QuoteReservationEventInput[] = [];
   const rotations: { providerReservationId: string; securityToken: string }[] = [];
   const { db } = fakeDb();
 

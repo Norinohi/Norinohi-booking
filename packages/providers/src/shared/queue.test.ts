@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SequentialQueue, sharedQueue } from "./queue";
+import { queueForInterval, SequentialQueue, sharedQueue } from "./queue";
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -109,5 +109,31 @@ describe("SequentialQueue", () => {
   it("exposes a module-scoped instance so separate providers still serialize", async () => {
     expect(sharedQueue).toBeInstanceOf(SequentialQueue);
     await expect(sharedQueue.run("shared-key", () => Promise.resolve("ok"))).resolves.toBe("ok");
+  });
+
+  it("pools one instance per interval and reuses it", () => {
+    expect(queueForInterval(0)).toBe(sharedQueue);
+    expect(queueForInterval(750)).toBe(queueForInterval(750));
+    expect(queueForInterval(750)).not.toBe(queueForInterval(900));
+  });
+
+  it("does not serialize two different keys against each other", async () => {
+    // The pooled instance is shared across providers, so this pins that the
+    // provider-namespaced keys still get independent lanes.
+    const queue = queueForInterval(400);
+    const finished: string[] = [];
+
+    const slow = queue.run("nausys:agency-user", async () => {
+      await delay(20);
+      finished.push("nausys");
+    });
+    const fast = queue.run("booking_manager:abc123", () => {
+      finished.push("booking_manager");
+      return Promise.resolve();
+    });
+
+    await Promise.all([slow, fast]);
+
+    expect(finished).toEqual(["booking_manager", "nausys"]);
   });
 });

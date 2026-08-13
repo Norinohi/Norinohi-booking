@@ -1,11 +1,14 @@
-import { booking } from "@yacht-charter/db/schema/booking";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError } from "../shared/errors";
-import { recordReservationEvent, type ReservationEventKind } from "../shared/reservation-log";
+import { toPositiveIntId } from "../shared/projection-helpers";
+import {
+  createReservationEventRecorder,
+  type ReservationEventKind,
+  type ReservationEventRecorder,
+} from "../shared/reservation-log";
 import {
   bookingDraftSchema,
   providerExtrasMutationSchema,
@@ -47,25 +50,13 @@ const cancelResponseSchema = z.union([restReservationSchema, z.null(), z.looseOb
  */
 export type VerifyPrice = (draft: BookingDraft) => Promise<string>;
 
-export interface BookingManagerReservationEventInput {
-  /** Our quote id; `booking.quote_id` is what ties an event back to a booking. */
-  quoteId: string;
-  kind: ReservationEventKind;
-  providerReference?: string | null;
-  payload?: unknown;
-}
-
-export type BookingManagerReservationEventRecorder = (
-  event: BookingManagerReservationEventInput,
-) => Promise<void>;
-
 export interface BookingManagerBookingServiceDeps {
   client: BookingManagerClient;
   resolver: CatalogueResolver;
   config: BookingManagerConfig;
   db: Database;
   verifyPrice: VerifyPrice;
-  recordEvent?: BookingManagerReservationEventRecorder;
+  recordEvent?: ReservationEventRecorder;
   /**
    * `BookingDraft` carries no currency, and the vendor prices per currency. This
    * is the account's billing currency; it must match what the quote was read in
@@ -99,7 +90,7 @@ export function createBookingManagerBookingService(
   deps: BookingManagerBookingServiceDeps,
 ): BookingManagerBookingService {
   const { client, resolver, config, db, verifyPrice } = deps;
-  const recordEvent = deps.recordEvent ?? createBookingManagerReservationEventRecorder(db);
+  const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const currency = deps.currency ?? "EUR";
   const sendNotification = deps.sendNotification ?? false;
 
@@ -114,7 +105,10 @@ export function createBookingManagerBookingService(
     status: number,
   ): Promise<Record<string, unknown>> {
     const ref = await resolver.toExternalListing(draft.listingId);
-    const yachtId = toNumericId(ref.externalYachtId, `listing ${draft.listingId}`);
+    const yachtId = toPositiveIntId(ref.externalYachtId, {
+      provider: "Booking Manager",
+      what: `listing ${draft.listingId}`,
+    });
     const baseId = ref.externalBaseId == null ? undefined : Number(ref.externalBaseId);
     const productName = draft.crewType ? deps.productNameFor?.(draft.crewType) : undefined;
     const clientId = deps.clientIdFor?.(draft);
@@ -192,7 +186,10 @@ export function createBookingManagerBookingService(
       );
     }
 
-    const id = toNumericId(parsed.reservation.providerReservationId, "reservation id");
+    const id = toPositiveIntId(parsed.reservation.providerReservationId, {
+      provider: "Booking Manager",
+      what: "reservation id",
+    });
     const endpoint = bookingManagerEndpoints.reservationById(id);
 
     const response = await client.put(endpoint, restReservationSchema, {
@@ -228,7 +225,10 @@ export function createBookingManagerBookingService(
    */
   async function cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
     const parsed = providerReservationRefSchema.parse(ref);
-    const id = toNumericId(parsed.providerReservationId, "reservation id");
+    const id = toPositiveIntId(parsed.providerReservationId, {
+      provider: "Booking Manager",
+      what: "reservation id",
+    });
     const endpoint = bookingManagerEndpoints.reservationById(id);
 
     const existing = await client.get(endpoint, restReservationSchema);
@@ -310,16 +310,6 @@ export function createBookingManagerBookingService(
 
 /* ------------------------------------------------------------------ internals */
 
-function toNumericId(value: string, what: string): number {
-  const id = Number(value);
-  if (!value || !Number.isSafeInteger(id) || id <= 0) {
-    throw new ContractError(
-      `Booking Manager needs a positive integer for ${what}, received ${JSON.stringify(value)}`,
-    );
-  }
-  return id;
-}
-
 /**
  * The vendor takes a single `clientName`, checkout collects a given name and an
  * optional family name.
@@ -369,34 +359,5 @@ function eventPayload(response: RestReservation): Record<string, unknown> {
     expirationDate: response.expirationDate,
     clientPrice: response.clientPrice,
     currency: response.currency,
-  };
-}
-
-/**
- * `provider_reservation_event` is keyed by booking and a `BookingDraft` carries
- * the quote instead. Booking Manager's `/offers` produces no provider quote id,
- * so `draft.quoteId` is always ours and the join is exact.
- */
-export function createBookingManagerReservationEventRecorder(
-  db: Database,
-): BookingManagerReservationEventRecorder {
-  return async ({ quoteId, kind, providerReference, payload }) => {
-    const [row] = await db
-      .select({ id: booking.id })
-      .from(booking)
-      .where(eq(booking.quoteId, quoteId))
-      .limit(1);
-
-    // Reconciliation and admin tooling can drive these calls with no booking
-    // behind them; that is not a reason to fail the provider call.
-    if (!row) return;
-
-    await recordReservationEvent(db, {
-      bookingId: row.id,
-      kind,
-      provider: PROVIDER,
-      providerReference,
-      payload,
-    });
   };
 }

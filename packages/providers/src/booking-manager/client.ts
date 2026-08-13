@@ -8,7 +8,7 @@ import {
   type QueryValue,
   type RawResponseEvent,
 } from "../shared/http-client";
-import { SequentialQueue, sharedQueue } from "../shared/queue";
+import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { BookingManagerConfig } from "./config";
 
@@ -37,7 +37,7 @@ export class BookingManagerClient {
       baseUrl: options.config.baseUrl,
       queueKey: options.config.queueKey,
       timeoutMs: options.config.timeoutMs,
-      queue: options.queue ?? withInterval(options.config.minIntervalMs),
+      queue: options.queue ?? queueForInterval(options.config.minIntervalMs),
       headers: { authorization: `Bearer ${options.config.apiToken}` },
       onRawResponse: options.onRawResponse,
       fetchImpl: options.fetchImpl,
@@ -94,22 +94,4 @@ export class BookingManagerClient {
     }
     return parsed.data as z.output<TSchema>;
   }
-}
-
-// Lanes are per key (the credential), but the spacing setting is per queue
-// instance, so instances are pooled by interval. Module-scoped on purpose: two
-// clients built in one process must share the lane.
-const queuesByInterval = new Map<number, SequentialQueue>();
-
-function withInterval(minIntervalMs: number): SequentialQueue {
-  if (minIntervalMs <= 0) {
-    return sharedQueue;
-  }
-  const existing = queuesByInterval.get(minIntervalMs);
-  if (existing) {
-    return existing;
-  }
-  const queue = new SequentialQueue({ minIntervalMs });
-  queuesByInterval.set(minIntervalMs, queue);
-  return queue;
 }

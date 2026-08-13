@@ -197,6 +197,13 @@
       "when": 1786602411510,
       "tag": "0027_modern_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1786607498765,
+      "tag": "0028_nasty_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

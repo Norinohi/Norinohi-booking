@@ -1,4 +1,8 @@
-import { providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { eq } from "drizzle-orm";
+
+import type { Database } from "../registry";
+import type { ProviderKey } from "../types";
 
 type ReservationEventInsert = typeof providerReservationEvent.$inferInsert;
 
@@ -128,4 +132,44 @@ export async function recordReservationEvent(
     providerReference: input.providerReference ?? null,
     payload: input.payload === undefined ? null : sanitizeReservationPayload(input.payload),
   });
+}
+
+export interface QuoteReservationEventInput {
+  /** Our quote id; `booking.quote_id` is what ties an event back to a booking. */
+  quoteId: string;
+  kind: ReservationEventKind;
+  providerReference?: string | null;
+  payload?: unknown;
+}
+
+export type ReservationEventRecorder = (event: QuoteReservationEventInput) => Promise<void>;
+
+/**
+ * `provider_reservation_event` is keyed by booking, and a `BookingDraft` carries
+ * the quote instead. Neither vendor's pricing call produces a provider quote id,
+ * so `draft.quoteId` is always ours and the join is exact.
+ */
+export function createReservationEventRecorder(
+  db: Database,
+  providerKey: ProviderKey,
+): ReservationEventRecorder {
+  return async ({ quoteId, kind, providerReference, payload }) => {
+    const [row] = await db
+      .select({ id: booking.id })
+      .from(booking)
+      .where(eq(booking.quoteId, quoteId))
+      .limit(1);
+
+    // Reconciliation and admin tooling can drive these calls with no booking
+    // behind them; that is not a reason to fail the provider call.
+    if (!row) return;
+
+    await recordReservationEvent(db, {
+      bookingId: row.id,
+      kind,
+      provider: providerKey,
+      providerReference,
+      payload,
+    });
+  };
 }

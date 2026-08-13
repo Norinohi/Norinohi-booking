@@ -1,5 +1,14 @@
-import { relations } from "drizzle-orm";
-import { index, jsonb, numeric, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import {
+  index,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 import { id, pct, timestamps } from "./_shared";
 import { listing } from "./listing";
@@ -30,7 +39,10 @@ export const listingSource = pgTable(
   },
   (t) => [
     index("listing_source_listing_idx").on(t.listingId),
-    index("listing_source_provider_record_idx").on(t.providerRecordId),
+    // One source row per provider record. Without it two concurrent runs of the
+    // same provider both read no existing link and both insert, leaving one yacht
+    // with two sources pointing at two listings.
+    uniqueIndex("listing_source_provider_record_uq").on(t.providerRecordId),
   ],
 );
 
@@ -54,6 +66,14 @@ export const listingDuplicateCandidate = pgTable(
   (t) => [
     index("listing_duplicate_source_a_idx").on(t.sourceAId),
     index("listing_duplicate_source_b_idx").on(t.sourceBId),
+    // Orientation-independent: the generator's own "not exists" check tests both
+    // (A,B) and (B,A), and under concurrency two runs pass it together. Keying on
+    // the sorted pair is what actually stops the reviewer being handed the same
+    // boat twice, mirrored.
+    uniqueIndex("listing_duplicate_pair_uq").on(
+      sql`least(${t.sourceAId}, ${t.sourceBId})`,
+      sql`greatest(${t.sourceAId}, ${t.sourceBId})`,
+    ),
   ],
 );
 

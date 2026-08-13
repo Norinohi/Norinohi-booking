@@ -14,7 +14,7 @@ import {
   type ProviderHttpClient,
   type RawResponseEvent,
 } from "../shared/http-client";
-import { SequentialQueue, sharedQueue } from "../shared/queue";
+import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { NausysConfig } from "./config";
 import { NAUSYS_STATUS_CODES, NAUSYS_STATUS_NAMES, restStatusSchema } from "./endpoints";
@@ -120,7 +120,7 @@ export class NausysClient {
       baseUrl: options.config.baseUrl,
       queueKey: options.config.queueKey,
       timeoutMs: options.config.timeoutMs,
-      queue: options.queue ?? withInterval(options.config.minIntervalMs),
+      queue: options.queue ?? queueForInterval(options.config.minIntervalMs),
       classifyResponse: classifyNausysResponse,
       onRawResponse: options.onRawResponse,
       fetchImpl: options.fetchImpl,
@@ -172,23 +172,4 @@ export class NausysClient {
     }
     return parsed.data as z.output<TSchema>;
   }
-}
-
-// Lanes are per key (the credential), but the spacing setting is per queue
-// instance, so instances are pooled by interval. Module-scoped on purpose: two
-// clients built in one process must share the lane, or the vendor's
-// sequential-only rule is broken by construction.
-const queuesByInterval = new Map<number, SequentialQueue>();
-
-function withInterval(minIntervalMs: number): SequentialQueue {
-  if (minIntervalMs <= 0) {
-    return sharedQueue;
-  }
-  const existing = queuesByInterval.get(minIntervalMs);
-  if (existing) {
-    return existing;
-  }
-  const queue = new SequentialQueue({ minIntervalMs });
-  queuesByInterval.set(minIntervalMs, queue);
-  return queue;
 }

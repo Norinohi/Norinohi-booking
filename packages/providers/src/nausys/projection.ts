@@ -5,10 +5,18 @@ import { stripHtml } from "../shared/html-text";
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
+  currencyOf,
+  intOf,
+  numberOf,
+  parseAll,
+  positiveInt,
+  slugify,
+  text,
+} from "../shared/projection-helpers";
+import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
   type ProviderRecordSet,
-  type ProviderResourceType,
 } from "../types";
 import {
   restCharterBaseSchema,
@@ -34,9 +42,6 @@ import {
  */
 
 const PROVIDER_PREFIX = "nausys";
-
-/** Last resort only: recorded yachts carry `depositCurrency` and priced seasons. */
-const FALLBACK_CURRENCY = "EUR";
 
 /**
  * `highlights` is the operator's public blurb and `note` its caveat line; there is
@@ -134,9 +139,12 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
     operators: companies.map((item) => ({
       externalId: String(item.id),
       name: item.name,
-      // Vendor-id suffixed: two companies of the same name are two operators, and a
-      // slug is the only unique key the operator table offers.
-      slug: `${slugify(item.name)}-${item.id}`,
+      // Provider-namespaced and vendor-id suffixed: two companies of the same name
+      // are two operators, and a slug is the only unique key the operator table
+      // offers. The provider prefix matters because the two vendors number their
+      // companies independently, so `sunsail-1234` from each would otherwise be one
+      // row that each sync overwrote with its own contact details.
+      slug: `${PROVIDER_PREFIX}-${slugify(item.name)}-${item.id}`,
       country:
         item.countryId === undefined ? undefined : countryNameById.get(String(item.countryId)),
       city: text(item.city),
@@ -431,52 +439,10 @@ function decimalOf(value: unknown): number | undefined {
 
 /* ----------------------------------------------------------------- helpers */
 
-function parseAll<TSchema extends z.ZodType>(
-  records: ProviderRecordSet,
-  resourceType: ProviderResourceType,
-  schema: TSchema,
-): z.infer<TSchema>[] {
-  const parsed: z.infer<TSchema>[] = [];
-  for (const entry of records.get(resourceType) ?? []) {
-    const result = schema.safeParse(entry.payload);
-    // One unparseable record is dropped rather than thrown: it is already retained
-    // raw, and the run is worth more than the row.
-    if (result.success) parsed.push(result.data);
-  }
-  return parsed;
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function text(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
 /** English if the vendor has it, otherwise the first locale it does have. */
 function name(value: unknown): string | undefined {
   const locales = toLocaleMap(value);
   return locales.en ?? Object.values(locales)[0];
-}
-
-function numberOf(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function intOf(value: unknown): number | undefined {
-  const parsed = numberOf(value);
-  return parsed === undefined ? undefined : Math.round(parsed);
-}
-
-function positiveInt(value: unknown): number | undefined {
-  const parsed = intOf(value);
-  return parsed !== undefined && parsed > 0 ? parsed : undefined;
 }
 
 /**
@@ -501,11 +467,6 @@ function seasonCurrencyOf(yacht: RestYacht): string | undefined {
     }
   }
   return undefined;
-}
-
-function currencyOf(value: unknown): string {
-  const code = text(value);
-  return code && code.length === 3 ? code.toUpperCase() : FALLBACK_CURRENCY;
 }
 
 /**
