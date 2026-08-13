@@ -14,6 +14,7 @@ import {
   type ProviderHttpClient,
   type RawResponseEvent,
 } from "../shared/http-client";
+import type { JsonObject, JsonValue } from "../shared/json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { NausysConfig } from "./config";
@@ -72,7 +73,7 @@ function statusCodeOf(status: string, errorCode: number | undefined): number | u
  */
 export function classifyNausysResponse(
   httpStatus: number,
-  body: unknown,
+  body: JsonValue,
   context: { endpoint: string },
 ): ProviderError | null {
   const httpError = httpStatusClassifier(httpStatus, body, context);
@@ -138,7 +139,7 @@ export class NausysClient {
   catalogueCall<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
-    body: Record<string, unknown> = {},
+    body: JsonObject = {},
   ): Promise<TOut> {
     return this.call(endpoint, schema, {
       username: this.config.username,
@@ -151,7 +152,7 @@ export class NausysClient {
   bookingCall<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
-    body: Record<string, unknown> = {},
+    body: JsonObject = {},
   ): Promise<TOut> {
     return this.call(endpoint, schema, {
       credentials: { username: this.config.username, password: this.config.password },
@@ -162,7 +163,7 @@ export class NausysClient {
   private async call<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
-    body: Record<string, unknown>,
+    body: JsonObject,
   ): Promise<TOut> {
     const response = await this.http.post(endpoint, body);
     const parsed = schema.safeParse(response.body);

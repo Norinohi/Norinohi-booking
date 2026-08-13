@@ -90,7 +90,7 @@ export interface BookingManagerBookingService {
  * The full `PUT /reservations` body. Every field is sent on every write: the
  * endpoint replaces the resource, so an omitted field is a cleared field.
  */
-interface ReservationBody {
+type ReservationBody = {
   dateFrom: string;
   dateTo: string;
   yachtId: number;
@@ -103,7 +103,7 @@ interface ReservationBody {
   baseFromId?: number;
   baseToId?: number;
   clientId?: number;
-}
+};
 
 export function createBookingManagerBookingService(
   deps: BookingManagerBookingServiceDeps,

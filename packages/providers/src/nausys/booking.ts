@@ -2,6 +2,8 @@ import { booking } from "@yacht-charter/db/schema/booking";
 import { and, eq } from "drizzle-orm";
 import type { z } from "zod";
 
+import type { JsonObject } from "../shared/json";
+
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate, parseNausysDateTime } from "../shared/dates";
@@ -127,7 +129,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
   async function withReservation(
     ref: ProviderReservationRef | typeof OPENS_RESERVATION,
     endpoint: string,
-    body: Record<string, unknown> = {},
+    body: JsonObject = {},
   ): Promise<ReservationStep> {
     const current = ref === OPENS_RESERVATION ? null : requireHandle(ref, endpoint);
 

@@ -8,6 +8,7 @@ import {
   RateLimitedError,
   TransientError,
 } from "./errors";
+import type { JsonValue } from "./json";
 import { type SequentialQueue, sharedQueue } from "./queue";
 import type { RetryPolicy } from "./retry";
 import { withRetry } from "./retry";
@@ -36,7 +37,7 @@ export type FetchLike = (
 ) => Promise<ProviderHttpResponseLike>;
 
 export interface ProviderHttpResult {
-  body: unknown;
+  body: JsonValue;
   httpStatus: number;
   durationMs: number;
   /** Identifies one HTTP attempt, so a retried call produces several. */
@@ -55,7 +56,7 @@ export interface RawResponseEvent extends ProviderHttpResult {
  */
 export type ResponseClassifier = (
   httpStatus: number,
-  body: unknown,
+  body: JsonValue,
   context: { endpoint: string },
 ) => ProviderError | null;
 
@@ -77,14 +78,14 @@ export interface ProviderHttpClientOptions {
 export type QueryValue = string | number | boolean | Array<string | number>;
 
 export interface ProviderHttpClient {
-  post(endpoint: string, body: unknown): Promise<ProviderHttpResult>;
+  post(endpoint: string, body: JsonValue): Promise<ProviderHttpResult>;
   /** Booking Manager serves every read as GET with query parameters. */
   get(
     endpoint: string,
     query?: Record<string, QueryValue | undefined>,
   ): Promise<ProviderHttpResult>;
   del(endpoint: string): Promise<ProviderHttpResult>;
-  put(endpoint: string, body?: unknown): Promise<ProviderHttpResult>;
+  put(endpoint: string, body?: JsonValue): Promise<ProviderHttpResult>;
 }
 
 /**
@@ -160,7 +161,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
   async function attempt(
     method: string,
     endpoint: string,
-    body: unknown,
+    body: JsonValue,
     hasBody: boolean,
   ): Promise<ProviderHttpResult> {
     const requestId = newRequestId();
@@ -194,7 +195,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
 
     const durationMs = now() - startedAt;
 
-    let parsed: unknown;
+    let parsed: JsonValue;
     try {
       parsed = text.trim() === "" ? null : JSON.parse(text);
     } catch (cause) {
@@ -223,7 +224,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
   function send(
     method: string,
     endpoint: string,
-    body: unknown,
+    body: JsonValue,
     hasBody: boolean,
   ): Promise<ProviderHttpResult> {
     return withRetry(
@@ -237,13 +238,13 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
       return send("POST", endpoint, body, true);
     },
     get(endpoint, query) {
-      return send("GET", `${endpoint}${query ? buildQueryString(query) : ""}`, undefined, false);
+      return send("GET", `${endpoint}${query ? buildQueryString(query) : ""}`, null, false);
     },
     del(endpoint) {
-      return send("DELETE", endpoint, undefined, false);
+      return send("DELETE", endpoint, null, false);
     },
     put(endpoint, body) {
-      return send("PUT", endpoint, body, body !== undefined);
+      return send("PUT", endpoint, body ?? null, body !== undefined);
     },
   };
 }

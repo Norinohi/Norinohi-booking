@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import { ContractError } from "../shared/errors";
+import type { JsonValue } from "../shared/json";
 import {
   createProviderHttpClient,
   type FetchLike,
@@ -54,12 +55,12 @@ export class BookingManagerClient {
     return this.parse(endpoint, schema, response.body);
   }
 
-  async post<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: unknown): Promise<TOut> {
+  async post<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: JsonValue): Promise<TOut> {
     const response = await this.http.post(endpoint, body);
     return this.parse(endpoint, schema, response.body);
   }
 
-  async put<TOut>(endpoint: string, schema: z.ZodType<TOut>, body?: unknown): Promise<TOut> {
+  async put<TOut>(endpoint: string, schema: z.ZodType<TOut>, body?: JsonValue): Promise<TOut> {
     const response = await this.http.put(endpoint, body);
     return this.parse(endpoint, schema, response.body);
   }
@@ -69,7 +70,7 @@ export class BookingManagerClient {
     return this.parse(endpoint, schema, response.body);
   }
 
-  private parse<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: unknown): TOut {
+  private parse<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: JsonValue): TOut {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       throw new ContractError(
