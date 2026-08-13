@@ -397,7 +397,7 @@ export const adminRouter = {
         operationId: "sweepExpiries",
         summary: "Expire stale quotes and provider holds",
         description:
-          "Runs the expiry sweep by hand. Normally this is driven by the scheduled POST /api/cron/sweep-expiries; this exists so staff can clear a stuck slot without waiting for the next run. Idempotent — running it twice changes nothing the second time.",
+          "Runs the expiry sweep by hand. Normally this is driven by the scheduled POST /api/cron/sweep-expiries; this exists so staff can clear a stuck slot without waiting for the next run. It also fails sync runs abandoned by a dead process, which is what unblocks a provider whose syncs are being refused by the in-flight lock. Idempotent — running it twice changes nothing the second time.",
         tags: ["Admin"],
         successDescription: "What the sweep changed.",
         spec: withJsonBodyExample({}),

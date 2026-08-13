@@ -19,4 +19,9 @@ export const sweepResultSchema = z.object({
   ),
   /** Listing view rows deleted past their retention window. */
   viewsPruned: z.number().int(),
+  /**
+   * Sync runs left in flight by a process that died, moved to `failed`. Non-zero means a
+   * provider's syncs were blocked until this ran — worth looking at, not just counting.
+   */
+  syncRunsReaped: z.number().int(),
 });
