@@ -219,6 +219,12 @@ export const restYachtCategorySchema = looseJsonObject({
   name: restInternationalTextSchema,
 });
 
+/** The vendor's rig reference, named per locale like every other catalogue list. */
+export const restSailTypeSchema = looseJsonObject({
+  id: z.number().int(),
+  name: restInternationalTextSchema,
+});
+
 /**
  * The hull dimensions and the category live here, not on `RestYacht`: the vendor
  * models them as properties of the model, so two sisterships share them.

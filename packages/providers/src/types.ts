@@ -409,7 +409,11 @@ const canonicalListingSchema = z.object({
     engines: z.number().int().optional(),
     fuelCapacity: z.number().int().optional(),
     waterCapacity: z.number().int().optional(),
+    /** Rig, resolved against the provider's own reference list rather than left as an id. */
+    sailType: z.string().optional(),
   }),
+  /** How the boat is sold. Backs the Crew filter, so it is left unset rather than guessed. */
+  crewType: crewTypeSchema.optional(),
   media: z.array(
     z.object({
       externalUrl: z.string(),
