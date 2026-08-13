@@ -77,6 +77,9 @@ export const listingSummarySchema = z.object({
     email: z.string().nullable(),
     phone: z.string().nullable(),
     website: z.string().nullable(),
+    /* Wall-clock at the marina, e.g. "17:00". Render as given; it is not an instant. */
+    checkInTime: z.string().nullable(),
+    checkOutTime: z.string().nullable(),
   }),
   specs: z.object({
     lengthM: z.number(),

@@ -73,6 +73,9 @@ export type ListingSearchDoc = {
   baseEmail: string | null;
   basePhone: string | null;
   baseWebsite: string | null;
+  /** Wall-clock at the marina, e.g. "17:00". Not an instant — see the column comment. */
+  baseCheckInTime: string | null;
+  baseCheckOutTime: string | null;
   lengthM: string | null;
   cabins: number | null;
   berths: number | null;

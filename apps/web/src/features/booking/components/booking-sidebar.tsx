@@ -60,6 +60,8 @@ export default function BookingSidebar({
         selectedPeriod={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
         onPeriodSelect={selectPeriod}
         slotError={slotError}
+        checkInTime={listing?.base.checkInTime}
+        checkOutTime={listing?.base.checkOutTime}
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}

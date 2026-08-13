@@ -731,6 +731,8 @@ const searchColumns = sql`
   doc.base_email as "baseEmail",
   doc.base_phone as "basePhone",
   doc.base_website as "baseWebsite",
+  doc.base_check_in_time as "baseCheckInTime",
+  doc.base_check_out_time as "baseCheckOutTime",
   doc.length_m as "lengthM",
   doc.cabins,
   doc.berths,

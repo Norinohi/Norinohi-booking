@@ -14,6 +14,7 @@ import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
+import { dayToDisplay } from "@/lib/date";
 
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
@@ -34,7 +35,14 @@ export type BoatCardBadge = {
 };
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
-export type BoatCardCharterDate = string;
+/**
+ * A charter endpoint: the calendar day, and the marina's wall-clock time for it.
+ *
+ * `time` is text the provider states about its own base, never an instant. Combining the two
+ * into a timestamp would need an IANA zone per marina, which no provider sends, and the card
+ * carried a hardcoded Zagreb one for exactly that reason. Kept apart and rendered as given.
+ */
+export type BoatCardCharterDate = { day: string; time: string | null };
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
 const DETAIL_HREF = "/yachts/lagoon-42";
@@ -53,9 +61,9 @@ export type BoatCardProps = {
   specs: BoatCardSpec[];
   amenities?: BoatCardAmenity[];
   stats?: string[];
-  start: BoatCardCharterDate;
-  end: BoatCardCharterDate;
-  timeZone: string;
+  /** Absent where no period is in play: the wishlist is not a search result. */
+  start?: BoatCardCharterDate;
+  end?: BoatCardCharterDate;
   priceLabel: string;
   price: string;
   /** The price slot holds words ("On request", "Unavailable") rather than an amount, so it drops to text size. */
@@ -226,24 +234,17 @@ function Details({
   );
 }
 
-function CharterDate({
-  value,
-  timeZone,
-  className,
-}: {
-  value: BoatCardCharterDate;
-  timeZone: string;
-  className?: string;
-}) {
+function CharterDate({ value, className }: { value: BoatCardCharterDate; className?: string }) {
   const format = useFormatter();
-  const at = new Date(value);
-  const date = format.dateTime(at, { ...FORMATS.day, timeZone });
-  const time = format.dateTime(at, { ...FORMATS.time, timeZone });
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <span className="text-xs font-semibold leading-[1.3] text-foreground">{date}</span>
-      <span className="text-sm font-medium leading-[1.3] text-natural-500">{time}</span>
+      <span className="text-xs font-semibold leading-[1.3] text-foreground">
+        {format.dateTime(dayToDisplay(value.day), FORMATS.day)}
+      </span>
+      {value.time ? (
+        <span className="text-sm font-medium leading-[1.3] text-natural-500">{value.time}</span>
+      ) : null}
     </div>
   );
 }
@@ -252,7 +253,6 @@ function Action({
   stats,
   start,
   end,
-  timeZone,
   priceLabel,
   price,
   priceIsLabel,
@@ -265,7 +265,6 @@ function Action({
   | "stats"
   | "start"
   | "end"
-  | "timeZone"
   | "priceLabel"
   | "price"
   | "priceIsLabel"
@@ -284,19 +283,13 @@ function Action({
         ))}
       </div>
 
-      <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
-        <CharterDate
-          value={start}
-          timeZone={timeZone}
-          className="flex-1 items-center md:flex-none md:items-start"
-        />
-        <ArrowRight className="size-4 shrink-0 text-foreground" />
-        <CharterDate
-          value={end}
-          timeZone={timeZone}
-          className="flex-1 items-center md:flex-none md:items-start"
-        />
-      </div>
+      {start && end ? (
+        <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
+          <CharterDate value={start} className="flex-1 items-center md:flex-none md:items-start" />
+          <ArrowRight className="size-4 shrink-0 text-foreground" />
+          <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
+        </div>
+      ) : null}
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
         <div className="flex flex-wrap items-center justify-center gap-2 md:flex-col md:items-start md:gap-1">
@@ -372,7 +365,6 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           stats={boat.stats}
           start={boat.start}
           end={boat.end}
-          timeZone={boat.timeZone}
           priceLabel={boat.priceLabel}
           price={boat.price}
           priceIsLabel={boat.priceIsLabel}

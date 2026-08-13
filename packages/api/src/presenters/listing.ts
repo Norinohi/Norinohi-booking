@@ -62,6 +62,8 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       email: doc.baseEmail,
       phone: doc.basePhone,
       website: doc.baseWebsite,
+      checkInTime: doc.baseCheckInTime,
+      checkOutTime: doc.baseCheckOutTime,
     },
     specs: {
       lengthM: Number(doc.lengthM ?? 0),

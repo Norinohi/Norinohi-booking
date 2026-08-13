@@ -65,6 +65,9 @@ export type BookingSummaryProps = {
   onPeriodSelect: (period: CharterPeriod) => void;
   /** The provider refused the last pick — shown under the date control. */
   slotError?: boolean;
+  /** The marina's wall-clock check-in/out, shown beneath each charter date. */
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   onCrewChange: (next: CrewType) => void;
@@ -90,12 +93,16 @@ function Separator() {
   return <span aria-hidden className="h-px w-full shrink-0 bg-border" />;
 }
 
-function CharterPoint({ date }: { date: string }) {
+/** The marina's own wall-clock time sits under the day, unconverted — see `BoatCardCharterDate`. */
+function CharterPoint({ date, time }: { date: string; time: string | null }) {
   const format = useFormatter();
   return (
-    <p className="text-base leading-5.5 font-bold whitespace-nowrap text-foreground">
-      {format.dateTime(dayToDisplay(date), "dayShort")}
-    </p>
+    <div className="flex flex-col gap-0.5">
+      <p className="text-base leading-5.5 font-bold whitespace-nowrap text-foreground">
+        {format.dateTime(dayToDisplay(date), "dayShort")}
+      </p>
+      {time ? <p className="text-sm leading-4.5 font-medium text-natural-500">{time}</p> : null}
+    </div>
   );
 }
 
@@ -197,6 +204,8 @@ export default function BookingSummary({
   selectedPeriod,
   onPeriodSelect,
   slotError = false,
+  checkInTime,
+  checkOutTime,
   crewType,
   crewOptions,
   onCrewChange,
@@ -248,9 +257,9 @@ export default function BookingSummary({
         <div className="flex w-full flex-col gap-3 p-4">
           {quote ? (
             <div className="flex items-center justify-between gap-2">
-              <CharterPoint date={quote.checkIn} />
+              <CharterPoint date={quote.checkIn} time={checkInTime ?? null} />
               <ArrowRight className="size-4 shrink-0 text-natural-300" />
-              <CharterPoint date={quote.checkOut} />
+              <CharterPoint date={quote.checkOut} time={checkOutTime ?? null} />
             </div>
           ) : null}
 
