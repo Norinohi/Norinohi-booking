@@ -6,6 +6,7 @@ import {
 } from "@yacht-charter/db/schema/provider";
 import { env } from "@yacht-charter/env/server";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { z } from "zod";
 
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
@@ -65,9 +66,7 @@ export interface ScopedCatalogueProvider {
 export function supportsScopedCatalogueSync(
   provider: InventoryProvider,
 ): provider is InventoryProvider & ScopedCatalogueProvider {
-  return (
-    typeof (provider as Partial<ScopedCatalogueProvider>).createCatalogueSyncSource === "function"
-  );
+  return "createCatalogueSyncSource" in provider;
 }
 
 /**
@@ -472,6 +471,8 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
  * Neither speaking means false, since the safe reading of "no opinion recorded" is
  * that inventory still needs review.
  */
+const providerConfigSchema = z.object({ autoPublish: z.boolean() });
+
 export async function readAutoPublish(
   db: Database,
   providerId: string,
@@ -483,11 +484,10 @@ export async function readAutoPublish(
     .where(eq(providerTable.id, providerId))
     .limit(1);
 
-  const config = row?.config;
-  if (typeof config === "object" && config !== null) {
-    const flag = (config as { autoPublish?: unknown }).autoPublish;
-    if (typeof flag === "boolean") return flag;
-  }
+  // `provider.config` is jsonb, so the column type tells us nothing; an explicit
+  // flag wins over the per-provider default below, anything else falls through.
+  const configured = providerConfigSchema.safeParse(row?.config);
+  if (configured.success) return configured.data.autoPublish;
 
   const code = providerCode ?? row?.code;
   if (!code) return false;

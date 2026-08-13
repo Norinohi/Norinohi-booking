@@ -45,46 +45,31 @@ export class BookingManagerClient {
     });
   }
 
-  async get<TSchema extends z.ZodType>(
+  async get<TOut>(
     endpoint: string,
-    schema: TSchema,
+    schema: z.ZodType<TOut>,
     query?: Record<string, QueryValue | undefined>,
-  ): Promise<z.output<TSchema>> {
+  ): Promise<TOut> {
     const response = await this.http.get(endpoint, query);
     return this.parse(endpoint, schema, response.body);
   }
 
-  async post<TSchema extends z.ZodType>(
-    endpoint: string,
-    schema: TSchema,
-    body: unknown,
-  ): Promise<z.output<TSchema>> {
+  async post<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: unknown): Promise<TOut> {
     const response = await this.http.post(endpoint, body);
     return this.parse(endpoint, schema, response.body);
   }
 
-  async put<TSchema extends z.ZodType>(
-    endpoint: string,
-    schema: TSchema,
-    body?: unknown,
-  ): Promise<z.output<TSchema>> {
+  async put<TOut>(endpoint: string, schema: z.ZodType<TOut>, body?: unknown): Promise<TOut> {
     const response = await this.http.put(endpoint, body);
     return this.parse(endpoint, schema, response.body);
   }
 
-  async del<TSchema extends z.ZodType>(
-    endpoint: string,
-    schema: TSchema,
-  ): Promise<z.output<TSchema>> {
+  async del<TOut>(endpoint: string, schema: z.ZodType<TOut>): Promise<TOut> {
     const response = await this.http.del(endpoint);
     return this.parse(endpoint, schema, response.body);
   }
 
-  private parse<TSchema extends z.ZodType>(
-    endpoint: string,
-    schema: TSchema,
-    body: unknown,
-  ): z.output<TSchema> {
+  private parse<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: unknown): TOut {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       throw new ContractError(
@@ -92,6 +77,6 @@ export class BookingManagerClient {
         { endpoint, payload: { issues: parsed.error.issues } },
       );
     }
-    return parsed.data as z.output<TSchema>;
+    return parsed.data;
   }
 }

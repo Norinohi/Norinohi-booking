@@ -113,9 +113,7 @@ export interface AvailabilitySyncProvider {
 export function supportsAvailabilitySync(
   provider: InventoryProvider,
 ): provider is InventoryProvider & AvailabilitySyncProvider {
-  return (
-    typeof (provider as Partial<AvailabilitySyncProvider>).createAvailabilitySource === "function"
-  );
+  return "createAvailabilitySource" in provider;
 }
 
 /* ------------------------------------------------------------------- store */

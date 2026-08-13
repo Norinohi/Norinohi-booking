@@ -54,12 +54,14 @@ const ERROR_BY_CODE: Record<number, ErrorFactory> = {
   [NAUSYS_STATUS_CODES.UNKNOWN_ERROR]: transientError,
 };
 
+const statusCodesByName = new Map<string, number>(Object.entries(NAUSYS_STATUS_CODES));
+
 function statusCodeOf(status: string, errorCode: number | undefined): number | undefined {
   if (errorCode !== undefined) {
     return errorCode;
   }
-  const known = NAUSYS_STATUS_CODES[status as keyof typeof NAUSYS_STATUS_CODES];
-  return known;
+  // The vendor sends status names we do not have a code for; those stay undefined.
+  return statusCodesByName.get(status);
 }
 
 /**
@@ -133,11 +135,11 @@ export class NausysClient {
    * uses this shape too, despite living under `yachtReservation/v6` alongside
    * `freeYachts`, which uses the nested one.
    */
-  catalogueCall<TSchema extends z.ZodType>(
+  catalogueCall<TOut>(
     endpoint: string,
-    schema: TSchema,
+    schema: z.ZodType<TOut>,
     body: Record<string, unknown> = {},
-  ): Promise<z.output<TSchema>> {
+  ): Promise<TOut> {
     return this.call(endpoint, schema, {
       username: this.config.username,
       password: this.config.password,
@@ -146,22 +148,22 @@ export class NausysClient {
   }
 
   /** Reservation and booking shape: credentials nested under `credentials`. */
-  bookingCall<TSchema extends z.ZodType>(
+  bookingCall<TOut>(
     endpoint: string,
-    schema: TSchema,
+    schema: z.ZodType<TOut>,
     body: Record<string, unknown> = {},
-  ): Promise<z.output<TSchema>> {
+  ): Promise<TOut> {
     return this.call(endpoint, schema, {
       credentials: { username: this.config.username, password: this.config.password },
       ...body,
     });
   }
 
-  private async call<TSchema extends z.ZodType>(
+  private async call<TOut>(
     endpoint: string,
-    schema: TSchema,
+    schema: z.ZodType<TOut>,
     body: Record<string, unknown>,
-  ): Promise<z.output<TSchema>> {
+  ): Promise<TOut> {
     const response = await this.http.post(endpoint, body);
     const parsed = schema.safeParse(response.body);
     if (!parsed.success) {
@@ -170,6 +172,6 @@ export class NausysClient {
         payload: { issues: parsed.error.issues },
       });
     }
-    return parsed.data as z.output<TSchema>;
+    return parsed.data;
   }
 }
