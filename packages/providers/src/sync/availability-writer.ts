@@ -167,8 +167,10 @@ export interface AvailabilitySyncStore {
   writeSlots(slots: AvailabilitySlotWrite[]): Promise<void>;
   /** Replaces the listing's free periods inside the years the dump covered. */
   writeFreePeriods(ref: ListingRef, years: readonly number[], periods: FreePeriod[]): Promise<void>;
-  /** The provider's published rates, stored as the periods it published them for. */
-  writePricePeriods(ref: ListingRef, prices: readonly SeasonalPrice[]): Promise<void>;
+  /** The provider's published rates, stored as the periods it published them for. Returns the
+   * number of distinct periods written, which is below the input whenever a yacht appears in
+   * more than one price list. */
+  writePricePeriods(ref: ListingRef, prices: readonly SeasonalPrice[]): Promise<number>;
   /** False when the period is held by an occupied slot, which the vendor's own dump wins. */
   confirmSlot(input: ConfirmSlotInput): Promise<boolean>;
   sweepScope(input: AvailabilitySweepInput): Promise<number>;
@@ -451,8 +453,7 @@ export async function runAvailabilitySync(
          * the card quotes "from" off these, not off what happens to be unsold today.
          */
         if (plan?.prices?.length) {
-          await store.writePricePeriods(ref, plan.prices);
-          pricePeriods += plan.prices.length;
+          pricePeriods += await store.writePricePeriods(ref, plan.prices);
           touched.add(ref.listingId);
         }
 
@@ -718,7 +719,7 @@ export function createDrizzleAvailabilitySyncStore(
       for (const price of prices) {
         unique.set(`${price.startDate}|${price.endDate}`, price);
       }
-      if (unique.size === 0) return;
+      if (unique.size === 0) return 0;
 
       await db
         .insert(listingPricePeriod)
@@ -748,6 +749,8 @@ export function createDrizzleAvailabilitySyncStore(
             updatedAt: sql`now()`,
           },
         });
+
+      return unique.size;
     },
 
     async writeSlots(slots) {

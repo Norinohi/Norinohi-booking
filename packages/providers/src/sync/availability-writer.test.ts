@@ -96,6 +96,7 @@ function fakeStore(seed: FakeStoreSeed = {}) {
       for (const price of prices) {
         pricePeriods.push({ listingId: ref.listingId, ...price });
       }
+      return prices.length;
     },
     async writeSlots(written) {
       for (const slot of written) {
