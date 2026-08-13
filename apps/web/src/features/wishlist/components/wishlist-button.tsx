@@ -27,6 +27,8 @@ export default function WishlistButton({
   const onClick = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
+    /* The button stays keyboard-focusable while loading, so block a second toggle in flight. */
+    if (pending) return;
     toggle();
   };
 
@@ -36,7 +38,8 @@ export default function WishlistButton({
         type="button"
         variant="brand"
         aria-pressed={saved}
-        disabled={disabled || pending}
+        disabled={disabled}
+        loading={pending}
         onClick={onClick}
         className={className}
       >
@@ -53,7 +56,8 @@ export default function WishlistButton({
       size="icon-md"
       aria-label={saved ? tCard("remove") : tCard("save")}
       aria-pressed={saved}
-      disabled={disabled || pending}
+      disabled={disabled}
+      loading={pending}
       onClick={onClick}
       className={cn(
         "shrink-0 bg-black/12 text-white hover:bg-black/25 hover:text-white focus-visible:ring-white/60",
