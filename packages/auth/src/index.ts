@@ -5,6 +5,7 @@ import { betterAuth, type BetterAuthAdvancedOptions } from "better-auth";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";
+import { sendResetPasswordEmail } from "@yacht-charter/transactional";
 
 export function createAuth() {
   const db = createDb();
@@ -49,6 +50,20 @@ export function createAuth() {
     trustedOrigins: [env.CORS_ORIGIN],
     emailAndPassword: {
       enabled: true,
+      sendResetPassword: async ({ user, url }) => {
+        const result = await sendResetPasswordEmail({ to: user.email, url });
+        // Without Resend configured the send is skipped. Surface the link in the server
+        // log outside production so the flow is completable locally.
+        if (result.skipped && env.NODE_ENV !== "production") {
+          console.warn(`[auth] password reset link for ${user.email}: ${url}`);
+        }
+      },
+      onPasswordReset: async ({ user }) => {
+        // A forgotten password may mean a compromised account: drop every existing
+        // session so a reset also signs the account out everywhere. The reset token
+        // itself is already single-use.
+        await db.delete(schema.session).where(eq(schema.session.userId, user.id));
+      },
     },
     socialProviders,
     user: {
