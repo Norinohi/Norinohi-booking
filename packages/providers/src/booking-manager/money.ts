@@ -1,5 +1,9 @@
+import { z } from "zod";
+
 import { ContractError } from "../shared/errors";
 import { currencyExponent, decimalStringToMinor } from "../shared/money";
+
+const finiteAmountSchema = z.number().finite();
 
 /**
  * Booking Manager ships money as JSON numbers, which are binary floats: 1234.35
@@ -12,10 +16,11 @@ import { currencyExponent, decimalStringToMinor } from "../shared/money";
  * advertise a capability the shared layer exists to prevent.
  */
 export function numberToMinor(value: number, currency: string, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
+  const amount = finiteAmountSchema.safeParse(value);
+  if (!amount.success) {
     throw new ContractError(
       `Booking Manager ${field} is not a finite number: ${JSON.stringify(value)}`,
     );
   }
-  return decimalStringToMinor(value.toFixed(currencyExponent(currency)), currency);
+  return decimalStringToMinor(amount.data.toFixed(currencyExponent(currency)), currency);
 }

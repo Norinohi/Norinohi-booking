@@ -1,22 +1,5 @@
-import { z } from "zod";
-
 import { ContractError } from "./errors";
-
-const dateStringSchema = z.string();
-
-/**
- * Both vendors have sent null where their own schema promised a string, so the
- * check stays even though callers pass a typed `string`. Failing here names the
- * provider seam as a ContractError; letting it through surfaces a bare
- * TypeError from `.trim()` several frames away.
- */
-function requireDateString(value: string, expected: string): string {
-  const parsed = dateStringSchema.safeParse(value);
-  if (!parsed.success) {
-    throw new ContractError(`Expected ${expected}, received ${JSON.stringify(value)}`);
-  }
-  return parsed.data;
-}
+import { requireJsonString } from "./json";
 
 const NAUSYS_DATE_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})$/;
 const NAUSYS_DATE_TIME_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
@@ -58,7 +41,7 @@ export function assertRealClock(parts: ClockParts, message: string): void {
 }
 
 function readNausysDateParts(value: string, raw: string): DateParts {
-  const text = requireDateString(value, "a dd.MM.yyyy date string");
+  const text = requireJsonString(value, "a dd.MM.yyyy date string");
   const match = NAUSYS_DATE_PATTERN.exec(text.trim());
   if (!match) {
     throw new ContractError(`Malformed date: ${JSON.stringify(raw)}`);
@@ -77,7 +60,7 @@ export function parseNausysDate(value: string): string {
 
 /** `"2026-08-08"` -> `"08.08.2026"`. */
 export function formatNausysDate(value: string): string {
-  const text = requireDateString(value, "a yyyy-MM-dd date string");
+  const text = requireJsonString(value, "a yyyy-MM-dd date string");
   const match = ISO_DATE_PATTERN.exec(text.trim());
   if (!match) {
     throw new ContractError(`Malformed ISO date: ${JSON.stringify(value)}`);
@@ -191,7 +174,7 @@ export function wallClockToInstant(
  * plain wall-clock strings and must never be run through here.
  */
 export function parseNausysDateTime(value: string, timeZone: string): Date {
-  const text = requireDateString(value, "a dd.MM.yyyy HH:mm datetime string");
+  const text = requireJsonString(value, "a dd.MM.yyyy HH:mm datetime string");
   const match = NAUSYS_DATE_TIME_PATTERN.exec(text.trim());
   if (!match) {
     throw new ContractError(`Malformed datetime: ${JSON.stringify(value)}`);

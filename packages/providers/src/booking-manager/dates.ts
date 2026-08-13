@@ -1,7 +1,12 @@
-import { assertRealClock, assertRealDate, pad, wallClockToInstant } from "../shared/dates";
+import {
+  assertRealClock,
+  assertRealDate,
+  pad,
+  wallClockToInstant,
+} from "../shared/dates";
 import { ContractError } from "../shared/errors";
 
-import type { JsonField } from "../shared/json";
+import { requireJsonString, type JsonField } from "../shared/json";
 
 /**
  * MMK support confirmed (Aug 2026) the asymmetry: we must send `T` between date
@@ -17,17 +22,13 @@ const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
  * `wallClockToInstant`.
  */
 export function parseBookingManagerDateTime(value: JsonField, timeZone: string): Date {
-  if (typeof value !== "string") {
-    throw new ContractError(
-      `Expected a yyyy-MM-dd HH:mm:ss datetime string, received ${typeof value}`,
-    );
-  }
-  const match = BM_DATE_TIME_PATTERN.exec(value.trim());
+  const text = requireJsonString(value, "a yyyy-MM-dd HH:mm:ss datetime string");
+  const match = BM_DATE_TIME_PATTERN.exec(text.trim());
   if (!match) {
     throw new ContractError(`Malformed datetime: ${JSON.stringify(value)}`);
   }
   const [, year = "", month = "", day = "", hour = "", minute = "", second = "0"] = match;
-  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, value);
+  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, text);
 
   const hours = Number(hour);
   const minutes = Number(minute);
@@ -42,16 +43,13 @@ export function parseBookingManagerDateTime(value: JsonField, timeZone: string):
 
 /** The calendar date only, as the vendor wrote it: `"2026-08-08 17:00:00"` -> `"2026-08-08"`. */
 export function parseBookingManagerDate(value: JsonField): string {
-  if (typeof value !== "string") {
-    throw new ContractError(`Expected a yyyy-MM-dd date string, received ${typeof value}`);
-  }
-  const trimmed = value.trim();
+  const trimmed = requireJsonString(value, "a yyyy-MM-dd date string").trim();
   const match = BM_DATE_TIME_PATTERN.exec(trimmed) ?? ISO_DATE_PATTERN.exec(trimmed);
   if (!match) {
     throw new ContractError(`Malformed date: ${JSON.stringify(value)}`);
   }
   const [, year = "", month = "", day = ""] = match;
-  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, value);
+  assertRealDate({ year: Number(year), month: Number(month), day: Number(day) }, trimmed);
   return `${year}-${month}-${day}`;
 }
 
@@ -64,10 +62,8 @@ export function parseBookingManagerDate(value: JsonField): string {
  * response, so asking for a specific time there is wrong, not merely redundant.
  */
 export function formatBookingManagerDateTime(date: string, time = "00:00:00"): string {
-  if (typeof date !== "string") {
-    throw new ContractError(`Expected a yyyy-MM-dd date string, received ${typeof date}`);
-  }
-  const match = ISO_DATE_PATTERN.exec(date.trim());
+  const text = requireJsonString(date, "a yyyy-MM-dd date string");
+  const match = ISO_DATE_PATTERN.exec(text.trim());
   if (!match) {
     throw new ContractError(`Malformed ISO date: ${JSON.stringify(date)}`);
   }
