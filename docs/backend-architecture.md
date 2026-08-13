@@ -60,7 +60,9 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 | Entity                      | Purpose                                                                                                                                                                    | M          |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `listing_search_doc`        | Denormalised, query-optimised projection of a listing (facets + min price hint + geo) rebuilt on sync. Backs results/facets/map.                                           | M3         |
-| `availability_slot` (cache) | Per-listing bookable weeks: start/end, valid check-in/out weekday, min-duration, price hint, `source`, `freshness_at`. **Cache only — never authoritative at quote time.** | M3         |
+| `availability_slot` (cache) | What the provider stated: occupancy (`occupied`/`option`/`blocked`) and its confirmed, priced offers. **Cache only — never authoritative at quote time.** | M3         |
+| `listing_free_period` | The complement of occupancy inside the fetched horizon. Asserts no start day, length or price — only that nothing is sold between two dates. Backs the search date filter. | M7 |
+| `listing_price_period` | The provider's published rates, as the periods it published them for. Backs the card's "from" price and the season-open signal. | M7 |
 | `facet_dictionary`          | Stable enum values + i18n labels for filters (category, cabins, length bands, amenities) so the web app never hard-codes provider strings. Dynamic facets ship first.      | later/M3.5 |
 
 ### 1.4 Customer / account entities
@@ -118,8 +120,14 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 
 ### `availability_slot` — cache _(M3)_
 
-- **Fields:** `id`, `listing_id`, `source`, `start_date`, `end_date`, `checkin_weekday`, `checkout_weekday`, `min_nights`, `is_one_way`, `status` (`FREE`/`UNDER_OPTION`/`occupied`), `price_hint_minor`, `currency`, `freshness_at`.
-- **Provider-derived cache.** Powers calendar + fast filtering; the quote step re-validates live so a stale slot can never confirm a booking.
+- **Fields:** `id`, `listing_id`, `listing_source_id`, `start_date`, `end_date`, `status` (`available`/`option`/`occupied`/`blocked`), `availability_confirmed`, `price_minor`, `currency`, `min_nights`, `checkin_weekday`, `checkout_weekday`, `source_hash`.
+- **Only what the provider stated.** Occupancy, plus the confirmed priced offers the hot pass gets back from `freeYachtsSearch`. It no longer holds synthesized "available" rows — see ADR 0004.
+
+### `listing_free_period` + `listing_price_period` — availability as constraints _(M7)_
+
+- `listing_free_period(id, listing_id, listing_source_id, start_date, end_date)` — the complement of occupancy, written per year and only for years whose dump arrived whole.
+- `listing_price_period(id, listing_id, listing_source_id, start_date, end_date, kind:'weekly'|'daily', price_minor, currency)` — published rates. A date no row covers is a season the provider has not opened, and so is not sellable.
+- Whether a given charter is legal is **computed** from these plus `listing_checkin_rule`, by `packages/api/src/lib/availability-rules.ts`. Nothing enumerates offers. **ADR 0004.**
 
 ### `quote` — priced snapshot _(M4)_
 
@@ -220,7 +228,9 @@ export interface InventoryProvider {
 
 `MockInventoryProvider` reads **provider-shaped fixtures** (mirroring NauSYS/BM shapes so the same mapping code runs) for the catalogue, extras and payment plans, plus a "provider re-price on quote" path so revalidation is testable pre-credentials. Default via `PROVIDER_MODE=mock`.
 
-**Availability is the exception: it comes from `availability_slot`, not from a fixture.** Under `PROVIDER_MODE=mock` those rows are the vendor's inventory, exactly as a real vendor's would be after a sync, and they are what `availability.calendar` publishes. Quoting from a separate fixture meant the catalogue offered weeks the quote endpoint then refused with a conflict — a slot cannot be bookable and unpriceable at once. The fixture source survives as the default for unit tests, which have no database.
+**Availability is the exception: it comes from the database, not from a fixture.** Under `PROVIDER_MODE=mock` the seeded `availability_slot`, `listing_free_period` and `listing_price_period` rows are the vendor's inventory, exactly as a real vendor's would be after a sync. Quoting from a separate fixture meant the catalogue offered weeks the quote endpoint then refused with a conflict — a period cannot be bookable and unpriceable at once. The fixture source survives as the default for unit tests, which have no database.
+
+The mock provider does not implement `createAvailabilitySource`, so `runAvailabilitySync` no-ops for it and the seed writes all three tables directly. `packages/db/src/seed.ts` derives the free and price periods from the same weekly slots it writes, so the three cannot disagree — if you change one, change the derivation beside it.
 
 ### 4.4 Connector mechanics (both real providers)
 
@@ -342,7 +352,7 @@ Gates: **`pnpm check-types`** + **`pnpm build`** (non-mutating). Run `pnpm check
 
 ### M3 — Search & availability query endpoints
 
-`listing_search_doc` + `availability_slot` read models (code-managed rebuild after sync) → `charterSearch.results/facets/mapMarkers/suggestions` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets are dynamic from `listing_search_doc` for M3; `facet_dictionary` is deferred until stable labels/i18n are needed.
+`listing_search_doc` + `availability_slot` / `listing_free_period` / `listing_price_period` read models (code-managed rebuild after sync) → `charterSearch.results/facets/mapMarkers/suggestions` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets are dynamic from `listing_search_doc` for M3; `facet_dictionary` is deferred until stable labels/i18n are needed.
 
 - **Acceptance:** results/filters/sort/pins/calendar from real queries on mock data; stable cursor pagination; direct page pagination with total counts for the Figma UI; p95 ≤ **[ASSUMPTION]** 200ms local.
 
@@ -414,11 +424,11 @@ BM + NauSYS adapters (same interface; NauSYS via [`nausys-api-v6-backend-map.md`
 | Screen                            | Entities                                                                                                    | Notable fields                                                                                                                             |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Home / hero search                | `facet_dictionary`, geography, `listing_search_doc`                                                         | destination suggest, dates, guests, yacht type; trending media                                                                             |
-| Results + filters + sort          | `listing_search_doc`, `availability_slot`, `facet_dictionary`                                               | card media/name/model/length/cabins/base/price-hint/rating; filters: category, cabins, length band, price band, amenity, base/region; sort |
+| Results + filters + sort          | `listing_search_doc`, `listing_free_period`, `facet_dictionary`                                             | card media/name/model/length/cabins/base/price-hint/rating; filters: category, cabins, length band, price band, amenity, base/region; sort |
 | Map + pins                        | `listing_search_doc`(geo)                                                                                   | lat/lng, price hint, clustering, bbox                                                                                                      |
 | Trip-builder wizard               | `availability`, `quote`                                                                                     | destination→dates→guests→extras→review; valid weekdays/min nights                                                                          |
 | Yacht detail                      | `listing`, `listing_specification`, `listing_media`, `listing_amenity`, `review`, `faq`, `operator`, `base` | specs, ordered gallery, amenities (obligatory/optional + price), operator, base, reviews summary, FAQ                                      |
-| Availability calendar             | `availability_slot`                                                                                         | week slots, status, min nights, check-in/out weekdays                                                                                      |
+| Availability calendar             | `listing_free_period`, `listing_price_period`, `listing_checkin_rule`, `availability_slot`                  | via `availability.constraints`: allowed weekdays and night bounds, occupancy, published rates, one-way windows                              |
 | Booking card (deposit/full)       | `quote`, `payment_policy`                                                                                   | breakdown, deposit-vs-full toggle, total, currency, expiry                                                                                 |
 | Checkout / summary / confirmation | `booking`, `payment_schedule`, `payment`, `booking_traveller`                                               | booking status, payment status/clientSecret, lead guest + crew, confirmation ref                                                           |
 | Login / registration / profile    | `user`/`session`, `profile`                                                                                 | auth flows; phone, locale, currency, marketing prefs                                                                                       |
