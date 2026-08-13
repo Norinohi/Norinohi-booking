@@ -29,6 +29,7 @@ export default function BookingSidebar({
     crewOptions,
     guests,
     isPending,
+    slotError,
     selectSlot,
     setCrew,
     setGuests,
@@ -56,13 +57,15 @@ export default function BookingSidebar({
             : null
         }
         slots={slots}
-        selectedCheckIn={quote?.checkIn}
+        selectedSlot={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
         onSlotChange={selectSlot}
+        slotError={slotError}
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}
         guests={guests}
         onGuestsChange={setGuests}
+        unavailable={listing ? !listing.availability.hasAvailableDates : false}
         actions={actions}
         shaded={shaded}
         payNowHref={payNowHref}

@@ -30,7 +30,22 @@ import { dayToDisplay } from "@/lib/date";
 import type { Quote, QuoteLine } from "@/features/booking/api/queries";
 
 export type CrewType = NonNullable<Quote["crewType"]>;
-export type WeekSlot = { checkIn: string; checkOut: string; priceMinor: number };
+/** `priceMinor` is null when no seasonal price covers the period; the quote prices it on selection. */
+export type WeekSlot = {
+  checkIn: string;
+  checkOut: string;
+  priceMinor: number | null;
+  /** False for a synthesized slot, or for one a live quote has since refused. */
+  bookable: boolean;
+};
+
+/**
+ * A listing can offer several durations from the same check-in day, so the period,
+ * not the start date, is what identifies a slot in the picker.
+ */
+export function slotKey(slot: { checkIn: string; checkOut: string }) {
+  return `${slot.checkIn}_${slot.checkOut}`;
+}
 
 /** Quote line `group` → the sidebar section it renders under (i18n key on `sidebar.groups`). */
 const GROUPS = [
@@ -59,14 +74,21 @@ export type BookingSummaryProps = {
   stats?: { booked: number; viewed: number } | null;
 
   slots: readonly WeekSlot[];
-  selectedCheckIn: string | undefined;
-  onSlotChange: (checkIn: string) => void;
+  selectedSlot: { checkIn: string; checkOut: string } | undefined;
+  onSlotChange: (key: string) => void;
+  /** The provider refused the last pick — shown under the date control. */
+  slotError?: boolean;
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   onCrewChange: (next: CrewType) => void;
   guests: number;
   onGuestsChange: (next: number) => void;
 
+  /**
+   * The listing has no bookable slot at all. Locks the date picker and swaps the panel for an
+   * enquiry prompt, so the flow never opens on a yacht that cannot be quoted.
+   */
+  unavailable?: boolean;
   /** The Pay Now / Request Quote pair. The booking flow has its own CTA, so it hides them. */
   actions?: boolean;
   /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
@@ -185,13 +207,15 @@ export default function BookingSummary({
   loading = false,
   stats,
   slots,
-  selectedCheckIn,
+  selectedSlot,
   onSlotChange,
+  slotError = false,
   crewType,
   crewOptions,
   onCrewChange,
   guests,
   onGuestsChange,
+  unavailable = false,
   actions = true,
   shaded = false,
   payNowHref,
@@ -204,6 +228,10 @@ export default function BookingSummary({
   const format = useFormatter();
   const slotDay = (date: string) =>
     format.dateTime(dayToDisplay(date), { day: "numeric", month: "short", timeZone: "UTC" });
+  const slotLabel = (slot: WeekSlot) => {
+    const period = `${slotDay(slot.checkIn)} – ${slotDay(slot.checkOut)}`;
+    return slot.priceMinor === null ? period : `${period} · ${money(slot.priceMinor)}`;
+  };
 
   const peoplePercent = ((guests - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
 
@@ -240,14 +268,19 @@ export default function BookingSummary({
           <Select
             className="h-12"
             options={slots.map((slot) => ({
-              value: slot.checkIn,
-              label: `${slotDay(slot.checkIn)} – ${slotDay(slot.checkOut)} · ${money(slot.priceMinor)}`,
+              value: slotKey(slot),
+              label: slotLabel(slot),
+              disabled: !slot.bookable,
             }))}
-            value={selectedCheckIn ?? ""}
+            value={selectedSlot ? slotKey(selectedSlot) : ""}
             onValueChange={onSlotChange}
+            disabled={unavailable}
             placeholder={t("sidebar.datesPlaceholder")}
             emptyLabel={t("sidebar.selectDates")}
           />
+          {slotError ? (
+            <p className="text-sm font-medium text-error-600">{t("sidebar.slotRefused")}</p>
+          ) : null}
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-4.25 font-semibold text-foreground">
@@ -409,7 +442,7 @@ export default function BookingSummary({
           </>
         ) : (
           <div className="flex min-h-56 flex-col items-center justify-center gap-4 p-6 text-center">
-            {loading ? (
+            {loading && !unavailable ? (
               <Loader />
             ) : (
               <>
@@ -420,7 +453,23 @@ export default function BookingSummary({
                   height={131}
                   unoptimized
                 />
-                <p className="text-sm font-medium text-natural-500">{t("sidebar.selectDates")}</p>
+                {unavailable ? (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      {t("sidebar.unavailable")}
+                    </p>
+                    <p className="text-sm font-medium text-natural-500">
+                      {t("sidebar.unavailableHint")}
+                    </p>
+                    {actions ? (
+                      <Button variant="neutral" onClick={onRequestQuote}>
+                        {t("sidebar.requestQuote")}
+                      </Button>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-sm font-medium text-natural-500">{t("sidebar.selectDates")}</p>
+                )}
               </>
             )}
           </div>

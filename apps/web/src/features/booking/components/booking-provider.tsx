@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
 import { useParams } from "next/navigation";
@@ -13,12 +14,25 @@ import {
   useState,
 } from "react";
 
-import type { CrewType, WeekSlot } from "@/components/shared/data-display/booking-summary";
+import {
+  type CrewType,
+  slotKey,
+  type WeekSlot,
+} from "@/components/shared/data-display/booking-summary";
 import { useListingDetail } from "@/features/yachts";
 import { dayFromNative } from "@/lib/date";
 
 import { availabilityCalendarQueryOptions, type Quote } from "../api/queries";
 import { useQuote } from "../hooks/use-quote";
+
+/**
+ * The vendor refusing a period comes back as CONFLICT. Synthesized slots are our own
+ * guess, so this is an expected answer rather than a failure, and the caller narrows
+ * the picker instead of surfacing an error page.
+ */
+function isSlotConflict(error: Error): boolean {
+  return error instanceof ORPCError && error.code === "CONFLICT";
+}
 
 const DEFAULT_GUESTS = 2;
 const CALENDAR_MONTHS = 6;
@@ -36,7 +50,9 @@ type BookingContextValue = {
   crewOptions: readonly CrewType[];
   guests: number;
   isPending: boolean;
-  selectSlot: (checkIn: string) => void;
+  /** The last selection was refused by the provider; the sidebar asks for another date. */
+  slotError: boolean;
+  selectSlot: (key: string) => void;
   setCrew: (next: CrewType) => void;
   setGuests: (next: number) => void;
   /** Step 2 hands its selection here — reprices the current quote's extras in place. */
@@ -90,6 +106,20 @@ export function BookingProvider({
     enabled: Boolean(listingId),
   });
 
+  /*
+   * Periods a live quote refused. A synthesized slot is our inference, so the vendor
+   * is the only authority — once it says no, the option stays disabled for the visit
+   * rather than inviting the same 409 again.
+   *
+   * Confirmation alone is too strict a gate: the confirming pass runs on a wall-clock
+   * budget and reaches a fraction of the fleet, so most sellable weeks never carry one.
+   * A price is the weaker but far broader signal — the vendor published a rate for that
+   * period, which it does not do for a season it has not opened. Unconfirmed AND
+   * unpriced is the combination with nothing behind it.
+   */
+  const [refusedSlots, setRefusedSlots] = useState<ReadonlySet<string>>(new Set());
+  const [slotError, setSlotError] = useState(false);
+
   const slots: WeekSlot[] = useMemo(
     () =>
       (calendar?.slots ?? [])
@@ -97,9 +127,12 @@ export function BookingProvider({
         .map((slot) => ({
           checkIn: slot.startDate,
           checkOut: slot.endDate,
-          priceMinor: slot.price?.amountMinor ?? 0,
+          priceMinor: slot.price?.amountMinor ?? null,
+          bookable:
+            (slot.availabilityConfirmed || slot.price !== undefined) &&
+            !refusedSlots.has(slotKey({ checkIn: slot.startDate, checkOut: slot.endDate })),
         })),
-    [calendar],
+    [calendar, refusedSlots],
   );
 
   const loadedRef = useRef(false);
@@ -115,11 +148,18 @@ export function BookingProvider({
     if (quote.crewType) setCrewChoice(quote.crewType);
   }, [quote]);
 
-  function selectSlot(checkIn: string) {
-    const slot = slots.find((entry) => entry.checkIn === checkIn);
-    if (!slot) return;
+  function selectSlot(key: string) {
+    const slot = slots.find((entry) => slotKey(entry) === key);
+    if (!slot || !slot.bookable) return;
     const dates = { checkIn: slot.checkIn, checkOut: slot.checkOut };
-    void (quote ? repriceWith(dates) : quoteFor({ ...dates, guests, crewType }));
+    setSlotError(false);
+    void (quote ? repriceWith(dates) : quoteFor({ ...dates, guests, crewType })).catch(
+      (error: Error) => {
+        if (!isSlotConflict(error)) throw error;
+        setRefusedSlots((current) => new Set(current).add(key));
+        setSlotError(true);
+      },
+    );
   }
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -149,6 +189,7 @@ export function BookingProvider({
     crewOptions: listing?.crew.options ?? [],
     guests,
     isPending,
+    slotError,
     selectSlot,
     setCrew,
     setGuests,
