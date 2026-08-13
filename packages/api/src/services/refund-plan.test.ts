@@ -21,7 +21,7 @@ function paymentRow(overrides: Partial<Payment> = {}): Payment {
     createdAt: new Date("2026-08-01T10:00:00Z"),
     updatedAt: new Date("2026-08-01T10:00:00Z"),
     ...overrides,
-  } as Payment;
+  };
 }
 
 describe("planRefund", () => {

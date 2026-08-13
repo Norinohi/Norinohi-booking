@@ -32,7 +32,7 @@ export async function requestInvoice(
   input: { bookingId: string; billingEmail: string; companyName?: string; vatNumber?: string },
 ): Promise<InvoiceResult> {
   const row = await readOwnedBooking(db, userId, input.bookingId);
-  const current = row.booking.status as BookingStatus;
+  const current = row.booking.status;
 
   const [existing] = await db
     .select()

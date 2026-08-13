@@ -8,12 +8,16 @@ import { env } from "@yacht-charter/env/server";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq, isNull } from "drizzle-orm";
 import type Stripe from "stripe";
+import { z } from "zod";
 
 import type { Database } from "../context";
 import { confirmBookingWithProvider } from "./booking-confirm";
-import { canTransition, type BookingStatus } from "./booking-state";
+import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
 import { refundBooking, settleWhenFullyRefunded } from "./refund";
+
+/** Stripe sends the bare id unless a caller expanded the intent into an object. */
+const paymentIntentIdSchema = z.string().min(1);
 
 export type WebhookOutcome =
   | { handled: true; eventId: string; duplicate: boolean }
@@ -56,7 +60,7 @@ export async function handleStripeWebhook(
       source: "stripe",
       externalEventId: event.id,
       eventType: event.type,
-      payload: event as unknown as Record<string, unknown>,
+      payload: event,
     })
     .onConflictDoNothing()
     .returning({ id: providerWebhookEvent.id });
@@ -130,7 +134,7 @@ async function onSucceeded(
  * `succeeded` inline, but bank debits and some wallets do not.
  */
 async function onRefundUpdated(db: Database, refund: Stripe.Refund): Promise<void> {
-  const intentId = typeof refund.payment_intent === "string" ? refund.payment_intent : null;
+  const intentId = paymentIntentIdSchema.safeParse(refund.payment_intent).data;
   if (!intentId) return;
 
   const row = await findByIntent(db, intentId);
@@ -177,7 +181,7 @@ async function onFailed(db: Database, intent: Stripe.PaymentIntent): Promise<voi
     })
     .where(eq(payment.id, row.payment.id));
 
-  const current = row.booking.status as BookingStatus;
+  const current = row.booking.status;
   if (!canTransition(current, "PAYMENT_FAILED")) return;
 
   // Stays retryable: the customer can try another card until the quote or the

@@ -9,6 +9,19 @@ import { paginatedQuery, totalFrom } from "./pagination";
 
 type AuditAction = "create" | "update" | "delete" | "sync" | "merge" | "price_adjustment";
 
+/**
+ * Side notes a writer attaches on top of `before`/`after`. Closed on purpose: a
+ * new key belongs here so the admin history knows how to render it.
+ */
+export type AuditMetadata = {
+  reason?: string;
+  note?: string;
+  manualTransferSettled?: boolean;
+  /** Refund counts: how many are still with Stripe, and how many need a transfer. */
+  awaitingSettlement?: number;
+  requiresManualTransfer?: number;
+};
+
 export type AuditEntry = {
   actorUserId: string;
   action: AuditAction;
@@ -16,7 +29,7 @@ export type AuditEntry = {
   entityId?: string | null;
   before?: unknown;
   after?: unknown;
-  metadata?: Record<string, unknown>;
+  metadata?: AuditMetadata;
 };
 
 /**

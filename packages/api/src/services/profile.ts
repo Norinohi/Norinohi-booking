@@ -79,10 +79,10 @@ export async function updateProfile(
     // Better Auth owns user.name and user.phone; keep them in step so the greeting
     // ("Hello, John Doe!") and the session payload do not drift from the profile.
     const name = [firstName, lastName].filter(Boolean).join(" ").trim();
-    await tx
-      .update(user)
-      .set({ phone, ...(name ? { name } : {}) })
-      .where(eq(user.id, userId));
+    const account: Partial<typeof user.$inferInsert> = { phone };
+    if (name) account.name = name;
+
+    await tx.update(user).set(account).where(eq(user.id, userId));
   });
 
   return getProfile(db, userId);
@@ -95,7 +95,10 @@ export async function deactivateProfile(db: Database, userId: string): Promise<v
   });
 }
 
-function splitName(full: string): { firstName: string | null; lastName: string | null } {
+/** The two halves of a display name, either of which can be missing. */
+type NameParts = { firstName: string | null; lastName: string | null };
+
+function splitName(full: string): NameParts {
   const [first, ...rest] = full.trim().split(/\s+/).filter(Boolean);
   return { firstName: first ?? null, lastName: rest.length > 0 ? rest.join(" ") : null };
 }

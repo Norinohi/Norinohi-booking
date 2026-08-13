@@ -10,6 +10,7 @@ import { count, desc, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { duplicateSignalsSchema } from "../contracts/admin";
 import type {
   duplicateCandidateSchema,
   duplicateConfirmInputSchema,
@@ -32,7 +33,10 @@ type Resolution = z.infer<typeof duplicateResolutionSchema>;
  * Media precedence from docs/backend-architecture.md §3: Booking Manager photos
  * win over NauSYS on a listing carrying both, everything else is a fallback.
  */
-const MEDIA_SOURCE_RANK: Record<string, number> = { booking_manager: 0, nausys: 1 };
+const MEDIA_SOURCE_RANK = new Map([
+  ["booking_manager", 0],
+  ["nausys", 1],
+]);
 
 const UNRANKED_SOURCE = 2;
 
@@ -58,7 +62,7 @@ export function pickPrimaryImage(media: readonly MediaRow[]): string | null {
 
 function mediaOrder(row: MediaRow): number {
   const sourceRank =
-    row.source === null ? UNRANKED_SOURCE : (MEDIA_SOURCE_RANK[row.source] ?? UNRANKED_SOURCE);
+    row.source === null ? UNRANKED_SOURCE : (MEDIA_SOURCE_RANK.get(row.source) ?? UNRANKED_SOURCE);
   const roleRank = row.role === "main" ? 0 : row.role === "gallery" ? 1 : 2;
   return sourceRank * 1_000_000 + roleRank * 100_000 + Math.min(row.sortOrder, 99_999);
 }
@@ -99,7 +103,7 @@ export async function listDuplicateCandidates(
     id: row.id,
     decision: row.decision,
     confidence: row.confidence === null ? null : Number(row.confidence),
-    signals: (row.signals as Record<string, unknown> | null) ?? null,
+    signals: duplicateSignalsSchema.safeParse(row.signals).data ?? null,
     createdAt: row.createdAt.toISOString(),
     reviewedAt: row.reviewedAt?.toISOString() ?? null,
     sideA: sides.get(row.sourceAId) ?? missingSide(row.sourceAId),

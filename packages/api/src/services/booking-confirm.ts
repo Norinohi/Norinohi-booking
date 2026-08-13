@@ -8,6 +8,8 @@ import { canTransition, type BookingStatus } from "./booking-state";
 import { awardReferralCredit } from "./loyalty";
 import { asCrewType } from "./quote";
 
+type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
+
 export type ConfirmOutcome =
   | { outcome: "confirmed"; providerReservationId: string | null }
   | { outcome: "rejected"; message: string }
@@ -43,7 +45,7 @@ export async function confirmBookingWithProvider(
 
   const row = found.booking;
   const priced = found.quote;
-  const current = row.status as BookingStatus;
+  const current = row.status;
 
   // Already done, or moved on by something else — either way, do not re-commit.
   if (current === "CONFIRMED") {
@@ -58,15 +60,16 @@ export async function confirmBookingWithProvider(
     return { outcome: "skipped", reason: "Booking changed while confirming" };
   }
 
+  const crewType = asCrewType(priced.crewType);
+
   try {
-    const reservation = await provider.confirmBooking({
+    const request: ConfirmRequest = {
       listingId: row.listingId,
       quoteId: priced.providerQuoteId ?? row.quoteId,
       checkIn: priced.checkIn,
       checkOut: priced.checkOut,
       guests: priced.guests,
       extras: priced.extras,
-      ...(asCrewType(priced.crewType) ? { crewType: asCrewType(priced.crewType) } : {}),
       priceSourceHash: priced.priceSourceHash,
       customer: {
         name: row.guestFullName ?? "Guest",
@@ -84,7 +87,11 @@ export async function confirmBookingWithProvider(
             securityToken: row.providerReservationUuid ?? undefined,
           }
         : undefined,
-    });
+    };
+
+    if (crewType) request.crewType = crewType;
+
+    const reservation = await provider.confirmBooking(request);
 
     await markConfirmed(db, bookingId, row.provider, row.userId, reservation);
 
@@ -126,17 +133,20 @@ async function markConfirmed(
   userId: string,
   reservation: Awaited<ReturnType<InventoryProvider["confirmBooking"]>>,
 ): Promise<void> {
+  const changes: Partial<typeof booking.$inferInsert> = {
+    status: "CONFIRMED",
+    confirmedAt: new Date(),
+    providerReservationId: reservation.providerReservationId ?? null,
+    providerStatus: reservation.status,
+  };
+
+  // Only when the provider issued a new one: a call that returns no token has not
+  // rotated it, and overwriting with null would strand the reservation.
+  if (reservation.securityToken) changes.providerReservationUuid = reservation.securityToken;
+
   await db
     .update(booking)
-    .set({
-      status: "CONFIRMED",
-      confirmedAt: new Date(),
-      providerReservationId: reservation.providerReservationId ?? null,
-      // Only when the provider issued a new one: a call that returns no token has
-      // not rotated it, and overwriting with null would strand the reservation.
-      ...(reservation.securityToken ? { providerReservationUuid: reservation.securityToken } : {}),
-      providerStatus: reservation.status,
-    })
+    .set(changes)
     .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
 
   await db.insert(providerReservationEvent).values({
@@ -144,7 +154,7 @@ async function markConfirmed(
     kind: "confirm_succeeded",
     provider,
     providerReference: reservation.providerReservationId ?? null,
-    payload: reservation as unknown as Record<string, unknown>,
+    payload: reservation,
   });
 
   // "Once they complete their trip, you receive €100 credits." Its own

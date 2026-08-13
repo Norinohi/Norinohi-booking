@@ -147,12 +147,14 @@ export const duplicateSideSchema = z.object({
   listing: duplicateSideListingSchema.nullable(),
 });
 
+/** Whatever the matcher recorded, e.g. `{ matchedOn: "model+yearBuilt" }`. */
+export const duplicateSignalsSchema = z.record(z.string(), z.unknown()).nullable();
+
 export const duplicateCandidateSchema = z.object({
   id: z.string(),
   decision: duplicateDecisionSchema,
   confidence: z.number().nullable(),
-  /** Whatever the matcher recorded, e.g. `{ matchedOn: "model+yearBuilt" }`. */
-  signals: z.record(z.string(), z.unknown()).nullable(),
+  signals: duplicateSignalsSchema,
   createdAt: z.string(),
   reviewedAt: z.string().nullable(),
   sideA: duplicateSideSchema,

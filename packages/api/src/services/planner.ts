@@ -21,45 +21,51 @@ const NEUTRAL_GUESTS = 6;
 
 type Destination = { country: string; flag: string };
 
-const COUNTRIES: Record<string, Destination> = {
+/** "Not sure" is an answer, never a lookup key: it resolves to the default first. */
+type AnsweredKey<TAnswer extends keyof PlannerAnswers> = Exclude<
+  NonNullable<PlannerAnswers[TAnswer]>,
+  "not-sure"
+>;
+
+const COUNTRIES = {
   croatia: { country: "Croatia", flag: "🇭🇷" },
   greece: { country: "Greece", flag: "🇬🇷" },
   italy: { country: "Italy", flag: "🇮🇹" },
   spain: { country: "Spain", flag: "🇪🇸" },
-};
+} satisfies Record<AnsweredKey<"destination">, Destination>;
 
-const GROUP_SIZES: Record<string, { guests: number; minBerths: number }> = {
+const GROUP_SIZES = {
   "2-4": { guests: 4, minBerths: 4 },
   "5-8": { guests: 8, minBerths: 8 },
   "9-plus": { guests: 10, minBerths: 9 },
-};
+} satisfies Record<AnsweredKey<"groupSize">, { guests: number; minBerths: number }>;
 
 /** Per person, per week, in minor units. `max: null` means open-ended. */
-const BUDGETS: Record<string, { min: number; max: number | null }> = {
+const BUDGETS = {
   "300-600": { min: 30_000, max: 60_000 },
   "600-1000": { min: 60_000, max: 100_000 },
   "1000-1200": { min: 100_000, max: 120_000 },
   "2000-plus": { min: 200_000, max: null },
-};
+} satisfies Record<AnsweredKey<"budget">, { min: number; max: number | null }>;
 
-const DURATIONS: Record<string, number> = {
+const DURATIONS = {
   "7": 7,
   "14": 14,
   "21": 21,
   "21-plus": 28,
-};
+} satisfies Record<AnsweredKey<"duration">, number>;
 
 /**
  * The vibe steers the kind of boat rather than filtering hard on it — a party of
  * six who picked "relax" should still see a catamaran if that is what is free.
  */
-const VIBE_CATEGORY: Record<string, string | null> = {
+const VIBE_CATEGORY = {
   adventure: "Sailing yacht",
   relax: "Catamaran",
   family: "Catamaran",
   luxury: "Luxury yacht",
   party: "Catamaran",
-};
+} satisfies Record<AnsweredKey<"vibe">, string>;
 
 type TripBrief = {
   destination: Destination;
@@ -82,12 +88,12 @@ function resolveBrief(answers: PlannerAnswers): TripBrief {
     answers.destination && answers.destination !== "not-sure"
       ? answers.destination
       : DEFAULT_DESTINATION;
-  // The keys are a closed enum and DEFAULT_DESTINATION is one of them, so this
-  // cannot actually miss; the fallback keeps the type honest without a cast.
-  const destination: Destination = COUNTRIES[destinationKey] ??
-    COUNTRIES[DEFAULT_DESTINATION] ?? { country: "Greece", flag: "\u{1F1EC}\u{1F1F7}" };
+  const destination: Destination = COUNTRIES[destinationKey];
 
-  const group = answers.groupSize ? GROUP_SIZES[answers.groupSize] : undefined;
+  const group =
+    answers.groupSize && answers.groupSize !== "not-sure"
+      ? GROUP_SIZES[answers.groupSize]
+      : undefined;
   const durationDays = answers.duration
     ? (DURATIONS[answers.duration] ?? 21)
     : DEFAULT_DURATION_DAYS;

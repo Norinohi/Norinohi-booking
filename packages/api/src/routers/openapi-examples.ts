@@ -1,11 +1,14 @@
+/** A literal JSON value, which is all an OpenAPI `example` may hold. */
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 type OpenApiParameter = {
   name?: string;
   in?: string;
-  example?: unknown;
+  example?: JsonValue;
 };
 
 type OpenApiMediaType = {
-  example?: unknown;
+  example?: JsonValue;
 };
 
 type OpenApiOperation = {
@@ -17,7 +20,7 @@ type OpenApiOperation = {
 
 type OpenApiSpecCallback = (operation: any) => any;
 
-export function withParameterExamples(examples: Record<string, unknown>): OpenApiSpecCallback {
+export function withParameterExamples(examples: Record<string, JsonValue>): OpenApiSpecCallback {
   return (operation: OpenApiOperation) => ({
     ...operation,
     parameters: operation.parameters?.map((parameter) => {
@@ -30,7 +33,7 @@ export function withParameterExamples(examples: Record<string, unknown>): OpenAp
   });
 }
 
-export function withJsonBodyExample(example: unknown): OpenApiSpecCallback {
+export function withJsonBodyExample(example: JsonValue): OpenApiSpecCallback {
   return (operation: OpenApiOperation) => ({
     ...operation,
     requestBody: {

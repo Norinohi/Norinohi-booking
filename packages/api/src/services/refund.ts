@@ -4,10 +4,10 @@ import { and, eq, isNull } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import type { Database } from "../context";
-import { writeAuditLog } from "./audit";
+import { type AuditMetadata, writeAuditLog } from "./audit";
 import { type BookingStatus, canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
-import { type PaymentRow, planRefund } from "./refund-plan";
+import { type CardPaymentRow, type PaymentRow, planRefund } from "./refund-plan";
 
 export type RefundResult = {
   bookingId: string;
@@ -39,7 +39,7 @@ export async function refundBooking(
 
   if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
 
-  const current = row.status as BookingStatus;
+  const current = row.status;
 
   // Idempotent: a second call on a finished refund reports it rather than failing.
   if (current === "REFUNDED") {
@@ -112,6 +112,13 @@ export async function refundBooking(
   const status = await settleWhenFullyRefunded(db, bookingId);
 
   if (options.actorUserId) {
+    const metadata: AuditMetadata = {
+      awaitingSettlement,
+      requiresManualTransfer: outstandingManual,
+    };
+    if (options.reason) metadata.reason = options.reason;
+    if (options.manualTransferSettled) metadata.manualTransferSettled = true;
+
     await writeAuditLog(db, {
       actorUserId: options.actorUserId,
       action: "update",
@@ -119,12 +126,7 @@ export async function refundBooking(
       entityId: bookingId,
       before: { status: current },
       after: { status, refundedMinor, currency: row.currency },
-      metadata: {
-        ...(options.reason ? { reason: options.reason } : {}),
-        ...(options.manualTransferSettled ? { manualTransferSettled: true } : {}),
-        awaitingSettlement,
-        requiresManualTransfer: outstandingManual,
-      },
+      metadata,
     });
   }
 
@@ -139,16 +141,19 @@ export async function refundBooking(
 
 function createRefund(
   stripe: Stripe,
-  paid: PaymentRow,
+  paid: CardPaymentRow,
   bookingId: string,
   reason: string | undefined,
 ): Promise<Stripe.Refund> {
+  const metadata: Stripe.MetadataParam = { bookingId, paymentId: paid.id };
+  if (reason) metadata.reason = reason;
+
   return stripe.refunds.create(
     {
-      payment_intent: paid.stripePaymentIntentId as string,
+      payment_intent: paid.stripePaymentIntentId,
       // No `amount`: the whole payment goes back. Partial refunds are a
       // cancellation-policy decision nothing in the system makes yet.
-      metadata: { bookingId, paymentId: paid.id, ...(reason ? { reason } : {}) },
+      metadata,
     },
     // Keyed on the payment, not the booking: a booking with a deposit and a
     // balance needs two refunds, and a retry after a timeout must not add a third.
@@ -188,7 +193,7 @@ export async function settleWhenFullyRefunded(
     .where(eq(booking.id, bookingId))
     .limit(1);
 
-  const current = (row?.status ?? "REFUND_PENDING") as BookingStatus;
+  const current = row?.status ?? "REFUND_PENDING";
   if (!canTransition(current, "REFUNDED")) return current;
 
   const plan = planRefund(await db.select().from(payment).where(eq(payment.bookingId, bookingId)));
@@ -200,5 +205,5 @@ export async function settleWhenFullyRefunded(
     .where(and(eq(booking.id, bookingId), eq(booking.status, current)))
     .returning({ status: booking.status });
 
-  return (moved?.status ?? current) as BookingStatus;
+  return moved?.status ?? current;
 }

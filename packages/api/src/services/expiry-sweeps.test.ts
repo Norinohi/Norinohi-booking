@@ -30,7 +30,7 @@ describe("every sweep writes a status the state machine allows", () => {
 describe("the two sweeps cannot both claim the same booking", () => {
   it("overlap only on OPTION_PENDING, which is separated by hold_expires_at", () => {
     const overlap = HOLD_SWEEP.from.filter((status) =>
-      (DEAD_QUOTE_SWEEP.from as readonly string[]).includes(status),
+      DEAD_QUOTE_SWEEP.from.some((other) => other === status),
     );
 
     // expireHolds additionally requires hold_expires_at IS NOT NULL, and that
