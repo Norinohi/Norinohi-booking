@@ -363,6 +363,8 @@ function textsOf(yacht: RestYacht) {
   const texts: { kind: "description" | "notes"; locale: string; value: string }[] = [];
 
   for (const source of TEXT_SOURCES) {
+    // SAFETY: TEXT_SOURCES names keys of RestYacht; the record view only exists
+    // because those names are read dynamically rather than as literals.
     const record = yacht as Record<string, unknown>;
     const locales = Object.entries(toLocaleMap(record[source.intText]));
 

@@ -94,7 +94,13 @@ export type NausysStatusName = keyof typeof NAUSYS_STATUS_CODES;
 export type NausysStatusCode = (typeof NAUSYS_STATUS_CODES)[NausysStatusName];
 
 export const NAUSYS_STATUS_NAMES: Record<number, NausysStatusName> = Object.fromEntries(
-  Object.entries(NAUSYS_STATUS_CODES).map(([name, code]) => [code, name as NausysStatusName]),
+  Object.entries(NAUSYS_STATUS_CODES).map(([name, code]) => [
+    code,
+    // SAFETY: NausysStatusName is keyof typeof NAUSYS_STATUS_CODES, so every key
+    // Object.entries yields is one by construction; entries only widens it to
+    // string because it cannot express that.
+    name as NausysStatusName,
+  ]),
 );
 
 /**

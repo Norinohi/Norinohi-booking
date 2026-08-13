@@ -352,6 +352,8 @@ function isFatal(error: unknown): boolean {
 }
 
 function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<string, unknown>[] {
+  // SAFETY: dumpSchema is a passthrough object, so its inferred type is already a
+  // string-keyed record; the assertion only restates that for dynamic key access.
   const body = dump as Record<string, unknown>;
 
   for (const key of keys) {
@@ -362,7 +364,11 @@ function collectionOf(dump: Dump, keys: string[], endpoint: string): Record<stri
   const fallback = Object.entries(body).find(
     ([key, value]) => key !== "status" && Array.isArray(value),
   );
-  if (fallback) return objectsOf(fallback[1] as unknown[]);
+  if (fallback) {
+    // SAFETY: the find predicate accepts an entry only when Array.isArray holds
+    // for its value; that narrowing does not survive out of the callback.
+    return objectsOf(fallback[1] as unknown[]);
+  }
 
   // An OK response carrying no collection at all is a contract violation, and the
   // only reading that is definitely wrong is "the vendor has nothing" — which would

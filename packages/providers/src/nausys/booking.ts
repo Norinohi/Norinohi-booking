@@ -1,5 +1,6 @@
 import { booking } from "@yacht-charter/db/schema/booking";
 import { and, eq } from "drizzle-orm";
+import type { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
@@ -410,7 +411,8 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         code: `${PROVIDER}:${extra.serviceId}`,
         label: `Service ${extra.serviceId}`,
         amount: { amountMinor: decimalStringToMinor(extra.amount, currency), currency },
-        payWhen: extra.calculationType === "SEPARATE_PAYMENT" ? "at_check_in" : "now",
+        payWhen:
+          extra.calculationType === "SEPARATE_PAYMENT" ? ("at_check_in" as const) : ("now" as const),
         kind: "extra" as const,
       }),
     );
@@ -418,7 +420,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     const totalMinor = extraLines.reduce((sum, line) => sum + line.amount.amountMinor, baseMinor);
     const policy = paymentPolicyOf(response);
 
-    return providerQuoteSchema.parse({
+    const quoteInput: z.input<typeof providerQuoteSchema> = {
       id: `qte_${PROVIDER}_${response.id}`,
       provider: PROVIDER,
       listingId: (await resolver.toListingId(String(response.yachtId))) ?? "",
@@ -443,14 +445,6 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
           policy.mode === "full" ? totalMinor : Math.round(totalMinor * policy.depositPct),
         currency,
       },
-      ...(response.securityDeposit
-        ? {
-            securityDeposit: {
-              amountMinor: decimalStringToMinor(response.securityDeposit, currency),
-              currency,
-            },
-          }
-        : {}),
       paymentPolicy: policy,
       // Deliberately not hashing the whole response: the uuid rotates on every
       // mutation and would make an unchanged price look like a new one.
@@ -467,7 +461,15 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         : // A committed reservation's price stands to the charter itself.
           `${checkIn}T00:00:00.000Z`,
       repriced: true,
-    });
+    };
+    if (response.securityDeposit) {
+      quoteInput.securityDeposit = {
+        amountMinor: decimalStringToMinor(response.securityDeposit, currency),
+        currency,
+      };
+    }
+
+    return providerQuoteSchema.parse(quoteInput);
   }
 
   async function logEvent(

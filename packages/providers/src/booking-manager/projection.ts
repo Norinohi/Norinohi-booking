@@ -474,14 +474,16 @@ function mediaOf(yacht: RestYacht) {
       sortOrder: intOf(image.sortOrder) ?? index,
       index,
     }))
-    .filter((image) => image.url !== undefined)
+    .filter((image): image is { url: string; sortOrder: number; index: number } => {
+      return image.url !== undefined;
+    })
     .sort((left, right) => left.sortOrder - right.sortOrder || left.index - right.index);
 
   const media: { externalUrl: string; role: "main" | "gallery"; sortOrder: number }[] = [];
   const seen = new Set<string>();
 
   for (const image of images) {
-    const url = image.url as string;
+    const url = image.url;
     if (seen.has(url)) continue;
     seen.add(url);
     media.push({

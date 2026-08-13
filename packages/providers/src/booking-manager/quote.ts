@@ -1,5 +1,6 @@
 import type { z } from "zod";
 
+import type { QueryValue } from "../shared/http-client";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { toPositiveIntId } from "../shared/projection-helpers";
@@ -78,17 +79,23 @@ export function createBookingManagerQuoteService(
       });
       const productName = parsed.crewType ? options.productNameFor?.(parsed.crewType) : undefined;
 
-      const offers = await client.get(bookingManagerEndpoints.offers, restOfferListSchema, {
-        // Midnight is mandatory here, not a placeholder: MMK confirmed the vendor
-        // substitutes the base's own check-in/check-out time and returns it on the
-        // offer, so sending a time of our own is refused or silently overridden.
+      // Midnight is mandatory here, not a placeholder: MMK confirmed the vendor
+      // substitutes the base's own check-in/check-out time and returns it on the
+      // offer, so sending a time of our own is refused or silently overridden.
+      const offerQuery: Record<string, QueryValue | undefined> = {
         dateFrom: formatBookingManagerDateTime(parsed.checkIn),
         dateTo: formatBookingManagerDateTime(parsed.checkOut),
         yachtId: [yachtId],
         currency: parsed.currency,
         passengersOnBoard: parsed.guests,
-        ...(productName ? { productName } : {}),
-      });
+      };
+      if (productName) offerQuery.productName = productName;
+
+      const offers = await client.get(
+        bookingManagerEndpoints.offers,
+        restOfferListSchema,
+        offerQuery,
+      );
 
       const offer = selectOffer(offers, yachtId, parsed.checkIn, parsed.checkOut, productName);
       if (!offer) {
