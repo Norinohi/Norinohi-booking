@@ -1,5 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
 import { listing } from "../schema/listing";
@@ -246,16 +246,31 @@ export async function rebuildSearchReadModelsAfterSync(
  *
  * Publishes every listing still in draft and rebuilds their search docs in one
  * call, so a caller can't publish without also refreshing the read model. No
- * review criteria: fine for a single-provider environment with no moderation
- * queue yet; a real one needs actual review before this runs unattended.
+ * review criteria: fine for an environment with no moderation queue yet; a real
+ * one needs actual review before this runs unattended.
+ *
+ * `providerCode` narrows it to one provider's drafts. Without it, an operator
+ * publishing a reviewed NauSYS import would also release every unreviewed
+ * Booking Manager draft sitting beside it, which is precisely what the
+ * draft-by-default rule exists to prevent.
  */
 export async function publishDraftListings(
   db: NodePgDatabase<typeof schema>,
+  options: { providerCode?: string } = {},
 ): Promise<{ publishedCount: number }> {
+  const ofProvider = options.providerCode
+    ? sql`exists (
+        select 1 from listing_source ls
+        join provider_record pr on pr.id = ls.provider_record_id
+        join provider p on p.id = pr.provider_id
+        where ls.listing_id = ${listing.id} and p.code = ${options.providerCode}
+      )`
+    : undefined;
+
   const published = await db
     .update(listing)
     .set({ status: "published" })
-    .where(eq(listing.status, "draft"))
+    .where(ofProvider ? and(eq(listing.status, "draft"), ofProvider) : eq(listing.status, "draft"))
     .returning({ id: listing.id });
 
   if (published.length > 0) {

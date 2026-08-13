@@ -11,6 +11,7 @@ import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { retainRawPayload, stableSourceHash } from "../shared/raw-retention";
+import { openSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
 import { loadProviderRecordSet, writeCanonicalCatalogue } from "./catalogue-writer";
@@ -577,16 +578,15 @@ export async function readCatalogueSyncProgress(
 }
 
 /** Created before the work starts so a caller can return the id and walk away. */
-export async function openCatalogueSyncRun(db: Database, providerId: string): Promise<string> {
-  const [row] = await db
-    .insert(syncRun)
-    .values({ providerId, kind: "catalogue", status: "pending" })
-    .returning({ id: syncRun.id });
-
-  if (!row) {
-    throw new Error("sync_run insert returned no row");
-  }
-  return row.id;
+/**
+ * Raised when a run of the same provider and kind is already pending or running.
+ *
+ * Separate from `ProviderError` on purpose: nothing went wrong with the vendor,
+ * so this must not reach `sync_error` or a retry. It is a scheduling collision,
+ * and the caller's job is to report it rather than start a second walk.
+ */
+export function openCatalogueSyncRun(db: Database, providerId: string): Promise<string> {
+  return openSyncRun(db, providerId, "catalogue");
 }
 
 export interface CatalogueSyncJobOptions {

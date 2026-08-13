@@ -22,11 +22,35 @@ export const syncRunStartedSchema = z.object({
   status: z.literal("pending"),
 });
 
+/** Omit `provider` to start every enabled connector; name one to start just it. */
+export const syncStartInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema.optional(),
+  })
+  .default({});
+
+/** One provider's outcome in a fan-out. A run already in flight is not an error. */
+export const syncRunOutcomeSchema = z.discriminatedUnion("started", [
+  syncRunStartedSchema.extend({ started: z.literal(true) }),
+  z.object({
+    started: z.literal(false),
+    provider: z.string(),
+    reason: z.enum(["already_running", "failed"]),
+    message: z.string(),
+  }),
+]);
+
+export const syncRunsStartedSchema = z.object({ runs: z.array(syncRunOutcomeSchema) });
+
 export const syncRunStatusInputSchema = z
   .object({
     /** Defaults to the provider's most recent run. */
     syncRunId: z.string().min(1).optional(),
     errorLimit: z.number().int().min(1).max(200).optional(),
+    /** Without it, "latest" spans kinds and an availability run answers for the catalogue. */
+    kind: z.enum(["catalogue", "availability", "pricing"]).optional(),
+    /** Defaults to the transacting provider, which is the one PROVIDER_MODE names. */
+    provider: providerKeyOutputSchema.optional(),
   })
   .default({});
 

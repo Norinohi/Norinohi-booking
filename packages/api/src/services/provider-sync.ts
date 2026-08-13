@@ -13,7 +13,8 @@ import {
   resolveProviderId,
   runCatalogueSyncJob,
 } from "@yacht-charter/providers/sync/runner";
-import { desc, eq } from "drizzle-orm";
+import { SyncAlreadyRunningError, type SyncKind } from "@yacht-charter/providers/sync/run";
+import { and, desc, eq } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -94,17 +95,58 @@ export async function startAvailabilitySync(
   return { syncRunId, status: "pending", provider: provider.key };
 }
 
+/** One provider's outcome when a fan-out asked every enabled provider to sync. */
+export type ProviderSyncOutcome =
+  | (SyncRunStarted & { started: true })
+  | { started: false; provider: string; reason: "already_running" | "failed"; message: string };
+
+/**
+ * Starts `start` for every provider, and never lets one provider's failure stop
+ * another's.
+ *
+ * A provider already mid-run is reported rather than raised: the nightly cron
+ * firing while a long catalogue walk is still going is expected operation, not an
+ * incident, and returning 500 for it would page someone every night.
+ */
+export async function startSyncForAll(
+  providers: Iterable<InventoryProvider>,
+  start: (provider: InventoryProvider) => Promise<SyncRunStarted>,
+): Promise<ProviderSyncOutcome[]> {
+  return Promise.all(
+    [...providers].map(async (provider) => {
+      try {
+        return { ...(await start(provider)), started: true as const };
+      } catch (error) {
+        const alreadyRunning = error instanceof SyncAlreadyRunningError;
+        return {
+          started: false as const,
+          provider: provider.key,
+          reason: alreadyRunning ? ("already_running" as const) : ("failed" as const),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }),
+  );
+}
+
 export async function getCatalogueSyncStatus(
   db: Database,
   provider: InventoryProvider,
-  input: { syncRunId?: string; errorLimit?: number } = {},
+  input: { syncRunId?: string; errorLimit?: number; kind?: SyncKind } = {},
 ): Promise<SyncRunStatus> {
   const providerId = await resolveProviderId(db, provider.key);
+
+  // Without the kind filter, asking for catalogue status right after an
+  // availability run returned the availability run, because "latest for this
+  // provider" spans both.
+  const latest = input.kind
+    ? and(eq(syncRun.providerId, providerId), eq(syncRun.kind, input.kind))
+    : eq(syncRun.providerId, providerId);
 
   const [run] = await db
     .select()
     .from(syncRun)
-    .where(input.syncRunId ? eq(syncRun.id, input.syncRunId) : eq(syncRun.providerId, providerId))
+    .where(input.syncRunId ? eq(syncRun.id, input.syncRunId) : latest)
     .orderBy(desc(syncRun.createdAt))
     .limit(1);
 

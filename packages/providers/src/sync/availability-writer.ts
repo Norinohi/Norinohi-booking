@@ -11,6 +11,7 @@ import type { Database } from "../registry";
 import { createCatalogueResolver, type CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
+import { openSyncRun } from "./run";
 
 /* ------------------------------------------------------------ canonical DTOs */
 
@@ -938,16 +939,8 @@ export function createDrizzleAvailabilitySyncStore(
 /* ------------------------------------------------------------ entry points */
 
 /** Created before the work starts so a caller can return the id and walk away. */
-export async function openAvailabilitySyncRun(db: Database, providerId: string): Promise<string> {
-  const [row] = await db
-    .insert(syncRun)
-    .values({ providerId, kind: "availability", status: "pending" })
-    .returning({ id: syncRun.id });
-
-  if (!row) {
-    throw new Error("sync_run insert returned no row");
-  }
-  return row.id;
+export function openAvailabilitySyncRun(db: Database, providerId: string): Promise<string> {
+  return openSyncRun(db, providerId, "availability");
 }
 
 export interface AvailabilitySyncJobOptions {

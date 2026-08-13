@@ -1,4 +1,11 @@
-import { providerCapabilitiesSchema } from "@yacht-charter/providers";
+import { ORPCError } from "@orpc/server";
+import {
+  type InventoryProvider,
+  providerCapabilitiesSchema,
+  type ProviderKey,
+} from "@yacht-charter/providers";
+
+import { getEnabledInventoryProviders } from "../context";
 
 import {
   discountCreateInputSchema,
@@ -14,9 +21,10 @@ import {
   listingPriceListSchema,
   listingPriceRowSchema,
   listingPriceUpdateInputSchema,
-  syncRunStartedSchema,
+  syncRunsStartedSchema,
   syncRunStatusInputSchema,
   syncRunStatusSchema,
+  syncStartInputSchema,
   yachtOptionsInputSchema,
   yachtOptionsSchema,
 } from "../contracts/admin";
@@ -62,6 +70,7 @@ import {
   getCatalogueSyncStatus,
   startAvailabilitySync,
   startCatalogueSync,
+  startSyncForAll,
 } from "../services/provider-sync";
 import {
   clearListingPrice,
@@ -70,6 +79,37 @@ import {
   updateListingPrice,
 } from "../services/listing-price";
 import { withJsonBodyExample } from "./openapi-examples";
+
+/**
+ * Which providers a sync request targets: the one named, or every enabled one.
+ *
+ * `context.provider` is not the answer here. It is whichever adapter
+ * `PROVIDER_MODE` selected for quoting and checkout, and importing from a vendor
+ * is a separate question from selling through it.
+ */
+async function resolveSyncTargets(
+  requested: ProviderKey | undefined,
+): Promise<InventoryProvider[]> {
+  const providers = await getEnabledInventoryProviders();
+  if (!requested) return [...providers.values()];
+
+  const target = providers.get(requested);
+  if (!target) {
+    throw new ORPCError("NOT_FOUND", {
+      message: `Provider "${requested}" is not enabled`,
+    });
+  }
+  return [target];
+}
+
+async function resolveSyncProvider(
+  context: { provider: InventoryProvider },
+  requested: ProviderKey | undefined,
+): Promise<InventoryProvider> {
+  if (!requested) return context.provider;
+  const [only] = await resolveSyncTargets(requested);
+  return only ?? context.provider;
+}
 
 export const adminRouter = {
   provider: {
@@ -95,14 +135,18 @@ export const adminRouter = {
         operationId: "startProviderCatalogueSync",
         summary: "Start a provider catalogue sync",
         description:
-          "Kicks off a full catalogue import for the active inventory provider and returns immediately with the sync run id. A full run can take hours, so it deliberately outlives the request; poll admin.provider.syncStatus to follow it. Normally this is driven by the scheduled POST /api/cron/sync-catalogue.",
+          "Kicks off a full catalogue import and returns immediately with the sync run ids. Omit provider to start every enabled connector, or name one to start just it. A full run can take hours, so it deliberately outlives the request; poll admin.provider.syncStatus to follow it. A provider whose run is already in flight is reported as not started rather than failing the call. Normally this is driven by the scheduled POST /api/cron/sync-catalogue.",
         tags: ["Admin"],
-        successDescription: "The sync run that was opened.",
+        successDescription: "The sync runs that were opened.",
         spec: withJsonBodyExample({}),
       })
-      .input(emptyInputSchema)
-      .output(syncRunStartedSchema)
-      .handler(({ context }) => startCatalogueSync(context.db, context.provider)),
+      .input(syncStartInputSchema)
+      .output(syncRunsStartedSchema)
+      .handler(async ({ context, input }) => ({
+        runs: await startSyncForAll(await resolveSyncTargets(input.provider), (provider) =>
+          startCatalogueSync(context.db, provider),
+        ),
+      })),
     syncAvailability: adminProcedure
       .route({
         method: "POST",
@@ -110,14 +154,18 @@ export const adminRouter = {
         operationId: "startProviderAvailabilitySync",
         summary: "Start a provider availability sync",
         description:
-          "Refreshes availability for the active inventory provider and returns immediately with the sync run id. Writes the provider's occupied and option periods, derives the bookable periods around them as unconfirmed availability, and then upgrades as many as its time budget allows to a live confirmed price. Normally driven by the scheduled POST /api/cron/sync-availability; poll admin.provider.syncStatus to follow it.",
+          "Refreshes availability and returns immediately with the sync run ids. Omit provider to refresh every enabled connector, or name one. Writes the provider's occupied and option periods, derives the bookable periods around them as unconfirmed availability, and then upgrades as many as its time budget allows to a live confirmed price. Normally driven by the scheduled POST /api/cron/sync-availability; poll admin.provider.syncStatus to follow it.",
         tags: ["Admin"],
-        successDescription: "The sync run that was opened.",
+        successDescription: "The sync runs that were opened.",
         spec: withJsonBodyExample({}),
       })
-      .input(emptyInputSchema)
-      .output(syncRunStartedSchema)
-      .handler(({ context }) => startAvailabilitySync(context.db, context.provider)),
+      .input(syncStartInputSchema)
+      .output(syncRunsStartedSchema)
+      .handler(async ({ context, input }) => ({
+        runs: await startSyncForAll(await resolveSyncTargets(input.provider), (provider) =>
+          startAvailabilitySync(context.db, provider),
+        ),
+      })),
     syncStatus: adminProcedure
       .route({
         method: "POST",
@@ -125,14 +173,20 @@ export const adminRouter = {
         operationId: "getProviderSyncStatus",
         summary: "Read a sync run and its errors",
         description:
-          "Returns one sync run with its created/updated/skipped/failed counts and its most recent errors. Omit syncRunId for the active provider's latest run.",
+          "Returns one sync run with its created/updated/skipped/failed counts and its most recent errors. Omit syncRunId for a provider's latest run, and pass kind to avoid an availability run answering for the catalogue. Defaults to the transacting provider.",
         tags: ["Admin"],
         successDescription: "The requested sync run.",
         spec: withJsonBodyExample({}),
       })
       .input(syncRunStatusInputSchema)
       .output(syncRunStatusSchema)
-      .handler(({ context, input }) => getCatalogueSyncStatus(context.db, context.provider, input)),
+      .handler(async ({ context, input }) =>
+        getCatalogueSyncStatus(
+          context.db,
+          await resolveSyncProvider(context, input.provider),
+          input,
+        ),
+      ),
   },
   booking: {
     cancel: adminProcedure

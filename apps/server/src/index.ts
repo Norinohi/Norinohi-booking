@@ -1,11 +1,16 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { serve } from "@hono/node-server";
-import { createContext, inventoryProvider } from "@yacht-charter/api/context";
+import {
+  createContext,
+  getEnabledInventoryProviders,
+  inventoryProvider,
+} from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
 import {
   startAvailabilitySync,
   startCatalogueSync,
+  startSyncForAll,
 } from "@yacht-charter/api/services/provider-sync";
 import { handleStripeWebhook } from "@yacht-charter/api/services/stripe-webhook";
 import { auth } from "@yacht-charter/auth";
@@ -103,7 +108,10 @@ app.post("/api/cron/sync-catalogue", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  return c.json(await startCatalogueSync(db, inventoryProvider));
+  const providers = await getEnabledInventoryProviders();
+  return c.json({
+    runs: await startSyncForAll(providers.values(), (provider) => startCatalogueSync(db, provider)),
+  });
 });
 
 // The vendor asks for occupancy hourly or every few hours. Started and let go like
@@ -119,7 +127,12 @@ app.post("/api/cron/sync-availability", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  return c.json(await startAvailabilitySync(db, inventoryProvider));
+  const providers = await getEnabledInventoryProviders();
+  return c.json({
+    runs: await startSyncForAll(providers.values(), (provider) =>
+      startAvailabilitySync(db, provider),
+    ),
+  });
 });
 
 // Try RPC (/rpc), then OpenAPI (/api-reference), else fall through.
