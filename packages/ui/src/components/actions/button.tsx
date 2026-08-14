@@ -1,6 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2Icon } from "lucide-react";
 
 /*
  * Button — Figma "Buttons" (node 1020-744892).
@@ -10,8 +11,8 @@ import { cva, type VariantProps } from "class-variance-authority";
  * Text = Manrope SemiBold 16 / 1.25; radius 8px; icon 16px; gap 6px.
  * Disabled is uniform across variants (bg natural-100 / text natural-300 / border natural-200).
  * `loading` is the in-flight state that shouldn't flash that grey: it keeps the variant's own
- * colours, dims them, and blocks pointer input. The button stays keyboard-focusable, so guard the
- * click handler against re-entry yourself.
+ * colours, dims them, adds a spinner and blocks pointer input. The button stays keyboard-focusable,
+ * so guard the click handler against re-entry yourself.
  */
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-transparent font-semibold whitespace-nowrap leading-[1.25] transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:bg-natural-100 disabled:text-natural-300 disabled:border-natural-200 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -58,6 +59,7 @@ function Button({
   variant = "primary",
   size = "md",
   loading = false,
+  children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { loading?: boolean }) {
   return (
@@ -71,7 +73,12 @@ function Button({
         className,
       )}
       {...props}
-    />
+    >
+      {/* Leads the label rather than replacing it: a button whose text vanishes mid-click
+          resizes under the cursor, and the label is what says which action is running. */}
+      {loading ? <Loader2Icon className="animate-spin" aria-hidden /> : null}
+      {children}
+    </ButtonPrimitive>
   );
 }
 

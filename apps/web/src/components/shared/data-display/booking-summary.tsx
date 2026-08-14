@@ -143,7 +143,7 @@ function PromoField({
             {t("applied", { amount: money(applied.amountMinor) })}
           </p>
         </div>
-        <Button variant="subtle" size="sm" disabled={pending} onClick={() => onApply(null)}>
+        <Button variant="subtle" size="sm" loading={pending} onClick={() => onApply(null)}>
           {t("remove")}
         </Button>
       </div>
@@ -180,7 +180,8 @@ function PromoField({
         <Button
           variant="neutral"
           className="shrink-0"
-          disabled={pending || code.trim().length === 0}
+          loading={pending}
+          disabled={code.trim().length === 0}
           onClick={submit}
         >
           {t("apply")}
@@ -542,6 +543,7 @@ export default function BookingSummary({
                 <>
                   <Button
                     variant="brand"
+                    loading={repricing}
                     disabled={!payNowReady}
                     nativeButton={payNowReady ? false : undefined}
                     render={payNowReady ? <Link href={payNowHref} /> : undefined}

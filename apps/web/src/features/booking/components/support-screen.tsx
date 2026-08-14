@@ -228,7 +228,7 @@ function BookingQuestion({
             type="submit"
             variant="brand"
             className="w-full"
-            disabled={form.formState.isSubmitting}
+            loading={form.formState.isSubmitting}
           >
             {cancelling ? t("cancellation.send") : t("send")}
           </Button>

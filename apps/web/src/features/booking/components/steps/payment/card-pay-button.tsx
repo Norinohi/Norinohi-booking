@@ -29,7 +29,8 @@ export default function CardPayButton({ label }: { label: string }) {
     <Button
       variant="brand"
       className="h-13 w-full"
-      disabled={!ready || paying}
+      loading={paying}
+      disabled={!ready}
       onClick={() => void submit()}
     >
       {label}

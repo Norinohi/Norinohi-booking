@@ -213,7 +213,8 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
           <Button
             variant="brand"
             className="h-13 w-full"
-            disabled={method === "card" || pending || !bookingId}
+            loading={pending}
+            disabled={method === "card" || !bookingId}
             onClick={() => void submitPayment()}
           >
             {cta}

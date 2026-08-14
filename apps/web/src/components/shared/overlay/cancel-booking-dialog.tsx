@@ -74,7 +74,7 @@ export default function CancelBookingDialog({
           </Button>
           <Button
             variant="destructive"
-            disabled={cancelBooking.isPending}
+            loading={cancelBooking.isPending}
             onClick={() => void confirm()}
           >
             {t("confirm")}

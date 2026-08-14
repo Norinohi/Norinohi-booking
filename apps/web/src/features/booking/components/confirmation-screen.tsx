@@ -470,7 +470,7 @@ export default function BookingConfirmationScreen() {
                 <Button
                   variant="brand"
                   className="w-full md:flex-1"
-                  disabled={downloading}
+                  loading={downloading}
                   onClick={() => void downloadReceipt()}
                 >
                   <FileText />
