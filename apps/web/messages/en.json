@@ -76,7 +76,9 @@
         "quoteExpired": "Your price has expired. Go back and refresh the quote before paying.",
         "notPayable": "This booking can no longer be paid for. Please start a new one.",
         "failed": "The payment could not be completed. Please try again.",
-        "cta": "Pay {amount}"
+        "cta": "Pay {amount}",
+        "orCard": "or pay by card",
+        "preparing": "Preparing payment options"
       },
       "invoice": {
         "email": "Billing Email",

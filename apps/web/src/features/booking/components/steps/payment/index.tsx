@@ -18,7 +18,12 @@ import { askQuestionMutationOptions, requestInvoiceMutationOptions } from "../..
 import type { BookingValues } from "../../../lib/booking-form";
 import { guestAccessFor } from "../../../lib/guest-access";
 import { serializeConfirmation } from "../../../lib/search-params";
-import { ELEMENTS_APPEARANCE, elementsLocale, stripeLoader } from "../../../lib/stripe";
+import {
+  ELEMENTS_APPEARANCE,
+  ELEMENTS_FONTS,
+  elementsLocale,
+  stripeLoader,
+} from "../../../lib/stripe";
 import { useBooking } from "../../booking-provider";
 import AskQuestion from "./ask-question";
 import CardPayButton from "./card-pay-button";
@@ -50,6 +55,7 @@ export default function PaymentStep() {
       currency: currency.toLowerCase(),
       locale: elementsLocale(locale),
       appearance: ELEMENTS_APPEARANCE,
+      fonts: ELEMENTS_FONTS,
     }),
     [dueNowMinor, currency, locale],
   );

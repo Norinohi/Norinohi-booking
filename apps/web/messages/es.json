@@ -76,7 +76,9 @@
         "quoteExpired": "Tu precio ha caducado. Vuelve atrás y actualiza el presupuesto antes de pagar.",
         "notPayable": "Esta reserva ya no se puede pagar. Empieza una nueva.",
         "failed": "No se pudo completar el pago. Inténtalo de nuevo.",
-        "cta": "Pagar {amount}"
+        "cta": "Pagar {amount}",
+        "orCard": "o paga con tarjeta",
+        "preparing": "Preparando las opciones de pago"
       },
       "invoice": {
         "email": "Correo de facturación",

@@ -37,6 +37,16 @@ export function elementsLocale(locale: Locale): StripeElementLocale {
 }
 
 /*
+ * Manrope has to be fetched by the iframe itself. `next/font` loads it into our
+ * document and exposes it as `--font-manrope`, but a CSS variable does not cross an
+ * origin boundary: naming one in `fontFamily` makes the whole declaration invalid
+ * inside Elements, and everything falls back to the browser's default serif.
+ */
+export const ELEMENTS_FONTS = [
+  { cssSrc: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&display=swap" },
+];
+
+/*
  * Elements renders in a cross-origin iframe, so it cannot read our CSS variables — the
  * values below are the resolved light-theme tokens from packages/ui/src/styles/globals.css.
  * The app is `forcedTheme="light"`, so one palette covers it; a dark theme would need a
@@ -51,12 +61,32 @@ export const ELEMENTS_APPEARANCE: Appearance = {
     colorTextSecondary: "#555555" /* --natural-500 */,
     colorDanger: "#ef4444" /* --error-500 */,
     borderRadius: "8px" /* --radius */,
-    fontFamily: "var(--font-manrope), ui-sans-serif, system-ui, sans-serif",
+    // The literal family, not the variable: see ELEMENTS_FONTS above.
+    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif",
     fontSizeBase: "16px",
+    spacingUnit: "4px",
   },
   rules: {
-    ".Input": { borderColor: "#e2e2e2" /* --border */, boxShadow: "none" },
+    ".Input": {
+      borderColor: "#e2e2e2" /* --border */,
+      boxShadow: "none",
+      padding: "12px",
+    },
     ".Input:focus": { borderColor: "#2f80ed", boxShadow: "none" },
-    ".Label": { fontWeight: "700" },
+    ".Input::placeholder": { color: "#8f8f8f" },
+    ".Label": { fontWeight: "700", fontSize: "14px", marginBottom: "6px" },
+    /*
+     * Matching the app's own cards: one hairline border, no drop shadow. Stripe's
+     * default gives each accordion row a shadow, which reads as a raised tile next to
+     * our flat panels.
+     */
+    ".AccordionItem": {
+      borderColor: "#e2e2e2",
+      boxShadow: "none",
+      paddingTop: "14px",
+      paddingBottom: "14px",
+    },
+    ".AccordionItem:hover": { borderColor: "#bfbfbf" /* --natural-200 */ },
+    ".AccordionItem--selected": { borderColor: "#2f80ed", boxShadow: "none" },
   },
 };

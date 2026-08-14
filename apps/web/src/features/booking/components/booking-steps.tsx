@@ -42,13 +42,18 @@ type Step = (typeof STEPS)[number]["id"];
  * Continue runs `trigger(step)`, which validates that branch of the schema and nothing
  * else, and advances only when it passes; the step never touches submission — except
  * Review, whose Confirm creates the held booking (see `confirmBooking`).
- * Every header stays clickable, so a step can be revisited. `multiple={false}` also means
- * the open step cannot be toggled shut — one is always expanded, except after the last Continue.
+ * Earlier headers stay clickable, so a step can be revisited. Payment is the exception: it
+ * is locked until Confirm has produced a booking, because everything in it needs one. Left
+ * open, it mounts a full card form that cannot be submitted, and a wallet button that opens
+ * Google Pay only to fail — the customer authorises a payment and is told no, for a reason
+ * that has nothing to do with their card.
+ * `multiple={false}` also means the open step cannot be toggled shut — one is always
+ * expanded, except after the last Continue.
  */
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
-  const { quote, setBookingId } = useBooking();
+  const { quote, bookingId, setBookingId } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
@@ -118,7 +123,8 @@ export default function BookingSteps() {
           onValueChange={(value) => setOpen(value.length > 0 ? step : null)}
           className="overflow-hidden rounded-2xl border border-border bg-card"
         >
-          <AccordionItem value={step}>
+          {/* Unlocks the moment Confirm succeeds, which also opens this step. */}
+          <AccordionItem value={step} disabled={step === "payment" && !bookingId}>
             <AccordionTrigger
               className="p-5"
               indicator={
