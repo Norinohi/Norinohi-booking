@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
-import { ArrowUpRight, CheckCircle2, LifeBuoy, Mail, Phone } from "lucide-react";
+import { ArrowUpRight, CalendarX, CheckCircle2, LifeBuoy, Mail, Phone } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
@@ -46,7 +46,8 @@ const MESSAGE_MAX = 2000;
  */
 export default function SupportScreen() {
   const t = useTranslations("Booking.support");
-  const [{ booking: bookingId }] = useQueryStates(supportParsers);
+  const [{ booking: bookingId, topic }] = useQueryStates(supportParsers);
+  const cancelling = topic === "cancellation";
 
   /* localStorage does not exist during prerender, so the token resolves after mount and the
      booking read waits for it — `null` is "not looked yet", not "no token". */
@@ -67,12 +68,14 @@ export default function SupportScreen() {
       <div className="mx-auto flex w-full max-w-175 flex-col gap-6 rounded-3xl bg-card p-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:gap-8 md:p-10">
         <div className="flex flex-col items-center gap-3 text-center">
           <span className="flex size-12 items-center justify-center rounded-xl bg-brand-50 text-brand">
-            <LifeBuoy className="size-6" />
+            {cancelling ? <CalendarX className="size-6" /> : <LifeBuoy className="size-6" />}
           </span>
           <h1 className="text-[28px] leading-[1.1] font-medium text-foreground md:text-[32px]">
-            {t("title")}
+            {cancelling ? t("cancellation.title") : t("title")}
           </h1>
-          <p className="text-base leading-[1.4] text-natural-600">{t("subtitle")}</p>
+          <p className="text-base leading-[1.4] text-natural-600">
+            {cancelling ? t("cancellation.subtitle") : t("subtitle")}
+          </p>
         </div>
 
         {waiting ? (
@@ -80,7 +83,7 @@ export default function SupportScreen() {
             <Loader />
           </div>
         ) : booking ? (
-          <BookingQuestion booking={booking} token={access?.token} />
+          <BookingQuestion booking={booking} token={access?.token} cancelling={cancelling} />
         ) : (
           <LeadEnquiryForm
             kind="charter_expert"
@@ -99,9 +102,11 @@ export default function SupportScreen() {
 function BookingQuestion({
   booking,
   token,
+  cancelling,
 }: {
   booking: BookingDetail;
   token: string | undefined;
+  cancelling: boolean;
 }) {
   const t = useTranslations("Booking.support");
   const format = useFormatter();
@@ -112,13 +117,25 @@ function BookingQuestion({
     () => z.object({ message: z.string().trim().min(1, t("required")).max(MESSAGE_MAX) }),
     [t],
   );
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { message: "" },
-    mode: "onTouched",
-  });
 
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
+
+  /*
+   * A cancellation opens with the request already written, so the customer only adds their
+   * reason. Staff then read one enquiry that says what it is, rather than having to infer it.
+   */
+  const opening = cancelling
+    ? t("cancellation.template", {
+        reference: booking.reference,
+        dates: `${day(booking.checkIn)} → ${day(booking.checkOut)}`,
+      })
+    : "";
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: { message: opening },
+    mode: "onTouched",
+  });
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
     try {
@@ -159,8 +176,12 @@ function BookingQuestion({
         {summary}
         <div className="flex flex-col items-center gap-3 text-center">
           <CheckCircle2 className="size-10 text-positive-600" />
-          <p className="text-xl leading-[1.3] font-bold text-foreground">{t("sentTitle")}</p>
-          <p className="text-base leading-[1.4] text-natural-600">{t("sentBody")}</p>
+          <p className="text-xl leading-[1.3] font-bold text-foreground">
+            {cancelling ? t("cancellation.sentTitle") : t("sentTitle")}
+          </p>
+          <p className="text-base leading-[1.4] text-natural-600">
+            {cancelling ? t("cancellation.sentBody") : t("sentBody")}
+          </p>
         </div>
         <Button
           variant="neutral"
@@ -185,12 +206,16 @@ function BookingQuestion({
             name="message"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("messageLabel")}</FormLabel>
+                <FormLabel>
+                  {cancelling ? t("cancellation.messageLabel") : t("messageLabel")}
+                </FormLabel>
                 <FormControl>
                   <TextField
                     className="h-full"
                     multiline
-                    placeholder={t("messagePlaceholder")}
+                    placeholder={
+                      cancelling ? t("cancellation.messagePlaceholder") : t("messagePlaceholder")
+                    }
                     {...field}
                   />
                 </FormControl>
@@ -205,7 +230,7 @@ function BookingQuestion({
             className="w-full"
             disabled={form.formState.isSubmitting}
           >
-            {t("send")}
+            {cancelling ? t("cancellation.send") : t("send")}
           </Button>
         </form>
       </Form>

@@ -222,8 +222,9 @@
         "due": "Due now"
       },
       "paid": {
-        "title": "This booking is paid in full",
-        "body": "Nothing left to pay on booking {reference}. Extras and the security deposit are settled at the marina."
+        "title": "Your booking is paid in full",
+        "body": "Nothing left to pay on booking {reference}. Extras and the security deposit are settled at the marina.",
+        "viewBooking": "View booking"
       },
       "notPayable": {
         "title": "Nothing to pay yet",
@@ -304,7 +305,8 @@
       "signInBody": "This booking is tied to your account. Sign in with the email you booked with and we'll bring you straight back here.",
       "signIn": "Sign in",
       "cancelledOn": "Cancelled on",
-      "cancelReason": "Reason"
+      "cancelReason": "Reason",
+      "requestCancel": "Request cancellation"
     },
     "support": {
       "title": "How can we help?",
@@ -318,7 +320,17 @@
       "sentBody": "We have it, together with your booking details. You'll hear from us by email.",
       "backToBooking": "Back to my booking",
       "failed": "We couldn't send your message. Please try again.",
-      "marinaContact": "Or reach the marina directly"
+      "marinaContact": "Or reach the marina directly",
+      "cancellation": {
+        "title": "Request a cancellation",
+        "subtitle": "Send us the request and we'll come back to you with what your cancellation policy allows.",
+        "messageLabel": "Why are you cancelling?",
+        "messagePlaceholder": "Anything that helps us — a change of plans, dates, weather, an illness.",
+        "template": "I would like to cancel booking {reference} ({dates}).\n\nReason: ",
+        "send": "Send cancellation request",
+        "sentTitle": "Cancellation requested",
+        "sentBody": "Your booking stays as it is until our team reviews the request. You'll hear from us by email with what your cancellation policy allows."
+      }
     },
     "booked": "Booked",
     "saveAndContinue": "Save & Continue",
@@ -1088,7 +1100,22 @@
       "totalPrice": "Total Price",
       "dueNow": "Due Now",
       "payNowCta": "Pay {amount} Now",
-      "requestQuote": "Request Quote"
+      "requestQuote": "Request Quote",
+      "promo": {
+        "label": "Promo code",
+        "placeholder": "Enter code",
+        "apply": "Apply",
+        "remove": "Remove",
+        "applied": "{amount} off",
+        "rejected": {
+          "unknown_code": "We don't recognise that code.",
+          "inactive": "That code is no longer active.",
+          "not_started": "That code is not valid yet.",
+          "expired": "That code has expired.",
+          "usage_limit_reached": "That code has been fully redeemed.",
+          "not_applicable": "That code doesn't apply to this yacht."
+        }
+      }
     },
     "panels": {
       "details": "Yacht Details",
@@ -1585,9 +1612,20 @@
         "nameRequired": "Enter a discount name",
         "codeRequired": "Enter a discount code",
         "priceRequired": "Enter a discount value",
-        "appliesRequired": "Choose what the discount applies to"
+        "appliesRequired": "Choose what the discount applies to",
+        "usageLimitInvalid": "Enter a whole number of uses, or leave blank"
       },
-      "error": "Something went wrong. Please try again."
+      "error": "Something went wrong. Please try again.",
+      "usageLimit": {
+        "label": "Usage limit",
+        "placeholder": "Unlimited",
+        "hint": "Leave blank for unlimited uses"
+      },
+      "active": {
+        "label": "Active",
+        "on": "Discount activated",
+        "off": "Discount deactivated"
+      }
     },
     "prices": {
       "search": "Search by name",
@@ -1609,7 +1647,9 @@
         "updated": "Price updated",
         "errors": {
           "priceRequired": "Enter a new price"
-        }
+        },
+        "reset": "Reset To Provider Price",
+        "cleared": "Price reset to the provider price"
       },
       "empty": "No yachts found",
       "error": "Couldn't load prices"

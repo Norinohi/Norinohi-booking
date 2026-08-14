@@ -6,6 +6,7 @@ import type { CharterConstraints } from "@yacht-charter/api/lib/availability-rul
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
+import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import {
   Accordion,
@@ -22,6 +23,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Calendar, ChevronDown, CircleCheckBig, Info } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
 import { useFormatter, useTranslations } from "next-intl";
+import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 
 import { Image } from "@/components/shared/data-display/image";
@@ -87,6 +89,11 @@ export type BookingSummaryProps = {
   payNowHref?: AppPathname;
   /** Opens the Request Quote enquiry dialog — supplied by the sidebar container (detail page only). */
   onRequestQuote?: () => void;
+  /**
+   * Applies a promo code to the current quote, or clears it with `null`. Omitted when there is
+   * nothing to apply one to — before a quote exists, and once a booking has been held off it.
+   */
+  onApplyPromo?: (code: string | null) => void;
 };
 
 function Separator() {
@@ -102,6 +109,88 @@ function CharterPoint({ date, time }: { date: string; time: string | null }) {
         {format.dateTime(dayToDisplay(date), "dayShort")}
       </p>
       {time ? <p className="text-sm leading-4.5 font-medium text-natural-500">{time}</p> : null}
+    </div>
+  );
+}
+
+/*
+ * The promo code box. The quote is the single source of truth for what happened: `discount`
+ * once a code was accepted, `discountRejected` with the reason when one was not — the server
+ * still prices the charter without it rather than failing, so this explains instead of erroring.
+ * Applying and removing are both reprices, which is why the whole box locks while one is in flight.
+ */
+function PromoField({
+  applied,
+  rejected,
+  pending,
+  onApply,
+}: {
+  applied: NonNullable<Quote>["discount"];
+  rejected: NonNullable<Quote>["discountRejected"];
+  pending: boolean;
+  onApply: (code: string | null) => void;
+}) {
+  const t = useTranslations("YachtDetail.sidebar.promo");
+  const money = useMoney();
+  const [code, setCode] = useState("");
+
+  if (applied) {
+    return (
+      <div className="flex w-full items-center gap-2 p-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="truncate text-base leading-5.5 font-bold text-foreground">{applied.code}</p>
+          <p className="text-sm leading-4.5 font-medium text-positive-600">
+            {t("applied", { amount: money(applied.amountMinor) })}
+          </p>
+        </div>
+        <Button variant="subtle" size="sm" disabled={pending} onClick={() => onApply(null)}>
+          {t("remove")}
+        </Button>
+      </div>
+    );
+  }
+
+  const submit = () => {
+    const trimmed = code.trim();
+    if (trimmed.length > 0) onApply(trimmed);
+  };
+
+  return (
+    <div className="flex w-full flex-col gap-2 p-4">
+      {/* `items-end` aligns the button to the bottom of the field's column, so the label above
+          the input does not push the two out of line; the explicit h-12 matches the field to
+          the button's own 48px rather than leaving it at whatever its padding computes to. */}
+      <div className="flex items-end gap-2">
+        <TextField
+          containerClassName="min-w-0 flex-1"
+          fieldClassName="h-12"
+          label={t("label")}
+          placeholder={t("placeholder")}
+          value={code}
+          status={rejected ? "error" : undefined}
+          onChange={(event) => setCode(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            // The sidebar sits inside no form of its own, but the booking wizard wraps it in
+            // one — Enter here must apply the code, never submit the step.
+            event.preventDefault();
+            submit();
+          }}
+        />
+        <Button
+          variant="neutral"
+          className="shrink-0"
+          disabled={pending || code.trim().length === 0}
+          onClick={submit}
+        >
+          {t("apply")}
+        </Button>
+      </div>
+      {rejected ? (
+        <p className="text-sm leading-4.5 font-medium text-error-500">
+          {t(`rejected.${rejected}`)}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -216,6 +305,7 @@ export default function BookingSummary({
   shaded = false,
   payNowHref,
   onRequestQuote,
+  onApplyPromo,
 }: BookingSummaryProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
@@ -399,6 +489,18 @@ export default function BookingSummary({
               <div className={cn("transition-opacity", repricing && "opacity-40")}>
                 <PaymentSchedule entries={quote.paymentSchedule} />
               </div>
+            ) : null}
+
+            {onApplyPromo ? (
+              <>
+                <Separator />
+                <PromoField
+                  applied={quote.discount}
+                  rejected={quote.discountRejected}
+                  pending={repricing}
+                  onApply={onApplyPromo}
+                />
+              </>
             ) : null}
 
             <Separator />

@@ -222,8 +222,9 @@
         "due": "A pagar ahora"
       },
       "paid": {
-        "title": "Esta reserva está pagada por completo",
-        "body": "No queda nada por pagar en la reserva {reference}. Los extras y la fianza se liquidan en el puerto."
+        "title": "Tu reserva está pagada por completo",
+        "body": "No queda nada por pagar en la reserva {reference}. Los extras y la fianza se liquidan en el puerto.",
+        "viewBooking": "Ver reserva"
       },
       "notPayable": {
         "title": "Todavía no hay nada que pagar",
@@ -304,7 +305,8 @@
       "signInBody": "Esta reserva está vinculada a tu cuenta. Inicia sesión con el correo que usaste al reservar y volverás directamente aquí.",
       "signIn": "Iniciar sesión",
       "cancelledOn": "Cancelada el",
-      "cancelReason": "Motivo"
+      "cancelReason": "Motivo",
+      "requestCancel": "Solicitar cancelación"
     },
     "support": {
       "title": "¿En qué podemos ayudarte?",
@@ -318,7 +320,17 @@
       "sentBody": "Ya lo tenemos, junto con los datos de tu reserva. Te escribiremos por correo.",
       "backToBooking": "Volver a mi reserva",
       "failed": "No hemos podido enviar tu mensaje. Inténtalo de nuevo.",
-      "marinaContact": "O contacta directamente con la marina"
+      "marinaContact": "O contacta directamente con la marina",
+      "cancellation": {
+        "title": "Solicita una cancelación",
+        "subtitle": "Envíanos la solicitud y te responderemos con lo que permite tu política de cancelación.",
+        "messageLabel": "¿Por qué quieres cancelar?",
+        "messagePlaceholder": "Cualquier cosa que nos ayude: un cambio de planes, las fechas, el tiempo, una enfermedad.",
+        "template": "Quiero cancelar la reserva {reference} ({dates}).\n\nMotivo: ",
+        "send": "Enviar solicitud de cancelación",
+        "sentTitle": "Cancelación solicitada",
+        "sentBody": "Tu reserva se mantiene tal cual hasta que nuestro equipo revise la solicitud. Te escribiremos por email con lo que permite tu política de cancelación."
+      }
     },
     "booked": "Reservado",
     "saveAndContinue": "Guardar y continuar",
@@ -1088,7 +1100,22 @@
       "totalPrice": "Precio total",
       "dueNow": "A pagar ahora",
       "payNowCta": "Pagar {amount}",
-      "requestQuote": "Solicitar presupuesto"
+      "requestQuote": "Solicitar presupuesto",
+      "promo": {
+        "label": "Código promocional",
+        "placeholder": "Introduce el código",
+        "apply": "Aplicar",
+        "remove": "Quitar",
+        "applied": "{amount} de descuento",
+        "rejected": {
+          "unknown_code": "No reconocemos ese código.",
+          "inactive": "Ese código ya no está activo.",
+          "not_started": "Ese código aún no es válido.",
+          "expired": "Ese código ha caducado.",
+          "usage_limit_reached": "Ese código ya se ha canjeado por completo.",
+          "not_applicable": "Ese código no se aplica a este yate."
+        }
+      }
     },
     "panels": {
       "details": "Detalles del yate",
@@ -1585,9 +1612,20 @@
         "nameRequired": "Introduce un nombre",
         "codeRequired": "Introduce un código",
         "priceRequired": "Introduce un valor",
-        "appliesRequired": "Elige a qué se aplica el descuento"
+        "appliesRequired": "Elige a qué se aplica el descuento",
+        "usageLimitInvalid": "Introduce un número entero de usos o déjalo en blanco"
       },
-      "error": "Algo salió mal. Inténtalo de nuevo."
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "usageLimit": {
+        "label": "Límite de usos",
+        "placeholder": "Ilimitado",
+        "hint": "Déjalo en blanco para usos ilimitados"
+      },
+      "active": {
+        "label": "Activo",
+        "on": "Descuento activado",
+        "off": "Descuento desactivado"
+      }
     },
     "prices": {
       "search": "Buscar por nombre",
@@ -1609,7 +1647,9 @@
         "updated": "Precio actualizado",
         "errors": {
           "priceRequired": "Introduce un nuevo precio"
-        }
+        },
+        "reset": "Restablecer al precio del proveedor",
+        "cleared": "Precio restablecido al del proveedor"
       },
       "empty": "No se encontraron yates",
       "error": "No se pudieron cargar los precios"

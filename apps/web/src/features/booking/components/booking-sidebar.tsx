@@ -33,6 +33,8 @@ export default function BookingSidebar({
     selectPeriod,
     setCrew,
     setGuests,
+    applyPromo,
+    bookingId,
   } = useBooking();
   const [quoteRequestOpen, setQuoteRequestOpen] = useState(false);
 
@@ -71,6 +73,9 @@ export default function BookingSidebar({
         actions={actions}
         shaded={shaded}
         payNowHref={payNowHref}
+        /* Every reprice mints a new quote id. Once Confirm has held a booking against one,
+           the held booking is what the customer pays, so the code can no longer change. */
+        onApplyPromo={quote && !bookingId ? applyPromo : undefined}
         onRequestQuote={actions ? () => setQuoteRequestOpen(true) : undefined}
       />
       {actions ? (

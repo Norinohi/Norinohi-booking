@@ -6,6 +6,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpRight,
+  CalendarX,
   CreditCard,
   FileText,
   Landmark,
@@ -209,6 +210,13 @@ function Charter({
    * button would fail on click; they cancel from My Bookings once they have set a password.
    */
   const showCancel = booking.cancellable && signedIn;
+  /*
+   * A confirmed charter is a slot held with the operator and money already taken, so it cannot be
+   * dropped from here — `booking.cancel` refuses it and only staff can route it to a refund. The
+   * customer still needs a way in, so instead of no affordance at all they get a request that
+   * lands in the staff inbox as an enquiry against this booking.
+   */
+  const showRequestCancel = booking.status === "CONFIRMED" && !showCancel;
 
   return (
     <Panel>
@@ -236,7 +244,7 @@ function Charter({
         ) : null}
       </dl>
 
-      {showPay || hasTransfer || showCancel ? (
+      {showPay || hasTransfer || showCancel || showRequestCancel ? (
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {showPay ? (
             <Button
@@ -269,6 +277,25 @@ function Charter({
             >
               <XCircle />
               {tCancel("action")}
+            </Button>
+          ) : null}
+
+          {showRequestCancel ? (
+            <Button
+              variant="subtle"
+              className="h-13 text-natural-600 sm:ml-auto"
+              nativeButton={false}
+              render={
+                <Link
+                  href={{
+                    pathname: "/support",
+                    query: { booking: bookingId, topic: "cancellation" },
+                  }}
+                />
+              }
+            >
+              <CalendarX />
+              {t("requestCancel")}
             </Button>
           ) : null}
         </div>

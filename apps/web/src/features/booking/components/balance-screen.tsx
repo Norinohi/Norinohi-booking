@@ -23,6 +23,7 @@ import {
   PAYMENT_ELEMENT_LAYOUT,
   stripeLoader,
 } from "../lib/stripe";
+import BalancePaid from "./balance-paid";
 import ExpressCheckout from "./steps/payment/express-checkout";
 import { PaymentTargetProvider } from "./payment-target";
 
@@ -104,24 +105,7 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
   }
 
   if (outstanding <= 0) {
-    return (
-      <Centered>
-        <EmptyState
-          illustration={null}
-          title={t("paid.title")}
-          description={t("paid.body", { reference: booking.reference })}
-          action={
-            <Button
-              variant="neutral"
-              nativeButton={false}
-              render={<Link href="/profile/bookings" />}
-            >
-              {t("viewBookings")}
-            </Button>
-          }
-        />
-      </Centered>
-    );
+    return <BalancePaid booking={booking} bookingId={bookingId} isGuest={Boolean(access.token)} />;
   }
 
   /* Paid, but our side has not caught up yet — see the polling note above. */

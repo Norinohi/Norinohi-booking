@@ -57,6 +57,8 @@ type BookingContextValue = {
   setGuests: (next: number) => void;
   /** Step 2 hands its selection here — reprices the current quote's extras in place. */
   setExtras: (extras: string[]) => void;
+  /** Applies a promo code to the live quote, or clears it with `null`. */
+  applyPromo: (code: string | null) => void;
   /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
   bookingId: string | null;
   setBookingId: (id: string | null) => void;
@@ -176,6 +178,15 @@ export function BookingProvider({
     if (quote) void repriceWith({ extras });
   }
 
+  /*
+   * Reprice carries the previous quote's code forward when `discountCode` is omitted, so this
+   * is the only place it moves: a code passed here sticks across every later date, guest and
+   * extras change, and `null` is what removes it.
+   */
+  function applyPromo(code: string | null) {
+    if (quote) void repriceWith({ discountCode: code });
+  }
+
   const value: BookingContextValue = {
     slug,
     listing,
@@ -190,6 +201,7 @@ export function BookingProvider({
     setCrew,
     setGuests,
     setExtras,
+    applyPromo,
     bookingId,
     setBookingId,
   };
