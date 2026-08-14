@@ -23,7 +23,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
-import type { ReactNode } from "react";
+import * as React from "react";
 
 export const colors = {
   page: "#f4f5f7",
@@ -101,7 +101,7 @@ export function EmailLayout({
 }: {
   preview: string;
   eyebrow: string;
-  children: ReactNode;
+  children: React.ReactNode;
   appUrl?: string;
 }) {
   const year = new Date().getFullYear();

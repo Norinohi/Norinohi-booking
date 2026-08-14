@@ -5,6 +5,7 @@
  * in ../index.ts and sent through Resend. Keep exactly one jsx-source annotation in this file.
  */
 import { Button, Heading, Hr, Link, Text } from "@react-email/components";
+import * as React from "react";
 
 import { colors, EmailLayout, fontFamily } from "./_components/email-layout";
 

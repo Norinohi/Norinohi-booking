@@ -161,6 +161,14 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                 )}
               />
 
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="-mt-1 cursor-pointer self-end text-sm font-medium text-natural-400 transition-colors hover:text-brand"
+              >
+                {t("forgotPassword")}
+              </button>
+
               <Button
                 type="submit"
                 variant="brand"

@@ -1088,6 +1088,14 @@
     "Invoice": {
       "title": "Invoice",
       "description": "The invoice for your yacht charter booking, with payment details."
+    },
+    "ForgotPassword": {
+      "title": "Forgot password",
+      "description": "Reset your YachtSkanner account password."
+    },
+    "ResetPassword": {
+      "title": "Reset password",
+      "description": "Choose a new password for your YachtSkanner account."
     }
   },
   "Profile": {
@@ -1174,6 +1182,7 @@
       "noAccount": "Have no account?",
       "createAccount": "Create Account",
       "success": "Sign in successful",
+      "forgotPassword": "Forgot password?",
       "errors": {
         "emailInvalid": "Invalid email address",
         "passwordMin": "Password must be at least 8 characters"
@@ -1213,6 +1222,41 @@
         "emailRegistered": "This email is already registered"
       },
       "referralApplied": "Referral code applied"
+    },
+    "ForgotPassword": {
+      "welcome": "Forgot your password?",
+      "cardTitle": "Reset your password",
+      "description": "Enter your email and we'll send you a link to reset your password.",
+      "email": { "label": "Email", "placeholder": "example@gmail.com" },
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "success": {
+        "title": "Check your email",
+        "body": "If an account exists for that address, we've sent a link to reset your password."
+      },
+      "backToLogin": "Back to sign in",
+      "errors": { "emailInvalid": "Invalid email address" }
+    },
+    "ResetPassword": {
+      "welcome": "Set a new password",
+      "cardTitle": "Choose a new password",
+      "newPassword": { "label": "New password", "placeholder": "Enter a new password" },
+      "confirmPassword": {
+        "label": "Confirm password",
+        "placeholder": "Confirm your new password"
+      },
+      "submit": "Reset password",
+      "submitting": "Resetting…",
+      "success": "Password updated. You can sign in now.",
+      "invalid": {
+        "title": "This link is invalid or has expired",
+        "body": "Password reset links expire after 1 hour and can be used once. Request a new one to continue.",
+        "action": "Request a new link"
+      },
+      "errors": {
+        "passwordMin": "Password must be at least 8 characters",
+        "passwordMismatch": "Passwords do not match"
+      }
     }
   },
   "Referrals": {
