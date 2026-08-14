@@ -1092,6 +1092,14 @@
     "Invoice": {
       "title": "Factura",
       "description": "La factura de tu reserva de chárter, con los datos de pago."
+    },
+    "ForgotPassword": {
+      "title": "Olvidé mi contraseña",
+      "description": "Restablece la contraseña de tu cuenta de YachtSkanner."
+    },
+    "ResetPassword": {
+      "title": "Restablecer contraseña",
+      "description": "Elige una nueva contraseña para tu cuenta de YachtSkanner."
     }
   },
   "Profile": {
@@ -1178,6 +1186,7 @@
       "noAccount": "¿No tienes una cuenta?",
       "createAccount": "Crear cuenta",
       "success": "Sesión iniciada correctamente",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
       "errors": {
         "emailInvalid": "Dirección de correo no válida",
         "passwordMin": "La contraseña debe tener al menos 8 caracteres"
@@ -1217,6 +1226,44 @@
         "emailRegistered": "Este correo ya está registrado"
       },
       "referralApplied": "Código de referido aplicado"
+    },
+    "ForgotPassword": {
+      "welcome": "¿Olvidaste tu contraseña?",
+      "cardTitle": "Restablecer tu contraseña",
+      "description": "Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.",
+      "email": { "label": "Correo electrónico", "placeholder": "ejemplo@gmail.com" },
+      "submit": "Enviar enlace",
+      "submitting": "Enviando…",
+      "success": {
+        "title": "Revisa tu correo",
+        "body": "Si existe una cuenta con esa dirección, te enviamos un enlace para restablecer tu contraseña."
+      },
+      "backToLogin": "Volver a iniciar sesión",
+      "errors": { "emailInvalid": "Correo electrónico no válido" }
+    },
+    "ResetPassword": {
+      "welcome": "Establece una nueva contraseña",
+      "cardTitle": "Elige una nueva contraseña",
+      "newPassword": {
+        "label": "Nueva contraseña",
+        "placeholder": "Introduce una nueva contraseña"
+      },
+      "confirmPassword": {
+        "label": "Confirmar contraseña",
+        "placeholder": "Confirma tu nueva contraseña"
+      },
+      "submit": "Restablecer contraseña",
+      "submitting": "Restableciendo…",
+      "success": "Contraseña actualizada. Ya puedes iniciar sesión.",
+      "invalid": {
+        "title": "Este enlace no es válido o ha caducado",
+        "body": "Los enlaces de restablecimiento caducan tras 1 hora y solo pueden usarse una vez. Solicita uno nuevo para continuar.",
+        "action": "Solicitar un nuevo enlace"
+      },
+      "errors": {
+        "passwordMin": "La contraseña debe tener al menos 8 caracteres",
+        "passwordMismatch": "Las contraseñas no coinciden"
+      }
     }
   },
   "Referrals": {

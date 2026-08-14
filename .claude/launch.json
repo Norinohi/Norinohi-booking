@@ -24,6 +24,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@yacht-charter/ui", "storybook", "--no-open"],
       "port": 6006
+    },
+    {
+      "name": "emails",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@yacht-charter/transactional", "dev"],
+      "port": 3002
     }
   ]
 }

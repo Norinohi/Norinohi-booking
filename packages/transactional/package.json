@@ -1,0 +1,29 @@
+{
+  "name": "@yacht-charter/transactional",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "dev": "email dev --dir ./src/emails --port 3002"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "@yacht-charter/env": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "resend": "catalog:"
+  },
+  "devDependencies": {
+    "@react-email/ui": "6.9.2",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@yacht-charter/config": "workspace:*",
+    "react-email": "^6.9.2",
+    "typescript": "catalog:"
+  }
+}
