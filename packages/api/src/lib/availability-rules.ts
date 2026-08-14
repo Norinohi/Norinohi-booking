@@ -28,6 +28,15 @@ export type CharterConstraints = {
   occupied: readonly DatePeriod[];
   /** Periods carrying a published rate. Used as a season-open signal, not to price. */
   priced: readonly DatePeriod[];
+  /**
+   * Exact periods the provider refused when asked to price them.
+   *
+   * Matched by both ends, never by overlap: the vendor said no to *this* charter, not to
+   * the days it spans. Folding these into `occupied` inferred the second from the first
+   * and hid bookable trips — refusing a fortnight from a Saturday took the perfectly free
+   * week starting the same day with it, and the boat read as gone when it was not.
+   */
+  refused?: readonly DatePeriod[];
 };
 
 export type RangeVerdict =
@@ -38,6 +47,8 @@ export type RangeVerdict =
   | "too-short"
   | "too-long"
   | "occupied"
+  /** This exact period was already offered to the provider and turned down. */
+  | "refused"
   | "season-closed";
 
 const MS_PER_DAY = 86_400_000;
@@ -126,10 +137,22 @@ export function rangeStatus(
   const violation = violationAcrossRules(constraints.rules, checkIn, checkOut);
   if (violation !== null) return violation;
 
+  if (wasRefused(constraints.refused, checkIn, checkOut)) return "refused";
   if (constraints.occupied.some((period) => overlaps(checkIn, checkOut, period))) return "occupied";
   if (!seasonOpen(constraints.priced, checkIn, checkOut)) return "season-closed";
 
   return "bookable";
+}
+
+/** Both ends, deliberately: see `refused` on CharterConstraints. */
+function wasRefused(
+  refused: readonly DatePeriod[] | undefined,
+  checkIn: string,
+  checkOut: string,
+): boolean {
+  return (
+    refused?.some((period) => period.startDate === checkIn && period.endDate === checkOut) ?? false
+  );
 }
 
 /**

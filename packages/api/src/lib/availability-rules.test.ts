@@ -186,3 +186,44 @@ describe("canCheckOut", () => {
     expect(canCheckOut("2026-08-19", "2026-08-15", constraints())).toBe(false);
   });
 });
+
+/*
+ * A refusal is the vendor answering about one charter, not about the days it spans. Folding
+ * refusals into `occupied` inferred the second from the first: a customer who asked for a
+ * fortnight and was told no lost the free week starting the same Saturday, and the boat read
+ * as gone when it was not. Proven against a real listing whose booking began mid-fortnight.
+ */
+describe("a refused period", () => {
+  const refused = () =>
+    constraints({
+      priced: [{ startDate: "2026-11-01", endDate: "2026-12-31" }],
+      refused: [{ startDate: "2026-11-07", endDate: "2026-11-21" }],
+    });
+
+  it("blocks exactly the period the provider turned down", () => {
+    expect(rangeStatus("2026-11-07", "2026-11-21", refused())).toBe("refused");
+  });
+
+  it("leaves a shorter charter from the same day bookable", () => {
+    // The case that regressed: overlap matching killed this one too.
+    expect(rangeStatus("2026-11-07", "2026-11-14", refused())).toBe("bookable");
+  });
+
+  it("leaves a longer charter from the same day bookable", () => {
+    expect(rangeStatus("2026-11-07", "2026-11-28", refused())).toBe("bookable");
+  });
+
+  it("leaves a charter ending on the same day bookable", () => {
+    expect(rangeStatus("2026-11-14", "2026-11-21", refused())).toBe("bookable");
+  });
+
+  it("still lets the calendar offer that start date", () => {
+    expect(canCheckIn("2026-11-07", refused())).toBe(true);
+    expect(canCheckOut("2026-11-14", "2026-11-07", refused())).toBe(true);
+    expect(canCheckOut("2026-11-21", "2026-11-07", refused())).toBe(false);
+  });
+
+  it("is absent by default, so nothing changes for constraints that carry none", () => {
+    expect(rangeStatus("2026-08-15", "2026-08-22", constraints())).toBe("bookable");
+  });
+});

@@ -115,14 +115,17 @@ export function BookingProvider({
   const [slotError, setSlotError] = useState(false);
 
   /*
-   * A period the vendor refused is subtracted as if it were occupancy: the constraints said it
-   * was legal and the vendor disagreed, and the vendor is the authority.
+   * A period the vendor refused stays refused — it said no and it is the authority — but only
+   * that period. Adding it to `occupied` made the calendar infer the days were taken, which
+   * blocked every overlapping range without ever asking: refuse a fortnight from a Saturday
+   * and the free week starting the same day vanished with it.
    */
   const constraints: CharterConstraints = useMemo(
     () => ({
       rules: published?.rules ?? [],
-      occupied: [...(published?.occupied ?? []), ...refusedPeriods],
+      occupied: published?.occupied ?? [],
       priced: published?.priced ?? [],
+      refused: refusedPeriods,
     }),
     [published, refusedPeriods],
   );
