@@ -8,6 +8,8 @@ import { env } from "@yacht-charter/env/server";
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { describeErrorChain } from "../shared/error-chain";
+
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
@@ -183,7 +185,7 @@ function scopeId(resourceType: ProviderResourceType, scopeKey: string | undefine
 const thrownStringSchema = z.string();
 
 function messageOf(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return describeErrorChain(error);
   return thrownStringSchema.safeParse(error).data ?? "Unknown sync failure";
 }
 

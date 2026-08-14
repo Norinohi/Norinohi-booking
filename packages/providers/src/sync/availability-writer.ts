@@ -10,6 +10,8 @@ import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-
 import { and, eq, gte, inArray, isNotNull, lt, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { describeErrorChain } from "../shared/error-chain";
+
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { createCatalogueResolver, type CatalogueResolver } from "../shared/catalogue-resolver";
@@ -318,7 +320,7 @@ export interface RunAvailabilitySyncOptions {
 const thrownStringSchema = z.string();
 
 function messageOf(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return describeErrorChain(error);
   return thrownStringSchema.safeParse(error).data ?? "Unknown availability sync failure";
 }
 
