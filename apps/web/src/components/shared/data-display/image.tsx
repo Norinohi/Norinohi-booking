@@ -49,6 +49,17 @@ type FillProps = BaseProps & { fill: true; width?: never; height?: never };
 export type ImageProps = SizedProps | FillProps;
 
 export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) {
+  // An absent src otherwise renders <NextImage src="">, which the browser resolves to the current
+  // page URL — a broken tile that never fires onError, so the overlay fallback below never shows.
+  // Render the neutral fallback directly instead, matching ImageWithFallback's contract.
+  if (!src) {
+    return rest.fill ? (
+      <ImageFallback className={cn("absolute inset-0", className)} />
+    ) : (
+      <ImageFallback className={className} style={{ width: rest.width, height: rest.height }} />
+    );
+  }
+
   const dynamic = !isLocal(src);
   const overlay = dynamic && rest.fill === true;
   const ref = useRef<HTMLImageElement>(null);
