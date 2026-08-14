@@ -6,6 +6,7 @@ import {
   CarouselViewport,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Check, Sailboat, Star, Users } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
@@ -98,24 +99,28 @@ function Gallery({
         unavailable && "[&_img]:opacity-60 [&_img]:grayscale",
       )}
     >
-      <Carousel className="size-full">
-        <CarouselViewport>
-          {images.map((src, index) => (
-            <CarouselSlide key={src + index}>
-              <Image
-                src={src}
-                alt={index === 0 ? (imageAlt ?? "") : ""}
-                fill
-                priority={priority && index === 0}
-                sizes="(min-width: 1280px) 40vw, 100vw"
-                className="object-cover"
-              />
-            </CarouselSlide>
-          ))}
-        </CarouselViewport>
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-        <CarouselBars className="absolute inset-x-0 bottom-4" />
-      </Carousel>
+      {images.length > 0 ? (
+        <Carousel className="size-full">
+          <CarouselViewport>
+            {images.map((src, index) => (
+              <CarouselSlide key={src + index}>
+                <Image
+                  src={src}
+                  alt={index === 0 ? (imageAlt ?? "") : ""}
+                  fill
+                  priority={priority && index === 0}
+                  sizes="(min-width: 1280px) 40vw, 100vw"
+                  className="object-cover"
+                />
+              </CarouselSlide>
+            ))}
+          </CarouselViewport>
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
+          <CarouselBars className="absolute inset-x-0 bottom-4" />
+        </Carousel>
+      ) : (
+        <ImageFallback className="absolute inset-0" />
+      )}
 
       <div className="absolute inset-x-4 top-4 flex items-start gap-5">
         <div className="flex flex-1 flex-wrap items-start gap-1.5">
