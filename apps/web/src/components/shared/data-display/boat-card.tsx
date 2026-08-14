@@ -14,6 +14,7 @@ import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
+import { dayToDisplay } from "@/lib/date";
 
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
@@ -25,10 +26,23 @@ const FORMATS = {
   time: { hour: "2-digit", minute: "2-digit", hour12: false },
 } as const;
 
-export type BoatCardBadge = { label: string; icon?: ReactNode; solid?: boolean };
+export type BoatCardBadge = {
+  label: string;
+  icon?: ReactNode;
+  solid?: boolean;
+  /** Neutral grey instead of brand blue — used by the unavailable tag. */
+  muted?: boolean;
+};
 export type BoatCardSpec = { label: string; value: string };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
-export type BoatCardCharterDate = string;
+/**
+ * A charter endpoint: the calendar day, and the marina's wall-clock time for it.
+ *
+ * `time` is text the provider states about its own base, never an instant. Combining the two
+ * into a timestamp would need an IANA zone per marina, which no provider sends, and the card
+ * carried a hardcoded Zagreb one for exactly that reason. Kept apart and rendered as given.
+ */
+export type BoatCardCharterDate = { day: string; time: string | null };
 
 /* TODO: every card opens the same hardcoded detail page until listings carry a real id. */
 const DETAIL_HREF = "/yachts/lagoon-42";
@@ -47,11 +61,15 @@ export type BoatCardProps = {
   specs: BoatCardSpec[];
   amenities?: BoatCardAmenity[];
   stats?: string[];
-  start: BoatCardCharterDate;
-  end: BoatCardCharterDate;
-  timeZone: string;
+  /** Absent where no period is in play: the wishlist is not a search result. */
+  start?: BoatCardCharterDate;
+  end?: BoatCardCharterDate;
   priceLabel: string;
   price: string;
+  /** The price slot holds words ("On request", "Unavailable") rather than an amount, so it drops to text size. */
+  priceIsLabel?: boolean;
+  /** The listing has no bookable dates — the photo desaturates and the copy dims. */
+  unavailable?: boolean;
   perPerson: string;
   prepayment: string;
   detailHref?: AppPathname;
@@ -69,9 +87,15 @@ function Gallery({
   imageAlt,
   badges,
   priority,
-}: Pick<BoatCardProps, "id" | "images" | "imageAlt" | "badges" | "priority">) {
+  unavailable,
+}: Pick<BoatCardProps, "id" | "images" | "imageAlt" | "badges" | "priority" | "unavailable">) {
   return (
-    <div className="relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl">
+    <div
+      className={cn(
+        "relative h-64 w-full min-w-0 overflow-hidden rounded-t-2xl xl:h-auto xl:rounded-tr-none xl:rounded-bl-2xl",
+        unavailable && "[&_img]:opacity-60 [&_img]:grayscale",
+      )}
+    >
       <Carousel className="size-full">
         <CarouselViewport>
           {images.map((src, index) => (
@@ -96,7 +120,7 @@ function Gallery({
           {badges?.map((badge) => (
             <Chip
               key={badge.label}
-              variant={badge.solid ? undefined : "brand"}
+              variant={badge.muted ? "neutral" : badge.solid ? undefined : "brand"}
               className={cn(
                 "shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
                 badge.solid && "bg-brand text-brand-foreground",
@@ -122,15 +146,25 @@ function Details({
   specs,
   amenities,
   summary,
+  unavailable,
 }: Pick<
   BoatCardProps,
-  "marina" | "name" | "rating" | "charterType" | "crew" | "specs" | "amenities" | "summary"
+  | "marina"
+  | "name"
+  | "rating"
+  | "charterType"
+  | "crew"
+  | "specs"
+  | "amenities"
+  | "summary"
+  | "unavailable"
 >) {
   return (
     <div
       className={cn(
         "flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:px-0",
         summary || "xl:border-r xl:border-natural-50",
+        unavailable && "opacity-70",
       )}
     >
       <div className="flex flex-col gap-3">
@@ -200,24 +234,17 @@ function Details({
   );
 }
 
-function CharterDate({
-  value,
-  timeZone,
-  className,
-}: {
-  value: BoatCardCharterDate;
-  timeZone: string;
-  className?: string;
-}) {
+function CharterDate({ value, className }: { value: BoatCardCharterDate; className?: string }) {
   const format = useFormatter();
-  const at = new Date(value);
-  const date = format.dateTime(at, { ...FORMATS.day, timeZone });
-  const time = format.dateTime(at, { ...FORMATS.time, timeZone });
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <span className="text-xs font-semibold leading-[1.3] text-foreground">{date}</span>
-      <span className="text-sm font-medium leading-[1.3] text-natural-500">{time}</span>
+      <span className="text-xs font-semibold leading-[1.3] text-foreground">
+        {format.dateTime(dayToDisplay(value.day), FORMATS.day)}
+      </span>
+      {value.time ? (
+        <span className="text-sm font-medium leading-[1.3] text-natural-500">{value.time}</span>
+      ) : null}
     </div>
   );
 }
@@ -226,9 +253,9 @@ function Action({
   stats,
   start,
   end,
-  timeZone,
   priceLabel,
   price,
+  priceIsLabel,
   perPerson,
   prepayment,
   detailHref,
@@ -238,9 +265,9 @@ function Action({
   | "stats"
   | "start"
   | "end"
-  | "timeZone"
   | "priceLabel"
   | "price"
+  | "priceIsLabel"
   | "perPerson"
   | "prepayment"
   | "detailHref"
@@ -256,35 +283,38 @@ function Action({
         ))}
       </div>
 
-      <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
-        <CharterDate
-          value={start}
-          timeZone={timeZone}
-          className="flex-1 items-center md:flex-none md:items-start"
-        />
-        <ArrowRight className="size-4 shrink-0 text-foreground" />
-        <CharterDate
-          value={end}
-          timeZone={timeZone}
-          className="flex-1 items-center md:flex-none md:items-start"
-        />
-      </div>
+      {start && end ? (
+        <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
+          <CharterDate value={start} className="flex-1 items-center md:flex-none md:items-start" />
+          <ArrowRight className="size-4 shrink-0 text-foreground" />
+          <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
+        </div>
+      ) : null}
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
         <div className="flex flex-wrap items-center justify-center gap-2 md:flex-col md:items-start md:gap-1">
           <span className="order-2 text-sm font-medium leading-[1.3] text-natural-500 md:order-1">
             {priceLabel}
           </span>
-          <span className="order-1 text-[42px] font-bold leading-[1.15] text-black md:order-2">
+          <span
+            className={cn(
+              "order-1 font-bold leading-[1.15] text-black md:order-2",
+              priceIsLabel ? "text-xl" : "text-[42px]",
+            )}
+          >
             {price}
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
-        <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
+        {prepayment ? (
+          <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
+        ) : null}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
+        {prepayment ? (
+          <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
+        ) : null}
         <Button
           variant="neutral"
           size="md"
@@ -317,6 +347,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         imageAlt={boat.imageAlt}
         badges={boat.badges}
         priority={boat.priority}
+        unavailable={boat.unavailable}
       />
       <Details
         marina={boat.marina}
@@ -327,15 +358,16 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         specs={boat.specs}
         amenities={boat.amenities}
         summary={boat.summary}
+        unavailable={boat.unavailable}
       />
       {boat.summary ? null : (
         <Action
           stats={boat.stats}
           start={boat.start}
           end={boat.end}
-          timeZone={boat.timeZone}
           priceLabel={boat.priceLabel}
           price={boat.price}
+          priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
           prepayment={boat.prepayment}
           detailHref={boat.detailHref}

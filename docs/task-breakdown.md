@@ -110,6 +110,7 @@ Confirm `check-types` + `build` green; share `AppRouterClient` usage with fronte
 - ☑ Incremental read-model rebuild path for sync workers: call `resolveListingIdsForListingSources(...)`, then `rebuildListingSearchDocsForListings(...)` after source/listing/spec/media/amenity/availability/review upserts.
 - ☑ `charterSearch.results/facets/mapMarkers/suggestions` against read models (`GET /charter-search/results`, `/facets`, `/map-markers`, `/suggestions`).
 - ☑ `availability.calendar` from `availability_slot` cache (`GET /listings/{listingId}/availability-calendar`).
+- ☑ `availability.constraints` — what a listing will sell, as rules rather than pre-cut periods (`GET /listings/{listingId}/availability-constraints`). See M7 and ADR 0004.
 - ☑ Stable cursor pagination for recommended/rating/newest/price sorts, including nullable price/year values.
 - ☑ Direct page pagination for the Figma results pager (`page`, `pageSize`, `pagination.totalItems`, `startItem`, `endItem`, `totalPages`).
 - ☐ Dedicated `facet_dictionary` table for stable translated labels. Deferred until frontend/admin needs label ownership beyond dynamic facets.
@@ -142,6 +143,38 @@ Confirm `check-types` + `build` green; share `AppRouterClient` usage with fronte
 - ☐ Extend `evlog` wide-events with domain fields; funnel analytics (search→quote→book)
 - ☐ Alerts: sync failures, webhook lag, provider error rate, conversion
 - **skill:** `analyze-logs`, `review-logging-patterns` (repo) · **agent:** `general-purpose`
+
+---
+
+## M7 — Availability as constraints
+
+Availability was an enumeration the sync invented: `synthesizeAvailableSlots` walked one reading of
+each listing's check-in rule, stepped seven days regardless, and wrote the result as though the
+provider had offered those periods. **ADR 0004** records the decision and its consequences.
+
+- ☑ `availability.constraints` returns rules, occupancy, published rates and one-way windows, so a
+      caller can evaluate a range nobody pre-cut. Additive.
+- ☑ `packages/api/src/lib/availability-rules.ts` — pure `rangeStatus` / `canCheckIn` / `canCheckOut`,
+      tested against the four rule shapes the fleet publishes.
+- ☑ Booking sidebar picks dates on a range calendar driven by those rules; illegal ranges cannot be
+      expressed rather than being refused afterwards.
+- ☑ `listing_price_period` + `listing_free_period` replace the synthesized rows. `availability_slot`
+      keeps occupancy and the vendor's confirmed offers; the sync stops synthesizing.
+- ☑ Search filters by containment against a free period. This fixed a live bug: a 14-night stay
+      matched 0 listings while 79 had the consecutive weeks free.
+- ☐ Daily rates. The NauSYS loader maps `WEEKLY` price lists and drops `DAILY` ones, so a
+      short-charter listing has no rate of its own. `listing_price_period.kind` is ready for them.
+- ☐ Three sections still present generated content as sourced: the invented "Suggested route",
+      the identical payment methods, and pickup/drop-off dates taken from the availability window.
+      Held until the second provider lands, since it may supply what NauSYS omits —
+      [generated-content-audit.md](./generated-content-audit.md).
+- ☐ `max_nights` is null on all 109 listings — unpublished by NauSYS, or dropped in mapping. Until
+      it is resolved the calendar cannot cap a range from above.
+- ☐ Seasonal check-in rules. `listing_checkin_rule` has no validity period, so a listing whose
+      check-in day changes by season cannot be expressed.
+- **Docs testing:** `pnpm db:migrate`, run an availability sync, then compare a 14-night search
+  before and after against `listing_free_period`.
+- **skill:** `provider-connector`, `drizzle-conventions` (repo) · **agent:** _provider-adapter-author_
 
 ---
 

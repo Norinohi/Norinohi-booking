@@ -93,19 +93,49 @@ export type BoatCardListing = {
   crewType: string | null;
   specs: BoatSpecs;
   amenities: string[];
-  bookingStats: { bookedThisMonth: number; viewedToday: number };
+  /* Absent on a My Bookings card: the counts describe a boat someone is still choosing. */
+  bookingStats?: { bookedThisMonth: number; viewedToday: number };
   badges: { label: string }[];
 };
+
+type PricedListing = {
+  priceFrom: { amountMinor: number } | null;
+  availability: { hasAvailableDates: boolean };
+};
+
+/**
+ * What a card shows where the amount goes. A listing with no bookable slot reads as
+ * unavailable; one with dates but no price is quotable, so it reads as on request.
+ * Callers pair this with `priceIsLabel` so the slot drops to text size for both.
+ */
+export function boatCardPrice(
+  t: BoatCardTranslator,
+  listing: PricedListing,
+  formatMoney: (amountMinor: number) => string,
+) {
+  if (listing.priceFrom) return formatMoney(listing.priceFrom.amountMinor);
+  return listing.availability.hasAvailableDates ? t("priceOnRequest") : t("priceUnavailable");
+}
+
+/**
+ * The "N booked / N viewed" lines, which are real counts and therefore often zero.
+ * A zero line is dropped rather than rendered: "0 people viewed today" is true but
+ * reads as a warning, and the card has nothing to say when nobody has looked yet.
+ */
+function boatCardStats(t: BoatCardTranslator, stats: BoatCardListing["bookingStats"]) {
+  if (!stats) return undefined;
+
+  const lines: string[] = [];
+  if (stats.bookedThisMonth > 0) lines.push(t("stats.booked", { count: stats.bookedThisMonth }));
+  if (stats.viewedToday > 0) lines.push(t("stats.viewed", { count: stats.viewedToday }));
+  return lines.length > 0 ? lines : undefined;
+}
 
 /** The BoatCard fields that depend only on the boat — shared by the catalogue and My Bookings. */
 export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing) {
   return {
     id: listing.id,
-    images: listing.gallery.length
-      ? listing.gallery
-      : listing.mainImage
-        ? [listing.mainImage]
-        : [],
+    images: listing.gallery.length ? listing.gallery : listing.mainImage ? [listing.mainImage] : [],
     badges: listing.badges.map((badge) => ({ label: badge.label })),
     name: listing.title,
     rating: String(listing.rating),
@@ -113,9 +143,6 @@ export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing
     crew: listing.crewType ? slugToLabel(listing.crewType) : "",
     specs: boatSpecs(t, listing.specs),
     amenities: amenityItems(listing.amenities),
-    stats: [
-      t("stats.booked", { count: listing.bookingStats.bookedThisMonth }),
-      t("stats.viewed", { count: listing.bookingStats.viewedToday }),
-    ],
+    stats: boatCardStats(t, listing.bookingStats),
   } satisfies Partial<BoatCardProps>;
 }

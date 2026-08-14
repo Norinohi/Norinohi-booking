@@ -230,7 +230,8 @@ export type ListingPaymentPolicy = {
   balanceDueAt?: string;
 } | null;
 
-const MARKETPLACE_DEFAULT = { mode: "deposit" as const, depositPct: 0.5 };
+/** Exported so the card quotes the same figure checkout falls back to, rather than its own. */
+export const MARKETPLACE_DEFAULT = { mode: "deposit" as const, depositPct: 0.5 };
 
 /**
  * §6.3: explicit listing override → the provider's own plan → the marketplace

@@ -28,6 +28,7 @@ import {
   restLocationSchema,
   restRegionSchema,
   restYachtBuilderSchema,
+  restSailTypeSchema,
   restYachtCategorySchema,
   restYachtModelSchema,
   restYachtSchema,
@@ -83,12 +84,20 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
   const categories = parseAll(records, "category", restYachtCategorySchema);
   const equipmentCategories = parseAll(records, "equipment_category", restEquipmentCategorySchema);
   const equipment = parseAll(records, "amenity", restEquipmentSchema);
+  const sailTypes = parseAll(records, "sail_type", restSailTypeSchema);
   const yachts = parseAll(records, "yacht", restYachtSchema);
 
   const countryNameById = new Map(countries.map((item) => [String(item.id), name(item.name)]));
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
   const modelById = new Map(models.map((item) => [String(item.id), item]));
   const knownEquipment = new Set(equipment.map((item) => String(item.id)));
+  /* An entry whose English name is missing is dropped: a rig with no label is not a rig. */
+  const sailTypeById = new Map(
+    sailTypes.flatMap((item) => {
+      const label = name(item.name);
+      return label === undefined ? [] : [[String(item.id), label] as const];
+    }),
+  );
 
   const projectedBases = bases.map((item) => {
     const locationId = String(item.locationId);
@@ -116,7 +125,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
   });
 
   const listings = yachts
-    .map((yacht) => projectYacht(yacht, { modelById, knownEquipment }))
+    .map((yacht) => projectYacht(yacht, { modelById, knownEquipment, sailTypeById }))
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return canonicalCatalogueSchema.parse({
@@ -193,7 +202,11 @@ type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 
 function projectYacht(
   yacht: RestYacht,
-  context: { modelById: Map<string, RestYachtModel>; knownEquipment: Set<string> },
+  context: {
+    modelById: Map<string, RestYachtModel>;
+    knownEquipment: Set<string>;
+    sailTypeById: Map<string, string>;
+  },
 ) {
   // The vendor's own withdrawals. `disabled` is a boat taken out of service and
   // `internalUse` one the operator books by hand; publishing either would sell
@@ -240,7 +253,14 @@ function projectYacht(
       engines: intOf(yacht.engines),
       fuelCapacity: capacityOf(yacht.fuelTank, model?.fuelTank),
       waterCapacity: capacityOf(yacht.waterTank, model?.waterTank),
+      // The vendor names the rig in its own `sailTypes` reference, so an id we cannot
+      // resolve is left unset rather than published as a number.
+      sailType:
+        yacht.sailTypeId === undefined
+          ? undefined
+          : context.sailTypeById.get(String(yacht.sailTypeId)),
     },
+    crewType: crewTypeOf(yacht),
     media: mediaOf(yacht),
     amenities: (yacht.standardYachtEquipment ?? [])
       .map((item) => String(item.equipmentId))
@@ -271,6 +291,23 @@ function projectYacht(
  * spans 1970 to 2099, so nothing is lost today; an operator who changes turnaround
  * day mid-season will need those columns before this is honest.
  */
+/**
+ * NauSYS splits the question in two: `charterType` says whether the boat is sold crewed, and
+ * `crewedCharterType` names the crewed product. A bareboat with `SKIPPER` is the middle case —
+ * the customer sails it, with a skipper aboard — which is exactly our `skipper`.
+ *
+ * Left unset rather than guessed when the pair is unrecognised. `crew_type` drives a search
+ * filter, so a wrong value silently files the boat under a charter it does not offer.
+ */
+function crewTypeOf(yacht: RestYacht): "bareboat" | "skipper" | "full-crew" | undefined {
+  const charter = text(yacht.charterType)?.toUpperCase();
+  const crewed = text(yacht.crewedCharterType)?.toUpperCase();
+
+  if (charter === "CREWED") return "full-crew";
+  if (charter === "BAREBOAT") return crewed === "SKIPPER" ? "skipper" : "bareboat";
+  return undefined;
+}
+
 function checkinRulesOf(yacht: RestYacht) {
   const rules = new Map<
     string,

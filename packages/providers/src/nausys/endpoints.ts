@@ -219,6 +219,12 @@ export const restYachtCategorySchema = looseJsonObject({
   name: restInternationalTextSchema,
 });
 
+/** The vendor's rig reference, named per locale like every other catalogue list. */
+export const restSailTypeSchema = looseJsonObject({
+  id: z.number().int(),
+  name: restInternationalTextSchema,
+});
+
 /**
  * The hull dimensions and the category live here, not on `RestYacht`: the vendor
  * models them as properties of the model, so two sisterships share them.
@@ -681,18 +687,29 @@ export const restOccupancyResponseSchema = looseJsonObject({
 
 // -- booking -----------------------------------------------------------------
 
+/**
+ * A client field the vendor may answer with `false` instead of omitting it or sending an
+ * empty string — observed on `company` for a private booking, and the same shape is
+ * plausible on every other text field of this block. Read `false` as absent; `true` is
+ * not tolerated, because a boolean-shaped *value* would be new information, not a blank.
+ */
+const blankableString = z
+  .union([z.string(), z.literal(false)])
+  .transform((value) => (value === false ? undefined : value))
+  .optional();
+
 export const restClientSchema = looseJsonObject({
-  name: z.string().optional(),
-  surname: z.string().optional(),
-  company: z.string().optional(),
-  vatNr: z.string().optional(),
-  address: z.string().optional(),
-  zip: z.string().optional(),
-  city: z.string().optional(),
+  name: blankableString,
+  surname: blankableString,
+  company: blankableString,
+  vatNr: blankableString,
+  address: blankableString,
+  zip: blankableString,
+  city: blankableString,
   countryId: z.number().int().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  mobile: z.string().optional(),
+  email: blankableString,
+  phone: blankableString,
+  mobile: blankableString,
 });
 export type RestClient = z.infer<typeof restClientSchema>;
 
@@ -751,7 +768,12 @@ export const restCreateOptionRequestSchema = z.object({
   credentials: restCredentialsSchema,
   id: z.number().int(),
   uuid: z.string(),
-  createWaitingOption: z.boolean().optional(),
+  /*
+   * A stringified boolean, and only that: the vendor deserializes this field as a String, so a
+   * JSON `false` kills the request inside their JSON-B parser and comes back as an HTML 500
+   * before any handler sees it. Typed here so the shape cannot regress to a boolean.
+   */
+  createWaitingOption: z.enum(["true", "false"]).optional(),
 });
 export type RestCreateOptionRequest = z.infer<typeof restCreateOptionRequestSchema>;
 

@@ -199,8 +199,14 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     // provider call on an object that costs nothing to abandon.
     await logEvent(parsed.quoteId, "info_created", info);
 
+    /*
+     * `createWaitingOption` is a STRING on the vendor's side, not a boolean. A JSON `false`
+     * crashes their JSON-B deserializer before any handler runs — Payara answers HTTP 500 with
+     * an HTML error page whose root cause is `JsonParser#getString() ... current parser state
+     * is VALUE_FALSE`. Verified against the live API: `"false"` returns a normal OPTION.
+     */
     const option = await withReservation(refOf(info.handle), nausysEndpoints.booking.createOption, {
-      createWaitingOption: false,
+      createWaitingOption: "false",
     });
 
     await logEvent(parsed.quoteId, "option_created", option);

@@ -13,11 +13,11 @@ import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
-import { badgesFor, stableCount } from "../presenters/listing";
+import { badgesFor } from "../presenters/listing";
 import type {
   bookingCancelSchema,
   consentsSchema,
@@ -42,6 +42,7 @@ import { paginatedQuery, totalFrom } from "./pagination";
 import { isUniqueViolation } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { asCrewType, assertQuoteIsFresh } from "./quote";
+import type { GuestAccessToken } from "./guest-access";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
 
@@ -66,13 +67,31 @@ const REFERENCE_LENGTH = 8;
 
 /* --------------------------------------------------------------------- reads */
 
+/*
+ * Never reached the customer as a booking: the provider refused or the hold ran out before
+ * anything was secured, and no money moved. The rows are kept — they carry the consents, the
+ * idempotency key and the vendor's reason — but a failed submit must not leave a card in the
+ * customer's history. Asking for one of these statuses explicitly still returns it, which is
+ * how support and admin see what was attempted.
+ */
+const NEVER_HELD: BookingStatus[] = [
+  "DRAFT",
+  "QUOTE_EXPIRED",
+  "OPTION_EXPIRED",
+  "PROVIDER_REJECTED",
+];
+
 export async function listBookings(
   db: Database,
   userId: string,
   input: ListInput,
 ): Promise<ListResult> {
   const filters = [eq(booking.userId, userId)];
-  if (input.status?.length) filters.push(inArray(booking.status, input.status));
+  if (input.status?.length) {
+    filters.push(inArray(booking.status, input.status));
+  } else {
+    filters.push(notInArray(booking.status, NEVER_HELD));
+  }
 
   // The date filter is on the charter period, which lives on the quote — that is
   // what "Any dates" means on a history screen, not when the booking was made.
@@ -197,6 +216,17 @@ export async function getCheckoutStatus(db: Database, userId: string, id: string
 /* ------------------------------------------------------------------ mutation */
 
 /**
+ * Who is checking out. A guest has an account — provisioned for them at the edge —
+ * but no session, so the booking additionally stores the hash of the token that is
+ * their only way back to it.
+ */
+export type CheckoutActor = {
+  userId: string;
+  /** Null for a signed-in customer, whose session already authorises the follow-ups. */
+  guestAccess: GuestAccessToken | null;
+};
+
+/**
  * Turns a fresh quote into a booking, holding a provider option when the provider
  * supports one. Idempotent on `idempotencyKey`: a retried submit returns the
  * booking the first call created rather than holding a second option (§6.2).
@@ -204,14 +234,18 @@ export async function getCheckoutStatus(db: Database, userId: string, id: string
 export async function createHold(
   db: Database,
   provider: InventoryProvider,
-  userId: string,
+  actor: CheckoutActor,
   quoteId: string,
   idempotencyKey: string,
   guest: GuestDetails,
   consents: Consents,
 ): Promise<Hold> {
+  const userId = actor.userId;
   const existing = await findHoldByKey(db, userId, idempotencyKey);
-  if (existing) return presentHold(existing);
+  if (existing) {
+    const reissued = await rehashGuestAccess(db, existing, actor);
+    return presentHold(reissued.row, reissued.applied ? (actor.guestAccess?.token ?? null) : null);
+  }
 
   const priced = await assertQuoteIsFresh(db, quoteId);
   if (priced.userId && priced.userId !== userId) {
@@ -243,6 +277,7 @@ export async function createHold(
     totalMinor: priced.totalMinor,
     currency: priced.currency,
     commercialSnapshot: snapshot,
+    guestAccessTokenHash: actor.guestAccess?.tokenHash ?? null,
     idempotencyKey,
   });
 
@@ -259,12 +294,14 @@ export async function createHold(
 
   // No option support: nothing to secure, so the booking waits at QUOTED and the
   // payment is what commits it.
+  const token = actor.guestAccess?.token ?? null;
+
   if (!provider.capabilities().supportsOptions) {
     await redeem();
-    return presentHold(created);
+    return presentHold(created, token);
   }
 
-  return presentHold(await holdOption(db, provider, created, priced, account, redeem));
+  return presentHold(await holdOption(db, provider, created, priced, account, redeem), token);
 }
 
 /**
@@ -276,6 +313,32 @@ export async function createHold(
  * meant the second one was refused outright and could not check out at all, and it
  * made the endpoint an oracle for whether a given key existed.
  */
+/**
+ * A retried guest submit arrives from a browser holding a token nobody kept a copy
+ * of, so the stored hash is replaced with the one this attempt minted.
+ *
+ * Refused unless the booking was itself a guest checkout. The email decides which
+ * account a guest acts as, so without that guard someone who typed a registered
+ * address and hit the right idempotency key would be handed a live token for a
+ * booking that customer made while signed in.
+ */
+async function rehashGuestAccess(
+  db: Database,
+  existing: BookingRow,
+  actor: CheckoutActor,
+): Promise<{ row: BookingRow; applied: boolean }> {
+  if (!actor.guestAccess || !existing.guestAccessTokenHash)
+    return { row: existing, applied: false };
+
+  const [updated] = await db
+    .update(booking)
+    .set({ guestAccessTokenHash: actor.guestAccess.tokenHash })
+    .where(eq(booking.id, existing.id))
+    .returning();
+
+  return updated ? { row: updated, applied: true } : { row: existing, applied: false };
+}
+
 async function findHoldByKey(
   db: Database,
   userId: string,
@@ -791,10 +854,6 @@ function presentSummary(
       crewType: snapshot.crewType,
       specs,
       amenities: snapshot.amenities ?? [],
-      bookingStats: {
-        bookedThisMonth: stableCount(row.listingId, 2, 8),
-        viewedToday: stableCount(row.id, 18, 64),
-      },
       badges: badgesFor({
         petsAllowed: snapshot.petsAllowed ?? false,
         depositInsuranceIncluded: snapshot.depositInsuranceIncluded ?? false,
@@ -829,13 +888,14 @@ function presentSummary(
   };
 }
 
-function presentHold(row: BookingRow): Hold {
+function presentHold(row: BookingRow, accessToken: string | null): Hold {
   return {
     bookingId: row.id,
     reference: row.reference,
     status: row.status,
     holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
     optionHeld: row.status === "OPTION_HELD",
+    accessToken,
   };
 }
 

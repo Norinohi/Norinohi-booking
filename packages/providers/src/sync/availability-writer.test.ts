@@ -2,23 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import { AuthError, TransientError } from "../shared/errors";
 import {
-  DEFAULT_CHECKIN_RULE,
+  freePeriodsFrom,
   runAvailabilitySync,
-  synthesizeAvailableSlots,
   type AvailabilityScope,
   type AvailabilitySlotWrite,
   type AvailabilitySource,
   type AvailabilitySyncStore,
-  type CheckinRule,
   type ConfirmedOfferPage,
+  type FreePeriod,
   type ListingAvailabilityPlan,
   type ListingRef,
   type OccupiedInterval,
+  type SeasonalPrice,
 } from "./availability-writer";
 
 const RUN_AT = new Date("2026-06-01T02:00:00.000Z");
-
-const SATURDAY_RULE: CheckinRule = { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7 };
 
 interface StoredSlot extends Omit<AvailabilitySlotWrite, "seenAt"> {
   updatedAt: Date;
@@ -33,13 +31,15 @@ interface FakeStoreSeed {
 
 /**
  * Stands in for the Drizzle store. What is worth protecting lives in the loop, not
- * in the SQL: which scopes may be swept, what synthesis is allowed to assert, and
- * that a budget stop leaves a cursor behind.
+ * in the SQL: which scopes may be swept, which years free periods may be asserted
+ * for, and that a budget stop leaves a cursor behind.
  */
 type RecordedError = Parameters<AvailabilitySyncStore["recordError"]>[0];
 
 function fakeStore(seed: FakeStoreSeed = {}) {
   const slots = new Map<string, StoredSlot>();
+  const freePeriods = new Map<string, FreePeriod & { listingId: string }>();
+  const pricePeriods: (SeasonalPrice & { listingId: string })[] = [];
   const errors: RecordedError[] = [];
   const cursors: unknown[] = [];
   const rebuilt: string[][] = [];
@@ -72,12 +72,31 @@ function fakeStore(seed: FakeStoreSeed = {}) {
       for (const listingId of listingIds) {
         const partial = seed.plans?.[listingId];
         plans.set(listingId, {
-          checkinRules: partial?.checkinRules ?? [SATURDAY_RULE],
           prices: partial?.prices ?? [],
           currency: partial?.currency ?? "EUR",
         });
       }
       return plans;
+    },
+    async writeFreePeriods(ref, years, periods) {
+      for (const [key, period] of freePeriods) {
+        if (period.listingId !== ref.listingId) continue;
+        if (years.some((year) => period.startDate.startsWith(String(year)))) {
+          freePeriods.delete(key);
+        }
+      }
+      for (const period of periods) {
+        freePeriods.set(keyOf(ref.listingId, period.startDate, period.endDate), {
+          listingId: ref.listingId,
+          ...period,
+        });
+      }
+    },
+    async writePricePeriods(ref, prices) {
+      for (const price of prices) {
+        pricePeriods.push({ listingId: ref.listingId, ...price });
+      }
+      return prices.length;
     },
     async writeSlots(written) {
       for (const slot of written) {
@@ -151,6 +170,13 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     closed,
     rebuilt,
     slots,
+    pricePeriods,
+    freeOf(listingId: string) {
+      return [...freePeriods.values()]
+        .filter((period) => period.listingId === listingId)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))
+        .map((period) => ({ startDate: period.startDate, endDate: period.endDate }));
+    },
     listOf(listingId: string, status?: StoredSlot["status"]) {
       return [...slots.values()]
         .filter((slot) => slot.listingId === listingId)
@@ -185,122 +211,72 @@ function occupied(overrides: Partial<OccupiedInterval> = {}): OccupiedInterval {
   };
 }
 
-describe("synthesizeAvailableSlots", () => {
-  const window = { start: "2026-06-01", end: "2026-08-31" };
+describe("freePeriodsFrom", () => {
+  const JULY = { start: "2026-07-01", end: "2026-07-31" };
 
-  it("emits periods on the rule's check-in weekday for its minimum duration", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [window],
-      rules: [SATURDAY_RULE],
-      occupied: [],
-    });
-
-    expect(slots[0]).toMatchObject({
-      startDate: "2026-06-06",
-      endDate: "2026-06-13",
-      minNights: 7,
-      checkinWeekday: 6,
-      checkoutWeekday: 6,
-    });
-    // Every start is a Saturday, seven nights apart.
-    for (const slot of slots) {
-      expect(new Date(`${slot.startDate}T00:00:00Z`).getUTCDay()).toBe(6);
-    }
-  });
-
-  it("honours a rule that is not Saturday and not seven nights", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [{ start: "2026-06-01", end: "2026-06-30" }],
-      rules: [{ checkinWeekday: 3, checkoutWeekday: null, minNights: 4 }],
-      occupied: [],
-    });
-
-    expect(slots.map((slot) => [slot.startDate, slot.endDate])).toEqual([
-      ["2026-06-03", "2026-06-07"],
-      ["2026-06-10", "2026-06-14"],
-      ["2026-06-17", "2026-06-21"],
-      ["2026-06-24", "2026-06-28"],
+  it("returns the whole window when nothing is booked", () => {
+    expect(freePeriodsFrom({ windows: [JULY], occupied: [] })).toEqual([
+      { startDate: "2026-07-01", endDate: "2026-07-31" },
     ]);
   });
 
-  it("stretches to the check-out weekday when the minimum lands elsewhere", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [{ start: "2026-06-01", end: "2026-06-30" }],
-      rules: [{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 5 }],
-      occupied: [],
-    });
-
-    expect(slots[0]).toMatchObject({ startDate: "2026-06-06", endDate: "2026-06-13" });
+  it("returns nothing when the window is sold end to end", () => {
+    const occupied = [{ startDate: "2026-07-01", endDate: "2026-07-31" }];
+    expect(freePeriodsFrom({ windows: [JULY], occupied })).toEqual([]);
   });
 
-  it("drops every candidate overlapping an occupied or option period", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [window],
-      rules: [SATURDAY_RULE],
-      occupied: [
-        { startDate: "2026-06-27", endDate: "2026-07-04" },
-        { startDate: "2026-07-18", endDate: "2026-07-25" },
-      ],
-    });
-
-    const periods = slots.map((slot) => slot.startDate);
-    expect(periods).not.toContain("2026-06-27");
-    expect(periods).not.toContain("2026-07-18");
-    // A charter ending the day the next begins is a turnaround, not a clash.
-    expect(periods).toContain("2026-07-04");
-    expect(periods).toContain("2026-07-25");
+  it("returns the gaps around a booking", () => {
+    const occupied = [{ startDate: "2026-07-11", endDate: "2026-07-18" }];
+    expect(freePeriodsFrom({ windows: [JULY], occupied })).toEqual([
+      { startDate: "2026-07-01", endDate: "2026-07-11" },
+      { startDate: "2026-07-18", endDate: "2026-07-31" },
+    ]);
   });
 
-  it("never emits a period that leaves the window", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [{ start: "2026-06-01", end: "2026-06-20" }],
-      rules: [SATURDAY_RULE],
-      occupied: [],
-    });
-
-    expect(slots.at(-1)?.endDate).toBe("2026-06-20");
+  /* Back-to-back charters share a turnaround day, which is not free time between them. */
+  it("leaves no gap between bookings that touch", () => {
+    const occupied = [
+      { startDate: "2026-07-04", endDate: "2026-07-11" },
+      { startDate: "2026-07-11", endDate: "2026-07-18" },
+    ];
+    expect(freePeriodsFrom({ windows: [JULY], occupied })).toEqual([
+      { startDate: "2026-07-01", endDate: "2026-07-04" },
+      { startDate: "2026-07-18", endDate: "2026-07-31" },
+    ]);
   });
 
-  it("falls back to Saturday to Saturday for a listing with no rule, and says so", () => {
-    const result = synthesizeAvailableSlots({
-      windows: [{ start: "2026-06-01", end: "2026-06-30" }],
-      rules: [],
-      occupied: [],
-    });
-
-    expect(result.usedFallback).toBe(true);
-    expect(result.slots[0]).toMatchObject({
-      startDate: "2026-06-06",
-      minNights: DEFAULT_CHECKIN_RULE.minNights,
-      checkinWeekday: DEFAULT_CHECKIN_RULE.checkinWeekday,
-    });
+  it("does not re-open sold time when bookings overlap", () => {
+    const occupied = [
+      { startDate: "2026-07-04", endDate: "2026-07-20" },
+      { startDate: "2026-07-11", endDate: "2026-07-18" },
+    ];
+    expect(freePeriodsFrom({ windows: [JULY], occupied })).toEqual([
+      { startDate: "2026-07-01", endDate: "2026-07-04" },
+      { startDate: "2026-07-20", endDate: "2026-07-31" },
+    ]);
   });
 
-  it("prices from the seasonal list covering the check-in date", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [{ start: "2026-06-01", end: "2026-07-31" }],
-      rules: [SATURDAY_RULE],
-      occupied: [],
-      prices: [
-        { startDate: "2026-06-01", endDate: "2026-06-26", priceMinor: 320000, currency: "EUR" },
-        { startDate: "2026-06-27", endDate: "2026-08-29", priceMinor: 390000, currency: "EUR" },
-      ],
-      currency: "EUR",
-    });
-
-    expect(slots[0]).toMatchObject({ startDate: "2026-06-06", priceMinor: 320000 });
-    expect(slots.at(-1)).toMatchObject({ startDate: "2026-07-18", priceMinor: 390000 });
+  it("clips a booking that starts before the window", () => {
+    const occupied = [{ startDate: "2026-06-27", endDate: "2026-07-04" }];
+    expect(freePeriodsFrom({ windows: [JULY], occupied })).toEqual([
+      { startDate: "2026-07-04", endDate: "2026-07-31" },
+    ]);
   });
 
-  it("leaves the price null when nothing covers the period", () => {
-    const { slots } = synthesizeAvailableSlots({
-      windows: [{ start: "2026-06-01", end: "2026-06-30" }],
-      rules: [SATURDAY_RULE],
-      occupied: [],
-      currency: "EUR",
-    });
+  it("ignores a booking outside the window entirely", () => {
+    const occupied = [{ startDate: "2026-09-01", endDate: "2026-09-08" }];
+    expect(freePeriodsFrom({ windows: [JULY], occupied })).toEqual([
+      { startDate: "2026-07-01", endDate: "2026-07-31" },
+    ]);
+  });
 
-    expect(slots[0]).toMatchObject({ priceMinor: null, currency: "EUR" });
+  it("never leaves the windows it was given", () => {
+    const windows = [JULY, { start: "2026-09-01", end: "2026-09-30" }];
+    const periods = freePeriodsFrom({ windows, occupied: [] });
+    expect(periods).toEqual([
+      { startDate: "2026-07-01", endDate: "2026-07-31" },
+      { startDate: "2026-09-01", endDate: "2026-09-30" },
+    ]);
   });
 });
 
@@ -343,18 +319,10 @@ describe("runAvailabilitySync", () => {
     expect(store.closed[0]?.skippedCount).toBe(1);
   });
 
-  it("synthesizes unconfirmed available slots around the occupied ones", async () => {
+  it("writes the free stretches around the occupied ones", async () => {
     const store = fakeStore({
       yachts: { "4711001": MARLIN },
       listings: { "102701": [MARLIN] },
-      plans: {
-        ylst_marlin: {
-          checkinRules: [SATURDAY_RULE],
-          prices: [
-            { startDate: "2026-01-01", endDate: "2026-12-31", priceMinor: 390000, currency: "EUR" },
-          ],
-        },
-      },
     });
 
     const summary = await runAvailabilitySync({
@@ -363,19 +331,40 @@ describe("runAvailabilitySync", () => {
       now: () => RUN_AT,
     });
 
-    const available = store.listOf("ylst_marlin", "available");
-    expect(summary.synthesizedSlots).toBe(available.length);
-    expect(available.length).toBeGreaterThan(20);
-    expect(available.map((slot) => slot.startDate)).not.toContain("2026-06-27");
-    // Nothing here may claim the provider confirmed a period it was never asked about.
-    for (const slot of available) {
-      expect(slot.availabilityConfirmed).toBe(false);
-      expect(slot.priceMinor).toBe(390000);
-      expect(slot.listingSourceId).toBe("lsrc_marlin");
-    }
+    const free = store.freeOf("ylst_marlin");
+    expect(summary.freePeriods).toBe(free.length);
+    /* The booking runs 2026-06-27 to 2026-07-04, so the free time is split either side. */
+    expect(free).toEqual([
+      { startDate: "2026-06-01", endDate: "2026-06-27" },
+      { startDate: "2026-07-04", endDate: "2026-12-31" },
+    ]);
+    /* Availability is no longer asserted as charters, so no slot claims to be one. */
+    expect(store.listOf("ylst_marlin", "available")).toEqual([]);
   });
 
-  it("stays inside the horizon and inside the year it fetched", async () => {
+  it("stores the provider's rates as the periods it published them for", async () => {
+    const prices = [
+      { startDate: "2026-01-01", endDate: "2026-06-30", priceMinor: 390000, currency: "EUR" },
+      { startDate: "2026-07-01", endDate: "2026-12-31", priceMinor: 450000, currency: "EUR" },
+    ];
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+      plans: { ylst_marlin: { prices } },
+    });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({ fetchOccupancy: () => Promise.resolve([occupied()]) }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.pricePeriods).toBe(2);
+    expect(store.pricePeriods.map((price) => price.priceMinor)).toEqual([390000, 450000]);
+  });
+
+  /* A boat with nothing left to sell has to lose the free periods it used to have. */
+  it("leaves no free period for a listing that is booked solid", async () => {
     const store = fakeStore({
       yachts: { "4711001": MARLIN },
       listings: { "102701": [MARLIN] },
@@ -383,34 +372,17 @@ describe("runAvailabilitySync", () => {
 
     await runAvailabilitySync({
       store: store.store,
-      source: source(),
-      horizonMonths: 12,
+      source: source({
+        fetchOccupancy: () =>
+          Promise.resolve([occupied({ startDate: "2026-01-01", endDate: "2026-12-31" })]),
+      }),
       now: () => RUN_AT,
     });
 
-    const available = store.listOf("ylst_marlin", "available");
-    expect(available[0]?.startDate.startsWith("2026-06")).toBe(true);
-    // 2027 was never fetched, so nothing may be asserted about it.
-    expect(available.at(-1)?.endDate.startsWith("2026-12")).toBe(true);
+    expect(store.freeOf("ylst_marlin")).toEqual([]);
   });
 
-  it("counts a listing with no check-in rule as a fallback", async () => {
-    const store = fakeStore({
-      listings: { "102701": [MARLIN] },
-      plans: { ylst_marlin: { checkinRules: [] } },
-    });
-
-    const summary = await runAvailabilitySync({
-      store: store.store,
-      source: source(),
-      now: () => RUN_AT,
-    });
-
-    expect(summary.fallbackListings).toBe(1);
-    expect(store.listOf("ylst_marlin", "available").length).toBeGreaterThan(0);
-  });
-
-  it("upgrades a synthesized slot to the vendor's confirmed price", async () => {
+  it("records the vendor's confirmed, priced offer as a slot", async () => {
     const store = fakeStore({
       yachts: { "4711001": MARLIN },
       listings: { "102701": [MARLIN] },
@@ -569,7 +541,6 @@ describe("runAvailabilitySync", () => {
     const store = fakeStore({
       yachts: { "4711001": MARLIN },
       listings: { "102701": [MARLIN] },
-      plans: { ylst_marlin: { checkinRules: [{ ...SATURDAY_RULE, minNights: 7 }] } },
       slots: [
         stale("ylst_marlin", "2026-09-02", "2026-09-09"),
         stale("ylst_marlin", "2027-09-01", "2027-09-08"),
@@ -625,7 +596,7 @@ describe("runAvailabilitySync", () => {
 
     expect(summary.deletedSlots).toBe(0);
     expect(summary.sweptScopes).toBe(0);
-    expect(summary.synthesizedSlots).toBe(0);
+    expect(summary.freePeriods).toBe(0);
     expect(summary.status).toBe("partial");
     expect(store.slots.size).toBe(1);
   });

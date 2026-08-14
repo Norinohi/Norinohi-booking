@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import {
+  getListingByIdOrSlug,
   getListingDetailByIdOrSlug,
   listListingReviews,
   listListingsByIds,
@@ -11,10 +12,12 @@ import {
   listingDetailSchema,
   listingSummarySchema,
   listingsByIdsInputSchema,
+  recordListingViewInputSchema,
 } from "../contracts/catalog";
 import { publicProcedure } from "../index";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 import { presentListingDetail, presentListingSummary } from "../presenters/listing";
+import { recordListingView } from "../services/listing-view";
 
 const idInputSchema = z.object({ id: z.string() });
 const listingIdInputSchema = z.object({ listingId: z.string() });
@@ -63,6 +66,38 @@ export const listingsRouter = {
     .handler(async ({ context, input }) => {
       const docs = await listListingsByIds(context.db, input.listingIds);
       return docs.map((doc) => presentListingSummary(doc));
+    }),
+  recordView: publicProcedure
+    .route({
+      method: "POST",
+      path: "/listings/{id}/views",
+      operationId: "recordListingView",
+      summary: "Record a listing view",
+      description:
+        "Counts one visitor against this listing for the current UTC day, which is what the detail page's 'people viewed today' reports. Repeat views by the same visitor on the same day are ignored, so the number is people rather than page loads. A signed-in caller is counted as their account; everyone else is counted by the anonymous id the browser sends, which the server hashes with the date before storing.",
+      tags: ["Listings"],
+      successDescription: "The view was counted, or was a repeat and already had been.",
+      spec: withJsonBodyExample({
+        id: "ylst_yacht-sunreef-60-celeste",
+        viewer: "b4f1c0d2e3a45678",
+      }),
+    })
+    .input(recordListingViewInputSchema)
+    .output(z.object({ recorded: z.literal(true) }))
+    .handler(async ({ context, input }) => {
+      // Resolved rather than trusted: the id can be a slug, and this rejects an
+      // unpublished or unknown listing here instead of at the foreign key.
+      const listing = await getListingByIdOrSlug(context.db, input.id);
+      if (!listing) {
+        throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
+      }
+
+      // A signed-in visitor counts once across their devices; the client-supplied
+      // id is only the fallback for someone with no account.
+      const viewer = context.session?.user.id ?? input.viewer;
+      await recordListingView(context.db, { listingId: listing.listingId, viewer });
+
+      return { recorded: true as const };
     }),
   reviews: publicProcedure
     .route({

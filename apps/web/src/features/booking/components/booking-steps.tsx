@@ -10,16 +10,13 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/auth-client";
-
 import { createHoldMutationOptions } from "../api/queries";
 import type { BookingValues } from "../lib/booking-form";
-import { serializeBooking } from "../lib/search-params";
+import { rememberGuestAccess } from "../lib/guest-access";
 import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
 import GuestDetailsStep from "./steps/guest-details";
@@ -51,9 +48,7 @@ type Step = (typeof STEPS)[number]["id"];
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
-  const { quote, slug, setBookingId } = useBooking();
-  const { data: session } = authClient.useSession();
-  const router = useRouter();
+  const { quote, setBookingId } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
@@ -79,16 +74,12 @@ export default function BookingSteps() {
   }
 
   /*
-   * Confirm gates on sign-in: `checkout.createHold` is a protected procedure, so an anonymous
-   * visitor is sent to sign in with a return link back to this quote, then holds the booking with
-   * the guest details and consents. The `bookingId` lands in the shared context for the payment step.
+   * Confirm holds the booking with the guest details and consents. It does not gate on sign-in:
+   * an anonymous visitor gets an account provisioned from their email and a booking-scoped token
+   * back, which is remembered here and carried by every later call in the flow. The `bookingId`
+   * lands in the shared context for the payment step.
    */
   async function confirmBooking() {
-    if (!session?.user) {
-      const back = serializeBooking(`/yachts/${slug}/booking`, { quoteId: quote?.quoteId ?? null });
-      router.push(`/login?redirect=${encodeURIComponent(back)}`);
-      return;
-    }
     if (!(await trigger("reviewAndBook"))) {
       touch("reviewAndBook");
       return;
@@ -108,6 +99,7 @@ export default function BookingSteps() {
         },
         consents: { terms: true, cancellationPolicy: true },
       });
+      rememberGuestAccess(hold.bookingId, hold.accessToken);
       setBookingId(hold.bookingId);
       setCompleted((prev) => new Set(prev).add("reviewAndBook"));
       setOpen("payment");

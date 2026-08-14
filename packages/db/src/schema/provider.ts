@@ -47,6 +47,13 @@ export const syncStatus = pgEnum("sync_status", [
   "partial",
 ]);
 
+/**
+ * The statuses that mean a run is still someone's to finish. They define the in-flight
+ * unique index below, and the sweep that reaps abandoned runs reads the same list — the
+ * lock and its only release must never disagree about what "in flight" means.
+ */
+export const IN_FLIGHT_SYNC_STATUSES = ["pending", "running"] as const;
+
 export const syncErrorType = pgEnum("sync_error_type", [
   "rate_limited",
   "transient",
@@ -140,9 +147,11 @@ export const syncRun = pgTable(
    * unaffected and still sync concurrently, which is the point.
    */
   (t) => [
+    // `sql.raw` so the predicate is inlined exactly as before rather than parameterised:
+    // drizzle-kit writes this text into the migration, and a placeholder there is not SQL.
     uniqueIndex("sync_run_in_flight_uq")
       .on(t.providerId, t.kind)
-      .where(sql`${t.status} in ('pending', 'running')`),
+      .where(sql`${t.status} in ${sql.raw(`(${IN_FLIGHT_SYNC_STATUSES.map((s) => `'${s}'`).join(", ")})`)}`),
   ],
 );
 

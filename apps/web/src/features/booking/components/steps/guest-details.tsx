@@ -43,6 +43,11 @@ export default function GuestDetailsStep() {
     <div className="flex flex-col gap-4 p-5">
       <Notification>{t("notice")}</Notification>
 
+      {/* Said at the point the address is typed, because that is what decides the account:
+          checkout never asks anyone to sign in, and nobody should discover afterwards that
+          one was created for them. */}
+      {session?.user ? null : <Notification>{t("guestNotice")}</Notification>}
+
       <FormField
         control={control}
         name="guestDetails.fullName"

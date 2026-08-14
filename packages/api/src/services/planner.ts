@@ -205,7 +205,7 @@ export async function recommendTrip(
     difficulty,
     durationDays,
     estimatedPrice: estimatePrice(items, guestsForMath, weeks, budget),
-    listing: top ? presentListingSummary(top, { duration: durationDays }) : null,
+    listing: top ? presentListingSummary(top) : null,
     matchCount: matched?.pagination?.totalItems ?? items.length,
     searchParams: {
       country: [destination.country],

@@ -51,7 +51,7 @@ export const charterSearchRouter = {
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
-          listing: presentListingSummary(item, period),
+          listing: presentListingSummary(item),
           checkIn: period.checkIn ?? item.availableFrom,
           checkOut: period.checkOut ?? item.availableTo,
         })),
@@ -109,7 +109,6 @@ export const charterSearchRouter = {
         pageSize: markerLimit,
         page: undefined,
       });
-      const period = effectivePeriod(input);
       return {
         markers: results.items
           .filter((item) => item.lat !== null && item.lng !== null)
@@ -121,7 +120,7 @@ export const charterSearchRouter = {
             lng: item.lng ?? 0,
             priceFromMinor: item.priceFromMinor,
             currency: item.currency,
-            listing: presentListingSummary(item, period),
+            listing: presentListingSummary(item),
           })),
       };
     }),

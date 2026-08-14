@@ -174,6 +174,13 @@ export const booking = pgTable(
     // id. Nullable because bookings taken before checkout collected it have none.
     guestCountryCode: text("guest_country_code"),
     specialRequests: text("special_requests"),
+    /**
+     * SHA-256 of the bearer token a guest checkout hands back, and the only way
+     * someone who never signed in can reach this booking again. Null for a booking
+     * made from a session. The token itself is never stored: a leaked database dump
+     * must not be a set of live booking links.
+     */
+    guestAccessTokenHash: text("guest_access_token_hash"),
     /** Null until the Payment step; the flow can also end without either. */
     paymentMethod: bookingPaymentMethod("payment_method"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),

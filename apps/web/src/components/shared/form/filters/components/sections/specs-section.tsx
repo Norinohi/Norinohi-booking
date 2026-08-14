@@ -63,8 +63,9 @@ export default function SpecsSection({ value, set }: SectionProps) {
         showScale={false}
       />
 
+      {/* Two bounds, so two labels: both read "Year" and only the aria labels told them apart. */}
       <SelectField
-        label={t("labels.year")}
+        label={t("labels.yearFrom")}
         ariaLabel={t("aria.builtFrom")}
         options={options.years}
         value={value.yearFrom}
@@ -73,7 +74,7 @@ export default function SpecsSection({ value, set }: SectionProps) {
         clearTo="any"
       />
       <SelectField
-        label={t("labels.year")}
+        label={t("labels.yearTo")}
         ariaLabel={t("aria.builtTo")}
         options={options.years}
         value={value.yearTo}
