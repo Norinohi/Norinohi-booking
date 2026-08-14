@@ -782,7 +782,8 @@
       "discount": "Gestión de descuentos",
       "logout": "Cerrar sesión",
       "duplicates": "Revisión de duplicados",
-      "sync": "Historial de sincronización"
+      "sync": "Historial de sincronización",
+      "inbox": "Bandeja de entrada"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1239,6 +1240,10 @@
     "BookingDetail": {
       "title": "Tu reserva",
       "description": "Detalles, pagos y documentos de tu reserva de chárter."
+    },
+    "Inbox": {
+      "title": "Bandeja de entrada",
+      "description": "Preguntas y consultas de clientes pendientes de respuesta."
     }
   },
   "Profile": {
@@ -1700,6 +1705,88 @@
         "auth": "Autenticación",
         "not_found": "No encontrado",
         "contract": "Contrato"
+      }
+    },
+    "Inbox": {
+      "title": "Bandeja de entrada",
+      "subtitle": "Preguntas sobre reservas existentes y consultas de quienes aún están eligiendo.",
+      "tabs": {
+        "enquiries": "Preguntas de reservas",
+        "leads": "Consultas"
+      },
+      "enquiries": {
+        "filters": {
+          "status": "Estado",
+          "allStatuses": "Todos los estados",
+          "search": "Buscar por correo o referencia"
+        },
+        "status": {
+          "open": "Abierta",
+          "answered": "Respondida",
+          "closed": "Cerrada"
+        },
+        "table": {
+          "received": "Recibida",
+          "customer": "Cliente",
+          "question": "Pregunta",
+          "status": "Estado",
+          "booking": "Reserva",
+          "actions": ""
+        },
+        "actions": {
+          "reply": "Responder",
+          "replyAgain": "Responder otra vez",
+          "close": "Cerrar",
+          "reopen": "Reabrir"
+        },
+        "answered": "Respuesta: {answer}",
+        "empty": "Nada por aquí: ninguna pregunta coincide con estos filtros.",
+        "error": "No hemos podido cargar las preguntas."
+      },
+      "leads": {
+        "filters": {
+          "status": "Estado",
+          "allStatuses": "Todos los estados",
+          "kind": "Tipo",
+          "allKinds": "Todos los tipos",
+          "search": "Buscar por nombre o correo"
+        },
+        "status": {
+          "new": "Nueva",
+          "contacted": "Contactado",
+          "closed": "Cerrada"
+        },
+        "kind": {
+          "quote_request": "Solicitud de precio",
+          "charter_expert": "Experto en chárter",
+          "consultation": "Consulta"
+        },
+        "table": {
+          "received": "Recibida",
+          "from": "De",
+          "kind": "Tipo",
+          "message": "Mensaje",
+          "status": "Estado",
+          "actions": ""
+        },
+        "actions": {
+          "contacted": "Marcar contactado",
+          "close": "Cerrar",
+          "reopen": "Reabrir"
+        },
+        "empty": "Nada por aquí: ninguna consulta coincide con estos filtros.",
+        "error": "No hemos podido cargar las consultas."
+      },
+      "answer": {
+        "title": "Responder a esta pregunta",
+        "description": "Reserva {reference}. Tu respuesta se envía por correo al cliente.",
+        "label": "Tu respuesta",
+        "placeholder": "Responde por completo: esto es lo que recibe el cliente.",
+        "close": "Cerrar la pregunta al enviar",
+        "cancel": "Cancelar",
+        "send": "Enviar respuesta",
+        "sent": "Respuesta enviada",
+        "failed": "No hemos podido enviar la respuesta. Inténtalo de nuevo."
       }
     }
   }

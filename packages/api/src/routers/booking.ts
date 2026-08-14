@@ -39,6 +39,7 @@ import {
 } from "../services/booking";
 import { provisionGuestAccount } from "../services/account-provisioning";
 import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
+import { announceEnquiry } from "../services/enquiry";
 import { mintGuestAccessToken, resolveBookingActor } from "../services/guest-access";
 import { getInvoiceDocument } from "../services/invoice-document";
 import { listTravellers, saveTravellers } from "../services/traveller";
@@ -377,7 +378,10 @@ export const checkoutRouter = {
     })
     .input(enquiryInputSchema)
     .output(enquirySchema)
-    .handler(async ({ context, input }) =>
-      askQuestion(context.db, await actorFor(context, input.bookingId, input.accessToken), input),
-    ),
+    .handler(async ({ context, input }) => {
+      const actor = await actorFor(context, input.bookingId, input.accessToken);
+      const enquiry = await askQuestion(context.db, actor, input);
+      await announceEnquiry(context.db, enquiry.id);
+      return enquiry;
+    }),
 };

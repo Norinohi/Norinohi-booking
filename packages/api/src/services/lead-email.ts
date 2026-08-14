@@ -2,6 +2,7 @@ import { env } from "@yacht-charter/env/server";
 import { sendLeadFollowUpEmail } from "@yacht-charter/transactional";
 
 import type { LeadKind } from "../contracts/lead";
+import { notifyStaff } from "./enquiry-email";
 
 /*
  * The enquiry acknowledgement. Same shape as ./booking-email: best-effort, because a recorded
@@ -15,6 +16,12 @@ const LOCALE = "en";
 function appUrl(path: string): string {
   return `${env.CORS_ORIGIN}/${LOCALE}${path}`;
 }
+
+const KIND_LABELS = {
+  quote_request: "quote request",
+  charter_expert: "expert enquiry",
+  consultation: "consultation request",
+} satisfies Record<LeadKind, string>;
 
 export type LeadReceivedEmail = {
   to: string;
@@ -43,4 +50,16 @@ export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void>
   } catch (cause) {
     console.error(`[email] lead follow-up to ${lead.to} failed`, cause);
   }
+
+  await notifyStaff({
+    title: `New ${KIND_LABELS[lead.kind]} from ${lead.name}`,
+    facts: [
+      { label: "From", value: `${lead.name} (${lead.to})` },
+      { label: "Kind", value: KIND_LABELS[lead.kind] },
+      ...(lead.yacht ? [{ label: "Yacht", value: lead.yacht.title }] : []),
+    ],
+    body: lead.message,
+    path: "/inbox",
+    actionLabel: "Open the inbox",
+  });
 }

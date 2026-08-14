@@ -782,7 +782,8 @@
       "discount": "Discount Manager",
       "logout": "Log Out",
       "duplicates": "Duplicate Review",
-      "sync": "Sync History"
+      "sync": "Sync History",
+      "inbox": "Inbox"
     },
     "UserMenu": {
       "account": "Account",
@@ -1239,6 +1240,10 @@
     "BookingDetail": {
       "title": "Your booking",
       "description": "Details, payments and documents for your yacht charter booking."
+    },
+    "Inbox": {
+      "title": "Inbox",
+      "description": "Customer questions and enquiries waiting for a reply."
     }
   },
   "Profile": {
@@ -1700,6 +1705,88 @@
         "auth": "Auth",
         "not_found": "Not found",
         "contract": "Contract"
+      }
+    },
+    "Inbox": {
+      "title": "Inbox",
+      "subtitle": "Questions about existing bookings and enquiries from people still choosing.",
+      "tabs": {
+        "enquiries": "Booking questions",
+        "leads": "Enquiries"
+      },
+      "enquiries": {
+        "filters": {
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "search": "Search by email or booking reference"
+        },
+        "status": {
+          "open": "Open",
+          "answered": "Answered",
+          "closed": "Closed"
+        },
+        "table": {
+          "received": "Received",
+          "customer": "Customer",
+          "question": "Question",
+          "status": "Status",
+          "booking": "Booking",
+          "actions": ""
+        },
+        "actions": {
+          "reply": "Reply",
+          "replyAgain": "Reply again",
+          "close": "Close",
+          "reopen": "Reopen"
+        },
+        "answered": "Answered: {answer}",
+        "empty": "Nothing here — no questions match these filters.",
+        "error": "We couldn't load the questions."
+      },
+      "leads": {
+        "filters": {
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "kind": "Kind",
+          "allKinds": "All kinds",
+          "search": "Search by name or email"
+        },
+        "status": {
+          "new": "New",
+          "contacted": "Contacted",
+          "closed": "Closed"
+        },
+        "kind": {
+          "quote_request": "Quote request",
+          "charter_expert": "Charter expert",
+          "consultation": "Consultation"
+        },
+        "table": {
+          "received": "Received",
+          "from": "From",
+          "kind": "Kind",
+          "message": "Message",
+          "status": "Status",
+          "actions": ""
+        },
+        "actions": {
+          "contacted": "Mark contacted",
+          "close": "Close",
+          "reopen": "Reopen"
+        },
+        "empty": "Nothing here — no enquiries match these filters.",
+        "error": "We couldn't load the enquiries."
+      },
+      "answer": {
+        "title": "Reply to this question",
+        "description": "Booking {reference}. Your reply is emailed to the customer.",
+        "label": "Your reply",
+        "placeholder": "Answer the question in full — this is what the customer receives.",
+        "close": "Close this question after sending",
+        "cancel": "Cancel",
+        "send": "Send reply",
+        "sent": "Reply sent",
+        "failed": "We couldn't send the reply. Please try again."
       }
     }
   }

@@ -1,6 +1,14 @@
 import { orpc } from "@/utils/orpc";
 
-import type { DuplicateDecision, ProviderKey, SyncRunKind, SyncRunState } from "../types";
+import type {
+  DuplicateDecision,
+  EnquiryStatus,
+  LeadKind,
+  LeadStatus,
+  ProviderKey,
+  SyncRunKind,
+  SyncRunState,
+} from "../types";
 
 /*
  * Isomorphic query option factories — used by both the server prefetch helpers
@@ -10,6 +18,7 @@ import type { DuplicateDecision, ProviderKey, SyncRunKind, SyncRunState } from "
  */
 
 export const DUPLICATES_PAGE_SIZE = 20;
+export const INBOX_PAGE_SIZE = 20;
 export const SYNC_RUNS_PAGE_SIZE = 20;
 
 /* page/decision stay explicit so each filter combination keeps its own cache key. */
@@ -21,6 +30,34 @@ export const duplicateQueueQueryOptions = (input: {
   orpc.admin.match.queue.queryOptions({
     input: { ...input, pageSize: input.pageSize ?? DUPLICATES_PAGE_SIZE },
     staleTime: 30_000,
+  });
+
+/*
+ * The staff inbox reads two unrelated queues side by side: questions about existing bookings
+ * (booking_enquiry) and pre-booking enquiries (lead). Both are worked through by hand, so both
+ * go stale as soon as a colleague touches one — hence the short staleTime.
+ */
+export const enquiryListQueryOptions = (input: {
+  status?: EnquiryStatus;
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.enquiry.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? INBOX_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+export const leadListQueryOptions = (input: {
+  status?: LeadStatus;
+  kind?: LeadKind;
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.lead.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? INBOX_PAGE_SIZE },
+    staleTime: 15_000,
   });
 
 export const syncRunsQueryOptions = (input: {

@@ -39,6 +39,13 @@ export const env = createEnv({
     // verified in Resend (or the sandbox onboarding@resend.dev in dev).
     RESEND_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.email().optional(),
+    /*
+     * Where new enquiries and booking questions are announced. Unset means no internal
+     * alert is sent — the staff inbox at /inbox still lists everything, so nothing is
+     * lost, and there is no fallback address because guessing one would mail an internal
+     * alert to a customer.
+     */
+    STAFF_EMAIL: z.email().optional(),
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),

@@ -7,8 +7,10 @@ import {
   BookingConfirmationEmail,
   type BookingConfirmationEmailProps,
 } from "./emails/booking-confirmation";
+import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
 import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
 import { ResetPasswordEmail } from "./emails/reset-password";
+import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert";
 
 let client: Resend | undefined;
 
@@ -62,6 +64,30 @@ export async function sendLeadFollowUpEmail(
     createElement(LeadFollowUpEmail, { ...lead, appUrl: env.CORS_ORIGIN }),
   );
   return sendHtml(to, "We have your enquiry — YachtSkanner", html);
+}
+
+/** The reply to a question about a booking, sent when staff answer it from the inbox. */
+export async function sendEnquiryAnswerEmail(
+  to: string,
+  enquiry: Omit<EnquiryAnswerEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(EnquiryAnswerEmail, { ...enquiry, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Re: your question about booking ${enquiry.reference}`, html);
+}
+
+/**
+ * The internal ping. `to` is the staff address from the environment; with none configured the
+ * caller skips this entirely, which is why there is no fallback recipient here — guessing one
+ * would mean mailing a customer an internal alert.
+ */
+export async function sendStaffAlertEmail(
+  to: string,
+  alert: Omit<StaffAlertEmailProps, "appUrl">,
+) {
+  const html = await render(createElement(StaffAlertEmail, { ...alert, appUrl: env.CORS_ORIGIN }));
+  return sendHtml(to, alert.title, html);
 }
 
 export async function sendResetPasswordEmail({ to, url }: { to: string; url: string }) {

@@ -49,6 +49,13 @@ import {
   invoiceSettleInputSchema,
   invoiceSettleSchema,
 } from "../contracts/booking";
+import {
+  enquiryAnswerInputSchema,
+  enquiryListInputSchema,
+  enquiryListSchema,
+  enquiryRowSchema,
+  enquirySetStatusInputSchema,
+} from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
 import { sweepResultSchema } from "../contracts/maintenance";
 import {
@@ -73,6 +80,7 @@ import {
 } from "../services/invoice";
 import { sweepExpiries } from "../services/expiry";
 import { listLeads, setLeadStatus } from "../services/lead";
+import { answerEnquiry, listEnquiries, setEnquiryStatus } from "../services/enquiry";
 import {
   createDiscount,
   getDiscount,
@@ -438,6 +446,60 @@ export const adminRouter = {
       .output(leadSchema)
       .handler(({ context, input }) =>
         setLeadStatus(context.db, context.session.user.id, input.id, input.status),
+      ),
+  },
+  enquiry: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/enquiry/list",
+        operationId: "listBookingEnquiries",
+        summary: "List questions asked about bookings",
+        description:
+          "Questions customers asked from the checkout's Ask a question step or from /support, newest first, filterable by status and searchable by customer email or booking reference. Each row carries the booking it is about. Distinct from admin.lead.list, which is the pre-booking funnel.",
+        tags: ["Admin"],
+        successDescription: "A page of booking enquiries.",
+        spec: withJsonBodyExample({ status: "open", page: 1, pageSize: 20 }),
+      })
+      .input(enquiryListInputSchema)
+      .output(enquiryListSchema)
+      .handler(({ context, input }) => listEnquiries(context.db, input)),
+    answer: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/enquiry/answer",
+        operationId: "answerBookingEnquiry",
+        summary: "Reply to a booking question",
+        description:
+          "Records the reply and emails it to the customer with their question quoted back and a link to the booking. Closes the enquiry unless `close` is false, which leaves it open for a follow-up. Writes an audit log entry. A failed send does not lose the recorded answer.",
+        tags: ["Admin"],
+        successDescription: "The answered enquiry.",
+        spec: withJsonBodyExample({
+          id: "enq_example",
+          answer: "Yes — please bring the skipper's licence and one ID per guest.",
+        }),
+      })
+      .input(enquiryAnswerInputSchema)
+      .output(enquiryRowSchema)
+      .handler(({ context, input }) =>
+        answerEnquiry(context.db, context.session.user.id, input),
+      ),
+    setStatus: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/enquiry/setStatus",
+        operationId: "setBookingEnquiryStatus",
+        summary: "Reopen or close a booking question",
+        description:
+          "Moves an enquiry without replying — closing one handled by phone, or reopening one that was closed too early. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The enquiry with its new status.",
+        spec: withJsonBodyExample({ id: "enq_example", status: "closed" }),
+      })
+      .input(enquirySetStatusInputSchema)
+      .output(enquiryRowSchema)
+      .handler(({ context, input }) =>
+        setEnquiryStatus(context.db, context.session.user.id, input),
       ),
   },
   discount: {
