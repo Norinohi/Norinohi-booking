@@ -105,18 +105,19 @@ export default function LeadsTable() {
             ]}
           />
         </div>
-        <div className="min-w-0 flex-1">
-          <TextField
-            className="h-12"
-            value={query}
-            startIcon={<Search className="size-5!" />}
-            placeholder={t("filters.search")}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setPage(1);
-            }}
-          />
-        </div>
+        {/* `className` lands on the input; the bordered field is `fieldClassName`, which is
+            what has to match the Select's 48px — see manage-prices-table. */}
+        <TextField
+          containerClassName="min-w-0 md:flex-1"
+          fieldClassName="h-12"
+          value={query}
+          startIcon={<Search />}
+          placeholder={t("filters.search")}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+          }}
+        />
       </div>
 
       <Table className="min-w-[900px] [&_td]:py-3 [&_th]:h-[50px] [&_th]:py-0">

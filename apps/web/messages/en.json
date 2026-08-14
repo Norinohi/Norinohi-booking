@@ -1731,7 +1731,7 @@
           "question": "Question",
           "status": "Status",
           "booking": "Booking",
-          "actions": ""
+          "actions": "Actions"
         },
         "actions": {
           "reply": "Reply",
@@ -1767,7 +1767,7 @@
           "kind": "Kind",
           "message": "Message",
           "status": "Status",
-          "actions": ""
+          "actions": "Actions"
         },
         "actions": {
           "contacted": "Mark contacted",

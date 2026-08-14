@@ -1,11 +1,9 @@
-import { headers } from "next/headers";
-import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
-import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
 import { buildMetadata } from "@/lib/seo";
 
+import { requireStaffPage } from "@/features/admin";
 import { DiscountRouteModal, prefetchDiscount } from "@/features/profile";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -28,19 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 /* Hard-load fallback of the intercepted /edit/[id] overlay — see ../../create/page.tsx. */
 export default async function EditDiscountPage({ params }: { params: Promise<{ id: string }> }) {
-  const locale = await getLocale();
-  const session = await authClient.getSession({
-    fetchOptions: { headers: await headers(), throw: true },
-  });
-
-  if (!session?.user) {
-    return redirect({ href: "/login", locale });
-  }
-
-  /* Platform-staff page: same staff/admin gate as the API's staffProcedure. */
-  if (!isStaffRole(userRole(session.user))) {
-    return redirect({ href: "/profile", locale });
-  }
+  await requireStaffPage();
 
   const { id } = await params;
 

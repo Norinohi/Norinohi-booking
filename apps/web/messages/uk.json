@@ -1731,7 +1731,7 @@
           "question": "Питання",
           "status": "Статус",
           "booking": "Бронювання",
-          "actions": ""
+          "actions": "Дії"
         },
         "actions": {
           "reply": "Відповісти",
@@ -1767,7 +1767,7 @@
           "kind": "Тип",
           "message": "Повідомлення",
           "status": "Статус",
-          "actions": ""
+          "actions": "Дії"
         },
         "actions": {
           "contacted": "Позначити «зв'язалися»",

@@ -1731,7 +1731,7 @@
           "question": "Pregunta",
           "status": "Estado",
           "booking": "Reserva",
-          "actions": ""
+          "actions": "Acciones"
         },
         "actions": {
           "reply": "Responder",
@@ -1767,7 +1767,7 @@
           "kind": "Tipo",
           "message": "Mensaje",
           "status": "Estado",
-          "actions": ""
+          "actions": "Acciones"
         },
         "actions": {
           "contacted": "Marcar contactado",

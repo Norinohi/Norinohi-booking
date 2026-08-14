@@ -53,27 +53,31 @@ export default function InboxScreen({ user }: { user: { name: string; email: str
               <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("subtitle")}</p>
             </div>
 
-            <div className="flex flex-col gap-4 p-4 md:p-5">
-              <Tabs
-                variant="segmented"
-                value={tab}
-                onValueChange={(value) => setTab(TABS.find((id) => id === value) ?? TABS[0])}
-              >
-                <TabsList>
-                  {TABS.map((id) => (
-                    <TabsTab key={id} value={id} className="flex-1 py-3">
-                      {t(`tabs.${id}`)}
-                    </TabsTab>
-                  ))}
-                </TabsList>
+            {/* Lined tabs rather than the segmented pill: two labels over a wide table read as
+                a heading row, and a stretched pill would dwarf the filters under it. The rule
+                runs the full width of the card, so the list keeps the card's padding while the
+                border does not. */}
+            <Tabs
+              value={tab}
+              onValueChange={(value) => setTab(TABS.find((id) => id === value) ?? TABS[0])}
+              className="gap-0"
+            >
+              <TabsList className="px-4 md:px-5">
+                {TABS.map((id) => (
+                  <TabsTab key={id} value={id}>
+                    {t(`tabs.${id}`)}
+                  </TabsTab>
+                ))}
+              </TabsList>
 
-                {/* Mounted per panel so the inactive queue is not fetched until it is opened. */}
-                <TabsPanel value="enquiries">
-                  {tab === "enquiries" ? <EnquiriesTable /> : null}
-                </TabsPanel>
-                <TabsPanel value="leads">{tab === "leads" ? <LeadsTable /> : null}</TabsPanel>
-              </Tabs>
-            </div>
+              {/* Mounted per panel so the inactive queue is not fetched until it is opened. */}
+              <TabsPanel value="enquiries" className="p-4 md:p-5">
+                {tab === "enquiries" ? <EnquiriesTable /> : null}
+              </TabsPanel>
+              <TabsPanel value="leads" className="p-4 md:p-5">
+                {tab === "leads" ? <LeadsTable /> : null}
+              </TabsPanel>
+            </Tabs>
           </section>
         </div>
       </div>
