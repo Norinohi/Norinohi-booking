@@ -205,6 +205,81 @@
         "title": "Esta reserva no tiene factura",
         "description": "Esta reserva no se pagó por transferencia bancaria, por lo que no se emitió ninguna factura."
       }
+    },
+    "balance": {
+      "title": "Paga el resto",
+      "reference": "Reserva {reference}",
+      "pay": "Pagar {amount}",
+      "notFound": "No encontramos esta reserva",
+      "browse": "Ver yates",
+      "viewBookings": "Mis reservas",
+      "unavailable": "El pago en línea no está disponible ahora mismo. Contáctanos para liquidar esta reserva.",
+      "summary": {
+        "total": "Precio total",
+        "paid": "Ya pagado",
+        "due": "A pagar ahora"
+      },
+      "paid": {
+        "title": "Esta reserva está pagada por completo",
+        "body": "No queda nada por pagar en la reserva {reference}. Los extras y la fianza se liquidan en el puerto."
+      },
+      "notPayable": {
+        "title": "Todavía no hay nada que pagar",
+        "body": "Esta reserva no tiene saldo pendiente. Si acabas de reservar, tu primer pago lo cubre por ahora."
+      },
+      "settling": {
+        "title": "Pago recibido",
+        "body": "Estamos actualizando tu reserva. Suele tardar unos segundos."
+      }
+    },
+    "detail": {
+      "notFound": "No encontramos esta reserva",
+      "browse": "Ver yates",
+      "reference": "Reserva {reference}",
+      "guests": "{count} personas",
+      "payBalance": "Pagar {amount}",
+      "viewInvoice": "Ver factura",
+      "priceTitle": "Desglose del precio",
+      "total": "Precio total",
+      "paymentsTitle": "Pagos",
+      "paid": "Pagado hasta ahora",
+      "outstanding": "Pendiente de pago",
+      "noPayments": "Aún no se han realizado pagos en esta reserva.",
+      "disputed": "en disputa",
+      "kind": {
+        "deposit": "Primer pago",
+        "balance": "Segundo pago",
+        "full": "Pago completo",
+        "checkin_extras": "Extras en la llegada",
+        "security_deposit": "Fianza"
+      },
+      "method": {
+        "card": "Tarjeta",
+        "transfer": "Transferencia bancaria"
+      },
+      "paymentStatus": {
+        "requires_payment": "Sin pagar",
+        "processing": "Procesando",
+        "succeeded": "Pagado",
+        "failed": "Fallido",
+        "refunded": "Reembolsado"
+      },
+      "status": {
+        "DRAFT": "Borrador",
+        "QUOTED": "Presupuestada",
+        "OPTION_PENDING": "Reservando",
+        "OPTION_HELD": "Retenida",
+        "PAYMENT_PENDING": "Pendiente de pago",
+        "CONFIRMING": "Confirmando",
+        "CONFIRMED": "Confirmada",
+        "QUOTE_EXPIRED": "Caducada",
+        "OPTION_EXPIRED": "Caducada",
+        "PAYMENT_FAILED": "Pago fallido",
+        "PROVIDER_REJECTED": "No disponible",
+        "CANCELLED": "Cancelada",
+        "REFUND_PENDING": "Reembolsando",
+        "REFUNDED": "Reembolsada"
+      }
     }
   },
   "Common": {
@@ -1102,6 +1177,14 @@
     "ResetPassword": {
       "title": "Restablecer contraseña",
       "description": "Elige una nueva contraseña para tu cuenta de YachtSkanner."
+    },
+    "Balance": {
+      "title": "Paga tu saldo",
+      "description": "Liquida el importe restante de tu reserva de chárter."
+    },
+    "BookingDetail": {
+      "title": "Tu reserva",
+      "description": "Detalles, pagos y documentos de tu reserva de chárter."
     }
   },
   "Profile": {
@@ -1157,7 +1240,8 @@
       "success": "Tu reserva ha sido cancelada.",
       "error": "No pudimos cancelar tu reserva. Inténtalo de nuevo."
     },
-    "statusCancelled": "Cancelada"
+    "statusCancelled": "Cancelada",
+    "payBalance": "Pagar saldo"
   },
   "Wishlist": {
     "title": "Tus favoritos",
@@ -1233,7 +1317,10 @@
       "welcome": "¿Olvidaste tu contraseña?",
       "cardTitle": "Restablecer tu contraseña",
       "description": "Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.",
-      "email": { "label": "Correo electrónico", "placeholder": "ejemplo@gmail.com" },
+      "email": {
+        "label": "Correo electrónico",
+        "placeholder": "ejemplo@gmail.com"
+      },
       "submit": "Enviar enlace",
       "submitting": "Enviando…",
       "success": {
@@ -1241,7 +1328,9 @@
         "body": "Si existe una cuenta con esa dirección, te enviamos un enlace para restablecer tu contraseña."
       },
       "backToLogin": "Volver a iniciar sesión",
-      "errors": { "emailInvalid": "Correo electrónico no válido" }
+      "errors": {
+        "emailInvalid": "Correo electrónico no válido"
+      }
     },
     "ResetPassword": {
       "welcome": "Establece una nueva contraseña",

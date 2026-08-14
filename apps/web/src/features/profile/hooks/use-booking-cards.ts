@@ -58,7 +58,9 @@ export function useBookingCards() {
     return {
       ...boatCardIdentity(t, booking.listing),
       imageAlt: t("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
-      detailHref: `/yachts/${booking.listing.id}`,
+      /* The booking, not the listing: this card is history, and the yacht page cannot say
+         what was paid, what is owed, or where the invoice is. */
+      detailHref: `/bookings/${booking.id}`,
       marina: toMarina(booking.listing.id, booking.base),
       start: charterStamp(booking.checkIn),
       end: charterStamp(booking.checkOut),

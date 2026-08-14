@@ -205,6 +205,81 @@
         "title": "No invoice for this booking",
         "description": "This booking was not paid by bank transfer, so no invoice was issued."
       }
+    },
+    "balance": {
+      "title": "Pay the rest",
+      "reference": "Booking {reference}",
+      "pay": "Pay {amount}",
+      "notFound": "We couldn't find this booking",
+      "browse": "Browse yachts",
+      "viewBookings": "My bookings",
+      "unavailable": "Online payment is not available right now. Please contact us to settle this booking.",
+      "summary": {
+        "total": "Total price",
+        "paid": "Already paid",
+        "due": "Due now"
+      },
+      "paid": {
+        "title": "This booking is paid in full",
+        "body": "Nothing left to pay on booking {reference}. Extras and the security deposit are settled at the marina."
+      },
+      "notPayable": {
+        "title": "Nothing to pay yet",
+        "body": "This booking has no balance to settle. If you have just booked, your first payment covers it for now."
+      },
+      "settling": {
+        "title": "Payment received",
+        "body": "We're updating your booking. This usually takes a few seconds."
+      }
+    },
+    "detail": {
+      "notFound": "We couldn't find this booking",
+      "browse": "Browse yachts",
+      "reference": "Booking {reference}",
+      "guests": "{count} guests",
+      "payBalance": "Pay {amount}",
+      "viewInvoice": "View invoice",
+      "priceTitle": "Price breakdown",
+      "total": "Total price",
+      "paymentsTitle": "Payments",
+      "paid": "Paid so far",
+      "outstanding": "Still to pay",
+      "noPayments": "No payments have been made on this booking yet.",
+      "disputed": "disputed",
+      "kind": {
+        "deposit": "First payment",
+        "balance": "Second payment",
+        "full": "Full payment",
+        "checkin_extras": "Extras at check-in",
+        "security_deposit": "Security deposit"
+      },
+      "method": {
+        "card": "Card",
+        "transfer": "Bank transfer"
+      },
+      "paymentStatus": {
+        "requires_payment": "Not paid",
+        "processing": "Processing",
+        "succeeded": "Paid",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "QUOTED": "Quoted",
+        "OPTION_PENDING": "Holding",
+        "OPTION_HELD": "Held",
+        "PAYMENT_PENDING": "Awaiting payment",
+        "CONFIRMING": "Confirming",
+        "CONFIRMED": "Confirmed",
+        "QUOTE_EXPIRED": "Expired",
+        "OPTION_EXPIRED": "Expired",
+        "PAYMENT_FAILED": "Payment failed",
+        "PROVIDER_REJECTED": "Not available",
+        "CANCELLED": "Cancelled",
+        "REFUND_PENDING": "Refunding",
+        "REFUNDED": "Refunded"
+      }
     }
   },
   "Common": {
@@ -1102,6 +1177,14 @@
     "ResetPassword": {
       "title": "Reset password",
       "description": "Choose a new password for your YachtSkanner account."
+    },
+    "Balance": {
+      "title": "Pay your balance",
+      "description": "Settle the remaining amount on your yacht charter booking."
+    },
+    "BookingDetail": {
+      "title": "Your booking",
+      "description": "Details, payments and documents for your yacht charter booking."
     }
   },
   "Profile": {
@@ -1157,7 +1240,8 @@
       "success": "Your booking has been cancelled.",
       "error": "We couldn't cancel your booking. Please try again."
     },
-    "statusCancelled": "Cancelled"
+    "statusCancelled": "Cancelled",
+    "payBalance": "Pay balance"
   },
   "Wishlist": {
     "title": "Your Wishlist",
@@ -1233,7 +1317,10 @@
       "welcome": "Forgot your password?",
       "cardTitle": "Reset your password",
       "description": "Enter your email and we'll send you a link to reset your password.",
-      "email": { "label": "Email", "placeholder": "example@gmail.com" },
+      "email": {
+        "label": "Email",
+        "placeholder": "example@gmail.com"
+      },
       "submit": "Send reset link",
       "submitting": "Sending…",
       "success": {
@@ -1241,12 +1328,17 @@
         "body": "If an account exists for that address, we've sent a link to reset your password."
       },
       "backToLogin": "Back to sign in",
-      "errors": { "emailInvalid": "Invalid email address" }
+      "errors": {
+        "emailInvalid": "Invalid email address"
+      }
     },
     "ResetPassword": {
       "welcome": "Set a new password",
       "cardTitle": "Choose a new password",
-      "newPassword": { "label": "New password", "placeholder": "Enter a new password" },
+      "newPassword": {
+        "label": "New password",
+        "placeholder": "Enter a new password"
+      },
       "confirmPassword": {
         "label": "Confirm password",
         "placeholder": "Confirm your new password"

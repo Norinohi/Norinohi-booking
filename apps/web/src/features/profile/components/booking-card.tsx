@@ -40,6 +40,11 @@ export type BookingCardProps = BoatCardProps & {
   bookingId: string;
   cancellable: boolean;
   isCancelled: boolean;
+  /**
+   * Set when the booking is confirmed and still owes money, so the customer can settle
+   * the second installment themselves rather than waiting to be chased.
+   */
+  payBalanceHref?: string;
 };
 
 function Stamp({ value }: { value: BoatCardCharterDate }) {
@@ -62,6 +67,7 @@ export default function BookingCard({
   bookingId,
   cancellable,
   isCancelled,
+  payBalanceHref,
   ...booking
 }: BookingCardProps) {
   const t = useTranslations("Common.boatCard");
@@ -178,6 +184,16 @@ export default function BookingCard({
 
         {/* Action */}
         <div className="flex flex-col items-center justify-center gap-3 py-6 pr-6">
+          {payBalanceHref ? (
+            <Button
+              variant="brand"
+              size="md"
+              nativeButton={false}
+              render={<Link href={payBalanceHref} />}
+            >
+              {tBookings("payBalance")}
+            </Button>
+          ) : null}
           <Button
             variant="neutral"
             size="md"
