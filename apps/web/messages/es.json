@@ -1233,6 +1233,10 @@
       "title": "Restablecer contraseña",
       "description": "Elige una nueva contraseña para tu cuenta de YachtSkanner."
     },
+    "SetPassword": {
+      "title": "Establecer contraseña",
+      "description": "Elige una contraseña para tu cuenta de YachtSkanner."
+    },
     "Balance": {
       "title": "Paga tu saldo",
       "description": "Liquida el importe restante de tu reserva de chárter."
@@ -1409,6 +1413,21 @@
         "title": "Este enlace no es válido o ha caducado",
         "body": "Los enlaces de restablecimiento caducan tras 1 hora y solo pueden usarse una vez. Solicita uno nuevo para continuar.",
         "action": "Solicitar un nuevo enlace"
+      },
+      "firstPassword": {
+        "welcome": "Establece tu contraseña",
+        "cardTitle": "Elige una contraseña",
+        "newPassword": {
+          "label": "Contraseña",
+          "placeholder": "Introduce una contraseña"
+        },
+        "submit": "Establecer contraseña",
+        "submitting": "Guardando…",
+        "success": "Contraseña establecida. Ya puedes iniciar sesión.",
+        "confirmPassword": {
+          "label": "Confirmar contraseña",
+          "placeholder": "Confirma tu contraseña"
+        }
       },
       "errors": {
         "passwordMin": "La contraseña debe tener al menos 8 caracteres",

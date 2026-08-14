@@ -71,10 +71,11 @@ export async function notifyBookingHeld(booking: BookingHeldEmail): Promise<void
       /*
        * Not a minted token: the account exists but has never chosen a password, and the
        * forgot-password flow is the one path that sets one, with better-auth issuing the
-       * single-use link. Prefilled with the address they booked with.
+       * single-use link. Prefilled with the address they booked with, and `welcome=1`
+       * carries "first password, not a reset" through to the mail and the screen.
        */
       setPasswordUrl: booking.isGuest
-        ? appUrl(`/forgot-password?email=${encodeURIComponent(booking.to)}`)
+        ? appUrl(`/forgot-password?email=${encodeURIComponent(booking.to)}&welcome=1`)
         : undefined,
       supportUrl: appUrl(`/support?booking=${booking.bookingId}`),
     });

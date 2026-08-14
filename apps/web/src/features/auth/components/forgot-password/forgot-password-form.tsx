@@ -29,12 +29,20 @@ import { authClient } from "@/lib/auth-client";
  *
  * `email` prefills the field. The booking confirmation email sends a guest here to set the
  * password their provisioned account never had, and it knows the address they booked with —
- * asking them to retype it is a step that can only go wrong.
+ * asking them to retype it is a step that can only go wrong. That same link carries
+ * `firstPassword`, which is passed on to /reset-password so the link the visitor receives, and
+ * the screen it lands on, both say "set" rather than "reset".
  */
 
 type Values = { email: string };
 
-export default function ForgotPasswordForm({ email }: { email?: string }) {
+export default function ForgotPasswordForm({
+  email,
+  firstPassword = false,
+}: {
+  email?: string;
+  firstPassword?: boolean;
+}) {
   const t = useTranslations("Auth.ForgotPassword");
   const locale = useLocale();
   const router = useRouter();
@@ -49,7 +57,9 @@ export default function ForgotPasswordForm({ email }: { email?: string }) {
   });
 
   const onSubmit = async ({ email }: Values) => {
-    const redirectTo = `${window.location.origin}/${locale}/reset-password`;
+    const redirectTo = `${window.location.origin}/${locale}/reset-password${
+      firstPassword ? "?welcome=1" : ""
+    }`;
     const { error } = await authClient.requestPasswordReset({ email, redirectTo });
     if (error) {
       toast.error(error.message ?? error.statusText);

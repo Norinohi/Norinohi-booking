@@ -1233,6 +1233,10 @@
       "title": "Reset password",
       "description": "Choose a new password for your YachtSkanner account."
     },
+    "SetPassword": {
+      "title": "Set password",
+      "description": "Choose a password for your YachtSkanner account."
+    },
     "Balance": {
       "title": "Pay your balance",
       "description": "Settle the remaining amount on your yacht charter booking."
@@ -1409,6 +1413,21 @@
         "title": "This link is invalid or has expired",
         "body": "Password reset links expire after 1 hour and can be used once. Request a new one to continue.",
         "action": "Request a new link"
+      },
+      "firstPassword": {
+        "welcome": "Set your password",
+        "cardTitle": "Choose a password",
+        "newPassword": {
+          "label": "Password",
+          "placeholder": "Enter a password"
+        },
+        "submit": "Set password",
+        "submitting": "Saving…",
+        "success": "Password set. You can sign in now.",
+        "confirmPassword": {
+          "label": "Confirm password",
+          "placeholder": "Confirm your password"
+        }
       },
       "errors": {
         "passwordMin": "Password must be at least 8 characters",

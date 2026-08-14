@@ -48,7 +48,10 @@ const DEFAULT_APP_URL = "https://yachtskanner.com";
 
 const styles = {
   body: { margin: 0, backgroundColor: colors.page, fontFamily, color: colors.text },
-  container: { maxWidth: "512px", margin: "0 auto", padding: "40px 20px" },
+  // 640px is the widest a card can be before Outlook's fixed reading pane starts
+  // scaling it down; with the 20px gutter the card itself lands on the 600px that
+  // every mail client is built around.
+  container: { maxWidth: "640px", margin: "0 auto", padding: "40px 20px" },
   card: {
     backgroundColor: colors.card,
     border: `1px solid ${colors.border}`,
@@ -79,7 +82,7 @@ const styles = {
   hero: {
     display: "block",
     width: "100%",
-    height: "200px",
+    height: "240px",
     objectFit: "cover",
     objectPosition: "center",
   },

@@ -10,6 +10,7 @@ import {
 import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
 import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
 import { ResetPasswordEmail } from "./emails/reset-password";
+import { SetPasswordEmail } from "./emails/set-password";
 import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert";
 
 let client: Resend | undefined;
@@ -60,9 +61,7 @@ export async function sendLeadFollowUpEmail(
   to: string,
   lead: Omit<LeadFollowUpEmailProps, "appUrl">,
 ) {
-  const html = await render(
-    createElement(LeadFollowUpEmail, { ...lead, appUrl: env.CORS_ORIGIN }),
-  );
+  const html = await render(createElement(LeadFollowUpEmail, { ...lead, appUrl: env.CORS_ORIGIN }));
   return sendHtml(to, "We have your enquiry — YachtSkanner", html);
 }
 
@@ -82,10 +81,7 @@ export async function sendEnquiryAnswerEmail(
  * caller skips this entirely, which is why there is no fallback recipient here — guessing one
  * would mean mailing a customer an internal alert.
  */
-export async function sendStaffAlertEmail(
-  to: string,
-  alert: Omit<StaffAlertEmailProps, "appUrl">,
-) {
+export async function sendStaffAlertEmail(to: string, alert: Omit<StaffAlertEmailProps, "appUrl">) {
   const html = await render(createElement(StaffAlertEmail, { ...alert, appUrl: env.CORS_ORIGIN }));
   return sendHtml(to, alert.title, html);
 }
@@ -94,4 +90,24 @@ export async function sendResetPasswordEmail({ to, url }: { to: string; url: str
   // The footer links back to the deployed web app; CORS_ORIGIN is that origin.
   const html = await render(createElement(ResetPasswordEmail, { url, appUrl: env.CORS_ORIGIN }));
   return sendHtml(to, "Reset your YachtSkanner password", html);
+}
+
+/**
+ * The same single-use link as the reset mail, for an account that has never had a password —
+ * one provisioned by guest checkout. Separate template because "reset" is wrong copy for a
+ * first password, and the recipient did not ask for anything.
+ */
+export async function sendSetPasswordEmail({
+  to,
+  url,
+  name,
+}: {
+  to: string;
+  url: string;
+  name?: string;
+}) {
+  const html = await render(
+    createElement(SetPasswordEmail, { url, name, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, "Set your YachtSkanner password", html);
 }

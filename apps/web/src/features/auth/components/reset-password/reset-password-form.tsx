@@ -25,6 +25,10 @@ import { authClient } from "@/lib/auth-client";
  * Auth appends to the redirect URL. With a valid token it submits a new password via
  * authClient.resetPassword and returns to /login; a missing/invalid token (?error=...)
  * shows a "request a new link" state instead. Same auth-card layout as sign-in-form.
+ *
+ * `firstPassword` (?welcome=1 on the link) means the account was provisioned by guest checkout
+ * and has never had a password. Same token, same request — only the wording changes, because
+ * "reset" describes something this visitor never did.
  */
 
 function useResetSchema() {
@@ -46,10 +50,46 @@ function useResetSchema() {
 
 type Values = z.infer<ReturnType<typeof useResetSchema>>;
 
-export default function ResetPasswordForm({ token, error }: { token?: string; error?: string }) {
+export default function ResetPasswordForm({
+  token,
+  error,
+  firstPassword = false,
+}: {
+  token?: string;
+  error?: string;
+  firstPassword?: boolean;
+}) {
   const t = useTranslations("Auth.ResetPassword");
+  const tFirst = useTranslations("Auth.ResetPassword.firstPassword");
   const router = useRouter();
   const schema = useResetSchema();
+
+  // Read through both namespaces rather than switching the one passed to useTranslations:
+  // the two are different literal types, and a union namespace does not survive the
+  // typed-messages overload.
+  const copy = firstPassword
+    ? {
+        welcome: tFirst("welcome"),
+        cardTitle: tFirst("cardTitle"),
+        submit: tFirst("submit"),
+        submitting: tFirst("submitting"),
+        success: tFirst("success"),
+        newPasswordLabel: tFirst("newPassword.label"),
+        newPasswordPlaceholder: tFirst("newPassword.placeholder"),
+        confirmLabel: tFirst("confirmPassword.label"),
+        confirmPlaceholder: tFirst("confirmPassword.placeholder"),
+      }
+    : {
+        welcome: t("welcome"),
+        cardTitle: t("cardTitle"),
+        submit: t("submit"),
+        submitting: t("submitting"),
+        success: t("success"),
+        newPasswordLabel: t("newPassword.label"),
+        newPasswordPlaceholder: t("newPassword.placeholder"),
+        confirmLabel: t("confirmPassword.label"),
+        confirmPlaceholder: t("confirmPassword.placeholder"),
+      };
 
   const form = useForm<Values>({
     defaultValues: { newPassword: "", confirmPassword: "" },
@@ -66,7 +106,7 @@ export default function ResetPasswordForm({ token, error }: { token?: string; er
       toast.error(resetError.message ?? resetError.statusText);
       return;
     }
-    toast.success(t("success"));
+    toast.success(copy.success);
     router.push("/login");
   };
 
@@ -74,13 +114,13 @@ export default function ResetPasswordForm({ token, error }: { token?: string; er
     <section className="px-4 pt-[122px] pb-16 md:pt-[109px] xl:pt-[113px]">
       <div className="mx-auto flex w-full max-w-[358px] flex-col gap-8 md:max-w-[660px] xl:max-w-[451px]">
         <h1 className="text-center text-[20px] leading-[1.3] font-bold text-foreground xl:text-[32px] xl:leading-[1.1]">
-          {t("welcome")}
+          {copy.welcome}
         </h1>
 
         <div className="overflow-hidden rounded-2xl border border-natural-100 bg-card">
           <div className="border-b border-natural-100 px-5 py-5">
             <h2 className="text-center text-xl leading-[1.3] font-bold text-foreground">
-              {invalid ? t("invalid.title") : t("cardTitle")}
+              {invalid ? t("invalid.title") : copy.cardTitle}
             </h2>
           </div>
 
@@ -109,12 +149,12 @@ export default function ResetPasswordForm({ token, error }: { token?: string; er
                   name="newPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("newPassword.label")}</FormLabel>
+                      <FormLabel>{copy.newPasswordLabel}</FormLabel>
                       <FormControl>
                         <TextField
                           type="password"
                           autoComplete="new-password"
-                          placeholder={t("newPassword.placeholder")}
+                          placeholder={copy.newPasswordPlaceholder}
                           className="leading-[1.25]"
                           {...field}
                         />
@@ -129,12 +169,12 @@ export default function ResetPasswordForm({ token, error }: { token?: string; er
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("confirmPassword.label")}</FormLabel>
+                      <FormLabel>{copy.confirmLabel}</FormLabel>
                       <FormControl>
                         <TextField
                           type="password"
                           autoComplete="new-password"
-                          placeholder={t("confirmPassword.placeholder")}
+                          placeholder={copy.confirmPlaceholder}
                           className="leading-[1.25]"
                           {...field}
                         />
@@ -151,7 +191,7 @@ export default function ResetPasswordForm({ token, error }: { token?: string; er
                   className="w-full"
                   disabled={form.formState.isSubmitting}
                 >
-                  {form.formState.isSubmitting ? t("submitting") : t("submit")}
+                  {form.formState.isSubmitting ? copy.submitting : copy.submit}
                 </Button>
               </form>
             </Form>

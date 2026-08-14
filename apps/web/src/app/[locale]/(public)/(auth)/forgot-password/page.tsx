@@ -26,8 +26,8 @@ export async function generateMetadata({
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; welcome?: string }>;
 }) {
-  const { email } = await searchParams;
-  return <ForgotPasswordForm email={email} />;
+  const { email, welcome } = await searchParams;
+  return <ForgotPasswordForm email={email} firstPassword={welcome === "1"} />;
 }
