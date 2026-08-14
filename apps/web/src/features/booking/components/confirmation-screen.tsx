@@ -403,16 +403,21 @@ export default function BookingConfirmationScreen() {
                 {isGuest ? t("guestEmailed") : t("emailed")}
               </p>
             </div>
-            {/* My Bookings needs an account, which a guest has only as an invitation email and
-                no password yet — so they go to the booking itself, which their access token
-                authorises. The page falls back to sign-in if that token is ever missing. */}
+            {/* Both destinations need an account: My Bookings for a signed-in customer, and the
+                booking page itself, which is signed-in only by design (see detail-screen). A
+                guest therefore goes through sign-in and lands on their booking — the password to
+                get there is in the email this screen just told them about. */}
             <Button
               variant="neutral"
               nativeButton={false}
               render={
-                <Link
-                  href={isGuest && bookingId ? `/bookings/${bookingId}` : "/profile/bookings"}
-                />
+                isGuest && bookingId ? (
+                  <Link
+                    href={{ pathname: "/login", query: { redirect: `/bookings/${bookingId}` } }}
+                  />
+                ) : (
+                  <Link href="/profile/bookings" />
+                )
               }
               className="w-full md:w-auto"
             >

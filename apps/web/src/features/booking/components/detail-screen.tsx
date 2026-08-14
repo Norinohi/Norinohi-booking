@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
 import EmptyState from "@/components/shared/feedback/empty-state";
@@ -30,7 +30,6 @@ import { authClient } from "@/lib/auth-client";
 import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
-import { guestAccessFor } from "../lib/guest-access";
 
 /* Which statuses read as "this charter is happening" versus a problem worth colouring. */
 const SETTLED_STATUSES = new Set(["CONFIRMED"]);
@@ -51,28 +50,34 @@ const FAILED_STATUSES = new Set([
  * wizard: nothing here is an input, and the sidebar reads the frozen booking rather than a
  * live quote, so prices cannot move under someone who has already paid.
  *
- * Same access rule as the invoice and balance pages: session or the guest token, because a
- * guest checkout has no password yet.
+ * Signed-in only, unlike the confirmation screen it follows and the balance and invoice pages
+ * it links to. Those three are the checkout finishing itself and must work off the guest token,
+ * because a guest who owes money or paid by transfer has to be able to pay and to fetch their
+ * invoice before they ever choose a password. This page is the record afterwards, and reading a
+ * booking back weeks later is what an account is for — so a guest is sent to sign in, with the
+ * set-password link their confirmation email carries.
  */
 export default function BookingDetailScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.detail");
   const tCard = useTranslations("Common.boatCard");
 
-  const [access, setAccess] = useState<{ token: string | undefined } | null>(null);
-  useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
-
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const signedIn = Boolean(session?.user);
   const bookingPath = `/bookings/${bookingId}`;
 
+  /*
+   * No guest token is passed, and the query does not run at all without a session: the server
+   * would accept the token — the endpoint still serves the pay and invoice screens, which need
+   * it — so the rule that this page is for account holders is kept here, by not asking.
+   */
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId, access?.token),
-    enabled: access !== null,
-    /* Failing here is the signed-out case, which the empty state below already explains. */
+    ...bookingDetailQueryOptions(bookingId),
+    enabled: signedIn,
+    /* A missing booking is answered by the empty state below, not by a toast. */
     meta: { silent: true },
   });
 
-  if (isLoading || access === null || sessionPending) {
+  if (sessionPending || (signedIn && isLoading)) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <Loader />
@@ -82,10 +87,8 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
 
   if (!booking) {
     /*
-     * Nothing came back, and for a signed-out visitor that is far more likely to be the missing
-     * credential than a missing booking: the guest token lives in one browser's localStorage, so
-     * the same link opened on a phone, or after clearing site data, lands here. Sign-in is the
-     * way back into it, and it returns to this page.
+     * Either there is no session — the guest case, which sign-in resolves and returns here — or
+     * there is one and the booking is not this customer's.
      */
     return (
       <div className="flex min-h-full items-center justify-center p-4 md:p-8">
