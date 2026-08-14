@@ -71,16 +71,11 @@
         "question": "Hacer una pregunta"
       },
       "card": {
-        "number": "Número de tarjeta",
-        "numberPlaceholder": "1234-3233-2332-0021",
-        "expiry": "Fecha de caducidad",
-        "expiryPlaceholder": "01/29",
-        "cvc": "CV",
-        "cvcPlaceholder": "123",
-        "name": "Nombre en la tarjeta",
-        "namePlaceholder": "Juan Pérez",
         "notice": "Asegura tu reserva al instante con un pago en línea.",
-        "unavailable": "El pago con tarjeta estará disponible pronto. Usa Solicitar factura o Hacer una pregunta.",
+        "unavailable": "El pago con tarjeta no está disponible ahora mismo. Usa Solicitar factura o Hacer una pregunta.",
+        "quoteExpired": "Tu precio ha caducado. Vuelve atrás y actualiza el presupuesto antes de pagar.",
+        "notPayable": "Esta reserva ya no se puede pagar. Empieza una nueva.",
+        "failed": "No se pudo completar el pago. Inténtalo de nuevo.",
         "cta": "Pagar {amount}"
       },
       "invoice": {
@@ -134,11 +129,20 @@
         "boatPrice": "Precio del barco (alquiler completo)",
         "deposit": "Depósito de seguridad reembolsable",
         "secondPayment": "2.º pago (a pagar: {date})",
+        "secondPaymentAtCheckIn": "2.º pago (a pagar en la llegada)",
         "totalPrice": "Precio total",
         "perPerson": "~ {price} por persona",
         "dueNow": "A pagar ahora"
       },
-      "viewInvoice": "Ver factura"
+      "viewInvoice": "Ver factura",
+      "settling": {
+        "title": "Pago recibido",
+        "body": "Estamos confirmando tu reserva con la base de chárter. Suele tardar unos segundos."
+      },
+      "failed": {
+        "title": "No pudimos confirmar esta reserva",
+        "body": "La base de chárter no pudo aceptar la reserva. Cualquier pago realizado será devuelto."
+      }
     },
     "invoice": {
       "title": "Factura",

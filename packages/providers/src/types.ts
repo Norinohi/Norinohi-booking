@@ -302,6 +302,15 @@ export type ProviderRecordSet = Map<ProviderResourceType, ProviderRecordEntry[]>
 export const providerCapabilitiesSchema = z.object({
   supportsOptions: z.boolean(),
   supportsWebhooks: z.boolean(),
+  /**
+   * Whether the provider guarantees the hold until it says otherwise, which is what
+   * makes charging before committing safe (D-PAYORDER).
+   *
+   * **Nothing reads this yet.** Every provider returns true, so checkout charges and
+   * then confirms, and the false branch — hold first, charge after — has never been
+   * written. A provider that returns false would silently get the wrong order, so
+   * adding one means implementing that branch, not just the adapter.
+   */
   optionExpiryOwnedByProvider: z.boolean(),
   supportsExtrasMutation: z.boolean(),
   supportsLiveQuote: z.boolean(),

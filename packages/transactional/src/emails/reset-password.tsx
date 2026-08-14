@@ -44,7 +44,7 @@ const styles = {
   },
 } as const;
 
-export function ResetPasswordEmail({ url, appUrl }: ResetPasswordEmailProps) {
+export function ResetPasswordEmail({ url, appUrl }: ResetPasswordEmailProps): React.ReactElement {
   return (
     <EmailLayout preview="Reset your YachtSkanner password" eyebrow="Security" appUrl={appUrl}>
       <Heading style={styles.heading}>Reset your password</Heading>

@@ -17,6 +17,8 @@ function paymentRow(overrides: Partial<Payment> = {}): Payment {
     failureReason: null,
     paidAt: new Date("2026-08-01T10:00:00Z"),
     refundedAt: null,
+    disputedAt: null,
+    disputeStatus: null,
     idempotencyKey: "pay:bkg_1:deposit:50000",
     createdAt: new Date("2026-08-01T10:00:00Z"),
     updatedAt: new Date("2026-08-01T10:00:00Z"),

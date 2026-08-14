@@ -174,6 +174,12 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
     depositPct: z.number(),
     balanceDueAt: z.string().nullable(),
   }),
+  /**
+   * What checkout actually charges up front, from the same `amountDue` the payment
+   * uses. Deriving it from the policy and the total instead overstates it by the
+   * lines marked pay-at-check-in, which are settled with the base and never charged.
+   */
+  dueNow: moneySchema,
   paymentSchedule: z.array(
     z.object({
       id: z.string(),
@@ -190,6 +196,13 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
       amount: moneySchema,
       status: paymentStatusSchema,
       paidAt: z.string().nullable(),
+      /**
+       * Set once a chargeback opens. Kept off `status` because contested is not the
+       * same as refunded: `disputeStatus` carries how it ended, and a won dispute
+       * leaves the payment succeeded with both fields still telling the story.
+       */
+      disputedAt: z.string().nullable(),
+      disputeStatus: z.string().nullable(),
     }),
   ),
 });
@@ -516,6 +529,15 @@ export const checkoutConfirmInputSchema = z.object({
   bookingId: z.string().min(1),
   /** Overrides the quote's own policy when the customer chooses to pay in full. */
   paymentPreference: z.enum(["deposit", "full"]).default("deposit"),
+  accessToken: guestAccessTokenSchema.optional(),
+});
+
+/**
+ * Settling what is left on a confirmed charter. No preference: the amount is whatever
+ * the booking still owes, which is the total less what has actually been paid.
+ */
+export const checkoutPayBalanceInputSchema = z.object({
+  bookingId: z.string().min(1),
   accessToken: guestAccessTokenSchema.optional(),
 });
 
