@@ -1,4 +1,5 @@
 import { loadStripe, type Stripe, type StripeElementLocale } from "@stripe/stripe-js";
+import type { StripePaymentElementOptions } from "@stripe/stripe-js";
 import type { Appearance } from "@stripe/stripe-js";
 import { env } from "@yacht-charter/env/web";
 
@@ -89,4 +90,19 @@ export const ELEMENTS_APPEARANCE: Appearance = {
     ".AccordionItem:hover": { borderColor: "#bfbfbf" /* --natural-200 */ },
     ".AccordionItem--selected": { borderColor: "#2f80ed", boxShadow: "none" },
   },
+};
+
+/*
+ * Accordion rather than tabs: the tab strip truncates once more than a few methods are
+ * eligible, and the set is a Dashboard decision that can grow without warning.
+ * `radios: "never"` drops the selection circles — the expanded item is already the
+ * selection — and the spacing carries the grouping instead of a border.
+ *
+ * Shared so the deposit form and the balance form cannot drift apart visually.
+ */
+export const PAYMENT_ELEMENT_LAYOUT: NonNullable<StripePaymentElementOptions["layout"]> = {
+  type: "accordion",
+  defaultCollapsed: false,
+  radios: "never",
+  spacedAccordionItems: true,
 };

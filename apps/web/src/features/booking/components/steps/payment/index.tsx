@@ -8,13 +8,17 @@ import { useMutation } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useMoney } from "@/hooks/use-money";
 
-import { askQuestionMutationOptions, requestInvoiceMutationOptions } from "../../../api/queries";
+import {
+  askQuestionMutationOptions,
+  confirmCheckoutMutationOptions,
+  requestInvoiceMutationOptions,
+} from "../../../api/queries";
 import type { BookingValues } from "../../../lib/booking-form";
 import { guestAccessFor } from "../../../lib/guest-access";
 import { serializeConfirmation } from "../../../lib/search-params";
@@ -25,6 +29,7 @@ import {
   stripeLoader,
 } from "../../../lib/stripe";
 import { useBooking } from "../../booking-provider";
+import { PaymentTargetProvider } from "../../payment-target";
 import AskQuestion from "./ask-question";
 import CardPayButton from "./card-pay-button";
 import PayByCard from "./pay-by-card";
@@ -65,9 +70,37 @@ export default function PaymentStep() {
 
   return (
     <Elements stripe={stripe} options={options}>
-      <PaymentMethods cardEnabled />
+      <CheckoutPaymentTarget>
+        <PaymentMethods cardEnabled />
+      </CheckoutPaymentTarget>
     </Elements>
   );
+}
+
+/** The deposit, and the confirmation screen it lands on. The balance page supplies its own. */
+function CheckoutPaymentTarget({ children }: { children: ReactNode }) {
+  const params = useParams<{ id: string }>();
+  const { bookingId } = useBooking();
+  const confirmCheckout = useMutation(confirmCheckoutMutationOptions());
+
+  const target = useMemo(
+    () => ({
+      bookingId,
+      startIntent: () =>
+        confirmCheckout.mutateAsync({
+          bookingId: bookingId ?? "",
+          accessToken: guestAccessFor(bookingId),
+          paymentPreference: "deposit" as const,
+        }),
+      landing: serializeConfirmation(`/yachts/${params.id}/booking/confirmation`, {
+        method: "card",
+        bookingId,
+      }),
+    }),
+    [bookingId, params.id, confirmCheckout],
+  );
+
+  return <PaymentTargetProvider value={target}>{children}</PaymentTargetProvider>;
 }
 
 function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {

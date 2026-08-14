@@ -49,6 +49,13 @@ export const createHoldMutationOptions = () => orpc.checkout.createHold.mutation
  */
 export const confirmCheckoutMutationOptions = () => orpc.checkout.confirm.mutationOptions();
 
+/*
+ * Settles what a confirmed booking still owes. Separate from `confirm` because the booking
+ * is already CONFIRMED and stays that way: the charter exists whether or not this second
+ * installment has landed.
+ */
+export const payBalanceMutationOptions = () => orpc.checkout.payBalance.mutationOptions();
+
 /** Bank-transfer intent for a held booking — no Stripe needed. */
 export const requestInvoiceMutationOptions = () => orpc.checkout.requestInvoice.mutationOptions();
 
