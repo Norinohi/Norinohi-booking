@@ -97,7 +97,7 @@ export async function requestInvoice(
 
     await tx
       .update(booking)
-      .set({ status: "PAYMENT_PENDING", paymentMethod: "invoice" })
+      .set({ status: "PAYMENT_PENDING" })
       .where(and(eq(booking.id, input.bookingId), eq(booking.status, current)));
 
     return request;
@@ -224,6 +224,25 @@ export async function getReceipt(
  * customer choosing to prepay everything. Lines marked pay-at-check-in are settled
  * with the base and are never part of either figure.
  */
+/**
+ * What a booking still owes: everything collectable up front, less what has actually
+ * arrived.
+ *
+ * `paidMinor` must count settled money only — a refunded payment has left again and a
+ * pending one has not landed. Both callers filter on `succeeded` in the query that reads
+ * them, which is where that belongs.
+ *
+ * `amountDue` has already dropped the pay-at-check-in lines, which the base collects in
+ * person and we must never charge.
+ *
+ * One definition on purpose: `checkout.payBalance` charges this and `booking.list`/`get`
+ * report it, and a screen that advertises one figure while the server takes another is
+ * worse than no screen.
+ */
+export function outstandingMinor(priced: typeof quote.$inferSelect, paidMinor: number): number {
+  return Math.max(amountDue(priced, "full") - paidMinor, 0);
+}
+
 export function amountDue(
   priced: typeof quote.$inferSelect,
   preference: "deposit" | "full",

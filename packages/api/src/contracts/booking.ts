@@ -105,6 +105,14 @@ export const bookingSummarySchema = z.object({
   perPerson: moneySchema,
   paidTotal: moneySchema,
   balanceDue: moneySchema,
+  /**
+   * What is still collectable, and exactly what `checkout.payBalance` would charge.
+   * Distinct from `balanceDue` above, which subtracts payments from the whole total and
+   * so includes the pay-at-check-in lines the base collects in person — a figure no
+   * screen should ever offer to take. On the summary so a card can decide whether to
+   * offer payment at all without loading the booking.
+   */
+  outstanding: moneySchema,
   /** What the quote's payment policy asked up front — the quote's `depositMinor`. */
   prepayment: moneySchema,
   nextPaymentDueAt: z.string().nullable(),
@@ -196,6 +204,14 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
       amount: moneySchema,
       status: paymentStatusSchema,
       paidAt: z.string().nullable(),
+      /**
+       * How this installment arrived. Derived from whether Stripe holds an intent for
+       * it, never stored: that is the fact itself, so a second column recording it
+       * could only ever disagree. Per payment rather than per booking, because a
+       * deposit paid by transfer and a balance paid by card is one booking with two
+       * answers — which is also how `planRefund` already decides what it can send back.
+       */
+      method: z.enum(["card", "transfer"]),
       /**
        * Set once a chargeback opens. Kept off `status` because contested is not the
        * same as refunded: `disputeStatus` carries how it ended, and a won dispute

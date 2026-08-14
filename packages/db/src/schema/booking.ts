@@ -48,8 +48,6 @@ export const paymentScheduleKind = pgEnum("payment_schedule_kind", [
   "security_deposit",
 ]);
 
-export const bookingPaymentMethod = pgEnum("booking_payment_method", ["card", "invoice"]);
-
 export const extraPricingType = pgEnum("extra_pricing_type", [
   "per_booking",
   "per_week",
@@ -187,8 +185,6 @@ export const booking = pgTable(
      * must not be a set of live booking links.
      */
     guestAccessTokenHash: text("guest_access_token_hash"),
-    /** Null until the Payment step; the flow can also end without either. */
-    paymentMethod: bookingPaymentMethod("payment_method"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),
     /**
      * Unique per customer so a retried checkout cannot create a second booking

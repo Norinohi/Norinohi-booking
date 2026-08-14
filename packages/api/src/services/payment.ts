@@ -10,7 +10,7 @@ import type { checkoutConfirmSchema } from "../contracts/booking";
 import { readOwnedBooking } from "./booking-read";
 import { isPreConfirmed, type BookingStatus } from "./booking-state";
 import { assertHoldStillValid, assertIntentIsResumable, assertPayable } from "./payment-guards";
-import { amountDue } from "./checkout";
+import { amountDue, outstandingMinor } from "./checkout";
 import { assertQuoteIsFresh } from "./quote";
 
 type ConfirmResult = z.infer<typeof checkoutConfirmSchema>;
@@ -149,22 +149,22 @@ export async function payBalance(
     });
   }
 
-  const outstandingMinor = await outstandingBalance(db, bookingId, row.quote);
+  const outstanding = await outstandingBalance(db, bookingId, row.quote);
 
-  if (outstandingMinor <= 0) {
+  if (outstanding <= 0) {
     throw new ORPCError("CONFLICT", {
       message: "This booking is already paid in full",
       data: { code: "ALREADY_PAID" },
     });
   }
 
-  const idempotencyKey = `pay:${bookingId}:balance:${outstandingMinor}`;
+  const idempotencyKey = `pay:${bookingId}:balance:${outstanding}`;
 
   const reused = await reuseIntent(db, stripe, bookingId, row.booking.status, idempotencyKey);
   if (reused) return reused;
 
   const intent = await stripe.paymentIntents.create(
-    intentParams(row.booking, "balance", outstandingMinor),
+    intentParams(row.booking, "balance", outstanding),
     { idempotencyKey },
   );
 
@@ -174,7 +174,7 @@ export async function payBalance(
     // CONFIRMED whether this charge lands now, later, or not at all.
     from: null,
     kind: "balance",
-    amountMinor: outstandingMinor,
+    amountMinor: outstanding,
     currency: row.booking.currency,
     stripePaymentIntentId: intent.id,
     idempotencyKey,
@@ -186,33 +186,28 @@ export async function payBalance(
     bookingId,
     status: row.booking.status,
     paymentId,
-    amountMinor: outstandingMinor,
+    amountMinor: outstanding,
     currency: row.booking.currency,
     kind: "balance",
     intent,
   });
 }
 
-/**
- * Everything collectable up front, less what has actually been paid.
- *
- * Only `succeeded` counts: a refunded payment has left again, and a pending one has
- * not arrived. Lines marked pay-at-check-in are excluded by `amountDue`, so they are
- * never chased here.
- */
+/** Sums the money that actually arrived, then weighs it against the quote. */
 async function outstandingBalance(
   db: Database,
   bookingId: string,
-  priced: Parameters<typeof amountDue>[0],
+  priced: Parameters<typeof outstandingMinor>[0],
 ): Promise<number> {
   const settled = await db
     .select({ amountMinor: payment.amountMinor })
     .from(payment)
     .where(and(eq(payment.bookingId, bookingId), eq(payment.status, "succeeded")));
 
-  const paidMinor = settled.reduce((total, row) => total + row.amountMinor, 0);
-
-  return Math.max(amountDue(priced, "full") - paidMinor, 0);
+  return outstandingMinor(
+    priced,
+    settled.reduce((total, row) => total + row.amountMinor, 0),
+  );
 }
 
 type BookingRow = typeof booking.$inferSelect;
@@ -352,7 +347,7 @@ async function recordIntent(
     if (input.from) {
       await tx
         .update(booking)
-        .set({ status: "PAYMENT_PENDING", paymentMethod: "card" })
+        .set({ status: "PAYMENT_PENDING" })
         .where(and(eq(booking.id, input.bookingId), eq(booking.status, input.from)));
     }
 

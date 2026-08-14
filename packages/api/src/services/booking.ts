@@ -36,7 +36,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
-import { amountDue } from "./checkout";
+import { amountDue, outstandingMinor } from "./checkout";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
@@ -193,6 +193,8 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       amount: { amountMinor: row_.amountMinor, currency: row_.currency },
       status: row_.status,
       paidAt: row_.paidAt?.toISOString() ?? null,
+      // Same test `planRefund` makes: an intent id is what a card payment is.
+      method: row_.stripePaymentIntentId ? ("card" as const) : ("transfer" as const),
       disputedAt: row_.disputedAt?.toISOString() ?? null,
       disputeStatus: row_.disputeStatus,
     })),
@@ -888,6 +890,7 @@ function presentSummary(
     },
     paidTotal: { amountMinor: paidMinor, currency: row.currency },
     balanceDue: { amountMinor: Math.max(row.totalMinor - paidMinor, 0), currency: row.currency },
+    outstanding: { amountMinor: outstandingMinor(priced, paidMinor), currency: row.currency },
     prepayment: { amountMinor: priced.depositMinor, currency: row.currency },
     nextPaymentDueAt: money?.nextDueAt?.toISOString() ?? null,
     cancellable: isUserCancellable(row.status),
