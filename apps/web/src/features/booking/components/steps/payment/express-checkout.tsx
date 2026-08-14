@@ -10,7 +10,7 @@ import { usePayBooking } from "../../../hooks/use-pay-booking";
 const BUTTON_HEIGHT = 52;
 
 /**
- * Apple Pay, Google Pay, PayPal and Link, above the card form.
+ * Apple Pay, Google Pay and PayPal, above the card form.
  *
  * A wallet buried as a row inside the accordion converts badly: it shows only
  * "another step will appear" because it collects nothing inline, so the customer sees
@@ -38,12 +38,13 @@ export default function ExpressCheckout() {
           /*
            * Klarna and Amazon Pay are off: both are credit or account products whose
            * dispute handling sits outside the chargeback flow, and neither was asked for.
+           * Link is off to match `EXCLUDED_PAYMENT_METHOD_TYPES` on the Elements instance.
            */
           paymentMethods: {
             applePay: "auto",
             googlePay: "auto",
             paypal: "auto",
-            link: "auto",
+            link: "never",
             klarna: "never",
             amazonPay: "never",
           },
@@ -53,7 +54,7 @@ export default function ExpressCheckout() {
         }}
         /*
          * Stripe reports the set even when every entry is false, so the object being
-         * present is not the question — whether any of the four we asked for can
+         * present is not the question — whether any of the three we asked for can
          * actually render is. Without this the divider sits above an empty element on
          * any browser with no wallet configured.
          */
@@ -61,7 +62,7 @@ export default function ExpressCheckout() {
           const methods = event.availablePaymentMethods;
           setAvailable(
             Boolean(
-              methods && (methods.applePay || methods.googlePay || methods.paypal || methods.link),
+              methods && (methods.applePay || methods.googlePay || methods.paypal),
             ),
           );
         }}

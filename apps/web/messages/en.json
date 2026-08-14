@@ -557,7 +557,12 @@
   },
   "Home": {
     "BoatTypes": {
-      "heading": "Choose Your Boat Type"
+      "heading": "Choose Your Boat Type",
+      "luxury": {
+        "title": "Luxury yacht",
+        "description": "The largest boats in the fleet, crewed and specified to hotel standard.",
+        "imageAlt": "Luxury yacht at anchor"
+      }
     },
     "BudgetFinder": {
       "heading": "Find Yachts By Your Budget",

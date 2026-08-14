@@ -50,9 +50,20 @@ export const yachtCategory = pgTable(
     id: id("cat"),
     code: text("code").unique(),
     name: text("name").notNull(),
+    /*
+     * The category the marketplace groups this one under — several vendor categories
+     * share one. `name` stays the operator's own wording for the listing page; search
+     * and facets read the group, so near-synonyms do not each become a facet. Null
+     * for a category the provider package has not classified, which then groups
+     * under its own name.
+     */
+    canonicalName: text("canonical_name"),
     ...timestamps,
   },
-  (t) => [index("yacht_category_name_idx").on(t.name)],
+  (t) => [
+    index("yacht_category_name_idx").on(t.name),
+    index("yacht_category_canonical_name_idx").on(t.canonicalName),
+  ],
 );
 
 export const amenityCategory = pgTable(

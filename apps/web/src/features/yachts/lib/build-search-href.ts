@@ -13,6 +13,8 @@ export type SearchCriteria = {
   duration?: string;
   price?: [number, number];
   berths?: [number, number];
+  /** Feet, matching `filterParsers.length` — `toSearchInput` converts to metres. */
+  length?: [number, number];
 };
 
 export function buildSearchHref(criteria: SearchCriteria): AppPathname {

@@ -25,7 +25,9 @@ import { serializeConfirmation } from "../../../lib/search-params";
 import {
   ELEMENTS_APPEARANCE,
   ELEMENTS_FONTS,
+  EXCLUDED_PAYMENT_METHOD_TYPES,
   elementsLocale,
+  PAYMENT_METHOD_ORDER,
   stripeLoader,
 } from "../../../lib/stripe";
 import { useBooking } from "../../booking-provider";
@@ -61,6 +63,8 @@ export default function PaymentStep() {
       locale: elementsLocale(locale),
       appearance: ELEMENTS_APPEARANCE,
       fonts: ELEMENTS_FONTS,
+      paymentMethodOrder: PAYMENT_METHOD_ORDER,
+      excludedPaymentMethodTypes: EXCLUDED_PAYMENT_METHOD_TYPES,
     }),
     [dueNowMinor, currency, locale],
   );

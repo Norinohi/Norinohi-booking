@@ -557,7 +557,12 @@
   },
   "Home": {
     "BoatTypes": {
-      "heading": "Elige tu tipo de barco"
+      "heading": "Elige tu tipo de barco",
+      "luxury": {
+        "title": "Yate de lujo",
+        "description": "Los barcos más grandes de la flota, con tripulación y equipados con estándar hotelero.",
+        "imageAlt": "Yate de lujo fondeado"
+      }
     },
     "BudgetFinder": {
       "heading": "Encuentra yates según tu presupuesto",

@@ -19,8 +19,10 @@ import { guestAccessFor } from "../lib/guest-access";
 import {
   ELEMENTS_APPEARANCE,
   ELEMENTS_FONTS,
+  EXCLUDED_PAYMENT_METHOD_TYPES,
   elementsLocale,
   PAYMENT_ELEMENT_LAYOUT,
+  PAYMENT_METHOD_ORDER,
   stripeLoader,
 } from "../lib/stripe";
 import BalancePaid from "./balance-paid";
@@ -202,6 +204,8 @@ function BalancePayment({
       locale: elementsLocale(locale),
       appearance: ELEMENTS_APPEARANCE,
       fonts: ELEMENTS_FONTS,
+      paymentMethodOrder: PAYMENT_METHOD_ORDER,
+      excludedPaymentMethodTypes: EXCLUDED_PAYMENT_METHOD_TYPES,
     }),
     [amountMinor, currency, locale],
   );
