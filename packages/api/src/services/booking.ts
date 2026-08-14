@@ -36,6 +36,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { amountDue } from "./checkout";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
@@ -175,6 +176,10 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       depositPct: row.quote.paymentPolicy.depositPct,
       balanceDueAt: row.quote.paymentPolicy.balanceDueAt ?? null,
     },
+    dueNow: {
+      amountMinor: amountDue(row.quote, row.quote.paymentPolicy.mode),
+      currency: row.booking.currency,
+    },
     paymentSchedule: schedules.map((schedule) => ({
       id: schedule.id,
       kind: schedule.kind,
@@ -188,6 +193,8 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       amount: { amountMinor: row_.amountMinor, currency: row_.currency },
       status: row_.status,
       paidAt: row_.paidAt?.toISOString() ?? null,
+      disputedAt: row_.disputedAt?.toISOString() ?? null,
+      disputeStatus: row_.disputeStatus,
     })),
   };
 }

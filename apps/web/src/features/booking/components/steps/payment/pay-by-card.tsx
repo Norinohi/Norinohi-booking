@@ -1,31 +1,51 @@
 "use client";
 
+import { PaymentElement } from "@stripe/react-stripe-js";
 import { Notification } from "@yacht-charter/ui/components/feedback/notification";
-import { TextField } from "@yacht-charter/ui/components/form/text-field";
-import { CreditCard, Shield, TriangleAlert } from "lucide-react";
+import { Shield, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useFormContext, useWatch } from "react-hook-form";
 
-export default function PayByCard() {
+import type { BookingValues } from "../../../lib/booking-form";
+
+/**
+ * `enabled` is false when Stripe has no publishable key. The panel then says so rather
+ * than rendering a PaymentElement with no provider above it — `<Elements>` is only
+ * mounted on the configured path.
+ */
+export default function PayByCard({ enabled }: { enabled: boolean }) {
   const t = useTranslations("Booking.payment.card");
+  const { control } = useFormContext<BookingValues>();
+  const guest = useWatch({ control, name: "guestDetails" });
 
-  return (
-    <div className="flex flex-col gap-4">
+  if (!enabled) {
+    return (
       <Notification variant="warning" icon={<TriangleAlert />}>
         {t("unavailable")}
       </Notification>
+    );
+  }
 
-      <TextField
-        label={t("number")}
-        placeholder={t("numberPlaceholder")}
-        startIcon={<CreditCard />}
+  return (
+    <div className="flex flex-col gap-4">
+      {/*
+        Step 1 already asked for the payer's name, email and country, so they are seeded here
+        instead of being collected twice. Stripe still shows whichever billing fields the
+        chosen payment method actually requires.
+      */}
+      <PaymentElement
+        options={{
+          layout: "tabs",
+          defaultValues: {
+            billingDetails: {
+              name: guest.fullName,
+              email: guest.email,
+              phone: guest.phone,
+              address: { country: guest.countryCode || undefined },
+            },
+          },
+        }}
       />
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <TextField label={t("expiry")} placeholder={t("expiryPlaceholder")} />
-        <TextField label={t("cvc")} placeholder={t("cvcPlaceholder")} />
-      </div>
-
-      <TextField label={t("name")} placeholder={t("namePlaceholder")} />
 
       <Notification icon={<Shield />}>{t("notice")}</Notification>
     </div>

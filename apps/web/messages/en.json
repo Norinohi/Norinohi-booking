@@ -71,16 +71,11 @@
         "question": "Ask a question"
       },
       "card": {
-        "number": "Card Number",
-        "numberPlaceholder": "1234-3233-2332-0021",
-        "expiry": "Expiry Date",
-        "expiryPlaceholder": "01/29",
-        "cvc": "CV",
-        "cvcPlaceholder": "123",
-        "name": "Name on Card",
-        "namePlaceholder": "John Doe",
         "notice": "Secure your booking instantly with an online payment.",
-        "unavailable": "Online card payment is coming soon. Please use Request invoice or Ask a question.",
+        "unavailable": "Online card payment is not available right now. Please use Request invoice or Ask a question.",
+        "quoteExpired": "Your price has expired. Go back and refresh the quote before paying.",
+        "notPayable": "This booking can no longer be paid for. Please start a new one.",
+        "failed": "The payment could not be completed. Please try again.",
         "cta": "Pay {amount}"
       },
       "invoice": {
@@ -134,11 +129,20 @@
         "boatPrice": "Boat price (full rental price)",
         "deposit": "Refundable Security Deposit",
         "secondPayment": "2nd payment (Pay at: {date})",
+        "secondPaymentAtCheckIn": "2nd payment (Pay at check-in)",
         "totalPrice": "Total Price",
         "perPerson": "~ {price} for person",
         "dueNow": "Due now"
       },
-      "viewInvoice": "View Invoice"
+      "viewInvoice": "View Invoice",
+      "settling": {
+        "title": "Payment received",
+        "body": "We're confirming your booking with the charter base. This usually takes a few seconds."
+      },
+      "failed": {
+        "title": "We couldn't confirm this booking",
+        "body": "The charter base could not take this reservation. Any payment you made is being returned."
+      }
     },
     "invoice": {
       "title": "Invoice",

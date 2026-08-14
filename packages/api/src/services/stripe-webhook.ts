@@ -16,11 +16,17 @@ import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
 import { refundBooking, settleWhenFullyRefunded } from "./refund";
 
-/** Stripe sends the bare id unless a caller expanded the intent into an object. */
-const paymentIntentIdSchema = z.string().min(1);
+/**
+ * Stripe sends the bare id unless a caller expanded the intent into an object, so both
+ * shapes are accepted and collapse to the id. Null on an event that carries neither.
+ */
+const paymentIntentRefSchema = z.union([
+  z.string().min(1),
+  z.object({ id: z.string().min(1) }).transform((intent) => intent.id),
+]);
 
 export type WebhookOutcome =
-  | { handled: true; eventId: string; duplicate: boolean }
+  | { handled: true; eventId: string; duplicate: boolean; note?: string }
   | { handled: false; reason: string };
 
 /**
@@ -54,7 +60,7 @@ export async function handleStripeWebhook(
     };
   }
 
-  const [recorded] = await db
+  const [inserted] = await db
     .insert(providerWebhookEvent)
     .values({
       source: "stripe",
@@ -65,21 +71,30 @@ export async function handleStripeWebhook(
     .onConflictDoNothing()
     .returning({ id: providerWebhookEvent.id });
 
-  // The unique (source, external_event_id) index already held this one.
+  // The unique (source, external_event_id) index already held this one; whether
+  // that means "done" depends on how far the earlier attempt got.
+  const recorded = inserted ?? (await claimUnprocessed(db, event.id));
+
   if (!recorded) return { handled: true, eventId: event.id, duplicate: true };
+
+  let note: string | undefined;
 
   try {
     if (event.type === "payment_intent.succeeded") {
-      await onSucceeded(db, provider, event.data.object);
+      note = await onSucceeded(db, provider, event.data.object);
     } else if (event.type === "payment_intent.payment_failed") {
       await onFailed(db, event.data.object);
     } else if (event.type === "refund.updated") {
       await onRefundUpdated(db, event.data.object);
+    } else if (event.type === "charge.dispute.created") {
+      note = await onDisputeOpened(db, event.data.object);
+    } else if (event.type === "charge.dispute.closed") {
+      note = await onDisputeClosed(db, event.data.object);
     }
 
     await db
       .update(providerWebhookEvent)
-      .set({ processedAt: new Date() })
+      .set({ processedAt: new Date(), error: note ?? null })
       .where(eq(providerWebhookEvent.id, recorded.id));
   } catch (error) {
     await db
@@ -89,16 +104,45 @@ export async function handleStripeWebhook(
     throw error;
   }
 
-  return { handled: true, eventId: event.id, duplicate: false };
+  return { handled: true, eventId: event.id, duplicate: false, note };
 }
 
+/**
+ * A redelivery of an event we recorded but never finished, ready to be applied again.
+ * Null when the earlier attempt ran to completion and there is nothing left to do.
+ *
+ * Dedupe has to key on *processed*, not *seen*. The row goes in before the handlers
+ * run, so a crash or a failed provider call in between leaves it recorded with no
+ * `processed_at` — and treating that as a duplicate turns Stripe's retry, the very
+ * thing that exists to save us, into a 200 that drops the event for good. The
+ * handlers are written to be re-appliable: the payment updates are idempotent, and
+ * `confirmBookingWithProvider` refuses any booking that is no longer confirmable.
+ */
+async function claimUnprocessed(db: Database, eventId: string): Promise<{ id: string } | null> {
+  const [row] = await db
+    .select({ id: providerWebhookEvent.id, processedAt: providerWebhookEvent.processedAt })
+    .from(providerWebhookEvent)
+    .where(
+      and(
+        eq(providerWebhookEvent.source, "stripe"),
+        eq(providerWebhookEvent.externalEventId, eventId),
+      ),
+    )
+    .limit(1);
+
+  if (!row || row.processedAt) return null;
+
+  return { id: row.id };
+}
+
+/** Returns a note when the event was handled but the outcome is one ops should see. */
 async function onSucceeded(
   db: Database,
   provider: InventoryProvider,
   intent: Stripe.PaymentIntent,
-): Promise<void> {
+): Promise<string | undefined> {
   const row = await findByIntent(db, intent.id);
-  if (!row) return;
+  if (!row) return undefined;
 
   await db.transaction(async (tx) => {
     await tx
@@ -118,15 +162,68 @@ async function onSucceeded(
   // Shared with admin invoice settlement so both routes to CONFIRMED behave alike.
   const outcome = await confirmBookingWithProvider(db, provider, row.booking.id);
 
-  if (outcome.outcome !== "rejected") return;
+  if (outcome.outcome !== "rejected") return undefined;
 
   // We are holding the customer's money for a charter that will not happen, and
-  // nobody has to ask us to give it back. Before the throw, so a refund failure
-  // cannot be hidden by the rejection that caused it.
+  // nobody has to ask us to give it back. Not guarded, so a refund that fails
+  // throws and the event stays unprocessed for Stripe to redeliver.
   await refundBooking(db, row.booking.id, { reason: outcome.message });
 
-  // Surfaces to the webhook caller, which records it against the event row.
-  throw new Error(outcome.message);
+  /*
+   * Returned rather than thrown. A provider refusing is an outcome this handler
+   * exists to deal with, and it dealt with it: the booking is REFUND_PENDING and
+   * the money is on its way back. Throwing answered Stripe with a 500, which marked
+   * a correctly handled event as a failed delivery and made real processing faults
+   * indistinguishable from it in the Dashboard. The reasoning lives in
+   * `booking.cancel_reason` and a `confirm_failed` reservation event either way.
+   */
+  return outcome.message;
+}
+
+/**
+ * A customer has charged back.
+ *
+ * The booking is deliberately left alone. Stripe has pulled the money, but a dispute
+ * can still be won, and the provider is holding a boat either way — cancelling here
+ * would give away a charter that may still be paid for, while doing nothing at all
+ * leaves a CONFIRMED booking nobody knows is contested. So it is recorded against the
+ * payment and returned as a note, which is the signal ops acts on.
+ */
+async function onDisputeOpened(db: Database, dispute: Stripe.Dispute): Promise<string | undefined> {
+  const row = await paymentForDispute(db, dispute);
+  if (!row) return undefined;
+
+  await db
+    .update(payment)
+    .set({ disputedAt: new Date(), disputeStatus: dispute.status })
+    .where(and(eq(payment.id, row.payment.id), isNull(payment.disputedAt)));
+
+  return `Booking ${row.booking.reference} disputed (${dispute.reason}); ${dispute.status}`;
+}
+
+/**
+ * How the dispute ended. `disputedAt` is left set even on a win: that this booking was
+ * once contested is history worth keeping, and `disputeStatus` is what says how it went.
+ */
+async function onDisputeClosed(db: Database, dispute: Stripe.Dispute): Promise<string | undefined> {
+  const row = await paymentForDispute(db, dispute);
+  if (!row) return undefined;
+
+  await db
+    .update(payment)
+    .set({ disputeStatus: dispute.status })
+    .where(eq(payment.id, row.payment.id));
+
+  // Lost means the money is gone for good, which is a different conversation from a
+  // refund we chose to make — the charter may still be on the provider's books.
+  return `Booking ${row.booking.reference} dispute ${dispute.status}`;
+}
+
+/** Disputes carry the intent as an id, or as the expanded object when someone asked for it. */
+async function paymentForDispute(db: Database, dispute: Stripe.Dispute) {
+  const intentId = paymentIntentRefSchema.safeParse(dispute.payment_intent).data;
+
+  return intentId ? findByIntent(db, intentId) : null;
 }
 
 /**
@@ -134,7 +231,7 @@ async function onSucceeded(
  * `succeeded` inline, but bank debits and some wallets do not.
  */
 async function onRefundUpdated(db: Database, refund: Stripe.Refund): Promise<void> {
-  const intentId = paymentIntentIdSchema.safeParse(refund.payment_intent).data;
+  const intentId = paymentIntentRefSchema.safeParse(refund.payment_intent).data;
   if (!intentId) return;
 
   const row = await findByIntent(db, intentId);

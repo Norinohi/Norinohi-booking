@@ -19,6 +19,11 @@ export type SweepResult = {
   viewsPruned: number;
   /** Sync runs abandoned by a process that died, moved to `failed`. */
   syncRunsReaped: number;
+  /**
+   * Bookings stuck in CONFIRMING. Reported, never moved — see
+   * `flagStaleConfirmations` for why guessing either way is the wrong answer.
+   */
+  staleConfirmations: { bookingId: string; reference: string; stuckSince: string }[];
 };
 
 /**
@@ -47,6 +52,7 @@ export async function sweepExpiries(
   const bookingsQuoteExpired = await expireBookingsWithDeadQuotes(db, now);
   const { viewsPruned } = await pruneListingViews(db, now);
   const syncRunsReaped = await reapAbandonedSyncRuns(db, now);
+  const staleConfirmations = await flagStaleConfirmations(db, now);
 
   return {
     quotesExpired,
@@ -55,7 +61,82 @@ export async function sweepExpiries(
     releaseFailures,
     viewsPruned,
     syncRunsReaped,
+    staleConfirmations,
   };
+}
+
+/**
+ * How long a booking may sit in CONFIRMING before its process is presumed dead.
+ *
+ * Generous, like the sync-run reaper above: CONFIRMING is only held across a single
+ * provider commit, but a slow vendor answering in minutes must not be mistaken for
+ * one that never will.
+ */
+const STALE_CONFIRMING_MS = 15 * 60 * 1000;
+
+/**
+ * Bookings a dead process left mid-commit.
+ *
+ * CONFIRMING is claimed before `provider.confirmBooking` is called, so a booking
+ * stuck here died during that call and we do not know whether the provider created
+ * the reservation. **Nothing is moved, deliberately.** The state machine offers
+ * CONFIRMED and PROVIDER_REJECTED, and both are guesses with a real cost: confirming
+ * invents a charter that may not exist, and rejecting refunds a customer whose boat
+ * may well be booked, losing the money and the slot. There is no `getReservation` on
+ * `InventoryProvider` to settle it, so the only honest move is to make the booking
+ * visible and let a human ask the provider.
+ *
+ * Reported on every run so it stays visible until someone resolves it; the audit
+ * event is written once, so a sweep on a schedule does not fill the log.
+ */
+async function flagStaleConfirmations(
+  db: Database,
+  now: Date,
+): Promise<SweepResult["staleConfirmations"]> {
+  const cutoff = new Date(now.getTime() - STALE_CONFIRMING_MS);
+
+  const stranded = await db
+    .select({
+      id: booking.id,
+      reference: booking.reference,
+      provider: booking.provider,
+      providerOptionId: booking.providerOptionId,
+      updatedAt: booking.updatedAt,
+    })
+    .from(booking)
+    .where(and(eq(booking.status, "CONFIRMING"), lte(booking.updatedAt, cutoff)));
+
+  for (const candidate of stranded) {
+    const [flagged] = await db
+      .select({ id: providerReservationEvent.id })
+      .from(providerReservationEvent)
+      .where(
+        and(
+          eq(providerReservationEvent.bookingId, candidate.id),
+          eq(providerReservationEvent.kind, "confirm_stale"),
+        ),
+      )
+      .limit(1);
+
+    if (flagged) continue;
+
+    await db.insert(providerReservationEvent).values({
+      bookingId: candidate.id,
+      kind: "confirm_stale",
+      provider: candidate.provider,
+      providerReference: candidate.providerOptionId,
+      payload: {
+        stuckSince: candidate.updatedAt.toISOString(),
+        note: "Left in CONFIRMING by a process that died mid-commit; ask the provider whether the reservation exists.",
+      },
+    });
+  }
+
+  return stranded.map((candidate) => ({
+    bookingId: candidate.id,
+    reference: candidate.reference,
+    stuckSince: candidate.updatedAt.toISOString(),
+  }));
 }
 
 /**

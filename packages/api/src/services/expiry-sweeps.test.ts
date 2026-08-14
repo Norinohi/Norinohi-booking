@@ -48,3 +48,28 @@ describe("the states a sweep produces are recoverable", () => {
     expect(canTransition(sweep.to, "CANCELLED")).toBe(true);
   });
 });
+
+/*
+ * CONFIRMING is the one stuck state the sweep reports without resolving. A booking
+ * reaches it only after the money is in, and it is claimed before the provider
+ * commit, so a stranded one may or may not have a real reservation behind it.
+ * `flagStaleConfirmations` therefore writes an audit event and leaves the status
+ * alone; these guard the reasoning rather than the query.
+ */
+describe("stale CONFIRMING bookings are never swept automatically", () => {
+  it.each(SWEEPS)("$name does not claim CONFIRMING", ({ sweep }) => {
+    // Adding it to either `from` list would expire a booking the customer has
+    // already paid for, releasing the slot while we still hold their money.
+    expect(sweep.from).not.toContain("CONFIRMING");
+  });
+
+  it("offers only outcomes that are guesses, which is why the sweep makes none", () => {
+    // Both are reachable, and picking either without asking the provider is wrong:
+    // CONFIRMED invents a charter, PROVIDER_REJECTED refunds one that may exist.
+    expect(canTransition("CONFIRMING", "CONFIRMED")).toBe(true);
+    expect(canTransition("CONFIRMING", "PROVIDER_REJECTED")).toBe(true);
+    // No escape that reprices, so a human has to resolve it either way.
+    expect(canTransition("CONFIRMING", "QUOTED")).toBe(false);
+    expect(canTransition("CONFIRMING", "CANCELLED")).toBe(false);
+  });
+});
