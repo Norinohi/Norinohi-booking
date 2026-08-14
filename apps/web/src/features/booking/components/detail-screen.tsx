@@ -2,8 +2,18 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { CreditCard, FileText, Landmark } from "lucide-react";
+import {
+  ArrowUpRight,
+  CreditCard,
+  FileText,
+  Landmark,
+  LifeBuoy,
+  Mail,
+  MessageCircle,
+  Phone,
+} from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { type ReactNode, useEffect, useState } from "react";
@@ -14,6 +24,7 @@ import Loader from "@/components/shared/feedback/loader";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useMoney } from "@/hooks/use-money";
+import { authClient } from "@/lib/auth-client";
 import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
@@ -48,12 +59,18 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
   const [access, setAccess] = useState<{ token: string | undefined } | null>(null);
   useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
 
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const signedIn = Boolean(session?.user);
+  const bookingPath = `/bookings/${bookingId}`;
+
   const { data: booking, isLoading } = useQuery({
     ...bookingDetailQueryOptions(bookingId, access?.token),
     enabled: access !== null,
+    /* Failing here is the signed-out case, which the empty state below already explains. */
+    meta: { silent: true },
   });
 
-  if (isLoading || access === null) {
+  if (isLoading || access === null || sessionPending) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <Loader />
@@ -62,14 +79,36 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
   }
 
   if (!booking) {
+    /*
+     * Nothing came back, and for a signed-out visitor that is far more likely to be the missing
+     * credential than a missing booking: the guest token lives in one browser's localStorage, so
+     * the same link opened on a phone, or after clearing site data, lands here. Sign-in is the
+     * way back into it, and it returns to this page.
+     */
     return (
       <div className="flex min-h-full items-center justify-center p-4 md:p-8">
         <EmptyState
-          title={t("notFound")}
+          title={signedIn ? t("notFound") : t("signInTitle")}
+          description={signedIn ? undefined : t("signInBody")}
           action={
-            <Button variant="brand" nativeButton={false} render={<Link href="/yachts" />}>
-              {t("browse")}
-            </Button>
+            signedIn ? (
+              <Button variant="brand" nativeButton={false} render={<Link href="/yachts" />}>
+                {t("browse")}
+              </Button>
+            ) : (
+              <div className="flex flex-col items-center gap-3 sm:flex-row">
+                <Button
+                  variant="brand"
+                  nativeButton={false}
+                  render={<Link href={{ pathname: "/login", query: { redirect: bookingPath } }} />}
+                >
+                  {t("signIn")}
+                </Button>
+                <Button variant="neutral" nativeButton={false} render={<Link href="/yachts" />}>
+                  {t("browse")}
+                </Button>
+              </div>
+            )
           }
         />
       </div>
@@ -103,12 +142,32 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
           labels={{ main: t("panels.main"), aside: t("panels.aside") }}
           main={
             <>
-              <BoatCard {...boat} summary priority />
+              <BoatCard
+                {...boat}
+                summary
+                priority
+                summaryAction={
+                  <Button
+                    variant="neutral"
+                    size="sm"
+                    nativeButton={false}
+                    render={<Link href={`/yachts/${booking.listing.id}`} />}
+                  >
+                    {t("viewYacht")}
+                    <ArrowUpRight />
+                  </Button>
+                }
+              />
               <Charter booking={booking} bookingId={bookingId} />
               <Payments booking={booking} />
             </>
           }
-          aside={<PriceAside booking={booking} />}
+          aside={
+            <div className="flex min-h-0 w-full flex-col gap-4 overflow-y-auto">
+              <PriceAside booking={booking} />
+              <SupportCard booking={booking} />
+            </div>
+          }
         />
       </div>
     </div>
@@ -122,6 +181,7 @@ function Charter({ booking, bookingId }: { booking: BookingDetail; bookingId: st
 
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
   const outstanding = booking.outstanding.amountMinor;
+  const showPay = booking.status === "CONFIRMED" && outstanding > 0;
   /* The invoice document only exists for a booking that asked to pay by transfer. */
   const hasTransfer = booking.payments.some((row) => row.method === "transfer");
 
@@ -132,35 +192,43 @@ function Charter({ booking, bookingId }: { booking: BookingDetail; bookingId: st
         <StatusChip status={booking.status} label={t(`status.${booking.status}`)} />
       </div>
 
-      <dl className="flex flex-col">
-        <Row label={t("dates")} value={`${day(booking.checkIn)} → ${day(booking.checkOut)}`} />
-        <Row label={t("guestsLabel")} value={String(booking.guests)} />
-        {booking.crewType ? <Row label={t("crew")} value={booking.crewType} /> : null}
-        <Row label={t("marina")} value={`${booking.base.name}, ${booking.base.countryName}`} />
-        <Row label={t("referenceLabel")} value={booking.reference} />
+      {/* Two columns from `sm` up: a full-width panel with one column of key/value rows leaves
+          the right half of the card empty. */}
+      <dl className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+        <Fact label={t("dates")} value={`${day(booking.checkIn)} → ${day(booking.checkOut)}`} />
+        <Fact label={t("guestsLabel")} value={String(booking.guests)} />
+        {booking.crewType ? (
+          <Fact label={t("crew")} value={booking.crewType} className="capitalize" />
+        ) : null}
+        <Fact label={t("marina")} value={`${booking.base.name}, ${booking.base.countryName}`} />
+        <Fact label={t("referenceLabel")} value={booking.reference} className="font-mono" />
       </dl>
 
-      {booking.status === "CONFIRMED" && outstanding > 0 ? (
-        <Button
-          variant="brand"
-          className="h-13 w-full md:w-auto"
-          nativeButton={false}
-          render={<Link href={`/bookings/${bookingId}/pay`} />}
-        >
-          {t("payBalance", { amount: money(outstanding) })}
-        </Button>
-      ) : null}
+      {showPay || hasTransfer ? (
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap">
+          {showPay ? (
+            <Button
+              variant="brand"
+              className="h-13 sm:min-w-56"
+              nativeButton={false}
+              render={<Link href={`/bookings/${bookingId}/pay`} />}
+            >
+              {t("payBalance", { amount: money(outstanding) })}
+            </Button>
+          ) : null}
 
-      {hasTransfer ? (
-        <Button
-          variant="neutral"
-          className="w-full md:w-auto"
-          nativeButton={false}
-          render={<Link href={`/bookings/${bookingId}/invoice`} />}
-        >
-          <FileText />
-          {t("viewInvoice")}
-        </Button>
+          {hasTransfer ? (
+            <Button
+              variant="neutral"
+              className="h-13"
+              nativeButton={false}
+              render={<Link href={`/bookings/${bookingId}/invoice`} />}
+            >
+              <FileText />
+              {t("viewInvoice")}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </Panel>
   );
@@ -175,7 +243,7 @@ function Payments({ booking }: { booking: BookingDetail }) {
       <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("paymentsTitle")}</h2>
 
       {booking.payments.length ? (
-        <dl className="flex flex-col">
+        <dl className="flex w-full flex-col">
           {booking.payments.map((row) => (
             <Row
               key={row.id}
@@ -216,7 +284,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
       <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("priceTitle")}</h2>
 
-      <dl className="flex flex-col rounded-xl bg-natural-50 p-4">
+      <dl className="flex w-full flex-col rounded-xl bg-natural-50 p-4">
         {booking.priceLines.map((line, index) => (
           <Row
             key={`${line.code}-${index}`}
@@ -227,7 +295,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
         <Row label={t("total")} value={money(booking.total.amountMinor)} emphasis />
       </dl>
 
-      <dl className="flex flex-col">
+      <dl className="flex w-full flex-col">
         <Row label={t("paid")} value={money(booking.paidTotal.amountMinor)} />
         <Row
           label={outstanding > 0 ? t("outstanding") : t("settled")}
@@ -239,11 +307,76 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
   );
 }
 
+/**
+ * Where someone goes when the page does not answer their question. The booking reference travels
+ * in the subject so the first reply does not have to ask for it, and the marina's own contacts are
+ * offered alongside because anything about the boat on the day is theirs to answer, not ours.
+ */
+function SupportCard({ booking }: { booking: BookingDetail }) {
+  const t = useTranslations("Booking.detail");
+  const { phone, email } = booking.base;
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand">
+          <LifeBuoy className="size-4.5" />
+        </span>
+        <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("supportTitle")}</h2>
+      </div>
+
+      <p className="text-sm leading-[1.4] text-natural-600">{t("supportBody")}</p>
+
+      <Button
+        variant="neutral"
+        className="w-full"
+        nativeButton={false}
+        render={<Link href={{ pathname: "/support", query: { booking: booking.id } }} />}
+      >
+        <MessageCircle />
+        {t("contactSupport")}
+      </Button>
+
+      {phone || email ? (
+        <div className="flex flex-col gap-2 border-t border-dashed border-border pt-3">
+          <span className="text-sm font-bold text-foreground">{t("marinaContact")}</span>
+          {phone ? <ContactLink href={`tel:${phone}`} icon={<Phone />} label={phone} /> : null}
+          {email ? <ContactLink href={`mailto:${email}`} icon={<Mail />} label={email} /> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ContactLink({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
+  return (
+    <a
+      href={href}
+      className="flex items-center gap-2 text-sm text-natural-600 transition-colors hover:text-brand [&_svg]:size-4 [&_svg]:shrink-0"
+    >
+      {icon}
+      <span className="truncate">{label}</span>
+    </a>
+  );
+}
+
 function Panel({ children }: { children: ReactNode }) {
   return (
     <section className="flex flex-col items-start gap-4 rounded-2xl border border-border bg-card p-5 md:p-6">
       {children}
     </section>
+  );
+}
+
+/** A charter fact, stacked rather than spread — it sits in a grid cell, not across the panel. */
+function Fact({ label, value, className }: { label: string; value: string; className?: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 rounded-xl bg-natural-50 px-4 py-3">
+      <dt className="text-sm leading-[1.4] text-natural-500">{label}</dt>
+      <dd className={cn("text-base leading-[1.4] font-bold text-foreground", className)}>
+        {value}
+      </dd>
+    </div>
   );
 }
 

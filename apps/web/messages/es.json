@@ -291,7 +291,30 @@
       "crew": "Tripulación",
       "marina": "Puerto",
       "referenceLabel": "Referencia",
-      "settled": "Nada pendiente de pago"
+      "settled": "Nada pendiente de pago",
+      "viewYacht": "Ver el yate",
+      "supportTitle": "¿Necesitas ayuda?",
+      "supportBody": "Dudas sobre tu chárter, cambios de fechas o cualquier otra cosa: nuestro equipo responde en un día laborable.",
+      "contactSupport": "Contactar con soporte",
+      "supportSubject": "Reserva {reference}",
+      "marinaContact": "Contacto de la marina",
+      "signInTitle": "Inicia sesión para ver esta reserva",
+      "signInBody": "Esta reserva está vinculada a tu cuenta. Inicia sesión con el correo que usaste al reservar y volverás directamente aquí.",
+      "signIn": "Iniciar sesión"
+    },
+    "support": {
+      "title": "¿En qué podemos ayudarte?",
+      "subtitle": "Envíanos un mensaje y te responderemos en un día laborable.",
+      "messageLabel": "Tu mensaje",
+      "messagePlaceholder": "Cuéntanos en qué necesitas ayuda: fechas, el barco, el pago, lo que sea.",
+      "required": "Escribe un mensaje primero",
+      "send": "Enviar mensaje",
+      "sent": "Mensaje enviado",
+      "sentTitle": "Mensaje enviado",
+      "sentBody": "Ya lo tenemos, junto con los datos de tu reserva. Te escribiremos por correo.",
+      "backToBooking": "Volver a mi reserva",
+      "failed": "No hemos podido enviar tu mensaje. Inténtalo de nuevo.",
+      "marinaContact": "O contacta directamente con la marina"
     }
   },
   "Common": {
@@ -344,8 +367,8 @@
         "discount": "{percent}% DTO."
       },
       "stats": {
-        "booked": "{count} reservas este mes",
-        "viewed": "{count} personas lo vieron hoy"
+        "booked": "{count, plural, one {# reserva este mes} other {# reservas este mes}}",
+        "viewed": "{count, plural, one {# persona lo vio hoy} other {# personas lo vieron hoy}}"
       },
       "amenities": {
         "wifi": "Wi-Fi gratis",
@@ -394,6 +417,18 @@
         "emailInvalid": "Por favor, introduce un correo electrónico válido",
         "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
       }
+    },
+    "charterPeriod": {
+      "or": ", o ",
+      "daysAndNights": "{days}, {nights}",
+      "weekdayRange": "de {from} a {to}",
+      "weekdayStart": "Empieza el {day}",
+      "weekdayEnd": "Termina el {day}",
+      "nightsExact": "{count, plural, one {# noche} other {# noches}}",
+      "nightsFrom": "desde {count, plural, one {# noche} other {# noches}}",
+      "nightsUpTo": "hasta {count, plural, one {# noche} other {# noches}}",
+      "nightsRange": "de {min} a {max} noches",
+      "label": "Periodo de chárter"
     }
   },
   "Filters": {

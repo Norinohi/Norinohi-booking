@@ -49,33 +49,33 @@ charter yet. Either show the times alone, or move the block behind a selected pe
 
 Kept here so the second connector is measured against the same list.
 
-| what | was | now |
-| --- | --- | --- |
-| Card charter dates | one hardcoded July week on every card, every search | the searched dates |
-| Card charter times | hardcoded `Europe/Zagreb` 17:00/09:00 | each base's own times, 6 bases differ |
-| Crew filter | `crew_type` null on all 109, filter always empty | `charterType` + `crewedCharterType`: 97/7/5 |
-| Mainsail filter | `sail_type` null on all 109 | `sailTypeId` resolved: 42/41/3/1 |
-| Card "from" price | cheapest enumerated week, absent on 8 listings | cheapest published rate, all 109 |
-| Price caption | "Price for 3 days" over a weekly rate | names the rate's own period |
-| Duration filter | selected nothing | filters on `listing_checkin_rule` |
-| Availability | synthesized charters (ADR 0004) | occupancy complement + published rates |
-| Pets | "Pets are not permitted" asserted on all 109 | points at the base, which decides |
-| Card prepayment | hardcoded 25% against a 50% default | the marketplace default itself |
-| Booked/viewed counts | `stableCount`, derived from the slug | counted from `booking` and `listing_view` |
+| what                 | was                                                 | now                                         |
+| -------------------- | --------------------------------------------------- | ------------------------------------------- |
+| Card charter dates   | one hardcoded July week on every card, every search | the searched dates                          |
+| Card charter times   | hardcoded `Europe/Zagreb` 17:00/09:00               | each base's own times, 6 bases differ       |
+| Crew filter          | `crew_type` null on all 109, filter always empty    | `charterType` + `crewedCharterType`: 97/7/5 |
+| Mainsail filter      | `sail_type` null on all 109                         | `sailTypeId` resolved: 42/41/3/1            |
+| Card "from" price    | cheapest enumerated week, absent on 8 listings      | cheapest published rate, all 109            |
+| Price caption        | "Price for 3 days" over a weekly rate               | names the rate's own period                 |
+| Duration filter      | selected nothing                                    | filters on `listing_checkin_rule`           |
+| Availability         | synthesized charters (ADR 0004)                     | occupancy complement + published rates      |
+| Pets                 | "Pets are not permitted" asserted on all 109        | points at the base, which decides           |
+| Card prepayment      | hardcoded 25% against a 50% default                 | the marketplace default itself              |
+| Booked/viewed counts | `stableCount`, derived from the slug                | counted from `booking` and `listing_view`   |
 
 ## Still unsourceable from NauSYS
 
 Not invented — absent, and correctly showing as absent. Re-check each against Booking Manager.
 
-| field | NauSYS | Booking Manager | note |
-| --- | --- | --- | --- |
-| `pets_allowed` | no field | not seen in the yacht record | false for all 109; copy no longer claims a ban |
-| `deposit_insurance_included` | only `depositWhenInsured`, an amount | unknown | false for all 109; the toggle matches nothing |
-| `max_nights` | never mapped by `checkinRulesOf` | `minimumCharterDuration` only | null on all 109; the calendar cannot cap a range |
-| Daily rates | `DAILY` price lists exist for **2** of 109 | unknown | `listing_price_period.kind` is ready for them |
-| Short-break product | `minimumShortPeriodDuration: 3` on **104** yachts, unmapped | unknown | see below |
-| Base timezone | not published | not published | times are wall-clock text; do not convert |
-| Seasonal check-in rules | `checkInPeriods` all span 1970–2099 | `defaultCheckInDay` is a single day | `listing_checkin_rule` has no validity period |
+| field                        | NauSYS                                                      | Booking Manager                     | note                                             |
+| ---------------------------- | ----------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
+| `pets_allowed`               | no field                                                    | not seen in the yacht record        | false for all 109; copy no longer claims a ban   |
+| `deposit_insurance_included` | only `depositWhenInsured`, an amount                        | unknown                             | false for all 109; the toggle matches nothing    |
+| `max_nights`                 | never mapped by `checkinRulesOf`                            | `minimumCharterDuration` only       | null on all 109; the calendar cannot cap a range |
+| Daily rates                  | `DAILY` price lists exist for **2** of 109                  | unknown                             | `listing_price_period.kind` is ready for them    |
+| Short-break product          | `minimumShortPeriodDuration: 3` on **104** yachts, unmapped | unknown                             | see below                                        |
+| Base timezone                | not published                                               | not published                       | times are wall-clock text; do not convert        |
+| Seasonal check-in rules      | `checkInPeriods` all span 1970–2099                         | `defaultCheckInDay` is a single day | `listing_checkin_rule` has no validity period    |
 
 ### The short-break question, worth asking the vendor
 

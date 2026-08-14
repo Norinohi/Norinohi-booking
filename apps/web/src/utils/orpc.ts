@@ -15,6 +15,10 @@ export function createQueryClient() {
     defaultOptions: QUERY_DEFAULTS,
     queryCache: new QueryCache({
       onError: (error, query) => {
+        /* A read whose failure is part of the screen's own logic — an unauthorised booking that
+           falls back to sign-in or a contact form — passes `meta: { silent: true }`, because a
+           toast on top of the state that already explains it is noise. */
+        if (query.meta?.silent === true) return;
         toast.error(`Error: ${error.message}`, {
           action: {
             label: "retry",

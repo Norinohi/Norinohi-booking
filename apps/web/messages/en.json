@@ -291,7 +291,30 @@
       "crew": "Crew",
       "marina": "Marina",
       "referenceLabel": "Reference",
-      "settled": "Nothing left to pay"
+      "settled": "Nothing left to pay",
+      "viewYacht": "View yacht page",
+      "supportTitle": "Need a hand?",
+      "supportBody": "Questions about your charter, changes to the dates or anything else — our team answers within one working day.",
+      "contactSupport": "Contact support",
+      "supportSubject": "Booking {reference}",
+      "marinaContact": "Marina contact",
+      "signInTitle": "Sign in to see this booking",
+      "signInBody": "This booking is tied to your account. Sign in with the email you booked with and we'll bring you straight back here.",
+      "signIn": "Sign in"
+    },
+    "support": {
+      "title": "How can we help?",
+      "subtitle": "Send us a message and we'll come back to you within one working day.",
+      "messageLabel": "Your message",
+      "messagePlaceholder": "Tell us what you need help with — dates, the boat, payment, anything.",
+      "required": "Write a message first",
+      "send": "Send message",
+      "sent": "Message sent",
+      "sentTitle": "Message sent",
+      "sentBody": "We have it, together with your booking details. You'll hear from us by email.",
+      "backToBooking": "Back to my booking",
+      "failed": "We couldn't send your message. Please try again.",
+      "marinaContact": "Or reach the marina directly"
     }
   },
   "Common": {
@@ -344,8 +367,8 @@
         "discount": "{percent}% OFF"
       },
       "stats": {
-        "booked": "{count} booked this month",
-        "viewed": "{count} people viewed today"
+        "booked": "{count, plural, one {# booked this month} other {# booked this month}}",
+        "viewed": "{count, plural, one {# person viewed today} other {# people viewed today}}"
       },
       "amenities": {
         "wifi": "Free Wi-Fi",
@@ -394,6 +417,18 @@
         "emailInvalid": "Please enter a valid email address",
         "submitFailed": "We couldn't send your request. Please try again."
       }
+    },
+    "charterPeriod": {
+      "or": ", or ",
+      "daysAndNights": "{days}, {nights}",
+      "weekdayRange": "{from} to {to}",
+      "weekdayStart": "Starts on {day}",
+      "weekdayEnd": "Ends on {day}",
+      "nightsExact": "{count, plural, one {# night} other {# nights}}",
+      "nightsFrom": "from {count, plural, one {# night} other {# nights}}",
+      "nightsUpTo": "up to {count, plural, one {# night} other {# nights}}",
+      "nightsRange": "{min} to {max} nights",
+      "label": "Charter period"
     }
   },
   "Filters": {

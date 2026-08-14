@@ -370,19 +370,21 @@ export default function BookingConfirmationScreen() {
                 {isGuest ? t("guestEmailed") : t("emailed")}
               </p>
             </div>
-            {/* My Bookings needs an account. A guest has one waiting behind the invitation
-                email, so pointing them at a page that would bounce them to sign in — for a
-                password they were never asked to choose — helps nobody. */}
-            {isGuest || (
-              <Button
-                variant="neutral"
-                nativeButton={false}
-                render={<Link href="/profile/bookings" />}
-                className="w-full md:w-auto"
-              >
-                {t("viewBooking")}
-              </Button>
-            )}
+            {/* My Bookings needs an account, which a guest has only as an invitation email and
+                no password yet — so they go to the booking itself, which their access token
+                authorises. The page falls back to sign-in if that token is ever missing. */}
+            <Button
+              variant="neutral"
+              nativeButton={false}
+              render={
+                <Link
+                  href={isGuest && bookingId ? `/bookings/${bookingId}` : "/profile/bookings"}
+                />
+              }
+              className="w-full md:w-auto"
+            >
+              {t("viewBooking")}
+            </Button>
           </motion.div>
 
           <motion.div variants={RISE} className="flex flex-col p-5">

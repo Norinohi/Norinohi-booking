@@ -76,6 +76,8 @@ export type BoatCardProps = {
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
   summary?: boolean;
+  /** Sits at the foot of the details column in `summary` mode, where the action column would be. */
+  summaryAction?: ReactNode;
   /** Extra content rendered inside the card, under the action button (e.g. My Bookings' Cancel). */
   footer?: ReactNode;
   className?: string;
@@ -146,6 +148,7 @@ function Details({
   specs,
   amenities,
   summary,
+  summaryAction,
   unavailable,
 }: Pick<
   BoatCardProps,
@@ -157,6 +160,7 @@ function Details({
   | "specs"
   | "amenities"
   | "summary"
+  | "summaryAction"
   | "unavailable"
 >) {
   return (
@@ -228,6 +232,12 @@ function Details({
               </span>
             </div>
           ))}
+        </div>
+      ) : null}
+
+      {summaryAction ? (
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-1 pb-4 md:pb-6 xl:pr-6">
+          {summaryAction}
         </div>
       ) : null}
     </div>
@@ -358,6 +368,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         specs={boat.specs}
         amenities={boat.amenities}
         summary={boat.summary}
+        summaryAction={boat.summary ? boat.summaryAction : undefined}
         unavailable={boat.unavailable}
       />
       {boat.summary ? null : (
