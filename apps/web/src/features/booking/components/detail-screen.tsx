@@ -13,6 +13,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  XCircle,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -23,6 +24,7 @@ import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
+import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
 import { useMoney } from "@/hooks/use-money";
 import { authClient } from "@/lib/auth-client";
 import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
@@ -158,7 +160,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
                   </Button>
                 }
               />
-              <Charter booking={booking} bookingId={bookingId} />
+              <Charter booking={booking} bookingId={bookingId} signedIn={signedIn} />
               <Payments booking={booking} />
             </>
           }
@@ -174,16 +176,36 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
   );
 }
 
-function Charter({ booking, bookingId }: { booking: BookingDetail; bookingId: string }) {
+function Charter({
+  booking,
+  bookingId,
+  signedIn,
+}: {
+  booking: BookingDetail;
+  bookingId: string;
+  signedIn: boolean;
+}) {
   const t = useTranslations("Booking.detail");
+  const tCancel = useTranslations("Bookings.cancel");
   const money = useMoney();
   const format = useFormatter();
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
   const outstanding = booking.outstanding.amountMinor;
   const showPay = booking.status === "CONFIRMED" && outstanding > 0;
-  /* The invoice document only exists for a booking that asked to pay by transfer. */
-  const hasTransfer = booking.payments.some((row) => row.method === "transfer");
+  /*
+   * The invoice document only exists for a booking that asked to pay by transfer, and it is an
+   * instruction to send money — so a charter that is off no longer offers it.
+   */
+  const off = booking.status === "CANCELLED" || booking.status === "REFUNDED";
+  const hasTransfer = !off && booking.payments.some((row) => row.method === "transfer");
+  /*
+   * `booking.cancel` is session-only and refuses a confirmed booking — the server decides both,
+   * and `cancellable` is its answer. A guest holding only an access token has no session, so the
+   * button would fail on click; they cancel from My Bookings once they have set a password.
+   */
+  const showCancel = booking.cancellable && signedIn;
 
   return (
     <Panel>
@@ -202,10 +224,17 @@ function Charter({ booking, bookingId }: { booking: BookingDetail; bookingId: st
         ) : null}
         <Fact label={t("marina")} value={`${booking.base.name}, ${booking.base.countryName}`} />
         <Fact label={t("referenceLabel")} value={booking.reference} className="font-mono" />
+        {/* Once it is off, the two facts that explain it — the rest of the panel is history. */}
+        {booking.cancelledAt ? (
+          <Fact label={t("cancelledOn")} value={day(booking.cancelledAt)} />
+        ) : null}
+        {booking.cancelReason ? (
+          <Fact label={t("cancelReason")} value={booking.cancelReason} />
+        ) : null}
       </dl>
 
-      {showPay || hasTransfer ? (
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap">
+      {showPay || hasTransfer || showCancel ? (
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {showPay ? (
             <Button
               variant="brand"
@@ -228,8 +257,21 @@ function Charter({ booking, bookingId }: { booking: BookingDetail; bookingId: st
               {t("viewInvoice")}
             </Button>
           ) : null}
+
+          {showCancel ? (
+            <Button
+              variant="subtle"
+              className="h-13 text-error-600 hover:border-error-200 hover:bg-error-50 sm:ml-auto"
+              onClick={() => setCancelOpen(true)}
+            >
+              <XCircle />
+              {tCancel("action")}
+            </Button>
+          ) : null}
         </div>
       ) : null}
+
+      <CancelBookingDialog bookingId={bookingId} open={cancelOpen} onOpenChange={setCancelOpen} />
     </Panel>
   );
 }

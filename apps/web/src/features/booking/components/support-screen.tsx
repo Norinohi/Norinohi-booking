@@ -13,7 +13,7 @@ import {
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
-import { CheckCircle2, LifeBuoy, Mail, Phone } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, LifeBuoy, Mail, Phone } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useState } from "react";
@@ -133,17 +133,24 @@ function BookingQuestion({
     }
   };
 
+  /* Back to the charter this message is about — the same trip is one tap away either way. */
   const summary = (
-    <div className="flex flex-col gap-2 rounded-2xl bg-natural-50 p-4">
+    <Link
+      href={`/bookings/${booking.id}`}
+      className="group flex flex-col gap-2 rounded-2xl bg-natural-50 p-4 transition-colors hover:bg-natural-100"
+    >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-base font-bold text-foreground">{booking.listing.title}</span>
+        <span className="text-base font-bold text-foreground group-hover:underline">
+          {booking.listing.title}
+        </span>
         <Chip className="shrink-0">{booking.reference}</Chip>
+        <ArrowUpRight className="size-4 shrink-0 text-natural-500" />
       </div>
       <span className="text-sm text-natural-600">
         {day(booking.checkIn)} → {day(booking.checkOut)} · {booking.base.name},{" "}
         {booking.base.countryName}
       </span>
-    </div>
+    </Link>
   );
 
   if (sent) {

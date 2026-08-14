@@ -21,7 +21,7 @@ import BoatCard, { type BoatCardProps } from "@/components/shared/data-display/b
 import { Image } from "@/components/shared/data-display/image";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
-import CancelBookingDialog from "./cancel-booking-dialog";
+import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
 
 /*
  * BookingCard — Figma "My bookings / Boat Card" (972:54753 desktop, 973:82792 tablet).

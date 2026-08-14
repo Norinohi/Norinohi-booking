@@ -300,7 +300,9 @@
       "marinaContact": "Contacto de la marina",
       "signInTitle": "Inicia sesión para ver esta reserva",
       "signInBody": "Esta reserva está vinculada a tu cuenta. Inicia sesión con el correo que usaste al reservar y volverás directamente aquí.",
-      "signIn": "Iniciar sesión"
+      "signIn": "Iniciar sesión",
+      "cancelledOn": "Cancelada el",
+      "cancelReason": "Motivo"
     },
     "support": {
       "title": "¿En qué podemos ayudarte?",

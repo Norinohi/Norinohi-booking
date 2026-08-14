@@ -300,7 +300,9 @@
       "marinaContact": "Marina contact",
       "signInTitle": "Sign in to see this booking",
       "signInBody": "This booking is tied to your account. Sign in with the email you booked with and we'll bring you straight back here.",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "cancelledOn": "Cancelled on",
+      "cancelReason": "Reason"
     },
     "support": {
       "title": "How can we help?",

@@ -14,7 +14,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
-import { useCancelBooking } from "../hooks/use-cancel-booking";
+import { useCancelBooking } from "@/hooks/use-cancel-booking";
 
 /*
  * Cancelling a booking is irreversible, so it goes through a confirm dialog with an optional reason.
