@@ -96,6 +96,13 @@ export const bookingQueueQueryOptions = (input: {
     staleTime: 15_000,
   });
 
+/**
+ * One booking for staff. Longer staleTime than the queues: a detail screen is opened to read,
+ * and the actions on it invalidate the whole booking segment anyway.
+ */
+export const bookingDetailQueryOptions = (input: { id: string }) =>
+  orpc.admin.booking.get.queryOptions({ input, staleTime: 30_000 });
+
 export const syncRunsQueryOptions = (input: {
   provider?: ProviderKey;
   kind?: SyncRunKind;

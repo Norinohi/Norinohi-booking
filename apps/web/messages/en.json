@@ -1257,6 +1257,10 @@
     "Payments": {
       "title": "Payments",
       "description": "Invoice requests and refunds awaiting staff."
+    },
+    "StaffBooking": {
+      "title": "Booking (staff)",
+      "description": "Staff view of a customer booking."
     }
   },
   "Profile": {
@@ -1798,12 +1802,15 @@
           "actions": "Actions"
         },
         "actions": {
+          "reply": "Reply",
+          "replyAgain": "Reply again",
           "contacted": "Mark contacted",
           "close": "Close",
           "reopen": "Reopen"
         },
         "empty": "Nothing here — no enquiries match these filters.",
-        "error": "We couldn't load the enquiries."
+        "error": "We couldn't load the enquiries.",
+        "answered": "Answered: {answer}"
       },
       "answer": {
         "title": "Reply to this question",
@@ -1811,6 +1818,18 @@
         "label": "Your reply",
         "placeholder": "Answer the question in full — this is what the customer receives.",
         "close": "Close this question after sending",
+        "cancel": "Cancel",
+        "send": "Send reply",
+        "sent": "Reply sent",
+        "failed": "We couldn't send the reply. Please try again."
+      },
+      "leadAnswer": {
+        "title": "Reply to this enquiry",
+        "description": "Your reply is emailed to {name}.",
+        "noMessage": "They left no message.",
+        "label": "Your reply",
+        "placeholder": "Answer the enquiry in full — this is what they receive.",
+        "close": "Close this enquiry after sending",
         "cancel": "Cancel",
         "send": "Send reply",
         "sent": "Reply sent",
@@ -1914,6 +1933,62 @@
         "partial": "{amount} returned — some payments are still settling.",
         "manualPending": "Card payments returned. {count} bank transfer(s) still have to be sent by hand.",
         "failed": "Could not process the refund."
+      }
+    },
+    "StaffBooking": {
+      "back": "Payments",
+      "staffOnly": "Staff view — this is a customer's booking. Do not share this page.",
+      "error": "Could not load this booking.",
+      "guestAccount": "Guest account",
+      "guests": "{count} guests",
+      "noReservationId": "No reservation id yet",
+      "outstanding": "{amount} outstanding",
+      "createdAt": "Created {at}",
+      "holdExpiresAt": "Hold expires {at}",
+      "confirmedAt": "Confirmed {at}",
+      "cancelledAt": "Cancelled {at}",
+      "cancelReason": "Cancellation reason: {reason}",
+      "fields": {
+        "customer": "Customer",
+        "charter": "Charter",
+        "provider": "Provider",
+        "total": "Total",
+        "collected": "Collected",
+        "timeline": "Timeline"
+      },
+      "invoice": {
+        "title": "Invoice request",
+        "number": "Number",
+        "amount": "Amount",
+        "status": "Status",
+        "billedTo": "Billed to",
+        "issued": "Issued",
+        "due": "Due"
+      },
+      "payments": {
+        "title": "Payments",
+        "kind": "Installment",
+        "amount": "Amount",
+        "method": "Method",
+        "status": "Status",
+        "paidAt": "Paid",
+        "empty": "Nothing has been collected yet.",
+        "disputed": "Disputed: {state}",
+        "methods": {
+          "card": "Card",
+          "transfer": "Bank transfer"
+        }
+      },
+      "schedule": {
+        "title": "Payment schedule",
+        "kind": "Installment",
+        "amount": "Amount",
+        "dueAt": "Due",
+        "status": "Status",
+        "empty": "No schedule on this booking."
+      },
+      "priceLines": {
+        "title": "Price breakdown"
       }
     }
   }

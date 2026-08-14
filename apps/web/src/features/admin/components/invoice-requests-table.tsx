@@ -156,7 +156,7 @@ export default function InvoiceRequestsTable() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Link
-                          href={`/bookings/${invoice.bookingId}`}
+                          href={`/staff/bookings/${invoice.bookingId}`}
                           className="font-medium text-brand hover:underline"
                         >
                           {invoice.reference}

@@ -19,7 +19,8 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useLeads, useSetLeadStatus } from "../hooks/use-inbox";
-import type { LeadKind, LeadStatus } from "../types";
+import type { LeadKind, LeadRow, LeadStatus } from "../types";
+import AnswerLeadDialog from "./answer-lead-dialog";
 
 /*
  * LeadsTable — the pre-booking funnel: Request Quote on a yacht, Contact a charter expert, and
@@ -49,6 +50,7 @@ export default function LeadsTable() {
   const [kind, setKind] = useState<string>(ALL);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [answering, setAnswering] = useState<LeadRow | null>(null);
 
   const setStatusMutation = useSetLeadStatus();
 
@@ -152,7 +154,8 @@ export default function LeadsTable() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground">{lead.name}</span>
-                          {/* A lead is answered by writing to them, so the address is the action. */}
+                          {/* Reply goes through the dialog; these stay for the call or the
+                              out-of-band mail that some enquiries still need. */}
                           <a
                             href={`mailto:${lead.email}`}
                             className="text-sm text-natural-500 transition-colors hover:text-brand"
@@ -179,6 +182,11 @@ export default function LeadsTable() {
                       </TableCell>
                       <TableCell className="max-w-96">
                         <p className="line-clamp-2 text-foreground">{lead.message ?? "—"}</p>
+                        {lead.answer ? (
+                          <p className="line-clamp-1 text-sm text-natural-500">
+                            {t("answered", { answer: lead.answer })}
+                          </p>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <Chip variant={STATUS_VARIANTS[lead.status]}>
@@ -187,9 +195,12 @@ export default function LeadsTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          <Button variant="brand" size="sm" onClick={() => setAnswering(lead)}>
+                            {lead.answer ? t("actions.replyAgain") : t("actions.reply")}
+                          </Button>
                           {lead.status === "new" ? (
                             <Button
-                              variant="brand"
+                              variant="subtle"
                               size="sm"
                               disabled={setStatusMutation.isPending}
                               onClick={() =>
@@ -228,6 +239,12 @@ export default function LeadsTable() {
                   ))}
         </TableBody>
       </Table>
+
+      <AnswerLeadDialog
+        lead={answering}
+        open={answering !== null}
+        onOpenChange={(next) => setAnswering(next ? answering : null)}
+      />
 
       {data && data.pagination.totalPages > 1 ? (
         <div className="flex justify-center md:justify-start">

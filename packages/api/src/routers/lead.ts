@@ -11,7 +11,7 @@ export const leadRouter = {
       operationId: "createLead",
       summary: "Send a pre-booking enquiry",
       description:
-        "Records an enquiry from Request Quote on a yacht page, Contact a charter expert in the search filters, or Get Consultation on the trip planner results. Public — none of those entry points require an account, though the enquiry is linked to the user when one is signed in. `context` carries whatever the visitor was looking at (search filters, planner answers, or the dates and guests on the sidebar). No email is sent; staff pick these up through admin.lead.list.",
+        "Records an enquiry from Request Quote on a yacht page, Contact a charter expert in the search filters, or Get Consultation on the trip planner results. Public — none of those entry points require an account, though the enquiry is linked to the user when one is signed in. `context` carries whatever the visitor was looking at (search filters, planner answers, or the dates and guests on the sidebar). Sends the enquirer an acknowledgement and alerts staff, both best-effort; staff work these through admin.lead.list and reply with admin.lead.answer.",
       tags: ["Lead"],
       successDescription: "The recorded enquiry.",
       spec: withJsonBodyExample({

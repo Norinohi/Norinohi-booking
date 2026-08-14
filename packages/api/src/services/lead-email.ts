@@ -1,5 +1,5 @@
 import { env } from "@yacht-charter/env/server";
-import { sendLeadFollowUpEmail } from "@yacht-charter/transactional";
+import { sendEnquiryAnswerEmail, sendLeadFollowUpEmail } from "@yacht-charter/transactional";
 
 import type { LeadKind } from "../contracts/lead";
 import { notifyStaff } from "./enquiry-email";
@@ -62,4 +62,34 @@ export async function notifyLeadReceived(lead: LeadReceivedEmail): Promise<void>
     path: "/inbox",
     actionLabel: "Open the inbox",
   });
+}
+
+export type LeadAnswered = {
+  to: string;
+  name: string;
+  /** What they wrote, when they wrote anything — the message box is optional on every form. */
+  question?: string;
+  answer: string;
+  yacht?: { title: string; slug: string };
+};
+
+/**
+ * The reply to a pre-booking enquiry. Same template as the booking-question answer, minus the
+ * reference and the booking link: a lead has no booking, so the call to action points at the
+ * yacht they asked about, and at nothing at all when they named none.
+ */
+export async function notifyLeadAnswered(lead: LeadAnswered): Promise<void> {
+  try {
+    await sendEnquiryAnswerEmail(lead.to, {
+      customerName: lead.name,
+      yachtName: lead.yacht?.title,
+      question: lead.question,
+      answer: lead.answer,
+      cta: lead.yacht
+        ? { url: appUrl(`/yachts/${lead.yacht.slug}`), label: "View the yacht" }
+        : undefined,
+    });
+  } catch (cause) {
+    console.error(`[email] lead answer to ${lead.to} failed`, cause);
+  }
 }

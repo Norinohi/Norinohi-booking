@@ -4,7 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
 
-import { bookingQueueQueryOptions, invoiceListQueryOptions } from "../api/queries";
+import {
+  bookingDetailQueryOptions,
+  bookingQueueQueryOptions,
+  invoiceListQueryOptions,
+} from "../api/queries";
 import type { BookingStatus, InvoiceStatus } from "../types";
 
 /*
@@ -36,6 +40,10 @@ export function useBookingQueue(input: {
   page: number;
 }) {
   return useQuery(bookingQueueQueryOptions(input));
+}
+
+export function useAdminBooking(id: string) {
+  return useQuery(bookingDetailQueryOptions({ id }));
 }
 
 export function useSettleInvoice() {

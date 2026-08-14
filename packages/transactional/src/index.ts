@@ -65,7 +65,10 @@ export async function sendLeadFollowUpEmail(
   return sendHtml(to, "We have your enquiry — YachtSkanner", html);
 }
 
-/** The reply to a question about a booking, sent when staff answer it from the inbox. */
+/**
+ * The reply staff send from the inbox — to a question about a booking, or to a pre-booking
+ * enquiry, which has no reference to put in the subject.
+ */
 export async function sendEnquiryAnswerEmail(
   to: string,
   enquiry: Omit<EnquiryAnswerEmailProps, "appUrl">,
@@ -73,7 +76,10 @@ export async function sendEnquiryAnswerEmail(
   const html = await render(
     createElement(EnquiryAnswerEmail, { ...enquiry, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `Re: your question about booking ${enquiry.reference}`, html);
+  const subject = enquiry.reference
+    ? `Re: your question about booking ${enquiry.reference}`
+    : "Re: your enquiry — YachtSkanner";
+  return sendHtml(to, subject, html);
 }
 
 /**

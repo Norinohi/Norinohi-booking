@@ -32,7 +32,7 @@ export async function notifyEnquiryAnswered(enquiry: EnquiryAnswered): Promise<v
       yachtName: enquiry.yachtName,
       question: enquiry.question,
       answer: enquiry.answer,
-      bookingUrl: appUrl(`/bookings/${enquiry.bookingId}`),
+      cta: { url: appUrl(`/bookings/${enquiry.bookingId}`), label: "View your booking" },
     });
   } catch (cause) {
     console.error(`[email] enquiry answer for ${enquiry.reference} failed`, cause);

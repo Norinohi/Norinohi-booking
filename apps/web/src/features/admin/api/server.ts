@@ -3,6 +3,7 @@ import "server-only";
 import type { QueryClient } from "@tanstack/react-query";
 
 import {
+  bookingDetailQueryOptions,
   duplicateQueueQueryOptions,
   enquiryListQueryOptions,
   invoiceListQueryOptions,
@@ -25,6 +26,11 @@ export function prefetchInbox(queryClient: QueryClient) {
  */
 export function prefetchPayments(queryClient: QueryClient) {
   return queryClient.prefetchQuery(invoiceListQueryOptions({ status: "pending", page: 1 }));
+}
+
+/** Server prefetch for /staff/bookings/[id]. */
+export function prefetchAdminBooking(queryClient: QueryClient, id: string) {
+  return queryClient.prefetchQuery(bookingDetailQueryOptions({ id }));
 }
 
 /** Server prefetch for /sync — the first page of the unfiltered run history. */

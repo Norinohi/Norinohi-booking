@@ -1257,6 +1257,10 @@
     "Payments": {
       "title": "Pagos",
       "description": "Solicitudes de factura y reembolsos pendientes."
+    },
+    "StaffBooking": {
+      "title": "Reserva (personal)",
+      "description": "Vista de personal de una reserva."
     }
   },
   "Profile": {
@@ -1798,12 +1802,15 @@
           "actions": "Acciones"
         },
         "actions": {
+          "reply": "Responder",
+          "replyAgain": "Responder de nuevo",
           "contacted": "Marcar contactado",
           "close": "Cerrar",
           "reopen": "Reabrir"
         },
         "empty": "Nada por aquí: ninguna consulta coincide con estos filtros.",
-        "error": "No hemos podido cargar las consultas."
+        "error": "No hemos podido cargar las consultas.",
+        "answered": "Respondido: {answer}"
       },
       "answer": {
         "title": "Responder a esta pregunta",
@@ -1815,6 +1822,18 @@
         "send": "Enviar respuesta",
         "sent": "Respuesta enviada",
         "failed": "No hemos podido enviar la respuesta. Inténtalo de nuevo."
+      },
+      "leadAnswer": {
+        "title": "Responder a esta consulta",
+        "description": "Tu respuesta se envía por correo a {name}.",
+        "noMessage": "No dejó ningún mensaje.",
+        "label": "Tu respuesta",
+        "placeholder": "Responde la consulta por completo: esto es lo que recibirá.",
+        "close": "Cerrar esta consulta al enviar",
+        "cancel": "Cancelar",
+        "send": "Enviar respuesta",
+        "sent": "Respuesta enviada",
+        "failed": "No pudimos enviar la respuesta. Inténtalo de nuevo."
       }
     },
     "Payments": {
@@ -1914,6 +1933,62 @@
         "partial": "{amount} devuelto: algunos pagos siguen liquidándose.",
         "manualPending": "Pagos con tarjeta devueltos. Quedan {count} transferencia(s) por enviar a mano.",
         "failed": "No se pudo procesar el reembolso."
+      }
+    },
+    "StaffBooking": {
+      "back": "Pagos",
+      "staffOnly": "Vista de personal: esta es la reserva de un cliente. No compartas esta página.",
+      "error": "No se pudo cargar esta reserva.",
+      "guestAccount": "Cuenta de invitado",
+      "guests": "{count} huéspedes",
+      "noReservationId": "Aún sin id de reserva",
+      "outstanding": "{amount} pendiente",
+      "createdAt": "Creada {at}",
+      "holdExpiresAt": "La opción vence {at}",
+      "confirmedAt": "Confirmada {at}",
+      "cancelledAt": "Cancelada {at}",
+      "cancelReason": "Motivo de cancelación: {reason}",
+      "fields": {
+        "customer": "Cliente",
+        "charter": "Chárter",
+        "provider": "Proveedor",
+        "total": "Total",
+        "collected": "Cobrado",
+        "timeline": "Cronología"
+      },
+      "invoice": {
+        "title": "Solicitud de factura",
+        "number": "Número",
+        "amount": "Importe",
+        "status": "Estado",
+        "billedTo": "Facturado a",
+        "issued": "Emitida",
+        "due": "Vence"
+      },
+      "payments": {
+        "title": "Pagos",
+        "kind": "Plazo",
+        "amount": "Importe",
+        "method": "Método",
+        "status": "Estado",
+        "paidAt": "Pagado",
+        "empty": "Todavía no se ha cobrado nada.",
+        "disputed": "En disputa: {state}",
+        "methods": {
+          "card": "Tarjeta",
+          "transfer": "Transferencia"
+        }
+      },
+      "schedule": {
+        "title": "Calendario de pagos",
+        "kind": "Plazo",
+        "amount": "Importe",
+        "dueAt": "Vence",
+        "status": "Estado",
+        "empty": "Esta reserva no tiene calendario."
+      },
+      "priceLines": {
+        "title": "Desglose de precio"
       }
     }
   }

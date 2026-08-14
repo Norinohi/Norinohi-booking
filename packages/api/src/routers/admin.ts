@@ -38,6 +38,8 @@ import {
   yachtOptionsSchema,
 } from "../contracts/admin";
 import {
+  adminBookingIdInputSchema,
+  bookingAdminDetailSchema,
   bookingAdminListInputSchema,
   bookingAdminListSchema,
   bookingCancelInputSchema,
@@ -61,6 +63,7 @@ import {
 import { emptyInputSchema } from "../contracts/primitives";
 import { sweepResultSchema } from "../contracts/maintenance";
 import {
+  leadAnswerInputSchema,
   leadListInputSchema,
   leadListSchema,
   leadSchema,
@@ -74,7 +77,7 @@ import {
   rejectDuplicateCandidate,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
-import { listBookingsForAdmin } from "../services/booking-admin";
+import { getBookingForAdmin, listBookingsForAdmin } from "../services/booking-admin";
 import { refundBooking } from "../services/refund";
 import {
   cancelInvoiceRequest,
@@ -82,7 +85,7 @@ import {
   settleInvoiceRequest,
 } from "../services/invoice";
 import { sweepExpiries } from "../services/expiry";
-import { listLeads, setLeadStatus } from "../services/lead";
+import { answerLead, listLeads, setLeadStatus } from "../services/lead";
 import { answerEnquiry, listEnquiries, setEnquiryStatus } from "../services/enquiry";
 import {
   createDiscount,
@@ -322,6 +325,21 @@ export const adminRouter = {
       .input(bookingAdminListInputSchema)
       .output(bookingAdminListSchema)
       .handler(({ context, input }) => listBookingsForAdmin(context.db, input)),
+    get: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/get",
+        operationId: "getBookingForAdmin",
+        summary: "Read any booking, regardless of owner",
+        description:
+          "The staff view of one booking: the customer it belongs to, the provider reservation, every price line, the payment schedule, and each payment with how it arrived and whether it is disputed. booking.get is scoped to the session user and answers NOT_FOUND for anyone else — correct for a customer, which is why staff need this. Travellers are deliberately absent here too: passport and crew data stays behind booking.travellers.*.",
+        tags: ["Admin"],
+        successDescription: "The booking.",
+        spec: withJsonBodyExample({ id: "bkg_example" }),
+      })
+      .input(adminBookingIdInputSchema)
+      .output(bookingAdminDetailSchema)
+      .handler(({ context, input }) => getBookingForAdmin(context.db, input.id)),
     cancel: adminProcedure
       .route({
         method: "POST",
@@ -440,7 +458,7 @@ export const adminRouter = {
         operationId: "listLeads",
         summary: "List pre-booking enquiries",
         description:
-          "Returns enquiries from Request Quote, Contact a charter expert, and Get Consultation, newest first, filterable by kind and status. This is the only way anyone sees them — nothing is emailed.",
+          "Returns enquiries from Request Quote, Contact a charter expert, and Get Consultation, newest first, filterable by kind and status. Reply to one with admin.lead.answer. Distinct from admin.enquiry.list, which is questions about existing bookings.",
         tags: ["Admin"],
         successDescription: "A page of enquiries.",
         spec: withJsonBodyExample({ status: "new", page: 1, pageSize: 20 }),
@@ -465,6 +483,25 @@ export const adminRouter = {
       .handler(({ context, input }) =>
         setLeadStatus(context.db, context.session.user.id, input.id, input.status),
       ),
+    answer: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/lead/answer",
+        operationId: "answerLead",
+        summary: "Reply to a pre-booking enquiry",
+        description:
+          "Records the reply and emails it to the enquirer with their message quoted back and a link to the yacht they asked about. Closes the enquiry unless `close` is false, which leaves it at contacted for a follow-up. Writes an audit log entry. A failed send does not lose the recorded answer.",
+        tags: ["Admin"],
+        successDescription: "The answered enquiry.",
+        spec: withJsonBodyExample({
+          id: "lead_example",
+          answer:
+            "That week is still open at the price shown. Shall I hold it for you until Friday?",
+        }),
+      })
+      .input(leadAnswerInputSchema)
+      .output(leadSchema)
+      .handler(({ context, input }) => answerLead(context.db, context.session.user.id, input)),
   },
   enquiry: {
     list: adminProcedure

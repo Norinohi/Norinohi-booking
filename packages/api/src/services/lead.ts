@@ -7,6 +7,7 @@ import type { z } from "zod";
 
 import type { Database } from "../context";
 import type {
+  leadAnswerInputSchema,
   leadCreatedSchema,
   leadCreateInputSchema,
   leadListInputSchema,
@@ -15,9 +16,10 @@ import type {
   leadStatusSchema,
 } from "../contracts/lead";
 import { writeAuditLog } from "./audit";
-import { notifyLeadReceived } from "./lead-email";
+import { notifyLeadAnswered, notifyLeadReceived } from "./lead-email";
 import { paginatedQuery, totalFrom } from "./pagination";
 type CreateInput = z.infer<typeof leadCreateInputSchema>;
+type AnswerInput = z.infer<typeof leadAnswerInputSchema>;
 
 type Created = z.infer<typeof leadCreatedSchema>;
 type ListInput = z.infer<typeof leadListInputSchema>;
@@ -167,6 +169,70 @@ export async function setLeadStatus(
   return present(updated, listingRow?.title ?? null);
 }
 
+/**
+ * Records the reply and sends it to the enquirer. Until this existed a lead could only be
+ * marked "contacted", with the reply itself written from someone's own mail client — invisible
+ * to everyone else. The email is best-effort (see ./lead-email), so a mail failure never loses
+ * the recorded answer. Answering closes the lead unless `close` is false.
+ */
+export async function answerLead(
+  db: Database,
+  actorUserId: string,
+  input: AnswerInput,
+): Promise<Lead> {
+  const [before] = await db.select().from(lead).where(eq(lead.id, input.id)).limit(1);
+  if (!before) throw new ORPCError("NOT_FOUND", { message: "Unknown enquiry" });
+
+  // The yacht the enquiry named, for the email's link back into the site. The search doc is
+  // where the slug lives, and a lead that named none is answered without a call to action.
+  const [subject] = before.listingId
+    ? await db
+        .select({ title: listingSearchDoc.title, slug: listingSearchDoc.slug })
+        .from(listingSearchDoc)
+        .where(eq(listingSearchDoc.listingId, before.listingId))
+        .limit(1)
+    : [];
+
+  const status = input.close ? "closed" : "contacted";
+
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(lead)
+      .set({
+        answer: input.answer,
+        answeredAt: new Date(),
+        status,
+        handledByUserId: actorUserId,
+        handledAt: new Date(),
+      })
+      .where(eq(lead.id, input.id))
+      .returning();
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      action: "update",
+      entityType: "lead",
+      entityId: input.id,
+      before: { status: before.status, answer: before.answer },
+      after: { status, answer: input.answer },
+    });
+
+    return row;
+  });
+
+  if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+  await notifyLeadAnswered({
+    to: before.email,
+    name: before.name,
+    question: before.message ?? undefined,
+    answer: input.answer,
+    yacht: subject,
+  });
+
+  return present(updated, subject?.title ?? null);
+}
+
 function present(row: typeof lead.$inferSelect, listingTitle: string | null): Lead {
   return {
     id: row.id,
@@ -181,6 +247,8 @@ function present(row: typeof lead.$inferSelect, listingTitle: string | null): Le
     phone: row.phone,
     message: row.message,
     context: row.context ?? null,
+    answer: row.answer,
+    answeredAt: row.answeredAt?.toISOString() ?? null,
     handledAt: row.handledAt?.toISOString() ?? null,
   };
 }

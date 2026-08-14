@@ -46,6 +46,16 @@ export function useSetEnquiryStatus() {
   );
 }
 
+export function useAnswerLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.lead.answer.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.lead.key() }),
+    }),
+  );
+}
+
 export function useSetLeadStatus() {
   const queryClient = useQueryClient();
 

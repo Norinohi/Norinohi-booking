@@ -1,9 +1,11 @@
 /** @jsxImportSource react */
 /*
- * EnquiryAnswerEmail — the reply to a question asked about an existing booking. The question is
- * quoted back because it may have been asked days ago and from a different device, and the
- * booking is linked so the answer lands next to the thing it is about. Sent when staff answer
- * from the inbox. Keep exactly one jsx-source annotation in this file.
+ * EnquiryAnswerEmail — the reply staff send from the inbox, to a question about an existing
+ * booking or to a pre-booking enquiry. The question is quoted back because it may have been
+ * asked days ago and from a different device, and the call to action links whatever the reply
+ * is about: the booking, or the yacht the enquiry named. A pre-booking lead has neither a
+ * reference nor, when the visitor left the message box empty, a question to quote — both are
+ * therefore optional. Keep exactly one jsx-source annotation in this file.
  */
 import { Button, Heading, Hr, Section, Text } from "@react-email/components";
 import * as React from "react";
@@ -12,11 +14,12 @@ import { colors, EmailLayout, fontFamily } from "./_components/email-layout";
 
 export type EnquiryAnswerEmailProps = {
   customerName: string;
-  reference: string;
-  yachtName: string;
-  question: string;
+  /** Present when the reply is about a booking; absent for a pre-booking enquiry. */
+  reference?: string;
+  yachtName?: string;
+  question?: string;
   answer: string;
-  bookingUrl: string;
+  cta?: { url: string; label: string };
   appUrl?: string;
 };
 
@@ -79,26 +82,36 @@ export function EnquiryAnswerEmail({
   yachtName,
   question,
   answer,
-  bookingUrl,
+  cta,
   appUrl,
 }: EnquiryAnswerEmailProps): React.ReactElement {
   return (
-    <EmailLayout preview={`Re: your question about ${yachtName}`} eyebrow="Support" appUrl={appUrl}>
-      <Text style={styles.eyebrow}>Booking {reference}</Text>
+    <EmailLayout
+      preview={`Re: your question about ${yachtName ?? "your enquiry"}`}
+      eyebrow="Support"
+      appUrl={appUrl}
+    >
+      {reference ? <Text style={styles.eyebrow}>Booking {reference}</Text> : null}
       <Heading style={styles.heading}>About your question</Heading>
       <Text style={styles.intro}>{customerName}, here is the answer from our team.</Text>
 
-      <Text style={styles.label}>You asked</Text>
-      <Text style={styles.quoted}>{question}</Text>
+      {question ? (
+        <>
+          <Text style={styles.label}>You asked</Text>
+          <Text style={styles.quoted}>{question}</Text>
+        </>
+      ) : null}
 
       <Text style={styles.label}>Our answer</Text>
       <Text style={styles.answer}>{answer}</Text>
 
-      <Section style={styles.buttonRow}>
-        <Button href={bookingUrl} style={styles.button}>
-          View your booking
-        </Button>
-      </Section>
+      {cta ? (
+        <Section style={styles.buttonRow}>
+          <Button href={cta.url} style={styles.button}>
+            {cta.label}
+          </Button>
+        </Section>
+      ) : null}
 
       <Hr style={styles.divider} />
       <Text style={styles.note}>
@@ -115,7 +128,7 @@ EnquiryAnswerEmail.PreviewProps = {
   question: "Do you need to see a sailing licence before departure?",
   answer:
     "Yes — please bring the skipper's licence and one ID for each guest. The base checks them at the briefing, and a photo on your phone is fine as a backup.",
-  bookingUrl: "https://example.com/en/bookings/bkg_preview",
+  cta: { url: "https://example.com/en/bookings/bkg_preview", label: "View your booking" },
 } satisfies EnquiryAnswerEmailProps;
 
 export default EnquiryAnswerEmail;

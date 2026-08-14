@@ -147,6 +147,50 @@ export const bookingIdInputSchema = z.object({
   accessToken: guestAccessTokenSchema.optional(),
 });
 
+/*
+ * The three repeated blocks of a booking's money, named so the customer detail view and the
+ * staff one cannot drift apart: they describe the same rows, and a field added for one is a
+ * field the other should already have.
+ */
+export const bookingPriceLineSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  amount: moneySchema,
+  /** The summary section this line belongs to; null for the base and discounts. */
+  group: lineGroupSchema.nullable(),
+});
+
+export const bookingScheduleEntrySchema = z.object({
+  id: z.string(),
+  kind: paymentScheduleKindSchema,
+  amount: moneySchema,
+  dueAt: z.string().nullable(),
+  status: z.enum(["pending", "paid", "cancelled", "refunded"]),
+});
+
+export const bookingPaymentSchema = z.object({
+  id: z.string(),
+  kind: paymentScheduleKindSchema,
+  amount: moneySchema,
+  status: paymentStatusSchema,
+  paidAt: z.string().nullable(),
+  /**
+   * How this installment arrived. Derived from whether Stripe holds an intent for
+   * it, never stored: that is the fact itself, so a second column recording it
+   * could only ever disagree. Per payment rather than per booking, because a
+   * deposit paid by transfer and a balance paid by card is one booking with two
+   * answers — which is also how `planRefund` already decides what it can send back.
+   */
+  method: z.enum(["card", "transfer"]),
+  /**
+   * Set once a chargeback opens. Kept off `status` because contested is not the
+   * same as refunded: `disputeStatus` carries how it ended, and a won dispute
+   * leaves the payment succeeded with both fields still telling the story.
+   */
+  disputedAt: z.string().nullable(),
+  disputeStatus: z.string().nullable(),
+});
+
 /**
  * Detail for "View Details". Travellers are deliberately absent: §10 forbids
  * returning crew and passport data from this endpoint.
@@ -160,15 +204,7 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   cancelReason: z.string().nullable(),
   /** How the yacht was crewed, as priced. Null for a quote taken before the ask. */
   crewType: z.string().nullable(),
-  priceLines: z.array(
-    z.object({
-      code: z.string(),
-      label: z.string(),
-      amount: moneySchema,
-      /** The summary section this line belongs to; null for the base and discounts. */
-      group: lineGroupSchema.nullable(),
-    }),
-  ),
+  priceLines: z.array(bookingPriceLineSchema),
   extras: z.array(
     z.object({
       code: z.string(),
@@ -188,39 +224,8 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
    * lines marked pay-at-check-in, which are settled with the base and never charged.
    */
   dueNow: moneySchema,
-  paymentSchedule: z.array(
-    z.object({
-      id: z.string(),
-      kind: paymentScheduleKindSchema,
-      amount: moneySchema,
-      dueAt: z.string().nullable(),
-      status: z.enum(["pending", "paid", "cancelled", "refunded"]),
-    }),
-  ),
-  payments: z.array(
-    z.object({
-      id: z.string(),
-      kind: paymentScheduleKindSchema,
-      amount: moneySchema,
-      status: paymentStatusSchema,
-      paidAt: z.string().nullable(),
-      /**
-       * How this installment arrived. Derived from whether Stripe holds an intent for
-       * it, never stored: that is the fact itself, so a second column recording it
-       * could only ever disagree. Per payment rather than per booking, because a
-       * deposit paid by transfer and a balance paid by card is one booking with two
-       * answers — which is also how `planRefund` already decides what it can send back.
-       */
-      method: z.enum(["card", "transfer"]),
-      /**
-       * Set once a chargeback opens. Kept off `status` because contested is not the
-       * same as refunded: `disputeStatus` carries how it ended, and a won dispute
-       * leaves the payment succeeded with both fields still telling the story.
-       */
-      disputedAt: z.string().nullable(),
-      disputeStatus: z.string().nullable(),
-    }),
-  ),
+  paymentSchedule: z.array(bookingScheduleEntrySchema),
+  payments: z.array(bookingPaymentSchema),
 });
 
 /* --------------------------------------------------------------- travellers */
@@ -442,6 +447,42 @@ export const invoiceRequestSchema = z.object({
   status: z.enum(["pending", "sent", "paid", "cancelled"]),
   bookingStatus: bookingStatusSchema,
   createdAt: z.string(),
+});
+
+/**
+ * What staff see on one booking.
+ *
+ * Not `bookingDetailSchema`: that one is the customer's own card, carrying the listing gallery,
+ * amenities and badges a support screen has no use for, and it is missing the two things this
+ * one exists to show — who the booking belongs to, and every payment against it with its method
+ * and dispute state.
+ *
+ * Travellers stay out, for the same reason §10 keeps them off the customer endpoint. Passport
+ * and crew data is encrypted at rest and read only through `booking.travellers.*`; a screen for
+ * settling money has no business widening that.
+ */
+/** Staff address a booking by id alone — no guest token, and no ownership to prove. */
+export const adminBookingIdInputSchema = z.object({ id: idSchema });
+
+export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
+  provider: z.string(),
+  providerReservationId: z.string().nullable(),
+  holdExpiresAt: z.string().nullable(),
+  confirmedAt: z.string().nullable(),
+  crewType: z.string().nullable(),
+  guests: z.number().int(),
+  /** True when the account was provisioned at checkout and has never been signed into. */
+  isGuestAccount: z.boolean(),
+  base: z.object({
+    name: z.string(),
+    locationName: z.string(),
+    countryName: z.string(),
+  }),
+  priceLines: z.array(bookingPriceLineSchema),
+  paymentSchedule: z.array(bookingScheduleEntrySchema),
+  payments: z.array(bookingPaymentSchema),
+  /** The bank-transfer request behind a PAYMENT_PENDING booking, when there is one. */
+  invoice: invoiceRequestSchema.nullable(),
 });
 
 /*
