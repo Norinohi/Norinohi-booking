@@ -4,8 +4,7 @@ import type {
   BoatCardCharterDate,
   BoatCardProps,
 } from "@/components/shared/data-display/boat-card";
-import { boatCardIdentity } from "@/lib/boat-card-fields";
-import type { Marina } from "@/components/shared/overlay/marina-popover";
+import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
 import { useMoney } from "@/hooks/use-money";
 
 import type { BookingSummary } from "../types";
@@ -15,25 +14,6 @@ const days = (checkIn: string, checkOut: string) =>
     1,
     Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86_400_000),
   );
-
-/*
- * booking.list's base carries the same values as the search base under different field names
- * (address/locationName/countryName/coordinates vs region/location/country/lat/lng), so this maps
- * them separately from yachts' `toMarina`. No base id, so the listing id stands in.
- */
-function toMarina(id: string, base: BookingSummary["base"]): Marina {
-  return {
-    id,
-    name: base.name,
-    address: base.address,
-    city: base.locationName,
-    country: base.countryName,
-    phone: base.phone ?? undefined,
-    website: base.website ?? undefined,
-    email: base.email ?? undefined,
-    coordinates: base.coordinates,
-  };
-}
 
 /**
  * Maps a `booking.list` row to the shared BoatCard props. The boat identity comes from the frozen
@@ -61,7 +41,7 @@ export function useBookingCards() {
       /* The booking, not the listing: this card is history, and the yacht page cannot say
          what was paid, what is owed, or where the invoice is. */
       detailHref: `/bookings/${booking.id}`,
-      marina: toMarina(booking.listing.id, booking.base),
+      marina: bookingMarina(booking.listing.id, booking.base),
       start: charterStamp(booking.checkIn),
       end: charterStamp(booking.checkOut),
       priceLabel: t("priceFor", { days: days(booking.checkIn, booking.checkOut) }),

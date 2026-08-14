@@ -18,6 +18,7 @@ import type {
   BoatCardProps,
   BoatCardSpec,
 } from "@/components/shared/data-display/boat-card";
+import type { Marina } from "@/components/shared/overlay/marina-popover";
 import { slugToLabel } from "@/lib/slug-to-label";
 
 /*
@@ -145,4 +146,38 @@ export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing
     amenities: amenityItems(listing.amenities),
     stats: boatCardStats(t, listing.bookingStats),
   } satisfies Partial<BoatCardProps>;
+}
+
+/**
+ * The base a booking was made at, as the shared Marina shape.
+ *
+ * A booking's frozen base snapshot names its fields differently from a listing's
+ * (address/locationName/countryName/coordinates vs region/location/country/lat/lng), so this
+ * stays separate from the catalogue's own mapping. There is no base id, so the caller passes
+ * something stable to stand in.
+ */
+export function bookingMarina(
+  id: string,
+  base: {
+    name: string;
+    address: string;
+    locationName: string;
+    countryName: string;
+    phone: string | null;
+    website: string | null;
+    email: string | null;
+    coordinates: { lat: number; lng: number };
+  },
+): Marina {
+  return {
+    id,
+    name: base.name,
+    address: base.address,
+    city: base.locationName,
+    country: base.countryName,
+    phone: base.phone ?? undefined,
+    website: base.website ?? undefined,
+    email: base.email ?? undefined,
+    coordinates: base.coordinates,
+  };
 }

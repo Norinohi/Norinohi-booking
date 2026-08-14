@@ -279,7 +279,19 @@
         "CANCELLED": "Cancelled",
         "REFUND_PENDING": "Refunding",
         "REFUNDED": "Refunded"
-      }
+      },
+      "backToBookings": "Back to my bookings",
+      "panels": {
+        "main": "Booking",
+        "aside": "Price"
+      },
+      "charterTitle": "Charter",
+      "dates": "Dates",
+      "guestsLabel": "Guests",
+      "crew": "Crew",
+      "marina": "Marina",
+      "referenceLabel": "Reference",
+      "settled": "Nothing left to pay"
     }
   },
   "Common": {

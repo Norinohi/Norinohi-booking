@@ -279,7 +279,19 @@
         "CANCELLED": "Скасовано",
         "REFUND_PENDING": "Повертаємо кошти",
         "REFUNDED": "Повернено"
-      }
+      },
+      "backToBookings": "Назад до моїх бронювань",
+      "panels": {
+        "main": "Бронювання",
+        "aside": "Вартість"
+      },
+      "charterTitle": "Чартер",
+      "dates": "Дати",
+      "guestsLabel": "Гості",
+      "crew": "Екіпаж",
+      "marina": "Марина",
+      "referenceLabel": "Номер",
+      "settled": "Немає що сплачувати"
     }
   },
   "Common": {

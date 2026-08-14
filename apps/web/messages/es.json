@@ -279,7 +279,19 @@
         "CANCELLED": "Cancelada",
         "REFUND_PENDING": "Reembolsando",
         "REFUNDED": "Reembolsada"
-      }
+      },
+      "backToBookings": "Volver a mis reservas",
+      "panels": {
+        "main": "Reserva",
+        "aside": "Precio"
+      },
+      "charterTitle": "Chárter",
+      "dates": "Fechas",
+      "guestsLabel": "Personas",
+      "crew": "Tripulación",
+      "marina": "Puerto",
+      "referenceLabel": "Referencia",
+      "settled": "Nada pendiente de pago"
     }
   },
   "Common": {

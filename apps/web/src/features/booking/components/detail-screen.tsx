@@ -8,9 +8,13 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
+import BoatCard from "@/components/shared/data-display/boat-card";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
+import SplitPanels from "@/components/shared/layout/split-panels";
+import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useMoney } from "@/hooks/use-money";
+import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
 import { guestAccessFor } from "../lib/guest-access";
@@ -28,15 +32,18 @@ const FAILED_STATUSES = new Set([
 /**
  * Everything about one booking, after the fact.
  *
- * The confirmation screen celebrates a booking that has just been made and is reached once;
- * this is the page a customer comes back to weeks later to check what they owe, what they
- * paid and how. Same access rule as the invoice and balance pages: session or the guest
- * token, because a guest checkout has no password yet.
+ * Laid out like the booking flow it came from — the boat recap and what happened on the
+ * left, the money in the sidebar — because a customer returning weeks later is looking at
+ * the same booking and should not have to re-learn where things are. What it drops is the
+ * wizard: nothing here is an input, and the sidebar reads the frozen booking rather than a
+ * live quote, so prices cannot move under someone who has already paid.
+ *
+ * Same access rule as the invoice and balance pages: session or the guest token, because a
+ * guest checkout has no password yet.
  */
 export default function BookingDetailScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.detail");
-  const money = useMoney();
-  const format = useFormatter();
+  const tCard = useTranslations("Common.boatCard");
 
   const [access, setAccess] = useState<{ token: string | undefined } | null>(null);
   useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
@@ -56,7 +63,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
 
   if (!booking) {
     return (
-      <Shell>
+      <div className="flex min-h-full items-center justify-center p-4 md:p-8">
         <EmptyState
           title={t("notFound")}
           action={
@@ -65,9 +72,53 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
             </Button>
           }
         />
-      </Shell>
+      </div>
     );
   }
+
+  /*
+   * Built from the booking's own snapshot, not the catalogue: the card must keep rendering
+   * after the listing is renamed, re-photographed or withdrawn by the provider.
+   */
+  const boat = {
+    ...boatCardIdentity(tCard, booking.listing),
+    imageAlt: tCard("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
+    marina: bookingMarina(booking.listing.id, booking.base),
+    priceLabel: "",
+    price: "",
+    perPerson: "",
+    prepayment: "",
+  };
+
+  return (
+    <div className="flex flex-col">
+      <AppBreadcrumbs
+        items={[]}
+        backLabel="Booking.detail.backToBookings"
+        backHref="/profile/bookings"
+      />
+
+      <div className="w-full px-4 py-6 md:px-13.5">
+        <SplitPanels
+          labels={{ main: t("panels.main"), aside: t("panels.aside") }}
+          main={
+            <>
+              <BoatCard {...boat} summary priority />
+              <Charter booking={booking} bookingId={bookingId} />
+              <Payments booking={booking} />
+            </>
+          }
+          aside={<PriceAside booking={booking} />}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Charter({ booking, bookingId }: { booking: BookingDetail; bookingId: string }) {
+  const t = useTranslations("Booking.detail");
+  const money = useMoney();
+  const format = useFormatter();
 
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
   const outstanding = booking.outstanding.amountMinor;
@@ -75,109 +126,122 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
   const hasTransfer = booking.payments.some((row) => row.method === "transfer");
 
   return (
-    <Shell>
-      <article className="flex w-full max-w-201.5 flex-col gap-6">
-        <header className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 md:p-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[28px] leading-[1.1] font-medium text-foreground">
-              {booking.listing.title}
-            </h1>
-            <StatusChip status={booking.status} label={t(`status.${booking.status}`)} />
-          </div>
-          <p className="text-base leading-[1.4] text-natural-600">
-            {day(booking.checkIn)} → {day(booking.checkOut)} ·{" "}
-            {t("guests", { count: booking.guests })}
-            {booking.crewType ? ` · ${booking.crewType}` : ""}
-          </p>
-          <p className="text-sm leading-[1.3] text-natural-500">
-            {t("reference", { reference: booking.reference })} · {booking.base.name},{" "}
-            {booking.base.countryName}
-          </p>
+    <Panel>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("charterTitle")}</h2>
+        <StatusChip status={booking.status} label={t(`status.${booking.status}`)} />
+      </div>
 
-          <div className="flex flex-col gap-3 pt-2 md:flex-row">
-            {booking.status === "CONFIRMED" && outstanding > 0 ? (
-              <Button
-                variant="brand"
-                nativeButton={false}
-                render={<Link href={`/bookings/${bookingId}/pay`} />}
-              >
-                {t("payBalance", { amount: money(outstanding) })}
-              </Button>
-            ) : null}
-            {hasTransfer ? (
-              <Button
-                variant="neutral"
-                nativeButton={false}
-                render={<Link href={`/bookings/${bookingId}/invoice`} />}
-              >
-                <FileText />
-                {t("viewInvoice")}
-              </Button>
-            ) : null}
-          </div>
-        </header>
+      <dl className="flex flex-col">
+        <Row label={t("dates")} value={`${day(booking.checkIn)} → ${day(booking.checkOut)}`} />
+        <Row label={t("guestsLabel")} value={String(booking.guests)} />
+        {booking.crewType ? <Row label={t("crew")} value={booking.crewType} /> : null}
+        <Row label={t("marina")} value={`${booking.base.name}, ${booking.base.countryName}`} />
+        <Row label={t("referenceLabel")} value={booking.reference} />
+      </dl>
 
-        <Section title={t("priceTitle")}>
-          <dl className="flex flex-col">
-            {booking.priceLines.map((line) => (
-              <Row
-                key={`${line.code}-${line.label}`}
-                label={line.label}
-                value={money(line.amount.amountMinor)}
-              />
-            ))}
-            <Row label={t("total")} value={money(booking.total.amountMinor)} emphasis />
-          </dl>
-        </Section>
+      {booking.status === "CONFIRMED" && outstanding > 0 ? (
+        <Button
+          variant="brand"
+          className="h-13 w-full md:w-auto"
+          nativeButton={false}
+          render={<Link href={`/bookings/${bookingId}/pay`} />}
+        >
+          {t("payBalance", { amount: money(outstanding) })}
+        </Button>
+      ) : null}
 
-        <Section title={t("paymentsTitle")}>
-          {booking.payments.length ? (
-            <dl className="flex flex-col">
-              {booking.payments.map((row) => (
-                <Row
-                  key={row.id}
-                  label={t(`kind.${row.kind}`)}
-                  /* Method per payment, so a transfer deposit and a card balance both show truly. */
-                  note={
-                    <span className="flex items-center gap-1.5 text-sm text-natural-500">
-                      {row.method === "card" ? (
-                        <CreditCard className="size-4" />
-                      ) : (
-                        <Landmark className="size-4" />
-                      )}
-                      {t(`method.${row.method}`)} · {t(`paymentStatus.${row.status}`)}
-                      {row.disputedAt ? ` · ${t("disputed")}` : ""}
-                    </span>
-                  }
-                  value={money(row.amount.amountMinor)}
-                />
-              ))}
-              <Row label={t("paid")} value={money(booking.paidTotal.amountMinor)} emphasis />
-              {outstanding > 0 ? (
-                <Row label={t("outstanding")} value={money(outstanding)} emphasis />
-              ) : null}
-            </dl>
-          ) : (
-            <p className="text-base text-natural-600">{t("noPayments")}</p>
-          )}
-        </Section>
-      </article>
-    </Shell>
+      {hasTransfer ? (
+        <Button
+          variant="neutral"
+          className="w-full md:w-auto"
+          nativeButton={false}
+          render={<Link href={`/bookings/${bookingId}/invoice`} />}
+        >
+          <FileText />
+          {t("viewInvoice")}
+        </Button>
+      ) : null}
+    </Panel>
   );
 }
 
-function Shell({ children }: { children: ReactNode }) {
+function Payments({ booking }: { booking: BookingDetail }) {
+  const t = useTranslations("Booking.detail");
+  const money = useMoney();
+
   return (
-    <section className="flex min-h-full justify-center px-4 pt-6 pb-8 md:px-6 md:py-16">
-      {children}
-    </section>
+    <Panel>
+      <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("paymentsTitle")}</h2>
+
+      {booking.payments.length ? (
+        <dl className="flex flex-col">
+          {booking.payments.map((row) => (
+            <Row
+              key={row.id}
+              label={t(`kind.${row.kind}`)}
+              /* Method per payment, so a transfer deposit and a card balance both show truly. */
+              note={
+                <span className="flex items-center gap-1.5 text-sm text-natural-500">
+                  {row.method === "card" ? (
+                    <CreditCard className="size-4" />
+                  ) : (
+                    <Landmark className="size-4" />
+                  )}
+                  {t(`method.${row.method}`)} · {t(`paymentStatus.${row.status}`)}
+                  {row.disputedAt ? ` · ${t("disputed")}` : ""}
+                </span>
+              }
+              value={money(row.amount.amountMinor)}
+            />
+          ))}
+        </dl>
+      ) : (
+        <p className="text-base text-natural-600">{t("noPayments")}</p>
+      )}
+    </Panel>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * The money, in the slot the wizard's sidebar occupied. Shaded to match it, and reading the
+ * booking's frozen lines rather than a live quote.
+ */
+function PriceAside({ booking }: { booking: BookingDetail }) {
+  const t = useTranslations("Booking.detail");
+  const money = useMoney();
+  const outstanding = booking.outstanding.amountMinor;
+
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 md:p-8">
-      <h2 className="text-xl leading-[1.3] font-bold text-foreground">{title}</h2>
+    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
+      <h2 className="text-xl leading-[1.3] font-bold text-foreground">{t("priceTitle")}</h2>
+
+      <dl className="flex flex-col rounded-xl bg-natural-50 p-4">
+        {booking.priceLines.map((line, index) => (
+          <Row
+            key={`${line.code}-${index}`}
+            label={line.label}
+            value={money(line.amount.amountMinor)}
+          />
+        ))}
+        <Row label={t("total")} value={money(booking.total.amountMinor)} emphasis />
+      </dl>
+
+      <dl className="flex flex-col">
+        <Row label={t("paid")} value={money(booking.paidTotal.amountMinor)} />
+        <Row
+          label={outstanding > 0 ? t("outstanding") : t("settled")}
+          value={money(outstanding)}
+          emphasis
+        />
+      </dl>
+    </div>
+  );
+}
+
+function Panel({ children }: { children: ReactNode }) {
+  return (
+    <section className="flex flex-col items-start gap-4 rounded-2xl border border-border bg-card p-5 md:p-6">
       {children}
     </section>
   );
@@ -205,7 +269,7 @@ function Row({
   emphasis?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-dashed border-border py-3 last:border-b-0">
+    <div className="flex w-full items-start justify-between gap-4 border-b border-dashed border-border py-3 last:border-b-0">
       <div className="flex min-w-0 flex-col gap-0.5">
         <dt className="text-base leading-[1.4] font-bold text-foreground">{label}</dt>
         {note ? <dd className="order-last">{note}</dd> : null}
