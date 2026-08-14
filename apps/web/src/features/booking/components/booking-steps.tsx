@@ -32,6 +32,8 @@ const STEPS = [
 
 type Step = (typeof STEPS)[number]["id"];
 
+const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
+
 /*
  * BookingSteps — the four-step accordion of the booking flow (Figma 859:33153 /
  * 969:74447 / 969:74929). The `STEPS` list above is the whole flow: order, titles and
@@ -83,11 +85,20 @@ export default function BookingSteps() {
    * an anonymous visitor gets an account provisioned from their email and a booking-scoped token
    * back, which is remembered here and carried by every later call in the flow. The `bookingId`
    * lands in the shared context for the payment step.
+   * Headers are clickable, so Review can be reached without passing through the steps before it.
+   * Confirm therefore validates the whole prefix, not just its own branch — otherwise an empty
+   * guest block reaches `createHold` and comes back as a server validation error with no field
+   * to point at.
    */
   async function confirmBooking() {
-    if (!(await trigger("reviewAndBook"))) {
-      touch("reviewAndBook");
-      return;
+    for (const { id } of STEPS.slice(0, REVIEW_INDEX + 1)) {
+      if (!(await trigger(id))) {
+        touch(id);
+        setOpen(id);
+        return;
+      }
+      /* Review is marked complete only once the hold exists, below. */
+      if (id !== "reviewAndBook") setCompleted((prev) => new Set(prev).add(id));
     }
     if (!quote) return;
 
