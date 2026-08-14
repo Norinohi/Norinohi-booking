@@ -336,6 +336,10 @@
     },
     "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
     "removeFilter": "Remove filter {label}",
+    "passwordToggle": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
     "sorting": {
       "label": "Sort by: {value}",
       "recommended": "Recommended",
@@ -783,7 +787,8 @@
       "logout": "Log Out",
       "duplicates": "Duplicate Review",
       "sync": "Sync History",
-      "inbox": "Inbox"
+      "inbox": "Inbox",
+      "payments": "Payments"
     },
     "UserMenu": {
       "account": "Account",
@@ -1248,6 +1253,10 @@
     "Inbox": {
       "title": "Inbox",
       "description": "Customer questions and enquiries waiting for a reply."
+    },
+    "Payments": {
+      "title": "Payments",
+      "description": "Invoice requests and refunds awaiting staff."
     }
   },
   "Profile": {
@@ -1806,6 +1815,105 @@
         "send": "Send reply",
         "sent": "Reply sent",
         "failed": "We couldn't send the reply. Please try again."
+      }
+    },
+    "Payments": {
+      "title": "Payments",
+      "subtitle": "Bank transfers waiting to be settled, and money owed back to customers.",
+      "tabs": {
+        "invoices": "Invoice requests",
+        "refunds": "Refunds due"
+      },
+      "invoices": {
+        "filters": {
+          "status": "Filter by status",
+          "allStatuses": "All statuses"
+        },
+        "table": {
+          "issued": "Issued",
+          "invoice": "Invoice",
+          "customer": "Customer",
+          "booking": "Booking",
+          "amount": "Amount",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "status": {
+          "pending": "Pending",
+          "sent": "Sent",
+          "paid": "Paid",
+          "cancelled": "Withdrawn"
+        },
+        "due": "Due {date}",
+        "settledAt": "Settled {date}",
+        "actions": {
+          "settle": "Transfer received",
+          "withdraw": "Withdraw"
+        },
+        "empty": "No invoice requests here.",
+        "error": "Could not load invoice requests."
+      },
+      "refunds": {
+        "filters": {
+          "search": "Search by reference, name or email"
+        },
+        "table": {
+          "cancelled": "Cancelled",
+          "customer": "Customer",
+          "booking": "Booking",
+          "charter": "Charter",
+          "collected": "Collected",
+          "actions": "Actions"
+        },
+        "ofTotal": "of {total}",
+        "actions": {
+          "refund": "Return the money"
+        },
+        "empty": "Nothing is owed back right now.",
+        "error": "Could not load the refund queue."
+      },
+      "settle": {
+        "title": "Record a received transfer",
+        "description": "Booking {reference} will be committed with the operator once this is recorded.",
+        "invoiced": "Invoice {number} · {amount} invoiced",
+        "amountLabel": "Amount received ({currency})",
+        "amountHint": "Change this if bank fees mean a different figure landed.",
+        "noteLabel": "Note",
+        "notePlaceholder": "Reference on the transfer, who confirmed it…",
+        "cancel": "Cancel",
+        "confirm": "Record transfer",
+        "settling": "Recording…",
+        "settled": "Transfer recorded — booking {reference} is confirmed.",
+        "rejected": "Transfer recorded, but the operator refused: {reason}. The booking now owes a refund.",
+        "failed": "Could not record the transfer."
+      },
+      "withdraw": {
+        "title": "Withdraw this invoice request",
+        "description": "Booking {reference} will be cancelled and the operator's option released.",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "No response after three reminders…",
+        "cancel": "Keep it",
+        "confirm": "Withdraw and cancel",
+        "withdrawing": "Withdrawing…",
+        "withdrawn": "Invoice withdrawn and booking {reference} cancelled.",
+        "failed": "Could not withdraw the invoice."
+      },
+      "refund": {
+        "title": "Return the money",
+        "description": "Refunds every payment collected on booking {reference}.",
+        "collected": "{amount} collected",
+        "cancelReason": "Cancelled: {reason}",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "Operator withdrew the yacht…",
+        "manualLabel": "I have sent the bank transfer back",
+        "manualHint": "Only tick this once the money has actually left. Card payments go back through Stripe on their own.",
+        "cancel": "Cancel",
+        "confirm": "Refund",
+        "refunding": "Refunding…",
+        "refunded": "{amount} returned.",
+        "partial": "{amount} returned — some payments are still settling.",
+        "manualPending": "Card payments returned. {count} bank transfer(s) still have to be sent by hand.",
+        "failed": "Could not process the refund."
       }
     }
   }

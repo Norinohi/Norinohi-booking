@@ -38,6 +38,8 @@ import {
   yachtOptionsSchema,
 } from "../contracts/admin";
 import {
+  bookingAdminListInputSchema,
+  bookingAdminListSchema,
   bookingCancelInputSchema,
   bookingCancelSchema,
   bookingRefundInputSchema,
@@ -72,6 +74,7 @@ import {
   rejectDuplicateCandidate,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
+import { listBookingsForAdmin } from "../services/booking-admin";
 import { refundBooking } from "../services/refund";
 import {
   cancelInvoiceRequest,
@@ -304,6 +307,21 @@ export const adminRouter = {
       .handler(({ context, input }) => listAuditLog(context.db, input)),
   },
   booking: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/list",
+        operationId: "listBookingsForAdmin",
+        summary: "List bookings across every customer",
+        description:
+          'The staff view of the booking table, filterable by status and searchable by reference, customer name or email. Carries the customer and the money actually collected rather than the listing card the customer\'s own history shows. Passing status: ["REFUND_PENDING"] is the refund queue — bookings whose money is owed back and which nothing else surfaces.',
+        tags: ["Admin"],
+        successDescription: "A page of bookings.",
+        spec: withJsonBodyExample({ status: ["REFUND_PENDING"], page: 1, pageSize: 20 }),
+      })
+      .input(bookingAdminListInputSchema)
+      .output(bookingAdminListSchema)
+      .handler(({ context, input }) => listBookingsForAdmin(context.db, input)),
     cancel: adminProcedure
       .route({
         method: "POST",
@@ -481,9 +499,7 @@ export const adminRouter = {
       })
       .input(enquiryAnswerInputSchema)
       .output(enquiryRowSchema)
-      .handler(({ context, input }) =>
-        answerEnquiry(context.db, context.session.user.id, input),
-      ),
+      .handler(({ context, input }) => answerEnquiry(context.db, context.session.user.id, input)),
     setStatus: adminProcedure
       .route({
         method: "POST",

@@ -224,8 +224,8 @@ export function BookingConfirmationEmail({
         <Section style={styles.callout}>
           <Text style={styles.calloutTitle}>Keep this booking in your account</Text>
           <Text style={styles.calloutBody}>
-            We opened an account with this email address. Set a password and this booking is
-            waiting for you on any device.
+            We opened an account with this email address. Set a password and this booking is waiting
+            for you on any device.
           </Text>
           <Link href={setPasswordUrl} style={styles.link}>
             Set your password →

@@ -1,8 +1,10 @@
 import { orpc } from "@/utils/orpc";
 
 import type {
+  BookingStatus,
   DuplicateDecision,
   EnquiryStatus,
+  InvoiceStatus,
   LeadKind,
   LeadStatus,
   ProviderKey,
@@ -20,6 +22,10 @@ import type {
 export const DUPLICATES_PAGE_SIZE = 20;
 export const INBOX_PAGE_SIZE = 20;
 export const SYNC_RUNS_PAGE_SIZE = 20;
+export const PAYMENTS_PAGE_SIZE = 20;
+
+/** The bookings whose money is owed back — the refund tab's entire filter. */
+export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
 
 /* page/decision stay explicit so each filter combination keeps its own cache key. */
 export const duplicateQueueQueryOptions = (input: {
@@ -57,6 +63,36 @@ export const leadListQueryOptions = (input: {
 }) =>
   orpc.admin.lead.list.queryOptions({
     input: { ...input, pageSize: input.pageSize ?? INBOX_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+/*
+ * The two staff payment queues. Both are worked by hand and both move a booking when they are,
+ * so a colleague acting on one makes the other's snapshot wrong — hence the short staleTime that
+ * the inbox queues use for the same reason.
+ */
+export const invoiceListQueryOptions = (input: {
+  status?: InvoiceStatus;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.invoice.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? PAYMENTS_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+export const bookingQueueQueryOptions = (input: {
+  status?: readonly BookingStatus[];
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.booking.list.queryOptions({
+    input: {
+      ...input,
+      status: input.status ? [...input.status] : undefined,
+      pageSize: input.pageSize ?? PAYMENTS_PAGE_SIZE,
+    },
     staleTime: 15_000,
   });
 

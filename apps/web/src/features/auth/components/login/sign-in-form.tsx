@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import z from "zod";
 
 import Loader from "@/components/shared/feedback/loader";
+import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { authClient } from "@/lib/auth-client";
 
 import { signedInTarget } from "../../lib/redirect-target";
@@ -62,6 +63,7 @@ type Values = { email: string; password: string };
 
 export default function SignInForm({ redirect }: { redirect?: string }) {
   const t = useTranslations("Auth.SignIn");
+  const passwordToggle = usePasswordToggleLabels();
   const router = useRouter();
   const { isPending } = authClient.useSession();
 
@@ -151,6 +153,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                       <TextField
                         type="password"
                         autoComplete="current-password"
+                        {...passwordToggle}
                         placeholder={t("password.placeholder")}
                         className="leading-[1.25]"
                         {...field}

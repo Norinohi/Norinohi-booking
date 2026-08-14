@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 
@@ -63,6 +64,7 @@ export default function ResetPasswordForm({
   const tFirst = useTranslations("Auth.ResetPassword.firstPassword");
   const router = useRouter();
   const schema = useResetSchema();
+  const passwordToggle = usePasswordToggleLabels();
 
   // Read through both namespaces rather than switching the one passed to useTranslations:
   // the two are different literal types, and a union namespace does not survive the
@@ -154,6 +156,7 @@ export default function ResetPasswordForm({
                         <TextField
                           type="password"
                           autoComplete="new-password"
+                          {...passwordToggle}
                           placeholder={copy.newPasswordPlaceholder}
                           className="leading-[1.25]"
                           {...field}
@@ -174,6 +177,7 @@ export default function ResetPasswordForm({
                         <TextField
                           type="password"
                           autoComplete="new-password"
+                          {...passwordToggle}
                           placeholder={copy.confirmPlaceholder}
                           className="leading-[1.25]"
                           {...field}

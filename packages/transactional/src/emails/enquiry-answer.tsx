@@ -83,11 +83,7 @@ export function EnquiryAnswerEmail({
   appUrl,
 }: EnquiryAnswerEmailProps): React.ReactElement {
   return (
-    <EmailLayout
-      preview={`Re: your question about ${yachtName}`}
-      eyebrow="Support"
-      appUrl={appUrl}
-    >
+    <EmailLayout preview={`Re: your question about ${yachtName}`} eyebrow="Support" appUrl={appUrl}>
       <Text style={styles.eyebrow}>Booking {reference}</Text>
       <Heading style={styles.heading}>About your question</Heading>
       <Text style={styles.intro}>{customerName}, here is the answer from our team.</Text>

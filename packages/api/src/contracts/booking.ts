@@ -276,6 +276,40 @@ export const bookingCancelSchema = z.object({
   status: bookingStatusSchema,
 });
 
+/*
+ * The staff-side booking list. Deliberately not `bookingListSchema`: that one carries the whole
+ * listing card because My Bookings renders one, and a queue staff work through needs the
+ * customer and the money instead. `status` is a list so one call answers "everything owing a
+ * refund" without the caller making two.
+ */
+export const bookingAdminListInputSchema = z
+  .object({
+    status: z.array(bookingStatusSchema).min(1).optional(),
+    /** Matches a reference, a customer name or their email. */
+    query: z.string().trim().max(200).optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: 20 }),
+  })
+  .default(paginationInputDefault(20));
+
+export const bookingAdminRowSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  status: bookingStatusSchema,
+  customerName: z.string().nullable(),
+  customerEmail: z.string(),
+  listingTitle: z.string(),
+  checkIn: z.string(),
+  checkOut: z.string(),
+  total: moneySchema,
+  /** What was actually collected — on a refund queue this is the sum at stake. */
+  paid: moneySchema,
+  cancelledAt: z.string().nullable(),
+  cancelReason: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const bookingAdminListSchema = paginatedSchema(bookingAdminRowSchema);
+
 export const bookingRefundInputSchema = z.object({
   id: z.string().min(1),
   reason: z.string().trim().max(500).optional(),

@@ -336,6 +336,10 @@
     },
     "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
     "removeFilter": "Quitar filtro {label}",
+    "passwordToggle": {
+      "show": "Mostrar contraseña",
+      "hide": "Ocultar contraseña"
+    },
     "sorting": {
       "label": "Ordenar por: {value}",
       "recommended": "Recomendados",
@@ -783,7 +787,8 @@
       "logout": "Cerrar sesión",
       "duplicates": "Revisión de duplicados",
       "sync": "Historial de sincronización",
-      "inbox": "Bandeja de entrada"
+      "inbox": "Bandeja de entrada",
+      "payments": "Pagos"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1248,6 +1253,10 @@
     "Inbox": {
       "title": "Bandeja de entrada",
       "description": "Preguntas y consultas de clientes pendientes de respuesta."
+    },
+    "Payments": {
+      "title": "Pagos",
+      "description": "Solicitudes de factura y reembolsos pendientes."
     }
   },
   "Profile": {
@@ -1806,6 +1815,105 @@
         "send": "Enviar respuesta",
         "sent": "Respuesta enviada",
         "failed": "No hemos podido enviar la respuesta. Inténtalo de nuevo."
+      }
+    },
+    "Payments": {
+      "title": "Pagos",
+      "subtitle": "Transferencias pendientes de conciliar y dinero que debe devolverse.",
+      "tabs": {
+        "invoices": "Solicitudes de factura",
+        "refunds": "Reembolsos pendientes"
+      },
+      "invoices": {
+        "filters": {
+          "status": "Filtrar por estado",
+          "allStatuses": "Todos los estados"
+        },
+        "table": {
+          "issued": "Emitida",
+          "invoice": "Factura",
+          "customer": "Cliente",
+          "booking": "Reserva",
+          "amount": "Importe",
+          "status": "Estado",
+          "actions": "Acciones"
+        },
+        "status": {
+          "pending": "Pendiente",
+          "sent": "Enviada",
+          "paid": "Pagada",
+          "cancelled": "Retirada"
+        },
+        "due": "Vence {date}",
+        "settledAt": "Conciliada {date}",
+        "actions": {
+          "settle": "Transferencia recibida",
+          "withdraw": "Retirar"
+        },
+        "empty": "No hay solicitudes de factura aquí.",
+        "error": "No se pudieron cargar las solicitudes de factura."
+      },
+      "refunds": {
+        "filters": {
+          "search": "Buscar por referencia, nombre o email"
+        },
+        "table": {
+          "cancelled": "Cancelada",
+          "customer": "Cliente",
+          "booking": "Reserva",
+          "charter": "Chárter",
+          "collected": "Cobrado",
+          "actions": "Acciones"
+        },
+        "ofTotal": "de {total}",
+        "actions": {
+          "refund": "Devolver el dinero"
+        },
+        "empty": "Ahora mismo no se debe nada.",
+        "error": "No se pudo cargar la cola de reembolsos."
+      },
+      "settle": {
+        "title": "Registrar una transferencia recibida",
+        "description": "La reserva {reference} se confirmará con el operador en cuanto se registre.",
+        "invoiced": "Factura {number} · {amount} facturado",
+        "amountLabel": "Importe recibido ({currency})",
+        "amountHint": "Cámbialo si las comisiones bancarias hicieron que llegara otra cifra.",
+        "noteLabel": "Nota",
+        "notePlaceholder": "Referencia de la transferencia, quién la confirmó…",
+        "cancel": "Cancelar",
+        "confirm": "Registrar transferencia",
+        "settling": "Registrando…",
+        "settled": "Transferencia registrada: la reserva {reference} está confirmada.",
+        "rejected": "Transferencia registrada, pero el operador la rechazó: {reason}. La reserva ahora debe un reembolso.",
+        "failed": "No se pudo registrar la transferencia."
+      },
+      "withdraw": {
+        "title": "Retirar esta solicitud de factura",
+        "description": "La reserva {reference} se cancelará y se liberará la opción del operador.",
+        "reasonLabel": "Motivo",
+        "reasonPlaceholder": "Sin respuesta tras tres recordatorios…",
+        "cancel": "Mantener",
+        "confirm": "Retirar y cancelar",
+        "withdrawing": "Retirando…",
+        "withdrawn": "Factura retirada y reserva {reference} cancelada.",
+        "failed": "No se pudo retirar la factura."
+      },
+      "refund": {
+        "title": "Devolver el dinero",
+        "description": "Reembolsa todos los pagos cobrados en la reserva {reference}.",
+        "collected": "{amount} cobrado",
+        "cancelReason": "Cancelada: {reason}",
+        "reasonLabel": "Motivo",
+        "reasonPlaceholder": "El operador retiró el barco…",
+        "manualLabel": "He devuelto la transferencia bancaria",
+        "manualHint": "Marca esto solo cuando el dinero haya salido de verdad. Los pagos con tarjeta se devuelven solos por Stripe.",
+        "cancel": "Cancelar",
+        "confirm": "Reembolsar",
+        "refunding": "Reembolsando…",
+        "refunded": "{amount} devuelto.",
+        "partial": "{amount} devuelto: algunos pagos siguen liquidándose.",
+        "manualPending": "Pagos con tarjeta devueltos. Quedan {count} transferencia(s) por enviar a mano.",
+        "failed": "No se pudo procesar el reembolso."
       }
     }
   }

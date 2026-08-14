@@ -177,11 +177,7 @@ export default function EnquiriesTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="brand"
-                            size="sm"
-                            onClick={() => setAnswering(enquiry)}
-                          >
+                          <Button variant="brand" size="sm" onClick={() => setAnswering(enquiry)}>
                             {enquiry.answer ? t("actions.replyAgain") : t("actions.reply")}
                           </Button>
                           {enquiry.status === "closed" ? (
