@@ -3,6 +3,7 @@ import { z } from "zod";
 import { paginationInputDefault, paginationInputSchema, paginationSchema } from "./primitives";
 
 export const leadKindSchema = z.enum(["quote_request", "charter_expert", "consultation"]);
+export type LeadKind = z.infer<typeof leadKindSchema>;
 export const leadStatusSchema = z.enum(["new", "contacted", "closed"]);
 
 /**

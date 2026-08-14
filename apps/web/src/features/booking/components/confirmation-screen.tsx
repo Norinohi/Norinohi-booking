@@ -5,9 +5,10 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Share2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
+import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
@@ -134,6 +135,7 @@ function Row({ row, last }: { row: SummaryRow; last: boolean }) {
 export default function BookingConfirmationScreen() {
   const t = useTranslations("Booking.confirmation");
   const tCrew = useTranslations("Common.crewTypes");
+  const locale = useLocale();
   const money = useMoney();
   const format = useFormatter();
   const [{ bookingId, method }] = useQueryStates(confirmationParsers);
@@ -246,6 +248,37 @@ export default function BookingConfirmationScreen() {
    * the server figure is what checkout charges, and it excludes the lines marked pay-at-check-in.
    * The security deposit is not carried on `booking.get`, so it shows only if a schedule row exists.
    */
+  /*
+   * Shares the yacht, not the booking: /bookings/<id> is authorised by a session or the guest
+   * token in this browser, so a friend who opens it sees a sign-in screen. The listing page with
+   * the dates is what someone actually wants to send. The Web Share API is absent on desktop
+   * browsers and outside a secure context, hence the clipboard fallback.
+   */
+  const shareTrip = async () => {
+    const url = `${window.location.origin}/${locale}/yachts/${booking.listing.id}`;
+    const text = t("shareText", {
+      name: booking.listing.title,
+      dates: `${day(booking.checkIn)} → ${day(booking.checkOut)}`,
+    });
+
+    if (navigator.share) {
+      /* A cancelled share sheet rejects; that is the customer changing their mind, not an error. */
+      try {
+        await navigator.share({ title: booking.listing.title, text, url });
+        return;
+      } catch {
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      toast.success(t("shareCopied"));
+    } catch {
+      toast.error(t("shareFailed"));
+    }
+  };
+
   const security = booking.paymentSchedule.find((entry) => entry.kind === "security_deposit");
   const dueNowMinor = booking.dueNow.amountMinor;
   const balanceMinor = booking.total.amountMinor - dueNowMinor;
@@ -408,7 +441,11 @@ export default function BookingConfirmationScreen() {
           <motion.div variants={RISE} className="flex flex-col">
             <span aria-hidden className="block h-px w-full bg-border" />
             <div className="flex flex-col-reverse gap-4 p-5 md:flex-row">
-              <Button variant="neutral" className="w-full md:flex-1">
+              <Button
+                variant="neutral"
+                className="w-full md:flex-1"
+                onClick={() => void shareTrip()}
+              >
                 <Share2 />
                 {t("shareTrip")}
               </Button>

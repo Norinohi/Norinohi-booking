@@ -25,12 +25,13 @@ import ReviewAndBookStep from "./steps/review-and-book";
 
 const STEPS = [
   { id: "guestDetails", Content: GuestDetailsStep, cta: "continue", ownsFooter: false },
-  { id: "extras", Content: ExtrasStep, cta: "saveAndContinue", ownsFooter: false },
+  { id: "extras", Content: ExtrasStep, cta: "continue", ownsFooter: false },
   { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "confirmBooking", ownsFooter: false },
   { id: "payment", Content: PaymentStep, cta: "continue", ownsFooter: true },
 ] as const;
 
 type Step = (typeof STEPS)[number]["id"];
+type Cta = (typeof STEPS)[number]["cta"] | "saveAndContinue";
 
 const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
 
@@ -55,10 +56,12 @@ const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
-  const { quote, bookingId, setBookingId } = useBooking();
+  const { listing, quote, bookingId, setBookingId } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
+  /* Extras has been shown once in answer to a Confirm that skipped it — see `confirmBooking`. */
+  const [extrasPrompted, setExtrasPrompted] = useState(false);
 
   /* `onTouched` only goes live after a blur, and `trigger` does not touch anything — so a failed
    * step has to touch its own fields, or a corrected one stays red until the next attempt. */
@@ -70,6 +73,14 @@ export default function BookingSteps() {
       setValue(path, getValues(path), { shouldTouch: true });
     }
   }
+
+  /*
+   * Whether the step has anything to choose. It drives both the CTA label — with add-ons on
+   * screen the button commits a choice and says so, with only the included items "Save" would
+   * be a promise about nothing — and whether skipping the step is worth interrupting a Confirm.
+   * Either way the picks are repriced on toggle; none of this is a deferred write.
+   */
+  const hasOptionalExtras = (listing?.optionalExtras.length ?? 0) > 0;
 
   async function advanceStep(step: Step, index: number) {
     if (await trigger(step)) {
@@ -91,6 +102,28 @@ export default function BookingSteps() {
    * to point at.
    */
   async function confirmBooking() {
+    /*
+     * Already held. Confirm stays on screen because Review can be reopened to re-read what was
+     * booked, but pressing it again must not mint a second booking — it only returns to payment.
+     */
+    if (bookingId) {
+      setOpen("payment");
+      return;
+    }
+
+    /*
+     * Extras never blocks a booking — nothing in it is required — but the step headers let
+     * someone jump straight to Review, and confirming then books past a page of paid add-ons
+     * they never saw. So the first such Confirm opens Extras instead of holding; pressing
+     * Confirm again goes through, and using the step's own Continue skips this entirely.
+     */
+    if (hasOptionalExtras && !completed.has("extras") && !extrasPrompted) {
+      setExtrasPrompted(true);
+      setOpen("extras");
+      toast.info(t("extrasSkipped"));
+      return;
+    }
+
     for (const { id } of STEPS.slice(0, REVIEW_INDEX + 1)) {
       if (!(await trigger(id))) {
         touch(id);
@@ -106,6 +139,12 @@ export default function BookingSteps() {
     try {
       const hold = await createHold.mutateAsync({
         quoteId: quote.quoteId,
+        /*
+         * One quote, one booking. Without a key the server mints a fresh UUID per call, so a
+         * double submit that races the disabled state is two bookings and two provider options;
+         * with it the retry returns the first one. A reprice yields a new quote, hence a new key.
+         */
+        idempotencyKey: quote.quoteId,
         guest: {
           fullName: guest.fullName,
           email: guest.email,
@@ -123,6 +162,9 @@ export default function BookingSteps() {
       toast.error(error instanceof Error ? error.message : t("errors.confirmFailed"));
     }
   }
+
+  const ctaFor = (step: Step, cta: Cta): Cta =>
+    step === "extras" && hasOptionalExtras ? "saveAndContinue" : cta;
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -170,14 +212,16 @@ export default function BookingSteps() {
                     <Button
                       variant="brand"
                       className="h-13 w-full"
-                      disabled={step === "reviewAndBook" && createHold.isPending}
+                      loading={step === "reviewAndBook" && createHold.isPending}
+                      /* The booking exists; this step is now a record of it, not an action. */
+                      disabled={step === "reviewAndBook" && Boolean(bookingId)}
                       onClick={() =>
                         void (step === "reviewAndBook"
                           ? confirmBooking()
                           : advanceStep(step, index))
                       }
                     >
-                      {t(cta)}
+                      {step === "reviewAndBook" && bookingId ? t("booked") : t(ctaFor(step, cta))}
                     </Button>
                   </div>
                 </>

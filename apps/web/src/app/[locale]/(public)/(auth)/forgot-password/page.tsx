@@ -23,6 +23,11 @@ export async function generateMetadata({
   });
 }
 
-export default function ForgotPasswordPage() {
-  return <ForgotPasswordForm />;
+export default async function ForgotPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  const { email } = await searchParams;
+  return <ForgotPasswordForm email={email} />;
 }

@@ -17,7 +17,6 @@
       "terms": "Acepto los <b>Términos y Condiciones y el Contrato de Alquiler</b>.",
       "cancellation": "Acepto la <b>Política de Cancelación</b> (cancelación gratuita hasta el 7 de junio)."
     },
-    "saveAndContinue": "Guardar y continuar",
     "extras": {
       "mandatory": "Obligatorio",
       "optional": "Extras opcionales",
@@ -144,7 +143,10 @@
       "failed": {
         "title": "No pudimos confirmar esta reserva",
         "body": "La base de chárter no pudo aceptar la reserva. Cualquier pago realizado será devuelto."
-      }
+      },
+      "shareText": "¡Alquilamos {name}, {dates}!",
+      "shareCopied": "Enlace copiado",
+      "shareFailed": "No hemos podido copiar el enlace"
     },
     "invoice": {
       "title": "Factura",
@@ -317,7 +319,10 @@
       "backToBooking": "Volver a mi reserva",
       "failed": "No hemos podido enviar tu mensaje. Inténtalo de nuevo.",
       "marinaContact": "O contacta directamente con la marina"
-    }
+    },
+    "booked": "Reservado",
+    "saveAndContinue": "Guardar y continuar",
+    "extrasSkipped": "Echa un vistazo a los extras opcionales y confirma después."
   },
   "Common": {
     "crewTypes": {

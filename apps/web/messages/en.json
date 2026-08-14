@@ -17,7 +17,6 @@
       "terms": "I agree to the <b>Terms & Conditions and the Rental Agreement</b>.",
       "cancellation": "I accept the <b>Cancellation Policy</b> (Free cancellation until June 7)."
     },
-    "saveAndContinue": "Save & Continue",
     "extras": {
       "mandatory": "Mandatory",
       "optional": "Optional extras",
@@ -144,7 +143,10 @@
       "failed": {
         "title": "We couldn't confirm this booking",
         "body": "The charter base could not take this reservation. Any payment you made is being returned."
-      }
+      },
+      "shareText": "We're chartering {name}, {dates}!",
+      "shareCopied": "Link copied",
+      "shareFailed": "We couldn't copy the link"
     },
     "invoice": {
       "title": "Invoice",
@@ -317,7 +319,10 @@
       "backToBooking": "Back to my booking",
       "failed": "We couldn't send your message. Please try again.",
       "marinaContact": "Or reach the marina directly"
-    }
+    },
+    "booked": "Booked",
+    "saveAndContinue": "Save & Continue",
+    "extrasSkipped": "Take a look at the optional extras first — then confirm."
   },
   "Common": {
     "crewTypes": {

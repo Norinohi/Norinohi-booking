@@ -17,6 +17,7 @@ import {
   Font,
   Head,
   Html,
+  Img,
   Link,
   Preview,
   Row,
@@ -73,6 +74,15 @@ const styles = {
     textAlign: "right",
   },
   content: { padding: "36px" },
+  /* Full-bleed under the letterhead. Height is fixed and the crop is centred, because a
+     provider photo can be any aspect ratio and a letterbox would leave white bars. */
+  hero: {
+    display: "block",
+    width: "100%",
+    height: "200px",
+    objectFit: "cover",
+    objectPosition: "center",
+  },
   footer: { backgroundColor: colors.footerBg, padding: "32px 36px" },
   footerWordmark: { margin: "0 0 6px", fontSize: "15px", fontWeight: "800", color: "#ffffff" },
   footerTagline: {
@@ -96,11 +106,14 @@ const styles = {
 export function EmailLayout({
   preview,
   eyebrow,
+  hero,
   children,
   appUrl = DEFAULT_APP_URL,
 }: {
   preview: string;
   eyebrow: string;
+  /** Optional photo under the letterhead — the yacht the email is about. */
+  hero?: { src: string; alt: string };
   children: React.ReactNode;
   appUrl?: string;
 }) {
@@ -132,6 +145,12 @@ export function EmailLayout({
                 </Column>
               </Row>
             </Section>
+
+            {hero ? (
+              <Section>
+                <Img src={hero.src} alt={hero.alt} style={styles.hero} />
+              </Section>
+            ) : null}
 
             <Section style={styles.content}>{children}</Section>
 

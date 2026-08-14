@@ -26,11 +26,15 @@ import { authClient } from "@/lib/auth-client";
  * authClient.requestPasswordReset with a locale-aware redirectTo back to /reset-password.
  * Enumeration-safe: on any non-error response it shows one success state regardless of
  * whether the email exists. Built on the same auth-card layout as sign-in-form.
+ *
+ * `email` prefills the field. The booking confirmation email sends a guest here to set the
+ * password their provisioned account never had, and it knows the address they booked with —
+ * asking them to retype it is a step that can only go wrong.
  */
 
 type Values = { email: string };
 
-export default function ForgotPasswordForm() {
+export default function ForgotPasswordForm({ email }: { email?: string }) {
   const t = useTranslations("Auth.ForgotPassword");
   const locale = useLocale();
   const router = useRouter();
@@ -39,7 +43,7 @@ export default function ForgotPasswordForm() {
   const schema = useMemo(() => z.object({ email: z.email(t("errors.emailInvalid")) }), [t]);
 
   const form = useForm<Values>({
-    defaultValues: { email: "" },
+    defaultValues: { email: email ?? "" },
     resolver: zodResolver(schema),
     mode: "onTouched",
   });

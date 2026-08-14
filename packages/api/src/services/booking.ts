@@ -36,6 +36,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { notifyBookingHeld } from "./booking-email";
 import { amountDue, outstandingMinor } from "./checkout";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
@@ -304,6 +305,18 @@ export async function createHold(
   // No option support: nothing to secure, so the booking waits at QUOTED and the
   // payment is what commits it.
   const token = actor.guestAccess?.token ?? null;
+
+  /* Sent for the booking as created; the option below only changes its status, not its content. */
+  await notifyBookingHeld({
+    to: guest.email,
+    guestName: guest.fullName,
+    bookingId: created.id,
+    reference: created.reference,
+    snapshot,
+    priced,
+    outstandingMinor: outstandingMinor(priced, 0),
+    isGuest: actor.guestAccess !== null,
+  });
 
   if (!provider.capabilities().supportsOptions) {
     await redeem();

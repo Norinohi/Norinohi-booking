@@ -3,6 +3,11 @@ import { env } from "@yacht-charter/env/server";
 import { createElement } from "react";
 import { Resend } from "resend";
 
+import {
+  BookingConfirmationEmail,
+  type BookingConfirmationEmailProps,
+} from "./emails/booking-confirmation";
+import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
 import { ResetPasswordEmail } from "./emails/reset-password";
 
 let client: Resend | undefined;
@@ -29,6 +34,34 @@ async function sendHtml(to: string, subject: string, html: string) {
   }
 
   return { skipped: false, id: result.data?.id } as const;
+}
+
+/**
+ * The booking receipt, sent as soon as a booking is held.
+ *
+ * Everything is pre-formatted by the caller: money and dates belong to the booking's currency
+ * and the customer's locale, neither of which this package knows. The subject carries the
+ * reference so a later "what was my booking number" search finds it.
+ */
+export async function sendBookingConfirmationEmail(
+  to: string,
+  booking: Omit<BookingConfirmationEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BookingConfirmationEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Your booking ${booking.reference} — ${booking.yachtName}`, html);
+}
+
+/** The acknowledgement an enquiry gets — quote request, charter expert, or consultation. */
+export async function sendLeadFollowUpEmail(
+  to: string,
+  lead: Omit<LeadFollowUpEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(LeadFollowUpEmail, { ...lead, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, "We have your enquiry — YachtSkanner", html);
 }
 
 export async function sendResetPasswordEmail({ to, url }: { to: string; url: string }) {

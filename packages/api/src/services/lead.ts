@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { lead } from "@yacht-charter/db/schema/lead";
 import { listing } from "@yacht-charter/db/schema/listing";
+import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -14,6 +15,7 @@ import type {
   leadStatusSchema,
 } from "../contracts/lead";
 import { writeAuditLog } from "./audit";
+import { notifyLeadReceived } from "./lead-email";
 import { paginatedQuery, totalFrom } from "./pagination";
 type CreateInput = z.infer<typeof leadCreateInputSchema>;
 
@@ -25,23 +27,32 @@ type Status = z.infer<typeof leadStatusSchema>;
 
 /**
  * Records an enquiry from Request Quote, Contact a charter expert, or Get
- * Consultation. Nothing is emailed — there is no email infrastructure yet, so the
- * row is the record and staff read it through admin.lead.list.
+ * Consultation. Staff read these through admin.lead.list; the customer gets an
+ * acknowledgement so the form does not end in silence, carrying the yacht they
+ * asked about (or the one the planner suggested) as a link back into the site.
  */
 export async function createLead(
   db: Database,
   userId: string | null,
   input: CreateInput,
 ): Promise<Created> {
-  // A dangling listingId would send staff to a yacht that no longer exists.
+  // A dangling listingId would send staff to a yacht that no longer exists. The same read
+  // returns what the customer's email shows: the name, the link, and the photo. The search
+  // doc is the one place all three sit together, and it is what the catalogue renders from.
+  let subject: { title: string; slug: string; mainImage: string | null } | undefined;
   if (input.listingId) {
     const [exists] = await db
-      .select({ id: listing.id })
-      .from(listing)
-      .where(eq(listing.id, input.listingId))
+      .select({
+        title: listingSearchDoc.title,
+        slug: listingSearchDoc.slug,
+        mainImage: listingSearchDoc.mainImage,
+      })
+      .from(listingSearchDoc)
+      .where(eq(listingSearchDoc.listingId, input.listingId))
       .limit(1);
 
     if (!exists) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+    subject = exists;
   }
 
   const [created] = await db
@@ -64,6 +75,14 @@ export async function createLead(
     });
 
   if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not save enquiry" });
+
+  await notifyLeadReceived({
+    to: input.email,
+    name: input.name,
+    kind: input.kind,
+    message: input.message,
+    yacht: subject,
+  });
 
   return {
     id: created.id,
