@@ -8,19 +8,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
-import {
-  SelectContent,
-  SelectItem,
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-} from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
-import { useCountryOptions } from "@/hooks/use-country-options";
+import CountryCombobox from "@/components/shared/form/country-combobox";
 import { authClient } from "@/lib/auth-client";
 
 import type { BookingValues } from "../../lib/booking-form";
@@ -29,7 +22,6 @@ export default function GuestDetailsStep() {
   const t = useTranslations("Booking.guestDetails");
   const { data: session } = authClient.useSession();
   const { control, getValues, setValue } = useFormContext<BookingValues>();
-  const countries = useCountryOptions();
 
   /* Prefill from the signed-in user, without clobbering anything already typed. */
   useEffect(() => {
@@ -99,29 +91,14 @@ export default function GuestDetailsStep() {
         render={({ field }) => (
           <FormItem>
             <FormLabel>{t("country")}</FormLabel>
-            <SelectRoot
-              value={field.value || null}
-              onValueChange={(next) => field.onChange(next ?? "")}
-            >
-              <FormControl>
-                <SelectTrigger onBlur={field.onBlur}>
-                  <SelectValue placeholder={t("countryPlaceholder")}>
-                    {(current) =>
-                      current
-                        ? (countries.find((option) => option.value === current)?.label ?? current)
-                        : t("countryPlaceholder")
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {countries.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </SelectRoot>
+            <FormControl>
+              <CountryCombobox
+                value={field.value}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder={t("countryPlaceholder")}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
