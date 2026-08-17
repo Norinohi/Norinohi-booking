@@ -10,9 +10,11 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 const noop = () => undefined;
 
 /**
- * Concurrency of exactly 1 per key. NauSYS contractually forbids parallel calls
- * on one credential ("parallel multi threads are not allowed"), so this is a
- * correctness constraint, not a throughput knob.
+ * Concurrency of exactly 1 per key. NauSYS forbids parallel calls on one
+ * credential ("parallel multi threads are not allowed") for its catalogue and
+ * availability sweeps, so this is a correctness constraint there, not a
+ * throughput knob. Which calls that covers is the caller's decision — see the
+ * lanes in `nausys/client.ts`.
  */
 export class SequentialQueue {
   private readonly chains = new Map<string, Promise<unknown>>();

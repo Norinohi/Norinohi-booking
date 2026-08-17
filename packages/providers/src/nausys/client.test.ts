@@ -10,7 +10,7 @@ import {
   TransientError,
 } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
-import { NausysClient } from "./client";
+import { NausysClient, reservationLane } from "./client";
 import type { NausysConfig } from "./config";
 import {
   NAUSYS_STATUS_CODES,
@@ -22,7 +22,7 @@ import {
   restYachtReservationResponseSchema,
 } from "./endpoints";
 import { providerRejection } from "../testing/contracts";
-import { FakeNausysTransport } from "./testing/fake-transport";
+import { FakeNausysTransport, nausysFixtures } from "./testing/fake-transport";
 
 const config: NausysConfig = {
   baseUrl: "https://ws-test.nausys.com",
@@ -248,7 +248,24 @@ describe("NauSYS fixture round trip", () => {
     expect(option.optionTill).toBe("12.02.2026 18:00");
   });
 
-  it("serializes concurrent calls on one credential", async () => {
+  it("serializes concurrent sync calls on one credential", async () => {
+    const transport = new FakeNausysTransport({ delayMs: 5 });
+    const { client } = build(transport);
+    const sync = client.forLane("sync");
+
+    await Promise.all([
+      sync.catalogueCall(nausysEndpoints.catalogue.countries, restCountriesResponseSchema),
+      sync.catalogueCall(nausysEndpoints.catalogue.regions, z.looseObject({ status: z.string() })),
+      sync.catalogueCall(
+        nausysEndpoints.catalogue.locations,
+        z.looseObject({ status: z.string() }),
+      ),
+    ]);
+
+    expect(transport.maxConcurrent).toBe(1);
+  });
+
+  it("lets live calls overlap, which is the exemption the vendor confirmed", async () => {
     const transport = new FakeNausysTransport({ delayMs: 5 });
     const { client } = build(transport);
 
@@ -261,6 +278,31 @@ describe("NauSYS fixture round trip", () => {
       client.catalogueCall(
         nausysEndpoints.catalogue.locations,
         z.looseObject({ status: z.string() }),
+      ),
+    ]);
+
+    expect(transport.maxConcurrent).toBe(3);
+  });
+
+  it("still serializes two calls that touch one reservation, because the uuid rotates", async () => {
+    const transport = new FakeNausysTransport({ delayMs: 5 });
+    const { client } = build(transport);
+    const lane = reservationLane("55901234");
+    transport.respondWith("updateExtras", nausysFixtures.createOption);
+    transport.respondWith("addExtras", nausysFixtures.createOption);
+
+    await Promise.all([
+      client.bookingCall(
+        nausysEndpoints.booking.updateExtras,
+        restYachtReservationResponseSchema,
+        { id: 55901234 },
+        lane,
+      ),
+      client.bookingCall(
+        nausysEndpoints.booking.addExtras,
+        restYachtReservationResponseSchema,
+        { id: 55901234 },
+        lane,
       ),
     ]);
 

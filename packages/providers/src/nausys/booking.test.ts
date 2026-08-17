@@ -216,6 +216,69 @@ describe("the mandatory three-step chain", () => {
     expect(confirmed.status).toBe("confirmed");
     expect(confirmed.providerReservationId).toBe(RESERVATION_ID);
   });
+
+  it("confirms for a company client, whose `company` comes back as a bare true", async () => {
+    // Three of 851 live reservations answer this way. Rejecting the boolean failed
+    // the parse, which on this path marks a charter the vendor accepted as rejected.
+    const { service, transport } = build();
+    transport.respondWith(
+      "createBooking",
+      fixture("createBooking", {
+        client: { name: "12 Knots Yachting Club", company: true, vatNr: "HR123" },
+      }),
+    );
+
+    const confirmed = await service.confirmBooking(heldDraft);
+
+    expect(confirmed.status).toBe("confirmed");
+  });
+});
+
+describe("the crew-list link", () => {
+  const LINK = "https://crew.nausys.com/crewlist/55901234?token=abc";
+
+  // No recorded response carries the key, so the casing is the vendor's word for
+  // it rather than something we have seen; all four are accepted.
+  it.each(["crewlistlink", "crewListLink", "crewlistLink", "crew_list_link"])(
+    "reads the link the vendor spells %s",
+    async (key) => {
+      const { service, transport } = build();
+      transport.respondWith("createBooking", fixture("createBooking", { [key]: LINK }));
+
+      const confirmed = await service.confirmBooking(heldDraft);
+
+      expect(confirmed.crewListLink).toBe(LINK);
+    },
+  );
+
+  it("carries the link from the hold too, since the vendor may issue it at option", async () => {
+    const { service, transport } = build();
+    transport.respondWith("createOption", fixture("createOption", { crewlistlink: LINK }));
+
+    const held = await service.createOption(draft);
+
+    expect(held.crewListLink).toBe(LINK);
+  });
+
+  it("drops a link that is not http(s), rather than hand the browser a scheme", async () => {
+    const { service, transport } = build();
+    transport.respondWith(
+      "createBooking",
+      fixture("createBooking", { crewlistlink: "javascript:alert(1)" }),
+    );
+
+    const confirmed = await service.confirmBooking(heldDraft);
+
+    expect(confirmed.crewListLink).toBeUndefined();
+  });
+
+  it("is absent when the reservation carries no link at all", async () => {
+    const { service } = build();
+
+    const confirmed = await service.confirmBooking(heldDraft);
+
+    expect(confirmed.crewListLink).toBeUndefined();
+  });
 });
 
 describe("the uuid funnel", () => {
@@ -300,28 +363,49 @@ describe("the uuid funnel", () => {
     });
   });
 
-  it("refuses to drop an extra, because the vendor offers no way to remove one", async () => {
-    // updateExtras is a partial update, so a deselected extra would silently stay
-    // on the booking and keep being billed. Failing is the honest outcome.
+  it("drops a deselected extra by updating its quantity to zero", async () => {
+    // The vendor's own removal mechanism: updateExtras is a partial update, so a
+    // line only leaves the reservation when it is named with quantity 0.
     const { service, transport } = build({
       loadReservationExtras: () =>
         Promise.resolve([
           { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
         ]),
     });
+    transport.respondWith("updateExtras", fixture("createOption"));
 
-    await expect(
-      service.addOrUpdateExtras({
-        ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-        extras: [],
-      }),
-    ).rejects.toThrow(/no way to remove/);
+    await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: [],
+    });
 
-    expect(transport.calls).toHaveLength(0);
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      id: 55901234,
+      uuid: OPTION_UUID,
+      services: [{ yachtReservationServiceId: 991, quantity: 0 }],
+    });
   });
 
-  it("refuses to touch a line the operator locked", async () => {
-    const { service } = build({
+  it("removes before it adds, so a refused addition cannot leave the old line billed", async () => {
+    const { service, transport } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: true },
+        ]),
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+    transport.respondWith("addExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: ["nausys:8002"],
+    });
+
+    expect(transport.callSequence()).toEqual(["updateExtras", "addExtras"]);
+  });
+
+  it("refuses to remove a line the operator locked", async () => {
+    const { service, transport } = build({
       loadReservationExtras: () =>
         Promise.resolve([
           { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: false },
@@ -331,9 +415,30 @@ describe("the uuid funnel", () => {
     await expect(
       service.addOrUpdateExtras({
         ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
-        extras: ["nausys:8001"],
+        extras: [],
       }),
     ).rejects.toThrow(/locked/);
+
+    expect(transport.calls).toHaveLength(0);
+  });
+
+  it("leaves a locked line alone as long as the customer still wants it", async () => {
+    const { service, transport } = build({
+      loadReservationExtras: () =>
+        Promise.resolve([
+          { yachtReservationServiceId: 991, serviceId: 8001, quantity: 1, editable: false },
+        ]),
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: ["nausys:8001"],
+    });
+
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      services: [{ yachtReservationServiceId: 991, quantity: 1 }],
+    });
   });
 
   it("refuses to call the vendor with a missing uuid", async () => {
@@ -704,9 +809,26 @@ describe("blank client fields on a reservation response", () => {
     expect(parsed.client?.name).toBe("Ana");
   });
 
-  it("still rejects a true, which would be a value rather than a blank", () => {
+  /**
+   * This used to assert the opposite, on the reasoning that a `true` would be a
+   * value rather than a blank. Live data settled it: `company: true` marks a client
+   * that is a company, alongside its own name and VAT number, and rejecting it made
+   * every such reservation unparseable. Only `company` is this lenient — the other
+   * text fields still refuse a boolean that is not `false`.
+   */
+  it("reads company: true as a flag with no name, not as a parse failure", () => {
+    const parsed = restYachtReservationResponseSchema.parse({
+      ...reservation,
+      client: { name: "12 Knots Yachting Club", company: true, vatNr: "HR123" },
+    });
+
+    expect(parsed.client?.company).toBeUndefined();
+    expect(parsed.client?.name).toBe("12 Knots Yachting Club");
+  });
+
+  it("still rejects a true on a field that is only ever text", () => {
     expect(() =>
-      restYachtReservationResponseSchema.parse({ ...reservation, client: { company: true } }),
+      restYachtReservationResponseSchema.parse({ ...reservation, client: { surname: true } }),
     ).toThrow();
   });
 });

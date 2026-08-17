@@ -27,9 +27,10 @@ import {
   type ProviderReservation,
   type ProviderReservationRef,
 } from "../types";
-import type { NausysClient } from "./client";
+import { type NausysClient, reservationLane } from "./client";
 import type { NausysConfig } from "./config";
 import {
+  crewListLinkOf,
   nausysEndpoints,
   restYachtReservationResponseSchema,
   type RestClient,
@@ -137,6 +138,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       endpoint,
       restYachtReservationResponseSchema,
       current ? { ...body, id: current.id, uuid: current.uuid } : body,
+      // Per reservation, because the token this funnel exists to manage is per
+      // reservation: two calls in flight on one of them would both carry the uuid
+      // that only the first of them is still allowed to use. A call that opens a
+      // reservation has none yet and needs no lane.
+      current ? reservationLane(String(current.id)) : undefined,
     );
 
     if (current && response.id !== current.id) {
@@ -225,6 +231,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       providerOptionId: reservationId,
       securityToken: option.handle.uuid,
       holdExpiresAt: holdExpiresAt(option.response),
+      crewListLink: crewListLinkOf(option.response),
     });
   }
 
@@ -253,6 +260,9 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       providerReservationId: reservationId,
       providerOptionId: parsed.reservation.providerOptionId ?? reservationId,
       securityToken: step.handle.uuid,
+      // The confirmed reservation is the one whose crew list the base will ask for,
+      // so this is the response the link actually matters on.
+      crewListLink: crewListLinkOf(step.response),
     });
   }
 
@@ -282,14 +292,18 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
    * how a deselected extra would have stayed on the booking and kept being billed.
    *
    * So the set is diffed instead. Additions go through `addExtras` keyed by
-   * catalogue `serviceId`; quantity changes go through `updateExtras` keyed by the
+   * catalogue `serviceId`; removals go through `updateExtras` keyed by the
    * reservation line's own `yachtReservationServiceId`, which is the id semantic
    * the vendor confirmed for each call.
    *
-   * Removal has no endpoint. Rather than drop it silently and bill the customer
-   * for something they deselected, a required removal fails here and the operator
-   * settles it out of band. The same goes for a line the operator has locked
-   * (`editable: false`).
+   * Removal has no endpoint of its own: NauSYS confirmed (Aug 2026) that setting a
+   * line's `quantity` to 0 through `updateExtras` drops it from the info and the
+   * option. Two limits ride with that answer. A line the operator locked
+   * (`editable: false`) cannot be touched, so a removal it blocks fails here rather
+   * than silently keeping a deselected extra on the bill. And extras cannot be
+   * edited at all once the booking is confirmed — that one is the vendor's to
+   * refuse, since only they know the reservation's current status, and it arrives
+   * as a classified provider error.
    */
   async function addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     const parsed = providerExtrasMutationSchema.parse(input);
@@ -297,30 +311,42 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     const current = (await deps.loadReservationExtras?.(parsed.ref)) ?? [];
 
     const currentByService = new Map(current.map((item) => [item.serviceId, item]));
-
     const removals = current.filter((item) => !desired.has(item.serviceId));
-    if (removals.length > 0) {
-      throw new ContractError(
-        `NauSYS offers no way to remove an extra; reservation ${parsed.ref.providerReservationId} ` +
-          `would need ${removals.map((item) => item.serviceId).join(", ")} removed`,
-        { payload: { removals: removals.map((item) => item.yachtReservationServiceId) } },
-      );
-    }
 
-    const locked = current.filter((item) => !item.editable && desired.has(item.serviceId));
+    const locked = removals.filter((item) => !item.editable);
     if (locked.length > 0) {
       throw new ContractError(
-        `NauSYS reservation ${parsed.ref.providerReservationId} has extras the operator locked`,
+        `NauSYS reservation ${parsed.ref.providerReservationId} has extras the operator locked, ` +
+          `so ${locked.map((item) => item.serviceId).join(", ")} cannot be removed`,
         { payload: { locked: locked.map((item) => item.yachtReservationServiceId) } },
       );
     }
 
     const additions = [...desired].filter((serviceId) => !currentByService.has(serviceId));
 
-    // Nothing to do rather than an empty mutation: the vendor would answer the
-    // whole reservation either way, but a call that changes nothing is still a
-    // call on the one lane it allows us.
-    if (additions.length === 0) {
+    // Removals first: they only ever shrink the reservation, so a later addition
+    // that the vendor refuses leaves the customer holding less than they picked
+    // rather than being billed for something they deselected.
+    let last =
+      removals.length === 0
+        ? null
+        : await withReservation(parsed.ref, nausysEndpoints.booking.updateExtras, {
+            services: removals.map((item) => ({
+              yachtReservationServiceId: item.yachtReservationServiceId,
+              quantity: 0,
+            })),
+          });
+
+    if (additions.length > 0) {
+      last = await withReservation(parsed.ref, nausysEndpoints.booking.addExtras, {
+        services: additions.map((serviceId) => ({ serviceId, quantity: 1 })),
+      });
+    }
+
+    // Nothing changed, so nothing is mutated: the price still has to come back,
+    // and re-sending the current lines at their current quantity is the only
+    // read the booking side offers.
+    if (last === null) {
       const unchanged = await withReservation(parsed.ref, nausysEndpoints.booking.updateExtras, {
         services: current.map((item) => ({
           yachtReservationServiceId: item.yachtReservationServiceId,
@@ -330,15 +356,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
       return await toProviderQuote(unchanged.response);
     }
 
-    const step = await withReservation(parsed.ref, nausysEndpoints.booking.addExtras, {
-      services: additions.map((serviceId) => ({ serviceId, quantity: 1 })),
-    });
-
-    await logEventForReservation(parsed.ref.providerReservationId, "extras_updated", step);
+    await logEventForReservation(parsed.ref.providerReservationId, "extras_updated", last);
 
     // The mutation answers with the whole reservation, so its price is the
     // re-read: there is no separate booking-side read endpoint.
-    return await toProviderQuote(step.response);
+    return await toProviderQuote(last.response);
   }
 
   async function externalYachtId(listingId: string): Promise<number> {

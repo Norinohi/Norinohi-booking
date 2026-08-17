@@ -105,6 +105,30 @@ export function classifyNausysResponse(
   return factory(`NauSYS ${context.endpoint} failed with ${status}`, options);
 }
 
+/**
+ * Which calls serialize against which.
+ *
+ * The vendor's sequential-only rule turned out to be narrower than its
+ * implementation guidelines read. NauSYS confirmed (Aug 2026) that "all live calls
+ * from the customer regarding booking flow will not be affected by parallel
+ * request restriction" — so the restriction is really about the background
+ * catalogue and availability sweeps, which is exactly what a multi-hour sync
+ * blocking a checkout price check was the danger of.
+ *
+ * - `sync` is the one lane per credential the rule still governs: catalogue dumps
+ *   and occupancy sweeps, spaced by `minIntervalMs`.
+ * - `live` is unserialized. Quote and availability checks issued for a customer
+ *   in front of a checkout page run as they arrive.
+ * - `reservation:<id>` serializes per reservation. That one is ours, not the
+ *   vendor's: the `uuid` rotates on every write, so two concurrent calls on one
+ *   reservation would send the same token twice and the second would be refused.
+ */
+export type NausysLane = "sync" | "live" | `reservation:${string}`;
+
+export function reservationLane(providerReservationId: string): NausysLane {
+  return `reservation:${providerReservationId}`;
+}
+
 export interface NausysClientOptions {
   config: NausysConfig;
   fetchImpl?: FetchLike;
@@ -112,14 +136,22 @@ export interface NausysClientOptions {
   retry?: Partial<RetryPolicy>;
   /** Raw retention hook; fires before classification, so error bodies land too. */
   onRawResponse?: (event: RawResponseEvent) => void | Promise<void>;
+  /** Lane for calls that do not name one. Live, because most callers are. */
+  lane?: NausysLane;
 }
 
 export class NausysClient {
   readonly config: NausysConfig;
+  private readonly options: NausysClientOptions;
+  private readonly lane: NausysLane;
   private readonly http: ProviderHttpClient;
+  /** Makes each live call its own lane key, which is what "not serialized" means. */
+  private liveCalls = 0;
 
   constructor(options: NausysClientOptions) {
     this.config = options.config;
+    this.options = options;
+    this.lane = options.lane ?? "live";
     this.http = createProviderHttpClient({
       baseUrl: options.config.baseUrl,
       queueKey: options.config.queueKey,
@@ -132,6 +164,11 @@ export class NausysClient {
     });
   }
 
+  /** The same credential and transport, issuing its calls on another lane. */
+  forLane(lane: NausysLane): NausysClient {
+    return lane === this.lane ? this : new NausysClient({ ...this.options, lane });
+  }
+
   /**
    * Catalogue shape: credentials sit at the TOP LEVEL of the body. Occupancy
    * uses this shape too, despite living under `yachtReservation/v6` alongside
@@ -141,12 +178,18 @@ export class NausysClient {
     endpoint: string,
     schema: z.ZodType<TOut>,
     body: JsonObject = {},
+    lane?: NausysLane,
   ): Promise<TOut> {
-    return this.call(endpoint, schema, {
-      username: this.config.username,
-      password: this.config.password,
-      ...body,
-    });
+    return this.call(
+      endpoint,
+      schema,
+      {
+        username: this.config.username,
+        password: this.config.password,
+        ...body,
+      },
+      lane,
+    );
   }
 
   /** Reservation and booking shape: credentials nested under `credentials`. */
@@ -154,19 +197,40 @@ export class NausysClient {
     endpoint: string,
     schema: z.ZodType<TOut>,
     body: JsonObject = {},
+    lane?: NausysLane,
   ): Promise<TOut> {
-    return this.call(endpoint, schema, {
-      credentials: { username: this.config.username, password: this.config.password },
-      ...body,
-    });
+    return this.call(
+      endpoint,
+      schema,
+      {
+        credentials: { username: this.config.username, password: this.config.password },
+        ...body,
+      },
+      lane,
+    );
+  }
+
+  /**
+   * A live call gets a key nothing else uses, so the queue admits it immediately;
+   * every other lane is a stable key and therefore a real one-at-a-time lane.
+   */
+  private queueKeyFor(lane: NausysLane): string {
+    if (lane === "live") {
+      this.liveCalls += 1;
+      return `${this.config.queueKey}:live#${this.liveCalls}`;
+    }
+    return `${this.config.queueKey}:${lane}`;
   }
 
   private async call<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
     body: JsonObject,
+    lane: NausysLane = this.lane,
   ): Promise<TOut> {
-    const response = await this.http.post(endpoint, body);
+    const response = await this.http.post(endpoint, body, {
+      queueKey: this.queueKeyFor(lane),
+    });
     const parsed = schema.safeParse(response.body);
     if (!parsed.success) {
       throw new ContractError(

@@ -589,7 +589,12 @@ export const restPriceSchema = looseJsonObject({
   /** Security deposit for the period, authoritative over the catalogue value. */
   depositAmount: decimal.optional(),
   depositWhenInsuredAmount: decimal.optional(),
-  /** "I" included, "E" excluded. Varies per price list; see Q-PRICELIST-VAT. */
+  /**
+   * "I" included, "E" excluded. Read only as provenance: NauSYS confirmed
+   * (Aug 2026) that `clientPrice` is the final customer amount whatever this says,
+   * so nothing adds VAT to it. Q-PRICELIST-VAT survives only for the catalogue
+   * "from" price, which is a different number.
+   */
   vatInPrice: z.string().optional(),
   /**
    * What we earn, not what the customer pays. Typed so it is named and therefore
@@ -764,10 +769,24 @@ const blankableString = z
   .transform((value) => (value === false ? undefined : value))
   .optional();
 
+/**
+ * `company` is overloaded on the wire: a company name on most clients, and a bare
+ * `true` on others — "this client is a company", not a company called `true`. Three
+ * of 851 live reservations send it that way, each on a client that has its own name,
+ * address and VAT number.
+ *
+ * Both booleans read as "no company name". Nothing downstream consumes the flag, and
+ * the alternative is what this replaced: `blankableString` rejected `true`, so every
+ * reservation belonging to a company client failed to parse — which on the booking
+ * path is a confirmed charter we would mark provider-rejected. Found by
+ * `scripts/probe-crewlist-link.ts` (Aug 2026).
+ */
+const companyName = z.union([z.string(), z.boolean().transform(() => undefined)]).optional();
+
 export const restClientSchema = looseJsonObject({
   name: blankableString,
   surname: blankableString,
-  company: blankableString,
+  company: companyName,
   vatNr: blankableString,
   address: blankableString,
   zip: blankableString,
@@ -819,6 +838,53 @@ export type RestYachtReservation = z.infer<typeof restYachtReservationSchema>;
  * the client classifies a non-OK status before anything is parsed.
  */
 export const restYachtReservationResponseSchema = restYachtReservationSchema.extend(statusFields);
+
+/** Only these reach a customer's browser as an href; anything else is dropped. */
+const CREW_LIST_LINK_SCHEMES = new Set(["http:", "https:"]);
+
+/**
+ * A value that is fit to be a link on our own pages: a string, and an absolute
+ * http(s) URL once trimmed. Everything else — a number, a null, a relative path, a
+ * `javascript:` payload — fails here rather than downstream.
+ */
+const crewListLinkSchema = z
+  .string()
+  .trim()
+  .refine((value) => {
+    const url = URL.parse(value);
+    return url !== null && CREW_LIST_LINK_SCHEMES.has(url.protocol);
+  });
+
+/**
+ * Matches `crewlistlink` and the casings the vendor might have used for it.
+ *
+ * A pattern rather than a declared field because the spelling is unverified: NauSYS
+ * answered our crew-list question (Aug 2026) calling it `crewlistlink`, but no
+ * reservation in our recorded test account carries the key at all, so it has never
+ * been seen on the wire. `looseJsonObject` keeps undeclared keys, so scanning them
+ * means the first live reservation that carries it works whichever convention the
+ * field follows, instead of the link silently never appearing.
+ */
+const CREW_LIST_LINK_KEY = /^crew[_-]?list[_-]?(link|url)$/i;
+
+/**
+ * The vendor's hosted crew-list page for this reservation (`crew.nausys.com`).
+ *
+ * Forwarding this to the customer is what NauSYS sanctioned in place of posting
+ * passenger data through `crewlist/v6/set2`, so it is read here and nowhere else.
+ * A value that is not an http(s) URL is dropped rather than passed on: this string
+ * becomes a link the customer clicks, and the vendor is not the right party to
+ * decide what scheme our pages will follow.
+ */
+export function crewListLinkOf(reservation: RestYachtReservation): string | undefined {
+  for (const [key, value] of Object.entries(reservation)) {
+    if (!CREW_LIST_LINK_KEY.test(key)) continue;
+
+    const link = crewListLinkSchema.safeParse(value);
+    if (link.success) return link.data;
+  }
+  return undefined;
+}
 
 export const restCreateInfoRequestSchema = z.object({
   credentials: restCredentialsSchema,
