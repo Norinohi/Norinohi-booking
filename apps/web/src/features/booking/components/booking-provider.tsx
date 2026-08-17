@@ -56,7 +56,7 @@ type BookingContextValue = {
   setCrew: (next: CrewType) => void;
   setGuests: (next: number) => void;
   /** Step 2 hands its selection here — reprices the current quote's extras in place. */
-  setExtras: (extras: string[]) => void;
+  setExtras: (extras: string[]) => Promise<void>;
   /** Applies a promo code to the live quote, or clears it with `null`. */
   applyPromo: (code: string | null) => void;
   /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
@@ -174,8 +174,13 @@ export function BookingProvider({
     debounceRef.current = setTimeout(() => void repriceWith({ guests: next }), REPRICE_DEBOUNCE_MS);
   }
 
-  function setExtras(extras: string[]) {
-    if (quote) void repriceWith({ extras });
+  /*
+   * Awaited by its callers, unlike the other controls. The extras step commits once
+   * on Continue rather than on every checkbox, and Confirm may commit them too, so a
+   * caller has to be able to wait for the superseding quote before holding against it.
+   */
+  async function setExtras(extras: string[]) {
+    if (quote) await repriceWith({ extras });
   }
 
   /*

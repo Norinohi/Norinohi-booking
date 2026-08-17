@@ -703,6 +703,49 @@ describe("projectNausysCatalogue", () => {
 
       expect(listingOf(yacht)?.extras).toEqual([]);
     });
+
+    /*
+     * NauSYS flags nothing as crew: a skipper is a priced service like any other and
+     * the name is the only signal. Reading it wrong in either direction is costly, so
+     * an unrecognised name stays a plain extra rather than becoming a role.
+     */
+    describe("crew roles read off the service name", () => {
+      const serviceNamed = (id: number, name: string) => ({
+        service: { id, name: { textEN: name } },
+        priced: [{ serviceId: id, price: "500.00", currency: "EUR" }],
+      });
+
+      const roleFor = (name: string) => {
+        const { service, priced } = serviceNamed(770_001, name);
+        const yacht = maria();
+        const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+        yacht.seasonSpecificData = [{ ...season, services: priced }];
+
+        const catalogue = projectNausysCatalogue(
+          fixtureRecords([yacht], { service: [...recorded.service, service] }),
+        );
+        return catalogue.listings[0]?.extras.find((extra) => extra.externalId === "770001")
+          ?.crewRole;
+      };
+
+      it("recognises the roles the Crew control offers", () => {
+        expect(roleFor("Skipper")).toBe("skipper");
+        expect(roleFor("Captain")).toBe("skipper");
+        expect(roleFor("Hostess")).toBe("hostess");
+        expect(roleFor("Cook")).toBe("cook");
+        expect(roleFor("Chef")).toBe("cook");
+      });
+
+      it("reads the more specific role when a name could match two", () => {
+        expect(roleFor("Skippered charter with cook")).toBe("cook");
+      });
+
+      it("leaves an ordinary service alone rather than guessing", () => {
+        expect(roleFor("Final cleaning")).toBeUndefined();
+        expect(roleFor("Outboard engine")).toBeUndefined();
+        expect(roleFor("Bed linen")).toBeUndefined();
+      });
+    });
   });
 
   it("maps one-way periods from the vendor's periodFrom and periodTo", () => {

@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { listSelectableExtraCodes } from "@yacht-charter/db/search";
 import { listing } from "@yacht-charter/db/schema/listing";
 import {
   priceAdjustmentSnapshot,
@@ -71,6 +72,7 @@ export async function createQuote(
   input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
   userId: string | null,
 ): Promise<PersistedQuote> {
+  await assertSelectableExtras(db, input.listingId, input.extras ?? []);
   const priced = await priceOrConflict(provider, input);
   return persistPricedQuote(db, priced, {
     userId,
@@ -105,6 +107,14 @@ export async function repriceQuote(
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
   const requestedExtras = changes.extras ?? existing.extras;
+
+  // Only what the caller actually sent. A value carried forward is already-written
+  // history, and refusing to re-price a date change because a quote from before
+  // this listing's catalogue was resynced names an extra it no longer sells would
+  // strand the customer on a quote they cannot edit.
+  if (changes.extras !== undefined) {
+    await assertSelectableExtras(db, existing.listingId, changes.extras);
+  }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
@@ -172,6 +182,32 @@ export async function assertQuoteIsFresh(db: Database, quoteId: string, now = ne
   }
 
   return row;
+}
+
+/**
+ * Refuses a selection this listing does not sell, or whose provider cannot price it
+ * at quote time.
+ *
+ * Rejected rather than dropped. Nothing used to check these: an arbitrary string
+ * was persisted onto the quote, carried into the booking draft, and then ignored by
+ * the adapter, so the customer was shown a total that silently omitted what they
+ * thought they had bought.
+ */
+async function assertSelectableExtras(
+  db: Database,
+  listingId: string,
+  extras: readonly string[],
+): Promise<void> {
+  if (extras.length === 0) return;
+
+  const selectable = await listSelectableExtraCodes(db, listingId);
+  const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
+  if (unsold.length === 0) return;
+
+  throw new ORPCError("BAD_REQUEST", {
+    message: `This listing does not sell: ${unsold.join(", ")}`,
+    data: { code: "EXTRA_NOT_SELECTABLE", extras: unsold },
+  });
 }
 
 async function priceOrConflict(

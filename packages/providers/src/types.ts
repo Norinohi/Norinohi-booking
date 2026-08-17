@@ -423,6 +423,12 @@ export const canonicalExtraSchema = z.object({
   calculationType: z.string().optional(),
   /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
   onRequestOnly: z.boolean(),
+  /**
+   * Set when this extra is really a crew role. Vendors sell crew as ordinary
+   * services with no flag saying so, so this is read off the name and left unset
+   * whenever the name does not clearly say which role it is.
+   */
+  crewRole: z.enum(["skipper", "hostess", "cook"]).optional(),
   externalSeasonId: z.string().optional(),
   externalBaseId: z.string().optional(),
 });

@@ -10,7 +10,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -56,7 +56,7 @@ const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
-  const { listing, quote, bookingId, setBookingId } = useBooking();
+  const { listing, quote, bookingId, setBookingId, setExtras } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
@@ -78,17 +78,42 @@ export default function BookingSteps() {
    * Whether the step has anything to choose. It drives both the CTA label — with add-ons on
    * screen the button commits a choice and says so, with only the included items "Save" would
    * be a promise about nothing — and whether skipping the step is worth interrupting a Confirm.
-   * Either way the picks are repriced on toggle; none of this is a deferred write.
+   *
+   * Counts only the extras the provider can actually price. An extra shown as
+   * arrange-with-the-base is not a choice this step takes, so a listing carrying nothing else
+   * must not promise a Save that commits anything.
    */
-  const hasOptionalExtras = (listing?.optionalExtras.length ?? 0) > 0;
+  const hasOptionalExtras =
+    (listing?.optionalExtras.filter((item) => item.selectable).length ?? 0) > 0;
+
+  /*
+   * The picks are a deferred write: they are committed once, when the step is left, rather
+   * than on every checkbox. Each reprice is a live provider call, so toggling four boxes used
+   * to mean four round trips and three thrown-away answers. The cost is that the sidebar total
+   * lags the checkbox until this runs.
+   *
+   * Keyed on the selection itself rather than on whether the step was completed, because the
+   * step can be reopened and changed after a Continue; comparing the sorted codes is what
+   * stops both a silently dropped change and a pointless supersede when nothing moved.
+   */
+  const committedExtras = useRef<string | null>(null);
+
+  async function commitExtras() {
+    const picks = getValues("extras.optional");
+    const key = [...picks].sort().join("|");
+    if (committedExtras.current === key) return;
+    committedExtras.current = key;
+    await setExtras(picks);
+  }
 
   async function advanceStep(step: Step, index: number) {
-    if (await trigger(step)) {
-      setCompleted((prev) => new Set(prev).add(step));
-      setOpen(STEPS[index + 1]?.id ?? null);
+    if (!(await trigger(step))) {
+      touch(step);
       return;
     }
-    touch(step);
+    if (step === "extras") await commitExtras();
+    setCompleted((prev) => new Set(prev).add(step));
+    setOpen(STEPS[index + 1]?.id ?? null);
   }
 
   /*
@@ -123,6 +148,13 @@ export default function BookingSteps() {
       toast.info(t("extrasSkipped"));
       return;
     }
+
+    /*
+     * Reaching Confirm without pressing the Extras step's own Continue leaves the picks
+     * uncommitted, so they are committed here. Awaited: the reprice supersedes the quote, and
+     * holding against the previous one would book the charter without the extras.
+     */
+    await commitExtras();
 
     for (const { id } of STEPS.slice(0, REVIEW_INDEX + 1)) {
       if (!(await trigger(id))) {

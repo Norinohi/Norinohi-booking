@@ -830,6 +830,7 @@ async function writeListingChildren(
         externalId: extra.externalId,
         name: extra.name,
         obligatory: extra.obligatory,
+        crewRole: extra.crewRole ?? null,
         priceMinor: extra.priceMinor,
         priceCurrency: extra.priceCurrency,
         priceMeasure: extra.priceMeasure ?? null,

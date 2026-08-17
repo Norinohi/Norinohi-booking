@@ -1701,26 +1701,26 @@ const allowsPets = (baseId: string, categoryId: string) =>
 const hasConfirmedAvailability = (slotId: string, status: string) =>
   status !== "available" || !slotId.includes("2026_08_08");
 
-const mandatoryExtraIds = ["amn_cleaning_fee", "amn_transit_log", "amn_marina_fees"] as const;
-
-const mandatoryExtraPrice = (amenityId: string) => {
-  switch (amenityId) {
-    case "amn_cleaning_fee":
-      return 15_000;
-    case "amn_transit_log":
-      return 40_000;
-    case "amn_marina_fees":
-      return 15_000;
-    default:
-      return 0;
-  }
-};
-
-const optionalExtraIdsFor = (categoryId: string) => {
-  if (categoryId === "cat_luxury") return ["amn_sunbathing_area", "amn_gas_bbq", "amn_hot_tub"];
-  if (categoryId === "cat_catamaran") return ["amn_sunbathing_area", "amn_gas_bbq"];
-  return ["amn_gas_bbq"];
-};
+/**
+ * The extras a mock listing sells, mirroring the non-crew entries of
+ * `packages/providers/src/mock/fixtures/availability.json`.
+ *
+ * These two lists have to agree, and this file cannot import that fixture because
+ * `packages/providers` depends on this package, not the other way round. Keeping
+ * them in step is what makes the displayed price the charged one: the mock adds
+ * every obligatory extra to a quote whether or not it was selected, so a mandatory
+ * extra shown here and absent there would be displayed and never billed, and one
+ * there and not here would be billed and never shown.
+ *
+ * Deliberately the same set for every listing, because the mock prices one global
+ * list rather than a per-yacht one.
+ */
+const MOCK_EXTRAS = [
+  { externalId: "transit-log", name: "Transit log", obligatory: true, priceMinor: 25_000 },
+  { externalId: "sup", name: "Stand-up paddleboard", obligatory: false, priceMinor: 12_000 },
+  { externalId: "early-checkin", name: "Early check-in", obligatory: false, priceMinor: 18_000 },
+  { externalId: "safety-net", name: "Safety net", obligatory: false, priceMinor: 15_000 },
+] as const;
 
 /**
  * Which crew roles a yacht sells, following how the operator sells the hull: a
@@ -1742,19 +1742,6 @@ const crewRolePrice = (amenityId: string) => {
       return 105_000;
     case "amn_cook":
       return 120_000;
-    default:
-      return 0;
-  }
-};
-
-const optionalExtraPrice = (amenityId: string) => {
-  switch (amenityId) {
-    case "amn_sunbathing_area":
-      return 10_000;
-    case "amn_gas_bbq":
-      return 20_000;
-    case "amn_hot_tub":
-      return 10_000;
     default:
       return 0;
   }
@@ -2141,33 +2128,22 @@ export async function main() {
       },
     });
 
-  const amenityNameById = new Map(amenities.map((item) => [item.id, item.name]));
-
   await db
     .insert(providerExtraCatalogue)
     .values(
       yachts.flatMap((item) =>
-        [
-          ...mandatoryExtraIds.map((amenityId) => ({
-            amenityId,
-            obligatory: true,
-            priceMinor: mandatoryExtraPrice(amenityId),
-          })),
-          ...optionalExtraIdsFor(item.categoryId).map((amenityId) => ({
-            amenityId,
-            obligatory: false,
-            priceMinor: optionalExtraPrice(amenityId),
-          })),
-        ].map(({ amenityId, obligatory, priceMinor }) => ({
-          id: `pxtr_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${amenityId.replace("amn_", "")}`,
+        MOCK_EXTRAS.map((extra) => ({
+          id: `pxtr_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${extra.externalId.replaceAll("-", "_")}`,
           listingId: item.listingId,
           source: "mock",
+          // The mock keeps one flat code space rather than the separate service and
+          // equipment spaces a real vendor has; `equipment` is the arbitrary half of
+          // the pair it is filed under.
           kind: "equipment" as const,
-          // The seed has no vendor id space of its own, so the amenity id stands in.
-          externalId: amenityId,
-          name: amenityNameById.get(amenityId) ?? amenityId,
-          obligatory,
-          priceMinor,
+          externalId: extra.externalId,
+          name: extra.name,
+          obligatory: extra.obligatory,
+          priceMinor: extra.priceMinor,
           priceCurrency: "EUR",
           onRequestOnly: false,
         })),

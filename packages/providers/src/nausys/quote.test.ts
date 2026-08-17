@@ -55,6 +55,12 @@ function firstObligatoryExtra(body: FreeYachtsResponse) {
   return extra;
 }
 
+function firstAdditionalExtra(body: FreeYachtsResponse) {
+  const [extra] = firstYacht(body).additionalExtras ?? [];
+  if (!extra) throw new Error("fixture lost its additional extras");
+  return extra;
+}
+
 function resolverFor(externalYachtId: string): CatalogueResolver {
   return {
     providerId: () => Promise.resolve("prv_nausys"),
@@ -153,16 +159,129 @@ describe("NauSYS live quote", () => {
     expect(sumOf(priced)).toBe(priced.total.amountMinor);
   });
 
+  /*
+   * `clientPrice` covers the charter and its obligatory extras, so a selected
+   * optional extra is genuinely additive. The vendor never learns of the choice —
+   * these are settled with the base on arrival.
+   */
+  describe("selected optional extras", () => {
+    const withExtras = (extras: string[]) => ({ ...request, extras });
+
+    it("prices a selected additional extra as an optional line", async () => {
+      const { service, transport } = build();
+      transport.respondWith("freeYachts", fixtureResponse());
+      const priced = await service.getNausysQuote(withExtras(["service:8003"]));
+
+      expect(lineByCode(priced, "service:8003")).toMatchObject({
+        kind: "extra",
+        group: "optional",
+        payWhen: "at_check_in",
+        amount: { amountMinor: 105_000, currency: "EUR" },
+      });
+      // 3340.00 charter + 150.00 + 70.00 obligatory + 1050.00 selected.
+      expect(priced.total).toEqual({ amountMinor: 461_000, currency: "EUR" });
+      expect(sumOf(priced)).toBe(priced.total.amountMinor);
+    });
+
+    it("prices nothing when the customer selected nothing", async () => {
+      const priced = await quote();
+
+      expect(priced.lines.filter((line) => line.group === "optional")).toEqual([]);
+    });
+
+    it("ignores a code the offer does not carry rather than billing it", async () => {
+      const { service, transport } = build();
+      transport.respondWith("freeYachts", fixtureResponse());
+      const priced = await service.getNausysQuote(withExtras(["service:999999"]));
+
+      expect(priced.lines.filter((line) => line.group === "optional")).toEqual([]);
+    });
+
+    /*
+     * NauSYS numbers services and equipment independently, and no recorded offer
+     * has ever carried the `extraId` shape, so an `equipment:` code has nothing
+     * trustworthy to match against. Matching it on the service id would bill the
+     * customer for whatever service happened to share the number.
+     */
+    it("does not match an equipment code against a service id", async () => {
+      const { service, transport } = build();
+      transport.respondWith("freeYachts", fixtureResponse());
+      const priced = await service.getNausysQuote(withExtras(["equipment:8003"]));
+
+      expect(priced.lines.filter((line) => line.group === "optional")).toEqual([]);
+    });
+  });
+
+  /*
+   * NauSYS sells crew as ordinary services and flags none of them, so the roles come
+   * from the catalogue sync's reading of the service names. Before this the crew
+   * choice was echoed back and priced at nothing: a crewed charter quoted bareboat.
+   */
+  describe("crew", () => {
+    // Service 8003 in the recording, standing in for the skipper the operator sells.
+    const crewRoles = [{ role: "skipper" as const, externalId: "8003" }];
+    const buildWithCrew = () => build({ loadCrewRoles: () => Promise.resolve(crewRoles) });
+
+    it("prices the chosen crew as a crew line", async () => {
+      const { service, transport } = buildWithCrew();
+      transport.respondWith("freeYachts", fixtureResponse());
+      const priced = await service.getNausysQuote({ ...request, crewType: "skipper" });
+
+      expect(lineByCode(priced, "service:8003")).toMatchObject({
+        kind: "extra",
+        group: "crew",
+        amount: { amountMinor: 105_000, currency: "EUR" },
+      });
+      expect(sumOf(priced)).toBe(priced.total.amountMinor);
+    });
+
+    it("quotes no crew for a bareboat charter or an unanswered control", async () => {
+      const { service, transport } = buildWithCrew();
+      transport.respondWith("freeYachts", fixtureResponse());
+      const bareboat = await service.getNausysQuote({ ...request, crewType: "bareboat" });
+      const unanswered = await service.getNausysQuote(request);
+
+      expect(bareboat.lines.filter((line) => line.group === "crew")).toEqual([]);
+      expect(unanswered.lines.filter((line) => line.group === "crew")).toEqual([]);
+    });
+
+    it("bills crew once when the same service is also ticked as an extra", async () => {
+      const { service, transport } = buildWithCrew();
+      transport.respondWith("freeYachts", fixtureResponse());
+      const priced = await service.getNausysQuote({
+        ...request,
+        crewType: "skipper",
+        extras: ["service:8003"],
+      });
+
+      expect(priced.lines.filter((line) => line.code === "service:8003")).toHaveLength(1);
+      expect(sumOf(priced)).toBe(priced.total.amountMinor);
+    });
+
+    /*
+     * The operator names its crew in a way the projection did not recognise, so the
+     * catalogue holds no role for this listing. Charging for a service we guessed at
+     * would be worse than leaving the choice unpriced.
+     */
+    it("leaves crew unpriced when the catalogue recognised no role", async () => {
+      const { service, transport } = build({ loadCrewRoles: () => Promise.resolve([]) });
+      transport.respondWith("freeYachts", fixtureResponse());
+      const priced = await service.getNausysQuote({ ...request, crewType: "full-crew" });
+
+      expect(priced.lines.filter((line) => line.group === "crew")).toEqual([]);
+    });
+  });
+
   it("maps ADVANCE_PAYMENT to now and SEPARATE_PAYMENT to at_check_in", async () => {
     const priced = await quote();
 
-    expect(lineByCode(priced, "nausys-service-8001")).toMatchObject({
+    expect(lineByCode(priced, "service:8001")).toMatchObject({
       kind: "extra",
       payWhen: "at_check_in",
       amount: { amountMinor: 15_000, currency: "EUR" },
     });
     // Quantity 10 on a 70.00 service: `amount` is the line total, not a unit price.
-    expect(lineByCode(priced, "nausys-service-8002")).toMatchObject({
+    expect(lineByCode(priced, "service:8002")).toMatchObject({
       kind: "extra",
       payWhen: "now",
       amount: { amountMinor: 7_000, currency: "EUR" },
@@ -327,8 +446,7 @@ describe("NauSYS priceSourceHash", () => {
     const priced = await service.getNausysQuote(request);
 
     expect(
-      priced.lines.find((item) => item.code === `nausys-service-${extra.serviceId}`)?.amount
-        .amountMinor,
+      priced.lines.find((item) => item.code === `service:${extra.serviceId}`)?.amount.amountMinor,
     ).toBe(15_000);
   });
 
@@ -344,8 +462,7 @@ describe("NauSYS priceSourceHash", () => {
     const priced = await service.getNausysQuote(request);
 
     expect(
-      priced.lines.find((item) => item.code === `nausys-service-${extra.serviceId}`)?.amount
-        .amountMinor,
+      priced.lines.find((item) => item.code === `service:${extra.serviceId}`)?.amount.amountMinor,
     ).toBe(2_999);
   });
 
@@ -361,6 +478,12 @@ describe("NauSYS priceSourceHash", () => {
     expect(moved.priceSourceHash).not.toBe((await quote()).priceSourceHash);
   });
 
+  /*
+   * Unselected additional extras stay out of the hash: the operator may re-price
+   * its whole optional catalogue without touching what this customer owes, and
+   * invalidating the quote for that would be noise. Selected ones are a different
+   * matter; see below.
+   */
   it("ignores fields that cannot change what the customer pays", async () => {
     const body = fixtureResponse();
     const yacht = firstYacht(body);
@@ -372,6 +495,24 @@ describe("NauSYS priceSourceHash", () => {
     const echoed = await service.getNausysQuote(request);
 
     expect(echoed.priceSourceHash).toBe((await quote()).priceSourceHash);
+  });
+
+  it("moves when a selected optional extra moves", async () => {
+    const selected = { ...request, extras: ["service:8003"] };
+    const baseline = build();
+    baseline.transport.respondWith("freeYachts", fixtureResponse());
+    const before = await baseline.service.getNausysQuote(selected);
+
+    const body = fixtureResponse();
+    const extra = firstAdditionalExtra(body);
+    extra.amount = "1200.00";
+    extra.totalPrice = "1200.00";
+
+    const { service, transport } = build();
+    transport.respondWith("freeYachts", body);
+    const after = await service.getNausysQuote(selected);
+
+    expect(after.priceSourceHash).not.toBe(before.priceSourceHash);
   });
 });
 

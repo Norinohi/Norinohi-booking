@@ -20,7 +20,8 @@
     "extras": {
       "mandatory": "Mandatory",
       "optional": "Optional extras",
-      "included": "Included"
+      "included": "Included",
+      "arrangeAtBase": "Arrange with the base"
     },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
