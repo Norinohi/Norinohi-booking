@@ -57,12 +57,18 @@ same contract. The oRPC layer depends on the interface, never on NauSYS structur
 
 ### Constraints the vendor imposes on any implementation
 
-1. **Calls must be strictly sequential per credential.** The vendor's
-   implementation guidelines state that parallel requests are not allowed. This is
-   contractual, not a tuning knob: the connector serializes every call through a
-   concurrency-1 queue keyed by credential. A multi-hour catalogue sync therefore
-   shares one lane with every live customer quote, which is why a sync-only second
-   credential is the first vendor question (§8).
+1. **Background sweeps must be strictly sequential per credential; live calls need
+   not be.** The vendor's implementation guidelines state that parallel requests
+   are not allowed, and NauSYS narrowed that in writing (Aug 2026): "all live calls
+   from the customer regarding booking flow will not be affected by parallel
+   request restriction." So the connector runs three kinds of lane, all keyed off
+   the credential (`client.ts`, `NausysLane`): `sync` is the single serialized lane
+   the rule governs, carrying catalogue dumps and occupancy sweeps;
+   live availability and quote calls are unserialized; and calls that touch one
+   reservation serialize per reservation, which is our own constraint rather than
+   the vendor's (the `uuid` in §1.4 rotates on every write). A multi-hour catalogue
+   sync therefore no longer queues in front of a checkout price check, and a
+   sync-only second credential is no longer needed.
 2. **Errors arrive as HTTP 200** with `{"status": "<CODE>", "errorCode": <n>}`.
    HTTP status alone tells you nothing.
 3. **The booking chain is `createInfo` → `createOption` → `createBooking`** and no
@@ -169,13 +175,42 @@ Calls are under `/CBMS-external/rest/booking/v6/`.
 | Create option                    | `RestYachtReservationOptionRequest`    | reserve a temporary provider hold with expiry                                             |
 | Online payment / payment plan    | online-payment requests/responses      | provider payment integration; do not conflate with Stripe until commercial flow is agreed |
 | Storno option                    | provider option cancellation           | release a hold after expiry/customer cancellation                                         |
-| Update extras                    | extras update request                  | recalculate quote after selections change                                                 |
+| Update extras                    | extras update request                  | recalculate quote after selections change; **quantity 0 removes a line**                  |
+
+#### Extras: ids, removal and the editable flag
+
+Confirmed by NauSYS, Aug 2026, and implemented in `nausys/booking.ts`:
+
+- `addExtras` takes the **season/catalogue** `serviceId` from the
+  `freeYachts`/`freeYachtsSearch` response. `updateExtras` takes the reservation
+  line's own `yachtReservationServiceId`. Two id spaces, one per call.
+- `updateExtras` is a **partial** update — unnamed lines keep their current
+  quantity — so the desired set is diffed rather than replayed.
+- **Removal is `updateExtras` with `quantity: 0`**, which drops the line from the
+  info and the option. There is no separate delete endpoint and no need to storno
+  and rebuild the reservation.
+- Each line carries an **`editable`** flag. A line the operator locked cannot be
+  changed, so a removal it blocks fails loudly instead of leaving a deselected
+  extra on the bill.
+- **Extras cannot be edited once the booking is confirmed.** Only the vendor knows
+  the reservation's current status, so that refusal arrives as a classified
+  provider error rather than a local guard.
+
+#### Extras pricing
+
+`amount` is the **unit price**, `quantity` the multiplier, and `totalPrice` the
+line total. NauSYS confirmed this twice (Aug 2026), the second time adjudicating
+their own documentation example — a `quantity: 10` extra that raises
+`totalPriceWithExtras` by one times `amount` — as a documentation mistake they will
+correct. The recorded response `{amount: "10.00", quantity: "10.00", totalPrice:
+"100.00"}` bills the customer 100.00. The connector uses `totalPrice` where the
+vendor sends it and `amount x quantity` where it does not.
 
 ### 2.4 Crew, invoices and contacts - PDF pages 134-153
 
 | Area                      | Use                                                    | Data handling                                                                                |
 | ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| Crew list                 | Retrieve/set passenger/crew manifest                   | collect only after booking when provider requires it; restrict access and audit mutations    |
+| Crew list                 | Retrieve/set passenger/crew manifest                   | do not implement `crewlist/v6/set2`; forward the vendor's `crewlistlink` (see below)         |
 | Invoices/linked documents | Provider invoice and document retrieval                | store metadata and provider reference; use object storage for permitted copies               |
 | Contacts2                 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts |
 | Deprecated Contacts       | Legacy contact endpoints                               | do not implement; use Contacts2                                                              |
@@ -185,6 +220,59 @@ email, telephone, document/passport-related data and crew-specific attributes.
 Treat this as sensitive personal data: encrypt at rest where stored, minimize
 retention, redact application logs, and never return it in generic profile or
 booking-list procedures.
+
+#### Crew list: forward the vendor's link
+
+**Answered (NauSYS, Aug 2026); the link is now carried end to end.** The vendor's
+answer settles who wants the manifest and why: the crew list is required by the
+**charter company**, not by NauSYS, because the authorities require it of them — the
+same obligation as a hotel check-in. If it is not complete on arrival, the base
+collects it there; nothing about the booking itself fails. And **forwarding the
+customer the reservation's `crewlistlink` is explicitly acceptable** in place of
+posting the data ourselves through `crewlist/v6/set2`.
+
+That is worth taking, because collecting it ourselves is the more expensive half:
+`requiredFields` varies per reservation and the vendor performs no API-side
+validation, so a partial list is accepted silently and we would be telling customers
+they are done without any confirmation the operator agrees.
+
+**What is built.** `crewListLinkOf` in `nausys/endpoints.ts` reads the link off a
+reservation response, `ProviderReservation.crewListLink` carries it, the hold and the
+confirmation both persist it to `booking.crew_list_link` (migration 0042), and
+`booking.get` returns it as `crewListLink`. Two things about the read are worth
+knowing:
+
+- **The spelling is confirmed: `crewlistlink`, all lower case.** Verified against the
+  live account with `scripts/probe-crewlist-link.ts` (`pnpm --filter
+@yacht-charter/providers probe:crewlist`), a read-only pass over
+  `yachtReservation/v6/reservations`: 849 of 851 reservations carry it, and the value
+  is `https://crew.nausys.com/<reservationId>/<token>/`. The reader still matches the
+  key case-insensitively, which now costs nothing and covers the vendor changing
+  convention. The 2 without one are `RESERVATION`s that simply have no link.
+- **Only http(s) values survive.** The string becomes a link a customer clicks, so
+  the scheme is checked here rather than trusted; anything else is dropped. A
+  malformed link never fails the confirmation itself — the field is optional all the
+  way through, because a bad URL must not reject a charter that is already paid for.
+
+**Found while verifying this.** The same probe turned up a live parse failure with
+nothing to do with crew lists: `client.company` comes back as a bare `true` on a
+client that is a company, and `restClientSchema` rejected any boolean but `false`.
+Three of 851 reservations answer that way, and on the booking path an unparseable
+response is a charter the vendor accepted that we would record as
+provider-rejected. `company` now reads a boolean as "no company name".
+
+**Decided (Aug 2026): we do not forward the link.** The customer fills the crew list
+in on our own booking page — a panel on `/bookings/[id]` over the
+`booking.travellers.*` procedures — and we submit it to the operator ourselves. So
+`crewListLink` stays stored and exposed but nothing renders it; it is the fallback if
+the submission turns out to be unavailable to our credential.
+
+**The submission is blocked on the vendor.** `crewlist/v6/set2` is not implemented
+here because its path is not discoverable: every plausible spelling under
+`/CBMS-external/rest/crewlist/v6/` answers HTTP 404 on production, on the same
+credential that gets a 200 from `catalogue/v6/countries`. Until we have the request
+schema — PDF pages ~134-153, or their Swagger — what a customer types is stored and
+reaches nobody, and the base still asks at the desk.
 
 ## 3. Data structure families - PDF pages 154-357
 
@@ -308,6 +396,20 @@ event timestamps to UTC.
    the immutable quote snapshot.
 6. Never expose agency price/commission unless the business explicitly requires
    it for an internal admin role.
+7. **`price.clientPrice` is the final customer amount, VAT included.** NauSYS
+   confirmed (Aug 2026) that the charter company configures the calculation on
+   its price list and that "the client price is the one you need to charge the
+   client without any additional calculation on your side". So nothing is added
+   to it: no VAT step, no rounding, no conversion. `vatInPrice` on a
+   `catalogue/v6/priceLists` entry still varies per list, but that is the
+   catalogue-derived "from" price on a card, not the amount anyone is billed.
+8. **A discount we grant comes out of our commission, capped by
+   `maxDiscountFromCommission`.** That is the binding field, not `maxDiscount`:
+   the vendor's answer is that a broker "can give up to the amount in
+   maxDiscountFromCommission". The minimum sale price is therefore
+   `clientPrice − (our discount, ≤ that cap)`. Whether the field is an amount or a
+   percentage is the one part still to pin down; NauSYS has a documentation update
+   coming and will tell us when it lands.
 
 ## 6. Booking state model
 
@@ -346,23 +448,46 @@ Terminal/side states: `QUOTE_EXPIRED`, `OPTION_EXPIRED`, `PAYMENT_FAILED`,
 7. Add scheduled sync/reconciliation, structured logs, provider metrics and
    alerts before enabling live booking.
 
-## 8. Vendor questions required before production
+## 8. Vendor questions
 
-- Agency credential permissions: which endpoints can create options/bookings,
-  add extras, access invoices and manage contacts?
-- Authentication/security, rate limits, pagination, bulk catalogue capability,
-  timeouts and retry guidance.
-- Freshness guarantees and any webhook/event mechanism for price, availability,
-  options and cancellations.
-- Exact option expiry, cancellation and payment semantics; whether an option
-  locks price and availability.
-- Meaning and use of client, agency and list price; commissions, VAT, currency
-  conversion and allowed agency discounts.
-- Stable yacht/operator IDs and fields sufficient to safely match records with
-  Booking Manager.
-- Rights and caching rules for images, descriptions, ratings and invoices.
-- Required customer/crew fields, retention requirements and data-processing
-  terms.
+### Answered (NauSYS, Aug 2026)
+
+Each answer is implemented where it touches code; the citation lives next to the
+code it justifies.
+
+| Question                                     | Answer                                                                                                                                                                                                   | Where it landed                                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Is `amount` a unit price or the line total?  | Unit price; `totalPrice` = `amount` x `quantity`. The contrary example in their documentation is a mistake they will fix.                                                                                | §2.3, `nausys/quote.ts`                             |
+| How is an extra removed?                     | `updateExtras` with `quantity: 0`; honour `editable`; no edits after confirmation. `addExtras` takes the season id, `updateExtras` the reservation line id.                                              | §2.3, `nausys/booking.ts`                           |
+| Is `clientPrice` the final customer amount?  | Yes, VAT included, nothing to add on our side.                                                                                                                                                           | §5.7                                                |
+| Which field caps an agency discount?         | `maxDiscountFromCommission`, drawn from our commission. Units pending their documentation update.                                                                                                        | §5.8                                                |
+| Must every call on one credential be serial? | No — live booking-flow calls are exempt; the restriction covers the background sweeps.                                                                                                                   | §1 constraint 1, `nausys/client.ts`                 |
+| Is `countryId` in `createInfo` a NauSYS id?  | Yes, the `catalogue/v6/countries` id, matched via `code2` — not an ISO code.                                                                                                                             | `nausys/booking.ts`, `shared/catalogue-resolver.ts` |
+| Must we build crew lists ourselves?          | No. The charter company needs the list because the authorities require it of them; the base collects it on arrival if it is incomplete. Sending our customers the vendor's `crewlistlink` is acceptable. | §2.4                                                |
+
+### Still open
+
+- **Test-account credentials.** `ws-test.nausys.com` is live and answers in the
+  vendor's own envelope, but our credential is production-only: it earns
+  `AUTHENTICATION_ERROR` (100) there on `catalogue/v6/countries`, which needs no
+  special permission. Until NauSYS issues a test login, the booking chain can only be
+  exercised against real inventory — so ask for one before anything calls
+  `createInfo`.
+- **Agency credential permissions** — which endpoints our credentials may call:
+  create options/bookings, add extras, access invoices, manage contacts.
+- **Rate limits, pagination, timeouts and retry guidance**, now that sequencing is
+  settled; and whether any bulk/delta catalogue endpoint exists.
+- **Freshness guarantees and webhooks/events** for price, availability, options and
+  cancellations, or whether polling is the only option.
+- **Exact option expiry and cancellation semantics** — whether an option locks
+  price as well as availability, cancellation windows, penalties, who may cancel.
+- **`maxDiscountFromCommission` units** — amount or percentage (their
+  documentation update).
+- **Stable yacht/operator IDs** sufficient to safely match records with Booking
+  Manager.
+- **Rights and caching rules** for images, descriptions, ratings and invoices.
+- **Retention and data-processing terms** for the customer data we do send
+  (`createInfo`: name, email, phone, country) and invoice ownership.
 
 ## 9. Deliberate MVP exclusions
 

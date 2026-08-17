@@ -46,6 +46,15 @@ Who earns a referral reward, how much, and when does it apply — at signup, at 
 
 - **What ships either way:** the `referral` / `discount` / `promo_code` schema exists; these are the business rules that fill it in. The backend must be ready in **M4** because the referrals/discounts **UI is an M5** task.
 
+### D-CREWLIST — Do we keep our own crew-list form? · **DECIDED: yes, we collect it ourselves** · Aug 2026
+
+NauSYS confirmed the crew list is the **charter company's** legal obligation, that the base collects it on arrival if it is incomplete, and that forwarding the customer the reservation's `crewlistlink` would have been acceptable. **We are not taking that option.** The customer fills the crew list in on our own booking page and we pass it to the operator, rather than sending them to `crew.nausys.com`.
+
+- **Built:** the crew-list panel on `/bookings/[id]`, over the `booking.travellers.*` procedures that already existed with no UI. Date of birth and document number are encrypted at rest and returned by no other procedure.
+- **Not built yet:** the push to NauSYS. `crewlist/v6/set2` is not in this repo and its path is not discoverable — every plausible spelling under `/CBMS-external/rest/crewlist/v6/` answers 404 on production while `catalogue/v6/countries` answers 200 on the same credential. **Blocked on the vendor's spec** (PDF pages ~134-153, or their Swagger).
+- **Consequence while it is blocked:** what a customer types is stored but reaches no operator, so the base will still ask at the desk. That is the same outcome as not filling it in — it is not a regression, but it is not the promise the panel's wording makes either, so this should not sit unfinished for long.
+- **`booking.crew_list_link` stays.** It costs one nullable column, it is what the connector already reads, and it is the fallback if the push turns out to be unavailable to our credential.
+
 ### D-PAYORDER — Deposit policy default + payment ordering · **owner: us + product** · **needed by: M5**
 
 Two parts: (1) what's the default payment policy — 50% deposit, 100% prepayment, or per-listing? (2) Do we take the customer's money **before** or **after** we commit the booking with the provider? Part (2) depends on the provider answer **Q-AVAIL** below.
@@ -57,6 +66,8 @@ Two parts: (1) what's the default payment policy — 50% deposit, 100% prepaymen
 ## 3. Questions to send to the providers (Booking Manager & NauSYS)
 
 These aren't ours to decide — they're to **forward to the providers** so answers land before we build the live connectors. Grouped so they can be pasted into an email. Most apply to **both** providers.
+
+**✅ Answered (NauSYS, Aug 2026)** — a second round closed the questions that gated taking money: `amount` on an extra is a **unit price** and `totalPrice` is `amount × quantity` (their documentation example showing otherwise is a mistake they will fix); an extra is **removed** by sending `updateExtras` with `quantity: 0`, subject to the line's `editable` flag and impossible after confirmation; **`clientPrice` is the final customer amount, VAT included**, with nothing to add on our side; an agency discount comes out of our commission and is capped by **`maxDiscountFromCommission`** (amount-or-percentage still to confirm); **live booking-flow calls are exempt** from the sequential-only rule, so a catalogue sync no longer blocks a checkout price check; `countryId` in `createInfo` is the NauSYS country id matched via `code2`; and **crew lists may be handed to the customer as the vendor's `crewlistlink`** rather than collected and posted by us (the link is now carried from the reservation through to `booking.get`; what remains is the product call on our own crew-list form, which is never forwarded to NauSYS and so satisfies no operator's obligation — see D-CREWLIST below). Detail and the code each answer changed: [`nausys-api-v6-backend-map.md`](./nausys-api-v6-backend-map.md) §8.
 
 **✅ Answered (Booking Manager, Aug 2026, support@mmksystems.com)** - the date/time & timezone questions: non-`/offers` calls use a **fixed CET clock that observes DST**; requests are `yyyy-MM-ddTHH:mm:ss` with a literal `T` and **mandatory seconds**, responses are space-separated `yyyy-MM-dd HH:mm:ss`; **no offset or `Z` suffix in either direction**, and no per-base zone is exposed. `/offers` takes `00:00:00` and the vendor substitutes the base's real check-in/check-out time. Details in [`booking-manager-api-backend-map.md`](./booking-manager-api-backend-map.md) §5.
 
@@ -74,10 +85,10 @@ These aren't ours to decide — they're to **forward to the providers** so answe
 
 ### Commercial & data
 
-7. **Pricing semantics** — We see `priceListPrice`, `agencyPrice`, and `clientPrice` (NauSYS). Please confirm which the customer pays, where our **commission** sits, how **VAT** and **currency conversion** are handled, and what **agency discounts** we're allowed to apply. _(please confirm the Booking Manager equivalents too)_
+7. **Pricing semantics** — We see `priceListPrice`, `agencyPrice`, and `clientPrice` (NauSYS). Please confirm which the customer pays, where our **commission** sits, how **VAT** and **currency conversion** are handled, and what **agency discounts** we're allowed to apply. _(please confirm the Booking Manager equivalents too)_ — **NauSYS answered:** the customer pays `clientPrice`, VAT included and final; a discount comes out of our commission, capped by `maxDiscountFromCommission`. Still open for Booking Manager, and for the units of that cap.
 8. **Option/cancellation semantics** — Exact **option expiry**, **cancellation windows**, penalties, and who may cancel.
 9. **Media rights** — May we **cache and transform** your photos (via our image pipeline / Cloudinary) and display them on our site, or must we hotlink? Please point to the relevant **Terms & Conditions**.
-10. **Customer & crew data** — Which customer/crew fields are **required** for a booking, and what are your **retention / data-processing** terms (for GDPR)? Who owns invoice generation?
+10. **Customer & crew data** — Which customer/crew fields are **required** for a booking, and what are your **retention / data-processing** terms (for GDPR)? Who owns invoice generation? — **NauSYS answered the crew half:** the crew list is the charter company's legal obligation, not NauSYS's, and we may forward the customer the reservation's `crewlistlink` instead of collecting passport data ourselves. Retention/processing terms and invoice ownership are still open.
 
 ---
 
