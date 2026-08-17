@@ -16,6 +16,7 @@ import {
 import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
+  type CanonicalExtra,
   type ProviderRecordSet,
 } from "../types";
 import {
@@ -419,6 +420,7 @@ function projectYacht(
     },
     media: mediaOf(yacht),
     amenities: amenityIdsOf(yacht).filter((id) => context.knownEquipment.has(id)),
+    extras: extrasOf(yacht, currency),
     texts: textsOf(yacht),
     checkinRules: checkinRulesOf(yacht),
     // The catalogue states no one-way periods; `/offers` is where a one-way charter
@@ -589,6 +591,53 @@ function countryCodeOf(country: RestCountry): string {
   return short !== undefined && short.length <= 3
     ? short.toUpperCase()
     : `${PROVIDER_PREFIX}-${country.id}`;
+}
+
+/**
+ * The priced extras behind the listing's two paid sections. Unlike NauSYS these
+ * name themselves, so no reference list has to resolve them.
+ *
+ * The vendor hangs extras off products rather than off the yacht, and the same
+ * extra is normally repeated by every product that sells it. The default
+ * product's price is the published one, so its entries are taken first and later
+ * repeats of the same id are ignored.
+ */
+function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
+  const products = [...(yacht.products ?? [])].sort(
+    (left, right) =>
+      Number(right.isDefaultProduct === true) - Number(left.isDefaultProduct === true),
+  );
+
+  const chosen = new Map<string, CanonicalExtra>();
+  for (const product of products) {
+    for (const item of product.extras ?? []) {
+      const externalId = idOf(item.id);
+      const label = text(item.name);
+      // An extra with no id cannot be kept stable across syncs, and one with no
+      // name cannot be shown to a buyer.
+      if (externalId === null || label === undefined) continue;
+      if (chosen.has(externalId)) continue;
+
+      const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+      const priceMinor = minorOf(item.price, priceCurrency);
+      if (priceMinor === undefined) continue;
+
+      chosen.set(externalId, {
+        // The vendor numbers extras in one space of its own, with no separate
+        // equipment pricing list to tell apart.
+        kind: "service",
+        externalId,
+        name: label,
+        obligatory: item.obligatory === true,
+        priceMinor,
+        priceCurrency,
+        priceMeasure: text(item.unit),
+        calculationType: undefined,
+        onRequestOnly: false,
+      });
+    }
+  }
+  return [...chosen.values()];
 }
 
 /**

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { JsonValue } from "../shared/json";
 import type { ProviderRecordSet } from "../types";
 import { projectBookingManagerCatalogue } from "./projection";
 
@@ -49,5 +50,84 @@ describe("country codes across both vendor spellings", () => {
     );
 
     expect(countries[0]?.name).toBe("ITA");
+  });
+});
+
+/**
+ * The vendor hangs priced extras off a yacht's products. They are the catalogue's
+ * only source for the listing's mandatory and optional extras sections; the
+ * equipment lists say what the yacht carries, not what it costs to add.
+ */
+describe("product extras", () => {
+  /** Only the fields projectYacht needs to keep the boat, plus the products under test. */
+  const yacht = (products: JsonValue[]) => ({
+    id: 5001,
+    companyId: 42,
+    homeBaseId: 7,
+    name: "Aurora",
+    currency: "EUR",
+    products,
+  });
+
+  function yachtRecords(payload: ReturnType<typeof yacht>): ProviderRecordSet {
+    return new Map([["yacht" as const, [{ externalId: String(payload.id), payload }]]]);
+  }
+
+  const listingOf = (products: JsonValue[]) =>
+    projectBookingManagerCatalogue(yachtRecords(yacht(products))).listings[0];
+
+  it("splits extras by the vendor's obligatory flag", () => {
+    const listing = listingOf([
+      {
+        isDefaultProduct: true,
+        extras: [
+          { id: 1, name: "Final cleaning", obligatory: true, price: 125, currency: "EUR" },
+          { id: 2, name: "Outboard engine", obligatory: false, price: 90, currency: "EUR" },
+        ],
+      },
+    ]);
+
+    expect(listing?.extras).toEqual([
+      expect.objectContaining({ externalId: "1", name: "Final cleaning", obligatory: true }),
+      expect.objectContaining({ externalId: "2", name: "Outboard engine", obligatory: false }),
+    ]);
+  });
+
+  it("prices a repeated extra from the default product", () => {
+    const extra = (price: number) => [{ id: 1, name: "Bedding", price, currency: "EUR" }];
+    const listing = listingOf([
+      { name: "Skippered", isDefaultProduct: false, extras: extra(60) },
+      { name: "Bareboat", isDefaultProduct: true, extras: extra(40) },
+    ]);
+
+    expect(listing?.extras).toHaveLength(1);
+    expect(listing?.extras[0]?.priceMinor).toBe(4_000);
+  });
+
+  it("drops an extra with no id or no name rather than publishing it unnamed", () => {
+    const listing = listingOf([
+      {
+        isDefaultProduct: true,
+        extras: [
+          { name: "Nameless id", price: 10, currency: "EUR" },
+          { id: 3, price: 10, currency: "EUR" },
+          { id: 4, name: "Kept", price: 10, currency: "EUR" },
+        ],
+      },
+    ]);
+
+    expect(listing?.extras).toEqual([expect.objectContaining({ externalId: "4" })]);
+  });
+
+  it("falls back to the yacht's currency when an extra names none", () => {
+    const listing = listingOf([
+      { isDefaultProduct: true, extras: [{ id: 1, name: "Bedding", price: 40 }] },
+    ]);
+
+    expect(listing?.extras[0]?.priceCurrency).toBe("EUR");
+  });
+
+  it("publishes no extras for a yacht with no products", () => {
+    expect(listingOf([])?.extras).toEqual([]);
   });
 });

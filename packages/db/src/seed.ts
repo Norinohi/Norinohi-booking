@@ -25,6 +25,7 @@ import {
   location,
   operator,
   provider,
+  providerExtraCatalogue,
   providerRecord,
   providerRawPayload,
   region,
@@ -2100,6 +2101,12 @@ export async function main() {
     )
     .onConflictDoNothing();
 
+  /*
+   * Equipment the yacht has, plus the priced crew roles the sidebar's Crew control
+   * reads back. Paid extras are NOT here: they live in provider_extra_catalogue,
+   * because an extra is something the customer buys rather than something the
+   * yacht carries, and the detail page reads the two from different tables.
+   */
   await db
     .insert(listingAmenity)
     .values(
@@ -2107,33 +2114,19 @@ export async function main() {
         [
           ...item.amenityIds.map((amenityId) => ({
             amenityId,
-            obligatory: false,
             priceMinor: null,
             priceCurrency: null,
           })),
-          ...mandatoryExtraIds.map((amenityId) => ({
-            amenityId,
-            obligatory: true,
-            priceMinor: mandatoryExtraPrice(amenityId),
-            priceCurrency: "EUR",
-          })),
-          ...optionalExtraIdsFor(item.categoryId).map((amenityId) => ({
-            amenityId,
-            obligatory: false,
-            priceMinor: optionalExtraPrice(amenityId),
-            priceCurrency: "EUR",
-          })),
           ...crewRoleIdsFor(crewTypeFor(item.categoryId)).map((amenityId) => ({
             amenityId,
-            obligatory: false,
             priceMinor: crewRolePrice(amenityId),
             priceCurrency: "EUR",
           })),
-        ].map(({ amenityId, obligatory, priceMinor, priceCurrency }) => ({
+        ].map(({ amenityId, priceMinor, priceCurrency }) => ({
           id: `lamn_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${amenityId.replace("amn_", "")}`,
           listingId: item.listingId,
           amenityId,
-          obligatory,
+          obligatory: false,
           priceMinor,
           priceCurrency,
         })),
@@ -2142,6 +2135,53 @@ export async function main() {
     .onConflictDoUpdate({
       target: [listingAmenity.listingId, listingAmenity.amenityId],
       set: {
+        obligatory: sql.raw("excluded.obligatory"),
+        priceMinor: sql.raw("excluded.price_minor"),
+        priceCurrency: sql.raw("excluded.price_currency"),
+      },
+    });
+
+  const amenityNameById = new Map(amenities.map((item) => [item.id, item.name]));
+
+  await db
+    .insert(providerExtraCatalogue)
+    .values(
+      yachts.flatMap((item) =>
+        [
+          ...mandatoryExtraIds.map((amenityId) => ({
+            amenityId,
+            obligatory: true,
+            priceMinor: mandatoryExtraPrice(amenityId),
+          })),
+          ...optionalExtraIdsFor(item.categoryId).map((amenityId) => ({
+            amenityId,
+            obligatory: false,
+            priceMinor: optionalExtraPrice(amenityId),
+          })),
+        ].map(({ amenityId, obligatory, priceMinor }) => ({
+          id: `pxtr_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${amenityId.replace("amn_", "")}`,
+          listingId: item.listingId,
+          source: "mock",
+          kind: "equipment" as const,
+          // The seed has no vendor id space of its own, so the amenity id stands in.
+          externalId: amenityId,
+          name: amenityNameById.get(amenityId) ?? amenityId,
+          obligatory,
+          priceMinor,
+          priceCurrency: "EUR",
+          onRequestOnly: false,
+        })),
+      ),
+    )
+    .onConflictDoUpdate({
+      target: [
+        providerExtraCatalogue.listingId,
+        providerExtraCatalogue.source,
+        providerExtraCatalogue.kind,
+        providerExtraCatalogue.externalId,
+      ],
+      set: {
+        name: sql.raw("excluded.name"),
         obligatory: sql.raw("excluded.obligatory"),
         priceMinor: sql.raw("excluded.price_minor"),
         priceCurrency: sql.raw("excluded.price_currency"),

@@ -19,9 +19,8 @@ import { guestAccessFor } from "../lib/guest-access";
 import {
   ELEMENTS_APPEARANCE,
   ELEMENTS_FONTS,
-  EXCLUDED_PAYMENT_METHOD_TYPES,
   elementsLocale,
-  PAYMENT_ELEMENT_LAYOUT,
+  PAYMENT_ELEMENT_OPTIONS,
   PAYMENT_METHOD_ORDER,
   stripeLoader,
 } from "../lib/stripe";
@@ -205,7 +204,6 @@ function BalancePayment({
       appearance: ELEMENTS_APPEARANCE,
       fonts: ELEMENTS_FONTS,
       paymentMethodOrder: PAYMENT_METHOD_ORDER,
-      excludedPaymentMethodTypes: EXCLUDED_PAYMENT_METHOD_TYPES,
     }),
     [amountMinor, currency, locale],
   );
@@ -230,7 +228,7 @@ function BalancePayment({
       <PaymentTargetProvider value={target}>
         <div className="flex flex-col gap-4">
           <ExpressCheckout />
-          <PaymentElement options={{ layout: PAYMENT_ELEMENT_LAYOUT }} />
+          <PaymentElement options={PAYMENT_ELEMENT_OPTIONS} />
           <PayButton label={t("pay", { amount: money(amountMinor) })} />
         </div>
       </PaymentTargetProvider>

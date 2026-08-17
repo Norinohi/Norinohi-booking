@@ -7,7 +7,11 @@ import {
   listingOneWayRule,
   listingSpecification,
 } from "@yacht-charter/db/schema/listing";
-import { listingDuplicateCandidate, listingSource } from "@yacht-charter/db/schema/listing-source";
+import {
+  listingDuplicateCandidate,
+  listingSource,
+  providerExtraCatalogue,
+} from "@yacht-charter/db/schema/listing-source";
 import { listingText } from "@yacht-charter/db/schema/listing-text";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
@@ -805,6 +809,36 @@ async function writeListingChildren(
     await db
       .insert(listingAmenity)
       .values(resolvedAmenities.map((amenityId) => ({ listingId, amenityId })));
+  }
+
+  // Scoped by source for the same reason media is: a merged listing must keep the
+  // other provider's extras when this one resyncs.
+  await db
+    .delete(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, providerKey),
+      ),
+    );
+  if (item.extras.length > 0) {
+    await db.insert(providerExtraCatalogue).values(
+      item.extras.map((extra) => ({
+        listingId,
+        source: providerKey,
+        kind: extra.kind,
+        externalId: extra.externalId,
+        name: extra.name,
+        obligatory: extra.obligatory,
+        priceMinor: extra.priceMinor,
+        priceCurrency: extra.priceCurrency,
+        priceMeasure: extra.priceMeasure ?? null,
+        calculationType: extra.calculationType ?? null,
+        onRequestOnly: extra.onRequestOnly,
+        externalSeasonId: extra.externalSeasonId ?? null,
+        externalBaseId: extra.externalBaseId ?? null,
+      })),
+    );
   }
 
   await db.delete(listingCheckinRule).where(eq(listingCheckinRule.listingId, listingId));

@@ -17,6 +17,7 @@ import {
 import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
+  type CanonicalExtra,
   type ProviderRecordSet,
 } from "../types";
 import {
@@ -26,7 +27,9 @@ import {
   restEquipmentCategorySchema,
   restEquipmentSchema,
   restLocationSchema,
+  restPriceMeasureSchema,
   restRegionSchema,
+  restServiceSchema,
   restYachtBuilderSchema,
   restSailTypeSchema,
   restYachtCategorySchema,
@@ -84,6 +87,8 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
   const categories = parseAll(records, "category", restYachtCategorySchema);
   const equipmentCategories = parseAll(records, "equipment_category", restEquipmentCategorySchema);
   const equipment = parseAll(records, "amenity", restEquipmentSchema);
+  const services = parseAll(records, "service", restServiceSchema);
+  const priceMeasures = parseAll(records, "price_measure", restPriceMeasureSchema);
   const sailTypes = parseAll(records, "sail_type", restSailTypeSchema);
   const yachts = parseAll(records, "yacht", restYachtSchema);
 
@@ -91,6 +96,25 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
   const locationNameById = new Map(locations.map((item) => [String(item.id), name(item.name)]));
   const modelById = new Map(models.map((item) => [String(item.id), item]));
   const knownEquipment = new Set(equipment.map((item) => String(item.id)));
+  /* Extras are named from these; an id that resolves to nothing is not offered. */
+  const equipmentNameById = new Map(
+    equipment.flatMap((item) => {
+      const label = name(item.name);
+      return label === undefined ? [] : [[String(item.id), label] as const];
+    }),
+  );
+  const serviceNameById = new Map(
+    services.flatMap((item) => {
+      const label = name(item.name);
+      return label === undefined ? [] : [[String(item.id), label] as const];
+    }),
+  );
+  const priceMeasureById = new Map(
+    priceMeasures.flatMap((item) => {
+      const label = name(item.name);
+      return label === undefined ? [] : [[String(item.id), label] as const];
+    }),
+  );
   /* An entry whose English name is missing is dropped: a rig with no label is not a rig. */
   const sailTypeById = new Map(
     sailTypes.flatMap((item) => {
@@ -125,7 +149,16 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
   });
 
   const listings = yachts
-    .map((yacht) => projectYacht(yacht, { modelById, knownEquipment, sailTypeById }))
+    .map((yacht) =>
+      projectYacht(yacht, {
+        modelById,
+        knownEquipment,
+        sailTypeById,
+        equipmentNameById,
+        serviceNameById,
+        priceMeasureById,
+      }),
+    )
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return canonicalCatalogueSchema.parse({
@@ -200,13 +233,19 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
 type RestYacht = z.infer<typeof restYachtSchema>;
 type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 
+type ExtraNaming = {
+  equipmentNameById: Map<string, string>;
+  serviceNameById: Map<string, string>;
+  priceMeasureById: Map<string, string>;
+};
+
 function projectYacht(
   yacht: RestYacht,
   context: {
     modelById: Map<string, RestYachtModel>;
     knownEquipment: Set<string>;
     sailTypeById: Map<string, string>;
-  },
+  } & ExtraNaming,
 ) {
   // The vendor's own withdrawals. `disabled` is a boat taken out of service and
   // `internalUse` one the operator books by hand; publishing either would sell
@@ -265,6 +304,7 @@ function projectYacht(
     amenities: (yacht.standardYachtEquipment ?? [])
       .map((item) => String(item.equipmentId))
       .filter((id) => context.knownEquipment.has(id)),
+    extras: extrasOf(yacht, currency, context),
     texts: textsOf(yacht),
     checkinRules: checkinRulesOf(yacht),
     oneWayRules: oneWayRulesOf(yacht),
@@ -501,6 +541,124 @@ function capacityOf(...candidates: JsonField[]): number | undefined {
     if (parsed !== undefined && parsed > 0) return parsed;
   }
   return undefined;
+}
+
+/**
+ * The priced extras behind the yacht's two paid detail sections.
+ *
+ * `seasonSpecificData` repeats the operator's whole extras list once per base it
+ * sails the yacht from, at that base's prices, so the home base's entries are the
+ * ones this listing sells at. When no entry names the home base the unscoped list
+ * is used rather than publishing nothing.
+ *
+ * Prices differ between seasons, so one entry per extra survives and the latest
+ * season wins: an operator that has published next year's price has superseded
+ * this year's.
+ */
+function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): CanonicalExtra[] {
+  const homeBaseId = yacht.baseId === undefined ? undefined : String(yacht.baseId);
+  const seasons = yacht.seasonSpecificData ?? [];
+  const atHomeBase = seasons.filter(
+    (season) => season.baseId !== undefined && String(season.baseId) === homeBaseId,
+  );
+  const relevant = atHomeBase.length > 0 ? atHomeBase : seasons;
+
+  const chosen = new Map<string, { seasonId: number; extra: CanonicalExtra }>();
+  const consider = (seasonId: number, extra: CanonicalExtra | null) => {
+    if (extra === null) return;
+    const key = `${extra.kind}:${extra.externalId}`;
+    const held = chosen.get(key);
+    if (held === undefined || seasonId > held.seasonId) chosen.set(key, { seasonId, extra });
+  };
+
+  for (const season of relevant) {
+    const scope = {
+      externalSeasonId: season.seasonId === undefined ? undefined : String(season.seasonId),
+      externalBaseId: season.baseId === undefined ? undefined : String(season.baseId),
+    };
+    const seasonId = season.seasonId ?? 0;
+
+    for (const service of season.services ?? []) {
+      consider(seasonId, serviceExtraOf(service, currency, scope, context));
+    }
+    for (const item of season.additionalYachtEquipment ?? []) {
+      consider(seasonId, equipmentExtraOf(item, currency, scope, context));
+    }
+  }
+
+  return [...chosen.values()].map((entry) => entry.extra);
+}
+
+type ExtraScope = { externalSeasonId: string | undefined; externalBaseId: string | undefined };
+
+function serviceExtraOf(
+  item: NonNullable<NonNullable<RestYacht["seasonSpecificData"]>[number]["services"]>[number],
+  fallbackCurrency: string,
+  scope: ExtraScope,
+  context: ExtraNaming,
+): CanonicalExtra | null {
+  const externalId = String(item.serviceId);
+  const label = context.serviceNameById.get(externalId);
+  // An extra we cannot name must not be sold: the buyer would be asked to approve
+  // a line reading "Service 934251". The `services` catalogue is the only source
+  // of these labels, and it does not cover every id a yacht references.
+  if (label === undefined) return null;
+  if (item.availableOnAgencyPortal === false) return null;
+
+  const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+  const priceMinor = minorOf(item.price ?? item.amount, priceCurrency);
+  if (priceMinor === undefined) return null;
+
+  return {
+    kind: "service",
+    externalId,
+    name: label,
+    obligatory: item.obligatory === true,
+    priceMinor,
+    priceCurrency,
+    priceMeasure: measureOf(item.priceMeasureId, context),
+    calculationType: text(item.calculationType),
+    onRequestOnly: item.onRequestOnly === true,
+    ...scope,
+  };
+}
+
+function equipmentExtraOf(
+  item: NonNullable<
+    NonNullable<RestYacht["seasonSpecificData"]>[number]["additionalYachtEquipment"]
+  >[number],
+  fallbackCurrency: string,
+  scope: ExtraScope,
+  context: ExtraNaming,
+): CanonicalExtra | null {
+  const externalId = String(item.equipmentId);
+  const label = context.equipmentNameById.get(externalId);
+  if (label === undefined) return null;
+  if (item.availableOnAgencyPortal === false) return null;
+
+  const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+  const priceMinor = minorOf(item.price ?? item.amount, priceCurrency);
+  if (priceMinor === undefined) return null;
+
+  return {
+    kind: "equipment",
+    externalId,
+    name: label,
+    // Additional equipment carries no obligatory flag; it is an opt-in add-on.
+    obligatory: false,
+    priceMinor,
+    priceCurrency,
+    priceMeasure: measureOf(item.priceMeasureId, context),
+    calculationType: text(item.calculationType),
+    onRequestOnly: false,
+    ...scope,
+  };
+}
+
+function measureOf(priceMeasureId: number | undefined, context: ExtraNaming): string | undefined {
+  return priceMeasureId === undefined
+    ? undefined
+    : context.priceMeasureById.get(String(priceMeasureId));
 }
 
 /** The currency the operator prices this season in; the deposit names its own. */

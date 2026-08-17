@@ -14,6 +14,7 @@ import equipment from "./fixtures/equipment.json" with { type: "json" };
 import equipmentCategories from "./fixtures/equipmentCategories.json" with { type: "json" };
 import locations from "./fixtures/locations.json" with { type: "json" };
 import regions from "./fixtures/regions.json" with { type: "json" };
+import services from "./fixtures/services.json" with { type: "json" };
 import yachtBuilders from "./fixtures/yachtBuilders.json" with { type: "json" };
 import yachtCategories from "./fixtures/yachtCategories.json" with { type: "json" };
 import yachtModels from "./fixtures/yachtModels.json" with { type: "json" };
@@ -48,6 +49,7 @@ const recorded = {
   category: payloadsSchema.parse(yachtCategories.categories),
   equipment_category: payloadsSchema.parse(equipmentCategories.equipmentCategories),
   amenity: payloadsSchema.parse(equipment.equipment),
+  service: payloadsSchema.parse(services.services),
   yacht: payloadsSchema.parse(yachts102701.yachts),
 };
 
@@ -551,6 +553,155 @@ describe("projectNausysCatalogue", () => {
 
       expect(listingOf(yacht)).toMatchObject({ title: "Maria's Pleasure Athena 38" });
       expect(listingOf(yacht)?.rating).toBeUndefined();
+    });
+  });
+
+  /*
+   * The catalogue's only source of priced extras. `standardYachtEquipment` carries
+   * neither a price nor an obligatory flag, so before these were read every synced
+   * listing published two empty extras sections and filed all 47 of its fittings
+   * as included.
+   */
+  describe("extras", () => {
+    it("reads the obligatory service the vendor prices on the season entry", () => {
+      const listing = listingOf(maria());
+
+      expect(listing?.extras).toContainEqual(
+        expect.objectContaining({
+          kind: "service",
+          externalId: "52",
+          name: "Final cleaning",
+          obligatory: true,
+          priceMinor: 12_500,
+          priceCurrency: "EUR",
+        }),
+      );
+    });
+
+    it("files additional equipment as an optional extra, never as obligatory", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      // Hand-built: the trimmed equipment fixture covers the 27 ids the fleet is
+      // fitted with, and none of the 10 the vendor sells as add-ons. Equipment 17
+      // is `Autopilot`, recorded.
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          additionalYachtEquipment: [{ equipmentId: 17, price: "100.00", currency: "EUR" }],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({
+          kind: "equipment",
+          externalId: "17",
+          name: "Autopilot",
+          obligatory: false,
+          priceMinor: 10_000,
+        }),
+      );
+    });
+
+    /*
+     * Not a fixture gap to paper over: the vendor prices add-ons the equipment
+     * dump does not describe, and the same id resolving for one yacht and not
+     * another is exactly the case the name filter exists for.
+     */
+    it("drops an add-on the equipment dump does not describe", () => {
+      const extras = listingOf(maria())?.extras ?? [];
+
+      expect(extras.filter((extra) => extra.kind === "equipment")).toEqual([]);
+    });
+
+    it("keeps standard equipment out of extras: it is fitted, not sold", () => {
+      const listing = listingOf(maria());
+      const serviceIds = new Set(
+        (listing?.extras ?? []).filter((e) => e.kind === "service").map((e) => e.externalId),
+      );
+
+      expect(listing?.amenities.length).toBeGreaterThan(0);
+      // The two id spaces are independent, so the only safe check is that the
+      // equipment ids the yacht is fitted with are not republished as services.
+      expect(listing?.amenities.some((id) => serviceIds.has(id))).toBe(false);
+    });
+
+    it("drops an extra whose id the catalogue cannot name", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      // Hand-built: every recorded serviceId but two resolves, and an unnamed extra
+      // would reach the buyer as "Service 999999".
+      yacht.seasonSpecificData = [
+        { ...season, services: [{ serviceId: 999_999, price: "10.00", currency: "EUR" }] },
+      ];
+
+      const extras = listingOf(yacht)?.extras ?? [];
+
+      expect(extras.filter((extra) => extra.kind === "service")).toEqual([]);
+    });
+
+    it("drops an extra the vendor withholds from the agency portal", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          services: [
+            {
+              serviceId: 52,
+              price: "125.00",
+              currency: "EUR",
+              obligatory: true,
+              availableOnAgencyPortal: false,
+            },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras.filter((extra) => extra.kind === "service")).toEqual([]);
+    });
+
+    /** Maria's recorded home base, pinned so the cases below do not depend on it. */
+    const HOME_BASE = 102_751;
+    const cleaningService = (price: string) => [
+      { serviceId: 52, price, currency: "EUR", obligatory: true },
+    ];
+
+    it("prices from the yacht's own base when the operator publishes several", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      // Hand-built: the recording gives each yacht one base. The vendor repeats the
+      // whole extras list per base it sails the yacht from, at that base's prices.
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        { ...season, baseId: 999_999, services: cleaningService("500.00") },
+        { ...season, baseId: HOME_BASE, services: cleaningService("125.00") },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", priceMinor: 12_500 }),
+      );
+    });
+
+    it("keeps one entry per extra, taking the latest season's price", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        { ...season, seasonId: 1, baseId: HOME_BASE, services: cleaningService("100.00") },
+        { ...season, seasonId: 2, baseId: HOME_BASE, services: cleaningService("150.00") },
+      ];
+
+      const cleaning = (listingOf(yacht)?.extras ?? []).filter((e) => e.externalId === "52");
+
+      expect(cleaning).toHaveLength(1);
+      expect(cleaning[0]?.priceMinor).toBe(15_000);
+    });
+
+    it("publishes no extras when the vendor sends no season data", () => {
+      const yacht = maria();
+      yacht.seasonSpecificData = [];
+
+      expect(listingOf(yacht)?.extras).toEqual([]);
     });
   });
 
