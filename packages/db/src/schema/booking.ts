@@ -48,8 +48,6 @@ export const paymentScheduleKind = pgEnum("payment_schedule_kind", [
   "security_deposit",
 ]);
 
-export const bookingPaymentMethod = pgEnum("booking_payment_method", ["card", "invoice"]);
-
 export const extraPricingType = pgEnum("extra_pricing_type", [
   "per_booking",
   "per_week",
@@ -84,6 +82,12 @@ export const providerReservationEventKind = pgEnum("provider_reservation_event_k
   "confirm_requested",
   "confirm_succeeded",
   "confirm_failed",
+  /*
+   * A booking left in CONFIRMING by a process that died mid-commit. Distinct from
+   * confirm_failed on purpose: the provider never told us it refused, and we cannot
+   * ask — this records that a human has to go and look.
+   */
+  "confirm_stale",
   "cancel_requested",
   "cancel_succeeded",
   "info_created",
@@ -181,8 +185,6 @@ export const booking = pgTable(
      * must not be a set of live booking links.
      */
     guestAccessTokenHash: text("guest_access_token_hash"),
-    /** Null until the Payment step; the flow can also end without either. */
-    paymentMethod: bookingPaymentMethod("payment_method"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),
     /**
      * Unique per customer so a retried checkout cannot create a second booking
@@ -308,6 +310,14 @@ export const payment = pgTable(
     failureReason: text("failure_reason"),
     paidAt: timestamp("paid_at"),
     refundedAt: timestamp("refunded_at"),
+    /*
+     * A chargeback. Kept off `status` on purpose: the money is contested, not
+     * refunded, and a dispute can still be won — treating it as a terminal payment
+     * state would either cancel a charter that is still on or hide one that is not.
+     * Set once when the dispute opens; `disputeStatus` carries how it ends.
+     */
+    disputedAt: timestamp("disputed_at"),
+    disputeStatus: text("dispute_status"),
     idempotencyKey: text("idempotency_key").notNull().unique(),
     ...timestamps,
   },

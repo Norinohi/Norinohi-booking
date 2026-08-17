@@ -13,6 +13,7 @@ import {
   checkoutConfirmInputSchema,
   checkoutConfirmSchema,
   checkoutCreateHoldInputSchema,
+  checkoutPayBalanceInputSchema,
   checkoutHoldSchema,
   checkoutStatusInputSchema,
   checkoutStatusSchema,
@@ -38,10 +39,11 @@ import {
 } from "../services/booking";
 import { provisionGuestAccount } from "../services/account-provisioning";
 import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
+import { announceEnquiry } from "../services/enquiry";
 import { mintGuestAccessToken, resolveBookingActor } from "../services/guest-access";
 import { getInvoiceDocument } from "../services/invoice-document";
 import { listTravellers, saveTravellers } from "../services/traveller";
-import { confirmCheckout } from "../services/payment";
+import { confirmCheckout, payBalance } from "../services/payment";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -307,6 +309,27 @@ export const checkoutRouter = {
         input.paymentPreference,
       ),
     ),
+  payBalance: publicProcedure
+    .route({
+      method: "POST",
+      path: "/checkout/payBalance",
+      operationId: "payCheckoutBalance",
+      summary: "Pay the remainder on a confirmed booking",
+      description:
+        "Opens a Stripe payment for whatever a confirmed booking still owes: the collectable total less everything already paid. This is how a deposit booking settles its second installment, so the balance does not have to be chased outside the system. The booking stays CONFIRMED throughout — the charter exists whether or not this payment has landed — and only a CONFIRMED booking is accepted; anything else answers NOT_PAYABLE. A booking with nothing left to pay answers ALREADY_PAID. Amounts marked pay-at-check-in are settled with the base and are never charged here. Reachable by the signed-in owner or with a guest accessToken.",
+      tags: ["Checkout"],
+      successDescription: "The client secret and the outstanding amount being charged.",
+      spec: withJsonBodyExample({ bookingId: "bkg_example" }),
+    })
+    .input(checkoutPayBalanceInputSchema)
+    .output(checkoutConfirmSchema)
+    .handler(async ({ context, input }) =>
+      payBalance(
+        context.db,
+        await actorFor(context, input.bookingId, input.accessToken),
+        input.bookingId,
+      ),
+    ),
   requestInvoice: publicProcedure
     .route({
       method: "POST",
@@ -355,7 +378,10 @@ export const checkoutRouter = {
     })
     .input(enquiryInputSchema)
     .output(enquirySchema)
-    .handler(async ({ context, input }) =>
-      askQuestion(context.db, await actorFor(context, input.bookingId, input.accessToken), input),
-    ),
+    .handler(async ({ context, input }) => {
+      const actor = await actorFor(context, input.bookingId, input.accessToken);
+      const enquiry = await askQuestion(context.db, actor, input);
+      await announceEnquiry(context.db, enquiry.id);
+      return enquiry;
+    }),
 };

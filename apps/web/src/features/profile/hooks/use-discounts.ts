@@ -52,6 +52,17 @@ export function useUpdateDiscount() {
   );
 }
 
+/** Deactivating a code is its own audited action, separate from editing its fields. */
+export function useSetDiscountActive() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.discount.setActive.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.discount.key() }),
+    }),
+  );
+}
+
 export function useListingPrices(input: {
   query?: string;
   category?: string;
@@ -71,6 +82,17 @@ export function useUpdateListingPrice() {
 
   return useMutation(
     orpc.admin.listingPrice.update.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listingPrice.key() }),
+    }),
+  );
+}
+
+/** Drops the override and hands the listing back to the provider's own price. */
+export function useClearListingPrice() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.listingPrice.clear.mutationOptions({
       onSuccess: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listingPrice.key() }),
     }),
   );

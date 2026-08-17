@@ -105,6 +105,14 @@ export const bookingSummarySchema = z.object({
   perPerson: moneySchema,
   paidTotal: moneySchema,
   balanceDue: moneySchema,
+  /**
+   * What is still collectable, and exactly what `checkout.payBalance` would charge.
+   * Distinct from `balanceDue` above, which subtracts payments from the whole total and
+   * so includes the pay-at-check-in lines the base collects in person — a figure no
+   * screen should ever offer to take. On the summary so a card can decide whether to
+   * offer payment at all without loading the booking.
+   */
+  outstanding: moneySchema,
   /** What the quote's payment policy asked up front — the quote's `depositMinor`. */
   prepayment: moneySchema,
   nextPaymentDueAt: z.string().nullable(),
@@ -139,6 +147,50 @@ export const bookingIdInputSchema = z.object({
   accessToken: guestAccessTokenSchema.optional(),
 });
 
+/*
+ * The three repeated blocks of a booking's money, named so the customer detail view and the
+ * staff one cannot drift apart: they describe the same rows, and a field added for one is a
+ * field the other should already have.
+ */
+export const bookingPriceLineSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  amount: moneySchema,
+  /** The summary section this line belongs to; null for the base and discounts. */
+  group: lineGroupSchema.nullable(),
+});
+
+export const bookingScheduleEntrySchema = z.object({
+  id: z.string(),
+  kind: paymentScheduleKindSchema,
+  amount: moneySchema,
+  dueAt: z.string().nullable(),
+  status: z.enum(["pending", "paid", "cancelled", "refunded"]),
+});
+
+export const bookingPaymentSchema = z.object({
+  id: z.string(),
+  kind: paymentScheduleKindSchema,
+  amount: moneySchema,
+  status: paymentStatusSchema,
+  paidAt: z.string().nullable(),
+  /**
+   * How this installment arrived. Derived from whether Stripe holds an intent for
+   * it, never stored: that is the fact itself, so a second column recording it
+   * could only ever disagree. Per payment rather than per booking, because a
+   * deposit paid by transfer and a balance paid by card is one booking with two
+   * answers — which is also how `planRefund` already decides what it can send back.
+   */
+  method: z.enum(["card", "transfer"]),
+  /**
+   * Set once a chargeback opens. Kept off `status` because contested is not the
+   * same as refunded: `disputeStatus` carries how it ended, and a won dispute
+   * leaves the payment succeeded with both fields still telling the story.
+   */
+  disputedAt: z.string().nullable(),
+  disputeStatus: z.string().nullable(),
+});
+
 /**
  * Detail for "View Details". Travellers are deliberately absent: §10 forbids
  * returning crew and passport data from this endpoint.
@@ -152,15 +204,7 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   cancelReason: z.string().nullable(),
   /** How the yacht was crewed, as priced. Null for a quote taken before the ask. */
   crewType: z.string().nullable(),
-  priceLines: z.array(
-    z.object({
-      code: z.string(),
-      label: z.string(),
-      amount: moneySchema,
-      /** The summary section this line belongs to; null for the base and discounts. */
-      group: lineGroupSchema.nullable(),
-    }),
-  ),
+  priceLines: z.array(bookingPriceLineSchema),
   extras: z.array(
     z.object({
       code: z.string(),
@@ -174,24 +218,14 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
     depositPct: z.number(),
     balanceDueAt: z.string().nullable(),
   }),
-  paymentSchedule: z.array(
-    z.object({
-      id: z.string(),
-      kind: paymentScheduleKindSchema,
-      amount: moneySchema,
-      dueAt: z.string().nullable(),
-      status: z.enum(["pending", "paid", "cancelled", "refunded"]),
-    }),
-  ),
-  payments: z.array(
-    z.object({
-      id: z.string(),
-      kind: paymentScheduleKindSchema,
-      amount: moneySchema,
-      status: paymentStatusSchema,
-      paidAt: z.string().nullable(),
-    }),
-  ),
+  /**
+   * What checkout actually charges up front, from the same `amountDue` the payment
+   * uses. Deriving it from the policy and the total instead overstates it by the
+   * lines marked pay-at-check-in, which are settled with the base and never charged.
+   */
+  dueNow: moneySchema,
+  paymentSchedule: z.array(bookingScheduleEntrySchema),
+  payments: z.array(bookingPaymentSchema),
 });
 
 /* --------------------------------------------------------------- travellers */
@@ -246,6 +280,40 @@ export const bookingCancelSchema = z.object({
   id: z.string(),
   status: bookingStatusSchema,
 });
+
+/*
+ * The staff-side booking list. Deliberately not `bookingListSchema`: that one carries the whole
+ * listing card because My Bookings renders one, and a queue staff work through needs the
+ * customer and the money instead. `status` is a list so one call answers "everything owing a
+ * refund" without the caller making two.
+ */
+export const bookingAdminListInputSchema = z
+  .object({
+    status: z.array(bookingStatusSchema).min(1).optional(),
+    /** Matches a reference, a customer name or their email. */
+    query: z.string().trim().max(200).optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: 20 }),
+  })
+  .default(paginationInputDefault(20));
+
+export const bookingAdminRowSchema = z.object({
+  id: z.string(),
+  reference: z.string(),
+  status: bookingStatusSchema,
+  customerName: z.string().nullable(),
+  customerEmail: z.string(),
+  listingTitle: z.string(),
+  checkIn: z.string(),
+  checkOut: z.string(),
+  total: moneySchema,
+  /** What was actually collected — on a refund queue this is the sum at stake. */
+  paid: moneySchema,
+  cancelledAt: z.string().nullable(),
+  cancelReason: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const bookingAdminListSchema = paginatedSchema(bookingAdminRowSchema);
 
 export const bookingRefundInputSchema = z.object({
   id: z.string().min(1),
@@ -379,6 +447,42 @@ export const invoiceRequestSchema = z.object({
   status: z.enum(["pending", "sent", "paid", "cancelled"]),
   bookingStatus: bookingStatusSchema,
   createdAt: z.string(),
+});
+
+/**
+ * What staff see on one booking.
+ *
+ * Not `bookingDetailSchema`: that one is the customer's own card, carrying the listing gallery,
+ * amenities and badges a support screen has no use for, and it is missing the two things this
+ * one exists to show — who the booking belongs to, and every payment against it with its method
+ * and dispute state.
+ *
+ * Travellers stay out, for the same reason §10 keeps them off the customer endpoint. Passport
+ * and crew data is encrypted at rest and read only through `booking.travellers.*`; a screen for
+ * settling money has no business widening that.
+ */
+/** Staff address a booking by id alone — no guest token, and no ownership to prove. */
+export const adminBookingIdInputSchema = z.object({ id: idSchema });
+
+export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
+  provider: z.string(),
+  providerReservationId: z.string().nullable(),
+  holdExpiresAt: z.string().nullable(),
+  confirmedAt: z.string().nullable(),
+  crewType: z.string().nullable(),
+  guests: z.number().int(),
+  /** True when the account was provisioned at checkout and has never been signed into. */
+  isGuestAccount: z.boolean(),
+  base: z.object({
+    name: z.string(),
+    locationName: z.string(),
+    countryName: z.string(),
+  }),
+  priceLines: z.array(bookingPriceLineSchema),
+  paymentSchedule: z.array(bookingScheduleEntrySchema),
+  payments: z.array(bookingPaymentSchema),
+  /** The bank-transfer request behind a PAYMENT_PENDING booking, when there is one. */
+  invoice: invoiceRequestSchema.nullable(),
 });
 
 /*
@@ -516,6 +620,15 @@ export const checkoutConfirmInputSchema = z.object({
   bookingId: z.string().min(1),
   /** Overrides the quote's own policy when the customer chooses to pay in full. */
   paymentPreference: z.enum(["deposit", "full"]).default("deposit"),
+  accessToken: guestAccessTokenSchema.optional(),
+});
+
+/**
+ * Settling what is left on a confirmed charter. No preference: the amount is whatever
+ * the booking still owes, which is the total less what has actually been paid.
+ */
+export const checkoutPayBalanceInputSchema = z.object({
+  bookingId: z.string().min(1),
   accessToken: guestAccessTokenSchema.optional(),
 });
 

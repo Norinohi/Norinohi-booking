@@ -11,38 +11,43 @@ import {
   DialogTitle,
 } from "@yacht-charter/ui/components/overlay/dialog";
 import { useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
-import { useCancelBooking } from "../hooks/use-cancel-booking";
+import { useCancelInvoice } from "../hooks/use-payments";
+import type { InvoiceRow } from "../types";
 
 /*
- * Cancelling a booking is irreversible, so it goes through a confirm dialog with an optional reason.
- * On success the list query is invalidated (see useCancelBooking), which flips the booking to a
- * "Cancelled" chip and drops its Cancel button.
+ * "They are not going to pay." Withdrawing cancels the booking waiting on the invoice, which
+ * releases the operator's option — so it is confirmed rather than a one-click row action, and
+ * the reason is required: it is the only record of why a held yacht was given back, and it is
+ * what a colleague reads when the customer calls a week later.
  */
-export default function CancelBookingDialog({
-  bookingId,
+export default function WithdrawInvoiceDialog({
+  invoice,
   open,
   onOpenChange,
 }: {
-  bookingId: string;
+  invoice: InvoiceRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const t = useTranslations("Bookings.cancel");
+  const t = useTranslations("Admin.Payments.withdraw");
   const reasonId = useId();
   const [reason, setReason] = useState("");
-  const cancelBooking = useCancelBooking();
+  const cancelInvoice = useCancelInvoice();
+
+  useEffect(() => setReason(""), [invoice]);
 
   const confirm = async () => {
+    if (!invoice || reason.trim().length === 0) return;
+
     try {
-      await cancelBooking.mutateAsync({ id: bookingId, reason: reason.trim() || undefined });
-      toast.success(t("success"));
-      setReason("");
+      await cancelInvoice.mutateAsync({ id: invoice.id, reason: reason.trim() });
+      toast.success(t("withdrawn", { reference: invoice.reference }));
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("error"));
+      toast.error(error instanceof Error ? error.message : t("failed"));
     }
   };
 
@@ -51,7 +56,9 @@ export default function CancelBookingDialog({
       <DialogContent showClose className="items-stretch">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>{t("description")}</DialogDescription>
+          <DialogDescription>
+            {invoice ? t("description", { reference: invoice.reference }) : ""}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex w-full flex-col gap-1.5 text-left">
@@ -63,21 +70,21 @@ export default function CancelBookingDialog({
             multiline
             value={reason}
             className="h-full"
-            onChange={(event) => setReason(event.target.value)}
             placeholder={t("reasonPlaceholder")}
+            onChange={(event) => setReason(event.target.value)}
           />
         </div>
 
         <DialogFooter>
           <Button variant="neutral" onClick={() => onOpenChange(false)}>
-            {t("keep")}
+            {t("cancel")}
           </Button>
           <Button
             variant="destructive"
-            disabled={cancelBooking.isPending}
+            disabled={reason.trim().length === 0 || cancelInvoice.isPending}
             onClick={() => void confirm()}
           >
-            {t("confirm")}
+            {cancelInvoice.isPending ? t("withdrawing") : t("confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

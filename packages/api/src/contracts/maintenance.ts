@@ -24,4 +24,17 @@ export const sweepResultSchema = z.object({
    * provider's syncs were blocked until this ran — worth looking at, not just counting.
    */
   syncRunsReaped: z.number().int(),
+  /**
+   * Bookings stuck in CONFIRMING, which the sweep reports but never moves: we cannot tell
+   * whether the provider took the reservation, and both guesses cost real money. Anything
+   * listed here is money held against a charter nobody has confirmed, and needs a human to
+   * ask the provider. Non-empty is an alert, not a statistic.
+   */
+  staleConfirmations: z.array(
+    z.object({
+      bookingId: z.string(),
+      reference: z.string(),
+      stuckSince: z.string(),
+    }),
+  ),
 });

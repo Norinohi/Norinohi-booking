@@ -6,9 +6,11 @@ import {
   type CharterConstraints,
 } from "@yacht-charter/api/lib/availability-rules";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useState } from "react";
 
 import DatePicker from "@/components/shared/form/date-picker";
+import { useCharterPeriodLabel } from "@/hooks/use-charter-period";
 import { dayFromNative, dayToNative } from "@/lib/date";
 
 export type CharterPeriod = { checkIn: string; checkOut: string };
@@ -39,6 +41,7 @@ export default function CharterDateField({
   className?: string;
   triggerClassName?: string;
 }) {
+  const periodLabel = useCharterPeriodLabel(constraints.rules);
   const [pending, setPending] = useState<DateRange | undefined>(undefined);
   const [open, setOpen] = useState(false);
   /* Read once per mount: a clock read during render would differ between server and client. */
@@ -78,18 +81,26 @@ export default function CharterDateField({
   }
 
   return (
-    <DatePicker
-      mode="range"
-      value={range}
-      onValueChange={handleChange}
-      disabled={disabled ? alwaysDisabled : isDayDisabled}
-      open={open}
-      onOpenChange={setOpen}
-      dateFormat="dayShort"
-      placeholder={placeholder}
-      className={className}
-      triggerClassName={triggerClassName}
-    />
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <DatePicker
+        mode="range"
+        value={range}
+        onValueChange={handleChange}
+        disabled={disabled ? alwaysDisabled : isDayDisabled}
+        open={open}
+        onOpenChange={setOpen}
+        dateFormat="dayShort"
+        placeholder={placeholder}
+        triggerClassName={triggerClassName}
+      />
+      {/*
+        Always shown, because the calendar already refuses the days these rules exclude and a
+        grid of greyed-out dates with no explanation reads as "booked solid" or a broken
+        picker. Absent entirely when the listing constrains nothing, so a fully flexible boat
+        does not carry a line that says so.
+      */}
+      {periodLabel ? <p className="text-sm leading-[1.3] text-natural-500">{periodLabel}</p> : null}
+    </div>
   );
 }
 

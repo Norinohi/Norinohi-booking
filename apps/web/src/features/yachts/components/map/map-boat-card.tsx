@@ -8,6 +8,7 @@ import {
   CarouselViewport,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Sailboat, Star, Users } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
@@ -95,23 +96,27 @@ export default function MapBoatCard({
       )}
     >
       <div className={cn("relative shrink-0 overflow-hidden", style.image)}>
-        <Carousel className="size-full">
-          <CarouselViewport>
-            {images.map((src, index) => (
-              <CarouselSlide key={src + index}>
-                <Image
-                  src={src}
-                  alt={index === 0 ? (imageAlt ?? "") : ""}
-                  fill
-                  sizes={style.sizes}
-                  className="object-cover"
-                />
-              </CarouselSlide>
-            ))}
-          </CarouselViewport>
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-          <CarouselBars className="absolute inset-x-0 bottom-4" />
-        </Carousel>
+        {images.length > 0 ? (
+          <Carousel className="size-full">
+            <CarouselViewport>
+              {images.map((src, index) => (
+                <CarouselSlide key={src + index}>
+                  <Image
+                    src={src}
+                    alt={index === 0 ? (imageAlt ?? "") : ""}
+                    fill
+                    sizes={style.sizes}
+                    className="object-cover"
+                  />
+                </CarouselSlide>
+              ))}
+            </CarouselViewport>
+            <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
+            <CarouselBars className="absolute inset-x-0 bottom-4" />
+          </Carousel>
+        ) : (
+          <ImageFallback className="absolute inset-0" />
+        )}
 
         <div className="absolute inset-x-4 top-4 flex items-start gap-5">
           <div className="flex flex-1 flex-wrap items-start gap-1.5">

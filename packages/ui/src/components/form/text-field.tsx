@@ -2,6 +2,7 @@
 
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import * as React from "react";
 
 /*
@@ -14,6 +15,7 @@ import * as React from "react";
  * sets — implies `status="error"` on its own.
  * Runtime states from the design (Empty/Focused/Typing/Filled) are just focus + value.
  * `multiline` renders the "big text field" (textarea); left/right 24px icon slots are optional.
+ * `type="password"` additionally gets a reveal toggle in the end slot, left of any `endIcon`.
  */
 const fieldVariants = cva(
   "flex w-full gap-2 rounded-lg border bg-transparent p-3 text-foreground transition-colors [&_[data-slot=text-field-icon]]:text-natural-500 [&_[data-slot=text-field-icon]_svg]:size-6",
@@ -65,6 +67,9 @@ type TextFieldOwnProps = {
   endIcon?: React.ReactNode;
   containerClassName?: string;
   fieldClassName?: string;
+  /* Reveal-toggle labels, exposed so the app can pass translated strings. */
+  showPasswordLabel?: string;
+  hidePasswordLabel?: string;
 } & Pick<VariantProps<typeof fieldVariants>, "status">;
 
 type TextFieldProps =
@@ -90,11 +95,20 @@ function TextField(props: TextFieldProps) {
     id: idProp,
     multiline = false,
     disabled,
+    showPasswordLabel = "Show password",
+    hidePasswordLabel = "Hide password",
     ...rest
   } = props;
 
   const invalid = rest["aria-invalid"] === true || rest["aria-invalid"] === "true";
   const status = statusProp ?? (invalid ? "error" : "default");
+
+  const [revealed, setRevealed] = React.useState(false);
+  // A read-only password field is a placeholder for a value the user cannot see anyway
+  // (the profile screen renders a dummy string), so it gets no reveal toggle.
+  // SAFETY: guarded by `!multiline`, which is the discriminant selecting the input branch.
+  const inputRest = multiline ? null : (rest as React.ComponentProps<"input">);
+  const isPassword = inputRest?.type === "password" && !inputRest.readOnly;
 
   const reactId = React.useId();
   const id = idProp ?? reactId;
@@ -122,6 +136,7 @@ function TextField(props: TextFieldProps) {
       aria-describedby={supportId}
       className={cn(controlClassName, className)}
       {...(rest as React.ComponentProps<"input">)}
+      {...(isPassword && revealed ? { type: "text" } : null)}
     />
   );
 
@@ -150,6 +165,20 @@ function TextField(props: TextFieldProps) {
           </span>
         )}
         {control}
+        {isPassword && (
+          <button
+            type="button"
+            data-slot="text-field-icon"
+            aria-label={revealed ? hidePasswordLabel : showPasswordLabel}
+            aria-pressed={revealed}
+            aria-controls={id}
+            disabled={disabled}
+            onClick={() => setRevealed((shown) => !shown)}
+            className="flex shrink-0 cursor-pointer items-center self-center rounded-xs outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed"
+          >
+            {revealed ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        )}
         {endIcon != null && (
           <span data-slot="text-field-icon" className="flex shrink-0 items-center self-start">
             {endIcon}

@@ -151,7 +151,9 @@ export const syncRun = pgTable(
     // drizzle-kit writes this text into the migration, and a placeholder there is not SQL.
     uniqueIndex("sync_run_in_flight_uq")
       .on(t.providerId, t.kind)
-      .where(sql`${t.status} in ${sql.raw(`(${IN_FLIGHT_SYNC_STATUSES.map((s) => `'${s}'`).join(", ")})`)}`),
+      .where(
+        sql`${t.status} in ${sql.raw(`(${IN_FLIGHT_SYNC_STATUSES.map((s) => `'${s}'`).join(", ")})`)}`,
+      ),
   ],
 );
 

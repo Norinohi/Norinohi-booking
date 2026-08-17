@@ -17,7 +17,6 @@
       "terms": "I agree to the <b>Terms & Conditions and the Rental Agreement</b>.",
       "cancellation": "I accept the <b>Cancellation Policy</b> (Free cancellation until June 7)."
     },
-    "saveAndContinue": "Save & Continue",
     "extras": {
       "mandatory": "Mandatory",
       "optional": "Optional extras",
@@ -71,17 +70,14 @@
         "question": "Ask a question"
       },
       "card": {
-        "number": "Card Number",
-        "numberPlaceholder": "1234-3233-2332-0021",
-        "expiry": "Expiry Date",
-        "expiryPlaceholder": "01/29",
-        "cvc": "CV",
-        "cvcPlaceholder": "123",
-        "name": "Name on Card",
-        "namePlaceholder": "John Doe",
         "notice": "Secure your booking instantly with an online payment.",
-        "unavailable": "Online card payment is coming soon. Please use Request invoice or Ask a question.",
-        "cta": "Pay {amount}"
+        "unavailable": "Online card payment is not available right now. Please use Request invoice or Ask a question.",
+        "quoteExpired": "Your price has expired. Go back and refresh the quote before paying.",
+        "notPayable": "This booking can no longer be paid for. Please start a new one.",
+        "failed": "The payment could not be completed. Please try again.",
+        "cta": "Pay {amount}",
+        "orCard": "or pay by card",
+        "preparing": "Preparing payment options"
       },
       "invoice": {
         "email": "Billing Email",
@@ -134,11 +130,23 @@
         "boatPrice": "Boat price (full rental price)",
         "deposit": "Refundable Security Deposit",
         "secondPayment": "2nd payment (Pay at: {date})",
+        "secondPaymentAtCheckIn": "2nd payment (Pay at check-in)",
         "totalPrice": "Total Price",
         "perPerson": "~ {price} for person",
         "dueNow": "Due now"
       },
-      "viewInvoice": "View Invoice"
+      "viewInvoice": "View Invoice",
+      "settling": {
+        "title": "Payment received",
+        "body": "We're confirming your booking with the charter base. This usually takes a few seconds."
+      },
+      "failed": {
+        "title": "We couldn't confirm this booking",
+        "body": "The charter base could not take this reservation. Any payment you made is being returned."
+      },
+      "shareText": "We're chartering {name}, {dates}!",
+      "shareCopied": "Link copied",
+      "shareFailed": "We couldn't copy the link"
     },
     "invoice": {
       "title": "Invoice",
@@ -199,7 +207,134 @@
         "title": "No invoice for this booking",
         "description": "This booking was not paid by bank transfer, so no invoice was issued."
       }
-    }
+    },
+    "balance": {
+      "title": "Pay the rest",
+      "reference": "Booking {reference}",
+      "pay": "Pay {amount}",
+      "notFound": "We couldn't find this booking",
+      "browse": "Browse yachts",
+      "viewBookings": "My bookings",
+      "unavailable": "Online payment is not available right now. Please contact us to settle this booking.",
+      "summary": {
+        "total": "Total price",
+        "paid": "Already paid",
+        "due": "Due now"
+      },
+      "paid": {
+        "title": "Your booking is paid in full",
+        "body": "Nothing left to pay on booking {reference}. Extras and the security deposit are settled at the marina.",
+        "viewBooking": "View booking"
+      },
+      "notPayable": {
+        "title": "Nothing to pay yet",
+        "body": "This booking has no balance to settle. If you have just booked, your first payment covers it for now."
+      },
+      "settling": {
+        "title": "Payment received",
+        "body": "We're updating your booking. This usually takes a few seconds."
+      }
+    },
+    "detail": {
+      "notFound": "We couldn't find this booking",
+      "browse": "Browse yachts",
+      "reference": "Booking {reference}",
+      "guests": "{count} guests",
+      "payBalance": "Pay {amount}",
+      "viewInvoice": "View invoice",
+      "priceTitle": "Price breakdown",
+      "total": "Total price",
+      "paymentsTitle": "Payments",
+      "paid": "Paid so far",
+      "outstanding": "Still to pay",
+      "noPayments": "No payments have been made on this booking yet.",
+      "disputed": "disputed",
+      "kind": {
+        "deposit": "First payment",
+        "balance": "Second payment",
+        "full": "Full payment",
+        "checkin_extras": "Extras at check-in",
+        "security_deposit": "Security deposit"
+      },
+      "method": {
+        "card": "Card",
+        "transfer": "Bank transfer"
+      },
+      "paymentStatus": {
+        "requires_payment": "Not paid",
+        "processing": "Processing",
+        "succeeded": "Paid",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "QUOTED": "Quoted",
+        "OPTION_PENDING": "Holding",
+        "OPTION_HELD": "Held",
+        "PAYMENT_PENDING": "Awaiting payment",
+        "CONFIRMING": "Confirming",
+        "CONFIRMED": "Confirmed",
+        "QUOTE_EXPIRED": "Expired",
+        "OPTION_EXPIRED": "Expired",
+        "PAYMENT_FAILED": "Payment failed",
+        "PROVIDER_REJECTED": "Not available",
+        "CANCELLED": "Cancelled",
+        "REFUND_PENDING": "Refunding",
+        "REFUNDED": "Refunded"
+      },
+      "backToBookings": "Back to my bookings",
+      "panels": {
+        "main": "Booking",
+        "aside": "Price"
+      },
+      "charterTitle": "Charter",
+      "dates": "Dates",
+      "guestsLabel": "Guests",
+      "crew": "Crew",
+      "marina": "Marina",
+      "referenceLabel": "Reference",
+      "settled": "Nothing left to pay",
+      "viewYacht": "View yacht page",
+      "supportTitle": "Need a hand?",
+      "supportBody": "Questions about your charter, changes to the dates or anything else — our team answers within one working day.",
+      "contactSupport": "Contact support",
+      "supportSubject": "Booking {reference}",
+      "marinaContact": "Marina contact",
+      "signInTitle": "Sign in to see this booking",
+      "signInBody": "This booking is tied to your account. Sign in with the email you booked with and we'll bring you straight back here.",
+      "signIn": "Sign in",
+      "cancelledOn": "Cancelled on",
+      "cancelReason": "Reason",
+      "requestCancel": "Request cancellation"
+    },
+    "support": {
+      "title": "How can we help?",
+      "subtitle": "Send us a message and we'll come back to you within one working day.",
+      "messageLabel": "Your message",
+      "messagePlaceholder": "Tell us what you need help with — dates, the boat, payment, anything.",
+      "required": "Write a message first",
+      "send": "Send message",
+      "sent": "Message sent",
+      "sentTitle": "Message sent",
+      "sentBody": "We have it, together with your booking details. You'll hear from us by email.",
+      "backToBooking": "Back to my booking",
+      "failed": "We couldn't send your message. Please try again.",
+      "marinaContact": "Or reach the marina directly",
+      "cancellation": {
+        "title": "Request a cancellation",
+        "subtitle": "Send us the request and we'll come back to you with what your cancellation policy allows.",
+        "messageLabel": "Why are you cancelling?",
+        "messagePlaceholder": "Anything that helps us — a change of plans, dates, weather, an illness.",
+        "template": "I would like to cancel booking {reference} ({dates}).\n\nReason: ",
+        "send": "Send cancellation request",
+        "sentTitle": "Cancellation requested",
+        "sentBody": "Your booking stays as it is until our team reviews the request. You'll hear from us by email with what your cancellation policy allows."
+      }
+    },
+    "booked": "Booked",
+    "saveAndContinue": "Save & Continue",
+    "extrasSkipped": "Take a look at the optional extras first — then confirm."
   },
   "Common": {
     "crewTypes": {
@@ -213,6 +348,10 @@
     },
     "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
     "removeFilter": "Remove filter {label}",
+    "passwordToggle": {
+      "show": "Show password",
+      "hide": "Hide password"
+    },
     "sorting": {
       "label": "Sort by: {value}",
       "recommended": "Recommended",
@@ -251,8 +390,8 @@
         "discount": "{percent}% OFF"
       },
       "stats": {
-        "booked": "{count} booked this month",
-        "viewed": "{count} people viewed today"
+        "booked": "{count, plural, one {# booked this month} other {# booked this month}}",
+        "viewed": "{count, plural, one {# person viewed today} other {# people viewed today}}"
       },
       "amenities": {
         "wifi": "Free Wi-Fi",
@@ -301,6 +440,18 @@
         "emailInvalid": "Please enter a valid email address",
         "submitFailed": "We couldn't send your request. Please try again."
       }
+    },
+    "charterPeriod": {
+      "or": ", or ",
+      "daysAndNights": "{days}, {nights}",
+      "weekdayRange": "{from} to {to}",
+      "weekdayStart": "Starts on {day}",
+      "weekdayEnd": "Ends on {day}",
+      "nightsExact": "{count, plural, one {# night} other {# nights}}",
+      "nightsFrom": "from {count, plural, one {# night} other {# nights}}",
+      "nightsUpTo": "up to {count, plural, one {# night} other {# nights}}",
+      "nightsRange": "{min} to {max} nights",
+      "label": "Charter period"
     }
   },
   "Filters": {
@@ -406,7 +557,12 @@
   },
   "Home": {
     "BoatTypes": {
-      "heading": "Choose Your Boat Type"
+      "heading": "Choose Your Boat Type",
+      "luxury": {
+        "title": "Luxury yacht",
+        "description": "The largest boats in the fleet, crewed and specified to hotel standard.",
+        "imageAlt": "Luxury yacht at anchor"
+      }
     },
     "BudgetFinder": {
       "heading": "Find Yachts By Your Budget",
@@ -647,7 +803,9 @@
       "discount": "Discount Manager",
       "logout": "Log Out",
       "duplicates": "Duplicate Review",
-      "sync": "Sync History"
+      "sync": "Sync History",
+      "inbox": "Inbox",
+      "payments": "Payments"
     },
     "UserMenu": {
       "account": "Account",
@@ -947,7 +1105,22 @@
       "totalPrice": "Total Price",
       "dueNow": "Due Now",
       "payNowCta": "Pay {amount} Now",
-      "requestQuote": "Request Quote"
+      "requestQuote": "Request Quote",
+      "promo": {
+        "label": "Promo code",
+        "placeholder": "Enter code",
+        "apply": "Apply",
+        "remove": "Remove",
+        "applied": "{amount} off",
+        "rejected": {
+          "unknown_code": "We don't recognise that code.",
+          "inactive": "That code is no longer active.",
+          "not_started": "That code is not valid yet.",
+          "expired": "That code has expired.",
+          "usage_limit_reached": "That code has been fully redeemed.",
+          "not_applicable": "That code doesn't apply to this yacht."
+        }
+      }
     },
     "panels": {
       "details": "Yacht Details",
@@ -1088,6 +1261,38 @@
     "Invoice": {
       "title": "Invoice",
       "description": "The invoice for your yacht charter booking, with payment details."
+    },
+    "ForgotPassword": {
+      "title": "Forgot password",
+      "description": "Reset your YachtSkanner account password."
+    },
+    "ResetPassword": {
+      "title": "Reset password",
+      "description": "Choose a new password for your YachtSkanner account."
+    },
+    "SetPassword": {
+      "title": "Set password",
+      "description": "Choose a password for your YachtSkanner account."
+    },
+    "Balance": {
+      "title": "Pay your balance",
+      "description": "Settle the remaining amount on your yacht charter booking."
+    },
+    "BookingDetail": {
+      "title": "Your booking",
+      "description": "Details, payments and documents for your yacht charter booking."
+    },
+    "Inbox": {
+      "title": "Inbox",
+      "description": "Customer questions and enquiries waiting for a reply."
+    },
+    "Payments": {
+      "title": "Payments",
+      "description": "Invoice requests and refunds awaiting staff."
+    },
+    "StaffBooking": {
+      "title": "Booking (staff)",
+      "description": "Staff view of a customer booking."
     }
   },
   "Profile": {
@@ -1143,7 +1348,8 @@
       "success": "Your booking has been cancelled.",
       "error": "We couldn't cancel your booking. Please try again."
     },
-    "statusCancelled": "Cancelled"
+    "statusCancelled": "Cancelled",
+    "payBalance": "Pay balance"
   },
   "Wishlist": {
     "title": "Your Wishlist",
@@ -1174,6 +1380,7 @@
       "noAccount": "Have no account?",
       "createAccount": "Create Account",
       "success": "Sign in successful",
+      "forgotPassword": "Forgot password?",
       "errors": {
         "emailInvalid": "Invalid email address",
         "passwordMin": "Password must be at least 8 characters"
@@ -1213,6 +1420,64 @@
         "emailRegistered": "This email is already registered"
       },
       "referralApplied": "Referral code applied"
+    },
+    "ForgotPassword": {
+      "welcome": "Forgot your password?",
+      "cardTitle": "Reset your password",
+      "description": "Enter your email and we'll send you a link to reset your password.",
+      "email": {
+        "label": "Email",
+        "placeholder": "example@gmail.com"
+      },
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "success": {
+        "title": "Check your email",
+        "body": "If an account exists for that address, we've sent a link to reset your password."
+      },
+      "backToLogin": "Back to sign in",
+      "errors": {
+        "emailInvalid": "Invalid email address"
+      }
+    },
+    "ResetPassword": {
+      "welcome": "Set a new password",
+      "cardTitle": "Choose a new password",
+      "newPassword": {
+        "label": "New password",
+        "placeholder": "Enter a new password"
+      },
+      "confirmPassword": {
+        "label": "Confirm password",
+        "placeholder": "Confirm your new password"
+      },
+      "submit": "Reset password",
+      "submitting": "Resetting…",
+      "success": "Password updated. You can sign in now.",
+      "invalid": {
+        "title": "This link is invalid or has expired",
+        "body": "Password reset links expire after 1 hour and can be used once. Request a new one to continue.",
+        "action": "Request a new link"
+      },
+      "firstPassword": {
+        "welcome": "Set your password",
+        "cardTitle": "Choose a password",
+        "newPassword": {
+          "label": "Password",
+          "placeholder": "Enter a password"
+        },
+        "submit": "Set password",
+        "submitting": "Saving…",
+        "success": "Password set. You can sign in now.",
+        "confirmPassword": {
+          "label": "Confirm password",
+          "placeholder": "Confirm your password"
+        }
+      },
+      "errors": {
+        "passwordMin": "Password must be at least 8 characters",
+        "passwordMismatch": "Passwords do not match"
+      }
     }
   },
   "Referrals": {
@@ -1352,9 +1617,20 @@
         "nameRequired": "Enter a discount name",
         "codeRequired": "Enter a discount code",
         "priceRequired": "Enter a discount value",
-        "appliesRequired": "Choose what the discount applies to"
+        "appliesRequired": "Choose what the discount applies to",
+        "usageLimitInvalid": "Enter a whole number of uses, or leave blank"
       },
-      "error": "Something went wrong. Please try again."
+      "error": "Something went wrong. Please try again.",
+      "usageLimit": {
+        "label": "Usage limit",
+        "placeholder": "Unlimited",
+        "hint": "Leave blank for unlimited uses"
+      },
+      "active": {
+        "label": "Active",
+        "on": "Discount activated",
+        "off": "Discount deactivated"
+      }
     },
     "prices": {
       "search": "Search by name",
@@ -1376,7 +1652,9 @@
         "updated": "Price updated",
         "errors": {
           "priceRequired": "Enter a new price"
-        }
+        },
+        "reset": "Reset To Provider Price",
+        "cleared": "Price reset to the provider price"
       },
       "empty": "No yachts found",
       "error": "Couldn't load prices"
@@ -1504,6 +1782,258 @@
         "auth": "Auth",
         "not_found": "Not found",
         "contract": "Contract"
+      }
+    },
+    "Inbox": {
+      "title": "Inbox",
+      "subtitle": "Questions about existing bookings and enquiries from people still choosing.",
+      "tabs": {
+        "enquiries": "Booking questions",
+        "leads": "Enquiries"
+      },
+      "enquiries": {
+        "filters": {
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "search": "Search by email or booking reference"
+        },
+        "status": {
+          "open": "Open",
+          "answered": "Answered",
+          "closed": "Closed"
+        },
+        "table": {
+          "received": "Received",
+          "customer": "Customer",
+          "question": "Question",
+          "status": "Status",
+          "booking": "Booking",
+          "actions": "Actions"
+        },
+        "actions": {
+          "reply": "Reply",
+          "replyAgain": "Reply again",
+          "close": "Close",
+          "reopen": "Reopen"
+        },
+        "answered": "Answered: {answer}",
+        "empty": "Nothing here — no questions match these filters.",
+        "error": "We couldn't load the questions."
+      },
+      "leads": {
+        "filters": {
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "kind": "Kind",
+          "allKinds": "All kinds",
+          "search": "Search by name or email"
+        },
+        "status": {
+          "new": "New",
+          "contacted": "Contacted",
+          "closed": "Closed"
+        },
+        "kind": {
+          "quote_request": "Quote request",
+          "charter_expert": "Charter expert",
+          "consultation": "Consultation"
+        },
+        "table": {
+          "received": "Received",
+          "from": "From",
+          "kind": "Kind",
+          "message": "Message",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "actions": {
+          "reply": "Reply",
+          "replyAgain": "Reply again",
+          "contacted": "Mark contacted",
+          "close": "Close",
+          "reopen": "Reopen"
+        },
+        "empty": "Nothing here — no enquiries match these filters.",
+        "error": "We couldn't load the enquiries.",
+        "answered": "Answered: {answer}"
+      },
+      "answer": {
+        "title": "Reply to this question",
+        "description": "Booking {reference}. Your reply is emailed to the customer.",
+        "label": "Your reply",
+        "placeholder": "Answer the question in full — this is what the customer receives.",
+        "close": "Close this question after sending",
+        "cancel": "Cancel",
+        "send": "Send reply",
+        "sent": "Reply sent",
+        "failed": "We couldn't send the reply. Please try again."
+      },
+      "leadAnswer": {
+        "title": "Reply to this enquiry",
+        "description": "Your reply is emailed to {name}.",
+        "noMessage": "They left no message.",
+        "label": "Your reply",
+        "placeholder": "Answer the enquiry in full — this is what they receive.",
+        "close": "Close this enquiry after sending",
+        "cancel": "Cancel",
+        "send": "Send reply",
+        "sent": "Reply sent",
+        "failed": "We couldn't send the reply. Please try again."
+      }
+    },
+    "Payments": {
+      "title": "Payments",
+      "subtitle": "Bank transfers waiting to be settled, and money owed back to customers.",
+      "tabs": {
+        "invoices": "Invoice requests",
+        "refunds": "Refunds due"
+      },
+      "invoices": {
+        "filters": {
+          "status": "Filter by status",
+          "allStatuses": "All statuses"
+        },
+        "table": {
+          "issued": "Issued",
+          "invoice": "Invoice",
+          "customer": "Customer",
+          "booking": "Booking",
+          "amount": "Amount",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "status": {
+          "pending": "Pending",
+          "sent": "Sent",
+          "paid": "Paid",
+          "cancelled": "Withdrawn"
+        },
+        "due": "Due {date}",
+        "settledAt": "Settled {date}",
+        "actions": {
+          "settle": "Transfer received",
+          "withdraw": "Withdraw"
+        },
+        "empty": "No invoice requests here.",
+        "error": "Could not load invoice requests."
+      },
+      "refunds": {
+        "filters": {
+          "search": "Search by reference, name or email"
+        },
+        "table": {
+          "cancelled": "Cancelled",
+          "customer": "Customer",
+          "booking": "Booking",
+          "charter": "Charter",
+          "collected": "Collected",
+          "actions": "Actions"
+        },
+        "ofTotal": "of {total}",
+        "actions": {
+          "refund": "Return the money"
+        },
+        "empty": "Nothing is owed back right now.",
+        "error": "Could not load the refund queue."
+      },
+      "settle": {
+        "title": "Record a received transfer",
+        "description": "Booking {reference} will be committed with the operator once this is recorded.",
+        "invoiced": "Invoice {number} · {amount} invoiced",
+        "amountLabel": "Amount received ({currency})",
+        "amountHint": "Change this if bank fees mean a different figure landed.",
+        "noteLabel": "Note",
+        "notePlaceholder": "Reference on the transfer, who confirmed it…",
+        "cancel": "Cancel",
+        "confirm": "Record transfer",
+        "settling": "Recording…",
+        "settled": "Transfer recorded — booking {reference} is confirmed.",
+        "rejected": "Transfer recorded, but the operator refused: {reason}. The booking now owes a refund.",
+        "failed": "Could not record the transfer."
+      },
+      "withdraw": {
+        "title": "Withdraw this invoice request",
+        "description": "Booking {reference} will be cancelled and the operator's option released.",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "No response after three reminders…",
+        "cancel": "Keep it",
+        "confirm": "Withdraw and cancel",
+        "withdrawing": "Withdrawing…",
+        "withdrawn": "Invoice withdrawn and booking {reference} cancelled.",
+        "failed": "Could not withdraw the invoice."
+      },
+      "refund": {
+        "title": "Return the money",
+        "description": "Refunds every payment collected on booking {reference}.",
+        "collected": "{amount} collected",
+        "cancelReason": "Cancelled: {reason}",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "Operator withdrew the yacht…",
+        "manualLabel": "I have sent the bank transfer back",
+        "manualHint": "Only tick this once the money has actually left. Card payments go back through Stripe on their own.",
+        "cancel": "Cancel",
+        "confirm": "Refund",
+        "refunding": "Refunding…",
+        "refunded": "{amount} returned.",
+        "partial": "{amount} returned — some payments are still settling.",
+        "manualPending": "Card payments returned. {count} bank transfer(s) still have to be sent by hand.",
+        "failed": "Could not process the refund."
+      }
+    },
+    "StaffBooking": {
+      "back": "Payments",
+      "staffOnly": "Staff view — this is a customer's booking. Do not share this page.",
+      "error": "Could not load this booking.",
+      "guestAccount": "Guest account",
+      "guests": "{count} guests",
+      "noReservationId": "No reservation id yet",
+      "outstanding": "{amount} outstanding",
+      "createdAt": "Created {at}",
+      "holdExpiresAt": "Hold expires {at}",
+      "confirmedAt": "Confirmed {at}",
+      "cancelledAt": "Cancelled {at}",
+      "cancelReason": "Cancellation reason: {reason}",
+      "fields": {
+        "customer": "Customer",
+        "charter": "Charter",
+        "provider": "Provider",
+        "total": "Total",
+        "collected": "Collected",
+        "timeline": "Timeline"
+      },
+      "invoice": {
+        "title": "Invoice request",
+        "number": "Number",
+        "amount": "Amount",
+        "status": "Status",
+        "billedTo": "Billed to",
+        "issued": "Issued",
+        "due": "Due"
+      },
+      "payments": {
+        "title": "Payments",
+        "kind": "Installment",
+        "amount": "Amount",
+        "method": "Method",
+        "status": "Status",
+        "paidAt": "Paid",
+        "empty": "Nothing has been collected yet.",
+        "disputed": "Disputed: {state}",
+        "methods": {
+          "card": "Card",
+          "transfer": "Bank transfer"
+        }
+      },
+      "schedule": {
+        "title": "Payment schedule",
+        "kind": "Installment",
+        "amount": "Amount",
+        "dueAt": "Due",
+        "status": "Status",
+        "empty": "No schedule on this booking."
+      },
+      "priceLines": {
+        "title": "Price breakdown"
       }
     }
   }

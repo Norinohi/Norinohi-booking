@@ -41,11 +41,36 @@ export const availabilityConstraintsQueryOptions = (input: CalendarInput) =>
  */
 export const createHoldMutationOptions = () => orpc.checkout.createHold.mutationOptions();
 
+/*
+ * Starts the card payment: re-validates the quote, opens the PaymentIntent and hands back the
+ * client secret Elements completes with. Called at the moment the customer presses pay, never on
+ * mounting the card tab — the intent and the PAYMENT_PENDING transition it writes should not exist
+ * for someone who only clicked through the tabs.
+ */
+export const confirmCheckoutMutationOptions = () => orpc.checkout.confirm.mutationOptions();
+
+/*
+ * Settles what a confirmed booking still owes. Separate from `confirm` because the booking
+ * is already CONFIRMED and stays that way: the charter exists whether or not this second
+ * installment has landed.
+ */
+export const payBalanceMutationOptions = () => orpc.checkout.payBalance.mutationOptions();
+
 /** Bank-transfer intent for a held booking — no Stripe needed. */
 export const requestInvoiceMutationOptions = () => orpc.checkout.requestInvoice.mutationOptions();
 
 /** A pre-payment question; leaves the booking held. */
 export const askQuestionMutationOptions = () => orpc.checkout.askQuestion.mutationOptions();
+
+export type CheckoutStatus = Awaited<ReturnType<AppRouterClient["checkout"]["status"]>>;
+
+/*
+ * Where a card booking got to. Stripe confirming the PaymentIntent in the browser is not the
+ * booking being confirmed: the webhook still has to land and the provider commit still has to
+ * succeed, and either can fail. The confirmation screen polls this until the booking settles.
+ */
+export const checkoutStatusQueryOptions = (bookingId: string, accessToken?: string) =>
+  orpc.checkout.status.queryOptions({ input: { bookingId, accessToken } });
 
 export type BookingDetail = Awaited<ReturnType<AppRouterClient["booking"]["get"]>>;
 

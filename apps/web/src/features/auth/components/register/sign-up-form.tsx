@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import z from "zod";
 
 import Loader from "@/components/shared/feedback/loader";
+import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { authClient } from "@/lib/auth-client";
 import { client } from "@/utils/orpc";
 
@@ -64,6 +65,7 @@ type Values = { email: string; phone: string; name: string; password: string };
 
 export default function SignUpForm() {
   const t = useTranslations("Auth.SignUp");
+  const passwordToggle = usePasswordToggleLabels();
   const router = useRouter();
   const { isPending } = authClient.useSession();
   /* Referral invite links land here as /register?ref=NORI-... (referral.myCode's urlPath). */
@@ -230,6 +232,7 @@ export default function SignUpForm() {
                       <TextField
                         type="password"
                         autoComplete="new-password"
+                        {...passwordToggle}
                         placeholder={t("password.placeholder")}
                         className="leading-[1.25]"
                         {...field}

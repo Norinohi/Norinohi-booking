@@ -5,6 +5,11 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "composite": true
+    "composite": true,
+    // This package transitively compiles React email templates as source
+    // (api → @yacht-charter/auth → @yacht-charter/transactional/*.tsx), so JSX must be
+    // enabled here even though api has no JSX of its own. Each template pins its own
+    // runtime with an @jsxImportSource pragma, so jsxImportSource is left at the default.
+    "jsx": "react-jsx"
   }
 }

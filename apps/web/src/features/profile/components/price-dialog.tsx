@@ -21,7 +21,11 @@ import z from "zod";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 
-import { useListingPrices, useUpdateListingPrice } from "../hooks/use-discounts";
+import {
+  useClearListingPrice,
+  useListingPrices,
+  useUpdateListingPrice,
+} from "../hooks/use-discounts";
 
 /*
  * PriceDialog — the "Edit Price" modal of /profile/discounts (Manage Prices tab).
@@ -57,6 +61,7 @@ export default function PriceDialog({
   const row = data?.items.find((item) => item.listingId === listingId);
 
   const updatePrice = useUpdateListingPrice();
+  const clearPrice = useClearListingPrice();
 
   /* Memoised so the translated schema keeps one identity per locale — a new identity
    * every render would re-register the resolver. */
@@ -104,6 +109,21 @@ export default function PriceDialog({
       },
     );
   };
+
+  /* Only an overridden listing has something to reset; `activeRuleId` is what says so. */
+  const clearOverride = () =>
+    clearPrice.mutate(
+      { listingId },
+      {
+        onSuccess: () => {
+          toast.success(t("prices.dialog.cleared"));
+          onOpenChange(false);
+        },
+        onError: () => toast.error(t("dialog.error")),
+      },
+    );
+
+  const busy = updatePrice.isPending || clearPrice.isPending;
 
   return (
     /* trap-focus: skip base-ui's page scroll-lock — its inline `overflow: hidden` on <html>
@@ -177,16 +197,22 @@ export default function PriceDialog({
                 </div>
               </div>
 
-              <div className="w-full shrink-0 border-t-0 border-natural-50 p-4 pb-6 md:border-t md:p-5">
-                <Button
-                  type="submit"
-                  variant="brand"
-                  size="md"
-                  className="w-full"
-                  disabled={updatePrice.isPending}
-                >
+              <div className="flex w-full shrink-0 flex-col gap-3 border-t-0 border-natural-50 p-4 pb-6 md:border-t md:p-5">
+                <Button type="submit" variant="brand" size="md" className="w-full" disabled={busy}>
                   {t("prices.dialog.submit")}
                 </Button>
+                {row.activeRuleId ? (
+                  <Button
+                    type="button"
+                    variant="neutral"
+                    size="md"
+                    className="w-full"
+                    disabled={busy}
+                    onClick={clearOverride}
+                  >
+                    {t("prices.dialog.reset")}
+                  </Button>
+                ) : null}
               </div>
             </form>
           </Form>

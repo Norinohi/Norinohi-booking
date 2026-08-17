@@ -38,6 +38,10 @@ import {
   yachtOptionsSchema,
 } from "../contracts/admin";
 import {
+  adminBookingIdInputSchema,
+  bookingAdminDetailSchema,
+  bookingAdminListInputSchema,
+  bookingAdminListSchema,
   bookingCancelInputSchema,
   bookingCancelSchema,
   bookingRefundInputSchema,
@@ -49,9 +53,17 @@ import {
   invoiceSettleInputSchema,
   invoiceSettleSchema,
 } from "../contracts/booking";
+import {
+  enquiryAnswerInputSchema,
+  enquiryListInputSchema,
+  enquiryListSchema,
+  enquiryRowSchema,
+  enquirySetStatusInputSchema,
+} from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
 import { sweepResultSchema } from "../contracts/maintenance";
 import {
+  leadAnswerInputSchema,
   leadListInputSchema,
   leadListSchema,
   leadSchema,
@@ -65,6 +77,7 @@ import {
   rejectDuplicateCandidate,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
+import { getBookingForAdmin, listBookingsForAdmin } from "../services/booking-admin";
 import { refundBooking } from "../services/refund";
 import {
   cancelInvoiceRequest,
@@ -72,7 +85,8 @@ import {
   settleInvoiceRequest,
 } from "../services/invoice";
 import { sweepExpiries } from "../services/expiry";
-import { listLeads, setLeadStatus } from "../services/lead";
+import { answerLead, listLeads, setLeadStatus } from "../services/lead";
+import { answerEnquiry, listEnquiries, setEnquiryStatus } from "../services/enquiry";
 import {
   createDiscount,
   getDiscount,
@@ -296,6 +310,36 @@ export const adminRouter = {
       .handler(({ context, input }) => listAuditLog(context.db, input)),
   },
   booking: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/list",
+        operationId: "listBookingsForAdmin",
+        summary: "List bookings across every customer",
+        description:
+          'The staff view of the booking table, filterable by status and searchable by reference, customer name or email. Carries the customer and the money actually collected rather than the listing card the customer\'s own history shows. Passing status: ["REFUND_PENDING"] is the refund queue — bookings whose money is owed back and which nothing else surfaces.',
+        tags: ["Admin"],
+        successDescription: "A page of bookings.",
+        spec: withJsonBodyExample({ status: ["REFUND_PENDING"], page: 1, pageSize: 20 }),
+      })
+      .input(bookingAdminListInputSchema)
+      .output(bookingAdminListSchema)
+      .handler(({ context, input }) => listBookingsForAdmin(context.db, input)),
+    get: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/get",
+        operationId: "getBookingForAdmin",
+        summary: "Read any booking, regardless of owner",
+        description:
+          "The staff view of one booking: the customer it belongs to, the provider reservation, every price line, the payment schedule, and each payment with how it arrived and whether it is disputed. booking.get is scoped to the session user and answers NOT_FOUND for anyone else — correct for a customer, which is why staff need this. Travellers are deliberately absent here too: passport and crew data stays behind booking.travellers.*.",
+        tags: ["Admin"],
+        successDescription: "The booking.",
+        spec: withJsonBodyExample({ id: "bkg_example" }),
+      })
+      .input(adminBookingIdInputSchema)
+      .output(bookingAdminDetailSchema)
+      .handler(({ context, input }) => getBookingForAdmin(context.db, input.id)),
     cancel: adminProcedure
       .route({
         method: "POST",
@@ -414,7 +458,7 @@ export const adminRouter = {
         operationId: "listLeads",
         summary: "List pre-booking enquiries",
         description:
-          "Returns enquiries from Request Quote, Contact a charter expert, and Get Consultation, newest first, filterable by kind and status. This is the only way anyone sees them — nothing is emailed.",
+          "Returns enquiries from Request Quote, Contact a charter expert, and Get Consultation, newest first, filterable by kind and status. Reply to one with admin.lead.answer. Distinct from admin.enquiry.list, which is questions about existing bookings.",
         tags: ["Admin"],
         successDescription: "A page of enquiries.",
         spec: withJsonBodyExample({ status: "new", page: 1, pageSize: 20 }),
@@ -438,6 +482,77 @@ export const adminRouter = {
       .output(leadSchema)
       .handler(({ context, input }) =>
         setLeadStatus(context.db, context.session.user.id, input.id, input.status),
+      ),
+    answer: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/lead/answer",
+        operationId: "answerLead",
+        summary: "Reply to a pre-booking enquiry",
+        description:
+          "Records the reply and emails it to the enquirer with their message quoted back and a link to the yacht they asked about. Closes the enquiry unless `close` is false, which leaves it at contacted for a follow-up. Writes an audit log entry. A failed send does not lose the recorded answer.",
+        tags: ["Admin"],
+        successDescription: "The answered enquiry.",
+        spec: withJsonBodyExample({
+          id: "lead_example",
+          answer:
+            "That week is still open at the price shown. Shall I hold it for you until Friday?",
+        }),
+      })
+      .input(leadAnswerInputSchema)
+      .output(leadSchema)
+      .handler(({ context, input }) => answerLead(context.db, context.session.user.id, input)),
+  },
+  enquiry: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/enquiry/list",
+        operationId: "listBookingEnquiries",
+        summary: "List questions asked about bookings",
+        description:
+          "Questions customers asked from the checkout's Ask a question step or from /support, newest first, filterable by status and searchable by customer email or booking reference. Each row carries the booking it is about. Distinct from admin.lead.list, which is the pre-booking funnel.",
+        tags: ["Admin"],
+        successDescription: "A page of booking enquiries.",
+        spec: withJsonBodyExample({ status: "open", page: 1, pageSize: 20 }),
+      })
+      .input(enquiryListInputSchema)
+      .output(enquiryListSchema)
+      .handler(({ context, input }) => listEnquiries(context.db, input)),
+    answer: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/enquiry/answer",
+        operationId: "answerBookingEnquiry",
+        summary: "Reply to a booking question",
+        description:
+          "Records the reply and emails it to the customer with their question quoted back and a link to the booking. Closes the enquiry unless `close` is false, which leaves it open for a follow-up. Writes an audit log entry. A failed send does not lose the recorded answer.",
+        tags: ["Admin"],
+        successDescription: "The answered enquiry.",
+        spec: withJsonBodyExample({
+          id: "enq_example",
+          answer: "Yes — please bring the skipper's licence and one ID per guest.",
+        }),
+      })
+      .input(enquiryAnswerInputSchema)
+      .output(enquiryRowSchema)
+      .handler(({ context, input }) => answerEnquiry(context.db, context.session.user.id, input)),
+    setStatus: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/enquiry/setStatus",
+        operationId: "setBookingEnquiryStatus",
+        summary: "Reopen or close a booking question",
+        description:
+          "Moves an enquiry without replying — closing one handled by phone, or reopening one that was closed too early. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The enquiry with its new status.",
+        spec: withJsonBodyExample({ id: "enq_example", status: "closed" }),
+      })
+      .input(enquirySetStatusInputSchema)
+      .output(enquiryRowSchema)
+      .handler(({ context, input }) =>
+        setEnquiryStatus(context.db, context.session.user.id, input),
       ),
   },
   discount: {

@@ -22,6 +22,7 @@ import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
+import { canonicalCategoryName } from "../shared/category-groups";
 import type {
   CanonicalCatalogue,
   ProviderKey,
@@ -283,8 +284,11 @@ export async function writeCanonicalCatalogue(
     const code = item.code ?? `${providerKey}:${item.externalId}`;
     const [row] = await db
       .insert(yachtCategory)
-      .values({ code, name: item.name })
-      .onConflictDoUpdate({ target: yachtCategory.code, set: { name: sql`excluded.name` } })
+      .values({ code, name: item.name, canonicalName: canonicalCategoryName(code) })
+      .onConflictDoUpdate({
+        target: yachtCategory.code,
+        set: { name: sql`excluded.name`, canonicalName: sql`excluded.canonical_name` },
+      })
       .returning({ id: yachtCategory.id });
     if (row) categoryIds.set(item.externalId, row.id);
   }

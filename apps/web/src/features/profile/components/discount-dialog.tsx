@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
 import { Radio, RadioGroup } from "@yacht-charter/ui/components/form/radio";
+import { Switch } from "@yacht-charter/ui/components/form/switch";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Dialog, DialogContent, DialogTitle } from "@yacht-charter/ui/components/overlay/dialog";
 import { Search } from "lucide-react";
@@ -29,6 +30,7 @@ import {
   useCreateDiscount,
   useDiscount,
   useDiscountYachtOptions,
+  useSetDiscountActive,
   useUpdateDiscount,
 } from "../hooks/use-discounts";
 import { CATEGORY_TARGET_OPTIONS, type CategoryTargetKey } from "../lib/discounts";
@@ -74,6 +76,13 @@ function useDiscountSchema() {
           .min(1, t("priceRequired"))
           .refine((value) => Number(value) > 0, t("priceRequired")),
         expires: z.custom<DateRange>().optional(),
+        /* Blank means unlimited. Kept as a string so the input round-trips, like `value`. */
+        usageLimit: z
+          .string()
+          .refine(
+            (value) => value === "" || (Number.isInteger(Number(value)) && Number(value) >= 1),
+            t("usageLimitInvalid"),
+          ),
         appliesTo: z.array(z.string()),
         specificYachts: z.array(z.string()),
       }),
@@ -91,6 +100,7 @@ function toValues(discount: Discount | null | undefined): Values {
       type: "percentage",
       value: "",
       expires: undefined,
+      usageLimit: "",
       /* The Figma create state opens with "All yachts" pre-checked. */
       appliesTo: ["allYachts"],
       specificYachts: [],
@@ -122,6 +132,7 @@ function toValues(discount: Discount | null | undefined): Values {
         : discount.value
           ? String(discount.value.amountMinor / 100)
           : "",
+    usageLimit: discount.usageLimit === null ? "" : String(discount.usageLimit),
     expires: discount.startsAt
       ? {
           from: new Date(discount.startsAt),
@@ -192,6 +203,7 @@ export default function DiscountDialog({
 
   const createDiscount = useCreateDiscount();
   const updateDiscount = useUpdateDiscount();
+  const setActive = useSetDiscountActive();
   const pending = createDiscount.isPending || updateDiscount.isPending;
 
   const schema = useDiscountSchema();
@@ -225,6 +237,7 @@ export default function DiscountDialog({
       valuePct: values.type === "percentage" ? Number(values.value) : null,
       valueMinor: values.type === "fixed_amount" ? Math.round(Number(values.value) * 100) : null,
       currency: values.type === "fixed_amount" ? "EUR" : undefined,
+      usageLimit: values.usageLimit === "" ? null : Number(values.usageLimit),
       startsAt: values.expires?.from ? toIsoDate(values.expires.from) : null,
       endsAt: values.expires?.to ? toIsoDate(values.expires.to) : null,
       targets,
@@ -367,22 +380,45 @@ export default function DiscountDialog({
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="expires"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("dialog.expiration.label")}</FormLabel>
-                        <DatePicker
-                          mode="range"
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder={t("dialog.expiration.placeholder")}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid items-start gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="expires"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("dialog.expiration.label")}</FormLabel>
+                          <DatePicker
+                            mode="range"
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder={t("dialog.expiration.placeholder")}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="usageLimit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("dialog.usageLimit.label")}</FormLabel>
+                          <FormControl>
+                            <TextField
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              step={1}
+                              placeholder={t("dialog.usageLimit.placeholder")}
+                              supportingText={t("dialog.usageLimit.hint")}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <FormField
                     control={form.control}
@@ -449,7 +485,28 @@ export default function DiscountDialog({
                 </div>
               </div>
 
-              <div className="w-full shrink-0 border-t-0 border-natural-50 p-4 md:border-t md:p-5">
+              <div className="flex w-full shrink-0 flex-col gap-4 border-t-0 border-natural-50 p-4 md:border-t md:p-5">
+                {/* Its own audited action, not part of the form: switching it off has to stop
+                    the code being redeemed now, without waiting for Save. */}
+                {isEdit && discount ? (
+                  <label className="flex w-full cursor-pointer items-center justify-between gap-3 text-base leading-[1.4] text-foreground">
+                    {t("dialog.active.label")}
+                    <Switch
+                      checked={discount.active}
+                      disabled={setActive.isPending}
+                      onCheckedChange={(checked) =>
+                        setActive.mutate(
+                          { id: discount.id, active: checked },
+                          {
+                            onSuccess: () =>
+                              toast.success(t(checked ? "dialog.active.on" : "dialog.active.off")),
+                            onError: () => toast.error(t("dialog.error")),
+                          },
+                        )
+                      }
+                    />
+                  </label>
+                ) : null}
                 <Button
                   type="submit"
                   variant="brand"

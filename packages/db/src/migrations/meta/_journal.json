@@ -246,6 +246,41 @@
       "when": 1786649377756,
       "tag": "0034_dizzy_ezekiel",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786696394718,
+      "tag": "0035_cynical_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1786698584787,
+      "tag": "0036_warm_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1786703340060,
+      "tag": "0037_lame_captain_flint",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1786720345833,
+      "tag": "0038_swift_slyde",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1786726137400,
+      "tag": "0039_past_katie_power",
+      "breakpoints": true
     }
   ]
 }

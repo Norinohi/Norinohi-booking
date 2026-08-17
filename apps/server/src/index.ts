@@ -78,8 +78,10 @@ app.post("/api/stripe/webhook", async (c) => {
 
   // A rejected signature is a 400 so Stripe stops retrying a request we will
   // never accept; a handled duplicate is a 200 because redelivery is normal.
+  // `note` carries an outcome ops should see — a provider refusal and its refund —
+  // without failing the delivery, which is what would make a real fault stand out.
   if (!outcome.handled) return c.json({ error: outcome.reason }, 400);
-  return c.json({ received: true, duplicate: outcome.duplicate });
+  return c.json({ received: true, duplicate: outcome.duplicate, note: outcome.note });
 });
 
 // Scheduled maintenance. Above the oRPC dispatch for the same reason as the Stripe

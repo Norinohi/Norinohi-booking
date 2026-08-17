@@ -6,6 +6,7 @@ import {
   CarouselViewport,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Check, Sailboat, Star, Users } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
@@ -76,6 +77,8 @@ export type BoatCardProps = {
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
   summary?: boolean;
+  /** Sits at the foot of the details column in `summary` mode, where the action column would be. */
+  summaryAction?: ReactNode;
   /** Extra content rendered inside the card, under the action button (e.g. My Bookings' Cancel). */
   footer?: ReactNode;
   className?: string;
@@ -96,24 +99,28 @@ function Gallery({
         unavailable && "[&_img]:opacity-60 [&_img]:grayscale",
       )}
     >
-      <Carousel className="size-full">
-        <CarouselViewport>
-          {images.map((src, index) => (
-            <CarouselSlide key={src + index}>
-              <Image
-                src={src}
-                alt={index === 0 ? (imageAlt ?? "") : ""}
-                fill
-                priority={priority && index === 0}
-                sizes="(min-width: 1280px) 40vw, 100vw"
-                className="object-cover"
-              />
-            </CarouselSlide>
-          ))}
-        </CarouselViewport>
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-        <CarouselBars className="absolute inset-x-0 bottom-4" />
-      </Carousel>
+      {images.length > 0 ? (
+        <Carousel className="size-full">
+          <CarouselViewport>
+            {images.map((src, index) => (
+              <CarouselSlide key={src + index}>
+                <Image
+                  src={src}
+                  alt={index === 0 ? (imageAlt ?? "") : ""}
+                  fill
+                  priority={priority && index === 0}
+                  sizes="(min-width: 1280px) 40vw, 100vw"
+                  className="object-cover"
+                />
+              </CarouselSlide>
+            ))}
+          </CarouselViewport>
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
+          <CarouselBars className="absolute inset-x-0 bottom-4" />
+        </Carousel>
+      ) : (
+        <ImageFallback className="absolute inset-0" />
+      )}
 
       <div className="absolute inset-x-4 top-4 flex items-start gap-5">
         <div className="flex flex-1 flex-wrap items-start gap-1.5">
@@ -146,6 +153,7 @@ function Details({
   specs,
   amenities,
   summary,
+  summaryAction,
   unavailable,
 }: Pick<
   BoatCardProps,
@@ -157,6 +165,7 @@ function Details({
   | "specs"
   | "amenities"
   | "summary"
+  | "summaryAction"
   | "unavailable"
 >) {
   return (
@@ -228,6 +237,12 @@ function Details({
               </span>
             </div>
           ))}
+        </div>
+      ) : null}
+
+      {summaryAction ? (
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-1 pb-4 md:pb-6 xl:pr-6">
+          {summaryAction}
         </div>
       ) : null}
     </div>
@@ -358,6 +373,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         specs={boat.specs}
         amenities={boat.amenities}
         summary={boat.summary}
+        summaryAction={boat.summary ? boat.summaryAction : undefined}
         unavailable={boat.unavailable}
       />
       {boat.summary ? null : (

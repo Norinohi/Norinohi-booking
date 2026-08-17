@@ -182,7 +182,7 @@ export function LeadEnquiryForm({
           type="submit"
           variant="brand"
           className={submitClassName}
-          disabled={form.formState.isSubmitting}
+          loading={form.formState.isSubmitting}
         >
           {submitLabel}
         </Button>

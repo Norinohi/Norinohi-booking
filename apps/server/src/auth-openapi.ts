@@ -51,7 +51,7 @@ const authBodyExamples = new Map<string, JsonObject>([
     "POST /request-password-reset",
     {
       email: "demo.customer@example.com",
-      redirectTo: "http://localhost:3001/auth/reset-password",
+      redirectTo: "http://localhost:3001/reset-password",
     },
   ],
   [

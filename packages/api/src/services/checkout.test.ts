@@ -2,7 +2,7 @@ import type { quote } from "@yacht-charter/db/schema/quote";
 import type { QuoteLine } from "@yacht-charter/db/schema/quote";
 import { describe, expect, it } from "vitest";
 
-import { amountDue } from "./checkout";
+import { amountDue, outstandingMinor } from "./checkout";
 import { payableNowMinor, totalMinor } from "./pricing";
 
 type QuoteRow = typeof quote.$inferSelect;
@@ -132,5 +132,37 @@ describe("amountDue vs payableNowMinor", () => {
 
     expect(payableNowMinor(row.lines)).toBe(500_000);
     expect(amountDue(row, "full")).toBe(969_000);
+  });
+});
+
+/*
+ * The figure the balance page advertises and `checkout.payBalance` charges. They read
+ * the same function on purpose: a screen offering one amount while the server takes
+ * another is worse than no screen.
+ */
+describe("outstandingMinor", () => {
+  it("owes the whole collectable total when nothing has been paid", () => {
+    // 500_000 payable now; the 30_000 check-in extra is the base's to collect.
+    expect(outstandingMinor(quoteRow(LINES), 0)).toBe(500_000);
+  });
+
+  it("subtracts what has been settled", () => {
+    expect(outstandingMinor(quoteRow(LINES), 250_000)).toBe(250_000);
+  });
+
+  it("never chases the pay-at-check-in lines", () => {
+    // Paying everything collectable leaves nothing, even though the total is higher.
+    expect(outstandingMinor(quoteRow(LINES), 500_000)).toBe(0);
+  });
+
+  it("floors at zero rather than reporting a credit", () => {
+    expect(outstandingMinor(quoteRow(LINES), 900_000)).toBe(0);
+  });
+
+  it("owes the full total on a full-prepayment policy too", () => {
+    const row = quoteRow(LINES, {
+      paymentPolicy: { mode: "full", depositPct: 1, currency: "EUR" },
+    });
+    expect(outstandingMinor(row, 0)).toBe(500_000);
   });
 });

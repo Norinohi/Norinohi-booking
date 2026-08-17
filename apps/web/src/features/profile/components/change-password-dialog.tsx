@@ -26,6 +26,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { authClient } from "@/lib/auth-client";
 
 /*
@@ -59,6 +60,7 @@ const emptyValues: Values = { currentPassword: "", newPassword: "", confirmPassw
 
 export default function ChangePasswordDialog() {
   const t = useTranslations("Profile");
+  const passwordToggle = usePasswordToggleLabels();
   const [open, setOpen] = useState(false);
 
   const schema = useChangePasswordSchema();
@@ -122,7 +124,12 @@ export default function ChangePasswordDialog() {
                   <FormItem>
                     <FormLabel>{t("currentPassword")}</FormLabel>
                     <FormControl>
-                      <TextField type="password" autoComplete="current-password" {...field} />
+                      <TextField
+                        type="password"
+                        autoComplete="current-password"
+                        {...passwordToggle}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -135,7 +142,12 @@ export default function ChangePasswordDialog() {
                   <FormItem>
                     <FormLabel>{t("newPassword")}</FormLabel>
                     <FormControl>
-                      <TextField type="password" autoComplete="new-password" {...field} />
+                      <TextField
+                        type="password"
+                        autoComplete="new-password"
+                        {...passwordToggle}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -148,7 +160,12 @@ export default function ChangePasswordDialog() {
                   <FormItem>
                     <FormLabel>{t("confirmPassword")}</FormLabel>
                     <FormControl>
-                      <TextField type="password" autoComplete="new-password" {...field} />
+                      <TextField
+                        type="password"
+                        autoComplete="new-password"
+                        {...passwordToggle}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

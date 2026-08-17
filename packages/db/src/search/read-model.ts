@@ -74,7 +74,10 @@ export async function rebuildListingSearchDocs(
       l.id,
       l.slug,
       l.title,
-      cat.name,
+      -- The marketplace category, not the vendor's: facets group on this column, and
+      -- ungrouped vendor near-synonyms would each become their own facet. An
+      -- unclassified category falls back to its own name rather than dropping out.
+      coalesce(cat.canonical_name, cat.name),
       l.crew_type,
       bld.name,
       mdl.name,
@@ -120,7 +123,10 @@ export async function rebuildListingSearchDocs(
       concat_ws(
         ' ',
         l.title,
+        -- Both spellings: a guest searching the vendor's wording ("motor boat")
+        -- and one searching the group ("motor yacht") must both hit this listing.
         cat.name,
+        cat.canonical_name,
         l.crew_type,
         bld.name,
         mdl.name,

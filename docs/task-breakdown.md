@@ -153,25 +153,25 @@ each listing's check-in rule, stepped seven days regardless, and wrote the resul
 provider had offered those periods. **ADR 0004** records the decision and its consequences.
 
 - ☑ `availability.constraints` returns rules, occupancy, published rates and one-way windows, so a
-      caller can evaluate a range nobody pre-cut. Additive.
+  caller can evaluate a range nobody pre-cut. Additive.
 - ☑ `packages/api/src/lib/availability-rules.ts` — pure `rangeStatus` / `canCheckIn` / `canCheckOut`,
-      tested against the four rule shapes the fleet publishes.
+  tested against the four rule shapes the fleet publishes.
 - ☑ Booking sidebar picks dates on a range calendar driven by those rules; illegal ranges cannot be
-      expressed rather than being refused afterwards.
+  expressed rather than being refused afterwards.
 - ☑ `listing_price_period` + `listing_free_period` replace the synthesized rows. `availability_slot`
-      keeps occupancy and the vendor's confirmed offers; the sync stops synthesizing.
+  keeps occupancy and the vendor's confirmed offers; the sync stops synthesizing.
 - ☑ Search filters by containment against a free period. This fixed a live bug: a 14-night stay
-      matched 0 listings while 79 had the consecutive weeks free.
+  matched 0 listings while 79 had the consecutive weeks free.
 - ☐ Daily rates. The NauSYS loader maps `WEEKLY` price lists and drops `DAILY` ones, so a
-      short-charter listing has no rate of its own. `listing_price_period.kind` is ready for them.
+  short-charter listing has no rate of its own. `listing_price_period.kind` is ready for them.
 - ☐ Three sections still present generated content as sourced: the invented "Suggested route",
-      the identical payment methods, and pickup/drop-off dates taken from the availability window.
-      Held until the second provider lands, since it may supply what NauSYS omits —
-      [generated-content-audit.md](./generated-content-audit.md).
+  the identical payment methods, and pickup/drop-off dates taken from the availability window.
+  Held until the second provider lands, since it may supply what NauSYS omits —
+  [generated-content-audit.md](./generated-content-audit.md).
 - ☐ `max_nights` is null on all 109 listings — unpublished by NauSYS, or dropped in mapping. Until
-      it is resolved the calendar cannot cap a range from above.
+  it is resolved the calendar cannot cap a range from above.
 - ☐ Seasonal check-in rules. `listing_checkin_rule` has no validity period, so a listing whose
-      check-in day changes by season cannot be expressed.
+  check-in day changes by season cannot be expressed.
 - **Docs testing:** `pnpm db:migrate`, run an availability sync, then compare a 14-night search
   before and after against `listing_free_period`.
 - **skill:** `provider-connector`, `drizzle-conventions` (repo) · **agent:** _provider-adapter-author_

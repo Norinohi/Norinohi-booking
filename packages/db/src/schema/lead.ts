@@ -25,6 +25,10 @@ export const lead = pgTable(
     // Search filters, planner answers or sidebar dates — shape varies per entry
     // point and is only ever read back.
     context: jsonb("context"),
+    // The reply staff sent from the inbox, kept for the same reason booking_enquiry keeps
+    // one: the email leaves no trace here, so without it nobody can see what was answered.
+    answer: text("answer"),
+    answeredAt: timestamp("answered_at"),
     status: leadStatus("status").default("new").notNull(),
     handledByUserId: text("handled_by_user_id").references(() => user.id, {
       onDelete: "set null",

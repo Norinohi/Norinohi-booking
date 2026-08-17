@@ -54,7 +54,11 @@ function AccordionTrigger({ className, children, indicator, ...props }: Accordio
         className={cn(
           "group flex w-full cursor-pointer items-center justify-between gap-3 bg-transparent text-left transition-colors outline-none",
           "focus-visible:ring-2 focus-visible:ring-ring/40",
+          /* Base UI marks a disabled item with `aria-disabled`/`data-disabled` rather than the
+             native attribute, so it stays focusable and announces itself. The `disabled:`
+             variant never matches that, and a locked item looked exactly like an open one. */
           "disabled:cursor-not-allowed disabled:opacity-50",
+          "data-disabled:cursor-not-allowed data-disabled:opacity-50",
           className,
         )}
         {...props}
