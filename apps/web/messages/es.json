@@ -307,7 +307,32 @@
       "signIn": "Iniciar sesión",
       "cancelledOn": "Cancelada el",
       "cancelReason": "Motivo",
-      "requestCancel": "Solicitar cancelación"
+      "requestCancel": "Solicitar cancelación",
+      "crewList": {
+        "title": "Lista de tripulación",
+        "notice": "La empresa de chárter debe entregar a las autoridades una lista de todas las personas a bordo antes de zarpar. Complétala aquí y nosotros la enviamos; lo que falte te lo pedirán en la base al llegar.",
+        "loading": "Cargando tu lista de tripulación…",
+        "empty": "Aún no has añadido a nadie. Tu reserva es para {guests} huéspedes: añade a cada persona que vaya a bordo, incluido el patrón.",
+        "member": "Tripulante {number}",
+        "remove": "Eliminar al tripulante {number}",
+        "add": "Añadir tripulante",
+        "save": "Guardar lista",
+        "saved": "Lista de tripulación guardada",
+        "saveFailed": "No hemos podido guardar tu lista de tripulación",
+        "fullName": "Nombre completo",
+        "fullNamePlaceholder": "Tal y como figura en el pasaporte",
+        "role": "Rol",
+        "rolePlaceholder": "Patrón, invitado…",
+        "dateOfBirth": "Fecha de nacimiento",
+        "documentNumber": "Número de pasaporte o DNI",
+        "documentNumberPlaceholder": "X1234567",
+        "nationality": "Nacionalidad",
+        "nationalityPlaceholder": "Selecciona un país",
+        "errors": {
+          "fullName": "Introduce el nombre completo de esta persona",
+          "dateOfBirth": "Introduce una fecha válida"
+        }
+      }
     },
     "support": {
       "title": "¿En qué podemos ayudarte?",
@@ -453,6 +478,10 @@
       "nightsUpTo": "hasta {count, plural, one {# noche} other {# noches}}",
       "nightsRange": "de {min} a {max} noches",
       "label": "Periodo de chárter"
+    },
+    "countryPicker": {
+      "search": "Buscar países",
+      "empty": "Ningún país coincide"
     }
   },
   "Filters": {

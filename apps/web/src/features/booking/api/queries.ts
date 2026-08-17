@@ -89,6 +89,20 @@ export const bookingDetailQueryOptions = (id: string, accessToken?: string) =>
 export const bookingReceiptQueryOptions = (id: string, accessToken?: string) =>
   orpc.booking.receipt.queryOptions({ input: { id, accessToken } });
 
+export type TravellerList = Awaited<ReturnType<AppRouterClient["booking"]["travellers"]["list"]>>;
+export type Traveller = TravellerList["travellers"][number];
+
+/*
+ * The crew list. Session-only, both calls: the manifest carries dates of birth and document
+ * numbers, so unlike everything else on this page it is never reachable with a guest token.
+ */
+export const bookingTravellersQueryOptions = (bookingId: string) =>
+  orpc.booking.travellers.list.queryOptions({ input: { bookingId } });
+
+export type SaveTravellersInput = Parameters<AppRouterClient["booking"]["travellers"]["save"]>[0];
+
+export const saveTravellersMutationOptions = () => orpc.booking.travellers.save.mutationOptions();
+
 export type InvoiceDocument = NonNullable<
   Awaited<ReturnType<AppRouterClient["booking"]["invoice"]>>
 >;
