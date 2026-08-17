@@ -95,9 +95,15 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 
 ### Deployment
 
-Railway, three services (`Postgres`, `server`, `web`), each app configured by its own
+Railway, three long-running services (`Postgres`, `server`, `web`), each app configured by its own
 `apps/*/railway.json` with the repo root as build context. Full runbook and the variables to set:
 `docs/railway-deployment.md`.
+
+Alongside them, three cron services run the scheduled provider jobs. Two build from this repo and
+carry their own config (`apps/server/railway.cron-catalogue.json`,
+`apps/server/railway.cron-availability.json`); the expiry sweep calls the HTTP route instead.
+Schedules, the variables each one needs, and why they omit the pre-deploy migration:
+`docs/scheduled-jobs.md`.
 
 Two things constrain code changes here:
 
