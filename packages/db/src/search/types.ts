@@ -62,9 +62,13 @@ export type ListingSearchDoc = {
   crewType: string | null;
   builder: string | null;
   model: string | null;
+  /** The model without its cabin configuration; null when the vendor name carries none. */
+  modelCanonical: string | null;
   operator: string;
   baseId: string;
   baseName: string;
+  /** The town the base is reached from; null until its vendor location is mapped. */
+  city: string | null;
   location: string;
   region: string;
   country: string;

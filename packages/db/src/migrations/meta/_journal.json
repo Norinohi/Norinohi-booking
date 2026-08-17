@@ -295,6 +295,20 @@
       "when": 1786961545585,
       "tag": "0041_marvelous_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1786977071193,
+      "tag": "0042_mute_maginty",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1786977080398,
+      "tag": "0043_seed_location_cities",
+      "breakpoints": true
     }
   ]
 }
