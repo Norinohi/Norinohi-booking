@@ -68,3 +68,8 @@ await revalidateCatalogCache();
 
 console.log(JSON.stringify(result, null, 2));
 console.log(`Catalogue sync ${syncRunId} finished`);
+
+// An idle pool client holds the event loop open. Harmless when a person runs this
+// and walks away, fatal on a schedule: Railway reads a container that never exits
+// as a run still in progress and skips every tick behind it.
+await db.$client.end();

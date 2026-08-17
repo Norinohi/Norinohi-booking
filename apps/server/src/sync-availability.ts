@@ -36,3 +36,7 @@ await revalidateCatalogCache();
 
 console.log(JSON.stringify(result, null, 2));
 console.log(`Availability sync ${syncRunId} finished`);
+
+// See sync-catalogue.ts: the pool keeps the process alive, and a cron container
+// that never exits blocks its own next run.
+await db.$client.end();
