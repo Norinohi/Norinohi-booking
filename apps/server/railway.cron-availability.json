@@ -21,6 +21,7 @@
   "deploy": {
     "startCommand": "pnpm --filter server sync:availability",
     "cronSchedule": "0 * * * *",
+    "region": "europe-west4-drams3a",
     "restartPolicyType": "NEVER",
     "numReplicas": 1
   }
