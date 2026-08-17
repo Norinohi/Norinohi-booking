@@ -1240,7 +1240,14 @@ function descriptionFor(listing: ListingSearchDoc): string {
     .filter(Boolean)
     .join(" and ");
 
-  return `${year}, ${listing.title} ${capacity}${layout ? ` with ${layout}` : ""}. Based at ${listing.baseName} in ${listing.location}, this ${listing.category ?? "yacht"} is set up for a smooth charter with ${listing.operator}.`;
+  // NauSYS has no city entity, so it fills `location` with the marina name and the two clauses
+  // collapse into "Based at ACI Marina Trogir in ACI Marina Trogir".
+  const where =
+    listing.location && listing.location !== listing.baseName
+      ? `${listing.baseName} in ${listing.location}`
+      : listing.baseName;
+
+  return `${year}, ${listing.title} ${capacity}${layout ? ` with ${layout}` : ""}. Based at ${where}, this ${listing.category ?? "yacht"} is set up for a smooth charter with ${listing.operator}.`;
 }
 
 function overviewFor(

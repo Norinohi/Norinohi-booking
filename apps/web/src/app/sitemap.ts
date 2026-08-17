@@ -1,7 +1,9 @@
 import { env } from "@yacht-charter/env/web";
 import type { MetadataRoute } from "next";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { defaultLocale, locales } from "@/i18n/config";
+import { CATALOG_TAG } from "@/lib/cache-tags";
 import { publicClient } from "@/utils/orpc";
 
 /*
@@ -9,15 +11,17 @@ import { publicClient } from "@/utils/orpc";
  * the proxy matcher skips dotted paths, so next-intl leaves it alone.
  *
  * Only indexable routes belong here. Anything passing `noIndex: true` to `buildMetadata` is
- * omitted: login, register, booking, confirmation, consultation, and everything under
- * `/profile`. `/wishlist` is indexable but stays out too — it renders per-visitor and has
- * nothing for a crawler to land on.
+ * omitted: login, register, booking, confirmation, consultation, `/wishlist`, `/yachts/map`,
+ * and everything under `/profile`.
  */
-const STATIC_PATHS = ["/", "/yachts", "/yachts/map", "/plan-my-trip"] as const;
+const STATIC_PATHS = ["/", "/yachts", "/plan-my-trip"] as const;
 
 /** Page size is capped at 50 by `listingSearchInputSchema`; the bound stops a bad cursor looping. */
 const PAGE_SIZE = 50;
 const MAX_PAGES = 40;
+
+/** Process start, which is deploy time here — the only moment the static routes can change. */
+const BUILT_AT = new Date();
 
 function localizePath(path: string, locale: string) {
   return path === "/" ? `/${locale}` : `/${locale}${path}`;
@@ -32,7 +36,7 @@ function absolute(path: string) {
  * the pairing Google asks for. It mirrors what `buildMetadata` puts in the page head, so the
  * two sources agree instead of sending search engines conflicting hreflang graphs.
  */
-function entriesFor(path: string, lastModified: Date): MetadataRoute.Sitemap {
+function entriesFor(path: string, lastModified?: Date): MetadataRoute.Sitemap {
   const languages: Record<string, string> = Object.fromEntries(
     locales.map((locale) => [locale, absolute(localizePath(path, locale))]),
   );
@@ -46,27 +50,38 @@ function entriesFor(path: string, lastModified: Date): MetadataRoute.Sitemap {
 }
 
 /**
- * Every listing slug, walked with the search cursor.
+ * Every listing slug, walked page by page.
  *
  * Detail pages are the catalog's organic surface, so a sitemap without them is half a sitemap.
  * A failure here degrades to the static routes rather than failing the build: an empty sitemap
  * is recoverable on the next deploy, a failed deploy is not.
+ *
+ * Paged, not cursored: `results` only switches to cursor mode once a cursor is supplied, so the
+ * first call — which by definition has none — came back with `nextCursor: null` and ended the
+ * walk. The sitemap shipped exactly one page of listings, whatever the catalog held.
+ *
+ * Cached on the catalog tag, so a crawler hit no longer re-walks the whole catalog; a provider
+ * sync drops it along with the rest of the catalog reads.
  */
 async function listingPaths(): Promise<string[]> {
-  const slugs: string[] = [];
-  let cursor: string | undefined;
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
 
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const result = await publicClient.charterSearch.results({ pageSize: PAGE_SIZE, cursor });
+  const slugs: string[] = [];
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const result = await publicClient.charterSearch.results({ pageSize: PAGE_SIZE, page });
 
     for (const item of result.items) {
       slugs.push(`/yachts/${item.listing.slug}`);
     }
 
-    if (!result.nextCursor) {
+    // Absent only in cursor mode, which this walk never enters; treat it as "no more pages"
+    // rather than looping to MAX_PAGES against a contract that changed underneath.
+    if (page >= (result.pagination?.totalPages ?? page)) {
       return slugs;
     }
-    cursor = result.nextCursor;
   }
 
   console.warn(
@@ -75,9 +90,14 @@ async function listingPaths(): Promise<string[]> {
   return slugs;
 }
 
+/*
+ * Listings carry no `lastModified` at all, rather than one stamped at request time.
+ *
+ * `new Date()` told Google every URL had just changed on every fetch, which is how a site
+ * teaches it to ignore the field entirely. Omitting it is neutral; restoring it needs a real
+ * per-listing timestamp, which the search contract does not expose yet.
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lastModified = new Date();
-
   let listings: string[] = [];
   try {
     listings = await listingPaths();
@@ -85,5 +105,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] listing enumeration failed, emitting static routes only", error);
   }
 
-  return [...STATIC_PATHS, ...listings].flatMap((path) => entriesFor(path, lastModified));
+  return [
+    ...STATIC_PATHS.flatMap((path) => entriesFor(path, BUILT_AT)),
+    ...listings.flatMap((path) => entriesFor(path)),
+  ];
 }

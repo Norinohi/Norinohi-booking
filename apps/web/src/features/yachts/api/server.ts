@@ -104,6 +104,12 @@ export async function prefetchListingDetail(id: string) {
       builder: listing.builder,
       model: listing.model,
       category: listing.category,
+      crewType: listing.crewType,
+      cabins: listing.specs.cabins,
+      berths: listing.specs.berths,
+      base: listing.base.name,
+      country: listing.base.country,
+      priceFromMinor: listing.priceFrom?.amountMinor ?? null,
     },
   };
 }

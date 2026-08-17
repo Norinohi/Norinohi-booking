@@ -1173,6 +1173,7 @@
     }
   },
   "Yachts": {
+    "heading": "Yacht Charter Search",
     "searchByMap": "Search by map",
     "emptyTitle": "No yachts found for your filters",
     "emptyDescription": "Try adjusting your dates, budget, or location — we will help you find the perfect match.",
@@ -1200,8 +1201,8 @@
   },
   "Seo": {
     "Yachts": {
-      "title": "Browse Yachts",
-      "description": "Explore our fleet of yachts and catamarans. Filter by destination, dates, guests and price to find the perfect boat for your trip."
+      "title": "Yacht Charter Search",
+      "description": "Search yachts and catamarans for charter across the Mediterranean and beyond. Filter by destination, dates, guests and price."
     },
     "YachtsMap": {
       "title": "Yachts on the Map",
@@ -1209,7 +1210,13 @@
     },
     "YachtDetail": {
       "title": "Yacht Details",
-      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates."
+      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates.",
+      "titleAtPlace": "{boat} Charter in {place}",
+      "titlePlain": "{boat} Charter",
+      "metaSpecs": "{category} with {cabins, plural, one {# cabin} other {# cabins}} for up to {guests} guests.",
+      "metaPlace": "{crew} charter from {place}.",
+      "metaPrice": "From {price} per week.",
+      "metaCta": "Check availability for your dates."
     },
     "Booking": {
       "title": "Book Your Yacht",

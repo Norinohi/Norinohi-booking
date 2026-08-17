@@ -46,6 +46,8 @@ export type SeoInput = {
   path?: string;
   image?: string;
   noIndex?: boolean;
+  /** Only read when `noIndex` is set: keeps the page's outgoing links crawlable. */
+  follow?: boolean;
   locale?: Locale | string;
 };
 
@@ -65,6 +67,7 @@ export function buildMetadata({
   path = "/",
   image = DEFAULT_OG_IMAGE,
   noIndex = false,
+  follow = false,
   locale = defaultLocale,
 }: SeoInput): Metadata {
   const canonical = localizePath(path, locale);
@@ -94,6 +97,6 @@ export function buildMetadata({
       description,
       images: [image],
     },
-    robots: noIndex ? { index: false, follow: false } : undefined,
+    robots: noIndex ? { index: false, follow } : undefined,
   };
 }

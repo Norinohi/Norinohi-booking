@@ -137,7 +137,10 @@ export default function SearchScreen() {
 
   return (
     <div className="flex flex-col">
-      <div className="border-b border-natural-50 px-4 py-6 md:px-13.5">
+      <div className="flex flex-col gap-4 border-b border-natural-50 px-4 py-6 md:px-13.5">
+        {/* Outside the boundary on purpose: the heading has to be in the static shell, which is
+            the only HTML a crawler is guaranteed to receive. */}
+        <h1 className="text-h4 text-foreground">{t("heading")}</h1>
         <Suspense fallback={null}>
           <SearchBarSection />
         </Suspense>

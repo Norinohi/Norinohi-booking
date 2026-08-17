@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 
 import { Hydrated } from "@/components/layout/hydrated";
 import { BookingProvider, BookingSidebar } from "@/features/booking";
@@ -19,6 +19,33 @@ import { buildMetadata, socialImage } from "@/lib/seo";
  * decision about the locale architecture, not a fix to this route.
  */
 export const instant = false;
+
+/* Google shows roughly 60 characters of a title, and `%s | YachtSkanner` claims 15 of them. */
+const TITLE_BUDGET = 45;
+const DESCRIPTION_BUDGET = 155;
+
+const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
+
+/** `crewType` arrives as a provider-supplied string; only these three have a label to show. */
+function crewKey(value: string | null | undefined): (typeof CREW_KEYS)[number] | null {
+  return CREW_KEYS.find((key) => key === value) ?? null;
+}
+
+/**
+ * Joins sentences while they fit, so the description ends on a full stop rather than mid-word.
+ * They arrive in descending order of usefulness, and the first overflow ends it.
+ */
+function withinBudget(sentences: (string | null)[]): string {
+  let out = "";
+  for (const sentence of sentences) {
+    if (!sentence) continue;
+    const next = out ? `${out} ${sentence}` : sentence;
+    if (next.length > DESCRIPTION_BUDGET) break;
+    out = next;
+  }
+
+  return out;
+}
 
 export async function generateMetadata({
   params,
@@ -44,12 +71,55 @@ export async function generateMetadata({
    */
   const path = `/yachts/${detail?.seo.slug ?? id}`;
 
+  if (!detail) {
+    return buildMetadata({
+      locale,
+      title: t("title"),
+      description: t("description"),
+      path,
+    });
+  }
+
+  const { seo } = detail;
+
+  /*
+   * The country, not the marina: "… Charter in Croatia" is the phrase people search, while
+   * "… Charter in Marina Zadar (ex. Tankerkomerc)" overruns the budget and matches nothing.
+   * Switch to the city once the geo mapping lands — that is the stronger keyword of the two.
+   */
+  const withPlace = seo.country
+    ? t("titleAtPlace", { boat: detail.title, place: seo.country })
+    : null;
+  const title =
+    withPlace && withPlace.length <= TITLE_BUDGET
+      ? withPlace
+      : t("titlePlain", { boat: detail.title });
+
+  const crew = await getTranslations("Common.crewTypes");
+  const format = await getFormatter();
+
+  const key = crewKey(seo.crewType);
+  const price = seo.priceFromMinor ? format.number(seo.priceFromMinor / 100, "eur") : null;
+
+  /*
+   * Built here rather than reusing `seo.description`: that string is the visible body copy, runs
+   * past 240 characters so a search result cuts it mid-sentence, and opens on the year built.
+   */
+  const description = withinBudget([
+    seo.category && seo.berths && seo.cabins
+      ? t("metaSpecs", { category: seo.category, guests: seo.berths, cabins: seo.cabins })
+      : null,
+    key && seo.base ? t("metaPlace", { crew: crew(key), place: seo.base }) : null,
+    price ? t("metaPrice", { price }) : null,
+    t("metaCta"),
+  ]);
+
   return buildMetadata({
     locale,
-    title: detail?.title ?? t("title"),
-    description: detail?.seo.description ?? t("description"),
+    title,
+    description: description || seo.description,
     path,
-    image: detail ? socialImage(detail.seo.image) : undefined,
+    image: socialImage(seo.image),
   });
 }
 
