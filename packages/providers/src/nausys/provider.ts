@@ -40,8 +40,11 @@ import {
   createNausysSeasonalPriceLoader,
   type NausysHotWindow,
 } from "./occupancy";
+import { providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
+import { and, eq, isNotNull } from "drizzle-orm";
+
 import { projectNausysCatalogue } from "./projection";
-import { createNausysQuoteService } from "./quote";
+import { createNausysQuoteService, type CrewRoleService } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
 
 import type { JsonField } from "../shared/json";
@@ -130,6 +133,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       client: this.client,
       resolver: this.resolver,
       config: this.config,
+      loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
     });
 
     this.bookings = createNausysBookingService({
@@ -269,4 +273,34 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
 
 function parseResume(value: unknown): NausysCatalogueCursor | null {
   return parseNausysCatalogueCursor(value);
+}
+
+/**
+ * The listing's crew roles, as the vendor services they are sold as.
+ *
+ * Reads back what the catalogue sync worked out: NauSYS marks no service as crew,
+ * so `crew_role` is our reading of the service name and is null wherever the name
+ * did not say. A listing whose operator names crew in a way the projection does not
+ * recognise returns nothing here, and a crew choice on it stays unpriced rather
+ * than being charged for a service we guessed at.
+ */
+async function loadNausysCrewRoles(db: Database, listingId: string): Promise<CrewRoleService[]> {
+  const rows = await db
+    .select({
+      role: providerExtraCatalogue.crewRole,
+      externalId: providerExtraCatalogue.externalId,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "nausys"),
+        eq(providerExtraCatalogue.kind, "service"),
+        isNotNull(providerExtraCatalogue.crewRole),
+      ),
+    );
+
+  return rows.flatMap((row) =>
+    row.role === null ? [] : [{ role: row.role, externalId: row.externalId }],
+  );
 }

@@ -609,7 +609,7 @@ function serviceExtraOf(
   const priceMinor = minorOf(item.price ?? item.amount, priceCurrency);
   if (priceMinor === undefined) return null;
 
-  return {
+  const extra: CanonicalExtra = {
     kind: "service",
     externalId,
     name: label,
@@ -621,6 +621,12 @@ function serviceExtraOf(
     onRequestOnly: item.onRequestOnly === true,
     ...scope,
   };
+
+  // Only a name the patterns recognise sets a role; the rest stay plain extras.
+  const crewRole = crewRoleOf(label);
+  if (crewRole !== undefined) extra.crewRole = crewRole;
+
+  return extra;
 }
 
 function equipmentExtraOf(
@@ -653,6 +659,29 @@ function equipmentExtraOf(
     onRequestOnly: false,
     ...scope,
   };
+}
+
+/**
+ * Which crew role a service's name says it is, if any.
+ *
+ * NauSYS marks nothing as crew: a skipper is a priced service like a paddleboard,
+ * and the only signal is what the operator called it. So this reads the name, and
+ * an unrecognised one stays unset rather than being guessed into a role — quoting
+ * a customer for a skipper they did not ask for is worse than not offering crew.
+ *
+ * Ordered because "skippered cook" must not match `skipper` first; the most
+ * specific patterns are tried before the general ones. Reviewed against the
+ * services our own account returns, so it will need revisiting for an operator who
+ * names crew in a language this does not cover.
+ */
+const CREW_ROLE_PATTERNS: { role: "skipper" | "hostess" | "cook"; pattern: RegExp }[] = [
+  { role: "cook", pattern: /\b(cook|chef)\b/i },
+  { role: "hostess", pattern: /\b(hostess|host|stewardess)\b/i },
+  { role: "skipper", pattern: /\b(skipper|captain)\b/i },
+];
+
+function crewRoleOf(name: string): "skipper" | "hostess" | "cook" | undefined {
+  return CREW_ROLE_PATTERNS.find((entry) => entry.pattern.test(name))?.role;
 }
 
 function measureOf(priceMeasureId: number | undefined, context: ExtraNaming): string | undefined {

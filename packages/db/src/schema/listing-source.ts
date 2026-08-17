@@ -28,6 +28,19 @@ export const duplicateDecision = pgEnum("duplicate_decision", ["pending", "confi
 export const providerExtraKind = pgEnum("provider_extra_kind", ["service", "equipment"]);
 
 /**
+ * The crew role an extra actually is, where it is one.
+ *
+ * Vendors sell crew as ordinary priced services with nothing marking them as crew,
+ * so this is our reading of the service's name rather than anything they state. It
+ * stays null when the name does not clearly say: an unrecognised service is sold as
+ * a plain extra, never guessed into a skipper.
+ *
+ * The values match the codes `crewOptionsFor` reads, which is what lets a synced
+ * listing offer the same Crew control a seeded one does.
+ */
+export const providerCrewRole = pgEnum("provider_crew_role", ["skipper", "hostess", "cook"]);
+
+/**
  * What a provider sells alongside the hull, at its published season list price.
  *
  * Deliberately not folded into `listing_amenity`: that table answers "what does
@@ -52,6 +65,7 @@ export const providerExtraCatalogue = pgTable(
     externalId: text("external_id").notNull(),
     name: text("name").notNull(),
     obligatory: boolean("obligatory").default(false).notNull(),
+    crewRole: providerCrewRole("crew_role"),
     ...money("price"),
     priceMeasure: text("price_measure"),
     calculationType: text("calculation_type"),

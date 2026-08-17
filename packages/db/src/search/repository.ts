@@ -196,18 +196,22 @@ export async function getListingDetailByIdOrSlug(
       order by la.obligatory desc, la.price_minor nulls first, a.name asc
     `),
     db.execute<{
+      source: string;
       kind: string;
       externalId: string;
       label: string;
       obligatory: boolean;
+      crewRole: string | null;
       priceMinor: number | null;
       priceCurrency: string | null;
     }>(sql`
       select
+        source,
         kind,
         external_id as "externalId",
         name as label,
         obligatory,
+        crew_role as "crewRole",
         price_minor as "priceMinor",
         price_currency as "priceCurrency"
       from provider_extra_catalogue
@@ -245,8 +249,10 @@ export async function getListingDetailByIdOrSlug(
     code: `${item.kind}:${item.externalId}`,
     label: item.label,
     obligatory: item.obligatory,
+    crewRole: item.crewRole,
     priceMinor: item.priceMinor,
     priceCurrency: item.priceCurrency,
+    selectable: isSelectableExtra(item.source, item.kind),
   }));
   const mandatoryExtras = extras
     .filter((item) => item.obligatory)
@@ -255,11 +261,29 @@ export async function getListingDetailByIdOrSlug(
   // Crew control, and listing it twice would let the customer add a skipper the
   // crew type does not include.
   const optionalExtras = extras
-    .filter((item) => !item.obligatory)
-    .map((item) => pricedItem(item, listing.currency));
-  const crewRoles = amenities
-    .filter((item) => item.crew && item.priceMinor !== null)
-    .map((item) => pricedItem(item, listing.currency));
+    .filter((item) => !item.obligatory && item.crewRole === null)
+    .map((item) => ({
+      ...pricedItem(item, listing.currency),
+      selectable: item.selectable,
+    }));
+  /*
+   * Two sources because the two kinds of listing carry crew differently. A seeded
+   * listing flags the amenity itself; a synced one has no such flag from the vendor,
+   * so the role was read off the service name at projection time and lives on the
+   * extras catalogue instead.
+   *
+   * Either way the code is the bare role, not the provider's id, because
+   * `crewOptionsFor` decides what the Crew control may offer by looking for
+   * `skipper`/`hostess`/`cook`.
+   */
+  const crewRoles = [
+    ...amenities
+      .filter((item) => item.crew && item.priceMinor !== null)
+      .map((item) => pricedItem(item, listing.currency)),
+    ...extras
+      .filter((item) => item.crewRole !== null)
+      .map((item) => pricedItem({ ...item, code: item.crewRole ?? item.code }, listing.currency)),
+  ];
 
   return {
     ...listing,
@@ -1138,6 +1162,50 @@ async function decorateFacetOptions(
 
 function labelsFromOptions(options: ListingFacetOption[]): string[] {
   return options.map((option) => option.label);
+}
+
+/**
+ * The optional extras this listing will actually price, as canonical codes.
+ *
+ * The quote path checks a selection against this rather than trusting the client:
+ * an unrecognised code used to be persisted onto the quote and then dropped by the
+ * adapter, which billed nothing and told nobody.
+ */
+export async function listSelectableExtraCodes(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+): Promise<Set<string>> {
+  const rows = await db.execute<{ source: string; kind: string; externalId: string }>(sql`
+    select source, kind, external_id as "externalId"
+    from provider_extra_catalogue
+    where listing_id = ${listingId} and obligatory = false
+  `);
+
+  return new Set(
+    rows.rows
+      .filter((row) => isSelectableExtra(row.source, row.kind))
+      .map((row) => `${row.kind}:${row.externalId}`),
+  );
+}
+
+/**
+ * Whether the booking flow may offer this extra as a priced choice.
+ *
+ * This is provider knowledge sitting in the read model because the dependency runs
+ * the other way: `packages/providers` imports this package. It mirrors what the
+ * adapters can actually match a selection against, so it has to be revisited
+ * whenever one of them learns a new id space.
+ *
+ * - mock keeps one flat code space and prices anything in it.
+ * - NauSYS offers key on `serviceId`; no recorded offer has ever carried the
+ *   `extraId` shape, so an `equipment` code has nothing to match against.
+ * - Booking Manager publishes optional extras in its catalogue but exposes none on
+ *   the offer it quotes from, so none of them can be priced.
+ */
+function isSelectableExtra(source: string, kind: string): boolean {
+  if (source === "mock") return true;
+  if (source === "nausys") return kind === "service";
+  return false;
 }
 
 function pricedItem(

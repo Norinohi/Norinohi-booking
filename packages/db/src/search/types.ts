@@ -111,7 +111,7 @@ export type ListingDetail = ListingSearchDoc & {
   overview: { code: string; label: string; value: string }[];
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];
-  optionalExtras: ListingPricedItem[];
+  optionalExtras: ListingOptionalItem[];
   /** What the sidebar's Crew control may offer, and what each role costs. */
   crew: {
     options: CrewType[];
@@ -160,6 +160,11 @@ export type ListingPricedItem = {
     currency: string;
   };
   pricingType: "per_booking" | "per_week" | "pay_at_check_in";
+};
+
+/** An optional extra, plus whether the provider can price it at quote time. */
+export type ListingOptionalItem = ListingPricedItem & {
+  selectable: boolean;
 };
 
 export type ListingReview = {

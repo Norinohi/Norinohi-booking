@@ -49,6 +49,20 @@ const pricedItemSchema = includedItemSchema.extend({
   pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
 });
 
+/**
+ * An optional extra, plus whether the booking flow may offer it as a choice.
+ *
+ * Not every provider can price an extra at quote time. Booking Manager publishes
+ * optional extras in its catalogue but exposes none on the offer it quotes from,
+ * and NauSYS keys its offer extras in an id space we have only ever seen used for
+ * services. An extra we cannot price must still be shown — the customer wants to
+ * know it exists — but offering a checkbox that silently changes nothing is worse
+ * than showing it as arrange-with-the-base.
+ */
+const optionalItemSchema = pricedItemSchema.extend({
+  selectable: z.boolean(),
+});
+
 const reviewSchema = z.object({
   id: z.string(),
   rating: z.number(),
@@ -136,7 +150,7 @@ export const listingDetailSchema = listingSummarySchema.extend({
   overview: z.array(includedItemSchema.extend({ value: z.string() })),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
-  optionalExtras: z.array(pricedItemSchema),
+  optionalExtras: z.array(optionalItemSchema),
   /**
    * What the booking sidebar's Crew control may offer for this yacht, and what
    * each role costs. `options` is derived from how the operator sells the hull

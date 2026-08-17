@@ -15,15 +15,40 @@ function SectionTitle({ children }: { children: ReactNode }) {
   return <h3 className="py-2 text-xl leading-[1.3] font-bold text-foreground">{children}</h3>;
 }
 
-export default function ExtrasStep() {
-  const t = useTranslations("Booking.extras");
+type OptionalExtra = NonNullable<
+  ReturnType<typeof useBooking>["listing"]
+>["optionalExtras"][number];
+
+/** The label, note and price shared by a selectable extra and an arrange-at-base one. */
+function ExtraRow({ item, note }: { item: OptionalExtra; note?: string }) {
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
+  const caption = note ?? (item.pricingType === "pay_at_check_in" ? tExtras("payAtCheckIn") : null);
+
+  return (
+    <>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="text-base leading-[1.4] text-foreground">{item.label}</span>
+        {caption === null ? null : (
+          <span className="text-xs leading-[1.3] font-semibold text-natural-300">{caption}</span>
+        )}
+      </span>
+      <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
+        {tExtras("perBooking", { price: money(item.price.amountMinor) })}
+      </span>
+    </>
+  );
+}
+
+export default function ExtrasStep() {
+  const t = useTranslations("Booking.extras");
   const { control } = useFormContext<BookingValues>();
-  const { listing, setExtras } = useBooking();
+  const { listing } = useBooking();
 
   const included = listing?.includedAmenities ?? [];
   const optional = listing?.optionalExtras ?? [];
+  const selectable = optional.filter((item) => item.selectable);
+  const arrangeAtBase = optional.filter((item) => !item.selectable);
 
   return (
     <>
@@ -62,7 +87,7 @@ export default function ExtrasStep() {
           name="extras.optional"
           render={({ field }) => (
             <div className="flex flex-col">
-              {optional.map((item) => (
+              {selectable.map((item) => (
                 <label
                   key={item.code}
                   className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border py-3"
@@ -70,27 +95,32 @@ export default function ExtrasStep() {
                   <Checkbox
                     checked={field.value.includes(item.code)}
                     onCheckedChange={(checked) => {
-                      const next = checked
-                        ? [...field.value, item.code]
-                        : field.value.filter((code) => code !== item.code);
-                      field.onChange(next);
-                      /* Repricing here is what makes the sidebar and Review reflect the pick. */
-                      setExtras(next);
+                      field.onChange(
+                        checked
+                          ? [...field.value, item.code]
+                          : field.value.filter((code) => code !== item.code),
+                      );
                     }}
                     onBlur={field.onBlur}
                   />
-                  <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="text-base leading-[1.4] text-foreground">{item.label}</span>
-                    {item.pricingType === "pay_at_check_in" ? (
-                      <span className="text-xs leading-[1.3] font-semibold text-natural-300">
-                        {tExtras("payAtCheckIn")}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
-                    {tExtras("perBooking", { price: money(item.price.amountMinor) })}
-                  </span>
+                  <ExtraRow item={item} />
                 </label>
+              ))}
+
+              {/*
+                Shown but not offered: the provider cannot price these on the quote, so a
+                checkbox would take a choice and silently charge nothing for it. The customer
+                still needs to know the extra exists and roughly what it costs.
+              */}
+              {arrangeAtBase.map((item) => (
+                <div
+                  key={item.code}
+                  className="flex items-start gap-2 border-b border-dashed border-border py-3"
+                >
+                  {/* Keeps the label column aligned with the checkbox rows above. */}
+                  <span aria-hidden className="size-4 shrink-0" />
+                  <ExtraRow item={item} note={t("arrangeAtBase")} />
+                </div>
               ))}
             </div>
           )}
