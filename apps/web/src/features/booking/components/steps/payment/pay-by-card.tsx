@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useFormContext, useWatch } from "react-hook-form";
 
 import type { BookingValues } from "../../../lib/booking-form";
-import { PAYMENT_ELEMENT_LAYOUT } from "../../../lib/stripe";
+import { PAYMENT_ELEMENT_OPTIONS } from "../../../lib/stripe";
 import ExpressCheckout from "./express-checkout";
 
 /**
@@ -39,7 +39,7 @@ export default function PayByCard({ enabled }: { enabled: boolean }) {
       */}
       <PaymentElement
         options={{
-          layout: PAYMENT_ELEMENT_LAYOUT,
+          ...PAYMENT_ELEMENT_OPTIONS,
           defaultValues: {
             billingDetails: {
               name: guest.fullName,

@@ -253,6 +253,17 @@ export const restServiceSchema = looseJsonObject({
 });
 
 /**
+ * The billing unit an extra's price is quoted in ("per booking", "per day").
+ * Same id/name shape as every other reference list; no response is recorded
+ * against it, so consumers must treat an unresolved measure as absent rather
+ * than assume a default unit.
+ */
+export const restPriceMeasureSchema = looseJsonObject({
+  id: z.number().int(),
+  name: restInternationalTextSchema.optional(),
+});
+
+/**
  * Seven named booleans per direction, not a numeric day. A period may enable
  * several weekdays at once, and the whole rule is bounded by `dateFrom`/`dateTo`.
  * `minimumShortPeriodDuration` is the floor for short-break offers, which is a
@@ -292,15 +303,70 @@ export const restYachtPictureSchema = looseJsonObject({
 });
 
 /**
- * Prices, services, extras and discounts, per season and per base. Only the
- * currency has a canonical home today; the rest is read from the retained raw
- * payload by the availability and quote paths.
+ * A priced service on a yacht's season entry (`RestYachtServicePrice`).
+ *
+ * `serviceId` points into the `services` catalogue, which is a different id space
+ * from `equipment` — the same number means different things in each, so the two
+ * must never be merged into one lookup.
+ *
+ * `price` and `amount` are equal across every recorded row; `price` is read and
+ * `amount` is the fallback so a vendor that starts distinguishing them (net vs
+ * gross, as `restExtraSchema` already does) does not silently drop the value.
+ */
+export const restYachtServicePriceSchema = looseJsonObject({
+  id: z.number().int().optional(),
+  serviceId: z.number().int(),
+  obligatory: z.boolean().optional(),
+  onRequestOnly: z.boolean().optional(),
+  availableOnAgencyPortal: z.boolean().optional(),
+  price: decimal.optional(),
+  amount: decimal.optional(),
+  currency: z.string().optional(),
+  priceMeasureId: z.number().int().optional(),
+  calculationType: z.string().optional(),
+  vatInPrice: z.string().optional(),
+  description: restInternationalTextSchema.optional(),
+  validForBases: z.array(z.number().int()).optional(),
+});
+
+/**
+ * A priced optional add-on keyed into the `equipment` id space
+ * (`RestYachtAdditionalEquipmentPrice`). It carries no `obligatory` flag: an
+ * additional-equipment row is optional by construction.
+ *
+ * `quantity` is the ceiling on how many may be taken, and 0 means unlimited
+ * rather than none — a row with quantity 0 is still sold.
+ */
+export const restYachtAdditionalEquipmentPriceSchema = looseJsonObject({
+  id: z.number().int().optional(),
+  equipmentId: z.number().int(),
+  availableOnAgencyPortal: z.boolean().optional(),
+  price: decimal.optional(),
+  amount: decimal.optional(),
+  currency: z.string().optional(),
+  priceMeasureId: z.number().int().optional(),
+  calculationType: z.string().optional(),
+  quantity: z.number().optional(),
+  vatInPrice: z.string().optional(),
+  condition: restInternationalTextSchema.optional(),
+});
+
+/**
+ * Prices, services, extras and discounts, per season and per base.
+ *
+ * `services` and `additionalYachtEquipment` are the catalogue's only source of
+ * priced extras: `standardYachtEquipment` on the yacht itself carries neither a
+ * price nor an obligatory flag, so everything it lists is included equipment.
+ * The offer-time `obligatoryExtras` on `freeYachts` prices the same services for
+ * one concrete period; these are the season-wide list prices behind them.
  */
 export const restSeasonSpecificDataSchema = looseJsonObject({
   seasonId: z.number().int().optional(),
   baseId: z.number().int().optional(),
   locationId: z.number().int().optional(),
   agencyVisible: z.boolean().optional(),
+  services: z.array(restYachtServicePriceSchema).optional(),
+  additionalYachtEquipment: z.array(restYachtAdditionalEquipmentPriceSchema).optional(),
   prices: z
     .array(
       looseJsonObject({

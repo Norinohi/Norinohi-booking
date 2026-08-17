@@ -38,7 +38,7 @@ export default function ExpressCheckout() {
           /*
            * Klarna and Amazon Pay are off: both are credit or account products whose
            * dispute handling sits outside the chargeback flow, and neither was asked for.
-           * Link is off to match `EXCLUDED_PAYMENT_METHOD_TYPES` on the Elements instance.
+           * Link is off to match `PAYMENT_ELEMENT_OPTIONS.wallets` on the form below.
            */
           paymentMethods: {
             applePay: "auto",
@@ -61,9 +61,7 @@ export default function ExpressCheckout() {
         onReady={(event) => {
           const methods = event.availablePaymentMethods;
           setAvailable(
-            Boolean(
-              methods && (methods.applePay || methods.googlePay || methods.paypal),
-            ),
+            Boolean(methods && (methods.applePay || methods.googlePay || methods.paypal)),
           );
         }}
         /*

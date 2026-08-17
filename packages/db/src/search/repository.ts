@@ -149,7 +149,7 @@ export async function getListingDetailByIdOrSlug(
   const listing = await getListingByIdOrSlug(db, idOrSlug);
   if (!listing) return undefined;
 
-  const [infoRows, amenityRows, faqRows, reviews, popularYachts] = await Promise.all([
+  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts] = await Promise.all([
     db.execute<{
       beamM: string | null;
       draftM: string | null;
@@ -195,6 +195,25 @@ export async function getListingDetailByIdOrSlug(
       where la.listing_id = ${listing.listingId}
       order by la.obligatory desc, la.price_minor nulls first, a.name asc
     `),
+    db.execute<{
+      kind: string;
+      externalId: string;
+      label: string;
+      obligatory: boolean;
+      priceMinor: number | null;
+      priceCurrency: string | null;
+    }>(sql`
+      select
+        kind,
+        external_id as "externalId",
+        name as label,
+        obligatory,
+        price_minor as "priceMinor",
+        price_currency as "priceCurrency"
+      from provider_extra_catalogue
+      where listing_id = ${listing.listingId}
+      order by obligatory desc, price_minor, name asc
+    `),
     db.execute<{ id: string; question: string; answer: string }>(sql`
       select id, question, answer
       from faq
@@ -210,16 +229,33 @@ export async function getListingDetailByIdOrSlug(
     code: item.code ?? valueForLabel(item.label),
   }));
   const includedAmenities = amenities
-    .filter((item) => !item.crew && !item.obligatory && item.priceMinor === null)
+    .filter((item) => !item.crew && item.priceMinor === null)
     .map((item) => ({ code: item.code, label: item.label }));
-  const mandatoryExtras = amenities
-    .filter((item) => !item.crew && item.obligatory && item.priceMinor !== null)
+  /*
+   * Extras come from provider_extra_catalogue, not from listing_amenity. The two
+   * answer different questions — what the yacht has versus what it costs extra —
+   * and providers key them in separate id spaces. Reading both from one set of
+   * columns is what left these sections empty for every synced listing: the
+   * catalogue sync only ever knew the yacht's standard equipment.
+   *
+   * The code is the provider id space plus its id, which is stable across syncs
+   * and cannot collide a service with an equipment of the same number.
+   */
+  const extras = extraRows.rows.map((item) => ({
+    code: `${item.kind}:${item.externalId}`,
+    label: item.label,
+    obligatory: item.obligatory,
+    priceMinor: item.priceMinor,
+    priceCurrency: item.priceCurrency,
+  }));
+  const mandatoryExtras = extras
+    .filter((item) => item.obligatory)
     .map((item) => pricedItem(item, listing.currency));
   // Crew is deliberately not in optionalExtras: the sidebar buys it through the
   // Crew control, and listing it twice would let the customer add a skipper the
   // crew type does not include.
-  const optionalExtras = amenities
-    .filter((item) => !item.crew && !item.obligatory && item.priceMinor !== null)
+  const optionalExtras = extras
+    .filter((item) => !item.obligatory)
     .map((item) => pricedItem(item, listing.currency));
   const crewRoles = amenities
     .filter((item) => item.crew && item.priceMinor !== null)

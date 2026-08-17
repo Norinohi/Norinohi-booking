@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   jsonb,
   numeric,
@@ -7,16 +8,63 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { id, pct, timestamps } from "./_shared";
+import { id, money, pct, timestamps } from "./_shared";
 import { listing } from "./listing";
 import { providerRecord } from "./provider";
 
 export const matchStatus = pgEnum("match_status", ["unmatched", "auto", "confirmed", "rejected"]);
 
 export const duplicateDecision = pgEnum("duplicate_decision", ["pending", "confirmed", "rejected"]);
+
+/**
+ * Which of the provider's id spaces `external_id` belongs to. NauSYS numbers
+ * services and equipment independently, so the pair is the identity and this
+ * column is what stops service 17 overwriting equipment 17.
+ */
+export const providerExtraKind = pgEnum("provider_extra_kind", ["service", "equipment"]);
+
+/**
+ * What a provider sells alongside the hull, at its published season list price.
+ *
+ * Deliberately not folded into `listing_amenity`: that table answers "what does
+ * this yacht have", and every row in it is included equipment. An extra is a
+ * thing the customer pays for, lives in a different id space, and may name the
+ * same equipment that is already fitted as standard — merging the two made all
+ * three detail sections read from one set of columns and silenced two of them.
+ *
+ * The price here is indicative. Binding prices come from the offer path, which
+ * quotes the same items for concrete dates, quantity and duration.
+ */
+export const providerExtraCatalogue = pgTable(
+  "provider_extra_catalogue",
+  {
+    id: id("pxtr"),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listing.id, { onDelete: "cascade" }),
+    // Scoped like listing_media.source so a merged listing keeps each provider's rows.
+    source: text("source").notNull(),
+    kind: providerExtraKind("kind").notNull(),
+    externalId: text("external_id").notNull(),
+    name: text("name").notNull(),
+    obligatory: boolean("obligatory").default(false).notNull(),
+    ...money("price"),
+    priceMeasure: text("price_measure"),
+    calculationType: text("calculation_type"),
+    onRequestOnly: boolean("on_request_only").default(false).notNull(),
+    externalSeasonId: text("external_season_id"),
+    externalBaseId: text("external_base_id"),
+    ...timestamps,
+  },
+  (t) => [
+    unique("provider_extra_catalogue_uq").on(t.listingId, t.source, t.kind, t.externalId),
+    index("provider_extra_catalogue_listing_idx").on(t.listingId),
+  ],
+);
 
 export const listingSource = pgTable(
   "listing_source",
@@ -76,6 +124,13 @@ export const listingDuplicateCandidate = pgTable(
     ),
   ],
 );
+
+export const providerExtraCatalogueRelations = relations(providerExtraCatalogue, ({ one }) => ({
+  listing: one(listing, {
+    fields: [providerExtraCatalogue.listingId],
+    references: [listing.id],
+  }),
+}));
 
 export const listingSourceRelations = relations(listingSource, ({ one }) => ({
   listing: one(listing, {

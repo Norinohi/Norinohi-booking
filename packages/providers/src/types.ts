@@ -398,6 +398,36 @@ const canonicalAmenitySchema = z.object({
   name: z.string(),
 });
 
+/**
+ * A priced extra the provider sells alongside the hull.
+ *
+ * Separate from `canonicalAmenitySchema` because the two answer different
+ * questions: an amenity is equipment the yacht has, an extra is something the
+ * customer pays for. Providers key them in different id spaces too, which `kind`
+ * records so the writer never collides a service with an equipment of the same
+ * number.
+ *
+ * The price is the season's published list price, not a quote. What a customer
+ * actually owes for concrete dates comes from the offer path, which prices the
+ * same items per period and quantity.
+ */
+export const canonicalExtraSchema = z.object({
+  kind: z.enum(["service", "equipment"]),
+  externalId: z.string(),
+  name: z.string(),
+  obligatory: z.boolean(),
+  priceMinor: z.number().int(),
+  priceCurrency: z.string().length(3),
+  /** Vendor's billing unit (per booking, per day, per person); display only. */
+  priceMeasure: z.string().optional(),
+  calculationType: z.string().optional(),
+  /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
+  onRequestOnly: z.boolean(),
+  externalSeasonId: z.string().optional(),
+  externalBaseId: z.string().optional(),
+});
+export type CanonicalExtra = z.infer<typeof canonicalExtraSchema>;
+
 const canonicalListingSchema = z.object({
   externalId: z.string(),
   externalCompanyId: z.string(),
@@ -431,6 +461,8 @@ const canonicalListingSchema = z.object({
     }),
   ),
   amenities: z.array(z.string()),
+  /* Defaulted: a provider with no extras feed still produces a valid listing. */
+  extras: z.array(canonicalExtraSchema).default([]),
   texts: z.array(
     z.object({
       kind: z.enum(["description", "notes", "conditions", "one_way_note"]),
