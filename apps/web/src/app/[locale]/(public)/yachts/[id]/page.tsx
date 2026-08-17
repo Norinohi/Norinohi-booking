@@ -6,6 +6,7 @@ import { Hydrated } from "@/components/layout/hydrated";
 import { BookingProvider, BookingSidebar } from "@/features/booking";
 import { YachtDetailScreen } from "@/features/yachts";
 import { isListingNotFound, prefetchListingDetail } from "@/features/yachts/api/server";
+import { crewKey, joinWithinBudget } from "@/features/yachts/lib/listing-copy";
 import { breadcrumbNode, JsonLd, listingNode } from "@/lib/json-ld";
 import { buildMetadata, socialImage } from "@/lib/seo";
 
@@ -24,27 +25,35 @@ export const instant = false;
 const TITLE_BUDGET = 45;
 const DESCRIPTION_BUDGET = 155;
 
-const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
-
-/** `crewType` arrives as a provider-supplied string; only these three have a label to show. */
-function crewKey(value: string | null | undefined): (typeof CREW_KEYS)[number] | null {
-  return CREW_KEYS.find((key) => key === value) ?? null;
-}
+type Seo = Awaited<ReturnType<typeof prefetchListingDetail>>["seo"];
 
 /**
- * Joins sentences while they fit, so the description ends on a full stop rather than mid-word.
- * They arrive in descending order of usefulness, and the first overflow ends it.
+ * The listing's own copy, as translated sentences in descending order of usefulness.
+ *
+ * Most listings have no provider prose — NauSYS fills `highlightsIntText` for a minority of its
+ * fleet, and never in Spanish — so this is the normal path, not a fallback. The head takes as
+ * many of these as fit its budget; the page body and the `Product` node take all of them, which
+ * is what keeps the three in agreement.
  */
-function withinBudget(sentences: (string | null)[]): string {
-  let out = "";
-  for (const sentence of sentences) {
-    if (!sentence) continue;
-    const next = out ? `${out} ${sentence}` : sentence;
-    if (next.length > DESCRIPTION_BUDGET) break;
-    out = next;
-  }
+async function describe(seo: Seo): Promise<string[]> {
+  const t = await getTranslations("Seo.YachtDetail");
+  const crew = await getTranslations("Common.crewTypes");
+  const format = await getFormatter();
 
-  return out;
+  /* A recognised code needs the local label; anything else the API already localized. */
+  const key = crewKey(seo.crewType);
+  const crewLabel = key ? crew(key) : seo.crewType;
+
+  return [
+    seo.category && seo.berths && seo.cabins
+      ? t("metaSpecs", { category: seo.category, guests: seo.berths, cabins: seo.cabins })
+      : null,
+    crewLabel && seo.base ? t("metaPlace", { crew: crewLabel, place: seo.base }) : null,
+    seo.priceFromMinor
+      ? t("metaPrice", { price: format.number(seo.priceFromMinor / 100, "eur") })
+      : null,
+    t("metaCta"),
+  ].filter((sentence): sentence is string => Boolean(sentence));
 }
 
 export async function generateMetadata({
@@ -62,7 +71,7 @@ export async function generateMetadata({
    * page body makes below, so it costs nothing extra; a miss falls back to the generic copy and
    * lets the body own the 404.
    */
-  const detail = await prefetchListingDetail(id).catch(() => null);
+  const detail = await prefetchListingDetail(id, locale).catch(() => null);
 
   /*
    * Canonical is keyed on the slug, never on `id` as typed. `listings.get` resolves either form,
@@ -95,29 +104,17 @@ export async function generateMetadata({
       ? withPlace
       : t("titlePlain", { boat: detail.title });
 
-  const crew = await getTranslations("Common.crewTypes");
-  const format = await getFormatter();
-
-  const key = crewKey(seo.crewType);
-  const price = seo.priceFromMinor ? format.number(seo.priceFromMinor / 100, "eur") : null;
-
   /*
-   * Built here rather than reusing `seo.description`: that string is the visible body copy, runs
-   * past 240 characters so a search result cuts it mid-sentence, and opens on the year built.
+   * The generated sentences, not the provider's prose, even when there is prose: it is marketing
+   * copy of unpredictable length that a search result cuts mid-sentence, while these are sized
+   * for the snippet and lead with what a searcher is choosing between.
    */
-  const description = withinBudget([
-    seo.category && seo.berths && seo.cabins
-      ? t("metaSpecs", { category: seo.category, guests: seo.berths, cabins: seo.cabins })
-      : null,
-    key && seo.base ? t("metaPlace", { crew: crew(key), place: seo.base }) : null,
-    price ? t("metaPrice", { price }) : null,
-    t("metaCta"),
-  ]);
+  const description = joinWithinBudget(await describe(seo), DESCRIPTION_BUDGET);
 
   return buildMetadata({
     locale,
     title,
-    description: description || seo.description,
+    description: description || t("description"),
     path,
     image: socialImage(seo.image),
   });
@@ -145,7 +142,7 @@ export default async function YachtDetailPage({
 
   let detail: Awaited<ReturnType<typeof prefetchListingDetail>>;
   try {
-    detail = await prefetchListingDetail(id);
+    detail = await prefetchListingDetail(id, locale);
   } catch (error) {
     /*
      * An unknown listing arrives as a thrown marker rather than a returned flag, so the absence is
@@ -163,6 +160,12 @@ export default async function YachtDetailPage({
   const t = await getTranslations("YachtDetail");
   const path = `/yachts/${detail.seo.slug}`;
 
+  /*
+   * Built on the server and threaded down, so the body, the `Product` node and the head all carry
+   * the same words. Unbudgeted here: only the snippet has a length to respect.
+   */
+  const description = detail.seo.description ?? joinWithinBudget(await describe(detail.seo), 1000);
+
   return (
     <>
       <JsonLd
@@ -176,7 +179,7 @@ export default async function YachtDetailPage({
           ),
           listingNode({
             name: detail.title,
-            description: detail.seo.description,
+            description,
             /* Absolute and pre-cropped: a bare Cloudinary id is not a resolvable `image`. */
             image: socialImage(detail.seo.image),
             builder: detail.seo.builder,
@@ -190,6 +193,7 @@ export default async function YachtDetailPage({
       <Hydrated state={detail.state}>
         <YachtDetailScreen
           title={detail.title}
+          description={description}
           aside={
             <BookingProvider>
               <BookingSidebar />

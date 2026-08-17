@@ -51,11 +51,8 @@ export async function prefetchSearch() {
  * `listingDetailQueryOptions` is bound to the header-forwarding client. Query keys derive from the
  * procedure path and input alone, so seeding that key by hand still matches the client hook.
  *
- * **Not keyed by locale, and correct only while listings are not localized.** Facet copy is the
- * only translated part of the catalog today (`facet_media_translation`); a listing's own text comes
- * from `listing_search_doc`, which the read model builds with a hardcoded `locale = 'en'`. The day
- * that changes, this entry starts serving one language's description to all three — add the locale
- * to the signature at the same time, not after.
+ * Keyed by locale as well as id: `listings.get` now localizes its labels and returns the provider's
+ * prose for that locale, so one entry per id would serve one language's copy to all three.
  *
  * **A miss is thrown, never returned.** Returning `{ found: false }` from here would cache the
  * absence for the full hour, so a listing created after someone happened to visit its URL would
@@ -70,14 +67,14 @@ export function isListingNotFound(error: Error): boolean {
   return error.message === LISTING_NOT_FOUND;
 }
 
-export async function prefetchListingDetail(id: string) {
+export async function prefetchListingDetail(id: string, locale: string) {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG, listingTag(id));
 
   let listing: Awaited<ReturnType<typeof publicClient.listings.get>>;
   try {
-    listing = await publicClient.listings.get({ id });
+    listing = await publicClient.listings.get({ id, locale });
   } catch (error) {
     if (error instanceof ORPCError && error.code === "NOT_FOUND") {
       throw new Error(LISTING_NOT_FOUND);
@@ -86,7 +83,7 @@ export async function prefetchListingDetail(id: string) {
   }
 
   const queryClient = new QueryClient();
-  queryClient.setQueryData(listingDetailQueryOptions(id).queryKey, listing);
+  queryClient.setQueryData(listingDetailQueryOptions(id, locale).queryKey, listing);
 
   /*
    * `seo` rides along so `generateMetadata` can build the head off this same cached read instead

@@ -146,7 +146,8 @@ export const listingsByIdsInputSchema = z.object({
 });
 
 export const listingDetailSchema = listingSummarySchema.extend({
-  description: z.string(),
+  /* Null when the provider ships no prose in the requested locale; the client writes its own. */
+  description: z.string().nullable(),
   overview: z.array(includedItemSchema.extend({ value: z.string() })),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),

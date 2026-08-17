@@ -27,7 +27,16 @@ import TitleBlock from "./title-block";
  * `aside` is the booking sidebar, injected by the route: it belongs to the booking feature, so the
  * cross-feature composition happens in `app/**`, not here.
  */
-export default function YachtDetailScreen({ title, aside }: { title?: string; aside?: ReactNode }) {
+export default function YachtDetailScreen({
+  title,
+  description,
+  aside,
+}: {
+  title?: string;
+  /* Built on the server so the body, the head and the Product node say the same thing. */
+  description?: string;
+  aside?: ReactNode;
+}) {
   const t = useTranslations("YachtDetail");
 
   const breadcrumbs: AppBreadcrumb[] = [{ name: "YachtDetail.breadcrumbSearch", url: "/yachts" }];
@@ -57,7 +66,7 @@ export default function YachtDetailScreen({ title, aside }: { title?: string; as
               <AmenitiesSection />
               <MandatoryExtrasSection />
               <OptionalExtrasSection />
-              <DescriptionSection />
+              <DescriptionSection description={description} />
               <ImportantInfoSection />
               <SuggestedRouteSection />
               <ReviewSection />

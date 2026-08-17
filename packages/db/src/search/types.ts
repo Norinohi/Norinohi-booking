@@ -107,7 +107,8 @@ export type ListingSearchResult = {
 };
 
 export type ListingDetail = ListingSearchDoc & {
-  description: string;
+  /** The provider's own prose in the requested locale; null when it ships none. */
+  description: string | null;
   overview: { code: string; label: string; value: string }[];
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];

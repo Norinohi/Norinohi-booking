@@ -37,8 +37,10 @@ export const mapMarkersQueryOptions = (input: MarkersInput) =>
 /** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
 const ONE_HOUR = 60 * 60 * 1000;
 
-export const listingDetailQueryOptions = (id: string) =>
-  orpc.listings.get.queryOptions({ input: { id }, staleTime: ONE_HOUR });
+/* `locale` is part of the input, so it is part of the key — server prefetch and client hook must
+ * pass the same one or the hydrated cache misses and the page refetches in English. */
+export const listingDetailQueryOptions = (id: string, locale: string) =>
+  orpc.listings.get.queryOptions({ input: { id, locale }, staleTime: ONE_HOUR });
 
 /**
  * Counts this visitor against the listing for today. Fire-and-forget: the detail page
