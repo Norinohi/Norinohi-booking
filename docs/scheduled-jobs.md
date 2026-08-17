@@ -35,9 +35,15 @@ Three differences from `apps/server/railway.json`, all deliberate:
   fail every run.
 - **`restartPolicyType: NEVER`.** A cron process that finishes has succeeded.
   `ON_FAILURE` would read the exit as a crash and restart the sync in a loop.
-- **`region: europe-west4-drams3a`** (EU West), pinned rather than left to the
-  platform default so a sync never runs an ocean away from the Postgres it
-  writes row by row. `api` and the database are already there.
+- **`multiRegionConfig: { "europe-west4-drams3a": ... }`** (EU West), pinned
+  rather than left to the platform default so a sync never runs an ocean away
+  from the Postgres it writes row by row. `api` and the database are already
+  there. It has to be `multiRegionConfig` and not the flat `deploy.region`:
+  both are in Railway's schema, but the dashboard's Regions & Replicas control
+  reads the former, and a file setting only `region` leaves the service in the
+  default US West while still showing as file-managed. Replicas are not
+  available for cron services at all, so the nested `numReplicas` is only there
+  because the shape requires it.
 
 They also watch `packages/providers/**`, which the `server` service does not:
 the provider adapters are what these three actually run.

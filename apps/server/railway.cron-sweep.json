@@ -21,8 +21,7 @@
   "deploy": {
     "startCommand": "pnpm --filter server sweep:expiries",
     "cronSchedule": "*/10 * * * *",
-    "region": "europe-west4-drams3a",
-    "restartPolicyType": "NEVER",
-    "numReplicas": 1
+    "multiRegionConfig": { "europe-west4-drams3a": { "numReplicas": 1 } },
+    "restartPolicyType": "NEVER"
   }
 }
