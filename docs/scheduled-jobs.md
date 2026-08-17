@@ -75,10 +75,17 @@ PROVIDER_AUTO_PUBLISH=nausys
 REVALIDATE_SECRET      ${{api.REVALIDATE_SECRET}}
 ```
 
+`cron-sweep` needs neither `PROVIDER_AUTO_PUBLISH` nor `REVALIDATE_SECRET`: it
+publishes nothing and writes no catalog, so there is no cache to drop. It does
+need the NauSYS pair like the other two, and not only to satisfy the env schema.
+`inventoryProvider` is built from `PROVIDER_MODE` at import, so nausys mode
+without credentials throws before the sweep starts, and releasing a hold is a
+real call to the vendor.
+
 Reference the `api` service rather than pasting values, so a rotated credential
-reaches all three services at once. `CRON_SECRET` is not needed: these run the
-job directly rather than calling the HTTP route, so there is no request to
-authenticate.
+reaches all three services at once. `CRON_SECRET` is not needed anywhere here:
+these run the job directly rather than calling the HTTP route, so there is no
+request to authenticate.
 
 ## The HTTP routes are still there
 
