@@ -21,6 +21,23 @@ export const env = createEnv({
         message: "COOKIE_DOMAIN must be a bare domain (.example.com), not a URL",
       })
       .optional(),
+    /*
+     * Namespace for better-auth's cookie names, which must differ per deployment.
+     * A browser keys a cookie by name, domain and path, so two environments under
+     * one parent domain (staging and production both scoped to .yachtskanner.com)
+     * write their session token into the same slot: signing in on one overwrites
+     * the other's cookie, and the environment that then receives a token its own
+     * database has never seen deletes the cookie and returns no session. Set this
+     * on every non-production deployment. Production leaves it unset so it keeps
+     * better-auth's `better-auth` default and existing sessions survive.
+     */
+    COOKIE_PREFIX: z
+      .string()
+      .min(1)
+      .regex(/^[A-Za-z0-9_-]+$/, {
+        message: "COOKIE_PREFIX must be letters, digits, hyphens or underscores only",
+      })
+      .optional(),
     OPENAPI_SERVER_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),

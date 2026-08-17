@@ -16,6 +16,16 @@ import { sendResetPasswordEmail, sendSetPasswordEmail } from "@yacht-charter/tra
  */
 const WELCOME_FLAG = "welcome";
 
+/*
+ * better-auth defaults to a 7-day session refreshed at most once a day. Seven days
+ * signs a customer out between one visit and the next, which on a charter site means
+ * re-authenticating to look at a booking they made last week. Thirty days is the
+ * lifetime; the refresh window stays at a day, so an active session is extended by a
+ * single write per day rather than on every request.
+ */
+const SESSION_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 30;
+const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24;
+
 function isFirstPasswordLink(url: string): boolean {
   try {
     const target = new URL(url);
@@ -55,14 +65,27 @@ export function createAuth() {
   // SameSite=None requires Secure, and Secure over plain http is a cookie the browser
   // stores nowhere — sign-in returns 200 with a user and the very next getSession() is
   // null, with nothing in the response to say why. Chrome makes an exception for
-  // localhost; Safari and Firefox do not. So the cross-site pair is only used when the
-  // deployment is actually https, and local http dev gets the Lax cookie that works
-  // everywhere (both ports share the `localhost` site, so Lax is still sent).
-  const crossSite = env.BETTER_AUTH_URL.startsWith("https://");
+  // localhost; Safari and Firefox do not. So Secure tracks the scheme, and local http
+  // dev gets the Lax cookie that works everywhere (both ports share the `localhost`
+  // site, so Lax is still sent).
+  //
+  // None is narrower than Secure: it is needed only where the browser counts the two
+  // hosts as different sites, and a browser decides that on the registrable domain, not
+  // the subdomain. COOKIE_DOMAIN being set says both hosts sit under one parent, which
+  // is same-site, and Lax is sent on same-site requests of every kind. Choosing Lax
+  // there keeps the session cookie out of the third-party-cookie blocking that None
+  // opts it into (Safari ITP, Firefox total cookie protection, Chrome with third-party
+  // cookies off), which expires it on the browser's schedule rather than ours. Over
+  // https with COOKIE_DOMAIN unset the two cases are indistinguishable from here, so
+  // the cross-site pair stays the fallback.
+  const isHttps = env.BETTER_AUTH_URL.startsWith("https://");
+  const crossSite = isHttps && !env.COOKIE_DOMAIN;
   const advanced: BetterAuthAdvancedOptions = {
+    // Undefined leaves better-auth's own `better-auth` default in place.
+    cookiePrefix: env.COOKIE_PREFIX,
     defaultCookieAttributes: {
       sameSite: crossSite ? "none" : "lax",
-      secure: crossSite,
+      secure: isHttps,
       httpOnly: true,
     },
   };
@@ -131,6 +154,10 @@ export function createAuth() {
           },
         },
       },
+    },
+    session: {
+      expiresIn: SESSION_EXPIRES_IN_SECONDS,
+      updateAge: SESSION_UPDATE_AGE_SECONDS,
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
