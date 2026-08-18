@@ -45,7 +45,9 @@ async function sendHtml(
    * reply-to would route a colleague's answer to the customer-facing inbox as if a customer
    * had written it.
    */
-  const payload: CreateEmailOptions = { from: env.EMAIL_FROM, to, subject, html };
+  const from = env.EMAIL_FROM_NAME ? `${env.EMAIL_FROM_NAME} <${env.EMAIL_FROM}>` : env.EMAIL_FROM;
+
+  const payload: CreateEmailOptions = { from, to, subject, html };
   if (replyable && env.REPLY_TO_EMAIL) payload.replyTo = env.REPLY_TO_EMAIL;
 
   const result = await resend.emails.send(payload);

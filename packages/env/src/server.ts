@@ -57,6 +57,13 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.email().optional(),
     /*
+     * The name a mail client shows instead of the bare address, which otherwise reads as
+     * "noreply". Kept apart from EMAIL_FROM so that stays a plain validated address; the two
+     * are composed at send time. Plain letters and spaces only — anything with a comma,
+     * quote or angle bracket would need RFC 5322 quoting that nothing here does.
+     */
+    EMAIL_FROM_NAME: z.string().min(1).max(64).optional(),
+    /*
      * Where a customer's reply lands. EMAIL_FROM is a sending identity and is usually a
      * noreply, so without this every "just reply to this email" is a dead end. Unset means
      * no header, which is the old behaviour rather than a guessed address. Internal staff
