@@ -1,5 +1,5 @@
 {
-  "id": "4276c4d9-78f6-4702-9fe3-be4507164644",
+  "id": "f4842963-ba63-4eb7-bed0-fd8704a7a0f3",
   "prevId": "b701adc1-c9f9-430d-9a1c-68f71288f1d3",
   "version": "7",
   "dialect": "postgresql",
@@ -1750,6 +1750,12 @@
         },
         "provider_reservation_uuid": {
           "name": "provider_reservation_uuid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "crew_list_link": {
+          "name": "crew_list_link",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -4145,12 +4151,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4172,21 +4172,6 @@
           "columns": [
             {
               "expression": "region_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "location_city_idx": {
-          "name": "location_city_idx",
-          "columns": [
-            {
-              "expression": "city",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4761,12 +4746,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "canonical_name": {
-          "name": "canonical_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4788,21 +4767,6 @@
           "columns": [
             {
               "expression": "builder_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "yacht_model_canonical_name_idx": {
-          "name": "yacht_model_canonical_name_idx",
-          "columns": [
-            {
-              "expression": "canonical_name",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7827,12 +7791,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "model_canonical": {
-          "name": "model_canonical",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "operator": {
           "name": "operator",
           "type": "text",
@@ -7850,12 +7808,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "city": {
-          "name": "city",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "location": {
           "name": "location",
@@ -8110,36 +8062,6 @@
           "columns": [
             {
               "expression": "location",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "listing_search_doc_city_idx": {
-          "name": "listing_search_doc_city_idx",
-          "columns": [
-            {
-              "expression": "city",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "listing_search_doc_model_canonical_idx": {
-          "name": "listing_search_doc_model_canonical_idx",
-          "columns": [
-            {
-              "expression": "model_canonical",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

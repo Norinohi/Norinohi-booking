@@ -55,17 +55,27 @@ const regions = [
   { id: "rgn_phuket", countryId: "cty_th", name: "Phuket" },
 ];
 
+/*
+ * `city` repeats `name` here because these fixtures name their locations after towns. A vendor
+ * does not: NauSYS files the marina under `location`, which is why the column exists at all
+ * (see `location.city`). Filling it keeps the city-level catalogue pages reachable locally.
+ */
 const locations = [
-  { id: "loc_split", regionId: "rgn_dalmatia", name: "Split" },
-  { id: "loc_dubrovnik", regionId: "rgn_dalmatia", name: "Dubrovnik" },
-  { id: "loc_sibenik", regionId: "rgn_dalmatia", name: "Sibenik" },
-  { id: "loc_athens", regionId: "rgn_attica", name: "Athens" },
-  { id: "loc_mykonos", regionId: "rgn_cyclades", name: "Mykonos" },
-  { id: "loc_lefkada", regionId: "rgn_ionian", name: "Lefkada" },
-  { id: "loc_amalfi", regionId: "rgn_campania", name: "Amalfi Coast" },
-  { id: "loc_palma", regionId: "rgn_balearics", name: "Palma de Mallorca" },
-  { id: "loc_ibiza", regionId: "rgn_balearics", name: "Ibiza" },
-  { id: "loc_phuket", regionId: "rgn_phuket", name: "Ao Po" },
+  { id: "loc_split", regionId: "rgn_dalmatia", name: "Split", city: "Split" },
+  { id: "loc_dubrovnik", regionId: "rgn_dalmatia", name: "Dubrovnik", city: "Dubrovnik" },
+  { id: "loc_sibenik", regionId: "rgn_dalmatia", name: "Sibenik", city: "Sibenik" },
+  { id: "loc_athens", regionId: "rgn_attica", name: "Athens", city: "Athens" },
+  { id: "loc_mykonos", regionId: "rgn_cyclades", name: "Mykonos", city: "Mykonos" },
+  { id: "loc_lefkada", regionId: "rgn_ionian", name: "Lefkada", city: "Lefkada" },
+  { id: "loc_amalfi", regionId: "rgn_campania", name: "Amalfi Coast", city: "Amalfi" },
+  {
+    id: "loc_palma",
+    regionId: "rgn_balearics",
+    name: "Palma de Mallorca",
+    city: "Palma de Mallorca",
+  },
+  { id: "loc_ibiza", regionId: "rgn_balearics", name: "Ibiza", city: "Ibiza" },
+  { id: "loc_phuket", regionId: "rgn_phuket", name: "Ao Po", city: "Ao Po" },
 ];
 
 const operators = [

@@ -263,8 +263,8 @@ export async function* syncNausysCatalogue(
     const endpoint = nausysEndpoints.catalogue.yachts(companyId);
     let dump: Dump;
     try {
-      // Strictly sequential, one company at a time: the vendor forbids parallel
-      // calls, and the client's queue would serialise them anyway.
+      // Strictly sequential, one company at a time: the sync lane is the one the
+      // vendor forbids parallel calls on, and its queue would serialise them anyway.
       dump = await client.catalogueCall(endpoint, dumpSchema);
     } catch (error) {
       if (isFatal(error)) throw error;

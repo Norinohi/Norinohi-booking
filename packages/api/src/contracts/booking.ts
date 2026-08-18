@@ -198,6 +198,14 @@ export const bookingPaymentSchema = z.object({
 export const bookingDetailSchema = bookingSummarySchema.extend({
   provider: z.string(),
   providerReservationId: z.string().nullable(),
+  /**
+   * Where the customer completes the crew list on the provider's own site, when the
+   * provider hosts one. Safe to return here precisely because it is a link and not a
+   * manifest: it carries no passenger data, so the §10 rule the travellers are held
+   * back by does not apply to it. Null when the provider hosts no such page, or when
+   * the booking predates the connector reading it.
+   */
+  crewListLink: z.string().nullable(),
   holdExpiresAt: z.string().nullable(),
   confirmedAt: z.string().nullable(),
   cancelledAt: z.string().nullable(),

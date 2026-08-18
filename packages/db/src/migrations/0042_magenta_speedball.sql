@@ -1,0 +1,1 @@
+ALTER TABLE "booking" ADD COLUMN "crew_list_link" text;

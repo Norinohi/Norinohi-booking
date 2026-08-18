@@ -16,7 +16,8 @@
     "import:nausys": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-nausys.ts",
     "import:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-booking-manager.ts",
     "listings:visibility": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/set-provider-visibility.ts",
-    "listings:purge": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/purge-provider-data.ts"
+    "listings:purge": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/purge-provider-data.ts",
+    "probe:crewlist": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-crewlist-link.ts"
   },
   "dependencies": {
     "@yacht-charter/db": "workspace:*",

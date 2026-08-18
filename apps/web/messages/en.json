@@ -307,7 +307,32 @@
       "signIn": "Sign in",
       "cancelledOn": "Cancelled on",
       "cancelReason": "Reason",
-      "requestCancel": "Request cancellation"
+      "requestCancel": "Request cancellation",
+      "crewList": {
+        "title": "Crew list",
+        "notice": "The charter company has to give the authorities a list of everyone aboard before you sail. Fill it in here and we'll pass it on — anything missing, the base will ask for at the desk when you arrive.",
+        "loading": "Loading your crew list…",
+        "empty": "No one added yet. Your booking is for {guests} guests — add each person who will be aboard, including the skipper.",
+        "member": "Crew member {number}",
+        "remove": "Remove crew member {number}",
+        "add": "Add crew member",
+        "save": "Save crew list",
+        "saved": "Crew list saved",
+        "saveFailed": "We couldn't save your crew list",
+        "fullName": "Full name",
+        "fullNamePlaceholder": "As printed in their passport",
+        "role": "Role",
+        "rolePlaceholder": "Skipper, guest…",
+        "dateOfBirth": "Date of birth",
+        "documentNumber": "Passport or ID number",
+        "documentNumberPlaceholder": "X1234567",
+        "nationality": "Nationality",
+        "nationalityPlaceholder": "Select a country",
+        "errors": {
+          "fullName": "Enter this person's full name",
+          "dateOfBirth": "Enter a valid date"
+        }
+      }
     },
     "support": {
       "title": "How can we help?",
@@ -453,6 +478,10 @@
       "nightsUpTo": "up to {count, plural, one {# night} other {# nights}}",
       "nightsRange": "{min} to {max} nights",
       "label": "Charter period"
+    },
+    "countryPicker": {
+      "search": "Search countries",
+      "empty": "No countries match that"
     }
   },
   "Filters": {

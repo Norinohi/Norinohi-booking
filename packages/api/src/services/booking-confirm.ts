@@ -144,6 +144,10 @@ async function markConfirmed(
   // rotated it, and overwriting with null would strand the reservation.
   if (reservation.securityToken) changes.providerReservationUuid = reservation.securityToken;
 
+  // Same rule, different reason: the hold may already have carried a crew-list
+  // link, and a confirmation that omits it is silence, not a retraction.
+  if (reservation.crewListLink) changes.crewListLink = reservation.crewListLink;
+
   await db
     .update(booking)
     .set(changes)

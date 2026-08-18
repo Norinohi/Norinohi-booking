@@ -160,6 +160,13 @@ export const booking = pgTable(
      * reservation data changes, and every subsequent call must send the latest one.
      */
     providerReservationUuid: text("provider_reservation_uuid"),
+    /**
+     * The provider's own crew-list page for this reservation, when it hosts one
+     * (NauSYS `crewlistlink`). Sending the customer here is what the vendor
+     * sanctioned in place of us collecting passport data, so it is a link we show,
+     * never data we hold: nothing about a passenger is stored in this column.
+     */
+    crewListLink: text("crew_list_link"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
     confirmedAt: timestamp("confirmed_at"),
