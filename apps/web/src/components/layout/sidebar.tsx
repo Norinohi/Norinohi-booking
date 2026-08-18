@@ -18,7 +18,7 @@ import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
  * page doesn't exist yet stay as inert buttons highlighted only by `defaultActive`.
  */
 
-const BASE_ITEMS = ["profile", "bookings", "referrals"] as const;
+const BASE_ITEMS = ["profile", "bookings", "referrals", "credits"] as const;
 
 const ADMIN_ITEMS = ["inbox", "payments", "discount", "duplicates", "sync"] as const;
 
@@ -29,6 +29,7 @@ const HREFS = new Map<SidebarItem, AppPathname>([
   ["profile", "/profile"],
   ["bookings", "/profile/bookings"],
   ["referrals", "/profile/referrals"],
+  ["credits", "/profile/credits"],
   ["discount", "/profile/discounts"],
   /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
   ["inbox", "/inbox"],

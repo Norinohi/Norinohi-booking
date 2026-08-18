@@ -830,6 +830,7 @@
       "profile": "Mi perfil",
       "bookings": "Mis reservas",
       "referrals": "Referidos",
+      "credits": "Créditos y saldo",
       "discount": "Gestión de descuentos",
       "logout": "Cerrar sesión",
       "duplicates": "Revisión de duplicados",
@@ -1283,6 +1284,10 @@
       "title": "Tus referidos",
       "description": "Sigue a los amigos que has invitado a YachtSkanner y las recompensas que has conseguido."
     },
+    "Credits": {
+      "title": "Créditos y saldo",
+      "description": "Consulta tu crédito de referidos disponible, lo que caduca pronto y cada movimiento de tu saldo."
+    },
     "Discounts": {
       "title": "Gestor de descuentos y precios",
       "description": "Gestiona los códigos promocionales y los precios de tus yates."
@@ -1577,6 +1582,26 @@
       "pending": "Pendiente",
       "void": "Cancelado",
       "empty": "Aún no tienes referidos. Comparte tu enlace para empezar."
+    }
+  },
+  "Credits": {
+    "title": "Créditos y saldo",
+    "balance": {
+      "label": "Saldo disponible",
+      "expiringSoon": "{amount} caduca en 30 días",
+      "hint": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000 y se descuentan de lo que pagas hoy."
+    },
+    "ledger": {
+      "title": "Historial de créditos",
+      "expires": "Caduca el {date}",
+      "emptyTitle": "Aún no tienes crédito",
+      "emptyDescription": "Invita a un amigo: ganas crédito cuando complete su viaje.",
+      "kind": {
+        "referral_reward": "Recompensa por referido",
+        "booking_redemption": "Aplicado a la reserva",
+        "expiry": "Caducado",
+        "adjustment": "Ajuste"
+      }
     }
   },
   "Discounts": {

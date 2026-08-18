@@ -10,6 +10,12 @@ export type ReferralHistoryRow = Awaited<
   ReturnType<AppRouterClient["referral"]["history"]>
 >["items"][number];
 
+export type CreditLedgerRow = Awaited<
+  ReturnType<AppRouterClient["credit"]["ledger"]>
+>["items"][number];
+
+export type CreditLedgerKind = CreditLedgerRow["kind"];
+
 /* Admin Discount & Price Manager view-types, inferred from the oRPC contract. */
 type AdminClient = AppRouterClient["admin"];
 
