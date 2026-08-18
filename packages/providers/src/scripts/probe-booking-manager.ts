@@ -29,7 +29,20 @@ import {
   restYachtListSchema,
   restYachtTypeListSchema,
 } from "../booking-manager/endpoints";
+import { z } from "zod";
+
 import type { QueryValue } from "../shared/http-client";
+
+/* The probe reports on payloads it has no type for, so each read is its own parse. */
+const rowsSchema = z.array(z.unknown());
+const keyedSchema = z.record(z.string(), z.unknown());
+const errorPayloadSchema = z.object({ payload: z.unknown() });
+
+/** The vendor's own field names, which is the whole point of a contract probe. */
+function keysOf(value: unknown): string | null {
+  const parsed = keyedSchema.safeParse(value);
+  return parsed.success ? Object.keys(parsed.data).sort().join(", ") : null;
+}
 
 /** The vendor's demo fleet. Every scoped call pins this so no live fleet is read. */
 const TEST_COMPANY_ID = 225;
@@ -49,7 +62,7 @@ const client = new BookingManagerClient({
 type Probe = {
   name: string;
   endpoint: string;
-  schema: Parameters<BookingManagerClient["get"]>[1];
+  schema: z.ZodType<unknown[]>;
   query?: Record<string, QueryValue | undefined>;
 };
 
@@ -120,27 +133,29 @@ async function main(): Promise<void> {
   for (const probe of probes) {
     const started = Date.now();
     try {
-      const rows = (await client.get(probe.endpoint, probe.schema, probe.query)) as unknown[];
+      const rows = rowsSchema.parse(await client.get(probe.endpoint, probe.schema, probe.query));
       const ms = Date.now() - started;
       console.log(`PASS  ${probe.name}: ${rows.length} row(s) in ${ms}ms`);
 
-      const [sample] = rows;
-      if (sample && typeof sample === "object") {
-        console.log(`      keys: ${Object.keys(sample).sort().join(", ")}`);
-      }
+      const keys = keysOf(rows[0]);
+      if (keys) console.log(`      keys: ${keys}`);
     } catch (error) {
       failures += 1;
       const ms = Date.now() - started;
       console.log(`FAIL  ${probe.name} after ${ms}ms`);
       console.log(`      ${error instanceof Error ? error.message : String(error)}`);
 
-      const payload = (error as { payload?: unknown }).payload;
-      if (payload) console.log(`      ${JSON.stringify(payload).slice(0, 900)}`);
+      const failure = errorPayloadSchema.safeParse(error);
+      if (failure.success && failure.data.payload !== undefined) {
+        console.log(`      ${JSON.stringify(failure.data.payload).slice(0, 900)}`);
+      }
 
-      const raw = lastRaw.get(probe.endpoint);
-      if (Array.isArray(raw) && raw[0]) {
-        console.log(`      vendor sent keys: ${Object.keys(raw[0] as object).sort().join(", ")}`);
-        console.log(`      first row: ${JSON.stringify(raw[0]).slice(0, 900)}`);
+      // What the vendor actually sent, which is what a schema mismatch needs.
+      const raw = rowsSchema.safeParse(lastRaw.get(probe.endpoint));
+      const sentKeys = raw.success ? keysOf(raw.data[0]) : null;
+      if (sentKeys) {
+        console.log(`      vendor sent keys: ${sentKeys}`);
+        console.log(`      first row: ${JSON.stringify(raw.success && raw.data[0]).slice(0, 900)}`);
       }
     }
   }

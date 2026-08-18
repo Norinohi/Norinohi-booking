@@ -46,7 +46,7 @@ inventory, live availability, pricing and the provider reservation lifecycle.
 | Beta base URL       | `http://beta.booking-manager.com/api/v2` (plain HTTP, as published) |
 | Auth scheme         | HTTP `Bearer` (SwaggerHub security scheme name `bearerAuth`)        |
 | Header              | `Authorization: Bearer <token>`                                     |
-| Env var             | `BOOKING_MANAGER_API_KEY`                                         |
+| Env var             | `BOOKING_MANAGER_API_KEY`                                           |
 
 The token is **not** an API-key header - not `X-API-Key`, not a query parameter.
 `packages/providers/src/booking-manager/client.ts` sets a single
