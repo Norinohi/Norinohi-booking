@@ -6,7 +6,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { parseAsBoolean, useQueryStates } from "nuqs";
+import { parseAsInteger, useQueryStates } from "nuqs";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
@@ -32,20 +32,31 @@ const POLL_INTERVAL_MS = 2000;
 /* Same reasoning as the confirmation screen: past a minute, polling harder fixes nothing. */
 const POLL_LIMIT_MS = 60_000;
 
-const settledParsers = { settled: parseAsBoolean.withDefault(false) };
+/*
+ * What the booking had already been paid when Pay was pressed, carried through the Stripe
+ * redirect. A boolean would only say "something was paid"; the figure says which read is
+ * still stale, and that is the whole question this page asks on the way back. See the poll
+ * below for why "outstanding is zero" cannot answer it.
+ */
+const settledParsers = { paidBefore: parseAsInteger };
 
 /**
- * Settling what is left on a confirmed booking.
+ * Paying whatever a booking still owes.
+ *
+ * Two arrivals, one screen: the second installment on a confirmed charter, and the first
+ * payment on one that was booked and never paid for. The server decides which through
+ * `payableNow`, so this page never has to work out what it is looking at.
  *
  * Deliberately outside the account area and with no session gate of its own, exactly like
  * the invoice page: someone who checked out as a guest has no password yet and still owes
- * the balance. The read authorises them by the booking token their browser kept.
+ * this money. The read authorises them by the booking token their browser kept.
  */
 export default function BalanceScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.balance");
   const money = useMoney();
   const format = useFormatter();
-  const [{ settled }] = useQueryStates(settledParsers);
+  const [{ paidBefore }] = useQueryStates(settledParsers);
+  const settling = paidBefore !== null;
 
   /*
    * Resolved on the client only — localStorage does not exist during prerender — and the
@@ -58,14 +69,20 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
    * After paying, the money is in but our record only catches up when the webhook lands, so
    * the page polls rather than announcing an amount that is about to change. Only after a
    * payment: an unpaid balance is a resting state and would poll forever.
+   *
+   * The signal is the paid total rising past what it was, not the outstanding reaching zero.
+   * A deposit that lands leaves a balance behind, so zero never arrives and the page would
+   * poll until the limit cut it off, telling the customer we were still waiting on money we
+   * already had.
    */
   const pollingSince = useRef(Date.now());
   const { data: booking, isLoading } = useQuery({
     ...bookingDetailQueryOptions(bookingId, access?.token),
     enabled: access !== null,
     refetchInterval: (query) => {
-      if (!settled || !query.state.data) return false;
-      if (query.state.data.outstanding.amountMinor <= 0) return false;
+      const current = query.state.data;
+      if (paidBefore === null || !current) return false;
+      if (current.paidTotal.amountMinor > paidBefore) return false;
       return Date.now() - pollingSince.current > POLL_LIMIT_MS ? false : POLL_INTERVAL_MS;
     },
   });
@@ -93,30 +110,67 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
     );
   }
 
-  const outstanding = booking.outstanding.amountMinor;
+  const payable = booking.payableNow.amountMinor;
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
 
-  /* Only a confirmed charter has a balance; before that the deposit is what is owed. */
-  if (booking.status !== "CONFIRMED") {
+  if (booking.outstanding.amountMinor <= 0) {
+    return <BalancePaid booking={booking} bookingId={bookingId} isGuest={Boolean(access.token)} />;
+  }
+
+  /*
+   * Just came back from Stripe. Either our record has not caught up yet, or it has and the
+   * payment landed — and a charter that still owes a later installment must not be dropped
+   * straight back onto a Pay form, which reads as though the money never arrived.
+   */
+  if (settling) {
+    const landed = booking.paidTotal.amountMinor > paidBefore;
+
     return (
       <Centered>
-        <EmptyState title={t("notPayable.title")} description={t("notPayable.body")} />
+        <EmptyState
+          illustration={landed ? undefined : <Loader />}
+          title={landed ? t("received.title") : t("settling.title")}
+          description={
+            landed
+              ? t("received.body", { outstanding: money(booking.outstanding.amountMinor) })
+              : t("settling.body")
+          }
+          action={
+            landed ? (
+              <Button
+                variant="brand"
+                nativeButton={false}
+                render={<Link href={`/bookings/${bookingId}`} />}
+              >
+                {t("received.viewBooking")}
+              </Button>
+            ) : undefined
+          }
+        />
       </Centered>
     );
   }
 
-  if (outstanding <= 0) {
-    return <BalancePaid booking={booking} bookingId={bookingId} isGuest={Boolean(access.token)} />;
-  }
-
-  /* Paid, but our side has not caught up yet — see the polling note above. */
-  if (settled) {
+  /*
+   * Money is owed but none of it can be taken here: the quote or the provider hold behind an
+   * unpaid booking has run out, or the charter is cancelled. Offering a Pay button would open
+   * a charge the server refuses, so the honest answer is the price has to be found again.
+   */
+  if (payable <= 0) {
     return (
       <Centered>
         <EmptyState
-          illustration={<Loader />}
-          title={t("settling.title")}
-          description={t("settling.body")}
+          title={t("notPayable.title")}
+          description={t("notPayable.body")}
+          action={
+            <Button
+              variant="brand"
+              nativeButton={false}
+              render={<Link href={`/yachts/${booking.listing.id}`} />}
+            >
+              {t("notPayable.action")}
+            </Button>
+          }
         />
       </Centered>
     );
@@ -126,7 +180,9 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
     <Centered>
       <article className="flex w-full max-w-201.5 flex-col gap-6 rounded-2xl border border-border bg-card p-5 md:p-8">
         <header className="flex flex-col gap-2">
-          <h1 className="text-[28px] leading-[1.1] font-medium text-foreground">{t("title")}</h1>
+          <h1 className="text-[28px] leading-[1.1] font-medium text-foreground">
+            {booking.status === "CONFIRMED" ? t("title") : t("titleUnpaid")}
+          </h1>
           <p className="text-base leading-[1.4] text-natural-600">
             {booking.listing.title} · {day(booking.checkIn)} → {day(booking.checkOut)}
           </p>
@@ -138,12 +194,13 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
         <dl className="flex flex-col">
           <Row label={t("summary.total")} value={money(booking.total.amountMinor)} />
           <Row label={t("summary.paid")} value={money(booking.paidTotal.amountMinor)} />
-          <Row label={t("summary.due")} value={money(outstanding)} emphasis />
+          <Row label={t("summary.due")} value={money(payable)} emphasis />
         </dl>
 
         <BalancePayment
           bookingId={bookingId}
-          amountMinor={outstanding}
+          amountMinor={payable}
+          paidMinor={booking.paidTotal.amountMinor}
           currency={booking.total.currency}
         />
       </article>
@@ -183,10 +240,13 @@ function Row({ label, value, emphasis }: { label: string; value: string; emphasi
 function BalancePayment({
   bookingId,
   amountMinor,
+  paidMinor,
   currency,
 }: {
   bookingId: string;
   amountMinor: number;
+  /** What has been paid so far, handed to the landing URL so the poll knows what to outgrow. */
+  paidMinor: number;
   currency: string;
 }) {
   const t = useTranslations("Booking.balance");
@@ -214,9 +274,9 @@ function BalancePayment({
       startIntent: () =>
         payBalance.mutateAsync({ bookingId, accessToken: guestAccessFor(bookingId) }),
       /* Back to this page, which then polls until our record catches up. */
-      landing: `/bookings/${bookingId}/pay?settled=true`,
+      landing: `/bookings/${bookingId}/pay?paidBefore=${paidMinor}`,
     }),
-    [bookingId, payBalance],
+    [bookingId, paidMinor, payBalance],
   );
 
   if (!stripe) {

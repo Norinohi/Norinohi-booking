@@ -200,8 +200,14 @@ function Charter({
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
-  const outstanding = booking.outstanding.amountMinor;
-  const showPay = booking.status === "CONFIRMED" && outstanding > 0;
+  /*
+   * `payableNow`, not `outstanding`: the server has already decided what this booking can be
+   * charged in the state it is in, and it is not always the whole remainder. A booking that was
+   * held and never paid for owes its prepayment here, and one whose quote or hold has lapsed
+   * owes nothing that can be taken until it is repriced — which is what hides the button.
+   */
+  const payable = booking.payableNow.amountMinor;
+  const showPay = payable > 0;
   /*
    * The invoice document only exists for a booking that asked to pay by transfer, and it is an
    * instruction to send money — so a charter that is off no longer offers it.
@@ -257,7 +263,9 @@ function Charter({
               nativeButton={false}
               render={<Link href={`/bookings/${bookingId}/pay`} />}
             >
-              {t("payBalance", { amount: money(outstanding) })}
+              {booking.status === "CONFIRMED"
+                ? t("payBalance", { amount: money(payable) })
+                : t("completePayment", { amount: money(payable) })}
             </Button>
           ) : null}
 

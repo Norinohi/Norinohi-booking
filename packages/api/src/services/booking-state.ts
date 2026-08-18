@@ -81,6 +81,24 @@ export const DEAD_QUOTE_SWEEP = {
   to: "QUOTE_EXPIRED",
 } as const satisfies SweepSpec;
 
+/**
+ * Checkouts abandoned at the payment step.
+ *
+ * The other two sweeps leave PAYMENT_PENDING alone because money may be in flight, which is
+ * right in the minutes after Pay and wrong a week later: nothing else moves this state, so an
+ * abandoned checkout used to hold its provider option against every future booking of that
+ * slot. The expiry service is what decides a booking has waited long enough.
+ *
+ * Two destinations, because the reason has to be true. A booking that held an option expired
+ * the option; one whose provider grants none never had a hold to lapse, and only its quote can
+ * be said to have run out.
+ */
+export const STALE_PAYMENT_SWEEP = {
+  from: ["PAYMENT_PENDING"],
+  to: "QUOTE_EXPIRED",
+  held: "OPTION_EXPIRED",
+} as const satisfies SweepSpec & { held: BookingStatus };
+
 type SweepSpec = { from: readonly BookingStatus[]; to: BookingStatus };
 
 export function canTransition(from: BookingStatus, to: BookingStatus): boolean {

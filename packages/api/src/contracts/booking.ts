@@ -106,13 +106,22 @@ export const bookingSummarySchema = z.object({
   paidTotal: moneySchema,
   balanceDue: moneySchema,
   /**
-   * What is still collectable, and exactly what `checkout.payBalance` would charge.
-   * Distinct from `balanceDue` above, which subtracts payments from the whole total and
-   * so includes the pay-at-check-in lines the base collects in person — a figure no
-   * screen should ever offer to take. On the summary so a card can decide whether to
-   * offer payment at all without loading the booking.
+   * What is still collectable over the life of the booking. Distinct from `balanceDue`
+   * above, which subtracts payments from the whole total and so includes the
+   * pay-at-check-in lines the base collects in person — a figure no screen should ever
+   * offer to take.
    */
   outstanding: moneySchema,
+  /**
+   * What `checkout.payBalance` would charge if it were called now, and the only figure a
+   * Pay affordance may show. Zero means there is nothing to take, either because the
+   * booking is settled or because it cannot be paid in the state it is in — so a card can
+   * decide whether to offer payment at all without loading the booking.
+   *
+   * Below `outstanding` on a deposit-policy booking that has not been confirmed yet: the
+   * prepayment is what buys the charter, and the rest is collected later.
+   */
+  payableNow: moneySchema,
   /** What the quote's payment policy asked up front — the quote's `depositMinor`. */
   prepayment: moneySchema,
   nextPaymentDueAt: z.string().nullable(),

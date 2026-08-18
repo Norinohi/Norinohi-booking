@@ -1,8 +1,10 @@
 import type { quote } from "@yacht-charter/db/schema/quote";
+
+import type { BookingStatus } from "./booking-state";
 import type { QuoteLine } from "@yacht-charter/db/schema/quote";
 import { describe, expect, it } from "vitest";
 
-import { amountDue, outstandingMinor } from "./checkout-amounts";
+import { amountDue, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { payableNowMinor, totalMinor } from "./pricing";
 
 type QuoteRow = typeof quote.$inferSelect;
@@ -164,5 +166,98 @@ describe("outstandingMinor", () => {
       paymentPolicy: { mode: "full", depositPct: 1, currency: "EUR" },
     });
     expect(outstandingMinor(row, 0)).toBe(500_000);
+  });
+});
+
+/*
+ * What every Pay affordance reads, and the only thing that decides whether one is shown at
+ * all. It answers two different questions behind one name, so the cases below are mostly
+ * about which of the two a given status gets.
+ */
+/* The quote fixture expires 2026-08-01, so every case below is read from before that. */
+const NOW = new Date("2026-07-15T00:00:00.000Z");
+
+/** A booking whose provider hold has not lapsed, which is the ordinary case. */
+const live = (status: BookingStatus, holdExpiresAt: Date | null = null) => ({
+  status,
+  holdExpiresAt,
+});
+
+describe("payableNowFor", () => {
+  it("asks a confirmed charter for everything it still owes", () => {
+    expect(payableNowFor(quoteRow(LINES), 250_000, live("CONFIRMED"), NOW)).toBe(250_000);
+  });
+
+  it("asks an unpaid booking for the prepayment, not the whole charter", () => {
+    // The deposit policy is what the customer agreed to; the balance comes later.
+    expect(payableNowFor(quoteRow(LINES), 0, live("OPTION_HELD"), NOW)).toBe(250_000);
+  });
+
+  it("asks for the whole collectable total under a full-prepayment policy", () => {
+    const row = quoteRow(LINES, {
+      paymentPolicy: { mode: "full", depositPct: 1, currency: "EUR" },
+    });
+    expect(payableNowFor(row, 0, live("OPTION_HELD"), NOW)).toBe(500_000);
+  });
+
+  it("subtracts a deposit that already arrived by transfer", () => {
+    // The regression this exists for: a customer part-paid before confirmation must not be
+    // asked for the prepayment a second time.
+    expect(payableNowFor(quoteRow(LINES), 100_000, live("PAYMENT_PENDING"), NOW)).toBe(150_000);
+  });
+
+  it("lets an abandoned checkout be resumed", () => {
+    // PAYMENT_PENDING is not a legal move to itself, so the transition table alone would
+    // refuse the one case the resume path exists for.
+    expect(payableNowFor(quoteRow(LINES), 0, live("PAYMENT_PENDING"), NOW)).toBe(250_000);
+  });
+
+  it("lets a failed payment be retried", () => {
+    expect(payableNowFor(quoteRow(LINES), 0, live("PAYMENT_FAILED"), NOW)).toBe(250_000);
+  });
+
+  it("offers nothing on a booking whose price has to be found again", () => {
+    // Both are one move from QUOTED and none from PAYMENT_PENDING: they reprice, they do
+    // not pay.
+    expect(payableNowFor(quoteRow(LINES), 0, live("QUOTE_EXPIRED"), NOW)).toBe(0);
+    expect(payableNowFor(quoteRow(LINES), 0, live("OPTION_EXPIRED"), NOW)).toBe(0);
+  });
+
+  it("offers nothing on a booking that is over", () => {
+    expect(payableNowFor(quoteRow(LINES), 250_000, live("CANCELLED"), NOW)).toBe(0);
+    expect(payableNowFor(quoteRow(LINES), 250_000, live("REFUNDED"), NOW)).toBe(0);
+    expect(payableNowFor(quoteRow(LINES), 250_000, live("REFUND_PENDING"), NOW)).toBe(0);
+  });
+
+  it("offers nothing while a booking is mid-commit", () => {
+    // Money is already in and the provider is being asked; a second charge here would be
+    // for a charter nobody has agreed to yet.
+    expect(payableNowFor(quoteRow(LINES), 250_000, live("CONFIRMING"), NOW)).toBe(0);
+  });
+
+  it("offers nothing on a settled charter", () => {
+    expect(payableNowFor(quoteRow(LINES), 500_000, live("CONFIRMED"), NOW)).toBe(0);
+  });
+
+  it("hides the button once the quote has run out", () => {
+    // The button's whole job is to be honest about this: `confirmCheckout` answers
+    // QUOTE_EXPIRED here, and finding that out after typing a card number is worse than
+    // never being offered the button.
+    const stale = new Date("2026-08-02T00:00:00.000Z");
+    expect(payableNowFor(quoteRow(LINES), 0, live("OPTION_HELD"), stale)).toBe(0);
+  });
+
+  it("hides the button once the provider hold has lapsed", () => {
+    const held = live("OPTION_HELD", new Date("2026-07-14T00:00:00.000Z"));
+    expect(payableNowFor(quoteRow(LINES), 0, held, NOW)).toBe(0);
+  });
+
+  it("keeps offering the balance on a confirmed charter whose quote and hold are long gone", () => {
+    // Both lapse in the ordinary course of a booking made months ahead, and neither says
+    // anything about whether the second installment can be collected.
+    const old = live("CONFIRMED", new Date("2026-07-01T00:00:00.000Z"));
+    expect(payableNowFor(quoteRow(LINES), 250_000, old, new Date("2027-01-01T00:00:00.000Z"))).toBe(
+      250_000,
+    );
   });
 });

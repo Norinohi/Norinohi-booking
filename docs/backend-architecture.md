@@ -321,8 +321,10 @@ CANCELLED reachable from any pre-CONFIRMED state (user/admin).
    - Amount from `quote.payment_policy` (deposit % or full). Create Stripe **PaymentIntent** (test mode) with our `idempotency_key`; write `payment_schedule` + `payment(requires_payment)`. Return `clientSecret`.
 4. **CONFIRMING → CONFIRMED** via **Stripe webhook** (authoritative):
    - `payment_intent.succeeded` → `payment.succeeded`, enter **CONFIRMING**, call `confirmBooking` (or promote the option). Success → `CONFIRMED`, capture `provider_reservation_id`. Provider failure → `PROVIDER_REJECTED` → **REFUND_PENDING** → refund/void (test mode) → **REFUNDED**, surfaced to ops.
+   - `payment_intent.processing` → `payment.processing`, booking unchanged. Delayed methods (SEPA debit and the rest of `automatic_payment_methods`) clear over days, and this is the only thing that tells the expiry sweeper money is still on its way; without it such a payment is indistinguishable from a checkout nobody submitted.
    - `payment_intent.payment_failed` → `PAYMENT_FAILED`; retry until quote/hold expiry, else `CANCELLED`.
-5. **Expiry sweeper** (cron/worker): quotes past `expires_at` → `QUOTE_EXPIRED`; holds past `hold_expires_at` → release provider option → `OPTION_EXPIRED`.
+   - **The endpoint must be subscribed to all six events we handle**, or the handler for a missing one never runs and the failure is silent: `payment_intent.succeeded`, `payment_intent.processing`, `payment_intent.payment_failed`, `refund.updated`, `charge.dispute.created`, `charge.dispute.closed`.
+5. **Expiry sweeper** (cron/worker): quotes past `expires_at` → `QUOTE_EXPIRED`; holds past `hold_expires_at` → release provider option → `OPTION_EXPIRED`. `PAYMENT_PENDING` is left alone while money can still arrive and reaped after five days, once no payment has succeeded or is processing and no invoice is still within its terms (those two exclusions, not the clock, are what wait for money; measured NauSYS options run 20 h to ~6 days, so five days releases at or before the vendor) → release option → `OPTION_EXPIRED`, or `QUOTE_EXPIRED` where no option was ever held. Without that last one an abandoned checkout holds its slot in `booking_provider_option_uq` forever.
 
 ### 6.2 Correctness properties
 

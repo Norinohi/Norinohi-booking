@@ -1,19 +1,21 @@
 /** @jsxImportSource react */
 /*
- * BookingConfirmationEmail — sent the moment a booking is held, which is when the customer
- * leaves the site with money about to move and nothing but a screen to prove it happened. It
- * carries the yacht's own photo, the reference, the charter, what was quoted and what is still
- * owed, and the links back into the booking. `setPasswordUrl` is present only for a guest
- * checkout, whose account was provisioned from their email and has no password yet — a signed-in
- * customer already has one and gets no such block. Only the card's middle content lives here; the
- * frame and the hero come from EmailLayout. Keep exactly one jsx-source annotation in this file.
+ * BookingConfirmedEmail — the charter exists. Sent once the operator has committed the
+ * reservation, which is the first moment anything is actually booked, and deliberately separate
+ * from BookingReceivedEmail: that one goes out over an unpaid hold, and a customer who gets a
+ * single mail called "confirmation" before paying has no way to tell the two apart.
+ *
+ * The operator's own reference is the point of it. From here on a customer talking to the marina
+ * needs their number, not ours, and this is the only place it is sent. Only the card's middle
+ * content lives here; the frame and the hero come from EmailLayout. Keep exactly one jsx-source
+ * annotation in this file.
  */
 import { Button, Column, Heading, Hr, Link, Row, Section, Text } from "@react-email/components";
 import * as React from "react";
 
 import { colors, EmailLayout, fontFamily } from "./_components/email-layout";
 
-export type BookingConfirmationEmailProps = {
+export type BookingConfirmedEmailProps = {
   guestName: string;
   reference: string;
   yachtName: string;
@@ -22,15 +24,19 @@ export type BookingConfirmationEmailProps = {
   checkOut: string;
   marina: string;
   guests: number;
-  crew?: string;
   total: string;
   paid: string;
   outstanding: string;
+  /** When the rest falls due. Absent on a booking that is already paid in full. */
+  balanceDueAt?: string;
+  /** The operator's own reservation number. Absent where the provider issued none. */
+  providerReference?: string;
+  /** The operator's crew-list form, where one came back with the reservation. */
+  crewListUrl?: string;
   bookingUrl: string;
-  /** The yacht's own photo. Absent where the provider sent none. */
+  /** Only where something is still owed, so a settled booking is not asked for money. */
+  payUrl?: string;
   imageUrl?: string;
-  /** Guest checkouts only — the account exists but has no password yet. */
-  setPasswordUrl?: string;
   supportUrl?: string;
   appUrl?: string;
 };
@@ -55,7 +61,6 @@ const styles = {
   },
   intro: { margin: "0 0 24px", fontSize: "15px", lineHeight: "1.6", color: colors.text },
 
-  /* The charter itself: two dates facing each other, the way the app's summary shows them. */
   trip: {
     padding: "18px 20px",
     backgroundColor: colors.page,
@@ -111,12 +116,7 @@ const styles = {
     backgroundColor: "#eef4fe",
     borderRadius: "12px",
   },
-  calloutTitle: {
-    margin: "0 0 6px",
-    fontSize: "14px",
-    fontWeight: "700",
-    color: colors.heading,
-  },
+  calloutTitle: { margin: "0 0 6px", fontSize: "14px", fontWeight: "700", color: colors.heading },
   calloutBody: { margin: "0 0 10px", fontSize: "13px", lineHeight: "1.6", color: colors.text },
   divider: { margin: "28px 0 18px", border: "none", borderTop: `1px solid ${colors.border}` },
   note: { margin: "0 0 8px", fontSize: "13px", lineHeight: "1.6", color: colors.muted },
@@ -155,7 +155,7 @@ function Money({
   );
 }
 
-export function BookingConfirmationEmail({
+export function BookingConfirmedEmail({
   guestName,
   reference,
   yachtName,
@@ -163,27 +163,30 @@ export function BookingConfirmationEmail({
   checkOut,
   marina,
   guests,
-  crew,
   total,
   paid,
   outstanding,
+  balanceDueAt,
+  providerReference,
+  crewListUrl,
   bookingUrl,
+  payUrl,
   imageUrl,
-  setPasswordUrl,
   supportUrl,
   appUrl,
-}: BookingConfirmationEmailProps): React.ReactElement {
+}: BookingConfirmedEmailProps): React.ReactElement {
   return (
     <EmailLayout
-      preview={`Your booking ${reference} — ${yachtName}`}
-      eyebrow="Booking"
+      preview={`${yachtName} is confirmed — booking ${reference}`}
+      eyebrow="Confirmed"
       hero={imageUrl ? { src: imageUrl, alt: yachtName } : undefined}
       appUrl={appUrl}
     >
       <Text style={styles.eyebrow}>Booking {reference}</Text>
-      <Heading style={styles.heading}>{yachtName} is reserved</Heading>
+      <Heading style={styles.heading}>{yachtName} is confirmed</Heading>
       <Text style={styles.intro}>
-        {guestName}, everything you need is below — and the booking page always shows the latest.
+        {guestName}, the operator has the reservation and the boat is yours for these dates. Nothing
+        else is needed from you right now.
       </Text>
 
       <Section style={styles.trip}>
@@ -205,7 +208,7 @@ export function BookingConfirmationEmail({
       <Section>
         <Fact label="Marina" value={marina} />
         <Fact label="Guests" value={String(guests)} />
-        {crew ? <Fact label="Crew" value={crew} /> : null}
+        {providerReference ? <Fact label="Operator reference" value={providerReference} /> : null}
       </Section>
 
       <Section style={styles.moneyBox}>
@@ -220,22 +223,37 @@ export function BookingConfirmationEmail({
         </Button>
       </Section>
 
-      {setPasswordUrl ? (
+      {payUrl ? (
         <Section style={styles.callout}>
-          <Text style={styles.calloutTitle}>Keep this booking in your account</Text>
-          <Text style={styles.calloutBody}>
-            We opened an account with this email address. Set a password and this booking is waiting
-            for you on any device.
+          <Text style={styles.calloutTitle}>
+            {balanceDueAt ? `The rest is due by ${balanceDueAt}` : "There is still a balance"}
           </Text>
-          <Link href={setPasswordUrl} style={styles.link}>
-            Set your password →
+          <Text style={styles.calloutBody}>
+            {outstanding} remains on this charter. We will remind you before the date, and you can
+            settle it whenever suits you.
+          </Text>
+          <Link href={payUrl} style={styles.link}>
+            Pay the balance →
+          </Link>
+        </Section>
+      ) : null}
+
+      {crewListUrl ? (
+        <Section style={styles.callout}>
+          <Text style={styles.calloutTitle}>Who is coming aboard</Text>
+          <Text style={styles.calloutBody}>
+            The marina needs everyone's details before departure. Filling it in early saves the
+            queue at check-in.
+          </Text>
+          <Link href={crewListUrl} style={styles.link}>
+            Complete the crew list →
           </Link>
         </Section>
       ) : null}
 
       <Hr style={styles.divider} />
       <Text style={styles.note}>
-        Questions about the charter, the dates or the payment? We answer within one working day.
+        Keep this mail: the reference above is what identifies your charter to us and to the marina.
       </Text>
       {supportUrl ? (
         <Link href={supportUrl} style={styles.link}>
@@ -246,7 +264,7 @@ export function BookingConfirmationEmail({
   );
 }
 
-BookingConfirmationEmail.PreviewProps = {
+BookingConfirmedEmail.PreviewProps = {
   guestName: "John",
   reference: "NB-T93Q9JFL",
   yachtName: "Lagoon 50 — 6 + 2 cab.",
@@ -254,14 +272,16 @@ BookingConfirmationEmail.PreviewProps = {
   checkOut: "22 Aug 2026",
   marina: "ACI Marina Cres, Croatia",
   guests: 2,
-  crew: "Bareboat",
   total: "€4,870",
-  paid: "€0",
-  outstanding: "€4,745",
+  paid: "€2,435",
+  outstanding: "€2,435",
+  balanceDueAt: "1 Aug 2026",
+  providerReference: "NS-4471902",
+  crewListUrl: "https://example.com/crew/bkg_preview",
   bookingUrl: "https://example.com/en/bookings/bkg_preview",
+  payUrl: "https://example.com/en/bookings/bkg_preview/pay",
   imageUrl: "https://images.unsplash.com/photo-1500514966906-fe245eea9344?w=1024",
-  setPasswordUrl: "https://example.com/en/forgot-password?email=john%40example.com",
   supportUrl: "https://example.com/en/support?booking=bkg_preview",
-} satisfies BookingConfirmationEmailProps;
+} satisfies BookingConfirmedEmailProps;
 
-export default BookingConfirmationEmail;
+export default BookingConfirmedEmail;

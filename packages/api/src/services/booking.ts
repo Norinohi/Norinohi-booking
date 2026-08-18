@@ -36,8 +36,8 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
-import { notifyBookingCancelled, notifyBookingHeld } from "./booking-email";
-import { amountDue, outstandingMinor } from "./checkout-amounts";
+import { notifyBookingCancelled, notifyBookingReceived } from "./booking-email";
+import { amountDue, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
@@ -303,28 +303,39 @@ export async function createHold(
   // checkouts cannot both take the last remaining use.
   const redeem = () => redeemFor(db, created.id, userId, priced);
 
-  // No option support: nothing to secure, so the booking waits at QUOTED and the
-  // payment is what commits it.
   const token = actor.guestAccess?.token ?? null;
 
-  /* Sent for the booking as created; the option below only changes its status, not its content. */
-  await notifyBookingHeld({
-    to: guest.email,
-    guestName: guest.fullName,
-    bookingId: created.id,
-    reference: created.reference,
-    snapshot,
-    priced,
-    outstandingMinor: outstandingMinor(priced, 0),
-    isGuest: actor.guestAccess !== null,
-  });
+  const announce = (row: BookingRow) =>
+    notifyBookingReceived({
+      to: guest.email,
+      guestName: guest.fullName,
+      bookingId: row.id,
+      reference: row.reference,
+      snapshot,
+      priced,
+      outstandingMinor: outstandingMinor(priced, 0),
+      holdExpiresAt: row.holdExpiresAt,
+      isGuest: actor.guestAccess !== null,
+    });
 
+  // No option support: nothing to secure, so the booking waits at QUOTED and the
+  // payment is what commits it.
   if (!provider.capabilities().supportsOptions) {
     await redeem();
+    await announce(created);
     return presentHold(created, token);
   }
 
-  return presentHold(await holdOption(db, provider, created, priced, account, redeem), token);
+  /*
+   * After the option rather than before it, because the mail tells the customer how long
+   * the slot is theirs and that date does not exist until the provider answers. A refusal
+   * throws out of holdOption, which is also the right moment to send nothing: there is no
+   * hold to write to them about.
+   */
+  const held = await holdOption(db, provider, created, priced, account, redeem);
+  await announce(held);
+
+  return presentHold(held, token);
 }
 
 /**
@@ -924,6 +935,10 @@ function presentSummary(
     paidTotal: { amountMinor: paidMinor, currency: row.currency },
     balanceDue: { amountMinor: Math.max(row.totalMinor - paidMinor, 0), currency: row.currency },
     outstanding: { amountMinor: outstandingMinor(priced, paidMinor), currency: row.currency },
+    payableNow: {
+      amountMinor: payableNowFor(priced, paidMinor, row),
+      currency: row.currency,
+    },
     prepayment: { amountMinor: priced.depositMinor, currency: row.currency },
     nextPaymentDueAt: money?.nextDueAt?.toISOString() ?? null,
     cancellable: isUserCancellable(row.status),

@@ -16,6 +16,7 @@ import type {
 import { writeAuditLog } from "./audit";
 import { confirmBookingWithProvider } from "./booking-confirm";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { announcePaymentReceived } from "./payment-receipt";
 type ListInput = z.infer<typeof invoiceListInputSchema>;
 
 type ListResult = z.infer<typeof invoiceListSchema>;
@@ -121,6 +122,21 @@ export async function settleInvoiceRequest(
         metadata: input.note ? { note: input.note } : undefined,
       });
     });
+
+    // Inside the branch that actually settled it: staff opening the dialog twice must not
+    // mail the customer a second receipt for the same transfer.
+    const [settled] = await db
+      .select({ id: payment.id })
+      .from(payment)
+      .where(
+        and(
+          eq(payment.bookingId, found.invoice.bookingId),
+          eq(payment.idempotencyKey, `invoice:${found.invoice.id}`),
+        ),
+      )
+      .limit(1);
+
+    if (settled) await announcePaymentReceived(db, settled.id, "bank transfer");
   }
 
   const outcome = await confirmBookingWithProvider(db, provider, found.invoice.bookingId);

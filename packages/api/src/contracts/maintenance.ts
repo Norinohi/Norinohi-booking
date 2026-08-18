@@ -8,6 +8,12 @@ export const sweepResultSchema = z.object({
   /** Bookings still waiting on a quote that ran out, moved to QUOTE_EXPIRED. */
   bookingsQuoteExpired: z.number().int(),
   /**
+   * Checkouts abandoned in PAYMENT_PENDING past the cutoff, with no money in or on its way
+   * and no invoice still within its terms. Nothing else moves that state, so until this ran
+   * each one held its provider option against every future booking of the same slot.
+   */
+  paymentsAbandoned: z.number().int(),
+  /**
    * Provider releases that failed. The booking expires either way — surfaced so ops
    * can check whether the provider is still holding a slot we think is free.
    */
