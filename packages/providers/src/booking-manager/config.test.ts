@@ -52,6 +52,25 @@ describe("resolveBookingManagerConfig", () => {
   });
 });
 
+describe("company scope", () => {
+  const scopeOf = (raw: string | undefined) =>
+    resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_COMPANY_IDS: raw }).companyIds;
+
+  it("reads a comma separated list", () => {
+    expect(scopeOf("225,331")).toEqual(["225", "331"]);
+  });
+
+  it("tolerates spacing and trailing separators", () => {
+    expect(scopeOf(" 225 , 331 ,")).toEqual(["225", "331"]);
+  });
+
+  it.each([undefined, "", "  ", ","])("imports every company for %o", (raw) => {
+    // Empty is production's intent, so it must never be mistaken for "import
+    // nothing": a scope that silently matched no company would empty the catalogue.
+    expect(scopeOf(raw)).toEqual([]);
+  });
+});
+
 describe("bookingManagerQueueKey", () => {
   it("never embeds the token, which would leak it into logs and error context", () => {
     const key = bookingManagerQueueKey("super-secret-token");

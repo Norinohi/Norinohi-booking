@@ -138,6 +138,7 @@ export class BookingManagerInventoryProvider
   createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return bookingManagerCatalogueSource(this.client, {
       resume: parseResume(options.resume),
+      companyIds: this.config.companyIds,
     });
   }
 
@@ -155,9 +156,13 @@ export class BookingManagerInventoryProvider
         // synchronous, so it is deferred into listScopes. Passing [] here would
         // make every availability run a successful no-op, which is the worst
         // possible failure mode.
-        companyIds: (await this.resolver.listExternalCompanyIds())
-          .map(Number)
-          .filter(Number.isFinite),
+        // The configured scope wins when set: it is the list we actually imported,
+        // and reading it back from the database would also pick up companies a
+        // previous, wider run left behind.
+        companyIds:
+          this.config.companyIds.length > 0
+            ? this.config.companyIds.map(Number).filter(Number.isFinite)
+            : (await this.resolver.listExternalCompanyIds()).map(Number).filter(Number.isFinite),
         years: this.years,
       });
 

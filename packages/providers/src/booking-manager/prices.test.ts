@@ -122,6 +122,13 @@ describe("mapBookingManagerPriceRow", () => {
     expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
   });
 
+  it.each([0, -1])("drops a row priced at %o rather than advertising it", (price) => {
+    // The card's "from" price is the minimum across periods, so one zero week would
+    // price the whole boat at nothing. Observed live: the vendor sends 0 for the
+    // year-end week on every yacht in the test fleet.
+    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
+  });
+
   it("drops a row with no usable currency", () => {
     expect(mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02")).toBeNull();
   });

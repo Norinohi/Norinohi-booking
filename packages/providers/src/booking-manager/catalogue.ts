@@ -124,6 +124,13 @@ export function parseBookingManagerCatalogueCursor(
 
 export interface BookingManagerCatalogueOptions {
   resume?: BookingManagerCatalogueCursor | null;
+  /**
+   * Charter companies to import. Empty imports everything the credential sees.
+   *
+   * Applied to the company dump as well as the yacht sweep, so a scoped run does
+   * not leave 1300 operator rows standing behind eleven boats.
+   */
+  companyIds?: readonly string[];
   /** Recoverable failures go here so the stream survives them; see below. */
   reporter?: Pick<SyncReporter, "reportError">;
 }
@@ -146,6 +153,8 @@ export async function* syncBookingManagerCatalogue(
 ): AsyncIterable<CatalogueSyncEvent> {
   const resume = options.resume ?? null;
   const startStep = resume?.step ?? 0;
+  const allowed = new Set(options.companyIds ?? []);
+  const inScope = (companyId: string) => allowed.size === 0 || allowed.has(companyId);
   let companyIds: string[] = [];
 
   for (const [index, step] of CATALOGUE_STEPS.entries()) {
@@ -171,13 +180,16 @@ export async function* syncBookingManagerCatalogue(
         malformed += 1;
         continue;
       }
+      // A company outside the scope is skipped rather than emitted, so the sweep
+      // that follows this step deactivates it if an earlier, wider run imported it.
+      if (index === COMPANY_STEP) {
+        if (!inScope(externalId)) continue;
+        companyIds.push(externalId);
+      }
       yield {
         type: "entity",
         entity: { resourceType: step.resourceType, externalId, payload: item },
       };
-      if (index === COMPANY_STEP) {
-        companyIds.push(externalId);
-      }
     }
 
     if (malformed > 0) {
@@ -205,7 +217,7 @@ export async function* syncBookingManagerCatalogue(
   if (companyIds.length === 0) {
     // Resuming past the companies dump leaves us without the ids the yacht sweep is
     // addressed by. One extra call is cheaper than restarting the whole run.
-    companyIds = await listCompanyIds(client, options);
+    companyIds = (await listCompanyIds(client, options)).filter(inScope);
   }
 
   const startCompany = resume?.step === YACHT_STEP ? resume.companyIndex : 0;
@@ -273,7 +285,7 @@ export async function* syncBookingManagerCatalogue(
 
 export function bookingManagerCatalogueSource(
   client: BookingManagerClient,
-  options: { resume?: BookingManagerCatalogueCursor | null } = {},
+  options: { resume?: BookingManagerCatalogueCursor | null; companyIds?: readonly string[] } = {},
 ): CatalogueSyncSource {
   return (reporter) => syncBookingManagerCatalogue(client, { ...options, reporter });
 }

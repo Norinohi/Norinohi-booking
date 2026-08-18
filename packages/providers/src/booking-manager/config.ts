@@ -22,6 +22,8 @@ export interface BookingManagerConfig {
    * they stay plain wall-clock strings and are never converted.
    */
   timeZone: string;
+  /** Charter companies to import. Empty means every company the key can see. */
+  companyIds: readonly string[];
   /** Serialization key. One lane per credential, never per instance. */
   queueKey: string;
 }
@@ -30,6 +32,7 @@ export interface BookingManagerConfig {
 export interface BookingManagerEnvSource {
   BOOKING_MANAGER_BASE_URL: string;
   BOOKING_MANAGER_API_KEY?: string | undefined;
+  BOOKING_MANAGER_COMPANY_IDS?: string | undefined;
   BOOKING_MANAGER_TIMEOUT_MS: number;
   BOOKING_MANAGER_MIN_INTERVAL_MS: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
@@ -42,6 +45,17 @@ export interface BookingManagerEnvSource {
  */
 export function bookingManagerQueueKey(apiToken: string): string {
   return `booking_manager:${createHash("sha256").update(apiToken).digest("hex").slice(0, 16)}`;
+}
+
+/**
+ * Ids are kept as strings because that is what `provider_record.external_id` and
+ * every scope key downstream use; the vendor's numeric form never leaves here.
+ */
+function parseCompanyIds(raw: string | undefined): readonly string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
 }
 
 /**
@@ -64,6 +78,7 @@ export function resolveBookingManagerConfig(
   return {
     baseUrl: source.BOOKING_MANAGER_BASE_URL.replace(/\/+$/, ""),
     apiToken,
+    companyIds: parseCompanyIds(source.BOOKING_MANAGER_COMPANY_IDS),
     timeoutMs: source.BOOKING_MANAGER_TIMEOUT_MS,
     minIntervalMs: source.BOOKING_MANAGER_MIN_INTERVAL_MS,
     optionSafetyMarginMinutes: source.BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES,
