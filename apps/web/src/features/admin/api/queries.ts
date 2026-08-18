@@ -8,6 +8,7 @@ import type {
   InvoiceStatus,
   LeadKind,
   LeadStatus,
+  ListingStatus,
   ProviderKey,
   SyncRunKind,
   SyncRunState,
@@ -25,6 +26,7 @@ export const DUPLICATES_PAGE_SIZE = 20;
 export const INBOX_PAGE_SIZE = 20;
 export const SYNC_RUNS_PAGE_SIZE = 20;
 export const PAYMENTS_PAGE_SIZE = 20;
+export const LISTINGS_PAGE_SIZE = 20;
 
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
@@ -118,6 +120,23 @@ export const auditListQueryOptions = (input: {
 }) =>
   orpc.admin.audit.list.queryOptions({
     input: { ...input, pageSize: input.pageSize ?? AUDIT_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+/*
+ * The catalogue as staff see it, drafts included. Short staleTime for the same reason the
+ * queues have one: this is a review screen two people work at once, and a row a colleague
+ * has just published must not stay listed as a draft here.
+ */
+export const listingAdminListQueryOptions = (input: {
+  provider?: ProviderKey;
+  status?: ListingStatus;
+  query?: string;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.listing.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? LISTINGS_PAGE_SIZE },
     staleTime: 15_000,
   });
 

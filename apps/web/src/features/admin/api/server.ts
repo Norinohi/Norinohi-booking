@@ -8,6 +8,7 @@ import {
   duplicateQueueQueryOptions,
   enquiryListQueryOptions,
   invoiceListQueryOptions,
+  listingAdminListQueryOptions,
   syncRunsQueryOptions,
 } from "./queries";
 
@@ -37,6 +38,14 @@ export function prefetchAdminBooking(queryClient: QueryClient, id: string) {
 /** Server prefetch for /audit — the first page of the unfiltered trail. */
 export function prefetchAuditLog(queryClient: QueryClient) {
   return queryClient.prefetchQuery(auditListQueryOptions({ page: 1 }));
+}
+
+/**
+ * Server prefetch for /listings: the first page of the whole catalogue, unfiltered, which is
+ * the state the table opens in.
+ */
+export function prefetchListings(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(listingAdminListQueryOptions({ page: 1 }));
 }
 
 /** Server prefetch for /sync — the first page of the unfiltered run history. */

@@ -32,6 +32,10 @@ export type BookingStatus = BookingAdminRow["status"];
 /** What admin.booking.refund reports back — some of it needs a human, so it is shown. */
 export type RefundResult = Awaited<ReturnType<AdminClient["booking"]["refund"]>>;
 
+export type ListingAdminList = Awaited<ReturnType<AdminClient["listing"]["list"]>>;
+export type ListingAdminRow = ListingAdminList["items"][number];
+export type ListingStatus = ListingAdminRow["status"];
+
 export type SyncRunList = Awaited<ReturnType<AdminClient["provider"]["syncRuns"]>>;
 export type SyncRunRow = SyncRunList["items"][number];
 export type SyncRunKind = SyncRunRow["kind"];
