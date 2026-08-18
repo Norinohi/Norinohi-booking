@@ -7,6 +7,18 @@ export const SITE_NAME = "YachtSkanner";
 
 const DEFAULT_OG_IMAGE = "/seo/og-default.jpg";
 
+/**
+ * The brand mark for `Organization.logo`, which is not the social card.
+ *
+ * A card is a 1200x630 photograph with a wordmark burnt into it; a logo is the small square
+ * Google puts beside the site name. Pointing the one at the other gave search engines a
+ * photograph to crop, so they showed nothing.
+ *
+ * Square, at least 112px, transparent background. Drop the file at this exact path and nothing
+ * here needs editing.
+ */
+export const LOGO_IMAGE = "/seo/logo.png";
+
 /*
  * Open Graph asks for a territory-qualified locale (`en_US`), not the bare language code the
  * routes are keyed on. Most scrapers tolerate the short form; Facebook's linter does not.

@@ -1,7 +1,7 @@
 import { env } from "@yacht-charter/env/web";
 
 import { defaultLocale } from "@/i18n/config";
-import { SITE_NAME } from "@/lib/seo";
+import { LOGO_IMAGE, SITE_NAME } from "@/lib/seo";
 
 /*
  * Structured data, kept deliberately thin.
@@ -89,7 +89,7 @@ export function organizationNode(): OrganizationNode {
     "@type": "Organization",
     name: SITE_NAME,
     url: absolute(`/${defaultLocale}`),
-    logo: absolute("/seo/og-default.jpg"),
+    logo: absolute(LOGO_IMAGE),
   };
 }
 
