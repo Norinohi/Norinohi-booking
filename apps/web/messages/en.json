@@ -2095,9 +2095,13 @@
       },
       "refund": {
         "title": "Return the money",
-        "description": "Refunds every payment collected on booking {reference}.",
+        "description": "Returns money collected on booking {reference}.",
         "collected": "{amount} collected",
         "cancelReason": "Cancelled: {reason}",
+        "amountLabel": "Amount to return",
+        "amountPlaceholder": "Everything ({amount})",
+        "amountHint": "Leave blank to return everything. Enter less to keep what the cancellation policy retains.",
+        "amountInvalid": "Enter an amount between 0 and what was collected.",
         "reasonLabel": "Reason",
         "reasonPlaceholder": "Operator withdrew the yacht…",
         "manualLabel": "I have sent the bank transfer back",
@@ -2106,7 +2110,7 @@
         "confirm": "Refund",
         "refunding": "Refunding…",
         "refunded": "{amount} returned.",
-        "partial": "{amount} returned — some payments are still settling.",
+        "partial": "{amount} returned. {outstanding} still owed back.",
         "manualPending": "Card payments returned. {count} bank transfer(s) still have to be sent by hand.",
         "failed": "Could not process the refund."
       }

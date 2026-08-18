@@ -1,6 +1,7 @@
 import {
   booking,
   payment,
+  paymentRefund,
   paymentSchedule,
   providerWebhookEvent,
 } from "@yacht-charter/db/schema/booking";
@@ -14,7 +15,7 @@ import type { Database } from "../context";
 import { confirmBookingWithProvider } from "./booking-confirm";
 import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
-import { refundBooking, settleWhenFullyRefunded } from "./refund";
+import { refundBooking, settlePayment, settleWhenFullyRefunded } from "./refund";
 
 /**
  * Stripe sends the bare id unless a caller expanded the intent into an object, so both
@@ -230,6 +231,11 @@ async function paymentForDispute(db: Database, dispute: Stripe.Dispute) {
  * Closes out a refund Stripe took time to settle — the card path usually answers
  * `succeeded` inline, but bank debits and some wallets do not.
  */
+/**
+ * Closes out a refund we opened. Keyed on the Stripe refund id, not the payment: a booking can
+ * be returned in parts, and Stripe redelivers this event, so the payment alone cannot say which
+ * of several refunds an update is about.
+ */
 async function onRefundUpdated(db: Database, refund: Stripe.Refund): Promise<void> {
   const intentId = paymentIntentRefSchema.safeParse(refund.payment_intent).data;
   if (!intentId) return;
@@ -237,19 +243,40 @@ async function onRefundUpdated(db: Database, refund: Stripe.Refund): Promise<voi
   const row = await findByIntent(db, intentId);
   if (!row) return;
 
+  const [attempt] = await db
+    .select()
+    .from(paymentRefund)
+    .where(eq(paymentRefund.stripeRefundId, refund.id))
+    .limit(1);
+
+  // A refund opened in the Stripe dashboard rather than by us. Recorded rather than ignored,
+  // so the money shows as returned instead of leaving the booking owing it forever.
+  const attemptId =
+    attempt?.id ??
+    (
+      await db
+        .insert(paymentRefund)
+        .values({
+          paymentId: row.payment.id,
+          amountMinor: refund.amount,
+          currency: row.payment.currency,
+          status: "pending",
+          stripeRefundId: refund.id,
+          reason: "Opened outside the app",
+        })
+        .returning({ id: paymentRefund.id })
+    )[0]?.id;
+
+  if (!attemptId) return;
+
   if (refund.status === "succeeded") {
     await db.transaction(async (tx) => {
       await tx
-        .update(payment)
-        .set({ status: "refunded", refundedAt: new Date() })
-        .where(and(eq(payment.id, row.payment.id), isNull(payment.refundedAt)));
+        .update(paymentRefund)
+        .set({ status: "succeeded", settledAt: new Date() })
+        .where(and(eq(paymentRefund.id, attemptId), isNull(paymentRefund.settledAt)));
 
-      if (row.payment.scheduleId) {
-        await tx
-          .update(paymentSchedule)
-          .set({ status: "refunded" })
-          .where(eq(paymentSchedule.id, row.payment.scheduleId));
-      }
+      await settlePayment(tx, row.payment);
     });
 
     await settleWhenFullyRefunded(db, row.booking.id);
@@ -257,12 +284,17 @@ async function onRefundUpdated(db: Database, refund: Stripe.Refund): Promise<voi
   }
 
   if (refund.status === "failed" || refund.status === "canceled") {
+    const failureReason = refund.failure_reason ?? `Refund ${refund.status}`;
+
     // Left at REFUND_PENDING deliberately: the debt is still real, and this is
-    // what an admin retrying admin.booking.refund needs to see.
+    // what an admin retrying admin.booking.refund needs to see. Marking the attempt
+    // failed is what puts the amount back on the pile for that retry to find.
     await db
-      .update(payment)
-      .set({ failureReason: refund.failure_reason ?? `Refund ${refund.status}` })
-      .where(eq(payment.id, row.payment.id));
+      .update(paymentRefund)
+      .set({ status: refund.status, failureReason })
+      .where(eq(paymentRefund.id, attemptId));
+
+    await db.update(payment).set({ failureReason }).where(eq(payment.id, row.payment.id));
   }
 }
 

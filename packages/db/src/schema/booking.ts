@@ -76,6 +76,18 @@ export const paymentStatus = pgEnum("payment_status", [
   "refunded",
 ]);
 
+/**
+ * Mirrors Stripe's refund lifecycle. `pending` money is already committed to leaving, so it
+ * counts against what a booking still owes back — refunding it twice is the failure that
+ * matters here, not refunding it slowly.
+ */
+export const paymentRefundStatus = pgEnum("payment_refund_status", [
+  "pending",
+  "succeeded",
+  "failed",
+  "canceled",
+]);
+
 export const providerReservationEventKind = pgEnum("provider_reservation_event_kind", [
   "option_created",
   "option_released",
@@ -334,6 +346,31 @@ export const payment = pgTable(
   ],
 );
 
+/**
+ * One attempt to send money back. Separate from `payment` because a payment can be returned in
+ * parts — a cancellation policy retains a percentage, not an installment — and because Stripe
+ * redelivers `refund.updated`, so the reconciliation has to key on the refund, not the payment.
+ */
+export const paymentRefund = pgTable(
+  "payment_refund",
+  {
+    id: id("prf"),
+    paymentId: text("payment_id")
+      .notNull()
+      .references(() => payment.id, { onDelete: "cascade" }),
+    amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull(),
+    status: paymentRefundStatus("status").default("pending").notNull(),
+    // Null for a bank transfer sent back by hand: no processor was involved.
+    stripeRefundId: text("stripe_refund_id").unique(),
+    reason: text("reason"),
+    failureReason: text("failure_reason"),
+    settledAt: timestamp("settled_at"),
+    ...timestamps,
+  },
+  (t) => [index("payment_refund_payment_idx").on(t.paymentId)],
+);
+
 /** Append-only log of every provider call, for reconciliation and support. */
 export const providerReservationEvent = pgTable(
   "provider_reservation_event",
@@ -399,12 +436,17 @@ export const paymentScheduleRelations = relations(paymentSchedule, ({ one, many 
   payments: many(payment),
 }));
 
-export const paymentRelations = relations(payment, ({ one }) => ({
+export const paymentRelations = relations(payment, ({ one, many }) => ({
   booking: one(booking, { fields: [payment.bookingId], references: [booking.id] }),
   schedule: one(paymentSchedule, {
     fields: [payment.scheduleId],
     references: [paymentSchedule.id],
   }),
+  refunds: many(paymentRefund),
+}));
+
+export const paymentRefundRelations = relations(paymentRefund, ({ one }) => ({
+  payment: one(payment, { fields: [paymentRefund.paymentId], references: [payment.id] }),
 }));
 
 export const providerReservationEventRelations = relations(providerReservationEvent, ({ one }) => ({

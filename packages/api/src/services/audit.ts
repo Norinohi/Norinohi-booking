@@ -20,6 +20,10 @@ export type AuditMetadata = {
   /** Refund counts: how many are still with Stripe, and how many need a transfer. */
   awaitingSettlement?: number;
   requiresManualTransfer?: number;
+  /** What staff asked to return, when it was less than the whole booking. */
+  requestedMinor?: number;
+  /** What the booking still owes back once this refund is applied. */
+  outstandingMinor?: number;
 };
 
 export type AuditEntry = {

@@ -367,7 +367,7 @@ export const adminRouter = {
         operationId: "adminRefundBooking",
         summary: "Return the money on a booking that owes a refund",
         description:
-          "Refunds every payment collected on a booking sitting at REFUND_PENDING, then moves it to REFUNDED once nothing is outstanding. Card payments go back through Stripe; a bank transfer cannot, so those are reported in requiresManualTransfer and only count as returned when staff resend the money and pass manualTransferSettled. Idempotent and keyed per payment — running it again finishes a partial refund rather than paying twice. A provider rejection refunds itself; this is for the admin-cancelled case and for retries. Writes an audit log entry.",
+          "Refunds a booking sitting at REFUND_PENDING, then moves it to REFUNDED once nothing is outstanding. Pass amountMinor to return part of the money — what a cancellation policy retains is a decision staff make until one is modelled — or omit it to return everything collected. Card money is allocated first and goes back through Stripe; a bank transfer cannot, so those are reported in requiresManualTransfer and only count as returned when staff resend the money and pass manualTransferSettled. Every refund is recorded before Stripe is called and keyed on that record, so a retry finishes the job rather than paying twice and a partial refund can be topped up later. A provider rejection refunds itself; this is for the admin-cancelled case and for retries. Writes an audit log entry.",
         tags: ["Admin"],
         successDescription: "What was returned and the booking's resulting status.",
         spec: withJsonBodyExample({ id: "bkg_example", reason: "Operator withdrew the yacht" }),
@@ -376,6 +376,7 @@ export const adminRouter = {
       .output(bookingRefundSchema)
       .handler(({ context, input }) =>
         refundBooking(context.db, input.id, {
+          amountMinor: input.amountMinor,
           reason: input.reason,
           manualTransferSettled: input.manualTransferSettled,
           actorUserId: context.session.user.id,

@@ -2095,9 +2095,13 @@
       },
       "refund": {
         "title": "Devolver el dinero",
-        "description": "Reembolsa todos los pagos cobrados en la reserva {reference}.",
+        "description": "Devuelve el dinero cobrado en la reserva {reference}.",
         "collected": "{amount} cobrado",
         "cancelReason": "Cancelada: {reason}",
+        "amountLabel": "Importe a devolver",
+        "amountPlaceholder": "Todo ({amount})",
+        "amountHint": "Déjalo vacío para devolver todo. Introduce menos para retener lo que marca la política de cancelación.",
+        "amountInvalid": "Introduce un importe entre 0 y lo cobrado.",
         "reasonLabel": "Motivo",
         "reasonPlaceholder": "El operador retiró el barco…",
         "manualLabel": "He devuelto la transferencia bancaria",
@@ -2106,7 +2110,7 @@
         "confirm": "Reembolsar",
         "refunding": "Reembolsando…",
         "refunded": "{amount} devuelto.",
-        "partial": "{amount} devuelto: algunos pagos siguen liquidándose.",
+        "partial": "{amount} devuelto. Quedan {outstanding} por devolver.",
         "manualPending": "Pagos con tarjeta devueltos. Quedan {count} transferencia(s) por enviar a mano.",
         "failed": "No se pudo procesar el reembolso."
       }
