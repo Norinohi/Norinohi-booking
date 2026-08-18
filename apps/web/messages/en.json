@@ -1150,6 +1150,13 @@
           "usage_limit_reached": "That code has been fully redeemed.",
           "not_applicable": "That code doesn't apply to this yacht."
         }
+      },
+      "credit": {
+        "label": "Referral credit",
+        "available": "{amount} available on this booking",
+        "applied": "{amount} applied",
+        "apply": "Apply",
+        "remove": "Remove"
       }
     },
     "panels": {

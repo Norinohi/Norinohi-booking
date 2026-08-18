@@ -59,6 +59,8 @@ type BookingContextValue = {
   setExtras: (extras: string[]) => Promise<void>;
   /** Applies a promo code to the live quote, or clears it with `null`. */
   applyPromo: (code: string | null) => void;
+  /** Spends the caller's referral credit on the live quote, or takes it back off. */
+  applyCredit: (spend: boolean) => void;
   /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
   bookingId: string | null;
   setBookingId: (id: string | null) => void;
@@ -192,6 +194,15 @@ export function BookingProvider({
     if (quote) void repriceWith({ discountCode: code });
   }
 
+  /*
+   * Carried forward the same way a code is: reprice keeps the previous quote's choice when
+   * `applyCredit` is omitted, so credit survives every later date, guest and extras change.
+   * How much is actually spendable is the server's call, not this one's.
+   */
+  function applyCredit(spend: boolean) {
+    if (quote) void repriceWith({ applyCredit: spend });
+  }
+
   const value: BookingContextValue = {
     slug,
     listing,
@@ -207,6 +218,7 @@ export function BookingProvider({
     setGuests,
     setExtras,
     applyPromo,
+    applyCredit,
     bookingId,
     setBookingId,
   };

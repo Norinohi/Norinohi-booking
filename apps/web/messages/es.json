@@ -1150,6 +1150,13 @@
           "usage_limit_reached": "Ese código ya se ha canjeado por completo.",
           "not_applicable": "Ese código no se aplica a este yate."
         }
+      },
+      "credit": {
+        "label": "Crédito de referidos",
+        "available": "{amount} disponible en esta reserva",
+        "applied": "{amount} aplicado",
+        "apply": "Aplicar",
+        "remove": "Quitar"
       }
     },
     "panels": {
