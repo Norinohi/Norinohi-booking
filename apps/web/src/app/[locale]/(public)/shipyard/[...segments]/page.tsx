@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { defaultLocale } from "@/i18n/config";
+
 import { CatalogCards, CatalogSiblings, SearchScreen } from "@/features/yachts";
 import {
   prefetchCatalogPages,
@@ -30,7 +32,8 @@ const PAGE_SIZE = 24;
 const ROOT = "shipyard";
 
 export async function generateStaticParams() {
-  const pages = await prefetchCatalogPages();
+  /* Segments do not vary by locale, so one read enumerates the routes for all three. */
+  const pages = await prefetchCatalogPages(defaultLocale);
   return pages.filter((page) => page.root === ROOT).map((page) => ({ segments: page.segments }));
 }
 
@@ -47,8 +50,8 @@ function lockedFor(page: CatalogPage) {
   };
 }
 
-async function resolve(segments: string[]) {
-  const pages = await prefetchCatalogPages();
+async function resolve(segments: string[], locale: string) {
+  const pages = await prefetchCatalogPages(locale);
   const page = findCatalogPage(pages, ROOT, segments);
   return { pages, page };
 }
@@ -59,7 +62,7 @@ export async function generateMetadata({
   params: Promise<{ segments: string[]; locale: string }>;
 }): Promise<Metadata> {
   const { segments, locale } = await params;
-  const { page } = await resolve(segments);
+  const { page } = await resolve(segments, locale);
   if (!page) return {};
 
   const t = await getTranslations("Seo.CatalogPage");
@@ -78,7 +81,7 @@ export default async function CatalogPageRoute({
   params: Promise<{ segments: string[]; locale: string }>;
 }) {
   const { segments, locale } = await params;
-  const { pages, page } = await resolve(segments);
+  const { pages, page } = await resolve(segments, locale);
 
   /*
    * 404 rather than an empty page: the enumeration is the only thing that decides a catalog page

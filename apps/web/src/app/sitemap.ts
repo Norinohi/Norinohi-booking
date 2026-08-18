@@ -98,7 +98,8 @@ async function listingPaths(): Promise<string[]> {
  * failure that turns a submitted sitemap into a page of 404s in Search Console.
  */
 async function catalogPagePaths(): Promise<string[]> {
-  const pages = await prefetchCatalogPages();
+  /* The default locale: only the headings are translated, and the sitemap reads none of them. */
+  const pages = await prefetchCatalogPages(defaultLocale);
   return pages.map((page) => `/${page.root}/${page.segments.join("/")}`);
 }
 

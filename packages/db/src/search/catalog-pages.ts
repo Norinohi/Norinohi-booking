@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
+import { facetTranslator } from "./localize";
 import { valueForLabel } from "./repository";
 
 /**
@@ -111,10 +112,21 @@ const str = (row: Row, key: string): string => String(row[key] ?? "");
 
 export async function listCatalogPages(
   db: NodePgDatabase<typeof schema>,
-  options: { threshold?: number } = {},
+  options: { threshold?: number; locale?: string } = {},
 ): Promise<CatalogPage[]> {
   const threshold = options.threshold ?? DEFAULT_CATALOG_PAGE_THRESHOLD;
   const of = (columns: string[]) => group(db, columns, threshold);
+
+  /*
+   * Labels are translated, slugs and filter values are not. A URL is a stable identifier and the
+   * filters compare against the untranslated column, so only the words a reader sees move.
+   *
+   * `facet_media` has no kind for a city, a builder or a model — a city name is rarely translated
+   * and a brand never should be — so those three keep their catalogue spelling in every locale.
+   */
+  const translate = await facetTranslator(db, options.locale);
+  const label = (kind: "country" | "region" | "marina" | "category", value: string) =>
+    translate ? translate(kind, value) : value;
 
   const [
     countries,
@@ -153,7 +165,7 @@ export async function listCatalogPages(
       kind: "country",
       segments: [toSlug(country)],
       filters: { country: v(country) },
-      labels: [country],
+      labels: [label("country", country)],
       count: Number(row.count),
     });
   }
@@ -172,7 +184,7 @@ export async function listCatalogPages(
       kind: "geo",
       segments: [toSlug(country), toSlug(region)],
       filters: { country: v(country), region: v(region) },
-      labels: [country, region],
+      labels: [label("country", country), label("region", region)],
       count: Number(row.count),
     });
   }
@@ -185,7 +197,7 @@ export async function listCatalogPages(
       kind: "geo",
       segments: [toSlug(country), toSlug(city)],
       filters: { country: v(country), city: v(city) },
-      labels: [country, city],
+      labels: [label("country", country), city],
       count: Number(row.count),
     });
   }
@@ -199,7 +211,7 @@ export async function listCatalogPages(
       kind: "marina",
       segments: [toSlug(country), toSlug(city), toSlug(marina)],
       filters: { country: v(country), city: v(city), marina: v(marina) },
-      labels: [country, city, marina],
+      labels: [label("country", country), city, label("marina", marina)],
       count: Number(row.count),
     });
   }
@@ -216,7 +228,7 @@ export async function listCatalogPages(
       kind: "type",
       segments: [toSlug(category)],
       filters: { category: v(category) },
-      labels: [category],
+      labels: [label("category", category)],
       count: Number(row.count),
     });
   }
@@ -229,7 +241,7 @@ export async function listCatalogPages(
       kind: "type-country",
       segments: [toSlug(category), toSlug(country)],
       filters: { category: v(category), country: v(country) },
-      labels: [category, country],
+      labels: [label("category", category), label("country", country)],
       count: Number(row.count),
     });
   }
@@ -243,7 +255,7 @@ export async function listCatalogPages(
       kind: "type-geo",
       segments: [toSlug(category), toSlug(country), toSlug(region)],
       filters: { category: v(category), country: v(country), region: v(region) },
-      labels: [category, country, region],
+      labels: [label("category", category), label("country", country), label("region", region)],
       count: Number(row.count),
     });
   }
@@ -257,7 +269,7 @@ export async function listCatalogPages(
       kind: "type-geo",
       segments: [toSlug(category), toSlug(country), toSlug(city)],
       filters: { category: v(category), country: v(country), city: v(city) },
-      labels: [category, country, city],
+      labels: [label("category", category), label("country", country), city],
       count: Number(row.count),
     });
   }
@@ -272,7 +284,12 @@ export async function listCatalogPages(
       kind: "type-marina",
       segments: [toSlug(category), toSlug(country), toSlug(city), toSlug(marina)],
       filters: { category: v(category), country: v(country), city: v(city), marina: v(marina) },
-      labels: [category, country, city, marina],
+      labels: [
+        label("category", category),
+        label("country", country),
+        city,
+        label("marina", marina),
+      ],
       count: Number(row.count),
     });
   }

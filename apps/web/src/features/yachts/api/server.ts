@@ -120,13 +120,16 @@ export async function prefetchListingDetail(id: string, locale: string) {
  * The one source `generateStaticParams`, the sitemap and each page's own segment lookup read, so
  * a URL is never advertised that the router will not build. Cached on the catalog tag: the set
  * only moves when a sync moves the counts behind it.
+ *
+ * Keyed by locale, because the headings it carries are translated. The segments are not, so every
+ * locale returns the same set of URLs.
  */
-export async function prefetchCatalogPages() {
+export async function prefetchCatalogPages(locale: string) {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG);
 
-  return publicClient.charterSearch.catalogPages({});
+  return publicClient.charterSearch.catalogPages({ locale });
 }
 
 /** The page's own boats, rendered into the HTML rather than fetched by the browser. */

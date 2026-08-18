@@ -159,7 +159,7 @@ export const charterSearchRouter = {
       successDescription:
         "Catalog pages with their path segments, filter values and listing counts.",
     })
-    .input(z.object({}))
+    .input(z.object({ locale: z.string().min(2).max(10).default("en") }))
     .output(z.array(catalogPageSchema))
-    .handler(({ context }) => listCatalogPages(context.db)),
+    .handler(({ context, input }) => listCatalogPages(context.db, { locale: input.locale })),
 };
