@@ -60,6 +60,9 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
         });
       case "boatType":
         return t("boatType", { value: names(options.boatTypes, state.boatType) });
+      case "builder":
+        /* No option list behind it: a builder only ever arrives from a `/shipyard` path. */
+        return t("builder", { value: names([], state.builder) });
       case "model":
         return t("model", { value: names(options.models, state.model) });
       case "crew":

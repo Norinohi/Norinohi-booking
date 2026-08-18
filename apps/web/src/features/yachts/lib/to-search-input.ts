@@ -40,6 +40,7 @@ export function toSearchInput(
   if (filters.charterCompany.length) input.charterCompany = filters.charterCompany;
   if (filters.marina.length) input.marina = filters.marina;
   if (filters.boatType.length) input.boatType = filters.boatType;
+  if (filters.builder.length) input.builder = filters.builder;
   if (filters.model.length) input.model = filters.model;
   if (filters.crew.length) input.crew = filters.crew;
   if (filters.mainsailType.length) input.mainsailType = filters.mainsailType;

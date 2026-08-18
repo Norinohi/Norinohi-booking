@@ -539,6 +539,7 @@
       "duration": "Duración: {count, plural, one {# día} other {# días}}",
       "dateFlexibility": "Flexibilidad: {value}",
       "boatType": "Tipo de barco: {value}",
+      "builder": "Astillero: {value}",
       "model": "Modelo: {value}",
       "crew": "Tripulación: {value}",
       "mainsailType": "Mayor: {value}",

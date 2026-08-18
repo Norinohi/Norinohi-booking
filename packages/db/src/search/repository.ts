@@ -891,6 +891,9 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("boatType") && input.boatType?.length) {
     parts.push(normalizedIn(sql`doc.category`, input.boatType));
   }
+  if (!skip.has("builder") && input.builder?.length) {
+    parts.push(normalizedIn(sql`doc.builder`, input.builder));
+  }
   if (!skip.has("model") && input.model?.length) {
     parts.push(
       sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.model_canonical`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,

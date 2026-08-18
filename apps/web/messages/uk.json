@@ -539,6 +539,7 @@
       "duration": "Тривалість: {count, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
       "dateFlexibility": "Гнучкість: {value}",
       "boatType": "Тип човна: {value}",
+      "builder": "Верф: {value}",
       "model": "Модель: {value}",
       "crew": "Екіпаж: {value}",
       "mainsailType": "Грот: {value}",

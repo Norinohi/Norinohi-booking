@@ -16,6 +16,8 @@ export type FiltersState = {
   dateFlexibility: string;
 
   boatType: string[];
+  /** Yacht builder. Arrives locked from a `/shipyard` page; no control of its own. */
+  builder: string[];
   model: string[];
   crew: string[];
   mainsailType: string[];
@@ -73,6 +75,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   dateFlexibility: "on-day",
 
   boatType: [],
+  builder: [],
   model: [],
   crew: [],
   mainsailType: [],

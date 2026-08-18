@@ -38,6 +38,7 @@ export type CatalogPageFilters = {
   city?: string;
   marina?: string;
   category?: string;
+  builder?: string;
   model?: string;
 };
 
@@ -300,16 +301,16 @@ export async function listCatalogPages(
       root: "shipyard",
       kind: "builder",
       segments: [toSlug(builder)],
-      filters: { model: v(builder) },
+      filters: { builder: v(builder) },
       labels: [builder],
       count: Number(row.count),
     });
   }
 
   /*
-   * Filtered on the model alone, not the pair: the search matches a model value against the
-   * vendor name, the canonical name and the builder at once, so passing both would narrow to
-   * listings whose model name happens to contain the builder's.
+   * The model alone, not the pair. `model` already matches the vendor name, the canonical name
+   * and the builder, so adding the builder would narrow to listings whose model name happens to
+   * contain it.
    */
   for (const row of models) {
     const builder = str(row, "builder");

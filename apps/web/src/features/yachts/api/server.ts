@@ -153,6 +153,7 @@ export async function prefetchCatalogResults(
     city: filters.city ? [filters.city] : undefined,
     marina: filters.marina ? [filters.marina] : undefined,
     boatType: filters.category ? [filters.category] : undefined,
+    builder: filters.builder ? [filters.builder] : undefined,
     model: filters.model ? [filters.model] : undefined,
   });
 }

@@ -17,6 +17,7 @@ export type ListingSearchInput = {
   charterCompany?: string[];
   marina?: string[];
   boatType?: string[];
+  builder?: string[];
   model?: string[];
   crew?: string[];
   mainsailType?: string[];

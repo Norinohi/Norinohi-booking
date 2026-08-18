@@ -39,13 +39,14 @@ export async function generateStaticParams() {
 
 /** The path's own facet, as the filter surfaces express it. Search normalizes the values. */
 function lockedFor(page: CatalogPage) {
-  const { country, region, city, marina, category, model } = page.filters;
+  const { country, region, city, marina, category, builder, model } = page.filters;
   return {
     ...(country ? { country: [country] } : null),
     ...(region ? { sailingArea: [region] } : null),
     ...(city ? { city: [city] } : null),
     ...(marina ? { marina: [marina] } : null),
     ...(category ? { boatType: [category] } : null),
+    ...(builder ? { builder: [builder] } : null),
     ...(model ? { model: [model] } : null),
   };
 }

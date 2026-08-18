@@ -18,6 +18,7 @@ export const CHIP_DEFS = [
   { id: "dateFlexibility", keys: ["dateFlexibility"] },
 
   { id: "boatType", keys: ["boatType"] },
+  { id: "builder", keys: ["builder"] },
   { id: "model", keys: ["model"] },
   { id: "crew", keys: ["crew"] },
   { id: "mainsailType", keys: ["mainsailType"] },
