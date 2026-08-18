@@ -51,10 +51,13 @@ export default function TitleBlock() {
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-4">
           <h1 className="text-[42px] font-bold leading-[1.15] text-foreground">{data.title}</h1>
-          <Chip className="bg-transparent p-1.5 text-gold">
-            <Star className="fill-current" />
-            {data.rating}
-          </Chip>
+          {/* Unrated is not zero — the read model coalesces an absent score, this puts it back. */}
+          {data.rating > 0 ? (
+            <Chip className="bg-transparent p-1.5 text-gold">
+              <Star className="fill-current" />
+              {data.rating}
+            </Chip>
+          ) : null}
           <div className="flex basis-full items-center gap-1.5 md:basis-auto">
             <Chip variant="neutral">
               <Sailboat />

@@ -10,7 +10,8 @@ export function toBoatCardProps(listing: RecommendedListing, priceText: string) 
     imageAlt: listing.title,
     location: `${listing.base.name}, ${listing.base.country}`,
     title: listing.title,
-    rating: listing.rating,
+    // Same rule as the catalogue card: an unrated listing shows no star, not a gold zero.
+    rating: listing.rating > 0 ? listing.rating : undefined,
     tags: listing.badges.slice(0, 2).map((badge) => ({ label: badge.label })),
     price: priceText,
     detailHref: `/yachts/${listing.slug}`,

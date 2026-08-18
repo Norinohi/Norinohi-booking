@@ -62,8 +62,9 @@ export default function UserMenu() {
             <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/referrals")}>
               {t("referrals")}
             </DropdownMenuItem>
-            {/* TODO: navigate once the credits page exists. */}
-            <DropdownMenuItem className={ITEM}>{t("credits")}</DropdownMenuItem>
+            <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/credits")}>
+              {t("credits")}
+            </DropdownMenuItem>
             {isStaff ? (
               <>
                 <DropdownMenuItem

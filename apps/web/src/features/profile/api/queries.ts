@@ -31,6 +31,21 @@ export const referralHistoryQueryOptions = (page = 1) =>
     staleTime: 30_000,
   });
 
+/*
+ * Credits. The balance is summed from the ledger on the server rather than stored, so these two
+ * can never disagree — the table is the whole explanation of the figure above it.
+ */
+export const creditBalanceQueryOptions = () =>
+  orpc.credit.balance.queryOptions({ staleTime: 30_000 });
+
+export const CREDIT_LEDGER_PAGE_SIZE = 10;
+
+export const creditLedgerQueryOptions = (page = 1) =>
+  orpc.credit.ledger.queryOptions({
+    input: { page, pageSize: CREDIT_LEDGER_PAGE_SIZE },
+    staleTime: 30_000,
+  });
+
 /* ------------------------- admin Discount & Price Manager ------------------------- */
 
 export const DISCOUNTS_PAGE_SIZE = 10;

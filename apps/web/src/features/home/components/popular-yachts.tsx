@@ -74,7 +74,7 @@ function PopularYachtSlides() {
             imageAlt={listing.title}
             location={`${listing.base.location}, ${listing.base.country}`}
             title={listing.title}
-            rating={listing.rating}
+            rating={listing.rating > 0 ? listing.rating : undefined}
             tags={[{ label: listing.category, icon: <Anchor /> }]}
             price={boatCardPrice(tCard, listing, (amountMinor) =>
               money(Math.round(amountMinor / listing.priceDetails.periodDays)),

@@ -5,11 +5,17 @@ import { useTranslations } from "next-intl";
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
 
+/*
+ * Per-listing questions. No provider publishes these, so the table is empty for the whole
+ * imported fleet and the section is hidden rather than rendering a heading over nothing.
+ * `DetailTabs` drops its tab on the same condition — a tab that scrolls nowhere is worse
+ * than one that is absent.
+ */
 export default function FaqSection() {
   const t = useTranslations("YachtDetail");
   const { data } = useListingDetail();
 
-  if (!data) return null;
+  if (!data || data.faq.length === 0) return null;
 
   return (
     <DetailSection id="faq" title={t("sections.faq")}>

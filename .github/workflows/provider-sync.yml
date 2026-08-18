@@ -1,11 +1,16 @@
 name: Provider sync
 
-# Scheduled NauSYS imports for staging.
+# Manual NauSYS imports for staging.
 #
-# The cadence comes from the vendor's own implementation guidelines: the catalogue
-# once per day after 01:00 GMT+1, occupancy hourly or every few hours. The
-# catalogue run is scheduled at 02:30 UTC, which is 03:30 CET and 04:30 CEST, so it
-# stays inside their window on both sides of the daylight-saving change.
+# The schedule is off. A second scheduler already runs the same two syncs against the
+# same database, and `sync_run_in_flight_uq` refuses whichever one arrives second, so
+# the hourly trigger here mostly produced a crashed run rather than a sync. Restoring
+# the block below means first deciding which scheduler owns the cadence.
+#
+# The cadence the vendor's implementation guidelines ask for, kept here for whoever
+# turns it back on: the catalogue once per day after 01:00 GMT+1, occupancy hourly or
+# every few hours. 02:30 UTC is 03:30 CET and 04:30 CEST, inside their window on both
+# sides of the daylight-saving change.
 #
 # These jobs only *trigger* a sync. Both routes persist a sync_run row and return
 # immediately, because a full catalogue walk is a sequential multi-hour job that no
@@ -25,9 +30,9 @@ name: Provider sync
 # staging's, not the default branch's.
 
 on:
-  schedule:
-    - cron: "30 2 * * *" # catalogue, daily
-    - cron: "15 * * * *" # availability, hourly
+  # schedule:
+  #   - cron: "30 2 * * *" # catalogue, daily
+  #   - cron: "15 * * * *" # availability, hourly
   workflow_dispatch:
     inputs:
       job:

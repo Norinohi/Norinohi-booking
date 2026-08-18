@@ -832,10 +832,12 @@
       "profile": "Mi perfil",
       "bookings": "Mis reservas",
       "referrals": "Referidos",
+      "credits": "Créditos y saldo",
       "discount": "Gestión de descuentos",
       "logout": "Cerrar sesión",
       "duplicates": "Revisión de duplicados",
       "sync": "Historial de sincronización",
+      "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
       "payments": "Pagos"
     },
@@ -1107,8 +1109,10 @@
       "next": "Yates siguientes"
     },
     "review": {
-      "count": "({count} opiniones)",
-      "summary": "Mostrando {shown} de {total}"
+      "count": "({count, plural, one {# opinión} other {# opiniones}})",
+      "summary": "Mostrando {shown} de {total}",
+      "empty": "Aún no hay opiniones escritas",
+      "operatorRated": "La puntuación procede de {count, plural, one {# valoración} other {# valoraciones}} de huéspedes recogidas por la empresa chárter."
     },
     "sidebar": {
       "crew": "Tripulación",
@@ -1152,6 +1156,13 @@
           "usage_limit_reached": "Ese código ya se ha canjeado por completo.",
           "not_applicable": "Ese código no se aplica a este yate."
         }
+      },
+      "credit": {
+        "label": "Crédito de referidos",
+        "available": "{amount} disponible en esta reserva",
+        "applied": "{amount} aplicado",
+        "apply": "Aplicar",
+        "remove": "Quitar"
       }
     },
     "panels": {
@@ -1285,6 +1296,10 @@
       "title": "Tus referidos",
       "description": "Sigue a los amigos que has invitado a YachtSkanner y las recompensas que has conseguido."
     },
+    "Credits": {
+      "title": "Créditos y saldo",
+      "description": "Consulta tu crédito de referidos disponible, lo que caduca pronto y cada movimiento de tu saldo."
+    },
     "Discounts": {
       "title": "Gestor de descuentos y precios",
       "description": "Gestiona los códigos promocionales y los precios de tus yates."
@@ -1296,6 +1311,10 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Audit": {
+      "title": "Registro de auditoría",
+      "description": "Cada acción del personal registrada sobre una reserva, un anuncio, un descuento o una consulta."
     },
     "Invoice": {
       "title": "Factura",
@@ -1597,6 +1616,26 @@
       "empty": "Aún no tienes referidos. Comparte tu enlace para empezar."
     }
   },
+  "Credits": {
+    "title": "Créditos y saldo",
+    "balance": {
+      "label": "Saldo disponible",
+      "expiringSoon": "{amount} caduca en 30 días",
+      "hint": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000 y se descuentan de lo que pagas hoy."
+    },
+    "ledger": {
+      "title": "Historial de créditos",
+      "expires": "Caduca el {date}",
+      "emptyTitle": "Aún no tienes crédito",
+      "emptyDescription": "Invita a un amigo: ganas crédito cuando complete su viaje.",
+      "kind": {
+        "referral_reward": "Recompensa por referido",
+        "booking_redemption": "Aplicado a la reserva",
+        "expiry": "Caducado",
+        "adjustment": "Ajuste"
+      }
+    }
+  },
   "Discounts": {
     "title": "Gestor de descuentos y precios",
     "subtitle": "Gestiona códigos promocionales y precios de yates.",
@@ -1784,6 +1823,33 @@
     "Sync": {
       "title": "Historial de sincronización",
       "subtitle": "Todas las ejecuciones de catálogo y disponibilidad, de la más reciente a la más antigua.",
+      "controls": {
+        "provider": "Proveedor a sincronizar",
+        "allProviders": "Todos los proveedores",
+        "startCatalogue": "Sincronizar catálogo",
+        "startAvailability": "Sincronizar disponibilidad",
+        "started": "{count, plural, one {# ejecución iniciada} other {# ejecuciones iniciadas}}",
+        "skipped": "{count, plural, one {# proveedor ya está importando} other {# proveedores ya están importando}}",
+        "noProviders": "No hay ningún conector activo.",
+        "capabilities": "Conector activo:",
+        "capability": {
+          "supportsLiveQuote": "Precio en vivo",
+          "supportsOptions": "Reservas provisionales",
+          "supportsExtrasMutation": "Extras editables",
+          "supportsWebhooks": "Webhooks"
+        },
+        "hint": "La ejecución se abre de inmediato y continúa aunque cierres esta página. Su resultado aparece en la tabla de abajo."
+      },
+      "maintenance": {
+        "sweep": "Caducar reservas provisionales",
+        "remind": "Enviar recordatorios de saldo",
+        "swept": "{count} reserva(s) caducada(s), {reaped} ejecución(es) de sincronización recuperada(s).",
+        "staleConfirmations": "{count} reserva(s) atascada(s) al confirmar. Pregunta al proveedor si la reserva existe.",
+        "releaseFailures": "No se pudieron liberar {count} espacio(s) del proveedor.",
+        "reminded": "{count} recordatorio(s) enviado(s).",
+        "remindSkipped": "{count} reserva(s) no tienen dirección de correo.",
+        "hint": "Ambos ya se ejecutan de forma programada. Hacerlo a mano es seguro: las caducidades son compare-and-set y cada plazo solo se recuerda una vez."
+      },
       "filters": {
         "provider": "Proveedor",
         "kind": "Tipo",
@@ -1838,6 +1904,53 @@
         "not_found": "No encontrado",
         "contract": "Contrato"
       }
+    },
+    "Audit": {
+      "title": "Registro de auditoría",
+      "subtitle": "Cada acción del personal, de la más reciente a la más antigua. Las entradas se escriben una vez y no se editan.",
+      "filters": {
+        "entityType": "Tipo de entidad",
+        "allEntities": "Todas las entidades",
+        "action": "Acción",
+        "allActions": "Todas las acciones",
+        "entityId": "Id de entidad",
+        "entityIdPlaceholder": "Pega un id completo"
+      },
+      "table": {
+        "when": "Cuándo",
+        "actor": "Quién",
+        "action": "Acción",
+        "entity": "Entidad",
+        "entityId": "Id",
+        "details": "Detalles"
+      },
+      "action": {
+        "create": "Creado",
+        "update": "Actualizado",
+        "delete": "Eliminado",
+        "sync": "Sincronizado",
+        "merge": "Fusionado",
+        "price_adjustment": "Cambio de precio"
+      },
+      "entity": {
+        "booking": "Reserva",
+        "booking_enquiry": "Pregunta de reserva",
+        "discount": "Código promocional",
+        "invoice_request": "Factura",
+        "lead": "Consulta",
+        "listing": "Anuncio",
+        "listing_duplicate_candidate": "Duplicado"
+      },
+      "details": {
+        "show": "Ver",
+        "hide": "Ocultar",
+        "before": "Antes",
+        "after": "Después",
+        "metadata": "Contexto"
+      },
+      "actorGone": "Cuenta eliminada",
+      "empty": "Aún no hay nada registrado.",
+      "error": "No se pudo cargar el registro de auditoría."
     },
     "Inbox": {
       "title": "Bandeja de entrada",
@@ -2019,9 +2132,13 @@
       },
       "refund": {
         "title": "Devolver el dinero",
-        "description": "Reembolsa todos los pagos cobrados en la reserva {reference}.",
+        "description": "Devuelve el dinero cobrado en la reserva {reference}.",
         "collected": "{amount} cobrado",
         "cancelReason": "Cancelada: {reason}",
+        "amountLabel": "Importe a devolver",
+        "amountPlaceholder": "Todo ({amount})",
+        "amountHint": "Déjalo vacío para devolver todo. Introduce menos para retener lo que marca la política de cancelación.",
+        "amountInvalid": "Introduce un importe entre 0 y lo cobrado.",
         "reasonLabel": "Motivo",
         "reasonPlaceholder": "El operador retiró el barco…",
         "manualLabel": "He devuelto la transferencia bancaria",
@@ -2030,7 +2147,7 @@
         "confirm": "Reembolsar",
         "refunding": "Reembolsando…",
         "refunded": "{amount} devuelto.",
-        "partial": "{amount} devuelto: algunos pagos siguen liquidándose.",
+        "partial": "{amount} devuelto. Quedan {outstanding} por devolver.",
         "manualPending": "Pagos con tarjeta devueltos. Quedan {count} transferencia(s) por enviar a mano.",
         "failed": "No se pudo procesar el reembolso."
       }

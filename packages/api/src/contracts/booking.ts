@@ -325,6 +325,11 @@ export const bookingAdminListSchema = paginatedSchema(bookingAdminRowSchema);
 
 export const bookingRefundInputSchema = z.object({
   id: z.string().min(1),
+  /**
+   * Return only this much. Omitted returns everything collected. Until a cancellation policy is
+   * modelled, what a booking retains is a decision staff make and this records.
+   */
+  amountMinor: z.number().int().positive().optional(),
   reason: z.string().trim().max(500).optional(),
   /**
    * Staff confirming they have sent the bank transfer back. Nothing else can
@@ -339,6 +344,8 @@ export const bookingRefundSchema = z.object({
   refunded: moneySchema,
   awaitingSettlement: z.number().int(),
   requiresManualTransfer: z.number().int(),
+  /** What the booking still owes back, so a partial refund can be topped up later. */
+  outstanding: moneySchema,
 });
 
 /* ------------------------------------------------------------------ checkout */

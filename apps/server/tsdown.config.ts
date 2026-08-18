@@ -6,6 +6,7 @@ export default defineConfig({
     "./src/migrate.ts",
     "./src/sync-catalogue.ts",
     "./src/sync-availability.ts",
+    "./src/sweep-expiries.ts",
     "./src/seed-facets.ts",
     "./src/publish-listings.ts",
   ],

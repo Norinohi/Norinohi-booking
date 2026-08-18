@@ -2,7 +2,7 @@ import type { quote } from "@yacht-charter/db/schema/quote";
 import type { QuoteLine } from "@yacht-charter/db/schema/quote";
 import { describe, expect, it } from "vitest";
 
-import { amountDue, outstandingMinor } from "./checkout";
+import { amountDue, outstandingMinor } from "./checkout-amounts";
 import { payableNowMinor, totalMinor } from "./pricing";
 
 type QuoteRow = typeof quote.$inferSelect;

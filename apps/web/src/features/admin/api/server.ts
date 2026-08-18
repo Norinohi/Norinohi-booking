@@ -3,6 +3,7 @@ import "server-only";
 import type { QueryClient } from "@tanstack/react-query";
 
 import {
+  auditListQueryOptions,
   bookingDetailQueryOptions,
   duplicateQueueQueryOptions,
   enquiryListQueryOptions,
@@ -31,6 +32,11 @@ export function prefetchPayments(queryClient: QueryClient) {
 /** Server prefetch for /staff/bookings/[id]. */
 export function prefetchAdminBooking(queryClient: QueryClient, id: string) {
   return queryClient.prefetchQuery(bookingDetailQueryOptions({ id }));
+}
+
+/** Server prefetch for /audit — the first page of the unfiltered trail. */
+export function prefetchAuditLog(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(auditListQueryOptions({ page: 1 }));
 }
 
 /** Server prefetch for /sync — the first page of the unfiltered run history. */

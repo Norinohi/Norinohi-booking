@@ -76,7 +76,7 @@ export default function PopularYachtsSection() {
                 imageAlt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
                 location={`${yacht.base.location}, ${yacht.base.country}`}
                 title={yacht.title}
-                rating={yacht.rating}
+                rating={yacht.rating > 0 ? yacht.rating : undefined}
                 tags={[
                   { label: yacht.category, icon: <Anchor /> },
                   ...(yacht.crewType

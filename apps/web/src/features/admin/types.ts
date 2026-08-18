@@ -41,6 +41,11 @@ export type SyncRunStatus = Awaited<ReturnType<AdminClient["provider"]["syncStat
 /** The connector keys the provider procedures accept, as the contract spells them. */
 export type ProviderKey = SyncRunStatus["provider"];
 
+/* Audit log view-types, inferred from the oRPC contract. */
+export type AuditList = Awaited<ReturnType<AdminClient["audit"]["list"]>>;
+export type AuditRow = AuditList["items"][number];
+export type AuditAction = AuditRow["action"];
+
 const PROVIDER_KEYS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
 
 /**
