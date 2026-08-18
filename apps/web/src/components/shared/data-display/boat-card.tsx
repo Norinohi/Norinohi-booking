@@ -56,7 +56,8 @@ export type BoatCardProps = {
   badges?: BoatCardBadge[];
   marina: Marina;
   name: string;
-  rating: string;
+  /** Absent for a listing nobody has rated — the chip is dropped rather than showing a zero. */
+  rating?: string;
   charterType: string;
   crew: string;
   specs: BoatCardSpec[];
@@ -184,10 +185,12 @@ function Details({
             <h3 className="min-w-0 line-clamp-2 pb-1 text-[28px] font-medium leading-[1.1] break-words text-foreground md:text-[32px]">
               {name}
             </h3>
-            <Chip className="mt-0.5 shrink-0 bg-transparent p-1.5 text-gold">
-              <Star className="fill-current" />
-              {rating}
-            </Chip>
+            {rating ? (
+              <Chip className="mt-0.5 shrink-0 bg-transparent p-1.5 text-gold">
+                <Star className="fill-current" />
+                {rating}
+              </Chip>
+            ) : null}
           </div>
           <div className="flex w-full items-center gap-1.5 md:w-auto xl:hidden">
             <Chip variant="neutral">

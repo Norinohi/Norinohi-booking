@@ -1107,8 +1107,10 @@
       "next": "Наступні яхти"
     },
     "review": {
-      "count": "({count} відгуків)",
-      "summary": "Показано {shown} з {total}"
+      "count": "({count, plural, one {# відгук} few {# відгуки} many {# відгуків} other {# відгуку}})",
+      "summary": "Показано {shown} з {total}",
+      "empty": "Написаних відгуків ще немає",
+      "operatorRated": "Оцінка сформована з {count, plural, one {# оцінки} few {# оцінок} many {# оцінок} other {# оцінки}} гостей, зібраних чартерною компанією."
     },
     "sidebar": {
       "crew": "Екіпаж",

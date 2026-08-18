@@ -54,7 +54,7 @@ export type MapBoatCardProps = {
   badges?: BoatCardBadge[];
   marina: Marina;
   name: string;
-  rating: string;
+  rating?: string;
   charterType: string;
   crew: string;
   priceLabel: string;
@@ -146,10 +146,12 @@ export default function MapBoatCard({
             <h3 className={cn("min-w-0 truncate leading-[1.3] text-foreground", style.name)}>
               {name}
             </h3>
-            <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
-              <Star className="fill-current" />
-              {rating}
-            </Chip>
+            {rating ? (
+              <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
+                <Star className="fill-current" />
+                {rating}
+              </Chip>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">

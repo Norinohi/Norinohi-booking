@@ -139,7 +139,10 @@ export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing
     images: listing.gallery.length ? listing.gallery : listing.mainImage ? [listing.mainImage] : [],
     badges: listing.badges.map((badge) => ({ label: badge.label })),
     name: listing.title,
-    rating: String(listing.rating),
+    // A listing nobody has scored is not a listing scored zero, and a gold "0" reads as the
+    // worst rating on the site. The read model coalesces an absent score to 0, so this is the
+    // only place that distinction can be put back.
+    rating: listing.rating > 0 ? String(listing.rating) : undefined,
     charterType: listing.category ?? "",
     crew: listing.crewType ? slugToLabel(listing.crewType) : "",
     specs: boatSpecs(t, listing.specs),

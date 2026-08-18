@@ -1107,8 +1107,10 @@
       "next": "Yates siguientes"
     },
     "review": {
-      "count": "({count} opiniones)",
-      "summary": "Mostrando {shown} de {total}"
+      "count": "({count, plural, one {# opinión} other {# opiniones}})",
+      "summary": "Mostrando {shown} de {total}",
+      "empty": "Aún no hay opiniones escritas",
+      "operatorRated": "La puntuación procede de {count, plural, one {# valoración} other {# valoraciones}} de huéspedes recogidas por la empresa chárter."
     },
     "sidebar": {
       "crew": "Tripulación",

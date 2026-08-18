@@ -1107,8 +1107,10 @@
       "next": "Next yachts"
     },
     "review": {
-      "count": "({count} reviews)",
-      "summary": "Showing {shown} of {total}"
+      "count": "({count, plural, one {# review} other {# reviews}})",
+      "summary": "Showing {shown} of {total}",
+      "empty": "No written reviews yet",
+      "operatorRated": "The score comes from {count, plural, one {# guest rating} other {# guest ratings}} collected by the charter operator."
     },
     "sidebar": {
       "crew": "Crew",
