@@ -1,11 +1,16 @@
 name: Provider sync
 
-# Scheduled NauSYS imports for staging.
+# Manual NauSYS imports for staging.
 #
-# The cadence comes from the vendor's own implementation guidelines: the catalogue
-# once per day after 01:00 GMT+1, occupancy hourly or every few hours. The
-# catalogue run is scheduled at 02:30 UTC, which is 03:30 CET and 04:30 CEST, so it
-# stays inside their window on both sides of the daylight-saving change.
+# The schedule is off. A second scheduler already runs the same two syncs against the
+# same database, and `sync_run_in_flight_uq` refuses whichever one arrives second, so
+# the hourly trigger here mostly produced a crashed run rather than a sync. Restoring
+# the block below means first deciding which scheduler owns the cadence.
+#
+# The cadence the vendor's implementation guidelines ask for, kept here for whoever
+# turns it back on: the catalogue once per day after 01:00 GMT+1, occupancy hourly or
+# every few hours. 02:30 UTC is 03:30 CET and 04:30 CEST, inside their window on both
+# sides of the daylight-saving change.
 #
 # These jobs only *trigger* a sync. Both routes persist a sync_run row and return
 # immediately, because a full catalogue walk is a sequential multi-hour job that no
@@ -13,11 +18,21 @@ name: Provider sync
 # NOT that the import succeeded: it catches a dead service, a wrong secret or an
 # unconfigured CRON_SECRET, and nothing else. Whether the run itself worked is in
 # sync_run / sync_error, or admin.provider.syncStatus.
+#
+# GitHub fires `on: schedule` only from the repository's DEFAULT branch, which is
+# main. A schedule block on any other branch never runs. So this file's scheduled
+# behaviour is always main's copy of it, no matter what staging holds — editing it
+# on staging alone changes nothing until it reaches main.
+#
+# What the schedule targets is a separate question from where it runs, and both
+# are pinned to staging here: the URL comes from STAGING_SERVER_URL, and the
+# checkout below pins the ref so any step that grows to run repo code runs
+# staging's, not the default branch's.
 
 on:
-  schedule:
-    - cron: "30 2 * * *" # catalogue, daily
-    - cron: "15 * * * *" # availability, hourly
+  # schedule:
+  #   - cron: "30 2 * * *" # catalogue, daily
+  #   - cron: "15 * * * *" # availability, hourly
   workflow_dispatch:
     inputs:
       job:
@@ -33,6 +48,12 @@ concurrency:
   group: provider-sync
   cancel-in-progress: false
 
+env:
+  # The branch these syncs belong to. Named once so the two jobs cannot drift apart,
+  # and so moving the syncs to another environment is a one-line change here plus the
+  # matching secret.
+  SYNC_REF: staging
+
 jobs:
   catalogue:
     name: catalogue sync
@@ -41,6 +62,10 @@ jobs:
       github.event.schedule == '30 2 * * *' ||
       contains(fromJSON('["catalogue","both"]'), github.event.inputs.job)
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SYNC_REF }}
+
       - name: Trigger catalogue sync
         env:
           SERVER_URL: ${{ secrets.STAGING_SERVER_URL }}
@@ -68,6 +93,10 @@ jobs:
       github.event.schedule == '15 * * * *' ||
       contains(fromJSON('["availability","both"]'), github.event.inputs.job)
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SYNC_REF }}
+
       - name: Trigger availability sync
         env:
           SERVER_URL: ${{ secrets.STAGING_SERVER_URL }}

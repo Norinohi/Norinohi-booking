@@ -43,6 +43,8 @@ export function createBookingManagerSeasonalPriceLoader(
   options: BookingManagerSeasonalPriceLoaderOptions,
 ): (listingIds: string[]) => Promise<Map<string, SeasonalPrice[]>> {
   const { client, resolver } = options;
+  const companyScope =
+    options.config.companyIds.length > 0 ? [...options.config.companyIds] : undefined;
 
   const yachtByListing = new Map<string, string | null>();
   let sweep: Promise<Map<string, SeasonalPrice[]>> | null = null;
@@ -63,10 +65,13 @@ export function createBookingManagerSeasonalPriceLoader(
     for (const checkIn of charterSaturdays(options.years)) {
       const checkOut = addDays(checkIn, 7);
       // Deliberately no yachtId: the vendor returns the whole fleet for the
-      // period, which is one call instead of one per batch of boats.
+      // period, which is one call instead of one per batch of boats. A configured
+      // company scope still narrows it, so a staging run does not pull prices for
+      // twelve thousand boats it never imported.
       const query = {
         dateFrom: formatBookingManagerDateTime(checkIn),
         dateTo: formatBookingManagerDateTime(checkOut),
+        companyId: companyScope,
         // An undefined value is dropped from the query string, so no currency
         // asks for the vendor's own default rather than for a blank one.
         currency: options.currency || undefined,
@@ -158,7 +163,12 @@ export function mapBookingManagerPriceRow(
     }
 
     const priceMinor = numberToMinor(row.price, currency, `yacht ${row.yachtId} price`);
-    if (priceMinor < 0) {
+    // Zero is the absence of a price, not a free charter. The vendor returns it for
+    // weeks outside its published season, and the search card takes its "from"
+    // figure as the minimum across periods, so one unpriced week would advertise
+    // the whole boat at nothing. Left out entirely, the way a period the vendor
+    // never priced is, and filled in by a live quote if anyone asks for it.
+    if (priceMinor <= 0) {
       return null;
     }
 

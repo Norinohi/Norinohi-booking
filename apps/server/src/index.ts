@@ -7,6 +7,8 @@ import {
   inventoryProvider,
 } from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
+import { sendBalanceReminders } from "@yacht-charter/api/services/payment-reminders";
+import { drainOutbox } from "@yacht-charter/api/services/outbox";
 import {
   startAvailabilitySync,
   startCatalogueSync,
@@ -78,8 +80,10 @@ app.post("/api/stripe/webhook", async (c) => {
 
   // A rejected signature is a 400 so Stripe stops retrying a request we will
   // never accept; a handled duplicate is a 200 because redelivery is normal.
+  // `note` carries an outcome ops should see — a provider refusal and its refund —
+  // without failing the delivery, which is what would make a real fault stand out.
   if (!outcome.handled) return c.json({ error: outcome.reason }, 400);
-  return c.json({ received: true, duplicate: outcome.duplicate });
+  return c.json({ received: true, duplicate: outcome.duplicate, note: outcome.note });
 });
 
 // Scheduled maintenance. Above the oRPC dispatch for the same reason as the Stripe
@@ -97,6 +101,39 @@ app.post("/api/cron/sweep-expiries", async (c) => {
   }
 
   return c.json(await sweepExpiries(db, inventoryProvider));
+});
+
+// Daily. The window is ten days wide and every installment is claimed before it is mailed, so
+// running this more often sends nothing extra — and missing a day still catches the same booking
+// tomorrow.
+app.post("/api/cron/payment-reminders", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await sendBalanceReminders(db));
+});
+
+// Every few minutes, and normally a no-op: checkout drains the outbox in-process as soon as
+// it has answered, so this only picks up what a replaced container or a mailer outage left
+// behind. A message is claimed with `for update skip locked`, so this can overlap a
+// request-time drain without either sending the other's mail.
+app.post("/api/cron/drain-outbox", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await drainOutbox(db));
 });
 
 // The vendor asks for one full catalogue dump a day, after 01:00 GMT+1. The run is

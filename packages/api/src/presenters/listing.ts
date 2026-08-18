@@ -1,37 +1,42 @@
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
-import { daysBetween } from "../lib/dates";
+import { MARKETPLACE_DEFAULT } from "../services/pricing";
 
 const EMPTY_IMAGE = "";
 
 /**
  * What a search card quotes as the up-front payment.
  *
- * This does NOT agree with the real deposit: checkout resolves it per listing
- * through resolvePaymentPolicy in services/pricing.ts, which honours a listing
- * override, then the provider's plan, then a 50% marketplace default. So a card
- * can advertise 25% on a listing the checkout will ask 50% for.
+ * A card has no quote, so it cannot know the real figure: checkout resolves it per listing
+ * through `resolvePaymentPolicy`, honouring a listing override, then the provider's plan,
+ * then the marketplace default. The card therefore shows that same default, which is the
+ * only number it can state without guessing.
  *
- * Left as-is deliberately -- reconciling them changes a displayed price, which
- * is a product decision. Naming it is so the disagreement is visible rather
- * than buried in an expression.
+ * It used to hardcode 25% against a 50% default, so a card advertised half of what checkout
+ * would ask for on every listing that fell through to it.
  */
-const CARD_PREPAYMENT_PCT = 0.25;
+const CARD_PREPAYMENT_PCT = MARKETPLACE_DEFAULT.depositPct;
 
-export type ListingSummaryOptions = {
-  checkIn?: string | null;
-  checkOut?: string | null;
-  duration?: number | null;
-};
+/** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
+const WEEKLY_RATE_DAYS = 7;
 
-export function presentListingSummary(doc: ListingSearchDoc, options: ListingSummaryOptions = {}) {
+export function presentListingSummary(doc: ListingSearchDoc) {
   const currency = doc.currency ?? "EUR";
-  const periodDays =
-    daysBetween(options.checkIn ?? null, options.checkOut ?? null) ??
-    options.duration ??
-    daysBetween(doc.availableFrom, doc.availableTo) ??
-    7;
-  const amountMinor = doc.priceFromMinor ?? 0;
+  /*
+   * The period the "from" price actually covers, which is a week: `price_from_minor` is the
+   * cheapest WEEKLY rate the provider published.
+   *
+   * It used to be the duration the visitor searched for, so a three-day search captioned a
+   * week's rate "Price for 3 days" — an understatement of roughly 2.3x on the trip it was
+   * describing. A weekly rate cannot be prorated into a shorter one either: NauSYS prices
+   * dailies from a separate list precisely because they are not a seventh of the week. The
+   * caption therefore names the rate's own period, and the quote prices the real trip.
+   */
+  const periodDays = WEEKLY_RATE_DAYS;
+  // A non-positive price is a provider saying "no price", not "free", so it is
+  // treated the same as a missing one rather than quoted as 0.
+  const amountMinor =
+    doc.priceFromMinor !== null && doc.priceFromMinor > 0 ? doc.priceFromMinor : null;
 
   return {
     id: doc.listingId,
@@ -58,6 +63,8 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
       email: doc.baseEmail,
       phone: doc.basePhone,
       website: doc.baseWebsite,
+      checkInTime: doc.baseCheckInTime,
+      checkOutTime: doc.baseCheckOutTime,
     },
     specs: {
       lengthM: Number(doc.lengthM ?? 0),
@@ -74,27 +81,33 @@ export function presentListingSummary(doc: ListingSearchDoc, options: ListingSum
     availability: {
       hasUnconfirmedAvailability: doc.hasUnconfirmedAvailability,
       hasTemporaryBooking: doc.hasTemporaryBooking,
+      // No projected window means the listing has no bookable slot at all, which
+      // is a different state from having dates but no price.
+      hasAvailableDates: doc.availableFrom !== null,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,
+    /*
+     * Real counts off our own tables: confirmed bookings this month, and distinct
+     * viewers today. Zero is a legitimate answer and is passed through as zero --
+     * the UI drops a line it cannot fill rather than inventing a floor for it.
+     */
     bookingStats: {
-      bookedThisMonth: stableCount(doc.listingId, 2, 8),
-      viewedToday: stableCount(doc.slug, 18, 64),
+      bookedThisMonth: doc.bookedThisMonth,
+      viewedToday: doc.viewedToday,
     },
     mainImage: doc.mainImage ?? doc.gallery[0] ?? EMPTY_IMAGE,
     gallery: doc.gallery,
     amenities: doc.amenities,
-    priceFrom: {
-      amountMinor,
-      currency,
-    },
+    priceFrom: amountMinor === null ? null : { amountMinor, currency },
     priceDetails: {
       periodDays,
-      perPersonMinor: doc.berths ? Math.round(amountMinor / doc.berths) : null,
-      bookingPrepayment: {
-        amountMinor: Math.round(amountMinor * CARD_PREPAYMENT_PCT),
-        currency,
-      },
+      perPersonMinor:
+        amountMinor !== null && doc.berths ? Math.round(amountMinor / doc.berths) : null,
+      bookingPrepayment:
+        amountMinor === null
+          ? null
+          : { amountMinor: Math.round(amountMinor * CARD_PREPAYMENT_PCT), currency },
     },
   };
 }
@@ -131,11 +144,4 @@ export function badgesFor(input: BadgeInput) {
   }
   if (input.rating >= 4.8) badges.push({ code: "top-rated", label: "Top rated" });
   return badges;
-}
-
-/** Shared with the My Bookings card's bookingStats placeholder. */
-export function stableCount(seed: string, min: number, max: number): number {
-  const spread = max - min + 1;
-  const value = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return min + (value % spread);
 }

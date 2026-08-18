@@ -219,6 +219,12 @@ export const restYachtCategorySchema = looseJsonObject({
   name: restInternationalTextSchema,
 });
 
+/** The vendor's rig reference, named per locale like every other catalogue list. */
+export const restSailTypeSchema = looseJsonObject({
+  id: z.number().int(),
+  name: restInternationalTextSchema,
+});
+
 /**
  * The hull dimensions and the category live here, not on `RestYacht`: the vendor
  * models them as properties of the model, so two sisterships share them.
@@ -244,6 +250,17 @@ export const restServiceSchema = looseJsonObject({
   id: z.number().int(),
   name: restInternationalTextSchema,
   depositInsurance: z.boolean().optional(),
+});
+
+/**
+ * The billing unit an extra's price is quoted in ("per booking", "per day").
+ * Same id/name shape as every other reference list; no response is recorded
+ * against it, so consumers must treat an unresolved measure as absent rather
+ * than assume a default unit.
+ */
+export const restPriceMeasureSchema = looseJsonObject({
+  id: z.number().int(),
+  name: restInternationalTextSchema.optional(),
 });
 
 /**
@@ -286,15 +303,70 @@ export const restYachtPictureSchema = looseJsonObject({
 });
 
 /**
- * Prices, services, extras and discounts, per season and per base. Only the
- * currency has a canonical home today; the rest is read from the retained raw
- * payload by the availability and quote paths.
+ * A priced service on a yacht's season entry (`RestYachtServicePrice`).
+ *
+ * `serviceId` points into the `services` catalogue, which is a different id space
+ * from `equipment` — the same number means different things in each, so the two
+ * must never be merged into one lookup.
+ *
+ * `price` and `amount` are equal across every recorded row; `price` is read and
+ * `amount` is the fallback so a vendor that starts distinguishing them (net vs
+ * gross, as `restExtraSchema` already does) does not silently drop the value.
+ */
+export const restYachtServicePriceSchema = looseJsonObject({
+  id: z.number().int().optional(),
+  serviceId: z.number().int(),
+  obligatory: z.boolean().optional(),
+  onRequestOnly: z.boolean().optional(),
+  availableOnAgencyPortal: z.boolean().optional(),
+  price: decimal.optional(),
+  amount: decimal.optional(),
+  currency: z.string().optional(),
+  priceMeasureId: z.number().int().optional(),
+  calculationType: z.string().optional(),
+  vatInPrice: z.string().optional(),
+  description: restInternationalTextSchema.optional(),
+  validForBases: z.array(z.number().int()).optional(),
+});
+
+/**
+ * A priced optional add-on keyed into the `equipment` id space
+ * (`RestYachtAdditionalEquipmentPrice`). It carries no `obligatory` flag: an
+ * additional-equipment row is optional by construction.
+ *
+ * `quantity` is the ceiling on how many may be taken, and 0 means unlimited
+ * rather than none — a row with quantity 0 is still sold.
+ */
+export const restYachtAdditionalEquipmentPriceSchema = looseJsonObject({
+  id: z.number().int().optional(),
+  equipmentId: z.number().int(),
+  availableOnAgencyPortal: z.boolean().optional(),
+  price: decimal.optional(),
+  amount: decimal.optional(),
+  currency: z.string().optional(),
+  priceMeasureId: z.number().int().optional(),
+  calculationType: z.string().optional(),
+  quantity: z.number().optional(),
+  vatInPrice: z.string().optional(),
+  condition: restInternationalTextSchema.optional(),
+});
+
+/**
+ * Prices, services, extras and discounts, per season and per base.
+ *
+ * `services` and `additionalYachtEquipment` are the catalogue's only source of
+ * priced extras: `standardYachtEquipment` on the yacht itself carries neither a
+ * price nor an obligatory flag, so everything it lists is included equipment.
+ * The offer-time `obligatoryExtras` on `freeYachts` prices the same services for
+ * one concrete period; these are the season-wide list prices behind them.
  */
 export const restSeasonSpecificDataSchema = looseJsonObject({
   seasonId: z.number().int().optional(),
   baseId: z.number().int().optional(),
   locationId: z.number().int().optional(),
   agencyVisible: z.boolean().optional(),
+  services: z.array(restYachtServicePriceSchema).optional(),
+  additionalYachtEquipment: z.array(restYachtAdditionalEquipmentPriceSchema).optional(),
   prices: z
     .array(
       looseJsonObject({
@@ -517,7 +589,12 @@ export const restPriceSchema = looseJsonObject({
   /** Security deposit for the period, authoritative over the catalogue value. */
   depositAmount: decimal.optional(),
   depositWhenInsuredAmount: decimal.optional(),
-  /** "I" included, "E" excluded. Varies per price list; see Q-PRICELIST-VAT. */
+  /**
+   * "I" included, "E" excluded. Read only as provenance: NauSYS confirmed
+   * (Aug 2026) that `clientPrice` is the final customer amount whatever this says,
+   * so nothing adds VAT to it. Q-PRICELIST-VAT survives only for the catalogue
+   * "from" price, which is a different number.
+   */
   vatInPrice: z.string().optional(),
   /**
    * What we earn, not what the customer pays. Typed so it is named and therefore
@@ -681,18 +758,43 @@ export const restOccupancyResponseSchema = looseJsonObject({
 
 // -- booking -----------------------------------------------------------------
 
+/**
+ * A client field the vendor may answer with `false` instead of omitting it or sending an
+ * empty string — observed on `company` for a private booking, and the same shape is
+ * plausible on every other text field of this block. Read `false` as absent; `true` is
+ * not tolerated, because a boolean-shaped *value* would be new information, not a blank.
+ */
+const blankableString = z
+  .union([z.string(), z.literal(false)])
+  .transform((value) => (value === false ? undefined : value))
+  .optional();
+
+/**
+ * `company` is overloaded on the wire: a company name on most clients, and a bare
+ * `true` on others — "this client is a company", not a company called `true`. Three
+ * of 851 live reservations send it that way, each on a client that has its own name,
+ * address and VAT number.
+ *
+ * Both booleans read as "no company name". Nothing downstream consumes the flag, and
+ * the alternative is what this replaced: `blankableString` rejected `true`, so every
+ * reservation belonging to a company client failed to parse — which on the booking
+ * path is a confirmed charter we would mark provider-rejected. Found by
+ * `scripts/probe-crewlist-link.ts` (Aug 2026).
+ */
+const companyName = z.union([z.string(), z.boolean().transform(() => undefined)]).optional();
+
 export const restClientSchema = looseJsonObject({
-  name: z.string().optional(),
-  surname: z.string().optional(),
-  company: z.string().optional(),
-  vatNr: z.string().optional(),
-  address: z.string().optional(),
-  zip: z.string().optional(),
-  city: z.string().optional(),
+  name: blankableString,
+  surname: blankableString,
+  company: companyName,
+  vatNr: blankableString,
+  address: blankableString,
+  zip: blankableString,
+  city: blankableString,
   countryId: z.number().int().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  mobile: z.string().optional(),
+  email: blankableString,
+  phone: blankableString,
+  mobile: blankableString,
 });
 export type RestClient = z.infer<typeof restClientSchema>;
 
@@ -737,6 +839,53 @@ export type RestYachtReservation = z.infer<typeof restYachtReservationSchema>;
  */
 export const restYachtReservationResponseSchema = restYachtReservationSchema.extend(statusFields);
 
+/** Only these reach a customer's browser as an href; anything else is dropped. */
+const CREW_LIST_LINK_SCHEMES = new Set(["http:", "https:"]);
+
+/**
+ * A value that is fit to be a link on our own pages: a string, and an absolute
+ * http(s) URL once trimmed. Everything else — a number, a null, a relative path, a
+ * `javascript:` payload — fails here rather than downstream.
+ */
+const crewListLinkSchema = z
+  .string()
+  .trim()
+  .refine((value) => {
+    const url = URL.parse(value);
+    return url !== null && CREW_LIST_LINK_SCHEMES.has(url.protocol);
+  });
+
+/**
+ * Matches `crewlistlink` and the casings the vendor might have used for it.
+ *
+ * A pattern rather than a declared field because the spelling is unverified: NauSYS
+ * answered our crew-list question (Aug 2026) calling it `crewlistlink`, but no
+ * reservation in our recorded test account carries the key at all, so it has never
+ * been seen on the wire. `looseJsonObject` keeps undeclared keys, so scanning them
+ * means the first live reservation that carries it works whichever convention the
+ * field follows, instead of the link silently never appearing.
+ */
+const CREW_LIST_LINK_KEY = /^crew[_-]?list[_-]?(link|url)$/i;
+
+/**
+ * The vendor's hosted crew-list page for this reservation (`crew.nausys.com`).
+ *
+ * Forwarding this to the customer is what NauSYS sanctioned in place of posting
+ * passenger data through `crewlist/v6/set2`, so it is read here and nowhere else.
+ * A value that is not an http(s) URL is dropped rather than passed on: this string
+ * becomes a link the customer clicks, and the vendor is not the right party to
+ * decide what scheme our pages will follow.
+ */
+export function crewListLinkOf(reservation: RestYachtReservation): string | undefined {
+  for (const [key, value] of Object.entries(reservation)) {
+    if (!CREW_LIST_LINK_KEY.test(key)) continue;
+
+    const link = crewListLinkSchema.safeParse(value);
+    if (link.success) return link.data;
+  }
+  return undefined;
+}
+
 export const restCreateInfoRequestSchema = z.object({
   credentials: restCredentialsSchema,
   client: restClientSchema,
@@ -751,7 +900,12 @@ export const restCreateOptionRequestSchema = z.object({
   credentials: restCredentialsSchema,
   id: z.number().int(),
   uuid: z.string(),
-  createWaitingOption: z.boolean().optional(),
+  /*
+   * A stringified boolean, and only that: the vendor deserializes this field as a String, so a
+   * JSON `false` kills the request inside their JSON-B parser and comes back as an HTML 500
+   * before any handler sees it. Typed here so the shape cannot regress to a boolean.
+   */
+  createWaitingOption: z.enum(["true", "false"]).optional(),
 });
 export type RestCreateOptionRequest = z.infer<typeof restCreateOptionRequestSchema>;
 

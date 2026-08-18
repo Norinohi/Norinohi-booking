@@ -7,6 +7,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { providerByKey } from "./provider-routing";
 import type {
   invoiceAdminRowSchema,
   invoiceListInputSchema,
@@ -16,6 +17,7 @@ import type {
 import { writeAuditLog } from "./audit";
 import { confirmBookingWithProvider } from "./booking-confirm";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { announcePaymentReceived } from "./payment-receipt";
 type ListInput = z.infer<typeof invoiceListInputSchema>;
 
 type ListResult = z.infer<typeof invoiceListSchema>;
@@ -121,9 +123,30 @@ export async function settleInvoiceRequest(
         metadata: input.note ? { note: input.note } : undefined,
       });
     });
+
+    // Inside the branch that actually settled it: staff opening the dialog twice must not
+    // mail the customer a second receipt for the same transfer.
+    const [settled] = await db
+      .select({ id: payment.id })
+      .from(payment)
+      .where(
+        and(
+          eq(payment.bookingId, found.invoice.bookingId),
+          eq(payment.idempotencyKey, `invoice:${found.invoice.id}`),
+        ),
+      )
+      .limit(1);
+
+    if (settled) await announcePaymentReceived(db, settled.id, "bank transfer");
   }
 
-  const outcome = await confirmBookingWithProvider(db, provider, found.invoice.bookingId);
+  // The booking records which vendor holds its option, and a settlement can be
+  // actioned by staff whose deployment is configured for the other one.
+  const outcome = await confirmBookingWithProvider(
+    db,
+    await providerByKey(provider, found.booking.provider),
+    found.invoice.bookingId,
+  );
 
   const [after] = await db
     .select({ invoice: invoiceRequest, booking, listingTitle: listing.title })
@@ -225,9 +248,19 @@ function present(
   return {
     id: invoice.id,
     bookingId: invoice.bookingId,
+    number: invoice.number,
+    issuedAt: invoice.issuedAt.toISOString(),
+    dueAt: invoice.dueAt.toISOString(),
     billingEmail: invoice.billingEmail,
+    billingName: invoice.billingName,
     companyName: invoice.companyName,
     vatNumber: invoice.vatNumber,
+    registrationNumber: invoice.registrationNumber,
+    addressLine1: invoice.addressLine1,
+    addressLine2: invoice.addressLine2,
+    city: invoice.city,
+    postalCode: invoice.postalCode,
+    countryCode: invoice.countryCode,
     amount: { amountMinor: invoice.amountMinor, currency: invoice.currency },
     status: invoice.status,
     bookingStatus: bookingRow.status,

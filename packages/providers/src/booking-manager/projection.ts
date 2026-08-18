@@ -16,6 +16,7 @@ import {
 import {
   canonicalCatalogueSchema,
   type CanonicalCatalogue,
+  type CanonicalExtra,
   type ProviderRecordSet,
 } from "../types";
 import {
@@ -419,6 +420,7 @@ function projectYacht(
     },
     media: mediaOf(yacht),
     amenities: amenityIdsOf(yacht).filter((id) => context.knownEquipment.has(id)),
+    extras: extrasOf(yacht, currency),
     texts: textsOf(yacht),
     checkinRules: checkinRulesOf(yacht),
     // The catalogue states no one-way periods; `/offers` is where a one-way charter
@@ -531,33 +533,56 @@ function textKindOf(category: string | undefined): TextKind {
 }
 
 /**
- * One rule, because the vendor states one turnaround day and one minimum duration
- * per yacht rather than a table of periods.
+ * One rule per day the vendor accepts a check-in on.
  *
- * `defaultCheckInDay` is read as ISO weekday numbering (1 Monday .. 7 Sunday) and
- * converted to the JavaScript numbering `listing_checkin_rule` stores. The spec
- * gives the field no range, so this is an assumption (Q-BM-CHECKIN-DAY); check-out
- * is taken to fall on the same weekday, which is what a whole-week charter does.
+ * `allCheckInDays` is preferred over `defaultCheckInDay`: a yacht that takes any
+ * day sends `[1..7]` with a default of `-1`, and collapsing that to a single
+ * turnaround would hide six sevenths of its availability.
+ *
+ * Check-out is taken to fall on the same weekday, which is what a whole-week
+ * charter does.
  */
 function checkinRulesOf(yacht: RestYacht) {
-  const weekday = weekdayOf(yacht.defaultCheckInDay);
   const minNights = positiveInt(yacht.minimumCharterDuration);
-  if (weekday === undefined && minNights === undefined) return [];
 
-  return [
-    {
-      checkinWeekday: weekday,
-      checkoutWeekday: weekday,
+  const days = Array.isArray(yacht.allCheckInDays)
+    ? yacht.allCheckInDays.map(weekdayOf).filter((day): day is number => day !== undefined)
+    : [];
+  const weekdays = days.length > 0 ? days : [weekdayOf(yacht.defaultCheckInDay)];
+
+  const rules = weekdays
+    .filter((day): day is number => day !== undefined)
+    .map((day) => ({
+      checkinWeekday: day,
+      checkoutWeekday: day,
       minNights,
       maxNights: undefined,
-    },
+    }));
+
+  if (rules.length > 0) return rules;
+  if (minNights === undefined) return [];
+  return [
+    { checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights: undefined },
   ];
 }
 
+/**
+ * Booking Manager numbers weekdays 1 Sunday .. 7 Saturday, so the JavaScript
+ * weekday `listing_checkin_rule` stores is one less.
+ *
+ * Confirmed against the live test fleet rather than the specification, which
+ * documents no range: every yacht there sends `defaultCheckInDay: 7`, and every
+ * booking in its 2026 availability starts on a Saturday. Reading the field as ISO
+ * (1 Monday .. 7 Sunday) put the turnaround on Sunday and would have synthesized
+ * every bookable week a day off the one the vendor actually sells.
+ *
+ * `-1` is the vendor's "any day", which arrives alongside a full `allCheckInDays`
+ * list, so it is dropped here rather than mapped.
+ */
 function weekdayOf(value: JsonField): number | undefined {
   const parsed = intOf(value);
-  if (parsed === undefined || parsed < 0 || parsed > 7) return undefined;
-  return parsed % 7;
+  if (parsed === undefined || parsed < 1 || parsed > 7) return undefined;
+  return parsed - 1;
 }
 
 /* ----------------------------------------------------------------- helpers */
@@ -589,6 +614,53 @@ function countryCodeOf(country: RestCountry): string {
   return short !== undefined && short.length <= 3
     ? short.toUpperCase()
     : `${PROVIDER_PREFIX}-${country.id}`;
+}
+
+/**
+ * The priced extras behind the listing's two paid sections. Unlike NauSYS these
+ * name themselves, so no reference list has to resolve them.
+ *
+ * The vendor hangs extras off products rather than off the yacht, and the same
+ * extra is normally repeated by every product that sells it. The default
+ * product's price is the published one, so its entries are taken first and later
+ * repeats of the same id are ignored.
+ */
+function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
+  const products = [...(yacht.products ?? [])].sort(
+    (left, right) =>
+      Number(right.isDefaultProduct === true) - Number(left.isDefaultProduct === true),
+  );
+
+  const chosen = new Map<string, CanonicalExtra>();
+  for (const product of products) {
+    for (const item of product.extras ?? []) {
+      const externalId = idOf(item.id);
+      const label = text(item.name);
+      // An extra with no id cannot be kept stable across syncs, and one with no
+      // name cannot be shown to a buyer.
+      if (externalId === null || label === undefined) continue;
+      if (chosen.has(externalId)) continue;
+
+      const priceCurrency = currencyOf(item.currency, fallbackCurrency);
+      const priceMinor = minorOf(item.price, priceCurrency);
+      if (priceMinor === undefined) continue;
+
+      chosen.set(externalId, {
+        // The vendor numbers extras in one space of its own, with no separate
+        // equipment pricing list to tell apart.
+        kind: "service",
+        externalId,
+        name: label,
+        obligatory: item.obligatory === true,
+        priceMinor,
+        priceCurrency,
+        priceMeasure: text(item.unit),
+        calculationType: undefined,
+        onRequestOnly: false,
+      });
+    }
+  }
+  return [...chosen.values()];
 }
 
 /**

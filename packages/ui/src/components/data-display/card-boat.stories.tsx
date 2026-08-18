@@ -20,3 +20,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+/** No image on the record — the media box falls back to a neutral tile with a picture glyph. */
+export const NoImage: Story = { args: { image: undefined } };
+
+/** Image URL that fails to load — the img's error event swaps in the same fallback tile. */
+export const BrokenImage: Story = { args: { image: "/__broken-image.png" } };

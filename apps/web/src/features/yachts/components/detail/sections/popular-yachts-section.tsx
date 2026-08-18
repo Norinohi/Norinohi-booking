@@ -20,6 +20,7 @@ import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
+import { boatCardPrice } from "@/lib/boat-card-fields";
 import { slugToLabel } from "@/lib/slug-to-label";
 import DetailSection from "./detail-section";
 
@@ -75,14 +76,14 @@ export default function PopularYachtsSection() {
                 imageAlt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
                 location={`${yacht.base.location}, ${yacht.base.country}`}
                 title={yacht.title}
-                rating={yacht.rating}
+                rating={yacht.rating > 0 ? yacht.rating : undefined}
                 tags={[
                   { label: yacht.category, icon: <Anchor /> },
                   ...(yacht.crewType
                     ? [{ label: slugToLabel(yacht.crewType), icon: <Users /> }]
                     : []),
                 ]}
-                price={formatMoney(yacht.priceFrom.amountMinor)}
+                price={boatCardPrice(tCard, yacht, formatMoney)}
                 priceSuffix={t("popular.perPerson")}
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}

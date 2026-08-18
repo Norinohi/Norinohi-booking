@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
 import { useParams } from "next/navigation";
@@ -13,12 +14,25 @@ import {
   useState,
 } from "react";
 
-import type { CrewType, WeekSlot } from "@/components/shared/data-display/booking-summary";
+import type { CharterConstraints, DatePeriod } from "@yacht-charter/api/lib/availability-rules";
+import { rangeStatus } from "@yacht-charter/api/lib/availability-rules";
+
+import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
+import type { CrewType } from "@/components/shared/data-display/booking-summary";
 import { useListingDetail } from "@/features/yachts";
 import { dayFromNative } from "@/lib/date";
 
-import { availabilityCalendarQueryOptions, type Quote } from "../api/queries";
+import { availabilityConstraintsQueryOptions, type Quote } from "../api/queries";
 import { useQuote } from "../hooks/use-quote";
+
+/**
+ * The vendor refusing a period comes back as CONFLICT. Availability is inferred from
+ * occupancy, so this is an expected answer rather than a failure, and the caller narrows
+ * the calendar instead of surfacing an error page.
+ */
+function isSlotConflict(error: Error): boolean {
+  return error instanceof ORPCError && error.code === "CONFLICT";
+}
 
 const DEFAULT_GUESTS = 2;
 const CALENDAR_MONTHS = 6;
@@ -31,16 +45,22 @@ type BookingContextValue = {
   slug: string;
   listing: ListingDetail;
   quote: Quote | null;
-  slots: WeekSlot[];
+  constraints: CharterConstraints;
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   guests: number;
   isPending: boolean;
-  selectSlot: (checkIn: string) => void;
+  /** The last selection was refused by the provider; the sidebar asks for another date. */
+  slotError: boolean;
+  selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
   setGuests: (next: number) => void;
   /** Step 2 hands its selection here — reprices the current quote's extras in place. */
-  setExtras: (extras: string[]) => void;
+  setExtras: (extras: string[]) => Promise<void>;
+  /** Applies a promo code to the live quote, or clears it with `null`. */
+  applyPromo: (code: string | null) => void;
+  /** Spends the caller's referral credit on the live quote, or takes it back off. */
+  applyCredit: (spend: boolean) => void;
   /** The held booking, set by `createHold` at Confirm; the payment step and confirmation key on it. */
   bookingId: string | null;
   setBookingId: (id: string | null) => void;
@@ -51,8 +71,8 @@ const BookingContext = createContext<BookingContextValue | null>(null);
 /*
  * Owns the one quote both surfaces of the booking flow share. The detail page wraps only the
  * sidebar; the wizard wraps the sidebar and the steps together, so Extras can reprice and Review
- * can read the same live quote. Charters sell in fixed weekly slots, so the date control is a slot
- * picker; the quote keys on `listing.id`, never the URL slug.
+ * can read the same live quote. The date control decides from the listing's published constraints
+ * rather than from pre-cut periods; the quote keys on `listing.id`, never the URL slug.
  */
 export function BookingProvider({
   quoteId,
@@ -80,8 +100,8 @@ export function BookingProvider({
     };
   }, []);
 
-  const { data: calendar } = useQuery({
-    ...availabilityCalendarQueryOptions({
+  const { data: published } = useQuery({
+    ...availabilityConstraintsQueryOptions({
       listingId,
       from: calWindow.from,
       to: calWindow.to,
@@ -90,16 +110,28 @@ export function BookingProvider({
     enabled: Boolean(listingId),
   });
 
-  const slots: WeekSlot[] = useMemo(
-    () =>
-      (calendar?.slots ?? [])
-        .filter((slot) => slot.status === "available")
-        .map((slot) => ({
-          checkIn: slot.startDate,
-          checkOut: slot.endDate,
-          priceMinor: slot.price?.amountMinor ?? 0,
-        })),
-    [calendar],
+  /*
+   * Periods a live quote refused. The constraints are what the provider published, and a
+   * refusal is it correcting them, so the period stays out for the rest of the visit rather
+   * than inviting the same 409 again.
+   */
+  const [refusedPeriods, setRefusedPeriods] = useState<readonly DatePeriod[]>([]);
+  const [slotError, setSlotError] = useState(false);
+
+  /*
+   * A period the vendor refused stays refused — it said no and it is the authority — but only
+   * that period. Adding it to `occupied` made the calendar infer the days were taken, which
+   * blocked every overlapping range without ever asking: refuse a fortnight from a Saturday
+   * and the free week starting the same day vanished with it.
+   */
+  const constraints: CharterConstraints = useMemo(
+    () => ({
+      rules: published?.rules ?? [],
+      occupied: published?.occupied ?? [],
+      priced: published?.priced ?? [],
+      refused: refusedPeriods,
+    }),
+    [published, refusedPeriods],
   );
 
   const loadedRef = useRef(false);
@@ -115,11 +147,19 @@ export function BookingProvider({
     if (quote.crewType) setCrewChoice(quote.crewType);
   }, [quote]);
 
-  function selectSlot(checkIn: string) {
-    const slot = slots.find((entry) => entry.checkIn === checkIn);
-    if (!slot) return;
-    const dates = { checkIn: slot.checkIn, checkOut: slot.checkOut };
-    void (quote ? repriceWith(dates) : quoteFor({ ...dates, guests, crewType }));
+  function selectPeriod(period: CharterPeriod) {
+    if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;
+    setSlotError(false);
+    void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType })).catch(
+      (error: Error) => {
+        if (!isSlotConflict(error)) throw error;
+        setRefusedPeriods((current) => [
+          ...current,
+          { startDate: period.checkIn, endDate: period.checkOut },
+        ]);
+        setSlotError(true);
+      },
+    );
   }
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -136,23 +176,49 @@ export function BookingProvider({
     debounceRef.current = setTimeout(() => void repriceWith({ guests: next }), REPRICE_DEBOUNCE_MS);
   }
 
-  function setExtras(extras: string[]) {
-    if (quote) void repriceWith({ extras });
+  /*
+   * Awaited by its callers, unlike the other controls. The extras step commits once
+   * on Continue rather than on every checkbox, and Confirm may commit them too, so a
+   * caller has to be able to wait for the superseding quote before holding against it.
+   */
+  async function setExtras(extras: string[]) {
+    if (quote) await repriceWith({ extras });
+  }
+
+  /*
+   * Reprice carries the previous quote's code forward when `discountCode` is omitted, so this
+   * is the only place it moves: a code passed here sticks across every later date, guest and
+   * extras change, and `null` is what removes it.
+   */
+  function applyPromo(code: string | null) {
+    if (quote) void repriceWith({ discountCode: code });
+  }
+
+  /*
+   * Carried forward the same way a code is: reprice keeps the previous quote's choice when
+   * `applyCredit` is omitted, so credit survives every later date, guest and extras change.
+   * How much is actually spendable is the server's call, not this one's.
+   */
+  function applyCredit(spend: boolean) {
+    if (quote) void repriceWith({ applyCredit: spend });
   }
 
   const value: BookingContextValue = {
     slug,
     listing,
     quote,
-    slots,
+    constraints,
     crewType,
     crewOptions: listing?.crew.options ?? [],
     guests,
     isPending,
-    selectSlot,
+    slotError,
+    selectPeriod,
     setCrew,
     setGuests,
     setExtras,
+    applyPromo,
+    applyCredit,
     bookingId,
     setBookingId,
   };

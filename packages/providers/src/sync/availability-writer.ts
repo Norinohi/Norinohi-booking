@@ -1,10 +1,16 @@
-import { availabilitySlot } from "@yacht-charter/db/schema/availability";
-import { listing, listingCheckinRule } from "@yacht-charter/db/schema/listing";
+import {
+  availabilitySlot,
+  listingFreePeriod,
+  listingPricePeriod,
+} from "@yacht-charter/db/schema/availability";
+import { listing } from "@yacht-charter/db/schema/listing";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, gte, inArray, isNotNull, lt, lte, sql } from "drizzle-orm";
 import { z } from "zod";
+
+import { describeErrorChain } from "../shared/error-chain";
 
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
@@ -64,20 +70,12 @@ export interface DateWindow {
   end: string;
 }
 
-export interface CheckinRule {
-  /** JavaScript weekday, 0 Sunday to 6 Saturday, as `listing_checkin_rule` stores it. */
-  checkinWeekday: number | null;
-  checkoutWeekday: number | null;
-  minNights: number | null;
-}
-
 export interface ListingRef {
   listingId: string;
   listingSourceId: string | null;
 }
 
 export interface ListingAvailabilityPlan {
-  checkinRules: CheckinRule[];
   prices: SeasonalPrice[];
   currency: string | null;
 }
@@ -169,6 +167,12 @@ export interface AvailabilitySyncStore {
   listListingsForScope(scopeKey: string): Promise<ListingRef[]>;
   loadPlans(listingIds: string[]): Promise<Map<string, ListingAvailabilityPlan>>;
   writeSlots(slots: AvailabilitySlotWrite[]): Promise<void>;
+  /** Replaces the listing's free periods inside the years the dump covered. */
+  writeFreePeriods(ref: ListingRef, years: readonly number[], periods: FreePeriod[]): Promise<void>;
+  /** The provider's published rates, stored as the periods it published them for. Returns the
+   * number of distinct periods written, which is below the input whenever a yacht appears in
+   * more than one price list. */
+  writePricePeriods(ref: ListingRef, prices: readonly SeasonalPrice[]): Promise<number>;
   /** False when the period is held by an occupied slot, which the vendor's own dump wins. */
   confirmSlot(input: ConfirmSlotInput): Promise<boolean>;
   sweepScope(input: AvailabilitySweepInput): Promise<number>;
@@ -182,135 +186,59 @@ export interface AvailabilitySyncStore {
   rebuildSearch(listingIds: string[]): Promise<void>;
 }
 
-/* --------------------------------------------------------------- synthesis */
-
-/**
- * What a listing gets when `listing_checkin_rule` is empty. Saturday to Saturday
- * for seven nights is the Adriatic bareboat norm and the only period the recorded
- * NauSYS `checkInPeriods` have ever shown, but it is still a guess: the count is
- * reported so a run that guesses for half the fleet is visible rather than silent.
- */
-export const DEFAULT_CHECKIN_RULE: CheckinRule = {
-  checkinWeekday: 6,
-  checkoutWeekday: 6,
-  minNights: 7,
-};
+/* ------------------------------------------------------------ free periods */
 
 const DAY_MS = 86_400_000;
-const MAX_CHECKOUT_STRETCH_DAYS = 6;
 
-export interface SynthesisInput {
+export interface FreePeriodInput {
   /** Only ranges whose occupancy we actually hold; see `runAvailabilitySync`. */
   windows: readonly DateWindow[];
-  rules: readonly CheckinRule[];
   occupied: readonly { startDate: string; endDate: string }[];
-  prices?: readonly SeasonalPrice[];
-  /** Used when no seasonal price covers the period. */
-  currency?: string | null;
 }
 
-export interface SynthesizedSlot {
+export interface FreePeriod {
   startDate: string;
   endDate: string;
-  priceMinor: number | null;
-  currency: string | null;
-  minNights: number;
-  checkinWeekday: number;
-  checkoutWeekday: number;
-}
-
-export interface SynthesisResult {
-  slots: SynthesizedSlot[];
-  usedFallback: boolean;
 }
 
 /**
- * OUR INFERENCE, not the provider's word.
+ * The stretches with nothing sold in them: the complement of occupancy inside the windows
+ * whose dumps arrived whole.
  *
- * Occupancy tells us what is taken; nothing tells us what is free. These slots are
- * derived by walking the listing's own check-in rule across the horizon and removing
- * anything the provider has already sold, which is why every one of them is written
- * with `availabilityConfirmed = false`. The read model surfaces that as
- * `has_unconfirmed_availability` so the card can say "subject to confirmation", and
- * nothing in this file may flip it true: only a live provider answer can.
+ * This replaces a synthesis that asserted whole charters. That one walked the listing's
+ * check-in rule and stepped a week at a time, so it published one reading of the rule as
+ * though it were the offer: a listing selling any three nights from any day became
+ * three-night blocks once a week, and every period in between was unreachable. Occupancy is
+ * the only thing the provider actually states, so it is the only thing inverted here.
+ * Whether a particular charter fits inside a free stretch is decided against the rules, at
+ * the point someone asks for it.
+ *
+ * Half-open, so a charter ending the day the next begins leaves no gap between them.
  */
-export function synthesizeAvailableSlots(input: SynthesisInput): SynthesisResult {
-  const usable = input.rules.filter(
-    (rule) => rule.checkinWeekday !== null || rule.minNights !== null,
-  );
-  const rules = usable.length > 0 ? usable : [DEFAULT_CHECKIN_RULE];
-  const byPeriod = new Map<string, SynthesizedSlot>();
+export function freePeriodsFrom(input: FreePeriodInput): FreePeriod[] {
+  const periods: FreePeriod[] = [];
 
   for (const window of input.windows) {
-    for (const rule of rules) {
-      const checkinWeekday = rule.checkinWeekday ?? DEFAULT_CHECKIN_RULE.checkinWeekday ?? 6;
-      let start = firstWeekdayOnOrAfter(window.start, checkinWeekday);
+    const inside = input.occupied
+      .filter((interval) => interval.startDate < window.end && window.start < interval.endDate)
+      .map((interval) => ({
+        startDate: interval.startDate < window.start ? window.start : interval.startDate,
+        endDate: interval.endDate > window.end ? window.end : interval.endDate,
+      }))
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-      while (start <= window.end) {
-        const nights = durationOf(rule, start);
-        const endDate = addDays(start, nights);
-        // A candidate that leaves the window leaves the part of the calendar whose
-        // occupancy we fetched, so we would be guessing against unknown bookings.
-        if (endDate > window.end || overlapsAny(start, endDate, input.occupied)) {
-          start = addDays(start, 7);
-          continue;
-        }
-
-        const key = `${start}|${endDate}`;
-        if (!byPeriod.has(key)) {
-          // Seasonal prices come from WEEKLY price lists, so they only describe a
-          // full week. NauSYS publishes daily rates separately and they are not a
-          // seventh of the weekly one, so a shorter or longer period cannot be
-          // derived from this number: pricing a 1-night slot at the week rate
-          // advertises roughly seven times the real price. Leave those unpriced
-          // until a live quote fills them in.
-          const price = nights === WEEKLY_NIGHTS ? priceAt(start, input.prices) : null;
-          byPeriod.set(key, {
-            startDate: start,
-            endDate,
-            priceMinor: price?.priceMinor ?? null,
-            currency: price?.currency ?? input.currency ?? null,
-            minNights: nights,
-            checkinWeekday,
-            checkoutWeekday: weekdayOf(endDate),
-          });
-        }
-        start = addDays(start, 7);
+    let cursor = window.start;
+    for (const interval of inside) {
+      if (interval.startDate > cursor) {
+        periods.push({ startDate: cursor, endDate: interval.startDate });
       }
+      // Overlapping bookings must not walk the cursor backwards and re-open sold time.
+      if (interval.endDate > cursor) cursor = interval.endDate;
     }
+    if (cursor < window.end) periods.push({ startDate: cursor, endDate: window.end });
   }
 
-  return {
-    slots: [...byPeriod.values()].sort((a, b) => a.startDate.localeCompare(b.startDate)),
-    usedFallback: usable.length === 0,
-  };
-}
-
-function durationOf(rule: CheckinRule, start: string): number {
-  const minNights = rule.minNights ?? DEFAULT_CHECKIN_RULE.minNights ?? 7;
-  if (rule.checkoutWeekday === null) return minNights;
-
-  // The rule names both ends, so the period runs to the first check-out day that
-  // still satisfies the minimum rather than to the minimum itself.
-  for (let nights = minNights; nights <= minNights + MAX_CHECKOUT_STRETCH_DAYS; nights += 1) {
-    if (weekdayOf(addDays(start, nights)) === rule.checkoutWeekday) return nights;
-  }
-  return minNights;
-}
-
-/** Half-open: a charter ending the day the next begins is a turnaround, not a clash. */
-function overlapsAny(
-  start: string,
-  end: string,
-  intervals: readonly { startDate: string; endDate: string }[],
-): boolean {
-  return intervals.some((interval) => start < interval.endDate && interval.startDate < end);
-}
-
-const WEEKLY_NIGHTS = 7;
-
-function priceAt(date: string, prices: readonly SeasonalPrice[] | undefined) {
-  return prices?.find((price) => price.startDate <= date && date <= price.endDate) ?? null;
+  return periods.sort((a, b) => a.startDate.localeCompare(b.startDate));
 }
 
 /* ------------------------------------------------------------- date helpers */
@@ -341,15 +269,6 @@ export function addMonths(iso: string, months: number): string {
   return toIso(target.getTime());
 }
 
-function weekdayOf(iso: string): number {
-  return new Date(toUtcMs(iso)).getUTCDay();
-}
-
-function firstWeekdayOnOrAfter(iso: string, weekday: number): string {
-  const shift = (weekday - weekdayOf(iso) + 7) % 7;
-  return shift === 0 ? iso : addDays(iso, shift);
-}
-
 function clip(window: DateWindow, other: DateWindow): DateWindow | null {
   const start = window.start > other.start ? window.start : other.start;
   const end = window.end < other.end ? window.end : other.end;
@@ -370,11 +289,10 @@ export interface AvailabilitySyncSummary {
   syncRunId: string;
   status: "success" | "partial" | "failed";
   occupiedSlots: number;
-  synthesizedSlots: number;
+  freePeriods: number;
   confirmedSlots: number;
   skippedYachts: number;
-  /** Listings priced off the documented default because they carry no check-in rule. */
-  fallbackListings: number;
+  pricePeriods: number;
   deletedSlots: number;
   sweptScopes: number;
   failedCount: number;
@@ -402,7 +320,7 @@ export interface RunAvailabilitySyncOptions {
 const thrownStringSchema = z.string();
 
 function messageOf(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) return describeErrorChain(error);
   return thrownStringSchema.safeParse(error).data ?? "Unknown availability sync failure";
 }
 
@@ -433,10 +351,10 @@ export async function runAvailabilitySync(
   const touched = new Set<string>();
 
   let occupiedSlots = 0;
-  let synthesizedSlots = 0;
+  let freePeriods = 0;
   let confirmedSlots = 0;
   let skippedYachts = 0;
-  let fallbackListings = 0;
+  let pricePeriods = 0;
   let deletedSlots = 0;
   let sweptScopes = 0;
   let failedCount = 0;
@@ -530,35 +448,28 @@ export async function runAvailabilitySync(
 
       for (const ref of listingRefs) {
         const plan = plans.get(ref.listingId);
-        const synthesis = synthesizeAvailableSlots({
-          windows,
-          rules: plan?.checkinRules ?? [],
-          occupied: occupiedByListing.get(ref.listingId) ?? [],
-          prices: plan?.prices,
-          currency: plan?.currency ?? null,
-        });
-        if (synthesis.usedFallback) fallbackListings += 1;
-        if (synthesis.slots.length === 0) continue;
 
-        await store.writeSlots(
-          synthesis.slots.map((slot) => ({
-            listingId: ref.listingId,
-            listingSourceId: ref.listingSourceId,
-            startDate: slot.startDate,
-            endDate: slot.endDate,
-            status: "available" as const,
-            availabilityConfirmed: false,
-            priceMinor: slot.priceMinor,
-            currency: slot.currency,
-            minNights: slot.minNights,
-            checkinWeekday: slot.checkinWeekday,
-            checkoutWeekday: slot.checkoutWeekday,
-            sourceHash: `synth:${ref.listingId}:${slot.startDate}:${slot.endDate}:${slot.priceMinor ?? ""}`,
-            seenAt: startedAt,
-          })),
-        );
-        synthesizedSlots += synthesis.slots.length;
-        touched.add(ref.listingId);
+        /*
+         * The provider's rates, kept as the periods it published. Written before the free
+         * periods so a listing that turns out to be fully booked still carries its prices:
+         * the card quotes "from" off these, not off what happens to be unsold today.
+         */
+        if (plan?.prices?.length) {
+          pricePeriods += await store.writePricePeriods(ref, plan.prices);
+          touched.add(ref.listingId);
+        }
+
+        const free = freePeriodsFrom({
+          windows,
+          occupied: occupiedByListing.get(ref.listingId) ?? [],
+        });
+        /*
+         * Written even when empty: a boat that just sold its last week must lose the free
+         * periods it had, and the sweep inside `writeFreePeriods` is what removes them.
+         */
+        await store.writeFreePeriods(ref, cleanYears, free);
+        freePeriods += free.length;
+        if (free.length > 0) touched.add(ref.listingId);
       }
 
       // Occupancy is a full dump per (company, year), so anything inside a year we
@@ -642,9 +553,9 @@ export async function runAvailabilitySync(
   const status = aborted ? "failed" : failedCount > 0 ? "partial" : "success";
   await store.closeRun({
     status,
-    // Slot writes are upserts, so "created" is every slot this run asserted and
-    // "updated" is the hot pass upgrading one to a confirmed price.
-    createdCount: occupiedSlots + synthesizedSlots,
+    // Writes are upserts, so "created" is everything this run asserted and "updated" is
+    // the hot pass turning an inferred free stretch into a confirmed, priced offer.
+    createdCount: occupiedSlots + freePeriods,
     updatedCount: confirmedSlots,
     skippedCount: skippedYachts,
     failedCount,
@@ -655,10 +566,10 @@ export async function runAvailabilitySync(
     syncRunId: store.syncRunId,
     status,
     occupiedSlots,
-    synthesizedSlots,
+    freePeriods,
     confirmedSlots,
     skippedYachts,
-    fallbackListings,
+    pricePeriods,
     deletedSlots,
     sweptScopes,
     failedCount,
@@ -742,16 +653,7 @@ export function createDrizzleAvailabilitySyncStore(
       const plans = new Map<string, ListingAvailabilityPlan>();
       if (listingIds.length === 0) return plans;
 
-      const [rules, listings, prices] = await Promise.all([
-        db
-          .select({
-            listingId: listingCheckinRule.listingId,
-            checkinWeekday: listingCheckinRule.checkinWeekday,
-            checkoutWeekday: listingCheckinRule.checkoutWeekday,
-            minNights: listingCheckinRule.minNights,
-          })
-          .from(listingCheckinRule)
-          .where(inArray(listingCheckinRule.listingId, listingIds)),
+      const [listings, prices] = await Promise.all([
         db
           .select({ id: listing.id, currency: listing.defaultCurrency })
           .from(listing)
@@ -762,18 +664,11 @@ export function createDrizzleAvailabilitySyncStore(
       const planFor = (listingId: string) => {
         const existing = plans.get(listingId);
         if (existing) return existing;
-        const plan: ListingAvailabilityPlan = { checkinRules: [], prices: [], currency: null };
+        const plan: ListingAvailabilityPlan = { prices: [], currency: null };
         plans.set(listingId, plan);
         return plan;
       };
 
-      for (const row of rules) {
-        planFor(row.listingId).checkinRules.push({
-          checkinWeekday: row.checkinWeekday,
-          checkoutWeekday: row.checkoutWeekday,
-          minNights: row.minNights,
-        });
-      }
       for (const row of listings) {
         planFor(row.id).currency = row.currency;
       }
@@ -782,6 +677,82 @@ export function createDrizzleAvailabilitySyncStore(
       }
 
       return plans;
+    },
+
+    async writeFreePeriods(ref, years, periods) {
+      /*
+       * Replace within the years the dump covered, never outside them. A year whose fetch
+       * failed keeps whatever it had: deleting there would erase availability on the
+       * strength of a request that never completed.
+       */
+      for (const year of years) {
+        await db
+          .delete(listingFreePeriod)
+          .where(
+            and(
+              eq(listingFreePeriod.listingId, ref.listingId),
+              gte(listingFreePeriod.startDate, `${year}-01-01`),
+              lte(listingFreePeriod.startDate, `${year}-12-31`),
+            ),
+          );
+      }
+
+      if (periods.length === 0) return;
+      await db
+        .insert(listingFreePeriod)
+        .values(
+          periods.map((period) => ({
+            listingId: ref.listingId,
+            listingSourceId: ref.listingSourceId,
+            startDate: period.startDate,
+            endDate: period.endDate,
+          })),
+        )
+        .onConflictDoNothing();
+    },
+
+    async writePricePeriods(ref, prices) {
+      /*
+       * A yacht can appear in more than one price list, and the same period then arrives
+       * twice. Postgres refuses an ON CONFLICT that would touch one row twice in a single
+       * statement, so the batch is deduplicated on the conflict target before it is sent.
+       */
+      const unique = new Map<string, SeasonalPrice>();
+      for (const price of prices) {
+        unique.set(`${price.startDate}|${price.endDate}`, price);
+      }
+      if (unique.size === 0) return 0;
+
+      await db
+        .insert(listingPricePeriod)
+        .values(
+          [...unique.values()].map((price) => ({
+            listingId: ref.listingId,
+            listingSourceId: ref.listingSourceId,
+            startDate: price.startDate,
+            endDate: price.endDate,
+            // The loader maps WEEKLY lists only; NauSYS publishes dailies separately and a
+            // weekly rate is not a seventh of one, so they cannot be folded together here.
+            kind: "weekly" as const,
+            priceMinor: price.priceMinor,
+            currency: price.currency,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [
+            listingPricePeriod.listingId,
+            listingPricePeriod.kind,
+            listingPricePeriod.startDate,
+            listingPricePeriod.endDate,
+          ],
+          set: {
+            priceMinor: sql`excluded.price_minor`,
+            currency: sql`excluded.currency`,
+            updatedAt: sql`now()`,
+          },
+        });
+
+      return unique.size;
     },
 
     async writeSlots(slots) {
@@ -973,10 +944,10 @@ export async function runAvailabilitySyncJob(
       syncRunId,
       status: "success",
       occupiedSlots: 0,
-      synthesizedSlots: 0,
+      freePeriods: 0,
       confirmedSlots: 0,
       skippedYachts: 0,
-      fallbackListings: 0,
+      pricePeriods: 0,
       deletedSlots: 0,
       sweptScopes: 0,
       failedCount: 0,

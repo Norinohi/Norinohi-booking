@@ -57,6 +57,11 @@ export const persistedQuoteSchema = providerQuoteSchema.extend({
     .nullable(),
   /** Referral credit absorbed by this quote, redeemed for real at checkout. */
   creditApplied: moneySchema.nullable(),
+  /**
+   * What the signed-in caller's balance could absorb here, applied or not. Null
+   * for a visitor with no balance, and for a trip under the credit minimum.
+   */
+  creditAvailable: moneySchema.nullable(),
   /** Every rule and discount that moved the price, in the order applied. */
   adjustments: z.array(appliedAdjustmentSchema),
 });

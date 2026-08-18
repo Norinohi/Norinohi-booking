@@ -16,20 +16,43 @@ const draft: BookingDraft = {
 };
 
 describe("MockInventoryProvider", () => {
-  it("returns a repriced quote when optional extras are selected", async () => {
+  /*
+   * The point of the fix: the total moves by the extra's own price. It used to move
+   * by a flat 1500 whatever was ticked, because the selection was matched against a
+   * code space it was never in, and a synthetic delta stood in for repricing.
+   */
+  it("moves the total by the selected extra's own price", async () => {
     const provider = new MockInventoryProvider();
-    const quote = await provider.getQuote({
+    const request = {
       listingId: "ylst_yacht-lagoon-42-aurora",
       checkIn: "2026-08-08",
       checkOut: "2026-08-15",
       guests: 8,
-      extras: ["skipper"],
       currency: "EUR",
-    });
+    };
 
-    expect(quote.repriced).toBe(true);
-    expect(quote.total.amountMinor).toBe(706500);
-    expect(quote.deposit.amountMinor).toBe(353250);
+    const without = await provider.getQuote({ ...request, extras: [] });
+    // Stand-up paddleboard, 120.00 in the fixture.
+    const with_ = await provider.getQuote({ ...request, extras: ["equipment:sup"] });
+
+    expect(with_.total.amountMinor - without.total.amountMinor).toBe(12_000);
+    expect(with_.deposit.amountMinor).toBe(Math.round(with_.total.amountMinor / 2));
+  });
+
+  it("ignores a selection the fixture does not carry rather than billing it", async () => {
+    const provider = new MockInventoryProvider();
+    const request = {
+      listingId: "ylst_yacht-lagoon-42-aurora",
+      checkIn: "2026-08-08",
+      checkOut: "2026-08-15",
+      guests: 8,
+      currency: "EUR",
+    };
+
+    const baseline = await provider.getQuote({ ...request, extras: [] });
+    const bogus = await provider.getQuote({ ...request, extras: ["equipment:not-a-thing"] });
+
+    expect(bogus.total.amountMinor).toBe(baseline.total.amountMinor);
   });
 
   it("prices only the skipper for a skippered charter, and every role for full crew", async () => {
@@ -84,15 +107,16 @@ describe("MockInventoryProvider", () => {
       checkIn: "2026-08-08",
       checkOut: "2026-08-15",
       guests: 8,
-      extras: ["sup"],
+      extras: ["equipment:sup"],
       crewType: "skipper",
       currency: "EUR",
     });
 
     const groupOf = (code: string) => quote.lines.find((line) => line.code === code)?.group;
 
-    expect(groupOf("transit-log")).toBe("mandatory");
-    expect(groupOf("sup")).toBe("optional");
+    expect(groupOf("equipment:transit-log")).toBe("mandatory");
+    expect(groupOf("equipment:sup")).toBe("optional");
+    // Crew keeps the bare amenity code the listing's Crew control offers.
     expect(groupOf("skipper")).toBe("crew");
     // The charter itself is in no section: it is the price the sections hang off.
     expect(groupOf("base-charter")).toBeUndefined();
@@ -169,7 +193,6 @@ describe("MockInventoryProvider", () => {
     expect(quote.listingId).toBe("ylst_yacht-lagoon-52f-solenne");
     expect(quote.checkIn).toBe("2026-08-22");
     expect(quote.checkOut).toBe("2026-08-29");
-    expect(quote.repriced).toBe(true);
   });
 
   it("advertises the hold it actually grants", () => {

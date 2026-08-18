@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { listSelectableExtraCodes } from "@yacht-charter/db/search";
 import { listing } from "@yacht-charter/db/schema/listing";
 import {
   priceAdjustmentSnapshot,
@@ -46,6 +47,11 @@ export type PersistedQuote = ProviderQuote & {
   discountRejected: DiscountRejection | null;
   /** Referral credit absorbed by this quote, redeemed for real at checkout. */
   creditApplied: { amountMinor: number; currency: string } | null;
+  /**
+   * What the caller's balance could absorb on this quote, whether or not it was
+   * taken. The sidebar needs a figure to offer before anyone has said yes.
+   */
+  creditAvailable: { amountMinor: number; currency: string } | null;
   adjustments: AppliedAdjustment[];
 };
 
@@ -71,6 +77,7 @@ export async function createQuote(
   input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
   userId: string | null,
 ): Promise<PersistedQuote> {
+  await assertSelectableExtras(db, input.listingId, input.extras ?? []);
   const priced = await priceOrConflict(provider, input);
   return persistPricedQuote(db, priced, {
     userId,
@@ -105,6 +112,14 @@ export async function repriceQuote(
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
   const requestedExtras = changes.extras ?? existing.extras;
+
+  // Only what the caller actually sent. A value carried forward is already-written
+  // history, and refusing to re-price a date change because a quote from before
+  // this listing's catalogue was resynced names an extra it no longer sells would
+  // strand the customer on a quote they cannot edit.
+  if (changes.extras !== undefined) {
+    await assertSelectableExtras(db, existing.listingId, changes.extras);
+  }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
@@ -172,6 +187,32 @@ export async function assertQuoteIsFresh(db: Database, quoteId: string, now = ne
   }
 
   return row;
+}
+
+/**
+ * Refuses a selection this listing does not sell, or whose provider cannot price it
+ * at quote time.
+ *
+ * Rejected rather than dropped. Nothing used to check these: an arbitrary string
+ * was persisted onto the quote, carried into the booking draft, and then ignored by
+ * the adapter, so the customer was shown a total that silently omitted what they
+ * thought they had bought.
+ */
+async function assertSelectableExtras(
+  db: Database,
+  listingId: string,
+  extras: readonly string[],
+): Promise<void> {
+  if (extras.length === 0) return;
+
+  const selectable = await listSelectableExtraCodes(db, listingId);
+  const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
+  if (unsold.length === 0) return;
+
+  throw new ORPCError("BAD_REQUEST", {
+    message: `This listing does not sell: ${unsold.join(", ")}`,
+    data: { code: "EXTRA_NOT_SELECTABLE", extras: unsold },
+  });
 }
 
 async function priceOrConflict(
@@ -312,36 +353,29 @@ async function applyWelcomeDiscount(
   };
 }
 
-/** Stage 4. Credit is a way of paying, so it never enters `applied`. */
-async function applyReferralCredit(
-  db: DatabaseExecutor,
+/**
+ * Stage 4. Credit is a way of paying, so it never enters `applied`.
+ *
+ * Takes the spendable figure rather than deriving it: the caller resolves it
+ * against the pre-credit lines, and re-reading it here would price the credit
+ * against a total this very line has already reduced.
+ */
+function applyReferralCredit(
   lines: QuoteLine[],
-  userId: string | null,
+  spendableMinor: number,
   currency: string,
-): Promise<{ lines: QuoteLine[]; creditApplied: PersistedQuote["creditApplied"] }> {
-  const spendable = await spendableCreditMinor(
-    db,
-    userId,
-    totalMinor(lines),
-    payableNowMinor(lines),
-  );
-
-  if (spendable <= 0) return { lines, creditApplied: null };
-
-  return {
-    lines: [
-      ...lines,
-      {
-        code: "referral-credit",
-        label: "Referral credit",
-        amountMinor: -spendable,
-        currency,
-        payWhen: "now",
-        kind: "credit",
-      },
-    ],
-    creditApplied: { amountMinor: spendable, currency },
-  };
+): QuoteLine[] {
+  return [
+    ...lines,
+    {
+      code: "referral-credit",
+      label: "Referral credit",
+      amountMinor: -spendableMinor,
+      currency,
+      payWhen: "now",
+      kind: "credit",
+    },
+  ];
 }
 
 /** Stage 5. Reads the listing override, then derives the deposit from the policy. */
@@ -431,12 +465,17 @@ async function persistPricedQuote(
   lines = welcome.lines;
 
   // 4. Referral credit, last: it is a way of paying rather than a price change,
-  // so it comes off after everything that decides what the trip costs.
-  const credit = options.applyCredit
-    ? await applyReferralCredit(db, lines, options.userId, currency)
-    : null;
+  // so it comes off after everything that decides what the trip costs. Resolved
+  // even when nobody asked to spend it, so the sidebar can offer what is there.
+  const spendableMinor = await spendableCreditMinor(
+    db,
+    options.userId,
+    totalMinor(lines),
+    payableNowMinor(lines),
+  );
+  const spendsCredit = options.applyCredit && spendableMinor > 0;
 
-  if (credit) lines = credit.lines;
+  if (spendsCredit) lines = applyReferralCredit(lines, spendableMinor, currency);
 
   // 5. Payment policy, then the deposit that follows from it.
   const { paymentPolicy, total, depositMinor } = await resolveDeposit(
@@ -449,7 +488,8 @@ async function persistPricedQuote(
 
   const appliedDiscount = promo?.discount ?? null;
   const discountRejected = promo?.rejected ?? null;
-  const creditApplied = credit?.creditApplied ?? null;
+  const creditAvailable = spendableMinor > 0 ? { amountMinor: spendableMinor, currency } : null;
+  const creditApplied = spendsCredit ? creditAvailable : null;
 
   // The provider is the authority on what it was asked to price; the request only
   // fills in for an adapter that does not echo the choice back.
@@ -510,6 +550,7 @@ async function persistPricedQuote(
     discount: appliedDiscount,
     discountRejected,
     creditApplied,
+    creditAvailable,
     adjustments: applied,
   };
 }

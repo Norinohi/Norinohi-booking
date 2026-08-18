@@ -2,8 +2,11 @@ name: CI
 
 on:
   pull_request:
+  # staging is Railway-watched, so a direct push there deploys. Without it here the
+  # gates covered only main and pull requests, and a push straight to staging
+  # reached the environment with nothing checked.
   push:
-    branches: [main]
+    branches: [main, staging]
 
 concurrency:
   group: ci-${{ github.ref }}

@@ -17,14 +17,15 @@
       "terms": "Acepto los <b>Términos y Condiciones y el Contrato de Alquiler</b>.",
       "cancellation": "Acepto la <b>Política de Cancelación</b> (cancelación gratuita hasta el 7 de junio)."
     },
-    "saveAndContinue": "Guardar y continuar",
     "extras": {
       "mandatory": "Obligatorio",
       "optional": "Extras opcionales",
-      "included": "Incluido"
+      "included": "Incluido",
+      "arrangeAtBase": "Acordar con la base"
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
+      "guestNotice": "No hace falta cuenta para reservar. Crearemos una para esta reserva y te enviaremos un enlace para elegir contraseña cuando quieras.",
       "fullName": "Nombre completo",
       "fullNamePlaceholder": "Juan Pérez",
       "email": "Correo electrónico",
@@ -44,7 +45,10 @@
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
-      "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo."
+      "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo.",
+      "billingName": "Introduce el nombre de facturación",
+      "billingAddress": "Introduce la dirección de facturación",
+      "city": "Introduce la ciudad"
     },
     "backToYacht": "Volver a {name}",
     "panels": {
@@ -67,17 +71,14 @@
         "question": "Hacer una pregunta"
       },
       "card": {
-        "number": "Número de tarjeta",
-        "numberPlaceholder": "1234-3233-2332-0021",
-        "expiry": "Fecha de caducidad",
-        "expiryPlaceholder": "01/29",
-        "cvc": "CV",
-        "cvcPlaceholder": "123",
-        "name": "Nombre en la tarjeta",
-        "namePlaceholder": "Juan Pérez",
         "notice": "Asegura tu reserva al instante con un pago en línea.",
-        "unavailable": "El pago con tarjeta estará disponible pronto. Usa Solicitar factura o Hacer una pregunta.",
-        "cta": "Pagar {amount}"
+        "unavailable": "El pago con tarjeta no está disponible ahora mismo. Usa Solicitar factura o Hacer una pregunta.",
+        "quoteExpired": "Tu precio ha caducado. Vuelve atrás y actualiza el presupuesto antes de pagar.",
+        "notPayable": "Esta reserva ya no se puede pagar. Empieza una nueva.",
+        "failed": "No se pudo completar el pago. Inténtalo de nuevo.",
+        "cta": "Pagar {amount}",
+        "orCard": "o paga con tarjeta",
+        "preparing": "Preparando las opciones de pago"
       },
       "invoice": {
         "email": "Correo de facturación",
@@ -87,7 +88,21 @@
         "vat": "Número de IVA (opcional)",
         "vatPlaceholder": "GB12312321321312123",
         "notice": "¿Prefieres pagar sin conexión? Te enviaremos una factura para completar el pago por transferencia bancaria.",
-        "cta": "Solicitar factura (por {amount})"
+        "cta": "Solicitar factura (por {amount})",
+        "name": "Nombre de facturación",
+        "namePlaceholder": "Jane Doe",
+        "addressLine1": "Dirección",
+        "addressLine1Placeholder": "Calle del Puerto 12",
+        "addressLine2": "Dirección línea 2 (opcional)",
+        "addressLine2Placeholder": "Apartamento, piso, planta",
+        "city": "Ciudad",
+        "cityPlaceholder": "Split",
+        "postalCode": "Código postal (opcional)",
+        "postalCodePlaceholder": "21000",
+        "country": "País",
+        "countryPlaceholder": "Selecciona un país",
+        "registration": "Número de registro (opcional)",
+        "registrationPlaceholder": "12345678"
       },
       "question": {
         "label": "Tu pregunta o solicitud",
@@ -100,7 +115,8 @@
       "notFound": "Reserva no encontrada",
       "browse": "Ver yates",
       "remaining": "Los {amount} restantes se pagarán al check-in.",
-      "emailed": "Hemos enviado una confirmación a tu correo",
+      "emailed": "Te hemos enviado los detalles por email, y te escribiremos otra vez cuando el operador confirme",
+      "guestEmailed": "Te hemos enviado los detalles por email, con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
       "viewBooking": "Ver reserva",
       "summaryTitle": "Resumen de la reserva",
       "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
@@ -115,11 +131,246 @@
         "boatPrice": "Precio del barco (alquiler completo)",
         "deposit": "Depósito de seguridad reembolsable",
         "secondPayment": "2.º pago (a pagar: {date})",
+        "secondPaymentAtCheckIn": "2.º pago (a pagar en la llegada)",
         "totalPrice": "Precio total",
         "perPerson": "~ {price} por persona",
         "dueNow": "A pagar ahora"
+      },
+      "viewInvoice": "Ver factura",
+      "settling": {
+        "title": "Pago recibido",
+        "body": "Estamos confirmando tu reserva con la base de chárter. Suele tardar unos segundos."
+      },
+      "failed": {
+        "title": "No pudimos confirmar esta reserva",
+        "body": "La base de chárter no pudo aceptar la reserva. Cualquier pago realizado será devuelto."
+      },
+      "shareText": "¡Alquilamos {name}, {dates}!",
+      "shareCopied": "Enlace copiado",
+      "shareFailed": "No hemos podido copiar el enlace"
+    },
+    "invoice": {
+      "title": "Factura",
+      "print": "Imprimir / Guardar como PDF",
+      "backToBookings": "Volver a mis reservas",
+      "browse": "Ver yates",
+      "issuedOn": "Emitida el {date}",
+      "dueOn": "Vence el {date}",
+      "status": {
+        "pending": "Pendiente de pago",
+        "sent": "Enviada",
+        "paid": "Pagada",
+        "cancelled": "Cancelada"
+      },
+      "from": "De",
+      "billTo": "Facturar a",
+      "vat": "NIF/IVA {value}",
+      "registration": "N.º de registro {value}",
+      "summary": {
+        "reference": "Referencia de la reserva",
+        "yacht": "Yate",
+        "base": "Base",
+        "dates": "Fechas del chárter",
+        "guests": "Huéspedes"
+      },
+      "lines": {
+        "description": "Concepto",
+        "collected": "Cobro",
+        "amount": "Importe"
+      },
+      "payWhen": {
+        "now": "Con esta factura",
+        "at_check_in": "En la llegada"
+      },
+      "totals": {
+        "charterTotal": "Total del chárter",
+        "paid": "Ya pagado",
+        "dueNow": "A pagar ahora",
+        "balance": "Saldo pendiente",
+        "securityDeposit": "En la llegada se cobra una fianza reembolsable de {amount} que no forma parte de esta factura."
+      },
+      "payment": {
+        "title": "Datos de pago",
+        "beneficiary": "Beneficiario",
+        "bank": "Banco",
+        "iban": "IBAN",
+        "bic": "BIC / SWIFT",
+        "reference": "Referencia del pago",
+        "amount": "Importe a transferir",
+        "note": "Indica la referencia de pago en la transferencia para que podamos asociarla a tu reserva. La reserva se confirma cuando se reciben los fondos."
+      },
+      "footnote": "Emitida por {company}. Esta factura se ha generado electrónicamente y es válida sin firma.",
+      "error": {
+        "title": "No se pudo cargar la factura",
+        "description": "Inténtalo de nuevo en un momento."
+      },
+      "missing": {
+        "title": "Esta reserva no tiene factura",
+        "description": "Esta reserva no se pagó por transferencia bancaria, por lo que no se emitió ninguna factura."
       }
-    }
+    },
+    "balance": {
+      "title": "Paga el resto",
+      "titleUnpaid": "Completa tu pago",
+      "reference": "Reserva {reference}",
+      "pay": "Pagar {amount}",
+      "notFound": "No encontramos esta reserva",
+      "browse": "Ver yates",
+      "viewBookings": "Mis reservas",
+      "unavailable": "El pago en línea no está disponible ahora mismo. Contáctanos para liquidar esta reserva.",
+      "summary": {
+        "total": "Precio total",
+        "paid": "Ya pagado",
+        "due": "A pagar ahora"
+      },
+      "paid": {
+        "title": "Tu reserva está pagada por completo",
+        "body": "No queda nada por pagar en la reserva {reference}. Los extras y la fianza se liquidan en el puerto.",
+        "viewBooking": "Ver reserva"
+      },
+      "notPayable": {
+        "title": "Este precio ha caducado",
+        "body": "Ya no podemos cobrar esta reserva: el precio que te dimos y la retención del operador han vencido. Vuelve a consultar las fechas y te daremos un precio nuevo.",
+        "action": "Ver disponibilidad"
+      },
+      "settling": {
+        "title": "Pago recibido",
+        "body": "Estamos actualizando tu reserva. Suele tardar unos segundos."
+      },
+      "received": {
+        "title": "Pago recibido",
+        "body": "Gracias. Quedan {outstanding} de este chárter y te avisaremos antes del vencimiento.",
+        "viewBooking": "Ver reserva"
+      }
+    },
+    "detail": {
+      "notFound": "No encontramos esta reserva",
+      "browse": "Ver yates",
+      "reference": "Reserva {reference}",
+      "guests": "{count} personas",
+      "payBalance": "Pagar {amount}",
+      "completePayment": "Completar el pago {amount}",
+      "viewInvoice": "Ver factura",
+      "priceTitle": "Desglose del precio",
+      "total": "Precio total",
+      "paymentsTitle": "Pagos",
+      "paid": "Pagado hasta ahora",
+      "outstanding": "Pendiente de pago",
+      "dueAtCheckIn": "A pagar en la marina",
+      "atMarina": "se paga en la marina",
+      "noPayments": "Aún no se han realizado pagos en esta reserva.",
+      "disputed": "en disputa",
+      "kind": {
+        "deposit": "Primer pago",
+        "balance": "Segundo pago",
+        "full": "Pago completo",
+        "checkin_extras": "Extras en la llegada",
+        "security_deposit": "Fianza"
+      },
+      "method": {
+        "card": "Tarjeta",
+        "transfer": "Transferencia bancaria"
+      },
+      "paymentStatus": {
+        "requires_payment": "Sin pagar",
+        "processing": "Procesando",
+        "succeeded": "Pagado",
+        "failed": "Fallido",
+        "refunded": "Reembolsado"
+      },
+      "status": {
+        "DRAFT": "Borrador",
+        "QUOTED": "Presupuestada",
+        "OPTION_PENDING": "Reservando",
+        "OPTION_HELD": "Retenida",
+        "PAYMENT_PENDING": "Pendiente de pago",
+        "CONFIRMING": "Confirmando",
+        "CONFIRMED": "Confirmada",
+        "QUOTE_EXPIRED": "Caducada",
+        "OPTION_EXPIRED": "Caducada",
+        "PAYMENT_FAILED": "Pago fallido",
+        "PROVIDER_REJECTED": "No disponible",
+        "CANCELLED": "Cancelada",
+        "REFUND_PENDING": "Reembolsando",
+        "REFUNDED": "Reembolsada"
+      },
+      "backToBookings": "Volver a mis reservas",
+      "panels": {
+        "main": "Reserva",
+        "aside": "Precio"
+      },
+      "charterTitle": "Chárter",
+      "dates": "Fechas",
+      "guestsLabel": "Personas",
+      "crew": "Tripulación",
+      "marina": "Puerto",
+      "referenceLabel": "Referencia",
+      "settled": "Nada pendiente de pago",
+      "viewYacht": "Ver el yate",
+      "supportTitle": "¿Necesitas ayuda?",
+      "supportBody": "Dudas sobre tu chárter, cambios de fechas o cualquier otra cosa: nuestro equipo responde en un día laborable.",
+      "contactSupport": "Contactar con soporte",
+      "supportSubject": "Reserva {reference}",
+      "marinaContact": "Contacto de la marina",
+      "signInTitle": "Inicia sesión para ver esta reserva",
+      "signInBody": "Esta reserva está vinculada a tu cuenta. Inicia sesión con el correo que usaste al reservar y volverás directamente aquí.",
+      "signIn": "Iniciar sesión",
+      "cancelledOn": "Cancelada el",
+      "cancelReason": "Motivo",
+      "requestCancel": "Solicitar cancelación",
+      "crewList": {
+        "title": "Lista de tripulación",
+        "notice": "La empresa de chárter debe entregar a las autoridades una lista de todas las personas a bordo antes de zarpar. Complétala aquí y nosotros la enviamos; lo que falte te lo pedirán en la base al llegar.",
+        "loading": "Cargando tu lista de tripulación…",
+        "empty": "Aún no has añadido a nadie. Tu reserva es para {guests} huéspedes: añade a cada persona que vaya a bordo, incluido el patrón.",
+        "member": "Tripulante {number}",
+        "remove": "Eliminar al tripulante {number}",
+        "add": "Añadir tripulante",
+        "save": "Guardar lista",
+        "saved": "Lista de tripulación guardada",
+        "saveFailed": "No hemos podido guardar tu lista de tripulación",
+        "fullName": "Nombre completo",
+        "fullNamePlaceholder": "Tal y como figura en el pasaporte",
+        "role": "Rol",
+        "rolePlaceholder": "Patrón, invitado…",
+        "dateOfBirth": "Fecha de nacimiento",
+        "documentNumber": "Número de pasaporte o DNI",
+        "documentNumberPlaceholder": "X1234567",
+        "nationality": "Nacionalidad",
+        "nationalityPlaceholder": "Selecciona un país",
+        "errors": {
+          "fullName": "Introduce el nombre completo de esta persona",
+          "dateOfBirth": "Introduce una fecha válida"
+        }
+      }
+    },
+    "support": {
+      "title": "¿En qué podemos ayudarte?",
+      "subtitle": "Envíanos un mensaje y te responderemos en un día laborable.",
+      "messageLabel": "Tu mensaje",
+      "messagePlaceholder": "Cuéntanos en qué necesitas ayuda: fechas, el barco, el pago, lo que sea.",
+      "required": "Escribe un mensaje primero",
+      "send": "Enviar mensaje",
+      "sent": "Mensaje enviado",
+      "sentTitle": "Mensaje enviado",
+      "sentBody": "Ya lo tenemos, junto con los datos de tu reserva. Te escribiremos por correo.",
+      "backToBooking": "Volver a mi reserva",
+      "failed": "No hemos podido enviar tu mensaje. Inténtalo de nuevo.",
+      "marinaContact": "O contacta directamente con la marina",
+      "cancellation": {
+        "title": "Solicita una cancelación",
+        "subtitle": "Envíanos la solicitud y te responderemos con lo que permite tu política de cancelación.",
+        "messageLabel": "¿Por qué quieres cancelar?",
+        "messagePlaceholder": "Cualquier cosa que nos ayude: un cambio de planes, las fechas, el tiempo, una enfermedad.",
+        "template": "Quiero cancelar la reserva {reference} ({dates}).\n\nMotivo: ",
+        "send": "Enviar solicitud de cancelación",
+        "sentTitle": "Cancelación solicitada",
+        "sentBody": "Tu reserva se mantiene tal cual hasta que nuestro equipo revise la solicitud. Te escribiremos por email con lo que permite tu política de cancelación."
+      }
+    },
+    "booked": "Reservado",
+    "saveAndContinue": "Guardar y continuar",
+    "extrasSkipped": "Echa un vistazo a los extras opcionales y confirma después."
   },
   "Common": {
     "crewTypes": {
@@ -133,6 +384,10 @@
     },
     "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
     "removeFilter": "Quitar filtro {label}",
+    "passwordToggle": {
+      "show": "Mostrar contraseña",
+      "hide": "Ocultar contraseña"
+    },
     "sorting": {
       "label": "Ordenar por: {value}",
       "recommended": "Recomendados",
@@ -147,6 +402,8 @@
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "priceOnRequest": "Bajo petición",
+      "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
       "prepayment": "Anticipo de reserva: {amount}",
@@ -162,14 +419,15 @@
       },
       "battenMainsail": "Mayor con sables",
       "badges": {
+        "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
         "bestValue": "Mejor relación calidad-precio",
         "new": "Nuevo",
         "discount": "{percent}% DTO."
       },
       "stats": {
-        "booked": "{count} reservas este mes",
-        "viewed": "{count} personas lo vieron hoy"
+        "booked": "{count, plural, one {# reserva este mes} other {# reservas este mes}}",
+        "viewed": "{count, plural, one {# persona lo vio hoy} other {# personas lo vieron hoy}}"
       },
       "amenities": {
         "wifi": "Wi-Fi gratis",
@@ -218,6 +476,22 @@
         "emailInvalid": "Por favor, introduce un correo electrónico válido",
         "submitFailed": "No pudimos enviar tu solicitud. Inténtalo de nuevo."
       }
+    },
+    "charterPeriod": {
+      "or": ", o ",
+      "daysAndNights": "{days}, {nights}",
+      "weekdayRange": "de {from} a {to}",
+      "weekdayStart": "Empieza el {day}",
+      "weekdayEnd": "Termina el {day}",
+      "nightsExact": "{count, plural, one {# noche} other {# noches}}",
+      "nightsFrom": "desde {count, plural, one {# noche} other {# noches}}",
+      "nightsUpTo": "hasta {count, plural, one {# noche} other {# noches}}",
+      "nightsRange": "de {min} a {max} noches",
+      "label": "Periodo de chárter"
+    },
+    "countryPicker": {
+      "search": "Buscar países",
+      "empty": "Ningún país coincide"
     }
   },
   "Filters": {
@@ -259,6 +533,8 @@
       "price": "Precio (del periodo elegido)",
       "boatAge": "Antigüedad del barco",
       "year": "Año",
+      "yearFrom": "Año desde",
+      "yearTo": "Año hasta",
       "guestRating": "Valoración de huéspedes"
     },
     "placeholders": {
@@ -321,7 +597,12 @@
   },
   "Home": {
     "BoatTypes": {
-      "heading": "Elige tu tipo de barco"
+      "heading": "Elige tu tipo de barco",
+      "luxury": {
+        "title": "Yate de lujo",
+        "description": "Los barcos más grandes de la flota, con tripulación y equipados con estándar hotelero.",
+        "imageAlt": "Yate de lujo fondeado"
+      }
     },
     "BudgetFinder": {
       "heading": "Encuentra yates según tu presupuesto",
@@ -559,10 +840,14 @@
       "profile": "Mi perfil",
       "bookings": "Mis reservas",
       "referrals": "Referidos",
+      "credits": "Créditos y saldo",
       "discount": "Gestión de descuentos",
       "logout": "Cerrar sesión",
       "duplicates": "Revisión de duplicados",
-      "sync": "Historial de sincronización"
+      "sync": "Historial de sincronización",
+      "audit": "Registro de auditoría",
+      "inbox": "Bandeja de entrada",
+      "payments": "Pagos"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -770,8 +1055,7 @@
     "consultation": {
       "close": "Cerrar",
       "title": "Ponte en contacto",
-      "subtitle": "Elige cómo te gustaría conectar con nuestro equipo.",
-      "back": "Atrás",
+      "subtitle": "Reserva una llamada o envíanos un mensaje, lo que prefieras.",
       "options": {
         "call": {
           "title": "Reservar una llamada rápida",
@@ -784,7 +1068,7 @@
       },
       "placeholder": {
         "title": "La reserva estará disponible pronto",
-        "description": "La programación en línea aún no está lista — envíanos un mensaje y coordinaremos un horario que te convenga.",
+        "description": "La programación en línea aún no está lista. Envíanos un mensaje y coordinaremos un horario que te convenga.",
         "cta": "Enviar un mensaje en su lugar"
       },
       "submitted": {
@@ -833,14 +1117,19 @@
       "next": "Yates siguientes"
     },
     "review": {
-      "count": "({count} opiniones)",
-      "summary": "Mostrando {shown} de {total}"
+      "count": "({count, plural, one {# opinión} other {# opiniones}})",
+      "summary": "Mostrando {shown} de {total}",
+      "empty": "Aún no hay opiniones escritas",
+      "operatorRated": "La puntuación procede de {count, plural, one {# valoración} other {# valoraciones}} de huéspedes recogidas por la empresa chárter."
     },
     "sidebar": {
       "crew": "Tripulación",
       "people": "Personas",
       "datesPlaceholder": "Selecciona fechas",
       "selectDates": "Selecciona tus fechas para ver el precio",
+      "unavailable": "Este yate no tiene fechas disponibles",
+      "unavailableHint": "Consúltanos por otras fechas o un yate similar.",
+      "slotRefused": "Esas fechas no se pueden reservar. Elige otro periodo.",
       "prepayment": "Anticipo del {percent}% por el barco",
       "boatPrice": "Precio del barco (alquiler completo)",
       "deposit": "Fianza reembolsable",
@@ -860,7 +1149,29 @@
       "totalPrice": "Precio total",
       "dueNow": "A pagar ahora",
       "payNowCta": "Pagar {amount}",
-      "requestQuote": "Solicitar presupuesto"
+      "requestQuote": "Solicitar presupuesto",
+      "promo": {
+        "label": "Código promocional",
+        "placeholder": "Introduce el código",
+        "apply": "Aplicar",
+        "remove": "Quitar",
+        "applied": "{amount} de descuento",
+        "rejected": {
+          "unknown_code": "No reconocemos ese código.",
+          "inactive": "Ese código ya no está activo.",
+          "not_started": "Ese código aún no es válido.",
+          "expired": "Ese código ha caducado.",
+          "usage_limit_reached": "Ese código ya se ha canjeado por completo.",
+          "not_applicable": "Ese código no se aplica a este yate."
+        }
+      },
+      "credit": {
+        "label": "Crédito de referidos",
+        "available": "{amount} disponible en esta reserva",
+        "applied": "{amount} aplicado",
+        "apply": "Aplicar",
+        "remove": "Quitar"
+      }
     },
     "panels": {
       "details": "Detalles del yate",
@@ -970,10 +1281,6 @@
       "title": "Crear cuenta",
       "description": "Crea una cuenta de YachtSkanner para reservar yates, guardar favoritos y gestionar tus viajes."
     },
-    "Dashboard": {
-      "title": "Panel",
-      "description": "Gestiona tus reservas de chárter, yates guardados y ajustes de la cuenta."
-    },
     "Wishlist": {
       "title": "Tus favoritos",
       "description": "Los yates y catamaranes que has guardado. Compara tus favoritos y consulta la disponibilidad para tus fechas."
@@ -990,6 +1297,10 @@
       "title": "Tus referidos",
       "description": "Sigue a los amigos que has invitado a YachtSkanner y las recompensas que has conseguido."
     },
+    "Credits": {
+      "title": "Créditos y saldo",
+      "description": "Consulta tu crédito de referidos disponible, lo que caduca pronto y cada movimiento de tu saldo."
+    },
     "Discounts": {
       "title": "Gestor de descuentos y precios",
       "description": "Gestiona los códigos promocionales y los precios de tus yates."
@@ -1001,6 +1312,46 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Audit": {
+      "title": "Registro de auditoría",
+      "description": "Cada acción del personal registrada sobre una reserva, un anuncio, un descuento o una consulta."
+    },
+    "Invoice": {
+      "title": "Factura",
+      "description": "La factura de tu reserva de chárter, con los datos de pago."
+    },
+    "ForgotPassword": {
+      "title": "Olvidé mi contraseña",
+      "description": "Restablece la contraseña de tu cuenta de YachtSkanner."
+    },
+    "ResetPassword": {
+      "title": "Restablecer contraseña",
+      "description": "Elige una nueva contraseña para tu cuenta de YachtSkanner."
+    },
+    "SetPassword": {
+      "title": "Establecer contraseña",
+      "description": "Elige una contraseña para tu cuenta de YachtSkanner."
+    },
+    "Balance": {
+      "title": "Paga tu saldo",
+      "description": "Liquida el importe restante de tu reserva de chárter."
+    },
+    "BookingDetail": {
+      "title": "Tu reserva",
+      "description": "Detalles, pagos y documentos de tu reserva de chárter."
+    },
+    "Inbox": {
+      "title": "Bandeja de entrada",
+      "description": "Preguntas y consultas de clientes pendientes de respuesta."
+    },
+    "Payments": {
+      "title": "Pagos",
+      "description": "Solicitudes de factura y reembolsos pendientes."
+    },
+    "StaffBooking": {
+      "title": "Reserva (personal)",
+      "description": "Vista de personal de una reserva."
     }
   },
   "Profile": {
@@ -1056,7 +1407,8 @@
       "success": "Tu reserva ha sido cancelada.",
       "error": "No pudimos cancelar tu reserva. Inténtalo de nuevo."
     },
-    "statusCancelled": "Cancelada"
+    "statusCancelled": "Cancelada",
+    "payBalance": "Pagar saldo"
   },
   "Wishlist": {
     "title": "Tus favoritos",
@@ -1087,6 +1439,7 @@
       "noAccount": "¿No tienes una cuenta?",
       "createAccount": "Crear cuenta",
       "success": "Sesión iniciada correctamente",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
       "errors": {
         "emailInvalid": "Dirección de correo no válida",
         "passwordMin": "La contraseña debe tener al menos 8 caracteres"
@@ -1126,6 +1479,64 @@
         "emailRegistered": "Este correo ya está registrado"
       },
       "referralApplied": "Código de referido aplicado"
+    },
+    "ForgotPassword": {
+      "welcome": "¿Olvidaste tu contraseña?",
+      "cardTitle": "Restablecer tu contraseña",
+      "description": "Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.",
+      "email": {
+        "label": "Correo electrónico",
+        "placeholder": "ejemplo@gmail.com"
+      },
+      "submit": "Enviar enlace",
+      "submitting": "Enviando…",
+      "success": {
+        "title": "Revisa tu correo",
+        "body": "Si existe una cuenta con esa dirección, te enviamos un enlace para restablecer tu contraseña."
+      },
+      "backToLogin": "Volver a iniciar sesión",
+      "errors": {
+        "emailInvalid": "Correo electrónico no válido"
+      }
+    },
+    "ResetPassword": {
+      "welcome": "Establece una nueva contraseña",
+      "cardTitle": "Elige una nueva contraseña",
+      "newPassword": {
+        "label": "Nueva contraseña",
+        "placeholder": "Introduce una nueva contraseña"
+      },
+      "confirmPassword": {
+        "label": "Confirmar contraseña",
+        "placeholder": "Confirma tu nueva contraseña"
+      },
+      "submit": "Restablecer contraseña",
+      "submitting": "Restableciendo…",
+      "success": "Contraseña actualizada. Ya puedes iniciar sesión.",
+      "invalid": {
+        "title": "Este enlace no es válido o ha caducado",
+        "body": "Los enlaces de restablecimiento caducan tras 1 hora y solo pueden usarse una vez. Solicita uno nuevo para continuar.",
+        "action": "Solicitar un nuevo enlace"
+      },
+      "firstPassword": {
+        "welcome": "Establece tu contraseña",
+        "cardTitle": "Elige una contraseña",
+        "newPassword": {
+          "label": "Contraseña",
+          "placeholder": "Introduce una contraseña"
+        },
+        "submit": "Establecer contraseña",
+        "submitting": "Guardando…",
+        "success": "Contraseña establecida. Ya puedes iniciar sesión.",
+        "confirmPassword": {
+          "label": "Confirmar contraseña",
+          "placeholder": "Confirma tu contraseña"
+        }
+      },
+      "errors": {
+        "passwordMin": "La contraseña debe tener al menos 8 caracteres",
+        "passwordMismatch": "Las contraseñas no coinciden"
+      }
     }
   },
   "Referrals": {
@@ -1188,6 +1599,26 @@
       "pending": "Pendiente",
       "void": "Cancelado",
       "empty": "Aún no tienes referidos. Comparte tu enlace para empezar."
+    }
+  },
+  "Credits": {
+    "title": "Créditos y saldo",
+    "balance": {
+      "label": "Saldo disponible",
+      "expiringSoon": "{amount} caduca en 30 días",
+      "hint": "Los créditos se pueden usar en cualquier reserva de yate superior a €1000 y se descuentan de lo que pagas hoy."
+    },
+    "ledger": {
+      "title": "Historial de créditos",
+      "expires": "Caduca el {date}",
+      "emptyTitle": "Aún no tienes crédito",
+      "emptyDescription": "Invita a un amigo: ganas crédito cuando complete su viaje.",
+      "kind": {
+        "referral_reward": "Recompensa por referido",
+        "booking_redemption": "Aplicado a la reserva",
+        "expiry": "Caducado",
+        "adjustment": "Ajuste"
+      }
     }
   },
   "Discounts": {
@@ -1265,9 +1696,20 @@
         "nameRequired": "Introduce un nombre",
         "codeRequired": "Introduce un código",
         "priceRequired": "Introduce un valor",
-        "appliesRequired": "Elige a qué se aplica el descuento"
+        "appliesRequired": "Elige a qué se aplica el descuento",
+        "usageLimitInvalid": "Introduce un número entero de usos o déjalo en blanco"
       },
-      "error": "Algo salió mal. Inténtalo de nuevo."
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "usageLimit": {
+        "label": "Límite de usos",
+        "placeholder": "Ilimitado",
+        "hint": "Déjalo en blanco para usos ilimitados"
+      },
+      "active": {
+        "label": "Activo",
+        "on": "Descuento activado",
+        "off": "Descuento desactivado"
+      }
     },
     "prices": {
       "search": "Buscar por nombre",
@@ -1289,7 +1731,9 @@
         "updated": "Precio actualizado",
         "errors": {
           "priceRequired": "Introduce un nuevo precio"
-        }
+        },
+        "reset": "Restablecer al precio del proveedor",
+        "cleared": "Precio restablecido al del proveedor"
       },
       "empty": "No se encontraron yates",
       "error": "No se pudieron cargar los precios"
@@ -1364,6 +1808,33 @@
     "Sync": {
       "title": "Historial de sincronización",
       "subtitle": "Todas las ejecuciones de catálogo y disponibilidad, de la más reciente a la más antigua.",
+      "controls": {
+        "provider": "Proveedor a sincronizar",
+        "allProviders": "Todos los proveedores",
+        "startCatalogue": "Sincronizar catálogo",
+        "startAvailability": "Sincronizar disponibilidad",
+        "started": "{count, plural, one {# ejecución iniciada} other {# ejecuciones iniciadas}}",
+        "skipped": "{count, plural, one {# proveedor ya está importando} other {# proveedores ya están importando}}",
+        "noProviders": "No hay ningún conector activo.",
+        "capabilities": "Conector activo:",
+        "capability": {
+          "supportsLiveQuote": "Precio en vivo",
+          "supportsOptions": "Reservas provisionales",
+          "supportsExtrasMutation": "Extras editables",
+          "supportsWebhooks": "Webhooks"
+        },
+        "hint": "La ejecución se abre de inmediato y continúa aunque cierres esta página. Su resultado aparece en la tabla de abajo."
+      },
+      "maintenance": {
+        "sweep": "Caducar reservas provisionales",
+        "remind": "Enviar recordatorios de saldo",
+        "swept": "{count} reserva(s) caducada(s), {reaped} ejecución(es) de sincronización recuperada(s).",
+        "staleConfirmations": "{count} reserva(s) atascada(s) al confirmar. Pregunta al proveedor si la reserva existe.",
+        "releaseFailures": "No se pudieron liberar {count} espacio(s) del proveedor.",
+        "reminded": "{count} recordatorio(s) enviado(s).",
+        "remindSkipped": "{count} reserva(s) no tienen dirección de correo.",
+        "hint": "Ambos ya se ejecutan de forma programada. Hacerlo a mano es seguro: las caducidades son compare-and-set y cada plazo solo se recuerda una vez."
+      },
       "filters": {
         "provider": "Proveedor",
         "kind": "Tipo",
@@ -1417,6 +1888,309 @@
         "auth": "Autenticación",
         "not_found": "No encontrado",
         "contract": "Contrato"
+      }
+    },
+    "Audit": {
+      "title": "Registro de auditoría",
+      "subtitle": "Cada acción del personal, de la más reciente a la más antigua. Las entradas se escriben una vez y no se editan.",
+      "filters": {
+        "entityType": "Tipo de entidad",
+        "allEntities": "Todas las entidades",
+        "action": "Acción",
+        "allActions": "Todas las acciones",
+        "entityId": "Id de entidad",
+        "entityIdPlaceholder": "Pega un id completo"
+      },
+      "table": {
+        "when": "Cuándo",
+        "actor": "Quién",
+        "action": "Acción",
+        "entity": "Entidad",
+        "entityId": "Id",
+        "details": "Detalles"
+      },
+      "action": {
+        "create": "Creado",
+        "update": "Actualizado",
+        "delete": "Eliminado",
+        "sync": "Sincronizado",
+        "merge": "Fusionado",
+        "price_adjustment": "Cambio de precio"
+      },
+      "entity": {
+        "booking": "Reserva",
+        "booking_enquiry": "Pregunta de reserva",
+        "discount": "Código promocional",
+        "invoice_request": "Factura",
+        "lead": "Consulta",
+        "listing": "Anuncio",
+        "listing_duplicate_candidate": "Duplicado"
+      },
+      "details": {
+        "show": "Ver",
+        "hide": "Ocultar",
+        "before": "Antes",
+        "after": "Después",
+        "metadata": "Contexto"
+      },
+      "actorGone": "Cuenta eliminada",
+      "empty": "Aún no hay nada registrado.",
+      "error": "No se pudo cargar el registro de auditoría."
+    },
+    "Inbox": {
+      "title": "Bandeja de entrada",
+      "subtitle": "Preguntas sobre reservas existentes y consultas de quienes aún están eligiendo.",
+      "tabs": {
+        "enquiries": "Preguntas de reservas",
+        "leads": "Consultas"
+      },
+      "enquiries": {
+        "filters": {
+          "status": "Estado",
+          "allStatuses": "Todos los estados",
+          "search": "Buscar por correo o referencia"
+        },
+        "status": {
+          "open": "Abierta",
+          "answered": "Respondida",
+          "closed": "Cerrada"
+        },
+        "table": {
+          "received": "Recibida",
+          "customer": "Cliente",
+          "question": "Pregunta",
+          "status": "Estado",
+          "booking": "Reserva",
+          "actions": "Acciones"
+        },
+        "actions": {
+          "reply": "Responder",
+          "replyAgain": "Responder otra vez",
+          "close": "Cerrar",
+          "reopen": "Reabrir"
+        },
+        "answered": "Respuesta: {answer}",
+        "empty": "Nada por aquí: ninguna pregunta coincide con estos filtros.",
+        "error": "No hemos podido cargar las preguntas."
+      },
+      "leads": {
+        "filters": {
+          "status": "Estado",
+          "allStatuses": "Todos los estados",
+          "kind": "Tipo",
+          "allKinds": "Todos los tipos",
+          "search": "Buscar por nombre o correo"
+        },
+        "status": {
+          "new": "Nueva",
+          "contacted": "Contactado",
+          "closed": "Cerrada"
+        },
+        "kind": {
+          "quote_request": "Solicitud de precio",
+          "charter_expert": "Experto en chárter",
+          "consultation": "Consulta"
+        },
+        "table": {
+          "received": "Recibida",
+          "from": "De",
+          "kind": "Tipo",
+          "message": "Mensaje",
+          "status": "Estado",
+          "actions": "Acciones"
+        },
+        "actions": {
+          "reply": "Responder",
+          "replyAgain": "Responder de nuevo",
+          "contacted": "Marcar contactado",
+          "close": "Cerrar",
+          "reopen": "Reabrir"
+        },
+        "empty": "Nada por aquí: ninguna consulta coincide con estos filtros.",
+        "error": "No hemos podido cargar las consultas.",
+        "answered": "Respondido: {answer}"
+      },
+      "answer": {
+        "title": "Responder a esta pregunta",
+        "description": "Reserva {reference}. Tu respuesta se envía por correo al cliente.",
+        "label": "Tu respuesta",
+        "placeholder": "Responde por completo: esto es lo que recibe el cliente.",
+        "close": "Cerrar la pregunta al enviar",
+        "cancel": "Cancelar",
+        "send": "Enviar respuesta",
+        "sent": "Respuesta enviada",
+        "failed": "No hemos podido enviar la respuesta. Inténtalo de nuevo."
+      },
+      "leadAnswer": {
+        "title": "Responder a esta consulta",
+        "description": "Tu respuesta se envía por correo a {name}.",
+        "noMessage": "No dejó ningún mensaje.",
+        "label": "Tu respuesta",
+        "placeholder": "Responde la consulta por completo: esto es lo que recibirá.",
+        "close": "Cerrar esta consulta al enviar",
+        "cancel": "Cancelar",
+        "send": "Enviar respuesta",
+        "sent": "Respuesta enviada",
+        "failed": "No pudimos enviar la respuesta. Inténtalo de nuevo."
+      }
+    },
+    "Payments": {
+      "title": "Pagos",
+      "subtitle": "Transferencias pendientes de conciliar y dinero que debe devolverse.",
+      "tabs": {
+        "invoices": "Solicitudes de factura",
+        "refunds": "Reembolsos pendientes"
+      },
+      "invoices": {
+        "filters": {
+          "status": "Filtrar por estado",
+          "allStatuses": "Todos los estados"
+        },
+        "table": {
+          "issued": "Emitida",
+          "invoice": "Factura",
+          "customer": "Cliente",
+          "booking": "Reserva",
+          "amount": "Importe",
+          "status": "Estado",
+          "actions": "Acciones"
+        },
+        "status": {
+          "pending": "Pendiente",
+          "sent": "Enviada",
+          "paid": "Pagada",
+          "cancelled": "Retirada"
+        },
+        "due": "Vence {date}",
+        "settledAt": "Conciliada {date}",
+        "actions": {
+          "settle": "Transferencia recibida",
+          "withdraw": "Retirar"
+        },
+        "empty": "No hay solicitudes de factura aquí.",
+        "error": "No se pudieron cargar las solicitudes de factura."
+      },
+      "refunds": {
+        "filters": {
+          "search": "Buscar por referencia, nombre o email"
+        },
+        "table": {
+          "cancelled": "Cancelada",
+          "customer": "Cliente",
+          "booking": "Reserva",
+          "charter": "Chárter",
+          "collected": "Cobrado",
+          "actions": "Acciones"
+        },
+        "ofTotal": "de {total}",
+        "actions": {
+          "refund": "Devolver el dinero"
+        },
+        "empty": "Ahora mismo no se debe nada.",
+        "error": "No se pudo cargar la cola de reembolsos."
+      },
+      "settle": {
+        "title": "Registrar una transferencia recibida",
+        "description": "La reserva {reference} se confirmará con el operador en cuanto se registre.",
+        "invoiced": "Factura {number} · {amount} facturado",
+        "amountLabel": "Importe recibido ({currency})",
+        "amountHint": "Cámbialo si las comisiones bancarias hicieron que llegara otra cifra.",
+        "noteLabel": "Nota",
+        "notePlaceholder": "Referencia de la transferencia, quién la confirmó…",
+        "cancel": "Cancelar",
+        "confirm": "Registrar transferencia",
+        "settling": "Registrando…",
+        "settled": "Transferencia registrada: la reserva {reference} está confirmada.",
+        "rejected": "Transferencia registrada, pero el operador la rechazó: {reason}. La reserva ahora debe un reembolso.",
+        "failed": "No se pudo registrar la transferencia."
+      },
+      "withdraw": {
+        "title": "Retirar esta solicitud de factura",
+        "description": "La reserva {reference} se cancelará y se liberará la opción del operador.",
+        "reasonLabel": "Motivo",
+        "reasonPlaceholder": "Sin respuesta tras tres recordatorios…",
+        "cancel": "Mantener",
+        "confirm": "Retirar y cancelar",
+        "withdrawing": "Retirando…",
+        "withdrawn": "Factura retirada y reserva {reference} cancelada.",
+        "failed": "No se pudo retirar la factura."
+      },
+      "refund": {
+        "title": "Devolver el dinero",
+        "description": "Devuelve el dinero cobrado en la reserva {reference}.",
+        "collected": "{amount} cobrado",
+        "cancelReason": "Cancelada: {reason}",
+        "amountLabel": "Importe a devolver",
+        "amountPlaceholder": "Todo ({amount})",
+        "amountHint": "Déjalo vacío para devolver todo. Introduce menos para retener lo que marca la política de cancelación.",
+        "amountInvalid": "Introduce un importe entre 0 y lo cobrado.",
+        "reasonLabel": "Motivo",
+        "reasonPlaceholder": "El operador retiró el barco…",
+        "manualLabel": "He devuelto la transferencia bancaria",
+        "manualHint": "Marca esto solo cuando el dinero haya salido de verdad. Los pagos con tarjeta se devuelven solos por Stripe.",
+        "cancel": "Cancelar",
+        "confirm": "Reembolsar",
+        "refunding": "Reembolsando…",
+        "refunded": "{amount} devuelto.",
+        "partial": "{amount} devuelto. Quedan {outstanding} por devolver.",
+        "manualPending": "Pagos con tarjeta devueltos. Quedan {count} transferencia(s) por enviar a mano.",
+        "failed": "No se pudo procesar el reembolso."
+      }
+    },
+    "StaffBooking": {
+      "back": "Pagos",
+      "staffOnly": "Vista de personal: esta es la reserva de un cliente. No compartas esta página.",
+      "error": "No se pudo cargar esta reserva.",
+      "guestAccount": "Cuenta de invitado",
+      "guests": "{count} huéspedes",
+      "noReservationId": "Aún sin id de reserva",
+      "outstanding": "{amount} pendiente",
+      "createdAt": "Creada {at}",
+      "holdExpiresAt": "La opción vence {at}",
+      "confirmedAt": "Confirmada {at}",
+      "cancelledAt": "Cancelada {at}",
+      "cancelReason": "Motivo de cancelación: {reason}",
+      "fields": {
+        "customer": "Cliente",
+        "charter": "Chárter",
+        "provider": "Proveedor",
+        "total": "Total",
+        "collected": "Cobrado",
+        "timeline": "Cronología"
+      },
+      "invoice": {
+        "title": "Solicitud de factura",
+        "number": "Número",
+        "amount": "Importe",
+        "status": "Estado",
+        "billedTo": "Facturado a",
+        "issued": "Emitida",
+        "due": "Vence"
+      },
+      "payments": {
+        "title": "Pagos",
+        "kind": "Plazo",
+        "amount": "Importe",
+        "method": "Método",
+        "status": "Estado",
+        "paidAt": "Pagado",
+        "empty": "Todavía no se ha cobrado nada.",
+        "disputed": "En disputa: {state}",
+        "methods": {
+          "card": "Tarjeta",
+          "transfer": "Transferencia"
+        }
+      },
+      "schedule": {
+        "title": "Calendario de pagos",
+        "kind": "Plazo",
+        "amount": "Importe",
+        "dueAt": "Vence",
+        "status": "Estado",
+        "empty": "Esta reserva no tiene calendario."
+      },
+      "priceLines": {
+        "title": "Desglose de precio"
       }
     }
   }

@@ -48,8 +48,6 @@ export const paymentScheduleKind = pgEnum("payment_schedule_kind", [
   "security_deposit",
 ]);
 
-export const bookingPaymentMethod = pgEnum("booking_payment_method", ["card", "invoice"]);
-
 export const extraPricingType = pgEnum("extra_pricing_type", [
   "per_booking",
   "per_week",
@@ -78,12 +76,30 @@ export const paymentStatus = pgEnum("payment_status", [
   "refunded",
 ]);
 
+/**
+ * Mirrors Stripe's refund lifecycle. `pending` money is already committed to leaving, so it
+ * counts against what a booking still owes back — refunding it twice is the failure that
+ * matters here, not refunding it slowly.
+ */
+export const paymentRefundStatus = pgEnum("payment_refund_status", [
+  "pending",
+  "succeeded",
+  "failed",
+  "canceled",
+]);
+
 export const providerReservationEventKind = pgEnum("provider_reservation_event_kind", [
   "option_created",
   "option_released",
   "confirm_requested",
   "confirm_succeeded",
   "confirm_failed",
+  /*
+   * A booking left in CONFIRMING by a process that died mid-commit. Distinct from
+   * confirm_failed on purpose: the provider never told us it refused, and we cannot
+   * ask — this records that a human has to go and look.
+   */
+  "confirm_stale",
   "cancel_requested",
   "cancel_succeeded",
   "info_created",
@@ -156,6 +172,13 @@ export const booking = pgTable(
      * reservation data changes, and every subsequent call must send the latest one.
      */
     providerReservationUuid: text("provider_reservation_uuid"),
+    /**
+     * The provider's own crew-list page for this reservation, when it hosts one
+     * (NauSYS `crewlistlink`). Sending the customer here is what the vendor
+     * sanctioned in place of us collecting passport data, so it is a link we show,
+     * never data we hold: nothing about a passenger is stored in this column.
+     */
+    crewListLink: text("crew_list_link"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
     confirmedAt: timestamp("confirmed_at"),
@@ -174,8 +197,13 @@ export const booking = pgTable(
     // id. Nullable because bookings taken before checkout collected it have none.
     guestCountryCode: text("guest_country_code"),
     specialRequests: text("special_requests"),
-    /** Null until the Payment step; the flow can also end without either. */
-    paymentMethod: bookingPaymentMethod("payment_method"),
+    /**
+     * SHA-256 of the bearer token a guest checkout hands back, and the only way
+     * someone who never signed in can reach this booking again. Null for a booking
+     * made from a session. The token itself is never stored: a leaked database dump
+     * must not be a set of live booking links.
+     */
+    guestAccessTokenHash: text("guest_access_token_hash"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),
     /**
      * Unique per customer so a retried checkout cannot create a second booking
@@ -276,6 +304,8 @@ export const paymentSchedule = pgTable(
     currency: text("currency").notNull(),
     dueAt: timestamp("due_at"),
     status: paymentScheduleStatus("status").default("pending").notNull(),
+    // Claimed before the reminder is sent, so two overlapping cron runs cannot both mail it.
+    reminderSentAt: timestamp("reminder_sent_at"),
     ...timestamps,
   },
   (t) => [index("payment_schedule_booking_idx").on(t.bookingId)],
@@ -301,6 +331,14 @@ export const payment = pgTable(
     failureReason: text("failure_reason"),
     paidAt: timestamp("paid_at"),
     refundedAt: timestamp("refunded_at"),
+    /*
+     * A chargeback. Kept off `status` on purpose: the money is contested, not
+     * refunded, and a dispute can still be won — treating it as a terminal payment
+     * state would either cancel a charter that is still on or hide one that is not.
+     * Set once when the dispute opens; `disputeStatus` carries how it ends.
+     */
+    disputedAt: timestamp("disputed_at"),
+    disputeStatus: text("dispute_status"),
     idempotencyKey: text("idempotency_key").notNull().unique(),
     ...timestamps,
   },
@@ -308,6 +346,31 @@ export const payment = pgTable(
     index("payment_booking_idx").on(t.bookingId),
     index("payment_intent_idx").on(t.stripePaymentIntentId),
   ],
+);
+
+/**
+ * One attempt to send money back. Separate from `payment` because a payment can be returned in
+ * parts — a cancellation policy retains a percentage, not an installment — and because Stripe
+ * redelivers `refund.updated`, so the reconciliation has to key on the refund, not the payment.
+ */
+export const paymentRefund = pgTable(
+  "payment_refund",
+  {
+    id: id("prf"),
+    paymentId: text("payment_id")
+      .notNull()
+      .references(() => payment.id, { onDelete: "cascade" }),
+    amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull(),
+    status: paymentRefundStatus("status").default("pending").notNull(),
+    // Null for a bank transfer sent back by hand: no processor was involved.
+    stripeRefundId: text("stripe_refund_id").unique(),
+    reason: text("reason"),
+    failureReason: text("failure_reason"),
+    settledAt: timestamp("settled_at"),
+    ...timestamps,
+  },
+  (t) => [index("payment_refund_payment_idx").on(t.paymentId)],
 );
 
 /** Append-only log of every provider call, for reconciliation and support. */
@@ -375,12 +438,17 @@ export const paymentScheduleRelations = relations(paymentSchedule, ({ one, many 
   payments: many(payment),
 }));
 
-export const paymentRelations = relations(payment, ({ one }) => ({
+export const paymentRelations = relations(payment, ({ one, many }) => ({
   booking: one(booking, { fields: [payment.bookingId], references: [booking.id] }),
   schedule: one(paymentSchedule, {
     fields: [payment.scheduleId],
     references: [paymentSchedule.id],
   }),
+  refunds: many(paymentRefund),
+}));
+
+export const paymentRefundRelations = relations(paymentRefund, ({ one }) => ({
+  payment: one(payment, { fields: [paymentRefund.paymentId], references: [payment.id] }),
 }));
 
 export const providerReservationEventRelations = relations(providerReservationEvent, ({ one }) => ({

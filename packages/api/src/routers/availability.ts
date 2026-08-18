@@ -1,9 +1,14 @@
-import { listAvailabilityCalendar } from "@yacht-charter/db/search";
+import { listAvailabilityCalendar, listAvailabilityConstraints } from "@yacht-charter/db/search";
 import { quoteRequestWithDiscountSchema } from "@yacht-charter/providers";
 
-import { availabilityCalendarInputSchema, availabilityCalendarSchema } from "../contracts/catalog";
+import {
+  availabilityCalendarInputSchema,
+  availabilityCalendarSchema,
+  availabilityConstraintsSchema,
+} from "../contracts/catalog";
 import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
 import { publicProcedure } from "../index";
+import { providerForListing, providerForQuote } from "../services/provider-routing";
 import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 
@@ -28,6 +33,26 @@ export const availabilityRouter = {
     .input(availabilityCalendarInputSchema)
     .output(availabilityCalendarSchema)
     .handler(({ context, input }) => listAvailabilityCalendar(context.db, input)),
+  constraints: publicProcedure
+    .route({
+      method: "GET",
+      path: "/listings/{listingId}/availability-constraints",
+      operationId: "listListingAvailabilityConstraints",
+      summary: "List what a listing will sell, as constraints",
+      description:
+        "Returns the rules a charter period must satisfy for one listing over a date window: the allowed check-in/check-out weekdays and night counts, the periods the provider says are taken, the periods carrying a published rate, and any one-way drop-off windows. Unlike the availability calendar, which lists the periods we have enumerated, this describes the whole legal space, so a caller can evaluate a range nobody pre-cut. Final price and bookability are still settled by the quote endpoint.",
+      tags: ["Availability"],
+      successDescription: "Charter constraints for the requested listing and date range.",
+      spec: withParameterExamples({
+        listingId: "ylst_yacht-sunreef-60-celeste",
+        from: "2026-07-01",
+        to: "2026-09-30",
+        currency: "EUR",
+      }),
+    })
+    .input(availabilityCalendarInputSchema)
+    .output(availabilityConstraintsSchema)
+    .handler(({ context, input }) => listAvailabilityConstraints(context.db, input)),
   quote: publicProcedure
     .route({
       method: "POST",
@@ -50,8 +75,13 @@ export const availabilityRouter = {
     })
     .input(quoteRequestWithDiscountSchema)
     .output(persistedQuoteSchema)
-    .handler(({ context, input }) =>
-      createQuote(context.db, context.provider, input, context.session?.user.id ?? null),
+    .handler(async ({ context, input }) =>
+      createQuote(
+        context.db,
+        await providerForListing(context.db, context.provider, input.listingId),
+        input,
+        context.session?.user.id ?? null,
+      ),
     ),
   reprice: publicProcedure
     .route({
@@ -73,15 +103,21 @@ export const availabilityRouter = {
     })
     .input(repriceInputSchema)
     .output(persistedQuoteSchema)
-    .handler(({ context, input }) =>
-      repriceQuote(context.db, context.provider, input.quoteId, context.session?.user.id ?? null, {
-        checkIn: input.checkIn,
-        checkOut: input.checkOut,
-        guests: input.guests,
-        extras: input.extras,
-        crewType: input.crewType,
-        discountCode: input.discountCode,
-        applyCredit: input.applyCredit,
-      }),
+    .handler(async ({ context, input }) =>
+      repriceQuote(
+        context.db,
+        await providerForQuote(context.db, context.provider, input.quoteId),
+        input.quoteId,
+        context.session?.user.id ?? null,
+        {
+          checkIn: input.checkIn,
+          checkOut: input.checkOut,
+          guests: input.guests,
+          extras: input.extras,
+          crewType: input.crewType,
+          discountCode: input.discountCode,
+          applyCredit: input.applyCredit,
+        },
+      ),
     ),
 };

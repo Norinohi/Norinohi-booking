@@ -21,7 +21,11 @@ export interface NausysConfig {
    * 10:00 CET. We keep them as plain wall-clock strings and never convert them.
    */
   optionTimeZone: string;
-  /** Serialization key. One lane per credential, never per instance. */
+  /**
+   * Base of every serialization key: the lanes in `client.ts` are suffixes of it.
+   * Keyed by credential, never by instance, so two clients in one process share
+   * the lane the vendor's sequential-only rule still applies to.
+   */
   queueKey: string;
 }
 

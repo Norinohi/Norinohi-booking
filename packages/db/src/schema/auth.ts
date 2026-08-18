@@ -12,6 +12,13 @@ export const user = pgTable("user", {
   phone: text("phone"),
   role: userRole("role").default("customer").notNull(),
   deactivatedAt: timestamp("deactivated_at"),
+  /**
+   * Set when guest checkout created this account on someone's behalf, so they have
+   * never chosen a password and never agreed to have an account. Null for everyone
+   * who signed up themselves. What tells the invitation flow whose account is still
+   * waiting to be claimed.
+   */
+  provisionedAt: timestamp("provisioned_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

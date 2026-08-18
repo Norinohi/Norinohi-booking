@@ -34,6 +34,7 @@ export function ConsultationForm({
       listingId={recommendation.listing?.id}
       context={{ answers, recommendation: summarizeRecommendation(recommendation) }}
       submitLabel={t("submit")}
+      submitClassName="w-full"
       successMessage={t("success")}
       onSuccess={onSuccess}
     />

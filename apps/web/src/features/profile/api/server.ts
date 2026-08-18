@@ -5,6 +5,8 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { BookingStatus } from "../types";
 import {
   bookingListQueryOptions,
+  creditBalanceQueryOptions,
+  creditLedgerQueryOptions,
   discountListQueryOptions,
   discountQueryOptions,
   listingPriceFiltersQueryOptions,
@@ -32,6 +34,14 @@ export function prefetchReferrals(queryClient: QueryClient) {
   return Promise.all([
     queryClient.prefetchQuery(referralSummaryQueryOptions()),
     queryClient.prefetchQuery(referralHistoryQueryOptions()),
+  ]);
+}
+
+/** Server prefetch for the /profile/credits route — pass to <Hydrated prefetch={...}>. */
+export function prefetchCredits(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.prefetchQuery(creditBalanceQueryOptions()),
+    queryClient.prefetchQuery(creditLedgerQueryOptions()),
   ]);
 }
 

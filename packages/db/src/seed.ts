@@ -10,6 +10,8 @@ import {
   availabilitySlot,
   base,
   builder,
+  listingFreePeriod,
+  listingPricePeriod,
   country,
   facetMedia,
   facetMediaTranslation,
@@ -23,6 +25,7 @@ import {
   location,
   operator,
   provider,
+  providerExtraCatalogue,
   providerRecord,
   providerRawPayload,
   region,
@@ -1636,6 +1639,47 @@ const slots = yachts.flatMap((item) => {
   });
 });
 
+/*
+ * The mock fleet has to carry the same canonical shapes a real sync writes, or the seeded
+ * catalogue is unbookable: search filters on free periods and the card's price comes from
+ * published rates. Derived from the same weekly slots so the three never disagree.
+ */
+const SEASON_START = seasonWeeks[0] ?? "";
+const SEASON_END = addWeek(seasonWeeks.at(-1) ?? "");
+
+const pricePeriods = slots.map((slot) => ({
+  id: `lpp_${slot.id}`,
+  listingId: slot.listingId,
+  listingSourceId: slot.listingSourceId,
+  startDate: slot.startDate,
+  endDate: slot.endDate,
+  kind: "weekly" as const,
+  priceMinor: slot.priceMinor,
+  currency: "EUR",
+}));
+
+/** The complement of everything sold, exactly as `freePeriodsFrom` computes it after a sync. */
+const freePeriods = yachts.flatMap((item) => {
+  const sold = slots
+    .filter((slot) => slot.listingId === item.listingId && slot.status !== "available")
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  const periods: { startDate: string; endDate: string }[] = [];
+  let cursor = SEASON_START;
+  for (const slot of sold) {
+    if (slot.startDate > cursor) periods.push({ startDate: cursor, endDate: slot.startDate });
+    if (slot.endDate > cursor) cursor = slot.endDate;
+  }
+  if (cursor < SEASON_END) periods.push({ startDate: cursor, endDate: SEASON_END });
+
+  return periods.map((period, index) => ({
+    id: `lfp_${key(item.externalId.replace("yacht-", ""))}_${index}`,
+    listingId: item.listingId,
+    listingSourceId: item.sourceId,
+    ...period,
+  }));
+});
+
 const crewTypeFor = (categoryId: string) => {
   if (categoryId === "cat_luxury" || categoryId === "cat_motor") return "full-crew";
   if (categoryId === "cat_catamaran") return "skipper";
@@ -1657,26 +1701,26 @@ const allowsPets = (baseId: string, categoryId: string) =>
 const hasConfirmedAvailability = (slotId: string, status: string) =>
   status !== "available" || !slotId.includes("2026_08_08");
 
-const mandatoryExtraIds = ["amn_cleaning_fee", "amn_transit_log", "amn_marina_fees"] as const;
-
-const mandatoryExtraPrice = (amenityId: string) => {
-  switch (amenityId) {
-    case "amn_cleaning_fee":
-      return 15_000;
-    case "amn_transit_log":
-      return 40_000;
-    case "amn_marina_fees":
-      return 15_000;
-    default:
-      return 0;
-  }
-};
-
-const optionalExtraIdsFor = (categoryId: string) => {
-  if (categoryId === "cat_luxury") return ["amn_sunbathing_area", "amn_gas_bbq", "amn_hot_tub"];
-  if (categoryId === "cat_catamaran") return ["amn_sunbathing_area", "amn_gas_bbq"];
-  return ["amn_gas_bbq"];
-};
+/**
+ * The extras a mock listing sells, mirroring the non-crew entries of
+ * `packages/providers/src/mock/fixtures/availability.json`.
+ *
+ * These two lists have to agree, and this file cannot import that fixture because
+ * `packages/providers` depends on this package, not the other way round. Keeping
+ * them in step is what makes the displayed price the charged one: the mock adds
+ * every obligatory extra to a quote whether or not it was selected, so a mandatory
+ * extra shown here and absent there would be displayed and never billed, and one
+ * there and not here would be billed and never shown.
+ *
+ * Deliberately the same set for every listing, because the mock prices one global
+ * list rather than a per-yacht one.
+ */
+const MOCK_EXTRAS = [
+  { externalId: "transit-log", name: "Transit log", obligatory: true, priceMinor: 25_000 },
+  { externalId: "sup", name: "Stand-up paddleboard", obligatory: false, priceMinor: 12_000 },
+  { externalId: "early-checkin", name: "Early check-in", obligatory: false, priceMinor: 18_000 },
+  { externalId: "safety-net", name: "Safety net", obligatory: false, priceMinor: 15_000 },
+] as const;
 
 /**
  * Which crew roles a yacht sells, following how the operator sells the hull: a
@@ -1698,19 +1742,6 @@ const crewRolePrice = (amenityId: string) => {
       return 105_000;
     case "amn_cook":
       return 120_000;
-    default:
-      return 0;
-  }
-};
-
-const optionalExtraPrice = (amenityId: string) => {
-  switch (amenityId) {
-    case "amn_sunbathing_area":
-      return 10_000;
-    case "amn_gas_bbq":
-      return 20_000;
-    case "amn_hot_tub":
-      return 10_000;
     default:
       return 0;
   }
@@ -2057,6 +2088,12 @@ export async function main() {
     )
     .onConflictDoNothing();
 
+  /*
+   * Equipment the yacht has, plus the priced crew roles the sidebar's Crew control
+   * reads back. Paid extras are NOT here: they live in provider_extra_catalogue,
+   * because an extra is something the customer buys rather than something the
+   * yacht carries, and the detail page reads the two from different tables.
+   */
   await db
     .insert(listingAmenity)
     .values(
@@ -2064,33 +2101,19 @@ export async function main() {
         [
           ...item.amenityIds.map((amenityId) => ({
             amenityId,
-            obligatory: false,
             priceMinor: null,
             priceCurrency: null,
           })),
-          ...mandatoryExtraIds.map((amenityId) => ({
-            amenityId,
-            obligatory: true,
-            priceMinor: mandatoryExtraPrice(amenityId),
-            priceCurrency: "EUR",
-          })),
-          ...optionalExtraIdsFor(item.categoryId).map((amenityId) => ({
-            amenityId,
-            obligatory: false,
-            priceMinor: optionalExtraPrice(amenityId),
-            priceCurrency: "EUR",
-          })),
           ...crewRoleIdsFor(crewTypeFor(item.categoryId)).map((amenityId) => ({
             amenityId,
-            obligatory: false,
             priceMinor: crewRolePrice(amenityId),
             priceCurrency: "EUR",
           })),
-        ].map(({ amenityId, obligatory, priceMinor, priceCurrency }) => ({
+        ].map(({ amenityId, priceMinor, priceCurrency }) => ({
           id: `lamn_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${amenityId.replace("amn_", "")}`,
           listingId: item.listingId,
           amenityId,
-          obligatory,
+          obligatory: false,
           priceMinor,
           priceCurrency,
         })),
@@ -2099,6 +2122,42 @@ export async function main() {
     .onConflictDoUpdate({
       target: [listingAmenity.listingId, listingAmenity.amenityId],
       set: {
+        obligatory: sql.raw("excluded.obligatory"),
+        priceMinor: sql.raw("excluded.price_minor"),
+        priceCurrency: sql.raw("excluded.price_currency"),
+      },
+    });
+
+  await db
+    .insert(providerExtraCatalogue)
+    .values(
+      yachts.flatMap((item) =>
+        MOCK_EXTRAS.map((extra) => ({
+          id: `pxtr_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${extra.externalId.replaceAll("-", "_")}`,
+          listingId: item.listingId,
+          source: "mock",
+          // The mock keeps one flat code space rather than the separate service and
+          // equipment spaces a real vendor has; `equipment` is the arbitrary half of
+          // the pair it is filed under.
+          kind: "equipment" as const,
+          externalId: extra.externalId,
+          name: extra.name,
+          obligatory: extra.obligatory,
+          priceMinor: extra.priceMinor,
+          priceCurrency: "EUR",
+          onRequestOnly: false,
+        })),
+      ),
+    )
+    .onConflictDoUpdate({
+      target: [
+        providerExtraCatalogue.listingId,
+        providerExtraCatalogue.source,
+        providerExtraCatalogue.kind,
+        providerExtraCatalogue.externalId,
+      ],
+      set: {
+        name: sql.raw("excluded.name"),
         obligatory: sql.raw("excluded.obligatory"),
         priceMinor: sql.raw("excluded.price_minor"),
         priceCurrency: sql.raw("excluded.price_currency"),
@@ -2150,6 +2209,24 @@ export async function main() {
         sourceHash: sql.raw("excluded.source_hash"),
       },
     });
+
+  await db
+    .insert(listingPricePeriod)
+    .values(pricePeriods)
+    .onConflictDoUpdate({
+      target: [
+        listingPricePeriod.listingId,
+        listingPricePeriod.kind,
+        listingPricePeriod.startDate,
+        listingPricePeriod.endDate,
+      ],
+      set: {
+        priceMinor: sql.raw("excluded.price_minor"),
+        currency: sql.raw("excluded.currency"),
+      },
+    });
+
+  await db.insert(listingFreePeriod).values(freePeriods).onConflictDoNothing();
 
   await db
     .insert(review)

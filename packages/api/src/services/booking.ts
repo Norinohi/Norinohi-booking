@@ -13,11 +13,11 @@ import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
-import { and, count, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
-import { badgesFor, stableCount } from "../presenters/listing";
+import { badgesFor } from "../presenters/listing";
 import type {
   bookingCancelSchema,
   consentsSchema,
@@ -36,12 +36,16 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { notifyBookingCancelled } from "./booking-email";
+import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
+import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { isUniqueViolation } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { asCrewType, assertQuoteIsFresh } from "./quote";
+import type { GuestAccessToken } from "./guest-access";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
 
@@ -66,13 +70,31 @@ const REFERENCE_LENGTH = 8;
 
 /* --------------------------------------------------------------------- reads */
 
+/*
+ * Never reached the customer as a booking: the provider refused or the hold ran out before
+ * anything was secured, and no money moved. The rows are kept — they carry the consents, the
+ * idempotency key and the vendor's reason — but a failed submit must not leave a card in the
+ * customer's history. Asking for one of these statuses explicitly still returns it, which is
+ * how support and admin see what was attempted.
+ */
+const NEVER_HELD: BookingStatus[] = [
+  "DRAFT",
+  "QUOTE_EXPIRED",
+  "OPTION_EXPIRED",
+  "PROVIDER_REJECTED",
+];
+
 export async function listBookings(
   db: Database,
   userId: string,
   input: ListInput,
 ): Promise<ListResult> {
   const filters = [eq(booking.userId, userId)];
-  if (input.status?.length) filters.push(inArray(booking.status, input.status));
+  if (input.status?.length) {
+    filters.push(inArray(booking.status, input.status));
+  } else {
+    filters.push(notInArray(booking.status, NEVER_HELD));
+  }
 
   // The date filter is on the charter period, which lives on the quote — that is
   // what "Any dates" means on a history screen, not when the booking was made.
@@ -131,6 +153,7 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
     ...summary,
     provider: row.booking.provider,
     providerReservationId: row.booking.providerReservationId,
+    crewListLink: row.booking.crewListLink,
     holdExpiresAt: row.booking.holdExpiresAt?.toISOString() ?? null,
     confirmedAt: row.booking.confirmedAt?.toISOString() ?? null,
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
@@ -141,6 +164,7 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       group: line.group ?? null,
+      payWhen: line.payWhen,
     })),
     extras: extras.map((extra) => ({
       code: extra.code,
@@ -156,6 +180,10 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       depositPct: row.quote.paymentPolicy.depositPct,
       balanceDueAt: row.quote.paymentPolicy.balanceDueAt ?? null,
     },
+    dueNow: {
+      amountMinor: amountDue(row.quote, row.quote.paymentPolicy.mode),
+      currency: row.booking.currency,
+    },
     paymentSchedule: schedules.map((schedule) => ({
       id: schedule.id,
       kind: schedule.kind,
@@ -169,6 +197,10 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       amount: { amountMinor: row_.amountMinor, currency: row_.currency },
       status: row_.status,
       paidAt: row_.paidAt?.toISOString() ?? null,
+      // Same test `planRefund` makes: an intent id is what a card payment is.
+      method: row_.stripePaymentIntentId ? ("card" as const) : ("transfer" as const),
+      disputedAt: row_.disputedAt?.toISOString() ?? null,
+      disputeStatus: row_.disputeStatus,
     })),
   };
 }
@@ -197,6 +229,17 @@ export async function getCheckoutStatus(db: Database, userId: string, id: string
 /* ------------------------------------------------------------------ mutation */
 
 /**
+ * Who is checking out. A guest has an account — provisioned for them at the edge —
+ * but no session, so the booking additionally stores the hash of the token that is
+ * their only way back to it.
+ */
+export type CheckoutActor = {
+  userId: string;
+  /** Null for a signed-in customer, whose session already authorises the follow-ups. */
+  guestAccess: GuestAccessToken | null;
+};
+
+/**
  * Turns a fresh quote into a booking, holding a provider option when the provider
  * supports one. Idempotent on `idempotencyKey`: a retried submit returns the
  * booking the first call created rather than holding a second option (§6.2).
@@ -204,14 +247,18 @@ export async function getCheckoutStatus(db: Database, userId: string, id: string
 export async function createHold(
   db: Database,
   provider: InventoryProvider,
-  userId: string,
+  actor: CheckoutActor,
   quoteId: string,
   idempotencyKey: string,
   guest: GuestDetails,
   consents: Consents,
 ): Promise<Hold> {
+  const userId = actor.userId;
   const existing = await findHoldByKey(db, userId, idempotencyKey);
-  if (existing) return presentHold(existing);
+  if (existing) {
+    const reissued = await rehashGuestAccess(db, existing, actor);
+    return presentHold(reissued.row, reissued.applied ? (actor.guestAccess?.token ?? null) : null);
+  }
 
   const priced = await assertQuoteIsFresh(db, quoteId);
   if (priced.userId && priced.userId !== userId) {
@@ -243,6 +290,7 @@ export async function createHold(
     totalMinor: priced.totalMinor,
     currency: priced.currency,
     commercialSnapshot: snapshot,
+    guestAccessTokenHash: actor.guestAccess?.tokenHash ?? null,
     idempotencyKey,
   });
 
@@ -257,14 +305,35 @@ export async function createHold(
   // checkouts cannot both take the last remaining use.
   const redeem = () => redeemFor(db, created.id, userId, priced);
 
+  const token = actor.guestAccess?.token ?? null;
+
+  /*
+   * Queued, not sent. The mail is an HTTP call to Resend and the answer does not depend on
+   * it, so it leaves with the drain `kickOutbox` starts once this call has something to
+   * return. The drain reads the booking back, which is why only the id goes on the queue.
+   */
+  const announce = (row: BookingRow) => enqueueOutbox(db, "booking_received", row.id);
+
   // No option support: nothing to secure, so the booking waits at QUOTED and the
   // payment is what commits it.
   if (!provider.capabilities().supportsOptions) {
     await redeem();
-    return presentHold(created);
+    await announce(created);
+    kickOutbox(db);
+    return presentHold(created, token);
   }
 
-  return presentHold(await holdOption(db, provider, created, priced, account, redeem));
+  /*
+   * After the option rather than before it, because the mail tells the customer how long
+   * the slot is theirs and that date does not exist until the provider answers. A refusal
+   * throws out of holdOption, which is also the right moment to send nothing: there is no
+   * hold to write to them about.
+   */
+  const held = await holdOption(db, provider, created, priced, account, redeem);
+  await announce(held);
+  kickOutbox(db);
+
+  return presentHold(held, token);
 }
 
 /**
@@ -276,6 +345,32 @@ export async function createHold(
  * meant the second one was refused outright and could not check out at all, and it
  * made the endpoint an oracle for whether a given key existed.
  */
+/**
+ * A retried guest submit arrives from a browser holding a token nobody kept a copy
+ * of, so the stored hash is replaced with the one this attempt minted.
+ *
+ * Refused unless the booking was itself a guest checkout. The email decides which
+ * account a guest acts as, so without that guard someone who typed a registered
+ * address and hit the right idempotency key would be handed a live token for a
+ * booking that customer made while signed in.
+ */
+async function rehashGuestAccess(
+  db: Database,
+  existing: BookingRow,
+  actor: CheckoutActor,
+): Promise<{ row: BookingRow; applied: boolean }> {
+  if (!actor.guestAccess || !existing.guestAccessTokenHash)
+    return { row: existing, applied: false };
+
+  const [updated] = await db
+    .update(booking)
+    .set({ guestAccessTokenHash: actor.guestAccess.tokenHash })
+    .where(eq(booking.id, existing.id))
+    .returning();
+
+  return updated ? { row: updated, applied: true } : { row: existing, applied: false };
+}
+
 async function findHoldByKey(
   db: Database,
   userId: string,
@@ -383,6 +478,7 @@ async function holdOption(
         providerReservationUuid: reservation.securityToken ?? null,
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
+        crewListLink: reservation.crewListLink ?? null,
       });
     } catch (error) {
       // booking_provider_option_uq: someone else already holds this exact option.
@@ -469,6 +565,24 @@ export async function cancelBooking(
       );
 
       await releaseProviderOption(db, provider, row.booking);
+    }
+
+    /*
+     * Only the no-money branch. A cancelled CONFIRMED booking lands at REFUND_PENDING and is
+     * answered by the refund mail once the money actually moves, which is the one that can
+     * state an amount.
+     */
+    if (moved.status === "CANCELLED" && row.booking.guestEmail) {
+      await notifyBookingCancelled({
+        to: row.booking.guestEmail,
+        guestName: row.booking.guestFullName ?? "Guest",
+        bookingId: moved.id,
+        reference: row.booking.reference,
+        yachtName: row.booking.commercialSnapshot.listingTitle,
+        checkIn: row.quote.checkIn,
+        checkOut: row.quote.checkOut,
+        reason,
+      });
     }
 
     return { id: moved.id, status: moved.status };
@@ -791,10 +905,6 @@ function presentSummary(
       crewType: snapshot.crewType,
       specs,
       amenities: snapshot.amenities ?? [],
-      bookingStats: {
-        bookedThisMonth: stableCount(row.listingId, 2, 8),
-        viewedToday: stableCount(row.id, 18, 64),
-      },
       badges: badgesFor({
         petsAllowed: snapshot.petsAllowed ?? false,
         depositInsuranceIncluded: snapshot.depositInsuranceIncluded ?? false,
@@ -822,6 +932,12 @@ function presentSummary(
     },
     paidTotal: { amountMinor: paidMinor, currency: row.currency },
     balanceDue: { amountMinor: Math.max(row.totalMinor - paidMinor, 0), currency: row.currency },
+    outstanding: { amountMinor: outstandingMinor(priced, paidMinor), currency: row.currency },
+    payableNow: {
+      amountMinor: payableNowFor(priced, paidMinor, row),
+      currency: row.currency,
+    },
+    dueAtCheckIn: { amountMinor: atCheckInMinor(priced), currency: row.currency },
     prepayment: { amountMinor: priced.depositMinor, currency: row.currency },
     nextPaymentDueAt: money?.nextDueAt?.toISOString() ?? null,
     cancellable: isUserCancellable(row.status),
@@ -829,13 +945,14 @@ function presentSummary(
   };
 }
 
-function presentHold(row: BookingRow): Hold {
+function presentHold(row: BookingRow, accessToken: string | null): Hold {
   return {
     bookingId: row.id,
     reference: row.reference,
     status: row.status,
     holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
     optionHeld: row.status === "OPTION_HELD",
+    accessToken,
   };
 }
 

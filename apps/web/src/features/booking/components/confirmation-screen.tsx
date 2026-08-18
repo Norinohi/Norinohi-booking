@@ -5,10 +5,11 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, Share2 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
-import { useState } from "react";
+import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
@@ -17,10 +18,18 @@ import { useMoney } from "@/hooks/use-money";
 import { GROUP, POP, RISE } from "@/lib/motion";
 import { client } from "@/utils/orpc";
 
-import { bookingDetailQueryOptions } from "../api/queries";
+import { bookingDetailQueryOptions, checkoutStatusQueryOptions } from "../api/queries";
+import { hasFailed, isSettling } from "../lib/checkout-status";
+import { guestAccessFor } from "../lib/guest-access";
 import { confirmationParsers } from "../lib/search-params";
 
 const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
+const POLL_INTERVAL_MS = 2000;
+/*
+ * Stop asking after a minute. Past that the webhook is stuck or the provider is not answering,
+ * and neither resolves by us polling harder — the screen says the confirmation will be emailed.
+ */
+const POLL_LIMIT_MS = 60_000;
 const CONFETTI_COLORS = ["#2f80ed", "#eab308", "#ec4899", "#22c55e", "#a855f7", "#f97316"];
 
 function noise(seed: number) {
@@ -126,17 +135,47 @@ function Row({ row, last }: { row: SummaryRow; last: boolean }) {
 export default function BookingConfirmationScreen() {
   const t = useTranslations("Booking.confirmation");
   const tCrew = useTranslations("Common.crewTypes");
+  const locale = useLocale();
   const money = useMoney();
   const format = useFormatter();
-  const [{ bookingId }] = useQueryStates(confirmationParsers);
+  const [{ bookingId, method }] = useQueryStates(confirmationParsers);
   const [downloading, setDownloading] = useState(false);
+  /*
+   * Resolved on the client only — localStorage does not exist during prerender — and the
+   * read has to land before the query runs, or a guest's first request goes out unauthorised.
+   * `null` is "not looked yet"; a guest who set a password since has no token and needs none.
+   */
+  const [access, setAccess] = useState<{ token: string | undefined } | null>(null);
+  useEffect(() => setAccess({ token: guestAccessFor(bookingId) }), [bookingId]);
+  const isGuest = Boolean(access?.token);
 
   const { data: booking, isLoading } = useQuery({
-    ...bookingDetailQueryOptions(bookingId ?? ""),
-    enabled: Boolean(bookingId),
+    ...bookingDetailQueryOptions(bookingId ?? "", access?.token),
+    enabled: Boolean(bookingId) && access !== null,
   });
 
-  if (isLoading) {
+  /*
+   * Card only. Stripe returning success means the money moved, not that the booking exists:
+   * the webhook still has to reach us and the provider commit still has to succeed. Polling
+   * until it settles is what stops this screen congratulating someone whose booking was
+   * rejected and refunded. An invoiced booking rests in PAYMENT_PENDING by design, so it
+   * would poll forever — hence the gate.
+   */
+  const pollingSince = useRef(Date.now());
+  const { data: checkout, isError: statusFailed } = useQuery({
+    ...checkoutStatusQueryOptions(bookingId ?? "", access?.token),
+    enabled: Boolean(bookingId) && access !== null && method === "card",
+    refetchInterval: (query) => {
+      if (!isSettling(query.state.data?.status)) return false;
+      return Date.now() - pollingSince.current > POLL_LIMIT_MS ? false : POLL_INTERVAL_MS;
+    },
+  });
+
+  /* Never render an outcome for a card booking before its first status lands. */
+  const awaitingStatus = method === "card" && !checkout && !statusFailed;
+
+  /* `access === null` keeps the query disabled, which reads as settled rather than loading. */
+  if (isLoading || access === null || awaitingStatus) {
     return (
       <div className="flex min-h-full items-center justify-center p-8">
         <Loader />
@@ -159,6 +198,35 @@ export default function BookingConfirmationScreen() {
     );
   }
 
+  if (hasFailed(checkout?.status)) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-4 md:p-8">
+        <EmptyState
+          title={t("failed.title")}
+          /* The server's own reason where it has one; it is written for the customer. */
+          description={checkout?.failureReason ?? t("failed.body")}
+          action={
+            <Button variant="brand" nativeButton={false} render={<Link href="/yachts" />}>
+              {t("browse")}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (isSettling(checkout?.status)) {
+    return (
+      <div className="flex min-h-full items-center justify-center p-4 md:p-8">
+        <EmptyState
+          illustration={<Loader />}
+          title={t("settling.title")}
+          description={t("settling.body")}
+        />
+      </div>
+    );
+  }
+
   /* checkIn/checkOut are ISO datetimes, so parse them as instants and render the day in UTC. */
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
   const crewKey = CREW_KEYS.find((key) => key === booking.crewType);
@@ -176,19 +244,43 @@ export default function BookingConfirmationScreen() {
     .map((extra) => extra.label);
 
   /*
-   * A booking's `payment_schedule` rows only exist once a card payment starts, so for a held or
-   * invoiced booking the deposit/balance split is derived from the frozen policy and total instead.
+   * `dueNow` comes off the booking rather than being re-derived from the policy and the total:
+   * the server figure is what checkout charges, and it excludes the lines marked pay-at-check-in.
    * The security deposit is not carried on `booking.get`, so it shows only if a schedule row exists.
    */
+  /*
+   * Shares the yacht, not the booking: /bookings/<id> is authorised by a session or the guest
+   * token in this browser, so a friend who opens it sees a sign-in screen. The listing page with
+   * the dates is what someone actually wants to send. The Web Share API is absent on desktop
+   * browsers and outside a secure context, hence the clipboard fallback.
+   */
+  const shareTrip = async () => {
+    const url = `${window.location.origin}/${locale}/yachts/${booking.listing.id}`;
+    const text = t("shareText", {
+      name: booking.listing.title,
+      dates: `${day(booking.checkIn)} → ${day(booking.checkOut)}`,
+    });
+
+    if (navigator.share) {
+      /* A cancelled share sheet rejects; that is the customer changing their mind, not an error. */
+      try {
+        await navigator.share({ title: booking.listing.title, text, url });
+        return;
+      } catch {
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      toast.success(t("shareCopied"));
+    } catch {
+      toast.error(t("shareFailed"));
+    }
+  };
+
   const security = booking.paymentSchedule.find((entry) => entry.kind === "security_deposit");
-  const depositFraction =
-    booking.paymentPolicy.depositPct > 1
-      ? booking.paymentPolicy.depositPct / 100
-      : booking.paymentPolicy.depositPct;
-  const dueNowMinor =
-    booking.paymentPolicy.mode === "full"
-      ? booking.total.amountMinor
-      : Math.round(booking.total.amountMinor * depositFraction);
+  const dueNowMinor = booking.dueNow.amountMinor;
   const balanceMinor = booking.total.amountMinor - dueNowMinor;
   const balanceDate = booking.paymentPolicy.balanceDueAt ?? booking.nextPaymentDueAt;
 
@@ -223,7 +315,13 @@ export default function BookingConfirmationScreen() {
     ...(balanceMinor > 0
       ? [
           {
-            label: t("summary.secondPayment", { date: balanceDate ? day(balanceDate) : "" }),
+            /*
+             * Undated means the remainder is the pay-at-check-in extra rather than a scheduled
+             * instalment, so it is labelled as such instead of printing an empty date.
+             */
+            label: balanceDate
+              ? t("summary.secondPayment", { date: day(balanceDate) })
+              : t("summary.secondPaymentAtCheckIn"),
             value: money(balanceMinor),
             emphasis: "bold" as const,
           },
@@ -244,7 +342,7 @@ export default function BookingConfirmationScreen() {
     if (!bookingId) return;
     setDownloading(true);
     try {
-      const receipt = await client.booking.receipt({ id: bookingId });
+      const receipt = await client.booking.receipt({ id: bookingId, accessToken: access?.token });
       const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -301,12 +399,26 @@ export default function BookingConfirmationScreen() {
               <p className="text-base leading-[1.4] text-foreground opacity-80">
                 {t("remaining", { amount: money(booking.balanceDue.amountMinor) })}
               </p>
-              <p className="text-sm leading-[1.3] font-medium text-natural-600">{t("emailed")}</p>
+              <p className="text-sm leading-[1.3] font-medium text-natural-600">
+                {isGuest ? t("guestEmailed") : t("emailed")}
+              </p>
             </div>
+            {/* Both destinations need an account: My Bookings for a signed-in customer, and the
+                booking page itself, which is signed-in only by design (see detail-screen). A
+                guest therefore goes through sign-in and lands on their booking — the password to
+                get there is in the email this screen just told them about. */}
             <Button
               variant="neutral"
               nativeButton={false}
-              render={<Link href="/profile/bookings" />}
+              render={
+                isGuest && bookingId ? (
+                  <Link
+                    href={{ pathname: "/login", query: { redirect: `/bookings/${bookingId}` } }}
+                  />
+                ) : (
+                  <Link href="/profile/bookings" />
+                )
+              }
               className="w-full md:w-auto"
             >
               {t("viewBooking")}
@@ -334,19 +446,37 @@ export default function BookingConfirmationScreen() {
           <motion.div variants={RISE} className="flex flex-col">
             <span aria-hidden className="block h-px w-full bg-border" />
             <div className="flex flex-col-reverse gap-4 p-5 md:flex-row">
-              <Button variant="neutral" className="w-full md:flex-1">
+              <Button
+                variant="neutral"
+                className="w-full md:flex-1"
+                onClick={() => void shareTrip()}
+              >
                 <Share2 />
                 {t("shareTrip")}
               </Button>
-              <Button
-                variant="brand"
-                className="w-full md:flex-1"
-                disabled={downloading}
-                onClick={() => void downloadReceipt()}
-              >
-                <FileText />
-                {t("downloadReceipt")}
-              </Button>
+              {/* Paying by transfer, the invoice is the document that matters — it carries the
+                  bank details and the amount due, which a receipt of nothing-paid-yet does not. */}
+              {method === "invoice" && bookingId ? (
+                <Button
+                  variant="brand"
+                  className="w-full md:flex-1"
+                  nativeButton={false}
+                  render={<Link href={`/bookings/${bookingId}/invoice`} />}
+                >
+                  <FileText />
+                  {t("viewInvoice")}
+                </Button>
+              ) : (
+                <Button
+                  variant="brand"
+                  className="w-full md:flex-1"
+                  loading={downloading}
+                  onClick={() => void downloadReceipt()}
+                >
+                  <FileText />
+                  {t("downloadReceipt")}
+                </Button>
+              )}
             </div>
           </motion.div>
         </motion.div>

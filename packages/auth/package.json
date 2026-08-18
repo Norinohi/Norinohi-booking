@@ -13,10 +13,10 @@
   "dependencies": {
     "@yacht-charter/db": "workspace:*",
     "@yacht-charter/env": "workspace:*",
+    "@yacht-charter/transactional": "workspace:*",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
-    "resend": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

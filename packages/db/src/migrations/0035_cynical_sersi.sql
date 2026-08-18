@@ -1,0 +1,1 @@
+ALTER TYPE "public"."provider_reservation_event_kind" ADD VALUE 'confirm_stale' BEFORE 'cancel_requested';

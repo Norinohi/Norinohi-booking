@@ -1,0 +1,218 @@
+import { render } from "@react-email/render";
+import { env } from "@yacht-charter/env/server";
+import { createElement } from "react";
+import { type CreateEmailOptions, Resend } from "resend";
+
+import { BalanceReminderEmail, type BalanceReminderEmailProps } from "./emails/balance-reminder";
+import { BookingCancelledEmail, type BookingCancelledEmailProps } from "./emails/booking-cancelled";
+import { BookingConfirmedEmail, type BookingConfirmedEmailProps } from "./emails/booking-confirmed";
+import { BookingReceivedEmail, type BookingReceivedEmailProps } from "./emails/booking-received";
+import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
+import { InvoiceIssuedEmail, type InvoiceIssuedEmailProps } from "./emails/invoice-issued";
+import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
+import { PaymentReceivedEmail, type PaymentReceivedEmailProps } from "./emails/payment-received";
+import { RefundIssuedEmail, type RefundIssuedEmailProps } from "./emails/refund-issued";
+import { ResetPasswordEmail } from "./emails/reset-password";
+import { SetPasswordEmail } from "./emails/set-password";
+import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert";
+
+let client: Resend | undefined;
+
+function getClient() {
+  if (!env.RESEND_API_KEY) return undefined;
+  client ??= new Resend(env.RESEND_API_KEY);
+  return client;
+}
+
+// Optional as a pair like the Google/Stripe keys: without RESEND_API_KEY and EMAIL_FROM
+// sends are skipped rather than the server failing to boot. Callers read `skipped` to
+// decide whether to surface the link some other way (e.g. a local dev log).
+async function sendHtml(
+  to: string,
+  subject: string,
+  html: string,
+  { replyable = true }: { replyable?: boolean } = {},
+) {
+  const resend = getClient();
+  if (!resend || !env.EMAIL_FROM) {
+    console.warn(`[email] RESEND_API_KEY/EMAIL_FROM not configured, skipping send to ${to}`);
+    return { skipped: true } as const;
+  }
+
+  /*
+   * Customer mail is answerable; internal alerts are not. Sending an alert with the public
+   * reply-to would route a colleague's answer to the customer-facing inbox as if a customer
+   * had written it.
+   */
+  const from = env.EMAIL_FROM_NAME ? `${env.EMAIL_FROM_NAME} <${env.EMAIL_FROM}>` : env.EMAIL_FROM;
+
+  const payload: CreateEmailOptions = { from, to, subject, html };
+  if (replyable && env.REPLY_TO_EMAIL) payload.replyTo = env.REPLY_TO_EMAIL;
+
+  const result = await resend.emails.send(payload);
+  if (result.error) {
+    throw new Error(`Resend send failed: ${result.error.message}`);
+  }
+
+  return { skipped: false, id: result.data?.id } as const;
+}
+
+/**
+ * What a customer gets the moment a booking is held, before any money has moved.
+ *
+ * The subject says "holding", not "confirmed", because that is what has happened: the mail goes
+ * out over an unpaid booking, and calling it a confirmation left customers believing they were
+ * booked when the slot was still running down. `sendBookingConfirmedEmail` is the one that means
+ * it.
+ *
+ * Everything is pre-formatted by the caller: money and dates belong to the booking's currency
+ * and the customer's locale, neither of which this package knows. The subject carries the
+ * reference so a later "what was my booking number" search finds it.
+ */
+export async function sendBookingReceivedEmail(
+  to: string,
+  booking: Omit<BookingReceivedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BookingReceivedEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `We're holding ${booking.yachtName} — booking ${booking.reference}`, html);
+}
+
+/** The charter is real: sent once the operator has committed the reservation. */
+export async function sendBookingConfirmedEmail(
+  to: string,
+  booking: Omit<BookingConfirmedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BookingConfirmedEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Confirmed: ${booking.yachtName} — booking ${booking.reference}`, html);
+}
+
+/**
+ * The receipt for one payment that landed. Its own mail rather than a line in the confirmation,
+ * because a deposit charter pays twice and the second one has no confirmation to ride along with.
+ */
+export async function sendPaymentReceivedEmail(
+  to: string,
+  payment: Omit<PaymentReceivedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(PaymentReceivedEmail, { ...payment, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `${payment.amount} received — booking ${payment.reference}`, html);
+}
+
+/**
+ * The bank-transfer details, sent when a customer asks for an invoice. The subject carries the
+ * invoice number so it is findable, and the amount so the mail is actionable from the list view.
+ */
+export async function sendInvoiceIssuedEmail(
+  to: string,
+  invoice: Omit<InvoiceIssuedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(InvoiceIssuedEmail, { ...invoice, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Invoice ${invoice.invoiceNumber} — ${invoice.amount} due`, html);
+}
+
+/** Confirmation that a booking is off, for the case where no money was ever taken. */
+export async function sendBookingCancelledEmail(
+  to: string,
+  booking: Omit<BookingCancelledEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BookingCancelledEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Booking ${booking.reference} is cancelled`, html);
+}
+
+/** The nudge before a confirmed booking's second installment falls due. */
+export async function sendBalanceReminderEmail(
+  to: string,
+  reminder: Omit<BalanceReminderEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BalanceReminderEmail, { ...reminder, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(
+    to,
+    `${reminder.amount} due ${reminder.dueAt} — booking ${reminder.reference}`,
+    html,
+  );
+}
+
+/** Confirmation that money went back, sent once a refund has actually settled. */
+export async function sendRefundIssuedEmail(
+  to: string,
+  refund: Omit<RefundIssuedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(RefundIssuedEmail, { ...refund, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `${refund.refunded} refunded — booking ${refund.reference}`, html);
+}
+
+/** The acknowledgement an enquiry gets — quote request, charter expert, or consultation. */
+export async function sendLeadFollowUpEmail(
+  to: string,
+  lead: Omit<LeadFollowUpEmailProps, "appUrl">,
+) {
+  const html = await render(createElement(LeadFollowUpEmail, { ...lead, appUrl: env.CORS_ORIGIN }));
+  return sendHtml(to, "We have your enquiry — YachtSkanner", html);
+}
+
+/**
+ * The reply staff send from the inbox — to a question about a booking, or to a pre-booking
+ * enquiry, which has no reference to put in the subject.
+ */
+export async function sendEnquiryAnswerEmail(
+  to: string,
+  enquiry: Omit<EnquiryAnswerEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(EnquiryAnswerEmail, { ...enquiry, appUrl: env.CORS_ORIGIN }),
+  );
+  const subject = enquiry.reference
+    ? `Re: your question about booking ${enquiry.reference}`
+    : "Re: your enquiry — YachtSkanner";
+  return sendHtml(to, subject, html);
+}
+
+/**
+ * The internal ping. `to` is the staff address from the environment; with none configured the
+ * caller skips this entirely, which is why there is no fallback recipient here — guessing one
+ * would mean mailing a customer an internal alert.
+ */
+export async function sendStaffAlertEmail(to: string, alert: Omit<StaffAlertEmailProps, "appUrl">) {
+  const html = await render(createElement(StaffAlertEmail, { ...alert, appUrl: env.CORS_ORIGIN }));
+  return sendHtml(to, alert.title, html, { replyable: false });
+}
+
+export async function sendResetPasswordEmail({ to, url }: { to: string; url: string }) {
+  // The footer links back to the deployed web app; CORS_ORIGIN is that origin.
+  const html = await render(createElement(ResetPasswordEmail, { url, appUrl: env.CORS_ORIGIN }));
+  return sendHtml(to, "Reset your YachtSkanner password", html);
+}
+
+/**
+ * The same single-use link as the reset mail, for an account that has never had a password —
+ * one provisioned by guest checkout. Separate template because "reset" is wrong copy for a
+ * first password, and the recipient did not ask for anything.
+ */
+export async function sendSetPasswordEmail({
+  to,
+  url,
+  name,
+}: {
+  to: string;
+  url: string;
+  name?: string;
+}) {
+  const html = await render(
+    createElement(SetPasswordEmail, { url, name, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, "Set your YachtSkanner password", html);
+}

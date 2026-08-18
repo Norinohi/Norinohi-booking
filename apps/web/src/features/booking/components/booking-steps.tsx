@@ -10,16 +10,13 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/auth-client";
-
 import { createHoldMutationOptions } from "../api/queries";
 import type { BookingValues } from "../lib/booking-form";
-import { serializeBooking } from "../lib/search-params";
+import { rememberGuestAccess } from "../lib/guest-access";
 import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
 import GuestDetailsStep from "./steps/guest-details";
@@ -28,12 +25,15 @@ import ReviewAndBookStep from "./steps/review-and-book";
 
 const STEPS = [
   { id: "guestDetails", Content: GuestDetailsStep, cta: "continue", ownsFooter: false },
-  { id: "extras", Content: ExtrasStep, cta: "saveAndContinue", ownsFooter: false },
+  { id: "extras", Content: ExtrasStep, cta: "continue", ownsFooter: false },
   { id: "reviewAndBook", Content: ReviewAndBookStep, cta: "confirmBooking", ownsFooter: false },
   { id: "payment", Content: PaymentStep, cta: "continue", ownsFooter: true },
 ] as const;
 
 type Step = (typeof STEPS)[number]["id"];
+type Cta = (typeof STEPS)[number]["cta"] | "saveAndContinue";
+
+const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
 
 /*
  * BookingSteps — the four-step accordion of the booking flow (Figma 859:33153 /
@@ -45,18 +45,23 @@ type Step = (typeof STEPS)[number]["id"];
  * Continue runs `trigger(step)`, which validates that branch of the schema and nothing
  * else, and advances only when it passes; the step never touches submission — except
  * Review, whose Confirm creates the held booking (see `confirmBooking`).
- * Every header stays clickable, so a step can be revisited. `multiple={false}` also means
- * the open step cannot be toggled shut — one is always expanded, except after the last Continue.
+ * Earlier headers stay clickable, so a step can be revisited. Payment is the exception: it
+ * is locked until Confirm has produced a booking, because everything in it needs one. Left
+ * open, it mounts a full card form that cannot be submitted, and a wallet button that opens
+ * Google Pay only to fail — the customer authorises a payment and is told no, for a reason
+ * that has nothing to do with their card.
+ * `multiple={false}` also means the open step cannot be toggled shut — one is always
+ * expanded, except after the last Continue.
  */
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
-  const { quote, slug, setBookingId } = useBooking();
-  const { data: session } = authClient.useSession();
-  const router = useRouter();
+  const { listing, quote, bookingId, setBookingId, setExtras } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
+  /* Extras has been shown once in answer to a Confirm that skipped it — see `confirmBooking`. */
+  const [extrasPrompted, setExtrasPrompted] = useState(false);
 
   /* `onTouched` only goes live after a blur, and `trigger` does not touch anything — so a failed
    * step has to touch its own fields, or a corrected one stays red until the next attempt. */
@@ -69,29 +74,96 @@ export default function BookingSteps() {
     }
   }
 
+  /*
+   * Whether the step has anything to choose. It drives both the CTA label — with add-ons on
+   * screen the button commits a choice and says so, with only the included items "Save" would
+   * be a promise about nothing — and whether skipping the step is worth interrupting a Confirm.
+   *
+   * Counts only the extras the provider can actually price. An extra shown as
+   * arrange-with-the-base is not a choice this step takes, so a listing carrying nothing else
+   * must not promise a Save that commits anything.
+   */
+  const hasOptionalExtras =
+    (listing?.optionalExtras.filter((item) => item.selectable).length ?? 0) > 0;
+
+  /*
+   * The picks are a deferred write: they are committed once, when the step is left, rather
+   * than on every checkbox. Each reprice is a live provider call, so toggling four boxes used
+   * to mean four round trips and three thrown-away answers. The cost is that the sidebar total
+   * lags the checkbox until this runs.
+   *
+   * Keyed on the selection itself rather than on whether the step was completed, because the
+   * step can be reopened and changed after a Continue; comparing the sorted codes is what
+   * stops both a silently dropped change and a pointless supersede when nothing moved.
+   */
+  const committedExtras = useRef<string | null>(null);
+
+  async function commitExtras() {
+    const picks = getValues("extras.optional");
+    const key = [...picks].sort().join("|");
+    if (committedExtras.current === key) return;
+    committedExtras.current = key;
+    await setExtras(picks);
+  }
+
   async function advanceStep(step: Step, index: number) {
-    if (await trigger(step)) {
-      setCompleted((prev) => new Set(prev).add(step));
-      setOpen(STEPS[index + 1]?.id ?? null);
+    if (!(await trigger(step))) {
+      touch(step);
       return;
     }
-    touch(step);
+    if (step === "extras") await commitExtras();
+    setCompleted((prev) => new Set(prev).add(step));
+    setOpen(STEPS[index + 1]?.id ?? null);
   }
 
   /*
-   * Confirm gates on sign-in: `checkout.createHold` is a protected procedure, so an anonymous
-   * visitor is sent to sign in with a return link back to this quote, then holds the booking with
-   * the guest details and consents. The `bookingId` lands in the shared context for the payment step.
+   * Confirm holds the booking with the guest details and consents. It does not gate on sign-in:
+   * an anonymous visitor gets an account provisioned from their email and a booking-scoped token
+   * back, which is remembered here and carried by every later call in the flow. The `bookingId`
+   * lands in the shared context for the payment step.
+   * Headers are clickable, so Review can be reached without passing through the steps before it.
+   * Confirm therefore validates the whole prefix, not just its own branch — otherwise an empty
+   * guest block reaches `createHold` and comes back as a server validation error with no field
+   * to point at.
    */
   async function confirmBooking() {
-    if (!session?.user) {
-      const back = serializeBooking(`/yachts/${slug}/booking`, { quoteId: quote?.quoteId ?? null });
-      router.push(`/login?redirect=${encodeURIComponent(back)}`);
+    /*
+     * Already held. Confirm stays on screen because Review can be reopened to re-read what was
+     * booked, but pressing it again must not mint a second booking — it only returns to payment.
+     */
+    if (bookingId) {
+      setOpen("payment");
       return;
     }
-    if (!(await trigger("reviewAndBook"))) {
-      touch("reviewAndBook");
+
+    /*
+     * Extras never blocks a booking — nothing in it is required — but the step headers let
+     * someone jump straight to Review, and confirming then books past a page of paid add-ons
+     * they never saw. So the first such Confirm opens Extras instead of holding; pressing
+     * Confirm again goes through, and using the step's own Continue skips this entirely.
+     */
+    if (hasOptionalExtras && !completed.has("extras") && !extrasPrompted) {
+      setExtrasPrompted(true);
+      setOpen("extras");
+      toast.info(t("extrasSkipped"));
       return;
+    }
+
+    /*
+     * Reaching Confirm without pressing the Extras step's own Continue leaves the picks
+     * uncommitted, so they are committed here. Awaited: the reprice supersedes the quote, and
+     * holding against the previous one would book the charter without the extras.
+     */
+    await commitExtras();
+
+    for (const { id } of STEPS.slice(0, REVIEW_INDEX + 1)) {
+      if (!(await trigger(id))) {
+        touch(id);
+        setOpen(id);
+        return;
+      }
+      /* Review is marked complete only once the hold exists, below. */
+      if (id !== "reviewAndBook") setCompleted((prev) => new Set(prev).add(id));
     }
     if (!quote) return;
 
@@ -99,6 +171,12 @@ export default function BookingSteps() {
     try {
       const hold = await createHold.mutateAsync({
         quoteId: quote.quoteId,
+        /*
+         * One quote, one booking. Without a key the server mints a fresh UUID per call, so a
+         * double submit that races the disabled state is two bookings and two provider options;
+         * with it the retry returns the first one. A reprice yields a new quote, hence a new key.
+         */
+        idempotencyKey: quote.quoteId,
         guest: {
           fullName: guest.fullName,
           email: guest.email,
@@ -108,6 +186,7 @@ export default function BookingSteps() {
         },
         consents: { terms: true, cancellationPolicy: true },
       });
+      rememberGuestAccess(hold.bookingId, hold.accessToken);
       setBookingId(hold.bookingId);
       setCompleted((prev) => new Set(prev).add("reviewAndBook"));
       setOpen("payment");
@@ -115,6 +194,9 @@ export default function BookingSteps() {
       toast.error(error instanceof Error ? error.message : t("errors.confirmFailed"));
     }
   }
+
+  const ctaFor = (step: Step, cta: Cta): Cta =>
+    step === "extras" && hasOptionalExtras ? "saveAndContinue" : cta;
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -126,7 +208,8 @@ export default function BookingSteps() {
           onValueChange={(value) => setOpen(value.length > 0 ? step : null)}
           className="overflow-hidden rounded-2xl border border-border bg-card"
         >
-          <AccordionItem value={step}>
+          {/* Unlocks the moment Confirm succeeds, which also opens this step. */}
+          <AccordionItem value={step} disabled={step === "payment" && !bookingId}>
             <AccordionTrigger
               className="p-5"
               indicator={
@@ -161,14 +244,16 @@ export default function BookingSteps() {
                     <Button
                       variant="brand"
                       className="h-13 w-full"
-                      disabled={step === "reviewAndBook" && createHold.isPending}
+                      loading={step === "reviewAndBook" && createHold.isPending}
+                      /* The booking exists; this step is now a record of it, not an action. */
+                      disabled={step === "reviewAndBook" && Boolean(bookingId)}
                       onClick={() =>
                         void (step === "reviewAndBook"
                           ? confirmBooking()
                           : advanceStep(step, index))
                       }
                     >
-                      {t(cta)}
+                      {step === "reviewAndBook" && bookingId ? t("booked") : t(ctaFor(step, cta))}
                     </Button>
                   </div>
                 </>

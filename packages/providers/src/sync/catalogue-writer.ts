@@ -7,7 +7,11 @@ import {
   listingOneWayRule,
   listingSpecification,
 } from "@yacht-charter/db/schema/listing";
-import { listingDuplicateCandidate, listingSource } from "@yacht-charter/db/schema/listing-source";
+import {
+  listingDuplicateCandidate,
+  listingSource,
+  providerExtraCatalogue,
+} from "@yacht-charter/db/schema/listing-source";
 import { listingText } from "@yacht-charter/db/schema/listing-text";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
@@ -22,6 +26,7 @@ import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
+import { canonicalCategoryName } from "../shared/category-groups";
 import type {
   CanonicalCatalogue,
   ProviderKey,
@@ -283,8 +288,11 @@ export async function writeCanonicalCatalogue(
     const code = item.code ?? `${providerKey}:${item.externalId}`;
     const [row] = await db
       .insert(yachtCategory)
-      .values({ code, name: item.name })
-      .onConflictDoUpdate({ target: yachtCategory.code, set: { name: sql`excluded.name` } })
+      .values({ code, name: item.name, canonicalName: canonicalCategoryName(code) })
+      .onConflictDoUpdate({
+        target: yachtCategory.code,
+        set: { name: sql`excluded.name`, canonicalName: sql`excluded.canonical_name` },
+      })
       .returning({ id: yachtCategory.id });
     if (row) categoryIds.set(item.externalId, row.id);
   }
@@ -368,6 +376,7 @@ export async function writeCanonicalCatalogue(
         ? (categoryIds.get(item.externalCategoryId) ?? null)
         : null,
       defaultCurrency: item.defaultCurrency,
+      crewType: item.crewType ?? null,
       paymentPolicy: item.paymentPolicy ?? null,
       providerRating: decimal(item.rating),
       providerReviewCount: item.reviewCount ?? null,
@@ -739,6 +748,7 @@ async function writeListingChildren(
       engines: item.spec.engines ?? null,
       fuelCapacity: item.spec.fuelCapacity ?? null,
       waterCapacity: item.spec.waterCapacity ?? null,
+      sailType: item.spec.sailType ?? null,
     })
     .onConflictDoUpdate({
       target: listingSpecification.listingId,
@@ -753,6 +763,7 @@ async function writeListingChildren(
         engines: sql`excluded.engines`,
         fuelCapacity: sql`excluded.fuel_capacity`,
         waterCapacity: sql`excluded.water_capacity`,
+        sailType: sql`excluded.sail_type`,
       },
     });
 
@@ -798,6 +809,37 @@ async function writeListingChildren(
     await db
       .insert(listingAmenity)
       .values(resolvedAmenities.map((amenityId) => ({ listingId, amenityId })));
+  }
+
+  // Scoped by source for the same reason media is: a merged listing must keep the
+  // other provider's extras when this one resyncs.
+  await db
+    .delete(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, providerKey),
+      ),
+    );
+  if (item.extras.length > 0) {
+    await db.insert(providerExtraCatalogue).values(
+      item.extras.map((extra) => ({
+        listingId,
+        source: providerKey,
+        kind: extra.kind,
+        externalId: extra.externalId,
+        name: extra.name,
+        obligatory: extra.obligatory,
+        crewRole: extra.crewRole ?? null,
+        priceMinor: extra.priceMinor,
+        priceCurrency: extra.priceCurrency,
+        priceMeasure: extra.priceMeasure ?? null,
+        calculationType: extra.calculationType ?? null,
+        onRequestOnly: extra.onRequestOnly,
+        externalSeasonId: extra.externalSeasonId ?? null,
+        externalBaseId: extra.externalBaseId ?? null,
+      })),
+    );
   }
 
   await db.delete(listingCheckinRule).where(eq(listingCheckinRule.listingId, listingId));

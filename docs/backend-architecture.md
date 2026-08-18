@@ -30,18 +30,19 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 
 ### 1.1 Internal canonical marketplace entities
 
-| Entity                                           | Purpose                                                                                                                                                                                                           | M         |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| `listing`                                        | **Canonical yacht identity.** One row per real-world yacht; many `listing_source` map to it. Everything customer-facing references `listing`. Has `slug`, `primary_source_id`, `published` state, `freshness_at`. | M2        |
-| `listing_specification`                          | Canonical spec block (length, beam, draft, year, cabins, berths, heads, engines, fuel, steering/sail/propulsion type…) copied from the primary source, admin-overridable.                                         | M2        |
-| `listing_media`                                  | Ordered gallery; each item: `source`, external URL, `role` (`main`/`layout`/`gallery`), sort order, dims, import time, optional Cloudinary asset id. **BM preferred.**                                            | M2        |
-| `listing_cabin`                                  | Cabin layout rows (cabin-charter support; not required for bareboat MVP).                                                                                                                                         | later     |
-| `listing_checkin_rule`, `listing_one_way_rule`   | Valid check-in/out weekdays, min/max duration, one-way periods (canonical copy for the calendar).                                                                                                                 | M2        |
-| `builder`, `yacht_model`, `yacht_category`       | Canonical taxonomy de-duplicated across providers.                                                                                                                                                                | M2        |
-| `amenity`, `amenity_category`, `listing_amenity` | Canonical amenity/equipment taxonomy + per-listing join (obligatory/optional, price when extra).                                                                                                                  | M2        |
-| `base`, `location`, `region`, `country`          | Canonical geography (marina → location → region → country) with lat/lng for map pins + check-in/out times/handover.                                                                                               | M2        |
-| `operator`                                       | Canonical charter-company identity across providers. **No auth/account** (no owner accounts) — display + attribution only; sensitive financials kept only in encrypted raw payload unless business needs them.    | M2        |
-| `review`, `faq`                                  | Marketplace-owned content on a listing (Figma). Seed-only for demo.                                                                                                                                               | M2 (mock) |
+| Entity                                           | Purpose                                                                                                                                                                                                                                                                                                        | M         |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `listing`                                        | **Canonical yacht identity.** One row per real-world yacht; many `listing_source` map to it. Everything customer-facing references `listing`. Has `slug`, `primary_source_id`, `published` state, `freshness_at`.                                                                                              | M2        |
+| `listing_specification`                          | Canonical spec block (length, beam, draft, year, cabins, berths, heads, engines, fuel, steering/sail/propulsion type…) copied from the primary source, admin-overridable.                                                                                                                                      | M2        |
+| `listing_media`                                  | Ordered gallery; each item: `source`, external URL, `role` (`main`/`layout`/`gallery`), sort order, dims, import time, optional Cloudinary asset id. **BM preferred.**                                                                                                                                         | M2        |
+| `listing_cabin`                                  | Cabin layout rows (cabin-charter support; not required for bareboat MVP).                                                                                                                                                                                                                                      | later     |
+| `listing_checkin_rule`, `listing_one_way_rule`   | Valid check-in/out weekdays, min/max duration, one-way periods (canonical copy for the calendar).                                                                                                                                                                                                              | M2        |
+| `builder`, `yacht_model`, `yacht_category`       | Canonical taxonomy de-duplicated across providers.                                                                                                                                                                                                                                                             | M2        |
+| `amenity`, `amenity_category`, `listing_amenity` | Canonical amenity/equipment taxonomy + per-listing join (obligatory/optional, price when extra).                                                                                                                                                                                                               | M2        |
+| `base`, `location`, `region`, `country`          | Canonical geography (marina → location → region → country) with lat/lng for map pins + check-in/out times/handover.                                                                                                                                                                                            | M2        |
+| `operator`                                       | Canonical charter-company identity across providers. **No auth/account** (no owner accounts) — display + attribution only; sensitive financials kept only in encrypted raw payload unless business needs them.                                                                                                 | M2        |
+| `review`, `faq`                                  | Marketplace-owned content on a listing (Figma). Seed-only for demo.                                                                                                                                                                                                                                            | M2 (mock) |
+| `listing_view`                                   | One row per viewer per listing per UTC day, behind the "N people viewed today" line. `viewer_key` is the visitor hashed with the date, so it dedups within a day and links nothing across days; rows are pruned by the sweep cron. The paired "N booked this month" is counted live off `booking`, not stored. | M7        |
 
 ### 1.2 Provider-source & import/provenance entities _(reconciled: generic `provider_record` + `listing_source`)_
 
@@ -60,7 +61,9 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 | Entity                      | Purpose                                                                                                                                                                    | M          |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `listing_search_doc`        | Denormalised, query-optimised projection of a listing (facets + min price hint + geo) rebuilt on sync. Backs results/facets/map.                                           | M3         |
-| `availability_slot` (cache) | Per-listing bookable weeks: start/end, valid check-in/out weekday, min-duration, price hint, `source`, `freshness_at`. **Cache only — never authoritative at quote time.** | M3         |
+| `availability_slot` (cache) | What the provider stated: occupancy (`occupied`/`option`/`blocked`) and its confirmed, priced offers. **Cache only — never authoritative at quote time.**                  | M3         |
+| `listing_free_period`       | The complement of occupancy inside the fetched horizon. Asserts no start day, length or price — only that nothing is sold between two dates. Backs the search date filter. | M7         |
+| `listing_price_period`      | The provider's published rates, as the periods it published them for. Backs the card's "from" price and the season-open signal.                                            | M7         |
 | `facet_dictionary`          | Stable enum values + i18n labels for filters (category, cabins, length bands, amenities) so the web app never hard-codes provider strings. Dynamic facets ship first.      | later/M3.5 |
 
 ### 1.4 Customer / account entities
@@ -118,8 +121,14 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 
 ### `availability_slot` — cache _(M3)_
 
-- **Fields:** `id`, `listing_id`, `source`, `start_date`, `end_date`, `checkin_weekday`, `checkout_weekday`, `min_nights`, `is_one_way`, `status` (`FREE`/`UNDER_OPTION`/`occupied`), `price_hint_minor`, `currency`, `freshness_at`.
-- **Provider-derived cache.** Powers calendar + fast filtering; the quote step re-validates live so a stale slot can never confirm a booking.
+- **Fields:** `id`, `listing_id`, `listing_source_id`, `start_date`, `end_date`, `status` (`available`/`option`/`occupied`/`blocked`), `availability_confirmed`, `price_minor`, `currency`, `min_nights`, `checkin_weekday`, `checkout_weekday`, `source_hash`.
+- **Only what the provider stated.** Occupancy, plus the confirmed priced offers the hot pass gets back from `freeYachtsSearch`. It no longer holds synthesized "available" rows — see ADR 0004.
+
+### `listing_free_period` + `listing_price_period` — availability as constraints _(M7)_
+
+- `listing_free_period(id, listing_id, listing_source_id, start_date, end_date)` — the complement of occupancy, written per year and only for years whose dump arrived whole.
+- `listing_price_period(id, listing_id, listing_source_id, start_date, end_date, kind:'weekly'|'daily', price_minor, currency)` — published rates. A date no row covers is a season the provider has not opened, and so is not sellable.
+- Whether a given charter is legal is **computed** from these plus `listing_checkin_rule`, by `packages/api/src/lib/availability-rules.ts`. Nothing enumerates offers. **ADR 0004.**
 
 ### `quote` — priced snapshot _(M4)_
 
@@ -220,7 +229,9 @@ export interface InventoryProvider {
 
 `MockInventoryProvider` reads **provider-shaped fixtures** (mirroring NauSYS/BM shapes so the same mapping code runs) for the catalogue, extras and payment plans, plus a "provider re-price on quote" path so revalidation is testable pre-credentials. Default via `PROVIDER_MODE=mock`.
 
-**Availability is the exception: it comes from `availability_slot`, not from a fixture.** Under `PROVIDER_MODE=mock` those rows are the vendor's inventory, exactly as a real vendor's would be after a sync, and they are what `availability.calendar` publishes. Quoting from a separate fixture meant the catalogue offered weeks the quote endpoint then refused with a conflict — a slot cannot be bookable and unpriceable at once. The fixture source survives as the default for unit tests, which have no database.
+**Availability is the exception: it comes from the database, not from a fixture.** Under `PROVIDER_MODE=mock` the seeded `availability_slot`, `listing_free_period` and `listing_price_period` rows are the vendor's inventory, exactly as a real vendor's would be after a sync. Quoting from a separate fixture meant the catalogue offered weeks the quote endpoint then refused with a conflict — a period cannot be bookable and unpriceable at once. The fixture source survives as the default for unit tests, which have no database.
+
+The mock provider does not implement `createAvailabilitySource`, so `runAvailabilitySync` no-ops for it and the seed writes all three tables directly. `packages/db/src/seed.ts` derives the free and price periods from the same weekly slots it writes, so the three cannot disagree — if you change one, change the derivation beside it.
 
 ### 4.4 Connector mechanics (both real providers)
 
@@ -251,7 +262,8 @@ Plain-object routers on `appRouter`, Zod v4 `.input()/.output()`, `publicProcedu
 - `listings.get({ id }) → ListingDetail` (summary/specs/gallery/amenities/operator/base)
 - `listings.reviews({ listingId }) → { id, rating, author, body }[]`
 - `listings.similar({ listingId }) → ListingCard[]`
-- Public OpenAPI paths: `GET /listings/{id}`, `GET /listings/{listingId}/reviews`, `GET /listings/{listingId}/similar`.
+- `listings.recordView({ id, viewer }) → { recorded }` — counts one visitor for the day (see `listing_view`). Client-side and fire-and-forget: the detail read is cached, so a server-side count would follow cache misses rather than people.
+- Public OpenAPI paths: `GET /listings/{id}`, `GET /listings/{listingId}/reviews`, `GET /listings/{listingId}/similar`, `POST /listings/{id}/views`.
 
 ### 5.3 `availability` — calendar & quote _(M4)_
 
@@ -309,8 +321,10 @@ CANCELLED reachable from any pre-CONFIRMED state (user/admin).
    - Amount from `quote.payment_policy` (deposit % or full). Create Stripe **PaymentIntent** (test mode) with our `idempotency_key`; write `payment_schedule` + `payment(requires_payment)`. Return `clientSecret`.
 4. **CONFIRMING → CONFIRMED** via **Stripe webhook** (authoritative):
    - `payment_intent.succeeded` → `payment.succeeded`, enter **CONFIRMING**, call `confirmBooking` (or promote the option). Success → `CONFIRMED`, capture `provider_reservation_id`. Provider failure → `PROVIDER_REJECTED` → **REFUND_PENDING** → refund/void (test mode) → **REFUNDED**, surfaced to ops.
+   - `payment_intent.processing` → `payment.processing`, booking unchanged. Delayed methods (SEPA debit and the rest of `automatic_payment_methods`) clear over days, and this is the only thing that tells the expiry sweeper money is still on its way; without it such a payment is indistinguishable from a checkout nobody submitted.
    - `payment_intent.payment_failed` → `PAYMENT_FAILED`; retry until quote/hold expiry, else `CANCELLED`.
-5. **Expiry sweeper** (cron/worker): quotes past `expires_at` → `QUOTE_EXPIRED`; holds past `hold_expires_at` → release provider option → `OPTION_EXPIRED`.
+   - **The endpoint must be subscribed to all six events we handle**, or the handler for a missing one never runs and the failure is silent: `payment_intent.succeeded`, `payment_intent.processing`, `payment_intent.payment_failed`, `refund.updated`, `charge.dispute.created`, `charge.dispute.closed`.
+5. **Expiry sweeper** (cron/worker): quotes past `expires_at` → `QUOTE_EXPIRED`; holds past `hold_expires_at` → release provider option → `OPTION_EXPIRED`. `PAYMENT_PENDING` is left alone while money can still arrive and reaped after five days, once no payment has succeeded or is processing and no invoice is still within its terms (those two exclusions, not the clock, are what wait for money; measured NauSYS options run 20 h to ~6 days, so five days releases at or before the vendor) → release option → `OPTION_EXPIRED`, or `QUOTE_EXPIRED` where no option was ever held. Without that last one an abandoned checkout holds its slot in `booking_provider_option_uq` forever.
 
 ### 6.2 Correctness properties
 
@@ -342,7 +356,7 @@ Gates: **`pnpm check-types`** + **`pnpm build`** (non-mutating). Run `pnpm check
 
 ### M3 — Search & availability query endpoints
 
-`listing_search_doc` + `availability_slot` read models (code-managed rebuild after sync) → `charterSearch.results/facets/mapMarkers/suggestions` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets are dynamic from `listing_search_doc` for M3; `facet_dictionary` is deferred until stable labels/i18n are needed.
+`listing_search_doc` + `availability_slot` / `listing_free_period` / `listing_price_period` read models (code-managed rebuild after sync) → `charterSearch.results/facets/mapMarkers/suggestions` + `availability.calendar` (trigram/ILIKE + btree/GiST geo; **[ASSUMPTION]** no PostGIS for demo). Facets are dynamic from `listing_search_doc` for M3; `facet_dictionary` is deferred until stable labels/i18n are needed.
 
 - **Acceptance:** results/filters/sort/pins/calendar from real queries on mock data; stable cursor pagination; direct page pagination with total counts for the Figma UI; p95 ≤ **[ASSUMPTION]** 200ms local.
 
@@ -394,14 +408,14 @@ BM + NauSYS adapters (same interface; NauSYS via [`nausys-api-v6-backend-map.md`
 ### Vendor questions (both providers unless noted)
 
 - **Q-PERM** agency credential permissions (which endpoints create options/bookings, add extras, access invoices, manage contacts?).
-- **Q-RATE** rate limits, pagination, bulk catalogue capability, timeouts, retry guidance, sync cadence/duration.
+- **Q-RATE** _(partly answered)_ rate limits, pagination, bulk catalogue capability, timeouts, retry guidance, sync cadence/duration. **NauSYS answered the sequencing half (Aug 2026):** the sequential-only rule covers the background sweeps, not live booking-flow calls, so the connector runs a serialized `sync` lane and unserialized live calls (per-reservation serialization is ours, for the rotating `uuid`). Numeric limits still unstated.
 - **Q-AVAIL** availability/quote **guarantees** — is a price/slot firm for N minutes? real option/hold + TTL? (drives §6.2 ordering).
 - **Q-OPT** option expiry + cancellation semantics (auto-expiry, windows, penalties, who cancels; whether an option locks price+availability).
-- **Q-PRICE** _(partly answered)_ NauSYS returns `priceListPrice`/`agencyPrice`/`clientPrice` + `securityDeposit`/`depositWhenInsured`/`paymentPlans`/`obligatoryExtras`/`agencyCommission`/`displayCurrency`. **Still confirm:** exact commission/VAT semantics, currency-conversion responsibility, allowed agency discount limits, and BM's equivalent price fields (validate vs Swagger v2.1.4).
+- **Q-PRICE** _(NauSYS answered; BM open)_ NauSYS returns `priceListPrice`/`agencyPrice`/`clientPrice` + `securityDeposit`/`depositWhenInsured`/`paymentPlans`/`obligatoryExtras`/`agencyCommission`/`displayCurrency`. **Answered Aug 2026:** `clientPrice` is the final customer amount, VAT included, with no calculation left to us; an agency discount is taken from our commission and capped by `maxDiscountFromCommission`; an extra's `amount` is a unit price and `totalPrice` is `amount x quantity`. **Still confirm:** whether that cap is an amount or a percentage (vendor doc update pending), currency-conversion responsibility, and BM's equivalent price fields (validate vs Swagger v2.1.4).
 - **Q-HOOK** do providers offer **webhooks** for price/availability/option/cancellation changes, or poll-only?
 - **Q-DUP** stable cross-provider IDs (MMSI/IMO/company codes) for safe matching; default transacting source when in both (§3.5)?
 - **Q-MEDIA** _(partly answered)_ BM states data may be displayed "on your website as you wish" (implies caching/display rights during the licensed period) — confirm in the BM **T&C** whether Cloudinary caching/transforming is permitted, and get the equivalent for NauSYS.
-- **Q-COMPLY** customer/crew PII handling, retention, GDPR/data-processing terms, invoice ownership.
+- **Q-COMPLY** _(partly answered)_ customer/crew PII handling, retention, GDPR/data-processing terms, invoice ownership. **NauSYS answered the crew-list half (Aug 2026):** the list is the charter company's legal obligation, the base collects it on arrival if incomplete, and we may forward the reservation's `crewlistlink` — so we store no passport or date-of-birth data. Retention terms and invoice ownership still open.
 - ✅ **Q-PAGES** _(closed)_ NauSYS PDF confirmed complete at 358 pages; map built from the full document.
 - **Q-ACCESS** _(new)_ both providers gate API access behind commercial terms — BM needs a **commercial proposal + online T&C** before keys; **schedule the trial start** so the 1-month BM free window overlaps the connector build (not wasted during mock-only M2–M3). NauSYS agency terms similarly TBD.
 
@@ -414,11 +428,11 @@ BM + NauSYS adapters (same interface; NauSYS via [`nausys-api-v6-backend-map.md`
 | Screen                            | Entities                                                                                                    | Notable fields                                                                                                                             |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Home / hero search                | `facet_dictionary`, geography, `listing_search_doc`                                                         | destination suggest, dates, guests, yacht type; trending media                                                                             |
-| Results + filters + sort          | `listing_search_doc`, `availability_slot`, `facet_dictionary`                                               | card media/name/model/length/cabins/base/price-hint/rating; filters: category, cabins, length band, price band, amenity, base/region; sort |
+| Results + filters + sort          | `listing_search_doc`, `listing_free_period`, `facet_dictionary`                                             | card media/name/model/length/cabins/base/price-hint/rating; filters: category, cabins, length band, price band, amenity, base/region; sort |
 | Map + pins                        | `listing_search_doc`(geo)                                                                                   | lat/lng, price hint, clustering, bbox                                                                                                      |
 | Trip-builder wizard               | `availability`, `quote`                                                                                     | destination→dates→guests→extras→review; valid weekdays/min nights                                                                          |
 | Yacht detail                      | `listing`, `listing_specification`, `listing_media`, `listing_amenity`, `review`, `faq`, `operator`, `base` | specs, ordered gallery, amenities (obligatory/optional + price), operator, base, reviews summary, FAQ                                      |
-| Availability calendar             | `availability_slot`                                                                                         | week slots, status, min nights, check-in/out weekdays                                                                                      |
+| Availability calendar             | `listing_free_period`, `listing_price_period`, `listing_checkin_rule`, `availability_slot`                  | via `availability.constraints`: allowed weekdays and night bounds, occupancy, published rates, one-way windows                             |
 | Booking card (deposit/full)       | `quote`, `payment_policy`                                                                                   | breakdown, deposit-vs-full toggle, total, currency, expiry                                                                                 |
 | Checkout / summary / confirmation | `booking`, `payment_schedule`, `payment`, `booking_traveller`                                               | booking status, payment status/clientSecret, lead guest + crew, confirmation ref                                                           |
 | Login / registration / profile    | `user`/`session`, `profile`                                                                                 | auth flows; phone, locale, currency, marketing prefs                                                                                       |

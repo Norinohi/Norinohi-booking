@@ -24,14 +24,18 @@ export default function BookingSidebar({
     slug,
     listing,
     quote,
-    slots,
+    constraints,
     crewType,
     crewOptions,
     guests,
     isPending,
-    selectSlot,
+    slotError,
+    selectPeriod,
     setCrew,
     setGuests,
+    applyPromo,
+    applyCredit,
+    bookingId,
   } = useBooking();
   const [quoteRequestOpen, setQuoteRequestOpen] = useState(false);
 
@@ -55,17 +59,27 @@ export default function BookingSidebar({
               }
             : null
         }
-        slots={slots}
-        selectedCheckIn={quote?.checkIn}
-        onSlotChange={selectSlot}
+        constraints={constraints}
+        selectedPeriod={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
+        onPeriodSelect={selectPeriod}
+        slotError={slotError}
+        checkInTime={listing?.base.checkInTime}
+        checkOutTime={listing?.base.checkOutTime}
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}
         guests={guests}
         onGuestsChange={setGuests}
+        unavailable={listing ? !listing.availability.hasAvailableDates : false}
         actions={actions}
         shaded={shaded}
         payNowHref={payNowHref}
+        /* Every reprice mints a new quote id. Once Confirm has held a booking against one,
+           the held booking is what the customer pays, so the code can no longer change. */
+        onApplyPromo={quote && !bookingId ? applyPromo : undefined}
+        /* Same rule as the promo code: once Confirm has held a booking, the amount is fixed
+           and the credit that backs it has already been counted against the balance. */
+        onApplyCredit={quote && !bookingId ? applyCredit : undefined}
         onRequestQuote={actions ? () => setQuoteRequestOpen(true) : undefined}
       />
       {actions ? (

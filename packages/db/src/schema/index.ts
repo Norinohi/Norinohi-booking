@@ -16,5 +16,7 @@ export * from "./quote";
 export * from "./booking";
 export * from "./checkout";
 export * from "./lead";
+export * from "./engagement";
 export * from "./loyalty";
 export * from "./search";
+export * from "./outbox";

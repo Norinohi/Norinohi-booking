@@ -24,6 +24,13 @@ export type QuoteSelection = {
  * query: reprice mutates, so it must not auto-refetch.
  */
 export function useQuote(listingId: string) {
+  /*
+   * Opted out of the React Compiler. Compiled, the mutation status this hook reads is cached and
+   * never re-read once the memo is populated, so `isPending` stays true for the rest of the visit:
+   * the reprice resolves, the quote renders, and the sidebar sits on skeletons and a spinning
+   * promo button forever. Verified by toggling this directive against a live reprice.
+   */
+  "use no memo";
   const [quote, setQuote] = useState<Quote | null>(null);
   const create = useMutation(quoteMutationOptions());
   const reprice = useMutation(repriceMutationOptions());

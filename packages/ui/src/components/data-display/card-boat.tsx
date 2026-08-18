@@ -5,6 +5,7 @@ import {
   CardMedia,
   CardTitle,
 } from "@yacht-charter/ui/components/data-display/card";
+import { ImageWithFallback } from "@yacht-charter/ui/components/data-display/image-with-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 
 /*
@@ -30,12 +31,7 @@ function BoatCard({
   return (
     <Card variant="ghost" className={cn("w-[334px] max-w-full gap-5", className)} {...props}>
       <CardMedia className="h-[224px] rounded-xl">
-        {/*
-         * Rendering <img src=""> makes the browser re-request the current page, so an absent
-         * image renders no <img> at all. CardMedia keeps its box either way, so the card does
-         * not resize and nothing around it shifts.
-         */}
-        {image ? <img src={image} alt={imageAlt} /> : <div className="size-full bg-natural-100" />}
+        <ImageWithFallback src={image} alt={imageAlt} />
       </CardMedia>
       <CardContent className="gap-3 p-0">
         <CardTitle className="text-xl leading-[1.1] md:text-2xl">{title}</CardTitle>

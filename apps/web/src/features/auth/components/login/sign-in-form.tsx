@@ -20,7 +20,10 @@ import { toast } from "sonner";
 import z from "zod";
 
 import Loader from "@/components/shared/feedback/loader";
+import { usePasswordToggleLabels } from "@/hooks/use-password-toggle-labels";
 import { authClient } from "@/lib/auth-client";
+
+import { signedInTarget } from "../../lib/redirect-target";
 
 /*
  * SignInForm — Figma "Sign In" (972:53946 desktop / 973:86586 tablet / 973:86647 mobile).
@@ -60,12 +63,11 @@ type Values = { email: string; password: string };
 
 export default function SignInForm({ redirect }: { redirect?: string }) {
   const t = useTranslations("Auth.SignIn");
+  const passwordToggle = usePasswordToggleLabels();
   const router = useRouter();
   const { isPending } = authClient.useSession();
 
-  /* A return link from checkout, restricted to same-site paths so it cannot be an open redirect. */
-  const target =
-    redirect && redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/dashboard";
+  const target = signedInTarget(redirect);
 
   const schema = useMemo(
     () =>
@@ -151,6 +153,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                       <TextField
                         type="password"
                         autoComplete="current-password"
+                        {...passwordToggle}
                         placeholder={t("password.placeholder")}
                         className="leading-[1.25]"
                         {...field}
@@ -160,6 +163,14 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                   </FormItem>
                 )}
               />
+
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="-mt-1 cursor-pointer self-end text-sm font-medium text-natural-400 transition-colors hover:text-brand"
+              >
+                {t("forgotPassword")}
+              </button>
 
               <Button
                 type="submit"

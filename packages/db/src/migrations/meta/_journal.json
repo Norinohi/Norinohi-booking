@@ -211,6 +211,118 @@
       "when": 1786608332009,
       "tag": "0029_grey_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1786638458878,
+      "tag": "0030_curious_texas_twister",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1786643765427,
+      "tag": "0031_rapid_frog_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1786647096906,
+      "tag": "0032_curved_queen_noir",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1786647561666,
+      "tag": "0033_futuristic_doctor_strange",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1786649377756,
+      "tag": "0034_dizzy_ezekiel",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786696394718,
+      "tag": "0035_cynical_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1786698584787,
+      "tag": "0036_warm_kate_bishop",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1786703340060,
+      "tag": "0037_lame_captain_flint",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1786720345833,
+      "tag": "0038_swift_slyde",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1786726137400,
+      "tag": "0039_past_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1786956297192,
+      "tag": "0040_past_ultimatum",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1786961545585,
+      "tag": "0041_marvelous_patch",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1786979775578,
+      "tag": "0042_magenta_speedball",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1787037590692,
+      "tag": "0043_material_green_goblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1787038523058,
+      "tag": "0044_smart_gravity",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1787075742926,
+      "tag": "0045_dashing_makkari",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import type { z } from "zod";
+
 import {
   bookingCancelInputSchema,
   bookingCancelSchema,
@@ -11,29 +13,83 @@ import {
   checkoutConfirmInputSchema,
   checkoutConfirmSchema,
   checkoutCreateHoldInputSchema,
+  checkoutPayBalanceInputSchema,
   checkoutHoldSchema,
   checkoutStatusInputSchema,
   checkoutStatusSchema,
   enquiryInputSchema,
   enquirySchema,
+  guestDetailsSchema,
+  invoiceDocumentSchema,
   invoiceRequestInputSchema,
   invoiceRequestSchema,
   travellerListInputSchema,
   travellerListSchema,
   travellerSaveInputSchema,
 } from "../contracts/booking";
-import { protectedProcedure } from "../index";
+import type { Context } from "../context";
+import { protectedProcedure, publicProcedure } from "../index";
 import {
   cancelBooking,
+  type CheckoutActor,
   createHold,
   getBooking,
   getCheckoutStatus,
   listBookings,
 } from "../services/booking";
+import { provisionGuestAccount } from "../services/account-provisioning";
 import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
+import { announceEnquiry } from "../services/enquiry";
+import { mintGuestAccessToken, resolveBookingActor } from "../services/guest-access";
+import { getInvoiceDocument } from "../services/invoice-document";
 import { listTravellers, saveTravellers } from "../services/traveller";
-import { confirmCheckout } from "../services/payment";
+import { confirmCheckout, payBalance } from "../services/payment";
+import { providerForBooking, providerForQuote } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
+
+/**
+ * Who the booking about to be created belongs to.
+ *
+ * A signed-in customer books as themselves and the guest block is only the party
+ * travelling. Without a session the email on that block decides the account: an
+ * existing one is reused rather than duplicated, since the address is the identity
+ * better-auth keys on. Reuse hands out no session and no account-wide access — only
+ * a token scoped to the booking this call is creating.
+ */
+async function checkoutActor(
+  context: Pick<Context, "db" | "session">,
+  guest: z.infer<typeof guestDetailsSchema>,
+): Promise<CheckoutActor> {
+  const sessionUserId = context.session?.user.id;
+  if (sessionUserId) return { userId: sessionUserId, guestAccess: null };
+
+  const account = await provisionGuestAccount(context.db, {
+    fullName: guest.fullName,
+    email: guest.email,
+    phone: guest.phone,
+  });
+
+  return { userId: account.userId, guestAccess: mintGuestAccessToken() };
+}
+
+/**
+ * Who is acting on an existing booking.
+ *
+ * Everything a customer does to one is reachable two ways: signed in, or holding the
+ * token guest checkout handed back. Both collapse to the owning user id here, so the
+ * services keep their single notion of a caller and enforce ownership exactly as
+ * before, which is what lets those procedures be `publicProcedure` without being
+ * public. `booking.list` and `booking.cancel` deliberately stay session-only: one is
+ * an account-wide read and the other is irreversible, and a token that authorises one
+ * booking is evidence of neither.
+ */
+function actorFor(
+  context: Pick<Context, "db" | "session">,
+  bookingId: string,
+  accessToken: string | undefined,
+): Promise<string> {
+  return resolveBookingActor(context.db, context.session?.user.id, bookingId, accessToken);
+}
 
 export const bookingRouter = {
   list: protectedProcedure
@@ -51,21 +107,23 @@ export const bookingRouter = {
     .input(bookingListInputSchema)
     .output(bookingListSchema)
     .handler(({ context, input }) => listBookings(context.db, context.session.user.id, input)),
-  get: protectedProcedure
+  get: publicProcedure
     .route({
       method: "POST",
       path: "/booking/get",
       operationId: "getBooking",
       summary: "Get one booking",
       description:
-        "Returns full detail for one of the authenticated user's bookings, including the price breakdown, extras, payment schedule and payments. Crew and passenger details are never returned by this endpoint.",
+        "Returns full detail for one booking, including the price breakdown, extras, payment schedule and payments. Reachable by the signed-in owner, or by a guest presenting the accessToken their checkout returned. Crew and passenger details are never returned by this endpoint.",
       tags: ["Booking"],
       successDescription: "The requested booking.",
       spec: withJsonBodyExample({ id: "bkg_example" }),
     })
     .input(bookingIdInputSchema)
     .output(bookingDetailSchema)
-    .handler(({ context, input }) => getBooking(context.db, context.session.user.id, input.id)),
+    .handler(async ({ context, input }) =>
+      getBooking(context.db, await actorFor(context, input.id, input.accessToken), input.id),
+    ),
   cancel: protectedProcedure
     .route({
       method: "POST",
@@ -80,11 +138,14 @@ export const bookingRouter = {
     })
     .input(bookingCancelInputSchema)
     .output(bookingCancelSchema)
-    .handler(({ context, input }) =>
-      cancelBooking(context.db, context.provider, input.id, input.reason, {
-        userId: context.session.user.id,
-        isAdmin: false,
-      }),
+    .handler(async ({ context, input }) =>
+      cancelBooking(
+        context.db,
+        await providerForBooking(context.db, context.provider, input.id),
+        input.id,
+        input.reason,
+        { userId: context.session.user.id, isAdmin: false },
+      ),
     ),
   travellers: {
     list: protectedProcedure
@@ -131,32 +192,55 @@ export const bookingRouter = {
       .output(travellerListSchema)
       .handler(({ context, input }) => saveTravellers(context.db, context.session.user.id, input)),
   },
-  receipt: protectedProcedure
+  receipt: publicProcedure
     .route({
       method: "POST",
       path: "/booking/receipt",
       operationId: "getBookingReceipt",
       summary: "Get receipt data for a booking",
       description:
-        "Returns the figures behind the Download Receipt button: the priced lines with when each is collected, the total, the refundable security deposit, and every payment taken so far. The PDF itself is rendered client-side.",
+        "Returns the figures behind the Download Receipt button: the priced lines with when each is collected, the total, the refundable security deposit, and every payment taken so far. Reachable by the signed-in owner or with a guest accessToken. The PDF itself is rendered client-side.",
       tags: ["Booking"],
       successDescription: "Receipt data for the requested booking.",
       spec: withJsonBodyExample({ id: "bkg_example" }),
     })
     .input(bookingIdInputSchema)
     .output(bookingReceiptSchema)
-    .handler(({ context, input }) => getReceipt(context.db, context.session.user.id, input.id)),
+    .handler(async ({ context, input }) =>
+      getReceipt(context.db, await actorFor(context, input.id, input.accessToken), input.id),
+    ),
+  invoice: publicProcedure
+    .route({
+      method: "POST",
+      path: "/booking/invoice",
+      operationId: "getBookingInvoice",
+      summary: "Get the invoice document for a booking",
+      description:
+        "Returns everything the printable invoice renders: the issued number and due date, the seller's legal and tax details, the billed party exactly as it was captured at checkout, the priced lines, what is due now, and the bank details to transfer to. Reachable by the signed-in owner or with a guest accessToken — a guest who chose bank transfer needs this document as much as an account holder does. Null when the booking was paid by card and no invoice was ever requested.",
+      tags: ["Booking"],
+      successDescription: "The invoice document, or null when the booking has no invoice.",
+      spec: withJsonBodyExample({ id: "bkg_example" }),
+    })
+    .input(bookingIdInputSchema)
+    .output(invoiceDocumentSchema)
+    .handler(async ({ context, input }) =>
+      getInvoiceDocument(
+        context.db,
+        await actorFor(context, input.id, input.accessToken),
+        input.id,
+      ),
+    ),
 };
 
 export const checkoutRouter = {
-  createHold: protectedProcedure
+  createHold: publicProcedure
     .route({
       method: "POST",
       path: "/checkout/createHold",
       operationId: "createCheckoutHold",
       summary: "Turn a quote into a held booking",
       description:
-        "Re-validates the quote, creates a booking with the guest details from step 1, records acceptance of the terms and the cancellation policy, and holds a provider option when the active provider supports options. Both consents must be true — an unticked box fails validation here, not just in the browser. Idempotent on idempotencyKey: retrying the same submit returns the original booking instead of holding a second option. An expired quote is rejected with QUOTE_EXPIRED so the caller reprices first.",
+        "Re-validates the quote, creates a booking with the guest details from step 1, records acceptance of the terms and the cancellation policy, and holds a provider option when the active provider supports options. Sign-in is not required: a booking made without a session provisions an account from the guest email and returns an accessToken, which is how that customer reaches the rest of their own checkout until they set a password. Both consents must be true — an unticked box fails validation here, not just in the browser. Idempotent on idempotencyKey: retrying the same submit returns the original booking instead of holding a second option. An expired quote is rejected with QUOTE_EXPIRED so the caller reprices first.",
       tags: ["Checkout"],
       successDescription: "The booking created for this quote, with its hold expiry.",
       spec: withJsonBodyExample({
@@ -173,11 +257,11 @@ export const checkoutRouter = {
     })
     .input(checkoutCreateHoldInputSchema)
     .output(checkoutHoldSchema)
-    .handler(({ context, input }) =>
+    .handler(async ({ context, input }) =>
       createHold(
         context.db,
-        context.provider,
-        context.session.user.id,
+        await providerForQuote(context.db, context.provider, input.quoteId),
+        await checkoutActor(context, input.guest),
         input.quoteId,
         // A client that does not send one still gets single-call safety; only a
         // retry that reuses the key is deduplicated.
@@ -186,46 +270,71 @@ export const checkoutRouter = {
         input.consents,
       ),
     ),
-  status: protectedProcedure
+  status: publicProcedure
     .route({
       method: "POST",
       path: "/checkout/status",
       operationId: "getCheckoutStatus",
       summary: "Poll a booking's checkout status",
       description:
-        "Returns the current state of a booking for the confirmation screen to poll while the provider and payment steps settle, plus a failure reason when it did not go through.",
+        "Returns the current state of a booking for the confirmation screen to poll while the provider and payment steps settle, plus a failure reason when it did not go through. Reachable by the signed-in owner or with a guest accessToken.",
       tags: ["Checkout"],
       successDescription: "The booking's current checkout state.",
       spec: withJsonBodyExample({ bookingId: "bkg_example" }),
     })
     .input(checkoutStatusInputSchema)
     .output(checkoutStatusSchema)
-    .handler(({ context, input }) =>
-      getCheckoutStatus(context.db, context.session.user.id, input.bookingId),
+    .handler(async ({ context, input }) =>
+      getCheckoutStatus(
+        context.db,
+        await actorFor(context, input.bookingId, input.accessToken),
+        input.bookingId,
+      ),
     ),
-  confirm: protectedProcedure
+  confirm: publicProcedure
     .route({
       method: "POST",
       path: "/checkout/confirm",
       operationId: "confirmCheckout",
       summary: "Start a card payment for a booking",
       description:
-        "Re-validates the quote, creates the payment schedule and payment rows, and returns a Stripe client secret for the browser to complete with Stripe Elements. paymentPreference chooses between the quote's deposit and paying in full; amounts marked pay-at-check-in are settled with the base and are never charged here. Returns NOT_IMPLEMENTED when STRIPE_SECRET_KEY is unset.",
+        "Re-validates the quote, creates the payment schedule and payment rows, and returns a Stripe client secret for the browser to complete with Stripe Elements. Reachable by the signed-in owner or with a guest accessToken. paymentPreference chooses between the quote's deposit and paying in full; amounts marked pay-at-check-in are settled with the base and are never charged here. Returns NOT_IMPLEMENTED when STRIPE_SECRET_KEY is unset.",
       tags: ["Checkout"],
       successDescription: "The client secret and the amount being charged.",
       spec: withJsonBodyExample({ bookingId: "bkg_example", paymentPreference: "deposit" }),
     })
     .input(checkoutConfirmInputSchema)
     .output(checkoutConfirmSchema)
-    .handler(({ context, input }) =>
+    .handler(async ({ context, input }) =>
       confirmCheckout(
         context.db,
-        context.session.user.id,
+        await actorFor(context, input.bookingId, input.accessToken),
         input.bookingId,
         input.paymentPreference,
       ),
     ),
-  requestInvoice: protectedProcedure
+  payBalance: publicProcedure
+    .route({
+      method: "POST",
+      path: "/checkout/payBalance",
+      operationId: "payCheckoutBalance",
+      summary: "Pay what a booking still owes",
+      description:
+        "Opens a Stripe payment for whatever the booking owes right now, which is the `payableNow` figure booking.list and booking.get report. On a CONFIRMED charter that is the collectable total less everything already paid, so a deposit booking can settle its second installment without being chased outside the system; the booking stays CONFIRMED throughout, because the charter exists whether or not this payment has landed. On a booking that was never paid for it is the quote's prepayment, which is how a customer who closed the tab mid-checkout finishes without starting again. That second case runs the same quote and hold checks as checkout.confirm, so a booking whose price or provider option has lapsed answers QUOTE_EXPIRED and has to be repriced. A booking that cannot be paid in the state it is in answers NOT_PAYABLE, and one with nothing left to pay answers ALREADY_PAID. Amounts marked pay-at-check-in are settled with the base and are never charged here. Reachable by the signed-in owner or with a guest accessToken.",
+      tags: ["Checkout"],
+      successDescription: "The client secret and the outstanding amount being charged.",
+      spec: withJsonBodyExample({ bookingId: "bkg_example" }),
+    })
+    .input(checkoutPayBalanceInputSchema)
+    .output(checkoutConfirmSchema)
+    .handler(async ({ context, input }) =>
+      payBalance(
+        context.db,
+        await actorFor(context, input.bookingId, input.accessToken),
+        input.bookingId,
+      ),
+    ),
+  requestInvoice: publicProcedure
     .route({
       method: "POST",
       path: "/checkout/requestInvoice",
@@ -238,14 +347,25 @@ export const checkoutRouter = {
       spec: withJsonBodyExample({
         bookingId: "bkg_example",
         billingEmail: "billing@example.com",
+        billingName: "Jane Doe",
+        addressLine1: "12 Harbour Road",
+        city: "Split",
+        postalCode: "21000",
+        countryCode: "HR",
         companyName: "Yachts Adventures",
         vatNumber: "GB123123211321312123",
       }),
     })
     .input(invoiceRequestInputSchema)
     .output(invoiceRequestSchema)
-    .handler(({ context, input }) => requestInvoice(context.db, context.session.user.id, input)),
-  askQuestion: protectedProcedure
+    .handler(async ({ context, input }) =>
+      requestInvoice(
+        context.db,
+        await actorFor(context, input.bookingId, input.accessToken),
+        input,
+      ),
+    ),
+  askQuestion: publicProcedure
     .route({
       method: "POST",
       path: "/checkout/askQuestion",
@@ -262,5 +382,10 @@ export const checkoutRouter = {
     })
     .input(enquiryInputSchema)
     .output(enquirySchema)
-    .handler(({ context, input }) => askQuestion(context.db, context.session.user.id, input)),
+    .handler(async ({ context, input }) => {
+      const actor = await actorFor(context, input.bookingId, input.accessToken);
+      const enquiry = await askQuestion(context.db, actor, input);
+      await announceEnquiry(context.db, enquiry.id);
+      return enquiry;
+    }),
 };

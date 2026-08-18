@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@yacht-charter/ui/components/data-display/card";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { ImageWithFallback } from "@yacht-charter/ui/components/data-display/image-with-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Star } from "lucide-react";
 
@@ -52,7 +53,7 @@ function BoatSmallCard({
   return (
     <Card className={cn("h-full w-[334px] max-w-full", className)} {...props}>
       <CardMedia className="aspect-[334/200]">
-        <img src={image} alt={imageAlt} />
+        <ImageWithFallback src={image} alt={imageAlt} />
         {saveRender && <div className="absolute top-4 right-4">{saveRender}</div>}
       </CardMedia>
       <CardContent className="gap-3">

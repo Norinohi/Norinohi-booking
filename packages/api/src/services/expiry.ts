@@ -1,17 +1,39 @@
-import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
+import { IN_FLIGHT_SYNC_STATUSES, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, lte, ne, notExists, sql } from "drizzle-orm";
 
 import type { Database } from "../context";
-import { DEAD_QUOTE_SWEEP, HOLD_SWEEP, assertTransition } from "./booking-state";
+import { providerByKey } from "./provider-routing";
+import {
+  DEAD_QUOTE_SWEEP,
+  HOLD_SWEEP,
+  STALE_PAYMENT_SWEEP,
+  assertTransition,
+  type BookingStatus,
+} from "./booking-state";
+import { pruneListingViews } from "./listing-view";
 
 export type SweepResult = {
   quotesExpired: number;
   holdsExpired: number;
   bookingsQuoteExpired: number;
+  /** Checkouts abandoned at the payment step, whose slot nothing else would ever release. */
+  paymentsAbandoned: number;
   /** Provider releases that failed. The booking still expires; this is for ops. */
   releaseFailures: { bookingId: string; message: string }[];
+  /** View rows dropped past their retention window — unrelated to expiry, but the
+   *  same scheduled call is the only maintenance tick this service has. */
+  viewsPruned: number;
+  /** Sync runs abandoned by a process that died, moved to `failed`. */
+  syncRunsReaped: number;
+  /**
+   * Bookings stuck in CONFIRMING. Reported, never moved — see
+   * `flagStaleConfirmations` for why guessing either way is the wrong answer.
+   */
+  staleConfirmations: { bookingId: string; reference: string; stuckSince: string }[];
 };
 
 /**
@@ -21,6 +43,10 @@ export type SweepResult = {
  * index is unique over live bookings, so a single abandoned checkout would keep
  * that slot unbookable forever. Quotes also only expired lazily, when something
  * happened to read them.
+ *
+ * Abandoned sync runs are reaped here for the same reason and not because they are
+ * expiries: `sync_run_in_flight_uq` is the other unique index over live rows, and a
+ * run whose process died holds it against every future sync of that provider.
  *
  * Safe to run concurrently and on a schedule — every write is a compare-and-set on
  * the status that was read, so two overlapping runs cannot double-apply, and a
@@ -34,8 +60,149 @@ export async function sweepExpiries(
   const quotesExpired = await expireQuotes(db, now);
   const { holdsExpired, releaseFailures } = await expireHolds(db, now, provider);
   const bookingsQuoteExpired = await expireBookingsWithDeadQuotes(db, now);
+  const { paymentsAbandoned } = await expireAbandonedPayments(db, now, provider, releaseFailures);
+  const { viewsPruned } = await pruneListingViews(db, now);
+  const syncRunsReaped = await reapAbandonedSyncRuns(db, now);
+  const staleConfirmations = await flagStaleConfirmations(db, now);
 
-  return { quotesExpired, holdsExpired, bookingsQuoteExpired, releaseFailures };
+  return {
+    quotesExpired,
+    holdsExpired,
+    bookingsQuoteExpired,
+    paymentsAbandoned,
+    releaseFailures,
+    viewsPruned,
+    syncRunsReaped,
+    staleConfirmations,
+  };
+}
+
+/**
+ * How long a booking may sit in CONFIRMING before its process is presumed dead.
+ *
+ * Generous, like the sync-run reaper above: CONFIRMING is only held across a single
+ * provider commit, but a slow vendor answering in minutes must not be mistaken for
+ * one that never will.
+ */
+const STALE_CONFIRMING_MS = 15 * 60 * 1000;
+
+/**
+ * Bookings a dead process left mid-commit.
+ *
+ * CONFIRMING is claimed before `provider.confirmBooking` is called, so a booking
+ * stuck here died during that call and we do not know whether the provider created
+ * the reservation. **Nothing is moved, deliberately.** The state machine offers
+ * CONFIRMED and PROVIDER_REJECTED, and both are guesses with a real cost: confirming
+ * invents a charter that may not exist, and rejecting refunds a customer whose boat
+ * may well be booked, losing the money and the slot. There is no `getReservation` on
+ * `InventoryProvider` to settle it, so the only honest move is to make the booking
+ * visible and let a human ask the provider.
+ *
+ * Reported on every run so it stays visible until someone resolves it; the audit
+ * event is written once, so a sweep on a schedule does not fill the log.
+ */
+async function flagStaleConfirmations(
+  db: Database,
+  now: Date,
+): Promise<SweepResult["staleConfirmations"]> {
+  const cutoff = new Date(now.getTime() - STALE_CONFIRMING_MS);
+
+  const stranded = await db
+    .select({
+      id: booking.id,
+      reference: booking.reference,
+      provider: booking.provider,
+      providerOptionId: booking.providerOptionId,
+      updatedAt: booking.updatedAt,
+    })
+    .from(booking)
+    .where(and(eq(booking.status, "CONFIRMING"), lte(booking.updatedAt, cutoff)));
+
+  for (const candidate of stranded) {
+    const [flagged] = await db
+      .select({ id: providerReservationEvent.id })
+      .from(providerReservationEvent)
+      .where(
+        and(
+          eq(providerReservationEvent.bookingId, candidate.id),
+          eq(providerReservationEvent.kind, "confirm_stale"),
+        ),
+      )
+      .limit(1);
+
+    if (flagged) continue;
+
+    await db.insert(providerReservationEvent).values({
+      bookingId: candidate.id,
+      kind: "confirm_stale",
+      provider: candidate.provider,
+      providerReference: candidate.providerOptionId,
+      payload: {
+        stuckSince: candidate.updatedAt.toISOString(),
+        note: "Left in CONFIRMING by a process that died mid-commit; ask the provider whether the reservation exists.",
+      },
+    });
+  }
+
+  return stranded.map((candidate) => ({
+    bookingId: candidate.id,
+    reference: candidate.reference,
+    stuckSince: candidate.updatedAt.toISOString(),
+  }));
+}
+
+/**
+ * How long a run may sit in flight before the sweep decides its process is gone.
+ *
+ * Generous on purpose: a full catalogue walk over a large fleet is slow, and reaping a
+ * run that is still working would let a second one start against the same cursor —
+ * exactly what `sync_run_in_flight_uq` exists to prevent. Six hours is far longer than
+ * any observed run and far shorter than the "never" we had before.
+ */
+const ABANDONED_SYNC_RUN_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * Sync runs whose process died mid-walk.
+ *
+ * `pending` and `running` are only ever left behind by the process doing the work — it
+ * writes the terminal status itself — so a redeploy, an OOM or a restart strands the row
+ * with nobody to close it. That used to be untidy history. Since the in-flight unique
+ * index it is a deadlock: the stranded row holds the lock for that provider and kind, and
+ * every later sync is refused at the insert, quietly, for as long as the row sits there.
+ *
+ * The failure is recorded as a `transient` sync_error rather than only a status, because
+ * a run that ends with no explanation is indistinguishable from one that failed on the
+ * vendor's side, and the two want different responses from whoever reads the history.
+ */
+async function reapAbandonedSyncRuns(db: Database, now: Date): Promise<number> {
+  const cutoff = new Date(now.getTime() - ABANDONED_SYNC_RUN_MS);
+
+  const reaped = await db
+    .update(syncRun)
+    .set({ status: "failed", finishedAt: now })
+    .where(
+      and(
+        // The index's own definition of in-flight, so the lock and its release agree.
+        inArray(syncRun.status, [...IN_FLIGHT_SYNC_STATUSES]),
+        // `started_at` is written on the move to running, so a run that died while still
+        // pending has none; it is aged from when it was created instead.
+        lte(sql`coalesce(${syncRun.startedAt}, ${syncRun.createdAt})`, cutoff),
+      ),
+    )
+    .returning({ id: syncRun.id });
+
+  if (reaped.length > 0) {
+    await db.insert(syncError).values(
+      reaped.map((row) => ({
+        syncRunId: row.id,
+        errorType: "transient" as const,
+        message: "Abandoned mid-run: no process claimed it before the sweep's cutoff",
+        context: { reapedAt: now.toISOString(), cutoff: cutoff.toISOString() },
+      })),
+    );
+  }
+
+  return reaped.length;
 }
 
 /** Active quotes past their expiry. Consumed ones belong to a booking and are left alone. */
@@ -82,19 +249,14 @@ async function expireHolds(
   let holdsExpired = 0;
 
   for (const candidate of candidates) {
-    let releaseError: string | null = null;
-
-    if (candidate.providerOptionId) {
-      try {
-        await provider.cancelOption({
-          providerReservationId: candidate.providerReservationId ?? candidate.providerOptionId,
-          securityToken: candidate.providerReservationUuid ?? undefined,
-        });
-      } catch (error) {
-        releaseError = error instanceof Error ? error.message : String(error);
-        releaseFailures.push({ bookingId: candidate.id, message: releaseError });
-      }
-    }
+    // The hold was taken with whichever vendor sold the listing, and the sweep
+    // walks every booking regardless of provider, so releasing it through the
+    // configured adapter would call the wrong vendor with an id it never issued.
+    const releaseError = await releaseOption(
+      await providerByKey(provider, candidate.providerName),
+      candidate,
+      releaseFailures,
+    );
 
     assertTransition(candidate.status, HOLD_SWEEP.to);
 
@@ -151,4 +313,170 @@ async function expireBookingsWithDeadQuotes(db: Database, now: Date): Promise<nu
   }
 
   return expired;
+}
+
+/**
+ * Hands the slot back to the provider, best-effort.
+ *
+ * Failures are collected rather than thrown: every caller has already decided the booking is
+ * over, and a provider that will not take the release must not leave a row nothing can clear.
+ * Returns the message so it can be recorded on the reservation event, which is where someone
+ * chasing a slot that is still blocked upstream will look.
+ */
+async function releaseOption(
+  provider: InventoryProvider,
+  candidate: {
+    id: string;
+    providerOptionId: string | null;
+    providerReservationId: string | null;
+    providerReservationUuid: string | null;
+  },
+  failures: SweepResult["releaseFailures"],
+): Promise<string | null> {
+  if (!candidate.providerOptionId) return null;
+
+  try {
+    await provider.cancelOption({
+      providerReservationId: candidate.providerReservationId ?? candidate.providerOptionId,
+      securityToken: candidate.providerReservationUuid ?? undefined,
+    });
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push({ bookingId: candidate.id, message });
+    return message;
+  }
+}
+
+/**
+ * How long a booking may sit in PAYMENT_PENDING before its checkout is presumed abandoned.
+ *
+ * The clock is not what waits for money, and that is why it can be this short. Everything that
+ * could still arrive is excluded below by something better than a timer: a delayed method in
+ * flight by its `processing` status, and a bank transfer by its invoice's own due date. What
+ * the cutoff governs is the remainder — an intent that was opened and never submitted, where
+ * nothing is coming and the only question is how long to leave the slot standing.
+ *
+ * Five days answers that against measured provider behaviour rather than a guess. Real NauSYS
+ * options run to about six days for a distant departure and as little as twenty hours for a
+ * charter leaving that week, so five puts our release at or before the vendor's in nearly every
+ * case. That is the direction to err in: releasing early hands a slot back to an operator who
+ * can still sell it, while releasing late leaves `booking_provider_option_uq` blocking a week
+ * the operator reclaimed days ago.
+ *
+ * The `processing` exclusion is load-bearing for this number. It is written by the webhook's
+ * `payment_intent.processing` handler, so if the Stripe endpoint is not subscribed to that
+ * event the clock becomes the only thing standing between a SEPA debit and a cancelled charter,
+ * and five days is not long enough for that job.
+ */
+const ABANDONED_PAYMENT_MS = 5 * 24 * 60 * 60 * 1000;
+
+/**
+ * Checkouts abandoned at the payment step.
+ *
+ * The two sweeps above leave PAYMENT_PENDING alone because money may be in flight and the
+ * Stripe webhook is the authority on how that ends. True in the minutes after Pay, and the
+ * reason nothing reaped this state at all: a customer who opened a payment and closed the tab
+ * left a booking that no sweep would touch, holding `booking_provider_option_uq` against every
+ * future booking of that slot. The operator releases their own option on `optionTill`; our row
+ * outlived it indefinitely.
+ *
+ * Three things keep a booking out of this: money that arrived or is still arriving, an invoice
+ * whose terms have not run out, and the cutoff. What is left is genuinely abandoned.
+ */
+async function expireAbandonedPayments(
+  db: Database,
+  now: Date,
+  provider: InventoryProvider,
+  releaseFailures: SweepResult["releaseFailures"],
+): Promise<{ paymentsAbandoned: number }> {
+  const cutoff = new Date(now.getTime() - ABANDONED_PAYMENT_MS);
+
+  const candidates = await db
+    .select({
+      id: booking.id,
+      status: booking.status,
+      providerName: booking.provider,
+      providerOptionId: booking.providerOptionId,
+      providerReservationId: booking.providerReservationId,
+      providerReservationUuid: booking.providerReservationUuid,
+    })
+    .from(booking)
+    .where(
+      and(
+        inArray(booking.status, [...STALE_PAYMENT_SWEEP.from]),
+        lte(booking.updatedAt, cutoff),
+        /*
+         * `processing` as well as `succeeded`: an async payment method that has not settled
+         * yet is money on its way, and cancelling underneath it would take a customer's
+         * transfer for a charter we just released.
+         */
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(payment)
+            .where(
+              and(
+                eq(payment.bookingId, booking.id),
+                inArray(payment.status, ["succeeded", "processing"]),
+              ),
+            ),
+        ),
+        // A live invoice is a customer we told to take their time, in writing.
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(invoiceRequest)
+            .where(
+              and(
+                eq(invoiceRequest.bookingId, booking.id),
+                ne(invoiceRequest.status, "cancelled"),
+                gt(invoiceRequest.dueAt, now),
+              ),
+            ),
+        ),
+      ),
+    );
+
+  let paymentsAbandoned = 0;
+
+  for (const candidate of candidates) {
+    // Same reason as the hold sweep: the option belongs to the vendor that issued
+    // it, not to whichever adapter this process was configured with.
+    const releaseError = await releaseOption(
+      await providerByKey(provider, candidate.providerName),
+      candidate,
+      releaseFailures,
+    );
+
+    // Naming what actually lapsed: a booking with no option never had a hold to expire.
+    const to: BookingStatus = candidate.providerOptionId
+      ? STALE_PAYMENT_SWEEP.held
+      : STALE_PAYMENT_SWEEP.to;
+
+    assertTransition(candidate.status, to);
+
+    const [updated] = await db
+      .update(booking)
+      .set({ status: to, cancelReason: "Payment was never completed" })
+      .where(and(eq(booking.id, candidate.id), eq(booking.status, candidate.status)))
+      .returning({ id: booking.id });
+
+    // A late webhook moved it between the read and the write; it wins.
+    if (!updated) continue;
+
+    paymentsAbandoned += 1;
+
+    await db.insert(providerReservationEvent).values({
+      bookingId: candidate.id,
+      kind: "option_released",
+      provider: candidate.providerName,
+      providerReference: candidate.providerOptionId,
+      payload: releaseError
+        ? { released: false, error: releaseError, reason: "payment_abandoned" }
+        : { released: true, reason: "payment_abandoned" },
+    });
+  }
+
+  return { paymentsAbandoned };
 }

@@ -237,6 +237,17 @@ export const providerReservationSchema = z.object({
    */
   securityToken: z.string().optional(),
   holdExpiresAt: z.string().optional(),
+  /**
+   * Where the customer completes the crew list on the provider's own site, when the
+   * provider hosts one (NauSYS `crewlistlink`). Forwarding it is what the vendor
+   * sanctioned in place of us collecting passport data and posting it back.
+   *
+   * Deliberately a plain string, not `z.url()`: this arrives on the response that
+   * confirms a booking, and a link the vendor mangled must not be what fails a
+   * charter the customer has already paid for. The connector is what checks the
+   * value is an http(s) URL, and omits it otherwise.
+   */
+  crewListLink: z.string().optional(),
 });
 export type ProviderReservation = z.infer<typeof providerReservationSchema>;
 
@@ -302,6 +313,15 @@ export type ProviderRecordSet = Map<ProviderResourceType, ProviderRecordEntry[]>
 export const providerCapabilitiesSchema = z.object({
   supportsOptions: z.boolean(),
   supportsWebhooks: z.boolean(),
+  /**
+   * Whether the provider guarantees the hold until it says otherwise, which is what
+   * makes charging before committing safe (D-PAYORDER).
+   *
+   * **Nothing reads this yet.** Every provider returns true, so checkout charges and
+   * then confirms, and the false branch — hold first, charge after — has never been
+   * written. A provider that returns false would silently get the wrong order, so
+   * adding one means implementing that branch, not just the adapter.
+   */
   optionExpiryOwnedByProvider: z.boolean(),
   supportsExtrasMutation: z.boolean(),
   supportsLiveQuote: z.boolean(),
@@ -389,6 +409,42 @@ const canonicalAmenitySchema = z.object({
   name: z.string(),
 });
 
+/**
+ * A priced extra the provider sells alongside the hull.
+ *
+ * Separate from `canonicalAmenitySchema` because the two answer different
+ * questions: an amenity is equipment the yacht has, an extra is something the
+ * customer pays for. Providers key them in different id spaces too, which `kind`
+ * records so the writer never collides a service with an equipment of the same
+ * number.
+ *
+ * The price is the season's published list price, not a quote. What a customer
+ * actually owes for concrete dates comes from the offer path, which prices the
+ * same items per period and quantity.
+ */
+export const canonicalExtraSchema = z.object({
+  kind: z.enum(["service", "equipment"]),
+  externalId: z.string(),
+  name: z.string(),
+  obligatory: z.boolean(),
+  priceMinor: z.number().int(),
+  priceCurrency: z.string().length(3),
+  /** Vendor's billing unit (per booking, per day, per person); display only. */
+  priceMeasure: z.string().optional(),
+  calculationType: z.string().optional(),
+  /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
+  onRequestOnly: z.boolean(),
+  /**
+   * Set when this extra is really a crew role. Vendors sell crew as ordinary
+   * services with no flag saying so, so this is read off the name and left unset
+   * whenever the name does not clearly say which role it is.
+   */
+  crewRole: z.enum(["skipper", "hostess", "cook"]).optional(),
+  externalSeasonId: z.string().optional(),
+  externalBaseId: z.string().optional(),
+});
+export type CanonicalExtra = z.infer<typeof canonicalExtraSchema>;
+
 const canonicalListingSchema = z.object({
   externalId: z.string(),
   externalCompanyId: z.string(),
@@ -409,7 +465,11 @@ const canonicalListingSchema = z.object({
     engines: z.number().int().optional(),
     fuelCapacity: z.number().int().optional(),
     waterCapacity: z.number().int().optional(),
+    /** Rig, resolved against the provider's own reference list rather than left as an id. */
+    sailType: z.string().optional(),
   }),
+  /** How the boat is sold. Backs the Crew filter, so it is left unset rather than guessed. */
+  crewType: crewTypeSchema.optional(),
   media: z.array(
     z.object({
       externalUrl: z.string(),
@@ -418,6 +478,8 @@ const canonicalListingSchema = z.object({
     }),
   ),
   amenities: z.array(z.string()),
+  /* Defaulted: a provider with no extras feed still produces a valid listing. */
+  extras: z.array(canonicalExtraSchema).default([]),
   texts: z.array(
     z.object({
       kind: z.enum(["description", "notes", "conditions", "one_way_note"]),

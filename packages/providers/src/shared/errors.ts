@@ -223,3 +223,25 @@ export function toSyncErrorType(err: unknown): SyncErrorType {
   }
   return "contract";
 }
+
+/**
+ * A one-line summary of why a response failed its schema — `id: expected number,
+ * client.email: invalid email`.
+ *
+ * The issues are already attached to the ContractError's payload, but nothing on the
+ * booking path prints a payload: the message is what reaches the log, the
+ * `provider_reservation_event` row and the customer-facing error. Vendor contract drift
+ * is only diagnosable if that message names the field, otherwise the only way to find
+ * out which one moved is to reproduce the call against the live vendor.
+ */
+export function describeSchemaIssues(
+  issues: readonly { path: readonly PropertyKey[]; message: string }[],
+  limit = 5,
+): string {
+  const shown = issues
+    .slice(0, limit)
+    .map((issue) => `${issue.path.map(String).join(".") || "(root)"}: ${issue.message}`)
+    .join(", ");
+
+  return issues.length > limit ? `${shown}, +${issues.length - limit} more` : shown;
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { JsonValue } from "../shared/json";
 import type { ProviderRecordSet } from "../types";
 import { projectBookingManagerCatalogue } from "./projection";
 
@@ -49,5 +50,130 @@ describe("country codes across both vendor spellings", () => {
     );
 
     expect(countries[0]?.name).toBe("ITA");
+  });
+});
+
+/**
+ * The vendor hangs priced extras off a yacht's products. They are the catalogue's
+ * only source for the listing's mandatory and optional extras sections; the
+ * equipment lists say what the yacht carries, not what it costs to add.
+ */
+describe("product extras", () => {
+  /** Only the fields projectYacht needs to keep the boat, plus the products under test. */
+  const yacht = (products: JsonValue[]) => ({
+    id: 5001,
+    companyId: 42,
+    homeBaseId: 7,
+    name: "Aurora",
+    currency: "EUR",
+    products,
+  });
+
+  function yachtRecords(payload: ReturnType<typeof yacht>): ProviderRecordSet {
+    return new Map([["yacht" as const, [{ externalId: String(payload.id), payload }]]]);
+  }
+
+  const listingOf = (products: JsonValue[]) =>
+    projectBookingManagerCatalogue(yachtRecords(yacht(products))).listings[0];
+
+  it("splits extras by the vendor's obligatory flag", () => {
+    const listing = listingOf([
+      {
+        isDefaultProduct: true,
+        extras: [
+          { id: 1, name: "Final cleaning", obligatory: true, price: 125, currency: "EUR" },
+          { id: 2, name: "Outboard engine", obligatory: false, price: 90, currency: "EUR" },
+        ],
+      },
+    ]);
+
+    expect(listing?.extras).toEqual([
+      expect.objectContaining({ externalId: "1", name: "Final cleaning", obligatory: true }),
+      expect.objectContaining({ externalId: "2", name: "Outboard engine", obligatory: false }),
+    ]);
+  });
+
+  it("prices a repeated extra from the default product", () => {
+    const extra = (price: number) => [{ id: 1, name: "Bedding", price, currency: "EUR" }];
+    const listing = listingOf([
+      { name: "Skippered", isDefaultProduct: false, extras: extra(60) },
+      { name: "Bareboat", isDefaultProduct: true, extras: extra(40) },
+    ]);
+
+    expect(listing?.extras).toHaveLength(1);
+    expect(listing?.extras[0]?.priceMinor).toBe(4_000);
+  });
+
+  it("drops an extra with no id or no name rather than publishing it unnamed", () => {
+    const listing = listingOf([
+      {
+        isDefaultProduct: true,
+        extras: [
+          { name: "Nameless id", price: 10, currency: "EUR" },
+          { id: 3, price: 10, currency: "EUR" },
+          { id: 4, name: "Kept", price: 10, currency: "EUR" },
+        ],
+      },
+    ]);
+
+    expect(listing?.extras).toEqual([expect.objectContaining({ externalId: "4" })]);
+  });
+
+  it("falls back to the yacht's currency when an extra names none", () => {
+    const listing = listingOf([
+      { isDefaultProduct: true, extras: [{ id: 1, name: "Bedding", price: 40 }] },
+    ]);
+
+    expect(listing?.extras[0]?.priceCurrency).toBe("EUR");
+  });
+
+  it("publishes no extras for a yacht with no products", () => {
+    expect(listingOf([])?.extras).toEqual([]);
+  });
+});
+
+/**
+ * Pinned to the live test fleet (company 225), not to the specification, which
+ * documents no range for these fields.
+ */
+describe("check-in rules", () => {
+  const yachtRecords = (payload: Record<string, JsonValue>): ProviderRecordSet =>
+    new Map([["yacht" as const, [{ externalId: String(payload.id), payload }]]]);
+
+  const rulesOf = (over: Record<string, JsonValue>) =>
+    projectBookingManagerCatalogue(
+      yachtRecords({ id: 5001, companyId: 225, homeBaseId: 7, name: "Zaffiro", ...over }),
+    ).listings[0]?.checkinRules;
+
+  it("reads day 7 as Saturday, the day the vendor actually turns boats around", () => {
+    // Every yacht in the test fleet sends 7, and every booking in its availability
+    // starts on a Saturday. ISO numbering would have made this Sunday and put every
+    // synthesized week a day off the one the vendor sells.
+    expect(
+      rulesOf({ defaultCheckInDay: 7, allCheckInDays: [7], minimumCharterDuration: 7 }),
+    ).toEqual([{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined }]);
+  });
+
+  it("emits a rule per day for a yacht that takes any", () => {
+    // The vendor writes this as defaultCheckInDay -1 plus a full list; collapsing
+    // it to one turnaround would hide six sevenths of the boat's availability.
+    const rules = rulesOf({
+      defaultCheckInDay: -1,
+      allCheckInDays: [1, 2, 3, 4, 5, 6, 7],
+      minimumCharterDuration: 0,
+    });
+
+    expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(rules?.every((rule) => rule.minNights === undefined)).toBe(true);
+  });
+
+  it("falls back to the default day when no list is sent", () => {
+    expect(rulesOf({ defaultCheckInDay: 1 })?.[0]?.checkinWeekday).toBe(0);
+  });
+
+  it("keeps a minimum duration for a yacht with no usable weekday", () => {
+    expect(rulesOf({ defaultCheckInDay: -1, minimumCharterDuration: 5 })).toEqual([
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 5, maxNights: undefined },
+    ]);
   });
 });

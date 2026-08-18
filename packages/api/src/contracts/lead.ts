@@ -3,6 +3,7 @@ import { z } from "zod";
 import { paginationInputDefault, paginationInputSchema, paginationSchema } from "./primitives";
 
 export const leadKindSchema = z.enum(["quote_request", "charter_expert", "consultation"]);
+export type LeadKind = z.infer<typeof leadKindSchema>;
 export const leadStatusSchema = z.enum(["new", "contacted", "closed"]);
 
 /**
@@ -48,6 +49,8 @@ export const leadSchema = leadCreatedSchema.extend({
   phone: z.string().nullable(),
   message: z.string().nullable(),
   context: z.unknown().nullable(),
+  answer: z.string().nullable(),
+  answeredAt: z.string().nullable(),
   handledAt: z.string().nullable(),
 });
 
@@ -70,4 +73,14 @@ export const leadListSchema = z.object({
 export const leadSetStatusInputSchema = z.object({
   id: z.string().min(1),
   status: leadStatusSchema,
+});
+
+/**
+ * The reply staff send from the inbox. `close` mirrors the booking-enquiry answer: a reply
+ * usually ends the thread, but an answer that invites one back should leave the lead open.
+ */
+export const leadAnswerInputSchema = z.object({
+  id: z.string().min(1),
+  answer: z.string().trim().min(1).max(4000),
+  close: z.boolean().default(true),
 });

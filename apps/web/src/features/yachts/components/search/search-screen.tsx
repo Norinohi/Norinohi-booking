@@ -91,7 +91,7 @@ function ResultsColumn() {
   const { toCard } = useListingCards();
   const input = useSearchInput(filters, defaults, { sort, page });
   const { data, isLoading } = useQuery(resultsQueryOptions(input));
-  const boats = data?.items.map(({ listing }) => toCard(listing)) ?? [];
+  const boats = data?.items.map((item) => toCard(item.listing, item)) ?? [];
   const pagination = data?.pagination;
   const chips = useFilterChips(filters);
 

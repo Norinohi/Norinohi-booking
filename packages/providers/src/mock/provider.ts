@@ -30,6 +30,7 @@ import { availability } from "./data";
 import { mapSlotToOffer, projectMockCatalogue, rawEntities, sourceHash } from "../mapping/mock";
 import { fixtureInventorySource, resolveReference, type MockInventorySource } from "./inventory";
 import { SlotUnavailableError } from "../shared/errors";
+import { formatExtraCode, parseExtraCode } from "../shared/extra-code";
 
 const quoteTtlMs = 15 * 60 * 1000;
 
@@ -157,12 +158,22 @@ export class MockInventoryProvider implements InventoryProvider {
     }
 
     const crewCodes = crewCodesFor(parsed.crewType);
+    /*
+     * Selections arrive as canonical `kind:externalId` codes. The mock has a single
+     * flat code space rather than the separate service and equipment spaces a real
+     * vendor keeps, so the kind is parsed off and only the id is matched.
+     */
+    const wanted = new Set(
+      parsed.extras.flatMap((code) => {
+        const parsedCode = parseExtraCode(code);
+        return parsedCode === null ? [] : [parsedCode.externalId];
+      }),
+    );
     const selectedExtras = availability.extras.filter(
-      (item) => item.obligatory || parsed.extras.includes(item.code) || crewCodes.has(item.code),
+      (item) => item.obligatory || wanted.has(item.code) || crewCodes.has(item.code),
     );
     const extraTotalMinor = selectedExtras.reduce((total, item) => total + item.priceMinor, 0);
-    const repriceDeltaMinor = parsed.extras.length > 0 ? 1500 : 0;
-    const totalMinor = slot.priceMinor + extraTotalMinor + repriceDeltaMinor;
+    const totalMinor = slot.priceMinor + extraTotalMinor;
     const depositMinor = Math.round(totalMinor * 0.5);
 
     return providerQuoteSchema.parse({
@@ -183,23 +194,21 @@ export class MockInventoryProvider implements InventoryProvider {
           kind: "base",
         },
         ...selectedExtras.map((item) => ({
-          code: item.code,
+          // Crew keeps its bare code: a crew role is identified by the amenity code
+          // the listing's Crew control offers, not by an entry in the extras
+          // catalogue. Everything else carries the canonical code the customer
+          // selected, so the line can be reconciled against the selection.
+          code: item.crew ? item.code : formatExtraCode("equipment", item.code),
           label: item.name,
           amount: { amountMinor: item.priceMinor, currency: parsed.currency },
-          payWhen: item.obligatory ? "at_check_in" : "now",
+          // Extras are settled with the base on arrival, which is what the listing
+          // page has always said about them; crew is part of the charter product and
+          // is collected with it. Billing an extra as due now contradicted the "Pay
+          // at check-in" line printed next to its price.
+          payWhen: item.crew ? "now" : "at_check_in",
           kind: item.obligatory ? "fee" : "extra",
           group: item.obligatory ? "mandatory" : item.crew ? "crew" : "optional",
         })),
-        ...(repriceDeltaMinor > 0
-          ? [
-              {
-                code: "provider-reprice",
-                label: "Provider reprice adjustment",
-                amount: { amountMinor: repriceDeltaMinor, currency: parsed.currency },
-                kind: "adjustment",
-              },
-            ]
-          : []),
       ],
       total: { amountMinor: totalMinor, currency: parsed.currency },
       deposit: { amountMinor: depositMinor, currency: parsed.currency },
@@ -216,10 +225,12 @@ export class MockInventoryProvider implements InventoryProvider {
         slot,
         extras: parsed.extras,
         crewType: parsed.crewType ?? null,
-        repriceDeltaMinor,
       }),
       expiresAt: new Date(Date.now() + quoteTtlMs).toISOString(),
-      repriced: repriceDeltaMinor > 0,
+      // Like NauSYS: an adapter prices what it was asked for and has no memory of a
+      // previous observation, so it cannot know a price moved. `repriceQuote` sets
+      // this when the caller asked for a reprice.
+      repriced: false,
     });
   }
 

@@ -49,6 +49,20 @@ const pricedItemSchema = includedItemSchema.extend({
   pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
 });
 
+/**
+ * An optional extra, plus whether the booking flow may offer it as a choice.
+ *
+ * Not every provider can price an extra at quote time. Booking Manager publishes
+ * optional extras in its catalogue but exposes none on the offer it quotes from,
+ * and NauSYS keys its offer extras in an id space we have only ever seen used for
+ * services. An extra we cannot price must still be shown — the customer wants to
+ * know it exists — but offering a checkbox that silently changes nothing is worse
+ * than showing it as arrange-with-the-base.
+ */
+const optionalItemSchema = pricedItemSchema.extend({
+  selectable: z.boolean(),
+});
+
 const reviewSchema = z.object({
   id: z.string(),
   rating: z.number(),
@@ -77,6 +91,9 @@ export const listingSummarySchema = z.object({
     email: z.string().nullable(),
     phone: z.string().nullable(),
     website: z.string().nullable(),
+    /* Wall-clock at the marina, e.g. "17:00". Render as given; it is not an instant. */
+    checkInTime: z.string().nullable(),
+    checkOutTime: z.string().nullable(),
   }),
   specs: z.object({
     lengthM: z.number(),
@@ -92,6 +109,7 @@ export const listingSummarySchema = z.object({
   }),
   availability: z.object({
     hasUnconfirmedAvailability: z.boolean(),
+    hasAvailableDates: z.boolean(),
     hasTemporaryBooking: z.boolean(),
   }),
   rating: z.number(),
@@ -103,12 +121,23 @@ export const listingSummarySchema = z.object({
   mainImage: z.string(),
   gallery: z.array(z.string()),
   amenities: z.array(z.string()),
-  priceFrom: moneySchema,
+  /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
+  priceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
     perPersonMinor: z.number().int().nullable(),
-    bookingPrepayment: moneySchema,
+    bookingPrepayment: moneySchema.nullable(),
   }),
+});
+
+/**
+ * `viewer` is the browser's own anonymous id, used only to keep one visitor from
+ * counting twice in a day. The server hashes it with the date before storing it,
+ * so a client that sends a stable id still leaves no cross-day trail.
+ */
+export const recordListingViewInputSchema = z.object({
+  id: z.string().min(1),
+  viewer: z.string().min(8).max(128),
 });
 
 export const listingsByIdsInputSchema = z.object({
@@ -121,7 +150,7 @@ export const listingDetailSchema = listingSummarySchema.extend({
   overview: z.array(includedItemSchema.extend({ value: z.string() })),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
-  optionalExtras: z.array(pricedItemSchema),
+  optionalExtras: z.array(optionalItemSchema),
   /**
    * What the booking sidebar's Crew control may offer for this yacht, and what
    * each role costs. `options` is derived from how the operator sells the hull
@@ -136,14 +165,9 @@ export const listingDetailSchema = listingSummarySchema.extend({
   importantInformation: z.object({
     charterCompany: z.string(),
     yachtPickupAddress: z.string(),
-    yachtPickup: z.object({
-      date: z.string().nullable(),
-      time: z.string().nullable(),
-    }),
-    yachtDropOff: z.object({
-      date: z.string().nullable(),
-      time: z.string().nullable(),
-    }),
+    /* Times only: a listing page has no charter, so it has no pickup date to state. */
+    yachtPickup: z.object({ time: z.string().nullable() }),
+    yachtDropOff: z.object({ time: z.string().nullable() }),
     cancellationPaymentPolicies: z.string(),
     sailingLicenseRequired: z.string(),
     pets: z.string(),
@@ -382,6 +406,43 @@ export const availabilityCalendarSchema = z.object({
       minNights: z.number().int().nullable(),
       checkinWeekday: z.number().int().nullable(),
       checkoutWeekday: z.number().int().nullable(),
+      availabilityConfirmed: z.boolean(),
+    }),
+  ),
+});
+
+export const availabilityConstraintsSchema = z.object({
+  listingId: z.string(),
+  window: z.object({ from: z.string(), to: z.string() }),
+  rules: z.array(
+    z.object({
+      checkinWeekday: z.number().int().min(0).max(6).nullable(),
+      checkoutWeekday: z.number().int().min(0).max(6).nullable(),
+      minNights: z.number().int().nullable(),
+      maxNights: z.number().int().nullable(),
+    }),
+  ),
+  occupied: z.array(
+    z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      status: z.enum(["option", "occupied", "blocked"]),
+    }),
+  ),
+  priced: z.array(
+    z.object({
+      startDate: z.string(),
+      endDate: z.string(),
+      priceMinor: z.number().int(),
+      currency: currencySchema,
+      confirmed: z.boolean(),
+    }),
+  ),
+  oneWay: z.array(
+    z.object({
+      startDate: z.string().nullable(),
+      endDate: z.string().nullable(),
+      isOneWay: z.boolean(),
     }),
   ),
 });

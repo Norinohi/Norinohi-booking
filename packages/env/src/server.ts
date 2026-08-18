@@ -21,6 +21,23 @@ export const env = createEnv({
         message: "COOKIE_DOMAIN must be a bare domain (.example.com), not a URL",
       })
       .optional(),
+    /*
+     * Namespace for better-auth's cookie names, which must differ per deployment.
+     * A browser keys a cookie by name, domain and path, so two environments under
+     * one parent domain (staging and production both scoped to .yachtskanner.com)
+     * write their session token into the same slot: signing in on one overwrites
+     * the other's cookie, and the environment that then receives a token its own
+     * database has never seen deletes the cookie and returns no session. Set this
+     * on every non-production deployment. Production leaves it unset so it keeps
+     * better-auth's `better-auth` default and existing sessions survive.
+     */
+    COOKIE_PREFIX: z
+      .string()
+      .min(1)
+      .regex(/^[A-Za-z0-9_-]+$/, {
+        message: "COOKIE_PREFIX must be letters, digits, hyphens or underscores only",
+      })
+      .optional(),
     OPENAPI_SERVER_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
@@ -39,6 +56,27 @@ export const env = createEnv({
     // verified in Resend (or the sandbox onboarding@resend.dev in dev).
     RESEND_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.email().optional(),
+    /*
+     * The name a mail client shows instead of the bare address, which otherwise reads as
+     * "noreply". Kept apart from EMAIL_FROM so that stays a plain validated address; the two
+     * are composed at send time. Plain letters and spaces only — anything with a comma,
+     * quote or angle bracket would need RFC 5322 quoting that nothing here does.
+     */
+    EMAIL_FROM_NAME: z.string().min(1).max(64).optional(),
+    /*
+     * Where a customer's reply lands. EMAIL_FROM is a sending identity and is usually a
+     * noreply, so without this every "just reply to this email" is a dead end. Unset means
+     * no header, which is the old behaviour rather than a guessed address. Internal staff
+     * alerts deliberately do not carry it.
+     */
+    REPLY_TO_EMAIL: z.email().optional(),
+    /*
+     * Where new enquiries and booking questions are announced. Unset means no internal
+     * alert is sent — the staff inbox at /inbox still lists everything, so nothing is
+     * lost, and there is no fallback address because guessing one would mail an internal
+     * alert to a customer.
+     */
+    STAFF_EMAIL: z.email().optional(),
     // Shared secret for the scheduled maintenance endpoint. Unset means the route
     // refuses every request rather than running unauthenticated.
     CRON_SECRET: z.string().min(16).optional(),
@@ -77,10 +115,22 @@ export const env = createEnv({
     // `optionTill` carries no timezone; pending vendor question Q-OPT.
     NAUSYS_OPTION_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
     BOOKING_MANAGER_BASE_URL: z.url().default("https://www.booking-manager.com/api/v2"),
-    // A Bearer token, not an API key - the bm-api spec declares `bearerAuth`.
+    // Named as the vendor names it: the Booking Manager portal issues this from
+    // My Account > API Integration and calls it an API key. It is SENT as a bearer
+    // token, because the bm-api spec declares `bearerAuth`.
     // Optional like the NauSYS pair: without it PROVIDER_MODE=booking_manager
     // refuses to construct the adapter instead of the server failing to boot.
-    BOOKING_MANAGER_API_TOKEN: z.string().min(1).optional(),
+    BOOKING_MANAGER_API_KEY: z.string().min(1).optional(),
+    /*
+     * Charter company ids to import, comma separated. Unset imports every company
+     * the credential can see, which is the production intent; staging sets the
+     * vendor's test company so it holds a fleet small enough to reason about.
+     *
+     * This is a sync scope, not a filter applied afterwards: a narrowed scope
+     * deactivates the companies it no longer covers, the same way any dump that
+     * stops listing a record does.
+     */
+    BOOKING_MANAGER_COMPANY_IDS: z.string().optional(),
     BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
     // Booking Manager has not published a rate limit; pending vendor answer, this
     // is our own politeness margin.

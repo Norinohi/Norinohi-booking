@@ -18,6 +18,7 @@ import { Link } from "@/i18n/navigation";
 
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
+import { boatCardPrice } from "@/lib/boat-card-fields";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 import { popularYachtsQueryOptions } from "../api/queries";
@@ -57,6 +58,7 @@ function CarouselNav() {
  */
 function PopularYachtSlides() {
   const t = useTranslations("Home.PopularYachts");
+  const tCard = useTranslations("Common.boatCard");
   const money = useMoney();
   const locale = useLocale();
   const { data } = useQuery(popularYachtsQueryOptions(locale));
@@ -72,10 +74,10 @@ function PopularYachtSlides() {
             imageAlt={listing.title}
             location={`${listing.base.location}, ${listing.base.country}`}
             title={listing.title}
-            rating={listing.rating}
+            rating={listing.rating > 0 ? listing.rating : undefined}
             tags={[{ label: listing.category, icon: <Anchor /> }]}
-            price={money(
-              Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
+            price={boatCardPrice(tCard, listing, (amountMinor) =>
+              money(Math.round(amountMinor / listing.priceDetails.periodDays)),
             )}
             priceSuffix={t("perDay")}
             priceLabel={t("from")}

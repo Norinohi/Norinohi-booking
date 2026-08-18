@@ -1,17 +1,20 @@
 import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { bookingEnquiry, invoiceRequest } from "@yacht-charter/db/schema/checkout";
-import { quote } from "@yacht-charter/db/schema/quote";
-import { and, desc, eq } from "drizzle-orm";
-import type { z } from "zod";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { z } from "zod";
 
-import type { Database } from "../context";
+import type { Database, DatabaseExecutor } from "../context";
 import type {
   bookingReceiptSchema,
   enquirySchema,
+  invoiceRequestInputSchema,
   invoiceRequestSchema,
 } from "../contracts/booking";
+import { INVOICE_PAYMENT_TERMS_DAYS } from "../lib/company";
+import { notifyInvoiceIssued } from "./booking-email";
 import { readOwnedBooking } from "./booking-read";
+import { amountDue } from "./checkout-amounts";
 import { assertTransition, type BookingStatus } from "./booking-state";
 type InvoiceResult = z.infer<typeof invoiceRequestSchema>;
 
@@ -23,13 +26,15 @@ type Receipt = z.infer<typeof bookingReceiptSchema>;
  * created so the money is tracked exactly like a card payment, but there is no
  * processor and no client secret; it settles when staff mark the transfer received.
  *
- * Nothing is emailed. The invoice_request row is the durable record until email
- * infrastructure exists.
+ * The bank details go out by email, after the transaction: the invoice exists whether or not
+ * Resend answers, and a customer who never got the mail can still read them off the invoice
+ * page. A re-submit returns the existing invoice and sends nothing, so the form cannot be used
+ * to mail someone repeatedly.
  */
 export async function requestInvoice(
   db: Database,
   userId: string,
-  input: { bookingId: string; billingEmail: string; companyName?: string; vatNumber?: string },
+  input: z.infer<typeof invoiceRequestInputSchema>,
 ): Promise<InvoiceResult> {
   const row = await readOwnedBooking(db, userId, input.bookingId);
   const current = row.booking.status;
@@ -54,9 +59,18 @@ export async function requestInvoice(
       .insert(invoiceRequest)
       .values({
         bookingId: input.bookingId,
+        number: await nextInvoiceNumber(tx),
+        dueAt: invoiceDueAt(row.quote.checkIn),
         billingEmail: input.billingEmail,
+        billingName: input.billingName,
         companyName: input.companyName ?? null,
         vatNumber: input.vatNumber ?? null,
+        registrationNumber: input.registrationNumber ?? null,
+        addressLine1: input.addressLine1,
+        addressLine2: input.addressLine2 ?? null,
+        city: input.city ?? null,
+        postalCode: input.postalCode ?? null,
+        countryCode: input.countryCode,
         amountMinor,
         currency: row.booking.currency,
       })
@@ -86,13 +100,53 @@ export async function requestInvoice(
 
     await tx
       .update(booking)
-      .set({ status: "PAYMENT_PENDING", paymentMethod: "invoice" })
+      .set({ status: "PAYMENT_PENDING" })
       .where(and(eq(booking.id, input.bookingId), eq(booking.status, current)));
 
     return request;
   });
 
+  await notifyInvoiceIssued({
+    to: input.billingEmail,
+    guestName: input.billingName,
+    bookingId: input.bookingId,
+    reference: row.booking.reference,
+    invoiceNumber: created.number,
+    yachtName: row.booking.commercialSnapshot.listingTitle,
+    amountMinor: created.amountMinor,
+    currency: created.currency,
+    dueAt: created.dueAt,
+    checkIn: row.quote.checkIn,
+    checkOut: row.quote.checkOut,
+  });
+
   return present(created, "PAYMENT_PENDING");
+}
+
+/*
+ * Gapless, monotonic, and never reused — the sequence is the only source. `nextval` does not roll
+ * back with the transaction, so a failed insert burns a number rather than handing it to the next
+ * caller; a burnt number is a far smaller problem than two invoices sharing one.
+ */
+async function nextInvoiceNumber(tx: DatabaseExecutor): Promise<string> {
+  const result = await tx.execute(sql`select nextval('invoice_number_seq') as value`);
+  // `nextval` returns bigint, which the driver hands back as a string.
+  const value = z.coerce.number().int().positive().safeParse(result.rows[0]?.value);
+
+  if (!value.success) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+  return `INV-${new Date().getUTCFullYear()}-${String(value.data).padStart(6, "0")}`;
+}
+
+/**
+ * Standard payment terms, except that the money has to be with us before the boat leaves —
+ * a charter starting in three days cannot carry a seven-day due date.
+ */
+function invoiceDueAt(checkIn: string): Date {
+  const terms = new Date(Date.now() + INVOICE_PAYMENT_TERMS_DAYS * 24 * 60 * 60 * 1000);
+  const start = new Date(`${checkIn}T00:00:00.000Z`);
+
+  return start < terms ? start : terms;
 }
 
 /**
@@ -182,25 +236,6 @@ export async function getReceipt(
   };
 }
 
-/**
- * What to charge now. `deposit` follows the quote's payment policy; `full` is the
- * customer choosing to prepay everything. Lines marked pay-at-check-in are settled
- * with the base and are never part of either figure.
- */
-export function amountDue(
-  priced: typeof quote.$inferSelect,
-  preference: "deposit" | "full",
-): number {
-  const atCheckIn = priced.lines
-    .filter((line) => line.payWhen === "at_check_in")
-    .reduce((total, line) => total + line.amountMinor, 0);
-
-  const payableNow = Math.max(priced.totalMinor - atCheckIn, 0);
-
-  if (preference === "full") return payableNow;
-  return Math.min(priced.depositMinor, payableNow);
-}
-
 function present(
   row: typeof invoiceRequest.$inferSelect,
   bookingStatus: BookingStatus,
@@ -208,9 +243,19 @@ function present(
   return {
     id: row.id,
     bookingId: row.bookingId,
+    number: row.number,
+    issuedAt: row.issuedAt.toISOString(),
+    dueAt: row.dueAt.toISOString(),
     billingEmail: row.billingEmail,
+    billingName: row.billingName,
     companyName: row.companyName,
     vatNumber: row.vatNumber,
+    registrationNumber: row.registrationNumber,
+    addressLine1: row.addressLine1,
+    addressLine2: row.addressLine2,
+    city: row.city,
+    postalCode: row.postalCode,
+    countryCode: row.countryCode,
     amount: { amountMinor: row.amountMinor, currency: row.currency },
     status: row.status,
     bookingStatus,

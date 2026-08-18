@@ -3,6 +3,7 @@ import type { z } from "zod";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
+import { externalIdsOfKind, formatExtraCode } from "../shared/extra-code";
 import { decimalStringToMinor } from "../shared/money";
 import { toPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
@@ -43,6 +44,26 @@ const DEFAULT_LABELS = {
 
 export type NausysLabelKind = "service" | "discount";
 
+/** A crew role and the vendor service the operator sells it as. */
+export interface CrewRoleService {
+  role: "skipper" | "hostess" | "cook";
+  externalId: string;
+}
+
+/**
+ * Which roles a crew choice puts aboard, mirroring `crewOptionsFor` in the read
+ * model. Bareboat and an unanswered control both mean nobody: a customer who has
+ * not chosen must never be quoted for a skipper.
+ */
+function crewServiceIdsFor(
+  roles: readonly CrewRoleService[],
+  crewType: CrewType | undefined,
+): string[] {
+  if (!crewType || crewType === "bareboat") return [];
+  const wanted = crewType === "skipper" ? roles.filter((item) => item.role === "skipper") : roles;
+  return wanted.map((item) => item.externalId);
+}
+
 export interface NausysQuoteServiceOptions {
   client: NausysClient;
   resolver: CatalogueResolver;
@@ -70,6 +91,13 @@ export interface NausysQuoteServiceOptions {
   loadSecurityDeposit?: (listingId: string) => Promise<Money | undefined>;
   /** Resolves a vendor service or discount id to a customer-facing line label. */
   labelFor?: (kind: NausysLabelKind, externalId: string) => string | undefined;
+  /**
+   * The listing's crew roles and the vendor service each is sold as. NauSYS flags
+   * no service as crew, so the roles were read off service names during the
+   * catalogue sync and this reads them back. Without it a crew choice is echoed and
+   * priced at nothing, which is what the adapter did before.
+   */
+  loadCrewRoles?: (listingId: string) => Promise<CrewRoleService[]>;
   now?: () => number;
 }
 
@@ -161,6 +189,8 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
               currency: yacht.price.currency,
             };
 
+      const crewRoles = (await options.loadCrewRoles?.(parsed.listingId)) ?? [];
+
       return mapFreeYachtToProviderQuote({
         yacht,
         listingId: parsed.listingId,
@@ -168,6 +198,8 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         checkOut: parsed.checkOut,
         guests: parsed.guests,
         crewType: parsed.crewType,
+        extras: parsed.extras,
+        crewServiceIds: crewServiceIdsFor(crewRoles, parsed.crewType),
         securityDeposit,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
         labelFor: options.labelFor,
@@ -184,11 +216,21 @@ export interface FreeYachtMapping {
   checkOut: string;
   guests: number;
   /**
-   * Echoed only. NauSYS prices crew as ordinary services out of the
-   * ADDITIONAL_EXTRAS catalogue, and this adapter does not map optional services
-   * onto lines yet, so a crew choice does not move the vendor's number.
+   * Echoed, and priced when the catalogue knows which services are crew roles.
+   * NauSYS sells crew as ordinary services out of ADDITIONAL_EXTRAS with no flag
+   * marking them as such, so the caller resolves the roles and passes their ids
+   * through `extras`; an unresolved crew type still moves nothing.
    */
   crewType?: CrewType | undefined;
+  /**
+   * Selected extras as canonical `kind:externalId` codes. Only the `service` half
+   * is priced: every recorded `additionalExtras` entry keys on `serviceId`, and
+   * the `extraId` shape the schema also admits has never been seen, so there is
+   * nothing to match an `equipment:` code against with any confidence.
+   */
+  extras?: readonly string[] | undefined;
+  /** Vendor service ids the chosen crew type puts aboard; priced as crew lines. */
+  crewServiceIds?: readonly string[] | undefined;
   securityDeposit?: Money | undefined;
   expiresAt: string;
   labelFor?: ((kind: NausysLabelKind, externalId: string) => string | undefined) | undefined;
@@ -205,13 +247,28 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   const clientPriceMinor = decimalStringToMinor(yacht.price.clientPrice, currency);
 
   const charterLines = buildCharterLines(yacht, currency, listPriceMinor, clientPriceMinor, input);
-  const extraLines = (yacht.obligatoryExtras ?? []).map((extra) =>
-    toExtraLine(extra, currency, input),
+  const obligatoryLines = (yacht.obligatoryExtras ?? []).map((extra) =>
+    toExtraLine(extra, currency, input, "mandatory"),
   );
+  /*
+   * Crew is bought by choosing a crew type, not by ticking an extra, so it is
+   * excluded from the optional selection: billing the same service twice is what
+   * would happen if a customer ticked the skipper the crew control already added.
+   */
+  const crewIds = new Set(input.crewServiceIds ?? []);
+  const crew = additionalExtrasById(yacht, crewIds);
+  const selected = selectedAdditionalExtras(yacht, input.extras ?? []).filter(
+    (extra) => !crewIds.has(String(extra.serviceId)),
+  );
+  const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew"));
+  const selectedLines = selected.map((extra) => toExtraLine(extra, currency, input, "optional"));
+  const extraLines = [...obligatoryLines, ...crewLines, ...selectedLines];
   const lines = [...charterLines, ...extraLines];
 
   // Computed from the vendor's own numbers rather than from the lines, so the
-  // assertion below is a real check on how we built them.
+  // assertion below is a real check on how we built them. `clientPrice` covers the
+  // charter and its obligatory extras only: an optional extra is something the
+  // customer added on top, and the vendor never saw the choice.
   const totalMinor = clientPriceMinor + sumMinor(extraLines);
   if (sumMinor(lines) !== totalMinor) {
     throw new ContractError(
@@ -227,7 +284,12 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
       ? payableNowMinor
       : Math.round(payableNowMinor * paymentPolicy.depositPct);
 
-  const priceSourceHash = priceObservationHash(yacht, input.securityDeposit);
+  // Crew as well as the ticked extras: both are billed, so a move in either has to
+  // invalidate the quote before checkout takes money against it.
+  const priceSourceHash = priceObservationHash(yacht, input.securityDeposit, [
+    ...crew,
+    ...selected,
+  ]);
 
   return providerQuoteSchema.parse({
     // freeYachts creates nothing provider-side, so there is no vendor quote id to
@@ -339,12 +401,44 @@ function quantityOf(extra: RestExtra): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
-/** Obligatory extras carry `serviceId`, additional ones `extraId`. */
+/**
+ * The schema admits two shapes, `serviceId` and `extraId`, but every recorded
+ * response keys both obligatory and additional extras on `serviceId`; the
+ * `extraId` form has never been seen in production or in a fixture.
+ */
 function extraKey(extra: RestExtra): string {
   return String(extra.serviceId ?? extra.extraId ?? "unknown");
 }
 
-function toExtraLine(extra: RestExtra, currency: string, input: FreeYachtMapping): QuoteLine {
+/**
+ * The additional extras the customer actually picked.
+ *
+ * Matched on `serviceId` only. An entry carrying just `extraId` is in an id space
+ * we have never observed, so matching a canonical `equipment:` code against it
+ * would be a guess about what the customer is buying; those extras are marked
+ * unselectable upstream instead.
+ */
+function selectedAdditionalExtras(
+  yacht: RestFreeYacht,
+  selectedCodes: readonly string[],
+): RestExtra[] {
+  return additionalExtrasById(yacht, externalIdsOfKind(selectedCodes, "service"));
+}
+
+function additionalExtrasById(yacht: RestFreeYacht, wanted: ReadonlySet<string>): RestExtra[] {
+  if (wanted.size === 0) return [];
+
+  return (yacht.additionalExtras ?? []).filter(
+    (extra) => extra.serviceId !== undefined && wanted.has(String(extra.serviceId)),
+  );
+}
+
+function toExtraLine(
+  extra: RestExtra,
+  currency: string,
+  input: FreeYachtMapping,
+  group: NonNullable<QuoteLine["group"]>,
+): QuoteLine {
   if (extra.currency !== currency) {
     throw new ContractError(
       `NauSYS service ${extraKey(extra)} is priced in ${extra.currency}, the charter in ${currency}`,
@@ -354,38 +448,35 @@ function toExtraLine(extra: RestExtra, currency: string, input: FreeYachtMapping
   // The vendor's own line total, where it exists. Production always sends it, and
   // rounding a unit price is their decision rather than ours.
   //
-  // Where it does not, the vendor's two accounts disagree and we refuse to guess.
-  // NauSYS told us (Aug 2026) that `amount` is a unit price "without calculated
-  // quantity", but the example in their own documentation, which this fixture
-  // mirrors, adds a `quantity: 10` extra to `totalPriceWithExtras` at one times
-  // `amount`. Multiplying would overcharge if the documentation is right; not
-  // multiplying would undercharge if the answer is. A quantity of one is the same
-  // number either way, so only a multi-unit extra with no total is ambiguous, and
-  // that fails loudly rather than billing a number nobody can vouch for. This is
-  // the same stance as the unknown `calculationType` below.
+  // Where it does not, `amount` is multiplied by `quantity`. NauSYS settled this
+  // twice (Aug 2026): `amount` is the unit price "without calculated quantity",
+  // and asked to adjudicate their own documented counter-example — a
+  // `quantity: 10` extra that raises `totalPriceWithExtras` by one times `amount`
+  // — they confirmed the real response (`amount: 10.00`, `quantity: 10.00`,
+  // `totalPrice: 100.00`) is right and the documentation example is a mistake they
+  // will fix. So the customer is charged 100.00 there, and a missing total is a
+  // product, not an ambiguity.
   const amountMinor = decimalStringToMinor(extra.amount, currency);
   const quantity = quantityOf(extra);
 
-  if (extra.totalPrice === undefined && quantity !== 1) {
-    throw new ContractError(
-      `NauSYS service ${extraKey(extra)} has quantity ${quantity} and no totalPrice, ` +
-        "so the line total is ambiguous",
-      { payload: { amount: extra.amount, quantity: extra.quantity } },
-    );
-  }
-
+  // Rounded because `quantity` can be fractional (hours, days); with an integer
+  // quantity, the common case, this is exact.
   const lineMinor =
-    extra.totalPrice === undefined ? amountMinor : decimalStringToMinor(extra.totalPrice, currency);
+    extra.totalPrice === undefined
+      ? Math.round(amountMinor * quantity)
+      : decimalStringToMinor(extra.totalPrice, currency);
 
   return {
-    code: `nausys-service-${extraKey(extra)}`,
+    // The canonical extra identity, the same string the listing page rendered and
+    // the customer submitted. Keeping the namespaces aligned is what lets a
+    // selection be reconciled against the line that priced it, and what makes
+    // `booking_extra.code` mean the same thing as the code on screen.
+    code: formatExtraCode("service", extraKey(extra)),
     label: labelOf(input, "service", extraKey(extra), DEFAULT_LABELS.service),
     amount: { amountMinor: lineMinor, currency },
     payWhen: payWhenFor(extra),
     kind: "extra",
-    // Everything a NauSYS quote returns today is an obligatory extra; optional
-    // services live in ADDITIONAL_EXTRAS and are not mapped onto lines yet.
-    group: "mandatory",
+    group,
   };
 }
 
@@ -451,6 +542,23 @@ function toPaymentPolicy(plans: RestFreeYacht["paymentPlans"], yachtId: number):
   return policy;
 }
 
+/** Sorted so the vendor's ordering cannot change the hash on its own. */
+function hashableExtras(extras: readonly RestExtra[]) {
+  return extras
+    .map((extra) => ({
+      serviceId: extra.serviceId ?? extra.extraId ?? 0,
+      // Both, not just whichever we billed. A unit price that moves while the
+      // total holds still means the vendor changed something about this line, and
+      // a re-quote is cheap next to serving a stale one.
+      amount: extra.amount,
+      totalPrice: extra.totalPrice ?? null,
+      quantity: extra.quantity ?? null,
+      currency: extra.currency,
+      calculationType: extra.calculationType ?? null,
+    }))
+    .sort((a, b) => a.serviceId - b.serviceId);
+}
+
 function assertEchoedPeriod(yacht: RestFreeYacht, checkIn: string, checkOut: string): void {
   const from = parseNausysDate(yacht.periodFrom);
   const to = parseNausysDate(yacht.periodTo);
@@ -464,13 +572,23 @@ function assertEchoedPeriod(yacht: RestFreeYacht, checkIn: string, checkOut: str
 
 /**
  * Hashed over the price-relevant subset only. The whole response would drag in
- * vendor echo fields and the optional-extras catalogue, either of which can move
- * without the price moving and would then invalidate a quote for no reason;
- * conversely every field below changes what the customer pays, so a change here
- * has to change the hash. Discount and payment-plan order is preserved because it
- * is semantic: discounts apply in sequence, and the first plan is the deposit.
+ * vendor echo fields and the rest of the optional-extras catalogue, which can move
+ * without this customer's price moving and would then invalidate a quote for no
+ * reason; conversely every field below changes what the customer pays, so a change
+ * here has to change the hash. Discount and payment-plan order is preserved because
+ * it is semantic: discounts apply in sequence, and the first plan is the deposit.
+ *
+ * The exclusion of `additionalExtras` is narrowed rather than absolute: the ones
+ * the customer actually selected are now billed, so their prices are as
+ * price-relevant as an obligatory extra's, and a drift in one has to invalidate
+ * the quote at hold time. The unselected remainder stays out, which is what the
+ * original exclusion was really protecting against.
  */
-function priceObservationHash(yacht: RestFreeYacht, securityDeposit: Money | undefined): string {
+function priceObservationHash(
+  yacht: RestFreeYacht,
+  securityDeposit: Money | undefined,
+  selectedExtras: readonly RestExtra[] = [],
+): string {
   return stableSourceHash({
     yachtId: yacht.yachtId,
     periodFrom: yacht.periodFrom,
@@ -484,19 +602,8 @@ function priceObservationHash(yacht: RestFreeYacht, securityDeposit: Money | und
       amount: String(discount.amount),
       type: discount.type,
     })),
-    obligatoryExtras: (yacht.obligatoryExtras ?? [])
-      .map((extra) => ({
-        serviceId: extra.serviceId ?? extra.extraId ?? 0,
-        // Both, not just whichever we billed. A unit price that moves while the
-        // total holds still means the vendor changed something about this line, and
-        // a re-quote is cheap next to serving a stale one.
-        amount: extra.amount,
-        totalPrice: extra.totalPrice ?? null,
-        quantity: extra.quantity ?? null,
-        currency: extra.currency,
-        calculationType: extra.calculationType ?? null,
-      }))
-      .sort((a, b) => a.serviceId - b.serviceId),
+    obligatoryExtras: hashableExtras(yacht.obligatoryExtras ?? []),
+    selectedExtras: hashableExtras(selectedExtras),
     paymentPlans: (yacht.paymentPlans ?? []).map((plan) => ({
       date: plan.date,
       percentage: plan.percentage,

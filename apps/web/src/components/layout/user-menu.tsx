@@ -12,7 +12,7 @@ import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 
-import { authClient } from "@/lib/auth-client";
+import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
 
 /*
  * UserMenu — Figma "Dropdowns" account menu (972:53920). A bare User icon opens a white
@@ -20,7 +20,8 @@ import { authClient } from "@/lib/auth-client";
  * My Profile / My Bookings / Referrals / Credits & Balance and a red Log Out — SemiBold 14,
  * 8px row gaps. Signed-out visitors get a single Sign In item (the design covers only the
  * signed-in state). Credits & Balance is rendered per the design but inert — its page
- * doesn't exist yet.
+ * doesn't exist yet. Staff sessions also get the admin rows the sidebar shows, so the menu is
+ * a complete way in — their labels come from the Sidebar namespace rather than being restated.
  */
 
 const ITEM =
@@ -28,8 +29,10 @@ const ITEM =
 
 export default function UserMenu() {
   const t = useTranslations("Layout.UserMenu");
+  const tAdmin = useTranslations("Layout.Sidebar");
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
+  const isStaff = isStaffRole(userRole(session?.user));
 
   /* The trigger is the same icon signed in or out, so it must not wait on the session:
    * SSR renders with isPending true while the client resolves it from the cookie cache
@@ -59,8 +62,25 @@ export default function UserMenu() {
             <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/referrals")}>
               {t("referrals")}
             </DropdownMenuItem>
-            {/* TODO: navigate once the credits page exists. */}
-            <DropdownMenuItem className={ITEM}>{t("credits")}</DropdownMenuItem>
+            <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/credits")}>
+              {t("credits")}
+            </DropdownMenuItem>
+            {isStaff ? (
+              <>
+                <DropdownMenuItem
+                  className={ITEM}
+                  onClick={() => router.push("/profile/discounts")}
+                >
+                  {tAdmin("discount")}
+                </DropdownMenuItem>
+                <DropdownMenuItem className={ITEM} onClick={() => router.push("/duplicates")}>
+                  {tAdmin("duplicates")}
+                </DropdownMenuItem>
+                <DropdownMenuItem className={ITEM} onClick={() => router.push("/sync")}>
+                  {tAdmin("sync")}
+                </DropdownMenuItem>
+              </>
+            ) : null}
             <DropdownMenuItem
               className={`${ITEM} text-error-500 focus:text-error-600`}
               onClick={() =>

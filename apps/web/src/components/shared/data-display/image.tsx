@@ -2,6 +2,7 @@
 
 import { env } from "@yacht-charter/env/web";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { Loader2 } from "lucide-react";
 import NextImage, { type ImageLoaderProps } from "next/image";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
@@ -48,6 +49,17 @@ type FillProps = BaseProps & { fill: true; width?: never; height?: never };
 export type ImageProps = SizedProps | FillProps;
 
 export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) {
+  // An absent src otherwise renders <NextImage src="">, which the browser resolves to the current
+  // page URL — a broken tile that never fires onError, so the overlay fallback below never shows.
+  // Render the neutral fallback directly instead, matching ImageWithFallback's contract.
+  if (!src) {
+    return rest.fill ? (
+      <ImageFallback className={cn("absolute inset-0", className)} />
+    ) : (
+      <ImageFallback className={className} style={{ width: rest.width, height: rest.height }} />
+    );
+  }
+
   const dynamic = !isLocal(src);
   const overlay = dynamic && rest.fill === true;
   const ref = useRef<HTMLImageElement>(null);
@@ -96,13 +108,19 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
           ref={overlayRef}
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-muted transition-opacity duration-500",
+            "pointer-events-none absolute inset-0 z-10 transition-opacity duration-500",
             revealed ? "opacity-0" : "opacity-100",
           )}
         >
-          {status === "loading" ? (
-            <Loader2 className="size-6 animate-spin text-natural-400" />
-          ) : null}
+          {status === "error" ? (
+            <ImageFallback />
+          ) : (
+            <div className="flex size-full items-center justify-center bg-muted">
+              {status === "loading" ? (
+                <Loader2 className="size-6 animate-spin text-natural-400" />
+              ) : null}
+            </div>
+          )}
         </div>
       ) : null}
     </>

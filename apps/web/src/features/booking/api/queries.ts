@@ -21,20 +21,40 @@ export const repriceMutationOptions = () => orpc.availability.reprice.mutationOp
 
 export type CalendarInput = Parameters<AppRouterClient["availability"]["calendar"]>[0];
 
-/*
- * The week-slot calendar behind the sidebar's date control. Charters sell in fixed weekly slots
- * (Sat→Sat), so the date field offers whole available weeks rather than a free range — a range the
- * provider cannot honour just fails the quote with "slot not available".
- */
+/** The enumerated slot list. Still read by callers that want the periods we pre-cut. */
 export const availabilityCalendarQueryOptions = (input: CalendarInput) =>
   orpc.availability.calendar.queryOptions({ input });
 
 /*
+ * What the listing will actually sell, as constraints. The sidebar's calendar decides from these
+ * rather than from the enumerated slots, which are a lossy projection of the same rules: a listing
+ * that sells any three nights from any day is enumerated as three-night blocks once a week.
+ */
+export const availabilityConstraintsQueryOptions = (input: CalendarInput) =>
+  orpc.availability.constraints.queryOptions({ input });
+
+/*
  * Confirm Booking. Re-validates the quote, records the guest and consents, and holds the provider
- * option — `protectedProcedure`, so the wizard gates it behind sign-in. Returns the `bookingId` the
- * payment step and confirmation are keyed on.
+ * option. Sign-in is optional: booking without one provisions the account and returns an
+ * `accessToken`, which is what authorises everything below for a customer who has none yet.
+ * Returns the `bookingId` the payment step and confirmation are keyed on.
  */
 export const createHoldMutationOptions = () => orpc.checkout.createHold.mutationOptions();
+
+/*
+ * Starts the card payment: re-validates the quote, opens the PaymentIntent and hands back the
+ * client secret Elements completes with. Called at the moment the customer presses pay, never on
+ * mounting the card tab — the intent and the PAYMENT_PENDING transition it writes should not exist
+ * for someone who only clicked through the tabs.
+ */
+export const confirmCheckoutMutationOptions = () => orpc.checkout.confirm.mutationOptions();
+
+/*
+ * Settles what a confirmed booking still owes. Separate from `confirm` because the booking
+ * is already CONFIRMED and stays that way: the charter exists whether or not this second
+ * installment has landed.
+ */
+export const payBalanceMutationOptions = () => orpc.checkout.payBalance.mutationOptions();
 
 /** Bank-transfer intent for a held booking — no Stripe needed. */
 export const requestInvoiceMutationOptions = () => orpc.checkout.requestInvoice.mutationOptions();
@@ -42,12 +62,51 @@ export const requestInvoiceMutationOptions = () => orpc.checkout.requestInvoice.
 /** A pre-payment question; leaves the booking held. */
 export const askQuestionMutationOptions = () => orpc.checkout.askQuestion.mutationOptions();
 
+export type CheckoutStatus = Awaited<ReturnType<AppRouterClient["checkout"]["status"]>>;
+
+/*
+ * Where a card booking got to. Stripe confirming the PaymentIntent in the browser is not the
+ * booking being confirmed: the webhook still has to land and the provider commit still has to
+ * succeed, and either can fail. The confirmation screen polls this until the booking settles.
+ */
+export const checkoutStatusQueryOptions = (bookingId: string, accessToken?: string) =>
+  orpc.checkout.status.queryOptions({ input: { bookingId, accessToken } });
+
 export type BookingDetail = Awaited<ReturnType<AppRouterClient["booking"]["get"]>>;
 
-/** The held/confirmed booking behind the confirmation screen. `protectedProcedure`. */
-export const bookingDetailQueryOptions = (id: string) =>
-  orpc.booking.get.queryOptions({ input: { id } });
+/*
+ * The booking-scoped reads. Each takes the guest token as well as the id, because the caller
+ * may be a customer who has not set a password yet; a signed-in caller passes undefined and is
+ * authorised by the session cookie instead. The token is part of the query key on purpose —
+ * two callers with different rights must not share one cached answer.
+ */
 
-/** The receipt for Download Receipt. `protectedProcedure`. */
-export const bookingReceiptQueryOptions = (id: string) =>
-  orpc.booking.receipt.queryOptions({ input: { id } });
+/** The held/confirmed booking behind the confirmation screen. */
+export const bookingDetailQueryOptions = (id: string, accessToken?: string) =>
+  orpc.booking.get.queryOptions({ input: { id, accessToken } });
+
+/** The receipt for Download Receipt. */
+export const bookingReceiptQueryOptions = (id: string, accessToken?: string) =>
+  orpc.booking.receipt.queryOptions({ input: { id, accessToken } });
+
+export type TravellerList = Awaited<ReturnType<AppRouterClient["booking"]["travellers"]["list"]>>;
+export type Traveller = TravellerList["travellers"][number];
+
+/*
+ * The crew list. Session-only, both calls: the manifest carries dates of birth and document
+ * numbers, so unlike everything else on this page it is never reachable with a guest token.
+ */
+export const bookingTravellersQueryOptions = (bookingId: string) =>
+  orpc.booking.travellers.list.queryOptions({ input: { bookingId } });
+
+export type SaveTravellersInput = Parameters<AppRouterClient["booking"]["travellers"]["save"]>[0];
+
+export const saveTravellersMutationOptions = () => orpc.booking.travellers.save.mutationOptions();
+
+export type InvoiceDocument = NonNullable<
+  Awaited<ReturnType<AppRouterClient["booking"]["invoice"]>>
+>;
+
+/** The printable invoice behind /bookings/[id]/invoice. Null for card bookings. */
+export const bookingInvoiceQueryOptions = (id: string, accessToken?: string) =>
+  orpc.booking.invoice.queryOptions({ input: { id, accessToken } });

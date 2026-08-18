@@ -16,3 +16,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+/** No image on the record — the fallback tile shows through under the gradient scrim and title. */
+export const NoImage: Story = { args: { image: undefined } };
+
+/** Image URL that fails to load — the img's error event swaps in the same fallback tile. */
+export const BrokenImage: Story = { args: { image: "/__broken-image.png" } };

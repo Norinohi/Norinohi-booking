@@ -8,9 +8,13 @@ import {
   CarouselViewport,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+
+import type { BoatCardCharterDate } from "@/components/shared/data-display/boat-card";
+import { dayToDisplay } from "@/lib/date";
 import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 
@@ -18,7 +22,7 @@ import BoatCard, { type BoatCardProps } from "@/components/shared/data-display/b
 import { Image } from "@/components/shared/data-display/image";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
-import CancelBookingDialog from "./cancel-booking-dialog";
+import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
 
 /*
  * BookingCard — Figma "My bookings / Boat Card" (972:54753 desktop, 973:82792 tablet).
@@ -37,20 +41,24 @@ export type BookingCardProps = BoatCardProps & {
   bookingId: string;
   cancellable: boolean;
   isCancelled: boolean;
+  /**
+   * Set when the booking is confirmed and still owes money, so the customer can settle
+   * the second installment themselves rather than waiting to be chased.
+   */
+  payBalanceHref?: string;
 };
 
-function Stamp({ value, timeZone }: { value: string; timeZone: string }) {
+function Stamp({ value }: { value: BoatCardCharterDate }) {
   const format = useFormatter();
-  const at = new Date(value);
 
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs font-semibold leading-[1.3] text-foreground">
-        {format.dateTime(at, { ...FORMATS.day, timeZone })}
+        {format.dateTime(dayToDisplay(value.day), FORMATS.day)}
       </span>
-      <span className="text-sm font-medium leading-[1.3] text-natural-500">
-        {format.dateTime(at, { ...FORMATS.time, timeZone })}
-      </span>
+      {value.time ? (
+        <span className="text-sm font-medium leading-[1.3] text-natural-500">{value.time}</span>
+      ) : null}
     </div>
   );
 }
@@ -60,6 +68,7 @@ export default function BookingCard({
   bookingId,
   cancellable,
   isCancelled,
+  payBalanceHref,
   ...booking
 }: BookingCardProps) {
   const t = useTranslations("Common.boatCard");
@@ -105,24 +114,28 @@ export default function BookingCard({
       >
         {/* Image */}
         <div className="relative overflow-hidden rounded-l-2xl">
-          <Carousel className="size-full">
-            <CarouselViewport>
-              {booking.images.map((src, index) => (
-                <CarouselSlide key={src + index}>
-                  <Image
-                    src={src}
-                    alt={index === 0 ? (booking.imageAlt ?? "") : ""}
-                    fill
-                    priority={booking.priority && index === 0}
-                    sizes="(min-width: 1280px) 30vw, 100vw"
-                    className="object-cover"
-                  />
-                </CarouselSlide>
-              ))}
-            </CarouselViewport>
-            <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-            <CarouselBars className="absolute inset-x-0 bottom-4" />
-          </Carousel>
+          {booking.images.length > 0 ? (
+            <Carousel className="size-full">
+              <CarouselViewport>
+                {booking.images.map((src, index) => (
+                  <CarouselSlide key={src + index}>
+                    <Image
+                      src={src}
+                      alt={index === 0 ? (booking.imageAlt ?? "") : ""}
+                      fill
+                      priority={booking.priority && index === 0}
+                      sizes="(min-width: 1280px) 30vw, 100vw"
+                      className="object-cover"
+                    />
+                  </CarouselSlide>
+                ))}
+              </CarouselViewport>
+              <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
+              <CarouselBars className="absolute inset-x-0 bottom-4" />
+            </Carousel>
+          ) : (
+            <ImageFallback className="absolute inset-0" />
+          )}
 
           <div className="absolute top-4 left-4">
             <Button
@@ -166,9 +179,9 @@ export default function BookingCard({
           </div>
 
           <div className="flex items-center gap-3">
-            <Stamp value={booking.start} timeZone={booking.timeZone} />
+            {booking.start ? <Stamp value={booking.start} /> : null}
             <ArrowRight className="size-4 shrink-0 text-foreground" />
-            <Stamp value={booking.end} timeZone={booking.timeZone} />
+            {booking.end ? <Stamp value={booking.end} /> : null}
           </div>
 
           <p className="text-[42px] font-bold leading-[1.15] text-black">{booking.price}</p>
@@ -176,6 +189,16 @@ export default function BookingCard({
 
         {/* Action */}
         <div className="flex flex-col items-center justify-center gap-3 py-6 pr-6">
+          {payBalanceHref ? (
+            <Button
+              variant="brand"
+              size="md"
+              nativeButton={false}
+              render={<Link href={payBalanceHref} />}
+            >
+              {tBookings("payBalance")}
+            </Button>
+          ) : null}
           <Button
             variant="neutral"
             size="md"
