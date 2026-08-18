@@ -4,6 +4,7 @@ import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
+import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
@@ -61,12 +62,26 @@ export async function providerByKey(
   fallback: InventoryProvider,
   code: string | null,
 ): Promise<InventoryProvider> {
-  // Falling back rather than throwing: a listing with no source is either seeded
-  // or mid-import, and refusing to quote it would be a worse answer than the one
-  // the single-provider build already gave.
+  // No code means no provider source: a seeded or demo listing, which the
+  // configured adapter is the right answer for and which refusing would break.
   if (!code || code === fallback.key) return fallback;
+
   const providers = await getEnabledInventoryProviders();
-  return providers.get(code) ?? fallback;
+  const target = providers.get(code);
+  if (target) return target;
+
+  /*
+   * A listing that names a provider this deployment cannot build must not fall
+   * back. The configured adapter would answer for a boat it has never heard of:
+   * against `mock` that is fixture pricing on a real yacht, and against the other
+   * vendor it is a reservation id that vendor never issued.
+   *
+   * Refusing is recoverable, and it names the actual fault, which is a provider
+   * left disabled while its listings are still published.
+   */
+  throw new ORPCError("SERVICE_UNAVAILABLE", {
+    message: `Provider "${code}" is not enabled in this deployment`,
+  });
 }
 
 /** The provider that prices and books this listing. */
