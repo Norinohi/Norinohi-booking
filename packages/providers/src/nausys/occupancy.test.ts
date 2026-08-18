@@ -121,11 +121,14 @@ function weeklyList(): RecordedPriceList {
 
 function build() {
   const transport = new FakeNausysTransport();
+  // The sync lane, as the provider wires it: this is the one the vendor's
+  // sequential-only rule still governs.
   const client = new NausysClient({
     config,
     fetchImpl: transport.fetch,
     queue: new SequentialQueue(),
     retry: { maxAttempts: 1 },
+    lane: "sync",
   });
   return { client, transport };
 }
@@ -231,7 +234,7 @@ describe("fetchNausysFreeYachtsSearch", () => {
       periodTo: "11.07.2026",
       resultsPerPage: 10,
     });
-    // The vendor forbids parallel calls; the pages must have gone out one at a time.
+    // Occupancy runs on the sync lane, so the pages must have gone out one at a time.
     expect(transport.maxConcurrent).toBe(1);
   });
 

@@ -152,6 +152,7 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
     ...summary,
     provider: row.booking.provider,
     providerReservationId: row.booking.providerReservationId,
+    crewListLink: row.booking.crewListLink,
     holdExpiresAt: row.booking.holdExpiresAt?.toISOString() ?? null,
     confirmedAt: row.booking.confirmedAt?.toISOString() ?? null,
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
@@ -468,6 +469,7 @@ async function holdOption(
         providerReservationUuid: reservation.securityToken ?? null,
         providerStatus: reservation.status,
         holdExpiresAt: reservation.holdExpiresAt ? new Date(reservation.holdExpiresAt) : null,
+        crewListLink: reservation.crewListLink ?? null,
       });
     } catch (error) {
       // booking_provider_option_uq: someone else already holds this exact option.

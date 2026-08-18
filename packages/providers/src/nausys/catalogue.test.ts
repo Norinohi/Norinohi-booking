@@ -48,11 +48,14 @@ function build() {
   // A company with no fixture of its own falls back to this key.
   transport.respondWith("yachts", { status: "OK", yachts: [] });
 
+  // The sync lane, as the provider wires it: this is the one the vendor's
+  // sequential-only rule still governs.
   const client = new NausysClient({
     config,
     fetchImpl: transport.fetch,
     queue: new SequentialQueue(),
     retry: { maxAttempts: 1 },
+    lane: "sync",
   });
 
   const errors: { message: string; resourceType?: string; scopeKey?: string }[] = [];
@@ -109,8 +112,8 @@ describe("syncNausysCatalogue", () => {
       "discountItems",
       "yachts-102701",
     ]);
-    // The vendor forbids parallel calls; the per-company sweep is the easiest place
-    // to break that by reaching for Promise.all.
+    // The sync lane is one call at a time; the per-company sweep is the easiest
+    // place to break that by reaching for Promise.all.
     expect(transport.maxConcurrent).toBe(1);
     expect(entities(events).length).toBeGreaterThan(0);
   });

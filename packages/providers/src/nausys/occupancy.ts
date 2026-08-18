@@ -35,8 +35,8 @@ import {
  * `sync/availability-writer.ts` has to derive that.
  *
  * `freeYachtsSearch` is the accurate one and says exactly what is free at what
- * price, but it is priced per (destination, week) and shares the vendor's single
- * sequential lane, so it is only ever run over a bounded hot window.
+ * price, but it is priced per (destination, week) and runs here on the sync lane,
+ * one call at a time, so it is only ever run over a bounded hot window.
  *
  * Raw retention happens in the transport (`NausysClient`'s `onRawResponse`), before
  * anything here parses a field.
@@ -346,8 +346,10 @@ export function createNausysAvailabilitySource(
  * `vatInPrice` ("I" included, "E" excluded) also rides on the list, and it does
  * vary: the recorded season carries four "I" lists and one "E". Nothing here acts
  * on it yet, so a mapped amount is whatever the list said it was. Whether a
- * displayed "from" price is gross or net is an open commercial question.
- * VENDOR QUESTION Q-PRICELIST-VAT.
+ * displayed "from" price is gross or net is still an open commercial question:
+ * NauSYS settled the transacting amount (Aug 2026, `clientPrice` is final and VAT
+ * inclusive) but said nothing about these catalogue lists, which no one is billed
+ * from. VENDOR QUESTION Q-PRICELIST-VAT.
  */
 const priceListPeriodSchema = z.looseObject({
   /** Both ends inclusive, which is what `priceAt` in the writer compares against. */

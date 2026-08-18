@@ -31,6 +31,7 @@ import { authClient } from "@/lib/auth-client";
 import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
+import CrewListPanel from "./crew-list-panel";
 
 /* Which statuses read as "this charter is happening" versus a problem worth colouring. */
 const SETTLED_STATUSES = new Set(["CONFIRMED"]);
@@ -165,6 +166,9 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
                 }
               />
               <Charter booking={booking} bookingId={bookingId} signedIn={signedIn} />
+              {/* Between the charter and the money: it is something still to do about this
+                  trip, and the payments below are a record of what is already done. */}
+              <CrewListPanel booking={booking} />
               <Payments booking={booking} />
             </>
           }

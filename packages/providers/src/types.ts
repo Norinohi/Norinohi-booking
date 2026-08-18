@@ -237,6 +237,17 @@ export const providerReservationSchema = z.object({
    */
   securityToken: z.string().optional(),
   holdExpiresAt: z.string().optional(),
+  /**
+   * Where the customer completes the crew list on the provider's own site, when the
+   * provider hosts one (NauSYS `crewlistlink`). Forwarding it is what the vendor
+   * sanctioned in place of us collecting passport data and posting it back.
+   *
+   * Deliberately a plain string, not `z.url()`: this arrives on the response that
+   * confirms a booking, and a link the vendor mangled must not be what fails a
+   * charter the customer has already paid for. The connector is what checks the
+   * value is an http(s) URL, and omits it otherwise.
+   */
+  crewListLink: z.string().optional(),
 });
 export type ProviderReservation = z.infer<typeof providerReservationSchema>;
 

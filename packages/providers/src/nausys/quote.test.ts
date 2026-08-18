@@ -419,19 +419,23 @@ describe("NauSYS priceSourceHash", () => {
     expect(moved.priceSourceHash).not.toBe((await quote()).priceSourceHash);
   });
 
-  it("refuses to price a multi-unit extra the vendor gave no total for", async () => {
-    // The vendor says `amount` is a unit price; their own documentation example
-    // adds a quantity-10 extra at one times `amount`. Rather than pick a side and
-    // silently over or under bill, an ambiguous line fails.
+  it("multiplies a multi-unit extra the vendor gave no total for", async () => {
+    // NauSYS adjudicated their own documentation example (Aug 2026): `amount` is
+    // the unit price, `totalPrice` is amount x quantity, and the doc example that
+    // shows otherwise is a mistake. This is the case that used to be refused.
     const body = fixtureResponse();
     const extra = firstObligatoryExtra(body);
+    extra.amount = "10.00";
     extra.quantity = "10.00";
     delete extra.totalPrice;
 
     const { service, transport } = build();
     transport.respondWith("freeYachts", body);
+    const priced = await service.getNausysQuote(request);
 
-    await expect(service.getNausysQuote(request)).rejects.toThrow(/ambiguous/);
+    expect(
+      priced.lines.find((item) => item.code === `service:${extra.serviceId}`)?.amount.amountMinor,
+    ).toBe(10_000);
   });
 
   it("prices a single-unit extra with no total from its amount", async () => {
