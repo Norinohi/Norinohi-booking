@@ -49,7 +49,18 @@ async function providerCodeForListing(db: Database, listingId: string): Promise<
   return TRANSACTING_PREFERENCE.find((code) => codes.includes(code)) ?? codes[0] ?? null;
 }
 
-async function pick(fallback: InventoryProvider, code: string | null): Promise<InventoryProvider> {
+/**
+ * The adapter for a provider code, or the configured one when the code is absent
+ * or not enabled in this deployment.
+ *
+ * Exported because the expiry sweep already holds the code: `booking.provider`
+ * records who a hold was taken with, so releasing it needs the right adapter
+ * rather than another lookup.
+ */
+export async function providerByKey(
+  fallback: InventoryProvider,
+  code: string | null,
+): Promise<InventoryProvider> {
   // Falling back rather than throwing: a listing with no source is either seeded
   // or mid-import, and refusing to quote it would be a worse answer than the one
   // the single-provider build already gave.
@@ -64,7 +75,7 @@ export async function providerForListing(
   fallback: InventoryProvider,
   listingId: string,
 ): Promise<InventoryProvider> {
-  return pick(fallback, await providerCodeForListing(db, listingId));
+  return providerByKey(fallback, await providerCodeForListing(db, listingId));
 }
 
 /** The provider that priced this quote, so a re-price asks the same vendor. */
@@ -80,7 +91,7 @@ export async function providerForQuote(
     .limit(1);
 
   if (!row?.listingId) return fallback;
-  return pick(fallback, await providerCodeForListing(db, row.listingId));
+  return providerByKey(fallback, await providerCodeForListing(db, row.listingId));
 }
 
 /** The provider that holds this booking's reservation, for cancel and refund. */
@@ -96,5 +107,5 @@ export async function providerForBooking(
     .limit(1);
 
   if (!row?.listingId) return fallback;
-  return pick(fallback, await providerCodeForListing(db, row.listingId));
+  return providerByKey(fallback, await providerCodeForListing(db, row.listingId));
 }
