@@ -4,6 +4,8 @@ import { Tabs, TabsList, TabsTab } from "@yacht-charter/ui/components/navigation
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import { useListingDetail } from "../../../hooks/use-listing-detail";
+
 const SECTIONS = [
   "overview",
   "amenities",
@@ -49,6 +51,14 @@ function useActiveSection() {
 export default function DetailTabs() {
   const t = useTranslations("YachtDetail");
   const [active, setActive] = useActiveSection();
+  const { data } = useListingDetail();
+
+  /*
+   * FAQ is the one section that can be absent: no provider publishes per-listing questions, so
+   * `FaqSection` renders nothing without them. Its tab has to go with it — `goTo` no-ops on a
+   * missing id, so the tab would look enabled and simply do nothing when pressed.
+   */
+  const sections = SECTIONS.filter((id) => id !== "faq" || (data?.faq.length ?? 0) > 0);
 
   function goTo(id: string) {
     setActive(id);
@@ -67,7 +77,7 @@ export default function DetailTabs() {
       className="sticky top-[calc(var(--header-h)+66px)] z-10 bg-background xl:top-(--header-h)"
     >
       <TabsList className="overflow-x-auto">
-        {SECTIONS.map((id) => (
+        {sections.map((id) => (
           <TabsTab key={id} value={id}>
             {t(`tabs.${id}`)}
           </TabsTab>

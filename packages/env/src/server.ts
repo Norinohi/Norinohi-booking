@@ -57,6 +57,13 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.email().optional(),
     /*
+     * Where a customer's reply lands. EMAIL_FROM is a sending identity and is usually a
+     * noreply, so without this every "just reply to this email" is a dead end. Unset means
+     * no header, which is the old behaviour rather than a guessed address. Internal staff
+     * alerts deliberately do not carry it.
+     */
+    REPLY_TO_EMAIL: z.email().optional(),
+    /*
      * Where new enquiries and booking questions are announced. Unset means no internal
      * alert is sent — the staff inbox at /inbox still lists everything, so nothing is
      * lost, and there is no fallback address because guessing one would mail an internal

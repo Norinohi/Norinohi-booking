@@ -1,9 +1,10 @@
 import { render } from "@react-email/render";
 import { env } from "@yacht-charter/env/server";
 import { createElement } from "react";
-import { Resend } from "resend";
+import { type CreateEmailOptions, Resend } from "resend";
 
 import { BalanceReminderEmail, type BalanceReminderEmailProps } from "./emails/balance-reminder";
+import { BookingCancelledEmail, type BookingCancelledEmailProps } from "./emails/booking-cancelled";
 import {
   BookingConfirmationEmail,
   type BookingConfirmationEmailProps,
@@ -27,14 +28,27 @@ function getClient() {
 // Optional as a pair like the Google/Stripe keys: without RESEND_API_KEY and EMAIL_FROM
 // sends are skipped rather than the server failing to boot. Callers read `skipped` to
 // decide whether to surface the link some other way (e.g. a local dev log).
-async function sendHtml(to: string, subject: string, html: string) {
+async function sendHtml(
+  to: string,
+  subject: string,
+  html: string,
+  { replyable = true }: { replyable?: boolean } = {},
+) {
   const resend = getClient();
   if (!resend || !env.EMAIL_FROM) {
     console.warn(`[email] RESEND_API_KEY/EMAIL_FROM not configured, skipping send to ${to}`);
     return { skipped: true } as const;
   }
 
-  const result = await resend.emails.send({ from: env.EMAIL_FROM, to, subject, html });
+  /*
+   * Customer mail is answerable; internal alerts are not. Sending an alert with the public
+   * reply-to would route a colleague's answer to the customer-facing inbox as if a customer
+   * had written it.
+   */
+  const payload: CreateEmailOptions = { from: env.EMAIL_FROM, to, subject, html };
+  if (replyable && env.REPLY_TO_EMAIL) payload.replyTo = env.REPLY_TO_EMAIL;
+
+  const result = await resend.emails.send(payload);
   if (result.error) {
     throw new Error(`Resend send failed: ${result.error.message}`);
   }
@@ -71,6 +85,17 @@ export async function sendInvoiceIssuedEmail(
     createElement(InvoiceIssuedEmail, { ...invoice, appUrl: env.CORS_ORIGIN }),
   );
   return sendHtml(to, `Invoice ${invoice.invoiceNumber} — ${invoice.amount} due`, html);
+}
+
+/** Confirmation that a booking is off, for the case where no money was ever taken. */
+export async function sendBookingCancelledEmail(
+  to: string,
+  booking: Omit<BookingCancelledEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BookingCancelledEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Booking ${booking.reference} is cancelled`, html);
 }
 
 /** The nudge before a confirmed booking's second installment falls due. */
@@ -132,7 +157,7 @@ export async function sendEnquiryAnswerEmail(
  */
 export async function sendStaffAlertEmail(to: string, alert: Omit<StaffAlertEmailProps, "appUrl">) {
   const html = await render(createElement(StaffAlertEmail, { ...alert, appUrl: env.CORS_ORIGIN }));
-  return sendHtml(to, alert.title, html);
+  return sendHtml(to, alert.title, html, { replyable: false });
 }
 
 export async function sendResetPasswordEmail({ to, url }: { to: string; url: string }) {

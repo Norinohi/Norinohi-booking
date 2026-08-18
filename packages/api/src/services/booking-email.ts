@@ -3,6 +3,7 @@ import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
 import {
   sendBalanceReminderEmail,
+  sendBookingCancelledEmail,
   sendBookingConfirmationEmail,
   sendInvoiceIssuedEmail,
   sendRefundIssuedEmail,
@@ -192,5 +193,40 @@ export async function notifyBalanceDue(reminder: BalanceDueEmail): Promise<void>
     });
   } catch (cause) {
     console.error(`[email] balance reminder for ${reminder.reference} failed`, cause);
+  }
+}
+
+export type BookingCancelledEmail = {
+  to: string;
+  guestName: string;
+  bookingId: string;
+  reference: string;
+  yachtName: string;
+  checkIn: string;
+  checkOut: string;
+  reason?: string;
+};
+
+/**
+ * A cancellation with no money in it.
+ *
+ * Only for the branch that ends at CANCELLED. A booking that was paid for goes to
+ * REFUND_PENDING instead and is answered by the refund mail, which states the amount — sending
+ * both would tell the same customer twice, once without the figure that matters.
+ */
+export async function notifyBookingCancelled(booking: BookingCancelledEmail): Promise<void> {
+  try {
+    await sendBookingCancelledEmail(booking.to, {
+      guestName: booking.guestName,
+      reference: booking.reference,
+      yachtName: booking.yachtName,
+      checkIn: day(booking.checkIn),
+      checkOut: day(booking.checkOut),
+      reason: booking.reason,
+      searchUrl: appUrl("/yachts"),
+      supportUrl: appUrl(`/support?booking=${booking.bookingId}`),
+    });
+  } catch (cause) {
+    console.error(`[email] cancellation notice for ${booking.reference} failed`, cause);
   }
 }

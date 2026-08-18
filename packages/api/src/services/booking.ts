@@ -36,7 +36,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
-import { notifyBookingHeld } from "./booking-email";
+import { notifyBookingCancelled, notifyBookingHeld } from "./booking-email";
 import { amountDue, outstandingMinor } from "./checkout-amounts";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
@@ -556,6 +556,24 @@ export async function cancelBooking(
       );
 
       await releaseProviderOption(db, provider, row.booking);
+    }
+
+    /*
+     * Only the no-money branch. A cancelled CONFIRMED booking lands at REFUND_PENDING and is
+     * answered by the refund mail once the money actually moves, which is the one that can
+     * state an amount.
+     */
+    if (moved.status === "CANCELLED" && row.booking.guestEmail) {
+      await notifyBookingCancelled({
+        to: row.booking.guestEmail,
+        guestName: row.booking.guestFullName ?? "Guest",
+        bookingId: moved.id,
+        reference: row.booking.reference,
+        yachtName: row.booking.commercialSnapshot.listingTitle,
+        checkIn: row.quote.checkIn,
+        checkOut: row.quote.checkOut,
+        reason,
+      });
     }
 
     return { id: moved.id, status: moved.status };
