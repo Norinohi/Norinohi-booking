@@ -835,6 +835,7 @@
       "logout": "Log Out",
       "duplicates": "Duplicate Review",
       "sync": "Sync History",
+      "audit": "Audit Log",
       "inbox": "Inbox",
       "payments": "Payments"
     },
@@ -1299,6 +1300,10 @@
     "Sync": {
       "title": "Sync History",
       "description": "Catalogue and availability sync runs with their counts and errors."
+    },
+    "Audit": {
+      "title": "Audit Log",
+      "description": "Every staff action recorded against a booking, listing, discount or enquiry."
     },
     "Invoice": {
       "title": "Invoice",
@@ -1862,6 +1867,53 @@
         "not_found": "Not found",
         "contract": "Contract"
       }
+    },
+    "Audit": {
+      "title": "Audit Log",
+      "subtitle": "Every staff action, newest first. Entries are written once and never edited.",
+      "filters": {
+        "entityType": "Entity type",
+        "allEntities": "All entities",
+        "action": "Action",
+        "allActions": "All actions",
+        "entityId": "Entity id",
+        "entityIdPlaceholder": "Search by id"
+      },
+      "table": {
+        "when": "When",
+        "actor": "Who",
+        "action": "Action",
+        "entity": "Entity",
+        "entityId": "Id",
+        "details": "Details"
+      },
+      "action": {
+        "create": "Created",
+        "update": "Updated",
+        "delete": "Deleted",
+        "sync": "Synced",
+        "merge": "Merged",
+        "price_adjustment": "Price change"
+      },
+      "entity": {
+        "booking": "Booking",
+        "booking_enquiry": "Booking question",
+        "discount": "Promo code",
+        "invoice_request": "Invoice",
+        "lead": "Enquiry",
+        "listing": "Listing",
+        "listing_duplicate_candidate": "Duplicate"
+      },
+      "details": {
+        "show": "Show",
+        "hide": "Hide",
+        "before": "Before",
+        "after": "After",
+        "metadata": "Context"
+      },
+      "actorGone": "Deleted account",
+      "empty": "Nothing recorded yet.",
+      "error": "The audit log could not be loaded."
     },
     "Inbox": {
       "title": "Inbox",

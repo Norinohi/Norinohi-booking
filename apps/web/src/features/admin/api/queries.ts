@@ -1,6 +1,7 @@
 import { orpc } from "@/utils/orpc";
 
 import type {
+  AuditAction,
   BookingStatus,
   DuplicateDecision,
   EnquiryStatus,
@@ -19,6 +20,7 @@ import type {
  * refetching on mount; mutations invalidate the router-segment key explicitly.
  */
 
+export const AUDIT_PAGE_SIZE = 20;
 export const DUPLICATES_PAGE_SIZE = 20;
 export const INBOX_PAGE_SIZE = 20;
 export const SYNC_RUNS_PAGE_SIZE = 20;
@@ -102,6 +104,22 @@ export const bookingQueueQueryOptions = (input: {
  */
 export const bookingDetailQueryOptions = (input: { id: string }) =>
   orpc.admin.booking.get.queryOptions({ input, staleTime: 30_000 });
+
+/*
+ * The admin audit trail. Every staff mutation writes one row and nothing edits them, so a page
+ * only goes stale when a colleague acts — short staleTime, same as the queues.
+ */
+export const auditListQueryOptions = (input: {
+  entityType?: string;
+  entityId?: string;
+  action?: AuditAction;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.audit.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? AUDIT_PAGE_SIZE },
+    staleTime: 15_000,
+  });
 
 /*
  * What the active connector can actually do. Fixed for the life of a deployment — it is

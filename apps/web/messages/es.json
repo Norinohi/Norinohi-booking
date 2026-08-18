@@ -835,6 +835,7 @@
       "logout": "Cerrar sesión",
       "duplicates": "Revisión de duplicados",
       "sync": "Historial de sincronización",
+      "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
       "payments": "Pagos"
     },
@@ -1299,6 +1300,10 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Audit": {
+      "title": "Registro de auditoría",
+      "description": "Cada acción del personal registrada sobre una reserva, un anuncio, un descuento o una consulta."
     },
     "Invoice": {
       "title": "Factura",
@@ -1862,6 +1867,53 @@
         "not_found": "No encontrado",
         "contract": "Contrato"
       }
+    },
+    "Audit": {
+      "title": "Registro de auditoría",
+      "subtitle": "Cada acción del personal, de la más reciente a la más antigua. Las entradas se escriben una vez y no se editan.",
+      "filters": {
+        "entityType": "Tipo de entidad",
+        "allEntities": "Todas las entidades",
+        "action": "Acción",
+        "allActions": "Todas las acciones",
+        "entityId": "Id de entidad",
+        "entityIdPlaceholder": "Buscar por id"
+      },
+      "table": {
+        "when": "Cuándo",
+        "actor": "Quién",
+        "action": "Acción",
+        "entity": "Entidad",
+        "entityId": "Id",
+        "details": "Detalles"
+      },
+      "action": {
+        "create": "Creado",
+        "update": "Actualizado",
+        "delete": "Eliminado",
+        "sync": "Sincronizado",
+        "merge": "Fusionado",
+        "price_adjustment": "Cambio de precio"
+      },
+      "entity": {
+        "booking": "Reserva",
+        "booking_enquiry": "Pregunta de reserva",
+        "discount": "Código promocional",
+        "invoice_request": "Factura",
+        "lead": "Consulta",
+        "listing": "Anuncio",
+        "listing_duplicate_candidate": "Duplicado"
+      },
+      "details": {
+        "show": "Ver",
+        "hide": "Ocultar",
+        "before": "Antes",
+        "after": "Después",
+        "metadata": "Contexto"
+      },
+      "actorGone": "Cuenta eliminada",
+      "empty": "Aún no hay nada registrado.",
+      "error": "No se pudo cargar el registro de auditoría."
     },
     "Inbox": {
       "title": "Bandeja de entrada",
