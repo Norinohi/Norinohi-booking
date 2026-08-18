@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import { ORPCError } from "@orpc/client";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { cacheLife, cacheTag } from "next/cache";
@@ -11,6 +12,8 @@ import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
 import { listingDetailQueryOptions } from "./queries";
+
+type CatalogPage = Awaited<ReturnType<AppRouterClient["charterSearch"]["catalogPages"]>>[number];
 
 /**
  * Server prefetch for the /yachts search route.
@@ -109,4 +112,44 @@ export async function prefetchListingDetail(id: string, locale: string) {
       priceFromMinor: listing.priceFrom?.amountMinor ?? null,
     },
   };
+}
+
+/**
+ * Every generated catalog page, as the enumeration returns them.
+ *
+ * The one source `generateStaticParams`, the sitemap and each page's own segment lookup read, so
+ * a URL is never advertised that the router will not build. Cached on the catalog tag: the set
+ * only moves when a sync moves the counts behind it.
+ */
+export async function prefetchCatalogPages() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
+
+  return publicClient.charterSearch.catalogPages({});
+}
+
+/** The page's own boats, rendered into the HTML rather than fetched by the browser. */
+export async function prefetchCatalogResults(
+  filters: CatalogPage["filters"],
+  locale: string,
+  pageSize: number,
+) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
+
+  return publicClient.charterSearch.results({
+    locale,
+    pageSize,
+    page: 1,
+    sort: "recommended",
+    /* Arrays because the filters are multi-select; a catalog page pins exactly one of each. */
+    country: filters.country ? [filters.country] : undefined,
+    sailingArea: filters.region ? [filters.region] : undefined,
+    city: filters.city ? [filters.city] : undefined,
+    marina: filters.marina ? [filters.marina] : undefined,
+    boatType: filters.category ? [filters.category] : undefined,
+    model: filters.model ? [filters.model] : undefined,
+  });
 }

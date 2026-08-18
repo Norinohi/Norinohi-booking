@@ -532,6 +532,7 @@
       "any": "будь-який",
       "country": "Країна: {value}",
       "sailingArea": "Регіон: {value}",
+      "city": "Місто: {value}",
       "charterCompany": "Компанія: {value}",
       "marina": "Марина: {value}",
       "startDate": "Початок: {value}",
@@ -1301,6 +1302,22 @@
     "StaffBooking": {
       "title": "Бронювання (персонал)",
       "description": "Службовий перегляд бронювання клієнта."
+    },
+    "CatalogPage": {
+      "country": "{place} — оренда яхт",
+      "geo": "{place}, {country} — оренда яхт",
+      "marina": "{place} — оренда яхт",
+      "type": "{type} в оренду",
+      "typeCountry": "{type} в оренду, {place}",
+      "typeGeo": "{type} в оренду, {place}, {country}",
+      "typeMarina": "{type} в оренду, {place}",
+      "builder": "{brand} — оренда яхт",
+      "model": "{model} в оренду",
+      "intro": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}, від {price} за тиждень.",
+      "introNoPrice": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}.",
+      "description": "Порівняй {count, plural, one {# яхту} few {# яхти} other {# яхт}} в оренду. Фільтруй за датами, гостями, каютами й ціною та перевіряй доступність.",
+      "siblings": "Дивись також",
+      "empty": "Зараз відповідних човнів немає. Спробуй повний каталог."
     }
   },
   "Profile": {

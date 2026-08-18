@@ -1,8 +1,14 @@
-import { listSearchFacets, listSearchSuggestions, searchListings } from "@yacht-charter/db/search";
+import {
+  listCatalogPages,
+  listSearchFacets,
+  listSearchSuggestions,
+  searchListings,
+} from "@yacht-charter/db/search";
 import { z } from "zod";
 
 import {
   facetsSchema,
+  catalogPageSchema,
   listingSearchInputSchema,
   mapResultSchema,
   partialListingSearchInputSchema,
@@ -141,4 +147,19 @@ export const charterSearchRouter = {
     .input(z.object({ query: z.string().default("") }))
     .output(z.array(suggestionSchema))
     .handler(({ context, input }) => listSearchSuggestions(context.db, input.query)),
+  catalogPages: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/catalog-pages",
+      operationId: "listCharterCatalogPages",
+      summary: "List the generated catalog pages",
+      description:
+        "Every destination, type and model combination with enough listings behind it to deserve its own page. One source for the routes that are built, the sitemap that advertises them and the filter each one applies, so the three can never disagree. Combinations below the threshold are absent rather than empty.",
+      tags: ["Charter Search"],
+      successDescription:
+        "Catalog pages with their path segments, filter values and listing counts.",
+    })
+    .input(z.object({}))
+    .output(z.array(catalogPageSchema))
+    .handler(({ context }) => listCatalogPages(context.db)),
 };

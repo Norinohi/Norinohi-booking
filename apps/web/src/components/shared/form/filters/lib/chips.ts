@@ -9,6 +9,7 @@ export type FilterChip = { id: ChipId; label: string; keys: (keyof FiltersState)
 export const CHIP_DEFS = [
   { id: "country", keys: ["country"] },
   { id: "sailingArea", keys: ["sailingArea"] },
+  { id: "city", keys: ["city"] },
   { id: "charterCompany", keys: ["charterCompany"] },
   { id: "marina", keys: ["marina"] },
 

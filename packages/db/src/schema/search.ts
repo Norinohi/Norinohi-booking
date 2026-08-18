@@ -75,7 +75,7 @@ export const listingSearchDoc = pgTable(
     index("listing_search_doc_country_idx").on(t.country),
     index("listing_search_doc_region_idx").on(t.region),
     index("listing_search_doc_location_idx").on(t.location),
-    /* Both back the generated landing pages, which group and filter on exactly these two. */
+    /* Both back the generated facet pages, which group and filter on exactly these two. */
     index("listing_search_doc_city_idx").on(t.city),
     index("listing_search_doc_model_canonical_idx").on(t.modelCanonical),
     index("listing_search_doc_category_idx").on(t.category),

@@ -46,7 +46,14 @@ type ProductNode = {
   model: string;
 };
 
-type Node = BreadcrumbListNode | OrganizationNode | ProductNode;
+type ItemListNode = {
+  "@type": "ItemList";
+  name: string;
+  numberOfItems: number;
+  itemListElement: { "@type": "ListItem"; position: number; name: string; url: string }[];
+};
+
+type Node = BreadcrumbListNode | ItemListNode | OrganizationNode | ProductNode;
 
 function absolute(path: string) {
   return new URL(path, env.NEXT_PUBLIC_APP_URL).toString();
@@ -129,5 +136,30 @@ export function listingNode(listing: ListingNodeInput): ProductNode {
     category: listing.category,
     brand: { "@type": "Brand", name: listing.builder },
     model: listing.model,
+  };
+}
+
+/**
+ * A facet page's boats as an ordered list.
+ *
+ * No rich result rides on this — product carousels are reserved for Google's own programs — but
+ * it states plainly that the page is a list of N specific listings rather than an article, and
+ * every entry is a link the page already renders.
+ */
+export function itemListNode(list: {
+  name: string;
+  items: { name: string; path: string }[];
+  locale: string;
+}): ItemListNode {
+  return {
+    "@type": "ItemList",
+    name: list.name,
+    numberOfItems: list.items.length,
+    itemListElement: list.items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      url: localized(item.path, list.locale),
+    })),
   };
 }

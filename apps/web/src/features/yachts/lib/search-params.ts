@@ -30,6 +30,7 @@ export const filterParsers = {
   query: parseAsString.withDefault(""),
   country: multi(),
   sailingArea: multi(),
+  city: multi(),
   charterCompany: multi(),
   marina: multi(),
 

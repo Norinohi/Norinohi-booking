@@ -36,6 +36,7 @@ export function toSearchInput(
   if (filters.query) input.query = filters.query;
   if (filters.country.length) input.country = filters.country;
   if (filters.sailingArea.length) input.sailingArea = filters.sailingArea;
+  if (filters.city.length) input.city = filters.city;
   if (filters.charterCompany.length) input.charterCompany = filters.charterCompany;
   if (filters.marina.length) input.marina = filters.marina;
   if (filters.boatType.length) input.boatType = filters.boatType;

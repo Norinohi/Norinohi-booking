@@ -13,6 +13,7 @@ export type ListingSearchInput = {
   maxPriceMinor?: number;
   country?: string[];
   sailingArea?: string[];
+  city?: string[];
   charterCompany?: string[];
   marina?: string[];
   boatType?: string[];

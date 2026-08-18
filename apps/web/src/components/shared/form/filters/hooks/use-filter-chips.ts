@@ -37,6 +37,9 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
         return t("country", { value: names(options.countries, state.country) });
       case "sailingArea":
         return t("sailingArea", { value: names(options.sailingAreas, state.sailingArea) });
+      case "city":
+        /* No option list behind it: a city only ever arrives from a catalogue page's path. */
+        return t("city", { value: names([], state.city) });
       case "charterCompany":
         return t("charterCompany", {
           value: names(options.charterCompanies, state.charterCompany),

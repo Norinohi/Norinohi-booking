@@ -5,6 +5,8 @@ export type FiltersState = {
   query: string;
   country: string[];
   sailingArea: string[];
+  /** Town, from a catalogue page's path. No control of its own; it arrives locked. */
+  city: string[];
   charterCompany: string[];
   marina: string[];
 
@@ -62,6 +64,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   query: "",
   country: [],
   sailingArea: [],
+  city: [],
   charterCompany: [],
   marina: [],
 

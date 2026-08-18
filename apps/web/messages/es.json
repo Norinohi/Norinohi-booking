@@ -532,6 +532,7 @@
       "any": "cualquiera",
       "country": "País: {value}",
       "sailingArea": "Zona: {value}",
+      "city": "Ciudad: {value}",
       "charterCompany": "Empresa: {value}",
       "marina": "Marina: {value}",
       "startDate": "Inicio: {value}",
@@ -1301,6 +1302,22 @@
     "StaffBooking": {
       "title": "Reserva (personal)",
       "description": "Vista de personal de una reserva."
+    },
+    "CatalogPage": {
+      "country": "Alquiler de yates en {place}",
+      "geo": "Alquiler de yates en {place}, {country}",
+      "marina": "Alquiler de yates en {place}",
+      "type": "Alquiler de {type}",
+      "typeCountry": "Alquiler de {type} en {place}",
+      "typeGeo": "Alquiler de {type} en {place}, {country}",
+      "typeMarina": "Alquiler de {type} en {place}",
+      "builder": "Alquiler de yates {brand}",
+      "model": "Alquiler de {model}",
+      "intro": "{count, plural, one {# barco disponible} other {# barcos disponibles}}, desde {price} por semana.",
+      "introNoPrice": "{count, plural, one {# barco disponible} other {# barcos disponibles}}.",
+      "description": "Compara {count, plural, one {# yate} other {# yates}} de alquiler. Filtra por fechas, huéspedes, camarotes y precio, y comprueba la disponibilidad.",
+      "siblings": "También te puede interesar",
+      "empty": "Ahora mismo no hay barcos que coincidan. Prueba el catálogo completo."
     }
   },
   "Profile": {

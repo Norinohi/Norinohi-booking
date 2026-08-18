@@ -83,7 +83,10 @@ export async function rebuildListingSearchDocs(
       l.crew_type,
       bld.name,
       mdl.name,
-      mdl.canonical_name,
+      -- The grouping name, like the category above: a model with no cabin suffix to strip has no
+      -- canonical of its own, and writing that null left every model page without a value to
+      -- group on.
+      coalesce(mdl.canonical_name, mdl.name),
       op.name,
       bs.id,
       bs.name,

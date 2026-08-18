@@ -877,6 +877,9 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("sailingArea") && input.sailingArea?.length) {
     parts.push(normalizedIn(sql`doc.region`, input.sailingArea));
   }
+  if (!skip.has("city") && input.city?.length) {
+    parts.push(normalizedIn(sql`doc.city`, input.city));
+  }
   if (!skip.has("charterCompany") && input.charterCompany?.length) {
     parts.push(normalizedIn(sql`doc.operator`, input.charterCompany));
   }
@@ -890,7 +893,7 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   }
   if (!skip.has("model") && input.model?.length) {
     parts.push(
-      sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
+      sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.model_canonical`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
     );
   }
   if (!skip.has("crew") && input.crew?.length) {
@@ -1410,7 +1413,15 @@ function routePlacesFor(region: string, location: string) {
   ];
 }
 
-function valueForLabel(label: string): string {
+/**
+ * The value a facet option is selected by, which is not `toSlug`.
+ *
+ * Diacritics are left alone here on purpose: the filter match normalizes both sides by stripping
+ * non-alphanumerics, so "Mali Lošinj" folds to `maliloinj` on the column and this has to fold the
+ * same way. Folding the accent instead would produce `malilosinj` and match nothing. Catalogue
+ * page URLs use `toSlug`, which does fold, because a URL is read by people.
+ */
+export function valueForLabel(label: string): string {
   return label
     .trim()
     .toLowerCase()

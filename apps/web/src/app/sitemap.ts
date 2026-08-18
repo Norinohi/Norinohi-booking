@@ -4,6 +4,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { defaultLocale, locales } from "@/i18n/config";
 import { CATALOG_TAG } from "@/lib/cache-tags";
+import { prefetchCatalogPages } from "@/features/yachts/api/server";
 import { publicClient } from "@/utils/orpc";
 
 /*
@@ -90,6 +91,17 @@ async function listingPaths(): Promise<string[]> {
   return slugs;
 }
 
+/**
+ * The generated catalog pages, read from the same enumeration `generateStaticParams` uses.
+ *
+ * One source, so the sitemap cannot advertise a combination the router does not build — the
+ * failure that turns a submitted sitemap into a page of 404s in Search Console.
+ */
+async function catalogPagePaths(): Promise<string[]> {
+  const pages = await prefetchCatalogPages();
+  return pages.map((page) => `/${page.root}/${page.segments.join("/")}`);
+}
+
 /*
  * Listings carry no `lastModified` at all, rather than one stamped at request time.
  *
@@ -99,14 +111,17 @@ async function listingPaths(): Promise<string[]> {
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let listings: string[] = [];
+  let catalogPages: string[] = [];
+
   try {
-    listings = await listingPaths();
+    [listings, catalogPages] = await Promise.all([listingPaths(), catalogPagePaths()]);
   } catch (error) {
-    console.error("[sitemap] listing enumeration failed, emitting static routes only", error);
+    console.error("[sitemap] enumeration failed, emitting the static routes only", error);
   }
 
   return [
     ...STATIC_PATHS.flatMap((path) => entriesFor(path, BUILT_AT)),
+    ...catalogPages.flatMap((path) => entriesFor(path)),
     ...listings.flatMap((path) => entriesFor(path)),
   ];
 }

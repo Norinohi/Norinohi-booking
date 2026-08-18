@@ -227,7 +227,7 @@ export async function writeCanonicalCatalogue(
         name: item.name,
         slug: item.slug,
         country: item.country ?? null,
-          email: item.email ?? null,
+        email: item.email ?? null,
         phone: item.phone ?? null,
       })
       .onConflictDoUpdate({

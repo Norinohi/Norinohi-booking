@@ -1,3 +1,5 @@
+import { slugToLabel } from "@/lib/slug-to-label";
+
 export type Option = {
   value: string;
   label: string;
@@ -10,8 +12,15 @@ export type Option = {
   currency?: string | null;
 };
 
+/**
+ * A value with no option behind it is un-slugged rather than printed raw.
+ *
+ * Catalogue pages pin facets the option lists do not carry — a city, or a builder filed under
+ * the model key — and those used to surface as "Model: bavaria" in a chip.
+ */
 export function labelOf(options: Option[], value: string): string {
-  return options.find((option) => option.value === value)?.label ?? value;
+  const option = options.find((candidate) => candidate.value === value);
+  return option?.label ?? slugToLabel(value);
 }
 
 export function orderedValues(options: Option[], selected: string[]): string[] {
