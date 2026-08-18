@@ -847,7 +847,8 @@
       "sync": "Sync History",
       "audit": "Audit Log",
       "inbox": "Inbox",
-      "payments": "Payments"
+      "payments": "Payments",
+      "listings": "Listings"
     },
     "UserMenu": {
       "account": "Account",
@@ -1312,6 +1313,10 @@
     "Sync": {
       "title": "Sync History",
       "description": "Catalogue and availability sync runs with their counts and errors."
+    },
+    "Listings": {
+      "title": "Listings",
+      "description": "Review imported yacht listings and release drafts to the catalogue."
     },
     "Audit": {
       "title": "Audit Log",
@@ -2032,6 +2037,62 @@
         "send": "Send reply",
         "sent": "Reply sent",
         "failed": "We couldn't send the reply. Please try again."
+      }
+    },
+    "Listings": {
+      "title": "Listings",
+      "subtitle": "Every listing staff can act on, drafts included. Imported inventory stays a draft until it is released here.",
+      "filters": {
+        "provider": "Provider",
+        "status": "Status",
+        "allProviders": "All providers",
+        "allStatuses": "All statuses",
+        "search": "Search by title or slug"
+      },
+      "table": {
+        "listing": "Listing",
+        "provider": "Provider",
+        "operator": "Operator",
+        "model": "Model & year",
+        "place": "Base & location",
+        "price": "From",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "hidden": "Hidden"
+      },
+      "actions": {
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "draft": "Back to draft"
+      },
+      "moved": "{title} is now {status}.",
+      "noProvider": "No provider",
+      "noPrice": "Not priced yet",
+      "notSet": "Not set",
+      "noImage": "No photo",
+      "empty": "No listings match these filters",
+      "error": "Couldn't load listings",
+      "publishDrafts": {
+        "providerLabel": "Provider to release",
+        "choose": "Choose a provider",
+        "action": "Publish all drafts",
+        "hint": "Releases every draft belonging to the chosen provider. A provider must be named: this screen never publishes the whole catalogue at once.",
+        "confirmTitle": "Publish all drafts?",
+        "confirmBody": "Every draft imported from {provider} becomes visible to customers straight away. Drafts from other providers are left alone.",
+        "cancel": "Cancel",
+        "confirm": "Publish drafts",
+        "publishing": "Publishing...",
+        "published": "{count, plural, =0 {No drafts left to publish for {provider}.} one {# draft published for {provider}.} other {# drafts published for {provider}.}}",
+        "failed": "Couldn't publish the drafts",
+        "provider": {
+          "mock": "Mock",
+          "booking_manager": "Booking Manager",
+          "nausys": "NauSYS"
+        }
       }
     },
     "Payments": {

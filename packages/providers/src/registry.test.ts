@@ -13,7 +13,7 @@ import { BookingManagerInventoryProvider } from "./booking-manager/provider";
 import { resolveBookingManagerConfig } from "./booking-manager/config";
 import { AuthError } from "./shared/errors";
 import type { Database } from "./registry";
-import { createInventoryProvider } from "./registry";
+import { createInventoryProvider, syncCandidateKeys } from "./registry";
 
 // SAFETY: the registry only stores the handle; nothing here reaches the database.
 const db = {} as Database;
@@ -134,5 +134,26 @@ describe("resolveNausysConfig", () => {
 
   it("trims the trailing slash so endpoint joins cannot double up", () => {
     expect(testConfig.baseUrl).toBe("https://ws-test.nausys.com");
+  });
+});
+
+describe("syncCandidateKeys", () => {
+  it("includes a provider that has never synced here", () => {
+    // The provider row is created by the sync itself, so reading only existing
+    // rows meant a new connector could never bootstrap: staging held a nausys row
+    // and no booking_manager one, and the fan-out silently skipped it forever.
+    expect(syncCandidateKeys([{ code: "nausys", enabled: true }])).toContain("booking_manager");
+  });
+
+  it("respects an explicit off switch on an existing row", () => {
+    expect(syncCandidateKeys([{ code: "booking_manager", enabled: false }])).toEqual(["nausys"]);
+  });
+
+  it("never syncs the mock, which is seeded enabled for local checkout", () => {
+    expect(syncCandidateKeys([{ code: "mock", enabled: true }])).not.toContain("mock");
+  });
+
+  it("returns every real provider for an empty database", () => {
+    expect(syncCandidateKeys([])).toEqual(["booking_manager", "nausys"]);
   });
 });

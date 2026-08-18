@@ -847,7 +847,8 @@
       "sync": "Historial de sincronización",
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
-      "payments": "Pagos"
+      "payments": "Pagos",
+      "listings": "Anuncios"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1312,6 +1313,10 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Listings": {
+      "title": "Anuncios",
+      "description": "Revisa los anuncios de yates importados y publica los borradores en el catálogo."
     },
     "Audit": {
       "title": "Registro de auditoría",
@@ -2032,6 +2037,62 @@
         "send": "Enviar respuesta",
         "sent": "Respuesta enviada",
         "failed": "No pudimos enviar la respuesta. Inténtalo de nuevo."
+      }
+    },
+    "Listings": {
+      "title": "Anuncios",
+      "subtitle": "Todos los anuncios sobre los que el equipo puede actuar, borradores incluidos. El inventario importado sigue siendo un borrador hasta que se publica aquí.",
+      "filters": {
+        "provider": "Proveedor",
+        "status": "Estado",
+        "allProviders": "Todos los proveedores",
+        "allStatuses": "Todos los estados",
+        "search": "Buscar por título o slug"
+      },
+      "table": {
+        "listing": "Anuncio",
+        "provider": "Proveedor",
+        "operator": "Operador",
+        "model": "Modelo y año",
+        "place": "Base y ubicación",
+        "price": "Desde",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "status": {
+        "draft": "Borrador",
+        "published": "Publicado",
+        "hidden": "Oculto"
+      },
+      "actions": {
+        "publish": "Publicar",
+        "unpublish": "Ocultar",
+        "draft": "Volver a borrador"
+      },
+      "moved": "{title} ahora está en estado {status}.",
+      "noProvider": "Sin proveedor",
+      "noPrice": "Todavía sin precio",
+      "notSet": "Sin definir",
+      "noImage": "Sin imagen",
+      "empty": "Ningún anuncio coincide con estos filtros",
+      "error": "No se pudieron cargar los anuncios",
+      "publishDrafts": {
+        "providerLabel": "Proveedor que publicar",
+        "choose": "Elige un proveedor",
+        "action": "Publicar todos los borradores",
+        "hint": "Publica todos los borradores del proveedor elegido. Hay que indicar un proveedor: esta pantalla nunca publica todo el catálogo de una vez.",
+        "confirmTitle": "¿Publicar todos los borradores?",
+        "confirmBody": "Todos los borradores importados de {provider} pasarán a ser visibles para los clientes de inmediato. Los borradores de otros proveedores no se tocan.",
+        "cancel": "Cancelar",
+        "confirm": "Publicar borradores",
+        "publishing": "Publicando...",
+        "published": "{count, plural, =0 {No quedan borradores por publicar de {provider}.} one {# borrador publicado de {provider}.} other {# borradores publicados de {provider}.}}",
+        "failed": "No se pudieron publicar los borradores",
+        "provider": {
+          "mock": "Mock",
+          "booking_manager": "Booking Manager",
+          "nausys": "NauSYS"
+        }
       }
     },
     "Payments": {

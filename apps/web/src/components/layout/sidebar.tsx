@@ -13,14 +13,22 @@ import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
  * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
  * Account menu card: a greeting header over a soft wash, then rows with an active highlight
  * (brand-50 + brand text) and a destructive "Log Out". Admin adds "Inbox", "Payments",
- * "Discount Manager", "Duplicate Review", "Sync History" and "Audit Log".
+ * "Listings", "Discount Manager", "Duplicate Review", "Sync History" and "Audit Log".
  * Rows with a route render as links and read their active state from the pathname; rows whose
  * page doesn't exist yet stay as inert buttons highlighted only by `defaultActive`.
  */
 
 const BASE_ITEMS = ["profile", "bookings", "referrals", "credits"] as const;
 
-const ADMIN_ITEMS = ["inbox", "payments", "discount", "duplicates", "sync", "audit"] as const;
+const ADMIN_ITEMS = [
+  "inbox",
+  "payments",
+  "listings",
+  "discount",
+  "duplicates",
+  "sync",
+  "audit",
+] as const;
 
 type SidebarItem = (typeof BASE_ITEMS)[number] | (typeof ADMIN_ITEMS)[number];
 
@@ -34,6 +42,7 @@ const HREFS = new Map<SidebarItem, AppPathname>([
   /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
   ["inbox", "/inbox"],
   ["payments", "/payments"],
+  ["listings", "/listings"],
   ["duplicates", "/duplicates"],
   ["sync", "/sync"],
   ["audit", "/audit"],

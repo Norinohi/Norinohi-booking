@@ -7,6 +7,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { providerByKey } from "./provider-routing";
 import type {
   invoiceAdminRowSchema,
   invoiceListInputSchema,
@@ -139,7 +140,13 @@ export async function settleInvoiceRequest(
     if (settled) await announcePaymentReceived(db, settled.id, "bank transfer");
   }
 
-  const outcome = await confirmBookingWithProvider(db, provider, found.invoice.bookingId);
+  // The booking records which vendor holds its option, and a settlement can be
+  // actioned by staff whose deployment is configured for the other one.
+  const outcome = await confirmBookingWithProvider(
+    db,
+    await providerByKey(provider, found.booking.provider),
+    found.invoice.bookingId,
+  );
 
   const [after] = await db
     .select({ invoice: invoiceRequest, booking, listingTitle: listing.title })

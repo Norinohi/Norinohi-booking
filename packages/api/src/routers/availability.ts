@@ -8,6 +8,7 @@ import {
 } from "../contracts/catalog";
 import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
 import { publicProcedure } from "../index";
+import { providerForListing, providerForQuote } from "../services/provider-routing";
 import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 
@@ -74,8 +75,13 @@ export const availabilityRouter = {
     })
     .input(quoteRequestWithDiscountSchema)
     .output(persistedQuoteSchema)
-    .handler(({ context, input }) =>
-      createQuote(context.db, context.provider, input, context.session?.user.id ?? null),
+    .handler(async ({ context, input }) =>
+      createQuote(
+        context.db,
+        await providerForListing(context.db, context.provider, input.listingId),
+        input,
+        context.session?.user.id ?? null,
+      ),
     ),
   reprice: publicProcedure
     .route({
@@ -97,15 +103,21 @@ export const availabilityRouter = {
     })
     .input(repriceInputSchema)
     .output(persistedQuoteSchema)
-    .handler(({ context, input }) =>
-      repriceQuote(context.db, context.provider, input.quoteId, context.session?.user.id ?? null, {
-        checkIn: input.checkIn,
-        checkOut: input.checkOut,
-        guests: input.guests,
-        extras: input.extras,
-        crewType: input.crewType,
-        discountCode: input.discountCode,
-        applyCredit: input.applyCredit,
-      }),
+    .handler(async ({ context, input }) =>
+      repriceQuote(
+        context.db,
+        await providerForQuote(context.db, context.provider, input.quoteId),
+        input.quoteId,
+        context.session?.user.id ?? null,
+        {
+          checkIn: input.checkIn,
+          checkOut: input.checkOut,
+          guests: input.guests,
+          extras: input.extras,
+          crewType: input.crewType,
+          discountCode: input.discountCode,
+          applyCredit: input.applyCredit,
+        },
+      ),
     ),
 };

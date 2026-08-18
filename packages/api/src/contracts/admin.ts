@@ -456,3 +456,79 @@ export const listingPriceUpdateInputSchema = z
   .superRefine(endsAtNotBeforeStartsAt);
 
 export const listingPriceClearInputSchema = z.object({ listingId: idSchema });
+
+/* --------------------------------------------------- listing administration */
+
+const LISTING_ADMIN_PAGE_SIZE = 20;
+
+export const listingAdminListInputSchema = z
+  .object({
+    /** Narrows the page to listings carrying a `listing_source` from this provider. */
+    provider: providerKeyOutputSchema.optional(),
+    status: listingStatusSchema.optional(),
+    /** Case-insensitive substring of the title or the slug. */
+    query: z.string().trim().max(200).optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: LISTING_ADMIN_PAGE_SIZE }),
+  })
+  .default(paginationInputDefault(LISTING_ADMIN_PAGE_SIZE));
+
+export const listingAdminRowSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  status: listingStatusSchema,
+  /**
+   * The provider `code` behind the listing, null when no `listing_source` points
+   * at it. A merged listing carries several; the lowest code wins, so the column
+   * is stable between pages rather than picking whichever row the planner read
+   * first.
+   */
+  provider: z.string().nullable(),
+  operatorName: z.string().nullable(),
+  modelName: z.string().nullable(),
+  yearBuilt: z.number().int().nullable(),
+  baseName: z.string().nullable(),
+  locationName: z.string().nullable(),
+  // Verbatim vendor URL rather than z.url(): stored exactly as the provider
+  // shipped it, and one malformed row must not fail the whole page.
+  primaryImageUrl: z.string().nullable(),
+  /** Cheapest available slot. Null until availability has been synced and priced. */
+  priceFromMinor: z.number().int().nullable(),
+  currency: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema);
+
+export const listingSetStatusInputSchema = z.object({
+  id: idSchema,
+  status: listingStatusSchema,
+});
+
+export const listingSetStatusSchema = z.object({
+  id: z.string(),
+  status: listingStatusSchema,
+});
+
+/**
+ * `provider` is the SCOPE OF THE PUBLISH, not a filter on what comes back.
+ *
+ * Naming a provider releases only that provider's drafts. Omitting it releases
+ * EVERY provider's drafts in the whole database, in one unreviewed batch. A sync
+ * imports as `draft` precisely so vendor inventory never reaches customers
+ * unseen; an unscoped call is the one way to undo that for the entire catalogue
+ * at once, and in production that is thousands of yachts.
+ */
+export const listingPublishDraftsInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema
+      .optional()
+      .describe(
+        "Provider code whose drafts are published. OMIT AT YOUR PERIL: with no provider, every provider's unreviewed drafts across the entire catalogue are published at once.",
+      ),
+  })
+  .default({});
+
+export const listingPublishDraftsSchema = z.object({
+  publishedCount: z.number().int(),
+});

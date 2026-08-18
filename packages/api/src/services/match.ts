@@ -194,7 +194,14 @@ async function loadSides(db: Database, sourceIds: string[]): Promise<Map<string,
   );
 }
 
-async function loadPrimaryImages(db: Database, listingIds: string[]): Promise<Map<string, string>> {
+/**
+ * Shared with the listing admin table so both screens front the same photo the
+ * search card does; the precedence lives in `pickPrimaryImage` above.
+ */
+export async function loadPrimaryImages(
+  db: Database,
+  listingIds: string[],
+): Promise<Map<string, string>> {
   if (listingIds.length === 0) return new Map();
 
   const rows = await db

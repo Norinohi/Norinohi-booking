@@ -6,6 +6,7 @@ import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq, gt, inArray, isNotNull, lte, ne, notExists, sql } from "drizzle-orm";
 
 import type { Database } from "../context";
+import { providerByKey } from "./provider-routing";
 import {
   DEAD_QUOTE_SWEEP,
   HOLD_SWEEP,
@@ -248,7 +249,14 @@ async function expireHolds(
   let holdsExpired = 0;
 
   for (const candidate of candidates) {
-    const releaseError = await releaseOption(provider, candidate, releaseFailures);
+    // The hold was taken with whichever vendor sold the listing, and the sweep
+    // walks every booking regardless of provider, so releasing it through the
+    // configured adapter would call the wrong vendor with an id it never issued.
+    const releaseError = await releaseOption(
+      await providerByKey(provider, candidate.providerName),
+      candidate,
+      releaseFailures,
+    );
 
     assertTransition(candidate.status, HOLD_SWEEP.to);
 
@@ -433,7 +441,13 @@ async function expireAbandonedPayments(
   let paymentsAbandoned = 0;
 
   for (const candidate of candidates) {
-    const releaseError = await releaseOption(provider, candidate, releaseFailures);
+    // Same reason as the hold sweep: the option belongs to the vendor that issued
+    // it, not to whichever adapter this process was configured with.
+    const releaseError = await releaseOption(
+      await providerByKey(provider, candidate.providerName),
+      candidate,
+      releaseFailures,
+    );
 
     // Naming what actually lapsed: a booking with no option never had a hold to expire.
     const to: BookingStatus = candidate.providerOptionId
