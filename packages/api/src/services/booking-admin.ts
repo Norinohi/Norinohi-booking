@@ -157,9 +157,10 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
     confirmedAt: row.booking.confirmedAt?.toISOString() ?? null,
     crewType: row.quote.crewType,
     guests: row.quote.guests,
-    // `provisionedAt` is stamped only by guest checkout, so it is the record of an account
-    // the customer never opened — which is what decides whether support can talk them
-    // through signing in or has to send them a set-password link.
+    // `provisionedAt` is stamped only by guest checkout and cleared the moment a password
+    // is chosen, so it is the record of an account the customer never opened and still has
+    // not claimed — which is what decides whether support can talk them through signing in
+    // or has to send them a set-password link.
     isGuestAccount: owner.provisionedAt !== null,
     base: {
       name: snapshot.baseName,

@@ -8,6 +8,7 @@ import {
 } from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
 import { sendBalanceReminders } from "@yacht-charter/api/services/payment-reminders";
+import { drainOutbox } from "@yacht-charter/api/services/outbox";
 import {
   startAvailabilitySync,
   startCatalogueSync,
@@ -116,6 +117,23 @@ app.post("/api/cron/payment-reminders", async (c) => {
   }
 
   return c.json(await sendBalanceReminders(db));
+});
+
+// Every few minutes, and normally a no-op: checkout drains the outbox in-process as soon as
+// it has answered, so this only picks up what a replaced container or a mailer outage left
+// behind. A message is claimed with `for update skip locked`, so this can overlap a
+// request-time drain without either sending the other's mail.
+app.post("/api/cron/drain-outbox", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await drainOutbox(db));
 });
 
 // The vendor asks for one full catalogue dump a day, after 01:00 GMT+1. The run is

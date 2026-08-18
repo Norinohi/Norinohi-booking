@@ -115,10 +115,12 @@ export const env = createEnv({
     // `optionTill` carries no timezone; pending vendor question Q-OPT.
     NAUSYS_OPTION_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
     BOOKING_MANAGER_BASE_URL: z.url().default("https://www.booking-manager.com/api/v2"),
-    // A Bearer token, not an API key - the bm-api spec declares `bearerAuth`.
+    // Named as the vendor names it: the Booking Manager portal issues this from
+    // My Account > API Integration and calls it an API key. It is SENT as a bearer
+    // token, because the bm-api spec declares `bearerAuth`.
     // Optional like the NauSYS pair: without it PROVIDER_MODE=booking_manager
     // refuses to construct the adapter instead of the server failing to boot.
-    BOOKING_MANAGER_API_TOKEN: z.string().min(1).optional(),
+    BOOKING_MANAGER_API_KEY: z.string().min(1).optional(),
     BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
     // Booking Manager has not published a rate limit; pending vendor answer, this
     // is our own politeness margin.

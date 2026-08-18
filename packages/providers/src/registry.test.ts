@@ -30,7 +30,7 @@ const testConfig = resolveNausysConfig({
 
 const testBookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
-  BOOKING_MANAGER_API_TOKEN: "t0ken",
+  BOOKING_MANAGER_API_KEY: "t0ken",
   BOOKING_MANAGER_TIMEOUT_MS: 30_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 250,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
@@ -65,7 +65,7 @@ describe("createInventoryProvider", () => {
   it("refuses booking_manager mode without a token instead of calling unauthenticated", () => {
     // The env schema keeps the token optional so a missing secret cannot stop the
     // server booting, which makes construction the only place that can refuse.
-    process.env.BOOKING_MANAGER_API_TOKEN = "";
+    process.env.BOOKING_MANAGER_API_KEY = "";
     expect(() => createInventoryProvider({ db }, "booking_manager")).toThrow(AuthError);
   });
 });

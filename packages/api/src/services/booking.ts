@@ -36,8 +36,9 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
-import { notifyBookingCancelled, notifyBookingReceived } from "./booking-email";
+import { notifyBookingCancelled } from "./booking-email";
 import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
+import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
@@ -306,24 +307,19 @@ export async function createHold(
 
   const token = actor.guestAccess?.token ?? null;
 
-  const announce = (row: BookingRow) =>
-    notifyBookingReceived({
-      to: guest.email,
-      guestName: guest.fullName,
-      bookingId: row.id,
-      reference: row.reference,
-      snapshot,
-      priced,
-      outstandingMinor: outstandingMinor(priced, 0),
-      holdExpiresAt: row.holdExpiresAt,
-      isGuest: actor.guestAccess !== null,
-    });
+  /*
+   * Queued, not sent. The mail is an HTTP call to Resend and the answer does not depend on
+   * it, so it leaves with the drain `kickOutbox` starts once this call has something to
+   * return. The drain reads the booking back, which is why only the id goes on the queue.
+   */
+  const announce = (row: BookingRow) => enqueueOutbox(db, "booking_received", row.id);
 
   // No option support: nothing to secure, so the booking waits at QUOTED and the
   // payment is what commits it.
   if (!provider.capabilities().supportsOptions) {
     await redeem();
     await announce(created);
+    kickOutbox(db);
     return presentHold(created, token);
   }
 
@@ -335,6 +331,7 @@ export async function createHold(
    */
   const held = await holdOption(db, provider, created, priced, account, redeem);
   await announce(held);
+  kickOutbox(db);
 
   return presentHold(held, token);
 }

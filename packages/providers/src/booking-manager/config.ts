@@ -29,7 +29,7 @@ export interface BookingManagerConfig {
 /** The slice of the server env this adapter reads. */
 export interface BookingManagerEnvSource {
   BOOKING_MANAGER_BASE_URL: string;
-  BOOKING_MANAGER_API_TOKEN?: string | undefined;
+  BOOKING_MANAGER_API_KEY?: string | undefined;
   BOOKING_MANAGER_TIMEOUT_MS: number;
   BOOKING_MANAGER_MIN_INTERVAL_MS: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
@@ -52,11 +52,11 @@ export function bookingManagerQueueKey(apiToken: string): string {
 export function resolveBookingManagerConfig(
   source: BookingManagerEnvSource = env,
 ): BookingManagerConfig {
-  const apiToken = source.BOOKING_MANAGER_API_TOKEN?.trim();
+  const apiToken = source.BOOKING_MANAGER_API_KEY?.trim();
 
   if (!apiToken) {
     throw new AuthError(
-      "Booking Manager credentials are not configured: set BOOKING_MANAGER_API_TOKEN",
+      "Booking Manager credentials are not configured: set BOOKING_MANAGER_API_KEY",
       { providerCode: "MISSING_CREDENTIALS" },
     );
   }

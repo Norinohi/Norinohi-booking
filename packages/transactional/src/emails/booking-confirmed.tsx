@@ -27,6 +27,13 @@ export type BookingConfirmedEmailProps = {
   total: string;
   paid: string;
   outstanding: string;
+  /**
+   * The part of the total the base collects in person, pre-formatted. Absent when the charter
+   * has no such line. Named here for the same reason the booking page names it: without it
+   * `total` minus `paid` does not reach `outstanding`, and a settled booking reads as
+   * underpaid by exactly this much.
+   */
+  dueAtCheckIn?: string;
   /** When the rest falls due. Absent on a booking that is already paid in full. */
   balanceDueAt?: string;
   /** The operator's own reservation number. Absent where the provider issued none. */
@@ -166,6 +173,7 @@ export function BookingConfirmedEmail({
   total,
   paid,
   outstanding,
+  dueAtCheckIn,
   balanceDueAt,
   providerReference,
   crewListUrl,
@@ -214,6 +222,7 @@ export function BookingConfirmedEmail({
       <Section style={styles.moneyBox}>
         <Money label="Total price" value={total} total />
         <Money label="Paid so far" value={paid} />
+        {dueAtCheckIn ? <Money label="Due at the marina" value={dueAtCheckIn} /> : null}
         <Money label="Still to pay" value={outstanding} />
       </Section>
 
@@ -274,7 +283,8 @@ BookingConfirmedEmail.PreviewProps = {
   guests: 2,
   total: "€4,870",
   paid: "€2,435",
-  outstanding: "€2,435",
+  outstanding: "€2,310",
+  dueAtCheckIn: "€125",
   balanceDueAt: "1 Aug 2026",
   providerReference: "NS-4471902",
   crewListUrl: "https://example.com/crew/bkg_preview",

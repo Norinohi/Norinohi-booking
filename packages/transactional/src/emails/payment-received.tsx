@@ -33,6 +33,13 @@ export type PaymentReceivedEmailProps = {
   total: string;
   paidTotal: string;
   outstanding: string;
+  /**
+   * The part of the total the base collects in person, pre-formatted. Absent when the charter
+   * has no such line. Named here for the same reason the booking page names it: without it
+   * `total` minus `paid` does not reach `outstanding`, and a settled booking reads as
+   * underpaid by exactly this much.
+   */
+  dueAtCheckIn?: string;
   /** When the rest falls due. Absent once nothing is left to pay. */
   balanceDueAt?: string;
   bookingUrl: string;
@@ -141,6 +148,7 @@ export function PaymentReceivedEmail({
   total,
   paidTotal,
   outstanding,
+  dueAtCheckIn,
   balanceDueAt,
   bookingUrl,
   supportUrl,
@@ -180,6 +188,7 @@ export function PaymentReceivedEmail({
       <Section style={styles.moneyBox}>
         <Money label="Charter total" value={total} />
         <Money label="Paid so far" value={paidTotal} />
+        {dueAtCheckIn ? <Money label="Due at the marina" value={dueAtCheckIn} /> : null}
         <Money label="Still to pay" value={outstanding} />
       </Section>
 
@@ -214,7 +223,8 @@ PaymentReceivedEmail.PreviewProps = {
   kind: "deposit",
   total: "€4,870",
   paidTotal: "€2,435",
-  outstanding: "€2,435",
+  outstanding: "€2,310",
+  dueAtCheckIn: "€125",
   balanceDueAt: "1 Aug 2026",
   bookingUrl: "https://example.com/en/bookings/bkg_preview",
   supportUrl: "https://example.com/en/support?booking=bkg_preview",

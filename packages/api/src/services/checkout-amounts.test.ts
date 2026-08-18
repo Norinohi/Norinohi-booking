@@ -4,7 +4,7 @@ import type { BookingStatus } from "./booking-state";
 import type { QuoteLine } from "@yacht-charter/db/schema/quote";
 import { describe, expect, it } from "vitest";
 
-import { amountDue, outstandingMinor, payableNowFor } from "./checkout-amounts";
+import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { payableNowMinor, totalMinor } from "./pricing";
 
 type QuoteRow = typeof quote.$inferSelect;
@@ -259,5 +259,46 @@ describe("payableNowFor", () => {
     expect(payableNowFor(quoteRow(LINES), 250_000, old, new Date("2027-01-01T00:00:00.000Z"))).toBe(
       250_000,
     );
+  });
+});
+
+/*
+ * The identity every money block renders, on the booking page and in the three emails that
+ * carry one: total, paid, due at the marina, still to pay. They are four separate figures
+ * from three separate functions, and the emails shipped without the third for long enough
+ * that their own preview data showed a €125 hole nobody could account for.
+ */
+describe("total, paid, at the marina and outstanding add up", () => {
+  const settlesTo = (lines: QuoteLine[], paidMinor: number) => {
+    const priced = quoteRow(lines);
+    return {
+      total: priced.totalMinor,
+      parts: paidMinor + atCheckInMinor(priced) + outstandingMinor(priced, paidMinor),
+    };
+  };
+
+  it("with nothing paid", () => {
+    const { total, parts } = settlesTo(LINES, 0);
+    expect(parts).toBe(total);
+  });
+
+  it("with the deposit in", () => {
+    const { total, parts } = settlesTo(LINES, 265_000);
+    expect(parts).toBe(total);
+  });
+
+  it("with the charter settled, which is where the missing row showed", () => {
+    const { total, parts } = settlesTo(LINES, 500_000);
+    expect(parts).toBe(total);
+    // The whole point: paid short of the total, and nothing left to chase.
+    expect(outstandingMinor(quoteRow(LINES), 500_000)).toBe(0);
+  });
+
+  it("with no at-check-in line at all, where the row is not rendered", () => {
+    const collectable = [line({ code: "base", amountMinor: 500_000, payWhen: "now" })];
+    const { total, parts } = settlesTo(collectable, 200_000);
+
+    expect(atCheckInMinor(quoteRow(collectable))).toBe(0);
+    expect(parts).toBe(total);
   });
 });

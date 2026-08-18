@@ -117,6 +117,15 @@ export function createAuth() {
         // session so a reset also signs the account out everywhere. The reset token
         // itself is already single-use.
         await db.delete(schema.session).where(eq(schema.session.userId, user.id));
+
+        // The account guest checkout opened has now been claimed by the person it was
+        // opened for. `provisioned_at` is what says otherwise, and the outbox reads it
+        // before it sends an invitation, so leaving it set means a customer who already
+        // has a password can still be mailed a link telling them to choose one.
+        await db
+          .update(schema.user)
+          .set({ provisionedAt: null })
+          .where(and(eq(schema.user.id, user.id), isNotNull(schema.user.provisionedAt)));
       },
     },
     socialProviders,

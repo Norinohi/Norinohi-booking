@@ -12,6 +12,7 @@ import {
 } from "@yacht-charter/transactional";
 
 import { COMPANY } from "../lib/company";
+import { atCheckInMinor } from "./checkout-amounts";
 
 /*
  * The emails checkout and the refund flow send. The confirmation screen has always promised the
@@ -27,7 +28,8 @@ import { COMPANY } from "../lib/company";
  *
  * Sending is best-effort by construction: a booking that exists must not be undone because Resend
  * was down, and the customer can still reach everything from the screen they are on. Failures are
- * logged and swallowed by each notify function.
+ * logged and swallowed by each notify function — except `notifyBookingReceived`, which is called
+ * from the outbox rather than from checkout and lets its failures out so the drain can retry them.
  */
 
 /** The locale the email is written in. Templates are English-only for now. */
@@ -50,6 +52,19 @@ function day(date: string): string {
   }).format(new Date(date));
 }
 
+/**
+ * The part of the total the base collects on the day, for the one row every money block in
+ * here owes the customer. Undefined at zero, so a charter with no such line shows no row at
+ * all rather than "€0" — the same condition the booking page applies.
+ *
+ * Without it the block does not add up: `total` carries these lines and `outstanding` does
+ * not, so a settled booking reads as underpaid by exactly this much.
+ */
+function atMarina(priced: typeof quote.$inferSelect): string | undefined {
+  const amountMinor = atCheckInMinor(priced);
+  return amountMinor > 0 ? money(amountMinor, priced.currency) : undefined;
+}
+
 /** Locale-prefixed like every app route — `/en/bookings/...`, matching the i18n routing. */
 function appUrl(path: string): string {
   return `${env.CORS_ORIGIN}/${LOCALE}${path}`;
@@ -69,41 +84,43 @@ export type BookingReceivedEmail = {
   isGuest: boolean;
 };
 
-/** Sent from `createHold`, over a booking nobody has paid for yet. */
+/**
+ * Sent over a booking nobody has paid for yet, from the `booking_received` outbox message
+ * `createHold` writes. Throws rather than logging: nothing is waiting on this call any more,
+ * and a swallowed failure here would be a confirmation the customer never gets and no record
+ * of why.
+ */
 export async function notifyBookingReceived(booking: BookingReceivedEmail): Promise<void> {
   const { snapshot, priced } = booking;
 
-  try {
-    await sendBookingReceivedEmail(booking.to, {
-      guestName: booking.guestName,
-      reference: booking.reference,
-      yachtName: snapshot.listingTitle,
-      checkIn: day(priced.checkIn),
-      checkOut: day(priced.checkOut),
-      marina: `${snapshot.baseName}, ${snapshot.countryName}`,
-      guests: priced.guests,
-      crew: priced.crewType ?? undefined,
-      imageUrl: snapshot.mainImage ?? undefined,
-      total: money(priced.totalMinor, priced.currency),
-      paid: money(0, priced.currency),
-      outstanding: money(booking.outstandingMinor, priced.currency),
-      bookingUrl: appUrl(`/bookings/${booking.bookingId}`),
-      payUrl: appUrl(`/bookings/${booking.bookingId}/pay`),
-      holdExpiresAt: booking.holdExpiresAt ? day(booking.holdExpiresAt.toISOString()) : undefined,
-      /*
-       * Not a minted token: the account exists but has never chosen a password, and the
-       * forgot-password flow is the one path that sets one, with better-auth issuing the
-       * single-use link. Prefilled with the address they booked with, and `welcome=1`
-       * carries "first password, not a reset" through to the mail and the screen.
-       */
-      setPasswordUrl: booking.isGuest
-        ? appUrl(`/forgot-password?email=${encodeURIComponent(booking.to)}&welcome=1`)
-        : undefined,
-      supportUrl: appUrl(`/support?booking=${booking.bookingId}`),
-    });
-  } catch (cause) {
-    console.error(`[email] booking received notice for ${booking.reference} failed`, cause);
-  }
+  await sendBookingReceivedEmail(booking.to, {
+    guestName: booking.guestName,
+    reference: booking.reference,
+    yachtName: snapshot.listingTitle,
+    checkIn: day(priced.checkIn),
+    checkOut: day(priced.checkOut),
+    marina: `${snapshot.baseName}, ${snapshot.countryName}`,
+    guests: priced.guests,
+    crew: priced.crewType ?? undefined,
+    imageUrl: snapshot.mainImage ?? undefined,
+    total: money(priced.totalMinor, priced.currency),
+    paid: money(0, priced.currency),
+    outstanding: money(booking.outstandingMinor, priced.currency),
+    dueAtCheckIn: atMarina(priced),
+    bookingUrl: appUrl(`/bookings/${booking.bookingId}`),
+    payUrl: appUrl(`/bookings/${booking.bookingId}/pay`),
+    holdExpiresAt: booking.holdExpiresAt ? day(booking.holdExpiresAt.toISOString()) : undefined,
+    /*
+     * Not a minted token: the account exists but has never chosen a password, and the
+     * forgot-password flow is the one path that sets one, with better-auth issuing the
+     * single-use link. Prefilled with the address they booked with, and `welcome=1`
+     * carries "first password, not a reset" through to the mail and the screen.
+     */
+    setPasswordUrl: booking.isGuest
+      ? appUrl(`/forgot-password?email=${encodeURIComponent(booking.to)}&welcome=1`)
+      : undefined,
+    supportUrl: appUrl(`/support?booking=${booking.bookingId}`),
+  });
 }
 
 export type BookingConfirmedEmail = {
@@ -143,6 +160,7 @@ export async function notifyBookingConfirmed(booking: BookingConfirmedEmail): Pr
       total: money(priced.totalMinor, priced.currency),
       paid: money(booking.paidMinor, priced.currency),
       outstanding: money(booking.outstandingMinor, priced.currency),
+      dueAtCheckIn: atMarina(priced),
       balanceDueAt: priced.paymentPolicy.balanceDueAt
         ? day(priced.paymentPolicy.balanceDueAt)
         : undefined,
@@ -183,6 +201,8 @@ export type PaymentReceivedEmail = {
   totalMinor: number;
   paidTotalMinor: number;
   outstandingMinor: number;
+  /** The part of the total settled with the base, which is in `totalMinor` and in nothing else. */
+  atCheckInMinor: number;
   balanceDueAt: string | null;
 };
 
@@ -200,6 +220,7 @@ export async function notifyPaymentReceived(paid: PaymentReceivedEmail): Promise
       total: money(paid.totalMinor, paid.currency),
       paidTotal: money(paid.paidTotalMinor, paid.currency),
       outstanding: money(paid.outstandingMinor, paid.currency),
+      dueAtCheckIn: paid.atCheckInMinor > 0 ? money(paid.atCheckInMinor, paid.currency) : undefined,
       // Only while something is left: a settled charter with a policy date would otherwise be
       // told to expect a payment it has already made.
       balanceDueAt:

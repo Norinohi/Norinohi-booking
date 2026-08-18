@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import { notifyPaymentReceived } from "./booking-email";
-import { outstandingMinor } from "./checkout-amounts";
+import { atCheckInMinor, outstandingMinor } from "./checkout-amounts";
 
 /**
  * The receipt for one payment that has settled.
@@ -62,6 +62,7 @@ export async function announcePaymentReceived(
     totalMinor: found.quote.totalMinor,
     paidTotalMinor,
     outstandingMinor: outstandingMinor(found.quote, paidTotalMinor),
+    atCheckInMinor: atCheckInMinor(found.quote),
     balanceDueAt: found.quote.paymentPolicy.balanceDueAt ?? null,
   });
 }

@@ -51,3 +51,16 @@ export const reminderResultSchema = z.object({
   /** Installments due but with no address on the booking — nothing to send to. */
   skipped: z.number().int(),
 });
+
+export const outboxDrainResultSchema = z.object({
+  /** Messages delivered on this run. */
+  sent: z.number().int(),
+  /** Messages whose send failed and that are waiting out their backoff. Retried on their own. */
+  retrying: z.number().int(),
+  /**
+   * Messages that ran out of attempts. Each one is a set-password invitation or a booking
+   * confirmation a customer never received, and nothing will try again. Non-zero is an
+   * alert, not a statistic.
+   */
+  failed: z.number().int(),
+});
