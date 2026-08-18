@@ -115,8 +115,8 @@
       "notFound": "Booking not found",
       "browse": "Browse yachts",
       "remaining": "The remaining {amount} will be paid at check-in.",
-      "emailed": "We've sent a confirmation to your email",
-      "guestEmailed": "We've sent your confirmation by email, along with a link to set a password and keep this booking in your account",
+      "emailed": "We've emailed you the details, and again once the operator confirms",
+      "guestEmailed": "We've emailed you the details, with a link to set a password and keep this booking in your account",
       "viewBooking": "View Booking",
       "summaryTitle": "Booking Summary",
       "quote": "\"This yacht is ideal for island hopping in Croatia — stable, spacious, and perfect for group travel. Your route includes Hvar and Vis, two of the most scenic islands in the Adriatic.\"",
@@ -211,6 +211,7 @@
     },
     "balance": {
       "title": "Pay the rest",
+      "titleUnpaid": "Complete your payment",
       "reference": "Booking {reference}",
       "pay": "Pay {amount}",
       "notFound": "We couldn't find this booking",
@@ -228,12 +229,18 @@
         "viewBooking": "View booking"
       },
       "notPayable": {
-        "title": "Nothing to pay yet",
-        "body": "This booking has no balance to settle. If you have just booked, your first payment covers it for now."
+        "title": "This price has expired",
+        "body": "We can't take payment for this booking any more: the price we quoted and the operator's hold have both run out. Check the dates again and we'll give you a fresh price.",
+        "action": "Check availability"
       },
       "settling": {
         "title": "Payment received",
         "body": "We're updating your booking. This usually takes a few seconds."
+      },
+      "received": {
+        "title": "Payment received",
+        "body": "Thank you. {outstanding} is left on this charter, and we'll remind you before it falls due.",
+        "viewBooking": "View booking"
       }
     },
     "detail": {
@@ -242,12 +249,15 @@
       "reference": "Booking {reference}",
       "guests": "{count} guests",
       "payBalance": "Pay {amount}",
+      "completePayment": "Complete payment {amount}",
       "viewInvoice": "View invoice",
       "priceTitle": "Price breakdown",
       "total": "Total price",
       "paymentsTitle": "Payments",
       "paid": "Paid so far",
       "outstanding": "Still to pay",
+      "dueAtCheckIn": "Due at the marina",
+      "atMarina": "paid at the marina",
       "noPayments": "No payments have been made on this booking yet.",
       "disputed": "disputed",
       "kind": {

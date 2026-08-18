@@ -5,13 +5,12 @@ import { type CreateEmailOptions, Resend } from "resend";
 
 import { BalanceReminderEmail, type BalanceReminderEmailProps } from "./emails/balance-reminder";
 import { BookingCancelledEmail, type BookingCancelledEmailProps } from "./emails/booking-cancelled";
-import {
-  BookingConfirmationEmail,
-  type BookingConfirmationEmailProps,
-} from "./emails/booking-confirmation";
+import { BookingConfirmedEmail, type BookingConfirmedEmailProps } from "./emails/booking-confirmed";
+import { BookingReceivedEmail, type BookingReceivedEmailProps } from "./emails/booking-received";
 import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
 import { InvoiceIssuedEmail, type InvoiceIssuedEmailProps } from "./emails/invoice-issued";
 import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
+import { PaymentReceivedEmail, type PaymentReceivedEmailProps } from "./emails/payment-received";
 import { RefundIssuedEmail, type RefundIssuedEmailProps } from "./emails/refund-issued";
 import { ResetPasswordEmail } from "./emails/reset-password";
 import { SetPasswordEmail } from "./emails/set-password";
@@ -59,20 +58,50 @@ async function sendHtml(
 }
 
 /**
- * The booking receipt, sent as soon as a booking is held.
+ * What a customer gets the moment a booking is held, before any money has moved.
+ *
+ * The subject says "holding", not "confirmed", because that is what has happened: the mail goes
+ * out over an unpaid booking, and calling it a confirmation left customers believing they were
+ * booked when the slot was still running down. `sendBookingConfirmedEmail` is the one that means
+ * it.
  *
  * Everything is pre-formatted by the caller: money and dates belong to the booking's currency
  * and the customer's locale, neither of which this package knows. The subject carries the
  * reference so a later "what was my booking number" search finds it.
  */
-export async function sendBookingConfirmationEmail(
+export async function sendBookingReceivedEmail(
   to: string,
-  booking: Omit<BookingConfirmationEmailProps, "appUrl">,
+  booking: Omit<BookingReceivedEmailProps, "appUrl">,
 ) {
   const html = await render(
-    createElement(BookingConfirmationEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+    createElement(BookingReceivedEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
   );
-  return sendHtml(to, `Your booking ${booking.reference} — ${booking.yachtName}`, html);
+  return sendHtml(to, `We're holding ${booking.yachtName} — booking ${booking.reference}`, html);
+}
+
+/** The charter is real: sent once the operator has committed the reservation. */
+export async function sendBookingConfirmedEmail(
+  to: string,
+  booking: Omit<BookingConfirmedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BookingConfirmedEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Confirmed: ${booking.yachtName} — booking ${booking.reference}`, html);
+}
+
+/**
+ * The receipt for one payment that landed. Its own mail rather than a line in the confirmation,
+ * because a deposit charter pays twice and the second one has no confirmation to ride along with.
+ */
+export async function sendPaymentReceivedEmail(
+  to: string,
+  payment: Omit<PaymentReceivedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(PaymentReceivedEmail, { ...payment, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `${payment.amount} received — booking ${payment.reference}`, html);
 }
 
 /**

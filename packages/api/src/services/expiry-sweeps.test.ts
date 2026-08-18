@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEAD_QUOTE_SWEEP, HOLD_SWEEP, canTransition } from "./booking-state";
+import { DEAD_QUOTE_SWEEP, HOLD_SWEEP, STALE_PAYMENT_SWEEP, canTransition } from "./booking-state";
 
 /*
  * The sweeper picks its candidates with a SQL status filter and then writes a
@@ -14,6 +14,13 @@ import { DEAD_QUOTE_SWEEP, HOLD_SWEEP, canTransition } from "./booking-state";
 const SWEEPS = [
   { name: "expireHolds", sweep: HOLD_SWEEP },
   { name: "expireBookingsWithDeadQuotes", sweep: DEAD_QUOTE_SWEEP },
+  { name: "expireAbandonedPayments", sweep: STALE_PAYMENT_SWEEP },
+  // Its second destination, chosen per booking by whether an option was ever held. Listed
+  // separately because `to` is the only half the checks below look at.
+  {
+    name: "expireAbandonedPayments (held)",
+    sweep: { from: STALE_PAYMENT_SWEEP.from, to: STALE_PAYMENT_SWEEP.held },
+  },
 ];
 
 describe("every sweep writes a status the state machine allows", () => {
@@ -27,7 +34,16 @@ describe("every sweep writes a status the state machine allows", () => {
   });
 });
 
-describe("the two sweeps cannot both claim the same booking", () => {
+describe("no two sweeps can both claim the same booking", () => {
+  it("leaves PAYMENT_PENDING to the payment sweep alone", () => {
+    // The other two exclude it deliberately: money may be in flight and the Stripe webhook
+    // is the authority. `expireAbandonedPayments` is the only thing allowed to give up on it,
+    // and only long after any payment could still land.
+    expect(HOLD_SWEEP.from).not.toContain("PAYMENT_PENDING");
+    expect(DEAD_QUOTE_SWEEP.from).not.toContain("PAYMENT_PENDING");
+    expect(STALE_PAYMENT_SWEEP.from).toEqual(["PAYMENT_PENDING"]);
+  });
+
   it("overlap only on OPTION_PENDING, which is separated by hold_expires_at", () => {
     const overlap = HOLD_SWEEP.from.filter((status) =>
       DEAD_QUOTE_SWEEP.from.some((other) => other === status),
@@ -71,5 +87,31 @@ describe("stale CONFIRMING bookings are never swept automatically", () => {
     // No escape that reprices, so a human has to resolve it either way.
     expect(canTransition("CONFIRMING", "QUOTED")).toBe(false);
     expect(canTransition("CONFIRMING", "CANCELLED")).toBe(false);
+  });
+});
+
+/*
+ * The two destinations of the payment sweep are not interchangeable: each one is a claim
+ * about what lapsed, and a booking that never held an option cannot have had one expire.
+ */
+describe("the payment sweep names what actually lapsed", () => {
+  it("expires the option only where one was held", () => {
+    expect(STALE_PAYMENT_SWEEP.held).toBe("OPTION_EXPIRED");
+    expect(STALE_PAYMENT_SWEEP.to).toBe("QUOTE_EXPIRED");
+  });
+
+  it("releases the slot either way", () => {
+    // Both destinations sit outside booking_provider_option_uq's partial predicate, which is
+    // the entire point: an abandoned checkout used to hold that option against every future
+    // booking of the same week.
+    const RELEASED = [
+      "CANCELLED",
+      "REFUNDED",
+      "OPTION_EXPIRED",
+      "QUOTE_EXPIRED",
+      "PROVIDER_REJECTED",
+    ];
+    expect(RELEASED).toContain(STALE_PAYMENT_SWEEP.to);
+    expect(RELEASED).toContain(STALE_PAYMENT_SWEEP.held);
   });
 });

@@ -18,7 +18,7 @@ import {
 
 const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
-  BOOKING_MANAGER_API_TOKEN: "t0ken",
+  BOOKING_MANAGER_API_KEY: "t0ken",
   BOOKING_MANAGER_TIMEOUT_MS: 30_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 0,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
@@ -119,6 +119,13 @@ describe("mapBookingManagerPriceRow", () => {
   });
 
   it.each([null, undefined])("drops a row with price %o", (price) => {
+    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
+  });
+
+  it.each([0, -1])("drops a row priced at %o rather than advertising it", (price) => {
+    // The card's "from" price is the minimum across periods, so one zero week would
+    // price the whole boat at nothing. Observed live: the vendor sends 0 for the
+    // year-end week on every yacht in the test fleet.
     expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
   });
 

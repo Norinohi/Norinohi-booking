@@ -1,10 +1,12 @@
-import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
+import { notifyBookingConfirmed } from "./booking-email";
 import { canTransition, type BookingStatus } from "./booking-state";
+import { outstandingMinor } from "./checkout-amounts";
 import { awardReferralCredit } from "./loyalty";
 import { asCrewType } from "./quote";
 
@@ -94,6 +96,7 @@ export async function confirmBookingWithProvider(
     const reservation = await provider.confirmBooking(request);
 
     await markConfirmed(db, bookingId, row.provider, row.userId, reservation);
+    await announceConfirmation(db, row, priced, reservation);
 
     return {
       outcome: "confirmed",
@@ -166,6 +169,48 @@ async function markConfirmed(
   // that is already confirmed and paid for.
   await db.transaction(async (tx) => {
     await awardReferralCredit(tx, userId, bookingId);
+  });
+}
+
+/**
+ * The one mail that means the charter exists.
+ *
+ * Sent from here rather than from either caller, for the same reason the commit itself is
+ * shared: money arrives by card through the Stripe webhook and by transfer through an admin
+ * settling an invoice, and a customer must not learn that their charter is real only on one
+ * of those two paths.
+ *
+ * After `markConfirmed`, so nothing is announced that the compare-and-set did not apply, and
+ * best-effort inside the notify function, so a mail that fails cannot unwind a confirmation
+ * the provider has already accepted.
+ */
+async function announceConfirmation(
+  db: Database,
+  row: typeof booking.$inferSelect,
+  priced: typeof quote.$inferSelect,
+  reservation: Awaited<ReturnType<InventoryProvider["confirmBooking"]>>,
+): Promise<void> {
+  if (!row.guestEmail) return;
+
+  const settled = await db
+    .select({ amountMinor: payment.amountMinor })
+    .from(payment)
+    .where(and(eq(payment.bookingId, row.id), eq(payment.status, "succeeded")));
+
+  const paidMinor = settled.reduce((total, entry) => total + entry.amountMinor, 0);
+
+  await notifyBookingConfirmed({
+    to: row.guestEmail,
+    guestName: row.guestFullName ?? "Guest",
+    bookingId: row.id,
+    reference: row.reference,
+    snapshot: row.commercialSnapshot,
+    priced,
+    paidMinor,
+    outstandingMinor: outstandingMinor(priced, paidMinor),
+    providerReference: reservation.providerReservationId ?? row.providerReservationId,
+    // A confirmation that returns no link has not retracted the one the hold carried.
+    crewListLink: reservation.crewListLink ?? row.crewListLink,
   });
 }
 

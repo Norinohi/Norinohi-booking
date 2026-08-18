@@ -200,8 +200,14 @@ function Charter({
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
-  const outstanding = booking.outstanding.amountMinor;
-  const showPay = booking.status === "CONFIRMED" && outstanding > 0;
+  /*
+   * `payableNow`, not `outstanding`: the server has already decided what this booking can be
+   * charged in the state it is in, and it is not always the whole remainder. A booking that was
+   * held and never paid for owes its prepayment here, and one whose quote or hold has lapsed
+   * owes nothing that can be taken until it is repriced — which is what hides the button.
+   */
+  const payable = booking.payableNow.amountMinor;
+  const showPay = payable > 0;
   /*
    * The invoice document only exists for a booking that asked to pay by transfer, and it is an
    * instruction to send money — so a charter that is off no longer offers it.
@@ -257,7 +263,9 @@ function Charter({
               nativeButton={false}
               render={<Link href={`/bookings/${bookingId}/pay`} />}
             >
-              {t("payBalance", { amount: money(outstanding) })}
+              {booking.status === "CONFIRMED"
+                ? t("payBalance", { amount: money(payable) })
+                : t("completePayment", { amount: money(payable) })}
             </Button>
           ) : null}
 
@@ -355,6 +363,12 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
   const money = useMoney();
   const outstanding = booking.outstanding.amountMinor;
+  /*
+   * The base collects this on the day and we never charge it, so it is in the total and in
+   * nothing else. Left unsaid, the panel reads as broken arithmetic: €1,421 total against
+   * €1,296 paid, and then "nothing left to pay". Naming it is what makes the column add up.
+   */
+  const atCheckIn = booking.dueAtCheckIn.amountMinor;
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
@@ -365,6 +379,12 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
           <Row
             key={`${line.code}-${index}`}
             label={line.label}
+            /* Tagged on the line as well as totalled below, so it is obvious which €125 it is. */
+            note={
+              line.payWhen === "at_check_in" ? (
+                <span className="text-sm text-natural-500">{t("atMarina")}</span>
+              ) : undefined
+            }
             value={money(line.amount.amountMinor)}
           />
         ))}
@@ -373,6 +393,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
 
       <dl className="flex w-full flex-col">
         <Row label={t("paid")} value={money(booking.paidTotal.amountMinor)} />
+        {atCheckIn > 0 ? <Row label={t("dueAtCheckIn")} value={money(atCheckIn)} /> : null}
         <Row
           label={outstanding > 0 ? t("outstanding") : t("settled")}
           value={money(outstanding)}

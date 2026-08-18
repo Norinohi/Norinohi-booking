@@ -115,8 +115,8 @@
       "notFound": "Reserva no encontrada",
       "browse": "Ver yates",
       "remaining": "Los {amount} restantes se pagarán al check-in.",
-      "emailed": "Hemos enviado una confirmación a tu correo",
-      "guestEmailed": "Te hemos enviado la confirmación por correo, junto con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
+      "emailed": "Te hemos enviado los detalles por email, y te escribiremos otra vez cuando el operador confirme",
+      "guestEmailed": "Te hemos enviado los detalles por email, con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
       "viewBooking": "Ver reserva",
       "summaryTitle": "Resumen de la reserva",
       "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
@@ -211,6 +211,7 @@
     },
     "balance": {
       "title": "Paga el resto",
+      "titleUnpaid": "Completa tu pago",
       "reference": "Reserva {reference}",
       "pay": "Pagar {amount}",
       "notFound": "No encontramos esta reserva",
@@ -228,12 +229,18 @@
         "viewBooking": "Ver reserva"
       },
       "notPayable": {
-        "title": "Todavía no hay nada que pagar",
-        "body": "Esta reserva no tiene saldo pendiente. Si acabas de reservar, tu primer pago lo cubre por ahora."
+        "title": "Este precio ha caducado",
+        "body": "Ya no podemos cobrar esta reserva: el precio que te dimos y la retención del operador han vencido. Vuelve a consultar las fechas y te daremos un precio nuevo.",
+        "action": "Ver disponibilidad"
       },
       "settling": {
         "title": "Pago recibido",
         "body": "Estamos actualizando tu reserva. Suele tardar unos segundos."
+      },
+      "received": {
+        "title": "Pago recibido",
+        "body": "Gracias. Quedan {outstanding} de este chárter y te avisaremos antes del vencimiento.",
+        "viewBooking": "Ver reserva"
       }
     },
     "detail": {
@@ -242,12 +249,15 @@
       "reference": "Reserva {reference}",
       "guests": "{count} personas",
       "payBalance": "Pagar {amount}",
+      "completePayment": "Completar el pago {amount}",
       "viewInvoice": "Ver factura",
       "priceTitle": "Desglose del precio",
       "total": "Precio total",
       "paymentsTitle": "Pagos",
       "paid": "Pagado hasta ahora",
       "outstanding": "Pendiente de pago",
+      "dueAtCheckIn": "A pagar en la marina",
+      "atMarina": "se paga en la marina",
       "noPayments": "Aún no se han realizado pagos en esta reserva.",
       "disputed": "en disputa",
       "kind": {

@@ -46,13 +46,13 @@ inventory, live availability, pricing and the provider reservation lifecycle.
 | Beta base URL       | `http://beta.booking-manager.com/api/v2` (plain HTTP, as published) |
 | Auth scheme         | HTTP `Bearer` (SwaggerHub security scheme name `bearerAuth`)        |
 | Header              | `Authorization: Bearer <token>`                                     |
-| Env var             | `BOOKING_MANAGER_API_TOKEN`                                         |
+| Env var             | `BOOKING_MANAGER_API_KEY`                                           |
 
 The token is **not** an API-key header - not `X-API-Key`, not a query parameter.
 `packages/providers/src/booking-manager/client.ts` sets a single
 `authorization: Bearer …` header on the shared HTTP client and nothing else.
 
-`BOOKING_MANAGER_API_TOKEN` is optional in the env schema so a missing secret
+`BOOKING_MANAGER_API_KEY` is optional in the env schema so a missing secret
 cannot stop the server booting; `resolveBookingManagerConfig` is the point that
 refuses loudly with an `AuthError` when `booking_manager` mode is actually
 selected. The queue key is a SHA-256 fingerprint of the token, never the token

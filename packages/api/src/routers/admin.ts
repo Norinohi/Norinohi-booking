@@ -61,7 +61,11 @@ import {
   enquirySetStatusInputSchema,
 } from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
-import { reminderResultSchema, sweepResultSchema } from "../contracts/maintenance";
+import {
+  outboxDrainResultSchema,
+  reminderResultSchema,
+  sweepResultSchema,
+} from "../contracts/maintenance";
 import {
   leadAnswerInputSchema,
   leadListInputSchema,
@@ -86,6 +90,7 @@ import {
 } from "../services/invoice";
 import { sweepExpiries } from "../services/expiry";
 import { sendBalanceReminders } from "../services/payment-reminders";
+import { drainOutbox } from "../services/outbox";
 import { answerLead, listLeads, setLeadStatus } from "../services/lead";
 import { answerEnquiry, listEnquiries, setEnquiryStatus } from "../services/enquiry";
 import {
@@ -466,6 +471,21 @@ export const adminRouter = {
       .input(emptyInputSchema)
       .output(reminderResultSchema)
       .handler(({ context }) => sendBalanceReminders(context.db)),
+    drainOutbox: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/drainOutbox",
+        operationId: "drainOutbox",
+        summary: "Send the mail checkout queued but never delivered",
+        description:
+          "Works through the outbox by hand: the set-password invitations and booking confirmations that guest checkout writes down instead of sending, so the customer is not kept waiting on Resend. Checkout drains this in-process the moment it has answered and POST /api/cron/drain-outbox retries what it missed, so a healthy system leaves nothing here; this exists to push the backlog out after a mailer outage rather than waiting on the backoff. Each message is claimed before it is sent, so running this twice sends nothing the second time.",
+        tags: ["Admin"],
+        successDescription: "What the drain sent, is retrying, and gave up on.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(outboxDrainResultSchema)
+      .handler(({ context }) => drainOutbox(context.db)),
   },
   lead: {
     list: adminProcedure

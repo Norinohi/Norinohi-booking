@@ -5,7 +5,7 @@ import { user } from "@yacht-charter/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 import type { Database } from "../context";
-import { inviteToSetPassword } from "./account-invitation";
+import { enqueueOutbox } from "./outbox";
 
 /*
  * The account behind a guest checkout.
@@ -14,6 +14,12 @@ import { inviteToSetPassword } from "./account-invitation";
  * path — so checkout without a session provisions the account rather than leaving the
  * row ownerless. The customer is never signed into it: they hold a booking-scoped
  * token (see guest-access.ts) until they accept the invitation and choose a password.
+ *
+ * What the customer used to wait on was not the row. It was the invitation: minting
+ * better-auth's single-use token and handing the mail to Resend, both inside the call
+ * that was supposed to answer with their booking. The row is one insert and stays here,
+ * because the booking cannot be written without an owner; the invitation is a message on
+ * the outbox and leaves with the drain (services/outbox.ts).
  */
 
 export type ProvisionInput = {
@@ -62,7 +68,7 @@ export async function provisionGuestAccount(
     return { userId: raced, created: false };
   }
 
-  await inviteToSetPassword({ userId: inserted.id, email, name: guest.fullName });
+  await enqueueOutbox(db, "account_invitation", inserted.id);
 
   return { userId: inserted.id, created: true };
 }

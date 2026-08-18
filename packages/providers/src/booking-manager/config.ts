@@ -22,6 +22,8 @@ export interface BookingManagerConfig {
    * they stay plain wall-clock strings and are never converted.
    */
   timeZone: string;
+  /** Charter companies to import. Empty means every company the key can see. */
+  companyIds: readonly string[];
   /** Serialization key. One lane per credential, never per instance. */
   queueKey: string;
 }
@@ -29,7 +31,8 @@ export interface BookingManagerConfig {
 /** The slice of the server env this adapter reads. */
 export interface BookingManagerEnvSource {
   BOOKING_MANAGER_BASE_URL: string;
-  BOOKING_MANAGER_API_TOKEN?: string | undefined;
+  BOOKING_MANAGER_API_KEY?: string | undefined;
+  BOOKING_MANAGER_COMPANY_IDS?: string | undefined;
   BOOKING_MANAGER_TIMEOUT_MS: number;
   BOOKING_MANAGER_MIN_INTERVAL_MS: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
@@ -45,6 +48,17 @@ export function bookingManagerQueueKey(apiToken: string): string {
 }
 
 /**
+ * Ids are kept as strings because that is what `provider_record.external_id` and
+ * every scope key downstream use; the vendor's numeric form never leaves here.
+ */
+function parseCompanyIds(raw: string | undefined): readonly string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+}
+
+/**
  * The token is optional in the env schema so a missing secret cannot stop the
  * server booting. The cost is that this is the point where booking_manager mode
  * has to refuse loudly rather than issue unauthenticated calls.
@@ -52,11 +66,11 @@ export function bookingManagerQueueKey(apiToken: string): string {
 export function resolveBookingManagerConfig(
   source: BookingManagerEnvSource = env,
 ): BookingManagerConfig {
-  const apiToken = source.BOOKING_MANAGER_API_TOKEN?.trim();
+  const apiToken = source.BOOKING_MANAGER_API_KEY?.trim();
 
   if (!apiToken) {
     throw new AuthError(
-      "Booking Manager credentials are not configured: set BOOKING_MANAGER_API_TOKEN",
+      "Booking Manager credentials are not configured: set BOOKING_MANAGER_API_KEY",
       { providerCode: "MISSING_CREDENTIALS" },
     );
   }
@@ -64,6 +78,7 @@ export function resolveBookingManagerConfig(
   return {
     baseUrl: source.BOOKING_MANAGER_BASE_URL.replace(/\/+$/, ""),
     apiToken,
+    companyIds: parseCompanyIds(source.BOOKING_MANAGER_COMPANY_IDS),
     timeoutMs: source.BOOKING_MANAGER_TIMEOUT_MS,
     minIntervalMs: source.BOOKING_MANAGER_MIN_INTERVAL_MS,
     optionSafetyMarginMinutes: source.BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES,

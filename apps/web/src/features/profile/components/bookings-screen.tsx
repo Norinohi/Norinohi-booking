@@ -102,10 +102,12 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                       bookingId={booking.id}
                       cancellable={booking.cancellable}
                       isCancelled={CANCELLED_STATUSES.has(booking.status)}
-                      /* `outstanding`, not `balanceDue`: the latter counts the extras the
-                         base collects at the marina, which we must never offer to take. */
+                      /* `payableNow` is the server's own answer to "is there a Pay button and
+                         for how much", so a booking held and never paid for offers one too. Not
+                         `balanceDue`, which counts the extras the base collects at the marina and
+                         we must never offer to take. */
                       payBalanceHref={
-                        booking.status === "CONFIRMED" && booking.outstanding.amountMinor > 0
+                        booking.payableNow.amountMinor > 0
                           ? `/bookings/${booking.id}/pay`
                           : undefined
                       }

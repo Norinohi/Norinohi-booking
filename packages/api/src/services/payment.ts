@@ -115,13 +115,25 @@ export async function confirmCheckout(
 }
 
 /**
- * Charges what is still owed on a confirmed charter.
+ * Charges whatever a booking still owes, from outside the checkout wizard.
  *
- * The deposit policy only works if the rest can be collected: a 50% booking that
- * confirms and then has no way to take the other half leaves the money to be chased
- * by hand. This is that second call, and it is deliberately not `checkout.confirm`
- * — the booking is already CONFIRMED and must stay that way, because the charter
- * exists whether or not this payment has landed yet.
+ * Two cases, because the customer asking has the same question in both: there is a
+ * Pay button on my booking and I want to finish. On a confirmed charter it takes the
+ * rest, which is what makes the deposit policy work at all — a 50% booking with no
+ * way to collect the other half leaves the money to be chased by hand. On one that
+ * was never paid for it takes the prepayment, which is the wizard's own first charge
+ * and used to be reachable only from a live quote inside checkout: a customer who
+ * closed the tab before paying had no way back in, and the booking sat unpayable
+ * until the sweeper cancelled it.
+ *
+ * That second case is delegated to `confirmCheckout` rather than reimplemented here.
+ * It carries the guards that matter — the quote's price and the provider's hold both
+ * have to still be good before anyone is charged — and the resume path for an intent
+ * the customer abandoned mid-3-D-Secure. Two implementations of the same charge would
+ * differ exactly where it hurts.
+ *
+ * A confirmed booking stays CONFIRMED throughout, because the charter exists whether
+ * or not this payment has landed yet.
  */
 export async function payBalance(
   db: Database,
@@ -137,16 +149,10 @@ export async function payBalance(
 
   const row = await readOwnedBooking(db, userId, bookingId);
 
-  /*
-   * Only once the charter is real. Before that the deposit is what is owed and
-   * `checkout.confirm` is the call; after a cancellation or refund there is nothing
-   * left to settle.
-   */
+  // The booking's own policy, not a preference: nobody is choosing anything on this
+  // path, they are finishing what they already agreed to.
   if (row.booking.status !== "CONFIRMED") {
-    throw new ORPCError("CONFLICT", {
-      message: `A booking in ${row.booking.status} has no balance to settle`,
-      data: { code: "NOT_PAYABLE" },
-    });
+    return confirmCheckout(db, userId, bookingId, row.quote.paymentPolicy.mode);
   }
 
   const outstanding = await outstandingBalance(db, bookingId, row.quote);

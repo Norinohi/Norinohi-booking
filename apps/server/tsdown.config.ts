@@ -7,6 +7,8 @@ export default defineConfig({
     "./src/sync-catalogue.ts",
     "./src/sync-availability.ts",
     "./src/sweep-expiries.ts",
+    "./src/payment-reminders.ts",
+    "./src/drain-outbox.ts",
     "./src/seed-facets.ts",
     "./src/publish-listings.ts",
   ],
