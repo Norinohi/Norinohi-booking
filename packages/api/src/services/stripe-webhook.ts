@@ -12,6 +12,7 @@ import type Stripe from "stripe";
 import { z } from "zod";
 
 import type { Database } from "../context";
+import { providerByKey } from "./provider-routing";
 import { confirmBookingWithProvider } from "./booking-confirm";
 import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
@@ -168,7 +169,16 @@ async function onSucceeded(
 
   // Money is in; the provider is the final arbiter of the reservation itself.
   // Shared with admin invoice settlement so both routes to CONFIRMED behave alike.
-  const outcome = await confirmBookingWithProvider(db, provider, row.booking.id);
+  //
+  // Resolved from the booking rather than from the configured adapter: the webhook
+  // answers for whichever vendor sold the charter, and confirming a paid booking
+  // with the wrong one sends a reservation id that vendor never issued while the
+  // customer's money is already taken.
+  const outcome = await confirmBookingWithProvider(
+    db,
+    await providerByKey(provider, row.booking.provider),
+    row.booking.id,
+  );
 
   if (outcome.outcome !== "rejected") return undefined;
 
