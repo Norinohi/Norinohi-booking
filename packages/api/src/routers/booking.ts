@@ -44,6 +44,7 @@ import { mintGuestAccessToken, resolveBookingActor } from "../services/guest-acc
 import { getInvoiceDocument } from "../services/invoice-document";
 import { listTravellers, saveTravellers } from "../services/traveller";
 import { confirmCheckout, payBalance } from "../services/payment";
+import { providerForBooking, providerForQuote } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -137,11 +138,14 @@ export const bookingRouter = {
     })
     .input(bookingCancelInputSchema)
     .output(bookingCancelSchema)
-    .handler(({ context, input }) =>
-      cancelBooking(context.db, context.provider, input.id, input.reason, {
-        userId: context.session.user.id,
-        isAdmin: false,
-      }),
+    .handler(async ({ context, input }) =>
+      cancelBooking(
+        context.db,
+        await providerForBooking(context.db, context.provider, input.id),
+        input.id,
+        input.reason,
+        { userId: context.session.user.id, isAdmin: false },
+      ),
     ),
   travellers: {
     list: protectedProcedure
@@ -256,7 +260,7 @@ export const checkoutRouter = {
     .handler(async ({ context, input }) =>
       createHold(
         context.db,
-        context.provider,
+        await providerForQuote(context.db, context.provider, input.quoteId),
         await checkoutActor(context, input.guest),
         input.quoteId,
         // A client that does not send one still gets single-call safety; only a

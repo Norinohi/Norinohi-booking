@@ -114,6 +114,7 @@ import {
   listListingPrices,
   updateListingPrice,
 } from "../services/listing-price";
+import { providerForBooking } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -360,11 +361,17 @@ export const adminRouter = {
       })
       .input(bookingCancelInputSchema)
       .output(bookingCancelSchema)
-      .handler(({ context, input }) =>
-        cancelBooking(context.db, context.provider, input.id, input.reason, {
-          userId: context.session.user.id,
-          isAdmin: true,
-        }),
+      .handler(async ({ context, input }) =>
+        cancelBooking(
+          context.db,
+          await providerForBooking(context.db, context.provider, input.id),
+          input.id,
+          input.reason,
+          {
+            userId: context.session.user.id,
+            isAdmin: true,
+          },
+        ),
       ),
     refund: adminProcedure
       .route({
