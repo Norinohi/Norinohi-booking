@@ -37,7 +37,7 @@ import {
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { notifyBookingCancelled, notifyBookingReceived } from "./booking-email";
-import { amountDue, outstandingMinor, payableNowFor } from "./checkout-amounts";
+import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
@@ -163,6 +163,7 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       group: line.group ?? null,
+      payWhen: line.payWhen,
     })),
     extras: extras.map((extra) => ({
       code: extra.code,
@@ -939,6 +940,7 @@ function presentSummary(
       amountMinor: payableNowFor(priced, paidMinor, row),
       currency: row.currency,
     },
+    dueAtCheckIn: { amountMinor: atCheckInMinor(priced), currency: row.currency },
     prepayment: { amountMinor: priced.depositMinor, currency: row.currency },
     nextPaymentDueAt: money?.nextDueAt?.toISOString() ?? null,
     cancellable: isUserCancellable(row.status),

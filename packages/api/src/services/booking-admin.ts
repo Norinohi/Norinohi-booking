@@ -171,6 +171,7 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
       label: line.label,
       amount: { amountMinor: line.amountMinor, currency: line.currency },
       group: line.group ?? null,
+      payWhen: line.payWhen,
     })),
     paymentSchedule: schedules.map((schedule) => ({
       id: schedule.id,

@@ -363,6 +363,12 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
   const t = useTranslations("Booking.detail");
   const money = useMoney();
   const outstanding = booking.outstanding.amountMinor;
+  /*
+   * The base collects this on the day and we never charge it, so it is in the total and in
+   * nothing else. Left unsaid, the panel reads as broken arithmetic: €1,421 total against
+   * €1,296 paid, and then "nothing left to pay". Naming it is what makes the column add up.
+   */
+  const atCheckIn = booking.dueAtCheckIn.amountMinor;
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
@@ -373,6 +379,12 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
           <Row
             key={`${line.code}-${index}`}
             label={line.label}
+            /* Tagged on the line as well as totalled below, so it is obvious which €125 it is. */
+            note={
+              line.payWhen === "at_check_in" ? (
+                <span className="text-sm text-natural-500">{t("atMarina")}</span>
+              ) : undefined
+            }
             value={money(line.amount.amountMinor)}
           />
         ))}
@@ -381,6 +393,7 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
 
       <dl className="flex w-full flex-col">
         <Row label={t("paid")} value={money(booking.paidTotal.amountMinor)} />
+        {atCheckIn > 0 ? <Row label={t("dueAtCheckIn")} value={money(atCheckIn)} /> : null}
         <Row
           label={outstanding > 0 ? t("outstanding") : t("settled")}
           value={money(outstanding)}

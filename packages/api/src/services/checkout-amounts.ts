@@ -38,14 +38,24 @@ export function amountDue(
   priced: typeof quote.$inferSelect,
   preference: "deposit" | "full",
 ): number {
-  const atCheckIn = priced.lines
-    .filter((line) => line.payWhen === "at_check_in")
-    .reduce((total, line) => total + line.amountMinor, 0);
-
-  const payableNow = Math.max(priced.totalMinor - atCheckIn, 0);
+  const payableNow = Math.max(priced.totalMinor - atCheckInMinor(priced), 0);
 
   if (preference === "full") return payableNow;
   return Math.min(priced.depositMinor, payableNow);
+}
+
+/**
+ * The part of the total the base collects in person, on the day.
+ *
+ * Never charged by us and never chased: it is in `total_minor` because it is part of what the
+ * charter costs, and out of every figure we take money against. Exposed so a screen can say
+ * where it went — a total of 1,421 against 1,296 paid and "nothing left to pay" is correct
+ * arithmetic that reads as a mistake until the missing 125 is named.
+ */
+export function atCheckInMinor(priced: typeof quote.$inferSelect): number {
+  return priced.lines
+    .filter((line) => line.payWhen === "at_check_in")
+    .reduce((total, line) => total + line.amountMinor, 0);
 }
 
 /**

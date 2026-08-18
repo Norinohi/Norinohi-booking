@@ -256,6 +256,8 @@
       "paymentsTitle": "Payments",
       "paid": "Paid so far",
       "outstanding": "Still to pay",
+      "dueAtCheckIn": "Due at the marina",
+      "atMarina": "paid at the marina",
       "noPayments": "No payments have been made on this booking yet.",
       "disputed": "disputed",
       "kind": {

@@ -256,6 +256,8 @@
       "paymentsTitle": "Pagos",
       "paid": "Pagado hasta ahora",
       "outstanding": "Pendiente de pago",
+      "dueAtCheckIn": "A pagar en la marina",
+      "atMarina": "se paga en la marina",
       "noPayments": "Aún no se han realizado pagos en esta reserva.",
       "disputed": "en disputa",
       "kind": {
