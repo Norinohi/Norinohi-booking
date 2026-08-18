@@ -12,6 +12,7 @@
     "sync:catalogue": "node dist/sync-catalogue.mjs",
     "sync:availability": "node dist/sync-availability.mjs",
     "sweep:expiries": "node dist/sweep-expiries.mjs",
+    "remind:payments": "node dist/payment-reminders.mjs",
     "seed:facets": "node dist/seed-facets.mjs",
     "publish:listings": "node dist/publish-listings.mjs"
   },
