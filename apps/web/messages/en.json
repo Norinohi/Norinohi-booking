@@ -1791,6 +1791,23 @@
     "Sync": {
       "title": "Sync History",
       "subtitle": "Every catalogue and availability run, newest first.",
+      "controls": {
+        "provider": "Provider to sync",
+        "allProviders": "All providers",
+        "startCatalogue": "Sync catalogue",
+        "startAvailability": "Sync availability",
+        "started": "{count, plural, one {# run started} other {# runs started}}",
+        "skipped": "{count, plural, one {# provider is already importing} other {# providers are already importing}}",
+        "noProviders": "No connector is enabled.",
+        "capabilities": "Active connector:",
+        "capability": {
+          "supportsLiveQuote": "Live quote",
+          "supportsOptions": "Holds",
+          "supportsExtrasMutation": "Editable extras",
+          "supportsWebhooks": "Webhooks"
+        },
+        "hint": "A run is opened immediately and keeps going after this page is closed. Its outcome appears in the table below."
+      },
       "filters": {
         "provider": "Provider",
         "kind": "Kind",

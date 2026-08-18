@@ -7,12 +7,14 @@ import Sidebar from "@/components/layout/sidebar";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 
+import SyncControls from "./sync-controls";
 import SyncRunsTable from "./sync-runs-table";
 
 /*
  * SyncHistoryScreen — /sync: the admin Sidebar beside the run-history card, in the same
  * shell as the Discount Manager (breadcrumb bar, 334px sidebar, bordered content card).
- * Read-only: runs are started by the cron routes, this is where their outcome is read.
+ * The cron routes drive imports normally; the controls above the table are the manual
+ * override, and the table is where every run's outcome is read.
  */
 
 export default function SyncHistoryScreen({ user }: { user: { name: string; email: string } }) {
@@ -41,6 +43,10 @@ export default function SyncHistoryScreen({ user }: { user: { name: string; emai
                 {t("title")}
               </h1>
               <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("subtitle")}</p>
+            </div>
+
+            <div className="border-b border-natural-50 p-4 md:p-5">
+              <SyncControls />
             </div>
 
             <div className="p-4 md:p-5">

@@ -1791,6 +1791,23 @@
     "Sync": {
       "title": "Historial de sincronización",
       "subtitle": "Todas las ejecuciones de catálogo y disponibilidad, de la más reciente a la más antigua.",
+      "controls": {
+        "provider": "Proveedor a sincronizar",
+        "allProviders": "Todos los proveedores",
+        "startCatalogue": "Sincronizar catálogo",
+        "startAvailability": "Sincronizar disponibilidad",
+        "started": "{count, plural, one {# ejecución iniciada} other {# ejecuciones iniciadas}}",
+        "skipped": "{count, plural, one {# proveedor ya está importando} other {# proveedores ya están importando}}",
+        "noProviders": "No hay ningún conector activo.",
+        "capabilities": "Conector activo:",
+        "capability": {
+          "supportsLiveQuote": "Precio en vivo",
+          "supportsOptions": "Reservas provisionales",
+          "supportsExtrasMutation": "Extras editables",
+          "supportsWebhooks": "Webhooks"
+        },
+        "hint": "La ejecución se abre de inmediato y continúa aunque cierres esta página. Su resultado aparece en la tabla de abajo."
+      },
       "filters": {
         "provider": "Proveedor",
         "kind": "Tipo",

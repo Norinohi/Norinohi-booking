@@ -103,6 +103,13 @@ export const bookingQueueQueryOptions = (input: {
 export const bookingDetailQueryOptions = (input: { id: string }) =>
   orpc.admin.booking.get.queryOptions({ input, staleTime: 30_000 });
 
+/*
+ * What the active connector can actually do. Fixed for the life of a deployment — it is
+ * compiled into the adapter, not stored — so this is read once and kept.
+ */
+export const providerCapabilitiesQueryOptions = () =>
+  orpc.admin.provider.capabilities.queryOptions({ staleTime: Number.POSITIVE_INFINITY });
+
 export const syncRunsQueryOptions = (input: {
   provider?: ProviderKey;
   kind?: SyncRunKind;
