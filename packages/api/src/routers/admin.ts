@@ -22,12 +22,18 @@ import {
   duplicateQueueSchema,
   duplicateRejectInputSchema,
   duplicateResolutionSchema,
+  listingAdminListInputSchema,
+  listingAdminListSchema,
   listingPriceClearInputSchema,
   listingPriceFiltersSchema,
   listingPriceListInputSchema,
   listingPriceListSchema,
   listingPriceRowSchema,
   listingPriceUpdateInputSchema,
+  listingPublishDraftsInputSchema,
+  listingPublishDraftsSchema,
+  listingSetStatusInputSchema,
+  listingSetStatusSchema,
   syncRunListInputSchema,
   syncRunListSchema,
   syncRunsStartedSchema,
@@ -100,6 +106,11 @@ import {
   setDiscountActive,
   updateDiscount,
 } from "../services/discount-admin";
+import {
+  listAdminListings,
+  publishListingDrafts,
+  setListingStatus,
+} from "../services/listing-admin";
 import { listYachtOptions } from "../services/listing-options";
 import {
   getCatalogueSyncStatus,
@@ -704,6 +715,65 @@ export const adminRouter = {
       .input(yachtOptionsInputSchema)
       .output(yachtOptionsSchema)
       .handler(({ context, input }) => listYachtOptions(context.db, input)),
+  },
+  listing: {
+    list: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/list",
+        operationId: "listAdminListings",
+        summary: "List the catalogue including unpublished listings",
+        description:
+          "Every listing staff can act on, newest first, drafts included. Filter by provider, by status, and by a case-insensitive substring of the title or slug. Rows carry the operator, model, year, base and location, the primary image, and the cheapest available price when availability has been synced. Public search shows published listings only, so this is the only place an imported draft is visible.",
+        tags: ["Admin"],
+        successDescription: "A page of listings.",
+        spec: withJsonBodyExample({
+          provider: "booking_manager",
+          status: "draft",
+          page: 1,
+          pageSize: 20,
+        }),
+      })
+      .input(listingAdminListInputSchema)
+      .output(listingAdminListSchema)
+      .handler(({ context, input }) => listAdminListings(context.db, input)),
+    setStatus: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/setStatus",
+        operationId: "setListingStatus",
+        summary: "Publish, hide or unpublish one listing",
+        description:
+          "Moves a single listing between draft, published and hidden, and rebuilds its search document so the change shows up in search immediately: publishing writes the document, draft and hidden remove it. Writes an audit log entry carrying the status before and after.",
+        tags: ["Admin"],
+        successDescription: "The listing with its new status.",
+        spec: withJsonBodyExample({
+          id: "ylst_yacht-sunreef-60-celeste",
+          status: "published",
+        }),
+      })
+      .input(listingSetStatusInputSchema)
+      .output(listingSetStatusSchema)
+      .handler(({ context, input }) =>
+        setListingStatus(context.db, context.session.user.id, input),
+      ),
+    publishDrafts: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/publishDrafts",
+        operationId: "publishListingDrafts",
+        summary: "Publish a provider's imported drafts in bulk",
+        description:
+          "Publishes every listing still sitting at draft within the given scope and rebuilds their search documents. provider is that scope, NOT a filter on the response: naming a provider releases only its drafts, while OMITTING provider PUBLISHES EVERY PROVIDER'S DRAFTS IN THE ENTIRE CATALOGUE IN ONE CALL. Syncs import as draft so unreviewed vendor inventory never reaches customers; an unscoped call undoes that everywhere at once, which in production is thousands of unreviewed yachts. Pass a provider unless releasing the whole catalogue is exactly what is meant. Writes one audit log entry recording the scope and the count.",
+        tags: ["Admin"],
+        successDescription: "How many drafts were published.",
+        spec: withJsonBodyExample({ provider: "booking_manager" }),
+      })
+      .input(listingPublishDraftsInputSchema)
+      .output(listingPublishDraftsSchema)
+      .handler(({ context, input }) =>
+        publishListingDrafts(context.db, context.session.user.id, input),
+      ),
   },
   listingPrice: {
     list: adminProcedure
