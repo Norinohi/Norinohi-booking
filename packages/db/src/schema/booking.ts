@@ -304,6 +304,8 @@ export const paymentSchedule = pgTable(
     currency: text("currency").notNull(),
     dueAt: timestamp("due_at"),
     status: paymentScheduleStatus("status").default("pending").notNull(),
+    // Claimed before the reminder is sent, so two overlapping cron runs cannot both mail it.
+    reminderSentAt: timestamp("reminder_sent_at"),
     ...timestamps,
   },
   (t) => [index("payment_schedule_booking_idx").on(t.bookingId)],

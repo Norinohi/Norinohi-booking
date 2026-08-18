@@ -1813,6 +1813,16 @@
         },
         "hint": "La ejecución se abre de inmediato y continúa aunque cierres esta página. Su resultado aparece en la tabla de abajo."
       },
+      "maintenance": {
+        "sweep": "Caducar reservas provisionales",
+        "remind": "Enviar recordatorios de saldo",
+        "swept": "{count} reserva(s) caducada(s), {reaped} ejecución(es) de sincronización recuperada(s).",
+        "staleConfirmations": "{count} reserva(s) atascada(s) al confirmar. Pregunta al proveedor si la reserva existe.",
+        "releaseFailures": "No se pudieron liberar {count} espacio(s) del proveedor.",
+        "reminded": "{count} recordatorio(s) enviado(s).",
+        "remindSkipped": "{count} reserva(s) no tienen dirección de correo.",
+        "hint": "Ambos ya se ejecutan de forma programada. Hacerlo a mano es seguro: las caducidades son compare-and-set y cada plazo solo se recuerda una vez."
+      },
       "filters": {
         "provider": "Proveedor",
         "kind": "Tipo",

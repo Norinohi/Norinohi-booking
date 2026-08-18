@@ -2,6 +2,7 @@ import type { CommercialSnapshot } from "@yacht-charter/db/schema/booking";
 import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
 import {
+  sendBalanceReminderEmail,
   sendBookingConfirmationEmail,
   sendInvoiceIssuedEmail,
   sendRefundIssuedEmail,
@@ -160,5 +161,36 @@ export async function notifyRefundIssued(refund: RefundIssuedEmail): Promise<voi
     });
   } catch (cause) {
     console.error(`[email] refund notice for ${refund.reference} failed`, cause);
+  }
+}
+
+export type BalanceDueEmail = {
+  to: string;
+  guestName: string;
+  bookingId: string;
+  reference: string;
+  yachtName: string;
+  amountMinor: number;
+  currency: string;
+  dueAt: Date;
+  checkIn: string;
+  checkOut: string;
+};
+
+export async function notifyBalanceDue(reminder: BalanceDueEmail): Promise<void> {
+  try {
+    await sendBalanceReminderEmail(reminder.to, {
+      guestName: reminder.guestName,
+      reference: reminder.reference,
+      yachtName: reminder.yachtName,
+      amount: money(reminder.amountMinor, reminder.currency),
+      dueAt: day(reminder.dueAt.toISOString()),
+      checkIn: day(reminder.checkIn),
+      checkOut: day(reminder.checkOut),
+      payUrl: appUrl(`/bookings/${reminder.bookingId}/pay`),
+      supportUrl: appUrl(`/support?booking=${reminder.bookingId}`),
+    });
+  } catch (cause) {
+    console.error(`[email] balance reminder for ${reminder.reference} failed`, cause);
   }
 }

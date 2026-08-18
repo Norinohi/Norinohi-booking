@@ -1813,6 +1813,16 @@
         },
         "hint": "A run is opened immediately and keeps going after this page is closed. Its outcome appears in the table below."
       },
+      "maintenance": {
+        "sweep": "Expire stale holds",
+        "remind": "Send balance reminders",
+        "swept": "{count} booking(s) expired, {reaped} sync run(s) reaped.",
+        "staleConfirmations": "{count} booking(s) stuck confirming. Ask the provider whether the reservation exists.",
+        "releaseFailures": "{count} provider slot(s) could not be released.",
+        "reminded": "{count} reminder(s) sent.",
+        "remindSkipped": "{count} booking(s) have no email address to send to.",
+        "hint": "Both run on a schedule already. Running one by hand is safe: expiries are compare-and-set, and each installment is only ever reminded once."
+      },
       "filters": {
         "provider": "Provider",
         "kind": "Kind",

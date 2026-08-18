@@ -309,6 +309,13 @@
       "when": 1787037590692,
       "tag": "0043_material_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1787038523058,
+      "tag": "0044_smart_gravity",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { env } from "@yacht-charter/env/server";
 import { createElement } from "react";
 import { Resend } from "resend";
 
+import { BalanceReminderEmail, type BalanceReminderEmailProps } from "./emails/balance-reminder";
 import {
   BookingConfirmationEmail,
   type BookingConfirmationEmailProps,
@@ -70,6 +71,21 @@ export async function sendInvoiceIssuedEmail(
     createElement(InvoiceIssuedEmail, { ...invoice, appUrl: env.CORS_ORIGIN }),
   );
   return sendHtml(to, `Invoice ${invoice.invoiceNumber} — ${invoice.amount} due`, html);
+}
+
+/** The nudge before a confirmed booking's second installment falls due. */
+export async function sendBalanceReminderEmail(
+  to: string,
+  reminder: Omit<BalanceReminderEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(BalanceReminderEmail, { ...reminder, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(
+    to,
+    `${reminder.amount} due ${reminder.dueAt} — booking ${reminder.reference}`,
+    html,
+  );
 }
 
 /** Confirmation that money went back, sent once a refund has actually settled. */

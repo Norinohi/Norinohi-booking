@@ -38,3 +38,10 @@ export const sweepResultSchema = z.object({
     }),
   ),
 });
+
+export const reminderResultSchema = z.object({
+  /** Balance installments a reminder went out for. Each is only ever mailed once. */
+  sent: z.number().int(),
+  /** Installments due but with no address on the booking — nothing to send to. */
+  skipped: z.number().int(),
+});

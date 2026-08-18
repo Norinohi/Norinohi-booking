@@ -61,7 +61,7 @@ import {
   enquirySetStatusInputSchema,
 } from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
-import { sweepResultSchema } from "../contracts/maintenance";
+import { reminderResultSchema, sweepResultSchema } from "../contracts/maintenance";
 import {
   leadAnswerInputSchema,
   leadListInputSchema,
@@ -85,6 +85,7 @@ import {
   settleInvoiceRequest,
 } from "../services/invoice";
 import { sweepExpiries } from "../services/expiry";
+import { sendBalanceReminders } from "../services/payment-reminders";
 import { answerLead, listLeads, setLeadStatus } from "../services/lead";
 import { answerEnquiry, listEnquiries, setEnquiryStatus } from "../services/enquiry";
 import {
@@ -450,6 +451,21 @@ export const adminRouter = {
       .input(emptyInputSchema)
       .output(sweepResultSchema)
       .handler(({ context }) => sweepExpiries(context.db, context.provider)),
+    sendPaymentReminders: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/sendPaymentReminders",
+        operationId: "sendPaymentReminders",
+        summary: "Remind customers of a balance falling due",
+        description:
+          "Mails every confirmed booking whose balance installment falls due within the next ten days. Normally driven by the scheduled POST /api/cron/payment-reminders; this exists so staff can send the batch after a mailer outage without waiting a day. Each installment is claimed before it is mailed, so running this twice sends nothing the second time.",
+        tags: ["Admin"],
+        successDescription: "How many reminders went out.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(reminderResultSchema)
+      .handler(({ context }) => sendBalanceReminders(context.db)),
   },
   lead: {
     list: adminProcedure
