@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { type AuditMetadata, writeAuditLog } from "./audit";
+import { notifyRefundIssued } from "./booking-email";
 import { type BookingStatus, canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
 import { allocate, type CardPaymentRow, type PaymentRow, planRefund } from "./refund-plan";
@@ -160,6 +161,26 @@ export async function refundBooking(
       before: { status: current },
       after: { status, refundedMinor, currency: row.currency },
       metadata,
+    });
+  }
+
+  /*
+   * Only for money that has actually moved. A refund Stripe has accepted but not settled tells
+   * the customer nothing they can check, and `refund.updated` is what closes those out — mailing
+   * on acceptance would announce a refund that can still fail.
+   */
+  const settledNow = refundedMinor - plan.alreadyRefundedMinor;
+  if (settledNow > 0 && row.guestEmail) {
+    await notifyRefundIssued({
+      to: row.guestEmail,
+      guestName: row.guestFullName ?? "Guest",
+      bookingId,
+      reference: row.reference,
+      yachtName: row.commercialSnapshot.listingTitle,
+      refundedMinor: settledNow,
+      outstandingMinor: after.outstandingMinor,
+      currency: row.currency,
+      reason: options.reason,
     });
   }
 

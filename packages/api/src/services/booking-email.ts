@@ -1,16 +1,23 @@
 import type { CommercialSnapshot } from "@yacht-charter/db/schema/booking";
 import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
-import { sendBookingConfirmationEmail } from "@yacht-charter/transactional";
+import {
+  sendBookingConfirmationEmail,
+  sendInvoiceIssuedEmail,
+  sendRefundIssuedEmail,
+} from "@yacht-charter/transactional";
+
+import { COMPANY } from "../lib/company";
 
 /*
- * The one email checkout sends. The confirmation screen has always promised it ("we've sent your
- * confirmation by email"), and until now nothing did — a customer who closed that tab had the
- * reference nowhere.
+ * The emails checkout and the refund flow send. The confirmation screen has always promised the
+ * first one ("we've sent your confirmation by email"), and until it existed a customer who closed
+ * that tab had the reference nowhere. The other two close the same gap for the two moments money
+ * moves without a screen in front of anyone: a bank transfer we are waiting on, and one we sent.
  *
  * Sending is best-effort by construction: a booking that exists must not be undone because Resend
  * was down, and the customer can still reach everything from the screen they are on. Failures are
- * logged and swallowed by `notifyBookingHeld`.
+ * logged and swallowed by each notify function.
  */
 
 /** The locale the email is written in. Templates are English-only for now. */
@@ -81,5 +88,77 @@ export async function notifyBookingHeld(booking: BookingHeldEmail): Promise<void
     });
   } catch (cause) {
     console.error(`[email] booking confirmation for ${booking.reference} failed`, cause);
+  }
+}
+
+export type InvoiceIssuedEmail = {
+  to: string;
+  guestName: string;
+  bookingId: string;
+  reference: string;
+  invoiceNumber: string;
+  yachtName: string;
+  amountMinor: number;
+  currency: string;
+  dueAt: Date;
+  checkIn: string;
+  checkOut: string;
+};
+
+/**
+ * The bank details for an invoice the customer asked for.
+ *
+ * Sent with the booking reference as the payment reference, because an unreferenced transfer is
+ * money nobody can match to a charter — the invoice row alone does not identify it in a bank feed.
+ */
+export async function notifyInvoiceIssued(invoice: InvoiceIssuedEmail): Promise<void> {
+  try {
+    await sendInvoiceIssuedEmail(invoice.to, {
+      guestName: invoice.guestName,
+      reference: invoice.reference,
+      invoiceNumber: invoice.invoiceNumber,
+      yachtName: invoice.yachtName,
+      amount: money(invoice.amountMinor, invoice.currency),
+      dueAt: day(invoice.dueAt.toISOString()),
+      checkIn: day(invoice.checkIn),
+      checkOut: day(invoice.checkOut),
+      bank: COMPANY.bank,
+      payeeName: COMPANY.legalName,
+      invoiceUrl: appUrl(`/bookings/${invoice.bookingId}/invoice`),
+      supportUrl: appUrl(`/support?booking=${invoice.bookingId}`),
+    });
+  } catch (cause) {
+    console.error(`[email] invoice ${invoice.invoiceNumber} failed`, cause);
+  }
+}
+
+export type RefundIssuedEmail = {
+  to: string;
+  guestName: string;
+  bookingId: string;
+  reference: string;
+  yachtName: string;
+  refundedMinor: number;
+  /** What the booking keeps. Zero sends no retained figure at all rather than "€0". */
+  outstandingMinor: number;
+  currency: string;
+  reason?: string;
+};
+
+export async function notifyRefundIssued(refund: RefundIssuedEmail): Promise<void> {
+  try {
+    await sendRefundIssuedEmail(refund.to, {
+      guestName: refund.guestName,
+      reference: refund.reference,
+      yachtName: refund.yachtName,
+      refunded: money(refund.refundedMinor, refund.currency),
+      outstanding:
+        refund.outstandingMinor > 0 ? money(refund.outstandingMinor, refund.currency) : undefined,
+      reason: refund.reason,
+      bookingUrl: appUrl(`/bookings/${refund.bookingId}`),
+      supportUrl: appUrl(`/support?booking=${refund.bookingId}`),
+    });
+  } catch (cause) {
+    console.error(`[email] refund notice for ${refund.reference} failed`, cause);
   }
 }

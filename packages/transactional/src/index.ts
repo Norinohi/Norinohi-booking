@@ -8,7 +8,9 @@ import {
   type BookingConfirmationEmailProps,
 } from "./emails/booking-confirmation";
 import { EnquiryAnswerEmail, type EnquiryAnswerEmailProps } from "./emails/enquiry-answer";
+import { InvoiceIssuedEmail, type InvoiceIssuedEmailProps } from "./emails/invoice-issued";
 import { LeadFollowUpEmail, type LeadFollowUpEmailProps } from "./emails/lead-follow-up";
+import { RefundIssuedEmail, type RefundIssuedEmailProps } from "./emails/refund-issued";
 import { ResetPasswordEmail } from "./emails/reset-password";
 import { SetPasswordEmail } from "./emails/set-password";
 import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert";
@@ -54,6 +56,31 @@ export async function sendBookingConfirmationEmail(
     createElement(BookingConfirmationEmail, { ...booking, appUrl: env.CORS_ORIGIN }),
   );
   return sendHtml(to, `Your booking ${booking.reference} — ${booking.yachtName}`, html);
+}
+
+/**
+ * The bank-transfer details, sent when a customer asks for an invoice. The subject carries the
+ * invoice number so it is findable, and the amount so the mail is actionable from the list view.
+ */
+export async function sendInvoiceIssuedEmail(
+  to: string,
+  invoice: Omit<InvoiceIssuedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(InvoiceIssuedEmail, { ...invoice, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `Invoice ${invoice.invoiceNumber} — ${invoice.amount} due`, html);
+}
+
+/** Confirmation that money went back, sent once a refund has actually settled. */
+export async function sendRefundIssuedEmail(
+  to: string,
+  refund: Omit<RefundIssuedEmailProps, "appUrl">,
+) {
+  const html = await render(
+    createElement(RefundIssuedEmail, { ...refund, appUrl: env.CORS_ORIGIN }),
+  );
+  return sendHtml(to, `${refund.refunded} refunded — booking ${refund.reference}`, html);
 }
 
 /** The acknowledgement an enquiry gets — quote request, charter expert, or consultation. */

@@ -10,7 +10,7 @@ import type { checkoutConfirmSchema } from "../contracts/booking";
 import { readOwnedBooking } from "./booking-read";
 import { isPreConfirmed, type BookingStatus } from "./booking-state";
 import { assertHoldStillValid, assertIntentIsResumable, assertPayable } from "./payment-guards";
-import { amountDue, outstandingMinor } from "./checkout";
+import { amountDue, outstandingMinor } from "./checkout-amounts";
 import { assertQuoteIsFresh } from "./quote";
 
 type ConfirmResult = z.infer<typeof checkoutConfirmSchema>;

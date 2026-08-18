@@ -37,7 +37,7 @@ import {
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
 import { notifyBookingHeld } from "./booking-email";
-import { amountDue, outstandingMinor } from "./checkout";
+import { amountDue, outstandingMinor } from "./checkout-amounts";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
