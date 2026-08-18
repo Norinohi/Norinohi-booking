@@ -1,34 +1,42 @@
+import "server-only";
+
 import { env } from "@yacht-charter/env/web";
 import type { MetadataRoute } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 
+import { prefetchCatalogPages } from "@/features/yachts/api/server";
 import { defaultLocale, locales } from "@/i18n/config";
 import { CATALOG_TAG } from "@/lib/cache-tags";
-import { prefetchCatalogPages } from "@/features/yachts/api/server";
 import { publicClient } from "@/utils/orpc";
 
 /*
- * Lives at `src/app/sitemap.ts`, outside `[locale]`, so it serves `/sitemap.xml` unprefixed —
- * the proxy matcher skips dotted paths, so next-intl leaves it alone.
+ * Shared by the sitemap index and each of its children.
+ *
+ * Split by page type rather than kept as one file, because Search Console reports coverage per
+ * submitted sitemap: one file answers "1800 of 2400 indexed" without saying which 600 are missing,
+ * while four answer it by type.
  *
  * Only indexable routes belong here. Anything passing `noIndex: true` to `buildMetadata` is
  * omitted: login, register, booking, confirmation, consultation, `/wishlist`, `/yachts/map`,
  * and everything under `/profile`.
  */
-const STATIC_PATHS = ["/", "/yachts", "/plan-my-trip"] as const;
+export const STATIC_PATHS = ["/", "/yachts", "/plan-my-trip"] as const;
 
 /** Page size is capped at 50 by `listingSearchInputSchema`; the bound stops a bad cursor looping. */
 const PAGE_SIZE = 50;
 const MAX_PAGES = 40;
 
 /** Process start, which is deploy time here — the only moment the static routes can change. */
-const BUILT_AT = new Date();
+export const BUILT_AT = new Date();
+
+/** Every child, and the order the index lists them in. */
+export const SITEMAP_NAMES = ["static", "catalog", "shipyard", "listings"] as const;
 
 function localizePath(path: string, locale: string) {
   return path === "/" ? `/${locale}` : `/${locale}${path}`;
 }
 
-function absolute(path: string) {
+export function absolute(path: string) {
   return new URL(path, env.NEXT_PUBLIC_APP_URL).toString();
 }
 
@@ -37,7 +45,7 @@ function absolute(path: string) {
  * the pairing Google asks for. It mirrors what `buildMetadata` puts in the page head, so the
  * two sources agree instead of sending search engines conflicting hreflang graphs.
  */
-function entriesFor(path: string, lastModified?: Date): MetadataRoute.Sitemap {
+export function entriesFor(path: string, lastModified?: Date): MetadataRoute.Sitemap {
   const languages: Record<string, string> = Object.fromEntries(
     locales.map((locale) => [locale, absolute(localizePath(path, locale))]),
   );
@@ -54,8 +62,8 @@ function entriesFor(path: string, lastModified?: Date): MetadataRoute.Sitemap {
  * Every listing slug, walked page by page.
  *
  * Detail pages are the catalog's organic surface, so a sitemap without them is half a sitemap.
- * A failure here degrades to the static routes rather than failing the build: an empty sitemap
- * is recoverable on the next deploy, a failed deploy is not.
+ * A failure degrades to an empty file rather than a failed build: an empty sitemap is recoverable
+ * on the next deploy, a failed deploy is not.
  *
  * Paged, not cursored: `results` only switches to cursor mode once a cursor is supplied, so the
  * first call — which by definition has none — came back with `nextCursor: null` and ended the
@@ -64,7 +72,7 @@ function entriesFor(path: string, lastModified?: Date): MetadataRoute.Sitemap {
  * Cached on the catalog tag, so a crawler hit no longer re-walks the whole catalog; a provider
  * sync drops it along with the rest of the catalog reads.
  */
-async function listingPaths(): Promise<string[]> {
+export async function listingPaths(): Promise<string[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG);
@@ -92,37 +100,24 @@ async function listingPaths(): Promise<string[]> {
 }
 
 /**
- * The generated catalog pages, read from the same enumeration `generateStaticParams` uses.
- *
- * One source, so the sitemap cannot advertise a combination the router does not build — the
- * failure that turns a submitted sitemap into a page of 404s in Search Console.
+ * The generated catalog pages under one root, from the same enumeration `generateStaticParams`
+ * reads. One source, so a sitemap can never advertise a combination the router will not build —
+ * the failure that turns a submitted sitemap into a page of 404s in Search Console.
  */
-async function catalogPagePaths(): Promise<string[]> {
-  /* The default locale: only the headings are translated, and the sitemap reads none of them. */
+export async function catalogPagePaths(root: "yacht-charter" | "shipyard"): Promise<string[]> {
+  /* The default locale: only the headings are translated, and no sitemap reads one. */
   const pages = await prefetchCatalogPages(defaultLocale);
-  return pages.map((page) => `/${page.root}/${page.segments.join("/")}`);
+  return pages
+    .filter((page) => page.root === root)
+    .map((page) => `/${page.root}/${page.segments.join("/")}`);
 }
 
-/*
- * Listings carry no `lastModified` at all, rather than one stamped at request time.
- *
- * `new Date()` told Google every URL had just changed on every fetch, which is how a site
- * teaches it to ignore the field entirely. Omitting it is neutral; restoring it needs a real
- * per-listing timestamp, which the search contract does not expose yet.
- */
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  let listings: string[] = [];
-  let catalogPages: string[] = [];
-
+/** An empty file beats a failed render: the other three still reach Search Console. */
+export async function safely(paths: () => Promise<string[]>, name: string): Promise<string[]> {
   try {
-    [listings, catalogPages] = await Promise.all([listingPaths(), catalogPagePaths()]);
+    return await paths();
   } catch (error) {
-    console.error("[sitemap] enumeration failed, emitting the static routes only", error);
+    console.error(`[sitemap] ${name} enumeration failed, emitting an empty file`, error);
+    return [];
   }
-
-  return [
-    ...STATIC_PATHS.flatMap((path) => entriesFor(path, BUILT_AT)),
-    ...catalogPages.flatMap((path) => entriesFor(path)),
-    ...listings.flatMap((path) => entriesFor(path)),
-  ];
 }
