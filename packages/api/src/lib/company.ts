@@ -6,8 +6,8 @@
  * deployment is a compliance problem, not a configuration feature. Change them here, in a commit,
  * with the change visible in review.
  *
- * TODO: placeholders until the operating entity is registered — replace before issuing a real
- * invoice. Bank details are the marketplace's own account; charter money is collected by us and
+ * TODO: the VAT and registration numbers are placeholders until the operating entity is
+ * registered — replace before issuing a real invoice. The address and mailbox are real. Bank details are the marketplace's own account; charter money is collected by us and
  * settled with the operator separately.
  */
 export const COMPANY = {
@@ -20,7 +20,7 @@ export const COMPANY = {
   countryCode: "HR",
   vatNumber: "HR00000000000",
   registrationNumber: "000000000",
-  email: "billing@yachtskanner.com",
+  email: "booking@yachtskanner.com",
   phone: "+385 1 000 0000",
   website: "https://yachtskanner.com",
   bank: {

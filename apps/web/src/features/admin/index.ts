@@ -1,11 +1,13 @@
 export {
   prefetchAdminBooking,
+  prefetchAuditLog,
   prefetchDuplicateQueue,
   prefetchInbox,
   prefetchPayments,
   prefetchSyncRuns,
 } from "./api/server";
 export { getAdminUser, isStaff, requireStaffPage } from "./api/session";
+export { default as AuditScreen } from "./components/audit-screen";
 export { default as DuplicateReviewScreen } from "./components/duplicate-review-screen";
 export { default as InboxScreen } from "./components/inbox-screen";
 export { default as PaymentsScreen } from "./components/payments-screen";

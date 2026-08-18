@@ -94,6 +94,11 @@ export type BookingSummaryProps = {
    * nothing to apply one to — before a quote exists, and once a booking has been held off it.
    */
   onApplyPromo?: (code: string | null) => void;
+  /**
+   * Spends the caller's referral credit on the quote, or takes it back off. Omitted under the
+   * same conditions as `onApplyPromo`; the block itself hides when the quote offers no credit.
+   */
+  onApplyCredit?: (spend: boolean) => void;
 };
 
 function Separator() {
@@ -192,6 +197,50 @@ function PromoField({
           {t(`rejected.${rejected}`)}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/*
+ * Referral credit. The quote reports both halves — `creditAvailable` is what the balance could
+ * absorb here, `creditApplied` is what it is absorbing — so this needs no separate balance read,
+ * and it renders nothing for a visitor with no credit or a trip under the credit minimum.
+ */
+function CreditField({
+  offer,
+  applied,
+  pending,
+  onApply,
+}: {
+  offer: NonNullable<NonNullable<Quote>["creditAvailable"]>;
+  applied: boolean;
+  pending: boolean;
+  onApply: (spend: boolean) => void;
+}) {
+  const t = useTranslations("YachtDetail.sidebar.credit");
+  const money = useMoney();
+
+  return (
+    <div className="flex w-full items-center gap-2 p-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="truncate text-base leading-5.5 font-bold text-foreground">{t("label")}</p>
+        <p
+          className={cn(
+            "text-sm leading-4.5 font-medium",
+            applied ? "text-positive-600" : "text-natural-500",
+          )}
+        >
+          {t(applied ? "applied" : "available", { amount: money(offer.amountMinor) })}
+        </p>
+      </div>
+      <Button
+        variant={applied ? "subtle" : "neutral"}
+        size="sm"
+        loading={pending}
+        onClick={() => onApply(!applied)}
+      >
+        {t(applied ? "remove" : "apply")}
+      </Button>
     </div>
   );
 }
@@ -307,6 +356,7 @@ export default function BookingSummary({
   payNowHref,
   onRequestQuote,
   onApplyPromo,
+  onApplyCredit,
 }: BookingSummaryProps) {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
@@ -323,6 +373,9 @@ export default function BookingSummary({
   const payNowReady = payNowHref !== undefined && !repricing;
 
   const base = quote?.lines.find((line) => line.kind === "base");
+  /* Applied wins: once credit is on the quote, `creditAvailable` is what it is still worth,
+     not a second offer to make. */
+  const creditOffer = quote?.creditApplied ?? quote?.creditAvailable ?? null;
   const rawPct = quote
     ? quote.paymentPolicy.mode === "full"
       ? 100
@@ -500,6 +553,18 @@ export default function BookingSummary({
                   rejected={quote.discountRejected}
                   pending={repricing}
                   onApply={onApplyPromo}
+                />
+              </>
+            ) : null}
+
+            {onApplyCredit && creditOffer ? (
+              <>
+                <Separator />
+                <CreditField
+                  offer={creditOffer}
+                  applied={quote.creditApplied !== null}
+                  pending={repricing}
+                  onApply={onApplyCredit}
                 />
               </>
             ) : null}

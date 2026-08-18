@@ -830,10 +830,12 @@
       "profile": "My Profile",
       "bookings": "My Bookings",
       "referrals": "Referrals",
+      "credits": "Credits & Balance",
       "discount": "Discount Manager",
       "logout": "Log Out",
       "duplicates": "Duplicate Review",
       "sync": "Sync History",
+      "audit": "Audit Log",
       "inbox": "Inbox",
       "payments": "Payments"
     },
@@ -1105,8 +1107,10 @@
       "next": "Next yachts"
     },
     "review": {
-      "count": "({count} reviews)",
-      "summary": "Showing {shown} of {total}"
+      "count": "({count, plural, one {# review} other {# reviews}})",
+      "summary": "Showing {shown} of {total}",
+      "empty": "No written reviews yet",
+      "operatorRated": "The score comes from {count, plural, one {# guest rating} other {# guest ratings}} collected by the charter operator."
     },
     "sidebar": {
       "crew": "Crew",
@@ -1150,6 +1154,13 @@
           "usage_limit_reached": "That code has been fully redeemed.",
           "not_applicable": "That code doesn't apply to this yacht."
         }
+      },
+      "credit": {
+        "label": "Referral credit",
+        "available": "{amount} available on this booking",
+        "applied": "{amount} applied",
+        "apply": "Apply",
+        "remove": "Remove"
       }
     },
     "panels": {
@@ -1276,6 +1287,10 @@
       "title": "Your Referrals",
       "description": "Track the friends you have invited to YachtSkanner and the rewards you have earned."
     },
+    "Credits": {
+      "title": "Credits & Balance",
+      "description": "See your available referral credit, what expires soon, and every entry behind the balance."
+    },
     "Discounts": {
       "title": "Discount & Price Manager",
       "description": "Manage promotional codes and yacht pricing for your listings."
@@ -1287,6 +1302,10 @@
     "Sync": {
       "title": "Sync History",
       "description": "Catalogue and availability sync runs with their counts and errors."
+    },
+    "Audit": {
+      "title": "Audit Log",
+      "description": "Every staff action recorded against a booking, listing, discount or enquiry."
     },
     "Invoice": {
       "title": "Invoice",
@@ -1572,6 +1591,26 @@
       "empty": "No referrals yet. Share your link to get started."
     }
   },
+  "Credits": {
+    "title": "Credits & Balance",
+    "balance": {
+      "label": "Available balance",
+      "expiringSoon": "{amount} expires within 30 days",
+      "hint": "Credits are usable for any yacht booking over €1000, and come off what you pay today."
+    },
+    "ledger": {
+      "title": "Credit History",
+      "expires": "Expires {date}",
+      "emptyTitle": "No credit yet",
+      "emptyDescription": "Invite a friend — you earn credit once they complete their trip.",
+      "kind": {
+        "referral_reward": "Referral reward",
+        "booking_redemption": "Applied to booking",
+        "expiry": "Expired",
+        "adjustment": "Adjustment"
+      }
+    }
+  },
   "Discounts": {
     "title": "Discount & Price Manager",
     "subtitle": "Manage promotional codes and yacht pricing.",
@@ -1759,6 +1798,33 @@
     "Sync": {
       "title": "Sync History",
       "subtitle": "Every catalogue and availability run, newest first.",
+      "controls": {
+        "provider": "Provider to sync",
+        "allProviders": "All providers",
+        "startCatalogue": "Sync catalogue",
+        "startAvailability": "Sync availability",
+        "started": "{count, plural, one {# run started} other {# runs started}}",
+        "skipped": "{count, plural, one {# provider is already importing} other {# providers are already importing}}",
+        "noProviders": "No connector is enabled.",
+        "capabilities": "Active connector:",
+        "capability": {
+          "supportsLiveQuote": "Live quote",
+          "supportsOptions": "Holds",
+          "supportsExtrasMutation": "Editable extras",
+          "supportsWebhooks": "Webhooks"
+        },
+        "hint": "A run is opened immediately and keeps going after this page is closed. Its outcome appears in the table below."
+      },
+      "maintenance": {
+        "sweep": "Expire stale holds",
+        "remind": "Send balance reminders",
+        "swept": "{count} booking(s) expired, {reaped} sync run(s) reaped.",
+        "staleConfirmations": "{count} booking(s) stuck confirming. Ask the provider whether the reservation exists.",
+        "releaseFailures": "{count} provider slot(s) could not be released.",
+        "reminded": "{count} reminder(s) sent.",
+        "remindSkipped": "{count} booking(s) have no email address to send to.",
+        "hint": "Both run on a schedule already. Running one by hand is safe: expiries are compare-and-set, and each installment is only ever reminded once."
+      },
       "filters": {
         "provider": "Provider",
         "kind": "Kind",
@@ -1813,6 +1879,53 @@
         "not_found": "Not found",
         "contract": "Contract"
       }
+    },
+    "Audit": {
+      "title": "Audit Log",
+      "subtitle": "Every staff action, newest first. Entries are written once and never edited.",
+      "filters": {
+        "entityType": "Entity type",
+        "allEntities": "All entities",
+        "action": "Action",
+        "allActions": "All actions",
+        "entityId": "Entity id",
+        "entityIdPlaceholder": "Paste a full id"
+      },
+      "table": {
+        "when": "When",
+        "actor": "Who",
+        "action": "Action",
+        "entity": "Entity",
+        "entityId": "Id",
+        "details": "Details"
+      },
+      "action": {
+        "create": "Created",
+        "update": "Updated",
+        "delete": "Deleted",
+        "sync": "Synced",
+        "merge": "Merged",
+        "price_adjustment": "Price change"
+      },
+      "entity": {
+        "booking": "Booking",
+        "booking_enquiry": "Booking question",
+        "discount": "Promo code",
+        "invoice_request": "Invoice",
+        "lead": "Enquiry",
+        "listing": "Listing",
+        "listing_duplicate_candidate": "Duplicate"
+      },
+      "details": {
+        "show": "Show",
+        "hide": "Hide",
+        "before": "Before",
+        "after": "After",
+        "metadata": "Context"
+      },
+      "actorGone": "Deleted account",
+      "empty": "Nothing recorded yet.",
+      "error": "The audit log could not be loaded."
     },
     "Inbox": {
       "title": "Inbox",
@@ -1994,9 +2107,13 @@
       },
       "refund": {
         "title": "Return the money",
-        "description": "Refunds every payment collected on booking {reference}.",
+        "description": "Returns money collected on booking {reference}.",
         "collected": "{amount} collected",
         "cancelReason": "Cancelled: {reason}",
+        "amountLabel": "Amount to return",
+        "amountPlaceholder": "Everything ({amount})",
+        "amountHint": "Leave blank to return everything. Enter less to keep what the cancellation policy retains.",
+        "amountInvalid": "Enter an amount between 0 and what was collected.",
         "reasonLabel": "Reason",
         "reasonPlaceholder": "Operator withdrew the yacht…",
         "manualLabel": "I have sent the bank transfer back",
@@ -2005,7 +2122,7 @@
         "confirm": "Refund",
         "refunding": "Refunding…",
         "refunded": "{amount} returned.",
-        "partial": "{amount} returned — some payments are still settling.",
+        "partial": "{amount} returned. {outstanding} still owed back.",
         "manualPending": "Card payments returned. {count} bank transfer(s) still have to be sent by hand.",
         "failed": "Could not process the refund."
       }

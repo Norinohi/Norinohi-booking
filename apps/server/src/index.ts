@@ -7,6 +7,7 @@ import {
   inventoryProvider,
 } from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
+import { sendBalanceReminders } from "@yacht-charter/api/services/payment-reminders";
 import {
   startAvailabilitySync,
   startCatalogueSync,
@@ -99,6 +100,22 @@ app.post("/api/cron/sweep-expiries", async (c) => {
   }
 
   return c.json(await sweepExpiries(db, inventoryProvider));
+});
+
+// Daily. The window is ten days wide and every installment is claimed before it is mailed, so
+// running this more often sends nothing extra — and missing a day still catches the same booking
+// tomorrow.
+app.post("/api/cron/payment-reminders", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await sendBalanceReminders(db));
 });
 
 // The vendor asks for one full catalogue dump a day, after 01:00 GMT+1. The run is

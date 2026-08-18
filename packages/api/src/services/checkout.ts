@@ -1,7 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { bookingEnquiry, invoiceRequest } from "@yacht-charter/db/schema/checkout";
-import { quote } from "@yacht-charter/db/schema/quote";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -13,7 +12,9 @@ import type {
   invoiceRequestSchema,
 } from "../contracts/booking";
 import { INVOICE_PAYMENT_TERMS_DAYS } from "../lib/company";
+import { notifyInvoiceIssued } from "./booking-email";
 import { readOwnedBooking } from "./booking-read";
+import { amountDue } from "./checkout-amounts";
 import { assertTransition, type BookingStatus } from "./booking-state";
 type InvoiceResult = z.infer<typeof invoiceRequestSchema>;
 
@@ -25,8 +26,10 @@ type Receipt = z.infer<typeof bookingReceiptSchema>;
  * created so the money is tracked exactly like a card payment, but there is no
  * processor and no client secret; it settles when staff mark the transfer received.
  *
- * Nothing is emailed. The invoice_request row is the durable record until email
- * infrastructure exists.
+ * The bank details go out by email, after the transaction: the invoice exists whether or not
+ * Resend answers, and a customer who never got the mail can still read them off the invoice
+ * page. A re-submit returns the existing invoice and sends nothing, so the form cannot be used
+ * to mail someone repeatedly.
  */
 export async function requestInvoice(
   db: Database,
@@ -101,6 +104,20 @@ export async function requestInvoice(
       .where(and(eq(booking.id, input.bookingId), eq(booking.status, current)));
 
     return request;
+  });
+
+  await notifyInvoiceIssued({
+    to: input.billingEmail,
+    guestName: input.billingName,
+    bookingId: input.bookingId,
+    reference: row.booking.reference,
+    invoiceNumber: created.number,
+    yachtName: row.booking.commercialSnapshot.listingTitle,
+    amountMinor: created.amountMinor,
+    currency: created.currency,
+    dueAt: created.dueAt,
+    checkIn: row.quote.checkIn,
+    checkOut: row.quote.checkOut,
   });
 
   return present(created, "PAYMENT_PENDING");
@@ -217,44 +234,6 @@ export async function getReceipt(
       paidAt: item.paidAt?.toISOString() ?? null,
     })),
   };
-}
-
-/**
- * What to charge now. `deposit` follows the quote's payment policy; `full` is the
- * customer choosing to prepay everything. Lines marked pay-at-check-in are settled
- * with the base and are never part of either figure.
- */
-/**
- * What a booking still owes: everything collectable up front, less what has actually
- * arrived.
- *
- * `paidMinor` must count settled money only — a refunded payment has left again and a
- * pending one has not landed. Both callers filter on `succeeded` in the query that reads
- * them, which is where that belongs.
- *
- * `amountDue` has already dropped the pay-at-check-in lines, which the base collects in
- * person and we must never charge.
- *
- * One definition on purpose: `checkout.payBalance` charges this and `booking.list`/`get`
- * report it, and a screen that advertises one figure while the server takes another is
- * worse than no screen.
- */
-export function outstandingMinor(priced: typeof quote.$inferSelect, paidMinor: number): number {
-  return Math.max(amountDue(priced, "full") - paidMinor, 0);
-}
-
-export function amountDue(
-  priced: typeof quote.$inferSelect,
-  preference: "deposit" | "full",
-): number {
-  const atCheckIn = priced.lines
-    .filter((line) => line.payWhen === "at_check_in")
-    .reduce((total, line) => total + line.amountMinor, 0);
-
-  const payableNow = Math.max(priced.totalMinor - atCheckIn, 0);
-
-  if (preference === "full") return payableNow;
-  return Math.min(priced.depositMinor, payableNow);
 }
 
 function present(

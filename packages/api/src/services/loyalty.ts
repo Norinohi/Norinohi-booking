@@ -3,6 +3,18 @@ import { creditLedger, loyaltyPerk, loyaltyTier } from "@yacht-charter/db/schema
 import { and, asc, count, eq, gt, isNull, or, sql, sum } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
+import {
+  bonusPctFor,
+  MIN_BOOKING_FOR_CREDIT_MINOR,
+  progressFor,
+  rewardMinor,
+  spendableFrom,
+  type TierProgress,
+} from "./loyalty-ladder";
+
+export { MIN_BOOKING_FOR_CREDIT_MINOR };
+
+export type { TierProgress };
 
 /*
  * Referral rewards and the loyalty ladder.
@@ -17,17 +29,6 @@ import type { Database, DatabaseExecutor } from "../context";
 const BASE_REWARD_MINOR = 10_000;
 const REWARD_CURRENCY = "EUR";
 const CREDIT_TTL_MONTHS = 12;
-
-export type TierProgress = {
-  tier: { code: string; name: string; level: number } | null;
-  nextTier: { code: string; name: string; level: number } | null;
-  completedBookings: number;
-  requiredForNext: number | null;
-  remainingToNext: number | null;
-  /** 0–100, for the progress bar. 100 once the top tier is reached. */
-  progressPct: number;
-  perks: { code: string; label: string; unlocked: boolean }[];
-};
 
 /** Unexpired balance. Summed from the ledger so it can never drift from its entries. */
 export async function creditBalanceMinor(db: Database, userId: string): Promise<number> {
@@ -71,55 +72,22 @@ export async function tierProgress(db: Database, userId: string): Promise<TierPr
     completedReferralBookings(db, userId),
   ]);
 
-  if (tiers.length === 0) {
-    return {
-      tier: null,
-      nextTier: null,
-      completedBookings: completed,
-      requiredForNext: null,
-      remainingToNext: null,
-      progressPct: 0,
-      perks: [],
-    };
-  }
+  // The perk read is skipped rather than issued and discarded: an unseeded programme has no
+  // tiers to hang perks off, so the join can only be empty.
+  const perks =
+    tiers.length === 0
+      ? []
+      : await db
+          .select({
+            code: loyaltyPerk.code,
+            label: loyaltyPerk.label,
+            tierLevel: loyaltyTier.level,
+          })
+          .from(loyaltyPerk)
+          .innerJoin(loyaltyTier, eq(loyaltyTier.id, loyaltyPerk.tierId))
+          .orderBy(asc(loyaltyTier.level), asc(loyaltyPerk.sortOrder));
 
-  const earned = tiers.filter((tier) => completed >= tier.requiredBookings);
-  const current = earned.at(-1) ?? tiers[0];
-  const next = tiers.find((tier) => tier.level > (current?.level ?? 0)) ?? null;
-
-  const perkRows = await db
-    .select({
-      code: loyaltyPerk.code,
-      label: loyaltyPerk.label,
-      tierLevel: loyaltyTier.level,
-      sortOrder: loyaltyPerk.sortOrder,
-    })
-    .from(loyaltyPerk)
-    .innerJoin(loyaltyTier, eq(loyaltyTier.id, loyaltyPerk.tierId))
-    .orderBy(asc(loyaltyTier.level), asc(loyaltyPerk.sortOrder));
-
-  // The card lists every perk in the programme and ticks the ones reached, so a
-  // locked perk is visible as something to aim at.
-  const perks = perkRows.map((perk) => ({
-    code: perk.code,
-    label: perk.label,
-    unlocked: (current?.level ?? 0) >= perk.tierLevel,
-  }));
-
-  const floor = current?.requiredBookings ?? 0;
-  const ceiling = next?.requiredBookings ?? null;
-  const span = ceiling === null ? 0 : Math.max(ceiling - floor, 1);
-
-  return {
-    tier: current ? { code: current.code, name: current.name, level: current.level } : null,
-    nextTier: next ? { code: next.code, name: next.name, level: next.level } : null,
-    completedBookings: completed,
-    requiredForNext: ceiling,
-    remainingToNext: ceiling === null ? null : Math.max(ceiling - completed, 0),
-    progressPct:
-      ceiling === null ? 100 : Math.min(Math.round(((completed - floor) / span) * 100), 100),
-    perks,
-  };
+  return progressFor(tiers, perks, completed);
 }
 
 /** Referrals of this user that have been credited, i.e. the friend actually sailed. */
@@ -174,7 +142,7 @@ export async function awardReferralCredit(
 
   // Read at award time, after the claim above has been counted.
   const bonusPct = await referralBonusPctFor(tx, owner.userId);
-  const amountMinor = Math.round(BASE_REWARD_MINOR * (1 + bonusPct));
+  const amountMinor = rewardMinor(BASE_REWARD_MINOR, bonusPct);
 
   const expiresAt = new Date();
   expiresAt.setMonth(expiresAt.getMonth() + CREDIT_TTL_MONTHS);
@@ -202,7 +170,7 @@ export async function awardReferralCredit(
  */
 export async function projectedRewardMinor(db: Database, userId: string): Promise<number> {
   const bonusPct = await referralBonusPctFor(db, userId);
-  return Math.round(BASE_REWARD_MINOR * (1 + bonusPct));
+  return rewardMinor(BASE_REWARD_MINOR, bonusPct);
 }
 
 /**
@@ -217,13 +185,9 @@ async function referralBonusPctFor(tx: DatabaseExecutor, userId: string): Promis
     .innerJoin(referral, eq(referral.id, referralRedemption.referralId))
     .where(and(eq(referral.userId, userId), eq(referralRedemption.status, "credited")));
 
-  const reached = await tx
-    .select({ pct: loyaltyTier.referralBonusPct, required: loyaltyTier.requiredBookings })
-    .from(loyaltyTier)
-    .orderBy(asc(loyaltyTier.level));
+  const tiers = await tx.select().from(loyaltyTier).orderBy(asc(loyaltyTier.level));
 
-  const earned = reached.filter((tier) => (completed?.total ?? 0) >= tier.required);
-  return Number(earned.at(-1)?.pct ?? 0);
+  return bonusPctFor(tiers, completed?.total ?? 0);
 }
 
 /** How many people used this user's code, whether or not they have sailed yet. */
@@ -236,13 +200,6 @@ export async function invitedCount(db: Database, userId: string): Promise<number
 
   return row?.total ?? 0;
 }
-
-/**
- * "Credits are usable for any yacht booking over €1000." Below that the balance
- * is untouched rather than partially spent, which is what the rule on the screen
- * says and keeps small bookings from quietly draining someone's credit.
- */
-export const MIN_BOOKING_FOR_CREDIT_MINOR = 100_000;
 
 /*
  * The invitee's half of the referral: "They get €100 off their first yacht
@@ -295,8 +252,7 @@ export async function spendableCreditMinor(
   if (!userId) return 0;
   if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
 
-  const balance = await creditBalanceMinor(db, userId);
-  return Math.max(Math.min(balance, payableNowMinor), 0);
+  return spendableFrom(await creditBalanceMinor(db, userId), bookingTotalMinor, payableNowMinor);
 }
 
 /**

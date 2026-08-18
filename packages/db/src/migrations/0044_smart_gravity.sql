@@ -1,0 +1,1 @@
+ALTER TABLE "payment_schedule" ADD COLUMN "reminder_sent_at" timestamp;
