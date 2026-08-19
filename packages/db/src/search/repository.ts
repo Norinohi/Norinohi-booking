@@ -43,7 +43,15 @@ const MAX_LIMIT = 500;
 const NULL_PRICE_ASC = 2_147_483_647;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
-const CURRENT_YEAR = new Date().getUTCFullYear();
+/*
+ * Read per query, not once at import. Boat age is a distance from today, so a
+ * constant captured at module load turns every age filter and the age slider's
+ * own bounds off by one on the first of January, on a server that has been up
+ * since December.
+ */
+function currentYear(): number {
+  return new Date().getUTCFullYear();
+}
 
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   { value: "7", label: "7 days" },
@@ -852,6 +860,7 @@ const searchColumns = sql`
   doc.cabins,
   doc.berths,
   doc.heads,
+  doc.showers,
   doc.year_built as "yearBuilt",
   doc.sail_type as "sailType",
   doc.security_deposit_minor as "securityDepositMinor",
@@ -970,10 +979,10 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
     parts.push(sql`doc.year_built <= ${input.yearTo}`);
   }
   if (!skip.has("minBoatAge") && input.minBoatAge !== undefined) {
-    parts.push(sql`doc.year_built <= ${CURRENT_YEAR - input.minBoatAge}`);
+    parts.push(sql`doc.year_built <= ${currentYear() - input.minBoatAge}`);
   }
   if (!skip.has("maxBoatAge") && input.maxBoatAge !== undefined) {
-    parts.push(sql`doc.year_built >= ${CURRENT_YEAR - input.maxBoatAge}`);
+    parts.push(sql`doc.year_built >= ${currentYear() - input.maxBoatAge}`);
   }
   if (!skip.has("minPriceMinor") && input.minPriceMinor) {
     parts.push(sql`doc.price_from_minor >= ${input.minPriceMinor}`);
@@ -1326,6 +1335,9 @@ function overviewFor(
     { code: "boat-type", label: "Boat type", value: listing.category ?? "Yacht" },
     { code: "cabins", label: "Cabins", value: String(listing.cabins ?? 0) },
     { code: "bathrooms", label: "Bathrooms", value: String(listing.heads ?? 0) },
+    ...(listing.showers === null
+      ? []
+      : [{ code: "showers", label: "Showers", value: String(listing.showers) }]),
     { code: "length", label: "Length", value: metresValue(listing.lengthM) },
     { code: "mainsail", label: "Type of mainsail", value: listing.sailType ?? "Not specified" },
     { code: "draught", label: "Draught", value: metresValue(info?.draftM) },
@@ -1538,9 +1550,10 @@ function numberOrZero(value: AggregateBound): number {
 function boatAgeRange(yearRange: NumericRange): NumericRange {
   if (yearRange.min === 0 && yearRange.max === 0) return { min: 0, max: 0 };
 
+  const year = currentYear();
   return {
-    min: Math.max(CURRENT_YEAR - yearRange.max, 0),
-    max: Math.max(CURRENT_YEAR - yearRange.min, 0),
+    min: Math.max(year - yearRange.max, 0),
+    max: Math.max(year - yearRange.min, 0),
   };
 }
 

@@ -1,6 +1,10 @@
+import { providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
+import { and, eq } from "drizzle-orm";
+
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { createCatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError } from "../shared/errors";
+import { formatExtraCode } from "../shared/extra-code";
 import type { Database } from "../registry";
 import type { InventoryProvider } from "../provider";
 import type {
@@ -87,6 +91,7 @@ export class BookingManagerInventoryProvider
       client: this.client,
       resolver: this.resolver,
       config: this.config,
+      loadExtraLabels: (listingId) => loadBookingManagerExtraLabels(this.db, listingId),
     });
 
     this.seasonalPrices = createBookingManagerSeasonalPriceLoader({
@@ -234,4 +239,26 @@ export class BookingManagerInventoryProvider
 
 function parseResume(value: unknown): BookingManagerCatalogueCursor | null {
   return parseBookingManagerCatalogueCursor(value);
+}
+
+/** The listing's extras by canonical code, so a priced line can say what it is. */
+async function loadBookingManagerExtraLabels(
+  db: Database,
+  listingId: string,
+): Promise<ReadonlyMap<string, string>> {
+  const rows = await db
+    .select({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+      name: providerExtraCatalogue.name,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "booking_manager"),
+      ),
+    );
+
+  return new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]));
 }

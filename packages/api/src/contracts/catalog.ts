@@ -106,6 +106,10 @@ export const listingSummarySchema = z.object({
     cabins: z.number().int(),
     berths: z.number().int(),
     heads: z.number().int(),
+    /* Null when the provider states no count, which is every Booking Manager
+       listing and most NauSYS ones; the card leaves the row out rather than
+       repeating the head count under a shower glyph. */
+    showers: z.number().int().nullable(),
     yearBuilt: z.number().int(),
     sailType: z.string().nullable(),
   }),

@@ -61,6 +61,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       cabins: doc.cabins ?? 0,
       berths: doc.berths ?? 0,
       heads: doc.heads ?? 0,
+      showers: doc.showers,
       yearBuilt: doc.yearBuilt ?? 0,
       sailType: doc.sailType,
     },
