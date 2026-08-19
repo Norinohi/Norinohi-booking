@@ -527,7 +527,7 @@ export async function listSearchSuggestions(
   // start, instead of an alphabetical slice that means nothing. Data-driven, so it never lists a
   // country with no listings.
   if (query.trim() === "") {
-    const popular = await db.execute<ListingSuggestion>(sql`
+    const popular = await db.execute<Omit<ListingSuggestion, "value">>(sql`
       select doc.country as label, 'country' as kind
       from listing_search_doc doc
       where doc.country is not null
@@ -535,11 +535,11 @@ export async function listSearchSuggestions(
       order by count(*) desc, doc.country asc
       limit 5
     `);
-    return popular.rows;
+    return popular.rows.map(withFilterValue);
   }
 
   const pattern = `%${query}%`;
-  const rows = await db.execute<ListingSuggestion>(sql`
+  const rows = await db.execute<Omit<ListingSuggestion, "value">>(sql`
     select distinct label, kind
     from (
       select doc.country as label, 'country' as kind from listing_search_doc doc
@@ -555,7 +555,16 @@ export async function listSearchSuggestions(
     limit 10
   `);
 
-  return rows.rows;
+  return rows.rows.map(withFilterValue);
+}
+
+/*
+ * Derived here rather than selected in SQL because it has to be the *same* derivation the facet
+ * options use -- a suggestion whose value did not match its facet option would set a filter the
+ * panel could not show as ticked.
+ */
+function withFilterValue(row: Omit<ListingSuggestion, "value">): ListingSuggestion {
+  return { ...row, value: valueForLabel(row.label) };
 }
 
 export async function listAvailabilityCalendar(

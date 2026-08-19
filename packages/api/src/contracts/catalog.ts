@@ -413,6 +413,8 @@ export const mapResultSchema = z.object({
 
 export const suggestionSchema = z.object({
   label: z.string(),
+  /* The filter value behind the label, identical to the matching facet option's. */
+  value: z.string(),
   kind: z.enum(["country", "region", "location", "base"]),
 });
 

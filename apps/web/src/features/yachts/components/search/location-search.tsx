@@ -27,16 +27,19 @@ const KIND_ICON = {
 /*
  * The search bar's Location field: a searchable single-select (same mechanism as the other search
  * fields). The trigger shows the chosen destination; the popup holds the search, which drives
- * `charterSearch.suggestions`. Picking a suggestion sets the `query` filter, matched server-side
- * against country/region/location/base.
+ * `charterSearch.suggestions`.
+ *
+ * The whole suggestion leaves through `onSelect`, not just its label: which filter a destination
+ * belongs in is decided by its `kind`, and that is the caller's business, not this control's.
+ * `value` is the caller's rendering of what is currently selected.
  */
 export default function LocationSearch({
   value,
-  onValueChange,
+  onSelect,
   placeholder,
 }: {
   value: string;
-  onValueChange: (next: string) => void;
+  onSelect: (next: Suggestion | null) => void;
   placeholder: string;
 }) {
   const t = useTranslations("Yachts.searchBar");
@@ -56,7 +59,7 @@ export default function LocationSearch({
       items={items}
       filter={null}
       value={null}
-      onValueChange={(item: Suggestion | null) => onValueChange(item?.label ?? "")}
+      onValueChange={(item: Suggestion | null) => onSelect(item)}
       inputValue={search}
       onInputValueChange={(next) => setSearch(next)}
       onOpenChange={(open) => {
@@ -66,7 +69,7 @@ export default function LocationSearch({
     >
       <ComboboxTrigger
         icon={<MapPin className="size-6 shrink-0 text-foreground" />}
-        onClear={value ? () => onValueChange("") : undefined}
+        onClear={value ? () => onSelect(null) : undefined}
         clearLabel={t("clearLocation")}
       >
         {value || <span className="text-placeholder-foreground">{placeholder}</span>}
@@ -76,7 +79,7 @@ export default function LocationSearch({
         <ComboboxEmpty>{debounced.trim().length >= 1 ? t("noLocations") : ""}</ComboboxEmpty>
         <ComboboxList>
           {(item: Suggestion) => (
-            <ComboboxItem key={item.label} value={item}>
+            <ComboboxItem key={`${item.kind}:${item.value}`} value={item}>
               {KIND_ICON[item.kind]}
               <span className="truncate">{item.label}</span>
             </ComboboxItem>

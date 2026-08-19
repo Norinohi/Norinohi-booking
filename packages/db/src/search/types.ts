@@ -278,6 +278,11 @@ export type ListingMapMarker = {
 
 export type ListingSuggestion = {
   label: string;
+  /**
+   * The same filter value the matching facet option carries, so a destination picked here and one
+   * ticked in the filter panel are the same selection rather than two spellings of it.
+   */
+  value: string;
   kind: "country" | "region" | "location" | "base";
 };
 

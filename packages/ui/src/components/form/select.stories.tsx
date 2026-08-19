@@ -15,9 +15,10 @@ const meta = {
   component: Select,
   tags: ["autodocs"],
   parameters: { layout: "centered" },
-  args: { options: OPTIONS, placeholder: "Any boat", value: undefined, onValueChange: () => {} },
+  args: { options: OPTIONS, placeholder: "Any boat", value: null, onValueChange: () => {} },
   render: function Render(args) {
-    const [value, setValue] = useState<string | undefined>(args.value);
+    /* `null` rather than `undefined`, so the select is controlled from the first render. */
+    const [value, setValue] = useState<string | null>(args.value ?? null);
     return (
       <div className="w-[240px]">
         <Select {...args} value={value} onValueChange={setValue} />

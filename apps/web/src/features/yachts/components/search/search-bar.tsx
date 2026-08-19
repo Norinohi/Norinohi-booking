@@ -9,13 +9,17 @@ import { type FormEvent, useState } from "react";
 
 import DatePicker from "@/components/shared/form/date-picker";
 import {
+  type FilterOptions,
   type FiltersState,
+  labelOf,
   orderedValues,
   useDraft,
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
+import { slugToLabel } from "@/lib/slug-to-label";
 
+import type { Suggestion } from "../../api/queries";
 import LocationSearch from "./location-search";
 
 function toRange(value: FiltersState): DateRange {
@@ -24,6 +28,62 @@ function toRange(value: FiltersState): DateRange {
     from: dayToNative(value.startDate),
     to: dayToNative(addDays(value.startDate, Number(value.duration))),
   };
+}
+
+/**
+ * What the Location field shows: the destination the filters already hold, wherever it came from.
+ *
+ * The home page's "Where to?" writes `country`, a catalog path pins a country and a region, and
+ * the panel below writes all four. The field used to render `query` alone, so a visitor who
+ * picked Croatia on the home page landed on a search whose top bar looked empty and read as if
+ * the choice had been dropped -- while the panel two blocks down showed it.
+ *
+ * Broad to specific, joined like every other multi-value trigger in the app. `query` stays as the
+ * fallback so an older link that carries free text still shows something.
+ */
+function destinationLabel(value: FiltersState, options: FilterOptions): string {
+  const labels = [
+    ...value.country.map((item) => labelOf(options.countries, item)),
+    ...value.sailingArea.map((item) => labelOf(options.sailingAreas, item)),
+    /* No option list of its own: a city arrives locked from a catalog path, never from a control. */
+    ...value.city.map(slugToLabel),
+    ...value.marina.map((item) => labelOf(options.marinas, item)),
+  ];
+
+  return labels.length > 0 ? labels.join(", ") : value.query;
+}
+
+/**
+ * Files a picked destination under the filter its kind belongs to, so the field and the panel hold
+ * one selection rather than two spellings of it — the suggestion carries the same `value` the
+ * matching facet option does.
+ *
+ * The other three are cleared: this is one field naming one place, and leaving a previous country
+ * standing under a newly picked marina would search for boats in neither. `query` goes with them,
+ * since a structured key says the same thing exactly rather than by text match.
+ */
+function withDestination(current: FiltersState, next: Suggestion | null): FiltersState {
+  const cleared: FiltersState = {
+    ...current,
+    country: [],
+    sailingArea: [],
+    city: [],
+    marina: [],
+    query: "",
+  };
+
+  if (!next) return cleared;
+
+  switch (next.kind) {
+    case "country":
+      return { ...cleared, country: [next.value] };
+    case "region":
+      return { ...cleared, sailingArea: [next.value] };
+    case "location":
+      return { ...cleared, city: [next.value] };
+    case "base":
+      return { ...cleared, marina: [next.value] };
+  }
 }
 
 export type SearchBarProps = {
@@ -74,8 +134,8 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     >
       <div>
         <LocationSearch
-          value={draft.query}
-          onValueChange={(next) => setDraft((current) => ({ ...current, query: next }))}
+          value={destinationLabel(draft, options)}
+          onSelect={(next) => setDraft((current) => withDestination(current, next))}
           placeholder={t("location")}
         />
       </div>
