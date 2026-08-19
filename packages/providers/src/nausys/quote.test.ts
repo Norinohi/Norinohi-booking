@@ -73,6 +73,7 @@ function resolverFor(externalYachtId: string): CatalogueResolver {
         externalBaseId: "511001",
         listingSourceId: "lsrc_1",
       }),
+    toExternalYachtIds: () => Promise.resolve(new Map<string, string>()),
     toListingId: () => Promise.resolve(LISTING_ID),
     toExternalAmenityIds: () => Promise.resolve([]),
     toExternalCountryId: () => Promise.resolve(null),

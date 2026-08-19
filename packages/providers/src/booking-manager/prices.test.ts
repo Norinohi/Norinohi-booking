@@ -57,11 +57,12 @@ const listingRef: ExternalListingRef = {
 };
 
 function fakeResolver(
-  toExternalListing: CatalogueResolver["toExternalListing"],
+  toExternalYachtIds: CatalogueResolver["toExternalYachtIds"],
 ): CatalogueResolver {
   return {
     providerId: () => Promise.resolve("prv_booking_manager"),
-    toExternalListing,
+    toExternalListing: () => Promise.reject(new Error("the price sweep must not ask per listing")),
+    toExternalYachtIds,
     toListingId: () => Promise.resolve(null),
     toExternalAmenityIds: () => Promise.resolve([]),
     toExternalCountryId: () => Promise.resolve(null),
@@ -144,14 +145,41 @@ describe("createBookingManagerSeasonalPriceLoader", () => {
       return Promise.resolve(rows.filter((r) => String(r.dateFrom).startsWith(checkIn)));
     });
 
-    const resolver = fakeResolver((listingId) =>
-      listingId === "ylst_unlinked"
-        ? Promise.reject(new Error("no source"))
-        : Promise.resolve(listingRef),
-    );
+    // Every listing maps to the one fixture yacht, except the unlinked one, which the
+    // resolver leaves out of the map entirely - there is no id to give.
+    const resolverCalls: (readonly string[])[] = [];
+    const resolver = fakeResolver((listingIds) => {
+      resolverCalls.push([...listingIds]);
+      return Promise.resolve(
+        new Map(
+          listingIds
+            .filter((listingId) => listingId !== "ylst_unlinked")
+            .map((listingId) => [listingId, listingRef.externalYachtId]),
+        ),
+      );
+    });
 
-    return { calls, client, resolver };
+    return { calls, client, resolver, resolverCalls };
   }
+
+  /*
+   * The mapping used to be one `toExternalListing` per listing, so a fleet-wide
+   * sweep was a round-trip per boat to answer one question about a set.
+   */
+  it("asks for the whole batch's yacht ids in one call", async () => {
+    const { client, resolver, resolverCalls } = harness([row()]);
+    const load = createBookingManagerSeasonalPriceLoader({
+      client,
+      resolver,
+      config,
+      years: [2027],
+    });
+
+    await load(["ylst_a", "ylst_b", "ylst_c", "ylst_a"]);
+
+    expect(resolverCalls).toHaveLength(1);
+    expect(resolverCalls[0]).toEqual(["ylst_a", "ylst_b", "ylst_c", "ylst_a"]);
+  });
 
   it("sweeps a week at a time for the whole fleet, never per yacht", async () => {
     const { calls, client, resolver } = harness([row()]);
@@ -246,7 +274,9 @@ describe("createBookingManagerSeasonalPriceLoader", () => {
       attempts += 1;
       return attempts <= 1 ? Promise.reject(new Error("boom")) : Promise.resolve([]);
     });
-    const resolver = fakeResolver(() => Promise.resolve(listingRef));
+    const resolver = fakeResolver(() =>
+      Promise.resolve(new Map([["ylst_a", listingRef.externalYachtId]])),
+    );
 
     const load = createBookingManagerSeasonalPriceLoader({
       client,

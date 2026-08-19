@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { AuthError, TransientError } from "../shared/errors";
+import { AuthError, ContractError, TransientError } from "../shared/errors";
 import {
+  ACCOUNT_WIDE_SCOPE,
   freePeriodsFrom,
+  isFatalAuthOnly,
   runAvailabilitySync,
   type AvailabilityScope,
   type AvailabilitySlotWrite,
@@ -10,10 +12,8 @@ import {
   type AvailabilitySyncStore,
   type ConfirmedOfferPage,
   type FreePeriod,
-  type ListingAvailabilityPlan,
   type ListingRef,
   type OccupiedInterval,
-  type SeasonalPrice,
 } from "./availability-writer";
 
 const RUN_AT = new Date("2026-06-01T02:00:00.000Z");
@@ -25,7 +25,6 @@ interface StoredSlot extends Omit<AvailabilitySlotWrite, "seenAt"> {
 interface FakeStoreSeed {
   listings?: Record<string, ListingRef[]>;
   yachts?: Record<string, ListingRef>;
-  plans?: Record<string, Partial<ListingAvailabilityPlan>>;
   slots?: StoredSlot[];
 }
 
@@ -39,8 +38,10 @@ type RecordedError = Parameters<AvailabilitySyncStore["recordError"]>[0];
 function fakeStore(seed: FakeStoreSeed = {}) {
   const slots = new Map<string, StoredSlot>();
   const freePeriods = new Map<string, FreePeriod & { listingId: string }>();
-  const pricePeriods: (SeasonalPrice & { listingId: string })[] = [];
   const errors: RecordedError[] = [];
+  // How many listings each batched write carried, so a regression back to one
+  // statement per boat shows up as a test failure rather than as a slow sync.
+  const freePeriodBatchSizes: number[] = [];
   const cursors: unknown[] = [];
   const rebuilt: string[][] = [];
   const closed: {
@@ -67,36 +68,24 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     async listListingsForScope(scopeKey) {
       return seed.listings?.[scopeKey] ?? [];
     },
-    async loadPlans(listingIds) {
-      const plans = new Map<string, ListingAvailabilityPlan>();
-      for (const listingId of listingIds) {
-        const partial = seed.plans?.[listingId];
-        plans.set(listingId, {
-          prices: partial?.prices ?? [],
-          currency: partial?.currency ?? "EUR",
-        });
-      }
-      return plans;
-    },
-    async writeFreePeriods(ref, years, periods) {
+    async writeFreePeriods(writes, years) {
+      freePeriodBatchSizes.push(writes.length);
+
+      const replacing = new Set(writes.map((write) => write.ref.listingId));
       for (const [key, period] of freePeriods) {
-        if (period.listingId !== ref.listingId) continue;
+        if (!replacing.has(period.listingId)) continue;
         if (years.some((year) => period.startDate.startsWith(String(year)))) {
           freePeriods.delete(key);
         }
       }
-      for (const period of periods) {
-        freePeriods.set(keyOf(ref.listingId, period.startDate, period.endDate), {
-          listingId: ref.listingId,
-          ...period,
-        });
+      for (const write of writes) {
+        for (const period of write.periods) {
+          freePeriods.set(keyOf(write.ref.listingId, period.startDate, period.endDate), {
+            listingId: write.ref.listingId,
+            ...period,
+          });
+        }
       }
-    },
-    async writePricePeriods(ref, prices) {
-      for (const price of prices) {
-        pricePeriods.push({ listingId: ref.listingId, ...price });
-      }
-      return prices.length;
     },
     async writeSlots(written) {
       for (const slot of written) {
@@ -170,7 +159,7 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     closed,
     rebuilt,
     slots,
-    pricePeriods,
+    freePeriodBatchSizes,
     freeOf(listingId: string) {
       return [...freePeriods.values()]
         .filter((period) => period.listingId === listingId)
@@ -193,8 +182,10 @@ function source(overrides: Partial<AvailabilitySource> & { scopes?: Availability
     fetchOccupancy: overrides.fetchOccupancy ?? (() => Promise.resolve([])),
   };
   // A source with no hot window must not carry the key at all: the writer branches
-  // on its presence, not on whether it is defined.
+  // on its presence, not on whether it is defined. Same for `isFatal`, whose absence
+  // has to fall back to the shared default rather than to `undefined`.
   if (overrides.searchConfirmed) built.searchConfirmed = overrides.searchConfirmed;
+  if (overrides.isFatal) built.isFatal = overrides.isFatal;
   return built;
 }
 
@@ -340,27 +331,6 @@ describe("runAvailabilitySync", () => {
     ]);
     /* Availability is no longer asserted as charters, so no slot claims to be one. */
     expect(store.listOf("ylst_marlin", "available")).toEqual([]);
-  });
-
-  it("stores the provider's rates as the periods it published them for", async () => {
-    const prices = [
-      { startDate: "2026-01-01", endDate: "2026-06-30", priceMinor: 390000, currency: "EUR" },
-      { startDate: "2026-07-01", endDate: "2026-12-31", priceMinor: 450000, currency: "EUR" },
-    ];
-    const store = fakeStore({
-      yachts: { "4711001": MARLIN },
-      listings: { "102701": [MARLIN] },
-      plans: { ylst_marlin: { prices } },
-    });
-
-    const summary = await runAvailabilitySync({
-      store: store.store,
-      source: source({ fetchOccupancy: () => Promise.resolve([occupied()]) }),
-      now: () => RUN_AT,
-    });
-
-    expect(summary.pricePeriods).toBe(2);
-    expect(store.pricePeriods.map((price) => price.priceMinor)).toEqual([390000, 450000]);
   });
 
   /* A boat with nothing left to sell has to lose the free periods it used to have. */
@@ -687,6 +657,155 @@ describe("runAvailabilitySync", () => {
     expect(summary.status).toBe("failed");
     expect(summary.sweptScopes).toBe(0);
     expect(store.errors[0]).toMatchObject({ errorType: "auth" });
+  });
+
+  it("aborts the run on a contract failure by default", async () => {
+    const store = fakeStore({ listings: { "102701": [MARLIN] } });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        fetchOccupancy: () => Promise.reject(new ContractError("envelope drift")),
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.aborted).toBe(true);
+    expect(summary.sweptScopes).toBe(0);
+  });
+
+  /*
+   * The bug this pins: one company-year of malformed rows discarded a whole run's
+   * completed work, because the shared default reads a contract failure as a
+   * prediction about every remaining call. It is that only for a vendor with one
+   * envelope schema, which is the source's business to know, not the writer's.
+   */
+  it("costs a contract failure only its own scope when the source says it is not fatal", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+    });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        scopes: [
+          { scopeKey: "102701", year: 2026 },
+          { scopeKey: "102702", year: 2026 },
+        ],
+        fetchOccupancy: (scope) =>
+          scope.scopeKey === "102701"
+            ? Promise.reject(new ContractError("one malformed row"))
+            : Promise.resolve([occupied()]),
+        isFatal: isFatalAuthOnly,
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.aborted).toBe(false);
+    expect(summary.status).toBe("partial");
+    expect(summary.failedCount).toBe(1);
+    // The scope that answered was still swept, and the one that threw was not.
+    expect(summary.sweptScopes).toBe(1);
+    expect(summary.occupiedSlots).toBe(1);
+  });
+
+  it("still aborts for that source on an auth failure", async () => {
+    const store = fakeStore({ listings: { "102701": [MARLIN] } });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        fetchOccupancy: () => Promise.reject(new AuthError("rejected")),
+        isFatal: isFatalAuthOnly,
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.aborted).toBe(true);
+    expect(summary.sweptScopes).toBe(0);
+  });
+
+  /*
+   * `skippedYachts` alone could not tell "a few boats we never imported" from "the
+   * id spaces do not line up and nothing landed at all" - a production run reported
+   * 123,600 skips and needed a database session to find out which.
+   */
+  it("samples the yacht ids it could not resolve, capped", async () => {
+    const store = fakeStore({ listings: { "102701": [MARLIN] } });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        fetchOccupancy: () =>
+          Promise.resolve(
+            Array.from({ length: 25 }, (_unused, index) =>
+              occupied({ externalYachtId: `unknown-${index}` }),
+            ),
+          ),
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.skippedYachts).toBe(25);
+    expect(summary.unresolvedYachtIdSample).toHaveLength(10);
+    expect(summary.unresolvedYachtIdSample[0]).toBe("unknown-0");
+  });
+
+  /*
+   * These two used to be a statement per boat: with the whole fleet arriving in one
+   * scope that is tens of thousands of sequential round-trips, which is what made the
+   * run slow once the HTTP fan-out was gone.
+   */
+  it("writes the whole scope's free periods in one batched call", async () => {
+    const OTTER: ListingRef = { listingId: "ylst_otter", listingSourceId: "lsrc_otter" };
+    const TERN: ListingRef = { listingId: "ylst_tern", listingSourceId: "lsrc_tern" };
+    const store = fakeStore({ listings: { "102701": [MARLIN, OTTER, TERN] } });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({ fetchOccupancy: () => Promise.resolve([]) }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.freePeriodBatchSizes).toEqual([3]);
+    // Every listing still got its own periods, batching or not.
+    for (const ref of [MARLIN, OTTER, TERN]) {
+      expect(store.freeOf(ref.listingId)).not.toHaveLength(0);
+    }
+  });
+
+  it("leaves a listing absent from the batch untouched", async () => {
+    const RIVAL: ListingRef = { listingId: "ylst_rival", listingSourceId: "lsrc_rival" };
+    const store = fakeStore({ listings: { "102701": [MARLIN] } });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({ fetchOccupancy: () => Promise.resolve([]) }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.freeOf(RIVAL.listingId)).toHaveLength(0);
+    expect(store.freeOf(MARLIN.listingId)).not.toHaveLength(0);
+  });
+
+  it("lists every listing under the account-wide scope so the sweep stays whole", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { [ACCOUNT_WIDE_SCOPE]: [MARLIN] },
+    });
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        scopes: [{ scopeKey: ACCOUNT_WIDE_SCOPE, year: 2026 }],
+        fetchOccupancy: () => Promise.resolve([occupied()]),
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.sweptScopes).toBe(1);
+    expect(summary.listingsTouched).toBe(1);
   });
 
   it("rebuilds the search read model for the listings it touched", async () => {

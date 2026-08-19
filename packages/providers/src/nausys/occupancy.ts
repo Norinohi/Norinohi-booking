@@ -1,6 +1,5 @@
-import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../registry";
@@ -14,8 +13,9 @@ import type {
   ConfirmedOffer,
   ConfirmedOfferPage,
   OccupiedInterval,
-  SeasonalPrice,
 } from "../sync/availability-writer";
+import type { SeasonalPrice } from "../sync/price-writer";
+import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import type { SyncReporter } from "../sync/runner";
 import type { NausysClient } from "./client";
 import {
@@ -515,6 +515,12 @@ export function mapNausysPriceLists(
 export interface NausysSeasonalPriceLoaderOptions {
   db: Database;
   providerId: string;
+  /**
+   * Listing to vendor-yacht mapping. Shared with the Booking Manager loader rather
+   * than hand-rolled here, so both get one chunked query instead of this file's own
+   * unbounded `IN (...)` over however many listings a catalogue run touched.
+   */
+  resolver: Pick<CatalogueResolver, "toExternalYachtIds">;
   /** Where skipped rows go; without it a refused row is silent. */
   reporter?: Pick<SyncReporter, "reportError">;
 }
@@ -563,25 +569,15 @@ export function createNausysSeasonalPriceLoader(
     const byYacht = await pricesByYacht;
     if (byYacht.size === 0) return byListing;
 
-    const links = await db
-      .select({
-        listingId: listingSource.listingId,
-        externalYachtId: listingSource.externalYachtId,
-      })
-      .from(listingSource)
-      .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
-      .where(
-        and(
-          eq(providerRecord.providerId, providerId),
-          inArray(listingSource.listingId, listingIds),
-          isNotNull(listingSource.listingId),
-        ),
-      );
+    // Now scoped to active records, which the hand-rolled query this replaced was
+    // not: a yacht retired out of the vendor's dump is not repriced from a list that
+    // no longer mentions it, and its listing is hidden by the orphan sweep anyway.
+    const links = await options.resolver.toExternalYachtIds(listingIds);
 
-    for (const link of links) {
-      const prices = byYacht.get(link.externalYachtId);
-      if (link.listingId && prices && prices.length > 0) {
-        byListing.set(link.listingId, prices);
+    for (const [listingId, externalYachtId] of links) {
+      const prices = byYacht.get(externalYachtId);
+      if (prices && prices.length > 0) {
+        byListing.set(listingId, prices);
       }
     }
     return byListing;

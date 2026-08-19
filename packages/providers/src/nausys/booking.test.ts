@@ -74,6 +74,7 @@ function fakeResolver(): CatalogueResolver {
         externalBaseId: "1002",
         listingSourceId: "lsrc_1",
       }),
+    toExternalYachtIds: () => Promise.resolve(new Map<string, string>()),
     toListingId: () => Promise.resolve("ylst_adriatic_1"),
     toExternalAmenityIds: (codes) => Promise.resolve(codes.map((code) => code.split(":")[1] ?? "")),
     /* The vendor's real Croatia id, so a mapped payload is recognisable. */

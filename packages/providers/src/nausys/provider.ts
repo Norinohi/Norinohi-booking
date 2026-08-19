@@ -22,11 +22,8 @@ import type {
   RawEntity,
 } from "../types";
 import type { CatalogueSyncSource } from "../sync/runner";
-import type {
-  AvailabilitySource,
-  AvailabilitySyncProvider,
-  SeasonalPrice,
-} from "../sync/availability-writer";
+import type { AvailabilitySource, AvailabilitySyncProvider } from "../sync/availability-writer";
+import type { SeasonalPrice } from "../sync/price-writer";
 import {
   type NausysCatalogueCursor,
   nausysCatalogueSource,
@@ -232,7 +229,11 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
 
   async loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>> {
     const providerId = await this.resolver.providerId();
-    return createNausysSeasonalPriceLoader({ db: this.db, providerId })(listingIds);
+    return createNausysSeasonalPriceLoader({
+      db: this.db,
+      providerId,
+      resolver: this.resolver,
+    })(listingIds);
   }
 
   async searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]> {
