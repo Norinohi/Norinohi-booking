@@ -63,10 +63,12 @@ try {
 if (response.status === 404) {
   console.error(
     `\n✖ The API server at ${url} does not serve ${probe.pathname}\n\n` +
-      "  It is running an older build than this one. The catalog routes read that procedure to\n" +
-      "  enumerate their static params, so the build would fail during page collection.\n\n" +
+      "  Usually it is running an older build than this one. The catalog routes read that\n" +
+      "  procedure to enumerate their static params, so the build would fail during page\n" +
+      "  collection.\n\n" +
       "  On Railway: wait for the api service to finish deploying, then redeploy web.\n" +
-      "  Locally: restart `pnpm dev:server` so it picks up the current packages/api.\n",
+      "  Locally: restart `pnpm dev:server` so it picks up the current packages/api.\n" +
+      "  If the procedure was renamed, this preflight is the stale side — fix the path above.\n",
   );
   process.exit(1);
 }
