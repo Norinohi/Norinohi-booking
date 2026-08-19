@@ -14,25 +14,43 @@ const DIM_OPACITY = 0.4;
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
 const MAX_RECOVERIES = 10;
 
-function styleBasemap({ target: map }: MapEvent) {
-  if (!map.getLayer(DIM_LAYER_ID)) {
-    map.addLayer({
-      id: DIM_LAYER_ID,
-      type: "background",
-      paint: { "background-color": "#000000", "background-opacity": DIM_OPACITY },
-    });
-  }
+function styleBasemap({ target: map }: MapEvent, opacity: number) {
+  if (opacity <= 0 || map.getLayer(DIM_LAYER_ID)) return;
+
+  map.addLayer({
+    id: DIM_LAYER_ID,
+    type: "background",
+    paint: { "background-color": "#000000", "background-opacity": opacity },
+  });
 }
 
 export type MapInstance = MapEvent["target"];
+
+export type MapViewState = { longitude: number; latitude: number; zoom: number };
 
 type MapCanvasProps = {
   children?: ReactNode;
   onReady?: (map: MapInstance) => void;
   onBackgroundPress?: () => void;
+  /** Where the map opens. Defaults to the Adriatic, which is what the search map wants. */
+  initialViewState?: MapViewState;
+  /**
+   * How dark the design's wash over the basemap is, `0` for none.
+   *
+   * The default exists so the search map's markers read against the terrain. Anywhere the map
+   * itself is the thing being looked at, the full strength works against the reason it was
+   * opened — street names and place labels are the first thing a black layer takes.
+   */
+  dimOpacity?: number;
 };
 
-function MapSurface({ children, onReady, onBackgroundPress }: MapCanvasProps) {
+function MapSurface({
+  children,
+  onReady,
+  onBackgroundPress,
+  initialViewState = DEFAULT_VIEW_STATE,
+  dimOpacity = DIM_OPACITY,
+}: MapCanvasProps) {
   const [ready, setReady] = useState(false);
 
   function dismissPopup(target: EventTarget | null) {
@@ -43,11 +61,11 @@ function MapSurface({ children, onReady, onBackgroundPress }: MapCanvasProps) {
   return (
     <Map
       mapboxAccessToken={env.NEXT_PUBLIC_MAPBOX_TOKEN}
-      initialViewState={DEFAULT_VIEW_STATE}
+      initialViewState={initialViewState}
       mapStyle={MAP_STYLE}
       style={{ width: "100%", height: "100%" }}
       onLoad={(event) => {
-        styleBasemap(event);
+        styleBasemap(event, dimOpacity);
         onReady?.(event.target);
       }}
       onIdle={() => setReady(true)}

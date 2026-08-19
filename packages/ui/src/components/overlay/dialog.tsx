@@ -28,12 +28,18 @@ function DialogContent({
   showClose = false,
   mobileSheet = false,
   backdropClassName,
+  closeClassName,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showClose?: boolean;
   mobileSheet?: boolean;
   /** Restyle the dimmed backdrop, e.g. `max-md:bg-transparent` for page-like mobile overlays. */
   backdropClassName?: string;
+  /**
+   * Restyle the close control. It is a bare glyph on the dialog's own surface, which a dialog
+   * whose content reaches the edges — an image, a map — does not give it.
+   */
+  closeClassName?: string;
 }) {
   return (
     <DialogPrimitive.Portal>
@@ -62,7 +68,10 @@ function DialogContent({
           <DialogPrimitive.Close
             data-slot="dialog-close"
             aria-label="Close"
-            className="absolute top-4 right-4 cursor-pointer text-natural-400 transition-colors hover:text-foreground [&_svg]:size-6"
+            className={cn(
+              "absolute top-4 right-4 cursor-pointer text-natural-400 transition-colors hover:text-foreground [&_svg]:size-6",
+              closeClassName,
+            )}
           >
             <X />
           </DialogPrimitive.Close>

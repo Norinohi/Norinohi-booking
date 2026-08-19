@@ -26,7 +26,7 @@ import { useListingCards } from "../../hooks/use-listing-cards";
 import { useMapClusters } from "../../hooks/use-map-clusters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import MapBoatPopup from "./map-boat-popup";
-import type { MapInstance } from "./map-canvas";
+import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 import MapClusterMarker from "./map-cluster-marker";
 import MapListPanel from "./map-list-panel";
 import MapMarker from "./map-marker";
@@ -39,7 +39,7 @@ const DETAIL_FOCUS_ZOOM = 11;
 
 type OpenCluster = { lng: number; lat: number; leaves: MapMarkerData[] };
 
-const MapCanvas = dynamic(() => import("./map-canvas"), {
+const MapCanvas = dynamic(() => import("@/components/shared/data-display/map-canvas"), {
   ssr: false,
   loading: () => <div className="size-full bg-natural-50" />,
 });

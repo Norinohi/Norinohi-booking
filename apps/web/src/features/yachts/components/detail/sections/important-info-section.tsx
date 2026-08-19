@@ -1,11 +1,9 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import { Image } from "@/components/shared/data-display/image";
-import { staticMapUrl } from "@/lib/mapbox";
+import MapPreview from "@/components/shared/overlay/map-preview";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import { slugToLabel } from "@/lib/slug-to-label";
@@ -82,23 +80,14 @@ export default function ImportantInfoSection() {
                 ) : null}
               </div>
               {row.mapPoint ? (
-                <div className="relative h-37 w-full overflow-hidden rounded-2xl md:h-59">
-                  <Image
-                    unoptimized
-                    src={staticMapUrl(row.mapPoint, { zoom: 9, size: "500x236@2x" })}
-                    alt=""
-                    fill
-                    sizes="501px"
-                    className="object-cover"
-                  />
-                  <span aria-hidden className="absolute inset-0 bg-black/40" />
-                  <span
-                    aria-hidden
-                    className="absolute top-1/2 left-1/2 flex size-21 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/25"
-                  >
-                    <MapPin className="size-6 fill-brand text-white" />
-                  </span>
-                </div>
+                <MapPreview
+                  point={row.mapPoint}
+                  title={row.value}
+                  zoom={9}
+                  imageSize="500x236@2x"
+                  imageSizes="501px"
+                  className="h-37 w-full rounded-2xl md:h-59"
+                />
               ) : null}
             </dd>
           </div>
