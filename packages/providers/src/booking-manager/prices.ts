@@ -77,7 +77,7 @@ export function createBookingManagerSeasonalPriceLoader(
         // Keyed to the Saturday we asked for rather than the echoed `dateFrom`,
         // because that is the check-in date the writer looks a price up by. The
         // vendor substitutes the base's real handover time into what it echoes.
-        const price = mapBookingManagerPriceRow(row, checkIn, options.currency);
+        const price = mapBookingManagerPriceRow(row, checkIn, checkOut, options.currency);
         // One unreadable row costs that boat that week, not the whole sweep; a
         // failure that matters is the client's throw, which passes straight out.
         if (!price) continue;
@@ -132,14 +132,19 @@ export function createBookingManagerSeasonalPriceLoader(
  * Pure `RestPrice → SeasonalPrice` for one requested week, or null for a row this
  * cannot honestly price.
  *
- * `startDate === endDate === checkIn`: the writer's lookup is inclusive on both
- * ends and only ever runs for a seven-night slot, so a week's price must cover
- * exactly its own check-in date. Widening it to the check-out date would let this
- * week win the lookup for the Saturday that begins the next one.
+ * The period is the week itself, `[checkIn, checkOut)`. This used to collapse to a
+ * point at `checkIn`, on the reasoning that a wider period would let one week claim
+ * the Saturday that begins the next. Every reader is half-open - `covers` is
+ * `start <= day < end`, `overlaps` is `checkIn < end && start < checkOut`, and the
+ * read model's `bookable_from` matches - so the check-out Saturday is already
+ * excluded, and the collapse instead made the rate cover no day at all. A rate is
+ * what opens a season, so every Booking Manager listing read as season-closed: slots
+ * synced, free periods synced, calendar entirely grey, no error anywhere.
  */
 export function mapBookingManagerPriceRow(
   row: RestPrice,
   checkIn: string,
+  checkOut: string,
   fallbackCurrency?: string,
 ): SeasonalPrice | null {
   const currency = row.currency?.trim() || fallbackCurrency;
@@ -164,7 +169,7 @@ export function mapBookingManagerPriceRow(
       return null;
     }
 
-    return { startDate: checkIn, endDate: checkIn, priceMinor, currency };
+    return { startDate: checkIn, endDate: checkOut, priceMinor, currency };
   } catch {
     return null;
   }
