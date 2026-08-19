@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Popup } from "react-map-gl/mapbox";
 
@@ -7,8 +8,9 @@ import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 import MapCanvas, { type MapInstance } from "@/components/shared/data-display/map-canvas";
 import MapMarker from "../map/map-marker";
+import { type RoutePoint, routeCaption, routePointRole, routePoints } from "../../lib/route-points";
 
-type Stop = { title: string; description: string; lat: number; lng: number };
+type Stop = { day: number; title: string; description: string; lat: number; lng: number };
 
 const RESET_MAPBOX_CHROME =
   "[&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:hidden";
@@ -19,13 +21,12 @@ const ZOOM_OUT_LIMIT = 1;
 
 function RouteStopPopup({
   coordinates,
-  title,
-  description,
+  stops,
   map,
 }: {
   coordinates: Coordinates;
-  title: string;
-  description: string;
+  /** Every day that happens here. More than one where the route comes back to the same marina. */
+  stops: Stop[];
   map: MapInstance | null;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -66,8 +67,12 @@ function RouteStopPopup({
           className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-card"
         />
         <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]">
-          <p className="text-base leading-5.5 font-bold text-foreground">{title}</p>
-          <p className="text-sm leading-4.5 text-natural-500">{description}</p>
+          {stops.map((stop) => (
+            <div key={stop.day} className="flex flex-col gap-1.5">
+              <p className="text-base leading-5.5 font-bold text-foreground">{stop.title}</p>
+              <p className="text-sm leading-4.5 text-natural-500">{stop.description}</p>
+            </div>
+          ))}
         </div>
       </div>
     </Popup>
@@ -106,13 +111,24 @@ function fitToStops(map: MapInstance, stops: Stop[]) {
   map.setMinZoom((camera.zoom ?? map.getZoom()) - ZOOM_OUT_LIMIT);
 }
 
+/** The places, not the days: two days at one marina are one marker carrying both numbers. */
+const pointLabel = (point: RoutePoint) => point.stops.map((stop) => stop.title).join(", ");
+
 export default function RouteMap({ stops }: { stops: Stop[] }) {
+  const t = useTranslations("YachtDetail.route");
   const [map, setMap] = useState<MapInstance | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
   if (!stops.length) return null;
 
-  const active = selected != null ? stops[selected] : undefined;
+  const words = { start: t("start"), finish: t("finish") };
+  const points = routePoints(stops);
+
+  const captionFor = (point: RoutePoint) => {
+    const role = routePointRole(point, stops);
+    return role ? routeCaption(role, words) : undefined;
+  };
+  const active = selected != null ? points[selected] : undefined;
 
   return (
     <MapCanvas
@@ -122,11 +138,12 @@ export default function RouteMap({ stops }: { stops: Stop[] }) {
       }}
       onBackgroundPress={() => setSelected(null)}
     >
-      {stops.map((stop, index) => (
+      {points.map((point, index) => (
         <MapMarker
-          key={stop.title}
-          coordinates={{ lat: stop.lat, lng: stop.lng }}
-          label={stop.title}
+          key={`${point.lat},${point.lng}`}
+          coordinates={{ lat: point.lat, lng: point.lng }}
+          label={pointLabel(point)}
+          caption={captionFor(point)}
           selected={selected === index}
           order={index}
           onSelect={() => setSelected(index)}
@@ -137,8 +154,7 @@ export default function RouteMap({ stops }: { stops: Stop[] }) {
         <RouteStopPopup
           key={selected}
           coordinates={{ lat: active.lat, lng: active.lng }}
-          title={active.title}
-          description={active.description}
+          stops={active.stops}
           map={map}
         />
       ) : null}

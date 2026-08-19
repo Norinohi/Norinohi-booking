@@ -1132,6 +1132,10 @@
       "previous": "Попередні яхти",
       "next": "Наступні яхти"
     },
+    "route": {
+      "start": "Старт",
+      "finish": "Фініш"
+    },
     "review": {
       "count": "({count, plural, one {# відгук} few {# відгуки} many {# відгуків} other {# відгуку}})",
       "summary": "Показано {shown} з {total}",

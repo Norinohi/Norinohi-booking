@@ -1132,6 +1132,10 @@
       "previous": "Yates anteriores",
       "next": "Yates siguientes"
     },
+    "route": {
+      "start": "Inicio",
+      "finish": "Fin"
+    },
     "review": {
       "count": "({count, plural, one {# opinión} other {# opiniones}})",
       "summary": "Mostrando {shown} de {total}",

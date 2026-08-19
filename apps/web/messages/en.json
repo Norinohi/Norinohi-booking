@@ -1132,6 +1132,10 @@
       "previous": "Previous yachts",
       "next": "Next yachts"
     },
+    "route": {
+      "start": "Start",
+      "finish": "Finish"
+    },
     "review": {
       "count": "({count, plural, one {# review} other {# reviews}})",
       "summary": "Showing {shown} of {total}",

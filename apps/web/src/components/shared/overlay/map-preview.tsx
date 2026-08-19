@@ -5,7 +5,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { Maximize2, MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
 import { staticMapUrl } from "@/lib/mapbox";
@@ -24,24 +24,48 @@ const MapDialogCanvas = dynamic(() => import("./map-dialog-canvas"), {
 /** Close enough to read the streets around a marina, which is what the picture cannot show. */
 const DIALOG_ZOOM = 14;
 
-export type MapPreviewProps = {
-  point: Coordinates;
+type CommonProps = {
   /** Names the place in the dialog's heading and in the trigger's accessible name. */
   title: string;
-  /** Zoom for the still picture. The dialog opens closer — see `DIALOG_ZOOM`. */
-  zoom?: number;
   /** The `sizes` hint for the still, which differs per slot. */
   imageSizes: string;
   /** Sizes the still. The dialog is sized by the dialog. */
   className?: string;
-  /** Dimensions for the Mapbox still, e.g. "500x236@2x". */
-  imageSize?: string;
-  /** A ready-made still, where one was stored with the record. */
-  imageUrl?: string;
   pinClassName?: string;
   /** Reported so a hover-opened surface hosting this can stay open while the map is up. */
   onOpenChange?: (open: boolean) => void;
+  /** Drawn over the still, under the hover chrome — the marks a multi-place still needs. */
+  overlay?: ReactNode;
 };
+
+/*
+ * Two shapes, because a place and a route are not the same preview.
+ *
+ * A place needs only its coordinates: the still and the map behind it both follow from them. A
+ * route has several, so its caller draws its own still and supplies the map to open — which is
+ * `RouteMap`, markers, popups and all, rather than the single pin this renders by default.
+ */
+export type MapPreviewProps = CommonProps &
+  (
+    | {
+        point: Coordinates;
+        /** Zoom for the still. The dialog opens closer — see `DIALOG_ZOOM`. */
+        zoom?: number;
+        /** Dimensions for the Mapbox still, e.g. "500x236@2x". */
+        imageSize?: string;
+        /** A ready-made still, where one was stored with the record. */
+        imageUrl?: string;
+        children?: undefined;
+      }
+    | {
+        point?: undefined;
+        zoom?: undefined;
+        imageSize?: undefined;
+        imageUrl: string;
+        /** What the dialog shows. Mounted only while it is open. */
+        children: ReactNode;
+      }
+  );
 
 /**
  * A place as a still picture that opens the real map.
@@ -55,19 +79,30 @@ export type MapPreviewProps = {
  * who never opens it, and it sidesteps the reconnect react-map-gl cannot survive (see `MapCanvas`)
  * — a closed dialog leaves nothing to reconnect.
  */
-export default function MapPreview({
-  point,
-  title,
-  zoom = 13,
-  imageSizes,
-  className,
-  imageSize,
-  imageUrl,
-  pinClassName,
-  onOpenChange,
-}: MapPreviewProps) {
+export default function MapPreview(props: MapPreviewProps) {
+  const { title, imageSizes, className, pinClassName, onOpenChange, overlay } = props;
   const t = useTranslations("Common.map");
   const [open, setOpen] = useState(false);
+
+  /*
+   * Narrowed on `point` rather than destructured: the two shapes decide both halves together, and
+   * reading them apart loses the link between the still and the map it opens.
+   */
+  const { still, dialogBody, showPin } = props.point
+    ? {
+        still:
+          props.imageUrl ??
+          staticMapUrl(
+            props.point,
+            props.imageSize
+              ? { zoom: props.zoom ?? 13, size: props.imageSize }
+              : { zoom: props.zoom ?? 13 },
+          ),
+        dialogBody: <MapDialogCanvas point={props.point} title={title} zoom={DIALOG_ZOOM} />,
+        /* One place, so this marks it. A route's still carries a pin per stop already. */
+        showPin: true,
+      }
+    : { still: props.imageUrl, dialogBody: props.children, showPin: false };
 
   function setDialogOpen(next: boolean) {
     setOpen(next);
@@ -85,29 +120,26 @@ export default function MapPreview({
           className,
         )}
       >
-        <Image
-          src={imageUrl ?? staticMapUrl(point, imageSize ? { zoom, size: imageSize } : { zoom })}
-          alt=""
-          fill
-          unoptimized
-          sizes={imageSizes}
-          className="object-cover"
-        />
+        <Image src={still} alt="" fill unoptimized sizes={imageSizes} className="object-cover" />
 
         {/* Lifts on hover, so the still reads as a way in rather than a decoration. */}
         <span
           aria-hidden
           className="absolute inset-0 bg-black/40 transition-colors group-hover:bg-black/25"
         />
-        <span
-          aria-hidden
-          className={cn(
-            "absolute top-1/2 left-1/2 flex size-21 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/25 transition-transform group-hover:scale-110",
-            pinClassName,
-          )}
-        >
-          <MapPin className="size-6 fill-brand text-white" />
-        </span>
+        {overlay}
+
+        {showPin ? (
+          <span
+            aria-hidden
+            className={cn(
+              "absolute top-1/2 left-1/2 flex size-21 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/25 transition-transform group-hover:scale-110",
+              pinClassName,
+            )}
+          >
+            <MapPin className="size-6 fill-brand text-white" />
+          </span>
+        ) : null}
         {/*
          * Always on show. Revealed on hover it was invisible on a phone, and even with a pointer
          * it only answered the question after the visitor had already guessed the answer — this
@@ -141,7 +173,7 @@ export default function MapPreview({
           className="h-4/5 max-h-200 min-h-100 w-4/5 max-w-none gap-0 overflow-hidden rounded-2xl p-0 data-open:zoom-in-100 data-closed:zoom-out-100"
         >
           <DialogTitle className="sr-only">{title}</DialogTitle>
-          {open ? <MapDialogCanvas point={point} title={title} zoom={DIALOG_ZOOM} /> : null}
+          {open ? dialogBody : null}
         </DialogContent>
       </Dialog>
     </>
