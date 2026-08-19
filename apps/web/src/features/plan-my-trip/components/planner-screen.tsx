@@ -128,11 +128,16 @@ function PlannerWizard() {
 }
 
 export default function PlannerScreen() {
+  const t = useTranslations("PlanMyTrip");
+
   return (
     <div
       data-testid="plan-my-trip-shell-marker"
       className="flex flex-1 flex-col px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5"
     >
+      {/* Screen-reader only, and outside the boundary: everything below streams in after the
+          shell, so a heading inside the wizard never reaches a crawler at all. */}
+      <h1 className="sr-only">{t("title")}</h1>
       <Suspense fallback={<PlannerCard compact />}>
         <PlannerWizard />
       </Suspense>

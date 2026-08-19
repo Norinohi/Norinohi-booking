@@ -5,8 +5,8 @@ import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagin
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Suspense } from "react";
-import { Link } from "@/i18n/navigation";
+import { type ReactNode, Suspense, useMemo } from "react";
+import { Link, useRouter } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
@@ -28,6 +28,7 @@ import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
+import { serializeSearch } from "../../lib/search-params";
 import ResultsHeader, { SORT_OPTIONS } from "./results-header";
 import SearchBar from "./search-bar";
 
@@ -46,12 +47,43 @@ const YACHTS_MAP_HREF = "/yachts/map";
  * that the page frame paints at once instead of after a database round trip.
  */
 
+/**
+ * The facet a catalogue page pins from its path, and whether an edit has just dropped it.
+ *
+ * Keys are compared by containment rather than equality: adding a second country to
+ * `/yacht-charter/croatia` is a refinement and stays on the page, removing Croatia is not.
+ */
+const LOCKABLE_KEYS = ["country", "sailingArea", "city", "marina", "boatType", "model"] as const;
+
+export type LockedFilters = Partial<Pick<FiltersState, (typeof LOCKABLE_KEYS)[number]>>;
+
+function escapesLock(next: FiltersState, locked: LockedFilters): boolean {
+  return LOCKABLE_KEYS.some(
+    (key) => locked[key]?.some((value) => !next[key].includes(value)) === true,
+  );
+}
+
 /** Applies a filter change and returns to page 1 — shared by the three filter surfaces. */
-function useApplyFilters() {
-  const { filters, setFilters, defaults } = useSearchFilters();
+function useApplyFilters(locked?: LockedFilters) {
+  const { filters: url, setFilters, defaults } = useSearchFilters();
   const [, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const router = useRouter();
+
+  /* Memoised: `useDraft` in the filters panel follows the applied value by reference, so a fresh
+   * object every render would discard an edit in progress. */
+  const filters = useMemo(() => (locked ? { ...url, ...locked } : url), [url, locked]);
 
   function applyFilters(next: FiltersState) {
+    /*
+     * Dropping one of a catalogue page's own filters means leaving it: the path says Croatia, so
+     * staying would leave the URL claiming something the results no longer honour. The rest of
+     * the filters travel along as query params.
+     */
+    if (locked && escapesLock(next, locked)) {
+      router.push(serializeSearch("/yachts", next));
+      return;
+    }
+
     setFilters(next);
     setPage(1);
   }
@@ -59,14 +91,14 @@ function useApplyFilters() {
   return { filters, defaults, applyFilters };
 }
 
-function SearchBarSection() {
-  const { filters, applyFilters } = useApplyFilters();
+function SearchBarSection({ locked }: { locked?: LockedFilters }) {
+  const { filters, applyFilters } = useApplyFilters(locked);
 
   return <SearchBar value={filters} onSearch={applyFilters} />;
 }
 
-function FiltersAside() {
-  const { filters, applyFilters } = useApplyFilters();
+function FiltersAside({ locked }: { locked?: LockedFilters }) {
+  const { filters, applyFilters } = useApplyFilters(locked);
   const filtersRef = useFillToFold("64rem");
 
   return (
@@ -79,9 +111,9 @@ function FiltersAside() {
   );
 }
 
-function ResultsColumn() {
+function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const t = useTranslations("Yachts");
-  const { filters, defaults, applyFilters } = useApplyFilters();
+  const { filters, defaults, applyFilters } = useApplyFilters(locked);
   const [sort, setSort] = useQueryState(
     "sort",
     parseAsStringLiteral(SORT_OPTIONS).withDefault("recommended"),
@@ -132,14 +164,44 @@ function ResultsColumn() {
   );
 }
 
-export default function SearchScreen() {
+/**
+ * The search screen, and the catalogue pages under `/yacht-charter` and `/shipyard`.
+ *
+ * One screen for both, so a visitor arriving from a search engine lands on the interface the rest
+ * of the site uses rather than a page that only looks like it. The catalogue pages differ by what
+ * they pass in, not by what they render.
+ */
+export default function SearchScreen({
+  heading,
+  locked,
+  resultsFallback,
+  footer,
+}: {
+  /** Overrides the page heading; a catalogue page names itself after its own facet. */
+  heading?: string;
+  /** The facet pinned by the path. Merged into every filter surface. */
+  locked?: LockedFilters;
+  /**
+   * Server-rendered cards shown until the client query resolves.
+   *
+   * This is what puts boats in the HTML. `ResultsColumn` reads the URL and fetches on the client,
+   * so on the server it never resolves and the boundary's fallback is what a crawler receives —
+   * a spinner on `/yachts`, and the page's own listings on a catalogue page.
+   */
+  resultsFallback?: ReactNode;
+  /** Rendered under the results. The catalogue pages put their sibling links here. */
+  footer?: ReactNode;
+}) {
   const t = useTranslations("Yachts");
 
   return (
     <div className="flex flex-col">
       <div className="border-b border-natural-50 px-4 py-6 md:px-13.5">
+        {/* Screen-reader only: the design has no slot for a page heading here. Outside the
+            boundary all the same, or it never reaches the HTML a crawler receives. */}
+        <h1 className="sr-only">{heading ?? t("heading")}</h1>
         <Suspense fallback={null}>
-          <SearchBarSection />
+          <SearchBarSection locked={locked} />
         </Suspense>
       </div>
 
@@ -169,15 +231,17 @@ export default function SearchScreen() {
             </div>
 
             <Suspense fallback={null}>
-              <FiltersAside />
+              <FiltersAside locked={locked} />
             </Suspense>
           </aside>
 
           <div className="flex min-w-0 flex-col gap-5">
             {/* `Loader` is the component's own pending UI, reused rather than a new skeleton. */}
-            <Suspense fallback={<Loader />}>
-              <ResultsColumn />
+            <Suspense fallback={resultsFallback ?? <Loader />}>
+              <ResultsColumn locked={locked} />
             </Suspense>
+
+            {footer}
           </div>
         </div>
       </div>

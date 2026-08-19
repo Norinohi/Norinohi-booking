@@ -26,9 +26,13 @@ export const listingSearchDoc = pgTable(
     crewType: text("crew_type"),
     builder: text("builder"),
     model: text("model"),
+    /* The model without its cabin configuration — what model pages and grouping read. */
+    modelCanonical: text("model_canonical"),
     operator: text("operator").notNull(),
     baseId: text("base_id").notNull(),
     baseName: text("base_name").notNull(),
+    /* The town, which the vendors do not model — see `base.city`. Null until its base is mapped. */
+    city: text("city"),
     location: text("location").notNull(),
     region: text("region").notNull(),
     country: text("country").notNull(),
@@ -71,6 +75,9 @@ export const listingSearchDoc = pgTable(
     index("listing_search_doc_country_idx").on(t.country),
     index("listing_search_doc_region_idx").on(t.region),
     index("listing_search_doc_location_idx").on(t.location),
+    /* Both back the generated facet pages, which group and filter on exactly these two. */
+    index("listing_search_doc_city_idx").on(t.city),
+    index("listing_search_doc_model_canonical_idx").on(t.modelCanonical),
     index("listing_search_doc_category_idx").on(t.category),
     index("listing_search_doc_crew_idx").on(t.crewType),
     index("listing_search_doc_sail_type_idx").on(t.sailType),

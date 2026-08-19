@@ -13,9 +13,11 @@ export type ListingSearchInput = {
   maxPriceMinor?: number;
   country?: string[];
   sailingArea?: string[];
+  city?: string[];
   charterCompany?: string[];
   marina?: string[];
   boatType?: string[];
+  builder?: string[];
   model?: string[];
   crew?: string[];
   mainsailType?: string[];
@@ -62,9 +64,13 @@ export type ListingSearchDoc = {
   crewType: string | null;
   builder: string | null;
   model: string | null;
+  /** The model without its cabin configuration; null when the vendor name carries none. */
+  modelCanonical: string | null;
   operator: string;
   baseId: string;
   baseName: string;
+  /** The town the base is reached from; null until its vendor location is mapped. */
+  city: string | null;
   location: string;
   region: string;
   country: string;
@@ -107,7 +113,8 @@ export type ListingSearchResult = {
 };
 
 export type ListingDetail = ListingSearchDoc & {
-  description: string;
+  /** The provider's own prose in the requested locale; null when it ships none. */
+  description: string | null;
   overview: { code: string; label: string; value: string }[];
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];

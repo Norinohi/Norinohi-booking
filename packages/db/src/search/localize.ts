@@ -33,12 +33,18 @@ type TranslationRow = { kind: string; key: string; label: string };
  * A missing translation leaves the English label in place, so a half-translated
  * locale degrades word by word rather than blanking a card.
  */
-export async function localizeSearchDocs<T extends ListingSearchDoc>(
+/**
+ * `(kind, value) → label` for one locale, or undefined when nothing is translated.
+ *
+ * Shared by the card localizer and the catalogue-page enumeration: both name the same countries,
+ * regions, marinas and categories, and a page headed "Yacht Charter in Croatia" above cards that
+ * say "Хорватія" is the drift this avoids.
+ */
+export async function facetTranslator(
   db: NodePgDatabase<typeof schema>,
-  docs: T[],
   locale: string | undefined,
-): Promise<T[]> {
-  if (docs.length === 0 || !locale || locale === DEFAULT_LOCALE) return docs;
+): Promise<((kind: FacetMediaKind, value: string) => string) | undefined> {
+  if (!locale || locale === DEFAULT_LOCALE) return undefined;
 
   const rows = await db.execute<TranslationRow>(sql`
     select
@@ -55,11 +61,28 @@ export async function localizeSearchDocs<T extends ListingSearchDoc>(
         sql`, `,
       )})
   `);
-  if (rows.rows.length === 0) return docs;
+  if (rows.rows.length === 0) return undefined;
 
   const byKindValue = new Map(rows.rows.map((row) => [`${row.kind}:${row.key}`, row.label]));
-  const translate = (kind: FacetMediaKind, value: string): string =>
-    byKindValue.get(`${kind}:${normalizedKey(value)}`) ?? value;
+  return (kind, value) => byKindValue.get(`${kind}:${normalizedKey(value)}`) ?? value;
+}
+
+/**
+ * Swaps the display labels on search rows for their `locale` copy.
+ *
+ * A missing translation leaves the English label in place, so a half-translated
+ * locale degrades word by word rather than blanking a card.
+ */
+export async function localizeSearchDocs<T extends ListingSearchDoc>(
+  db: NodePgDatabase<typeof schema>,
+  docs: T[],
+  locale: string | undefined,
+): Promise<T[]> {
+  if (docs.length === 0) return docs;
+
+  const translate = await facetTranslator(db, locale);
+  if (!translate) return docs;
+
   /* Nullable columns keep their null: an absent label has nothing to translate. */
   const translateOptional = (kind: FacetMediaKind, value: string | null): string | null =>
     value === null ? null : translate(kind, value);

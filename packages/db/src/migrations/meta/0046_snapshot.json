@@ -1,5 +1,5 @@
 {
-  "id": "fc11cab6-1746-4de1-9039-8e5a840c4365",
+  "id": "a9afeb26-182e-4e1e-ad5f-36642a948188",
   "prevId": "e6f899b9-c559-4222-8c60-e44d41004ac3",
   "version": "7",
   "dialect": "postgresql",
@@ -1834,18 +1834,6 @@
         },
         "guest_access_token_hash": {
           "name": "guest_access_token_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "excluded_at": {
-          "name": "excluded_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "excluded_reason": {
-          "name": "excluded_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -4290,6 +4278,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4311,6 +4305,21 @@
           "columns": [
             {
               "expression": "region_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "location_city_idx": {
+          "name": "location_city_idx",
+          "columns": [
+            {
+              "expression": "city",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -4885,6 +4894,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "canonical_name": {
+          "name": "canonical_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4906,6 +4921,21 @@
           "columns": [
             {
               "expression": "builder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "yacht_model_canonical_name_idx": {
+          "name": "yacht_model_canonical_name_idx",
+          "columns": [
+            {
+              "expression": "canonical_name",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7930,6 +7960,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "model_canonical": {
+          "name": "model_canonical",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "operator": {
           "name": "operator",
           "type": "text",
@@ -7947,6 +7983,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "location": {
           "name": "location",
@@ -8201,6 +8243,36 @@
           "columns": [
             {
               "expression": "location",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "listing_search_doc_city_idx": {
+          "name": "listing_search_doc_city_idx",
+          "columns": [
+            {
+              "expression": "city",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "listing_search_doc_model_canonical_idx": {
+          "name": "listing_search_doc_model_canonical_idx",
+          "columns": [
+            {
+              "expression": "model_canonical",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

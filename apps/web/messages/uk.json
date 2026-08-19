@@ -571,12 +571,14 @@
       "any": "будь-який",
       "country": "Країна: {value}",
       "sailingArea": "Регіон: {value}",
+      "city": "Місто: {value}",
       "charterCompany": "Компанія: {value}",
       "marina": "Марина: {value}",
       "startDate": "Початок: {value}",
       "duration": "Тривалість: {count, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
       "dateFlexibility": "Гнучкість: {value}",
       "boatType": "Тип човна: {value}",
+      "builder": "Верф: {value}",
       "model": "Модель: {value}",
       "crew": "Екіпаж: {value}",
       "mainsailType": "Грот: {value}",
@@ -1228,6 +1230,7 @@
     }
   },
   "Yachts": {
+    "heading": "Пошук яхт в оренду",
     "searchByMap": "Пошук на карті",
     "emptyTitle": "За вашими фільтрами яхт не знайдено",
     "emptyDescription": "Спробуйте змінити дати, бюджет або місце — ми допоможемо знайти відповідний варіант.",
@@ -1255,8 +1258,8 @@
   },
   "Seo": {
     "Yachts": {
-      "title": "Каталог яхт",
-      "description": "Переглядай наш флот яхт і катамаранів. Фільтруй за напрямком, датами, гостями та ціною, щоб знайти ідеальний човен для подорожі."
+      "title": "Пошук яхт в оренду",
+      "description": "Шукай яхти й катамарани в оренду по Середземномор'ю та інших регіонах. Фільтруй за напрямком, датами, гостями та ціною."
     },
     "YachtsMap": {
       "title": "Яхти на карті",
@@ -1264,7 +1267,13 @@
     },
     "YachtDetail": {
       "title": "Деталі яхти",
-      "description": "Дивись фото, характеристики, опції екіпажу та ціни цієї яхти й перевіряй доступність на твої дати."
+      "description": "Дивись фото, характеристики, опції екіпажу та ціни цієї яхти й перевіряй доступність на твої дати.",
+      "titleAtPlace": "{boat} в оренду, {place}",
+      "titlePlain": "{boat} в оренду",
+      "metaSpecs": "{category}, {cabins, plural, one {# каюта} few {# каюти} other {# кают}}, до {guests} гостей.",
+      "metaPlace": "{crew}. База: {place}.",
+      "metaPrice": "Від {price} за тиждень.",
+      "metaCta": "Перевір доступність на свої дати."
     },
     "Booking": {
       "title": "Бронювання яхти",
@@ -1361,6 +1370,22 @@
     "StaffBooking": {
       "title": "Бронювання (персонал)",
       "description": "Службовий перегляд бронювання клієнта."
+    },
+    "CatalogPage": {
+      "country": "{place} — оренда яхт",
+      "geo": "{place}, {country} — оренда яхт",
+      "marina": "{place} — оренда яхт",
+      "type": "{type} в оренду",
+      "typeCountry": "{type} в оренду, {place}",
+      "typeGeo": "{type} в оренду, {place}, {country}",
+      "typeMarina": "{type} в оренду, {place}",
+      "builder": "{brand} — оренда яхт",
+      "model": "{model} в оренду",
+      "intro": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}, від {price} за тиждень.",
+      "introNoPrice": "Доступно {count, plural, one {# човен} few {# човни} other {# човнів}}.",
+      "description": "Порівняй {count, plural, one {# яхту} few {# яхти} other {# яхт}} в оренду. Фільтруй за датами, гостями, каютами й ціною та перевіряй доступність.",
+      "siblings": "Дивись також",
+      "empty": "Зараз відповідних човнів немає. Спробуй повний каталог."
     }
   },
   "Profile": {

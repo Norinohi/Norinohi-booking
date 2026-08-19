@@ -571,12 +571,14 @@
       "any": "cualquiera",
       "country": "País: {value}",
       "sailingArea": "Zona: {value}",
+      "city": "Ciudad: {value}",
       "charterCompany": "Empresa: {value}",
       "marina": "Marina: {value}",
       "startDate": "Inicio: {value}",
       "duration": "Duración: {count, plural, one {# día} other {# días}}",
       "dateFlexibility": "Flexibilidad: {value}",
       "boatType": "Tipo de barco: {value}",
+      "builder": "Astillero: {value}",
       "model": "Modelo: {value}",
       "crew": "Tripulación: {value}",
       "mainsailType": "Mayor: {value}",
@@ -1228,6 +1230,7 @@
     }
   },
   "Yachts": {
+    "heading": "Buscador de alquiler de yates",
     "searchByMap": "Buscar en el mapa",
     "emptyTitle": "No se han encontrado yates para tus filtros",
     "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
@@ -1255,8 +1258,8 @@
   },
   "Seo": {
     "Yachts": {
-      "title": "Explorar Yates",
-      "description": "Explora nuestra flota de yates y catamaranes. Filtra por destino, fechas, huéspedes y precio para encontrar el barco perfecto para tu viaje."
+      "title": "Buscador de alquiler de yates",
+      "description": "Busca yates y catamaranes de alquiler por el Mediterráneo y otros destinos. Filtra por destino, fechas, huéspedes y precio."
     },
     "YachtsMap": {
       "title": "Yates en el mapa",
@@ -1264,7 +1267,13 @@
     },
     "YachtDetail": {
       "title": "Detalles del yate",
-      "description": "Consulta fotos, características, opciones de tripulación y precios de este yate, y comprueba la disponibilidad para tus fechas."
+      "description": "Consulta fotos, características, opciones de tripulación y precios de este yate, y comprueba la disponibilidad para tus fechas.",
+      "titleAtPlace": "Alquiler de {boat} en {place}",
+      "titlePlain": "Alquiler de {boat}",
+      "metaSpecs": "{category} con {cabins, plural, one {# camarote} other {# camarotes}} para hasta {guests} huéspedes.",
+      "metaPlace": "{crew}. Base: {place}.",
+      "metaPrice": "Desde {price} por semana.",
+      "metaCta": "Comprueba la disponibilidad para tus fechas."
     },
     "Booking": {
       "title": "Reserva tu yate",
@@ -1361,6 +1370,22 @@
     "StaffBooking": {
       "title": "Reserva (personal)",
       "description": "Vista de personal de una reserva."
+    },
+    "CatalogPage": {
+      "country": "Alquiler de yates en {place}",
+      "geo": "Alquiler de yates en {place}, {country}",
+      "marina": "Alquiler de yates en {place}",
+      "type": "Alquiler de {type}",
+      "typeCountry": "Alquiler de {type} en {place}",
+      "typeGeo": "Alquiler de {type} en {place}, {country}",
+      "typeMarina": "Alquiler de {type} en {place}",
+      "builder": "Alquiler de yates {brand}",
+      "model": "Alquiler de {model}",
+      "intro": "{count, plural, one {# barco disponible} other {# barcos disponibles}}, desde {price} por semana.",
+      "introNoPrice": "{count, plural, one {# barco disponible} other {# barcos disponibles}}.",
+      "description": "Compara {count, plural, one {# yate} other {# yates}} de alquiler. Filtra por fechas, huéspedes, camarotes y precio, y comprueba la disponibilidad.",
+      "siblings": "También te puede interesar",
+      "empty": "Ahora mismo no hay barcos que coincidan. Prueba el catálogo completo."
     }
   },
   "Profile": {

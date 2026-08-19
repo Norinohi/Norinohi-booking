@@ -20,6 +20,8 @@ export async function generateMetadata() {
     title: t("title"),
     description: t("description"),
     path: "/wishlist",
+    // Renders per visitor, so a crawler only ever sees the empty state.
+    noIndex: true,
   });
 }
 
