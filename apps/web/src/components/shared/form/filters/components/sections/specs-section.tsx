@@ -6,6 +6,13 @@ import { useState } from "react";
 import { RangeField, Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
 import { useFilterRanges } from "../../hooks/use-filter-ranges";
+import {
+  toAgeRange,
+  withAgeRange,
+  withYearFrom,
+  withYearTo,
+  type YearBounds,
+} from "../../lib/boat-age";
 
 const FEET_TO_METRES = 0.3048;
 
@@ -18,6 +25,12 @@ export default function SpecsSection({ value, set }: SectionProps) {
 
   const showLength = (feet: number) =>
     lengthUnit === "m" ? String(Math.round(feet * FEET_TO_METRES)) : String(feet);
+
+  /* Two keys, one constraint: the slider and both selects all write through here. */
+  function setYears(next: YearBounds) {
+    set("yearFrom", next.yearFrom);
+    set("yearTo", next.yearTo);
+  }
 
   return (
     <Section value="specs" title={t("sections.specs")}>
@@ -54,22 +67,31 @@ export default function SpecsSection({ value, set }: SectionProps) {
         onChange={(next) => set("price", next)}
         format={(n) => format.number(n, "eur")}
       />
+      {/*
+       * The slider is a view over `yearFrom` / `yearTo` (lib/boat-age.ts): dragging it rewrites the
+       * years, picking a year moves it, and a thumb on its end is the same as a select on "Any".
+       */}
       <RangeField
         label={t("labels.boatAge")}
         limits={ranges.boatAge}
-        value={value.boatAge}
-        onChange={(next) => set("boatAge", next)}
+        value={toAgeRange(value, ranges)}
+        onChange={(next) => setYears(withAgeRange(value, next, ranges))}
         format={(n) => t("units.years", { count: n })}
         showScale={false}
       />
 
-      {/* Two bounds, so two labels: both read "Year" and only the aria labels told them apart. */}
+      {/*
+       * Two bounds, so two labels: both read "Year" and only the aria labels told them apart.
+       * The list holds only years a boat was built in, while the slider can land on any year in
+       * between; the select then shows that year by itself (Select falls back to the raw value)
+       * rather than snapping the thumb, which would leave keyboard users stuck on a gap.
+       */}
       <SelectField
         label={t("labels.yearFrom")}
         ariaLabel={t("aria.builtFrom")}
         options={options.years}
         value={value.yearFrom}
-        onChange={(next) => set("yearFrom", next)}
+        onChange={(next) => setYears(withYearFrom(value, next))}
         clearable
         clearTo="any"
       />
@@ -78,7 +100,7 @@ export default function SpecsSection({ value, set }: SectionProps) {
         ariaLabel={t("aria.builtTo")}
         options={options.years}
         value={value.yearTo}
-        onChange={(next) => set("yearTo", next)}
+        onChange={(next) => setYears(withYearTo(value, next))}
         clearable
         clearTo="any"
       />

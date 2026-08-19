@@ -418,7 +418,7 @@
         "year": "Year",
         "people": "People",
         "toilets": "Toilets",
-        "baths": "Baths",
+        "showers": "Showers",
         "mainsail": "Mainsail type",
         "cabins": "Cabins",
         "length": "Length"
@@ -604,7 +604,6 @@
       "berths": "Berths: {value}",
       "bathrooms": "Bathrooms: {value}",
       "price": "Price: {value}",
-      "boatAge": "Age: {value}",
       "year": "Year: {from}–{to}",
       "withoutAvailabilityConfirmation": "Without availability confirmation",
       "underTemporaryBooking": "Under temporary booking",
@@ -1132,6 +1131,10 @@
       "previous": "Previous yachts",
       "next": "Next yachts"
     },
+    "route": {
+      "start": "Start",
+      "finish": "Finish"
+    },
     "review": {
       "count": "({count, plural, one {# review} other {# reviews}})",
       "summary": "Showing {shown} of {total}",
@@ -1147,11 +1150,12 @@
       "unavailableHint": "Ask us about other dates or a similar yacht.",
       "slotRefused": "Those dates are not bookable. Please choose another period.",
       "prepayment": "{percent}% Booking Prepayment For Boat",
-      "boatPrice": "Boat price (full rental price)",
-      "deposit": "Refundable Security Deposit",
+      "boatPrice": "Boat price",
+      "boatPriceHint": "Full rental price",
+      "deposit": "Refundable deposit",
       "howItWorks": "See how it works",
       "groups": {
-        "mandatory": "Mandatory",
+        "mandatory": "Mandatory extras",
         "selectedExtras": "Selected extras",
         "crew": "Crew"
       },

@@ -288,7 +288,10 @@ than a re-sync.
 ## 8b. The vendor's own integration guide
 
 The knowledge base at `support.booking-manager.com/hc/en-us/sections/360000531632-Rest-API`
-carries four articles. It is worth reading before changing the sync: two of its
+carries four articles, all four read as of 2026-08-19. "Booking Manager API User
+Manual-REST" is a stub that only links to the Swagger, and "Introduction to REST
+API" is onboarding: neither adds a requirement. The load-bearing two are quoted
+below. It is worth reading before changing the sync: two of its
 statements are load-bearing and are not in the Swagger. Note the site 403s
 automated fetches and needs a real browser.
 
@@ -320,9 +323,95 @@ UI calls it an API key; the API consumes it as a Bearer token.
 the loose schemas mean a mismatch would not throw: it would silently drop every
 ISO country code, which is the field that merges a country across providers.
 
-**No pagination anywhere.** The only volume guidance ("How to manipulate large set
-of data thru API") is SOAP-era and tells the caller to raise its own parser
-limits, which implies large single responses rather than paged ones.
+**Whose payment plan `/offers` returns**, from "How to view the Payment Plan via
+Rest API" (added to the KB in 2026, and the reason this section was revisited):
+
+> the Payment Plan data in `getOffers` and in `createReservation` is "the Payment
+> Plan that the Agent must respect towards the Charter operator". Only after
+> `confirmReservation` does the system show "the Payment Plan of the Agent and no
+> longer of the charter" - what the guest owes the agency.
+
+We are the agency, and `toPaymentPolicy` in `quote.ts` derives the customer's
+deposit from the `/offers` plan. So the split we present at checkout is currently
+our own obligation to the operator, not a schedule we chose. That is conservative
+on cash flow - we never collect less than we owe - but it lets each operator's
+terms set our customer-facing deposit, and MMK supports entering an agency plan of
+our own in the portal. **Q-BM-PAYPLAN**: decide whether to keep mirroring the
+charter's plan, or publish our own and read the agency plan back after confirm. We
+do not read it back today.
+
+**`showOptions` does not gate the payment plan.** The article's worked example
+passes `showOptions=True`, which reads as though the plan depends on it. Measured
+against the live endpoint on 2026-08-19, company 225, 2026-08-22 to 2026-08-29:
+five offers, all five carrying a `paymentPlan`, with and without the flag, and
+identical either way. The flag adds `myReservationId` and nothing else, which is
+what `restOfferSchema` already says.
+
+**No pagination on the endpoints we use.** The only volume guidance ("How to
+manipulate large set of data thru API") is SOAP-era and tells the caller to raise
+its own parser limits, which implies large single responses rather than paged
+ones. `/yachts` with no `companyId` bears this out: it did not answer inside 120
+seconds when tried on 2026-08-19.
+
+**But `/objects/{entity}/search/` pages, and carries a sync point.** Added in spec
+2.2.0, so it does not exist in the 2.1.4 this connector was written against, and we
+use none of it. It is live on the production host. Two things it offers are things
+we recorded as open vendor questions:
+
+- **`lastSyncPoint` in, `syncpoint` out.** A "changed since" cursor, which is
+  exactly Q-BM-DELTA. If it works for `Resource`, the catalogue need not walk 1308
+  companies to learn that nothing moved.
+- **`page` / `per_page` / `page_count` / `total_count`**, plus `fields.include` to
+  select columns and `filterRules` for predicates.
+
+`Entity` is `User | Reservation | Resource | Payment | PaymentMethod | Service`.
+`Resource` is the boat - the SOAP call for the fleet was `getResources`, and
+`/objects/Resource/properties` returns `MODEL_AND_NAME`, `BERTHS`, `BOAT_CLASS`.
+`Reservation` is worth as much: nothing today tells us a Booking Manager
+reservation changed operator-side, because the BM availability source deliberately
+defines no `searchConfirmed` where the NauSYS one does.
+
+**Measured on 2026-08-19.** The endpoint works on our key, and the shape of a
+working call is not obvious from the spec:
+
+- **`filterRules` is effectively mandatory.** A body with none returns zero
+  objects rather than everything. `{"field":"ID","value":"","matchRule":10}` -
+  `matchRule` 10 is `EXISTS` - is the match-all idiom.
+- `matchRule` is `0 STARTS_WITH_IGNORE_CASE, 1 EQUALS_IGNORE_CASE, 2
+CONTAINS_IGNORE_CASE, 3 STARTS_WITH, 4 EQUALS, 5 CONTAINS, 6 LARGER, 7
+LARGER_OR_EQUAL, 8 SMALLER, 9 SMALLER_OR_EQUAL, 10 EXISTS`.
+- `total_count` does **not** track the filter. It stayed at 24816 for `Resource`
+  across every rule tried, including an `EQUALS` on a yacht id we hold. Read it as
+  the entity's population, not the match count.
+- `page_count` came back equal to the number of objects returned, not the number
+  of pages. Unconfirmed, and worth pinning down before paging anything.
+
+**Where it works, and where it does not.** With the EXISTS idiom:
+
+| entity        | objects  | total_count |
+| ------------- | -------- | ----------- |
+| `User`        | returned | 19          |
+| `Reservation` | returned | 526127      |
+| `Service`     | returned | 8541        |
+| `Resource`    | **none** | 24816       |
+| `Payment`     | **none** | 2           |
+
+So this is not a malformed request: three entities answer with rows on the same
+credential and the same body. `Resource` returns nothing whatever the field or
+rule - `ID`, `MODEL_AND_NAME`, `RESOURCE_TYPE`, `BERTHS`, `DISABLED` all give zero,
+and `RESOURCE_ID`, the field the spec's own `FilterRule` example names, is not a
+valid field and errors. The likeliest reading is that object-level read on
+`Resource` is not granted to an agency key, but that is a guess and **Q-BM-OBJECTS**
+asks it directly.
+
+**`Reservation` is the one to want first.** It answers today, it has a sync point,
+and it covers a real blind spot: nothing tells us a Booking Manager reservation
+changed operator-side, because the BM availability source defines no
+`searchConfirmed` where the NauSYS one does. A catalogue delta needs `Resource` and
+therefore needs the vendor; reservation reconciliation appears to need neither.
+
+**24816 is also the fleet size** the sync-duration arithmetic wants, and it is far
+above the 13-15k that was being assumed from fleet-size guesses.
 
 ## 9. Open vendor questions
 
@@ -338,9 +427,11 @@ now answered; these are not.
 - **Rate limits.** No documented limit or retry guidance. We self-throttle at
   250 ms between calls, which is a guess. The Saturday sweep is 52 calls per year
   per sync, so this matters.
-- **Delta sync.** Does `/yachts` support a "changed since" parameter, or is a
-  full dump the only option? Determines whether the catalogue sync can ever be
-  incremental.
+- **Delta sync.** `/yachts` has no "changed since" parameter, but
+  `/objects/{entity}/search/` has `lastSyncPoint` (see §8b) and we have not made it
+  return objects. The question to MMK is now narrower: what does a `Resource`
+  search need in order to return rows, and is its sync point a supported way to
+  keep a fleet current?
 - **Which `/countries` spelling is current**, `short`/`long` or
   `shortName`/`longName`. We accept both; confirming lets one be dropped.
 - **Array query-parameter encoding.** Repeat-key (`?id=1&id=2`) or comma-joined

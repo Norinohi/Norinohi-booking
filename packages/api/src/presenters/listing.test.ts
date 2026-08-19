@@ -31,6 +31,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   cabins: 3,
   berths: 6,
   heads: 2,
+  showers: 3,
   yearBuilt: 2023,
   sailType: null,
   securityDepositMinor: 310_000,

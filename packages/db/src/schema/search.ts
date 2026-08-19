@@ -52,6 +52,7 @@ export const listingSearchDoc = pgTable(
     cabins: integer("cabins"),
     berths: integer("berths"),
     heads: integer("heads"),
+    showers: integer("showers"),
     yearBuilt: integer("year_built"),
     sailType: text("sail_type"),
     securityDepositMinor: integer("security_deposit_minor"),

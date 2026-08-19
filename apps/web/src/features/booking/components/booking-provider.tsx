@@ -22,6 +22,7 @@ import type { CharterPeriod } from "@/components/shared/form/charter-date-field"
 import type { CrewType } from "@/components/shared/data-display/booking-summary";
 import { useListingDetail } from "@/features/yachts";
 import { detailPeriodParsers } from "@/features/yachts/lib/search-params";
+import { firstBookablePeriod } from "@/lib/charter-period";
 import { dayFromNative, dayToNative } from "@/lib/date";
 
 import { availabilityConstraintsQueryOptions, type Quote } from "../api/queries";
@@ -109,6 +110,8 @@ export function BookingProvider({
       ? { checkIn: carried.checkIn, checkOut: carried.checkOut }
       : null;
   const searchedCheckOut = searchedPeriod?.checkOut;
+  /* The listing's own first sellable day, which the undated result card offers in place of dates. */
+  const bookableFrom = listing?.availability.bookableFrom ?? null;
 
   const calWindow = useMemo(() => {
     const from = startOfMonth(new Date());
@@ -116,15 +119,17 @@ export function BookingProvider({
     /*
      * A carried period can fall past the default horizon — people book a year out. Constraints
      * the window does not cover come back empty, which reads as season-closed, and the sidebar
-     * would refuse to price the very dates it was handed.
+     * would refuse to price the very dates it was handed. `bookableFrom` is the same story for
+     * a boat sold out until next season: it is the one day worth opening on, so the window has
+     * to reach it.
      */
-    const carriedEnd =
-      searchedCheckOut && searchedCheckOut > horizon ? dayToNative(searchedCheckOut) : undefined;
+    const beyond = [searchedCheckOut, bookableFrom].filter((day) => day != null && day > horizon);
+    const furthest = dayToNative(beyond.sort().at(-1) ?? null);
     return {
       from: dayFromNative(from),
-      to: carriedEnd ? dayFromNative(endOfMonth(carriedEnd)) : horizon,
+      to: furthest ? dayFromNative(endOfMonth(furthest)) : horizon,
     };
-  }, [searchedCheckOut]);
+  }, [searchedCheckOut, bookableFrom]);
 
   const { data: published } = useQuery({
     ...availabilityConstraintsQueryOptions({
@@ -185,20 +190,31 @@ export function BookingProvider({
   }, [quote]);
 
   /*
-   * Prices the carried period once, as soon as the published constraints are in — before them
-   * every range reads as season-closed, since `priced` is what opens a season. Only on the
-   * detail page: the wizard arrives with `quoteId` and loads that quote instead. A period the
-   * listing will not sell is left alone rather than reported, because the visitor did not ask
-   * for this boat on these dates so much as arrive at it, and the calendar is already open.
+   * Without a searched period, the listing's own first bookable day opens the panel instead.
+   * `bookableFrom` names a day a charter may begin but proves no legal check-out follows, so
+   * the end comes from the same published constraints the calendar draws — the shortest
+   * charter this operator sells from that day.
+   */
+  const suggestedPeriod = useMemo(
+    () => (bookableFrom && published ? firstBookablePeriod(bookableFrom, constraints) : null),
+    [bookableFrom, published, constraints],
+  );
+
+  /*
+   * Prices that period once, as soon as the published constraints are in — before them every
+   * range reads as season-closed, since `priced` is what opens a season. Only on the detail
+   * page: the wizard arrives with `quoteId` and loads that quote instead. A period the listing
+   * will not sell is left alone rather than reported, because the visitor did not ask for this
+   * boat on these dates so much as arrive at it, and the calendar is already open.
    */
   const seededRef = useRef(false);
   useEffect(() => {
-    if (seededRef.current || quoteId || !searchedPeriod || !published || !listingId) return;
-    if (rangeStatus(searchedPeriod.checkIn, searchedPeriod.checkOut, constraints) !== "bookable") {
-      return;
-    }
+    if (seededRef.current || quoteId || !published || !listingId) return;
+    const period = searchedPeriod ?? suggestedPeriod;
+    if (!period) return;
+    if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;
     seededRef.current = true;
-    selectPeriod(searchedPeriod);
+    selectPeriod(period);
   });
 
   function selectPeriod(period: CharterPeriod) {

@@ -254,6 +254,19 @@ describe("projectNausysCatalogue", () => {
       });
     });
 
+    it("projects the shower count the vendor states, separately from the heads", () => {
+      expect(listingOf(kraken())?.spec).toMatchObject({ heads: 4, showers: 4 });
+    });
+
+    /*
+     * Five of the six recorded yachts carry `showers: 0` next to a non-zero `wc`,
+     * which is the operator never filling the field in rather than a boat with no
+     * shower. Publishing the zero would print "0 showers" on a yacht that has them.
+     */
+    it("reads a zero shower count as unstated", () => {
+      expect(listingOf(maria())?.spec).toMatchObject({ heads: 2, showers: undefined });
+    });
+
     it("keeps a yacht that references an unknown model, dimensions and all", () => {
       const yacht = maria();
       yacht.yachtModelId = 999_999;

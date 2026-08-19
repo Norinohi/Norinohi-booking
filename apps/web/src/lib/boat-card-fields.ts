@@ -4,8 +4,10 @@ import {
   Compass,
   Droplets,
   Flame,
+  ShowerHead,
   Snowflake,
   Sun,
+  Toilet,
   Waves,
   Wifi,
   Zap,
@@ -59,6 +61,7 @@ export type BoatSpecs = {
   cabins: number;
   berths: number;
   heads: number;
+  showers: number | null;
   yearBuilt: number;
   sailType: string | null;
 };
@@ -69,8 +72,22 @@ export function boatSpecs(t: BoatCardTranslator, specs: BoatSpecs): BoatCardSpec
   return [
     { label: t("specs.year"), value: String(specs.yearBuilt) },
     { label: t("specs.people"), value: String(specs.berths) },
-    { label: t("specs.toilets"), value: String(specs.heads) },
-    { label: t("specs.baths"), value: String(specs.heads) },
+    /* Drawn as glyphs rather than spelled out. */
+    { label: t("specs.toilets"), value: String(specs.heads), icon: createElement(Toilet) },
+    /*
+     * Only when the provider states a count. A head is the WC compartment and does
+     * not imply a shower, so repeating `heads` here would put a number under the
+     * shower glyph that no vendor ever sent.
+     */
+    ...(specs.showers === null
+      ? []
+      : [
+          {
+            label: t("specs.showers"),
+            value: String(specs.showers),
+            icon: createElement(ShowerHead),
+          },
+        ]),
     {
       label: t("specs.mainsail"),
       value: specs.sailType ? slugToLabel(specs.sailType) : t("battenMainsail"),

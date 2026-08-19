@@ -789,6 +789,7 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
       cabins: listingSearchDoc.cabins,
       berths: listingSearchDoc.berths,
       heads: listingSearchDoc.heads,
+      showers: listingSearchDoc.showers,
       yearBuilt: listingSearchDoc.yearBuilt,
       sailType: listingSearchDoc.sailType,
       amenities: listingSearchDoc.amenities,
@@ -830,6 +831,7 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
       cabins: doc.cabins ?? 0,
       berths: doc.berths ?? 0,
       heads: doc.heads ?? 0,
+      showers: doc.showers ?? null,
       yearBuilt: doc.yearBuilt ?? 0,
       sailType: doc.sailType,
     },
@@ -881,14 +883,18 @@ function presentSummary(
 ): Summary {
   const snapshot = row.commercialSnapshot;
   const paidMinor = money?.paidMinor ?? 0;
-  const specs = snapshot.specs ?? {
-    lengthM: 0,
-    cabins: 0,
-    berths: 0,
-    heads: 0,
-    yearBuilt: 0,
-    sailType: null,
-  };
+  const snapshotSpecs = snapshot.specs;
+  const specs = snapshotSpecs
+    ? { ...snapshotSpecs, showers: snapshotSpecs.showers ?? null }
+    : {
+        lengthM: 0,
+        cabins: 0,
+        berths: 0,
+        heads: 0,
+        showers: null,
+        yearBuilt: 0,
+        sailType: null,
+      };
 
   return {
     id: row.id,

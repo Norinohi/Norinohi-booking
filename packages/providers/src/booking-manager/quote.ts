@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
+import { formatExtraCode } from "../shared/extra-code";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
@@ -26,6 +27,13 @@ import {
 const PROVIDER = "booking_manager" as const;
 
 const DEFAULT_QUOTE_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * The vendor numbers extras in one space with no separate equipment list, which is
+ * the same call `extrasOf` makes when it files them, so every code on both sides
+ * of the quote is a service.
+ */
+const EXTRA_KIND = "service" as const;
 
 const DEFAULT_LABELS = {
   base: "Charter price",
@@ -54,6 +62,14 @@ export interface BookingManagerQuoteServiceOptions {
   productNameFor?: (crewType: CrewType) => string | undefined;
   /** Resolves a vendor extra id to a customer-facing line label. */
   labelFor?: (externalId: string) => string | undefined;
+  /**
+   * The listing's extras by canonical code, for naming the lines they price.
+   * `/offers` sends obligatory extras whose `name` is empty on some accounts, and
+   * without this those lines read "Charter extra" in the sidebar while the same
+   * item is spelled out by name in the page's own section, so the customer cannot
+   * tell they are one charge.
+   */
+  loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
   now?: () => number;
 }
 
@@ -108,6 +124,8 @@ export function createBookingManagerQuoteService(
         );
       }
 
+      const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
+
       return mapOfferToProviderQuote({
         offer,
         listingId: parsed.listingId,
@@ -117,7 +135,11 @@ export function createBookingManagerQuoteService(
         crewType: parsed.crewType,
         requestedCurrency: parsed.currency,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
-        labelFor: options.labelFor,
+        /* The catalogue answers first; an extra the sync never recorded falls
+           through to whatever the caller knows. */
+        labelFor: (externalId) =>
+          extraLabels?.get(formatExtraCode(EXTRA_KIND, externalId)) ??
+          options.labelFor?.(externalId),
       });
     },
   };
@@ -351,7 +373,7 @@ function toExtraLine(
   // quantity, so there is nothing to multiply by; if the vendor means a unit price
   // this under-charges on multi-unit extras.
   return {
-    code: `bm-extra-${externalId}`,
+    code: formatExtraCode(EXTRA_KIND, externalId),
     label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
     amount: { amountMinor: numberToMinor(extra.price, currency, `extra ${externalId}`), currency },
     // Settled with the base on arrival: it counts toward the total but never

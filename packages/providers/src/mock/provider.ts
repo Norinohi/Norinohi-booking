@@ -163,12 +163,18 @@ export class MockInventoryProvider implements InventoryProvider {
      * flat code space rather than the separate service and equipment spaces a real
      * vendor keeps, so the kind is parsed off and only the id is matched.
      */
-    const wanted = new Set(
-      parsed.extras.flatMap((code) => {
-        const parsedCode = parseExtraCode(code);
-        return parsedCode === null ? [] : [parsedCode.externalId];
-      }),
-    );
+    /*
+     * Keyed by bare id, valued by the canonical code the customer sent, so the line
+     * can carry that same code back. A real vendor keys services and equipment
+     * apart; the mock does not, and hardcoding `equipment:` here made a selection
+     * sent as `service:sup` come back as `equipment:sup` — priced, but no longer
+     * recognisable as the box the customer ticked.
+     */
+    const wanted = new Map<string, string>();
+    for (const code of parsed.extras) {
+      const parsedCode = parseExtraCode(code);
+      if (parsedCode !== null) wanted.set(parsedCode.externalId, code);
+    }
     const selectedExtras = availability.extras.filter(
       (item) => item.obligatory || wanted.has(item.code) || crewCodes.has(item.code),
     );
@@ -198,7 +204,9 @@ export class MockInventoryProvider implements InventoryProvider {
           // the listing's Crew control offers, not by an entry in the extras
           // catalogue. Everything else carries the canonical code the customer
           // selected, so the line can be reconciled against the selection.
-          code: item.crew ? item.code : formatExtraCode("equipment", item.code),
+          code: item.crew
+            ? item.code
+            : (wanted.get(item.code) ?? formatExtraCode("equipment", item.code)),
           label: item.name,
           amount: { amountMinor: item.priceMinor, currency: parsed.currency },
           // Extras are settled with the base on arrival, which is what the listing

@@ -101,6 +101,8 @@ export const listingSpecification = pgTable("listing_specification", {
   cabins: integer("cabins"),
   berths: integer("berths"),
   heads: integer("heads"),
+  /* Null when the provider states no count; a head is not necessarily a shower. */
+  showers: integer("showers"),
   engines: integer("engines"),
   enginePower: text("engine_power"),
   fuelType: text("fuel_type"),

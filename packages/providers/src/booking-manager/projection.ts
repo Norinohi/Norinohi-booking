@@ -412,6 +412,7 @@ function projectYacht(
       cabins: intOf(yacht.cabins) ?? 0,
       berths: intOf(yacht.berths) ?? 0,
       heads: intOf(yacht.wc) ?? 0,
+      // The vendor publishes `wc` and nothing about showers, so the count stays unknown.
       yearBuilt: intOf(yacht.year) ?? 0,
       // `engine` is a free-text description ("2 x 75hp Volvo"), never a count.
       engines: undefined,

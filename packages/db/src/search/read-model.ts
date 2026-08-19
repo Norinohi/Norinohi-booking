@@ -53,6 +53,7 @@ export async function rebuildListingSearchDocs(
       cabins,
       berths,
       heads,
+      showers,
       year_built,
       sail_type,
       security_deposit_minor,
@@ -110,6 +111,7 @@ export async function rebuildListingSearchDocs(
       spec.cabins,
       spec.berths,
       spec.heads,
+      spec.showers,
       spec.year_built,
       spec.sail_type,
       -- Only ever shown as "plus a refundable deposit"; a zero is the provider
@@ -320,6 +322,7 @@ export async function rebuildListingSearchDocs(
       cabins = excluded.cabins,
       berths = excluded.berths,
       heads = excluded.heads,
+      showers = excluded.showers,
       year_built = excluded.year_built,
       sail_type = excluded.sail_type,
       security_deposit_minor = excluded.security_deposit_minor,

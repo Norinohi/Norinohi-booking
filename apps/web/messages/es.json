@@ -418,7 +418,7 @@
         "year": "Año",
         "people": "Personas",
         "toilets": "Aseos",
-        "baths": "Baños",
+        "showers": "Duchas",
         "mainsail": "Tipo de mayor",
         "cabins": "Camarotes",
         "length": "Eslora"
@@ -604,7 +604,6 @@
       "berths": "Literas: {value}",
       "bathrooms": "Baños: {value}",
       "price": "Precio: {value}",
-      "boatAge": "Antigüedad: {value}",
       "year": "Año: {from}–{to}",
       "withoutAvailabilityConfirmation": "Sin confirmación de disponibilidad",
       "underTemporaryBooking": "Con reserva temporal",
@@ -1132,6 +1131,10 @@
       "previous": "Yates anteriores",
       "next": "Yates siguientes"
     },
+    "route": {
+      "start": "Inicio",
+      "finish": "Fin"
+    },
     "review": {
       "count": "({count, plural, one {# opinión} other {# opiniones}})",
       "summary": "Mostrando {shown} de {total}",
@@ -1147,11 +1150,12 @@
       "unavailableHint": "Consúltanos por otras fechas o un yate similar.",
       "slotRefused": "Esas fechas no se pueden reservar. Elige otro periodo.",
       "prepayment": "Anticipo del {percent}% por el barco",
-      "boatPrice": "Precio del barco (alquiler completo)",
+      "boatPrice": "Precio del barco",
+      "boatPriceHint": "Precio total del alquiler",
       "deposit": "Fianza reembolsable",
       "howItWorks": "Ver cómo funciona",
       "groups": {
-        "mandatory": "Obligatorios",
+        "mandatory": "Extras obligatorios",
         "selectedExtras": "Extras seleccionados",
         "crew": "Tripulación"
       },

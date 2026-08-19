@@ -135,6 +135,8 @@ export type CommercialSnapshot = {
     cabins: number;
     berths: number;
     heads: number;
+    /* Added after the first snapshots were written, so absent on older rows. */
+    showers?: number | null;
     yearBuilt: number;
     sailType: string | null;
   };

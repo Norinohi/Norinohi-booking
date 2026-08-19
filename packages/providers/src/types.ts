@@ -493,6 +493,14 @@ const canonicalListingSchema = z.object({
     cabins: z.number().int(),
     berths: z.number().int(),
     heads: z.number().int(),
+    /**
+     * Separate from `heads` because the two are not the same fitting: a head is the
+     * WC compartment, and a yacht can carry more or fewer showers than it has of
+     * them. Optional because only NauSYS states a count at all, and it leaves the
+     * field at zero for most of its fleet, so an absent value means unknown rather
+     * than none.
+     */
+    showers: z.number().int().optional(),
     yearBuilt: z.number().int(),
     engines: z.number().int().optional(),
     fuelCapacity: z.number().int().optional(),

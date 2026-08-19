@@ -289,6 +289,7 @@ function projectYacht(
       cabins: yacht.cabins ?? 0,
       berths: yacht.berthsTotal ?? 0,
       heads: yacht.wc ?? 0,
+      showers: capacityOf(yacht.showers),
       yearBuilt: yacht.buildYear ?? 0,
       engines: intOf(yacht.engines),
       fuelCapacity: capacityOf(yacht.fuelTank, model?.fuelTank),

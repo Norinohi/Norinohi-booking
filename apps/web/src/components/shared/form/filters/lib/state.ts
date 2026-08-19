@@ -28,7 +28,11 @@ export type FiltersState = {
   berths: Range;
   bathrooms: Range;
   price: Range;
-  boatAge: Range;
+  /**
+   * Build-year bounds, "any" or a four-digit year. Also what the Boat Age slider edits: age and
+   * build year are one constraint shown two ways, and keeping only the years means a URL, a chip
+   * and a search request each carry it once — see `lib/boat-age.ts` for the mapping.
+   */
   yearFrom: string;
   yearTo: string;
 
@@ -46,8 +50,11 @@ export type FilterRanges = {
   berths: Range;
   bathrooms: Range;
   price: Range;
-  boatAge: Range;
   guestRating: Range;
+  /** Slider limits only — not filter values; the state keeps `yearFrom` / `yearTo`. */
+  boatAge: Range;
+  /** Oldest and newest build year behind `boatAge`; anchors the age ↔ year mapping. */
+  year: Range;
 };
 
 const EMPTY_RANGE: Range = [0, 0];
@@ -58,8 +65,9 @@ export const EMPTY_RANGES: FilterRanges = {
   berths: EMPTY_RANGE,
   bathrooms: EMPTY_RANGE,
   price: EMPTY_RANGE,
-  boatAge: EMPTY_RANGE,
   guestRating: EMPTY_RANGE,
+  boatAge: EMPTY_RANGE,
+  year: EMPTY_RANGE,
 };
 
 export const DEFAULT_FILTERS: FiltersState = {
@@ -86,7 +94,6 @@ export const DEFAULT_FILTERS: FiltersState = {
   berths: EMPTY_RANGE,
   bathrooms: EMPTY_RANGE,
   price: EMPTY_RANGE,
-  boatAge: EMPTY_RANGE,
   yearFrom: "any",
   yearTo: "any",
 
@@ -98,9 +105,17 @@ export const DEFAULT_FILTERS: FiltersState = {
   guestRating: EMPTY_RANGE,
 };
 
+/* Picked by name: `boatAge` and `year` bound the slider but are not filter values. */
 export function buildDefaultFilters(ranges: FilterRanges): FiltersState {
-  return { ...DEFAULT_FILTERS, ...ranges };
+  const { length, cabins, berths, bathrooms, price, guestRating } = ranges;
+  return { ...DEFAULT_FILTERS, length, cabins, berths, bathrooms, price, guestRating };
 }
+
+/*
+ * One filter shown through two keys: the Boat Age slider edits both, so they are one chip and
+ * one unit in the active count, the same as any single-key filter.
+ */
+export const YEAR_KEYS = ["yearFrom", "yearTo"] as const satisfies readonly (keyof FiltersState)[];
 
 /** The place keys a Where control narrows its own option list by. */
 const SCOPE_KEYS = ["country", "sailingArea", "city", "charterCompany", "marina"] as const;
@@ -145,5 +160,8 @@ export function countActiveFilters(
   // SAFETY: the keys come from DEFAULT_FILTERS, which is a complete FiltersState, so each one
   // is a key of it; Object.keys only ever reports them as bare strings.
   const keys = Object.keys(DEFAULT_FILTERS) as (keyof FiltersState)[];
-  return keys.filter((key) => !isSameValue(state[key], defaults[key])).length;
+  const isActive = (key: keyof FiltersState) => !isSameValue(state[key], defaults[key]);
+  const isYearKey = (key: keyof FiltersState) => YEAR_KEYS.some((yearKey) => yearKey === key);
+  const singles = keys.filter((key) => !isYearKey(key) && isActive(key)).length;
+  return singles + (YEAR_KEYS.some(isActive) ? 1 : 0);
 }

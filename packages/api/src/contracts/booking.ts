@@ -69,6 +69,7 @@ export const bookingSummarySchema = z.object({
       cabins: z.number().int(),
       berths: z.number().int(),
       heads: z.number().int(),
+      showers: z.number().int().nullable(),
       yearBuilt: z.number().int(),
       sailType: z.string().nullable(),
     }),

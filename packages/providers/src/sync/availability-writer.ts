@@ -704,6 +704,35 @@ export interface DrizzleAvailabilityStoreOptions {
   cursorScope?: string;
 }
 
+/**
+ * Collapses slots that share the period an upsert keys on.
+ *
+ * `ON CONFLICT DO UPDATE` refuses a statement whose own rows collide with each other -
+ * Postgres 21000, "cannot affect row a second time". The rows we build are one per
+ * occupied interval, not one per period, and two intervals landing on the same
+ * (listing, start, end) is ordinary vendor data: an option and a reservation over one
+ * week, two same-day service blocks that both widen to the same day, or two external
+ * yacht ids resolving to one merged listing. Unhandled it aborts the whole run - it
+ * took out a Booking Manager availability sync on 2026-08-19, after 10109 listings.
+ *
+ * Last wins, which is what the upsert already did whenever a colliding pair happened to
+ * straddle a chunk boundary, since `excluded.*` overwrites. Availability is unaffected
+ * either way: every status we store occupies the boat, so a collision changes the label
+ * on a taken week, never whether it is taken.
+ *
+ * It lives with the constraint it answers to rather than at the call site, so a later
+ * caller inherits the protection instead of rediscovering the error in production.
+ */
+export function dedupeSlotsByPeriod<
+  T extends { listingId: string; startDate: string; endDate: string },
+>(slots: readonly T[]): T[] {
+  const byPeriod = new Map<string, T>();
+  for (const slot of slots) {
+    byPeriod.set(`${slot.listingId}::${slot.startDate}::${slot.endDate}`, slot);
+  }
+  return [...byPeriod.values()];
+}
+
 export function createDrizzleAvailabilitySyncStore(
   options: DrizzleAvailabilityStoreOptions,
 ): AvailabilitySyncStore {
@@ -844,10 +873,12 @@ export function createDrizzleAvailabilitySyncStore(
     async writeSlots(slots) {
       if (slots.length === 0) return;
 
+      const deduped = dedupeSlotsByPeriod(slots);
+
       // Chunked for the same reason the other bulk writes are, and more urgently: a
       // slot binds thirteen parameters, so an account-wide dump in one statement
       // would blow the 65535 ceiling long before it ran out of rows.
-      for (const chunk of chunked(slots, ROW_CHUNK)) {
+      for (const chunk of chunked(deduped, ROW_CHUNK)) {
         await db
           .insert(availabilitySlot)
           .values(
