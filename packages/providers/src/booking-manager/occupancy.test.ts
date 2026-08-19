@@ -27,14 +27,19 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
 
+/*
+ * Ids are digit strings, which is what the client's parser produces: the vendor's
+ * run to 19 digits and `JSON.parse` would round them. A real one is used below so the
+ * fixtures cannot drift back to a shape a float64 could hold.
+ */
 const row = (over: Partial<RestAvailability> = {}): RestAvailability => ({
-  id: 1,
-  yachtId: 42,
+  id: "1",
+  yachtId: "6614004890000100225",
   dateFrom: "2026-08-08 17:00:00",
   dateTo: "2026-08-15 09:00:00",
   status: BM_RESERVATION_STATUS.RESERVATION,
-  baseFromId: 3,
-  baseToId: 3,
+  baseFromId: "3",
+  baseToId: "3",
   optionExpirationDate: null,
   ...over,
 });
@@ -42,7 +47,8 @@ const row = (over: Partial<RestAvailability> = {}): RestAvailability => ({
 describe("mapBookingManagerAvailability", () => {
   it("maps a reservation to an occupied half-open interval", () => {
     expect(mapBookingManagerAvailability(row(), config)).toMatchObject({
-      externalYachtId: "42",
+      // Intact, not the 6614004890000100000 a float64 would have left.
+      externalYachtId: "6614004890000100225",
       startDate: "2026-08-08",
       endDate: "2026-08-15",
       status: "occupied",
@@ -113,9 +119,67 @@ describe("mapBookingManagerAvailability", () => {
 
 describe("mapBookingManagerOccupancyDump", () => {
   it("maps every row", () => {
-    expect(mapBookingManagerOccupancyDump([row({ id: 1 }), row({ id: 2 })], config)).toHaveLength(
-      2,
+    expect(
+      mapBookingManagerOccupancyDump([row({ id: "1" }), row({ id: "2" })], config).intervals,
+    ).toHaveLength(2);
+  });
+
+  it("quarantines nothing when the dump is clean", () => {
+    const dump = mapBookingManagerOccupancyDump([row()], config);
+
+    expect(dump.quarantinedYachtIds).toBeUndefined();
+    expect(dump.issues).toBeUndefined();
+  });
+
+  /*
+   * Measured on the live account 2026-08-19: one row of 239,444 carried
+   * dateFrom=2027-10-30 with dateTo=2026-03-25, and under the old all-or-nothing
+   * mapping it failed the scope - which account-wide means every company.
+   */
+  it("quarantines the yacht that owns an unreadable row, not the scope", () => {
+    const dump = mapBookingManagerOccupancyDump(
+      [
+        row({ yachtId: "42" }),
+        row({ yachtId: "99", dateFrom: "2027-10-30 00:00:00", dateTo: "2026-03-25 00:00:00" }),
+      ],
+      config,
     );
+
+    expect(dump.intervals.map((interval) => interval.externalYachtId)).toEqual(["42"]);
+    expect(dump.quarantinedYachtIds).toEqual(["99"]);
+    expect(dump.issues?.[0]).toContain("before it starts");
+  });
+
+  it("drops a quarantined yacht's readable rows too", () => {
+    const dump = mapBookingManagerOccupancyDump(
+      [
+        row({ yachtId: "99", id: "1" }),
+        row({
+          yachtId: "99",
+          id: "2",
+          dateFrom: "2027-10-30 00:00:00",
+          dateTo: "2026-03-25 00:00:00",
+        }),
+      ],
+      config,
+    );
+
+    // Half a calendar is not a calendar: partial occupancy plus no sweep would leave
+    // the rest of its slots stale with nothing to tidy them.
+    expect(dump.intervals).toEqual([]);
+    expect(dump.quarantinedYachtIds).toEqual(["99"]);
+  });
+
+  it("caps the reported issues", () => {
+    const bad = (yachtId: string) =>
+      row({ yachtId, dateFrom: "2027-10-30 00:00:00", dateTo: "2026-03-25 00:00:00" });
+    const dump = mapBookingManagerOccupancyDump(
+      Array.from({ length: 9 }, (_unused, index) => bad(String(index))),
+      config,
+    );
+
+    expect(dump.quarantinedYachtIds).toHaveLength(9);
+    expect(dump.issues).toHaveLength(5);
   });
 });
 
@@ -127,10 +191,12 @@ interface RecordedCall {
 }
 
 /**
- * Captures what actually reaches the transport. The bug this guards against was
- * invisible for exactly as long as no test looked here: the vendor names the
- * company filter `company` on `/availability`, the connector sent `companyId`, and
- * an unknown query parameter is dropped rather than refused.
+ * Captures what actually reaches the transport, which nothing here used to do.
+ *
+ * The name is load-bearing and is NOT the one the spec documents: `?company=` is
+ * accepted and ignored by the live endpoint, returning the whole account, while
+ * `?companyId=` filters. See the comment in `fetchBookingManagerOccupancy`. A
+ * silently-widened scope looks like success, so this is asserted rather than trusted.
  */
 function recordingClient(rows: RestAvailability[] = []) {
   const calls: RecordedCall[] = [];
@@ -146,12 +212,12 @@ function recordingClient(rows: RestAvailability[] = []) {
 }
 
 describe("fetchBookingManagerOccupancy", () => {
-  it("narrows by `company`, the name the vendor documents on /availability", async () => {
+  it("narrows by `companyId`, the name the live endpoint honours", async () => {
     const { client, calls } = recordingClient();
 
     await fetchBookingManagerOccupancy(client, { companyId: "10", year: 2026 });
 
-    expect(calls).toEqual([{ endpoint: "availability/2026", query: { company: "10" } }]);
+    expect(calls).toEqual([{ endpoint: "availability/2026", query: { companyId: "10" } }]);
   });
 
   it("sends no filter at all for the account-wide scope", async () => {
@@ -213,7 +279,11 @@ describe("createBookingManagerAvailabilitySource", () => {
 
     await expect(
       source.fetchOccupancy({ scopeKey: ACCOUNT_WIDE_SCOPE, year: 2026 }),
-    ).resolves.toMatchObject([{ externalYachtId: "42", status: "occupied" }]);
+    ).resolves.toEqual({
+      intervals: [
+        expect.objectContaining({ externalYachtId: "6614004890000100225", status: "occupied" }),
+      ],
+    });
   });
 
   describe("isFatal", () => {

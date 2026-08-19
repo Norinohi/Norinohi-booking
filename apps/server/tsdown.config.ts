@@ -11,6 +11,7 @@ export default defineConfig({
     "./src/drain-outbox.ts",
     "./src/seed-facets.ts",
     "./src/publish-listings.ts",
+    "./src/repair-bm-ids.ts",
   ],
   format: "esm",
   outDir: "./dist",

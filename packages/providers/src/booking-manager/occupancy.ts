@@ -5,6 +5,7 @@ import {
   type AvailabilityScope,
   type AvailabilitySource,
   isFatalAuthOnly,
+  type OccupancyDump,
   type OccupiedInterval,
 } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
@@ -83,14 +84,21 @@ export async function fetchBookingManagerOccupancy(
     bookingManagerEndpoints.availability(scope.year),
     restAvailabilityListSchema,
     /*
-     * `company`, not `companyId`. The spec has named it that on `/availability` and
-     * `/shortAvailability` since at least 2.1.4, while `/yachts`, `/prices` and
-     * `/offers` all take `companyId` - so the obvious name is the wrong one on
-     * exactly these two endpoints, and an unknown query parameter is dropped
-     * silently rather than refused. Nothing caught it because no test on this
-     * module reaches the transport.
+     * `companyId`, despite the spec. Both 2.1.4 and 2.2.1 document this parameter as
+     * `company` on `/availability` and `/shortAvailability` (while `/yachts`,
+     * `/prices` and `/offers` take `companyId`), so the documented name looks like
+     * the right one. It is not: measured against the live v2 endpoint on 2026-08-19,
+     * `?company=225` returns the unfiltered account dump - 16194 rows across 4017
+     * yachts, byte-identical to sending no filter - while `?companyId=225` returns
+     * the 1 row that company actually has. The vendor drops the unknown parameter
+     * silently, so following the spec here reads as success and quietly widens every
+     * scope to the whole account.
+     *
+     * Do not "correct" this to match the spec without re-running that comparison.
+     * VENDOR QUESTION Q-BM-COMPANYPARAM: which name is intended, and is `company`
+     * deprecated or simply wrong in the document?
      */
-    scope.companyId === ACCOUNT_WIDE_SCOPE ? undefined : { company: scope.companyId },
+    scope.companyId === ACCOUNT_WIDE_SCOPE ? undefined : { companyId: scope.companyId },
   );
 }
 
@@ -151,11 +159,55 @@ export function mapBookingManagerAvailability(
   };
 }
 
+/** Enough to name the problem to the vendor without pasting a dump into a log line. */
+const MAX_REPORTED_ISSUES = 5;
+
+/**
+ * Lossy for one yacht, never for the scope.
+ *
+ * `mapBookingManagerAvailability` still throws on a row it cannot read - that is the
+ * per-row contract and the only safe reading of a range that runs backwards. What
+ * changed is who pays. Failing the whole scope was right when a scope was one
+ * company-year; account-wide it means one row out of a quarter of a million blocks
+ * every company, which is what a single reversed `dateFrom`/`dateTo` did on
+ * 2026-08-19. So the yacht that owns the bad row is quarantined instead: its readable
+ * periods are kept, and the writer neither publishes free time for it nor sweeps it.
+ */
 export function mapBookingManagerOccupancyDump(
   rows: readonly RestAvailability[],
   config: BookingManagerConfig,
-): OccupiedInterval[] {
-  return rows.map((row) => mapBookingManagerAvailability(row, config));
+): OccupancyDump {
+  const intervals: OccupiedInterval[] = [];
+  const quarantinedYachtIds = new Set<string>();
+  const issues: string[] = [];
+
+  for (const row of rows) {
+    try {
+      intervals.push(mapBookingManagerAvailability(row, config));
+    } catch (error) {
+      const externalYachtId = String(row.yachtId);
+      quarantinedYachtIds.add(externalYachtId);
+      if (issues.length < MAX_REPORTED_ISSUES) {
+        issues.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+
+  // A quarantined yacht's own readable rows are dropped too. Half a calendar is not
+  // a calendar: keeping them would let the writer restamp some of its slots and
+  // leave the rest to look stale, and the sweep it is excluded from is the only
+  // thing that would have tidied that up.
+  const kept =
+    quarantinedYachtIds.size === 0
+      ? intervals
+      : intervals.filter((interval) => !quarantinedYachtIds.has(interval.externalYachtId));
+
+  const dump: OccupancyDump = { intervals: kept };
+  if (quarantinedYachtIds.size > 0) {
+    dump.quarantinedYachtIds = [...quarantinedYachtIds];
+    dump.issues = issues;
+  }
+  return dump;
 }
 
 export interface BookingManagerAvailabilitySourceOptions {

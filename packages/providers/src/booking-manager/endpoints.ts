@@ -68,6 +68,46 @@ const numeric = z.coerce.number();
 const optionalNumeric = numeric.optional().nullable();
 const optionalText = z.string().optional().nullable();
 
+/*
+ * Ids are carried as digit strings, never as numbers.
+ *
+ * The vendor's ids run to 19 digits and a float64 holds 15-16, so a number here is a
+ * value we may have rewritten: `6614004890000100225` parses as
+ * `6614004890000100000`, and `9046281455002103` as `9046281455002104` - which can be
+ * a different real yacht. `BookingManagerClient` parses responses with
+ * `parseExactJson`, which hands over the exact digits for any literal that would not
+ * survive; this accepts either shape and settles on the string, so an id that did
+ * round-trip is not stored in a second form.
+ *
+ * Deliberately not `z.coerce.string()`: coercing a number that has already been
+ * rounded produces confident, wrong digits, whereas the union documents that both
+ * shapes arrive and only one of them is trustworthy for a long id.
+ */
+const idDigits = /^-?\d+$/;
+
+/*
+ * The numeric branch cannot be `z.number().int()`: that caps at
+ * `Number.MAX_SAFE_INTEGER`, which rejects exactly the ids `parseExactJson`
+ * deliberately left as numbers. `/bases` ids run to 18 digits and round-trip fine
+ * because they end in zeros, so they arrive numeric and are perfectly good - the bound
+ * would refuse 1,296 of 1,297 bases for being large rather than for being wrong.
+ *
+ * The upper guard is about `String`, not about size: from 1e21 it switches to
+ * exponential notation, and "1e+21" is not an id.
+ */
+const MAX_PRINTABLE_INTEGER = 1e21;
+const integerId = z
+  .number()
+  .refine(
+    (value) => Number.isInteger(value) && Math.abs(value) < MAX_PRINTABLE_INTEGER,
+    "Expected an integer id that stringifies as digits",
+  );
+
+const id = z
+  .union([z.string().regex(idDigits, "Expected an integer id"), integerId])
+  .transform(String);
+const optionalId = id.optional().nullable();
+
 export const restImageSchema = looseJsonObject({
   name: optionalText,
   description: optionalText,
@@ -76,7 +116,7 @@ export const restImageSchema = looseJsonObject({
 });
 
 export const restDocumentSchema = looseJsonObject({
-  id: optionalNumeric,
+  id: optionalId,
   name: optionalText,
   description: optionalText,
   url: optionalText,
@@ -89,7 +129,7 @@ export const restValidForBasesSchema = looseJsonObject({
 });
 
 export const restExtrasSchema = looseJsonObject({
-  id: optionalNumeric,
+  id: optionalId,
   name: optionalText,
   obligatory: z.boolean().optional().nullable(),
   price: optionalNumeric,
@@ -132,8 +172,8 @@ export const restCrewSchema = looseJsonObject({
 });
 
 export const restEquipmentItemRawSchema = looseJsonObject({
-  id: optionalNumeric,
-  parentId: optionalNumeric,
+  id: optionalId,
+  parentId: optionalId,
   name: optionalText,
   value: optionalText,
   categoryName: optionalText,
@@ -146,16 +186,16 @@ export const restEquipmentItemRawSchema = looseJsonObject({
  * spec lives.
  */
 export const restYachtSchema = looseJsonObject({
-  id: numeric,
+  id: id,
   name: optionalText,
   model: optionalText,
-  modelId: optionalNumeric,
+  modelId: optionalId,
   kind: optionalText,
-  homeBaseId: optionalNumeric,
+  homeBaseId: optionalId,
   homeBase: optionalText,
-  companyId: optionalNumeric,
+  companyId: optionalId,
   company: optionalText,
-  shipyardId: optionalNumeric,
+  shipyardId: optionalId,
   year: optionalNumeric,
   certificate: optionalText,
   draught: optionalNumeric,
@@ -192,7 +232,7 @@ export const restYachtSchema = looseJsonObject({
   maximumCharterDuration: optionalNumeric,
   maxPeopleOnBoard: optionalNumeric,
   images: z.array(restImageSchema).optional().nullable(),
-  equipmentIds: z.array(numeric).optional().nullable(),
+  equipmentIds: z.array(id).optional().nullable(),
   equipment: z
     .array(looseJsonObject({ id: optionalNumeric, value: optionalText }))
     .optional()
@@ -204,7 +244,7 @@ export const restYachtSchema = looseJsonObject({
 });
 
 export const restBaseSchema = looseJsonObject({
-  id: numeric,
+  id: id,
   name: optionalText,
   city: optionalText,
   country: optionalText,
@@ -212,12 +252,12 @@ export const restBaseSchema = looseJsonObject({
   // Latitude/longitude are declared as strings in the spec, not numbers.
   latitude: optionalText,
   longitude: optionalText,
-  countryId: optionalNumeric,
+  countryId: optionalId,
   sailingAreas: z.array(numeric).optional().nullable(),
 });
 
 export const restCompanySchema = looseJsonObject({
-  id: numeric,
+  id: id,
   name: optionalText,
   city: optionalText,
   zip: optionalText,
@@ -236,7 +276,7 @@ export const restCompanySchema = looseJsonObject({
 });
 
 export const restShipyardSchema = looseJsonObject({
-  id: numeric,
+  id: id,
   name: optionalText,
   shortName: optionalText,
 });
@@ -250,7 +290,7 @@ export const restShipyardSchema = looseJsonObject({
  * Manager and NauSYS one row.
  */
 export const restCountrySchema = looseJsonObject({
-  id: numeric,
+  id: id,
   name: optionalText,
   short: optionalText,
   long: optionalText,
@@ -273,10 +313,10 @@ export const restPaymentSchema = looseJsonObject({
 });
 
 export const restOfferSchema = looseJsonObject({
-  yachtId: numeric,
+  yachtId: id,
   yacht: optionalText,
-  startBaseId: optionalNumeric,
-  endBaseId: optionalNumeric,
+  startBaseId: optionalId,
+  endBaseId: optionalId,
   startBase: optionalText,
   endBase: optionalText,
   dateFrom: optionalText,
@@ -293,11 +333,11 @@ export const restOfferSchema = looseJsonObject({
   commissionValue: optionalNumeric,
   discountPercentage: optionalNumeric,
   // Only present when the /offers call passed showOptions=true.
-  myReservationId: optionalNumeric,
+  myReservationId: optionalId,
 });
 
 export const restPriceSchema = looseJsonObject({
-  yachtId: numeric,
+  yachtId: id,
   dateFrom: optionalText,
   dateTo: optionalText,
   product: optionalText,
@@ -308,13 +348,13 @@ export const restPriceSchema = looseJsonObject({
 });
 
 export const restAvailabilitySchema = looseJsonObject({
-  id: optionalNumeric,
+  id: optionalId,
   dateFrom: optionalText,
   dateTo: optionalText,
-  yachtId: numeric,
+  yachtId: id,
   status: optionalNumeric,
-  baseFromId: optionalNumeric,
-  baseToId: optionalNumeric,
+  baseFromId: optionalId,
+  baseToId: optionalId,
   optionExpirationDate: optionalText,
 });
 
@@ -334,23 +374,23 @@ export const restInvoiceItemSchema = looseJsonObject({
 });
 
 export const restReservationSchema = looseJsonObject({
-  id: numeric,
+  id: id,
   /** Present on agency reservations only. */
-  charterReservationId: optionalNumeric,
+  charterReservationId: optionalId,
   reservationCode: optionalText,
   dateFrom: optionalText,
   dateTo: optionalText,
   creationDate: optionalText,
   confirmationDate: optionalText,
   expirationDate: optionalText,
-  yachtId: optionalNumeric,
+  yachtId: optionalId,
   status: optionalNumeric,
   productName: optionalText,
-  baseFromId: optionalNumeric,
-  baseToId: optionalNumeric,
+  baseFromId: optionalId,
+  baseToId: optionalId,
   currency: optionalText,
   clientName: optionalText,
-  clientId: optionalNumeric,
+  clientId: optionalId,
   basePrice: optionalNumeric,
   discount: optionalNumeric,
   commission: optionalNumeric,
@@ -362,6 +402,16 @@ export const restReservationSchema = looseJsonObject({
   termsOfPayment: optionalText,
   remarks: optionalText,
 });
+
+/**
+ * Just enough of any collection to read its ids.
+ *
+ * The id repair needs ids and nothing else, and validating the rest would couple a
+ * one-off migration to every unrelated strictness question in the full schemas -
+ * `/yachts` account-wide currently fails `equipment[].value` on 2000+ rows, which has
+ * no bearing on whether an id is exact.
+ */
+export const restIdListSchema = z.array(looseJsonObject({ id }));
 
 export const restYachtListSchema = z.array(restYachtSchema);
 export const restBaseListSchema = z.array(restBaseSchema);

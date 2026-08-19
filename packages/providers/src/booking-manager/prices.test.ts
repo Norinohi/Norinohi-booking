@@ -26,7 +26,7 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
 });
 
 const row = (over: Partial<RestPrice> = {}): RestPrice => ({
-  yachtId: 42,
+  yachtId: "42",
   dateFrom: "2027-01-02 17:00:00",
   dateTo: "2027-01-09 09:00:00",
   price: 1234.5,

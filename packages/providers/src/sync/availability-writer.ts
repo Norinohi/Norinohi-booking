@@ -81,6 +81,39 @@ export interface ListingRef {
 
 /* ------------------------------------------------------------------ source */
 
+/**
+ * What one scope's occupancy fetch returned, when the source needs to say more than
+ * "here are the taken periods".
+ *
+ * A source may return a bare array instead; that means nothing was quarantined.
+ */
+export interface OccupancyDump {
+  intervals: OccupiedInterval[];
+  /**
+   * Yachts whose dump could not be read in full.
+   *
+   * Their occupied periods are still written - asserting that time is taken can
+   * never oversell - but they are excluded from free-period synthesis and from the
+   * removal sweep, because we are holding an incomplete picture of their calendar.
+   * Synthesizing against it would publish a gap the missing row was covering, and
+   * sweeping against it would delete sold time the dump simply failed to restate.
+   *
+   * This exists because a scope grew. When one scope was one company-year, failing
+   * the whole scope over a malformed row cost eleven boats and was obviously right.
+   * Account-wide, the same rule lets one vendor row block every company - which is
+   * exactly what it did: a single reversed date range out of 239,444.
+   */
+  quarantinedYachtIds?: readonly string[];
+  /** One line per quarantine, for the error row. The source caps this. */
+  issues?: readonly string[];
+}
+
+export type OccupancyFetchResult = OccupiedInterval[] | OccupancyDump;
+
+export function normalizeOccupancyDump(result: OccupancyFetchResult): OccupancyDump {
+  return Array.isArray(result) ? { intervals: result } : result;
+}
+
 export interface ConfirmedOfferPage {
   offers: ConfirmedOffer[];
   /** Where a resumed run should start; already past everything in this page. */
@@ -93,7 +126,7 @@ export interface AvailabilitySource {
    * Resolves only for a dump that arrived whole. A throw is what stops this scope
    * from being swept, so a partial answer must never be returned as a short list.
    */
-  fetchOccupancy(scope: AvailabilityScope): Promise<OccupiedInterval[]>;
+  fetchOccupancy(scope: AvailabilityScope): Promise<OccupancyFetchResult>;
   /**
    * The accurate pass. Pages are yielded rather than collected so the caller can
    * abandon the walk on a wall-clock budget without having bought the rest of it.
@@ -325,6 +358,12 @@ export interface AvailabilitySyncSummary {
    * is a whole run's difference and used to need a database session to tell apart.
    */
   unresolvedYachtIdSample: string[];
+  /**
+   * Yachts whose occupancy arrived unreadable, so their free periods were neither
+   * asserted nor swept this run. Non-zero means a vendor data problem worth chasing,
+   * not a code failure - the accompanying `sync_error` rows name the rows.
+   */
+  quarantinedYachts: number;
   deletedSlots: number;
   sweptScopes: number;
   failedCount: number;
@@ -394,6 +433,7 @@ export async function runAvailabilitySync(
   let confirmedSlots = 0;
   let skippedYachts = 0;
   const unresolved = new Set<string>();
+  const quarantined = new Set<string>();
   let deletedSlots = 0;
   let sweptScopes = 0;
   let failedCount = 0;
@@ -424,10 +464,32 @@ export async function runAvailabilitySync(
       const occupiedByListing = new Map<string, OccupiedInterval[]>();
       const listings = new Map<string, ListingRef>();
 
+      // Listing ids we hold an incomplete calendar for, in this scope.
+      const quarantinedListingIds = new Set<string>();
+
       for (const year of [...years].sort((a, b) => a - b)) {
         let intervals: OccupiedInterval[];
         try {
-          intervals = await source.fetchOccupancy({ scopeKey, year });
+          const dump = normalizeOccupancyDump(await source.fetchOccupancy({ scopeKey, year }));
+          intervals = dump.intervals;
+
+          for (const externalYachtId of dump.quarantinedYachtIds ?? []) {
+            quarantined.add(externalYachtId);
+            const ref = await store.resolveListing(externalYachtId);
+            if (ref) quarantinedListingIds.add(ref.listingId);
+          }
+
+          // Reported once per scope-year rather than per row: it downgrades the run to
+          // `partial` so the vendor problem is visible, without turning one bad dump
+          // into thousands of error rows.
+          if (dump.issues?.length) {
+            await report(new ContractError(dump.issues.join("; ")), {
+              scopeKey,
+              year,
+              phase: "occupancy-quarantine",
+              quarantinedYachts: dump.quarantinedYachtIds?.length ?? 0,
+            });
+          }
         } catch (error) {
           if (isFatal(error)) throw error;
           // No completion, so no sweep and no synthesis for this year: the rest of
@@ -488,10 +550,23 @@ export async function runAvailabilitySync(
       const freeWrites: FreePeriodWrite[] = [];
 
       for (const ref of listingRefs) {
-        const free = freePeriodsFrom({
-          windows,
-          occupied: occupiedByListing.get(ref.listingId) ?? [],
-        });
+        /*
+         * A quarantined yacht is cleared, not skipped.
+         *
+         * Skipping it would leave the free periods the last good run published, and
+         * those are the rows the catalogue advertises as bookable - so a week sold
+         * since then would still be on sale, which is the exact thing quarantining is
+         * meant to prevent. Writing an empty list deletes them inside the years we
+         * fetched and asserts nothing in their place: the boat shows no availability
+         * until the vendor's data is readable again. Its already-stored occupied slots
+         * stay put, because the sweep below skips it too.
+         */
+        const free = quarantinedListingIds.has(ref.listingId)
+          ? []
+          : freePeriodsFrom({
+              windows,
+              occupied: occupiedByListing.get(ref.listingId) ?? [],
+            });
         /*
          * Collected even when empty: a boat that just sold its last week must lose the
          * free periods it had, and the replace inside `writeFreePeriods` is what removes
@@ -507,9 +582,13 @@ export async function runAvailabilitySync(
       // Occupancy is a full dump per (company, year), so anything inside a year we
       // fetched cleanly and did not restamp is gone from the provider. Strictly one
       // year and one company at a time: a failed fetch swept nothing above.
+      // Excluded from the sweep, so a slot we could not re-derive is not deleted into
+      // looking free. Nothing advertises it either - its free periods were just cleared.
+      const sweepable = listingRefs.filter((ref) => !quarantinedListingIds.has(ref.listingId));
+
       for (const year of cleanYears) {
         deletedSlots += await store.sweepScope({
-          listings: listingRefs,
+          listings: sweepable,
           year,
           seenBefore: startedAt,
         });
@@ -603,6 +682,7 @@ export async function runAvailabilitySync(
     confirmedSlots,
     skippedYachts,
     unresolvedYachtIdSample: [...unresolved],
+    quarantinedYachts: quarantined.size,
     deletedSlots,
     sweptScopes,
     failedCount,
@@ -968,6 +1048,7 @@ export async function runAvailabilitySyncJob(
       confirmedSlots: 0,
       skippedYachts: 0,
       unresolvedYachtIdSample: [],
+      quarantinedYachts: 0,
       deletedSlots: 0,
       sweptScopes: 0,
       failedCount: 0,

@@ -789,6 +789,128 @@ describe("runAvailabilitySync", () => {
     expect(store.freeOf(MARLIN.listingId)).not.toHaveLength(0);
   });
 
+  /*
+   * A quarantined yacht is one whose dump the source could not read in full. The
+   * rule is: never state what is free from a calendar we only partly have, and
+   * never delete what we already hold from it either.
+   */
+  describe("quarantined yachts", () => {
+    const seed = () =>
+      fakeStore({ yachts: { "4711001": MARLIN }, listings: { "102701": [MARLIN] } });
+
+    const quarantining = () =>
+      source({
+        fetchOccupancy: () =>
+          Promise.resolve({
+            intervals: [],
+            quarantinedYachtIds: ["4711001"],
+            issues: ["row 7 ends before it starts"],
+          }),
+      });
+
+    it("clears its free periods rather than leaving last run's on sale", async () => {
+      const store = fakeStore({
+        yachts: { "4711001": MARLIN },
+        listings: { "102701": [MARLIN] },
+      });
+
+      // A clean run first, so there is something on sale to be left behind.
+      await runAvailabilitySync({
+        store: store.store,
+        source: source({ fetchOccupancy: () => Promise.resolve([]) }),
+        now: () => RUN_AT,
+      });
+      expect(store.freeOf("ylst_marlin")).not.toHaveLength(0);
+
+      await runAvailabilitySync({
+        store: store.store,
+        source: quarantining(),
+        now: () => RUN_AT,
+      });
+
+      expect(store.freeOf("ylst_marlin")).toEqual([]);
+    });
+
+    it("does not sweep its stored slots", async () => {
+      const store = fakeStore({
+        yachts: { "4711001": MARLIN },
+        listings: { "102701": [MARLIN] },
+        slots: [
+          {
+            listingId: "ylst_marlin",
+            listingSourceId: "lsrc_marlin",
+            startDate: "2026-06-27",
+            endDate: "2026-07-04",
+            status: "occupied",
+            availabilityConfirmed: true,
+            priceMinor: null,
+            currency: null,
+            minNights: null,
+            checkinWeekday: null,
+            checkoutWeekday: null,
+            sourceHash: "stale",
+            updatedAt: new Date("2026-05-01T00:00:00.000Z"),
+          },
+        ],
+      });
+
+      const summary = await runAvailabilitySync({
+        store: store.store,
+        source: quarantining(),
+        now: () => RUN_AT,
+      });
+
+      // Deleting an occupied slot it could not re-derive would read as free time.
+      expect(store.listOf("ylst_marlin")).toHaveLength(1);
+      expect(summary.deletedSlots).toBe(0);
+    });
+
+    it("counts them and reports the vendor's rows as a partial run", async () => {
+      const summary = await runAvailabilitySync({
+        store: seed().store,
+        source: quarantining(),
+        now: () => RUN_AT,
+      });
+
+      expect(summary.quarantinedYachts).toBe(1);
+      expect(summary.status).toBe("partial");
+      expect(summary.aborted).toBe(false);
+    });
+
+    it("keeps sweeping and synthesizing for everyone else in the scope", async () => {
+      const OTTER: ListingRef = { listingId: "ylst_otter", listingSourceId: "lsrc_otter" };
+      const store = fakeStore({
+        yachts: { "4711001": MARLIN, "4711002": OTTER },
+        listings: { "102701": [MARLIN, OTTER] },
+      });
+
+      await runAvailabilitySync({
+        store: store.store,
+        source: source({
+          fetchOccupancy: () =>
+            Promise.resolve({ intervals: [], quarantinedYachtIds: ["4711001"] }),
+        }),
+        now: () => RUN_AT,
+      });
+
+      expect(store.freeOf("ylst_marlin")).toEqual([]);
+      expect(store.freeOf("ylst_otter")).not.toHaveLength(0);
+    });
+
+    it("accepts a bare array from a source that quarantines nothing", async () => {
+      const store = seed();
+
+      const summary = await runAvailabilitySync({
+        store: store.store,
+        source: source({ fetchOccupancy: () => Promise.resolve([occupied()]) }),
+        now: () => RUN_AT,
+      });
+
+      expect(summary.quarantinedYachts).toBe(0);
+      expect(summary.occupiedSlots).toBe(1);
+    });
+  });
+
   it("lists every listing under the account-wide scope so the sweep stays whole", async () => {
     const store = fakeStore({
       yachts: { "4711001": MARLIN },

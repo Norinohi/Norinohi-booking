@@ -9,6 +9,7 @@
     "dev": "tsx watch src/index.ts",
     "migrate": "node dist/migrate.mjs",
     "start": "node dist/index.mjs",
+    "repair:bm-ids": "node dist/repair-bm-ids.mjs",
     "sync:catalogue": "node dist/sync-catalogue.mjs",
     "sync:availability": "node dist/sync-availability.mjs",
     "sweep:expiries": "node dist/sweep-expiries.mjs",
