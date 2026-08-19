@@ -18,7 +18,7 @@ import type {
   bookingExcludeInputSchema,
   bookingExcludeSchema,
 } from "../contracts/booking";
-import { writeAuditLog } from "./audit";
+import { type AuditEntry, writeAuditLog } from "./audit";
 import { readAnyBooking } from "./booking-read";
 import { paginatedQuery, totalFrom } from "./pagination";
 
@@ -268,15 +268,17 @@ export async function setBookingExcluded(
 
     await tx.update(booking).set({ excludedAt, excludedReason }).where(eq(booking.id, input.id));
 
-    await writeAuditLog(tx, {
+    const entry: AuditEntry = {
       actorUserId,
       action: "update",
       entityType: "booking",
       entityId: input.id,
       before: { excludedAt: existing.excludedAt?.toISOString() ?? null },
       after: { excludedAt: excludedAt?.toISOString() ?? null },
-      ...(input.reason ? { metadata: { reason: input.reason } } : {}),
-    });
+    };
+    if (input.reason) entry.metadata = { reason: input.reason };
+
+    await writeAuditLog(tx, entry);
 
     return {
       bookingId: input.id,
