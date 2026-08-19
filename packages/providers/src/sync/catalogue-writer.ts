@@ -22,6 +22,7 @@ import {
   yachtCategory,
   yachtModel,
 } from "@yacht-charter/db/schema/taxonomy";
+import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
@@ -833,9 +834,28 @@ async function writeListingChildren(
         eq(providerExtraCatalogue.source, providerKey),
       ),
     );
-  if (item.extras.length > 0) {
+  /*
+   * An extra priced beyond what the column holds is dropped, not thrown.
+   *
+   * `provider_extra_catalogue.price_minor` is an integer like every money column
+   * here, and this insert is one statement per listing, so a single over-range
+   * extra fails all of them. Worse, there is no per-listing catch in this loop -
+   * the throw leaves `writeCanonicalCatalogue` entirely, so one boat's optional
+   * transfer fee would cost the projection of every listing in the run. Losing one
+   * extra from one boat is the smaller loss by a very wide margin.
+   */
+  const extras = item.extras.filter(
+    (extra) =>
+      Number.isSafeInteger(extra.priceMinor) && Math.abs(extra.priceMinor) <= MAX_MONEY_MINOR,
+  );
+  if (extras.length !== item.extras.length) {
+    console.warn(
+      `[catalogue] listing ${listingId}: dropped ${item.extras.length - extras.length} extra(s) priced beyond price_minor`,
+    );
+  }
+  if (extras.length > 0) {
     await db.insert(providerExtraCatalogue).values(
-      item.extras.map((extra) => ({
+      extras.map((extra) => ({
         listingId,
         source: providerKey,
         kind: extra.kind,

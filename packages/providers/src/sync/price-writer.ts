@@ -1,4 +1,5 @@
 import { listingPricePeriod } from "@yacht-charter/db/schema/availability";
+import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord } from "@yacht-charter/db/schema/provider";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
@@ -80,11 +81,22 @@ export interface PricePeriodRow {
  * priced for the same week would collapse into one row and the second would silently
  * lose its price.
  */
-export function dedupePricePeriodRows(writes: readonly PricePeriodWrite[]): PricePeriodRow[] {
+export interface PricePeriodRows {
+  rows: PricePeriodRow[];
+  /** Rates too large for the column, which are left unwritten and reported. */
+  rejected: number;
+}
+
+export function dedupePricePeriodRows(writes: readonly PricePeriodWrite[]): PricePeriodRows {
   const unique = new Map<string, PricePeriodRow>();
+  let rejected = 0;
 
   for (const write of writes) {
     for (const price of write.prices) {
+      if (!Number.isSafeInteger(price.priceMinor) || Math.abs(price.priceMinor) > MAX_MONEY_MINOR) {
+        rejected += 1;
+        continue;
+      }
       unique.set(`${write.listingId}|${price.startDate}|${price.endDate}`, {
         listingId: write.listingId,
         listingSourceId: write.listingSourceId,
@@ -97,7 +109,7 @@ export function dedupePricePeriodRows(writes: readonly PricePeriodWrite[]): Pric
     }
   }
 
-  return [...unique.values()];
+  return { rows: [...unique.values()], rejected };
 }
 
 export interface PricePeriodStore {
@@ -174,7 +186,14 @@ export function createDrizzlePricePeriodStore(options: {
     },
 
     async writePricePeriods(writes) {
-      const rows = dedupePricePeriodRows(writes);
+      const { rows, rejected } = dedupePricePeriodRows(writes);
+      if (rejected > 0) {
+        // Printed rather than thrown: it is a vendor data problem, one boat wide, and
+        // the run has thousands of other listings whose rates are fine.
+        console.warn(
+          `[prices] dropped ${rejected} rate(s) too large for price_minor; those periods keep their previous price`,
+        );
+      }
       if (rows.length === 0) return 0;
 
       for (const chunk of chunked(rows, ROW_CHUNK)) {

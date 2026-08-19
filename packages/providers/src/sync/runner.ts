@@ -766,6 +766,15 @@ export interface CatalogueSyncJobOptions {
   resume?: unknown;
   cursorScope?: string;
   now?: () => Date;
+  /**
+   * Called as the job moves between its three phases.
+   *
+   * Only the ingest phase writes `provider_record`, so a caller polling the database
+   * for progress sees every number freeze the moment the walk ends - which is exactly
+   * when the run still has its projection and its price sweep to do. Without this, a
+   * job eight minutes into pricing and a hung one look identical.
+   */
+  onPhase?: (phase: CatalogueSyncPhase) => void;
 }
 
 export interface CatalogueSyncJobResult extends CatalogueIngestSummary {
@@ -786,6 +795,8 @@ export interface CatalogueSyncJobResult extends CatalogueIngestSummary {
  * the provider's own pure projection over everything ingested so far, which is why
  * it can run even after a partial ingest.
  */
+export type CatalogueSyncPhase = "ingest" | "project" | "prices";
+
 export async function runCatalogueSyncJob(
   options: CatalogueSyncJobOptions,
 ): Promise<CatalogueSyncJobResult> {
@@ -798,6 +809,8 @@ export async function runCatalogueSyncJob(
     syncRunId,
     cursorScope: options.cursorScope,
   });
+
+  options.onPhase?.("ingest");
 
   const source = supportsScopedCatalogueSync(provider)
     ? provider.createCatalogueSyncSource({ resume: options.resume })
@@ -818,6 +831,8 @@ export async function runCatalogueSyncJob(
   if (ingest.aborted) {
     return { ...ingest, ...empty };
   }
+
+  options.onPhase?.("project");
 
   let written: Awaited<ReturnType<typeof writeCanonicalCatalogue>>;
   try {
@@ -866,6 +881,7 @@ export async function runCatalogueSyncJob(
   let priceFailures = 0;
 
   if (supportsSeasonalPrices(provider)) {
+    options.onPhase?.("prices");
     try {
       pricePeriods = await writeSeasonalPrices({
         store: createDrizzlePricePeriodStore({ db, providerId }),

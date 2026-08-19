@@ -31,7 +31,7 @@ function fakeStore(sourceIds: Record<string, string | null> = {}) {
     },
     writePricePeriods(writes) {
       batches.push([...writes]);
-      return Promise.resolve(dedupePricePeriodRows(writes).length);
+      return Promise.resolve(dedupePricePeriodRows(writes).rows.length);
     },
   };
 
@@ -46,7 +46,7 @@ describe("dedupePricePeriodRows", () => {
   });
 
   it("collapses a period a yacht was published twice for, last one winning", () => {
-    const rows = dedupePricePeriodRows([
+    const { rows } = dedupePricePeriodRows([
       write("a", [price({ priceMinor: 400_000 }), price({ priceMinor: 450_000 })]),
     ]);
 
@@ -58,7 +58,7 @@ describe("dedupePricePeriodRows", () => {
    * boat's price would vanish into the first boat's row.
    */
   it("keeps two yachts priced for the same week apart", () => {
-    const rows = dedupePricePeriodRows([
+    const { rows } = dedupePricePeriodRows([
       write("a", [price({ priceMinor: 400_000 })]),
       write("b", [price({ priceMinor: 900_000 })]),
     ]);
@@ -67,14 +67,14 @@ describe("dedupePricePeriodRows", () => {
   });
 
   it("carries each listing's own source id and the weekly kind", () => {
-    expect(dedupePricePeriodRows([write("a", [price()])])[0]).toMatchObject({
+    expect(dedupePricePeriodRows([write("a", [price()])]).rows[0]).toMatchObject({
       listingSourceId: "src_a",
       kind: "weekly",
     });
   });
 
   it("is empty for a batch with no prices in it", () => {
-    expect(dedupePricePeriodRows([write("a", [])])).toEqual([]);
+    expect(dedupePricePeriodRows([write("a", [])]).rows).toEqual([]);
   });
 });
 
@@ -192,5 +192,52 @@ describe("supportsSeasonalPrices", () => {
 
   it("rejects one that does not", () => {
     expect(supportsSeasonalPrices({ key: "mock" })).toBe(false);
+  });
+});
+
+/*
+ * A rate the column cannot hold used to reach Postgres and take the statement with
+ * it: `value "8883888500" is out of range for type integer`, which failed a sweep
+ * across 11285 listings on production. High-denomination currencies reach ten digits
+ * honestly, so this is vendor data, not corruption.
+ */
+describe("dedupePricePeriodRows: rates too large for the column", () => {
+  const rate = (priceMinor: number, currency = "IDR") => ({
+    startDate: "2026-09-05",
+    endDate: "2026-09-12",
+    priceMinor,
+    currency,
+  });
+  const over = rate;
+  const price = () => rate(450_000, "EUR");
+  const write = (listingId: string, prices: ReturnType<typeof rate>[]) => ({
+    listingId,
+    listingSourceId: `src_${listingId}`,
+    prices,
+  });
+
+  it("drops a rate above the integer ceiling and keeps counting", () => {
+    const result = dedupePricePeriodRows([write("a", [over(8_883_888_500)])]);
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.rejected).toBe(1);
+  });
+
+  it("keeps the other listings in the same batch", () => {
+    const result = dedupePricePeriodRows([
+      write("a", [over(8_883_888_500)]),
+      write("b", [price()]),
+    ]);
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.listingId).toBe("b");
+    expect(result.rejected).toBe(1);
+  });
+
+  it("admits the largest value the column does hold", () => {
+    const result = dedupePricePeriodRows([write("a", [over(2_147_483_647)])]);
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rejected).toBe(0);
   });
 });

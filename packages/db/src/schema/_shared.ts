@@ -28,6 +28,18 @@ export const timestamps = {
  * schema pairs its minor units with a bare `currency`. listing_amenity is the only
  * table on this shape; reconciling the two is a rename migration, not a refactor.
  */
+/**
+ * The largest amount any money column in this schema can hold.
+ *
+ * Every one of them is a Postgres `integer`, so this is int32's ceiling. It is
+ * exported because the constraint is invisible at the call site and expensive to
+ * rediscover: a rate of 8883888500 - four times this, and an ordinary week once a
+ * high-denomination currency is involved - failed a whole multi-row insert and cost
+ * a price sync across 11285 listings. A writer that takes amounts from a vendor
+ * should compare against this before handing them to Postgres.
+ */
+export const MAX_MONEY_MINOR = 2_147_483_647;
+
 export const money = <Name extends string>(name: Name) => {
   const minor = integer(`${name}_minor`);
   const currency = text(`${name}_currency`);
