@@ -179,10 +179,17 @@ export const restYachtSchema = looseJsonObject({
   mainsailType: optionalText,
   genoaType: optionalText,
   requiredSkipperLicense: optionalNumeric,
+  /**
+   * Weekday the vendor numbers 1 Sunday .. 7 Saturday, or -1 for "any day".
+   * `allCheckInDays` carries the full list and is what the projection reads;
+   * confirmed against the live test fleet, not the specification.
+   */
   defaultCheckInDay: optionalNumeric,
+  allCheckInDays: z.array(numeric).optional().nullable(),
   defaultCheckInTime: optionalText,
   defaultCheckOutTime: optionalText,
   minimumCharterDuration: optionalNumeric,
+  maximumCharterDuration: optionalNumeric,
   maxPeopleOnBoard: optionalNumeric,
   images: z.array(restImageSchema).optional().nullable(),
   equipmentIds: z.array(numeric).optional().nullable(),

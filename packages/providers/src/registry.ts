@@ -1,10 +1,10 @@
 import type * as dbSchema from "@yacht-charter/db/schema/index";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { env } from "@yacht-charter/env/server";
-import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type { InventoryProvider } from "./provider";
+import { AuthError } from "./shared/errors";
 import { type ProviderKey, providerKeySchema } from "./types";
 import { databaseInventorySource } from "./mock/inventory";
 import { MockInventoryProvider } from "./mock/provider";
@@ -36,37 +36,52 @@ export type ProviderDeps = {
 };
 
 /**
- * Every provider whose row is enabled, keyed by provider code.
+ * Providers this deployment could sync, before credentials are considered.
+ *
+ * A missing row means the provider has never synced here, not that it is off:
+ * the row is created by the sync itself, so reading only existing rows meant a
+ * new connector could never bootstrap. `enabled: false` on an existing row is
+ * the explicit off switch and is respected.
+ *
+ * The mock is excluded outright. It is seeded enabled so local development can
+ * transact against it, but it is a fixture rather than a vendor, and a scheduled
+ * fan-out importing it would write invented yachts beside real ones.
+ */
+export function syncCandidateKeys(
+  rows: readonly { code: string; enabled: boolean }[],
+): ProviderKey[] {
+  const disabled = new Set(rows.filter((row) => !row.enabled).map((row) => row.code));
+
+  return providerKeySchema.options.filter((key) => key !== "mock" && !disabled.has(key));
+}
+
+/**
+ * Every provider this deployment can actually sync, keyed by provider code.
  *
  * Sync fans out over this; the booking path does not. `PROVIDER_MODE` still picks
- * the single adapter that quotes and transacts, because an offer has exactly one
- * source and checkout must not have to choose. Importing from two vendors and
- * selling through one are genuinely different questions.
+ * the single adapter used for a listing with no provider source, because an offer
+ * has exactly one source and checkout must not have to choose. Importing from two
+ * vendors and selling through one are genuinely different questions.
  *
- * Driven by the `provider.enabled` column rather than a second env var so an
- * operator can turn a connector off without a deploy, and so enabling one that has
- * no credentials fails loudly at construction instead of being silently skipped.
+ * A provider whose credentials are absent here is skipped rather than raised: a
+ * deployment that only holds one vendor's key is a normal configuration, and the
+ * other vendor's absence must not stop the run.
  */
 export async function createEnabledInventoryProviders(
   deps: ProviderDeps,
 ): Promise<Map<ProviderKey, InventoryProvider>> {
   const rows = await deps.db
-    .select({ code: providerTable.code })
-    .from(providerTable)
-    .where(eq(providerTable.enabled, true));
+    .select({ code: providerTable.code, enabled: providerTable.enabled })
+    .from(providerTable);
 
   const providers = new Map<ProviderKey, InventoryProvider>();
-  for (const row of rows) {
-    const parsed = providerKeySchema.safeParse(row.code);
-    // A code we cannot build is a row someone added by hand, not a reason to
-    // abandon the run: the other providers still sync.
-    if (!parsed.success) continue;
-    // The mock is seeded enabled so local development can transact against it, but
-    // it is a fixture rather than a vendor. Letting a scheduled fan-out import it
-    // would write invented yachts into a real catalogue alongside genuine ones.
-    // A deliberate mock import still works through PROVIDER_MODE and the scripts.
-    if (parsed.data === "mock") continue;
-    providers.set(parsed.data, createInventoryProvider(deps, parsed.data));
+  for (const key of syncCandidateKeys(rows)) {
+    try {
+      providers.set(key, createInventoryProvider(deps, key));
+    } catch (error) {
+      if (error instanceof AuthError) continue;
+      throw error;
+    }
   }
   return providers;
 }

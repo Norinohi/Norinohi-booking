@@ -115,8 +115,8 @@
       "notFound": "Reserva no encontrada",
       "browse": "Ver yates",
       "remaining": "Los {amount} restantes se pagarán al check-in.",
-      "emailed": "Hemos enviado una confirmación a tu correo",
-      "guestEmailed": "Te hemos enviado la confirmación por correo, junto con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
+      "emailed": "Te hemos enviado los detalles por email, y te escribiremos otra vez cuando el operador confirme",
+      "guestEmailed": "Te hemos enviado los detalles por email, con un enlace para crear una contraseña y guardar esta reserva en tu cuenta",
       "viewBooking": "Ver reserva",
       "summaryTitle": "Resumen de la reserva",
       "quote": "\"Este yate es ideal para island hopping en Croacia: estable, espacioso y perfecto para viajes en grupo. Tu ruta incluye Hvar y Vis, dos de las islas más pintorescas del Adriático.\"",
@@ -211,6 +211,7 @@
     },
     "balance": {
       "title": "Paga el resto",
+      "titleUnpaid": "Completa tu pago",
       "reference": "Reserva {reference}",
       "pay": "Pagar {amount}",
       "notFound": "No encontramos esta reserva",
@@ -228,12 +229,18 @@
         "viewBooking": "Ver reserva"
       },
       "notPayable": {
-        "title": "Todavía no hay nada que pagar",
-        "body": "Esta reserva no tiene saldo pendiente. Si acabas de reservar, tu primer pago lo cubre por ahora."
+        "title": "Este precio ha caducado",
+        "body": "Ya no podemos cobrar esta reserva: el precio que te dimos y la retención del operador han vencido. Vuelve a consultar las fechas y te daremos un precio nuevo.",
+        "action": "Ver disponibilidad"
       },
       "settling": {
         "title": "Pago recibido",
         "body": "Estamos actualizando tu reserva. Suele tardar unos segundos."
+      },
+      "received": {
+        "title": "Pago recibido",
+        "body": "Gracias. Quedan {outstanding} de este chárter y te avisaremos antes del vencimiento.",
+        "viewBooking": "Ver reserva"
       }
     },
     "detail": {
@@ -242,12 +249,15 @@
       "reference": "Reserva {reference}",
       "guests": "{count} personas",
       "payBalance": "Pagar {amount}",
+      "completePayment": "Completar el pago {amount}",
       "viewInvoice": "Ver factura",
       "priceTitle": "Desglose del precio",
       "total": "Precio total",
       "paymentsTitle": "Pagos",
       "paid": "Pagado hasta ahora",
       "outstanding": "Pendiente de pago",
+      "dueAtCheckIn": "A pagar en la marina",
+      "atMarina": "se paga en la marina",
       "noPayments": "Aún no se han realizado pagos en esta reserva.",
       "disputed": "en disputa",
       "kind": {
@@ -839,7 +849,8 @@
       "sync": "Historial de sincronización",
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
-      "payments": "Pagos"
+      "payments": "Pagos",
+      "listings": "Anuncios"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1311,6 +1322,10 @@
     "Sync": {
       "title": "Historial de sincronización",
       "description": "Ejecuciones de sincronización de catálogo y disponibilidad con sus recuentos y errores."
+    },
+    "Listings": {
+      "title": "Anuncios",
+      "description": "Revisa los anuncios de yates importados y publica los borradores en el catálogo."
     },
     "Audit": {
       "title": "Registro de auditoría",
@@ -2047,6 +2062,62 @@
         "send": "Enviar respuesta",
         "sent": "Respuesta enviada",
         "failed": "No pudimos enviar la respuesta. Inténtalo de nuevo."
+      }
+    },
+    "Listings": {
+      "title": "Anuncios",
+      "subtitle": "Todos los anuncios sobre los que el equipo puede actuar, borradores incluidos. El inventario importado sigue siendo un borrador hasta que se publica aquí.",
+      "filters": {
+        "provider": "Proveedor",
+        "status": "Estado",
+        "allProviders": "Todos los proveedores",
+        "allStatuses": "Todos los estados",
+        "search": "Buscar por título o slug"
+      },
+      "table": {
+        "listing": "Anuncio",
+        "provider": "Proveedor",
+        "operator": "Operador",
+        "model": "Modelo y año",
+        "place": "Base y ubicación",
+        "price": "Desde",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "status": {
+        "draft": "Borrador",
+        "published": "Publicado",
+        "hidden": "Oculto"
+      },
+      "actions": {
+        "publish": "Publicar",
+        "unpublish": "Ocultar",
+        "draft": "Volver a borrador"
+      },
+      "moved": "{title} ahora está en estado {status}.",
+      "noProvider": "Sin proveedor",
+      "noPrice": "Todavía sin precio",
+      "notSet": "Sin definir",
+      "noImage": "Sin imagen",
+      "empty": "Ningún anuncio coincide con estos filtros",
+      "error": "No se pudieron cargar los anuncios",
+      "publishDrafts": {
+        "providerLabel": "Proveedor que publicar",
+        "choose": "Elige un proveedor",
+        "action": "Publicar todos los borradores",
+        "hint": "Publica todos los borradores del proveedor elegido. Hay que indicar un proveedor: esta pantalla nunca publica todo el catálogo de una vez.",
+        "confirmTitle": "¿Publicar todos los borradores?",
+        "confirmBody": "Todos los borradores importados de {provider} pasarán a ser visibles para los clientes de inmediato. Los borradores de otros proveedores no se tocan.",
+        "cancel": "Cancelar",
+        "confirm": "Publicar borradores",
+        "publishing": "Publicando...",
+        "published": "{count, plural, =0 {No quedan borradores por publicar de {provider}.} one {# borrador publicado de {provider}.} other {# borradores publicados de {provider}.}}",
+        "failed": "No se pudieron publicar los borradores",
+        "provider": {
+          "mock": "Mock",
+          "booking_manager": "Booking Manager",
+          "nausys": "NauSYS"
+        }
       }
     },
     "Payments": {

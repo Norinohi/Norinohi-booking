@@ -15,7 +15,7 @@ import {
 
 const source: BookingManagerEnvSource = {
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
-  BOOKING_MANAGER_API_TOKEN: "t0ken",
+  BOOKING_MANAGER_API_KEY: "t0ken",
   BOOKING_MANAGER_TIMEOUT_MS: 30_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 250,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
@@ -47,8 +47,27 @@ describe("resolveBookingManagerConfig", () => {
     // The env schema keeps the token optional so a missing secret cannot stop the
     // server booting, which makes this the only place that can refuse.
     expect(() =>
-      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_API_TOKEN: token }),
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_API_KEY: token }),
     ).toThrow(AuthError);
+  });
+});
+
+describe("company scope", () => {
+  const scopeOf = (raw: string | undefined) =>
+    resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_COMPANY_IDS: raw }).companyIds;
+
+  it("reads a comma separated list", () => {
+    expect(scopeOf("225,331")).toEqual(["225", "331"]);
+  });
+
+  it("tolerates spacing and trailing separators", () => {
+    expect(scopeOf(" 225 , 331 ,")).toEqual(["225", "331"]);
+  });
+
+  it.each([undefined, "", "  ", ","])("imports every company for %o", (raw) => {
+    // Empty is production's intent, so it must never be mistaken for "import
+    // nothing": a scope that silently matched no company would empty the catalogue.
+    expect(scopeOf(raw)).toEqual([]);
   });
 });
 

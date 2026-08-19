@@ -81,6 +81,49 @@ export const DEAD_QUOTE_SWEEP = {
   to: "QUOTE_EXPIRED",
 } as const satisfies SweepSpec;
 
+/**
+ * Checkouts abandoned at the payment step.
+ *
+ * The other two sweeps leave PAYMENT_PENDING alone because money may be in flight, which is
+ * right in the minutes after Pay and wrong a week later: nothing else moves this state, so an
+ * abandoned checkout used to hold its provider option against every future booking of that
+ * slot. The expiry service is what decides a booking has waited long enough.
+ *
+ * Two destinations, because the reason has to be true. A booking that held an option expired
+ * the option; one whose provider grants none never had a hold to lapse, and only its quote can
+ * be said to have run out.
+ */
+export const STALE_PAYMENT_SWEEP = {
+  from: ["PAYMENT_PENDING"],
+  to: "QUOTE_EXPIRED",
+  held: "OPTION_EXPIRED",
+} as const satisfies SweepSpec & { held: BookingStatus };
+
+/**
+ * The states the "we're holding your yacht" mail is true of.
+ *
+ * Not a sweep, but here for the same reason the sweeps are: it is a claim about states, and
+ * a copy of it kept next to the sender would drift the first time the table changed. The mail
+ * says three things — the slot is held, nothing has been charged, finish your payment — and
+ * every state outside this list falsifies at least one of them. It matters because the mail is
+ * queued rather than sent: `createHold` enqueues it, and by the time a retry gets its turn the
+ * booking may have been paid, confirmed, cancelled or expired out from under it.
+ *
+ * CONFIRMING is out even though nothing has settled there: the money is with the provider and
+ * the confirmation mail is a moment away, so "complete your payment" is the wrong thing to say.
+ * PAYMENT_PENDING and PAYMENT_FAILED are in — an opened payment is not an arrived one and a
+ * declined card is not a charge, and the pay link that mail carries is the thing both of those
+ * customers need. Every expired and rejected state is out: there is no hold left to write to
+ * anyone about, which is the whole reason the sweeps move a booking there.
+ */
+export const BOOKING_RECEIVED_STATES = [
+  "QUOTED",
+  "OPTION_PENDING",
+  "OPTION_HELD",
+  "PAYMENT_PENDING",
+  "PAYMENT_FAILED",
+] as const satisfies readonly BookingStatus[];
+
 type SweepSpec = { from: readonly BookingStatus[]; to: BookingStatus };
 
 export function canTransition(from: BookingStatus, to: BookingStatus): boolean {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BOOKING_RECEIVED_STATES,
+  DEAD_QUOTE_SWEEP,
+  HOLD_SWEEP,
+  STALE_PAYMENT_SWEEP,
   type BookingStatus,
   InvalidTransitionError,
   assertTransition,
@@ -149,5 +153,80 @@ describe("assertTransition", () => {
     // a 500 there while booking.ts catches it and returns 409.
     const error = new InvalidTransitionError("CANCELLED", "CONFIRMED");
     expect(error).toBeInstanceOf(Error);
+  });
+});
+
+/*
+ * `BOOKING_RECEIVED_STATES` decides whether a queued "we're holding your yacht" mail is still
+ * worth sending when the drain finally gets to it. It is a claim about the table above, so it
+ * answers to the table: a state that can no longer reach CONFIRMED is a booking nobody is
+ * holding, and telling that customer to complete their payment is the one thing the guard exists
+ * to prevent.
+ */
+describe("the states the booking-received mail is true of", () => {
+  const reaches = (from: BookingStatus, goal: BookingStatus): boolean => {
+    const seen = new Set<BookingStatus>([from]);
+    const queue: BookingStatus[] = [from];
+
+    while (queue.length > 0) {
+      const at = queue.shift();
+      if (at === undefined) break;
+      if (at === goal) return true;
+
+      for (const next of ALL) {
+        if (!seen.has(next) && canTransition(at, next)) {
+          seen.add(next);
+          queue.push(next);
+        }
+      }
+    }
+
+    return false;
+  };
+
+  it.each([...BOOKING_RECEIVED_STATES])("%s can still become a charter", (status) => {
+    expect(reaches(status, "CONFIRMED")).toBe(true);
+  });
+
+  it("excludes every state that cannot", () => {
+    const stale = ALL.filter((status) => !reaches(status, "CONFIRMED"));
+    const listed: readonly BookingStatus[] = BOOKING_RECEIVED_STATES;
+
+    expect(stale).not.toEqual([]);
+    expect(stale.filter((status) => listed.includes(status))).toEqual([]);
+  });
+
+  it("covers both states createHold can leave a booking in", () => {
+    const listed: readonly BookingStatus[] = BOOKING_RECEIVED_STATES;
+
+    // QUOTED for a provider that grants no option, OPTION_HELD for one that does. Dropping
+    // either would stop the mail going out on the ordinary path, not just on a retry.
+    expect(listed).toContain("QUOTED");
+    expect(listed).toContain("OPTION_HELD");
+  });
+
+  it("excludes a charter that is already confirmed", () => {
+    const listed: readonly BookingStatus[] = BOOKING_RECEIVED_STATES;
+
+    // Both can still reach CONFIRMED, so the reachability test cannot catch them.
+    expect(listed).not.toContain("CONFIRMED");
+    expect(listed).not.toContain("CONFIRMING");
+  });
+
+  it("excludes everything the expiry sweeps produce", () => {
+    const listed: readonly BookingStatus[] = BOOKING_RECEIVED_STATES;
+    /*
+     * An expired booking can be repriced back to QUOTED and go on to be confirmed, so
+     * reachability says nothing about it. What matters is that its hold is gone: the mail
+     * names a date the operator is holding the slot until, and after a sweep there is none.
+     */
+    const swept: readonly BookingStatus[] = [
+      HOLD_SWEEP.to,
+      DEAD_QUOTE_SWEEP.to,
+      STALE_PAYMENT_SWEEP.to,
+      STALE_PAYMENT_SWEEP.held,
+    ];
+
+    expect(swept.filter((status) => listed.includes(status))).toEqual([]);
   });
 });

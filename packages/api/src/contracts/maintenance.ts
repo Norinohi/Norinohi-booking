@@ -8,6 +8,12 @@ export const sweepResultSchema = z.object({
   /** Bookings still waiting on a quote that ran out, moved to QUOTE_EXPIRED. */
   bookingsQuoteExpired: z.number().int(),
   /**
+   * Checkouts abandoned in PAYMENT_PENDING past the cutoff, with no money in or on its way
+   * and no invoice still within its terms. Nothing else moves that state, so until this ran
+   * each one held its provider option against every future booking of the same slot.
+   */
+  paymentsAbandoned: z.number().int(),
+  /**
    * Provider releases that failed. The booking expires either way — surfaced so ops
    * can check whether the provider is still holding a slot we think is free.
    */
@@ -44,4 +50,17 @@ export const reminderResultSchema = z.object({
   sent: z.number().int(),
   /** Installments due but with no address on the booking — nothing to send to. */
   skipped: z.number().int(),
+});
+
+export const outboxDrainResultSchema = z.object({
+  /** Messages delivered on this run. */
+  sent: z.number().int(),
+  /** Messages whose send failed and that are waiting out their backoff. Retried on their own. */
+  retrying: z.number().int(),
+  /**
+   * Messages that ran out of attempts. Each one is a set-password invitation or a booking
+   * confirmation a customer never received, and nothing will try again. Non-zero is an
+   * alert, not a statistic.
+   */
+  failed: z.number().int(),
 });

@@ -44,6 +44,7 @@ import { mintGuestAccessToken, resolveBookingActor } from "../services/guest-acc
 import { getInvoiceDocument } from "../services/invoice-document";
 import { listTravellers, saveTravellers } from "../services/traveller";
 import { confirmCheckout, payBalance } from "../services/payment";
+import { providerForBooking, providerForQuote } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -137,11 +138,14 @@ export const bookingRouter = {
     })
     .input(bookingCancelInputSchema)
     .output(bookingCancelSchema)
-    .handler(({ context, input }) =>
-      cancelBooking(context.db, context.provider, input.id, input.reason, {
-        userId: context.session.user.id,
-        isAdmin: false,
-      }),
+    .handler(async ({ context, input }) =>
+      cancelBooking(
+        context.db,
+        await providerForBooking(context.db, context.provider, input.id),
+        input.id,
+        input.reason,
+        { userId: context.session.user.id, isAdmin: false },
+      ),
     ),
   travellers: {
     list: protectedProcedure
@@ -256,7 +260,7 @@ export const checkoutRouter = {
     .handler(async ({ context, input }) =>
       createHold(
         context.db,
-        context.provider,
+        await providerForQuote(context.db, context.provider, input.quoteId),
         await checkoutActor(context, input.guest),
         input.quoteId,
         // A client that does not send one still gets single-call safety; only a
@@ -314,9 +318,9 @@ export const checkoutRouter = {
       method: "POST",
       path: "/checkout/payBalance",
       operationId: "payCheckoutBalance",
-      summary: "Pay the remainder on a confirmed booking",
+      summary: "Pay what a booking still owes",
       description:
-        "Opens a Stripe payment for whatever a confirmed booking still owes: the collectable total less everything already paid. This is how a deposit booking settles its second installment, so the balance does not have to be chased outside the system. The booking stays CONFIRMED throughout — the charter exists whether or not this payment has landed — and only a CONFIRMED booking is accepted; anything else answers NOT_PAYABLE. A booking with nothing left to pay answers ALREADY_PAID. Amounts marked pay-at-check-in are settled with the base and are never charged here. Reachable by the signed-in owner or with a guest accessToken.",
+        "Opens a Stripe payment for whatever the booking owes right now, which is the `payableNow` figure booking.list and booking.get report. On a CONFIRMED charter that is the collectable total less everything already paid, so a deposit booking can settle its second installment without being chased outside the system; the booking stays CONFIRMED throughout, because the charter exists whether or not this payment has landed. On a booking that was never paid for it is the quote's prepayment, which is how a customer who closed the tab mid-checkout finishes without starting again. That second case runs the same quote and hold checks as checkout.confirm, so a booking whose price or provider option has lapsed answers QUOTE_EXPIRED and has to be repriced. A booking that cannot be paid in the state it is in answers NOT_PAYABLE, and one with nothing left to pay answers ALREADY_PAID. Amounts marked pay-at-check-in are settled with the base and are never charged here. Reachable by the signed-in owner or with a guest accessToken.",
       tags: ["Checkout"],
       successDescription: "The client secret and the outstanding amount being charged.",
       spec: withJsonBodyExample({ bookingId: "bkg_example" }),

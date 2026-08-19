@@ -131,3 +131,49 @@ describe("product extras", () => {
     expect(listingOf([])?.extras).toEqual([]);
   });
 });
+
+/**
+ * Pinned to the live test fleet (company 225), not to the specification, which
+ * documents no range for these fields.
+ */
+describe("check-in rules", () => {
+  const yachtRecords = (payload: Record<string, JsonValue>): ProviderRecordSet =>
+    new Map([["yacht" as const, [{ externalId: String(payload.id), payload }]]]);
+
+  const rulesOf = (over: Record<string, JsonValue>) =>
+    projectBookingManagerCatalogue(
+      yachtRecords({ id: 5001, companyId: 225, homeBaseId: 7, name: "Zaffiro", ...over }),
+    ).listings[0]?.checkinRules;
+
+  it("reads day 7 as Saturday, the day the vendor actually turns boats around", () => {
+    // Every yacht in the test fleet sends 7, and every booking in its availability
+    // starts on a Saturday. ISO numbering would have made this Sunday and put every
+    // synthesized week a day off the one the vendor sells.
+    expect(
+      rulesOf({ defaultCheckInDay: 7, allCheckInDays: [7], minimumCharterDuration: 7 }),
+    ).toEqual([{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined }]);
+  });
+
+  it("emits a rule per day for a yacht that takes any", () => {
+    // The vendor writes this as defaultCheckInDay -1 plus a full list; collapsing
+    // it to one turnaround would hide six sevenths of the boat's availability.
+    const rules = rulesOf({
+      defaultCheckInDay: -1,
+      allCheckInDays: [1, 2, 3, 4, 5, 6, 7],
+      minimumCharterDuration: 0,
+    });
+
+    expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(rules?.every((rule) => rule.minNights === undefined)).toBe(true);
+  });
+
+  it("falls back to the default day when no list is sent", () => {
+    expect(rulesOf({ defaultCheckInDay: 1 })?.[0]?.checkinWeekday).toBe(0);
+  });
+
+  it("keeps a minimum duration for a yacht with no usable weekday", () => {
+    expect(rulesOf({ defaultCheckInDay: -1, minimumCharterDuration: 5 })).toEqual([
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 5, maxNights: undefined },
+    ]);
+  });
+});

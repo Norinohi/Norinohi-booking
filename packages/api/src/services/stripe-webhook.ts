@@ -12,9 +12,11 @@ import type Stripe from "stripe";
 import { z } from "zod";
 
 import type { Database } from "../context";
+import { providerByKey } from "./provider-routing";
 import { confirmBookingWithProvider } from "./booking-confirm";
 import { canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
+import { announcePaymentReceived } from "./payment-receipt";
 import { refundBooking, settlePayment, settleWhenFullyRefunded } from "./refund";
 
 /**
@@ -83,6 +85,8 @@ export async function handleStripeWebhook(
   try {
     if (event.type === "payment_intent.succeeded") {
       note = await onSucceeded(db, provider, event.data.object);
+    } else if (event.type === "payment_intent.processing") {
+      await onProcessing(db, event.data.object);
     } else if (event.type === "payment_intent.payment_failed") {
       await onFailed(db, event.data.object);
     } else if (event.type === "refund.updated") {
@@ -159,9 +163,22 @@ async function onSucceeded(
     }
   });
 
+  // Before the commit, so the receipt arrives ahead of the confirmation it pays for. Both
+  // are best-effort; neither can hold up the provider call that turns money into a charter.
+  await announcePaymentReceived(db, row.payment.id, "card");
+
   // Money is in; the provider is the final arbiter of the reservation itself.
   // Shared with admin invoice settlement so both routes to CONFIRMED behave alike.
-  const outcome = await confirmBookingWithProvider(db, provider, row.booking.id);
+  //
+  // Resolved from the booking rather than from the configured adapter: the webhook
+  // answers for whichever vendor sold the charter, and confirming a paid booking
+  // with the wrong one sends a reservation id that vendor never issued while the
+  // customer's money is already taken.
+  const outcome = await confirmBookingWithProvider(
+    db,
+    await providerByKey(provider, row.booking.provider),
+    row.booking.id,
+  );
 
   if (outcome.outcome !== "rejected") return undefined;
 
@@ -296,6 +313,33 @@ async function onRefundUpdated(db: Database, refund: Stripe.Refund): Promise<voi
 
     await db.update(payment).set({ failureReason }).where(eq(payment.id, row.payment.id));
   }
+}
+
+/**
+ * A delayed payment method has been submitted and is on its way.
+ *
+ * Nothing about the booking changes: no money has arrived, PAYMENT_PENDING is already where
+ * it is, and `payment_intent.succeeded` remains the event that commits the charter. What
+ * changes is that the payment row stops looking untouched.
+ *
+ * That distinction is load-bearing. A card resolves in seconds, but SEPA debit and the other
+ * delayed methods behind `automatic_payment_methods` clear over days, and everything that asks
+ * "is money still coming?" reads this column: `expireAbandonedPayments` refuses to reap a
+ * booking whose payment is processing. Without this handler such a payment sat at
+ * `requires_payment`, indistinguishable from a checkout nobody ever submitted, and the sweep's
+ * exclusion for it could never match anything.
+ *
+ * Only from `requires_payment`, so a redelivery arriving after the money landed cannot walk a
+ * succeeded payment backwards.
+ */
+async function onProcessing(db: Database, intent: Stripe.PaymentIntent): Promise<void> {
+  const row = await findByIntent(db, intent.id);
+  if (!row) return;
+
+  await db
+    .update(payment)
+    .set({ status: "processing" })
+    .where(and(eq(payment.id, row.payment.id), eq(payment.status, "requires_payment")));
 }
 
 async function onFailed(db: Database, intent: Stripe.PaymentIntent): Promise<void> {

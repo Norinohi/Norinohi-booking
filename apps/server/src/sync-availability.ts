@@ -9,7 +9,7 @@
  * against an empty database ends up in the same state.
  */
 import { db } from "@yacht-charter/db";
-import { createInventoryProvider } from "@yacht-charter/providers";
+import { createEnabledInventoryProviders } from "@yacht-charter/providers";
 import {
   HOT_WINDOW_CURSOR_SCOPE,
   openAvailabilitySyncRun,
@@ -19,24 +19,56 @@ import { readSyncCursor } from "@yacht-charter/providers/sync/cursor";
 import { ensureProviderId } from "@yacht-charter/providers/sync/runner";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 
-const provider = createInventoryProvider({ db });
-const providerId = await ensureProviderId(db, provider.key);
-const syncRunId = await openAvailabilitySyncRun(db, providerId);
-const resume = await readSyncCursor(db, {
-  providerId,
-  kind: "availability",
-  scope: HOT_WINDOW_CURSOR_SCOPE,
-});
+/*
+ * Every enabled provider, not the one PROVIDER_MODE names: that variable selects
+ * who we transact through, not who we import from. See sync-catalogue.ts for why
+ * this runs one vendor at a time.
+ */
+const providers = await createEnabledInventoryProviders({ db });
 
-console.log(`Started availability sync ${syncRunId} for provider "${provider.key}"`);
+if (providers.size === 0) {
+  console.error("No enabled provider rows; nothing to sync");
+  await db.$client.end();
+  process.exit(1);
+}
 
-const result = await runAvailabilitySyncJob({ db, provider, providerId, syncRunId, resume });
+let failed = 0;
+
+for (const provider of providers.values()) {
+  const providerId = await ensureProviderId(db, provider.key);
+  const resume = await readSyncCursor(db, {
+    providerId,
+    kind: "availability",
+    scope: HOT_WINDOW_CURSOR_SCOPE,
+  });
+
+  let syncRunId: string;
+  try {
+    syncRunId = await openAvailabilitySyncRun(db, providerId);
+  } catch (error) {
+    failed += 1;
+    console.error(`Skipped "${provider.key}": ${error instanceof Error ? error.message : error}`);
+    continue;
+  }
+
+  console.log(`Started availability sync ${syncRunId} for provider "${provider.key}"`);
+
+  try {
+    const result = await runAvailabilitySyncJob({ db, provider, providerId, syncRunId, resume });
+    console.log(JSON.stringify(result, null, 2));
+    console.log(`Availability sync ${syncRunId} finished for "${provider.key}"`);
+    if (result.status === "failed") failed += 1;
+  } catch (error) {
+    // One vendor being down must not cost the other its refresh.
+    failed += 1;
+    console.error(`Availability sync failed for "${provider.key}":`, error);
+  }
+}
 
 await revalidateCatalogCache();
-
-console.log(JSON.stringify(result, null, 2));
-console.log(`Availability sync ${syncRunId} finished`);
 
 // See sync-catalogue.ts: the pool keeps the process alive, and a cron container
 // that never exits blocks its own next run.
 await db.$client.end();
+
+if (failed > 0) process.exit(1);
