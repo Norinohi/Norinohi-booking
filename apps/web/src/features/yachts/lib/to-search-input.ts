@@ -72,15 +72,12 @@ export function toSearchInput(
     input.minPriceMinor = filters.price[0] * 100;
     input.maxPriceMinor = filters.price[1] * 100;
   }
-  if (isActive("boatAge")) {
-    input.minBoatAge = filters.boatAge[0];
-    input.maxBoatAge = filters.boatAge[1];
-  }
   if (isActive("guestRating")) {
     input.minGuestRating = filters.guestRating[0];
     input.maxGuestRating = filters.guestRating[1];
   }
 
+  /* The Boat Age slider edits these too, so `minBoatAge` / `maxBoatAge` are never sent alongside. */
   if (filters.yearFrom !== "any") input.yearFrom = Number(filters.yearFrom);
   if (filters.yearTo !== "any") input.yearTo = Number(filters.yearTo);
 

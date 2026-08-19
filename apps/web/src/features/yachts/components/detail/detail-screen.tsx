@@ -25,7 +25,9 @@ import TitleBlock from "./title-block";
  * labels are identical either way; only the final crumb waits for the listing's name.
  *
  * `aside` is the booking sidebar, injected by the route: it belongs to the booking feature, so the
- * cross-feature composition happens in `app/**`, not here.
+ * cross-feature composition happens in `app/**`, not here. `optionalExtras` is the same story for
+ * the add-ons list — its ticked state lives on the booking quote, so the route wires it up and
+ * hands the finished section in; left out, the plain read-only list renders.
  */
 export default function YachtDetailScreen({
   title,

@@ -35,9 +35,16 @@ export default function Gallery() {
   const sources = data.gallery.length ? data.gallery : [data.mainImage];
   const photos = sources.map((src) => ({ src, alt: data.title }));
 
+  /*
+   * The main photo is the hero and the thumbs are its index, so they are sized apart: the photo
+   * takes the column at 16:9 and the thumbs are a strip of small 16:9 tiles — the same crop, so a
+   * thumb previews exactly the framing the click brings up. Widths are fixed on desktop and a
+   * fraction of the column on phones so a partial tile always peeks past the edge as the cue that
+   * the strip scrolls; the primitive keeps the active tile in view.
+   */
   return (
-    <Carousel className="flex flex-col gap-4 md:gap-6" options={{ loop: true }}>
-      <div className="relative h-50 w-full overflow-hidden rounded-2xl md:h-100">
+    <Carousel className="flex flex-col gap-3 md:gap-4" options={{ loop: true }}>
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl">
         <CarouselViewport>
           {photos.map((photo, index) => (
             <CarouselSlide key={photo.src}>
@@ -71,16 +78,16 @@ export default function Gallery() {
       </div>
 
       <CarouselThumbs
-        listClassName="gap-2 md:gap-6"
-        itemClassName="basis-1/3 md:basis-83.5 rounded-2xl"
+        listClassName="gap-2 md:gap-3"
+        itemClassName="basis-1/3 rounded-xl opacity-100 md:basis-44"
       >
         {photos.map((photo) => (
-          <div key={photo.src} className="relative h-20 w-full md:h-50">
+          <div key={photo.src} className="relative aspect-video w-full">
             <Image
               src={photo.src}
               alt=""
               fill
-              sizes="(min-width: 768px) 334px, 33vw"
+              sizes="(min-width: 768px) 176px, 33vw"
               className="object-cover"
             />
             <div aria-hidden className="absolute inset-0 bg-black/10" />

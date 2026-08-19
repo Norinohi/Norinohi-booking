@@ -418,7 +418,7 @@
         "year": "Рік",
         "people": "Осіб",
         "toilets": "Туалетів",
-        "baths": "Санвузлів",
+        "showers": "Душових",
         "mainsail": "Тип грота",
         "cabins": "Кают",
         "length": "Довжина"
@@ -604,7 +604,6 @@
       "berths": "Спальні місця: {value}",
       "bathrooms": "Санвузли: {value}",
       "price": "Ціна: {value}",
-      "boatAge": "Вік: {value}",
       "year": "Рік: {from}–{to}",
       "withoutAvailabilityConfirmation": "Без підтвердження доступності",
       "underTemporaryBooking": "З тимчасовим бронюванням",
@@ -1151,11 +1150,12 @@
       "unavailableHint": "Запитайте нас про інші дати або схожу яхту.",
       "slotRefused": "Ці дати недоступні для бронювання. Оберіть інший період.",
       "prepayment": "Передоплата за човен {percent}%",
-      "boatPrice": "Ціна човна (повна вартість оренди)",
+      "boatPrice": "Ціна човна",
+      "boatPriceHint": "Повна вартість оренди",
       "deposit": "Поворотна застава",
       "howItWorks": "Як це працює",
       "groups": {
-        "mandatory": "Обов'язкові",
+        "mandatory": "Обов'язкові доплати",
         "selectedExtras": "Вибрані опції",
         "crew": "Екіпаж"
       },

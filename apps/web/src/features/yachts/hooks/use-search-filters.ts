@@ -19,7 +19,6 @@ export function useSearchFilters() {
       berths: raw.berths ?? defaults.berths,
       bathrooms: raw.bathrooms ?? defaults.bathrooms,
       price: raw.price ?? defaults.price,
-      boatAge: raw.boatAge ?? defaults.boatAge,
       guestRating: raw.guestRating ?? defaults.guestRating,
     }),
     [raw, defaults],
@@ -33,7 +32,6 @@ export function useSearchFilters() {
       berths: isSameValue(next.berths, defaults.berths) ? null : next.berths,
       bathrooms: isSameValue(next.bathrooms, defaults.bathrooms) ? null : next.bathrooms,
       price: isSameValue(next.price, defaults.price) ? null : next.price,
-      boatAge: isSameValue(next.boatAge, defaults.boatAge) ? null : next.boatAge,
       guestRating: isSameValue(next.guestRating, defaults.guestRating) ? null : next.guestRating,
     });
   }

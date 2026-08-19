@@ -4,8 +4,10 @@ import {
   Compass,
   Droplets,
   Flame,
+  ShowerHead,
   Snowflake,
   Sun,
+  Toilet,
   Waves,
   Wifi,
   Zap,
@@ -69,8 +71,13 @@ export function boatSpecs(t: BoatCardTranslator, specs: BoatSpecs): BoatCardSpec
   return [
     { label: t("specs.year"), value: String(specs.yearBuilt) },
     { label: t("specs.people"), value: String(specs.berths) },
-    { label: t("specs.toilets"), value: String(specs.heads) },
-    { label: t("specs.baths"), value: String(specs.heads) },
+    /*
+     * The sanitary pair is drawn as glyphs rather than spelled out. Both counts are `heads`: a
+     * head on a charter yacht is a compartment with a WC and a shower, and neither provider
+     * mapping projects showers separately yet (NauSYS does send a `showers` field).
+     */
+    { label: t("specs.toilets"), value: String(specs.heads), icon: createElement(Toilet) },
+    { label: t("specs.showers"), value: String(specs.heads), icon: createElement(ShowerHead) },
     {
       label: t("specs.mainsail"),
       value: specs.sailType ? slugToLabel(specs.sailType) : t("battenMainsail"),

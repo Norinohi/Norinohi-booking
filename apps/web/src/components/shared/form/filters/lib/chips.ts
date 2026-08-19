@@ -1,4 +1,4 @@
-import { DEFAULT_FILTERS, type FiltersState, isSameValue } from "./state";
+import { DEFAULT_FILTERS, type FiltersState, isSameValue, YEAR_KEYS } from "./state";
 
 export type FilterChip = { id: ChipId; label: string; keys: (keyof FiltersState)[] };
 
@@ -29,8 +29,8 @@ export const CHIP_DEFS = [
   { id: "berths", keys: ["berths"] },
   { id: "bathrooms", keys: ["bathrooms"] },
   { id: "price", keys: ["price"] },
-  { id: "boatAge", keys: ["boatAge"] },
-  { id: "year", keys: ["yearFrom", "yearTo"] },
+  /* Also the Boat Age slider's chip: the slider edits these two keys (lib/boat-age.ts). */
+  { id: "year", keys: YEAR_KEYS },
 
   { id: "withoutAvailabilityConfirmation", keys: ["withoutAvailabilityConfirmation"] },
   { id: "underTemporaryBooking", keys: ["underTemporaryBooking"] },

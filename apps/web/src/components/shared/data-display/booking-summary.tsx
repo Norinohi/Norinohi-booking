@@ -55,6 +55,8 @@ const SCHEDULE_AMOUNT_KEY = {
 const PEOPLE_MIN = 1;
 const PEOPLE_MAX = 20;
 
+const NBSP = "\u00A0";
+
 export type BookingSummaryProps = {
   /** The live quote to render, or `null` before a valid selection has been priced. */
   quote: Quote | null;
@@ -327,7 +329,9 @@ function PaymentSchedule({ entries }: { entries: Quote["paymentSchedule"] }) {
 
   const when = (entry: Quote["paymentSchedule"][number]) => {
     if (!entry.dueAt) return t("sidebar.payNow");
-    const date = format.dateTime(dayToDisplay(entry.dueAt), "dayShort");
+    /* Non-breaking inside the date, so a narrow column wraps before it rather than through
+       it — otherwise the Ukrainian "р." lands alone on a line of its own. */
+    const date = format.dateTime(dayToDisplay(entry.dueAt), "dayShort").replaceAll(" ", NBSP);
     return entry.kind === "checkin_extras" || entry.kind === "security_deposit"
       ? t("sidebar.payAtCheckIn", { date })
       : t("sidebar.payAt", { date });
@@ -496,28 +500,42 @@ export default function BookingSummary({
                 </span>
               </div>
 
-              <div className="flex gap-1.5">
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <p className="text-sm leading-4.5 font-medium text-natural-500">
-                    {t("sidebar.boatPrice")}
+              {/*
+                One grid, filled column by column, so the two figures share their rows: label,
+                amount, footnote. However the labels wrap at this width, the amounts stay on
+                one line, and a short label bottom-aligns against its neighbour's last line.
+                The explanation the price label used to carry in brackets is the footnote now,
+                where it can run long without pushing the amount down.
+              */}
+              <div
+                className={cn(
+                  "grid grid-flow-col grid-rows-[auto_auto_auto] gap-x-1.5 gap-y-1",
+                  quote.securityDeposit ? "grid-cols-2" : "grid-cols-1",
+                )}
+              >
+                <p className="self-end text-sm leading-4.5 font-medium text-natural-500">
+                  {t("sidebar.boatPrice")}
+                </p>
+                {repricing ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <p className="text-2xl leading-8 font-semibold text-foreground">
+                    {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0)}
                   </p>
-                  {repricing ? (
-                    <Skeleton className="h-8 w-24" />
-                  ) : (
-                    <p className="text-2xl leading-8 font-semibold text-foreground">
-                      {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0)}
-                    </p>
-                  )}
-                </div>
+                )}
+                <p className="text-xs leading-4 font-medium text-natural-500">
+                  {t("sidebar.boatPriceHint")}
+                </p>
+
                 {quote.securityDeposit ? (
-                  <div className="flex min-w-0 flex-1 flex-col gap-1 text-right">
-                    <p className="text-sm leading-4.5 font-medium text-natural-500">
+                  <>
+                    <p className="self-end text-right text-sm leading-4.5 font-medium text-natural-500">
                       {t("sidebar.deposit")}
                     </p>
                     {repricing ? (
-                      <Skeleton className="h-8 w-24 self-end" />
+                      <Skeleton className="h-8 w-24 justify-self-end" />
                     ) : (
-                      <p className="text-2xl leading-8 font-semibold text-foreground">
+                      <p className="text-right text-2xl leading-8 font-semibold text-foreground">
                         {money(quote.securityDeposit.amountMinor)}
                       </p>
                     )}
@@ -526,7 +544,7 @@ export default function BookingSummary({
                         render={
                           <button
                             type="button"
-                            className="flex cursor-pointer items-center justify-end gap-1 text-xs font-semibold text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                            className="flex cursor-pointer items-center gap-1 justify-self-end text-xs leading-4 font-semibold text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                           />
                         }
                       >
@@ -535,7 +553,7 @@ export default function BookingSummary({
                       </TooltipTrigger>
                       <TooltipContent>{tCard("securityDepositInfo")}</TooltipContent>
                     </Tooltip>
-                  </div>
+                  </>
                 ) : null}
               </div>
             </>

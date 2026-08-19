@@ -28,7 +28,15 @@ export type BoatCardBadge = {
   /** Neutral grey instead of brand blue — used by the unavailable tag. */
   muted?: boolean;
 };
-export type BoatCardSpec = { label: string; value: string };
+export type BoatCardSpec = {
+  label: string;
+  value: string;
+  /**
+   * Drawn in place of the check mark and the spelled-out label ("Toilets: 2" becomes a toilet
+   * glyph and "2"). The label survives as the tooltip and the accessible name.
+   */
+  icon?: ReactNode;
+};
 export type BoatCardAmenity = { icon: ReactNode; label: string };
 /**
  * A charter endpoint: the calendar day, and the marina's wall-clock time for it.
@@ -144,6 +152,7 @@ function Details({
   crew,
   specs,
   amenities,
+  detailHref,
   summary,
   summaryAction,
   unavailable,
@@ -156,6 +165,7 @@ function Details({
   | "crew"
   | "specs"
   | "amenities"
+  | "detailHref"
   | "summary"
   | "summaryAction"
   | "unavailable"
@@ -163,7 +173,7 @@ function Details({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-3 px-4 pt-4 md:px-6 md:pt-6 xl:px-0",
+        "flex min-w-0 flex-col gap-3 p-4 md:p-6 xl:pl-0",
         summary || "xl:border-r xl:border-natural-50",
         unavailable && "opacity-70",
       )}
@@ -173,8 +183,19 @@ function Details({
 
         <div className="flex flex-wrap items-start gap-2">
           <div className="flex min-w-0 flex-1 items-start gap-2">
+            {/* The name opens the same page as "View Details"; a card without one (the booking
+                recap) keeps plain text. */}
             <h3 className="min-w-0 line-clamp-2 pb-1 text-[28px] font-medium leading-[1.1] break-words text-foreground md:text-[32px]">
-              {name}
+              {detailHref ? (
+                <Link
+                  href={detailHref}
+                  className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  {name}
+                </Link>
+              ) : (
+                name
+              )}
             </h3>
             {rating ? (
               <Chip className="mt-0.5 shrink-0 bg-transparent p-1.5 text-gold">
@@ -183,7 +204,7 @@ function Details({
               </Chip>
             ) : null}
           </div>
-          <div className="flex w-full items-center gap-1.5 md:w-auto xl:hidden">
+          <div className="flex w-full flex-wrap items-center gap-1.5 md:w-auto xl:hidden">
             <Chip variant="neutral">
               <Sailboat />
               {charterType}
@@ -195,7 +216,7 @@ function Details({
           </div>
         </div>
 
-        <div className="hidden items-center gap-1.5 xl:flex">
+        <div className="hidden flex-wrap items-center gap-1.5 xl:flex">
           <Chip variant="neutral">
             <Sailboat />
             {charterType}
@@ -208,19 +229,31 @@ function Details({
       </div>
 
       <div className="flex flex-wrap items-start gap-1.5">
-        {specs.map((spec) => (
-          <span
-            key={spec.label}
-            className="inline-flex items-center gap-1 rounded-sm p-1 text-sm font-medium leading-[1.3] text-natural-500"
-          >
-            <Check className="size-4 shrink-0" />
-            {spec.label}: <span className="text-foreground">{spec.value}</span>
-          </span>
-        ))}
+        {specs.map((spec) =>
+          spec.icon ? (
+            <span
+              key={spec.label}
+              title={`${spec.label}: ${spec.value}`}
+              className="inline-flex items-center gap-1 rounded-sm p-1 text-sm font-medium leading-[1.3] text-natural-500 [&_svg]:size-4 [&_svg]:shrink-0"
+            >
+              <span className="sr-only">{spec.label}: </span>
+              <span aria-hidden>{spec.icon}</span>
+              <span className="text-foreground">{spec.value}</span>
+            </span>
+          ) : (
+            <span
+              key={spec.label}
+              className="inline-flex items-center gap-1 rounded-sm p-1 text-sm font-medium leading-[1.3] text-natural-500"
+            >
+              <Check className="size-4 shrink-0" />
+              {spec.label}: <span className="text-foreground">{spec.value}</span>
+            </span>
+          ),
+        )}
       </div>
 
       {amenities?.length ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pb-3 md:pb-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {amenities.map((amenity) => (
             <div key={amenity.label} className="flex items-center gap-2">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand [&_svg]:size-4">
@@ -235,9 +268,7 @@ function Details({
       ) : null}
 
       {summaryAction ? (
-        <div className="mt-auto flex flex-wrap items-center gap-3 pt-1 pb-4 md:pb-6 xl:pr-6">
-          {summaryAction}
-        </div>
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">{summaryAction}</div>
       ) : null}
     </div>
   );
@@ -288,7 +319,7 @@ function Action({
   const format = useFormatter();
 
   return (
-    <div className="flex flex-col gap-3 border-t border-natural-50 px-4 pt-3 pb-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:px-6 md:pt-4 md:pb-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:px-0 xl:pr-6">
+    <div className="flex flex-col gap-3 border-t border-natural-50 p-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:p-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:pl-0">
       <div className="flex flex-col items-center gap-2 text-sm font-medium leading-[1.3] text-foreground md:items-start">
         {stats?.map((stat) => (
           <p key={stat}>{stat}</p>
@@ -314,10 +345,12 @@ function Action({
           <span className="order-2 text-sm font-medium leading-[1.3] text-natural-500 md:order-1">
             {priceLabel}
           </span>
+          {/* `leading` sits after the font size on purpose: tailwind-merge lets a later font size drop an
+              earlier line-height, which is how the price used to render at the default 1.5. */}
           <span
             className={cn(
-              "order-1 font-bold leading-[1.15] text-black md:order-2",
-              priceIsLabel ? "text-xl" : "text-[42px]",
+              "order-1 font-bold text-black md:order-2",
+              priceIsLabel ? "text-xl" : "text-2xl leading-[1.15] md:text-[28px]",
             )}
           >
             {price}
@@ -351,7 +384,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         "flex w-full flex-col overflow-hidden rounded-2xl border bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:items-stretch xl:gap-6",
         boat.summary
           ? "border-border xl:grid-cols-[minmax(0,452fr)_minmax(0,566fr)]"
-          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,208fr)]",
+          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,232fr)]",
         className,
       )}
     >
@@ -371,6 +404,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         crew={boat.crew}
         specs={boat.specs}
         amenities={boat.amenities}
+        detailHref={boat.detailHref}
         summary={boat.summary}
         summaryAction={boat.summary ? boat.summaryAction : undefined}
         unavailable={boat.unavailable}

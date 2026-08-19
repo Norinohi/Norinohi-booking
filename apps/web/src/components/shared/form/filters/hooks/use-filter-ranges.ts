@@ -32,8 +32,9 @@ export function useFilterRanges(): { ranges: FilterRanges; defaults: FiltersStat
       berths: asRange(r.berths),
       bathrooms: asRange(r.bathrooms),
       price: [Math.round(r.price.minMinor / 100), Math.round(r.price.maxMinor / 100)],
-      boatAge: asRange(r.boatAge),
       guestRating: asRange(r.guestRating),
+      boatAge: asRange(r.boatAge),
+      year: asRange(r.year),
     };
     return { ranges, defaults: buildDefaultFilters(ranges) };
   }, [facets]);

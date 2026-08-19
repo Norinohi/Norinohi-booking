@@ -50,7 +50,6 @@ export const filterParsers = {
   berths: rangeParser(),
   bathrooms: rangeParser(),
   price: rangeParser(),
-  boatAge: rangeParser(),
   yearFrom: parseAsString.withDefault("any"),
   yearTo: parseAsString.withDefault("any"),
 

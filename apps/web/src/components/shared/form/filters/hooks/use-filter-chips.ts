@@ -81,8 +81,6 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
         return t("bathrooms", { value: range(state.bathrooms) });
       case "price":
         return t("price", { value: money(state.price) });
-      case "boatAge":
-        return t("boatAge", { value: range(state.boatAge) });
       case "year":
         return t("year", {
           from: state.yearFrom === "any" ? t("any") : state.yearFrom,
