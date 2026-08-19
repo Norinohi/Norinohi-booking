@@ -4,11 +4,11 @@ import { ImageResponse } from "next/og";
  * Generated rather than committed as a binary.
  *
  * iOS ignores `favicon.ico` when a page is added to the home screen and falls back to a
- * screenshot of the page, which for this app is a slab of hero photo with no brand on it. There
- * is no logo asset in the repo — the navigation bar sets the wordmark in type — so the icon is
- * drawn here from the same brand blue (`--brand-500`, #2f80ed) the UI uses.
+ * screenshot of the page, which for this app is a slab of hero photo with no brand on it. The
+ * mark is drawn here from the same brand blue (`--brand-500`, #2f80ed) the UI uses, and matches
+ * `public/seo/logo.png` — that one is a file because search engines read it as a plain URL.
  *
- * 180×180 is the size iOS actually asks for; anything smaller gets upscaled and looks soft.
+ * 180x180 is the size iOS actually asks for; anything smaller gets upscaled and looks soft.
  */
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";

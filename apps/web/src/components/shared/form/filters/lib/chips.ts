@@ -9,6 +9,7 @@ export type FilterChip = { id: ChipId; label: string; keys: (keyof FiltersState)
 export const CHIP_DEFS = [
   { id: "country", keys: ["country"] },
   { id: "sailingArea", keys: ["sailingArea"] },
+  { id: "city", keys: ["city"] },
   { id: "charterCompany", keys: ["charterCompany"] },
   { id: "marina", keys: ["marina"] },
 
@@ -17,6 +18,7 @@ export const CHIP_DEFS = [
   { id: "dateFlexibility", keys: ["dateFlexibility"] },
 
   { id: "boatType", keys: ["boatType"] },
+  { id: "builder", keys: ["builder"] },
   { id: "model", keys: ["model"] },
   { id: "crew", keys: ["crew"] },
   { id: "mainsailType", keys: ["mainsailType"] },

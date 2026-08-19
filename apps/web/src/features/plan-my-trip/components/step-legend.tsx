@@ -11,7 +11,7 @@ export function StepLegend({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-h4 text-foreground">{title}</h1>
+      <h2 className="text-h4 text-foreground">{title}</h2>
       {subtitle && <p className="text-body-xl text-natural-600">{subtitle}</p>}
     </div>
   );

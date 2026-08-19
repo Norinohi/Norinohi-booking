@@ -22,6 +22,12 @@ export const yachtModel = pgTable(
       onDelete: "set null",
     }),
     name: text("name").notNull(),
+    /*
+     * The hull without its cabin configuration — "Lagoon 42" for "Lagoon 42 - 4 + 2 cab.". `name`
+     * stays the vendor's wording because the layout is a real difference to a charterer; grouping
+     * and model pages read this. Null when the name carries no such suffix.
+     */
+    canonicalName: text("canonical_name"),
     ...timestamps,
   },
   /*
@@ -37,6 +43,7 @@ export const yachtModel = pgTable(
    */
   (t) => [
     index("yacht_model_builder_idx").on(t.builderId),
+    index("yacht_model_canonical_name_idx").on(t.canonicalName),
     uniqueIndex("yacht_model_builder_name_uq").on(t.builderId, t.name),
     uniqueIndex("yacht_model_name_no_builder_uq")
       .on(t.name)

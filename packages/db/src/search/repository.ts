@@ -142,24 +142,51 @@ export async function getListingByIdOrSlug(
   return rows.rows[0] ? normalizeSearchRow(rows.rows[0]) : undefined;
 }
 
+/**
+ * The provider's own description in `locale`, or undefined when it ships none.
+ *
+ * `listing_search_doc` bakes provider prose into `searchable_text` only, so the detail read is
+ * the one place it can still be recovered per locale. English is not a fallback here on purpose:
+ * serving it under `lang="uk"` is the duplicate-content case the caller's generated copy avoids.
+ */
+async function providerDescription(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+  locale: string,
+): Promise<string | undefined> {
+  const rows = await db.execute<{ value: string }>(sql`
+    select value
+    from listing_text
+    where listing_id = ${listingId} and kind = 'description' and locale = ${locale}
+    limit 1
+  `);
+
+  return rows.rows[0]?.value;
+}
+
 export async function getListingDetailByIdOrSlug(
   db: NodePgDatabase<typeof schema>,
   idOrSlug: string,
+  locale: string = DEFAULT_LOCALE,
 ): Promise<ListingDetail | undefined> {
-  const listing = await getListingByIdOrSlug(db, idOrSlug);
-  if (!listing) return undefined;
+  const raw = await getListingByIdOrSlug(db, idOrSlug);
+  if (!raw) return undefined;
 
-  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts] = await Promise.all([
-    db.execute<{
-      beamM: string | null;
-      draftM: string | null;
-      engines: number | null;
-      enginePower: string | null;
-      fuelCapacity: number | null;
-      waterCapacity: number | null;
-      checkInTime: string | null;
-      checkOutTime: string | null;
-    }>(sql`
+  const [localized] = await localizeSearchDocs(db, [raw], locale);
+  const listing = localized ?? raw;
+
+  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose] =
+    await Promise.all([
+      db.execute<{
+        beamM: string | null;
+        draftM: string | null;
+        engines: number | null;
+        enginePower: string | null;
+        fuelCapacity: number | null;
+        waterCapacity: number | null;
+        checkInTime: string | null;
+        checkOutTime: string | null;
+      }>(sql`
       select
         spec.beam_m as "beamM",
         spec.draft_m as "draftM",
@@ -175,14 +202,14 @@ export async function getListingDetailByIdOrSlug(
       where l.id = ${listing.listingId}
       limit 1
     `),
-    db.execute<{
-      code: string | null;
-      label: string;
-      obligatory: boolean;
-      crew: boolean;
-      priceMinor: number | null;
-      priceCurrency: string | null;
-    }>(sql`
+      db.execute<{
+        code: string | null;
+        label: string;
+        obligatory: boolean;
+        crew: boolean;
+        priceMinor: number | null;
+        priceCurrency: string | null;
+      }>(sql`
       select
         a.code,
         a.name as label,
@@ -195,16 +222,16 @@ export async function getListingDetailByIdOrSlug(
       where la.listing_id = ${listing.listingId}
       order by la.obligatory desc, la.price_minor nulls first, a.name asc
     `),
-    db.execute<{
-      source: string;
-      kind: string;
-      externalId: string;
-      label: string;
-      obligatory: boolean;
-      crewRole: string | null;
-      priceMinor: number | null;
-      priceCurrency: string | null;
-    }>(sql`
+      db.execute<{
+        source: string;
+        kind: string;
+        externalId: string;
+        label: string;
+        obligatory: boolean;
+        crewRole: string | null;
+        priceMinor: number | null;
+        priceCurrency: string | null;
+      }>(sql`
       select
         source,
         kind,
@@ -218,15 +245,16 @@ export async function getListingDetailByIdOrSlug(
       where listing_id = ${listing.listingId}
       order by obligatory desc, price_minor, name asc
     `),
-    db.execute<{ id: string; question: string; answer: string }>(sql`
+      db.execute<{ id: string; question: string; answer: string }>(sql`
       select id, question, answer
       from faq
       where listing_id = ${listing.listingId}
       order by sort_order asc, created_at asc
     `),
-    listListingReviews(db, listing.listingId),
-    listSimilarListings(db, listing.listingId),
-  ]);
+      listListingReviews(db, listing.listingId),
+      listSimilarListings(db, listing.listingId),
+      providerDescription(db, listing.listingId, locale),
+    ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
     ...item,
@@ -287,7 +315,12 @@ export async function getListingDetailByIdOrSlug(
 
   return {
     ...listing,
-    description: descriptionFor(listing),
+    /*
+     * Null rather than the generated sentence when the provider ships no prose for this locale.
+     * The generated copy is translated, and its translations live in the web app's message files,
+     * so building it here would mean shipping Ukrainian string templates from the database package.
+     */
+    description: prose ?? null,
     overview: overviewFor(listing, info),
     includedAmenities,
     mandatoryExtras,
@@ -785,9 +818,11 @@ const searchColumns = sql`
   doc.crew_type as "crewType",
   doc.builder,
   doc.model,
+  doc.model_canonical as "modelCanonical",
   doc.operator,
   doc.base_id as "baseId",
   doc.base_name as "baseName",
+  doc.city,
   doc.location,
   doc.region,
   doc.country,
@@ -842,6 +877,9 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("sailingArea") && input.sailingArea?.length) {
     parts.push(normalizedIn(sql`doc.region`, input.sailingArea));
   }
+  if (!skip.has("city") && input.city?.length) {
+    parts.push(normalizedIn(sql`doc.city`, input.city));
+  }
   if (!skip.has("charterCompany") && input.charterCompany?.length) {
     parts.push(normalizedIn(sql`doc.operator`, input.charterCompany));
   }
@@ -853,9 +891,12 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("boatType") && input.boatType?.length) {
     parts.push(normalizedIn(sql`doc.category`, input.boatType));
   }
+  if (!skip.has("builder") && input.builder?.length) {
+    parts.push(normalizedIn(sql`doc.builder`, input.builder));
+  }
   if (!skip.has("model") && input.model?.length) {
     parts.push(
-      sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
+      sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.model_canonical`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
     );
   }
   if (!skip.has("crew") && input.crew?.length) {
@@ -1228,21 +1269,6 @@ function pricedItem(
   };
 }
 
-function descriptionFor(listing: ListingSearchDoc): string {
-  const year = listing.yearBuilt ? `Built in ${listing.yearBuilt}` : "This yacht";
-  const capacity = listing.berths
-    ? `accommodates up to ${listing.berths} guests`
-    : "is ready for a comfortable charter";
-  const layout = [
-    listing.cabins ? `${listing.cabins} cabins` : undefined,
-    listing.heads ? `${listing.heads} bathrooms` : undefined,
-  ]
-    .filter(Boolean)
-    .join(" and ");
-
-  return `${year}, ${listing.title} ${capacity}${layout ? ` with ${layout}` : ""}. Based at ${listing.baseName} in ${listing.location}, this ${listing.category ?? "yacht"} is set up for a smooth charter with ${listing.operator}.`;
-}
-
 function overviewFor(
   listing: ListingSearchDoc,
   info:
@@ -1390,7 +1416,15 @@ function routePlacesFor(region: string, location: string) {
   ];
 }
 
-function valueForLabel(label: string): string {
+/**
+ * The value a facet option is selected by, which is not `toSlug`.
+ *
+ * Diacritics are left alone here on purpose: the filter match normalizes both sides by stripping
+ * non-alphanumerics, so "Mali Lošinj" folds to `maliloinj` on the column and this has to fold the
+ * same way. Folding the accent instead would produce `malilosinj` and match nothing. Catalogue
+ * page URLs use `toSlug`, which does fold, because a URL is read by people.
+ */
+export function valueForLabel(label: string): string {
   return label
     .trim()
     .toLowerCase()

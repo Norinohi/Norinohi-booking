@@ -2,6 +2,8 @@ import "@yacht-charter/env/web";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+import { isPublicSite } from "./src/lib/site";
+
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
@@ -20,6 +22,21 @@ const nextConfig: NextConfig = {
     exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
   },
   allowedDevOrigins: ["*.ngrok-free.dev", "*.ngrok-free.app", "*.trycloudflare.com"],
+
+  /*
+   * A header rather than `Disallow: /`: `Disallow` blocks the fetch, so an already-indexed URL
+   * could never be re-read and would never drop out. Same reasoning as `src/app/robots.ts`.
+   */
+  async headers() {
+    if (isPublicSite(process.env.NEXT_PUBLIC_APP_URL)) return [];
+
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

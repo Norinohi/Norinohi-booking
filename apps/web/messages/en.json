@@ -571,12 +571,14 @@
       "any": "any",
       "country": "Country: {value}",
       "sailingArea": "Sailing Area: {value}",
+      "city": "City: {value}",
       "charterCompany": "Charter Company: {value}",
       "marina": "Marina: {value}",
       "startDate": "Start: {value}",
       "duration": "Duration: {count, plural, one {# day} other {# days}}",
       "dateFlexibility": "Flexibility: {value}",
       "boatType": "Boat Type: {value}",
+      "builder": "Builder: {value}",
       "model": "Model: {value}",
       "crew": "Crew: {value}",
       "mainsailType": "Mainsail: {value}",
@@ -1224,6 +1226,7 @@
     }
   },
   "Yachts": {
+    "heading": "Yacht Charter Search",
     "searchByMap": "Search by map",
     "emptyTitle": "No yachts found for your filters",
     "emptyDescription": "Try adjusting your dates, budget, or location — we will help you find the perfect match.",
@@ -1251,8 +1254,8 @@
   },
   "Seo": {
     "Yachts": {
-      "title": "Browse Yachts",
-      "description": "Explore our fleet of yachts and catamarans. Filter by destination, dates, guests and price to find the perfect boat for your trip."
+      "title": "Yacht Charter Search",
+      "description": "Search yachts and catamarans for charter across the Mediterranean and beyond. Filter by destination, dates, guests and price."
     },
     "YachtsMap": {
       "title": "Yachts on the Map",
@@ -1260,7 +1263,13 @@
     },
     "YachtDetail": {
       "title": "Yacht Details",
-      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates."
+      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates.",
+      "titleAtPlace": "{boat} Charter in {place}",
+      "titlePlain": "{boat} Charter",
+      "metaSpecs": "{category} with {cabins, plural, one {# cabin} other {# cabins}} for up to {guests} guests.",
+      "metaPlace": "{crew} charter from {place}.",
+      "metaPrice": "From {price} per week.",
+      "metaCta": "Check availability for your dates."
     },
     "Booking": {
       "title": "Book Your Yacht",
@@ -1357,6 +1366,22 @@
     "StaffBooking": {
       "title": "Booking (staff)",
       "description": "Staff view of a customer booking."
+    },
+    "CatalogPage": {
+      "country": "Yacht Charter in {place}",
+      "geo": "Yacht Charter in {place}, {country}",
+      "marina": "Yacht Charter at {place}",
+      "type": "{type} Charter",
+      "typeCountry": "{type} Charter in {place}",
+      "typeGeo": "{type} Charter in {place}, {country}",
+      "typeMarina": "{type} Charter at {place}",
+      "builder": "{brand} Yacht Charter",
+      "model": "{model} Charter",
+      "intro": "{count, plural, one {# boat} other {# boats}} available, from {price} per week.",
+      "introNoPrice": "{count, plural, one {# boat} other {# boats}} available.",
+      "description": "Compare {count, plural, one {# yacht} other {# yachts}} for charter. Filter by dates, guests, cabins and price, then check availability for your trip.",
+      "siblings": "Also worth a look",
+      "empty": "No boats match right now. Try the full catalogue."
     }
   },
   "Profile": {

@@ -5,6 +5,8 @@ export type FiltersState = {
   query: string;
   country: string[];
   sailingArea: string[];
+  /** Town, from a catalogue page's path. No control of its own; it arrives locked. */
+  city: string[];
   charterCompany: string[];
   marina: string[];
 
@@ -14,6 +16,8 @@ export type FiltersState = {
   dateFlexibility: string;
 
   boatType: string[];
+  /** Yacht builder. Arrives locked from a `/shipyard` page; no control of its own. */
+  builder: string[];
   model: string[];
   crew: string[];
   mainsailType: string[];
@@ -62,6 +66,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   query: "",
   country: [],
   sailingArea: [],
+  city: [],
   charterCompany: [],
   marina: [],
 
@@ -70,6 +75,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   dateFlexibility: "on-day",
 
   boatType: [],
+  builder: [],
   model: [],
   crew: [],
   mainsailType: [],

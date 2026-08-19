@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Sidebar from "@/components/layout/sidebar";
 
@@ -8,8 +10,15 @@ export const instant = false;
 /*
  * Dev-only kitchen-sink for app sections that don't live in Storybook.
  * Global chrome (NavigationBar + Footer) is already visible around it.
+ *
+ * 404s elsewhere: it declares no metadata, so a deployment served it at 200 under the root
+ * layout's title — the home page's own — leaving two pages competing for the brand query.
  */
 export default function PreviewPage() {
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-12 p-6 md:p-10">
       <div className="flex flex-col gap-1">
