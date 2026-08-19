@@ -21,10 +21,8 @@ if (!url) {
   process.exit(1);
 }
 
-const timeout = AbortSignal.timeout(5000);
-
 try {
-  await fetch(url, { signal: timeout });
+  await fetch(url, { signal: AbortSignal.timeout(5000) });
 } catch (error) {
   console.error(
     `\n✖ Cannot reach the API server at ${url}\n\n` +
@@ -34,6 +32,50 @@ try {
       "    pnpm db:start      # Postgres (published on 5434)\n" +
       "    pnpm dev:server    # API on :3000\n\n" +
       `  Underlying error: ${error instanceof Error ? error.message : String(error)}\n`,
+  );
+  process.exit(1);
+}
+
+/*
+ * The catalog routes enumerate their params from `charterSearch.catalogPages`, so a server older
+ * than this build answers 404 and Next fails during page collection naming only the route. Deploys
+ * hit this whenever web and the API roll out together and web wins the race.
+ */
+const probe = new URL("/rpc/charterSearch/catalogPages", url);
+
+let response;
+
+try {
+  response = await fetch(probe, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ json: {} }),
+    signal: AbortSignal.timeout(20000),
+  });
+} catch (error) {
+  console.error(
+    `\n✖ The API server at ${url} did not answer ${probe.pathname}\n\n` +
+      `  Underlying error: ${error instanceof Error ? error.message : String(error)}\n`,
+  );
+  process.exit(1);
+}
+
+if (response.status === 404) {
+  console.error(
+    `\n✖ The API server at ${url} does not serve ${probe.pathname}\n\n` +
+      "  It is running an older build than this one. The catalog routes read that procedure to\n" +
+      "  enumerate their static params, so the build would fail during page collection.\n\n" +
+      "  On Railway: wait for the api service to finish deploying, then redeploy web.\n" +
+      "  Locally: restart `pnpm dev:server` so it picks up the current packages/api.\n",
+  );
+  process.exit(1);
+}
+
+if (!response.ok) {
+  console.error(
+    `\n✖ The API server at ${url} answered ${response.status} for ${probe.pathname}\n\n` +
+      "  The catalog routes read that procedure during prerender, so the build cannot proceed.\n" +
+      "  Check the server logs; a failing database connection usually shows up here first.\n",
   );
   process.exit(1);
 }

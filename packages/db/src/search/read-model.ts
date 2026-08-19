@@ -83,7 +83,9 @@ export async function rebuildListingSearchDocs(
       -- unclassified category falls back to its own name rather than dropping out.
       coalesce(cat.canonical_name, cat.name),
       l.crew_type,
-      bld.name,
+      -- The brand, not the legal entity: providers send "Bavaria Yachtbau" and "Lagoon-Bénéteau",
+      -- and grouped by those the same brand splits into several shipyard pages and filters.
+      coalesce(bld.canonical_name, bld.name),
       mdl.name,
       -- The grouping name, like the category above: a model with no cabin suffix to strip has no
       -- canonical of its own, and writing that null left every model page without a value to
@@ -142,6 +144,7 @@ export async function rebuildListingSearchDocs(
         cat.canonical_name,
         l.crew_type,
         bld.name,
+        bld.canonical_name,
         mdl.name,
         op.name,
         bs.name,
