@@ -1,6 +1,7 @@
 "use client";
 
 import type { Option } from "../lib/options";
+import type { FacetScope } from "../lib/state";
 import { useFacets } from "./use-facets";
 
 export type FilterOptions = {
@@ -40,7 +41,8 @@ export const EMPTY_OPTIONS: FilterOptions = {
   years: [],
 };
 
-export function useFilterOptions() {
-  const query = useFacets();
+/** `scope` narrows the lists to a place; see `facetScopeOf`. Omitted, every option is offered. */
+export function useFilterOptions(scope?: FacetScope) {
+  const query = useFacets(scope);
   return { ...query, options: query.data?.options ?? EMPTY_OPTIONS };
 }

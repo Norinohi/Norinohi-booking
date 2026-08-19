@@ -102,6 +102,33 @@ export function buildDefaultFilters(ranges: FilterRanges): FiltersState {
   return { ...DEFAULT_FILTERS, ...ranges };
 }
 
+/** The place keys a Where control narrows its own option list by. */
+const SCOPE_KEYS = ["country", "sailingArea", "city", "charterCompany", "marina"] as const;
+
+export type FacetScope = Partial<Pick<FiltersState, (typeof SCOPE_KEYS)[number]>>;
+
+/**
+ * The place a facet list should be read within.
+ *
+ * `charterSearch.facets` already narrows every group by the input it is given and skips the
+ * group's own key, so handing it the selected country returns the regions of that country and
+ * still the full country list. Nothing here reaches the results — this is what the option lists
+ * are read against, not what is searched.
+ *
+ * Empty selections are dropped rather than sent as `[]`, so an untouched panel asks the exact
+ * input the route prefetched and hydrates instead of fetching a second time.
+ *
+ * Takes a partial state so a catalog route can hand it the facet its path pins, which is the same
+ * shape without the rest of the panel around it.
+ */
+export function facetScopeOf(filters: FacetScope): FacetScope {
+  const scope: FacetScope = {};
+  for (const key of SCOPE_KEYS) {
+    if (filters[key]?.length) scope[key] = filters[key];
+  }
+  return scope;
+}
+
 export type FilterValue = FiltersState[keyof FiltersState];
 
 export function isSameValue(a: FilterValue, b: FilterValue): boolean {

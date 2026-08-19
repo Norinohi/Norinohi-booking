@@ -17,6 +17,7 @@ import {
   catalogPageSiblings,
   findCatalogPage,
 } from "@/features/yachts/lib/catalog-page";
+import { facetScopeOf } from "@/components/shared/form/filters";
 import { Hydrated } from "@/components/layout/hydrated";
 import { breadcrumbNode, itemListNode, JsonLd } from "@/lib/json-ld";
 import { buildMetadata } from "@/lib/seo";
@@ -95,7 +96,7 @@ export default async function CatalogPageRoute({
    * against, and every control reads as empty while the chips already name it. */
   const [results, facets] = await Promise.all([
     prefetchCatalogResults(page.filters, locale, PAGE_SIZE),
-    prefetchSearch(),
+    prefetchSearch(facetScopeOf(lockedFor(page))),
   ]);
   const listings = results.items.map((item) => item.listing);
 

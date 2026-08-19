@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 
 import { facetsQueryOptions } from "../api/queries";
+import type { FacetScope } from "../lib/state";
 
 /**
  * The single facets read behind every filter control.
@@ -15,9 +16,14 @@ import { facetsQueryOptions } from "../api/queries";
  *
  * Deliberately not exported from the barrel: it is the shared internal, not part of the surface a
  * filter control consumes.
+ *
+ * `scope` is opt-in per caller, and only the Where controls take it. `useFilterRanges` reads the
+ * unscoped facets on purpose: the slider bounds it derives are also the panel's defaults, and
+ * defaults that moved with the selected country would re-scale every slider and change what
+ * "Apply Filters (N)" counts as set.
  */
-export function useFacets() {
+export function useFacets(scope?: FacetScope) {
   const locale = useLocale();
 
-  return useQuery(facetsQueryOptions(locale));
+  return useQuery(facetsQueryOptions(locale, scope));
 }

@@ -7,6 +7,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getFacets } from "@/components/shared/form/filters/api/server";
+import type { FacetScope } from "@/components/shared/form/filters";
 import { CATALOG_TAG, listingTag } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
@@ -30,15 +31,29 @@ type CatalogPage = Awaited<ReturnType<AppRouterClient["charterSearch"]["catalogP
  * The locale reaches the cache key through the root param (see `getRootLocale`), but is still read
  * by name here: the seeded query key has to match the one the client hook rebuilds from its own
  * locale, or hydration fills an entry nothing reads and the browser refetches on mount.
+ *
+ * `scope` is for a catalog route, whose path pins a place. The Where controls read the facets
+ * narrowed to it, which is a different query key from the unscoped taxonomy, so both are seeded:
+ * without the second the pinned page would paint its filter controls empty and fill them a round
+ * trip later. An unpinned route passes nothing and seeds one entry, as before.
  */
-export async function prefetchSearch() {
+export async function prefetchSearch(scope: FacetScope = {}) {
   "use cache";
   cacheLife("days");
   cacheTag(CATALOG_TAG);
 
+  const scoped = Object.keys(scope).length > 0;
   const queryClient = new QueryClient();
-  const [locale, facets] = await Promise.all([getRootLocale(), getFacets()]);
+  const [locale, facets, scopedFacets] = await Promise.all([
+    getRootLocale(),
+    getFacets(),
+    scoped ? getFacets(scope) : null,
+  ]);
+
   queryClient.setQueryData(facetsQueryOptions(locale).queryKey, facets);
+  if (scopedFacets) {
+    queryClient.setQueryData(facetsQueryOptions(locale, scope).queryKey, scopedFacets);
+  }
 
   return dehydrate(queryClient);
 }
