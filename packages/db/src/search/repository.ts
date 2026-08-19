@@ -839,6 +839,8 @@ const searchColumns = sql`
   doc.heads,
   doc.year_built as "yearBuilt",
   doc.sail_type as "sailType",
+  doc.security_deposit_minor as "securityDepositMinor",
+  doc.security_deposit_currency as "securityDepositCurrency",
   doc.deposit_insurance_included as "depositInsuranceIncluded",
   doc.pets_allowed as "petsAllowed",
   doc.rating,

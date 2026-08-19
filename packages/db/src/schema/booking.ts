@@ -204,6 +204,24 @@ export const booking = pgTable(
      * must not be a set of live booking links.
      */
     guestAccessTokenHash: text("guest_access_token_hash"),
+    /**
+     * Marks a booking as not real business — a test reservation made against a
+     * vendor's test charter company, which is how one reaches production at all.
+     *
+     * Deliberately not derived from anything. It is tempting to infer it: the
+     * listing is hidden, or its charter company fell out of the import scope. Both
+     * are wrong. A listing is hidden for many reasons, and a company we stop
+     * selling still leaves customers we owe a charter to. What makes a booking
+     * excludable is that it was never real, and only a person knows that.
+     *
+     * Excluded bookings drop out of the staff queues and the money collected with
+     * them, and nothing else changes: the row keeps its status, its payments and
+     * its provider reservation, and the customer-facing paths are untouched. It is
+     * a reporting decision, not a lifecycle state, which is why it sits apart from
+     * `status` and is reversible.
+     */
+    excludedAt: timestamp("excluded_at"),
+    excludedReason: text("excluded_reason"),
     commercialSnapshot: jsonb("commercial_snapshot").$type<CommercialSnapshot>().notNull(),
     /**
      * Unique per customer so a retried checkout cannot create a second booking

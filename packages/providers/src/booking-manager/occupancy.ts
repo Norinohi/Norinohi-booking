@@ -1,9 +1,12 @@
 import { ContractError } from "../shared/errors";
 import { stableSourceHash } from "../shared/raw-retention";
-import type {
-  AvailabilityScope,
-  AvailabilitySource,
-  OccupiedInterval,
+import {
+  ACCOUNT_WIDE_SCOPE,
+  type AvailabilityScope,
+  type AvailabilitySource,
+  isFatalAuthOnly,
+  type OccupancyDump,
+  type OccupiedInterval,
 } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
@@ -27,8 +30,12 @@ import {
  * The writer's canonical `OccupiedInterval` needs all three, so the main sweep uses
  * `/availability` and `/shortAvailability` is not called at all.
  *
- * Scoping is (companyId, year), matching the writer's per-scope sweep: a company
- * whose year failed to load leaves every other company's slots untouched.
+ * Scoping follows what the credential is actually asked for. With no allowlist the
+ * vendor answers for the whole account in one call per year, so the scope is the
+ * year alone (`ACCOUNT_WIDE_SCOPE`) - fanning it out per company meant ~1300
+ * sequential calls an hour to re-fetch the same two dumps, and the vendor's own
+ * integration guide never asks for that. An allowlist has already cut the fleet
+ * down, so there it stays (company, year) and narrows the call server-side.
  *
  * Raw retention happens in the transport (`BookingManagerClient`'s
  * `onRawResponse`), before anything here reads a field.
@@ -57,9 +64,6 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
  */
 const UNKNOWN_STATUS: OccupiedInterval["status"] = "blocked";
 
-/** No `companyId` filter: one account-wide dump per year. */
-const ALL_COMPANIES_SCOPE = "*";
-
 const DAY_MS = 86_400_000;
 
 function addOneDay(date: string): string {
@@ -67,7 +71,7 @@ function addOneDay(date: string): string {
 }
 
 export interface BookingManagerOccupancyScope {
-  /** External company id, or `*` for an unfiltered account-wide sweep. */
+  /** External company id, or `ACCOUNT_WIDE_SCOPE` for an unfiltered sweep. */
   companyId: string;
   year: number;
 }
@@ -79,7 +83,22 @@ export async function fetchBookingManagerOccupancy(
   return client.get(
     bookingManagerEndpoints.availability(scope.year),
     restAvailabilityListSchema,
-    scope.companyId === ALL_COMPANIES_SCOPE ? undefined : { companyId: scope.companyId },
+    /*
+     * `companyId`, despite the spec. Both 2.1.4 and 2.2.1 document this parameter as
+     * `company` on `/availability` and `/shortAvailability` (while `/yachts`,
+     * `/prices` and `/offers` take `companyId`), so the documented name looks like
+     * the right one. It is not: measured against the live v2 endpoint on 2026-08-19,
+     * `?company=225` returns the unfiltered account dump - 16194 rows across 4017
+     * yachts, byte-identical to sending no filter - while `?companyId=225` returns
+     * the 1 row that company actually has. The vendor drops the unknown parameter
+     * silently, so following the spec here reads as success and quietly widens every
+     * scope to the whole account.
+     *
+     * Do not "correct" this to match the spec without re-running that comparison.
+     * VENDOR QUESTION Q-BM-COMPANYPARAM: which name is intended, and is `company`
+     * deprecated or simply wrong in the document?
+     */
+    scope.companyId === ACCOUNT_WIDE_SCOPE ? undefined : { companyId: scope.companyId },
   );
 }
 
@@ -140,22 +159,70 @@ export function mapBookingManagerAvailability(
   };
 }
 
+/** Enough to name the problem to the vendor without pasting a dump into a log line. */
+const MAX_REPORTED_ISSUES = 5;
+
+/**
+ * Lossy for one yacht, never for the scope.
+ *
+ * `mapBookingManagerAvailability` still throws on a row it cannot read - that is the
+ * per-row contract and the only safe reading of a range that runs backwards. What
+ * changed is who pays. Failing the whole scope was right when a scope was one
+ * company-year; account-wide it means one row out of a quarter of a million blocks
+ * every company, which is what a single reversed `dateFrom`/`dateTo` did on
+ * 2026-08-19. So the yacht that owns the bad row is quarantined instead: its readable
+ * periods are kept, and the writer neither publishes free time for it nor sweeps it.
+ */
 export function mapBookingManagerOccupancyDump(
   rows: readonly RestAvailability[],
   config: BookingManagerConfig,
-): OccupiedInterval[] {
-  return rows.map((row) => mapBookingManagerAvailability(row, config));
+): OccupancyDump {
+  const intervals: OccupiedInterval[] = [];
+  const quarantinedYachtIds = new Set<string>();
+  const issues: string[] = [];
+
+  for (const row of rows) {
+    try {
+      intervals.push(mapBookingManagerAvailability(row, config));
+    } catch (error) {
+      const externalYachtId = String(row.yachtId);
+      quarantinedYachtIds.add(externalYachtId);
+      if (issues.length < MAX_REPORTED_ISSUES) {
+        issues.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+
+  // A quarantined yacht's own readable rows are dropped too. Half a calendar is not
+  // a calendar: keeping them would let the writer restamp some of its slots and
+  // leave the rest to look stale, and the sweep it is excluded from is the only
+  // thing that would have tidied that up.
+  const kept =
+    quarantinedYachtIds.size === 0
+      ? intervals
+      : intervals.filter((interval) => !quarantinedYachtIds.has(interval.externalYachtId));
+
+  const dump: OccupancyDump = { intervals: kept };
+  if (quarantinedYachtIds.size > 0) {
+    dump.quarantinedYachtIds = [...quarantinedYachtIds];
+    dump.issues = issues;
+  }
+  return dump;
 }
 
 export interface BookingManagerAvailabilitySourceOptions {
   client: BookingManagerClient;
   config: BookingManagerConfig;
-  /** One `/availability` call per (company, year); the writer sweeps a year at a time. */
+  /** Calendar years to sweep; the writer sweeps a year at a time. */
   years: number[];
   /**
-   * External charter company ids. Omitted means one unfiltered dump per year, which
-   * costs the per-company failure isolation and leaves the writer unable to list a
-   * scope's listings, so only yachts that actually appear in the dump are swept.
+   * The allowlist, verbatim, when the deployment configured one. Present means the
+   * fleet is already small, so each (company, year) is fetched with the vendor
+   * narrowing it. Absent means one unfiltered dump per year under
+   * `ACCOUNT_WIDE_SCOPE`, and the writer resolves the whole fleet against it.
+   *
+   * Deliberately not "every company we could enumerate". Passing the database's
+   * company list here is what turned two calls into thirteen hundred.
    */
   companyIds?: number[];
 }
@@ -167,22 +234,26 @@ export interface BookingManagerAvailabilitySourceOptions {
  * price. Nothing in these options carries them, and `createNausysAvailabilitySource`
  * makes the same call when its `hotWindows` list is empty. Slots stay
  * `availabilityConfirmed = false` until the quote path reconciles them live.
+ *
+ * (The vendor's guide points at a cheaper answer than the one that reasoning
+ * assumes: one `/offers` per Saturday-to-Saturday returns the whole available fleet
+ * priced, which is a complete confirming pass in ~52 calls a year. Not built here.)
  */
 export function createBookingManagerAvailabilitySource(
   options: BookingManagerAvailabilitySourceOptions,
 ): AvailabilitySource {
   const { client, config } = options;
-  const companyIds =
+  const scopeKeys =
     options.companyIds && options.companyIds.length > 0
       ? options.companyIds.map(String)
-      : [ALL_COMPANIES_SCOPE];
+      : [ACCOUNT_WIDE_SCOPE];
 
   return {
     listScopes(): Promise<AvailabilityScope[]> {
       const scopes: AvailabilityScope[] = [];
-      for (const companyId of companyIds) {
+      for (const scopeKey of scopeKeys) {
         for (const year of options.years) {
-          scopes.push({ scopeKey: companyId, year });
+          scopes.push({ scopeKey, year });
         }
       }
       return Promise.resolve(scopes);
@@ -195,5 +266,15 @@ export function createBookingManagerAvailabilitySource(
       });
       return mapBookingManagerOccupancyDump(rows, config);
     },
+
+    /*
+     * Only a credential failure repeats on every remaining scope. A malformed row
+     * or a drifted array schema costs the scope-year it arrived in, exactly as this
+     * provider's catalogue source already treats one, and for the same reason: each
+     * endpoint here carries its own schema, so one saying nothing predicts nothing
+     * about the next. Under the shared default a single bad row discarded a whole
+     * run's completed work.
+     */
+    isFatal: isFatalAuthOnly,
   };
 }

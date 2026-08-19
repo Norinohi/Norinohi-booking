@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import { ContractError, describeSchemaIssues } from "../shared/errors";
-import type { JsonValue } from "../shared/json";
+import type { JsonRequestValue, JsonValue } from "../shared/json";
 import {
   createProviderHttpClient,
   type FetchLike,
@@ -9,6 +9,7 @@ import {
   type QueryValue,
   type RawResponseEvent,
 } from "../shared/http-client";
+import { parseExactJson } from "../shared/exact-json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { BookingManagerConfig } from "./config";
@@ -41,6 +42,9 @@ export class BookingManagerClient {
       queue: options.queue ?? queueForInterval(options.config.minIntervalMs),
       headers: { authorization: `Bearer ${options.config.apiToken}` },
       onRawResponse: options.onRawResponse,
+      // Without this the vendor's 19-digit ids are rounded before anything sees them,
+      // and the id we send back on a quote or a booking is one we invented.
+      parseJson: parseExactJson,
       fetchImpl: options.fetchImpl,
       retry: options.retry,
     });
@@ -55,12 +59,20 @@ export class BookingManagerClient {
     return this.parse(endpoint, schema, response.body);
   }
 
-  async post<TOut>(endpoint: string, schema: z.ZodType<TOut>, body: JsonValue): Promise<TOut> {
+  async post<TOut>(
+    endpoint: string,
+    schema: z.ZodType<TOut>,
+    body: JsonRequestValue,
+  ): Promise<TOut> {
     const response = await this.http.post(endpoint, body);
     return this.parse(endpoint, schema, response.body);
   }
 
-  async put<TOut>(endpoint: string, schema: z.ZodType<TOut>, body?: JsonValue): Promise<TOut> {
+  async put<TOut>(
+    endpoint: string,
+    schema: z.ZodType<TOut>,
+    body?: JsonRequestValue,
+  ): Promise<TOut> {
     const response = await this.http.put(endpoint, body);
     return this.parse(endpoint, schema, response.body);
   }

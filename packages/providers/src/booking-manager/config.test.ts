@@ -54,7 +54,8 @@ describe("resolveBookingManagerConfig", () => {
 
 describe("company scope", () => {
   const scopeOf = (raw: string | undefined) =>
-    resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_COMPANY_IDS: raw }).companyIds;
+    resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_COMPANY_IDS: raw }).companyScope
+      .include;
 
   it("reads a comma separated list", () => {
     expect(scopeOf("225,331")).toEqual(["225", "331"]);

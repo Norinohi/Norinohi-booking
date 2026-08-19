@@ -1,5 +1,6 @@
 import { env } from "@yacht-charter/env/server";
 
+import { type CompanyScope, companyScopeFromEnv } from "../shared/company-scope";
 import { AuthError } from "../shared/errors";
 
 export interface NausysConfig {
@@ -21,6 +22,8 @@ export interface NausysConfig {
    * 10:00 CET. We keep them as plain wall-clock strings and never convert them.
    */
   optionTimeZone: string;
+  /** Which charter companies to import. Unconfigured means every company the credential can see. */
+  companyScope: CompanyScope;
   /**
    * Base of every serialization key: the lanes in `client.ts` are suffixes of it.
    * Keyed by credential, never by instance, so two clients in one process share
@@ -38,6 +41,8 @@ export interface NausysEnvSource {
   NAUSYS_MIN_INTERVAL_MS: number;
   NAUSYS_OPTION_SAFETY_MARGIN_MINUTES: number;
   NAUSYS_OPTION_TIMEZONE: string;
+  NAUSYS_COMPANY_IDS?: string | undefined;
+  NAUSYS_EXCLUDED_COMPANY_IDS?: string | undefined;
 }
 
 export function nausysQueueKey(username: string): string {
@@ -68,6 +73,10 @@ export function resolveNausysConfig(source: NausysEnvSource = env): NausysConfig
     minIntervalMs: source.NAUSYS_MIN_INTERVAL_MS,
     optionSafetyMarginMinutes: source.NAUSYS_OPTION_SAFETY_MARGIN_MINUTES,
     optionTimeZone: source.NAUSYS_OPTION_TIMEZONE,
+    companyScope: companyScopeFromEnv(
+      source.NAUSYS_COMPANY_IDS,
+      source.NAUSYS_EXCLUDED_COMPANY_IDS,
+    ),
     queueKey: nausysQueueKey(username),
   };
 }

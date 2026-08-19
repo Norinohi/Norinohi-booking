@@ -262,6 +262,7 @@ function projectYacht(
   const modelName = model?.name ?? "";
   const title = `${yacht.name} ${modelName}`.trim();
   const currency = currencyOf(seasonCurrencyOf(yacht) ?? yacht.depositCurrency);
+  const depositCurrency = currencyOf(yacht.depositCurrency ?? currency);
 
   return {
     externalId,
@@ -309,7 +310,8 @@ function projectYacht(
     checkinRules: checkinRulesOf(yacht),
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
-    securityDepositMinor: minorOf(yacht.deposit, currencyOf(yacht.depositCurrency ?? currency)),
+    securityDepositMinor: minorOf(yacht.deposit, depositCurrency),
+    securityDepositCurrency: depositCurrency,
     ...euminiaOf(yacht),
     // Payment terms are per period and come from `freeYachts`, never from the
     // catalogue dump.

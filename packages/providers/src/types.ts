@@ -504,6 +504,8 @@ const canonicalListingSchema = z.object({
   ),
   defaultCurrency: z.string().length(3),
   securityDepositMinor: z.number().int().optional(),
+  /** Unset means the deposit is denominated in `defaultCurrency`. */
+  securityDepositCurrency: z.string().length(3).optional(),
   /** Provider-side review aggregate. Left unset when the provider has no verdict. */
   rating: z.number().min(0).max(5).optional(),
   reviewCount: z.number().int().nonnegative().optional(),

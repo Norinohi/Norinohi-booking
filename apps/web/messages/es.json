@@ -407,7 +407,9 @@
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
       "prepayment": "Anticipo de reserva: {amount}",
-      "prepaymentInfo": "Es una fianza reembolsable que cubre posibles daños durante el viaje. Se devuelve tras la entrega si todo está en buen estado.",
+      "prepaymentInfo": "Es la parte del precio del chárter que se paga por adelantado para asegurar la reserva. Se descuenta del total y el resto se abona antes de la llegada.",
+      "securityDeposit": "Fianza reembolsable: {amount}",
+      "securityDepositInfo": "Fianza reembolsable que retiene la base por posibles daños durante el viaje. Se cobra en la llegada, no forma parte del precio y se devuelve tras la entrega si todo está en buen estado.",
       "specs": {
         "year": "Año",
         "people": "Personas",
@@ -850,7 +852,11 @@
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
       "payments": "Pagos",
-      "listings": "Anuncios"
+      "listings": "Anuncios",
+      "sections": {
+        "account": "Cuenta",
+        "admin": "Administración"
+      }
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -2277,6 +2283,13 @@
       },
       "priceLines": {
         "title": "Desglose de precio"
+      },
+      "excluded": {
+        "chip": "No es negocio real",
+        "exclude": "Marcar como reserva de prueba",
+        "restore": "Devolver a las colas",
+        "excludedAt": "Excluida de las colas y los totales el {at}",
+        "help": "Una reserva excluida conserva su estado, sus pagos y su reserva con el proveedor. Solo deja de contarse en las colas de personal y en los totales de dinero."
       }
     }
   }

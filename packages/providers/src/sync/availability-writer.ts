@@ -1,21 +1,16 @@
-import {
-  availabilitySlot,
-  listingFreePeriod,
-  listingPricePeriod,
-} from "@yacht-charter/db/schema/availability";
-import { listing } from "@yacht-charter/db/schema/listing";
+import { availabilitySlot, listingFreePeriod } from "@yacht-charter/db/schema/availability";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
-import { and, eq, gte, inArray, isNotNull, lt, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { describeErrorChain } from "../shared/error-chain";
 
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
-import { createCatalogueResolver, type CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
+import { chunked, ROW_CHUNK } from "../shared/chunks";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
 import { openSyncRun } from "./run";
 import type { SyncErrorContext } from "./runner";
@@ -25,9 +20,27 @@ import type { SyncErrorContext } from "./runner";
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO yyyy-MM-dd date");
 
 /**
+ * A scope key meaning "every listing this provider has", for a vendor whose
+ * occupancy dump is addressed by year alone.
+ *
+ * Booking Manager's `/availability/{year}` takes an optional company filter, so
+ * one call answers for the whole credential. Fanning that out per company cost
+ * ~1300 sequential calls an hour to re-fetch the same two dumps. The bound the
+ * removal sweep needs is still there - it is the year - and `listListingsForScope`
+ * reads this key as "the whole fleet" so the sweep stays complete rather than
+ * being narrowed to the yachts that happen to appear in the dump.
+ *
+ * The cost is that occupancy failure isolation drops from per-company to per-year.
+ * That was protecting against one company's dump being malformed while the rest
+ * were fine, which is no longer a thing that can happen: there is one dump.
+ */
+export const ACCOUNT_WIDE_SCOPE = "*";
+
+/**
  * One occupancy dump. NauSYS addresses it as (company, year); every provider that
  * publishes occupancy publishes it in some such bounded chunk, and the bound is
- * what makes the removal sweep safe.
+ * what makes the removal sweep safe. `ACCOUNT_WIDE_SCOPE` is the degenerate bound:
+ * the year alone.
  */
 export const availabilityScopeSchema = z.object({
   scopeKey: z.string().min(1),
@@ -56,15 +69,6 @@ export const confirmedOfferSchema = z.object({
 });
 export type ConfirmedOffer = z.infer<typeof confirmedOfferSchema>;
 
-/** Catalogue price, valid for a date range rather than for one booking. */
-export const seasonalPriceSchema = z.object({
-  startDate: isoDateSchema,
-  endDate: isoDateSchema,
-  priceMinor: z.number().int().nonnegative(),
-  currency: z.string().length(3),
-});
-export type SeasonalPrice = z.infer<typeof seasonalPriceSchema>;
-
 export interface DateWindow {
   start: string;
   end: string;
@@ -75,12 +79,40 @@ export interface ListingRef {
   listingSourceId: string | null;
 }
 
-export interface ListingAvailabilityPlan {
-  prices: SeasonalPrice[];
-  currency: string | null;
+/* ------------------------------------------------------------------ source */
+
+/**
+ * What one scope's occupancy fetch returned, when the source needs to say more than
+ * "here are the taken periods".
+ *
+ * A source may return a bare array instead; that means nothing was quarantined.
+ */
+export interface OccupancyDump {
+  intervals: OccupiedInterval[];
+  /**
+   * Yachts whose dump could not be read in full.
+   *
+   * Their occupied periods are still written - asserting that time is taken can
+   * never oversell - but they are excluded from free-period synthesis and from the
+   * removal sweep, because we are holding an incomplete picture of their calendar.
+   * Synthesizing against it would publish a gap the missing row was covering, and
+   * sweeping against it would delete sold time the dump simply failed to restate.
+   *
+   * This exists because a scope grew. When one scope was one company-year, failing
+   * the whole scope over a malformed row cost eleven boats and was obviously right.
+   * Account-wide, the same rule lets one vendor row block every company - which is
+   * exactly what it did: a single reversed date range out of 239,444.
+   */
+  quarantinedYachtIds?: readonly string[];
+  /** One line per quarantine, for the error row. The source caps this. */
+  issues?: readonly string[];
 }
 
-/* ------------------------------------------------------------------ source */
+export type OccupancyFetchResult = OccupiedInterval[] | OccupancyDump;
+
+export function normalizeOccupancyDump(result: OccupancyFetchResult): OccupancyDump {
+  return Array.isArray(result) ? { intervals: result } : result;
+}
 
 export interface ConfirmedOfferPage {
   offers: ConfirmedOffer[];
@@ -94,19 +126,34 @@ export interface AvailabilitySource {
    * Resolves only for a dump that arrived whole. A throw is what stops this scope
    * from being swept, so a partial answer must never be returned as a short list.
    */
-  fetchOccupancy(scope: AvailabilityScope): Promise<OccupiedInterval[]>;
+  fetchOccupancy(scope: AvailabilityScope): Promise<OccupancyFetchResult>;
   /**
    * The accurate pass. Pages are yielded rather than collected so the caller can
    * abandon the walk on a wall-clock budget without having bought the rest of it.
    */
   searchConfirmed?(resume: unknown): AsyncIterable<ConfirmedOfferPage>;
+  /**
+   * Whether an error from `fetchOccupancy` will repeat on every remaining scope,
+   * and so must stop the run rather than cost one scope.
+   *
+   * The source decides because only it knows its transport's error semantics.
+   * NauSYS puts every endpoint behind one envelope schema, so a contract failure
+   * really does predict the next call; Booking Manager gives each endpoint its own
+   * array schema, and one company-year of malformed rows says nothing about the
+   * rest - its catalogue source already draws exactly this distinction. Defaults
+   * to the NauSYS reading, so a source that says nothing keeps today's behaviour.
+   */
+  isFatal?(error: unknown): boolean;
 }
 
-/** A provider that can drive an availability sync; the mock cannot. */
+/**
+ * A provider that can drive an availability sync; the mock cannot.
+ *
+ * Seasonal prices used to hang off this interface. They are catalogue data on a
+ * catalogue cadence now - see `sync/price-writer.ts` for why.
+ */
 export interface AvailabilitySyncProvider {
   createAvailabilitySource(options: { resume?: unknown }): AvailabilitySource;
-  /** Seasonal prices per listing, so a synthesized slot can carry a price. */
-  loadSeasonalPrices?(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>>;
 }
 
 export function supportsAvailabilitySync(
@@ -142,6 +189,17 @@ export interface ConfirmSlotInput extends ListingRef {
   seenAt: Date;
 }
 
+/**
+ * One listing's free periods for the years a dump covered. Batched because an
+ * account-wide scope hands the store the whole fleet in one pass, and a statement
+ * per boat is a round-trip per boat.
+ */
+export interface FreePeriodWrite {
+  ref: ListingRef;
+  /** Empty is meaningful: it says this listing has nothing free left in those years. */
+  periods: readonly FreePeriod[];
+}
+
 export interface AvailabilitySweepInput {
   listings: ListingRef[];
   year: number;
@@ -165,14 +223,13 @@ export interface AvailabilitySyncStore {
   resolveListing(externalYachtId: string): Promise<ListingRef | null>;
   /** Every listing under a provider-side scope, including the ones with no bookings. */
   listListingsForScope(scopeKey: string): Promise<ListingRef[]>;
-  loadPlans(listingIds: string[]): Promise<Map<string, ListingAvailabilityPlan>>;
   writeSlots(slots: AvailabilitySlotWrite[]): Promise<void>;
-  /** Replaces the listing's free periods inside the years the dump covered. */
-  writeFreePeriods(ref: ListingRef, years: readonly number[], periods: FreePeriod[]): Promise<void>;
-  /** The provider's published rates, stored as the periods it published them for. Returns the
-   * number of distinct periods written, which is below the input whenever a yacht appears in
-   * more than one price list. */
-  writePricePeriods(ref: ListingRef, prices: readonly SeasonalPrice[]): Promise<number>;
+  /**
+   * Replaces the free periods of every listing given, inside the years the dump
+   * covered and nowhere else. A listing present with no periods loses the ones it
+   * had; a listing absent from the batch is not touched at all.
+   */
+  writeFreePeriods(writes: readonly FreePeriodWrite[], years: readonly number[]): Promise<void>;
   /** False when the period is held by an occupied slot, which the vendor's own dump wins. */
   confirmSlot(input: ConfirmSlotInput): Promise<boolean>;
   sweepScope(input: AvailabilitySweepInput): Promise<number>;
@@ -282,6 +339,8 @@ function yearWindow(year: number): DateWindow {
 /* ---------------------------------------------------------------- the sync */
 
 export const DEFAULT_HORIZON_MONTHS = 12;
+/** Enough ids to eyeball against the catalogue, few enough to keep in a log line. */
+const UNRESOLVED_SAMPLE_LIMIT = 10;
 /** The hot pass shares the vendor's single lane, so it is bounded by time, not by completeness. */
 export const DEFAULT_HOT_WINDOW_BUDGET_MS = 5 * 60 * 1000;
 
@@ -292,7 +351,19 @@ export interface AvailabilitySyncSummary {
   freePeriods: number;
   confirmedSlots: number;
   skippedYachts: number;
-  pricePeriods: number;
+  /**
+   * A few of the external yacht ids the dump named and the catalogue has no
+   * listing for. `skippedYachts` alone cannot distinguish "a handful of boats we
+   * never imported" from "the id spaces do not line up and nothing landed", which
+   * is a whole run's difference and used to need a database session to tell apart.
+   */
+  unresolvedYachtIdSample: string[];
+  /**
+   * Yachts whose occupancy arrived unreadable, so their free periods were neither
+   * asserted nor swept this run. Non-zero means a vendor data problem worth chasing,
+   * not a code failure - the accompanying `sync_error` rows name the rows.
+   */
+  quarantinedYachts: number;
   deletedSlots: number;
   sweptScopes: number;
   failedCount: number;
@@ -330,9 +401,14 @@ function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
 }
 
 /** Auth and contract failures repeat on every subsequent call; nothing else does. */
-function isFatal(error: unknown): boolean {
+export function isFatalByDefault(error: unknown): boolean {
   const type = toSyncErrorType(error);
   return type === "auth" || type === "contract";
+}
+
+/** A credential failure repeats identically; a malformed payload need not. */
+export function isFatalAuthOnly(error: unknown): boolean {
+  return toSyncErrorType(error) === "auth";
 }
 
 export async function runAvailabilitySync(
@@ -342,6 +418,8 @@ export async function runAvailabilitySync(
   const now = options.now ?? (() => new Date());
   const horizonMonths = options.horizonMonths ?? DEFAULT_HORIZON_MONTHS;
   const budgetMs = options.hotWindowBudgetMs ?? DEFAULT_HOT_WINDOW_BUDGET_MS;
+
+  const isFatal = source.isFatal ?? isFatalByDefault;
 
   const startedAt = now();
   await store.startRun(startedAt);
@@ -354,7 +432,8 @@ export async function runAvailabilitySync(
   let freePeriods = 0;
   let confirmedSlots = 0;
   let skippedYachts = 0;
-  let pricePeriods = 0;
+  const unresolved = new Set<string>();
+  const quarantined = new Set<string>();
   let deletedSlots = 0;
   let sweptScopes = 0;
   let failedCount = 0;
@@ -385,10 +464,32 @@ export async function runAvailabilitySync(
       const occupiedByListing = new Map<string, OccupiedInterval[]>();
       const listings = new Map<string, ListingRef>();
 
+      // Listing ids we hold an incomplete calendar for, in this scope.
+      const quarantinedListingIds = new Set<string>();
+
       for (const year of [...years].sort((a, b) => a - b)) {
         let intervals: OccupiedInterval[];
         try {
-          intervals = await source.fetchOccupancy({ scopeKey, year });
+          const dump = normalizeOccupancyDump(await source.fetchOccupancy({ scopeKey, year }));
+          intervals = dump.intervals;
+
+          for (const externalYachtId of dump.quarantinedYachtIds ?? []) {
+            quarantined.add(externalYachtId);
+            const ref = await store.resolveListing(externalYachtId);
+            if (ref) quarantinedListingIds.add(ref.listingId);
+          }
+
+          // Reported once per scope-year rather than per row: it downgrades the run to
+          // `partial` so the vendor problem is visible, without turning one bad dump
+          // into thousands of error rows.
+          if (dump.issues?.length) {
+            await report(new ContractError(dump.issues.join("; ")), {
+              scopeKey,
+              year,
+              phase: "occupancy-quarantine",
+              quarantinedYachts: dump.quarantinedYachtIds?.length ?? 0,
+            });
+          }
         } catch (error) {
           if (isFatal(error)) throw error;
           // No completion, so no sweep and no synthesis for this year: the rest of
@@ -402,6 +503,7 @@ export async function runAvailabilitySync(
           const ref = await store.resolveListing(interval.externalYachtId);
           if (!ref) {
             skippedYachts += 1;
+            if (unresolved.size < UNRESOLVED_SAMPLE_LIMIT) unresolved.add(interval.externalYachtId);
             continue;
           }
           listings.set(ref.listingId, ref);
@@ -441,43 +543,52 @@ export async function runAvailabilitySync(
       }
 
       const listingRefs = [...listings.values()];
-      const plans = await store.loadPlans(listingRefs.map((ref) => ref.listingId));
       const windows = cleanYears
         .map((year) => clip(horizon, yearWindow(year)))
         .filter((window): window is DateWindow => window !== null);
 
+      const freeWrites: FreePeriodWrite[] = [];
+
       for (const ref of listingRefs) {
-        const plan = plans.get(ref.listingId);
-
         /*
-         * The provider's rates, kept as the periods it published. Written before the free
-         * periods so a listing that turns out to be fully booked still carries its prices:
-         * the card quotes "from" off these, not off what happens to be unsold today.
+         * A quarantined yacht is cleared, not skipped.
+         *
+         * Skipping it would leave the free periods the last good run published, and
+         * those are the rows the catalogue advertises as bookable - so a week sold
+         * since then would still be on sale, which is the exact thing quarantining is
+         * meant to prevent. Writing an empty list deletes them inside the years we
+         * fetched and asserts nothing in their place: the boat shows no availability
+         * until the vendor's data is readable again. Its already-stored occupied slots
+         * stay put, because the sweep below skips it too.
          */
-        if (plan?.prices?.length) {
-          pricePeriods += await store.writePricePeriods(ref, plan.prices);
-          touched.add(ref.listingId);
-        }
-
-        const free = freePeriodsFrom({
-          windows,
-          occupied: occupiedByListing.get(ref.listingId) ?? [],
-        });
+        const free = quarantinedListingIds.has(ref.listingId)
+          ? []
+          : freePeriodsFrom({
+              windows,
+              occupied: occupiedByListing.get(ref.listingId) ?? [],
+            });
         /*
-         * Written even when empty: a boat that just sold its last week must lose the free
-         * periods it had, and the sweep inside `writeFreePeriods` is what removes them.
+         * Collected even when empty: a boat that just sold its last week must lose the
+         * free periods it had, and the replace inside `writeFreePeriods` is what removes
+         * them. Absent from the batch and present-but-empty are different statements.
          */
-        await store.writeFreePeriods(ref, cleanYears, free);
+        freeWrites.push({ ref, periods: free });
         freePeriods += free.length;
         if (free.length > 0) touched.add(ref.listingId);
       }
 
+      await store.writeFreePeriods(freeWrites, cleanYears);
+
       // Occupancy is a full dump per (company, year), so anything inside a year we
       // fetched cleanly and did not restamp is gone from the provider. Strictly one
       // year and one company at a time: a failed fetch swept nothing above.
+      // Excluded from the sweep, so a slot we could not re-derive is not deleted into
+      // looking free. Nothing advertises it either - its free periods were just cleared.
+      const sweepable = listingRefs.filter((ref) => !quarantinedListingIds.has(ref.listingId));
+
       for (const year of cleanYears) {
         deletedSlots += await store.sweepScope({
-          listings: listingRefs,
+          listings: sweepable,
           year,
           seenBefore: startedAt,
         });
@@ -493,6 +604,7 @@ export async function runAvailabilitySync(
             const ref = await store.resolveListing(offer.externalYachtId);
             if (!ref) {
               skippedYachts += 1;
+              if (unresolved.size < UNRESOLVED_SAMPLE_LIMIT) unresolved.add(offer.externalYachtId);
               continue;
             }
             const changed = await store.confirmSlot({
@@ -569,7 +681,8 @@ export async function runAvailabilitySync(
     freePeriods,
     confirmedSlots,
     skippedYachts,
-    pricePeriods,
+    unresolvedYachtIdSample: [...unresolved],
+    quarantinedYachts: quarantined.size,
     deletedSlots,
     sweptScopes,
     failedCount,
@@ -588,23 +701,60 @@ export interface DrizzleAvailabilityStoreOptions {
   db: Database;
   providerId: string;
   syncRunId: string;
-  resolver: CatalogueResolver;
-  loadSeasonalPrices?: (listingIds: string[]) => Promise<Map<string, SeasonalPrice[]>>;
   cursorScope?: string;
 }
 
 export function createDrizzleAvailabilitySyncStore(
   options: DrizzleAvailabilityStoreOptions,
 ): AvailabilitySyncStore {
-  const { db, providerId, syncRunId, resolver } = options;
+  const { db, providerId, syncRunId } = options;
   const cursorKey = {
     providerId,
     kind: "availability" as const,
     scope: options.cursorScope ?? HOT_WINDOW_CURSOR_SCOPE,
   };
-  // A company's fleet appears once per year of its dump and again in the hot pass;
-  // resolving each yacht once per run keeps that to two queries per boat.
-  const resolved = new Map<string, ListingRef | null>();
+  /*
+   * The whole provider's yacht -> listing index, read once.
+   *
+   * This was two queries per distinct yacht, which is fine for a vendor whose
+   * dump covers one company and ruinous for one whose dump covers the account:
+   * a Booking Manager run spent tens of thousands of sequential round-trips
+   * establishing, one boat at a time, that it had no listings. The index is a few
+   * columns over `listing_source` and no sync mutates it mid-run.
+   */
+  let indexPromise: Promise<Map<string, ListingRef>> | null = null;
+
+  async function listingIndex(): Promise<Map<string, ListingRef>> {
+    indexPromise ??= db
+      .select({
+        externalYachtId: listingSource.externalYachtId,
+        listingId: listingSource.listingId,
+        listingSourceId: listingSource.id,
+        active: providerRecord.active,
+      })
+      .from(listingSource)
+      .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+      .where(and(eq(providerRecord.providerId, providerId), isNotNull(listingSource.listingId)))
+      .then((rows) => {
+        const index = new Map<string, ListingRef>();
+        // Active first, so a yacht carrying both a retired record and a live one
+        // resolves to the live one. The two queries this replaced took whichever row
+        // an unordered `limit(1)` happened to return.
+        for (const row of [...rows].sort((a, b) => Number(b.active) - Number(a.active))) {
+          if (!row.listingId || index.has(row.externalYachtId)) continue;
+          index.set(row.externalYachtId, {
+            listingId: row.listingId,
+            // A retired yacht still resolves - its slots are still ours to restamp -
+            // but contributes no source id, so the sweep will not scope by it. Kept
+            // as the pair of queries this replaced behaved, not as a new rule.
+            listingSourceId: row.active ? row.listingSourceId : null,
+          });
+        }
+        return index;
+      });
+
+    return indexPromise;
+  }
 
   return {
     syncRunId,
@@ -617,17 +767,7 @@ export function createDrizzleAvailabilitySyncStore(
     },
 
     async resolveListing(externalYachtId) {
-      const cached = resolved.get(externalYachtId);
-      if (cached !== undefined) return cached;
-
-      const listingId = await resolver.toListingId(externalYachtId);
-      let ref: ListingRef | null = null;
-      if (listingId) {
-        const link = await resolver.toExternalListing(listingId).catch(() => null);
-        ref = { listingId, listingSourceId: link?.listingSourceId ?? null };
-      }
-      resolved.set(externalYachtId, ref);
-      return ref;
+      return (await listingIndex()).get(externalYachtId) ?? null;
     },
 
     async listListingsForScope(scopeKey) {
@@ -639,7 +779,12 @@ export function createDrizzleAvailabilitySyncStore(
           and(
             eq(providerRecord.providerId, providerId),
             eq(providerRecord.active, true),
-            eq(listingSource.externalCompanyId, scopeKey),
+            // The account-wide scope is not a company id and must not be matched as
+            // one: it means the dump answered for the whole credential, so every
+            // listing under it is in scope and the sweep covers the whole fleet.
+            scopeKey === ACCOUNT_WIDE_SCOPE
+              ? undefined
+              : eq(listingSource.externalCompanyId, scopeKey),
             isNotNull(listingSource.listingId),
           ),
         );
@@ -649,157 +794,103 @@ export function createDrizzleAvailabilitySyncStore(
       );
     },
 
-    async loadPlans(listingIds) {
-      const plans = new Map<string, ListingAvailabilityPlan>();
-      if (listingIds.length === 0) return plans;
+    async writeFreePeriods(writes, years) {
+      if (writes.length === 0 || years.length === 0) return;
 
-      const [listings, prices] = await Promise.all([
-        db
-          .select({ id: listing.id, currency: listing.defaultCurrency })
-          .from(listing)
-          .where(inArray(listing.id, listingIds)),
-        options.loadSeasonalPrices?.(listingIds) ?? Promise.resolve(new Map<string, never[]>()),
-      ]);
-
-      const planFor = (listingId: string) => {
-        const existing = plans.get(listingId);
-        if (existing) return existing;
-        const plan: ListingAvailabilityPlan = { prices: [], currency: null };
-        plans.set(listingId, plan);
-        return plan;
-      };
-
-      for (const row of listings) {
-        planFor(row.id).currency = row.currency;
-      }
-      for (const listingId of listingIds) {
-        planFor(listingId).prices = prices.get(listingId) ?? [];
-      }
-
-      return plans;
-    },
-
-    async writeFreePeriods(ref, years, periods) {
       /*
        * Replace within the years the dump covered, never outside them. A year whose fetch
        * failed keeps whatever it had: deleting there would erase availability on the
        * strength of a request that never completed.
        */
-      for (const year of years) {
-        await db
-          .delete(listingFreePeriod)
-          .where(
-            and(
-              eq(listingFreePeriod.listingId, ref.listingId),
-              gte(listingFreePeriod.startDate, `${year}-01-01`),
-              lte(listingFreePeriod.startDate, `${year}-12-31`),
+      const inAnyCleanYear = years.map((year) =>
+        and(
+          gte(listingFreePeriod.startDate, `${year}-01-01`),
+          lte(listingFreePeriod.startDate, `${year}-12-31`),
+        ),
+      );
+
+      // One DELETE per chunk of listings covering every clean year, rather than one
+      // statement per listing per year. The whole fleet arrives in a single call under
+      // an account-wide scope, so this is the difference between two round-trips and
+      // tens of thousands.
+      for (const chunk of chunked(writes)) {
+        await db.delete(listingFreePeriod).where(
+          and(
+            inArray(
+              listingFreePeriod.listingId,
+              chunk.map((write) => write.ref.listingId),
             ),
-          );
+            or(...inAnyCleanYear),
+          ),
+        );
       }
 
-      if (periods.length === 0) return;
-      await db
-        .insert(listingFreePeriod)
-        .values(
-          periods.map((period) => ({
-            listingId: ref.listingId,
-            listingSourceId: ref.listingSourceId,
-            startDate: period.startDate,
-            endDate: period.endDate,
-          })),
-        )
-        .onConflictDoNothing();
-    },
+      const rows = writes.flatMap((write) =>
+        write.periods.map((period) => ({
+          listingId: write.ref.listingId,
+          listingSourceId: write.ref.listingSourceId,
+          startDate: period.startDate,
+          endDate: period.endDate,
+        })),
+      );
 
-    async writePricePeriods(ref, prices) {
-      /*
-       * A yacht can appear in more than one price list, and the same period then arrives
-       * twice. Postgres refuses an ON CONFLICT that would touch one row twice in a single
-       * statement, so the batch is deduplicated on the conflict target before it is sent.
-       */
-      const unique = new Map<string, SeasonalPrice>();
-      for (const price of prices) {
-        unique.set(`${price.startDate}|${price.endDate}`, price);
+      // Chunked by row, not by listing: how many periods a boat has is the provider's
+      // business, and the bind-parameter ceiling is per statement.
+      for (const chunk of chunked(rows, ROW_CHUNK)) {
+        await db.insert(listingFreePeriod).values(chunk).onConflictDoNothing();
       }
-      if (unique.size === 0) return 0;
-
-      await db
-        .insert(listingPricePeriod)
-        .values(
-          [...unique.values()].map((price) => ({
-            listingId: ref.listingId,
-            listingSourceId: ref.listingSourceId,
-            startDate: price.startDate,
-            endDate: price.endDate,
-            // The loader maps WEEKLY lists only; NauSYS publishes dailies separately and a
-            // weekly rate is not a seventh of one, so they cannot be folded together here.
-            kind: "weekly" as const,
-            priceMinor: price.priceMinor,
-            currency: price.currency,
-          })),
-        )
-        .onConflictDoUpdate({
-          target: [
-            listingPricePeriod.listingId,
-            listingPricePeriod.kind,
-            listingPricePeriod.startDate,
-            listingPricePeriod.endDate,
-          ],
-          set: {
-            priceMinor: sql`excluded.price_minor`,
-            currency: sql`excluded.currency`,
-            updatedAt: sql`now()`,
-          },
-        });
-
-      return unique.size;
     },
 
     async writeSlots(slots) {
       if (slots.length === 0) return;
 
-      await db
-        .insert(availabilitySlot)
-        .values(
-          slots.map((slot) => ({
-            listingId: slot.listingId,
-            listingSourceId: slot.listingSourceId,
-            startDate: slot.startDate,
-            endDate: slot.endDate,
-            status: slot.status,
-            availabilityConfirmed: slot.availabilityConfirmed,
-            priceMinor: slot.priceMinor,
-            currency: slot.currency,
-            minNights: slot.minNights,
-            checkinWeekday: slot.checkinWeekday,
-            checkoutWeekday: slot.checkoutWeekday,
-            sourceHash: slot.sourceHash,
-            updatedAt: slot.seenAt,
-          })),
-        )
-        .onConflictDoUpdate({
-          target: [
-            availabilitySlot.listingId,
-            availabilitySlot.startDate,
-            availabilitySlot.endDate,
-          ],
-          set: {
-            listingSourceId: sql`excluded.listing_source_id`,
-            status: sql`excluded.status`,
-            // A re-synthesized slot drops back to unconfirmed on purpose: a
-            // confirmation the vendor gave yesterday is not one it gives today, and
-            // re-asserting it would be us confirming our own guess.
-            availabilityConfirmed: sql`excluded.availability_confirmed`,
-            priceMinor: sql`excluded.price_minor`,
-            currency: sql`excluded.currency`,
-            minNights: sql`excluded.min_nights`,
-            checkinWeekday: sql`excluded.checkin_weekday`,
-            checkoutWeekday: sql`excluded.checkout_weekday`,
-            sourceHash: sql`excluded.source_hash`,
-            // The stamp the sweep reads; `$onUpdate` does not fire on a conflict path.
-            updatedAt: sql`excluded.updated_at`,
-          },
-        });
+      // Chunked for the same reason the other bulk writes are, and more urgently: a
+      // slot binds thirteen parameters, so an account-wide dump in one statement
+      // would blow the 65535 ceiling long before it ran out of rows.
+      for (const chunk of chunked(slots, ROW_CHUNK)) {
+        await db
+          .insert(availabilitySlot)
+          .values(
+            chunk.map((slot) => ({
+              listingId: slot.listingId,
+              listingSourceId: slot.listingSourceId,
+              startDate: slot.startDate,
+              endDate: slot.endDate,
+              status: slot.status,
+              availabilityConfirmed: slot.availabilityConfirmed,
+              priceMinor: slot.priceMinor,
+              currency: slot.currency,
+              minNights: slot.minNights,
+              checkinWeekday: slot.checkinWeekday,
+              checkoutWeekday: slot.checkoutWeekday,
+              sourceHash: slot.sourceHash,
+              updatedAt: slot.seenAt,
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [
+              availabilitySlot.listingId,
+              availabilitySlot.startDate,
+              availabilitySlot.endDate,
+            ],
+            set: {
+              listingSourceId: sql`excluded.listing_source_id`,
+              status: sql`excluded.status`,
+              // A re-synthesized slot drops back to unconfirmed on purpose: a
+              // confirmation the vendor gave yesterday is not one it gives today, and
+              // re-asserting it would be us confirming our own guess.
+              availabilityConfirmed: sql`excluded.availability_confirmed`,
+              priceMinor: sql`excluded.price_minor`,
+              currency: sql`excluded.currency`,
+              minNights: sql`excluded.min_nights`,
+              checkinWeekday: sql`excluded.checkin_weekday`,
+              checkoutWeekday: sql`excluded.checkout_weekday`,
+              sourceHash: sql`excluded.source_hash`,
+              // The stamp the sweep reads; `$onUpdate` does not fire on a conflict path.
+              updatedAt: sql`excluded.updated_at`,
+            },
+          });
+      }
     },
 
     async confirmSlot(input) {
@@ -844,31 +935,40 @@ export function createDrizzleAvailabilitySyncStore(
     },
 
     async sweepScope(input) {
-      const listingIds = input.listings.map((ref) => ref.listingId);
-      if (listingIds.length === 0) return 0;
+      if (input.listings.length === 0) return 0;
 
-      const sourceIds = input.listings
-        .map((ref) => ref.listingSourceId)
-        .filter((id): id is string => id !== null);
+      let deleted = 0;
+      // Chunked by listing, carrying each chunk's own source ids, so the pairing
+      // the source scoping relies on only ever narrows.
+      for (const chunk of chunked(input.listings)) {
+        const sourceIds = chunk
+          .map((ref) => ref.listingSourceId)
+          .filter((id): id is string => id !== null);
 
-      const rows = await db
-        .delete(availabilitySlot)
-        .where(
-          and(
-            inArray(availabilitySlot.listingId, listingIds),
-            // Scoped by source as well as by listing so a second provider's slots on
-            // a merged listing are not collateral damage.
-            sourceIds.length > 0
-              ? inArray(availabilitySlot.listingSourceId, sourceIds)
-              : sql`false`,
-            gte(availabilitySlot.startDate, `${input.year}-01-01`),
-            lte(availabilitySlot.startDate, `${input.year}-12-31`),
-            lt(availabilitySlot.updatedAt, input.seenBefore),
-          ),
-        )
-        .returning({ id: availabilitySlot.id });
+        const rows = await db
+          .delete(availabilitySlot)
+          .where(
+            and(
+              inArray(
+                availabilitySlot.listingId,
+                chunk.map((ref) => ref.listingId),
+              ),
+              // Scoped by source as well as by listing so a second provider's slots on
+              // a merged listing are not collateral damage.
+              sourceIds.length > 0
+                ? inArray(availabilitySlot.listingSourceId, sourceIds)
+                : sql`false`,
+              gte(availabilitySlot.startDate, `${input.year}-01-01`),
+              lte(availabilitySlot.startDate, `${input.year}-12-31`),
+              lt(availabilitySlot.updatedAt, input.seenBefore),
+            ),
+          )
+          .returning({ id: availabilitySlot.id });
 
-      return rows.length;
+        deleted += rows.length;
+      }
+
+      return deleted;
     },
 
     async recordError(input) {
@@ -947,7 +1047,8 @@ export async function runAvailabilitySyncJob(
       freePeriods: 0,
       confirmedSlots: 0,
       skippedYachts: 0,
-      pricePeriods: 0,
+      unresolvedYachtIdSample: [],
+      quarantinedYachts: 0,
       deletedSlots: 0,
       sweptScopes: 0,
       failedCount: 0,
@@ -958,16 +1059,7 @@ export async function runAvailabilitySyncJob(
     };
   }
 
-  const resolver = createCatalogueResolver(db, provider.key);
-  const storeOptions: DrizzleAvailabilityStoreOptions = {
-    db,
-    providerId,
-    syncRunId,
-    resolver,
-  };
-  if (provider.loadSeasonalPrices) {
-    storeOptions.loadSeasonalPrices = provider.loadSeasonalPrices.bind(provider);
-  }
+  const storeOptions: DrizzleAvailabilityStoreOptions = { db, providerId, syncRunId };
   if (options.cursorScope) storeOptions.cursorScope = options.cursorScope;
 
   const runOptions: RunAvailabilitySyncOptions = {

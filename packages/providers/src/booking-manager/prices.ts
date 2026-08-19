@@ -1,5 +1,5 @@
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
-import type { SeasonalPrice } from "../sync/availability-writer";
+import type { SeasonalPrice } from "../sync/price-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
@@ -43,21 +43,15 @@ export function createBookingManagerSeasonalPriceLoader(
   options: BookingManagerSeasonalPriceLoaderOptions,
 ): (listingIds: string[]) => Promise<Map<string, SeasonalPrice[]>> {
   const { client, resolver } = options;
+  // Narrows the vendor query where the allowlist can express it. An exclusion-only
+  // scope has nothing to narrow to, so the sweep stays wide and the prices of an
+  // excluded company are simply never asked for: its listings are hidden by then.
   const companyScope =
-    options.config.companyIds.length > 0 ? [...options.config.companyIds] : undefined;
+    options.config.companyScope.include.length > 0
+      ? [...options.config.companyScope.include]
+      : undefined;
 
-  const yachtByListing = new Map<string, string | null>();
   let sweep: Promise<Map<string, SeasonalPrice[]>> | null = null;
-
-  async function externalYachtId(listingId: string): Promise<string | null> {
-    const cached = yachtByListing.get(listingId);
-    if (cached !== undefined) return cached;
-
-    const ref = await resolver.toExternalListing(listingId).catch(() => null);
-    const yachtId = ref?.externalYachtId ?? null;
-    yachtByListing.set(listingId, yachtId);
-    return yachtId;
-  }
 
   async function runSweep(): Promise<Map<string, SeasonalPrice[]>> {
     const byYacht = new Map<string, SeasonalPrice[]>();
@@ -108,15 +102,13 @@ export function createBookingManagerSeasonalPriceLoader(
     const byListing = new Map<string, SeasonalPrice[]>();
     if (listingIds.length === 0) return byListing;
 
-    const wanted = new Map<string, string>();
-    for (const listingId of new Set(listingIds)) {
-      const yachtId = await externalYachtId(listingId);
-      // A listing with no active Booking Manager source is not this loader's
-      // problem to report: the writer simply leaves its slots unpriced.
-      if (yachtId) {
-        wanted.set(listingId, yachtId);
-      }
-    }
+    /*
+     * One query for the whole batch. This was `toExternalListing` per listing, which
+     * on a fleet-wide sweep is a round-trip per boat to answer a single question
+     * about a set. A listing with no active Booking Manager source is simply absent
+     * and not this loader's problem to report: the writer leaves it unpriced.
+     */
+    const wanted = await resolver.toExternalYachtIds(listingIds);
     if (wanted.size === 0) return byListing;
 
     // Assigned only after it resolves, so a failed sweep is retried by the next

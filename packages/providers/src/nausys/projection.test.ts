@@ -210,6 +210,8 @@ describe("projectNausysCatalogue", () => {
 
       // Zero-exponent currency: 1825 yen is 1825 minor units, not 182 500.
       expect(listingOf(yacht)?.securityDepositMinor).toBe(1825);
+      // Carried alongside the amount: minor units are meaningless without it.
+      expect(listingOf(yacht)?.securityDepositCurrency).toBe("JPY");
     });
 
     it("takes the listing currency from the priced season", () => {
@@ -225,6 +227,7 @@ describe("projectNausysCatalogue", () => {
       expect(listing?.defaultCurrency).toBe("USD");
       // The deposit keeps its own currency, which the vendor states separately.
       expect(listing?.securityDepositMinor).toBe(182_500);
+      expect(listing?.securityDepositCurrency).toBe("EUR");
     });
 
     it("drops a malformed deposit instead of the yacht", () => {

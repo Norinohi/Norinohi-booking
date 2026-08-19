@@ -15,6 +15,11 @@ import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import type { JsonField } from "../shared/json";
 import { retainRawPayload, stableSourceHash } from "../shared/raw-retention";
+import {
+  createDrizzlePricePeriodStore,
+  supportsSeasonalPrices,
+  writeSeasonalPrices,
+} from "./price-writer";
 import { openSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
@@ -616,6 +621,12 @@ export interface CatalogueSyncJobResult extends CatalogueIngestSummary {
   listingsUpdated: number;
   listingsHidden: number;
   duplicateCandidates: number;
+  /**
+   * Seasonal price periods written. Phase C, and only for providers that publish a
+   * price list. It ran in the hourly availability sync until the volume made the
+   * cadence indefensible - see `sync/price-writer.ts`.
+   */
+  pricePeriods: number;
 }
 
 /**
@@ -647,6 +658,7 @@ export async function runCatalogueSyncJob(
     listingsUpdated: 0,
     listingsHidden: 0,
     duplicateCandidates: 0,
+    pricePeriods: 0,
   };
 
   // An aborted ingest leaves the record set mid-dump and its sweeps unrun; projecting
@@ -655,10 +667,11 @@ export async function runCatalogueSyncJob(
     return { ...ingest, ...empty };
   }
 
+  let written: Awaited<ReturnType<typeof writeCanonicalCatalogue>>;
   try {
     const records = await loadProviderRecordSet(db, providerId);
     const catalogue = provider.projectCatalogue(records);
-    const written = await writeCanonicalCatalogue({
+    written = await writeCanonicalCatalogue({
       db,
       providerId,
       providerKey: provider.key,
@@ -666,14 +679,6 @@ export async function runCatalogueSyncJob(
       autoPublish: await readAutoPublish(db, providerId),
       now: now(),
     });
-
-    return {
-      ...ingest,
-      listingsCreated: written.listingsCreated,
-      listingsUpdated: written.listingsUpdated,
-      listingsHidden: written.listingsHidden,
-      duplicateCandidates: written.duplicateCandidates,
-    };
   } catch (error) {
     await store.recordError({
       errorType: toSyncErrorType(error),
@@ -696,4 +701,56 @@ export async function runCatalogueSyncJob(
       failedCount: ingest.failedCount + 1,
     };
   }
+
+  /*
+   * Phase C: the price list, for the listings this run refreshed.
+   *
+   * Reported rather than thrown. The catalogue is already written and correct by this
+   * point, and a vendor's price endpoint failing is not a reason to call the whole
+   * import failed - the previous run's prices are still there, and the next one will
+   * try again. It does downgrade the run to `partial` so the failure is visible.
+   */
+  let pricePeriods = 0;
+  let priceFailures = 0;
+
+  if (supportsSeasonalPrices(provider)) {
+    try {
+      pricePeriods = await writeSeasonalPrices({
+        store: createDrizzlePricePeriodStore({ db, providerId }),
+        listingIds: written.touchedListingIds,
+        loadSeasonalPrices: (listingIds) => provider.loadSeasonalPrices(listingIds),
+      });
+    } catch (error) {
+      priceFailures = 1;
+      await store.recordError({
+        errorType: toSyncErrorType(error),
+        message: messageOf(error),
+        context: contextOf(error, { phase: "prices" }),
+      });
+    }
+  }
+
+  const status = priceFailures > 0 && ingest.status === "success" ? "partial" : ingest.status;
+
+  if (priceFailures > 0) {
+    await store.closeRun({
+      status,
+      createdCount: ingest.createdCount,
+      updatedCount: ingest.updatedCount,
+      skippedCount: ingest.skippedCount,
+      failedCount: ingest.failedCount + priceFailures,
+      finishedAt: now(),
+    });
+  }
+
+  return {
+    ...ingest,
+    status,
+    failedCount: ingest.failedCount + priceFailures,
+    listingsCreated: written.listingsCreated,
+    listingsUpdated: written.listingsUpdated,
+    listingsHidden: written.listingsHidden,
+    duplicateCandidates: written.duplicateCandidates,
+    pricePeriods,
+  };
 }

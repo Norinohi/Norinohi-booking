@@ -3,7 +3,8 @@ import { z } from "zod";
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError } from "../shared/errors";
-import { toPositiveIntId } from "../shared/projection-helpers";
+import { exactJsonNumber } from "../shared/exact-json";
+import { toExactPositiveIntId } from "../shared/projection-helpers";
 import {
   createReservationEventRecorder,
   type ReservationEventKind,
@@ -93,15 +94,15 @@ export interface BookingManagerBookingService {
 type ReservationBody = {
   dateFrom: string;
   dateTo: string;
-  yachtId: number;
+  yachtId: RawJSON;
   status: number;
   clientName: string;
   passengersOnBoard: number;
   currency: string;
   sendNotification: boolean;
   productName?: string;
-  baseFromId?: number;
-  baseToId?: number;
+  baseFromId?: RawJSON;
+  baseToId?: RawJSON;
   clientId?: number;
 };
 
@@ -121,11 +122,11 @@ export function createBookingManagerBookingService(
    */
   async function reservationBody(draft: BookingDraft, status: number): Promise<ReservationBody> {
     const ref = await resolver.toExternalListing(draft.listingId);
-    const yachtId = toPositiveIntId(ref.externalYachtId, {
+    const yachtId = toExactPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
       what: `listing ${draft.listingId}`,
     });
-    const baseId = ref.externalBaseId == null ? undefined : Number(ref.externalBaseId);
+    const baseId = ref.externalBaseId?.trim() || undefined;
     const productName = draft.crewType ? deps.productNameFor?.(draft.crewType) : undefined;
     const clientId = deps.clientIdFor?.(draft);
 
@@ -134,7 +135,9 @@ export function createBookingManagerBookingService(
       // substitutes them, exactly as it does on `/offers`.
       dateFrom: formatBookingManagerDateTime(draft.checkIn),
       dateTo: formatBookingManagerDateTime(draft.checkOut),
-      yachtId,
+      // The vendor declares these as `Long`, so they go out unquoted and whole.
+      // `JSON.stringify` on a number would re-round the digits we just preserved.
+      yachtId: exactJsonNumber(yachtId),
       status,
       clientName: fullName(draft.customer),
       passengersOnBoard: draft.guests,
@@ -144,9 +147,9 @@ export function createBookingManagerBookingService(
     if (productName) body.productName = productName;
     // One-way charters are not modelled yet, so the start base is also the end
     // base; a real one-way period would need both ids from the offer.
-    if (baseId !== undefined && Number.isSafeInteger(baseId)) {
-      body.baseFromId = baseId;
-      body.baseToId = baseId;
+    if (baseId !== undefined && /^[1-9]\d*$/.test(baseId)) {
+      body.baseFromId = exactJsonNumber(baseId);
+      body.baseToId = exactJsonNumber(baseId);
     }
     if (clientId !== undefined) body.clientId = clientId;
     return body;
@@ -204,7 +207,7 @@ export function createBookingManagerBookingService(
       );
     }
 
-    const id = toPositiveIntId(parsed.reservation.providerReservationId, {
+    const id = toExactPositiveIntId(parsed.reservation.providerReservationId, {
       provider: "Booking Manager",
       what: "reservation id",
     });
@@ -243,7 +246,7 @@ export function createBookingManagerBookingService(
    */
   async function cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
     const parsed = providerReservationRefSchema.parse(ref);
-    const id = toPositiveIntId(parsed.providerReservationId, {
+    const id = toExactPositiveIntId(parsed.providerReservationId, {
       provider: "Booking Manager",
       what: "reservation id",
     });

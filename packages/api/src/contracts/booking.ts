@@ -320,9 +320,15 @@ export const bookingAdminListInputSchema = z
     status: z.array(bookingStatusSchema).min(1).optional(),
     /** Matches a reference, a customer name or their email. */
     query: z.string().trim().max(200).optional(),
+    /**
+     * Bring back the bookings someone marked as not real business. Off by
+     * default, so every staff queue and every total is the real book of business
+     * without each caller having to remember to ask.
+     */
+    includeExcluded: z.boolean().default(false),
     ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: 20 }),
   })
-  .default(paginationInputDefault(20));
+  .default({ ...paginationInputDefault(20), includeExcluded: false });
 
 export const bookingAdminRowSchema = z.object({
   id: z.string(),
@@ -338,10 +344,49 @@ export const bookingAdminRowSchema = z.object({
   paid: moneySchema,
   cancelledAt: z.string().nullable(),
   cancelReason: z.string().nullable(),
+  /** When someone marked this as not real business. Null on an ordinary booking. */
+  excludedAt: z.string().nullable(),
+  excludedReason: z.string().nullable(),
   createdAt: z.string(),
 });
 
 export const bookingAdminListSchema = paginatedSchema(bookingAdminRowSchema);
+
+export const bookingExcludeInputSchema = z.object({
+  id: z.string().min(1),
+  /** False restores it to the queues and the totals. */
+  excluded: z.boolean(),
+  reason: z.string().trim().max(500).optional(),
+});
+
+export const bookingExcludeSchema = z.object({
+  bookingId: z.string(),
+  excludedAt: z.string().nullable(),
+  excludedReason: z.string().nullable(),
+});
+
+export const bookingExcludeByCompanyInputSchema = z.object({
+  /** Provider code, as `booking.provider` stores it: "nausys" or "booking_manager". */
+  provider: z.string().min(1),
+  /** The vendor's own charter company id, as `listing_source.external_company_id` holds it. */
+  externalCompanyId: z.string().min(1),
+  reason: z.string().trim().max(500).optional(),
+  /**
+   * Report what would change without changing it. Defaults to a dry run: this is
+   * the one action here that touches many rows at once, and finding out how many
+   * must not require having already done it.
+   */
+  apply: z.boolean().default(false),
+});
+
+export const bookingExcludeByCompanySchema = z.object({
+  provider: z.string(),
+  externalCompanyId: z.string(),
+  applied: z.boolean(),
+  /** Bookings the filter matched and that were not already excluded. */
+  matched: z.number().int(),
+  references: z.array(z.string()),
+});
 
 export const bookingRefundInputSchema = z.object({
   id: z.string().min(1),

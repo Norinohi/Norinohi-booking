@@ -20,7 +20,8 @@ import { dayToDisplay } from "@/lib/date";
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
 
-import PrepaymentNote from "./prepayment-note";
+import CardNote from "./card-note";
+import type { CardNote as CardNoteData } from "./card-note";
 
 const FORMATS = {
   day: { day: "numeric", month: "long", year: "numeric" },
@@ -73,7 +74,8 @@ export type BoatCardProps = {
   /** The listing has no bookable dates — the photo desaturates and the copy dims. */
   unavailable?: boolean;
   perPerson: string;
-  prepayment: string;
+  /** Money footnote under the price, with the tooltip that explains that figure. */
+  note: CardNoteData | null;
   detailHref?: AppPathname;
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
@@ -275,7 +277,7 @@ function Action({
   price,
   priceIsLabel,
   perPerson,
-  prepayment,
+  note,
   detailHref,
   footer,
 }: Pick<
@@ -287,7 +289,7 @@ function Action({
   | "price"
   | "priceIsLabel"
   | "perPerson"
-  | "prepayment"
+  | "note"
   | "detailHref"
   | "footer"
 >) {
@@ -324,15 +326,11 @@ function Action({
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
-        {prepayment ? (
-          <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
-        ) : null}
+        {note ? <CardNote backdrop note={note} className="flex md:hidden" /> : null}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        {prepayment ? (
-          <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
-        ) : null}
+        {note ? <CardNote backdrop note={note} className="hidden md:flex" /> : null}
         <Button
           variant="neutral"
           size="md"
@@ -388,7 +386,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           price={boat.price}
           priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
-          prepayment={boat.prepayment}
+          note={boat.note}
           detailHref={boat.detailHref}
           footer={boat.footer}
         />

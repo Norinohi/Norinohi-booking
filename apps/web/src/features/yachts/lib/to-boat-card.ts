@@ -52,10 +52,13 @@ export function toBoatCard(
       listing.priceDetails.perPersonMinor != null
         ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor) })
         : "",
-    prepayment: listing.priceDetails.bookingPrepayment
-      ? t("prepayment", {
-          amount: formatMoney(listing.priceDetails.bookingPrepayment.amountMinor),
-        })
-      : "",
+    note: listing.priceDetails.securityDeposit
+      ? {
+          label: t("securityDeposit", {
+            amount: formatMoney(listing.priceDetails.securityDeposit.amountMinor),
+          }),
+          tooltip: t("securityDepositInfo"),
+        }
+      : null,
   };
 }

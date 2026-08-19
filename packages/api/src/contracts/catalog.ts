@@ -126,7 +126,8 @@ export const listingSummarySchema = z.object({
   priceDetails: z.object({
     periodDays: z.number().int(),
     perPersonMinor: z.number().int().nullable(),
-    bookingPrepayment: moneySchema.nullable(),
+    /** Refundable damage deposit collected at the base. Null when there is none. */
+    securityDeposit: moneySchema.nullable(),
   }),
 });
 

@@ -133,7 +133,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
     priceLabel: "",
     price: "",
     perPerson: "",
-    prepayment: "",
+    note: null,
   };
 
   return (

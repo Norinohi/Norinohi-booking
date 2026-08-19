@@ -377,6 +377,13 @@ export async function writeCanonicalCatalogue(
         : null,
       defaultCurrency: item.defaultCurrency,
       crewType: item.crewType ?? null,
+      securityDepositMinor: item.securityDepositMinor ?? null,
+      // The currency is only meaningful alongside an amount, and a deposit that
+      // named no currency of its own is priced like the rest of the yacht.
+      securityDepositCurrency:
+        item.securityDepositMinor === undefined
+          ? null
+          : (item.securityDepositCurrency ?? item.defaultCurrency),
       paymentPolicy: item.paymentPolicy ?? null,
       providerRating: decimal(item.rating),
       providerReviewCount: item.reviewCount ?? null,

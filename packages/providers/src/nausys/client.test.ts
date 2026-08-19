@@ -9,6 +9,7 @@ import {
   type ProviderErrorOptions,
   TransientError,
 } from "../shared/errors";
+import { unscopedCompanies } from "../shared/company-scope";
 import { SequentialQueue } from "../shared/queue";
 import { NausysClient, reservationLane } from "./client";
 import type { NausysConfig } from "./config";
@@ -32,6 +33,7 @@ const config: NausysConfig = {
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
   queueKey: "nausys:agency-user",
 };
 

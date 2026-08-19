@@ -8,7 +8,7 @@ import {
   RateLimitedError,
   TransientError,
 } from "./errors";
-import type { JsonValue } from "./json";
+import type { JsonRequestValue, JsonValue } from "./json";
 import { type SequentialQueue, sharedQueue } from "./queue";
 import type { RetryPolicy } from "./retry";
 import { withRetry } from "./retry";
@@ -70,6 +70,14 @@ export interface ProviderHttpClientOptions {
   /** Called with the untouched parsed body so callers can retain raw before mapping. */
   onRawResponse?: (event: RawResponseEvent) => void | Promise<void>;
   headers?: Record<string, string>;
+  /**
+   * How a response body becomes a value. Defaults to `JSON.parse`.
+   *
+   * Booking Manager overrides it with `parseExactJson`, because `JSON.parse` rounds
+   * its 19-digit ids. Per client rather than global: NauSYS's ids are small, and
+   * changing their shape would be blast radius for no defect.
+   */
+  parseJson?: (text: string) => JsonValue;
   fetchImpl?: FetchLike;
   now?: () => number;
   newRequestId?: () => string;
@@ -89,7 +97,7 @@ export interface ProviderRequestOptions {
 export interface ProviderHttpClient {
   post(
     endpoint: string,
-    body: JsonValue,
+    body: JsonRequestValue,
     options?: ProviderRequestOptions,
   ): Promise<ProviderHttpResult>;
   /** Booking Manager serves every read as GET with query parameters. */
@@ -98,7 +106,7 @@ export interface ProviderHttpClient {
     query?: Record<string, QueryValue | undefined>,
   ): Promise<ProviderHttpResult>;
   del(endpoint: string): Promise<ProviderHttpResult>;
-  put(endpoint: string, body?: JsonValue): Promise<ProviderHttpResult>;
+  put(endpoint: string, body?: JsonRequestValue): Promise<ProviderHttpResult>;
 }
 
 /**
@@ -166,6 +174,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     queue = sharedQueue,
     classifyResponse = httpStatusClassifier,
     onRawResponse,
+    parseJson = JSON.parse,
     fetchImpl = defaultFetch,
     now = Date.now,
     newRequestId = randomUUID,
@@ -180,7 +189,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
   async function attempt(
     method: string,
     endpoint: string,
-    body: JsonValue,
+    body: JsonRequestValue,
     hasBody: boolean,
   ): Promise<ProviderHttpResult> {
     const requestId = newRequestId();
@@ -216,7 +225,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
 
     let parsed: JsonValue;
     try {
-      parsed = text.trim() === "" ? null : JSON.parse(text);
+      parsed = text.trim() === "" ? null : parseJson(text);
     } catch (cause) {
       // The status and the first line of the body are in the payload too, but only the
       // message survives into a log line or a rejected booking's cancel_reason, and
@@ -249,7 +258,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
   function send(
     method: string,
     endpoint: string,
-    body: JsonValue,
+    body: JsonRequestValue,
     hasBody: boolean,
     lane = queueKey,
   ): Promise<ProviderHttpResult> {

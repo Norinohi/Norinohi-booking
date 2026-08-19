@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ContractError } from "./errors";
+import "./json-source";
 
 /**
  * Everything a provider hands us arrives through `JSON.parse`, so a raw payload
@@ -16,6 +17,27 @@ export interface JsonObject {
 
 /** Reading an absent key yields undefined, which JSON itself cannot represent. */
 export type JsonField = JsonValue | undefined;
+
+/**
+ * A value on its way *out* to a provider.
+ *
+ * Wider than `JsonValue` by exactly one thing: the marker `exactJsonNumber` returns,
+ * which `JSON.stringify` emits as an unquoted integer carrying its full digits. A
+ * plain `number` cannot express an id past 2^53, and a string would be quoted where
+ * the vendor declares a `Long` - so requests need a shape responses do not.
+ */
+export type JsonRequestValue =
+  | string
+  | number
+  | boolean
+  | null
+  | RawJSON
+  | JsonRequestValue[]
+  | JsonRequestObject;
+
+export interface JsonRequestObject {
+  [key: string]: JsonRequestValue | undefined;
+}
 
 /**
  * A vendor object we validate loosely: the declared keys are checked, and every

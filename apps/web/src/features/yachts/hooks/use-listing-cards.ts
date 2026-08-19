@@ -39,7 +39,7 @@ export function useListingCards() {
       priceLabel: card.priceLabel,
       price: card.price,
       perPerson: card.perPerson,
-      prepayment: card.prepayment,
+      note: card.note,
     };
   }
 
