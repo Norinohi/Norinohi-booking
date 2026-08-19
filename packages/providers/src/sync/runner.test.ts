@@ -41,6 +41,9 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
   const closed: { status: string; counts: Record<string, number> }[] = [];
   let started: Date | null = null;
   let nextId = 1;
+  /* Round trips, which is the whole point of batching them. */
+  let findCalls = 0;
+  let touchCalls = 0;
 
   const keyOf = (resourceType: ProviderResourceType, externalId: string) =>
     `${resourceType}::${externalId}`;
@@ -64,9 +67,14 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
     async startRun(startedAt) {
       started = startedAt;
     },
-    async findRecord(resourceType, externalId) {
-      const found = records.get(keyOf(resourceType, externalId));
-      return found ? { id: found.id, sourceHash: found.sourceHash } : null;
+    async findRecords(resourceType, externalIds) {
+      findCalls += 1;
+      const found = new Map<string, { id: string; sourceHash: string | null }>();
+      for (const externalId of externalIds) {
+        const record = records.get(keyOf(resourceType, externalId));
+        if (record) found.set(externalId, { id: record.id, sourceHash: record.sourceHash });
+      }
+      return found;
     },
     async writeRecord(input) {
       const key = keyOf(input.resourceType, input.externalId);
@@ -82,12 +90,13 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
         rawPayloadWrites: (existing?.rawPayloadWrites ?? 0) + 1,
       });
     },
-    async touchRecord(recordId, seenAt) {
+    async touchRecords(recordIds, seenAt) {
+      touchCalls += 1;
+      const wanted = new Set(recordIds);
       for (const record of records.values()) {
-        if (record.id === recordId) {
-          record.active = true;
-          record.lastSeenAt = seenAt;
-        }
+        if (!wanted.has(record.id)) continue;
+        record.active = true;
+        record.lastSeenAt = seenAt;
       }
     },
     async sweepScope(input) {
@@ -128,6 +137,7 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
     closed,
     records,
     startedAt: () => started,
+    roundTrips: () => ({ find: findCalls, touch: touchCalls }),
     record: (resourceType: ProviderResourceType, externalId: string) =>
       records.get(keyOf(resourceType, externalId)),
   };
@@ -185,6 +195,125 @@ describe("runCatalogueIngest", () => {
     expect(summary).toMatchObject({ skippedCount: 1, createdCount: 0, updatedCount: 0 });
     expect(fake.record("yacht", "4711001")?.rawPayloadWrites).toBe(0);
     expect(fake.record("yacht", "4711001")?.lastSeenAt).toEqual(fake.startedAt());
+  });
+
+  it("reads and restamps a whole batch in one round trip each", async () => {
+    const payloads = Array.from({ length: 40 }, (_, index) => ({
+      id: index,
+      name: `Boat ${index}`,
+    }));
+    const fake = fakeStore(
+      payloads.map((payload) => ({
+        resourceType: "yacht" as const,
+        externalId: String(payload.id),
+        scopeKey: "102701",
+        sourceHash: stableSourceHash(payload),
+        lastSeenAt: new Date("2026-01-01T00:00:00Z"),
+      })),
+    );
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        ...payloads.map((payload) => ({
+          type: "entity" as const,
+          entity: entity("yacht", String(payload.id), payload, "102701"),
+        })),
+        { type: "scope-complete", resourceType: "yacht", scopeKey: "102701" },
+      ]),
+    });
+
+    expect(summary).toMatchObject({ skippedCount: 40, status: "success" });
+    // The whole point: 40 unchanged records used to cost 80 sequential queries.
+    expect(fake.roundTrips()).toEqual({ find: 1, touch: 1 });
+  });
+
+  it("restamps the batch before a sweep can read it as absent", async () => {
+    // The regression this guards is total: flush after sweep and every record the
+    // run just read is deactivated, which hides the entire fleet it imported.
+    const payloads = Array.from({ length: 5 }, (_, index) => ({ id: index }));
+    const fake = fakeStore(
+      payloads.map((payload) => ({
+        resourceType: "yacht" as const,
+        externalId: String(payload.id),
+        scopeKey: "102701",
+        sourceHash: stableSourceHash(payload),
+        lastSeenAt: new Date("2026-01-01T00:00:00Z"),
+      })),
+    );
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        ...payloads.map((payload) => ({
+          type: "entity" as const,
+          entity: entity("yacht", String(payload.id), payload, "102701"),
+        })),
+        { type: "scope-complete", resourceType: "yacht", scopeKey: "102701" },
+      ]),
+    });
+
+    expect(summary.deactivatedCount).toBe(0);
+    for (const payload of payloads) {
+      expect(fake.record("yacht", String(payload.id))?.active).toBe(true);
+    }
+  });
+
+  it("flushes before saving a cursor, so a resume cannot skip buffered entities", async () => {
+    const fake = fakeStore();
+
+    await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        { type: "entity", entity: entity("yacht", "4711001", yachtPayload, "102701") },
+        {
+          type: "scope-complete",
+          resourceType: "yacht",
+          scopeKey: "102701",
+          cursor: { step: 1 },
+        },
+      ]),
+    });
+
+    // Written by the time the cursor that would skip past it was saved.
+    expect(fake.record("yacht", "4711001")).toBeDefined();
+    expect(fake.cursors).toEqual([{ step: 1 }, null]);
+  });
+
+  it("keeps the last copy when one dump names a record twice", async () => {
+    const fake = fakeStore();
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        { type: "entity", entity: entity("yacht", "4711001", { id: 4711001, name: "Old" }) },
+        { type: "entity", entity: entity("yacht", "4711001", { id: 4711001, name: "New" }) },
+      ]),
+    });
+
+    expect(summary).toMatchObject({ createdCount: 1, updatedCount: 0, skippedCount: 0 });
+    expect(fake.record("yacht", "4711001")?.rawPayloadWrites).toBe(1);
+    expect(fake.record("yacht", "4711001")?.sourceHash).toBe(
+      stableSourceHash({ id: 4711001, name: "New" }),
+    );
+  });
+
+  it("does not confuse two resource types that share an external id", async () => {
+    const fake = fakeStore();
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        { type: "entity", entity: entity("yacht", "17", { id: 17, kind: "yacht" }) },
+        { type: "entity", entity: entity("base", "17", { id: 17, kind: "base" }) },
+      ]),
+    });
+
+    expect(summary.createdCount).toBe(2);
+    expect(fake.record("yacht", "17")).toBeDefined();
+    expect(fake.record("base", "17")).toBeDefined();
+    // One read per type, not one per record.
+    expect(fake.roundTrips().find).toBe(2);
   });
 
   it("reactivates a record that reappears in a dump", async () => {

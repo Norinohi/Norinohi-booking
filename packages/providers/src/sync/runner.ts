@@ -5,7 +5,7 @@ import {
   syncRun,
 } from "@yacht-charter/db/schema/provider";
 import { env } from "@yacht-charter/env/server";
-import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { describeErrorChain } from "../shared/error-chain";
@@ -151,13 +151,21 @@ export interface CloseRunInput {
 export interface CatalogueSyncStore {
   readonly syncRunId: string;
   startRun(startedAt: Date): Promise<void>;
-  findRecord(
+  /**
+   * Existing state for a batch of ids of one resource type, keyed by external id.
+   * Absent ids are simply missing from the map.
+   *
+   * Batched rather than per record because this is the hot path of a full dump:
+   * a daily re-import of an unchanged catalogue asks this question once per record,
+   * and against a remote database the round trip, not the query, is the cost.
+   */
+  findRecords(
     resourceType: ProviderResourceType,
-    externalId: string,
-  ): Promise<ProviderRecordSnapshot | null>;
+    externalIds: readonly string[],
+  ): Promise<Map<string, ProviderRecordSnapshot>>;
   writeRecord(input: WriteRecordInput): Promise<void>;
-  /** Unchanged payload: restamp only, and never write a second raw payload. */
-  touchRecord(recordId: string, seenAt: Date): Promise<void>;
+  /** Unchanged payloads: restamp only, and never write a second raw payload. */
+  touchRecords(recordIds: readonly string[], seenAt: Date): Promise<void>;
   sweepScope(input: SweepScopeInput): Promise<number>;
   recordError(input: {
     errorType: ReturnType<typeof toSyncErrorType>;
@@ -197,6 +205,22 @@ function messageOf(error: unknown): string {
 function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
   return { ...base, ...extra };
+}
+
+/**
+ * Entities held before a round trip to the database.
+ *
+ * The win is per batch, not per record, so the exact figure matters far less than
+ * being well above one: at 500 a full Booking Manager dump trades roughly fifty
+ * thousand sequential queries for a few hundred. Bounded because the buffer holds
+ * whole vendor payloads, and because a batch is also the unit of work an abort
+ * throws away.
+ */
+const INGEST_BATCH_SIZE = 500;
+
+/** Identity of a provider record within one run: the pair its unique index uses. */
+function recordKey(resourceType: ProviderResourceType, externalId: string): string {
+  return `${resourceType}::${externalId}`;
 }
 
 /** Auth and contract failures repeat on every subsequent call; nothing else does. */
@@ -246,43 +270,127 @@ export async function runCatalogueIngest(options: {
     return ![...failedScopes].some((key) => key.startsWith(`${resourceType}::`));
   };
 
+  /*
+   * Entities wait here until a flush. Keyed by resource type and external id, last
+   * write winning, which is what the unswept sequential loop did with a repeated id
+   * anyway - and deduping is what lets the flush trust its own snapshot: without it,
+   * the second copy of an id would be judged against state the first copy replaced.
+   */
+  const pending = new Map<string, { entity: RawEntity; sourceHash: string }>();
+
+  /**
+   * Writes everything buffered so far.
+   *
+   * MUST run before any sweep and before any cursor save. A sweep deactivates every
+   * record of its scope not seen since `startedAt`, so flushing after one would
+   * deactivate the fleet this run had just read but not yet stamped; a cursor saved
+   * over unflushed entities would skip them for good on the next resume.
+   */
+  async function flushPending(): Promise<void> {
+    if (pending.size === 0) return;
+    const batch = [...pending.values()];
+    pending.clear();
+
+    const idsByType = new Map<ProviderResourceType, string[]>();
+    for (const { entity } of batch) {
+      const ids = idsByType.get(entity.resourceType);
+      if (ids) ids.push(entity.externalId);
+      else idsByType.set(entity.resourceType, [entity.externalId]);
+    }
+
+    const known = new Map<string, ProviderRecordSnapshot>();
+    const unreadable = new Set<ProviderResourceType>();
+    for (const [resourceType, externalIds] of idsByType) {
+      try {
+        const found = await store.findRecords(resourceType, externalIds);
+        for (const [externalId, snapshot] of found) {
+          known.set(recordKey(resourceType, externalId), snapshot);
+        }
+      } catch (error) {
+        if (isFatal(error)) throw error;
+        // Reported against the whole resource type with no scope key, which blocks
+        // every sweep of it: we could not read what exists, and a removal sweep on
+        // top of that would delete inventory on the strength of a failed query.
+        unreadable.add(resourceType);
+        await reporter.reportError(error, {
+          resourceType,
+          context: { batchSize: externalIds.length },
+        });
+      }
+    }
+
+    // Collected per type so a failed restamp blocks exactly the types it left
+    // unstamped, and no others.
+    const touchIdsByType = new Map<ProviderResourceType, string[]>();
+
+    for (const { entity, sourceHash } of batch) {
+      if (unreadable.has(entity.resourceType)) continue;
+      const existing = known.get(recordKey(entity.resourceType, entity.externalId));
+
+      if (existing && existing.sourceHash === sourceHash) {
+        // A daily full dump of a stable catalogue would otherwise append a raw
+        // payload per record per day, forever.
+        const ids = touchIdsByType.get(entity.resourceType);
+        if (ids) ids.push(existing.id);
+        else touchIdsByType.set(entity.resourceType, [existing.id]);
+        skippedCount += 1;
+        continue;
+      }
+
+      try {
+        await store.writeRecord({
+          resourceType: entity.resourceType,
+          externalId: entity.externalId,
+          scopeKey: entity.scopeKey,
+          payload: entity.payload,
+          sourceHash,
+          seenAt: startedAt,
+        });
+
+        if (existing) updatedCount += 1;
+        else createdCount += 1;
+      } catch (error) {
+        if (isFatal(error)) throw error;
+        await reporter.reportError(error, {
+          resourceType: entity.resourceType,
+          scopeKey: entity.scopeKey,
+          context: { externalId: entity.externalId },
+        });
+      }
+    }
+
+    for (const [resourceType, recordIds] of touchIdsByType) {
+      try {
+        await store.touchRecords(recordIds, startedAt);
+      } catch (error) {
+        if (isFatal(error)) throw error;
+        // These records still carry an older last_seen_at, so a sweep of this type
+        // would now read them as absent from the dump and deactivate them. Marking
+        // the type failed is what stops that.
+        await reporter.reportError(error, {
+          resourceType,
+          context: { restamped: recordIds.length },
+        });
+      }
+    }
+  }
+
   try {
     for await (const event of source(reporter)) {
       if (event.type === "entity") {
         const { entity } = event;
-        try {
-          const sourceHash = stableSourceHash(entity.payload);
-          const existing = await store.findRecord(entity.resourceType, entity.externalId);
-
-          if (existing && existing.sourceHash === sourceHash) {
-            // A daily full dump of a stable catalogue would otherwise append a raw
-            // payload per record per day, forever.
-            await store.touchRecord(existing.id, startedAt);
-            skippedCount += 1;
-            continue;
-          }
-
-          await store.writeRecord({
-            resourceType: entity.resourceType,
-            externalId: entity.externalId,
-            scopeKey: entity.scopeKey,
-            payload: entity.payload,
-            sourceHash,
-            seenAt: startedAt,
-          });
-
-          if (existing) updatedCount += 1;
-          else createdCount += 1;
-        } catch (error) {
-          if (isFatal(error)) throw error;
-          await reporter.reportError(error, {
-            resourceType: entity.resourceType,
-            scopeKey: entity.scopeKey,
-            context: { externalId: entity.externalId },
-          });
+        pending.set(recordKey(entity.resourceType, entity.externalId), {
+          entity,
+          sourceHash: stableSourceHash(entity.payload),
+        });
+        if (pending.size >= INGEST_BATCH_SIZE) {
+          await flushPending();
         }
         continue;
       }
+
+      // Before the sweep and before the cursor, never after either.
+      await flushPending();
 
       if (isSweepable(event.resourceType, event.scopeKey)) {
         deactivatedCount += await store.sweepScope({
@@ -297,8 +405,14 @@ export async function runCatalogueIngest(options: {
         await store.saveCursor(event.cursor);
       }
     }
+
+    await flushPending();
   } catch (error) {
     aborted = true;
+    // Whatever is still buffered is deliberately dropped rather than flushed. An
+    // aborted run saves no cursor, so the next one re-reads these records anyway,
+    // and writing on the way out of a failure only risks compounding it.
+    pending.clear();
     await reporter.reportError(error, { context: { aborted: true } });
   }
 
@@ -357,20 +471,29 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
         .where(eq(syncRun.id, syncRunId));
     },
 
-    async findRecord(resourceType, externalId) {
-      const [row] = await db
-        .select({ id: providerRecord.id, sourceHash: providerRecord.sourceHash })
+    async findRecords(resourceType, externalIds) {
+      const found = new Map<string, ProviderRecordSnapshot>();
+      if (externalIds.length === 0) return found;
+
+      const rows = await db
+        .select({
+          id: providerRecord.id,
+          externalId: providerRecord.externalId,
+          sourceHash: providerRecord.sourceHash,
+        })
         .from(providerRecord)
         .where(
           and(
             eq(providerRecord.providerId, providerId),
             eq(providerRecord.resourceType, resourceType),
-            eq(providerRecord.externalId, externalId),
+            inArray(providerRecord.externalId, [...externalIds]),
           ),
-        )
-        .limit(1);
+        );
 
-      return row ?? null;
+      for (const row of rows) {
+        found.set(row.externalId, { id: row.id, sourceHash: row.sourceHash });
+      }
+      return found;
     },
 
     async writeRecord(input) {
@@ -414,11 +537,13 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
       });
     },
 
-    async touchRecord(recordId, seenAt) {
+    async touchRecords(recordIds, seenAt) {
+      if (recordIds.length === 0) return;
+
       await db
         .update(providerRecord)
         .set({ active: true, lastSeenAt: seenAt, lastSeenSyncRunId: syncRunId })
-        .where(eq(providerRecord.id, recordId));
+        .where(inArray(providerRecord.id, [...recordIds]));
     },
 
     async sweepScope(input) {

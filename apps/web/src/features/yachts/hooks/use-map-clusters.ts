@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Supercluster, { type PointFeature } from "supercluster";
 
 import type { MapMarkerData } from "../api/queries";
-import type { MapInstance } from "../components/map/map-canvas";
+import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 
 const CLUSTER_RADIUS = 60;
 const CLUSTER_MAX_ZOOM = 16;

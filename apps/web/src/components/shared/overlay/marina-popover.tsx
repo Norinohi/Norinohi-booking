@@ -8,12 +8,11 @@ import {
   PopoverTrigger,
 } from "@yacht-charter/ui/components/overlay/popover";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ArrowUpRight, Globe, Mail, MapPin, Smartphone } from "lucide-react";
+import { ArrowUpRight, Globe, Mail, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
-import { Image } from "@/components/shared/data-display/image";
-import { staticMapUrl } from "@/lib/mapbox";
+import MapPreview from "./map-preview";
 
 const withProtocol = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
 
@@ -46,31 +45,25 @@ function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }
 export type MarinaCardProps = {
   marina: Marina;
   className?: string;
+  /** Told when the map dialog opens, so a hover-opened host can hold itself open. */
+  onMapOpenChange?: (open: boolean) => void;
 };
 
-export function MarinaCard({ marina, className }: MarinaCardProps) {
+export function MarinaCard({ marina, className, onMapOpenChange }: MarinaCardProps) {
   const t = useTranslations("Common.marina");
 
   return (
     <article className={cn("w-full overflow-hidden rounded-2xl", className)}>
       <div className="flex flex-col md:flex-row md:items-stretch md:gap-4">
-        <div className="relative h-41 w-full shrink-0 overflow-hidden md:h-auto md:w-57">
-          <Image
-            src={marina.mapImageUrl ?? staticMapUrl(marina.coordinates)}
-            alt=""
-            fill
-            unoptimized
-            sizes="(min-width: 768px) 228px, 100vw"
-            className="object-cover"
-          />
-          <div aria-hidden className="absolute inset-0 bg-black/40" />
-          <div
-            aria-hidden
-            className="absolute top-1/2 left-1/2 flex size-27.6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/12 bg-white/12"
-          >
-            <MapPin className="size-6 fill-brand text-white" />
-          </div>
-        </div>
+        <MapPreview
+          point={marina.coordinates}
+          title={marina.name}
+          imageUrl={marina.mapImageUrl}
+          imageSizes="(min-width: 768px) 228px, 100vw"
+          onOpenChange={onMapOpenChange}
+          className="h-41 w-full shrink-0 md:h-auto md:w-57"
+          pinClassName="size-27.6 border-2 border-white/12 bg-white/12"
+        />
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 px-4 py-4 md:pl-0">
           <div className="flex flex-col gap-1.5 md:gap-2">
@@ -124,8 +117,19 @@ export type MarinaPopoverProps = {
 };
 
 export function MarinaPopover({ marina, className }: MarinaPopoverProps) {
+  const [hovered, setHovered] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+
+  /*
+   * Held open while the map dialog is up.
+   *
+   * The popover opens on hover, and reaching the dialog means leaving it — which would close the
+   * popover, unmount its content, and take the dialog rendered inside it along. Keeping the
+   * popover open behind the dialog's backdrop costs nothing visually and keeps the map mounted;
+   * it closes on its own once the dialog does.
+   */
   return (
-    <Popover>
+    <Popover open={hovered || mapOpen} onOpenChange={setHovered}>
       <PopoverTrigger
         openOnHover
         delay={200}
@@ -146,7 +150,7 @@ export function MarinaPopover({ marina, className }: MarinaPopoverProps) {
         className="w-150.25 max-w-[calc(100vw-2rem)] overflow-visible rounded-2xl border-0 p-0 shadow-[4px_4px_15px_rgba(0,0,0,0.03)]"
       >
         <PopoverArrow className="before:border-0" />
-        <MarinaCard marina={marina} />
+        <MarinaCard marina={marina} onMapOpenChange={setMapOpen} />
       </PopoverContent>
     </Popover>
   );

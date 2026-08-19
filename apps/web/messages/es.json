@@ -465,6 +465,9 @@
     "marina": {
       "viewDetails": "Ver detalles"
     },
+    "map": {
+      "open": "Abrir el mapa de {place}"
+    },
     "leadForm": {
       "fields": {
         "name": {

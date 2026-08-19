@@ -8,7 +8,7 @@ import { Popup } from "react-map-gl/mapbox";
 import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
-import type { MapInstance } from "./map-canvas";
+import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 
 const RESET_MAPBOX_CHROME =
   "[&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:hidden";

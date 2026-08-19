@@ -5,7 +5,7 @@ import { Popup } from "react-map-gl/mapbox";
 
 import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
-import MapCanvas, { type MapInstance } from "../map/map-canvas";
+import MapCanvas, { type MapInstance } from "@/components/shared/data-display/map-canvas";
 import MapMarker from "../map/map-marker";
 
 type Stop = { title: string; description: string; lat: number; lng: number };

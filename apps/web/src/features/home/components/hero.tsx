@@ -133,7 +133,7 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
  *
  * Checked during render, not in an effect: a hidden route still re-renders with the new path, but
  * its effects are frozen, so an effect keyed on the path never runs. Same reason and same shape as
- * `RoutedMap` in features/yachts/components/map/map-canvas.tsx. `usePathname` is Next's raw
+ * `RoutedMap` in components/shared/data-display/map-canvas.tsx. `usePathname` is Next's raw
  * locale-prefixed path, so switching locale counts as leaving too.
  */
 function SearchCard() {

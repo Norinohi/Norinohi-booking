@@ -21,7 +21,21 @@ const nextConfig: NextConfig = {
      */
     exposeTestingApiInProductionBuild: process.env.EXPOSE_TESTING_API === "1",
   },
-  allowedDevOrigins: ["*.ngrok-free.dev", "*.ngrok-free.app", "*.trycloudflare.com"],
+  /*
+   * Origins `next dev` will serve its client runtime to. An origin missing here still gets the
+   * server-rendered HTML, so the page looks like it loaded — then the HMR socket is refused,
+   * nothing hydrates, and no query ever fires. It reads as "every request fails" when in fact
+   * none was made.
+   *
+   * The private ranges are for testing on a phone over the LAN; the rest are tunnel hosts.
+   */
+  allowedDevOrigins: [
+    "192.168.*.*",
+    "10.*.*.*",
+    "*.ngrok-free.dev",
+    "*.ngrok-free.app",
+    "*.trycloudflare.com",
+  ],
 
   /*
    * A header rather than `Disallow: /`: `Disallow` blocks the fetch, so an already-indexed URL
