@@ -169,6 +169,11 @@ export interface WriteCanonicalCatalogueOptions {
    * deploy, and so a second provider does not inherit the first one's trust.
    */
   autoPublish?: boolean;
+  /**
+   * Records a listing the projection could not write. Without it a failure is only a
+   * counter, and a counter nobody can explain is worse than no counter.
+   */
+  reportListingError?: (input: { externalId: string; error: unknown }) => Promise<void>;
   now?: Date;
 }
 
@@ -178,6 +183,8 @@ export interface CatalogueWriteSummary {
   /** Drafts promoted by auto-publish, so a surprise is visible in the run counts. */
   listingsPublished: number;
   listingsSkipped: number;
+  /** Listings whose own write threw; the rest of the projection still landed. */
+  listingsFailed: number;
   listingsHidden: number;
   duplicateCandidates: number;
   touchedListingIds: string[];
@@ -332,108 +339,136 @@ export async function writeCanonicalCatalogue(
     listingsUpdated: 0,
     listingsPublished: 0,
     listingsSkipped: 0,
+    listingsFailed: 0,
     listingsHidden: 0,
     duplicateCandidates: 0,
     touchedListingIds: [],
   };
 
   for (const item of catalogue.listings) {
-    const operatorId = operatorIds.get(item.externalCompanyId);
-    const homeBaseId = baseIds.get(item.externalBaseId);
-    const providerRecordId = yachtRecordIds.get(item.externalId);
+    /*
+     * One listing's failure costs that listing, not the projection.
+     *
+     * This loop ran unguarded, so anything a single boat could raise - a price
+     * beyond its column, a text field longer than its own, a not-null we mis-derived
+     * - threw out of writeCanonicalCatalogue and lost all eleven thousand. Every
+     * other loop in this sync already works the other way: the ingest reports per
+     * entity and continues, occupancy quarantines a yacht rather than failing its
+     * scope, and one company's outage costs that company's fleet.
+     *
+     * What a caught listing is not is clean. The steps here run in order and the
+     * listing row is written first, so a failure further down - its specification,
+     * its extras, its check-in rules - leaves the row updated and those tables
+     * holding what the last good run put there. Stale, but coherent: every one of
+     * them is a replace, so nothing is half applied.
+     *
+     * What is guaranteed is that it does not reach `touchedListingIds`. The price
+     * sweep therefore does not price it and no search document is rebuilt from it,
+     * so a listing we could not fully write is never the one a customer is shown a
+     * new rate for. The orphan sweep leaves it alone too: its provider records were
+     * ingested and are still active, which is what that sweep reads.
+     */
+    try {
+      const operatorId = operatorIds.get(item.externalCompanyId);
+      const homeBaseId = baseIds.get(item.externalBaseId);
+      const providerRecordId = yachtRecordIds.get(item.externalId);
 
-    // A yacht we cannot anchor to an operator, a base, or its own provenance row is
-    // left out entirely: the listing columns are NOT NULL for good reasons.
-    if (!operatorId || !homeBaseId || !providerRecordId) {
-      summary.listingsSkipped += 1;
-      continue;
-    }
-
-    const modelId = item.externalModelId ? (modelIds.get(item.externalModelId) ?? null) : null;
-    // The model leg is our resolved model id on both sides of the comparison: the
-    // stored listing keeps no provider model id, and a name match is not deterministic.
-    const incomingKey = listingMatchKey({
-      externalCompanyId: item.externalCompanyId,
-      externalBaseId: item.externalBaseId,
-      model: modelId,
-      yearBuilt: item.spec.yearBuilt,
-      name: item.title,
-    });
-
-    const decision = decideListingMatch({
-      providerKey,
-      existing: existingLinks.get(item.externalId) ?? null,
-      incomingKey,
-      candidates: matchCandidates,
-    });
-
-    const columns = {
-      title: item.title,
-      operatorId,
-      homeBaseId,
-      builderId: item.externalBuilderId ? (builderIds.get(item.externalBuilderId) ?? null) : null,
-      modelId,
-      categoryId: item.externalCategoryId
-        ? (categoryIds.get(item.externalCategoryId) ?? null)
-        : null,
-      defaultCurrency: item.defaultCurrency,
-      crewType: item.crewType ?? null,
-      securityDepositMinor: item.securityDepositMinor ?? null,
-      // The currency is only meaningful alongside an amount, and a deposit that
-      // named no currency of its own is priced like the rest of the yacht.
-      securityDepositCurrency:
-        item.securityDepositMinor === undefined
-          ? null
-          : (item.securityDepositCurrency ?? item.defaultCurrency),
-      paymentPolicy: item.paymentPolicy ?? null,
-      providerRating: decimal(item.rating),
-      providerReviewCount: item.reviewCount ?? null,
-      freshnessAt: now,
-    };
-
-    let listingId = decision.listingId;
-    if (listingId) {
-      await db.update(listing).set(columns).where(eq(listing.id, listingId));
-      summary.listingsUpdated += 1;
-    } else {
-      const created = await insertListingWithFreeSlug(db, item.slug, {
-        ...columns,
-        // Draft unless the provider is explicitly trusted: thousands of unreviewed
-        // yachts must not go live on the first run of a new connector.
-        status: options.autoPublish ? "published" : "draft",
-      });
-      if (!created) {
+      // A yacht we cannot anchor to an operator, a base, or its own provenance row is
+      // left out entirely: the listing columns are NOT NULL for good reasons.
+      if (!operatorId || !homeBaseId || !providerRecordId) {
         summary.listingsSkipped += 1;
         continue;
       }
-      listingId = created.id;
-      summary.listingsCreated += 1;
-      matchCandidates.set(incomingKey, listingId);
-    }
 
-    await writeListingChildren(db, providerKey, listingId, item, amenityIds);
-
-    const sourceId = await upsertListingSource(db, {
-      existing: existingLinks.get(item.externalId) ?? null,
-      listingId,
-      providerRecordId,
-      externalYachtId: item.externalId,
-      externalCompanyId: item.externalCompanyId,
-      externalBaseId: item.externalBaseId,
-      decision,
-      now,
-    });
-
-    if (sourceId) {
-      await db.update(listing).set({ primarySourceId: sourceId }).where(eq(listing.id, listingId));
-      existingLinks.set(item.externalId, {
-        listingSourceId: sourceId,
-        listingId,
-        matchStatus: decision.matchStatus,
+      const modelId = item.externalModelId ? (modelIds.get(item.externalModelId) ?? null) : null;
+      // The model leg is our resolved model id on both sides of the comparison: the
+      // stored listing keeps no provider model id, and a name match is not deterministic.
+      const incomingKey = listingMatchKey({
+        externalCompanyId: item.externalCompanyId,
+        externalBaseId: item.externalBaseId,
+        model: modelId,
+        yearBuilt: item.spec.yearBuilt,
+        name: item.title,
       });
-    }
 
-    summary.touchedListingIds.push(listingId);
+      const decision = decideListingMatch({
+        providerKey,
+        existing: existingLinks.get(item.externalId) ?? null,
+        incomingKey,
+        candidates: matchCandidates,
+      });
+
+      const columns = {
+        title: item.title,
+        operatorId,
+        homeBaseId,
+        builderId: item.externalBuilderId ? (builderIds.get(item.externalBuilderId) ?? null) : null,
+        modelId,
+        categoryId: item.externalCategoryId
+          ? (categoryIds.get(item.externalCategoryId) ?? null)
+          : null,
+        defaultCurrency: item.defaultCurrency,
+        crewType: item.crewType ?? null,
+        securityDepositMinor: item.securityDepositMinor ?? null,
+        // The currency is only meaningful alongside an amount, and a deposit that
+        // named no currency of its own is priced like the rest of the yacht.
+        securityDepositCurrency:
+          item.securityDepositMinor === undefined
+            ? null
+            : (item.securityDepositCurrency ?? item.defaultCurrency),
+        paymentPolicy: item.paymentPolicy ?? null,
+        providerRating: decimal(item.rating),
+        providerReviewCount: item.reviewCount ?? null,
+        freshnessAt: now,
+      };
+
+      let listingId = decision.listingId;
+      if (listingId) {
+        await db.update(listing).set(columns).where(eq(listing.id, listingId));
+        summary.listingsUpdated += 1;
+      } else {
+        const created = await insertListingWithFreeSlug(db, item.slug, {
+          ...columns,
+          // Draft unless the provider is explicitly trusted: thousands of unreviewed
+          // yachts must not go live on the first run of a new connector.
+          status: options.autoPublish ? "published" : "draft",
+        });
+        if (!created) {
+          summary.listingsSkipped += 1;
+          continue;
+        }
+        listingId = created.id;
+        summary.listingsCreated += 1;
+        matchCandidates.set(incomingKey, listingId);
+      }
+
+      await writeListingChildren(db, providerKey, listingId, item, amenityIds);
+
+      const sourceId = await upsertListingSource(db, {
+        existing: existingLinks.get(item.externalId) ?? null,
+        listingId,
+        providerRecordId,
+        externalYachtId: item.externalId,
+        externalCompanyId: item.externalCompanyId,
+        externalBaseId: item.externalBaseId,
+        decision,
+        now,
+      });
+
+      if (sourceId) {
+        await db.update(listing).set({ primarySourceId: sourceId }).where(eq(listing.id, listingId));
+        existingLinks.set(item.externalId, {
+          listingSourceId: sourceId,
+          listingId,
+          matchStatus: decision.matchStatus,
+        });
+      }
+
+      summary.touchedListingIds.push(listingId);
+    } catch (error) {
+      summary.listingsFailed += 1;
+      await options.reportListingError?.({ externalId: item.externalId, error });
+    }
   }
 
   summary.duplicateCandidates = await recordDuplicateCandidates(

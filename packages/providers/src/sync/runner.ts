@@ -780,6 +780,8 @@ export interface CatalogueSyncJobOptions {
 export interface CatalogueSyncJobResult extends CatalogueIngestSummary {
   listingsCreated: number;
   listingsUpdated: number;
+  /** Listings the projection could not write; the rest of the run still landed. */
+  listingsFailed: number;
   listingsHidden: number;
   duplicateCandidates: number;
   /**
@@ -821,6 +823,7 @@ export async function runCatalogueSyncJob(
   const empty = {
     listingsCreated: 0,
     listingsUpdated: 0,
+    listingsFailed: 0,
     listingsHidden: 0,
     duplicateCandidates: 0,
     pricePeriods: 0,
@@ -844,6 +847,13 @@ export async function runCatalogueSyncJob(
       providerKey: provider.key,
       catalogue,
       autoPublish: await readAutoPublish(db, providerId),
+      reportListingError: async ({ externalId, error }) => {
+        await store.recordError({
+          errorType: toSyncErrorType(error),
+          message: messageOf(error),
+          context: contextOf(error, { phase: "project", resourceType: "yacht", externalId }),
+        });
+      },
       now: now(),
     });
   } catch (error) {
@@ -910,7 +920,13 @@ export async function runCatalogueSyncJob(
     }
   }
 
-  const status = priceFailures > 0 && ingest.status === "success" ? "partial" : ingest.status;
+  /*
+   * A run that dropped listings is not a success, whatever the ingest thought. It is
+   * not a failure either: the rest of the catalogue is written and correct, and
+   * calling it failed would hide that behind a word that means "nothing landed".
+   */
+  const degraded = priceFailures > 0 || written.listingsFailed > 0;
+  const status = degraded && ingest.status === "success" ? "partial" : ingest.status;
 
   if (priceFailures > 0) {
     await store.closeRun({
@@ -928,6 +944,7 @@ export async function runCatalogueSyncJob(
     status,
     failedCount: ingest.failedCount + priceFailures,
     listingsCreated: written.listingsCreated,
+    listingsFailed: written.listingsFailed,
     listingsUpdated: written.listingsUpdated,
     listingsHidden: written.listingsHidden,
     duplicateCandidates: written.duplicateCandidates,
