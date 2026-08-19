@@ -401,6 +401,7 @@
       "remove": "Видалити з обраного",
       "viewDetails": "Детальніше",
       "imageAlt": "{name} біля причалу {marina}",
+      "openGallery": "Відкрити галерею фото",
       "priceFor": "Ціна за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
       "availableFrom": "Доступна з {date}",
       "priceOnRequest": "За запитом",
@@ -451,6 +452,13 @@
         "fullCrew": "Повний екіпаж",
         "skipperOptional": "Шкіпер за бажанням"
       }
+    },
+    "gallery": {
+      "close": "Закрити",
+      "previous": "Назад",
+      "next": "Далі",
+      "zoomIn": "Збільшити",
+      "zoomOut": "Зменшити"
     },
     "marina": {
       "viewDetails": "Детальніше"
@@ -1101,13 +1109,6 @@
     "addToWishlist": "Додати в обране",
     "removeFromWishlist": "Видалити з обраного",
     "included": "Включено",
-    "gallery": {
-      "close": "Закрити",
-      "previous": "Назад",
-      "next": "Далі",
-      "zoomIn": "Збільшити",
-      "zoomOut": "Зменшити"
-    },
     "importantInfo": {
       "charterCompany": "Чартерна компанія",
       "pickUpAddress": "Адреса отримання яхти",

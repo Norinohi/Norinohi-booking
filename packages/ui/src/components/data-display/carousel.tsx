@@ -110,7 +110,12 @@ function CarouselBars({
   return (
     <div
       data-slot="carousel-bars"
-      className={cn("flex items-center justify-center gap-1 p-1", className)}
+      /*
+       * The row is laid over the photo and is usually far wider than the bars it centres, so it
+       * would otherwise swallow hover and clicks across the whole width — including any cursor the
+       * photo underneath sets for itself. Only the bars take pointer events back.
+       */
+      className={cn("pointer-events-none flex items-center justify-center gap-1 p-1", className)}
       {...props}
     >
       {Array.from({ length: snapCount }, (_, index) => (
@@ -121,7 +126,7 @@ function CarouselBars({
           aria-current={index === selected || undefined}
           onClick={() => api?.scrollTo(index)}
           className={cn(
-            "h-1 w-4 cursor-pointer rounded-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+            "pointer-events-auto h-1 w-4 cursor-pointer rounded-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/70",
             index === selected ? "bg-white" : "bg-white/12 hover:bg-white/40",
             barClassName,
           )}

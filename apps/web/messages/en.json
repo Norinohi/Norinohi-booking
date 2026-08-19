@@ -401,6 +401,7 @@
       "remove": "Remove from wishlist",
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
+      "openGallery": "Open photo gallery",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
       "availableFrom": "Available from {date}",
       "priceOnRequest": "On request",
@@ -451,6 +452,13 @@
         "fullCrew": "Full crew",
         "skipperOptional": "Skipper optional"
       }
+    },
+    "gallery": {
+      "close": "Close",
+      "previous": "Previous",
+      "next": "Next",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out"
     },
     "marina": {
       "viewDetails": "View Details"
@@ -1101,13 +1109,6 @@
     "addToWishlist": "Add To Wishlist",
     "removeFromWishlist": "Remove From Wishlist",
     "included": "Included",
-    "gallery": {
-      "close": "Close",
-      "previous": "Previous",
-      "next": "Next",
-      "zoomIn": "Zoom in",
-      "zoomOut": "Zoom out"
-    },
     "importantInfo": {
       "charterCompany": "Charter company",
       "pickUpAddress": "Yacht pick-up address",

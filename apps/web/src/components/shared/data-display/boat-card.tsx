@@ -1,12 +1,5 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import {
-  Carousel,
-  CarouselBars,
-  CarouselSlide,
-  CarouselViewport,
-} from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Check, Sailboat, Star, Users } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
@@ -14,7 +7,6 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 
-import { Image } from "@/components/shared/data-display/image";
 import { dayToDisplay } from "@/lib/date";
 
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
@@ -22,6 +14,7 @@ import { WishlistButton } from "@/features/wishlist";
 
 import CardNote from "./card-note";
 import type { CardNote as CardNoteData } from "./card-note";
+import CardPhotos from "./card-photos";
 
 const FORMATS = {
   day: { day: "numeric", month: "long", year: "numeric" },
@@ -108,30 +101,20 @@ function Gallery({
         unavailable && "[&_img]:opacity-60 [&_img]:grayscale",
       )}
     >
-      {images.length > 0 ? (
-        <Carousel className="size-full">
-          <CarouselViewport>
-            {images.map((src, index) => (
-              <CarouselSlide key={src + index}>
-                <Image
-                  src={src}
-                  alt={index === 0 ? (imageAlt ?? "") : ""}
-                  fill
-                  priority={priority && index === 0}
-                  sizes="(min-width: 1280px) 40vw, 100vw"
-                  className="object-cover"
-                />
-              </CarouselSlide>
-            ))}
-          </CarouselViewport>
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-          <CarouselBars className="absolute inset-x-0 bottom-4" />
-        </Carousel>
-      ) : (
-        <ImageFallback className="absolute inset-0" />
-      )}
+      <CardPhotos
+        images={images}
+        imageAlt={imageAlt}
+        priority={priority}
+        sizes="(min-width: 1280px) 40vw, 100vw"
+      />
 
-      <div className="absolute inset-x-4 top-4 flex items-start gap-5">
+      {/*
+       * Laid over the photo, which is now a button: without this the badge row — full width, and
+       * two chips tall on a well-tagged listing — would eat the hover and the click across the top
+       * of every card. The chips are labels, so they stay transparent to the pointer and the photo
+       * under them opens the gallery; only the wishlist control takes events back.
+       */}
+      <div className="pointer-events-none absolute inset-x-4 top-4 flex items-start gap-5">
         <div className="flex flex-1 flex-wrap items-start gap-1.5">
           {badges?.map((badge) => (
             <Chip
@@ -147,7 +130,7 @@ function Gallery({
             </Chip>
           ))}
         </div>
-        <WishlistButton listingId={id} />
+        <WishlistButton listingId={id} className="pointer-events-auto" />
       </div>
     </div>
   );

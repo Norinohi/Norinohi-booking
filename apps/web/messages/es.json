@@ -401,6 +401,7 @@
       "remove": "Quitar de favoritos",
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
+      "openGallery": "Abrir la galería de fotos",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
       "availableFrom": "Disponible desde el {date}",
       "priceOnRequest": "Bajo petición",
@@ -451,6 +452,13 @@
         "fullCrew": "Tripulación completa",
         "skipperOptional": "Patrón opcional"
       }
+    },
+    "gallery": {
+      "close": "Cerrar",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar"
     },
     "marina": {
       "viewDetails": "Ver detalles"
@@ -1101,13 +1109,6 @@
     "addToWishlist": "Añadir a favoritos",
     "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
-    "gallery": {
-      "close": "Cerrar",
-      "previous": "Anterior",
-      "next": "Siguiente",
-      "zoomIn": "Acercar",
-      "zoomOut": "Alejar"
-    },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",
       "pickUpAddress": "Dirección de recogida del yate",
