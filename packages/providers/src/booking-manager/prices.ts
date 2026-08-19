@@ -43,8 +43,13 @@ export function createBookingManagerSeasonalPriceLoader(
   options: BookingManagerSeasonalPriceLoaderOptions,
 ): (listingIds: string[]) => Promise<Map<string, SeasonalPrice[]>> {
   const { client, resolver } = options;
+  // Narrows the vendor query where the allowlist can express it. An exclusion-only
+  // scope has nothing to narrow to, so the sweep stays wide and the prices of an
+  // excluded company are simply never asked for: its listings are hidden by then.
   const companyScope =
-    options.config.companyIds.length > 0 ? [...options.config.companyIds] : undefined;
+    options.config.companyScope.include.length > 0
+      ? [...options.config.companyScope.include]
+      : undefined;
 
   const yachtByListing = new Map<string, string | null>();
   let sweep: Promise<Map<string, SeasonalPrice[]>> | null = null;

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import type { Database } from "../registry";
+import { unscopedCompanies } from "../shared/company-scope";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { AuthError, ContractError, NotFoundError } from "../shared/errors";
 import type { JsonObject } from "../shared/json";
@@ -27,6 +28,7 @@ const config: NausysConfig = {
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
   queueKey: "nausys:agency-user",
 };
 
@@ -78,6 +80,7 @@ function fakeResolver(): CatalogueResolver {
     toExternalCountryId: (isoCode) => Promise.resolve(isoCode.toUpperCase() === "HR" ? "1" : null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
+    listYachtCompanyScopeKeys: async () => [],
   };
 }
 

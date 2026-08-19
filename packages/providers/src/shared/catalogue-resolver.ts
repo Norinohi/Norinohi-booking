@@ -10,7 +10,7 @@ import {
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider, providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
 import type { ListingSummary, ProviderKey } from "../types";
@@ -51,6 +51,17 @@ export interface CatalogueResolver {
   loadListingSummary(listingId: string): Promise<ListingSummary | null>;
   /** Every external company id with an active record, for per-company sync sweeps. */
   listExternalCompanyIds(): Promise<string[]>;
+  /**
+   * Every company a yacht record is still filed under, whether or not the company
+   * record itself is active.
+   *
+   * Deliberately not `listExternalCompanyIds`. Narrowing the import scope
+   * deactivates the company record on the next run, so a company that has fallen
+   * out of scope disappears from that list while its fleet stays active and its
+   * listings stay published. This reads the fleet's own filing instead, which is
+   * what a retire sweep has to address.
+   */
+  listYachtCompanyScopeKeys(): Promise<string[]>;
 }
 
 type CountryIndex = { byAlpha2: Map<string, string>; byAlpha3: Map<string, string> };
@@ -297,6 +308,22 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
         );
 
       return rows.map((row) => row.externalId);
+    },
+
+    async listYachtCompanyScopeKeys() {
+      const rows = await db
+        .selectDistinct({ scopeKey: providerRecord.scopeKey })
+        .from(providerRecord)
+        .where(
+          and(
+            eq(providerRecord.providerId, await providerId()),
+            eq(providerRecord.resourceType, "yacht"),
+            eq(providerRecord.active, true),
+            isNotNull(providerRecord.scopeKey),
+          ),
+        );
+
+      return rows.flatMap((row) => (row.scopeKey === null ? [] : [row.scopeKey]));
     },
   };
 }

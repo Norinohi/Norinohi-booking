@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
+import { unscopedCompanies } from "../shared/company-scope";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
@@ -20,6 +21,7 @@ const config: NausysConfig = {
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
   queueKey: "nausys:agency-user",
 };
 
@@ -76,6 +78,7 @@ function resolverFor(externalYachtId: string): CatalogueResolver {
     toExternalCountryId: () => Promise.resolve(null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
+    listYachtCompanyScopeKeys: async () => [],
   };
 }
 

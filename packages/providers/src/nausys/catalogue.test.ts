@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { createCompanyScope, unscopedCompanies } from "../shared/company-scope";
 import { AuthError } from "../shared/errors";
 import type { JsonObject } from "../shared/json";
 import { SequentialQueue } from "../shared/queue";
@@ -17,6 +18,7 @@ const config: NausysConfig = {
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
   queueKey: "nausys:agency-user",
 };
 
@@ -193,6 +195,65 @@ describe("syncNausysCatalogue", () => {
     );
 
     expect(transport.callSequence()).toEqual(["yachts-102701"]);
+  });
+
+  it("skips a company the scope excludes, so the companies sweep deactivates it", async () => {
+    const { client, transport, reporter } = build();
+
+    const events = await collect(
+      syncNausysCatalogue(client, { reporter, companyScope: createCompanyScope([], ["102701"]) }),
+    );
+
+    // Never emitted, so the companies scope-complete deactivates the record an
+    // earlier unscoped run created, and its fleet is never fetched.
+    expect(entities(events).some((event) => event.entity.externalId === "102701")).toBe(false);
+    expect(transport.callSequence()).not.toContain("yachts-102701");
+  });
+
+  it("retires the fleet of a company that has fallen out of scope", async () => {
+    const { client, reporter } = build();
+
+    const events = await collect(
+      syncNausysCatalogue(client, {
+        reporter,
+        companyScope: createCompanyScope([], ["999"]),
+        listImportedCompanyIds: async () => ["102701", "999"],
+      }),
+    );
+
+    // The empty scope-complete is the whole mechanism: it tells the runner this
+    // company's fleet is empty, and the ordinary sweep deactivates the records
+    // an earlier, wider run left active.
+    expect(completions(events)).toContainEqual({
+      type: "scope-complete",
+      resourceType: "yacht",
+      scopeKey: "999",
+    });
+    // Still in scope, so its fleet is announced by the sweep proper, with a cursor.
+    expect(completions(events)).toContainEqual(
+      expect.objectContaining({
+        resourceType: "yacht",
+        scopeKey: "102701",
+        cursor: expect.anything(),
+      }),
+    );
+  });
+
+  it("does not read the imported companies when nothing is scoped out", async () => {
+    const { client, reporter } = build();
+    let reads = 0;
+
+    await collect(
+      syncNausysCatalogue(client, {
+        reporter,
+        listImportedCompanyIds: async () => {
+          reads += 1;
+          return ["102701"];
+        },
+      }),
+    );
+
+    expect(reads).toBe(0);
   });
 
   it("leaves a failed company fleet unannounced without touching the others", async () => {

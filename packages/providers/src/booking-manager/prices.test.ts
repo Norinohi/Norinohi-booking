@@ -67,6 +67,7 @@ function fakeResolver(
     toExternalCountryId: () => Promise.resolve(null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
+    listYachtCompanyScopeKeys: async () => [],
   };
 }
 

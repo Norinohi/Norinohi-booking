@@ -182,6 +182,8 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return nausysCatalogueSource(this.syncClient, {
       resume: parseResume(options.resume),
+      companyScope: this.config.companyScope,
+      listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
     });
   }
 
@@ -197,7 +199,14 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
         // synchronous, so it is deferred into listScopes rather than passed as an
         // empty list. Passing [] here would make every availability run a
         // successful no-op, which is the worst possible failure mode.
-        companyIds: await this.resolver.listExternalCompanyIds(),
+        //
+        // Filtered through the scope rather than trusted: an out-of-scope company
+        // keeps active records until the next catalogue run retires them, and
+        // sweeping its availability in the meantime refreshes inventory we have
+        // already decided not to sell.
+        companyIds: (await this.resolver.listExternalCompanyIds()).filter((id) =>
+          this.config.companyScope.inScope(id),
+        ),
         years: this.years,
         hotWindows: this.hotWindows,
         currency: this.currency,

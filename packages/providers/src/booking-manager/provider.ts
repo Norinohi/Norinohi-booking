@@ -138,7 +138,8 @@ export class BookingManagerInventoryProvider
   createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return bookingManagerCatalogueSource(this.client, {
       resume: parseResume(options.resume),
-      companyIds: this.config.companyIds,
+      companyScope: this.config.companyScope,
+      listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
     });
   }
 
@@ -156,13 +157,19 @@ export class BookingManagerInventoryProvider
         // synchronous, so it is deferred into listScopes. Passing [] here would
         // make every availability run a successful no-op, which is the worst
         // possible failure mode.
-        // The configured scope wins when set: it is the list we actually imported,
-        // and reading it back from the database would also pick up companies a
-        // previous, wider run left behind.
-        companyIds:
-          this.config.companyIds.length > 0
-            ? this.config.companyIds.map(Number).filter(Number.isFinite)
-            : (await this.resolver.listExternalCompanyIds()).map(Number).filter(Number.isFinite),
+        // The allowlist wins when set: it is the list we actually imported, and
+        // reading it back from the database would also pick up companies a
+        // previous, wider run left behind. With only an exclusion list configured
+        // there is nothing to enumerate, so the database is read and filtered -
+        // which is also what keeps an excluded company from being swept for
+        // availability in the window before its catalogue retire lands.
+        companyIds: (this.config.companyScope.include.length > 0
+          ? this.config.companyScope.include
+          : await this.resolver.listExternalCompanyIds()
+        )
+          .filter((id) => this.config.companyScope.inScope(id))
+          .map(Number)
+          .filter(Number.isFinite),
         years: this.years,
       });
 
