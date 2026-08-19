@@ -456,7 +456,10 @@ export async function writeCanonicalCatalogue(
       });
 
       if (sourceId) {
-        await db.update(listing).set({ primarySourceId: sourceId }).where(eq(listing.id, listingId));
+        await db
+          .update(listing)
+          .set({ primarySourceId: sourceId })
+          .where(eq(listing.id, listingId));
         existingLinks.set(item.externalId, {
           listingSourceId: sourceId,
           listingId,
