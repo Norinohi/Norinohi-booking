@@ -5,6 +5,11 @@ const EMPTY_IMAGE = "";
 /** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
 const WEEKLY_RATE_DAYS = 7;
 
+/** UTC, matching the `date` columns the projection wrote against `current_date`. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function presentListingSummary(doc: ListingSearchDoc) {
   const currency = doc.currency ?? "EUR";
   /*
@@ -69,6 +74,13 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       // No projected window means the listing has no bookable slot at all, which
       // is a different state from having dates but no price.
       hasAvailableDates: doc.availableFrom !== null,
+      /*
+       * Dropped once it has gone by: the column is computed against the clock and is only as
+       * fresh as the last projection run, and a card offering a day that has already passed
+       * sends the visitor to a calendar that refuses it.
+       */
+      bookableFrom:
+        doc.bookableFrom !== null && doc.bookableFrom >= todayIso() ? doc.bookableFrom : null,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,

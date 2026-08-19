@@ -111,6 +111,8 @@ export const listingSummarySchema = z.object({
     hasUnconfirmedAvailability: z.boolean(),
     hasAvailableDates: z.boolean(),
     hasTemporaryBooking: z.boolean(),
+    /** Earliest day a charter may begin, for a card with no period of its own. Null once past. */
+    bookableFrom: z.string().nullable(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),

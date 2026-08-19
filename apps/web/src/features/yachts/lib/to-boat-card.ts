@@ -2,8 +2,10 @@ import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import type { useTranslations } from "next-intl";
 
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
+import type { AppPathname } from "@/i18n/navigation";
 import { boatCardIdentity, boatCardPrice } from "@/lib/boat-card-fields";
 
+import { serializeDetailPeriod } from "./search-params";
 import { toMarina } from "./to-marina";
 
 type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["results"]>>;
@@ -37,14 +39,20 @@ export function toBoatCard(
       ? { unavailable, badges: [{ label: t("badges.unavailable"), muted: true }] }
       : null),
     imageAlt: t("imageAlt", { name: listing.title, marina: listing.base.name }),
-    detailHref: `/yachts/${listing.slug}`,
+    /* SAFETY: `/yachts/[id]` is a real route; typedRoutes only recognises it when the segment
+       is a literal, and nuqs serializes the query string back to a plain string. */
+    detailHref: serializeDetailPeriod(`/yachts/${listing.slug}`, {
+      checkIn: period?.checkIn ?? null,
+      checkOut: period?.checkOut ?? null,
+    }) as AppPathname,
     marina: toMarina(listing.base),
     ...(period?.checkIn && period.checkOut
       ? {
           start: { day: period.checkIn, time: listing.base.checkInTime },
           end: { day: period.checkOut, time: listing.base.checkOutTime },
         }
-      : null),
+      : /* No charter to show, so the card offers the day one could start instead. */
+        { availableFrom: listing.availability.bookableFrom ?? undefined }),
     priceLabel: t("priceFor", { days: listing.priceDetails.periodDays }),
     price: boatCardPrice(t, listing, formatMoney),
     priceIsLabel: !listing.priceFrom,

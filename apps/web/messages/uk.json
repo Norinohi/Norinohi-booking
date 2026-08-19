@@ -402,6 +402,7 @@
       "viewDetails": "Детальніше",
       "imageAlt": "{name} біля причалу {marina}",
       "priceFor": "Ціна за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+      "availableFrom": "Доступна з {date}",
       "priceOnRequest": "За запитом",
       "priceUnavailable": "Недоступно",
       "perPerson": "{price} з особи",

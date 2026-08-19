@@ -105,6 +105,8 @@ export type ListingSearchDoc = {
   currency: string | null;
   availableFrom: string | null;
   availableTo: string | null;
+  /** Earliest legal check-in day; see `bookableFrom` on the `listing_search_doc` schema. */
+  bookableFrom: string | null;
   hasUnconfirmedAvailability: boolean;
   hasTemporaryBooking: boolean;
 };

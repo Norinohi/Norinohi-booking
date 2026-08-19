@@ -68,6 +68,7 @@ export async function rebuildListingSearchDocs(
       currency,
       available_from,
       available_to,
+      bookable_from,
       has_unconfirmed_availability,
       has_temporary_booking,
       searchable_text,
@@ -133,6 +134,7 @@ export async function rebuildListingSearchDocs(
       coalesce(rate.currency, l.default_currency),
       avail.available_from,
       avail.available_to,
+      checkin.bookable_from,
       coalesce(avail.has_unconfirmed_availability, false),
       coalesce(held.has_temporary_booking, false),
       concat_ws(
@@ -236,6 +238,44 @@ export async function rebuildListingSearchDocs(
       from listing_free_period free
       where free.listing_id = l.id
     ) avail on true
+    /*
+     * The first day a charter could actually begin, which is what an undated search card offers
+     * in place of a period of its own. Mirrors canCheckIn in
+     * packages/api/src/lib/availability-rules.ts -- free, inside a published weekly rate (the
+     * season signal), and on a weekday some check-in rule admits -- so the day the card names is
+     * a day the detail calendar accepts. Like canCheckIn, it does not prove a legal check-out
+     * follows it.
+     *
+     * available_from cannot answer this: it is the first day nothing is sold, which is today for
+     * most of the fleet and, on a Saturday-to-Saturday boat, never a day anyone could board.
+     *
+     * The candidate is stepped onto the rule's weekday arithmetically rather than by walking a
+     * day at a time -- dow is 0 Sunday, the numbering listing_checkin_rule stores. Past periods
+     * are excluded first, so the row count stays proportional to the season ahead.
+     */
+    left join lateral (
+      select min(c.candidate) as bookable_from
+      from listing_free_period free
+      join listing_price_period price
+        on price.listing_id = l.id
+       and price.kind = 'weekly'
+       and price.end_date > current_date
+       and price.start_date < free.end_date
+       and price.end_date > free.start_date
+      left join listing_checkin_rule rule on rule.listing_id = l.id
+      cross join lateral (
+        select greatest(free.start_date, price.start_date, current_date) as opens
+      ) w
+      cross join lateral (
+        select case
+          when rule.checkin_weekday is null then w.opens
+          else w.opens + ((rule.checkin_weekday - extract(dow from w.opens)::int + 7) % 7)
+        end as candidate
+      ) c
+      where free.listing_id = l.id
+        and free.end_date > current_date
+        and c.candidate < least(free.end_date, price.end_date)
+    ) checkin on true
     left join lateral (
       select bool_or(slot.status = 'option') as has_temporary_booking
       from availability_slot slot
@@ -295,6 +335,7 @@ export async function rebuildListingSearchDocs(
       currency = excluded.currency,
       available_from = excluded.available_from,
       available_to = excluded.available_to,
+      bookable_from = excluded.bookable_from,
       has_unconfirmed_availability = excluded.has_unconfirmed_availability,
       has_temporary_booking = excluded.has_temporary_booking,
       searchable_text = excluded.searchable_text,

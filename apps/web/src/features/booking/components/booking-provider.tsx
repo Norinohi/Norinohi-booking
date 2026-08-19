@@ -4,6 +4,7 @@ import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
 import { useParams } from "next/navigation";
+import { useQueryStates } from "nuqs";
 import {
   createContext,
   type ReactNode,
@@ -20,7 +21,8 @@ import { rangeStatus } from "@yacht-charter/api/lib/availability-rules";
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
 import type { CrewType } from "@/components/shared/data-display/booking-summary";
 import { useListingDetail } from "@/features/yachts";
-import { dayFromNative } from "@/lib/date";
+import { detailPeriodParsers } from "@/features/yachts/lib/search-params";
+import { dayFromNative, dayToNative } from "@/lib/date";
 
 import { availabilityConstraintsQueryOptions, type Quote } from "../api/queries";
 import { useQuote } from "../hooks/use-quote";
@@ -92,13 +94,32 @@ export function BookingProvider({
   /* Defaulted synchronously off the prefetched listing so the crew Select stays controlled. */
   const crewType = crewChoice ?? listing?.crew.options[0];
 
+  /*
+   * The charter the visitor already searched for, handed over by the result card they clicked.
+   * Without it the sidebar opened on an empty calendar and made them pick the same week twice.
+   */
+  const [carried] = useQueryStates(detailPeriodParsers);
+  const searchedPeriod =
+    carried.checkIn && carried.checkOut
+      ? { checkIn: carried.checkIn, checkOut: carried.checkOut }
+      : null;
+  const searchedCheckOut = searchedPeriod?.checkOut;
+
   const calWindow = useMemo(() => {
     const from = startOfMonth(new Date());
+    const horizon = dayFromNative(endOfMonth(addMonths(from, CALENDAR_MONTHS)));
+    /*
+     * A carried period can fall past the default horizon — people book a year out. Constraints
+     * the window does not cover come back empty, which reads as season-closed, and the sidebar
+     * would refuse to price the very dates it was handed.
+     */
+    const carriedEnd =
+      searchedCheckOut && searchedCheckOut > horizon ? dayToNative(searchedCheckOut) : undefined;
     return {
       from: dayFromNative(from),
-      to: dayFromNative(endOfMonth(addMonths(from, CALENDAR_MONTHS))),
+      to: carriedEnd ? dayFromNative(endOfMonth(carriedEnd)) : horizon,
     };
-  }, []);
+  }, [searchedCheckOut]);
 
   const { data: published } = useQuery({
     ...availabilityConstraintsQueryOptions({
@@ -146,6 +167,23 @@ export function BookingProvider({
     setGuestsState(quote.guests);
     if (quote.crewType) setCrewChoice(quote.crewType);
   }, [quote]);
+
+  /*
+   * Prices the carried period once, as soon as the published constraints are in — before them
+   * every range reads as season-closed, since `priced` is what opens a season. Only on the
+   * detail page: the wizard arrives with `quoteId` and loads that quote instead. A period the
+   * listing will not sell is left alone rather than reported, because the visitor did not ask
+   * for this boat on these dates so much as arrive at it, and the calendar is already open.
+   */
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || quoteId || !searchedPeriod || !published || !listingId) return;
+    if (rangeStatus(searchedPeriod.checkIn, searchedPeriod.checkOut, constraints) !== "bookable") {
+      return;
+    }
+    seededRef.current = true;
+    selectPeriod(searchedPeriod);
+  });
 
   function selectPeriod(period: CharterPeriod) {
     if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;

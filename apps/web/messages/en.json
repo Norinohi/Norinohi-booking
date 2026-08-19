@@ -402,6 +402,7 @@
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
+      "availableFrom": "Available from {date}",
       "priceOnRequest": "On request",
       "priceUnavailable": "Unavailable",
       "perPerson": "{price} for person",
