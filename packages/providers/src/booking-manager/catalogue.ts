@@ -109,6 +109,16 @@ const YACHT_QUERY = { inventory: "raw" } as const;
 export interface BookingManagerCatalogueCursor {
   step: number;
   companyIndex: number;
+  /**
+   * The company `companyIndex` pointed at when the cursor was written.
+   *
+   * A position in a list only means something against the same list. Narrowing the
+   * scope rebuilds it - 1308 entries become one - and the old index then addresses
+   * a company that is not there, so the resume skips the whole sweep and reports
+   * success. That is not hypothetical: a scoped run on production walked zero
+   * yachts, wrote no prices, and still retired every company it had excluded.
+   */
+  companyId?: string;
 }
 
 export function parseBookingManagerCatalogueCursor(
@@ -118,6 +128,7 @@ export function parseBookingManagerCatalogueCursor(
     .object({
       step: z.number().int().min(0).max(YACHT_STEP),
       companyIndex: z.number().int().min(0).default(0),
+      companyId: z.string().optional(),
     })
     .safeParse(value);
 
@@ -155,6 +166,24 @@ export interface BookingManagerCatalogueOptions {
  * `/yachts`. An abandoned step emits no `scope-complete`, so its records are left
  * active rather than swept away by a dump we only half understood.
  */
+/**
+ * Where the yacht sweep should start, given a cursor that may predate this scope.
+ *
+ * Resuming into the wrong list is worse than repeating work: the run reports success
+ * having swept nothing, and on a narrowed scope the retire still fires, so a fleet is
+ * withdrawn by a run that never looked at it. So the index is trusted only when the
+ * company it named is still sitting at it, and a cursor written before this field
+ * existed is not trusted at all.
+ */
+export function resumeCompanyIndex(
+  resume: BookingManagerCatalogueCursor | null,
+  companyIds: readonly string[],
+): number {
+  if (resume?.step !== YACHT_STEP || resume.companyIndex === 0) return 0;
+  if (resume.companyIndex >= companyIds.length) return 0;
+  return companyIds[resume.companyIndex] === resume.companyId ? resume.companyIndex : 0;
+}
+
 export async function* syncBookingManagerCatalogue(
   client: BookingManagerClient,
   options: BookingManagerCatalogueOptions = {},
@@ -228,7 +257,7 @@ export async function* syncBookingManagerCatalogue(
     companyIds = (await listCompanyIds(client, options)).filter(inScope);
   }
 
-  const startCompany = resume?.step === YACHT_STEP ? resume.companyIndex : 0;
+  const startCompany = resumeCompanyIndex(resume, companyIds);
 
   for (const [index, companyId] of companyIds.entries()) {
     if (index < startCompany) continue;
@@ -286,6 +315,8 @@ export async function* syncBookingManagerCatalogue(
       cursor: {
         step: YACHT_STEP,
         companyIndex: index + 1,
+        // Undefined on the last company, where there is nothing left to point at.
+        companyId: companyIds[index + 1],
       } satisfies BookingManagerCatalogueCursor,
     };
   }
