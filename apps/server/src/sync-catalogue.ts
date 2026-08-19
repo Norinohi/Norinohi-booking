@@ -21,6 +21,7 @@
 import { db } from "@yacht-charter/db";
 import { createEnabledInventoryProviders } from "@yacht-charter/providers";
 import {
+  type CatalogueSyncPhase,
   ensureProviderId,
   openCatalogueSyncRun,
   readCatalogueSyncProgress,
@@ -68,21 +69,34 @@ for (const provider of providers.values()) {
 
   console.log(`Started catalogue sync ${syncRunId} for provider "${provider.key}"`);
   const startedAt = Date.now();
+  let phase: CatalogueSyncPhase = "ingest";
 
   const logProgress = async () => {
     const progress = await readCatalogueSyncProgress(db, providerId, syncRunId);
     const elapsedS = Math.round((Date.now() - startedAt) / 1000);
+    const errors = `sync_error this run: ${progress.syncErrorTotal}`;
+
+    /*
+     * Only the ingest phase writes provider_record, so its counters are meaningless
+     * afterwards - and printing a decaying rate beside a frozen count reads as a
+     * stall rather than as a phase that does not touch that table.
+     */
+    if (phase !== "ingest") {
+      console.log(`[${provider.key} ${elapsedS}s] phase: ${phase} | ${errors}`);
+      return;
+    }
+
     const seen = progress.recordsSeenThisRun;
     const rate = elapsedS > 0 ? (seen / elapsedS).toFixed(1) : "0.0";
     // Companies only once the walk reaches them; before that the cursor is still in
-    // the global dumps and a "0/1308" would read as no progress rather than none yet.
+    // the global dumps and a "0/1309" would read as no progress rather than none yet.
     const companies =
       progress.companyIndex === null
         ? "companies -"
         : `companies ${progress.companyIndex}/${progress.companyTotal}`;
 
     console.log(
-      `[${provider.key} ${elapsedS}s] seen this run: ${seen} (${rate}/s) | ${companies} | provider_record total: ${progress.providerRecordTotal} | sync_error this run: ${progress.syncErrorTotal}`,
+      `[${provider.key} ${elapsedS}s] phase: ingest | seen this run: ${seen} (${rate}/s) | ${companies} | provider_record total: ${progress.providerRecordTotal} | ${errors}`,
     );
   };
 
@@ -96,6 +110,10 @@ for (const provider of providers.values()) {
       syncRunId,
       resume,
       cursorScope: "full",
+      onPhase: (next) => {
+        phase = next;
+        console.log(`[${provider.key}] phase: ${next}`);
+      },
     });
     console.log(JSON.stringify(result, null, 2));
     console.log(`Catalogue sync ${syncRunId} finished for "${provider.key}"`);

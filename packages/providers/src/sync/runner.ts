@@ -766,11 +766,22 @@ export interface CatalogueSyncJobOptions {
   resume?: unknown;
   cursorScope?: string;
   now?: () => Date;
+  /**
+   * Called as the job moves between its three phases.
+   *
+   * Only the ingest phase writes `provider_record`, so a caller polling the database
+   * for progress sees every number freeze the moment the walk ends - which is exactly
+   * when the run still has its projection and its price sweep to do. Without this, a
+   * job eight minutes into pricing and a hung one look identical.
+   */
+  onPhase?: (phase: CatalogueSyncPhase) => void;
 }
 
 export interface CatalogueSyncJobResult extends CatalogueIngestSummary {
   listingsCreated: number;
   listingsUpdated: number;
+  /** Listings the projection could not write; the rest of the run still landed. */
+  listingsFailed: number;
   listingsHidden: number;
   duplicateCandidates: number;
   /**
@@ -786,6 +797,8 @@ export interface CatalogueSyncJobResult extends CatalogueIngestSummary {
  * the provider's own pure projection over everything ingested so far, which is why
  * it can run even after a partial ingest.
  */
+export type CatalogueSyncPhase = "ingest" | "project" | "prices";
+
 export async function runCatalogueSyncJob(
   options: CatalogueSyncJobOptions,
 ): Promise<CatalogueSyncJobResult> {
@@ -799,6 +812,8 @@ export async function runCatalogueSyncJob(
     cursorScope: options.cursorScope,
   });
 
+  options.onPhase?.("ingest");
+
   const source = supportsScopedCatalogueSync(provider)
     ? provider.createCatalogueSyncSource({ resume: options.resume })
     : fromRawEntities(provider.syncCatalogue());
@@ -808,6 +823,7 @@ export async function runCatalogueSyncJob(
   const empty = {
     listingsCreated: 0,
     listingsUpdated: 0,
+    listingsFailed: 0,
     listingsHidden: 0,
     duplicateCandidates: 0,
     pricePeriods: 0,
@@ -819,6 +835,8 @@ export async function runCatalogueSyncJob(
     return { ...ingest, ...empty };
   }
 
+  options.onPhase?.("project");
+
   let written: Awaited<ReturnType<typeof writeCanonicalCatalogue>>;
   try {
     const records = await loadProviderRecordSet(db, providerId);
@@ -829,6 +847,13 @@ export async function runCatalogueSyncJob(
       providerKey: provider.key,
       catalogue,
       autoPublish: await readAutoPublish(db, providerId),
+      reportListingError: async ({ externalId, error }) => {
+        await store.recordError({
+          errorType: toSyncErrorType(error),
+          message: messageOf(error),
+          context: contextOf(error, { phase: "project", resourceType: "yacht", externalId }),
+        });
+      },
       now: now(),
     });
   } catch (error) {
@@ -866,6 +891,7 @@ export async function runCatalogueSyncJob(
   let priceFailures = 0;
 
   if (supportsSeasonalPrices(provider)) {
+    options.onPhase?.("prices");
     try {
       pricePeriods = await writeSeasonalPrices({
         store: createDrizzlePricePeriodStore({ db, providerId }),
@@ -894,7 +920,13 @@ export async function runCatalogueSyncJob(
     }
   }
 
-  const status = priceFailures > 0 && ingest.status === "success" ? "partial" : ingest.status;
+  /*
+   * A run that dropped listings is not a success, whatever the ingest thought. It is
+   * not a failure either: the rest of the catalogue is written and correct, and
+   * calling it failed would hide that behind a word that means "nothing landed".
+   */
+  const degraded = priceFailures > 0 || written.listingsFailed > 0;
+  const status = degraded && ingest.status === "success" ? "partial" : ingest.status;
 
   if (priceFailures > 0) {
     await store.closeRun({
@@ -912,6 +944,7 @@ export async function runCatalogueSyncJob(
     status,
     failedCount: ingest.failedCount + priceFailures,
     listingsCreated: written.listingsCreated,
+    listingsFailed: written.listingsFailed,
     listingsUpdated: written.listingsUpdated,
     listingsHidden: written.listingsHidden,
     duplicateCandidates: written.duplicateCandidates,
