@@ -71,6 +71,13 @@ export default function BookingSidebar({
         guests={guests}
         onGuestsChange={setGuests}
         unavailable={listing ? !listing.availability.hasAvailableDates : false}
+        /* The same rule the search card uses for "On request", so the two agree:
+           free dates, but no published rate to open a season with. */
+        datesOnRequest={
+          listing
+            ? listing.availability.hasAvailableDates && listing.availability.bookableFrom === null
+            : false
+        }
         actions={actions}
         shaded={shaded}
         payNowHref={payNowHref}

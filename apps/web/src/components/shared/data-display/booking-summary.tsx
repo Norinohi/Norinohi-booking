@@ -83,6 +83,15 @@ export type BookingSummaryProps = {
    * enquiry prompt, so the flow never opens on a yacht that cannot be quoted.
    */
   unavailable?: boolean;
+  /**
+   * Dates exist, but the operator publishes no rate for them.
+   *
+   * Distinct from `unavailable` because the answer is opposite: that boat has nothing
+   * to sell, this one has everything to sell and no price on it. Without the
+   * distinction the panel fell through to "select your dates to see the price" beside
+   * a calendar that refuses every day, which is the one reading that is simply untrue.
+   */
+  datesOnRequest?: boolean;
   /** The Pay Now / Request Quote pair. The booking flow has its own CTA, so it hides them. */
   actions?: boolean;
   /** Lifts the price groups onto the neutral background (Figma: booking flow only). */
@@ -379,6 +388,7 @@ export default function BookingSummary({
   guests,
   onGuestsChange,
   unavailable = false,
+  datesOnRequest = false,
   actions = true,
   shaded = false,
   payNowHref,
@@ -697,6 +707,20 @@ export default function BookingSummary({
                     </p>
                     <p className="text-sm font-medium text-natural-500">
                       {t("sidebar.unavailableHint")}
+                    </p>
+                    {actions ? (
+                      <Button variant="neutral" onClick={onRequestQuote}>
+                        {t("sidebar.requestQuote")}
+                      </Button>
+                    ) : null}
+                  </>
+                ) : datesOnRequest ? (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      {t("sidebar.onRequest")}
+                    </p>
+                    <p className="text-sm font-medium text-natural-500">
+                      {t("sidebar.onRequestHint")}
                     </p>
                     {actions ? (
                       <Button variant="neutral" onClick={onRequestQuote}>

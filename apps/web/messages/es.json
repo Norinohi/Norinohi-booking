@@ -1191,7 +1191,9 @@
         "applied": "{amount} aplicado",
         "apply": "Aplicar",
         "remove": "Quitar"
-      }
+      },
+      "onRequest": "Este yate se cotiza a petición",
+      "onRequestHint": "Tenemos fechas disponibles, pero el operador no publica una tarifa. Dinos cuándo quieres navegar y te enviaremos un precio."
     },
     "panels": {
       "details": "Detalles del yate",
@@ -2136,7 +2138,8 @@
           "booking_manager": "Booking Manager",
           "nausys": "NauSYS"
         }
-      }
+      },
+      "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío."
     },
     "Payments": {
       "title": "Pagos",

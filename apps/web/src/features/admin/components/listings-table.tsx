@@ -283,6 +283,18 @@ export default function ListingsTable() {
         </TableBody>
       </Table>
 
+      {/*
+        Health, not decoration. A listing with free dates and no published rate is sold
+        as "On request" and shows a calendar that refuses every day; a handful of those
+        is a fleet priced by conversation, thousands is a price sweep that did not
+        finish, and nothing else on this screen tells the two apart.
+      */}
+      {data && data.summary.unpricedWithDates > 0 ? (
+        <p className="text-sm leading-[1.4] font-medium text-warning-600">
+          {t("unpriced", { count: data.summary.unpricedWithDates })}
+        </p>
+      ) : null}
+
       {data && data.pagination.totalPages > 1 ? (
         <div className="flex justify-center md:justify-start">
           <PaginationControl

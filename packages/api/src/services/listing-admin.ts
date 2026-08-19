@@ -69,6 +69,18 @@ const currencyColumn = sql<string | null>`coalesce(
   ${listing.defaultCurrency}
 )`;
 
+/**
+ * Free dates, no published weekly rate. Correlated rather than joined, for the same
+ * reason `providerCodeColumn` is: either table can hold many rows per listing.
+ */
+const unpricedWithDates = sql`(
+  exists (select 1 from listing_free_period f where f.listing_id = ${listing.id})
+  and not exists (
+    select 1 from listing_price_period pp
+    where pp.listing_id = ${listing.id} and pp.kind = 'weekly'
+  )
+)`;
+
 function providerScope(providerCode: string) {
   return sql`exists (
     select 1
@@ -128,6 +140,13 @@ export async function listAdminListings(db: Database, input: ListInput): Promise
       totalFrom(await db.select({ totalItems: count() }).from(listing).where(where)),
   });
 
+  // Counted over the filter rather than the page: a per-page number would say more
+  // about the pager than about the catalogue.
+  const [unpriced] = await db
+    .select({ total: count() })
+    .from(listing)
+    .where(where ? and(where, unpricedWithDates) : unpricedWithDates);
+
   const images = await loadPrimaryImages(
     db,
     rows.map((row) => row.id),
@@ -150,7 +169,11 @@ export async function listAdminListings(db: Database, input: ListInput): Promise
     createdAt: row.createdAt.toISOString(),
   }));
 
-  return { items, pagination };
+  return {
+    items,
+    pagination,
+    summary: { unpricedWithDates: unpriced?.total ?? 0 },
+  };
 }
 
 /** Publishing, hiding and sending a listing back to draft, one listing at a time. */
