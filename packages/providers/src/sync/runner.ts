@@ -14,6 +14,7 @@ import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import type { JsonField } from "../shared/json";
+import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { retainRawPayload, stableSourceHash } from "../shared/raw-retention";
 import {
   createDrizzlePricePeriodStore,
@@ -22,7 +23,7 @@ import {
 } from "./price-writer";
 import { openSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
-import { clearSyncCursor, writeSyncCursor } from "./cursor";
+import { clearSyncCursor, readSyncCursor, writeSyncCursor } from "./cursor";
 import { loadProviderRecordSet, writeCanonicalCatalogue } from "./catalogue-writer";
 
 /* --------------------------------------------------------- ingest protocol */
@@ -690,6 +691,19 @@ export async function ensureProviderId(db: Database, code: string): Promise<stri
 export interface CatalogueSyncProgress {
   providerRecordTotal: number;
   syncErrorTotal: number;
+  /**
+   * Records this run has reached, changed or not.
+   *
+   * The one number that always moves. `providerRecordTotal` counts every record the
+   * provider has, so a re-walk of an unchanged catalogue - the ordinary case - leaves
+   * it frozen, and a job doing thousands of round trips a minute looks identical to a
+   * hung one. Every record the ingest touches is stamped with the run that touched it,
+   * so this counts the walk rather than its result.
+   */
+  recordsSeenThisRun: number;
+  /** Companies swept and companies known, when the connector walks them one at a time. */
+  companyIndex: number | null;
+  companyTotal: number;
 }
 
 /**
@@ -705,7 +719,11 @@ export async function readCatalogueSyncProgress(
   syncRunId: string,
 ): Promise<CatalogueSyncProgress> {
   const [records] = await db
-    .select({ total: sql<number>`count(*)::int` })
+    .select({
+      total: sql<number>`count(*)::int`,
+      seen: sql<number>`count(*) filter (where ${providerRecord.lastSeenSyncRunId} = ${syncRunId})::int`,
+      companies: sql<number>`count(*) filter (where ${providerRecord.resourceType} = 'company')::int`,
+    })
     .from(providerRecord)
     .where(eq(providerRecord.providerId, providerId));
   const [errors] = await db
@@ -713,9 +731,18 @@ export async function readCatalogueSyncProgress(
     .from(syncError)
     .where(eq(syncError.syncRunId, syncRunId));
 
+  // Read from the cursor rather than threaded out of the loop: it is written on every
+  // scope completion anyway, and a progress reader that needs no hook into the run
+  // cannot slow it down or mis-report when it is the run that is stuck.
+  const cursor = await readSyncCursor(db, { providerId, kind: "catalogue", scope: "full" });
+  const parsed = z.object({ companyIndex: z.number().int().min(0) }).safeParse(cursor);
+
   return {
     providerRecordTotal: records?.total ?? 0,
     syncErrorTotal: errors?.total ?? 0,
+    recordsSeenThisRun: records?.seen ?? 0,
+    companyIndex: parsed.success ? parsed.data.companyIndex : null,
+    companyTotal: records?.companies ?? 0,
   };
 }
 
@@ -845,6 +872,18 @@ export async function runCatalogueSyncJob(
         listingIds: written.touchedListingIds,
         loadSeasonalPrices: (listingIds) => provider.loadSeasonalPrices(listingIds),
       });
+
+      /*
+       * Rebuilt again, because phase B already rebuilt these documents and did it
+       * before the rates existed. `bookable_from` and the card's "from" price are
+       * materialised from `listing_price_period`, so a first run would otherwise
+       * publish a boat whose detail-page calendar opens and whose card beside it
+       * reports no availability - and it would stay that way until some later run
+       * happened to rebuild the document for another reason.
+       */
+      if (pricePeriods > 0) {
+        await rebuildSearchReadModelsAfterSync(db, { listingIds: written.touchedListingIds });
+      }
     } catch (error) {
       priceFailures = 1;
       await store.recordError({

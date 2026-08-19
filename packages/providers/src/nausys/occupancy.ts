@@ -352,7 +352,7 @@ export function createNausysAvailabilitySource(
  * from. VENDOR QUESTION Q-PRICELIST-VAT.
  */
 const priceListPeriodSchema = z.looseObject({
-  /** Both ends inclusive, which is what `priceAt` in the writer compares against. */
+  /** Both ends inclusive, as the vendor states them; readers of the stored period are half-open. */
   periodFrom: z.string(),
   periodTo: z.string(),
 });

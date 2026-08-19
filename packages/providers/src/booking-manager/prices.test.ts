@@ -99,40 +99,55 @@ describe("charterSaturdays", () => {
 });
 
 describe("mapBookingManagerPriceRow", () => {
-  it("keys the week to its check-in date on both ends", () => {
-    // priceAt matches startDate <= date <= endDate, so a week must cover exactly
-    // its own check-in or it wins the lookup for the following Saturday too.
-    expect(mapBookingManagerPriceRow(row(), "2027-01-02")).toEqual({
+  it("spans the week it priced, half-open on the check-out day", () => {
+    // Every reader is half-open (`start <= day < end`), so the check-out Saturday is
+    // excluded without collapsing the period - and collapsing it made the rate cover
+    // no day at all, which read as a closed season on every Booking Manager listing.
+    expect(mapBookingManagerPriceRow(row(), "2027-01-02", "2027-01-09")).toEqual({
       startDate: "2027-01-02",
-      endDate: "2027-01-02",
+      endDate: "2027-01-09",
       priceMinor: 123_450,
       currency: "EUR",
     });
   });
 
+  it("covers its own check-in day and not the next week's", () => {
+    const price = mapBookingManagerPriceRow(row(), "2027-01-02", "2027-01-09");
+    const covers = (day: string) => price!.startDate <= day && day < price!.endDate;
+
+    expect(covers("2027-01-02")).toBe(true);
+    expect(covers("2027-01-08")).toBe(true);
+    // The Saturday that begins the following charter belongs to the following rate.
+    expect(covers("2027-01-09")).toBe(false);
+  });
+
   it("drops a row the vendor answered for a different period", () => {
-    expect(mapBookingManagerPriceRow(row(), "2027-01-09")).toBeNull();
+    expect(mapBookingManagerPriceRow(row(), "2027-01-09", "2027-01-16")).toBeNull();
   });
 
   it("falls back to the requested currency when the row omits one", () => {
-    expect(mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02", "EUR")).toMatchObject({
+    expect(
+      mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02", "2027-01-09", "EUR"),
+    ).toMatchObject({
       currency: "EUR",
     });
   });
 
   it.each([null, undefined])("drops a row with price %o", (price) => {
-    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
+    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02", "2027-01-09")).toBeNull();
   });
 
   it.each([0, -1])("drops a row priced at %o rather than advertising it", (price) => {
     // The card's "from" price is the minimum across periods, so one zero week would
     // price the whole boat at nothing. Observed live: the vendor sends 0 for the
     // year-end week on every yacht in the test fleet.
-    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02")).toBeNull();
+    expect(mapBookingManagerPriceRow(row({ price }), "2027-01-02", "2027-01-09")).toBeNull();
   });
 
   it("drops a row with no usable currency", () => {
-    expect(mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02")).toBeNull();
+    expect(
+      mapBookingManagerPriceRow(row({ currency: null }), "2027-01-02", "2027-01-09"),
+    ).toBeNull();
   });
 });
 
@@ -218,7 +233,7 @@ describe("createBookingManagerSeasonalPriceLoader", () => {
           [
             {
               startDate: "2027-01-02",
-              endDate: "2027-01-02",
+              endDate: "2027-01-09",
               priceMinor: 123_450,
               currency: "EUR",
             },

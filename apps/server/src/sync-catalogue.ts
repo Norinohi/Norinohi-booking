@@ -72,8 +72,17 @@ for (const provider of providers.values()) {
   const logProgress = async () => {
     const progress = await readCatalogueSyncProgress(db, providerId, syncRunId);
     const elapsedS = Math.round((Date.now() - startedAt) / 1000);
+    const seen = progress.recordsSeenThisRun;
+    const rate = elapsedS > 0 ? (seen / elapsedS).toFixed(1) : "0.0";
+    // Companies only once the walk reaches them; before that the cursor is still in
+    // the global dumps and a "0/1308" would read as no progress rather than none yet.
+    const companies =
+      progress.companyIndex === null
+        ? "companies -"
+        : `companies ${progress.companyIndex}/${progress.companyTotal}`;
+
     console.log(
-      `[${provider.key} ${elapsedS}s] provider_record total: ${progress.providerRecordTotal} | sync_error this run: ${progress.syncErrorTotal}`,
+      `[${provider.key} ${elapsedS}s] seen this run: ${seen} (${rate}/s) | ${companies} | provider_record total: ${progress.providerRecordTotal} | sync_error this run: ${progress.syncErrorTotal}`,
     );
   };
 
