@@ -3,7 +3,8 @@ import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/book
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote } from "@yacht-charter/db/schema/quote";
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { listingSource } from "@yacht-charter/db/schema/listing-source";
+import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -12,7 +13,12 @@ import type {
   bookingAdminListInputSchema,
   bookingAdminListSchema,
   bookingAdminRowSchema,
+  bookingExcludeByCompanyInputSchema,
+  bookingExcludeByCompanySchema,
+  bookingExcludeInputSchema,
+  bookingExcludeSchema,
 } from "../contracts/booking";
+import { writeAuditLog } from "./audit";
 import { readAnyBooking } from "./booking-read";
 import { paginatedQuery, totalFrom } from "./pagination";
 
@@ -34,6 +40,9 @@ type Detail = z.infer<typeof bookingAdminDetailSchema>;
 export async function listBookingsForAdmin(db: Database, input: ListInput): Promise<ListResult> {
   const filters = [];
   if (input.status?.length) filters.push(inArray(booking.status, input.status));
+  // Default, not an opt-out: a queue or a total that quietly counts test bookings
+  // is wrong in a way nobody notices until the numbers are used for something.
+  if (!input.includeExcluded) filters.push(isNull(booking.excludedAt));
 
   if (input.query) {
     const term = `%${input.query}%`;
@@ -104,6 +113,8 @@ function present(row: {
     paid: { amountMinor: Number(row.paidMinor), currency: row.quote.currency },
     cancelledAt: row.booking.cancelledAt?.toISOString() ?? null,
     cancelReason: row.booking.cancelReason,
+    excludedAt: row.booking.excludedAt?.toISOString() ?? null,
+    excludedReason: row.booking.excludedReason,
     createdAt: row.booking.createdAt.toISOString(),
   };
 }
@@ -216,4 +227,139 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
         }
       : null,
   };
+}
+
+type ExcludeInput = z.infer<typeof bookingExcludeInputSchema>;
+type ExcludeResult = z.infer<typeof bookingExcludeSchema>;
+type ExcludeByCompanyInput = z.infer<typeof bookingExcludeByCompanyInputSchema>;
+type ExcludeByCompanyResult = z.infer<typeof bookingExcludeByCompanySchema>;
+
+/**
+ * Marks one booking as not real business, or puts it back.
+ *
+ * Nothing about the booking's lifecycle moves: the status, the payments and the
+ * provider reservation are left exactly as they are, and the customer-facing
+ * paths never read this column. It only decides whether staff queues and money
+ * totals count the row, which is why it is reversible and why cancelling is still
+ * the right action for a booking that was real and is not happening.
+ */
+export async function setBookingExcluded(
+  db: Database,
+  input: ExcludeInput,
+  actorUserId: string,
+): Promise<ExcludeResult> {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({
+        id: booking.id,
+        excludedAt: booking.excludedAt,
+        excludedReason: booking.excludedReason,
+      })
+      .from(booking)
+      .where(eq(booking.id, input.id))
+      .limit(1);
+
+    if (!existing) {
+      throw new ORPCError("NOT_FOUND", { message: `Booking ${input.id} does not exist` });
+    }
+
+    const excludedAt = input.excluded ? new Date() : null;
+    const excludedReason = input.excluded ? (input.reason ?? null) : null;
+
+    await tx.update(booking).set({ excludedAt, excludedReason }).where(eq(booking.id, input.id));
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      action: "update",
+      entityType: "booking",
+      entityId: input.id,
+      before: { excludedAt: existing.excludedAt?.toISOString() ?? null },
+      after: { excludedAt: excludedAt?.toISOString() ?? null },
+      ...(input.reason ? { metadata: { reason: input.reason } } : {}),
+    });
+
+    return {
+      bookingId: input.id,
+      excludedAt: excludedAt?.toISOString() ?? null,
+      excludedReason,
+    };
+  });
+}
+
+/**
+ * Excludes every booking taken against one charter company's yachts.
+ *
+ * The one action here that touches many rows, and the reason it exists: a test
+ * charter company reaches production, someone books against it to prove the flow
+ * works, and afterwards there is no way to say "none of that was real" without
+ * clicking through each one.
+ *
+ * Scoped by the provider's own company id rather than by anything of ours,
+ * because that is the identity the decision is actually about, and it keeps
+ * working after the company's listings have been hidden by the import scope.
+ *
+ * Dry by default. `apply: false` reports exactly what would change and changes
+ * nothing, so the size of the blast radius can be read before it goes off.
+ */
+export async function excludeBookingsByCompany(
+  db: Database,
+  input: ExcludeByCompanyInput,
+  actorUserId: string,
+): Promise<ExcludeByCompanyResult> {
+  const matches = and(
+    eq(booking.provider, input.provider),
+    isNull(booking.excludedAt),
+    sql`exists (
+      select 1
+      from ${listingSource}
+      where ${listingSource.listingId} = ${booking.listingId}
+        and ${listingSource.externalCompanyId} = ${input.externalCompanyId}
+    )`,
+  );
+
+  return db.transaction(async (tx) => {
+    const candidates = await tx
+      .select({ id: booking.id, reference: booking.reference })
+      .from(booking)
+      .where(matches);
+
+    const result = {
+      provider: input.provider,
+      externalCompanyId: input.externalCompanyId,
+      applied: input.apply,
+      matched: candidates.length,
+      references: candidates.map((row) => row.reference),
+    };
+
+    if (!input.apply || candidates.length === 0) {
+      return result;
+    }
+
+    await tx
+      .update(booking)
+      .set({ excludedAt: new Date(), excludedReason: input.reason ?? null })
+      .where(
+        inArray(
+          booking.id,
+          candidates.map((row) => row.id),
+        ),
+      );
+
+    // One entry for the batch rather than one per booking: the decision was made
+    // once, about a company, and a per-row log would bury that in the history.
+    await writeAuditLog(tx, {
+      actorUserId,
+      action: "update",
+      entityType: "booking",
+      before: { excluded: 0 },
+      after: { excluded: candidates.length },
+      metadata: {
+        reason:
+          input.reason ??
+          `Bookings against ${input.provider} charter company ${input.externalCompanyId}`,
+      },
+    });
+
+    return result;
+  });
 }

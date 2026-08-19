@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
   Table,
@@ -16,7 +17,7 @@ import type { ComponentProps } from "react";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
 import { useAmount } from "../hooks/use-amount";
-import { useAdminBooking } from "../hooks/use-payments";
+import { useAdminBooking, useSetBookingExcluded } from "../hooks/use-payments";
 import type { BookingAdminDetail } from "../types";
 
 /*
@@ -114,7 +115,9 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
           <h1 className="text-xl leading-[1.3] font-bold text-foreground">{booking.reference}</h1>
           <Chip variant={chipVariant(STATUS_VARIANTS, booking.status)}>{booking.status}</Chip>
           {booking.isGuestAccount ? <Chip variant="outline">{t("guestAccount")}</Chip> : null}
+          {booking.excludedAt ? <Chip variant="neutral">{t("excluded.chip")}</Chip> : null}
         </div>
+        <ExcludeControl booking={booking} />
         <p className="text-base text-natural-500">
           {booking.listingTitle} · {booking.base.name}, {booking.base.countryName}
         </p>
@@ -309,6 +312,49 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
         </div>
       </section>
     </>
+  );
+}
+
+/*
+ * Marks a booking as test data, or puts it back.
+ *
+ * No confirmation step, deliberately. The flag changes nothing about the booking
+ * itself - status, payments and the provider reservation are untouched - it is
+ * fully reversible from this same button, and every change writes an audit entry
+ * naming who made it. A dialog here would be friction standing in front of a
+ * decision that costs nothing to undo. Cancelling a booking, which does move real
+ * money, keeps its dialog.
+ */
+function ExcludeControl({ booking }: { booking: BookingAdminDetail }) {
+  const t = useTranslations("Admin.StaffBooking");
+  const format = useFormatter();
+  const setExcluded = useSetBookingExcluded();
+  const isExcluded = booking.excludedAt !== null;
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-natural-100 pt-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={setExcluded.isPending}
+          onClick={() => setExcluded.mutate({ id: booking.id, excluded: !isExcluded })}
+        >
+          {isExcluded ? t("excluded.restore") : t("excluded.exclude")}
+        </Button>
+        {isExcluded && booking.excludedAt ? (
+          <span className="text-sm text-natural-500">
+            {t("excluded.excludedAt", {
+              at: format.dateTime(new Date(booking.excludedAt), {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }),
+            })}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-sm text-natural-500">{t("excluded.help")}</p>
+    </div>
   );
 }
 

@@ -56,6 +56,18 @@ export function useCancelInvoice() {
   return useMutation(orpc.admin.invoice.cancel.mutationOptions({ onSettled: invalidate }));
 }
 
+/**
+ * Marks a booking as not real business, or restores it.
+ *
+ * Invalidates both queues like every other write here: an excluded booking leaves
+ * the refund queue and the money it carried leaves the totals, so the tab the
+ * colleague is not looking at is the one that just went stale.
+ */
+export function useSetBookingExcluded() {
+  const invalidate = useInvalidateQueues();
+  return useMutation(orpc.admin.booking.setExcluded.mutationOptions({ onSettled: invalidate }));
+}
+
 export function useRefundBooking() {
   const invalidate = useInvalidateQueues();
   return useMutation(orpc.admin.booking.refund.mutationOptions({ onSettled: invalidate }));

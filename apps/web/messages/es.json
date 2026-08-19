@@ -2252,6 +2252,13 @@
       },
       "priceLines": {
         "title": "Desglose de precio"
+      },
+      "excluded": {
+        "chip": "No es negocio real",
+        "exclude": "Marcar como reserva de prueba",
+        "restore": "Devolver a las colas",
+        "excludedAt": "Excluida de las colas y los totales el {at}",
+        "help": "Una reserva excluida conserva su estado, sus pagos y su reserva con el proveedor. Solo deja de contarse en las colas de personal y en los totales de dinero."
       }
     }
   }

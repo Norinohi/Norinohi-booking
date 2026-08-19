@@ -2252,6 +2252,13 @@
       },
       "priceLines": {
         "title": "Price breakdown"
+      },
+      "excluded": {
+        "chip": "Not real business",
+        "exclude": "Mark as test booking",
+        "restore": "Restore to the queues",
+        "excludedAt": "Excluded from the queues and totals {at}",
+        "help": "An excluded booking keeps its status, its payments and its provider reservation. It only stops being counted by staff queues and money totals."
       }
     }
   }
