@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
 
 import { facetsQueryOptions } from "../api/queries";
@@ -21,9 +21,21 @@ import type { FacetScope } from "../lib/state";
  * unscoped facets on purpose: the slider bounds it derives are also the panel's defaults, and
  * defaults that moved with the selected country would re-scale every slider and change what
  * "Apply Filters (N)" counts as set.
+ *
+ * A scope the browser has not asked for yet falls back to the unscoped taxonomy, which every route
+ * prefetches and hydrates. Without it a filtered URL paints its Where controls empty until the
+ * narrowed read lands — and a control with no options cannot render the values it already holds,
+ * so a panel that knows it has two filters set would show four placeholders and read as if they
+ * had been lost. The previous scope wins over it, so changing a country does not flash the global
+ * list on the way to the narrower one.
  */
 export function useFacets(scope?: FacetScope) {
   const locale = useLocale();
+  const queryClient = useQueryClient();
+  const unscopedKey = facetsQueryOptions(locale).queryKey;
 
-  return useQuery(facetsQueryOptions(locale, scope));
+  return useQuery({
+    ...facetsQueryOptions(locale, scope),
+    placeholderData: (previous) => previous ?? queryClient.getQueryData(unscopedKey),
+  });
 }

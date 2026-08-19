@@ -1,5 +1,3 @@
-import { keepPreviousData } from "@tanstack/react-query";
-
 import type { Locale } from "@/i18n/config";
 import { orpc } from "@/utils/orpc";
 
@@ -23,13 +21,8 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
  * every region on the platform. Omitted, the input is exactly `{ locale }`, which is the entry the
  * routes prefetch, so an untouched panel still hydrates instead of fetching.
  *
- * `keepPreviousData` is what stops the Where selects emptying while a narrowed list is in flight:
- * a scope change is a new query key, and without it every tick of a country would blank the
- * controls below it for the length of a round trip.
+ * What a scoped read shows while it is in flight is `useFacets`'s business, not this factory's:
+ * the server prefetch calls this too, and it has nothing to fall back to.
  */
 export const facetsQueryOptions = (locale: Locale, scope: FacetScope = {}) =>
-  orpc.charterSearch.facets.queryOptions({
-    input: { locale, ...scope },
-    staleTime: ONE_DAY,
-    placeholderData: keepPreviousData,
-  });
+  orpc.charterSearch.facets.queryOptions({ input: { locale, ...scope }, staleTime: ONE_DAY });
