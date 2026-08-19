@@ -54,6 +54,8 @@ export const listingSearchDoc = pgTable(
     heads: integer("heads"),
     yearBuilt: integer("year_built"),
     sailType: text("sail_type"),
+    securityDepositMinor: integer("security_deposit_minor"),
+    securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),
     rating: numeric("rating", { precision: 3, scale: 2 }).notNull(),

@@ -508,7 +508,7 @@ export default function BookingSummary({
                         <Info className="size-4 shrink-0" />
                         {t("sidebar.howItWorks")}
                       </TooltipTrigger>
-                      <TooltipContent>{tCard("prepaymentInfo")}</TooltipContent>
+                      <TooltipContent>{tCard("securityDepositInfo")}</TooltipContent>
                     </Tooltip>
                   </div>
                 ) : null}

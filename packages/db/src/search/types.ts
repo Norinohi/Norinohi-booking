@@ -88,6 +88,9 @@ export type ListingSearchDoc = {
   heads: number | null;
   yearBuilt: number | null;
   sailType: string | null;
+  /** Refundable damage deposit taken at the base. Null when the provider takes none. */
+  securityDepositMinor: number | null;
+  securityDepositCurrency: string | null;
   depositInsuranceIncluded: boolean;
   petsAllowed: boolean;
   rating: string;

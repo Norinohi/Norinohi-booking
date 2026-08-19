@@ -17,7 +17,8 @@ import { Link } from "@/i18n/navigation";
 
 import type { BoatCardBadge } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
-import PrepaymentNote from "@/components/shared/data-display/prepayment-note";
+import CardNote from "@/components/shared/data-display/card-note";
+import type { CardNote as CardNoteData } from "@/components/shared/data-display/card-note";
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
 
@@ -60,7 +61,7 @@ export type MapBoatCardProps = {
   priceLabel: string;
   price: string;
   perPerson: string;
-  prepayment: string;
+  note: CardNoteData | null;
   detailHref?: AppPathname;
   layout?: keyof typeof LAYOUT;
   className?: string;
@@ -79,7 +80,7 @@ export default function MapBoatCard({
   priceLabel,
   price,
   perPerson,
-  prepayment,
+  note,
   detailHref,
   layout = "list",
   className,
@@ -181,7 +182,7 @@ export default function MapBoatCard({
             </p>
           </div>
 
-          <PrepaymentNote backdrop label={prepayment} className="flex w-fit" />
+          {note ? <CardNote backdrop note={note} className="flex w-fit" /> : null}
         </div>
 
         <Button

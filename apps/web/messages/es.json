@@ -407,7 +407,9 @@
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
       "prepayment": "Anticipo de reserva: {amount}",
-      "prepaymentInfo": "Es una fianza reembolsable que cubre posibles daños durante el viaje. Se devuelve tras la entrega si todo está en buen estado.",
+      "prepaymentInfo": "Es la parte del precio del chárter que se paga por adelantado para asegurar la reserva. Se descuenta del total y el resto se abona antes de la llegada.",
+      "securityDeposit": "Fianza reembolsable: {amount}",
+      "securityDepositInfo": "Fianza reembolsable que retiene la base por posibles daños durante el viaje. Se cobra en la llegada, no forma parte del precio y se devuelve tras la entrega si todo está en buen estado.",
       "specs": {
         "year": "Año",
         "people": "Personas",

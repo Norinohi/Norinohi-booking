@@ -47,7 +47,10 @@ export function useBookingCards() {
       priceLabel: t("priceFor", { days: days(booking.checkIn, booking.checkOut) }),
       price: formatMoney(booking.total.amountMinor),
       perPerson: t("perPerson", { price: formatMoney(booking.perPerson.amountMinor) }),
-      prepayment: t("prepayment", { amount: formatMoney(booking.prepayment.amountMinor) }),
+      note: {
+        label: t("prepayment", { amount: formatMoney(booking.prepayment.amountMinor) }),
+        tooltip: t("prepaymentInfo"),
+      },
     };
   }
 

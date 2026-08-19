@@ -407,7 +407,9 @@
       "perPerson": "{price} for person",
       "perPersonApprox": "~ {price} for person",
       "prepayment": "Booking prepayment: {amount}",
-      "prepaymentInfo": "This is a refundable deposit held in case of damages during your trip. You will get it back after check-out if everything is in good condition.",
+      "prepaymentInfo": "This is the part of the charter price paid up front to secure the booking. It counts towards the total, and the rest is due before check-in.",
+      "securityDeposit": "Refundable deposit: {amount}",
+      "securityDepositInfo": "A refundable deposit held by the charter base against damage during your trip. It is collected at check-in, is not part of the price, and is returned after check-out if everything is in good condition.",
       "specs": {
         "year": "Year",
         "people": "People",

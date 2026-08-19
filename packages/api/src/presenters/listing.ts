@@ -1,21 +1,6 @@
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
-import { MARKETPLACE_DEFAULT } from "../services/pricing";
-
 const EMPTY_IMAGE = "";
-
-/**
- * What a search card quotes as the up-front payment.
- *
- * A card has no quote, so it cannot know the real figure: checkout resolves it per listing
- * through `resolvePaymentPolicy`, honouring a listing override, then the provider's plan,
- * then the marketplace default. The card therefore shows that same default, which is the
- * only number it can state without guessing.
- *
- * It used to hardcode 25% against a 50% default, so a card advertised half of what checkout
- * would ask for on every listing that fell through to it.
- */
-const CARD_PREPAYMENT_PCT = MARKETPLACE_DEFAULT.depositPct;
 
 /** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
 const WEEKLY_RATE_DAYS = 7;
@@ -104,10 +89,22 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       periodDays,
       perPersonMinor:
         amountMinor !== null && doc.berths ? Math.round(amountMinor / doc.berths) : null,
-      bookingPrepayment:
-        amountMinor === null
+      /*
+       * The provider's refundable damage deposit, taken by the base at check-in and
+       * returned after check-out. Indicative like `priceFrom`: a NauSYS offer states
+       * its own `depositAmount`, which wins over this catalogue figure at quote time.
+       *
+       * This replaced a fabricated "prepayment" that was a fixed percentage of the
+       * price, labelled to the guest as a refundable deposit. Nothing refunded that
+       * number, because nothing charged it.
+       */
+      securityDeposit:
+        doc.securityDepositMinor === null
           ? null
-          : { amountMinor: Math.round(amountMinor * CARD_PREPAYMENT_PCT), currency },
+          : {
+              amountMinor: doc.securityDepositMinor,
+              currency: doc.securityDepositCurrency ?? currency,
+            },
     },
   };
 }

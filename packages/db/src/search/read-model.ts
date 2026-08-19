@@ -55,6 +55,8 @@ export async function rebuildListingSearchDocs(
       heads,
       year_built,
       sail_type,
+      security_deposit_minor,
+      security_deposit_currency,
       deposit_insurance_included,
       pets_allowed,
       rating,
@@ -107,6 +109,10 @@ export async function rebuildListingSearchDocs(
       spec.heads,
       spec.year_built,
       spec.sail_type,
+      -- Only ever shown as "plus a refundable deposit"; a zero is the provider
+      -- saying it takes none, so it is stored as null and the card omits the line.
+      nullif(l.security_deposit_minor, 0),
+      case when l.security_deposit_minor > 0 then l.security_deposit_currency end,
       l.deposit_insurance_included,
       l.pets_allowed,
       -- Our own reviews win outright; the provider aggregate only fills the gap
@@ -273,6 +279,8 @@ export async function rebuildListingSearchDocs(
       heads = excluded.heads,
       year_built = excluded.year_built,
       sail_type = excluded.sail_type,
+      security_deposit_minor = excluded.security_deposit_minor,
+      security_deposit_currency = excluded.security_deposit_currency,
       deposit_insurance_included = excluded.deposit_insurance_included,
       pets_allowed = excluded.pets_allowed,
       rating = excluded.rating,

@@ -106,6 +106,22 @@ const integerId = z
 const id = z
   .union([z.string().regex(idDigits, "Expected an integer id"), integerId])
   .transform(String);
+
+/*
+ * Text the vendor sometimes sends as a bare number.
+ *
+ * An equipment `value` is the quantity or descriptor for a fitting, and it arrives as
+ * `"2"` on 119,571 rows and as `2` on 2,107 - the same meaning in two shapes. Declaring
+ * it text refused the numeric ones outright: an account-wide `/yachts` fetch failed
+ * with 2,000+ issues, and per-company fetches quietly lost whichever company happened
+ * to own them. `equipmentRaw` sends the same field always stringified, which is the
+ * shape the projection reads, so both settle on text here rather than at each use.
+ */
+const optionalTextOrNumber = z
+  .union([z.string(), z.number()])
+  .transform(String)
+  .optional()
+  .nullable();
 const optionalId = id.optional().nullable();
 
 export const restImageSchema = looseJsonObject({
@@ -175,7 +191,10 @@ export const restEquipmentItemRawSchema = looseJsonObject({
   id: optionalId,
   parentId: optionalId,
   name: optionalText,
-  value: optionalText,
+  // Always a string in 423,425 observed rows, but it is the same vendor field as
+  // `equipment[].value`; letting the two disagree about type is how the drift stayed
+  // invisible in one of them.
+  value: optionalTextOrNumber,
   categoryName: optionalText,
 });
 
@@ -234,7 +253,11 @@ export const restYachtSchema = looseJsonObject({
   images: z.array(restImageSchema).optional().nullable(),
   equipmentIds: z.array(id).optional().nullable(),
   equipment: z
-    .array(looseJsonObject({ id: optionalNumeric, value: optionalText }))
+    // `id` is load-bearing: the projection turns it into the `booking_manager:<id>`
+    // amenity code the resolver splits back apart to name extras to the vendor, so a
+    // rounded one here is a wrong extra. Missed by the first pass over this file
+    // because it is inline rather than one field per line.
+    .array(looseJsonObject({ id: optionalId, value: optionalTextOrNumber }))
     .optional()
     .nullable(),
   equipmentRaw: z.array(restEquipmentItemRawSchema).optional().nullable(),
@@ -407,9 +430,7 @@ export const restReservationSchema = looseJsonObject({
  * Just enough of any collection to read its ids.
  *
  * The id repair needs ids and nothing else, and validating the rest would couple a
- * one-off migration to every unrelated strictness question in the full schemas -
- * `/yachts` account-wide currently fails `equipment[].value` on 2000+ rows, which has
- * no bearing on whether an id is exact.
+ * one-off migration to every unrelated strictness question in the full schemas.
  */
 export const restIdListSchema = z.array(looseJsonObject({ id }));
 
