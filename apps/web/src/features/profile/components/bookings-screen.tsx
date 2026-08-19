@@ -4,6 +4,8 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { useTranslations } from "next-intl";
+
+import { useMoney } from "@/hooks/use-money";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 
@@ -33,6 +35,7 @@ const CANCELLED_STATUSES = new Set(["CANCELLED", "REFUND_PENDING", "REFUNDED"]);
 
 export default function BookingsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Bookings");
+  const formatMoney = useMoney();
   const router = useRouter();
   const { toBookingCard } = useBookingCards();
   const [{ from, to, page }, setParams] = useQueryStates(bookingSearchParsers);
@@ -111,6 +114,14 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                           ? `/bookings/${booking.id}/pay`
                           : undefined
                       }
+                      /* "Pay balance" over a booking nobody has paid a cent of reads as though
+                         money is missing. Confirmed means there really is a balance; anything
+                         else is the first payment, which is what the booking record's own
+                         button has always said. */
+                      payBalanceLabel={t(
+                        booking.status === "CONFIRMED" ? "payBalance" : "completePayment",
+                        { amount: formatMoney(booking.payableNow.amountMinor) },
+                      )}
                       priority={index === 0}
                     />
                   ))}

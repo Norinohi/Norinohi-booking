@@ -1,13 +1,13 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
-import type { AppPathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useId, useState } from "react";
 
 import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
+import { ACCOUNT_ITEMS, ACCOUNT_NAV_HREFS, ADMIN_ITEMS, type AccountNavItem } from "./account-nav";
 
 /*
  * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
@@ -24,40 +24,10 @@ import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
  * session gets no headings at all: one group needs no name to be told apart from nothing.
  */
 
-const BASE_ITEMS = ["profile", "bookings", "referrals", "credits"] as const;
-
-const ADMIN_ITEMS = [
-  "inbox",
-  "payments",
-  "listings",
-  "discount",
-  "duplicates",
-  "sync",
-  "audit",
-] as const;
-
-type SidebarItem = (typeof BASE_ITEMS)[number] | (typeof ADMIN_ITEMS)[number];
-
-/* Only wired pages get an href; the rest stay inert until their routes exist. */
-const HREFS = new Map<SidebarItem, AppPathname>([
-  ["profile", "/profile"],
-  ["bookings", "/profile/bookings"],
-  ["referrals", "/profile/referrals"],
-  ["credits", "/profile/credits"],
-  ["discount", "/profile/discounts"],
-  /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
-  ["inbox", "/inbox"],
-  ["payments", "/payments"],
-  ["listings", "/listings"],
-  ["duplicates", "/duplicates"],
-  ["sync", "/sync"],
-  ["audit", "/audit"],
-]);
-
 type SidebarProps = {
   name?: string;
   variant?: "user" | "admin";
-  defaultActive?: SidebarItem;
+  defaultActive?: AccountNavItem;
   onLogout?: () => void;
   className?: string;
 };
@@ -84,16 +54,16 @@ export default function Sidebar({
   const isStaff = variant === "admin" || (hydrated && isStaffUser);
 
   const headingId = useId();
-  const groups: readonly { key: "account" | "admin"; items: readonly SidebarItem[] }[] = isStaff
+  const groups: readonly { key: "account" | "admin"; items: readonly AccountNavItem[] }[] = isStaff
     ? [
-        { key: "account", items: BASE_ITEMS },
+        { key: "account", items: ACCOUNT_ITEMS },
         { key: "admin", items: ADMIN_ITEMS },
       ]
-    : [{ key: "account", items: BASE_ITEMS }];
+    : [{ key: "account", items: ACCOUNT_ITEMS }];
   const showHeadings = groups.length > 1;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
-  const activeFromPath = [...HREFS]
+  const activeFromPath = [...ACCOUNT_NAV_HREFS]
     .filter(([, href]) => pathname === href || pathname.startsWith(`${href}/`))
     .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
   const active = activeFromPath ?? defaultActive;
@@ -167,8 +137,16 @@ export default function Sidebar({
 /* Menu Item is 54px in Figma: 16px paddings around 16/1.4 text. A row with no route yet
    stays an inert button rather than a dead link, so nothing announces itself as navigation
    it cannot perform. */
-function Row({ item, isActive, label }: { item: SidebarItem; isActive: boolean; label: string }) {
-  const href = HREFS.get(item);
+function Row({
+  item,
+  isActive,
+  label,
+}: {
+  item: AccountNavItem;
+  isActive: boolean;
+  label: string;
+}) {
+  const href = ACCOUNT_NAV_HREFS.get(item);
   const className = cn(
     "block w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
     isActive

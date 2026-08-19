@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { bookingEnquiry, invoiceRequest } from "@yacht-charter/db/schema/checkout";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -14,7 +14,7 @@ import type {
 import { INVOICE_PAYMENT_TERMS_DAYS } from "../lib/company";
 import { notifyInvoiceIssued } from "./booking-email";
 import { readOwnedBooking } from "./booking-read";
-import { amountDue } from "./checkout-amounts";
+import { payableNowFor } from "./checkout-amounts";
 import { assertTransition, type BookingStatus } from "./booking-state";
 type InvoiceResult = z.infer<typeof invoiceRequestSchema>;
 
@@ -28,8 +28,15 @@ type Receipt = z.infer<typeof bookingReceiptSchema>;
  *
  * The bank details go out by email, after the transaction: the invoice exists whether or not
  * Resend answers, and a customer who never got the mail can still read them off the invoice
- * page. A re-submit returns the existing invoice and sends nothing, so the form cannot be used
+ * page. A re-submit returns the standing invoice and sends nothing, so the form cannot be used
  * to mail someone repeatedly.
+ *
+ * A booking can be invoiced more than once, because a deposit-policy charter is paid in two
+ * instalments and the second is as transferable as the first. What is invoiced is
+ * `payableNowFor` — the same figure the card would charge and the same one the balance screen
+ * offers — rather than the quote's deposit, which on a confirmed booking would raise a document
+ * for money already received. It is only ever one open invoice at a time: a second is possible
+ * once the first has been settled or cancelled.
  */
 export async function requestInvoice(
   db: Database,
@@ -39,20 +46,51 @@ export async function requestInvoice(
   const row = await readOwnedBooking(db, userId, input.bookingId);
   const current = row.booking.status;
 
-  const [existing] = await db
+  // Re-submitting the form must not stack up invoice requests or payments. Narrowed to the
+  // requests still awaiting money: a settled one is a closed instalment, not a duplicate.
+  const [standing] = await db
     .select()
     .from(invoiceRequest)
-    .where(eq(invoiceRequest.bookingId, input.bookingId))
+    .where(
+      and(
+        eq(invoiceRequest.bookingId, input.bookingId),
+        inArray(invoiceRequest.status, ["pending", "sent"]),
+      ),
+    )
+    .orderBy(desc(invoiceRequest.createdAt))
     .limit(1);
 
-  // Re-submitting the form must not stack up invoice requests or payments.
-  if (existing) {
-    return present(existing, current);
+  if (standing) {
+    return present(standing, current);
   }
 
-  assertTransition(current, "PAYMENT_PENDING");
+  const paidMinor = await settledPaidMinor(db, input.bookingId);
+  const amountMinor = payableNowFor(row.quote, paidMinor, row.booking);
 
-  const amountMinor = amountDue(row.quote, "deposit");
+  // Zero covers every reason there is nothing to raise a document for: settled, cancelled,
+  // mid-commit, or a quote or provider hold that has lapsed and has to be repriced first.
+  if (amountMinor <= 0) {
+    throw new ORPCError("CONFLICT", {
+      message: "This booking has nothing left to invoice",
+    });
+  }
+
+  /*
+   * A confirmed charter keeps its status while a transfer is outstanding: the balance is owed
+   * against a booking that already happened, and moving it back to PAYMENT_PENDING would
+   * reopen a checkout that is long finished. Only a booking on its way to being paid for the
+   * first time makes that move, and it must be a legal one.
+   */
+  const opensCheckout = current !== "CONFIRMED";
+  if (opensCheckout) assertTransition(current, "PAYMENT_PENDING");
+
+  // Mirrors what the card path books the same money as, so the two never disagree about
+  // which instalment a payment row belongs to.
+  const kind = opensCheckout
+    ? row.quote.paymentPolicy.mode === "full"
+      ? ("full" as const)
+      : ("deposit" as const)
+    : ("balance" as const);
 
   const created = await db.transaction(async (tx) => {
     const [request] = await tx
@@ -82,7 +120,7 @@ export async function requestInvoice(
       .insert(paymentSchedule)
       .values({
         bookingId: input.bookingId,
-        kind: "deposit",
+        kind,
         amountMinor,
         currency: row.booking.currency,
       })
@@ -91,17 +129,19 @@ export async function requestInvoice(
     await tx.insert(payment).values({
       bookingId: input.bookingId,
       scheduleId: schedule?.id ?? null,
-      kind: "deposit",
+      kind,
       amountMinor,
       currency: row.booking.currency,
       status: "requires_payment",
       idempotencyKey: `invoice:${request.id}`,
     });
 
-    await tx
-      .update(booking)
-      .set({ status: "PAYMENT_PENDING" })
-      .where(and(eq(booking.id, input.bookingId), eq(booking.status, current)));
+    if (opensCheckout) {
+      await tx
+        .update(booking)
+        .set({ status: "PAYMENT_PENDING" })
+        .where(and(eq(booking.id, input.bookingId), eq(booking.status, current)));
+    }
 
     return request;
   });
@@ -120,7 +160,17 @@ export async function requestInvoice(
     checkOut: row.quote.checkOut,
   });
 
-  return present(created, "PAYMENT_PENDING");
+  return present(created, opensCheckout ? "PAYMENT_PENDING" : current);
+}
+
+/** Settled money only: a payment that has not landed is not a payment. */
+async function settledPaidMinor(db: Database, bookingId: string): Promise<number> {
+  const rows = await db
+    .select({ amountMinor: payment.amountMinor })
+    .from(payment)
+    .where(and(eq(payment.bookingId, bookingId), eq(payment.status, "succeeded")));
+
+  return rows.reduce((total, item) => total + item.amountMinor, 0);
 }
 
 /*

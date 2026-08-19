@@ -46,6 +46,12 @@ export const includedItemSchema = z.object({
 
 const pricedItemSchema = includedItemSchema.extend({
   price: moneySchema,
+  /**
+   * What `price` is the price of, in the vendor's own words — "per person",
+   * "per booking". Rendered as given: it is operator copy, not an enum we can
+   * translate, and stating the wrong unit is what this exists to stop.
+   */
+  priceMeasure: z.string().nullable(),
   pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
 });
 

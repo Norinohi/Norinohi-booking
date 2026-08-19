@@ -2,7 +2,9 @@ export { default as BookingConfirmationScreen } from "./components/confirmation-
 export { default as BookingBalanceScreen } from "./components/balance-screen";
 export { default as BookingDetailScreen } from "./components/detail-screen";
 export { default as BookingInvoiceScreen } from "./components/invoice-screen";
-export { BookingProvider } from "./components/booking-provider";
+/* `useBooking` is public for the yacht detail page's extras list, which reprices the same
+   quote the sidebar renders — the one feature→feature import the architecture allows. */
+export { BookingProvider, useBooking } from "./components/booking-provider";
 export { default as BookingScreen } from "./components/booking-screen";
 export { default as BookingSidebar } from "./components/booking-sidebar";
 export { default as BookingSupportScreen } from "./components/support-screen";

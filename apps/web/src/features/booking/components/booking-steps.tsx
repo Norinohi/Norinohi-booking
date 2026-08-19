@@ -10,7 +10,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -56,7 +56,7 @@ const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
-  const { listing, quote, bookingId, setBookingId, setExtras } = useBooking();
+  const { listing, quote, extras, bookingId, setBookingId, setExtras } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [open, setOpen] = useState<Step | null>(STEPS[0].id);
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
@@ -79,24 +79,42 @@ export default function BookingSteps() {
    * screen the button commits a choice and says so, with only the included items "Save" would
    * be a promise about nothing — and whether skipping the step is worth interrupting a Confirm.
    *
-   * Counts only the extras the provider can actually price. An extra shown as
-   * arrange-with-the-base is not a choice this step takes, so a listing carrying nothing else
-   * must not promise a Save that commits anything.
+   * Counts only the extras this booking can actually buy: one the provider cannot price at
+   * all, and one the operator left off the offer for these dates, are both shown but not
+   * offered, so a listing carrying nothing else must not promise a Save that commits anything.
    */
+  const offeredCodes = quote?.offeredExtras && new Set(quote.offeredExtras.map((it) => it.code));
   const hasOptionalExtras =
-    (listing?.optionalExtras.filter((item) => item.selectable).length ?? 0) > 0;
+    (listing?.optionalExtras.filter(
+      (item) => item.selectable && (offeredCodes?.has(item.code) ?? true),
+    ).length ?? 0) > 0;
 
   /*
-   * The picks are a deferred write: they are committed once, when the step is left, rather
-   * than on every checkbox. Each reprice is a live provider call, so toggling four boxes used
-   * to mean four round trips and three thrown-away answers. The cost is that the sidebar total
-   * lags the checkbox until this runs.
+   * The step reprices as it is edited now — `selectExtras` debounces, which is what the four
+   * round trips this used to avoid actually needed — so by the time Continue runs the quote
+   * usually already holds these picks and `setExtras` returns without a call. What remains is
+   * the flush: a Continue pressed inside the debounce window must not leave the step on a
+   * quote that never saw the last tick.
    *
    * Keyed on the selection itself rather than on whether the step was completed, because the
    * step can be reopened and changed after a Continue; comparing the sorted codes is what
    * stops both a silently dropped change and a pointless supersede when nothing moved.
    */
   const committedExtras = useRef<string | null>(null);
+
+  /*
+   * The wizard is entered with a `quoteId` and nothing else, so the form has no idea what was
+   * ticked on the listing page: the sidebar listed three selected extras beside a step whose
+   * boxes were all empty, and a Continue would have committed that emptiness back over them.
+   * Seeded once, from the quote the provider read them off — after that the form owns them,
+   * or the step would fight the user's own unticking.
+   */
+  const seededExtras = useRef(false);
+  useEffect(() => {
+    if (seededExtras.current || extras.length === 0) return;
+    seededExtras.current = true;
+    setValue("extras.optional", [...extras]);
+  }, [extras, setValue]);
 
   async function commitExtras() {
     const picks = getValues("extras.optional");

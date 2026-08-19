@@ -171,6 +171,15 @@ export type ListingPricedItem = {
     amountMinor: number;
     currency: string;
   };
+  /**
+   * What `price` is the price *of*, in the vendor's own words — "per person",
+   * "one-way / person", "per booking". Null where the provider ships none.
+   *
+   * Load-bearing, not decoration: a per-person extra's catalogue price is a unit,
+   * and the offer multiplies it by a quantity it chooses. Rendering every extra as
+   * "per booking" told the customer €10 for a Tour the quote then charged €100 for.
+   */
+  priceMeasure: string | null;
   pricingType: "per_booking" | "per_week" | "pay_at_check_in";
 };
 

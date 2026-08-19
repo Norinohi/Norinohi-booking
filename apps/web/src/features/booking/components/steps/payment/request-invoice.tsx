@@ -15,26 +15,42 @@ import { useFormContext } from "react-hook-form";
 
 import CountryCombobox from "@/components/shared/form/country-combobox";
 
-import type { BookingValues } from "../../../lib/booking-form";
+import type { InvoiceFormValues } from "../../../lib/invoice-form";
 
 /*
  * The billing details that end up on the invoice. Name, address and country are what make the
  * document a tax record; the company block underneath is optional and only fills in when the
  * charter is billed to a business.
+ *
+ * Typed against the block alone rather than the wizard's whole form, because the balance page
+ * collects the same details for a second instalment and has no wizard around it. Both mount it
+ * at `payment.invoice`, so the field names below are the one thing they must agree on.
+ *
+ * `prefill` is whoever the payer already looks like — the wizard's guest step, or the booking's
+ * own guest. Applied only to fields still empty, so it can never overwrite a correction.
  */
-export default function RequestInvoice() {
+export default function RequestInvoice({
+  prefill,
+}: {
+  prefill?: { email?: string; name?: string; countryCode?: string } | undefined;
+}) {
   const t = useTranslations("Booking.payment.invoice");
-  const { control, getValues, setValue } = useFormContext<BookingValues>();
+  const { control, getValues, setValue } = useFormContext<InvoiceFormValues>();
 
-  /* The guest from step 1 is the payer unless they say otherwise — don't make them retype it. */
+  const prefillEmail = prefill?.email;
+  const prefillName = prefill?.name;
+  const prefillCountry = prefill?.countryCode;
   useEffect(() => {
-    const guest = getValues("guestDetails");
-    if (!getValues("payment.invoice.email")) setValue("payment.invoice.email", guest.email);
-    if (!getValues("payment.invoice.name")) setValue("payment.invoice.name", guest.fullName);
-    if (!getValues("payment.invoice.countryCode")) {
-      setValue("payment.invoice.countryCode", guest.countryCode);
+    if (prefillEmail && !getValues("payment.invoice.email")) {
+      setValue("payment.invoice.email", prefillEmail);
     }
-  }, [getValues, setValue]);
+    if (prefillName && !getValues("payment.invoice.name")) {
+      setValue("payment.invoice.name", prefillName);
+    }
+    if (prefillCountry && !getValues("payment.invoice.countryCode")) {
+      setValue("payment.invoice.countryCode", prefillCountry);
+    }
+  }, [prefillEmail, prefillName, prefillCountry, getValues, setValue]);
 
   return (
     <div className="flex flex-col gap-4">

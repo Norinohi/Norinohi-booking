@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@yacht-charter/ui/components/overlay/dropdown-menu";
 import { User } from "lucide-react";
@@ -13,6 +14,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 
 import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
+import { ACCOUNT_NAV_HREFS, ADMIN_ITEMS } from "./account-nav";
 
 /*
  * UserMenu — Figma "Dropdowns" account menu (972:53920). A bare User icon opens a white
@@ -20,8 +22,10 @@ import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
  * My Profile / My Bookings / Referrals / Credits & Balance and a red Log Out — SemiBold 14,
  * 8px row gaps. Signed-out visitors get a single Sign In item (the design covers only the
  * signed-in state). Credits & Balance is rendered per the design but inert — its page
- * doesn't exist yet. Staff sessions also get the admin rows the sidebar shows, so the menu is
- * a complete way in — their labels come from the Sidebar namespace rather than being restated.
+ * doesn't exist yet. Staff sessions also get every admin row the sidebar shows, so the menu is
+ * a complete way in — the rows come from the same list the sidebar reads, and their labels from
+ * the Sidebar namespace rather than being restated. A rule separates them: seven extra rows
+ * appended to the account four would otherwise read as one undifferentiated list.
  */
 
 const ITEM =
@@ -67,18 +71,15 @@ export default function UserMenu() {
             </DropdownMenuItem>
             {isStaff ? (
               <>
-                <DropdownMenuItem
-                  className={ITEM}
-                  onClick={() => router.push("/profile/discounts")}
-                >
-                  {tAdmin("discount")}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={ITEM} onClick={() => router.push("/duplicates")}>
-                  {tAdmin("duplicates")}
-                </DropdownMenuItem>
-                <DropdownMenuItem className={ITEM} onClick={() => router.push("/sync")}>
-                  {tAdmin("sync")}
-                </DropdownMenuItem>
+                <DropdownMenuSeparator className="mx-0 my-0 bg-natural-100" />
+                {ADMIN_ITEMS.map((item) => {
+                  const href = ACCOUNT_NAV_HREFS.get(item);
+                  return href ? (
+                    <DropdownMenuItem key={item} className={ITEM} onClick={() => router.push(href)}>
+                      {tAdmin(item)}
+                    </DropdownMenuItem>
+                  ) : null;
+                })}
               </>
             ) : null}
             <DropdownMenuItem

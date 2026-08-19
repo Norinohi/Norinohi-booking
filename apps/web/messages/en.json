@@ -21,7 +21,8 @@
       "mandatory": "Mandatory",
       "optional": "Optional extras",
       "included": "Included",
-      "arrangeAtBase": "Arrange with the base"
+      "arrangeAtBase": "Arrange with the base",
+      "notOnTheseDates": "Not available on these dates"
     },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
@@ -221,6 +222,7 @@
       "summary": {
         "total": "Total price",
         "paid": "Already paid",
+        "atCheckIn": "Due at the marina",
         "due": "Due now"
       },
       "paid": {
@@ -1446,7 +1448,8 @@
       "error": "We couldn't cancel your booking. Please try again."
     },
     "statusCancelled": "Cancelled",
-    "payBalance": "Pay balance"
+    "payBalance": "Pay {amount}",
+    "completePayment": "Complete payment {amount}"
   },
   "Wishlist": {
     "title": "Your Wishlist",

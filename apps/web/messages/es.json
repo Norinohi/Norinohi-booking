@@ -21,7 +21,8 @@
       "mandatory": "Obligatorio",
       "optional": "Extras opcionales",
       "included": "Incluido",
-      "arrangeAtBase": "Acordar con la base"
+      "arrangeAtBase": "Acordar con la base",
+      "notOnTheseDates": "No disponible en estas fechas"
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
@@ -221,6 +222,7 @@
       "summary": {
         "total": "Precio total",
         "paid": "Ya pagado",
+        "atCheckIn": "A pagar en la marina",
         "due": "A pagar ahora"
       },
       "paid": {
@@ -1446,7 +1448,8 @@
       "error": "No pudimos cancelar tu reserva. Inténtalo de nuevo."
     },
     "statusCancelled": "Cancelada",
-    "payBalance": "Pagar saldo"
+    "payBalance": "Pagar {amount}",
+    "completePayment": "Completar el pago {amount}"
   },
   "Wishlist": {
     "title": "Tus favoritos",

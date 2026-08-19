@@ -57,7 +57,11 @@ type BookingContextValue = {
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
   setGuests: (next: number) => void;
-  /** Step 2 hands its selection here — reprices the current quote's extras in place. */
+  /** The optional extras currently on the quote, so a checkbox can read its own state. */
+  extras: readonly string[];
+  /** A list edited by hand — debounced, so a burst of ticks is one reprice rather than four. */
+  selectExtras: (extras: string[]) => void;
+  /** Commits a selection now and waits for the quote, for a step that is being left. */
   setExtras: (extras: string[]) => Promise<void>;
   /** Applies a promo code to the live quote, or clears it with `null`. */
   applyPromo: (code: string | null) => void;
@@ -90,6 +94,7 @@ export function BookingProvider({
 
   const [crewChoice, setCrewChoice] = useState<CrewType | undefined>();
   const [guests, setGuestsState] = useState(DEFAULT_GUESTS);
+  const [extras, setExtrasState] = useState<string[]>([]);
   const [bookingId, setBookingId] = useState<string | null>(null);
   /* Defaulted synchronously off the prefetched listing so the crew Select stays controlled. */
   const crewType = crewChoice ?? listing?.crew.options[0];
@@ -166,6 +171,17 @@ export function BookingProvider({
     if (!quote) return;
     setGuestsState(quote.guests);
     if (quote.crewType) setCrewChoice(quote.crewType);
+    /*
+     * The selection is whatever the quote priced, read back off its optional lines
+     * rather than remembered separately. Two things fall out of that: the wizard,
+     * which arrives with only a `quoteId` and no memory of what was ticked on the
+     * listing, shows the right boxes; and an extra the offer stopped carrying — a
+     * changed date, usually — drops out on its own instead of standing ticked over
+     * a charge that will never appear.
+     */
+    setExtrasState(
+      quote.lines.filter((line) => line.group === "optional").map((line) => line.code),
+    );
   }, [quote]);
 
   /*
@@ -188,7 +204,7 @@ export function BookingProvider({
   function selectPeriod(period: CharterPeriod) {
     if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;
     setSlotError(false);
-    void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType })).catch(
+    void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType, extras })).catch(
       (error: Error) => {
         if (!isSlotConflict(error)) throw error;
         setRefusedPeriods((current) => [
@@ -219,8 +235,43 @@ export function BookingProvider({
    * on Continue rather than on every checkbox, and Confirm may commit them too, so a
    * caller has to be able to wait for the superseding quote before holding against it.
    */
-  async function setExtras(extras: string[]) {
-    if (quote) await repriceWith({ extras });
+  const extrasDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  /** What the live quote actually priced, which is what a reprice would have to change. */
+  const pricedExtras = () =>
+    quote?.lines.filter((line) => line.group === "optional").map((line) => line.code) ?? [];
+
+  const sameSelection = (a: readonly string[], b: readonly string[]) =>
+    a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
+
+  /*
+   * Every hand-edited extras list, on the listing and in the wizard alike. The box has to
+   * answer immediately, so the selection moves now and the reprice follows on the same
+   * debounce the guest slider uses: ticking three extras is one reprice, not three superseded
+   * quotes. The wizard used to defer this to its Continue instead, which is why its sidebar
+   * sat on a total that did not match the boxes beside it.
+   */
+  function selectExtras(next: string[]) {
+    setExtrasState(next);
+    if (!quote) return;
+    clearTimeout(extrasDebounceRef.current);
+    extrasDebounceRef.current = setTimeout(
+      () => void repriceWith({ extras: next }),
+      REPRICE_DEBOUNCE_MS,
+    );
+  }
+
+  /*
+   * The same edit, committed rather than previewed: a step being left has to know the quote it
+   * is leaving behind. Cancels any pending debounce so a stale timer cannot supersede the quote
+   * this just minted, and does nothing at all when the live quote already priced this exact
+   * selection — leaving a step normally means the debounce has already landed.
+   */
+  async function setExtras(next: string[]) {
+    clearTimeout(extrasDebounceRef.current);
+    setExtrasState(next);
+    if (!quote || sameSelection(pricedExtras(), next)) return;
+    await repriceWith({ extras: next });
   }
 
   /*
@@ -254,6 +305,8 @@ export function BookingProvider({
     selectPeriod,
     setCrew,
     setGuests,
+    extras,
+    selectExtras,
     setExtras,
     applyPromo,
     applyCredit,

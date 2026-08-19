@@ -39,6 +39,8 @@ export type BookingCardProps = BoatCardProps & {
    * the second installment themselves rather than waiting to be chased.
    */
   payBalanceHref?: string;
+  /** What that button says — the wording depends on whether anything has been paid yet. */
+  payBalanceLabel?: string;
 };
 
 function Stamp({ value }: { value: BoatCardCharterDate }) {
@@ -62,6 +64,7 @@ export default function BookingCard({
   cancellable,
   isCancelled,
   payBalanceHref,
+  payBalanceLabel,
   ...booking
 }: BookingCardProps) {
   const t = useTranslations("Common.boatCard");
@@ -173,7 +176,7 @@ export default function BookingCard({
               nativeButton={false}
               render={<Link href={payBalanceHref} />}
             >
-              {tBookings("payBalance")}
+              {payBalanceLabel ?? tBookings("payBalance", { amount: "" })}
             </Button>
           ) : null}
           <Button

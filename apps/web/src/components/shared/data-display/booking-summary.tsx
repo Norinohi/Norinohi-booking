@@ -245,6 +245,30 @@ function CreditField({
   );
 }
 
+/*
+ * Every discount on the quote, listed. Discount lines carry no `group` (see `QuoteLine`), so
+ * the sections above cannot show them, and until they were rendered here the money simply
+ * vanished: a provider discount moved the total with nothing on screen to account for it.
+ * One row per line rather than a single summed "Discounts" — a provider discount, a promo code
+ * and the referral welcome are different things, and the labels are the only place that shows.
+ */
+function DiscountRows({ lines }: { lines: QuoteLine[] }) {
+  const money = useMoney();
+
+  return (
+    <div className="flex w-full flex-col gap-3 p-4">
+      {lines.map((line) => (
+        <div key={line.code} className="flex items-start gap-2">
+          <p className="min-w-0 flex-1 text-base leading-5.5 text-foreground">{line.label}</p>
+          <p className="shrink-0 text-base leading-5.5 font-bold text-positive-600">
+            {money(line.amount.amountMinor)}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PriceGroup({
   labelKey,
   lines,
@@ -373,6 +397,7 @@ export default function BookingSummary({
   const payNowReady = payNowHref !== undefined && !repricing;
 
   const base = quote?.lines.find((line) => line.kind === "base");
+  const discounts = quote?.lines.filter((line) => line.kind === "discount") ?? [];
   /* Applied wins: once credit is on the quote, `creditAvailable` is what it is still worth,
      not a second offer to make. */
   const creditOffer = quote?.creditApplied ?? quote?.creditAvailable ?? null;
@@ -566,6 +591,18 @@ export default function BookingSummary({
                   pending={repricing}
                   onApply={onApplyCredit}
                 />
+              </>
+            ) : null}
+
+            {discounts.length ? (
+              <>
+                <Separator />
+                <div
+                  className={cn("transition-opacity", repricing && "opacity-40")}
+                  aria-busy={repricing}
+                >
+                  <DiscountRows lines={discounts} />
+                </div>
               </>
             ) : null}
 

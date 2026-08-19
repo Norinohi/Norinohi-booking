@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import z from "zod";
 
+import { INVOICE_DEFAULTS, invoiceValuesSchema, useInvoiceRefinement } from "./invoice-form";
+
 /*
  * The booking flow is ONE react-hook-form, keyed by step. `BookingSteps` gates Continue on
  * `trigger("<step>")`, which validates that branch of the schema and nothing else.
@@ -17,18 +19,7 @@ export const BOOKING_DEFAULTS: BookingValues = {
   reviewAndBook: { terms: false, cancellation: false },
   payment: {
     method: "card",
-    invoice: {
-      email: "",
-      name: "",
-      company: "",
-      vat: "",
-      registration: "",
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      postalCode: "",
-      countryCode: "",
-    },
+    invoice: INVOICE_DEFAULTS,
     question: { message: "" },
   },
 };
@@ -36,6 +27,7 @@ export const BOOKING_DEFAULTS: BookingValues = {
 /** Built in a hook, not as a constant, so the messages come out of the active locale. */
 export function useBookingSchema() {
   const t = useTranslations("Booking.errors");
+  const refineInvoice = useInvoiceRefinement();
 
   return useMemo(
     () =>
@@ -57,54 +49,15 @@ export function useBookingSchema() {
           .object({
             method: z.enum(["card", "invoice", "question"]),
             /*
-             * An invoice is a tax document, so the billed party needs a name and a postal
-             * address; the company block (name, VAT, registration) is what makes it a B2B
-             * invoice and stays optional. Required-ness is enforced in the refinement below,
-             * not on the fields, because none of it applies to the other two methods.
+             * Shape only: required-ness is applied in the refinement below, and only when
+             * invoice is the chosen method, because none of it applies to the other two.
              */
-            invoice: z.object({
-              email: z.string(),
-              name: z.string(),
-              company: z.string(),
-              vat: z.string(),
-              registration: z.string(),
-              addressLine1: z.string(),
-              addressLine2: z.string(),
-              city: z.string(),
-              postalCode: z.string(),
-              countryCode: z.string(),
-            }),
+            invoice: invoiceValuesSchema,
             question: z.object({ message: z.string() }),
           })
           .superRefine((value, ctx) => {
             if (value.method === "invoice") {
-              if (!z.email().safeParse(value.invoice.email).success) {
-                ctx.addIssue({ code: "custom", path: ["invoice", "email"], message: t("email") });
-              }
-              if (value.invoice.name.trim().length < 2) {
-                ctx.addIssue({
-                  code: "custom",
-                  path: ["invoice", "name"],
-                  message: t("billingName"),
-                });
-              }
-              if (value.invoice.addressLine1.trim().length === 0) {
-                ctx.addIssue({
-                  code: "custom",
-                  path: ["invoice", "addressLine1"],
-                  message: t("billingAddress"),
-                });
-              }
-              if (value.invoice.city.trim().length === 0) {
-                ctx.addIssue({ code: "custom", path: ["invoice", "city"], message: t("city") });
-              }
-              if (value.invoice.countryCode.length !== 2) {
-                ctx.addIssue({
-                  code: "custom",
-                  path: ["invoice", "countryCode"],
-                  message: t("country"),
-                });
-              }
+              refineInvoice(value.invoice, ctx, ["invoice"]);
             }
             if (value.method === "question" && value.question.message.trim().length === 0) {
               ctx.addIssue({
@@ -115,7 +68,7 @@ export function useBookingSchema() {
             }
           }),
       }),
-    [t],
+    [t, refineInvoice],
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
+import { Notification } from "@yacht-charter/ui/components/feedback/notification";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -195,6 +196,7 @@ function Charter({
 }) {
   const t = useTranslations("Booking.detail");
   const tCancel = useTranslations("Bookings.cancel");
+  const tBalance = useTranslations("Booking.balance");
   const money = useMoney();
   const format = useFormatter();
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -213,7 +215,26 @@ function Charter({
    * instruction to send money — so a charter that is off no longer offers it.
    */
   const off = booking.status === "CANCELLED" || booking.status === "REFUNDED";
-  const hasTransfer = !off && booking.payments.some((row) => row.method === "transfer");
+  /*
+   * Money is owed and none of it can be taken: the quote behind an unpaid booking has lapsed,
+   * or the operator's hold has. Hiding the button was right and silent — the sidebar goes on
+   * saying "still to pay" beside nothing to press. Say which, and where the fresh price is.
+   */
+  const expired = !showPay && booking.outstanding.amountMinor > 0 && !off;
+  /*
+   * The invoice is an instruction to send money to a bank account, so an expired price must
+   * withdraw it for the same reason a cancelled charter does: the notice above says we cannot
+   * take payment, and a Bank-transfer document beside it invites exactly the transfer we would
+   * then have to send back. Money that already arrived is the exception — that customer needs
+   * the document as their record, and it is a receipt now rather than an instruction.
+   */
+  const settledByTransfer = booking.payments.some(
+    (row) => row.method === "transfer" && row.status === "succeeded",
+  );
+  const hasTransfer =
+    !off &&
+    booking.payments.some((row) => row.method === "transfer") &&
+    (!expired || settledByTransfer);
   /*
    * `booking.cancel` is session-only and refuses a confirmed booking — the server decides both,
    * and `cancellable` is its answer. A guest holding only an access token has no session, so the
@@ -254,7 +275,16 @@ function Charter({
         ) : null}
       </dl>
 
-      {showPay || hasTransfer || showCancel || showRequestCancel ? (
+      {expired ? (
+        <Notification variant="warning">
+          <span className="flex flex-col gap-2">
+            <span className="font-bold">{tBalance("notPayable.title")}</span>
+            <span>{tBalance("notPayable.body")}</span>
+          </span>
+        </Notification>
+      ) : null}
+
+      {expired || showPay || hasTransfer || showCancel || showRequestCancel ? (
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {showPay ? (
             <Button
@@ -266,6 +296,17 @@ function Charter({
               {booking.status === "CONFIRMED"
                 ? t("payBalance", { amount: money(payable) })
                 : t("completePayment", { amount: money(payable) })}
+            </Button>
+          ) : null}
+
+          {expired ? (
+            <Button
+              variant="brand"
+              className="h-13 sm:min-w-56"
+              nativeButton={false}
+              render={<Link href={`/yachts/${booking.listing.id}`} />}
+            >
+              {tBalance("notPayable.action")}
             </Button>
           ) : null}
 

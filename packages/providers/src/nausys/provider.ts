@@ -41,6 +41,7 @@ import { providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source"
 import { and, eq, isNotNull } from "drizzle-orm";
 
 import { projectNausysCatalogue } from "./projection";
+import { formatExtraCode } from "../shared/extra-code";
 import { createNausysQuoteService, type CrewRoleService } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
 
@@ -138,6 +139,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       resolver: this.resolver,
       config: this.config,
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
+      loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
     });
 
     this.bookings = createNausysBookingService({
@@ -301,6 +303,32 @@ function parseResume(value: unknown): NausysCatalogueCursor | null {
  * recognise returns nothing here, and a crew choice on it stays unpriced rather
  * than being charged for a service we guessed at.
  */
+/**
+ * The listing's extras by canonical code, so a priced line can say what it is.
+ * Both id spaces, because `freeYachts` prices out of both and the code carries
+ * which one a row belongs to.
+ */
+async function loadNausysExtraLabels(
+  db: Database,
+  listingId: string,
+): Promise<ReadonlyMap<string, string>> {
+  const rows = await db
+    .select({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+      name: providerExtraCatalogue.name,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "nausys"),
+      ),
+    );
+
+  return new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]));
+}
+
 async function loadNausysCrewRoles(db: Database, listingId: string): Promise<CrewRoleService[]> {
   const rows = await db
     .select({

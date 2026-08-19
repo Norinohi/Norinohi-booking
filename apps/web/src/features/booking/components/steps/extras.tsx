@@ -19,11 +19,35 @@ type OptionalExtra = NonNullable<
   ReturnType<typeof useBooking>["listing"]
 >["optionalExtras"][number];
 
-/** The label, note and price shared by a selectable extra and an arrange-at-base one. */
-function ExtraRow({ item, note }: { item: OptionalExtra; note?: string }) {
+type OfferedExtra = NonNullable<
+  NonNullable<ReturnType<typeof useBooking>["quote"]>["offeredExtras"]
+>[number];
+
+/*
+ * The label, note and price shared by a selectable extra and one that is only shown.
+ *
+ * `offered` is what the vendor will bill for this charter, and the only figure a tickable row
+ * may show: the catalogue's price is a unit against a measure the operator chose, which the
+ * offer then multiplies by a quantity it chose too. Without an offer the unit is all there is,
+ * so it is stated with its own measure rather than under a blanket "per booking".
+ */
+function ExtraRow({
+  item,
+  offered,
+  note,
+}: {
+  item: OptionalExtra;
+  offered?: OfferedExtra | undefined;
+  note?: string;
+}) {
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
-  const caption = note ?? (item.pricingType === "pay_at_check_in" ? tExtras("payAtCheckIn") : null);
+  /* Whether it is settled at the base is the offer's answer where there is one; the two
+     sources disagree on individual extras, and the offer is what will be charged. */
+  const atCheckIn = offered
+    ? offered.payWhen === "at_check_in"
+    : item.pricingType === "pay_at_check_in";
+  const caption = note ?? (atCheckIn ? tExtras("payAtCheckIn") : null);
 
   return (
     <>
@@ -34,7 +58,11 @@ function ExtraRow({ item, note }: { item: OptionalExtra; note?: string }) {
         )}
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
-        {tExtras("perBooking", { price: money(item.price.amountMinor) })}
+        {offered
+          ? money(offered.amount.amountMinor)
+          : item.priceMeasure
+            ? `${money(item.price.amountMinor)} ${item.priceMeasure}`
+            : tExtras("perBooking", { price: money(item.price.amountMinor) })}
       </span>
     </>
   );
@@ -43,11 +71,18 @@ function ExtraRow({ item, note }: { item: OptionalExtra; note?: string }) {
 export default function ExtrasStep() {
   const t = useTranslations("Booking.extras");
   const { control } = useFormContext<BookingValues>();
-  const { listing } = useBooking();
+  const { listing, quote, selectExtras } = useBooking();
 
   const included = listing?.includedAmenities ?? [];
   const optional = listing?.optionalExtras ?? [];
-  const selectable = optional.filter((item) => item.selectable);
+  /* Null until a quote exists, and for a provider whose offer does not report it —
+     neither is grounds for greying anything out. */
+  const offered = quote?.offeredExtras
+    ? new Map(quote.offeredExtras.map((item) => [item.code, item]))
+    : null;
+  const isOffered = (code: string) => offered === null || offered.has(code);
+  const selectable = optional.filter((item) => item.selectable && isOffered(item.code));
+  const notOnTheseDates = optional.filter((item) => item.selectable && !isOffered(item.code));
   const arrangeAtBase = optional.filter((item) => !item.selectable);
 
   return (
@@ -95,33 +130,42 @@ export default function ExtrasStep() {
                   <Checkbox
                     checked={field.value.includes(item.code)}
                     onCheckedChange={(checked) => {
-                      field.onChange(
-                        checked
-                          ? [...field.value, item.code]
-                          : field.value.filter((code) => code !== item.code),
-                      );
+                      const next = checked
+                        ? [...field.value, item.code]
+                        : field.value.filter((code) => code !== item.code);
+                      field.onChange(next);
+                      /* The sidebar beside this step shows the same quote, so it moves with
+                         the box rather than waiting for Continue to commit the step. */
+                      selectExtras(next);
                     }}
                     onBlur={field.onBlur}
                   />
-                  <ExtraRow item={item} />
+                  <ExtraRow item={item} offered={offered?.get(item.code)} />
                 </label>
               ))}
 
               {/*
-                Shown but not offered: the provider cannot price these on the quote, so a
-                checkbox would take a choice and silently charge nothing for it. The customer
-                still needs to know the extra exists and roughly what it costs.
+                Shown but not offered: a checkbox would take a choice and silently charge
+                nothing for it. Two separate reasons, and the note says which — the provider
+                cannot price this id space at all, or the operator did not put this extra on
+                the offer for these dates. Either way the customer still needs to know the
+                extra exists and roughly what it costs.
               */}
-              {arrangeAtBase.map((item) => (
-                <div
-                  key={item.code}
-                  className="flex items-start gap-2 border-b border-dashed border-border py-3"
-                >
-                  {/* Keeps the label column aligned with the checkbox rows above. */}
-                  <span aria-hidden className="size-4 shrink-0" />
-                  <ExtraRow item={item} note={t("arrangeAtBase")} />
-                </div>
-              ))}
+              {[
+                { items: notOnTheseDates, note: t("notOnTheseDates") },
+                { items: arrangeAtBase, note: t("arrangeAtBase") },
+              ].map(({ items, note }) =>
+                items.map((item) => (
+                  <div
+                    key={item.code}
+                    className="flex items-start gap-2 border-b border-dashed border-border py-3"
+                  >
+                    {/* Keeps the label column aligned with the checkbox rows above. */}
+                    <span aria-hidden className="size-4 shrink-0" />
+                    <ExtraRow item={item} note={note} />
+                  </div>
+                )),
+              )}
             </div>
           )}
         />

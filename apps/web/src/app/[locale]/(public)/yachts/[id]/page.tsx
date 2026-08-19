@@ -191,15 +191,16 @@ export default async function YachtDetailPage({
         ]}
       />
       <Hydrated state={detail.state}>
-        <YachtDetailScreen
-          title={detail.title}
-          description={description}
-          aside={
-            <BookingProvider>
-              <BookingSidebar />
-            </BookingProvider>
-          }
-        />
+        {/* Wraps the whole screen, not just the sidebar: the optional-extras list in the main
+            column reprices the same quote the sidebar renders, so both have to sit under one
+            provider. */}
+        <BookingProvider>
+          <YachtDetailScreen
+            title={detail.title}
+            description={description}
+            aside={<BookingSidebar />}
+          />
+        </BookingProvider>
       </Hydrated>
     </>
   );

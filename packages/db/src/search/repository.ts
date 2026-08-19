@@ -231,6 +231,8 @@ export async function getListingDetailByIdOrSlug(
         crewRole: string | null;
         priceMinor: number | null;
         priceCurrency: string | null;
+        priceMeasure: string | null;
+        calculationType: string | null;
       }>(sql`
       select
         source,
@@ -240,7 +242,9 @@ export async function getListingDetailByIdOrSlug(
         obligatory,
         crew_role as "crewRole",
         price_minor as "priceMinor",
-        price_currency as "priceCurrency"
+        price_currency as "priceCurrency",
+        price_measure as "priceMeasure",
+        calculation_type as "calculationType"
       from provider_extra_catalogue
       where listing_id = ${listing.listingId}
       order by obligatory desc, price_minor, name asc
@@ -280,6 +284,8 @@ export async function getListingDetailByIdOrSlug(
     crewRole: item.crewRole,
     priceMinor: item.priceMinor,
     priceCurrency: item.priceCurrency,
+    priceMeasure: item.priceMeasure,
+    calculationType: item.calculationType,
     selectable: isSelectableExtra(item.source, item.kind),
   }));
   const mandatoryExtras = extras
@@ -1267,6 +1273,8 @@ function pricedItem(
     label: string;
     priceMinor: number | null;
     priceCurrency: string | null;
+    priceMeasure?: string | null;
+    calculationType?: string | null;
   },
   fallbackCurrency: string | null,
 ): ListingPricedItem {
@@ -1277,8 +1285,26 @@ function pricedItem(
       amountMinor: item.priceMinor ?? 0,
       currency: item.priceCurrency ?? fallbackCurrency ?? "EUR",
     },
-    pricingType: "pay_at_check_in",
+    priceMeasure: item.priceMeasure ?? null,
+    pricingType: pricingTypeOf(item.calculationType),
   };
+}
+
+/*
+ * Most extras are settled with the base on arrival, but not all: the vendor also
+ * sells some up front, and this used to answer "pay at check-in" for every one of
+ * them. A quote then charged the customer today for a line the listing had just
+ * promised them at the marina.
+ *
+ * The offer is the authority where there is one — it and the catalogue genuinely
+ * disagree on individual extras — so this only answers for an extra no offer
+ * covers. `per_booking` here carries no measure, only "not settled at the base";
+ * what the price is per is `priceMeasure`'s job.
+ */
+function pricingTypeOf(
+  calculationType: string | null | undefined,
+): ListingPricedItem["pricingType"] {
+  return calculationType === "ADVANCE_PAYMENT" ? "per_booking" : "pay_at_check_in";
 }
 
 function overviewFor(
