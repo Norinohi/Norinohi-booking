@@ -19,7 +19,11 @@ import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 import { presentListingDetail, presentListingSummary } from "../presenters/listing";
 import { recordListingView } from "../services/listing-view";
 
-const idInputSchema = z.object({ id: z.string() });
+const idInputSchema = z.object({
+  id: z.string(),
+  /* Mirrors listingSearchInputSchema, so both reads localize labels on the same rules. */
+  locale: z.string().min(2).max(10).default("en"),
+});
 const listingIdInputSchema = z.object({ listingId: z.string() });
 
 export const listingsRouter = {
@@ -41,7 +45,7 @@ export const listingsRouter = {
     .input(idInputSchema)
     .output(listingDetailSchema)
     .handler(async ({ context, input }) => {
-      const listing = await getListingDetailByIdOrSlug(context.db, input.id);
+      const listing = await getListingDetailByIdOrSlug(context.db, input.id, input.locale);
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }

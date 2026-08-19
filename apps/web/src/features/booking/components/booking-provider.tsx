@@ -4,6 +4,7 @@ import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
 import { useParams } from "next/navigation";
+import { useQueryStates } from "nuqs";
 import {
   createContext,
   type ReactNode,
@@ -20,7 +21,8 @@ import { rangeStatus } from "@yacht-charter/api/lib/availability-rules";
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
 import type { CrewType } from "@/components/shared/data-display/booking-summary";
 import { useListingDetail } from "@/features/yachts";
-import { dayFromNative } from "@/lib/date";
+import { detailPeriodParsers } from "@/features/yachts/lib/search-params";
+import { dayFromNative, dayToNative } from "@/lib/date";
 
 import { availabilityConstraintsQueryOptions, type Quote } from "../api/queries";
 import { useQuote } from "../hooks/use-quote";
@@ -55,7 +57,11 @@ type BookingContextValue = {
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
   setGuests: (next: number) => void;
-  /** Step 2 hands its selection here — reprices the current quote's extras in place. */
+  /** The optional extras currently on the quote, so a checkbox can read its own state. */
+  extras: readonly string[];
+  /** A list edited by hand — debounced, so a burst of ticks is one reprice rather than four. */
+  selectExtras: (extras: string[]) => void;
+  /** Commits a selection now and waits for the quote, for a step that is being left. */
   setExtras: (extras: string[]) => Promise<void>;
   /** Applies a promo code to the live quote, or clears it with `null`. */
   applyPromo: (code: string | null) => void;
@@ -88,17 +94,37 @@ export function BookingProvider({
 
   const [crewChoice, setCrewChoice] = useState<CrewType | undefined>();
   const [guests, setGuestsState] = useState(DEFAULT_GUESTS);
+  const [extras, setExtrasState] = useState<string[]>([]);
   const [bookingId, setBookingId] = useState<string | null>(null);
   /* Defaulted synchronously off the prefetched listing so the crew Select stays controlled. */
   const crewType = crewChoice ?? listing?.crew.options[0];
 
+  /*
+   * The charter the visitor already searched for, handed over by the result card they clicked.
+   * Without it the sidebar opened on an empty calendar and made them pick the same week twice.
+   */
+  const [carried] = useQueryStates(detailPeriodParsers);
+  const searchedPeriod =
+    carried.checkIn && carried.checkOut
+      ? { checkIn: carried.checkIn, checkOut: carried.checkOut }
+      : null;
+  const searchedCheckOut = searchedPeriod?.checkOut;
+
   const calWindow = useMemo(() => {
     const from = startOfMonth(new Date());
+    const horizon = dayFromNative(endOfMonth(addMonths(from, CALENDAR_MONTHS)));
+    /*
+     * A carried period can fall past the default horizon — people book a year out. Constraints
+     * the window does not cover come back empty, which reads as season-closed, and the sidebar
+     * would refuse to price the very dates it was handed.
+     */
+    const carriedEnd =
+      searchedCheckOut && searchedCheckOut > horizon ? dayToNative(searchedCheckOut) : undefined;
     return {
       from: dayFromNative(from),
-      to: dayFromNative(endOfMonth(addMonths(from, CALENDAR_MONTHS))),
+      to: carriedEnd ? dayFromNative(endOfMonth(carriedEnd)) : horizon,
     };
-  }, []);
+  }, [searchedCheckOut]);
 
   const { data: published } = useQuery({
     ...availabilityConstraintsQueryOptions({
@@ -145,12 +171,40 @@ export function BookingProvider({
     if (!quote) return;
     setGuestsState(quote.guests);
     if (quote.crewType) setCrewChoice(quote.crewType);
+    /*
+     * The selection is whatever the quote priced, read back off its optional lines
+     * rather than remembered separately. Two things fall out of that: the wizard,
+     * which arrives with only a `quoteId` and no memory of what was ticked on the
+     * listing, shows the right boxes; and an extra the offer stopped carrying — a
+     * changed date, usually — drops out on its own instead of standing ticked over
+     * a charge that will never appear.
+     */
+    setExtrasState(
+      quote.lines.filter((line) => line.group === "optional").map((line) => line.code),
+    );
   }, [quote]);
+
+  /*
+   * Prices the carried period once, as soon as the published constraints are in — before them
+   * every range reads as season-closed, since `priced` is what opens a season. Only on the
+   * detail page: the wizard arrives with `quoteId` and loads that quote instead. A period the
+   * listing will not sell is left alone rather than reported, because the visitor did not ask
+   * for this boat on these dates so much as arrive at it, and the calendar is already open.
+   */
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || quoteId || !searchedPeriod || !published || !listingId) return;
+    if (rangeStatus(searchedPeriod.checkIn, searchedPeriod.checkOut, constraints) !== "bookable") {
+      return;
+    }
+    seededRef.current = true;
+    selectPeriod(searchedPeriod);
+  });
 
   function selectPeriod(period: CharterPeriod) {
     if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;
     setSlotError(false);
-    void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType })).catch(
+    void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType, extras })).catch(
       (error: Error) => {
         if (!isSlotConflict(error)) throw error;
         setRefusedPeriods((current) => [
@@ -181,8 +235,43 @@ export function BookingProvider({
    * on Continue rather than on every checkbox, and Confirm may commit them too, so a
    * caller has to be able to wait for the superseding quote before holding against it.
    */
-  async function setExtras(extras: string[]) {
-    if (quote) await repriceWith({ extras });
+  const extrasDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  /** What the live quote actually priced, which is what a reprice would have to change. */
+  const pricedExtras = () =>
+    quote?.lines.filter((line) => line.group === "optional").map((line) => line.code) ?? [];
+
+  const sameSelection = (a: readonly string[], b: readonly string[]) =>
+    a.length === b.length && [...a].sort().join("|") === [...b].sort().join("|");
+
+  /*
+   * Every hand-edited extras list, on the listing and in the wizard alike. The box has to
+   * answer immediately, so the selection moves now and the reprice follows on the same
+   * debounce the guest slider uses: ticking three extras is one reprice, not three superseded
+   * quotes. The wizard used to defer this to its Continue instead, which is why its sidebar
+   * sat on a total that did not match the boxes beside it.
+   */
+  function selectExtras(next: string[]) {
+    setExtrasState(next);
+    if (!quote) return;
+    clearTimeout(extrasDebounceRef.current);
+    extrasDebounceRef.current = setTimeout(
+      () => void repriceWith({ extras: next }),
+      REPRICE_DEBOUNCE_MS,
+    );
+  }
+
+  /*
+   * The same edit, committed rather than previewed: a step being left has to know the quote it
+   * is leaving behind. Cancels any pending debounce so a stale timer cannot supersede the quote
+   * this just minted, and does nothing at all when the live quote already priced this exact
+   * selection — leaving a step normally means the debounce has already landed.
+   */
+  async function setExtras(next: string[]) {
+    clearTimeout(extrasDebounceRef.current);
+    setExtrasState(next);
+    if (!quote || sameSelection(pricedExtras(), next)) return;
+    await repriceWith({ extras: next });
   }
 
   /*
@@ -216,6 +305,8 @@ export function BookingProvider({
     selectPeriod,
     setCrew,
     setGuests,
+    extras,
+    selectExtras,
     setExtras,
     applyPromo,
     applyCredit,

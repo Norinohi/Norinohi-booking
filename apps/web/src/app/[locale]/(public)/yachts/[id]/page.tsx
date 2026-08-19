@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 
 import { Hydrated } from "@/components/layout/hydrated";
 import { BookingProvider, BookingSidebar } from "@/features/booking";
 import { YachtDetailScreen } from "@/features/yachts";
 import { isListingNotFound, prefetchListingDetail } from "@/features/yachts/api/server";
+import { crewKey, joinWithinBudget } from "@/features/yachts/lib/listing-copy";
 import { breadcrumbNode, JsonLd, listingNode } from "@/lib/json-ld";
 import { buildMetadata, socialImage } from "@/lib/seo";
 
@@ -19,6 +20,41 @@ import { buildMetadata, socialImage } from "@/lib/seo";
  * decision about the locale architecture, not a fix to this route.
  */
 export const instant = false;
+
+/* Google shows roughly 60 characters of a title, and `%s | YachtSkanner` claims 15 of them. */
+const TITLE_BUDGET = 45;
+const DESCRIPTION_BUDGET = 155;
+
+type Seo = Awaited<ReturnType<typeof prefetchListingDetail>>["seo"];
+
+/**
+ * The listing's own copy, as translated sentences in descending order of usefulness.
+ *
+ * Most listings have no provider prose — NauSYS fills `highlightsIntText` for a minority of its
+ * fleet, and never in Spanish — so this is the normal path, not a fallback. The head takes as
+ * many of these as fit its budget; the page body and the `Product` node take all of them, which
+ * is what keeps the three in agreement.
+ */
+async function describe(seo: Seo): Promise<string[]> {
+  const t = await getTranslations("Seo.YachtDetail");
+  const crew = await getTranslations("Common.crewTypes");
+  const format = await getFormatter();
+
+  /* A recognised code needs the local label; anything else the API already localized. */
+  const key = crewKey(seo.crewType);
+  const crewLabel = key ? crew(key) : seo.crewType;
+
+  return [
+    seo.category && seo.berths && seo.cabins
+      ? t("metaSpecs", { category: seo.category, guests: seo.berths, cabins: seo.cabins })
+      : null,
+    crewLabel && seo.base ? t("metaPlace", { crew: crewLabel, place: seo.base }) : null,
+    seo.priceFromMinor
+      ? t("metaPrice", { price: format.number(seo.priceFromMinor / 100, "eur") })
+      : null,
+    t("metaCta"),
+  ].filter((sentence): sentence is string => Boolean(sentence));
+}
 
 export async function generateMetadata({
   params,
@@ -35,7 +71,7 @@ export async function generateMetadata({
    * page body makes below, so it costs nothing extra; a miss falls back to the generic copy and
    * lets the body own the 404.
    */
-  const detail = await prefetchListingDetail(id).catch(() => null);
+  const detail = await prefetchListingDetail(id, locale).catch(() => null);
 
   /*
    * Canonical is keyed on the slug, never on `id` as typed. `listings.get` resolves either form,
@@ -44,12 +80,43 @@ export async function generateMetadata({
    */
   const path = `/yachts/${detail?.seo.slug ?? id}`;
 
+  if (!detail) {
+    return buildMetadata({
+      locale,
+      title: t("title"),
+      description: t("description"),
+      path,
+    });
+  }
+
+  const { seo } = detail;
+
+  /*
+   * The country, not the marina: "… Charter in Croatia" is the phrase people search, while
+   * "… Charter in Marina Zadar (ex. Tankerkomerc)" overruns the budget and matches nothing.
+   * Switch to the city once the geo mapping lands — that is the stronger keyword of the two.
+   */
+  const withPlace = seo.country
+    ? t("titleAtPlace", { boat: detail.title, place: seo.country })
+    : null;
+  const title =
+    withPlace && withPlace.length <= TITLE_BUDGET
+      ? withPlace
+      : t("titlePlain", { boat: detail.title });
+
+  /*
+   * The generated sentences, not the provider's prose, even when there is prose: it is marketing
+   * copy of unpredictable length that a search result cuts mid-sentence, while these are sized
+   * for the snippet and lead with what a searcher is choosing between.
+   */
+  const description = joinWithinBudget(await describe(seo), DESCRIPTION_BUDGET);
+
   return buildMetadata({
     locale,
-    title: detail?.title ?? t("title"),
-    description: detail?.seo.description ?? t("description"),
+    title,
+    description: description || t("description"),
     path,
-    image: detail ? socialImage(detail.seo.image) : undefined,
+    image: socialImage(seo.image),
   });
 }
 
@@ -75,7 +142,7 @@ export default async function YachtDetailPage({
 
   let detail: Awaited<ReturnType<typeof prefetchListingDetail>>;
   try {
-    detail = await prefetchListingDetail(id);
+    detail = await prefetchListingDetail(id, locale);
   } catch (error) {
     /*
      * An unknown listing arrives as a thrown marker rather than a returned flag, so the absence is
@@ -93,6 +160,12 @@ export default async function YachtDetailPage({
   const t = await getTranslations("YachtDetail");
   const path = `/yachts/${detail.seo.slug}`;
 
+  /*
+   * Built on the server and threaded down, so the body, the `Product` node and the head all carry
+   * the same words. Unbudgeted here: only the snippet has a length to respect.
+   */
+  const description = detail.seo.description ?? joinWithinBudget(await describe(detail.seo), 1000);
+
   return (
     <>
       <JsonLd
@@ -106,7 +179,7 @@ export default async function YachtDetailPage({
           ),
           listingNode({
             name: detail.title,
-            description: detail.seo.description,
+            description,
             /* Absolute and pre-cropped: a bare Cloudinary id is not a resolvable `image`. */
             image: socialImage(detail.seo.image),
             builder: detail.seo.builder,
@@ -118,14 +191,16 @@ export default async function YachtDetailPage({
         ]}
       />
       <Hydrated state={detail.state}>
-        <YachtDetailScreen
-          title={detail.title}
-          aside={
-            <BookingProvider>
-              <BookingSidebar />
-            </BookingProvider>
-          }
-        />
+        {/* Wraps the whole screen, not just the sidebar: the optional-extras list in the main
+            column reprices the same quote the sidebar renders, so both have to sit under one
+            provider. */}
+        <BookingProvider>
+          <YachtDetailScreen
+            title={detail.title}
+            description={description}
+            aside={<BookingSidebar />}
+          />
+        </BookingProvider>
       </Hydrated>
     </>
   );

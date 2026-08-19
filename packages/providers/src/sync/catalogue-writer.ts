@@ -27,6 +27,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
 import { canonicalCategoryName } from "../shared/category-groups";
+import { canonicalModelName } from "../shared/model-names";
 import type {
   CanonicalCatalogue,
   ProviderKey,
@@ -226,7 +227,6 @@ export async function writeCanonicalCatalogue(
         name: item.name,
         slug: item.slug,
         country: item.country ?? null,
-        city: item.city ?? null,
         email: item.email ?? null,
         phone: item.phone ?? null,
       })
@@ -377,6 +377,13 @@ export async function writeCanonicalCatalogue(
         : null,
       defaultCurrency: item.defaultCurrency,
       crewType: item.crewType ?? null,
+      securityDepositMinor: item.securityDepositMinor ?? null,
+      // The currency is only meaningful alongside an amount, and a deposit that
+      // named no currency of its own is priced like the rest of the yacht.
+      securityDepositCurrency:
+        item.securityDepositMinor === undefined
+          ? null
+          : (item.securityDepositCurrency ?? item.defaultCurrency),
       paymentPolicy: item.paymentPolicy ?? null,
       providerRating: decimal(item.rating),
       providerReviewCount: item.reviewCount ?? null,
@@ -526,14 +533,17 @@ async function ensureModel(
   // Two constraints back this: the composite, and a partial index covering the
   // unattributed case, because Postgres treats NULL builder ids as distinct and
   // the composite alone would let those duplicate freely.
+  // Updates rather than ignores the conflict so a re-sync backfills `canonical_name` onto rows
+  // written before it existed; nothing else about a model row is mutable.
   const [created] = await db
     .insert(yachtModel)
-    .values({ builderId, name })
-    .onConflictDoNothing(
-      builderId === null
-        ? { target: yachtModel.name, where: isNull(yachtModel.builderId) }
-        : { target: [yachtModel.builderId, yachtModel.name] },
-    )
+    .values({ builderId, name, canonicalName: canonicalModelName(name) })
+    .onConflictDoUpdate({
+      ...(builderId === null
+        ? { target: yachtModel.name, targetWhere: isNull(yachtModel.builderId) }
+        : { target: [yachtModel.builderId, yachtModel.name] }),
+      set: { canonicalName: sql`excluded.canonical_name` },
+    })
     .returning({ id: yachtModel.id });
   if (created) return created.id;
 

@@ -1,16 +1,20 @@
 import "server-only";
 
+import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import { ORPCError } from "@orpc/client";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { facetsQueryOptions } from "@/components/shared/form/filters/api/queries";
 import { getFacets } from "@/components/shared/form/filters/api/server";
+import type { FacetScope } from "@/components/shared/form/filters";
 import { CATALOG_TAG, listingTag } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
 import { listingDetailQueryOptions } from "./queries";
+
+type CatalogPage = Awaited<ReturnType<AppRouterClient["charterSearch"]["catalogPages"]>>[number];
 
 /**
  * Server prefetch for the /yachts search route.
@@ -27,15 +31,29 @@ import { listingDetailQueryOptions } from "./queries";
  * The locale reaches the cache key through the root param (see `getRootLocale`), but is still read
  * by name here: the seeded query key has to match the one the client hook rebuilds from its own
  * locale, or hydration fills an entry nothing reads and the browser refetches on mount.
+ *
+ * `scope` is for a catalog route, whose path pins a place. The Where controls read the facets
+ * narrowed to it, which is a different query key from the unscoped taxonomy, so both are seeded:
+ * without the second the pinned page would paint its filter controls empty and fill them a round
+ * trip later. An unpinned route passes nothing and seeds one entry, as before.
  */
-export async function prefetchSearch() {
+export async function prefetchSearch(scope: FacetScope = {}) {
   "use cache";
   cacheLife("days");
   cacheTag(CATALOG_TAG);
 
+  const scoped = Object.keys(scope).length > 0;
   const queryClient = new QueryClient();
-  const [locale, facets] = await Promise.all([getRootLocale(), getFacets()]);
+  const [locale, facets, scopedFacets] = await Promise.all([
+    getRootLocale(),
+    getFacets(),
+    scoped ? getFacets(scope) : null,
+  ]);
+
   queryClient.setQueryData(facetsQueryOptions(locale).queryKey, facets);
+  if (scopedFacets) {
+    queryClient.setQueryData(facetsQueryOptions(locale, scope).queryKey, scopedFacets);
+  }
 
   return dehydrate(queryClient);
 }
@@ -51,11 +69,8 @@ export async function prefetchSearch() {
  * `listingDetailQueryOptions` is bound to the header-forwarding client. Query keys derive from the
  * procedure path and input alone, so seeding that key by hand still matches the client hook.
  *
- * **Not keyed by locale, and correct only while listings are not localized.** Facet copy is the
- * only translated part of the catalog today (`facet_media_translation`); a listing's own text comes
- * from `listing_search_doc`, which the read model builds with a hardcoded `locale = 'en'`. The day
- * that changes, this entry starts serving one language's description to all three — add the locale
- * to the signature at the same time, not after.
+ * Keyed by locale as well as id: `listings.get` now localizes its labels and returns the provider's
+ * prose for that locale, so one entry per id would serve one language's copy to all three.
  *
  * **A miss is thrown, never returned.** Returning `{ found: false }` from here would cache the
  * absence for the full hour, so a listing created after someone happened to visit its URL would
@@ -70,14 +85,14 @@ export function isListingNotFound(error: Error): boolean {
   return error.message === LISTING_NOT_FOUND;
 }
 
-export async function prefetchListingDetail(id: string) {
+export async function prefetchListingDetail(id: string, locale: string) {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG, listingTag(id));
 
   let listing: Awaited<ReturnType<typeof publicClient.listings.get>>;
   try {
-    listing = await publicClient.listings.get({ id });
+    listing = await publicClient.listings.get({ id, locale });
   } catch (error) {
     if (error instanceof ORPCError && error.code === "NOT_FOUND") {
       throw new Error(LISTING_NOT_FOUND);
@@ -86,7 +101,7 @@ export async function prefetchListingDetail(id: string) {
   }
 
   const queryClient = new QueryClient();
-  queryClient.setQueryData(listingDetailQueryOptions(id).queryKey, listing);
+  queryClient.setQueryData(listingDetailQueryOptions(id, locale).queryKey, listing);
 
   /*
    * `seo` rides along so `generateMetadata` can build the head off this same cached read instead
@@ -104,6 +119,56 @@ export async function prefetchListingDetail(id: string) {
       builder: listing.builder,
       model: listing.model,
       category: listing.category,
+      crewType: listing.crewType,
+      cabins: listing.specs.cabins,
+      berths: listing.specs.berths,
+      base: listing.base.name,
+      country: listing.base.country,
+      priceFromMinor: listing.priceFrom?.amountMinor ?? null,
     },
   };
+}
+
+/**
+ * Every generated catalog page, as the enumeration returns them.
+ *
+ * The one source `generateStaticParams`, the sitemap and each page's own segment lookup read, so
+ * a URL is never advertised that the router will not build. Cached on the catalog tag: the set
+ * only moves when a sync moves the counts behind it.
+ *
+ * Keyed by locale, because the headings it carries are translated. The segments are not, so every
+ * locale returns the same set of URLs.
+ */
+export async function prefetchCatalogPages(locale: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
+
+  return publicClient.charterSearch.catalogPages({ locale });
+}
+
+/** The page's own boats, rendered into the HTML rather than fetched by the browser. */
+export async function prefetchCatalogResults(
+  filters: CatalogPage["filters"],
+  locale: string,
+  pageSize: number,
+) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
+
+  return publicClient.charterSearch.results({
+    locale,
+    pageSize,
+    page: 1,
+    sort: "recommended",
+    /* Arrays because the filters are multi-select; a catalog page pins exactly one of each. */
+    country: filters.country ? [filters.country] : undefined,
+    sailingArea: filters.region ? [filters.region] : undefined,
+    city: filters.city ? [filters.city] : undefined,
+    marina: filters.marina ? [filters.marina] : undefined,
+    boatType: filters.category ? [filters.category] : undefined,
+    builder: filters.builder ? [filters.builder] : undefined,
+    model: filters.model ? [filters.model] : undefined,
+  });
 }

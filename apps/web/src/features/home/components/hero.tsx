@@ -9,7 +9,8 @@ import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { Suspense, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Suspense, useRef, useState } from "react";
 
 import AnimatedNumber from "@/components/shared/data-display/animated-number";
 import DatePicker from "@/components/shared/form/date-picker";
@@ -37,9 +38,10 @@ const STATS = [
  */
 function SearchCardView({ options, isPending }: { options: FilterOptions; isPending: boolean }) {
   const t = useTranslations("Home.Hero");
-  const [country, setCountry] = useState<string>();
-  const [boatType, setBoatType] = useState<string>();
-  const [crew, setCrew] = useState<string>();
+  /* `null`, not `undefined`: these selects are controlled from the first render — see `Select`. */
+  const [country, setCountry] = useState<string | null>(null);
+  const [boatType, setBoatType] = useState<string | null>(null);
+  const [crew, setCrew] = useState<string | null>(null);
   const [range, setRange] = useState<DateRange | undefined>();
 
   const href = buildSearchHref({
@@ -122,9 +124,24 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
  * Isolated because `useQuery` reads the clock on every render, which bars any component calling
  * it from the prerendered shell. Keeping that read in this leaf lets everything around it —
  * heading, imagery, stats — prerender.
+ *
+ * It also drops the card while home is not the current route, which is what empties it. The four
+ * selections are local state, and Next keeps a navigated-away route mounted-but-hidden (React
+ * Activity) and reconnects it later, so a visitor who searched Croatia and came back found the
+ * card still filled with a search they had already run. Rendering nothing while the route is away
+ * unmounts the state with it, and coming back mounts a fresh card.
+ *
+ * Checked during render, not in an effect: a hidden route still re-renders with the new path, but
+ * its effects are frozen, so an effect keyed on the path never runs. Same reason and same shape as
+ * `RoutedMap` in features/yachts/components/map/map-canvas.tsx. `usePathname` is Next's raw
+ * locale-prefixed path, so switching locale counts as leaving too.
  */
 function SearchCard() {
   const { options, isPending } = useFilterOptions();
+  const pathname = usePathname();
+  const mountPath = useRef(pathname);
+
+  if (pathname !== mountPath.current) return null;
 
   return <SearchCardView options={options} isPending={isPending} />;
 }

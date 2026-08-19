@@ -102,7 +102,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
         </span>
 
         <motion.div variants={RISE} className="flex flex-col items-center gap-4 text-center">
-          <h1 className="text-h4 text-foreground">{t("title")}</h1>
+          <h2 className="text-h4 text-foreground">{t("title")}</h2>
           <p className="text-body-xl text-natural-600">{t("subtitle")}</p>
         </motion.div>
       </div>

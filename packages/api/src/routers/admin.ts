@@ -50,6 +50,10 @@ import {
   bookingAdminListSchema,
   bookingCancelInputSchema,
   bookingCancelSchema,
+  bookingExcludeByCompanyInputSchema,
+  bookingExcludeByCompanySchema,
+  bookingExcludeInputSchema,
+  bookingExcludeSchema,
   bookingRefundInputSchema,
   bookingRefundSchema,
   invoiceAdminRowSchema,
@@ -87,7 +91,12 @@ import {
   rejectDuplicateCandidate,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
-import { getBookingForAdmin, listBookingsForAdmin } from "../services/booking-admin";
+import {
+  excludeBookingsByCompany,
+  getBookingForAdmin,
+  listBookingsForAdmin,
+  setBookingExcluded,
+} from "../services/booking-admin";
 import { refundBooking } from "../services/refund";
 import {
   cancelInvoiceRequest,
@@ -358,6 +367,48 @@ export const adminRouter = {
       .input(adminBookingIdInputSchema)
       .output(bookingAdminDetailSchema)
       .handler(({ context, input }) => getBookingForAdmin(context.db, input.id)),
+    setExcluded: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/set-excluded",
+        operationId: "setBookingExcluded",
+        summary: "Mark a booking as not real business, or put it back",
+        description:
+          "Marks a booking as test data, so the staff queues and the money totals stop counting it. Nothing about the booking moves: the status, the payments and the provider reservation are untouched, and the customer still sees it in their own history. This is for a reservation that was never real — typically one made against a vendor's test charter company to prove the flow works. A booking that was real and is not happening should be cancelled instead. Reversible: pass excluded: false. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The booking's exclusion after the change.",
+        spec: withJsonBodyExample({
+          id: "bkg_example",
+          excluded: true,
+          reason: "Test booking against the vendor's test company",
+        }),
+      })
+      .input(bookingExcludeInputSchema)
+      .output(bookingExcludeSchema)
+      .handler(({ context, input }) =>
+        setBookingExcluded(context.db, input, context.session.user.id),
+      ),
+    excludeByCompany: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/booking/exclude-by-company",
+        operationId: "excludeBookingsByCompany",
+        summary: "Mark every booking against one charter company as not real business",
+        description:
+          "The bulk form of booking.setExcluded, scoped to one provider's charter company id. Written for the case it names: a vendor's test charter company is imported, bookings are made against its yachts to prove checkout works, and afterwards there is no way to say none of that was real without clicking through each one. Scoped by the provider's own company id rather than by anything of ours, so it keeps working after the company's listings have been hidden by the import scope. Dry by default — apply: false reports exactly which references would be excluded and changes nothing.",
+        tags: ["Admin"],
+        successDescription: "What matched, and whether it was applied.",
+        spec: withJsonBodyExample({
+          provider: "booking_manager",
+          externalCompanyId: "225",
+          apply: false,
+        }),
+      })
+      .input(bookingExcludeByCompanyInputSchema)
+      .output(bookingExcludeByCompanySchema)
+      .handler(({ context, input }) =>
+        excludeBookingsByCompany(context.db, input, context.session.user.id),
+      ),
     cancel: adminProcedure
       .route({
         method: "POST",

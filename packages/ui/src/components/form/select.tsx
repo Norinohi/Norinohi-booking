@@ -162,8 +162,14 @@ function Select({
   disabled,
 }: {
   options: SelectOption[];
-  /** Controlled value; pair with `onValueChange`. Omit both and pass `defaultValue` for uncontrolled. */
-  value?: string;
+  /**
+   * Controlled value; pair with `onValueChange`. Use `null` for controlled-but-empty — `undefined`
+   * is how Base UI is told the select is uncontrolled, so a caller whose state starts out
+   * `undefined` and later holds a string switches the select from uncontrolled to controlled
+   * mid-life and Base UI logs it. Omit both and pass `defaultValue` for a genuinely uncontrolled
+   * select.
+   */
+  value?: string | null;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;

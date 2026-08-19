@@ -18,6 +18,18 @@ the NauSYS request for one full dump a day after 01:00 GMT+1. Railway's cron
 runs in UTC and enforces a minimum gap between runs (5 minutes at the time of
 writing), so the sweep can go faster than 10 minutes but not much.
 
+Seasonal prices are written by the **catalogue** run, not the availability one.
+They used to be part of the hourly sweep, because that is where they were needed:
+a free period reads better with a price on it. But a price list is catalogue data
+that a vendor publishes for a season and leaves alone, and the volume is not small
+— Booking Manager's sweep is 52 weeks per yacht per year, so on a real fleet the
+hourly run was rewriting on the order of a million `listing_price_period` rows to
+restate figures that had not moved since the night before. They are now phase C of
+the daily import, after the listings are written and for the listings that run
+refreshed. A vendor price endpoint failing there is reported and downgrades the run
+to `partial`; it does not fail the import, and the previous day's prices stand.
+See `packages/providers/src/sync/price-writer.ts`.
+
 The outbox drain is the only job here that is not the primary path for its own work.
 Guest checkout writes its set-password invitation and its booking confirmation to
 `outbox_message` and starts a drain in-process as soon as it has an answer to return,

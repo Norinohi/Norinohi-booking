@@ -1,14 +1,7 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import {
-  Carousel,
-  CarouselBars,
-  CarouselSlide,
-  CarouselViewport,
-} from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Sailboat, Star, Users } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
@@ -16,8 +9,9 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import type { BoatCardBadge } from "@/components/shared/data-display/boat-card";
-import { Image } from "@/components/shared/data-display/image";
-import PrepaymentNote from "@/components/shared/data-display/prepayment-note";
+import CardPhotos from "@/components/shared/data-display/card-photos";
+import CardNote from "@/components/shared/data-display/card-note";
+import type { CardNote as CardNoteData } from "@/components/shared/data-display/card-note";
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
 
@@ -60,7 +54,7 @@ export type MapBoatCardProps = {
   priceLabel: string;
   price: string;
   perPerson: string;
-  prepayment: string;
+  note: CardNoteData | null;
   detailHref?: AppPathname;
   layout?: keyof typeof LAYOUT;
   className?: string;
@@ -79,7 +73,7 @@ export default function MapBoatCard({
   priceLabel,
   price,
   perPerson,
-  prepayment,
+  note,
   detailHref,
   layout = "list",
   className,
@@ -96,29 +90,10 @@ export default function MapBoatCard({
       )}
     >
       <div className={cn("relative shrink-0 overflow-hidden", style.image)}>
-        {images.length > 0 ? (
-          <Carousel className="size-full">
-            <CarouselViewport>
-              {images.map((src, index) => (
-                <CarouselSlide key={src + index}>
-                  <Image
-                    src={src}
-                    alt={index === 0 ? (imageAlt ?? "") : ""}
-                    fill
-                    sizes={style.sizes}
-                    className="object-cover"
-                  />
-                </CarouselSlide>
-              ))}
-            </CarouselViewport>
-            <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-            <CarouselBars className="absolute inset-x-0 bottom-4" />
-          </Carousel>
-        ) : (
-          <ImageFallback className="absolute inset-0" />
-        )}
+        <CardPhotos images={images} imageAlt={imageAlt} sizes={style.sizes} />
 
-        <div className="absolute inset-x-4 top-4 flex items-start gap-5">
+        {/* Transparent to the pointer, like the search card's: the photo below opens the gallery. */}
+        <div className="pointer-events-none absolute inset-x-4 top-4 flex items-start gap-5">
           <div className="flex flex-1 flex-wrap items-start gap-1.5">
             {badges?.map((badge) => (
               <Chip
@@ -134,7 +109,7 @@ export default function MapBoatCard({
               </Chip>
             ))}
           </div>
-          <WishlistButton listingId={id} />
+          <WishlistButton listingId={id} className="pointer-events-auto" />
         </div>
       </div>
 
@@ -181,7 +156,7 @@ export default function MapBoatCard({
             </p>
           </div>
 
-          <PrepaymentNote backdrop label={prepayment} className="flex w-fit" />
+          {note ? <CardNote backdrop note={note} className="flex w-fit" /> : null}
         </div>
 
         <Button

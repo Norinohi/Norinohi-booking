@@ -46,6 +46,12 @@ export const includedItemSchema = z.object({
 
 const pricedItemSchema = includedItemSchema.extend({
   price: moneySchema,
+  /**
+   * What `price` is the price of, in the vendor's own words — "per person",
+   * "per booking". Rendered as given: it is operator copy, not an enum we can
+   * translate, and stating the wrong unit is what this exists to stop.
+   */
+  priceMeasure: z.string().nullable(),
   pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
 });
 
@@ -111,6 +117,8 @@ export const listingSummarySchema = z.object({
     hasUnconfirmedAvailability: z.boolean(),
     hasAvailableDates: z.boolean(),
     hasTemporaryBooking: z.boolean(),
+    /** Earliest day a charter may begin, for a card with no period of its own. Null once past. */
+    bookableFrom: z.string().nullable(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),
@@ -126,7 +134,8 @@ export const listingSummarySchema = z.object({
   priceDetails: z.object({
     periodDays: z.number().int(),
     perPersonMinor: z.number().int().nullable(),
-    bookingPrepayment: moneySchema.nullable(),
+    /** Refundable damage deposit collected at the base. Null when there is none. */
+    securityDeposit: moneySchema.nullable(),
   }),
 });
 
@@ -146,7 +155,8 @@ export const listingsByIdsInputSchema = z.object({
 });
 
 export const listingDetailSchema = listingSummarySchema.extend({
-  description: z.string(),
+  /* Null when the provider ships no prose in the requested locale; the client writes its own. */
+  description: z.string().nullable(),
   overview: z.array(includedItemSchema.extend({ value: z.string() })),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
@@ -212,6 +222,38 @@ export const listingDetailSchema = listingSummarySchema.extend({
   popularYachts: z.array(listingSummarySchema),
 });
 
+/**
+ * A generated catalog page. `filters` carries catalogue values, not the slugs in `segments`:
+ * search normalizes by stripping non-alphanumerics, so a slugged "Mali Lošinj" no longer matches
+ * the row it came from.
+ */
+export const catalogPageSchema = z.object({
+  root: z.enum(["yacht-charter", "shipyard"]),
+  kind: z.enum([
+    "country",
+    "geo",
+    "marina",
+    "type",
+    "type-country",
+    "type-geo",
+    "type-marina",
+    "builder",
+    "model",
+  ]),
+  segments: z.array(z.string()),
+  filters: z.object({
+    country: z.string().optional(),
+    region: z.string().optional(),
+    city: z.string().optional(),
+    marina: z.string().optional(),
+    category: z.string().optional(),
+    builder: z.string().optional(),
+    model: z.string().optional(),
+  }),
+  labels: z.array(z.string()),
+  count: z.number().int().nonnegative(),
+});
+
 export const listingSearchInputBaseSchema = z.object({
   destination: z.string().optional(),
   query: z.string().optional(),
@@ -223,9 +265,11 @@ export const listingSearchInputBaseSchema = z.object({
   maxPriceMinor: z.coerce.number().int().positive().optional(),
   country: stringArrayParamSchema,
   sailingArea: stringArrayParamSchema,
+  city: stringArrayParamSchema,
   charterCompany: stringArrayParamSchema,
   marina: stringArrayParamSchema,
   boatType: stringArrayParamSchema,
+  builder: stringArrayParamSchema,
   model: stringArrayParamSchema,
   crew: stringArrayParamSchema,
   mainsailType: stringArrayParamSchema,
@@ -375,6 +419,8 @@ export const mapResultSchema = z.object({
 
 export const suggestionSchema = z.object({
   label: z.string(),
+  /* The filter value behind the label, identical to the matching facet option's. */
+  value: z.string(),
   kind: z.enum(["country", "region", "location", "base"]),
 });
 

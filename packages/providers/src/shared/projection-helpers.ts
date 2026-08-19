@@ -74,6 +74,31 @@ export function currencyOf(value: JsonField, fallback: string = FALLBACK_CURRENC
  * The vendor ids we send back on a quote or a booking. A non-integer id is a
  * contract breach rather than a value to coerce: it would address another boat.
  */
+/**
+ * A positive integer id kept as digits, for a vendor whose ids outrun a float64.
+ *
+ * `toPositiveIntId` is right for NauSYS and wrong for Booking Manager: its
+ * `Number.isSafeInteger` check correctly refuses anything past 2^53, so rather than
+ * booking the wrong boat it made quoting and booking impossible for the ~44% of the
+ * Booking Manager fleet whose ids are longer than that. Validating the digits and
+ * never converting keeps those yachts usable, and `exactJsonNumber` is how the id
+ * reaches a request body still intact.
+ */
+export function toExactPositiveIntId(
+  value: string,
+  labels: { provider: string; what: string },
+): string {
+  const digits = value.trim();
+  // No leading zeros: the vendor never sends them, and accepting one would let two
+  // spellings of the same id through as different keys.
+  if (!/^[1-9]\d*$/.test(digits)) {
+    throw new ContractError(
+      `${labels.provider} needs a positive integer for ${labels.what}, received ${JSON.stringify(value)}`,
+    );
+  }
+  return digits;
+}
+
 export function toPositiveIntId(value: string, labels: { provider: string; what: string }): number {
   const id = Number(value);
   if (!value || !Number.isSafeInteger(id) || id <= 0) {

@@ -27,6 +27,13 @@
   },
   "overrides": [
     {
+      "files": ["packages/providers/src/shared/json-source.ts"],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off"
+      }
+    },
+    {
       "files": [
         "packages/providers/src/shared/errors.ts",
         "packages/providers/src/shared/reservation-log.ts"

@@ -4,6 +4,8 @@ import { AuthError, ContractError } from "../shared/errors";
 import type { JsonObject } from "../shared/json";
 import type { JsonValue } from "../shared/json";
 import { idOf, objectsOf } from "../shared/projection-helpers";
+import { type CompanyScope, unscopedCompanies } from "../shared/company-scope";
+import { retireOutOfScopeCompanies } from "../sync/retire-companies";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
 import type { BookingManagerClient } from "./client";
@@ -125,12 +127,18 @@ export function parseBookingManagerCatalogueCursor(
 export interface BookingManagerCatalogueOptions {
   resume?: BookingManagerCatalogueCursor | null;
   /**
-   * Charter companies to import. Empty imports everything the credential sees.
+   * Charter companies to import. Unconfigured imports everything the credential sees.
    *
    * Applied to the company dump as well as the yacht sweep, so a scoped run does
    * not leave 1300 operator rows standing behind eleven boats.
    */
-  companyIds?: readonly string[];
+  companyScope?: CompanyScope;
+  /**
+   * Companies our fleet is filed under, for retiring the ones now out of scope.
+   * Injected rather than queried here so this stream stays a pure function of the
+   * vendor client, which is what its tests fake.
+   */
+  listImportedCompanyIds?: () => Promise<readonly string[]>;
   /** Recoverable failures go here so the stream survives them; see below. */
   reporter?: Pick<SyncReporter, "reportError">;
 }
@@ -153,8 +161,8 @@ export async function* syncBookingManagerCatalogue(
 ): AsyncIterable<CatalogueSyncEvent> {
   const resume = options.resume ?? null;
   const startStep = resume?.step ?? 0;
-  const allowed = new Set(options.companyIds ?? []);
-  const inScope = (companyId: string) => allowed.size === 0 || allowed.has(companyId);
+  const scope = options.companyScope ?? unscopedCompanies;
+  const inScope = (companyId: string) => scope.inScope(companyId);
   let companyIds: string[] = [];
 
   for (const [index, step] of CATALOGUE_STEPS.entries()) {
@@ -281,11 +289,16 @@ export async function* syncBookingManagerCatalogue(
       } satisfies BookingManagerCatalogueCursor,
     };
   }
+
+  yield* retireOutOfScopeCompanies({
+    scope,
+    listImportedCompanyIds: options.listImportedCompanyIds,
+  });
 }
 
 export function bookingManagerCatalogueSource(
   client: BookingManagerClient,
-  options: { resume?: BookingManagerCatalogueCursor | null; companyIds?: readonly string[] } = {},
+  options: Omit<BookingManagerCatalogueOptions, "reporter"> = {},
 ): CatalogueSyncSource {
   return (reporter) => syncBookingManagerCatalogue(client, { ...options, reporter });
 }

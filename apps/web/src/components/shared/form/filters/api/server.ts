@@ -6,6 +6,8 @@ import { CATALOG_TAG } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
+import type { FacetScope } from "../lib/state";
+
 /**
  * The filter taxonomy — countries, boat types, budget bands, ranges.
  *
@@ -24,11 +26,15 @@ import { publicClient } from "@/utils/orpc";
  * threading it down. Facet labels are the localized half of the response
  * (`facet_media_translation` server-side); `value` stays untranslated because the filters compare
  * against it.
+ *
+ * `scope` narrows the lists to a place (see `facetScopeOf`) and rides in the cache key, so a
+ * catalog page pinned to one country holds its own entry beside the unscoped taxonomy rather than
+ * overwriting it. Empty by default, which is the entry every unpinned route shares.
  */
-export async function getFacets() {
+export async function getFacets(scope: FacetScope = {}) {
   "use cache";
   cacheLife("days");
   cacheTag(CATALOG_TAG);
 
-  return publicClient.charterSearch.facets({ locale: await getRootLocale() });
+  return publicClient.charterSearch.facets({ locale: await getRootLocale(), ...scope });
 }

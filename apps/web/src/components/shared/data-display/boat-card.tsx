@@ -1,12 +1,5 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import {
-  Carousel,
-  CarouselBars,
-  CarouselSlide,
-  CarouselViewport,
-} from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Check, Sailboat, Star, Users } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
@@ -14,13 +7,14 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 
-import { Image } from "@/components/shared/data-display/image";
 import { dayToDisplay } from "@/lib/date";
 
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
 
-import PrepaymentNote from "./prepayment-note";
+import CardNote from "./card-note";
+import type { CardNote as CardNoteData } from "./card-note";
+import CardPhotos from "./card-photos";
 
 const FORMATS = {
   day: { day: "numeric", month: "long", year: "numeric" },
@@ -66,6 +60,12 @@ export type BoatCardProps = {
   /** Absent where no period is in play: the wishlist is not a search result. */
   start?: BoatCardCharterDate;
   end?: BoatCardCharterDate;
+  /**
+   * The earliest day this boat can be chartered from, as `yyyy-MM-dd`. Shown only where there
+   * is no period: an undated search has no charter to print, and the day it could start is the
+   * useful thing to say instead.
+   */
+  availableFrom?: string;
   priceLabel: string;
   price: string;
   /** The price slot holds words ("On request", "Unavailable") rather than an amount, so it drops to text size. */
@@ -73,7 +73,8 @@ export type BoatCardProps = {
   /** The listing has no bookable dates — the photo desaturates and the copy dims. */
   unavailable?: boolean;
   perPerson: string;
-  prepayment: string;
+  /** Money footnote under the price, with the tooltip that explains that figure. */
+  note: CardNoteData | null;
   detailHref?: AppPathname;
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
@@ -100,30 +101,20 @@ function Gallery({
         unavailable && "[&_img]:opacity-60 [&_img]:grayscale",
       )}
     >
-      {images.length > 0 ? (
-        <Carousel className="size-full">
-          <CarouselViewport>
-            {images.map((src, index) => (
-              <CarouselSlide key={src + index}>
-                <Image
-                  src={src}
-                  alt={index === 0 ? (imageAlt ?? "") : ""}
-                  fill
-                  priority={priority && index === 0}
-                  sizes="(min-width: 1280px) 40vw, 100vw"
-                  className="object-cover"
-                />
-              </CarouselSlide>
-            ))}
-          </CarouselViewport>
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-          <CarouselBars className="absolute inset-x-0 bottom-4" />
-        </Carousel>
-      ) : (
-        <ImageFallback className="absolute inset-0" />
-      )}
+      <CardPhotos
+        images={images}
+        imageAlt={imageAlt}
+        priority={priority}
+        sizes="(min-width: 1280px) 40vw, 100vw"
+      />
 
-      <div className="absolute inset-x-4 top-4 flex items-start gap-5">
+      {/*
+       * Laid over the photo, which is now a button: without this the badge row — full width, and
+       * two chips tall on a well-tagged listing — would eat the hover and the click across the top
+       * of every card. The chips are labels, so they stay transparent to the pointer and the photo
+       * under them opens the gallery; only the wishlist control takes events back.
+       */}
+      <div className="pointer-events-none absolute inset-x-4 top-4 flex items-start gap-5">
         <div className="flex flex-1 flex-wrap items-start gap-1.5">
           {badges?.map((badge) => (
             <Chip
@@ -139,7 +130,7 @@ function Gallery({
             </Chip>
           ))}
         </div>
-        <WishlistButton listingId={id} />
+        <WishlistButton listingId={id} className="pointer-events-auto" />
       </div>
     </div>
   );
@@ -271,11 +262,12 @@ function Action({
   stats,
   start,
   end,
+  availableFrom,
   priceLabel,
   price,
   priceIsLabel,
   perPerson,
-  prepayment,
+  note,
   detailHref,
   footer,
 }: Pick<
@@ -283,15 +275,17 @@ function Action({
   | "stats"
   | "start"
   | "end"
+  | "availableFrom"
   | "priceLabel"
   | "price"
   | "priceIsLabel"
   | "perPerson"
-  | "prepayment"
+  | "note"
   | "detailHref"
   | "footer"
 >) {
   const t = useTranslations("Common.boatCard");
+  const format = useFormatter();
 
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 px-4 pt-3 pb-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:px-6 md:pt-4 md:pb-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:px-0 xl:pr-6">
@@ -307,6 +301,12 @@ function Action({
           <ArrowRight className="size-4 shrink-0 text-foreground" />
           <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
         </div>
+      ) : availableFrom ? (
+        <p className="w-full text-center text-xs font-semibold leading-[1.3] text-foreground md:text-left xl:text-center">
+          {t("availableFrom", {
+            date: format.dateTime(dayToDisplay(availableFrom), FORMATS.day),
+          })}
+        </p>
       ) : null}
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
@@ -324,15 +324,11 @@ function Action({
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
-        {prepayment ? (
-          <PrepaymentNote backdrop label={prepayment} className="flex md:hidden" />
-        ) : null}
+        {note ? <CardNote backdrop note={note} className="flex md:hidden" /> : null}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        {prepayment ? (
-          <PrepaymentNote backdrop label={prepayment} className="hidden md:flex" />
-        ) : null}
+        {note ? <CardNote backdrop note={note} className="hidden md:flex" /> : null}
         <Button
           variant="neutral"
           size="md"
@@ -384,11 +380,12 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           stats={boat.stats}
           start={boat.start}
           end={boat.end}
+          availableFrom={boat.availableFrom}
           priceLabel={boat.priceLabel}
           price={boat.price}
           priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
-          prepayment={boat.prepayment}
+          note={boat.note}
           detailHref={boat.detailHref}
           footer={boat.footer}
         />

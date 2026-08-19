@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
+import { unscopedCompanies } from "../shared/company-scope";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { SequentialQueue } from "../shared/queue";
@@ -20,6 +21,7 @@ const config: NausysConfig = {
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
+  companyScope: unscopedCompanies,
   queueKey: "nausys:agency-user",
 };
 
@@ -71,11 +73,13 @@ function resolverFor(externalYachtId: string): CatalogueResolver {
         externalBaseId: "511001",
         listingSourceId: "lsrc_1",
       }),
+    toExternalYachtIds: () => Promise.resolve(new Map<string, string>()),
     toListingId: () => Promise.resolve(LISTING_ID),
     toExternalAmenityIds: () => Promise.resolve([]),
     toExternalCountryId: () => Promise.resolve(null),
     loadListingSummary: () => Promise.resolve(null),
     listExternalCompanyIds: () => Promise.resolve([]),
+    listYachtCompanyScopeKeys: async () => [],
   };
 }
 
@@ -198,10 +202,10 @@ describe("NauSYS live quote", () => {
     });
 
     /*
-     * NauSYS numbers services and equipment independently, and no recorded offer
-     * has ever carried the `extraId` shape, so an `equipment:` code has nothing
-     * trustworthy to match against. Matching it on the service id would bill the
-     * customer for whatever service happened to share the number.
+     * NauSYS numbers services and equipment independently, so `8003` alone says
+     * nothing: an entry keyed on `serviceId` is a service, whatever the customer's
+     * code claims. Matching across the two spaces would bill them for whichever
+     * one happened to share the number.
      */
     it("does not match an equipment code against a service id", async () => {
       const { service, transport } = build();
@@ -209,6 +213,131 @@ describe("NauSYS live quote", () => {
       const priced = await service.getNausysQuote(withExtras(["equipment:8003"]));
 
       expect(priced.lines.filter((line) => line.group === "optional")).toEqual([]);
+    });
+
+    /*
+     * The shape the live account actually sends. Its additional extras carry no
+     * `serviceId` at all — the id arrives as `extraId`, with `extrasType` naming
+     * the space it belongs to. Reading only `serviceId` matched none of them, so
+     * every ticked extra was dropped from the quote in silence.
+     */
+    describe("an offer keyed on extraId", () => {
+      const keyedOnExtraId = (extrasType: string) => {
+        const body = fixtureResponse();
+        for (const extra of firstYacht(body).additionalExtras ?? []) {
+          extra.extraId = extra.serviceId;
+          extra.extrasType = extrasType;
+          delete extra.serviceId;
+        }
+        return body;
+      };
+
+      it("prices a selected SERVICE extra", async () => {
+        const { service, transport } = build();
+        transport.respondWith("freeYachts", keyedOnExtraId("SERVICE"));
+        const priced = await service.getNausysQuote(withExtras(["service:8003"]));
+
+        expect(lineByCode(priced, "service:8003")).toMatchObject({
+          group: "optional",
+          amount: { amountMinor: 105_000, currency: "EUR" },
+        });
+        expect(sumOf(priced)).toBe(priced.total.amountMinor);
+      });
+
+      it("prices a selected EQUIPMENT extra under its own code", async () => {
+        const { service, transport } = build();
+        transport.respondWith("freeYachts", keyedOnExtraId("EQUIPMENT"));
+        const priced = await service.getNausysQuote(withExtras(["equipment:8003"]));
+
+        expect(lineByCode(priced, "equipment:8003")).toMatchObject({
+          group: "optional",
+          amount: { amountMinor: 105_000, currency: "EUR" },
+        });
+        expect(sumOf(priced)).toBe(priced.total.amountMinor);
+      });
+
+      it("keeps the two spaces apart", async () => {
+        const { service, transport } = build();
+        transport.respondWith("freeYachts", keyedOnExtraId("EQUIPMENT"));
+        const priced = await service.getNausysQuote(withExtras(["service:8003"]));
+
+        expect(priced.lines.filter((line) => line.group === "optional")).toEqual([]);
+      });
+
+      /*
+       * `extrasType` is the only thing that says which space `extraId` counts in.
+       * Without it the entry is unplaceable, and pricing it would be a guess at
+       * what the customer bought.
+       */
+      it("prices nothing when the vendor names no id space", async () => {
+        const { service, transport } = build();
+        const body = keyedOnExtraId("SERVICE");
+        for (const extra of firstYacht(body).additionalExtras ?? []) {
+          delete extra.extrasType;
+        }
+        transport.respondWith("freeYachts", body);
+        const priced = await service.getNausysQuote(withExtras(["service:8003"]));
+
+        expect(priced.lines.filter((line) => line.group === "optional")).toEqual([]);
+      });
+
+      it("reports both id spaces as offered, priced as the charter would bill them", async () => {
+        const { service, transport } = build();
+        const body = fixtureResponse();
+        const [first, ...rest] = firstYacht(body).additionalExtras ?? [];
+        if (!first) throw new Error("fixture lost its additional extras");
+        first.extraId = first.serviceId;
+        first.extrasType = "EQUIPMENT";
+        delete first.serviceId;
+        transport.respondWith("freeYachts", body);
+        const priced = await service.getNausysQuote(request);
+
+        expect(priced.offeredExtras?.map((item) => item.code)).toEqual([
+          "equipment:8003",
+          ...rest.map((extra) => `service:${extra.serviceId}`),
+        ]);
+        /* The figure a ticked box will add, which is what the listing must show:
+           the catalogue's own price is a unit against a measure the operator chose. */
+        expect(priced.offeredExtras?.[0]?.amount).toEqual({
+          amountMinor: 105_000,
+          currency: "EUR",
+        });
+      });
+
+      it("leaves an extra it cannot bill in the charter's currency off the offer", async () => {
+        const { service, transport } = build();
+        const body = fixtureResponse();
+        const [first] = firstYacht(body).additionalExtras ?? [];
+        if (!first) throw new Error("fixture lost its additional extras");
+        first.currency = "USD";
+        transport.respondWith("freeYachts", body);
+        const priced = await service.getNausysQuote(request);
+
+        expect(priced.offeredExtras?.map((item) => item.code)).not.toContain("service:8003");
+      });
+
+      it("leaves an entry it cannot place out of the offer", async () => {
+        const { service, transport } = build();
+        const body = keyedOnExtraId("SERVICE");
+        for (const extra of firstYacht(body).additionalExtras ?? []) {
+          delete extra.extrasType;
+        }
+        transport.respondWith("freeYachts", body);
+        const priced = await service.getNausysQuote(request);
+
+        expect(priced.offeredExtras).toEqual([]);
+      });
+
+      it("prices the chosen crew, whose service arrives in the same shape", async () => {
+        const { service, transport } = build({
+          loadCrewRoles: () => Promise.resolve([{ role: "skipper" as const, externalId: "8003" }]),
+        });
+        transport.respondWith("freeYachts", keyedOnExtraId("SERVICE"));
+        const priced = await service.getNausysQuote({ ...request, crewType: "skipper" });
+
+        expect(lineByCode(priced, "service:8003")).toMatchObject({ group: "crew" });
+        expect(sumOf(priced)).toBe(priced.total.amountMinor);
+      });
     });
   });
 

@@ -21,7 +21,8 @@
       "mandatory": "Mandatory",
       "optional": "Optional extras",
       "included": "Included",
-      "arrangeAtBase": "Arrange with the base"
+      "arrangeAtBase": "Arrange with the base",
+      "notOnTheseDates": "Not available on these dates"
     },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
@@ -221,6 +222,7 @@
       "summary": {
         "total": "Total price",
         "paid": "Already paid",
+        "atCheckIn": "Due at the marina",
         "due": "Due now"
       },
       "paid": {
@@ -401,13 +403,17 @@
       "remove": "Remove from wishlist",
       "viewDetails": "View Details",
       "imageAlt": "{name} moored at {marina}",
+      "openGallery": "Open photo gallery",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
+      "availableFrom": "Available from {date}",
       "priceOnRequest": "On request",
       "priceUnavailable": "Unavailable",
       "perPerson": "{price} for person",
       "perPersonApprox": "~ {price} for person",
       "prepayment": "Booking prepayment: {amount}",
-      "prepaymentInfo": "This is a refundable deposit held in case of damages during your trip. You will get it back after check-out if everything is in good condition.",
+      "prepaymentInfo": "This is the part of the charter price paid up front to secure the booking. It counts towards the total, and the rest is due before check-in.",
+      "securityDeposit": "Refundable deposit: {amount}",
+      "securityDepositInfo": "A refundable deposit held by the charter base against damage during your trip. It is collected at check-in, is not part of the price, and is returned after check-out if everything is in good condition.",
       "specs": {
         "year": "Year",
         "people": "People",
@@ -448,6 +454,13 @@
         "fullCrew": "Full crew",
         "skipperOptional": "Skipper optional"
       }
+    },
+    "gallery": {
+      "close": "Close",
+      "previous": "Previous",
+      "next": "Next",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out"
     },
     "marina": {
       "viewDetails": "View Details"
@@ -571,12 +584,14 @@
       "any": "any",
       "country": "Country: {value}",
       "sailingArea": "Sailing Area: {value}",
+      "city": "City: {value}",
       "charterCompany": "Charter Company: {value}",
       "marina": "Marina: {value}",
       "startDate": "Start: {value}",
       "duration": "Duration: {count, plural, one {# day} other {# days}}",
       "dateFlexibility": "Flexibility: {value}",
       "boatType": "Boat Type: {value}",
+      "builder": "Builder: {value}",
       "model": "Model: {value}",
       "crew": "Crew: {value}",
       "mainsailType": "Mainsail: {value}",
@@ -848,7 +863,11 @@
       "audit": "Audit Log",
       "inbox": "Inbox",
       "payments": "Payments",
-      "listings": "Listings"
+      "listings": "Listings",
+      "sections": {
+        "account": "Account",
+        "admin": "Admin"
+      }
     },
     "UserMenu": {
       "account": "Account",
@@ -1092,13 +1111,6 @@
     "addToWishlist": "Add To Wishlist",
     "removeFromWishlist": "Remove From Wishlist",
     "included": "Included",
-    "gallery": {
-      "close": "Close",
-      "previous": "Previous",
-      "next": "Next",
-      "zoomIn": "Zoom in",
-      "zoomOut": "Zoom out"
-    },
     "importantInfo": {
       "charterCompany": "Charter company",
       "pickUpAddress": "Yacht pick-up address",
@@ -1224,6 +1236,7 @@
     }
   },
   "Yachts": {
+    "heading": "Yacht Charter Search",
     "searchByMap": "Search by map",
     "emptyTitle": "No yachts found for your filters",
     "emptyDescription": "Try adjusting your dates, budget, or location — we will help you find the perfect match.",
@@ -1251,8 +1264,8 @@
   },
   "Seo": {
     "Yachts": {
-      "title": "Browse Yachts",
-      "description": "Explore our fleet of yachts and catamarans. Filter by destination, dates, guests and price to find the perfect boat for your trip."
+      "title": "Yacht Charter Search",
+      "description": "Search yachts and catamarans for charter across the Mediterranean and beyond. Filter by destination, dates, guests and price."
     },
     "YachtsMap": {
       "title": "Yachts on the Map",
@@ -1260,7 +1273,13 @@
     },
     "YachtDetail": {
       "title": "Yacht Details",
-      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates."
+      "description": "View photos, specifications, crew options and pricing for this yacht, and check availability for your dates.",
+      "titleAtPlace": "{boat} Charter in {place}",
+      "titlePlain": "{boat} Charter",
+      "metaSpecs": "{category} with {cabins, plural, one {# cabin} other {# cabins}} for up to {guests} guests.",
+      "metaPlace": "{crew} charter from {place}.",
+      "metaPrice": "From {price} per week.",
+      "metaCta": "Check availability for your dates."
     },
     "Booking": {
       "title": "Book Your Yacht",
@@ -1357,6 +1376,22 @@
     "StaffBooking": {
       "title": "Booking (staff)",
       "description": "Staff view of a customer booking."
+    },
+    "CatalogPage": {
+      "country": "Yacht Charter in {place}",
+      "geo": "Yacht Charter in {place}, {country}",
+      "marina": "Yacht Charter at {place}",
+      "type": "{type} Charter",
+      "typeCountry": "{type} Charter in {place}",
+      "typeGeo": "{type} Charter in {place}, {country}",
+      "typeMarina": "{type} Charter at {place}",
+      "builder": "{brand} Yacht Charter",
+      "model": "{model} Charter",
+      "intro": "{count, plural, one {# boat} other {# boats}} available, from {price} per week.",
+      "introNoPrice": "{count, plural, one {# boat} other {# boats}} available.",
+      "description": "Compare {count, plural, one {# yacht} other {# yachts}} for charter. Filter by dates, guests, cabins and price, then check availability for your trip.",
+      "siblings": "Also worth a look",
+      "empty": "No boats match right now. Try the full catalogue."
     }
   },
   "Profile": {
@@ -1413,7 +1448,8 @@
       "error": "We couldn't cancel your booking. Please try again."
     },
     "statusCancelled": "Cancelled",
-    "payBalance": "Pay balance"
+    "payBalance": "Pay {amount}",
+    "completePayment": "Complete payment {amount}"
   },
   "Wishlist": {
     "title": "Your Wishlist",
@@ -2252,6 +2288,13 @@
       },
       "priceLines": {
         "title": "Price breakdown"
+      },
+      "excluded": {
+        "chip": "Not real business",
+        "exclude": "Mark as test booking",
+        "restore": "Restore to the queues",
+        "excludedAt": "Excluded from the queues and totals {at}",
+        "help": "An excluded booking keeps its status, its payments and its provider reservation. It only stops being counted by staff queues and money totals."
       }
     }
   }

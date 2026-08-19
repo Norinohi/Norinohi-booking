@@ -1,25 +1,18 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import {
-  Carousel,
-  CarouselBars,
-  CarouselSlide,
-  CarouselViewport,
-} from "@yacht-charter/ui/components/data-display/carousel";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import { ImageFallback } from "@yacht-charter/ui/components/data-display/image-fallback";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Bookmark, Sailboat, Star, Users } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
 import type { BoatCardCharterDate } from "@/components/shared/data-display/boat-card";
+import CardPhotos from "@/components/shared/data-display/card-photos";
 import { dayToDisplay } from "@/lib/date";
 import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 
 import BoatCard, { type BoatCardProps } from "@/components/shared/data-display/boat-card";
-import { Image } from "@/components/shared/data-display/image";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 
 import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
@@ -46,6 +39,8 @@ export type BookingCardProps = BoatCardProps & {
    * the second installment themselves rather than waiting to be chased.
    */
   payBalanceHref?: string;
+  /** What that button says — the wording depends on whether anything has been paid yet. */
+  payBalanceLabel?: string;
 };
 
 function Stamp({ value }: { value: BoatCardCharterDate }) {
@@ -69,6 +64,7 @@ export default function BookingCard({
   cancellable,
   isCancelled,
   payBalanceHref,
+  payBalanceLabel,
   ...booking
 }: BookingCardProps) {
   const t = useTranslations("Common.boatCard");
@@ -114,28 +110,12 @@ export default function BookingCard({
       >
         {/* Image */}
         <div className="relative overflow-hidden rounded-l-2xl">
-          {booking.images.length > 0 ? (
-            <Carousel className="size-full">
-              <CarouselViewport>
-                {booking.images.map((src, index) => (
-                  <CarouselSlide key={src + index}>
-                    <Image
-                      src={src}
-                      alt={index === 0 ? (booking.imageAlt ?? "") : ""}
-                      fill
-                      priority={booking.priority && index === 0}
-                      sizes="(min-width: 1280px) 30vw, 100vw"
-                      className="object-cover"
-                    />
-                  </CarouselSlide>
-                ))}
-              </CarouselViewport>
-              <div aria-hidden className="pointer-events-none absolute inset-0 bg-black/10" />
-              <CarouselBars className="absolute inset-x-0 bottom-4" />
-            </Carousel>
-          ) : (
-            <ImageFallback className="absolute inset-0" />
-          )}
+          <CardPhotos
+            images={booking.images}
+            imageAlt={booking.imageAlt}
+            priority={booking.priority}
+            sizes="(min-width: 1280px) 30vw, 100vw"
+          />
 
           <div className="absolute top-4 left-4">
             <Button
@@ -196,7 +176,7 @@ export default function BookingCard({
               nativeButton={false}
               render={<Link href={payBalanceHref} />}
             >
-              {tBookings("payBalance")}
+              {payBalanceLabel ?? tBookings("payBalance", { amount: "" })}
             </Button>
           ) : null}
           <Button

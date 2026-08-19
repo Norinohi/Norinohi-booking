@@ -27,8 +27,12 @@ export default function MandatoryExtrasSection() {
               <p className="text-base leading-5.5 text-foreground">{item.label}</p>
               <p className="text-xs font-semibold text-natural-300">{tExtras("payAtCheckIn")}</p>
             </div>
+            {/* The operator's own measure, where it gave one: a per-person extra quoted
+                as "per booking" understates what the charter will be billed. */}
             <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
-              {tExtras("perBooking", { price: formatMoney(item.price.amountMinor) })}
+              {item.priceMeasure
+                ? `${formatMoney(item.price.amountMinor)} ${item.priceMeasure}`
+                : tExtras("perBooking", { price: formatMoney(item.price.amountMinor) })}
             </p>
           </div>
         ))}

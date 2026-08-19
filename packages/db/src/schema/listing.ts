@@ -49,6 +49,14 @@ export const listing = pgTable(
       onDelete: "set null",
     }),
     crewType: text("crew_type"),
+    /**
+     * Refundable damage deposit the base takes at check-in and returns after
+     * check-out. Never collected by us, so it stays out of every total; the
+     * currency is stored because NauSYS lets a deposit name one of its own,
+     * distinct from the season currency in `default_currency`.
+     */
+    securityDepositMinor: integer("security_deposit_minor"),
+    securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),
     defaultCurrency: text("default_currency"),

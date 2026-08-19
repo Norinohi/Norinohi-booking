@@ -47,10 +47,19 @@ export const location = pgTable(
       .notNull()
       .references(() => region.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
+    /*
+     * The town this location is reached from, which no provider models: a NauSYS `location` is
+     * the marina itself, so the name arrives as "Marina Zadar (ex. Tankerkomerc)". Curated, never
+     * written by a sync — the writer inserts locations with `onConflictDoNothing`, so an edit
+     * here survives every later import. Null until someone fills it in, which is what keeps a
+     * wrong town out of a URL.
+     */
+    city: text("city"),
     ...timestamps,
   },
   (t) => [
     index("location_region_idx").on(t.regionId),
+    index("location_city_idx").on(t.city),
     uniqueIndex("location_region_name_uq").on(t.regionId, t.name),
   ],
 );

@@ -21,7 +21,8 @@
       "mandatory": "Obligatorio",
       "optional": "Extras opcionales",
       "included": "Incluido",
-      "arrangeAtBase": "Acordar con la base"
+      "arrangeAtBase": "Acordar con la base",
+      "notOnTheseDates": "No disponible en estas fechas"
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
@@ -221,6 +222,7 @@
       "summary": {
         "total": "Precio total",
         "paid": "Ya pagado",
+        "atCheckIn": "A pagar en la marina",
         "due": "A pagar ahora"
       },
       "paid": {
@@ -401,13 +403,17 @@
       "remove": "Quitar de favoritos",
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
+      "openGallery": "Abrir la galería de fotos",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "availableFrom": "Disponible desde el {date}",
       "priceOnRequest": "Bajo petición",
       "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
       "prepayment": "Anticipo de reserva: {amount}",
-      "prepaymentInfo": "Es una fianza reembolsable que cubre posibles daños durante el viaje. Se devuelve tras la entrega si todo está en buen estado.",
+      "prepaymentInfo": "Es la parte del precio del chárter que se paga por adelantado para asegurar la reserva. Se descuenta del total y el resto se abona antes de la llegada.",
+      "securityDeposit": "Fianza reembolsable: {amount}",
+      "securityDepositInfo": "Fianza reembolsable que retiene la base por posibles daños durante el viaje. Se cobra en la llegada, no forma parte del precio y se devuelve tras la entrega si todo está en buen estado.",
       "specs": {
         "year": "Año",
         "people": "Personas",
@@ -448,6 +454,13 @@
         "fullCrew": "Tripulación completa",
         "skipperOptional": "Patrón opcional"
       }
+    },
+    "gallery": {
+      "close": "Cerrar",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar"
     },
     "marina": {
       "viewDetails": "Ver detalles"
@@ -571,12 +584,14 @@
       "any": "cualquiera",
       "country": "País: {value}",
       "sailingArea": "Zona: {value}",
+      "city": "Ciudad: {value}",
       "charterCompany": "Empresa: {value}",
       "marina": "Marina: {value}",
       "startDate": "Inicio: {value}",
       "duration": "Duración: {count, plural, one {# día} other {# días}}",
       "dateFlexibility": "Flexibilidad: {value}",
       "boatType": "Tipo de barco: {value}",
+      "builder": "Astillero: {value}",
       "model": "Modelo: {value}",
       "crew": "Tripulación: {value}",
       "mainsailType": "Mayor: {value}",
@@ -848,7 +863,11 @@
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
       "payments": "Pagos",
-      "listings": "Anuncios"
+      "listings": "Anuncios",
+      "sections": {
+        "account": "Cuenta",
+        "admin": "Administración"
+      }
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1092,13 +1111,6 @@
     "addToWishlist": "Añadir a favoritos",
     "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
-    "gallery": {
-      "close": "Cerrar",
-      "previous": "Anterior",
-      "next": "Siguiente",
-      "zoomIn": "Acercar",
-      "zoomOut": "Alejar"
-    },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",
       "pickUpAddress": "Dirección de recogida del yate",
@@ -1224,6 +1236,7 @@
     }
   },
   "Yachts": {
+    "heading": "Buscador de alquiler de yates",
     "searchByMap": "Buscar en el mapa",
     "emptyTitle": "No se han encontrado yates para tus filtros",
     "emptyDescription": "Prueba a ajustar las fechas, el presupuesto o el lugar; te ayudaremos a encontrar la opción ideal.",
@@ -1251,8 +1264,8 @@
   },
   "Seo": {
     "Yachts": {
-      "title": "Explorar Yates",
-      "description": "Explora nuestra flota de yates y catamaranes. Filtra por destino, fechas, huéspedes y precio para encontrar el barco perfecto para tu viaje."
+      "title": "Buscador de alquiler de yates",
+      "description": "Busca yates y catamaranes de alquiler por el Mediterráneo y otros destinos. Filtra por destino, fechas, huéspedes y precio."
     },
     "YachtsMap": {
       "title": "Yates en el mapa",
@@ -1260,7 +1273,13 @@
     },
     "YachtDetail": {
       "title": "Detalles del yate",
-      "description": "Consulta fotos, características, opciones de tripulación y precios de este yate, y comprueba la disponibilidad para tus fechas."
+      "description": "Consulta fotos, características, opciones de tripulación y precios de este yate, y comprueba la disponibilidad para tus fechas.",
+      "titleAtPlace": "Alquiler de {boat} en {place}",
+      "titlePlain": "Alquiler de {boat}",
+      "metaSpecs": "{category} con {cabins, plural, one {# camarote} other {# camarotes}} para hasta {guests} huéspedes.",
+      "metaPlace": "{crew}. Base: {place}.",
+      "metaPrice": "Desde {price} por semana.",
+      "metaCta": "Comprueba la disponibilidad para tus fechas."
     },
     "Booking": {
       "title": "Reserva tu yate",
@@ -1357,6 +1376,22 @@
     "StaffBooking": {
       "title": "Reserva (personal)",
       "description": "Vista de personal de una reserva."
+    },
+    "CatalogPage": {
+      "country": "Alquiler de yates en {place}",
+      "geo": "Alquiler de yates en {place}, {country}",
+      "marina": "Alquiler de yates en {place}",
+      "type": "Alquiler de {type}",
+      "typeCountry": "Alquiler de {type} en {place}",
+      "typeGeo": "Alquiler de {type} en {place}, {country}",
+      "typeMarina": "Alquiler de {type} en {place}",
+      "builder": "Alquiler de yates {brand}",
+      "model": "Alquiler de {model}",
+      "intro": "{count, plural, one {# barco disponible} other {# barcos disponibles}}, desde {price} por semana.",
+      "introNoPrice": "{count, plural, one {# barco disponible} other {# barcos disponibles}}.",
+      "description": "Compara {count, plural, one {# yate} other {# yates}} de alquiler. Filtra por fechas, huéspedes, camarotes y precio, y comprueba la disponibilidad.",
+      "siblings": "También te puede interesar",
+      "empty": "Ahora mismo no hay barcos que coincidan. Prueba el catálogo completo."
     }
   },
   "Profile": {
@@ -1413,7 +1448,8 @@
       "error": "No pudimos cancelar tu reserva. Inténtalo de nuevo."
     },
     "statusCancelled": "Cancelada",
-    "payBalance": "Pagar saldo"
+    "payBalance": "Pagar {amount}",
+    "completePayment": "Completar el pago {amount}"
   },
   "Wishlist": {
     "title": "Tus favoritos",
@@ -2252,6 +2288,13 @@
       },
       "priceLines": {
         "title": "Desglose de precio"
+      },
+      "excluded": {
+        "chip": "No es negocio real",
+        "exclude": "Marcar como reserva de prueba",
+        "restore": "Devolver a las colas",
+        "excludedAt": "Excluida de las colas y los totales el {at}",
+        "help": "Una reserva excluida conserva su estado, sus pagos y su reserva con el proveedor. Solo deja de contarse en las colas de personal y en los totales de dinero."
       }
     }
   }

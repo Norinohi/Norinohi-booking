@@ -428,6 +428,8 @@ function projectYacht(
     oneWayRules: [],
     defaultCurrency: currency,
     securityDepositMinor: minorOf(yacht.deposit, currency),
+    // Booking Manager prices the yacht and its deposit in one currency.
+    securityDepositCurrency: currency,
     // Booking Manager publishes no review aggregate, and absent must stay absent: a
     // yacht nobody has rated is not a yacht rated zero.
     rating: undefined,

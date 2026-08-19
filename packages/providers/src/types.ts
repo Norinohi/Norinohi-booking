@@ -179,6 +179,38 @@ export const providerQuoteSchema = z.object({
     depositPct: z.number(),
     balanceDueAt: z.string().optional(),
   }),
+  /**
+   * The canonical extra codes this offer can actually price for this period, or
+   * null where the provider's offer does not say.
+   *
+   * Not the same question as the catalogue's `selectable`, which asks whether an
+   * adapter can ever match a code at all. An operator lists everything it sells
+   * across every season, and a given week prices only part of that: before this
+   * the sidebar offered the whole catalogue and dropped whatever the vendor had
+   * not quoted, without saying so.
+   *
+   * Carries the amount as well as the code, because the catalogue's figure is a
+   * unit price against a measure the operator chose ("per person") and the offer
+   * multiplies it by a quantity the operator also chose. Only this is what ticking
+   * the box will actually add.
+   *
+   * `payWhen` for the same reason: the two sources genuinely disagree — an extra the
+   * catalogue files as settled at the base can arrive on the offer as payable up
+   * front, and it is the offer the customer is about to pay.
+   *
+   * Null means "the offer does not report it", never "none": a provider that
+   * publishes no per-period extras must not have its whole list greyed out.
+   */
+  offeredExtras: z
+    .array(
+      z.object({
+        code: z.string(),
+        amount: moneySchema,
+        payWhen: z.enum(["now", "at_check_in"]),
+      }),
+    )
+    .nullable()
+    .default(null),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
@@ -504,6 +536,8 @@ const canonicalListingSchema = z.object({
   ),
   defaultCurrency: z.string().length(3),
   securityDepositMinor: z.number().int().optional(),
+  /** Unset means the deposit is denominated in `defaultCurrency`. */
+  securityDepositCurrency: z.string().length(3).optional(),
   /** Provider-side review aggregate. Left unset when the provider has no verdict. */
   rating: z.number().min(0).max(5).optional(),
   reviewCount: z.number().int().nonnegative().optional(),

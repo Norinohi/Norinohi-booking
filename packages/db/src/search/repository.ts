@@ -142,24 +142,51 @@ export async function getListingByIdOrSlug(
   return rows.rows[0] ? normalizeSearchRow(rows.rows[0]) : undefined;
 }
 
+/**
+ * The provider's own description in `locale`, or undefined when it ships none.
+ *
+ * `listing_search_doc` bakes provider prose into `searchable_text` only, so the detail read is
+ * the one place it can still be recovered per locale. English is not a fallback here on purpose:
+ * serving it under `lang="uk"` is the duplicate-content case the caller's generated copy avoids.
+ */
+async function providerDescription(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+  locale: string,
+): Promise<string | undefined> {
+  const rows = await db.execute<{ value: string }>(sql`
+    select value
+    from listing_text
+    where listing_id = ${listingId} and kind = 'description' and locale = ${locale}
+    limit 1
+  `);
+
+  return rows.rows[0]?.value;
+}
+
 export async function getListingDetailByIdOrSlug(
   db: NodePgDatabase<typeof schema>,
   idOrSlug: string,
+  locale: string = DEFAULT_LOCALE,
 ): Promise<ListingDetail | undefined> {
-  const listing = await getListingByIdOrSlug(db, idOrSlug);
-  if (!listing) return undefined;
+  const raw = await getListingByIdOrSlug(db, idOrSlug);
+  if (!raw) return undefined;
 
-  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts] = await Promise.all([
-    db.execute<{
-      beamM: string | null;
-      draftM: string | null;
-      engines: number | null;
-      enginePower: string | null;
-      fuelCapacity: number | null;
-      waterCapacity: number | null;
-      checkInTime: string | null;
-      checkOutTime: string | null;
-    }>(sql`
+  const [localized] = await localizeSearchDocs(db, [raw], locale);
+  const listing = localized ?? raw;
+
+  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose] =
+    await Promise.all([
+      db.execute<{
+        beamM: string | null;
+        draftM: string | null;
+        engines: number | null;
+        enginePower: string | null;
+        fuelCapacity: number | null;
+        waterCapacity: number | null;
+        checkInTime: string | null;
+        checkOutTime: string | null;
+      }>(sql`
       select
         spec.beam_m as "beamM",
         spec.draft_m as "draftM",
@@ -175,14 +202,14 @@ export async function getListingDetailByIdOrSlug(
       where l.id = ${listing.listingId}
       limit 1
     `),
-    db.execute<{
-      code: string | null;
-      label: string;
-      obligatory: boolean;
-      crew: boolean;
-      priceMinor: number | null;
-      priceCurrency: string | null;
-    }>(sql`
+      db.execute<{
+        code: string | null;
+        label: string;
+        obligatory: boolean;
+        crew: boolean;
+        priceMinor: number | null;
+        priceCurrency: string | null;
+      }>(sql`
       select
         a.code,
         a.name as label,
@@ -195,16 +222,18 @@ export async function getListingDetailByIdOrSlug(
       where la.listing_id = ${listing.listingId}
       order by la.obligatory desc, la.price_minor nulls first, a.name asc
     `),
-    db.execute<{
-      source: string;
-      kind: string;
-      externalId: string;
-      label: string;
-      obligatory: boolean;
-      crewRole: string | null;
-      priceMinor: number | null;
-      priceCurrency: string | null;
-    }>(sql`
+      db.execute<{
+        source: string;
+        kind: string;
+        externalId: string;
+        label: string;
+        obligatory: boolean;
+        crewRole: string | null;
+        priceMinor: number | null;
+        priceCurrency: string | null;
+        priceMeasure: string | null;
+        calculationType: string | null;
+      }>(sql`
       select
         source,
         kind,
@@ -213,20 +242,23 @@ export async function getListingDetailByIdOrSlug(
         obligatory,
         crew_role as "crewRole",
         price_minor as "priceMinor",
-        price_currency as "priceCurrency"
+        price_currency as "priceCurrency",
+        price_measure as "priceMeasure",
+        calculation_type as "calculationType"
       from provider_extra_catalogue
       where listing_id = ${listing.listingId}
       order by obligatory desc, price_minor, name asc
     `),
-    db.execute<{ id: string; question: string; answer: string }>(sql`
+      db.execute<{ id: string; question: string; answer: string }>(sql`
       select id, question, answer
       from faq
       where listing_id = ${listing.listingId}
       order by sort_order asc, created_at asc
     `),
-    listListingReviews(db, listing.listingId),
-    listSimilarListings(db, listing.listingId),
-  ]);
+      listListingReviews(db, listing.listingId),
+      listSimilarListings(db, listing.listingId),
+      providerDescription(db, listing.listingId, locale),
+    ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
     ...item,
@@ -252,6 +284,8 @@ export async function getListingDetailByIdOrSlug(
     crewRole: item.crewRole,
     priceMinor: item.priceMinor,
     priceCurrency: item.priceCurrency,
+    priceMeasure: item.priceMeasure,
+    calculationType: item.calculationType,
     selectable: isSelectableExtra(item.source, item.kind),
   }));
   const mandatoryExtras = extras
@@ -287,7 +321,12 @@ export async function getListingDetailByIdOrSlug(
 
   return {
     ...listing,
-    description: descriptionFor(listing),
+    /*
+     * Null rather than the generated sentence when the provider ships no prose for this locale.
+     * The generated copy is translated, and its translations live in the web app's message files,
+     * so building it here would mean shipping Ukrainian string templates from the database package.
+     */
+    description: prose ?? null,
     overview: overviewFor(listing, info),
     includedAmenities,
     mandatoryExtras,
@@ -494,7 +533,7 @@ export async function listSearchSuggestions(
   // start, instead of an alphabetical slice that means nothing. Data-driven, so it never lists a
   // country with no listings.
   if (query.trim() === "") {
-    const popular = await db.execute<ListingSuggestion>(sql`
+    const popular = await db.execute<Omit<ListingSuggestion, "value">>(sql`
       select doc.country as label, 'country' as kind
       from listing_search_doc doc
       where doc.country is not null
@@ -502,11 +541,11 @@ export async function listSearchSuggestions(
       order by count(*) desc, doc.country asc
       limit 5
     `);
-    return popular.rows;
+    return popular.rows.map(withFilterValue);
   }
 
   const pattern = `%${query}%`;
-  const rows = await db.execute<ListingSuggestion>(sql`
+  const rows = await db.execute<Omit<ListingSuggestion, "value">>(sql`
     select distinct label, kind
     from (
       select doc.country as label, 'country' as kind from listing_search_doc doc
@@ -522,7 +561,16 @@ export async function listSearchSuggestions(
     limit 10
   `);
 
-  return rows.rows;
+  return rows.rows.map(withFilterValue);
+}
+
+/*
+ * Derived here rather than selected in SQL because it has to be the *same* derivation the facet
+ * options use -- a suggestion whose value did not match its facet option would set a filter the
+ * panel could not show as ticked.
+ */
+function withFilterValue(row: Omit<ListingSuggestion, "value">): ListingSuggestion {
+  return { ...row, value: valueForLabel(row.label) };
 }
 
 export async function listAvailabilityCalendar(
@@ -785,9 +833,11 @@ const searchColumns = sql`
   doc.crew_type as "crewType",
   doc.builder,
   doc.model,
+  doc.model_canonical as "modelCanonical",
   doc.operator,
   doc.base_id as "baseId",
   doc.base_name as "baseName",
+  doc.city,
   doc.location,
   doc.region,
   doc.country,
@@ -804,6 +854,8 @@ const searchColumns = sql`
   doc.heads,
   doc.year_built as "yearBuilt",
   doc.sail_type as "sailType",
+  doc.security_deposit_minor as "securityDepositMinor",
+  doc.security_deposit_currency as "securityDepositCurrency",
   doc.deposit_insurance_included as "depositInsuranceIncluded",
   doc.pets_allowed as "petsAllowed",
   doc.rating,
@@ -816,6 +868,7 @@ const searchColumns = sql`
   doc.currency,
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
+  doc.bookable_from as "bookableFrom",
   doc.has_unconfirmed_availability as "hasUnconfirmedAvailability",
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;
@@ -842,6 +895,9 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("sailingArea") && input.sailingArea?.length) {
     parts.push(normalizedIn(sql`doc.region`, input.sailingArea));
   }
+  if (!skip.has("city") && input.city?.length) {
+    parts.push(normalizedIn(sql`doc.city`, input.city));
+  }
   if (!skip.has("charterCompany") && input.charterCompany?.length) {
     parts.push(normalizedIn(sql`doc.operator`, input.charterCompany));
   }
@@ -853,9 +909,12 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("boatType") && input.boatType?.length) {
     parts.push(normalizedIn(sql`doc.category`, input.boatType));
   }
+  if (!skip.has("builder") && input.builder?.length) {
+    parts.push(normalizedIn(sql`doc.builder`, input.builder));
+  }
   if (!skip.has("model") && input.model?.length) {
     parts.push(
-      sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
+      sql`(${normalizedIn(sql`doc.model`, input.model)} or ${normalizedIn(sql`doc.model_canonical`, input.model)} or ${normalizedIn(sql`doc.builder`, input.model)})`,
     );
   }
   if (!skip.has("crew") && input.crew?.length) {
@@ -1214,6 +1273,8 @@ function pricedItem(
     label: string;
     priceMinor: number | null;
     priceCurrency: string | null;
+    priceMeasure?: string | null;
+    calculationType?: string | null;
   },
   fallbackCurrency: string | null,
 ): ListingPricedItem {
@@ -1224,23 +1285,26 @@ function pricedItem(
       amountMinor: item.priceMinor ?? 0,
       currency: item.priceCurrency ?? fallbackCurrency ?? "EUR",
     },
-    pricingType: "pay_at_check_in",
+    priceMeasure: item.priceMeasure ?? null,
+    pricingType: pricingTypeOf(item.calculationType),
   };
 }
 
-function descriptionFor(listing: ListingSearchDoc): string {
-  const year = listing.yearBuilt ? `Built in ${listing.yearBuilt}` : "This yacht";
-  const capacity = listing.berths
-    ? `accommodates up to ${listing.berths} guests`
-    : "is ready for a comfortable charter";
-  const layout = [
-    listing.cabins ? `${listing.cabins} cabins` : undefined,
-    listing.heads ? `${listing.heads} bathrooms` : undefined,
-  ]
-    .filter(Boolean)
-    .join(" and ");
-
-  return `${year}, ${listing.title} ${capacity}${layout ? ` with ${layout}` : ""}. Based at ${listing.baseName} in ${listing.location}, this ${listing.category ?? "yacht"} is set up for a smooth charter with ${listing.operator}.`;
+/*
+ * Most extras are settled with the base on arrival, but not all: the vendor also
+ * sells some up front, and this used to answer "pay at check-in" for every one of
+ * them. A quote then charged the customer today for a line the listing had just
+ * promised them at the marina.
+ *
+ * The offer is the authority where there is one — it and the catalogue genuinely
+ * disagree on individual extras — so this only answers for an extra no offer
+ * covers. `per_booking` here carries no measure, only "not settled at the base";
+ * what the price is per is `priceMeasure`'s job.
+ */
+function pricingTypeOf(
+  calculationType: string | null | undefined,
+): ListingPricedItem["pricingType"] {
+  return calculationType === "ADVANCE_PAYMENT" ? "per_booking" : "pay_at_check_in";
 }
 
 function overviewFor(
@@ -1390,7 +1454,15 @@ function routePlacesFor(region: string, location: string) {
   ];
 }
 
-function valueForLabel(label: string): string {
+/**
+ * The value a facet option is selected by, which is not `toSlug`.
+ *
+ * Diacritics are left alone here on purpose: the filter match normalizes both sides by stripping
+ * non-alphanumerics, so "Mali Lošinj" folds to `maliloinj` on the column and this has to fold the
+ * same way. Folding the accent instead would produce `malilosinj` and match nothing. Catalogue
+ * page URLs use `toSlug`, which does fold, because a URL is read by people.
+ */
+export function valueForLabel(label: string): string {
   return label
     .trim()
     .toLowerCase()

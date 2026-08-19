@@ -10,7 +10,9 @@ import {
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider, providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+
+import { chunked } from "./chunks";
 
 import type { Database } from "../registry";
 import type { ListingSummary, ProviderKey } from "../types";
@@ -38,6 +40,20 @@ export interface CatalogueResolver {
    */
   providerId(): Promise<string>;
   toExternalListing(listingId: string): Promise<ExternalListingRef>;
+  /**
+   * The same mapping as `toExternalListing`, for many listings at once and yielding
+   * only the yacht id.
+   *
+   * Exists because the seasonal price sweep prices the whole fleet in one pass and
+   * needs to know which vendor yacht each of our listings is. Asking
+   * `toExternalListing` per listing was a query per boat - tens of thousands of
+   * sequential round-trips to answer one question about a set.
+   *
+   * A listing with no active source under this provider is absent from the map
+   * rather than mapped to null: there is no id to give, and a caller that cannot
+   * tell "not ours" from "ours but unnamed" would price the wrong boat.
+   */
+  toExternalYachtIds(listingIds: readonly string[]): Promise<Map<string, string>>;
   toListingId(externalYachtId: string): Promise<string | null>;
   /** Maps our amenity codes to the provider's service/equipment ids for extras. */
   toExternalAmenityIds(amenityCodes: string[]): Promise<string[]>;
@@ -51,6 +67,17 @@ export interface CatalogueResolver {
   loadListingSummary(listingId: string): Promise<ListingSummary | null>;
   /** Every external company id with an active record, for per-company sync sweeps. */
   listExternalCompanyIds(): Promise<string[]>;
+  /**
+   * Every company a yacht record is still filed under, whether or not the company
+   * record itself is active.
+   *
+   * Deliberately not `listExternalCompanyIds`. Narrowing the import scope
+   * deactivates the company record on the next run, so a company that has fallen
+   * out of scope disappears from that list while its fleet stays active and its
+   * listings stay published. This reads the fleet's own filing instead, which is
+   * what a retire sweep has to address.
+   */
+  listYachtCompanyScopeKeys(): Promise<string[]>;
 }
 
 type CountryIndex = { byAlpha2: Map<string, string>; byAlpha3: Map<string, string> };
@@ -146,6 +173,36 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
       }
 
       return row;
+    },
+
+    async toExternalYachtIds(listingIds) {
+      const found = new Map<string, string>();
+      if (listingIds.length === 0) return found;
+
+      const owner = await providerId();
+
+      for (const chunk of chunked([...new Set(listingIds)])) {
+        const rows = await db
+          .select({
+            listingId: listingSource.listingId,
+            externalYachtId: listingSource.externalYachtId,
+          })
+          .from(listingSource)
+          .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+          .where(
+            and(
+              inArray(listingSource.listingId, chunk),
+              eq(providerRecord.providerId, owner),
+              eq(providerRecord.active, true),
+            ),
+          );
+
+        for (const row of rows) {
+          if (row.listingId) found.set(row.listingId, row.externalYachtId);
+        }
+      }
+
+      return found;
     },
 
     async toListingId(externalYachtId) {
@@ -297,6 +354,22 @@ export function createCatalogueResolver(db: Database, providerKey: ProviderKey):
         );
 
       return rows.map((row) => row.externalId);
+    },
+
+    async listYachtCompanyScopeKeys() {
+      const rows = await db
+        .selectDistinct({ scopeKey: providerRecord.scopeKey })
+        .from(providerRecord)
+        .where(
+          and(
+            eq(providerRecord.providerId, await providerId()),
+            eq(providerRecord.resourceType, "yacht"),
+            eq(providerRecord.active, true),
+            isNotNull(providerRecord.scopeKey),
+          ),
+        );
+
+      return rows.flatMap((row) => (row.scopeKey === null ? [] : [row.scopeKey]));
     },
   };
 }

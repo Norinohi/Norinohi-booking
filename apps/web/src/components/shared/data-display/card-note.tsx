@@ -7,19 +7,25 @@ import {
 } from "@yacht-charter/ui/components/overlay/tooltip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Info } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-export default function PrepaymentNote({
-  label,
+/**
+ * The money footnote under a card's price. It carries its own tooltip because the
+ * slot holds a different figure per caller: a catalogue card states the base's
+ * refundable deposit, a booking card states what was actually prepaid, and one
+ * explanation cannot be true of both.
+ */
+export type CardNote = { label: string; tooltip: string };
+
+export default function CardNote({
+  note,
   backdrop,
   className,
 }: {
-  label: string;
+  note: CardNote;
   backdrop?: boolean;
   className?: string;
 }) {
-  const t = useTranslations("Common.boatCard");
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,9 +43,9 @@ export default function PrepaymentNote({
         }
       >
         <Info className="size-4 shrink-0" />
-        {label}
+        {note.label}
       </TooltipTrigger>
-      <TooltipContent backdrop={backdrop}>{t("prepaymentInfo")}</TooltipContent>
+      <TooltipContent backdrop={backdrop}>{note.tooltip}</TooltipContent>
     </Tooltip>
   );
 }

@@ -30,6 +30,7 @@ export const filterParsers = {
   query: parseAsString.withDefault(""),
   country: multi(),
   sailingArea: multi(),
+  city: multi(),
   charterCompany: multi(),
   marina: multi(),
 
@@ -38,6 +39,7 @@ export const filterParsers = {
   dateFlexibility: parseAsString.withDefault("on-day"),
 
   boatType: multi(),
+  builder: multi(),
   model: multi(),
   crew: multi(),
   mainsailType: multi(),
@@ -67,3 +69,16 @@ export const filterParsers = {
  * `buildSearchHref` sugar, so both sides emit the same param encoding as `filterParsers` parses.
  */
 export const serializeSearch = createSerializer(filterParsers);
+
+/*
+ * The charter a visitor already searched for, carried on a listing's own URL so the detail page
+ * opens on the dates they picked rather than on an empty calendar. Kept here, next to the search
+ * params they come from, because the card that writes them and the sidebar that reads them sit in
+ * different features and must agree on the encoding.
+ */
+export const detailPeriodParsers = {
+  checkIn: parseAsString,
+  checkOut: parseAsString,
+};
+
+export const serializeDetailPeriod = createSerializer(detailPeriodParsers);

@@ -2,7 +2,7 @@ import type { z } from "zod";
 
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
-import { toPositiveIntId } from "../shared/projection-helpers";
+import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
 import {
   providerQuoteSchema,
@@ -72,7 +72,9 @@ export function createBookingManagerQuoteService(
     async getBookingManagerQuote(input: QuoteRequest): Promise<ProviderQuote> {
       const parsed = quoteRequestSchema.parse(input);
       const ref = await resolver.toExternalListing(parsed.listingId);
-      const yachtId = toPositiveIntId(ref.externalYachtId, {
+      // Digits, not a number: the id can be 19 long, and `/offers` takes it as a
+      // query parameter, where a string is exactly what goes on the wire anyway.
+      const yachtId = toExactPositiveIntId(ref.externalYachtId, {
         provider: "Booking Manager",
         what: "the yacht id",
       });
@@ -130,7 +132,7 @@ export function createBookingManagerQuoteService(
  */
 function selectOffer(
   offers: readonly RestOffer[],
-  yachtId: number,
+  yachtId: string,
   checkIn: string,
   checkOut: string,
   productName: string | undefined,

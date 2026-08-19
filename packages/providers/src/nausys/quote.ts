@@ -3,7 +3,7 @@ import type { z } from "zod";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
-import { externalIdsOfKind, formatExtraCode } from "../shared/extra-code";
+import { formatExtraCode, type ExtraKind } from "../shared/extra-code";
 import { decimalStringToMinor } from "../shared/money";
 import { toPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
@@ -42,7 +42,7 @@ const DEFAULT_LABELS = {
   discount: "Charter discount",
 } as const;
 
-export type NausysLabelKind = "service" | "discount";
+export type NausysLabelKind = "service" | "equipment" | "discount";
 
 /** A crew role and the vendor service the operator sells it as. */
 export interface CrewRoleService {
@@ -91,6 +91,13 @@ export interface NausysQuoteServiceOptions {
   loadSecurityDeposit?: (listingId: string) => Promise<Money | undefined>;
   /** Resolves a vendor service or discount id to a customer-facing line label. */
   labelFor?: (kind: NausysLabelKind, externalId: string) => string | undefined;
+  /**
+   * The listing's extras by canonical code, for naming the lines they price.
+   * `freeYachts` sends ids and prices but no names, so without this every extra
+   * on the quote read "Charter extra" — three of them on one booking, and the
+   * customer approving a bill that never says what they bought.
+   */
+  loadExtraLabels?: (listingId: string) => Promise<ReadonlyMap<string, string>>;
   /**
    * The listing's crew roles and the vendor service each is sold as. NauSYS flags
    * no service as crew, so the roles were read off service names during the
@@ -190,6 +197,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
             };
 
       const crewRoles = (await options.loadCrewRoles?.(parsed.listingId)) ?? [];
+      const extraLabels = await options.loadExtraLabels?.(parsed.listingId);
 
       return mapFreeYachtToProviderQuote({
         yacht,
@@ -202,7 +210,11 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         crewServiceIds: crewServiceIdsFor(crewRoles, parsed.crewType),
         securityDeposit,
         expiresAt: new Date(now() + quoteTtlMs).toISOString(),
-        labelFor: options.labelFor,
+        /* The catalogue answers for extras; a discount has no catalogue row, and an
+           extra the sync never recorded falls through to whatever the caller knows. */
+        labelFor: (kind, externalId) =>
+          (kind === "discount" ? undefined : extraLabels?.get(formatExtraCode(kind, externalId))) ??
+          options.labelFor?.(kind, externalId),
       });
     },
   };
@@ -223,10 +235,10 @@ export interface FreeYachtMapping {
    */
   crewType?: CrewType | undefined;
   /**
-   * Selected extras as canonical `kind:externalId` codes. Only the `service` half
-   * is priced: every recorded `additionalExtras` entry keys on `serviceId`, and
-   * the `extraId` shape the schema also admits has never been seen, so there is
-   * nothing to match an `equipment:` code against with any confidence.
+   * Selected extras as canonical `kind:externalId` codes, matched against the
+   * offer by `offerExtraIdentity`. Both id spaces are priced: an account that
+   * sends the `extraId` shape names the space in `extrasType`, so an
+   * `equipment:` code has something exact to match.
    */
   extras?: readonly string[] | undefined;
   /** Vendor service ids the chosen crew type puts aboard; priced as crew lines. */
@@ -255,10 +267,13 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
    * excluded from the optional selection: billing the same service twice is what
    * would happen if a customer ticked the skipper the crew control already added.
    */
-  const crewIds = new Set(input.crewServiceIds ?? []);
-  const crew = additionalExtrasById(yacht, crewIds);
-  const selected = selectedAdditionalExtras(yacht, input.extras ?? []).filter(
-    (extra) => !crewIds.has(String(extra.serviceId)),
+  const crewCodes = new Set(
+    (input.crewServiceIds ?? []).map((id) => formatExtraCode("service", id)),
+  );
+  const crew = additionalExtrasByCode(yacht, crewCodes);
+  const selected = additionalExtrasByCode(
+    yacht,
+    new Set((input.extras ?? []).filter((code) => !crewCodes.has(code))),
   );
   const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew"));
   const selectedLines = selected.map((extra) => toExtraLine(extra, currency, input, "optional"));
@@ -276,6 +291,27 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
       { endpoint: nausysEndpoints.availability.freeYachts },
     );
   }
+
+  /*
+   * Everything the offer could price, ticked or not, so the listing can grey out
+   * the extras this period does not sell instead of accepting a choice that
+   * quietly costs nothing. Crew stays in: the listing keeps crew roles out of its
+   * optional extras entirely, so nothing downstream can offer them twice.
+   */
+  const offeredExtras = (yacht.additionalExtras ?? []).flatMap((extra) => {
+    const identity = offerExtraIdentity(extra);
+    /* An entry we cannot place, or cannot pay for in the charter's currency, is not
+       on offer: leaving it out is also what keeps `toExtraLine` from ever meeting it. */
+    if (identity.externalId === UNPLACEABLE_ID || extra.currency !== currency) return [];
+
+    return [
+      {
+        code: formatExtraCode(identity.kind, identity.externalId),
+        amount: { amountMinor: extraLineMinor(extra, currency), currency },
+        payWhen: payWhenFor(extra),
+      },
+    ];
+  });
 
   const paymentPolicy = toPaymentPolicy(yacht.paymentPlans, yacht.yachtId);
   const payableNowMinor = sumMinor(lines.filter((line) => line.payWhen === "now"));
@@ -308,6 +344,7 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     deposit: { amountMinor: depositMinor, currency },
     securityDeposit: input.securityDeposit,
     paymentPolicy,
+    offeredExtras,
     priceSourceHash,
     // `QuoteRequest` carries no expected price, so the adapter has nothing to
     // compare against; `repriceQuote` sets this itself when the caller asked for
@@ -394,6 +431,30 @@ function discountAmountMinor(
   );
 }
 
+/**
+ * What this entry costs on this charter.
+ *
+ * The vendor's own line total, where it exists. Production always sends it, and
+ * rounding a unit price is their decision rather than ours.
+ *
+ * Where it does not, `amount` is multiplied by `quantity`. NauSYS settled this
+ * twice (Aug 2026): `amount` is the unit price "without calculated quantity", and
+ * asked to adjudicate their own documented counter-example — a `quantity: 10`
+ * extra that raises `totalPriceWithExtras` by one times `amount` — they confirmed
+ * the real response (`amount: 10.00`, `quantity: 10.00`, `totalPrice: 100.00`) is
+ * right and the documentation example is a mistake they will fix. So the customer
+ * is charged 100.00 there, and a missing total is a product, not an ambiguity.
+ *
+ * Rounded because `quantity` can be fractional (hours, days); with an integer
+ * quantity, the common case, this is exact.
+ */
+function extraLineMinor(extra: RestExtra, currency: string): number {
+  const amountMinor = decimalStringToMinor(extra.amount, currency);
+  return extra.totalPrice === undefined
+    ? Math.round(amountMinor * quantityOf(extra))
+    : decimalStringToMinor(extra.totalPrice, currency);
+}
+
 /** `quantity` is a decimal string ("1.00", "10.00"); absent or unreadable is one. */
 function quantityOf(extra: RestExtra): number {
   if (extra.quantity === undefined) return 1;
@@ -401,36 +462,61 @@ function quantityOf(extra: RestExtra): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
-/**
- * The schema admits two shapes, `serviceId` and `extraId`, but every recorded
- * response keys both obligatory and additional extras on `serviceId`; the
- * `extraId` form has never been seen in production or in a fixture.
- */
-function extraKey(extra: RestExtra): string {
-  return String(extra.serviceId ?? extra.extraId ?? "unknown");
+/** Stands in for an entry in neither documented shape; no selection can equal it. */
+const UNPLACEABLE_ID = "unknown";
+
+/** What an offer entry is, in the one identity the rest of the system knows it by. */
+interface OfferExtraIdentity {
+  kind: ExtraKind;
+  externalId: string;
 }
 
 /**
- * The additional extras the customer actually picked.
+ * Which id space `extraId` belongs to. An unrecognised value is not a guess to
+ * make: billing the customer for whichever service happened to share the number
+ * is the failure this naming prevents.
+ */
+function extrasKindOf(extrasType: string | undefined): ExtraKind | null {
+  const named = extrasType?.trim().toUpperCase();
+  if (named === "SERVICE") return "service";
+  if (named === "EQUIPMENT") return "equipment";
+  return null;
+}
+
+/**
+ * The canonical `kind:externalId` an offer entry answers to — the same string the
+ * catalogue stores and the customer submits.
  *
- * Matched on `serviceId` only. An entry carrying just `extraId` is in an id space
- * we have never observed, so matching a canonical `equipment:` code against it
- * would be a guess about what the customer is buying; those extras are marked
- * unselectable upstream instead.
+ * The response keys its two halves differently, as `restExtraSchema` has always
+ * said: an obligatory extra carries `serviceId`, an additional one carries
+ * `extraId` alongside `extrasType`. Reading only `serviceId` was right for the
+ * recorded fixture and wrong on the live account, which sends every additional
+ * extra in the second shape — so nothing a customer ticked ever matched, and the
+ * selection was dropped from the quote without a word. Both shapes now resolve.
+ *
+ * An entry in neither shape resolves to `service:unknown`, which no selection can
+ * equal: it is priced only where the vendor itself made it obligatory.
  */
-function selectedAdditionalExtras(
-  yacht: RestFreeYacht,
-  selectedCodes: readonly string[],
-): RestExtra[] {
-  return additionalExtrasById(yacht, externalIdsOfKind(selectedCodes, "service"));
+function offerExtraIdentity(extra: RestExtra): OfferExtraIdentity {
+  if (extra.serviceId !== undefined) {
+    return { kind: "service", externalId: String(extra.serviceId) };
+  }
+
+  const kind = extra.extraId === undefined ? null : extrasKindOf(extra.extrasType);
+  if (kind === null) return { kind: "service", externalId: UNPLACEABLE_ID };
+
+  return { kind, externalId: String(extra.extraId) };
 }
 
-function additionalExtrasById(yacht: RestFreeYacht, wanted: ReadonlySet<string>): RestExtra[] {
+function offerExtraCode(extra: RestExtra): string {
+  const { kind, externalId } = offerExtraIdentity(extra);
+  return formatExtraCode(kind, externalId);
+}
+
+function additionalExtrasByCode(yacht: RestFreeYacht, wanted: ReadonlySet<string>): RestExtra[] {
   if (wanted.size === 0) return [];
 
-  return (yacht.additionalExtras ?? []).filter(
-    (extra) => extra.serviceId !== undefined && wanted.has(String(extra.serviceId)),
-  );
+  return (yacht.additionalExtras ?? []).filter((extra) => wanted.has(offerExtraCode(extra)));
 }
 
 function toExtraLine(
@@ -439,40 +525,22 @@ function toExtraLine(
   input: FreeYachtMapping,
   group: NonNullable<QuoteLine["group"]>,
 ): QuoteLine {
+  const identity = offerExtraIdentity(extra);
   if (extra.currency !== currency) {
     throw new ContractError(
-      `NauSYS service ${extraKey(extra)} is priced in ${extra.currency}, the charter in ${currency}`,
+      `NauSYS extra ${formatExtraCode(identity.kind, identity.externalId)} is priced in ${extra.currency}, the charter in ${currency}`,
     );
   }
 
-  // The vendor's own line total, where it exists. Production always sends it, and
-  // rounding a unit price is their decision rather than ours.
-  //
-  // Where it does not, `amount` is multiplied by `quantity`. NauSYS settled this
-  // twice (Aug 2026): `amount` is the unit price "without calculated quantity",
-  // and asked to adjudicate their own documented counter-example — a
-  // `quantity: 10` extra that raises `totalPriceWithExtras` by one times `amount`
-  // — they confirmed the real response (`amount: 10.00`, `quantity: 10.00`,
-  // `totalPrice: 100.00`) is right and the documentation example is a mistake they
-  // will fix. So the customer is charged 100.00 there, and a missing total is a
-  // product, not an ambiguity.
-  const amountMinor = decimalStringToMinor(extra.amount, currency);
-  const quantity = quantityOf(extra);
-
-  // Rounded because `quantity` can be fractional (hours, days); with an integer
-  // quantity, the common case, this is exact.
-  const lineMinor =
-    extra.totalPrice === undefined
-      ? Math.round(amountMinor * quantity)
-      : decimalStringToMinor(extra.totalPrice, currency);
+  const lineMinor = extraLineMinor(extra, currency);
 
   return {
     // The canonical extra identity, the same string the listing page rendered and
     // the customer submitted. Keeping the namespaces aligned is what lets a
     // selection be reconciled against the line that priced it, and what makes
     // `booking_extra.code` mean the same thing as the code on screen.
-    code: formatExtraCode("service", extraKey(extra)),
-    label: labelOf(input, "service", extraKey(extra), DEFAULT_LABELS.service),
+    code: formatExtraCode(identity.kind, identity.externalId),
+    label: labelOf(input, identity.kind, identity.externalId, DEFAULT_LABELS.service),
     amount: { amountMinor: lineMinor, currency },
     payWhen: payWhenFor(extra),
     kind: "extra",
@@ -496,7 +564,7 @@ function payWhenFor(extra: RestExtra): QuoteLine["payWhen"] {
       return "at_check_in";
     default:
       throw new ContractError(
-        `Unknown NauSYS calculationType ${JSON.stringify(extra.calculationType)} on service ${extraKey(extra)}`,
+        `Unknown NauSYS calculationType ${JSON.stringify(extra.calculationType)} on extra ${offerExtraCode(extra)}`,
       );
   }
 }

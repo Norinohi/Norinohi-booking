@@ -28,12 +28,16 @@ export async function generateMetadata({
   });
 }
 
-export default async function YachtBookingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function YachtBookingPage({
+  params,
+}: {
+  params: Promise<{ id: string; locale: string }>;
+}) {
+  const { id, locale } = await params;
 
   let detail: Awaited<ReturnType<typeof prefetchListingDetail>>;
   try {
-    detail = await prefetchListingDetail(id);
+    detail = await prefetchListingDetail(id, locale);
   } catch (error) {
     if (error instanceof Error && isListingNotFound(error)) {
       notFound();

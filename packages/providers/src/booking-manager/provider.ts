@@ -21,11 +21,8 @@ import type {
   RawEntity,
 } from "../types";
 import type { CatalogueSyncSource } from "../sync/runner";
-import type {
-  AvailabilitySource,
-  AvailabilitySyncProvider,
-  SeasonalPrice,
-} from "../sync/availability-writer";
+import type { AvailabilitySource, AvailabilitySyncProvider } from "../sync/availability-writer";
+import type { SeasonalPrice } from "../sync/price-writer";
 import {
   type BookingManagerCatalogueCursor,
   bookingManagerCatalogueSource,
@@ -138,7 +135,8 @@ export class BookingManagerInventoryProvider
   createCatalogueSyncSource(options: { resume?: JsonField }): CatalogueSyncSource {
     return bookingManagerCatalogueSource(this.client, {
       resume: parseResume(options.resume),
-      companyIds: this.config.companyIds,
+      companyScope: this.config.companyScope,
+      listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
     });
   }
 
@@ -148,35 +146,27 @@ export class BookingManagerInventoryProvider
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
     void options;
-    const build = async (): Promise<AvailabilitySource> =>
-      createBookingManagerAvailabilitySource({
-        client: this.client,
-        config: this.config,
-        // Which companies to sweep is a database read and the factory is
-        // synchronous, so it is deferred into listScopes. Passing [] here would
-        // make every availability run a successful no-op, which is the worst
-        // possible failure mode.
-        // The configured scope wins when set: it is the list we actually imported,
-        // and reading it back from the database would also pick up companies a
-        // previous, wider run left behind.
-        companyIds:
-          this.config.companyIds.length > 0
-            ? this.config.companyIds.map(Number).filter(Number.isFinite)
-            : (await this.resolver.listExternalCompanyIds()).map(Number).filter(Number.isFinite),
-        years: this.years,
-      });
-
-    let pending: Promise<AvailabilitySource> | null = null;
-    const source = () => (pending ??= build());
-
-    return {
-      async listScopes() {
-        return (await source()).listScopes();
-      },
-      async fetchOccupancy(scope) {
-        return (await source()).fetchOccupancy(scope);
-      },
-    };
+    /*
+     * Only the allowlist is passed through, and only to narrow the vendor call.
+     *
+     * This used to fall back to enumerating every company in `provider_record`,
+     * which on a production credential is ~1300 of them: two years each, ~2600
+     * sequential `/availability` calls, 20-50 minutes an hour, to reassemble two
+     * dumps the vendor will hand over in two calls. Without an allowlist the sweep
+     * is now account-wide and the writer resolves the whole fleet against it, so
+     * an excluded company is no longer skipped at fetch time - its listings are
+     * hidden by the catalogue retire instead, which is the mechanism that actually
+     * owns that decision.
+     */
+    return createBookingManagerAvailabilitySource({
+      client: this.client,
+      config: this.config,
+      companyIds: this.config.companyScope.include
+        .filter((id) => this.config.companyScope.inScope(id))
+        .map(Number)
+        .filter(Number.isFinite),
+      years: this.years,
+    });
   }
 
   async searchAvailability(input: AvailabilitySearch): Promise<AvailableOffer[]> {

@@ -1,13 +1,13 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
-import type { AppPathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
+import { ACCOUNT_ITEMS, ACCOUNT_NAV_HREFS, ADMIN_ITEMS, type AccountNavItem } from "./account-nav";
 
 /*
  * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
@@ -16,42 +16,18 @@ import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
  * "Listings", "Discount Manager", "Duplicate Review", "Sync History" and "Audit Log".
  * Rows with a route render as links and read their active state from the pathname; rows whose
  * page doesn't exist yet stay as inert buttons highlighted only by `defaultActive`.
+ *
+ * Staff see two labelled groups rather than one long list, because the two halves answer to
+ * different people: "My Bookings" is the reader's own charter, "Payments" is everyone's money.
+ * The rows themselves stay identical - tinting the admin half would collide with the active
+ * and hover states, which are the only colours in here that mean anything. A non-staff
+ * session gets no headings at all: one group needs no name to be told apart from nothing.
  */
-
-const BASE_ITEMS = ["profile", "bookings", "referrals", "credits"] as const;
-
-const ADMIN_ITEMS = [
-  "inbox",
-  "payments",
-  "listings",
-  "discount",
-  "duplicates",
-  "sync",
-  "audit",
-] as const;
-
-type SidebarItem = (typeof BASE_ITEMS)[number] | (typeof ADMIN_ITEMS)[number];
-
-/* Only wired pages get an href; the rest stay inert until their routes exist. */
-const HREFS = new Map<SidebarItem, AppPathname>([
-  ["profile", "/profile"],
-  ["bookings", "/profile/bookings"],
-  ["referrals", "/profile/referrals"],
-  ["credits", "/profile/credits"],
-  ["discount", "/profile/discounts"],
-  /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
-  ["inbox", "/inbox"],
-  ["payments", "/payments"],
-  ["listings", "/listings"],
-  ["duplicates", "/duplicates"],
-  ["sync", "/sync"],
-  ["audit", "/audit"],
-]);
 
 type SidebarProps = {
   name?: string;
   variant?: "user" | "admin";
-  defaultActive?: SidebarItem;
+  defaultActive?: AccountNavItem;
   onLogout?: () => void;
   className?: string;
 };
@@ -76,10 +52,18 @@ export default function Sidebar({
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
   const isStaff = variant === "admin" || (hydrated && isStaffUser);
-  const items: readonly SidebarItem[] = isStaff ? [...BASE_ITEMS, ...ADMIN_ITEMS] : BASE_ITEMS;
+
+  const headingId = useId();
+  const groups: readonly { key: "account" | "admin"; items: readonly AccountNavItem[] }[] = isStaff
+    ? [
+        { key: "account", items: ACCOUNT_ITEMS },
+        { key: "admin", items: ADMIN_ITEMS },
+      ]
+    : [{ key: "account", items: ACCOUNT_ITEMS }];
+  const showHeadings = groups.length > 1;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
-  const activeFromPath = [...HREFS]
+  const activeFromPath = [...ACCOUNT_NAV_HREFS]
     .filter(([, href]) => pathname === href || pathname.startsWith(`${href}/`))
     .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
   const active = activeFromPath ?? defaultActive;
@@ -109,50 +93,78 @@ export default function Sidebar({
         </h2>
       </div>
 
-      <ul className="flex flex-col py-4">
-        {items.map((item) => {
-          const href = HREFS.get(item);
-          const isActive = active === item;
-          /* Menu Item is 54px in Figma: 16px paddings around 16/1.4 text */
-          const rowClassName = cn(
-            "block w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
-            isActive
-              ? "bg-brand-50 font-semibold text-brand"
-              : "font-medium text-foreground hover:bg-natural-50",
-          );
-
-          return (
-            <li key={item}>
-              {href ? (
-                <Link
-                  href={href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={rowClassName}
-                >
-                  {t(item)}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  aria-current={isActive ? "page" : undefined}
-                  className={rowClassName}
-                >
-                  {t(item)}
-                </button>
-              )}
-            </li>
-          );
-        })}
-        <li>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] font-medium text-error-500 outline-none transition-colors hover:bg-error-50 focus-visible:bg-error-50"
+      <div className="flex flex-col py-4">
+        {groups.map((group, index) => (
+          <div
+            key={group.key}
+            /* Separated by a rule rather than spacing: the rows are full-bleed, so a gap
+               reads as a rendering gap while a line reads as a boundary. */
+            className={index > 0 ? "mt-2 border-t border-natural-100 pt-2" : undefined}
           >
-            {t("logout")}
-          </button>
-        </li>
-      </ul>
+            {showHeadings ? (
+              <h3
+                id={`${headingId}-${group.key}`}
+                className="px-4 pt-2 pb-1 text-xs leading-[1.4] font-semibold tracking-wide text-natural-500 uppercase"
+              >
+                {t(`sections.${group.key}`)}
+              </h3>
+            ) : null}
+            <ul
+              aria-labelledby={showHeadings ? `${headingId}-${group.key}` : undefined}
+              className="flex flex-col"
+            >
+              {group.items.map((item) => (
+                <li key={item}>
+                  <Row item={item} isActive={active === item} label={t(item)} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className="mt-2 w-full cursor-pointer border-t border-natural-100 px-4 py-4 pt-4 text-left text-base leading-[1.4] font-medium text-error-500 outline-none transition-colors hover:bg-error-50 focus-visible:bg-error-50"
+        >
+          {t("logout")}
+        </button>
+      </div>
     </nav>
+  );
+}
+
+/* Menu Item is 54px in Figma: 16px paddings around 16/1.4 text. A row with no route yet
+   stays an inert button rather than a dead link, so nothing announces itself as navigation
+   it cannot perform. */
+function Row({
+  item,
+  isActive,
+  label,
+}: {
+  item: AccountNavItem;
+  isActive: boolean;
+  label: string;
+}) {
+  const href = ACCOUNT_NAV_HREFS.get(item);
+  const className = cn(
+    "block w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
+    isActive
+      ? "bg-brand-50 font-semibold text-brand"
+      : "font-medium text-foreground hover:bg-natural-50",
+  );
+
+  if (!href) {
+    return (
+      <button type="button" aria-current={isActive ? "page" : undefined} className={className}>
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} aria-current={isActive ? "page" : undefined} className={className}>
+      {label}
+    </Link>
   );
 }

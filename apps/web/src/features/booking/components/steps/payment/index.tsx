@@ -117,6 +117,13 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
   const requestInvoice = useMutation(requestInvoiceMutationOptions());
   const askQuestion = useMutation(askQuestionMutationOptions());
   const method = useWatch({ control, name: "payment.method" });
+  /* The guest from step 1 is the payer unless they say otherwise — don't make them retype it. */
+  const guest = getValues("guestDetails");
+  const guestPrefill = {
+    email: guest.email,
+    name: guest.fullName,
+    countryCode: guest.countryCode,
+  };
 
   /* Due-now, straight from the quote — the same figure `checkout.confirm` would charge. */
   const amount = quote ? money(quote.deposit.amountMinor) : "";
@@ -198,7 +205,7 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
             <PayByCard enabled={cardEnabled} />
           </TabsPanel>
           <TabsPanel value="invoice">
-            <RequestInvoice />
+            <RequestInvoice prefill={guestPrefill} />
           </TabsPanel>
           <TabsPanel value="question">
             <AskQuestion />

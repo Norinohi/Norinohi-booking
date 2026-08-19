@@ -420,6 +420,7 @@ export function projectMockCatalogue(records: ProviderRecordSet): CanonicalCatal
       oneWayRules: yacht.oneWayPeriods ?? [],
       defaultCurrency: yacht.currency,
       securityDepositMinor: yacht.securityDepositMinor,
+      securityDepositCurrency: yacht.currency,
       // Matches what the mock quote prices; a real adapter reads it per yacht.
       paymentPolicy: { mode: "deposit" as const, depositPct: 0.5 },
     };

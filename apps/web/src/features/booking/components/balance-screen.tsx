@@ -13,7 +13,27 @@ import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 
-import { bookingDetailQueryOptions, payBalanceMutationOptions } from "../api/queries";
+import { Form } from "@yacht-charter/ui/components/form/form";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import z from "zod";
+
+import { useRouter } from "@/i18n/navigation";
+
+import {
+  bookingDetailQueryOptions,
+  payBalanceMutationOptions,
+  requestInvoiceMutationOptions,
+} from "../api/queries";
+import {
+  INVOICE_DEFAULTS,
+  type InvoiceFormValues,
+  invoiceValuesSchema,
+  useInvoiceRefinement,
+} from "../lib/invoice-form";
+import RequestInvoice from "./steps/payment/request-invoice";
 import { usePayBooking } from "../hooks/use-pay-booking";
 import { guestAccessFor } from "../lib/guest-access";
 import {
@@ -53,6 +73,7 @@ const settledParsers = { paidBefore: parseAsInteger };
  */
 export default function BalanceScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.balance");
+  const tPayment = useTranslations("Booking.payment");
   const money = useMoney();
   const format = useFormatter();
   const [{ paidBefore }] = useQueryStates(settledParsers);
@@ -191,18 +212,48 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
           </p>
         </header>
 
+        {/*
+          The marina's share is listed even though nothing here can charge it. Without it the
+          three rows do not reconcile — total minus paid does not reach due — and the reader is
+          left to guess whether they are being undercharged or the page is wrong. It is the same
+          figure `dueAtCheckIn` exists to make explicable on the booking record.
+        */}
         <dl className="flex flex-col">
           <Row label={t("summary.total")} value={money(booking.total.amountMinor)} />
           <Row label={t("summary.paid")} value={money(booking.paidTotal.amountMinor)} />
+          {booking.dueAtCheckIn.amountMinor > 0 ? (
+            <Row label={t("summary.atCheckIn")} value={money(booking.dueAtCheckIn.amountMinor)} />
+          ) : null}
           <Row label={t("summary.due")} value={money(payable)} emphasis />
         </dl>
 
-        <BalancePayment
-          bookingId={bookingId}
-          amountMinor={payable}
-          paidMinor={booking.paidTotal.amountMinor}
-          currency={booking.total.currency}
-        />
+        {/*
+          The same two ways of settling the wizard offers, for the same reason: a customer who
+          paid the deposit by transfer has no card to reach for now either. Nothing about a
+          second instalment makes it card-only.
+        */}
+        <Tabs defaultValue="card">
+          <TabsList className="max-md:flex-col max-md:items-stretch">
+            <TabsTab value="card" className="flex-1 max-md:flex-none">
+              {tPayment("tabs.card")}
+            </TabsTab>
+            <TabsTab value="invoice" className="flex-1 max-md:flex-none">
+              {tPayment("tabs.invoice")}
+            </TabsTab>
+          </TabsList>
+
+          <TabsPanel value="card">
+            <BalancePayment
+              bookingId={bookingId}
+              amountMinor={payable}
+              paidMinor={booking.paidTotal.amountMinor}
+              currency={booking.total.currency}
+            />
+          </TabsPanel>
+          <TabsPanel value="invoice">
+            <BalanceInvoice bookingId={bookingId} amountMinor={payable} />
+          </TabsPanel>
+        </Tabs>
       </article>
     </Centered>
   );
@@ -293,6 +344,76 @@ function BalancePayment({
         </div>
       </PaymentTargetProvider>
     </Elements>
+  );
+}
+
+/**
+ * Requesting an invoice for what is outstanding. The same billing block the wizard collects,
+ * with its own form because there is no wizard here to hold one — the server raises the
+ * document against `payableNow`, so this asks for exactly the figure beside the button.
+ */
+function BalanceInvoice({ bookingId, amountMinor }: { bookingId: string; amountMinor: number }) {
+  const t = useTranslations("Booking.payment");
+  const money = useMoney();
+  const router = useRouter();
+  const requestInvoice = useMutation(requestInvoiceMutationOptions());
+  const refineInvoice = useInvoiceRefinement();
+
+  /* Memoised: a new schema identity on every render re-registers the resolver. */
+  const schema = useMemo(
+    () =>
+      z
+        .object({ payment: z.object({ invoice: invoiceValuesSchema }) })
+        .superRefine((value, ctx) =>
+          refineInvoice(value.payment.invoice, ctx, ["payment", "invoice"]),
+        ),
+    [refineInvoice],
+  );
+
+  const form = useForm<InvoiceFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { payment: { invoice: INVOICE_DEFAULTS } },
+    mode: "onTouched",
+  });
+
+  async function submit(values: InvoiceFormValues) {
+    const invoice = values.payment.invoice;
+    try {
+      await requestInvoice.mutateAsync({
+        bookingId,
+        accessToken: guestAccessFor(bookingId),
+        billingEmail: invoice.email,
+        billingName: invoice.name,
+        addressLine1: invoice.addressLine1,
+        addressLine2: invoice.addressLine2 || undefined,
+        city: invoice.city || undefined,
+        postalCode: invoice.postalCode || undefined,
+        countryCode: invoice.countryCode,
+        companyName: invoice.company || undefined,
+        vatNumber: invoice.vat || undefined,
+        registrationNumber: invoice.registration || undefined,
+      });
+      /* Where the bank details are, and the document itself. */
+      router.push(`/bookings/${bookingId}/invoice`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("submitFailed"));
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(submit)} className="flex flex-col gap-4">
+        <RequestInvoice />
+        <Button
+          type="submit"
+          variant="brand"
+          className="h-13 w-full"
+          loading={form.formState.isSubmitting}
+        >
+          {t("invoice.cta", { amount: money(amountMinor) })}
+        </Button>
+      </form>
+    </Form>
   );
 }
 

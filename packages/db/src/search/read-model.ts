@@ -34,9 +34,11 @@ export async function rebuildListingSearchDocs(
       crew_type,
       builder,
       model,
+      model_canonical,
       operator,
       base_id,
       base_name,
+      city,
       location,
       region,
       country,
@@ -53,6 +55,8 @@ export async function rebuildListingSearchDocs(
       heads,
       year_built,
       sail_type,
+      security_deposit_minor,
+      security_deposit_currency,
       deposit_insurance_included,
       pets_allowed,
       rating,
@@ -64,6 +68,7 @@ export async function rebuildListingSearchDocs(
       currency,
       available_from,
       available_to,
+      bookable_from,
       has_unconfirmed_availability,
       has_temporary_booking,
       searchable_text,
@@ -79,11 +84,18 @@ export async function rebuildListingSearchDocs(
       -- unclassified category falls back to its own name rather than dropping out.
       coalesce(cat.canonical_name, cat.name),
       l.crew_type,
-      bld.name,
+      -- The brand, not the legal entity: providers send "Bavaria Yachtbau" and "Lagoon-Bénéteau",
+      -- and grouped by those the same brand splits into several shipyard pages and filters.
+      coalesce(bld.canonical_name, bld.name),
       mdl.name,
+      -- The grouping name, like the category above: a model with no cabin suffix to strip has no
+      -- canonical of its own, and writing that null left every model page without a value to
+      -- group on.
+      coalesce(mdl.canonical_name, mdl.name),
       op.name,
       bs.id,
       bs.name,
+      loc.city,
       loc.name,
       rgn.name,
       cty.name,
@@ -100,6 +112,10 @@ export async function rebuildListingSearchDocs(
       spec.heads,
       spec.year_built,
       spec.sail_type,
+      -- Only ever shown as "plus a refundable deposit"; a zero is the provider
+      -- saying it takes none, so it is stored as null and the card omits the line.
+      nullif(l.security_deposit_minor, 0),
+      case when l.security_deposit_minor > 0 then l.security_deposit_currency end,
       l.deposit_insurance_included,
       l.pets_allowed,
       -- Our own reviews win outright; the provider aggregate only fills the gap
@@ -118,6 +134,7 @@ export async function rebuildListingSearchDocs(
       coalesce(rate.currency, l.default_currency),
       avail.available_from,
       avail.available_to,
+      checkin.bookable_from,
       coalesce(avail.has_unconfirmed_availability, false),
       coalesce(held.has_temporary_booking, false),
       concat_ws(
@@ -129,6 +146,7 @@ export async function rebuildListingSearchDocs(
         cat.canonical_name,
         l.crew_type,
         bld.name,
+        bld.canonical_name,
         mdl.name,
         op.name,
         bs.name,
@@ -220,6 +238,44 @@ export async function rebuildListingSearchDocs(
       from listing_free_period free
       where free.listing_id = l.id
     ) avail on true
+    /*
+     * The first day a charter could actually begin, which is what an undated search card offers
+     * in place of a period of its own. Mirrors canCheckIn in
+     * packages/api/src/lib/availability-rules.ts -- free, inside a published weekly rate (the
+     * season signal), and on a weekday some check-in rule admits -- so the day the card names is
+     * a day the detail calendar accepts. Like canCheckIn, it does not prove a legal check-out
+     * follows it.
+     *
+     * available_from cannot answer this: it is the first day nothing is sold, which is today for
+     * most of the fleet and, on a Saturday-to-Saturday boat, never a day anyone could board.
+     *
+     * The candidate is stepped onto the rule's weekday arithmetically rather than by walking a
+     * day at a time -- dow is 0 Sunday, the numbering listing_checkin_rule stores. Past periods
+     * are excluded first, so the row count stays proportional to the season ahead.
+     */
+    left join lateral (
+      select min(c.candidate) as bookable_from
+      from listing_free_period free
+      join listing_price_period price
+        on price.listing_id = l.id
+       and price.kind = 'weekly'
+       and price.end_date > current_date
+       and price.start_date < free.end_date
+       and price.end_date > free.start_date
+      left join listing_checkin_rule rule on rule.listing_id = l.id
+      cross join lateral (
+        select greatest(free.start_date, price.start_date, current_date) as opens
+      ) w
+      cross join lateral (
+        select case
+          when rule.checkin_weekday is null then w.opens
+          else w.opens + ((rule.checkin_weekday - extract(dow from w.opens)::int + 7) % 7)
+        end as candidate
+      ) c
+      where free.listing_id = l.id
+        and free.end_date > current_date
+        and c.candidate < least(free.end_date, price.end_date)
+    ) checkin on true
     left join lateral (
       select bool_or(slot.status = 'option') as has_temporary_booking
       from availability_slot slot
@@ -245,9 +301,11 @@ export async function rebuildListingSearchDocs(
       crew_type = excluded.crew_type,
       builder = excluded.builder,
       model = excluded.model,
+      model_canonical = excluded.model_canonical,
       operator = excluded.operator,
       base_id = excluded.base_id,
       base_name = excluded.base_name,
+      city = excluded.city,
       location = excluded.location,
       region = excluded.region,
       country = excluded.country,
@@ -264,6 +322,8 @@ export async function rebuildListingSearchDocs(
       heads = excluded.heads,
       year_built = excluded.year_built,
       sail_type = excluded.sail_type,
+      security_deposit_minor = excluded.security_deposit_minor,
+      security_deposit_currency = excluded.security_deposit_currency,
       deposit_insurance_included = excluded.deposit_insurance_included,
       pets_allowed = excluded.pets_allowed,
       rating = excluded.rating,
@@ -275,6 +335,7 @@ export async function rebuildListingSearchDocs(
       currency = excluded.currency,
       available_from = excluded.available_from,
       available_to = excluded.available_to,
+      bookable_from = excluded.bookable_from,
       has_unconfirmed_availability = excluded.has_unconfirmed_availability,
       has_temporary_booking = excluded.has_temporary_booking,
       searchable_text = excluded.searchable_text,

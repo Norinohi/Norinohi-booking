@@ -8,10 +8,20 @@ export const builder = pgTable(
   {
     id: id("bld"),
     name: text("name").notNull(),
+    /*
+     * The brand a charterer searches for — "Bavaria" for "Bavaria Yachtbau". Search, facets and
+     * shipyard pages group on this, so one brand spelled several ways across providers reads as
+     * one. Curated rather than synced, unlike its namesake on `yacht_model`: no rule turns a legal
+     * entity into a brand, so nothing in the sync writes it and a hand edit survives every import.
+     */
+    canonicalName: text("canonical_name"),
     slug: text("slug").unique(),
     ...timestamps,
   },
-  (t) => [index("builder_name_idx").on(t.name)],
+  (t) => [
+    index("builder_name_idx").on(t.name),
+    index("builder_canonical_name_idx").on(t.canonicalName),
+  ],
 );
 
 export const yachtModel = pgTable(
@@ -22,6 +32,12 @@ export const yachtModel = pgTable(
       onDelete: "set null",
     }),
     name: text("name").notNull(),
+    /*
+     * The hull without its cabin configuration — "Lagoon 42" for "Lagoon 42 - 4 + 2 cab.". `name`
+     * stays the vendor's wording because the layout is a real difference to a charterer; grouping
+     * and model pages read this. Null when the name carries no such suffix.
+     */
+    canonicalName: text("canonical_name"),
     ...timestamps,
   },
   /*
@@ -37,6 +53,7 @@ export const yachtModel = pgTable(
    */
   (t) => [
     index("yacht_model_builder_idx").on(t.builderId),
+    index("yacht_model_canonical_name_idx").on(t.canonicalName),
     uniqueIndex("yacht_model_builder_name_uq").on(t.builderId, t.name),
     uniqueIndex("yacht_model_name_no_builder_uq")
       .on(t.name)

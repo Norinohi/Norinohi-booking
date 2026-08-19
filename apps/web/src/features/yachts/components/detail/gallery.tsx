@@ -22,7 +22,9 @@ const ARROW = "rounded-lg bg-black/12 text-white hover:bg-black/25 hover:text-wh
  * open, so it is fetched on the first photo click instead of with the page. `ssr: false` because
  * it renders nothing until opened — there is no shell content to lose.
  */
-const GalleryLightbox = dynamic(() => import("./gallery-lightbox"), { ssr: false });
+const GalleryLightbox = dynamic(() => import("@/components/shared/data-display/gallery-lightbox"), {
+  ssr: false,
+});
 
 export default function Gallery() {
   const { data } = useListingDetail();

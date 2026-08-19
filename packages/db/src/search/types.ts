@@ -13,9 +13,11 @@ export type ListingSearchInput = {
   maxPriceMinor?: number;
   country?: string[];
   sailingArea?: string[];
+  city?: string[];
   charterCompany?: string[];
   marina?: string[];
   boatType?: string[];
+  builder?: string[];
   model?: string[];
   crew?: string[];
   mainsailType?: string[];
@@ -62,9 +64,13 @@ export type ListingSearchDoc = {
   crewType: string | null;
   builder: string | null;
   model: string | null;
+  /** The model without its cabin configuration; null when the vendor name carries none. */
+  modelCanonical: string | null;
   operator: string;
   baseId: string;
   baseName: string;
+  /** The town the base is reached from; null until its vendor location is mapped. */
+  city: string | null;
   location: string;
   region: string;
   country: string;
@@ -82,6 +88,9 @@ export type ListingSearchDoc = {
   heads: number | null;
   yearBuilt: number | null;
   sailType: string | null;
+  /** Refundable damage deposit taken at the base. Null when the provider takes none. */
+  securityDepositMinor: number | null;
+  securityDepositCurrency: string | null;
   depositInsuranceIncluded: boolean;
   petsAllowed: boolean;
   rating: string;
@@ -96,6 +105,8 @@ export type ListingSearchDoc = {
   currency: string | null;
   availableFrom: string | null;
   availableTo: string | null;
+  /** Earliest legal check-in day; see `bookableFrom` on the `listing_search_doc` schema. */
+  bookableFrom: string | null;
   hasUnconfirmedAvailability: boolean;
   hasTemporaryBooking: boolean;
 };
@@ -107,7 +118,8 @@ export type ListingSearchResult = {
 };
 
 export type ListingDetail = ListingSearchDoc & {
-  description: string;
+  /** The provider's own prose in the requested locale; null when it ships none. */
+  description: string | null;
   overview: { code: string; label: string; value: string }[];
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];
@@ -159,6 +171,15 @@ export type ListingPricedItem = {
     amountMinor: number;
     currency: string;
   };
+  /**
+   * What `price` is the price *of*, in the vendor's own words — "per person",
+   * "one-way / person", "per booking". Null where the provider ships none.
+   *
+   * Load-bearing, not decoration: a per-person extra's catalogue price is a unit,
+   * and the offer multiplies it by a quantity it chooses. Rendering every extra as
+   * "per booking" told the customer €10 for a Tour the quote then charged €100 for.
+   */
+  priceMeasure: string | null;
   pricingType: "per_booking" | "per_week" | "pay_at_check_in";
 };
 
@@ -266,6 +287,11 @@ export type ListingMapMarker = {
 
 export type ListingSuggestion = {
   label: string;
+  /**
+   * The same filter value the matching facet option carries, so a destination picked here and one
+   * ticked in the filter panel are the same selection rather than two spellings of it.
+   */
+  value: string;
   kind: "country" | "region" | "location" | "base";
 };
 

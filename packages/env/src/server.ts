@@ -114,6 +114,19 @@ export const env = createEnv({
     NAUSYS_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),
     // `optionTill` carries no timezone; pending vendor question Q-OPT.
     NAUSYS_OPTION_TIMEZONE: z.string().min(1).default("Europe/Zagreb"),
+    /*
+     * Charter company ids to import, comma separated. Unset imports every company
+     * the credential can see. Mirrors BOOKING_MANAGER_COMPANY_IDS below; see the
+     * note there for why the pair exists rather than one list.
+     */
+    NAUSYS_COMPANY_IDS: z.string().optional(),
+    /*
+     * Charter company ids to keep out, comma separated, applied on top of the
+     * allowlist and winning over it. This is what production sets: it imports the
+     * whole credential except the vendor's test companies, which an allowlist
+     * cannot express without enumerating every real company forever.
+     */
+    NAUSYS_EXCLUDED_COMPANY_IDS: z.string().optional(),
     BOOKING_MANAGER_BASE_URL: z.url().default("https://www.booking-manager.com/api/v2"),
     // Named as the vendor names it: the Booking Manager portal issues this from
     // My Account > API Integration and calls it an API key. It is SENT as a bearer
@@ -131,6 +144,14 @@ export const env = createEnv({
      * stops listing a record does.
      */
     BOOKING_MANAGER_COMPANY_IDS: z.string().optional(),
+    /*
+     * Charter company ids to keep out, comma separated, applied on top of the
+     * allowlist and winning over it. Production imports everything except the
+     * vendor's test companies - company 225 among them - and an allowlist cannot
+     * say that without naming every real company and being edited whenever the
+     * vendor signs one.
+     */
+    BOOKING_MANAGER_EXCLUDED_COMPANY_IDS: z.string().optional(),
     BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
     // Booking Manager has not published a rate limit; pending vendor answer, this
     // is our own politeness margin.

@@ -1,15 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
+import type { z } from "zod";
 
 vi.hoisted(() => {
   process.env.SKIP_ENV_VALIDATION = "1";
 });
 
-import { ContractError } from "../shared/errors";
+import { AuthError, ContractError, TransientError } from "../shared/errors";
+import type { QueryValue } from "../shared/http-client";
+import { ACCOUNT_WIDE_SCOPE } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
 import { type BookingManagerConfig, resolveBookingManagerConfig } from "./config";
 import { BM_RESERVATION_STATUS, type RestAvailability } from "./endpoints";
 import {
   createBookingManagerAvailabilitySource,
+  fetchBookingManagerOccupancy,
   mapBookingManagerAvailability,
   mapBookingManagerOccupancyDump,
 } from "./occupancy";
@@ -23,14 +27,19 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
 
+/*
+ * Ids are digit strings, which is what the client's parser produces: the vendor's
+ * run to 19 digits and `JSON.parse` would round them. A real one is used below so the
+ * fixtures cannot drift back to a shape a float64 could hold.
+ */
 const row = (over: Partial<RestAvailability> = {}): RestAvailability => ({
-  id: 1,
-  yachtId: 42,
+  id: "1",
+  yachtId: "6614004890000100225",
   dateFrom: "2026-08-08 17:00:00",
   dateTo: "2026-08-15 09:00:00",
   status: BM_RESERVATION_STATUS.RESERVATION,
-  baseFromId: 3,
-  baseToId: 3,
+  baseFromId: "3",
+  baseToId: "3",
   optionExpirationDate: null,
   ...over,
 });
@@ -38,7 +47,8 @@ const row = (over: Partial<RestAvailability> = {}): RestAvailability => ({
 describe("mapBookingManagerAvailability", () => {
   it("maps a reservation to an occupied half-open interval", () => {
     expect(mapBookingManagerAvailability(row(), config)).toMatchObject({
-      externalYachtId: "42",
+      // Intact, not the 6614004890000100000 a float64 would have left.
+      externalYachtId: "6614004890000100225",
       startDate: "2026-08-08",
       endDate: "2026-08-15",
       status: "occupied",
@@ -109,20 +119,133 @@ describe("mapBookingManagerAvailability", () => {
 
 describe("mapBookingManagerOccupancyDump", () => {
   it("maps every row", () => {
-    expect(mapBookingManagerOccupancyDump([row({ id: 1 }), row({ id: 2 })], config)).toHaveLength(
-      2,
+    expect(
+      mapBookingManagerOccupancyDump([row({ id: "1" }), row({ id: "2" })], config).intervals,
+    ).toHaveLength(2);
+  });
+
+  it("quarantines nothing when the dump is clean", () => {
+    const dump = mapBookingManagerOccupancyDump([row()], config);
+
+    expect(dump.quarantinedYachtIds).toBeUndefined();
+    expect(dump.issues).toBeUndefined();
+  });
+
+  /*
+   * Measured on the live account 2026-08-19: one row of 239,444 carried
+   * dateFrom=2027-10-30 with dateTo=2026-03-25, and under the old all-or-nothing
+   * mapping it failed the scope - which account-wide means every company.
+   */
+  it("quarantines the yacht that owns an unreadable row, not the scope", () => {
+    const dump = mapBookingManagerOccupancyDump(
+      [
+        row({ yachtId: "42" }),
+        row({ yachtId: "99", dateFrom: "2027-10-30 00:00:00", dateTo: "2026-03-25 00:00:00" }),
+      ],
+      config,
     );
+
+    expect(dump.intervals.map((interval) => interval.externalYachtId)).toEqual(["42"]);
+    expect(dump.quarantinedYachtIds).toEqual(["99"]);
+    expect(dump.issues?.[0]).toContain("before it starts");
+  });
+
+  it("drops a quarantined yacht's readable rows too", () => {
+    const dump = mapBookingManagerOccupancyDump(
+      [
+        row({ yachtId: "99", id: "1" }),
+        row({
+          yachtId: "99",
+          id: "2",
+          dateFrom: "2027-10-30 00:00:00",
+          dateTo: "2026-03-25 00:00:00",
+        }),
+      ],
+      config,
+    );
+
+    // Half a calendar is not a calendar: partial occupancy plus no sweep would leave
+    // the rest of its slots stale with nothing to tidy them.
+    expect(dump.intervals).toEqual([]);
+    expect(dump.quarantinedYachtIds).toEqual(["99"]);
+  });
+
+  it("caps the reported issues", () => {
+    const bad = (yachtId: string) =>
+      row({ yachtId, dateFrom: "2027-10-30 00:00:00", dateTo: "2026-03-25 00:00:00" });
+    const dump = mapBookingManagerOccupancyDump(
+      Array.from({ length: 9 }, (_unused, index) => bad(String(index))),
+      config,
+    );
+
+    expect(dump.quarantinedYachtIds).toHaveLength(9);
+    expect(dump.issues).toHaveLength(5);
+  });
+});
+
+type OccupancyQuery = Record<string, QueryValue | undefined>;
+
+interface RecordedCall {
+  endpoint: string;
+  query: OccupancyQuery | undefined;
+}
+
+/**
+ * Captures what actually reaches the transport, which nothing here used to do.
+ *
+ * The name is load-bearing and is NOT the one the spec documents: `?company=` is
+ * accepted and ignored by the live endpoint, returning the whole account, while
+ * `?companyId=` filters. See the comment in `fetchBookingManagerOccupancy`. A
+ * silently-widened scope looks like success, so this is asserted rather than trusted.
+ */
+function recordingClient(rows: RestAvailability[] = []) {
+  const calls: RecordedCall[] = [];
+  // SAFETY: a stub with nothing behind it; any method these paths do not use is
+  // absent, so reaching for one is a TypeError rather than a wrong answer.
+  const client = Object.assign({} as BookingManagerClient, {
+    get: (endpoint: string, _schema: z.ZodType<RestAvailability[]>, query?: OccupancyQuery) => {
+      calls.push({ endpoint, query });
+      return Promise.resolve(rows);
+    },
+  });
+  return { client, calls };
+}
+
+describe("fetchBookingManagerOccupancy", () => {
+  it("narrows by `companyId`, the name the live endpoint honours", async () => {
+    const { client, calls } = recordingClient();
+
+    await fetchBookingManagerOccupancy(client, { companyId: "10", year: 2026 });
+
+    expect(calls).toEqual([{ endpoint: "availability/2026", query: { companyId: "10" } }]);
+  });
+
+  it("sends no filter at all for the account-wide scope", async () => {
+    const { client, calls } = recordingClient();
+
+    await fetchBookingManagerOccupancy(client, { companyId: ACCOUNT_WIDE_SCOPE, year: 2026 });
+
+    expect(calls).toEqual([{ endpoint: "availability/2026", query: undefined }]);
   });
 });
 
 describe("createBookingManagerAvailabilitySource", () => {
-  // SAFETY: listScopes only multiplies the configured companies by the configured
-  // years, so the source never reaches the transport on this path.
-  const client = {} as BookingManagerClient;
-
-  it("produces one scope per company and year", async () => {
+  it("sweeps the whole account in one scope per year when no allowlist is configured", async () => {
     const source = createBookingManagerAvailabilitySource({
-      client,
+      client: recordingClient().client,
+      config,
+      years: [2026, 2027],
+    });
+
+    expect(await source.listScopes()).toEqual([
+      { scopeKey: ACCOUNT_WIDE_SCOPE, year: 2026 },
+      { scopeKey: ACCOUNT_WIDE_SCOPE, year: 2027 },
+    ]);
+  });
+
+  it("narrows to one scope per company and year when an allowlist is configured", async () => {
+    const source = createBookingManagerAvailabilitySource({
+      client: recordingClient().client,
       config,
       years: [2026, 2027],
       companyIds: [10, 20],
@@ -136,9 +259,50 @@ describe("createBookingManagerAvailabilitySource", () => {
     ]);
   });
 
-  it("falls back to one account-wide scope per year without company ids", async () => {
+  it("costs one call per year, not one per company, without an allowlist", async () => {
+    const { client, calls } = recordingClient([row()]);
+    const source = createBookingManagerAvailabilitySource({ client, config, years: [2026, 2027] });
+
+    for (const scope of await source.listScopes()) {
+      await source.fetchOccupancy(scope);
+    }
+
+    expect(calls).toEqual([
+      { endpoint: "availability/2026", query: undefined },
+      { endpoint: "availability/2027", query: undefined },
+    ]);
+  });
+
+  it("maps the fetched dump", async () => {
+    const { client } = recordingClient([row()]);
     const source = createBookingManagerAvailabilitySource({ client, config, years: [2026] });
 
-    expect(await source.listScopes()).toEqual([{ scopeKey: "*", year: 2026 }]);
+    await expect(
+      source.fetchOccupancy({ scopeKey: ACCOUNT_WIDE_SCOPE, year: 2026 }),
+    ).resolves.toEqual({
+      intervals: [
+        expect.objectContaining({ externalYachtId: "6614004890000100225", status: "occupied" }),
+      ],
+    });
+  });
+
+  describe("isFatal", () => {
+    const source = createBookingManagerAvailabilitySource({
+      client: recordingClient().client,
+      config,
+      years: [2026],
+    });
+
+    it("stops the run only for a credential failure", () => {
+      expect(source.isFatal?.(new AuthError("rejected"))).toBe(true);
+    });
+
+    // The regression: one malformed row used to discard a whole run's completed work.
+    it.each([
+      ["contract", new ContractError("schema drift")],
+      ["transient", new TransientError("gateway hiccup")],
+    ])("lets a %s failure cost its own scope-year", (_label, error) => {
+      expect(source.isFatal?.(error)).toBe(false);
+    });
   });
 });
