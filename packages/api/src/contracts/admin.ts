@@ -498,7 +498,22 @@ export const listingAdminRowSchema = z.object({
   createdAt: z.string(),
 });
 
-export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema);
+export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema).extend({
+  /**
+   * Counts over everything the current filters match, not just this page.
+   *
+   * `unpricedWithDates` is the one worth watching: a listing with free dates and no
+   * published weekly rate is sold as "On request" on the card and shows a calendar
+   * that refuses every day, because a rate is what opens a season. Some genuinely are
+   * on request - a 40m gulet is priced by conversation. The rest are a price sweep
+   * that did not finish, and from outside the two look identical. This is the number
+   * that tells them apart: it should be small and stable, and a jump into the
+   * thousands means the sweep failed rather than that the fleet went bespoke.
+   */
+  summary: z.object({
+    unpricedWithDates: z.number().int(),
+  }),
+});
 
 export const listingSetStatusInputSchema = z.object({
   id: idSchema,
