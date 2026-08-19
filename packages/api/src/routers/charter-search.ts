@@ -58,8 +58,16 @@ export const charterSearchRouter = {
       return {
         items: results.items.map((item) => ({
           listing: presentListingSummary(item),
-          checkIn: period.checkIn ?? item.availableFrom,
-          checkOut: period.checkOut ?? item.availableTo,
+          /*
+           * The searched charter, or nothing. These used to fall back to the listing's
+           * `available_from`/`available_to`, which is the outer envelope of every free slot
+           * in the horizon -- so an undated search captioned each card with a year-long
+           * "charter" ("19 Aug 2026 -> 19 Aug 2027") beside a weekly rate. That envelope is
+           * not even a bookable stretch, since it spans the gaps between slots. The card
+           * already renders without dates on the catalogue pages.
+           */
+          checkIn: period.checkIn ?? null,
+          checkOut: period.checkOut ?? null,
         })),
         nextCursor: results.nextCursor,
         pagination: results.pagination,
