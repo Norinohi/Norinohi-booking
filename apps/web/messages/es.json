@@ -848,7 +848,11 @@
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
       "payments": "Pagos",
-      "listings": "Anuncios"
+      "listings": "Anuncios",
+      "sections": {
+        "account": "Cuenta",
+        "admin": "Administración"
+      }
     },
     "UserMenu": {
       "account": "Cuenta",

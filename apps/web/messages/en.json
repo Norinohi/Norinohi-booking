@@ -848,7 +848,11 @@
       "audit": "Audit Log",
       "inbox": "Inbox",
       "payments": "Payments",
-      "listings": "Listings"
+      "listings": "Listings",
+      "sections": {
+        "account": "Account",
+        "admin": "Admin"
+      }
     },
     "UserMenu": {
       "account": "Account",
