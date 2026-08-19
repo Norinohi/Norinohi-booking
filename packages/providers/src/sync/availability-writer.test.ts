@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AuthError, ContractError, TransientError } from "../shared/errors";
 import {
   ACCOUNT_WIDE_SCOPE,
+  dedupeSlotsByPeriod,
   freePeriodsFrom,
   isFatalAuthOnly,
   runAvailabilitySync,
@@ -940,5 +941,68 @@ describe("runAvailabilitySync", () => {
     });
 
     expect(store.rebuilt).toEqual([["ylst_marlin"]]);
+  });
+});
+
+/*
+ * The fake store above keys slots by exactly this triple, so it collapses duplicates
+ * silently and can never reproduce what Postgres does with them. That is why a run
+ * aborted in production while every test here passed. These test the collapse itself.
+ */
+describe("dedupeSlotsByPeriod", () => {
+  const slot = (listingId: string, startDate: string, endDate: string, status: string) => ({
+    listingId,
+    startDate,
+    endDate,
+    status,
+  });
+
+  it("collapses two intervals that share one listing and period", () => {
+    // An option and a reservation over the same week: ordinary vendor data, and
+    // `ON CONFLICT DO UPDATE` rejects the whole statement over it.
+    const deduped = dedupeSlotsByPeriod([
+      slot("ylst_a", "2026-08-22", "2026-08-29", "option"),
+      slot("ylst_a", "2026-08-22", "2026-08-29", "booked"),
+    ]);
+
+    expect(deduped).toHaveLength(1);
+    // Last wins, matching what the upsert did when a pair straddled a chunk boundary.
+    expect(deduped[0]?.status).toBe("booked");
+  });
+
+  it("keeps periods that differ in any part of the key", () => {
+    const deduped = dedupeSlotsByPeriod([
+      slot("ylst_a", "2026-08-22", "2026-08-29", "booked"),
+      slot("ylst_b", "2026-08-22", "2026-08-29", "booked"),
+      slot("ylst_a", "2026-08-29", "2026-09-05", "booked"),
+      slot("ylst_a", "2026-08-22", "2026-08-23", "booked"),
+    ]);
+
+    expect(deduped).toHaveLength(4);
+  });
+
+  it("collapses two same-day blocks that widened onto the same day", () => {
+    // A same-day SERVICE row is widened to the one day it describes, so two of them
+    // on one boat on one day arrive as an identical pair.
+    const deduped = dedupeSlotsByPeriod([
+      slot("ylst_a", "2026-08-22", "2026-08-23", "service"),
+      slot("ylst_a", "2026-08-22", "2026-08-23", "service"),
+    ]);
+
+    expect(deduped).toHaveLength(1);
+  });
+
+  it("preserves order of first appearance", () => {
+    const deduped = dedupeSlotsByPeriod([
+      slot("ylst_a", "2026-08-22", "2026-08-29", "booked"),
+      slot("ylst_b", "2026-08-22", "2026-08-29", "booked"),
+      slot("ylst_a", "2026-08-22", "2026-08-29", "option"),
+    ]);
+
+    expect(deduped.map((s) => s.listingId)).toEqual(["ylst_a", "ylst_b"]);
+  });
+
+  it("passes an empty batch through", () => {
+    expect(dedupeSlotsByPeriod([])).toEqual([]);
   });
 });

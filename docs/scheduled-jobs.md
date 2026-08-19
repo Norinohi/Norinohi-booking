@@ -104,23 +104,64 @@ nothing. `CORS_ORIGIN` is not: `revalidateCatalogCache` builds the web app's
 `/api/revalidate` URL from it, on the reasoning that an origin auth already
 depends on cannot drift.
 
-Then what the jobs actually use:
+Then what the jobs actually use.
+
+`cron-catalogue` and `cron-availability` fan out over **every enabled provider**,
+not the one `PROVIDER_MODE` names - they build from `createEnabledInventoryProviders`,
+and a provider whose credentials are absent is skipped silently. That is the trap:
+give these two only one vendor's credentials and the other vendor simply never
+syncs, with no error anywhere. Both need both sets.
 
 ```
 PROVIDER_MODE=nausys
-NAUSYS_BASE_URL        ${{api.NAUSYS_BASE_URL}}
-NAUSYS_USERNAME        ${{api.NAUSYS_USERNAME}}
-NAUSYS_PASSWORD        ${{api.NAUSYS_PASSWORD}}
+NAUSYS_BASE_URL                      ${{api.NAUSYS_BASE_URL}}
+NAUSYS_USERNAME                      ${{api.NAUSYS_USERNAME}}
+NAUSYS_PASSWORD                      ${{api.NAUSYS_PASSWORD}}
+NAUSYS_COMPANY_IDS                   ${{api.NAUSYS_COMPANY_IDS}}
+NAUSYS_EXCLUDED_COMPANY_IDS          ${{api.NAUSYS_EXCLUDED_COMPANY_IDS}}
+BOOKING_MANAGER_BASE_URL             ${{api.BOOKING_MANAGER_BASE_URL}}
+BOOKING_MANAGER_API_KEY              ${{api.BOOKING_MANAGER_API_KEY}}
+BOOKING_MANAGER_COMPANY_IDS          ${{api.BOOKING_MANAGER_COMPANY_IDS}}
+BOOKING_MANAGER_EXCLUDED_COMPANY_IDS ${{api.BOOKING_MANAGER_EXCLUDED_COMPANY_IDS}}
 PROVIDER_AUTO_PUBLISH=nausys
-REVALIDATE_SECRET      ${{api.REVALIDATE_SECRET}}
+REVALIDATE_SECRET                    ${{api.REVALIDATE_SECRET}}
 ```
 
+`PROVIDER_MODE` is still single-valued and still matters, but only to the booking
+path: an offer has one source and checkout must not have to choose. Importing from
+two vendors and selling through one are different questions, and this variable
+answers the second.
+
+`PROVIDER_AUTO_PUBLISH` is a comma-separated list, and it is deliberately **not**
+`nausys,booking_manager` here. Adding a provider to it puts every yacht it imports
+straight on sale; for Booking Manager that is a five-figure fleet nobody has looked
+at. New Booking Manager listings land as drafts and are released from the admin
+Listings screen instead.
+
+The company scope pair is what keeps a vendor's test companies out. Unset imports
+everything the credential sees; the exclusion list wins over the allowlist and is
+what production sets. Narrowing the scope also retires what a wider run imported -
+the next catalogue run deactivates those records and their listings are hidden.
+`apps/server/.env.example` carries the full explanation.
+
 `cron-sweep` needs neither `PROVIDER_AUTO_PUBLISH` nor `REVALIDATE_SECRET`: it
-publishes nothing and writes no catalog, so there is no cache to drop. It does
-need the NauSYS pair like the other two, and not only to satisfy the env schema.
-`inventoryProvider` is built from `PROVIDER_MODE` at import, so nausys mode
-without credentials throws before the sweep starts, and releasing a hold is a
-real call to the vendor.
+publishes nothing and writes no catalog, so there is no cache to drop. Credentials
+it does need, for two separate reasons.
+
+The first is module scope, unchanged: `inventoryProvider` is built from
+`PROVIDER_MODE` when `@yacht-charter/api/context` is imported, so nausys mode
+without the pair throws before the sweep starts.
+
+The second is newer and easier to get wrong. Releasing a hold is a real call to the
+vendor that issued it, and the sweep walks every booking regardless of provider, so
+it resolves the adapter from each booking's own `provider` column rather than using
+the configured one - releasing a Booking Manager option through the NauSYS adapter
+would hand the wrong vendor an id it never issued. **So this service needs the
+credentials of every vendor that can hold an option, not just the one
+`PROVIDER_MODE` names.** Give it only the NauSYS pair and an expiring Booking
+Manager hold is refused rather than released: the run exits non-zero and the vendor
+keeps holding the boat, which is at least loud, but it is still a boat nobody can
+sell until someone reads the log.
 
 `cron-reminders` and `cron-outbox` touch no provider at all, so `PROVIDER_MODE` can
 stay at its `mock` default there. What they do need is the mailer, and need it more
