@@ -29,6 +29,7 @@ import {
 } from "../types";
 import { type NausysClient, reservationLane } from "./client";
 import type { NausysConfig } from "./config";
+import { extraLineMinor } from "./extras";
 import {
   crewListLinkOf,
   nausysEndpoints,
@@ -338,6 +339,12 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
           });
 
     if (additions.length > 0) {
+      // `quantity: 1` is a formality for a measure-priced extra, not a claim: NauSYS
+      // recomputes it from the price measure and answers with its own figure.
+      // Verified live 2026-08-20 on a test yacht — a per-person extra added with
+      // quantity 1 came back `quantity: "6.00", totalPrice: "60.00"` for a six-person
+      // boat. Sending the party size here would change nothing; the headcount the
+      // vendor multiplies by is theirs, and the response is the only authority.
       last = await withReservation(parsed.ref, nausysEndpoints.booking.addExtras, {
         services: additions.map((serviceId) => ({ serviceId, quantity: 1 })),
       });
@@ -440,7 +447,12 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         // catalogue, which the quote path owns.
         code: `${PROVIDER}:${extra.serviceId}`,
         label: `Service ${extra.serviceId}`,
-        amount: { amountMinor: decimalStringToMinor(extra.amount, currency), currency },
+        // `amount` is the unit price, so a per-person or per-day line billed off it
+        // under-charges by its quantity — NauSYS prices a per-person extra at the
+        // yacht's full berth count, which on a ten-berth yacht is a tenth of the
+        // real figure. `extraLineMinor` is what the quote reads, and the two must
+        // agree or the reservation contradicts the invoice built from the quote.
+        amount: { amountMinor: extraLineMinor(extra, currency), currency },
         payWhen:
           extra.calculationType === "SEPARATE_PAYMENT"
             ? ("at_check_in" as const)

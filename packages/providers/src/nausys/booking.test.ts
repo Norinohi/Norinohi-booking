@@ -672,6 +672,73 @@ describe("extras mutation pricing", () => {
     expect(quote.checkIn).toBe("2026-07-04");
   });
 
+  /**
+   * The reservation's `services` are the same shape `freeYachts` sends, and NauSYS
+   * fills `quantity` itself: a per-person extra comes back at the yacht's full
+   * berth count (verified live 2026-08-20 — 4 berths gave quantity 4, 10 gave 10,
+   * unmoved by trip length). Billing the unit price instead charged a tenth of the
+   * quoted figure on a ten-berth yacht, so the invoice and the reservation
+   * disagreed about the same extra.
+   */
+  it("bills a per-person extra at its line total, not its unit price", async () => {
+    const { service, transport } = build();
+    transport.respondWith(
+      "addExtras",
+      fixture("createOption", {
+        services: [
+          {
+            serviceId: 8001,
+            amount: "10.00",
+            listPrice: "10.00",
+            currency: "EUR",
+            quantity: "10.00",
+            totalPrice: "100.00",
+            priceMeasureId: 52,
+            calculationType: "SEPARATE_PAYMENT",
+          },
+        ],
+      }),
+    );
+
+    const quote = await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: ["nausys:8001"],
+    });
+
+    expect(quote.lines[1]).toMatchObject({
+      code: "nausys:8001",
+      amount: { amountMinor: 10_000, currency: "EUR" },
+    });
+    expect(quote.total.amountMinor).toBe(344_000);
+  });
+
+  /** Production always sends `totalPrice`; a vendor that omits it still owes the product. */
+  it("falls back to unit times quantity when the vendor omits the line total", async () => {
+    const { service, transport } = build();
+    transport.respondWith(
+      "addExtras",
+      fixture("createOption", {
+        services: [
+          {
+            serviceId: 8001,
+            amount: "10.00",
+            currency: "EUR",
+            quantity: "10.00",
+            priceMeasureId: 52,
+            calculationType: "SEPARATE_PAYMENT",
+          },
+        ],
+      }),
+    );
+
+    const quote = await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: ["nausys:8001"],
+    });
+
+    expect(quote.lines[1]?.amount.amountMinor).toBe(10_000);
+  });
+
   it("produces a hash that ignores the rotating uuid", async () => {
     const { service, transport } = build();
     transport.respondWith("addExtras", fixture("createOption"));
