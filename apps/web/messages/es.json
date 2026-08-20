@@ -1198,7 +1198,7 @@
         "remove": "Quitar"
       },
       "onRequest": "Este yate se cotiza a petición",
-      "onRequestHint": "Tenemos fechas disponibles, pero el operador no publica una tarifa. Dinos cuándo quieres navegar y te enviaremos un precio."
+      "onRequestHint": "Tenemos fechas para este barco, pero ninguna tarifa publicada las cubre. Dinos cuándo te gustaría navegar y te daremos un precio."
     },
     "panels": {
       "details": "Detalles del yate",

@@ -1198,7 +1198,7 @@
         "remove": "Remove"
       },
       "onRequest": "This yacht is priced on request",
-      "onRequestHint": "We have dates for it, but the operator does not publish a rate. Tell us when you would like to sail and we will come back with a price."
+      "onRequestHint": "We have dates for it, but no published rate covers them. Tell us when you would like to sail and we will come back with a price."
     },
     "panels": {
       "details": "Yacht Details",
