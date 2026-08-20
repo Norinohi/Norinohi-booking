@@ -9,7 +9,7 @@ import { MAP_STYLE_URL } from "@/lib/mapbox";
 
 const MAP_STYLE = MAP_STYLE_URL;
 const DIM_LAYER_ID = "design-dim";
-const DIM_OPACITY = 0.4;
+const DIM_OPACITY = 0.15;
 
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
 const MAX_RECOVERIES = 10;
@@ -37,9 +37,8 @@ type MapCanvasProps = {
   /**
    * How dark the design's wash over the basemap is, `0` for none.
    *
-   * The default exists so the search map's markers read against the terrain. Anywhere the map
-   * itself is the thing being looked at, the full strength works against the reason it was
-   * opened — street names and place labels are the first thing a black layer takes.
+   * Slight by default, so the search map's markers read without burying the imagery under them.
+   * Pass `0` wherever the map itself is the thing being looked at.
    */
   dimOpacity?: number;
 };

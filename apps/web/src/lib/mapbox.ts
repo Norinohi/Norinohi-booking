@@ -1,6 +1,8 @@
 import { env } from "@yacht-charter/env/web";
 
-export const MAP_STYLE_ID = "testaccfor123098/cmsg01i3v00hn01sf5hecb7kb";
+/* Classic, not Standard: the Static Images API renders no Standard style, and the stills have to
+   match the live maps they open. */
+export const MAP_STYLE_ID = "mapbox/satellite-streets-v12";
 export const MAP_STYLE_URL = `mapbox://styles/${MAP_STYLE_ID}`;
 
 type Point = { lat: number; lng: number };

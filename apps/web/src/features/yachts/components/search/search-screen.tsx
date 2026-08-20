@@ -64,15 +64,8 @@ function escapesLock(next: FiltersState, locked: LockedFilters): boolean {
 }
 
 /**
- * Sort and page, and the rule that ties them together.
- *
- * A page number belongs to the result set it was picked from. Re-sort or re-filter and there is no
- * reason to think page 5 of the new set is where the visitor wanted to be — often it is past the
- * end of it. So every control that changes the request comes through here and none of them has to
- * remember the rule on its own: sort did not, and sorting from page 5 stayed on page 5.
- *
- * nuqs keys are shared, so the filter surfaces and the results column read one value between them
- * and their writes in the same tick land as a single URL update.
+ * Sort and page, and the rule that ties them together: a page belongs to the result set it was
+ * picked from, so anything that changes the request returns to the first one.
  */
 function useResultOrder() {
   const [sort, setSortParam] = useQueryState(

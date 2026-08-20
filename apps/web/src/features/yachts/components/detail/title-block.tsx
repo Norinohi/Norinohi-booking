@@ -33,15 +33,8 @@ export default function TitleBlock() {
     }
   };
 
-  /*
-   * A grid from `md` up rather than nested rows, so the actions can sit on the badge line while
-   * staying last in the DOM.
-   *
-   * They belong beside the badges, not beside the whole heading: as a sibling of it they were laid
-   * out against a column that fills the width, so they wrapped underneath and read as a third row
-   * of the title. Source order still puts them after the heading, which is what a phone wants —
-   * three full-width buttons above the yacht's name push the name off the first screen.
-   */
+  /* Grid from `md` up, so the actions sit on the badge line while staying last in the DOM —
+     three full-width buttons above the yacht's name is what a phone wants. */
   return (
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-5 md:gap-y-4">
       <div className="flex flex-wrap items-start gap-1.5 md:col-start-1 md:row-start-1">
@@ -53,7 +46,10 @@ export default function TitleBlock() {
         )}
       </div>
 
-      <MarinaPopover marina={toMarina(data.base)} className="md:col-span-2 md:col-start-1 md:row-start-2" />
+      <MarinaPopover
+        marina={toMarina(data.base)}
+        className="md:col-span-2 md:col-start-1 md:row-start-2"
+      />
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-4 md:col-span-2 md:col-start-1 md:row-start-3">
         <h1 className="text-[42px] font-bold leading-[1.15] text-foreground">{data.title}</h1>

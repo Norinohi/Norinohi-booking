@@ -35,8 +35,7 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
     setPage(1);
   }
 
-  /* Same rule the search screen states in `useResultOrder`: a page belongs to the result set it
-   * was picked from, so a new order starts at the top of the new one. */
+  /* Same rule as `useResultOrder` on the search screen: a new order starts at the first page. */
   function changeSort(next: string) {
     setSort(toSortValue(next));
     setPage(1);
