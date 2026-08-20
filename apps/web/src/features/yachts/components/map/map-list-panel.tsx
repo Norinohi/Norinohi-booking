@@ -35,6 +35,12 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
     setPage(1);
   }
 
+  /* Same rule as `useResultOrder` on the search screen: a new order starts at the first page. */
+  function changeSort(next: string) {
+    setSort(toSortValue(next));
+    setPage(1);
+  }
+
   const input = useSearchInput(filters, defaults, { sort, page });
   const { data, isLoading } = useQuery(resultsQueryOptions(input));
   const boats = data?.items.map((item) => toMapCard(item.listing, item)) ?? [];
@@ -56,7 +62,7 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
           className="h-12 w-full min-w-0"
           options={SORT_OPTIONS.map((value) => ({ value, label: t(`sorting.${value}`) }))}
           value={sort}
-          onValueChange={(next) => setSort(toSortValue(next))}
+          onValueChange={changeSort}
           renderValue={(value) => t("sorting.label", { value: t(`sorting.${toSortValue(value)}`) })}
         />
       </div>

@@ -29,7 +29,7 @@ import { useListingCards } from "../../hooks/use-listing-cards";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { serializeSearch } from "../../lib/search-params";
-import ResultsHeader, { SORT_OPTIONS } from "./results-header";
+import ResultsHeader, { SORT_OPTIONS, type SortValue } from "./results-header";
 import SearchBar from "./search-bar";
 
 const YACHTS_MAP_HREF = "/yachts/map";
@@ -63,10 +63,33 @@ function escapesLock(next: FiltersState, locked: LockedFilters): boolean {
   );
 }
 
+/**
+ * Sort and page, and the rule that ties them together: a page belongs to the result set it was
+ * picked from, so anything that changes the request returns to the first one.
+ */
+function useResultOrder() {
+  const [sort, setSortParam] = useQueryState(
+    "sort",
+    parseAsStringLiteral(SORT_OPTIONS).withDefault("recommended"),
+  );
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+
+  return {
+    sort,
+    page,
+    setPage,
+    firstPage: () => void setPage(1),
+    setSort: (next: SortValue) => {
+      void setSortParam(next);
+      void setPage(1);
+    },
+  };
+}
+
 /** Applies a filter change and returns to page 1 — shared by the three filter surfaces. */
 function useApplyFilters(locked?: LockedFilters) {
   const { filters: url, setFilters, defaults } = useSearchFilters();
-  const [, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const { firstPage } = useResultOrder();
   const router = useRouter();
 
   /* Memoised: `useDraft` in the filters panel follows the applied value by reference, so a fresh
@@ -85,7 +108,7 @@ function useApplyFilters(locked?: LockedFilters) {
     }
 
     setFilters(next);
-    setPage(1);
+    firstPage();
   }
 
   return { filters, defaults, applyFilters };
@@ -114,11 +137,7 @@ function FiltersAside({ locked }: { locked?: LockedFilters }) {
 function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const t = useTranslations("Yachts");
   const { filters, defaults, applyFilters } = useApplyFilters(locked);
-  const [sort, setSort] = useQueryState(
-    "sort",
-    parseAsStringLiteral(SORT_OPTIONS).withDefault("recommended"),
-  );
-  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
+  const { sort, setSort, page, setPage } = useResultOrder();
 
   const { toCard } = useListingCards();
   const input = useSearchInput(filters, defaults, { sort, page });

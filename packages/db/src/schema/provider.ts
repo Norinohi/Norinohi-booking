@@ -54,6 +54,17 @@ export const syncStatus = pgEnum("sync_status", [
  */
 export const IN_FLIGHT_SYNC_STATUSES = ["pending", "running"] as const;
 
+/**
+ * How long a run may go without a heartbeat before its process is presumed gone.
+ *
+ * Read against `sync_run.heartbeat_at`, which the owning process touches on a timer, so
+ * this measures liveness rather than duration: a multi-hour catalogue walk keeps its lock
+ * for as long as it keeps beating, and a process killed mid-walk loses it within minutes.
+ * Ten missed beats before anything is taken away, which is a wide margin over a database
+ * hiccup and still short enough that a redeploy costs one sweep tick rather than a day.
+ */
+export const STALE_SYNC_RUN_MS = 10 * 60 * 1000;
+
 export const syncErrorType = pgEnum("sync_error_type", [
   "rate_limited",
   "transient",
@@ -133,6 +144,20 @@ export const syncRun = pgTable(
     failedCount: integer("failed_count").default(0).notNull(),
     startedAt: timestamp("started_at"),
     finishedAt: timestamp("finished_at"),
+    /**
+     * Last sign of life from the process that owns this run.
+     *
+     * The in-flight index below is a lock with no lease: only the working process writes a
+     * terminal status, so a redeploy or an OOM strands the row and every later sync of that
+     * provider is refused at the insert. Ageing the row off `started_at` instead cannot fix
+     * that, because the cutoff then has to outlast the longest legitimate walk — six hours,
+     * where the daily catalogue sync it blocks runs once. A heartbeat separates "still
+     * working" from "still running", so the cutoff can be minutes.
+     *
+     * Defaulted rather than nullable: a run has an owner from the moment it is inserted, and
+     * a null here would have to be read as either "brand new" or "never beat".
+     */
+    heartbeatAt: timestamp("heartbeat_at").defaultNow().notNull(),
     ...timestamps,
   },
   /*

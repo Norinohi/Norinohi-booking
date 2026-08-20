@@ -465,7 +465,9 @@
       "viewDetails": "Ver detalles"
     },
     "map": {
-      "open": "Abrir el mapa de {place}"
+      "open": "Abrir el mapa de {place}",
+      "satellite": "Satélite",
+      "streets": "Mapa"
     },
     "leadForm": {
       "fields": {
@@ -617,6 +619,8 @@
   "Home": {
     "BoatTypes": {
       "heading": "Elige tu tipo de barco",
+      "previous": "Tipos de barco anteriores",
+      "next": "Tipos de barco siguientes",
       "luxury": {
         "title": "Yate de lujo",
         "description": "Los barcos más grandes de la flota, con tripulación y equipados con estándar hotelero.",
@@ -1135,7 +1139,8 @@
     },
     "route": {
       "start": "Inicio",
-      "finish": "Fin"
+      "finish": "Fin",
+      "day": "Día {day}"
     },
     "review": {
       "count": "({count, plural, one {# opinión} other {# opiniones}})",
@@ -1195,7 +1200,7 @@
         "remove": "Quitar"
       },
       "onRequest": "Este yate se cotiza a petición",
-      "onRequestHint": "Tenemos fechas disponibles, pero el operador no publica una tarifa. Dinos cuándo quieres navegar y te enviaremos un precio."
+      "onRequestHint": "Tenemos fechas para este barco, pero ninguna tarifa publicada las cubre. Dinos cuándo te gustaría navegar y te daremos un precio."
     },
     "panels": {
       "details": "Detalles del yate",

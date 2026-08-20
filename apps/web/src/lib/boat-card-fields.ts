@@ -18,6 +18,7 @@ import { createElement, type ReactNode } from "react";
 import type {
   BoatCardAmenity,
   BoatCardProps,
+  BoatCardStat,
   BoatCardSpec,
 } from "@/components/shared/data-display/boat-card";
 import type { Marina } from "@/components/shared/overlay/marina-popover";
@@ -143,9 +144,13 @@ export function boatCardPrice(
 function boatCardStats(t: BoatCardTranslator, stats: BoatCardListing["bookingStats"]) {
   if (!stats) return undefined;
 
-  const lines: string[] = [];
-  if (stats.bookedThisMonth > 0) lines.push(t("stats.booked", { count: stats.bookedThisMonth }));
-  if (stats.viewedToday > 0) lines.push(t("stats.viewed", { count: stats.viewedToday }));
+  const lines: BoatCardStat[] = [];
+  if (stats.bookedThisMonth > 0) {
+    lines.push({ kind: "booked", label: t("stats.booked", { count: stats.bookedThisMonth }) });
+  }
+  if (stats.viewedToday > 0) {
+    lines.push({ kind: "viewed", label: t("stats.viewed", { count: stats.viewedToday }) });
+  }
   return lines.length > 0 ? lines : undefined;
 }
 

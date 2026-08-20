@@ -12,7 +12,10 @@ export type MapMarkerProps = {
   coordinates: Coordinates;
   label: string;
   selected?: boolean;
+  /** Position in the set, which becomes the stagger. Ignored when `delayMs` is given. */
   order?: number;
+  /** An exact delay instead, for a route, where a marker waits for the line to reach it. */
+  delayMs?: number;
   onSelect: () => void;
   /**
    * A word plate under the marker — "Start", "Finish" — for the two places on an itinerary that
@@ -30,6 +33,7 @@ export default function MapMarker({
   label,
   selected,
   order = 0,
+  delayMs,
   onSelect,
   caption,
 }: MapMarkerProps) {
@@ -44,7 +48,7 @@ export default function MapMarker({
           event.preventDefault();
           onSelect();
         }}
-        style={{ animationDelay: `${order * STAGGER_MS}ms` }}
+        style={{ animationDelay: `${delayMs ?? order * STAGGER_MS}ms` }}
         className={cn(
           /* Smaller on a phone: seven of these at 84px merge into one blur on a 343px map. */
           "relative flex size-12 cursor-pointer items-center justify-center rounded-full border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white md:size-21",

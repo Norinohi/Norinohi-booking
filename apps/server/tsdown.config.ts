@@ -12,6 +12,7 @@ export default defineConfig({
     "./src/seed-facets.ts",
     "./src/publish-listings.ts",
     "./src/repair-bm-ids.ts",
+    "./src/rebuild-search-docs.ts",
   ],
   format: "esm",
   outDir: "./dist",

@@ -62,7 +62,9 @@ export function MarinaCard({ marina, className, onMapOpenChange }: MarinaCardPro
           imageSizes="(min-width: 768px) 228px, 100vw"
           onOpenChange={onMapOpenChange}
           className="h-41 w-full shrink-0 md:h-auto md:w-57"
-          pinClassName="size-27.6 border-2 border-white/12 bg-white/12"
+          /* Smaller than the default disc, but the standard white: this map is 228px wide, and the
+             faint one it used to carry disappeared once the basemap became satellite imagery. */
+          pinClassName="size-16"
         />
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 px-4 py-4 md:pl-0">

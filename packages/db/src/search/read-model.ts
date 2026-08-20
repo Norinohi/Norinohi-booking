@@ -209,15 +209,39 @@ export async function rebuildListingSearchDocs(
       where la.listing_id = l.id
     ) amn on true
     /*
-     * The "from" price is the provider's cheapest published rate, not the cheapest period we
-     * happened to have unsold. Before listing_price_period existed it was the latter, which
-     * made the headline price depend on how the calendar had been cut and left a listing
-     * priceless wherever the cut missed. Weekly only: a daily rate is not comparable to it.
+     * The cheapest week this listing could actually sell.
+     *
+     * Read from the rate list rather than from unsold slots, because that made the headline
+     * price depend on how the calendar had been cut and left a listing priceless wherever the
+     * cut missed. Weekly only: a daily rate is not comparable to it.
+     *
+     * But the rate list alone is not a price either. Taken whole it includes seasons already
+     * past and seasons the boat is booked solid through, and the minimum lands on one of them
+     * far more often than not -- a Bavaria 32 advertised at EUR 145 for seven days off a
+     * November rate, on a hull whose free dates are all the following year and carry no rate
+     * at all. The card then quoted a week nobody could buy beside a detail page correctly
+     * saying the yacht was priced on request.
+     *
+     * So a rate counts only if it still lies ahead and overlaps a stretch the provider has not
+     * sold. That is weaker than bookable_from below, which proves a whole legal charter
+     * fits; it is a "from" price and may name a week whose exact shape the rules refuse. It is
+     * not weaker in the way that matters: every listing priced here has something to sell, and
+     * a listing with nothing to sell is priced on request on both surfaces rather than one.
      */
     left join lateral (
-      select min(price_minor) as price_from_minor, min(currency) as currency
+      select min(price.price_minor) as price_from_minor, min(price.currency) as currency
       from listing_price_period price
-      where price.listing_id = l.id and price.kind = 'weekly'
+      where price.listing_id = l.id
+        and price.kind = 'weekly'
+        and price.end_date > current_date
+        and exists (
+          select 1
+          from listing_free_period free
+          where free.listing_id = l.id
+            and free.end_date > current_date
+            and free.start_date < price.end_date
+            and free.end_date > price.start_date
+        )
     ) rate on true
     /*
      * Availability is the span of the free stretches, which are the complement of occupancy.
@@ -381,6 +405,29 @@ export async function rebuildListingSearchDocs(
       where l.id = doc.listing_id and l.status = 'published'
     )
   `);
+}
+
+/**
+ * What the projection currently holds, for an operator who has just rebuilt it by hand.
+ *
+ * A rebuild that writes the right number of rows but prices none of them has failed in a
+ * way a row count alone cannot show, and the entry point that runs it lives in `apps/server`,
+ * which deliberately does not depend on drizzle-orm. So the query belongs here.
+ */
+export async function readListingSearchDocStats(db: NodePgDatabase<typeof schema>): Promise<{
+  docs: number;
+  priced: number;
+  bookable: number;
+}> {
+  const { rows } = await db.execute<{ docs: number; priced: number; bookable: number }>(sql`
+    select
+      count(*)::int as docs,
+      count(price_from_minor)::int as priced,
+      count(bookable_from)::int as bookable
+    from listing_search_doc
+  `);
+
+  return rows[0] ?? { docs: 0, priced: 0, bookable: 0 };
 }
 
 export function rebuildListingSearchDocsForListings(

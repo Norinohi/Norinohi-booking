@@ -11,7 +11,7 @@ import { orpc } from "@/utils/orpc";
 
 /**
  * Expires stale quotes and provider holds. Invalidates the sync history because the same sweep
- * fails runs abandoned by a dead process, which is what the history was showing as in-flight.
+ * fails runs whose process stopped beating, which is what the history was showing as in-flight.
  */
 export function useSweepExpiries() {
   const queryClient = useQueryClient();

@@ -2,12 +2,17 @@
 
 import { Dialog, DialogContent, DialogTitle } from "@yacht-charter/ui/components/overlay/dialog";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { Maximize2, MapPin } from "lucide-react";
+import { Map as MapIcon, Maximize2, MapPin, Satellite } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
 import { Image } from "@/components/shared/data-display/image";
+import {
+  MAP_STYLE_KEYS,
+  MapStyleProvider,
+  type MapStyleKey,
+} from "@/components/shared/data-display/map-canvas";
 import { staticMapUrl } from "@/lib/mapbox";
 
 import type { Coordinates } from "./marina-popover";
@@ -23,6 +28,10 @@ const MapDialogCanvas = dynamic(() => import("./map-dialog-canvas"), {
 
 /** Close enough to read the streets around a marina, which is what the picture cannot show. */
 const DIALOG_ZOOM = 14;
+
+/* Fixed white, not theme tokens: satellite tiles do not follow the app's theme. */
+const CONTROL_PLATE =
+  "flex items-center justify-center rounded-lg bg-white text-natural-900 shadow-[0_1px_6px_rgba(0,0,0,0.45)] transition-colors";
 
 type CommonProps = {
   /** Names the place in the dialog's heading and in the trigger's accessible name. */
@@ -79,10 +88,51 @@ export type MapPreviewProps = CommonProps &
  * who never opens it, and it sidesteps the reconnect react-map-gl cannot survive (see `MapCanvas`)
  * — a closed dialog leaves nothing to reconnect.
  */
+const STYLE_ICON = { satellite: Satellite, streets: MapIcon };
+
+/** Two buttons over the map, the way a mapping site offers the same choice. */
+function StyleSwitch({
+  value,
+  onChange,
+}: {
+  value: MapStyleKey;
+  onChange: (next: MapStyleKey) => void;
+}) {
+  const t = useTranslations("Common.map");
+
+  return (
+    /* Inset matched to the dialog's own close button, which sits at `top-4 right-4`. */
+    <div className="absolute top-4 left-4 z-10 flex overflow-hidden rounded-lg bg-white shadow-[0_1px_6px_rgba(0,0,0,0.45)]">
+      {MAP_STYLE_KEYS.map((key) => {
+        const Icon = STYLE_ICON[key];
+
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={key === value}
+            onClick={() => onChange(key)}
+            className={cn(
+              "flex cursor-pointer items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset",
+              key === value
+                ? "bg-brand text-brand-foreground"
+                : "text-natural-900 hover:bg-natural-50",
+            )}
+          >
+            <Icon className="size-4 shrink-0" />
+            {t(key)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function MapPreview(props: MapPreviewProps) {
   const { title, imageSizes, className, pinClassName, onOpenChange, overlay } = props;
   const t = useTranslations("Common.map");
   const [open, setOpen] = useState(false);
+  const [styleKey, setStyleKey] = useState<MapStyleKey>("satellite");
 
   /*
    * Narrowed on `point` rather than destructured: the two shapes decide both halves together, and
@@ -125,7 +175,7 @@ export default function MapPreview(props: MapPreviewProps) {
         {/* Lifts on hover, so the still reads as a way in rather than a decoration. */}
         <span
           aria-hidden
-          className="absolute inset-0 bg-black/40 transition-colors group-hover:bg-black/25"
+          className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/5"
         />
         {overlay}
 
@@ -147,9 +197,9 @@ export default function MapPreview(props: MapPreviewProps) {
          */}
         <span
           aria-hidden
-          className="absolute right-3 bottom-3 flex size-8 items-center justify-center rounded-lg bg-black/40 text-white transition-colors group-hover:bg-black/60"
+          className={`${CONTROL_PLATE} absolute right-3 bottom-3 size-7 group-hover:bg-natural-50`}
         >
-          <Maximize2 className="size-4" />
+          <Maximize2 className="size-3.5" />
         </span>
       </button>
 
@@ -161,9 +211,8 @@ export default function MapPreview(props: MapPreviewProps) {
          */}
         <DialogContent
           showClose
-          /* The close sits on the map itself, so it carries its own backing rather than relying
-             on a dialog surface that is not there. */
-          closeClassName="flex size-9 items-center justify-center rounded-lg bg-black/40 text-white hover:bg-black/60 hover:text-white [&_svg]:size-5"
+          /* The close sits on the map itself, so it carries its own backing. */
+          closeClassName={`${CONTROL_PLATE} size-9 hover:bg-natural-50 hover:text-natural-900 [&_svg]:size-5`}
           /*
            * `zoom-in-100` cancels the dialog's default scale-in. Mapbox measures its container as
            * it initialises, and a dialog still scaling up hands it a box smaller than the one it
@@ -173,7 +222,12 @@ export default function MapPreview(props: MapPreviewProps) {
           className="h-4/5 max-h-200 min-h-100 w-4/5 max-w-none gap-0 overflow-hidden rounded-2xl p-0 data-open:zoom-in-100 data-closed:zoom-out-100"
         >
           <DialogTitle className="sr-only">{title}</DialogTitle>
-          {open ? dialogBody : null}
+          {open ? (
+            <>
+              <StyleSwitch value={styleKey} onChange={setStyleKey} />
+              <MapStyleProvider value={styleKey}>{dialogBody}</MapStyleProvider>
+            </>
+          ) : null}
         </DialogContent>
       </Dialog>
     </>

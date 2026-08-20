@@ -2,19 +2,32 @@
 
 import { env } from "@yacht-charter/env/web";
 import { usePathname } from "next/navigation";
-import { Component, type ReactNode, useRef, useState } from "react";
+import { Component, createContext, type ReactNode, useContext, useRef, useState } from "react";
+import type { ComponentProps } from "react";
 import Map, { type MapEvent } from "react-map-gl/mapbox";
 
-import { MAP_STYLE_URL } from "@/lib/mapbox";
+import { MAP_STYLE_STREETS_URL, MAP_STYLE_URL } from "@/lib/mapbox";
 
-const MAP_STYLE = MAP_STYLE_URL;
+export const MAP_STYLES = { satellite: MAP_STYLE_URL, streets: MAP_STYLE_STREETS_URL } as const;
+
+export type MapStyleKey = keyof typeof MAP_STYLES;
+
+/** Listed rather than derived from the object, so the switch's order is a decision, not a side effect. */
+export const MAP_STYLE_KEYS: MapStyleKey[] = ["satellite", "streets"];
+
+/* Read rather than passed, because the surface that offers the choice — a dialog — sits above a
+   map it was handed as a child and cannot reach into it. Satellite where nothing offers it. */
+const MapStyleContext = createContext<MapStyleKey>("satellite");
+
+export const MapStyleProvider = MapStyleContext.Provider;
+
 const DIM_LAYER_ID = "design-dim";
-const DIM_OPACITY = 0.4;
+const DIM_OPACITY = 0.15;
 
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
 const MAX_RECOVERIES = 10;
 
-function styleBasemap({ target: map }: MapEvent, opacity: number) {
+function styleBasemap(map: MapInstance, opacity: number) {
   if (opacity <= 0 || map.getLayer(DIM_LAYER_ID)) return;
 
   map.addLayer({
@@ -26,7 +39,13 @@ function styleBasemap({ target: map }: MapEvent, opacity: number) {
 
 export type MapInstance = MapEvent["target"];
 
-export type MapViewState = { longitude: number; latitude: number; zoom: number };
+/*
+ * The library's own camera type, which also accepts `bounds`. Worth taking whole rather than
+ * narrowing to a centre and a zoom: bounds are resolved while the map is being constructed, from
+ * the real size of the container, so a map that has to frame several places opens already framed
+ * instead of opening somewhere else and jumping.
+ */
+export type MapViewState = NonNullable<ComponentProps<typeof Map>["initialViewState"]>;
 
 type MapCanvasProps = {
   children?: ReactNode;
@@ -37,11 +56,18 @@ type MapCanvasProps = {
   /**
    * How dark the design's wash over the basemap is, `0` for none.
    *
-   * The default exists so the search map's markers read against the terrain. Anywhere the map
-   * itself is the thing being looked at, the full strength works against the reason it was
-   * opened — street names and place labels are the first thing a black layer takes.
+   * Slight by default, so the search map's markers read without burying the imagery under them.
+   * Pass `0` wherever the map itself is the thing being looked at.
    */
   dimOpacity?: number;
+  /**
+   * Called after every *later* style load, never the first.
+   *
+   * Switching styles throws away every source and layer added by hand, so anything a caller drew
+   * itself has to be drawn again. The first load is `onReady`'s, which also positions the camera —
+   * something a style change must not disturb.
+   */
+  onStyleChange?: (map: MapInstance) => void;
 };
 
 function MapSurface({
@@ -50,8 +76,10 @@ function MapSurface({
   onBackgroundPress,
   initialViewState = DEFAULT_VIEW_STATE,
   dimOpacity = DIM_OPACITY,
+  onStyleChange,
 }: MapCanvasProps) {
   const [ready, setReady] = useState(false);
+  const styleKey = useContext(MapStyleContext);
 
   function dismissPopup(target: EventTarget | null) {
     if (target instanceof Element && target.closest(".mapboxgl-marker")) return;
@@ -62,11 +90,19 @@ function MapSurface({
     <Map
       mapboxAccessToken={env.NEXT_PUBLIC_MAPBOX_TOKEN}
       initialViewState={initialViewState}
-      mapStyle={MAP_STYLE}
+      mapStyle={MAP_STYLES[styleKey]}
       style={{ width: "100%", height: "100%" }}
       onLoad={(event) => {
-        styleBasemap(event, dimOpacity);
-        onReady?.(event.target);
+        const map = event.target;
+
+        /* Attached after the first style has loaded, so it only ever hears the later ones. */
+        map.on("style.load", () => {
+          styleBasemap(map, dimOpacity);
+          onStyleChange?.(map);
+        });
+
+        styleBasemap(map, dimOpacity);
+        onReady?.(map);
       }}
       onIdle={() => setReady(true)}
       onMouseDown={(event) => dismissPopup(event.originalEvent.target)}

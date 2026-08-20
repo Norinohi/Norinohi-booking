@@ -1,7 +1,13 @@
 import { env } from "@yacht-charter/env/web";
 
-export const MAP_STYLE_ID = "testaccfor123098/cmsg01i3v00hn01sf5hecb7kb";
+/* Classic, not Standard: the Static Images API renders no Standard style, and the stills have to
+   match the live maps they open. */
+export const MAP_STYLE_ID = "mapbox/satellite-streets-v12";
 export const MAP_STYLE_URL = `mapbox://styles/${MAP_STYLE_ID}`;
+
+/* The street map a dialog can switch to. Stills stay satellite: only the live maps offer the
+   choice, and a still is a picture of the map that opens by default. */
+export const MAP_STYLE_STREETS_URL = "mapbox://styles/mapbox/streets-v12";
 
 type Point = { lat: number; lng: number };
 
@@ -40,10 +46,14 @@ const unprojectY = (y: number) => {
   return (Math.atan(Math.sinh(n)) * 180) / Math.PI;
 };
 
+export type StillPosition = { leftPercent: number; topPercent: number };
+
 export type StaticMapFrame = {
   url: string;
   /** Each point's place on the still, in percent, ready for `left`/`top`. */
-  markers: { leftPercent: number; topPercent: number }[];
+  markers: StillPosition[];
+  /** The same maths for any other coordinate, so a route can be drawn over the still. */
+  project: (point: Point) => StillPosition;
 };
 
 /**
@@ -84,11 +94,14 @@ export function staticMapFrame(
   const centreY = (minY + maxY) / 2;
   const worldSize = TILE_SIZE * 2 ** zoom;
 
+  const project = (point: Point): StillPosition => ({
+    leftPercent: ((projectX(point.lng) - centreX) * worldSize + width / 2) / (width / 100),
+    topPercent: ((projectY(point.lat) - centreY) * worldSize + height / 2) / (height / 100),
+  });
+
   return {
     url: `${BASE}/${unprojectX(centreX)},${unprojectY(centreY)},${zoom}/${width}x${height}@2x?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}`,
-    markers: points.map((point, index) => ({
-      leftPercent: (((xs[index] ?? centreX) - centreX) * worldSize + width / 2) / (width / 100),
-      topPercent: (((ys[index] ?? centreY) - centreY) * worldSize + height / 2) / (height / 100),
-    })),
+    markers: points.map(project),
+    project,
   };
 }

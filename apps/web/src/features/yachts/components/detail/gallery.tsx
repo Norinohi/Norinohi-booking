@@ -79,7 +79,7 @@ export default function Gallery() {
 
       <CarouselThumbs
         listClassName="gap-2 md:gap-3"
-        itemClassName="basis-1/3 rounded-xl opacity-100 md:basis-44"
+        itemClassName="basis-1/3 rounded-xl md:basis-44"
       >
         {photos.map((photo) => (
           <div key={photo.src} className="relative aspect-video w-full">
@@ -90,7 +90,6 @@ export default function Gallery() {
               sizes="(min-width: 768px) 176px, 33vw"
               className="object-cover"
             />
-            <div aria-hidden className="absolute inset-0 bg-black/10" />
           </div>
         ))}
       </CarouselThumbs>

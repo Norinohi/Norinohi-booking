@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -164,10 +165,52 @@ function CarouselArrow({
 }
 
 /**
+ * The prev/next pair a section heading carries, as against `CarouselArrow`, which floats over the
+ * slides. Labels are passed in because they are translated and this package holds no messages.
+ */
+function CarouselNav({
+  previousLabel,
+  nextLabel,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { previousLabel: string; nextLabel: string }) {
+  const { api, canScrollPrev, canScrollNext } = useCarousel();
+
+  return (
+    <div className={cn("flex shrink-0 items-center gap-1", className)} {...props}>
+      <Button
+        type="button"
+        variant="neutral"
+        size="icon-md"
+        aria-label={previousLabel}
+        disabled={!canScrollPrev}
+        onClick={() => api?.scrollPrev()}
+      >
+        <ChevronLeft />
+      </Button>
+      <Button
+        type="button"
+        variant="neutral"
+        size="icon-md"
+        aria-label={nextLabel}
+        disabled={!canScrollNext}
+        onClick={() => api?.scrollNext()}
+      >
+        <ChevronRight />
+      </Button>
+    </div>
+  );
+}
+
+/**
  * A second Embla instance whose slides act as controls for the main one.
  * `containScroll: "keepSnaps"` keeps every thumb reachable, and the strip
  * auto-scrolls so the active thumb never ends up off-screen.
  */
+/* The strip hides its overflow to scroll, which would cut the selected thumb's outline off the
+   first and last tile. Padded by the outline's reach, pulled back by the same amount. */
+const THUMBS_OUTLINE_ROOM = "-m-1 p-1";
+
 function CarouselThumbs({
   children,
   className,
@@ -195,7 +238,7 @@ function CarouselThumbs({
     <div
       ref={thumbsRef}
       data-slot="carousel-thumbs"
-      className={cn("overflow-hidden", className)}
+      className={cn("overflow-hidden", THUMBS_OUTLINE_ROOM, className)}
       {...props}
     >
       <div className={cn("flex gap-4", listClassName)}>
@@ -208,7 +251,10 @@ function CarouselThumbs({
             onClick={() => api?.scrollTo(index)}
             className={cn(
               "relative min-w-0 shrink-0 grow-0 basis-1/3 cursor-pointer overflow-hidden rounded-xl outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring/40",
-              index === selected ? "opacity-100" : "opacity-60 hover:opacity-100",
+              /* Offset outward, so the strip needs room for it — see `THUMBS_OUTLINE_ROOM`. */
+              index === selected
+                ? "opacity-100 ring-2 ring-brand ring-offset-2 ring-offset-background"
+                : "opacity-55 hover:opacity-100",
               itemClassName,
             )}
           >
@@ -226,6 +272,7 @@ export {
   CarouselSlide,
   CarouselBars,
   CarouselArrow,
+  CarouselNav,
   CarouselThumbs,
   useCarousel,
 };
