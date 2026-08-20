@@ -21,7 +21,7 @@ import {
   supportsSeasonalPrices,
   writeSeasonalPrices,
 } from "./price-writer";
-import { openSyncRun } from "./run";
+import { openSyncRun, releaseSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
 import { clearSyncCursor, readSyncCursor, writeSyncCursor } from "./cursor";
 import { loadProviderRecordSet, writeCanonicalCatalogue } from "./catalogue-writer";
@@ -594,6 +594,10 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
           finishedAt: input.finishedAt,
         })
         .where(eq(syncRun.id, syncRunId));
+
+      /* The row is terminal now, so this process stops beating for it and stops promising
+         to close it on shutdown — it has one fewer run to answer for, not none. */
+      releaseSyncRun(syncRunId);
     },
   };
 }

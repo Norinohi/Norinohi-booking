@@ -51,6 +51,7 @@ if (providers.size === 0) {
 }
 
 let failed = 0;
+let skipped = 0;
 
 for (const provider of providers.values()) {
   const providerId = await ensureProviderId(db, provider.key);
@@ -60,10 +61,15 @@ for (const provider of providers.values()) {
   try {
     syncRunId = await openCatalogueSyncRun(db, providerId);
   } catch (error) {
-    // A run already in flight is the expected collision when a previous tick is
-    // still walking, not a reason to fail the others.
-    failed += 1;
-    console.error(`Skipped "${provider.key}": ${error instanceof Error ? error.message : error}`);
+    /*
+     * A live run really is walking this provider: since `openSyncRun` reaps a lock whose
+     * owner stopped beating, this is no longer how a stranded row looks. It is the previous
+     * tick overrunning, which for a multi-hour catalogue walk on a daily schedule is
+     * ordinary. Counted apart from failures so the container does not exit non-zero and
+     * report itself Crashed for doing the right thing.
+     */
+    skipped += 1;
+    console.warn(`Skipped "${provider.key}": ${error instanceof Error ? error.message : error}`);
     continue;
   }
 
@@ -136,4 +142,5 @@ await revalidateCatalogCache();
 // as a run still in progress and skips every tick behind it.
 await db.$client.end();
 
+if (skipped > 0) console.warn(`${skipped} provider(s) skipped: a sync of theirs is still running`);
 if (failed > 0) process.exit(1);

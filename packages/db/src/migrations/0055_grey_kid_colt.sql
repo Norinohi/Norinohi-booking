@@ -1,0 +1,1 @@
+ALTER TABLE "sync_run" ADD COLUMN "heartbeat_at" timestamp DEFAULT now() NOT NULL;

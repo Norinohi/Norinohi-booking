@@ -79,6 +79,39 @@ The three sync and sweep services also watch `packages/providers/**`, which the
 the same reason and with the same consequence if it is missing: an edit to a mail
 template alone would otherwise leave the service running the previous build.
 
+## A deploy must not strand the sync lock
+
+`sync_run_in_flight_uq` allows one `pending`/`running` row per provider and kind, and only
+the working process writes a terminal status. So a redeploy, an OOM or a hard restart used
+to leave the row behind, holding the lock against every later tick — the daily catalogue
+sync would be refused at the insert, quietly, until a sweep six hours later noticed.
+
+Three things now give that lock a lease. They are layered on purpose: each one covers a
+failure the one before it cannot.
+
+- **A heartbeat.** `sync_run.heartbeat_at` is touched once a minute by the owning process
+  (`packages/providers/src/sync/run.ts`). The reaper reads that instead of `started_at`, so
+  its cutoff measures liveness rather than duration and can be `STALE_SYNC_RUN_MS` — ten
+  minutes — without ever reaping a multi-hour walk that is still working. The timer is
+  `unref`'d, so it can never be the reason a container fails to exit.
+- **A shutdown hook.** SIGTERM and SIGINT close every run the process still owns as `failed`,
+  with a `sync_error` naming the signal, then exit `128 + signum`. A deploy is the common way
+  a run dies and the one case where the process is told first, so this releases the lock in
+  the same second rather than ten minutes later. Best effort inside a five-second budget: a
+  database that will not answer must not also cost us the exit.
+- **Reaping at the lock.** `openSyncRun` does not believe a conflict. If the incumbent stopped
+  beating it is failed and the insert retried once, so the next scheduled tick unblocks itself
+  instead of waiting for the sweep. The sweep still runs the same `reapStaleSyncRuns`, for the
+  provider whose schedule has nothing due and whose stranded row nobody is asking about.
+
+Two consequences worth knowing. A collision that survives all of this means a live run really
+is walking that provider, so the sync entry points count it apart from a failure and exit `0`
+— a previous tick overrunning is ordinary, and exiting non-zero reported the container as
+Crashed for doing the right thing. And the migration that added `heartbeat_at` backfilled
+every existing row with the migration's own timestamp, so a sync still running from an older
+build loses its lock ten minutes into the deploy; it is being SIGTERM'd by that same deploy
+anyway.
+
 Each entry point ends with `await db.$client.end()`, and that line is what makes
 a scheduled run possible at all. An idle pool client keeps the event loop open,
 so without it the container runs the job, prints its summary and then sits there

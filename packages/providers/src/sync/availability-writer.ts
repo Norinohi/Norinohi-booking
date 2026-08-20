@@ -12,7 +12,7 @@ import type { Database } from "../registry";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { chunked, ROW_CHUNK } from "../shared/chunks";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
-import { openSyncRun } from "./run";
+import { openSyncRun, releaseSyncRun } from "./run";
 import type { SyncErrorContext } from "./runner";
 
 /* ------------------------------------------------------------ canonical DTOs */
@@ -1031,6 +1031,10 @@ export function createDrizzleAvailabilitySyncStore(
           finishedAt: input.finishedAt,
         })
         .where(eq(syncRun.id, syncRunId));
+
+      /* The row is terminal now, so this process stops beating for it and stops promising
+         to close it on shutdown — it has one fewer run to answer for, not none. */
+      releaseSyncRun(syncRunId);
     },
 
     async rebuildSearch(listingIds) {

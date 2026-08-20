@@ -1,8 +1,8 @@
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
-import { IN_FLIGHT_SYNC_STATUSES, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
+import { reapStaleSyncRuns } from "@yacht-charter/providers/sync/run";
 import { and, eq, gt, inArray, isNotNull, lte, ne, notExists, sql } from "drizzle-orm";
 
 import type { Database } from "../context";
@@ -46,7 +46,7 @@ export type SweepResult = {
  *
  * Abandoned sync runs are reaped here for the same reason and not because they are
  * expiries: `sync_run_in_flight_uq` is the other unique index over live rows, and a
- * run whose process died holds it against every future sync of that provider.
+ * run whose process stopped beating holds it against every future sync of that provider.
  *
  * Safe to run concurrently and on a schedule — every write is a compare-and-set on
  * the status that was read, so two overlapping runs cannot double-apply, and a
@@ -62,7 +62,13 @@ export async function sweepExpiries(
   const bookingsQuoteExpired = await expireBookingsWithDeadQuotes(db, now);
   const { paymentsAbandoned } = await expireAbandonedPayments(db, now, provider, releaseFailures);
   const { viewsPruned } = await pruneListingViews(db, now);
-  const syncRunsReaped = await reapAbandonedSyncRuns(db, now);
+  /*
+   * Reaped through the same function `openSyncRun` calls, so the sweep and the lock can
+   * never disagree about when a run has been abandoned. The sweep is the unattended half:
+   * a provider whose schedule has nothing due keeps its stranded row until something asks
+   * for the lock, and staff reading the history should not have to see it as in flight.
+   */
+  const syncRunsReaped = (await reapStaleSyncRuns(db, { now })).length;
   const staleConfirmations = await flagStaleConfirmations(db, now);
 
   return {
@@ -149,60 +155,6 @@ async function flagStaleConfirmations(
     reference: candidate.reference,
     stuckSince: candidate.updatedAt.toISOString(),
   }));
-}
-
-/**
- * How long a run may sit in flight before the sweep decides its process is gone.
- *
- * Generous on purpose: a full catalogue walk over a large fleet is slow, and reaping a
- * run that is still working would let a second one start against the same cursor —
- * exactly what `sync_run_in_flight_uq` exists to prevent. Six hours is far longer than
- * any observed run and far shorter than the "never" we had before.
- */
-const ABANDONED_SYNC_RUN_MS = 6 * 60 * 60 * 1000;
-
-/**
- * Sync runs whose process died mid-walk.
- *
- * `pending` and `running` are only ever left behind by the process doing the work — it
- * writes the terminal status itself — so a redeploy, an OOM or a restart strands the row
- * with nobody to close it. That used to be untidy history. Since the in-flight unique
- * index it is a deadlock: the stranded row holds the lock for that provider and kind, and
- * every later sync is refused at the insert, quietly, for as long as the row sits there.
- *
- * The failure is recorded as a `transient` sync_error rather than only a status, because
- * a run that ends with no explanation is indistinguishable from one that failed on the
- * vendor's side, and the two want different responses from whoever reads the history.
- */
-async function reapAbandonedSyncRuns(db: Database, now: Date): Promise<number> {
-  const cutoff = new Date(now.getTime() - ABANDONED_SYNC_RUN_MS);
-
-  const reaped = await db
-    .update(syncRun)
-    .set({ status: "failed", finishedAt: now })
-    .where(
-      and(
-        // The index's own definition of in-flight, so the lock and its release agree.
-        inArray(syncRun.status, [...IN_FLIGHT_SYNC_STATUSES]),
-        // `started_at` is written on the move to running, so a run that died while still
-        // pending has none; it is aged from when it was created instead.
-        lte(sql`coalesce(${syncRun.startedAt}, ${syncRun.createdAt})`, cutoff),
-      ),
-    )
-    .returning({ id: syncRun.id });
-
-  if (reaped.length > 0) {
-    await db.insert(syncError).values(
-      reaped.map((row) => ({
-        syncRunId: row.id,
-        errorType: "transient" as const,
-        message: "Abandoned mid-run: no process claimed it before the sweep's cutoff",
-        context: { reapedAt: now.toISOString(), cutoff: cutoff.toISOString() },
-      })),
-    );
-  }
-
-  return reaped.length;
 }
 
 /** Active quotes past their expiry. Consumed ones belong to a booking and are left alone. */
