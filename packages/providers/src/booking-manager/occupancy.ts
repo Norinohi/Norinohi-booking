@@ -60,7 +60,14 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
  * that only lists taken periods, so it is unbookable. It is deliberately NOT a
  * throw: a fifth state added by the vendor would otherwise stall availability for
  * the whole account until we shipped a patch, and `blocked` is the reading that
- * cannot oversell. VENDOR QUESTION Q-BM-STATUS: is the enum closed at 4?
+ * cannot oversell.
+ *
+ * Q-BM-STATUS is answered, and the answer is that the enum is NOT closed at 4.
+ * Measured 2026-08-20 over the unfiltered account: status `11` is live, 387 rows in
+ * 2026 and 119 in 2027, mostly single days, and it is undocumented. It lands here.
+ * `OPTION_IN_EXPIRATION` was checked at the same time and is genuinely still
+ * holding the week: five status-3 periods were each absent from `/offers`, with a
+ * control yacht offered for an adjacent free week and refused for its status-3 one.
  */
 const UNKNOWN_STATUS: OccupiedInterval["status"] = "blocked";
 
@@ -95,8 +102,10 @@ export async function fetchBookingManagerOccupancy(
      * scope to the whole account.
      *
      * Do not "correct" this to match the spec without re-running that comparison.
-     * VENDOR QUESTION Q-BM-COMPANYPARAM: which name is intended, and is `company`
-     * deprecated or simply wrong in the document?
+     * Q-BM-COMPANYPARAM is answered by measurement, and the spec is simply wrong:
+     * re-verified 2026-08-20 across five endpoints, `companyId` filters on all of
+     * them and `company` filters on none. `?company=225` on `/offers` returned
+     * 3,150 rows spanning 2,487 distinct yachts, six of which belong to 225.
      */
     scope.companyId === ACCOUNT_WIDE_SCOPE ? undefined : { companyId: scope.companyId },
   );

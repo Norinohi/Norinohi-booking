@@ -50,13 +50,34 @@ export const BM_RESERVATION_STATUS = {
   OPTION: 2,
   OPTION_IN_EXPIRATION: 3,
   SERVICE: 4,
+  /**
+   * Undocumented, and the only status a successful DELETE ever answers with: the
+   * vendor transitions the record rather than removing it. Measured 2026-08-20 on
+   * company 225 across five deleted options, and the delete is idempotent (a
+   * repeat returns 200 and status 5 again).
+   */
+  CANCELLED: 5,
 } as const;
 
+/**
+ * Two further values are live and undocumented, named here so they log as
+ * something other than "unknown" (both measured 2026-08-20):
+ *
+ * - `9`: a create that soft-conflicts with an existing hold. It carries no
+ *   `expirationDate`, never appears in `/reservations/{year}` or
+ *   `/availability/{year}`, and blocks nothing - a ghost record.
+ * - `11`: a short vendor-side block, 387 rows across the account in 2026 and 119
+ *   in 2027, mostly single days. Occupancy treats it as blocked; see
+ *   `UNKNOWN_STATUS` in `occupancy.ts`.
+ */
 export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
   [BM_RESERVATION_STATUS.RESERVATION, "RESERVATION"],
   [BM_RESERVATION_STATUS.OPTION, "OPTION"],
   [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "OPTION_IN_EXPIRATION"],
   [BM_RESERVATION_STATUS.SERVICE, "SERVICE"],
+  [BM_RESERVATION_STATUS.CANCELLED, "CANCELLED"],
+  [9, "CONFLICTING_CREATE"],
+  [11, "VENDOR_BLOCK"],
 ]);
 
 /** `format=3` on /shortAvailability: one character per day. */
@@ -144,6 +165,15 @@ export const restValidForBasesSchema = looseJsonObject({
   to: z.array(numeric).optional().nullable(),
 });
 
+/** One line of an offer's `discounts[]`. Undocumented; see `restOfferSchema`. */
+export const restDiscountSchema = looseJsonObject({
+  id: optionalId,
+  name: optionalText,
+  percentage: optionalNumeric,
+  price: optionalNumeric,
+  currency: optionalText,
+});
+
 export const restExtrasSchema = looseJsonObject({
   id: optionalId,
   name: optionalText,
@@ -224,8 +254,20 @@ export const restYachtSchema = looseJsonObject({
   fuelCapacity: optionalNumeric,
   engine: optionalText,
   deposit: optionalNumeric,
+  /**
+   * `0.0` on every yacht measured, which is indistinguishable from "no waiver
+   * product configured" - the vendor exposes no waiver, damage-insurance or
+   * deposit product among the extras either. Do not read `0` as "the waiver is
+   * free"; see VENDOR QUESTION Q3.
+   */
+  depositWithWaiver: optionalNumeric,
   currency: optionalText,
   commissionPercentage: optionalNumeric,
+  /**
+   * Also present per yacht, not only on the company, and it can differ from the
+   * company value. Enforcement is unverified - see VENDOR QUESTION Q2.
+   */
+  maxDiscountFromCommissionPercentage: optionalNumeric,
   wc: optionalNumeric,
   berths: optionalNumeric,
   cabins: optionalNumeric,
@@ -355,7 +397,25 @@ export const restOfferSchema = looseJsonObject({
   commissionPercentage: optionalNumeric,
   commissionValue: optionalNumeric,
   discountPercentage: optionalNumeric,
-  // Only present when the /offers call passed showOptions=true.
+  /**
+   * Constant `0` on every offer measured (3,026 in one account-wide week), so it
+   * carries no information today. Declared so a future non-zero value is visible
+   * rather than swallowed by `looseJsonObject`.
+   */
+  status: optionalNumeric,
+  /**
+   * The itemised breakdown behind `discountPercentage`, and the only place a
+   * discount's name appears ("Early Booking A 2027"). Present on 1,016 of 3,026
+   * offers in one account-wide week; the line prices sum to
+   * `startPrice - price` exactly.
+   */
+  discounts: z.array(restDiscountSchema).optional().nullable(),
+  /**
+   * Only present when the /offers call passed showOptions=true - and it is an
+   * output, not an echo of anything we sent: it carries the vendor's own
+   * agency-side reservation id for an option we already hold on this yacht and
+   * period. See `createOption` in booking.ts.
+   */
   myReservationId: optionalId,
 });
 
@@ -421,6 +481,16 @@ export const restReservationSchema = looseJsonObject({
   clientPrice: optionalNumeric,
   items: z.array(restInvoiceItemSchema).optional().nullable(),
   paymentPlan: z.array(restPaymentSchema).optional().nullable(),
+  /**
+   * What we owe the charter, as opposed to `paymentPlan`, which is what the guest
+   * owes. Present only on the charter-side record (the agency-side twin carries
+   * `null`) and undocumented. Measured 2026-08-20: for a 4500.00 charter with
+   * 600.00 commission, `paymentPlan` was 2 x 2250.00 and `agencyPaymentPlan` was
+   * 2 x 1950.00, i.e. `clientPrice - commission`. Neither can be derived from the
+   * `/offers` plan, which covers `price` alone and excludes non-`payableInBase`
+   * extras.
+   */
+  agencyPaymentPlan: z.array(restPaymentSchema).optional().nullable(),
   bankDetails: optionalText,
   termsOfPayment: optionalText,
   remarks: optionalText,

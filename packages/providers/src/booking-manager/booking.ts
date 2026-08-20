@@ -218,23 +218,42 @@ export function createBookingManagerBookingService(
       id,
     });
 
-    if (response.id !== id) {
+    // Every reservation exists twice: a charter-side record whose id ends in the
+    // charter company's id, and an agency-side twin ending in ours, linked by
+    // `charterReservationId`. POST answers with the charter-side record, but PUT
+    // and DELETE always answer with the agency-side one - so an equality check
+    // against the id we addressed rejected every real confirmation. Measured
+    // 2026-08-20: PUT on charter id 8178244520000100225 answered with agency id
+    // 8178244250000107113 carrying charterReservationId 8178244520000100225.
+    const answeredForUs = response.id === id || (response.charterReservationId ?? null) === id;
+    if (!answeredForUs) {
       throw new ContractError(
         `Booking Manager ${endpoint} answered for reservation ${response.id}, not ${id}`,
-        { endpoint, payload: { requested: id, returned: response.id } },
+        {
+          endpoint,
+          payload: {
+            requested: id,
+            returned: response.id,
+            charterReservationId: response.charterReservationId,
+          },
+        },
       );
     }
 
     await logEvent(parsed.quoteId, "confirm_succeeded", response);
 
+    // The charter-side id stays the handle across option and booking; switching to
+    // the id PUT happens to answer with would change the key mid-lifecycle.
+    const reservationId = String(id);
+
     return providerReservationSchema.parse({
-      id: String(response.id),
+      id: reservationId,
       provider: PROVIDER,
       listingId: parsed.listingId,
       quoteId: parsed.quoteId,
       status: toCanonicalStatus(response, endpoint),
-      providerReservationId: String(response.id),
-      providerOptionId: parsed.reservation.providerOptionId ?? String(response.id),
+      providerReservationId: reservationId,
+      providerOptionId: parsed.reservation.providerOptionId ?? reservationId,
     });
   }
 
@@ -346,17 +365,23 @@ function fullName(customer: BookingDraft["customer"]): string {
  * canonical state as `2`. An absent or unknown status is refused rather than
  * assumed: reading a confirmed reservation as a hold would let the sweeper
  * release a sold charter.
+ *
+ * `5` (CANCELLED) is undocumented and is what every successful DELETE answers
+ * with - the vendor transitions the record instead of removing it. Throwing on it
+ * meant any read-back of a cancelled reservation failed.
  */
 function toCanonicalStatus(
   response: RestReservation,
   endpoint: string,
-): "option_held" | "confirmed" {
+): "option_held" | "confirmed" | "cancelled" {
   switch (response.status) {
     case BM_RESERVATION_STATUS.RESERVATION:
       return "confirmed";
     case BM_RESERVATION_STATUS.OPTION:
     case BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION:
       return "option_held";
+    case BM_RESERVATION_STATUS.CANCELLED:
+      return "cancelled";
     default:
       throw new ContractError(
         `Booking Manager reservation ${response.id} came back with status ${JSON.stringify(response.status)} (${BM_RESERVATION_STATUS_NAMES.get(response.status ?? -1) ?? "unknown"})`,

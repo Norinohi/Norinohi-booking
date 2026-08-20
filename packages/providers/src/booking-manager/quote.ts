@@ -228,12 +228,16 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
   );
 
   /*
-   * OPEN VENDOR QUESTION (Q-BM-EXTRAS): `obligatoryExtrasPrice` is read as being
-   * additive to `price`, not already inside it - the spec lists them as separate
-   * fields and `price` moves with `discountPercentage` while the extras do not.
-   * The assertion below is what makes the assumption falsifiable: a payload where
-   * the extras do not sum to the vendor's own subtotal fails here rather than
-   * mispricing a booking downstream.
+   * Q-BM-EXTRAS is answered: `obligatoryExtrasPrice` IS additive to `price`, not
+   * already inside it. Measured 2026-08-20 - `paymentPlan` sums to `price` alone
+   * and never to `price + obligatoryExtrasPrice`, and a yacht with 1922.00 of
+   * extras carried the same `price` as one with none. The line items sum to the
+   * declared subtotal to the cent, the sole exception being a pro-rated `per_week`
+   * extra on a 4-night charter, off by 0.003 at the total.
+   *
+   * The assertion below stays: it is what makes the reading falsifiable, and a
+   * payload where the extras do not sum to the vendor's own subtotal should fail
+   * here rather than mispricing a booking downstream.
    */
   const extrasMinor = sumMinor(extraLines);
   if (offer.obligatoryExtrasPrice != null) {
