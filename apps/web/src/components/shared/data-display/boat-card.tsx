@@ -65,15 +65,13 @@ export type BoatCardProps = {
   specs: BoatCardSpec[];
   amenities?: BoatCardAmenity[];
   stats?: string[];
-  /** Absent where no period is in play: the wishlist is not a search result. */
+  /**
+   * The charter the dates describe: the one that was searched for, or, on an undated search,
+   * the first one this boat would sell. Absent where no period is in play at all — the wishlist
+   * is not a search result, and a boat with nothing to sell has no period to name.
+   */
   start?: BoatCardCharterDate;
   end?: BoatCardCharterDate;
-  /**
-   * The earliest day this boat can be chartered from, as `yyyy-MM-dd`. Shown only where there
-   * is no period: an undated search has no charter to print, and the day it could start is the
-   * useful thing to say instead.
-   */
-  availableFrom?: string;
   priceLabel: string;
   price: string;
   /** The price slot holds words ("On request", "Unavailable") rather than an amount, so it drops to text size. */
@@ -293,7 +291,6 @@ function Action({
   stats,
   start,
   end,
-  availableFrom,
   priceLabel,
   price,
   priceIsLabel,
@@ -306,7 +303,6 @@ function Action({
   | "stats"
   | "start"
   | "end"
-  | "availableFrom"
   | "priceLabel"
   | "price"
   | "priceIsLabel"
@@ -316,7 +312,6 @@ function Action({
   | "footer"
 >) {
   const t = useTranslations("Common.boatCard");
-  const format = useFormatter();
 
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 p-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:p-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:pl-0">
@@ -332,12 +327,6 @@ function Action({
           <ArrowRight className="size-4 shrink-0 text-foreground" />
           <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
         </div>
-      ) : availableFrom ? (
-        <p className="w-full text-center text-xs font-semibold leading-[1.3] text-foreground md:text-left xl:text-center">
-          {t("availableFrom", {
-            date: format.dateTime(dayToDisplay(availableFrom), FORMATS.day),
-          })}
-        </p>
       ) : null}
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
@@ -414,7 +403,6 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           stats={boat.stats}
           start={boat.start}
           end={boat.end}
-          availableFrom={boat.availableFrom}
           priceLabel={boat.priceLabel}
           price={boat.price}
           priceIsLabel={boat.priceIsLabel}

@@ -70,6 +70,7 @@ export async function rebuildListingSearchDocs(
       available_from,
       available_to,
       bookable_from,
+      bookable_to,
       has_unconfirmed_availability,
       has_temporary_booking,
       searchable_text,
@@ -137,6 +138,7 @@ export async function rebuildListingSearchDocs(
       avail.available_from,
       avail.available_to,
       checkin.bookable_from,
+      checkin.bookable_to,
       coalesce(avail.has_unconfirmed_availability, false),
       coalesce(held.has_temporary_booking, false),
       concat_ws(
@@ -241,22 +243,31 @@ export async function rebuildListingSearchDocs(
       where free.listing_id = l.id
     ) avail on true
     /*
-     * The first day a charter could actually begin, which is what an undated search card offers
-     * in place of a period of its own. Mirrors canCheckIn in
-     * packages/api/src/lib/availability-rules.ts -- free, inside a published weekly rate (the
-     * season signal), and on a weekday some check-in rule admits -- so the day the card names is
-     * a day the detail calendar accepts. Like canCheckIn, it does not prove a legal check-out
-     * follows it.
+     * The first charter this listing would actually sell, which is what an undated search card
+     * shows in place of a period of its own. Mirrors canCheckIn and offeredCheckOut in
+     * packages/api/src/lib/availability-rules.ts, and has to keep mirroring them: the card sends
+     * the visitor to a calendar that evaluates those, and a period this invents that they refuse
+     * is exactly the dead end the pair exists to close.
      *
      * available_from cannot answer this: it is the first day nothing is sold, which is today for
      * most of the fleet and, on a Saturday-to-Saturday boat, never a day anyone could board.
      *
-     * The candidate is stepped onto the rule's weekday arithmetically rather than by walking a
-     * day at a time -- dow is 0 Sunday, the numbering listing_checkin_rule stores. Past periods
-     * are excluded first, so the row count stays proportional to the season ahead.
+     * Both ends, not just the start. A start day alone proves nothing follows it, so the tail of
+     * a gap too short to sell, and every mid-week day of a listing that turns around on
+     * Saturdays, read as bookable and sent the card's date to a calendar with no end to offer.
+     * Requiring the whole charter inside the free period is what rules those out.
+     *
+     * The lengths are the rules' own, one per rule: its minimum, stepped up to its check-out
+     * weekday, dropped if that overshoots its maximum. A rule that states no minimum is read as
+     * a week (ASSUMED_NIGHTS in availability-rules.ts) rather than as a single night, because it
+     * is a provider that published nothing, not one selling nights.
+     *
+     * Weekdays are stepped onto arithmetically rather than by walking a day at a time -- dow is
+     * 0 Sunday, the numbering listing_checkin_rule stores. Past periods are excluded first, so
+     * the row count stays proportional to the season ahead.
      */
     left join lateral (
-      select min(c.candidate) as bookable_from
+      select c.candidate as bookable_from, c.candidate + n.nights as bookable_to
       from listing_free_period free
       join listing_price_period price
         on price.listing_id = l.id
@@ -274,9 +285,24 @@ export async function rebuildListingSearchDocs(
           else w.opens + ((rule.checkin_weekday - extract(dow from w.opens)::int + 7) % 7)
         end as candidate
       ) c
+      cross join lateral (
+        select greatest(coalesce(rule.min_nights, 7), 1) as base
+      ) b
+      cross join lateral (
+        select case
+          when rule.checkout_weekday is null then b.base
+          else b.base
+             + ((rule.checkout_weekday
+                 - extract(dow from c.candidate + b.base)::int + 7) % 7)
+        end as nights
+      ) n
       where free.listing_id = l.id
         and free.end_date > current_date
         and c.candidate < least(free.end_date, price.end_date)
+        and (rule.max_nights is null or n.nights <= rule.max_nights)
+        and c.candidate + n.nights <= free.end_date
+      order by c.candidate, n.nights
+      limit 1
     ) checkin on true
     left join lateral (
       select bool_or(slot.status = 'option') as has_temporary_booking
@@ -339,6 +365,7 @@ export async function rebuildListingSearchDocs(
       available_from = excluded.available_from,
       available_to = excluded.available_to,
       bookable_from = excluded.bookable_from,
+      bookable_to = excluded.bookable_to,
       has_unconfirmed_availability = excluded.has_unconfirmed_availability,
       has_temporary_booking = excluded.has_temporary_booking,
       searchable_text = excluded.searchable_text,

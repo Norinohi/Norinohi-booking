@@ -69,15 +69,19 @@ export const listingSearchDoc = pgTable(
     availableFrom: date("available_from"),
     availableTo: date("available_to"),
     /**
-     * The earliest day a charter may actually start: free, inside a published season, and on a
-     * weekday the check-in rule admits. `available_from` is none of that -- it is the first day
-     * nothing is sold, which for most of the fleet is today and for a Saturday-to-Saturday boat
-     * is never a day you could board on.
+     * The first charter this listing would actually sell, as both its ends.
+     *
+     * `available_from` is neither of these -- it is the first day nothing is sold, which for
+     * most of the fleet is today and for a Saturday-to-Saturday boat is never a day you could
+     * board on. A start day alone was not enough either: on its own it proves no legal
+     * check-out follows, so an undated card offered dates the detail page then refused. The
+     * pair is written together and read together; neither half means anything alone.
      *
      * Computed against the clock, so it is only as fresh as the last projection run (hourly,
-     * with the availability sync). Readers drop a value that has fallen into the past.
+     * with the availability sync). Readers drop a period that has fallen into the past.
      */
     bookableFrom: date("bookable_from"),
+    bookableTo: date("bookable_to"),
     hasUnconfirmedAvailability: boolean("has_unconfirmed_availability").default(false).notNull(),
     hasTemporaryBooking: boolean("has_temporary_booking").default(false).notNull(),
     searchableText: text("searchable_text").notNull(),

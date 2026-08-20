@@ -76,12 +76,14 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       // is a different state from having dates but no price.
       hasAvailableDates: doc.availableFrom !== null,
       /*
-       * Dropped once it has gone by: the column is computed against the clock and is only as
+       * Dropped once it has gone by: the columns are computed against the clock and are only as
        * fresh as the last projection run, and a card offering a day that has already passed
        * sends the visitor to a calendar that refuses it.
        */
-      bookableFrom:
-        doc.bookableFrom !== null && doc.bookableFrom >= todayIso() ? doc.bookableFrom : null,
+      bookablePeriod:
+        doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
+          ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
+          : null,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,

@@ -5,6 +5,9 @@ import {
   canCheckOut,
   type CharterConstraints,
   type CharterRule,
+  firstBookablePeriod,
+  firstCheckOut,
+  offeredCheckOut,
   nightsBetween,
   rangeStatus,
   weekdayOf,
@@ -177,6 +180,107 @@ describe("canCheckIn", () => {
 
   it("rejects a day in a season with no published rate", () => {
     expect(canCheckIn("2027-08-14", constraints())).toBe(false);
+  });
+});
+
+/*
+ * The bug this half of the module exists for. A day passing the cheap tests -- right weekday,
+ * nothing booked over it, inside a published rate -- can still begin no charter anyone will
+ * sell, and offering it produced two visible failures: calendar days that greyed out every
+ * possible end once clicked, and a search card naming an "available from" date the detail page
+ * then refused. Proven against listing five-o-sun-odyssey-509, whose rules claimed all seven
+ * turnarounds while every rate it published ran Saturday to Saturday.
+ */
+describe("canCheckIn with no legal check-out", () => {
+  it("rejects a gap too short for the minimum stay", () => {
+    const tightGap = constraints({
+      rules: [SAT_WEEK],
+      occupied: [{ startDate: "2026-08-20", endDate: "2026-09-05" }],
+    });
+    // A Saturday, free, and inside the season, but the next booking lands four days later.
+    expect(canCheckIn("2026-08-15", tightGap)).toBe(false);
+  });
+
+  it("rejects a day the season closes under before the charter could end", () => {
+    const closing = constraints({ priced: [{ startDate: "2026-08-01", endDate: "2026-08-20" }] });
+    expect(canCheckIn("2026-08-15", closing)).toBe(true);
+    expect(canCheckIn("2026-08-22", closing)).toBe(false);
+  });
+
+  it("still accepts a day whose only legal charter is a long one", () => {
+    const fortnight = constraints({ rules: [{ ...SAT_WEEK, minNights: 14 }] });
+    expect(canCheckIn("2026-08-15", fortnight)).toBe(true);
+  });
+});
+
+describe("firstCheckOut", () => {
+  it("takes the shortest legal charter, whatever the rules were written for", () => {
+    expect(firstCheckOut("2026-08-18", constraints({ rules: [ANY_DAY_MIN_1] }))).toBe("2026-08-19");
+  });
+
+  it("honours a rule whose check-out weekday forces a longer stay", () => {
+    expect(firstCheckOut("2026-08-15", constraints({ rules: [SAT_TO_FRI] }))).toBe("2026-08-21");
+  });
+
+  it("returns null for a day that begins nothing sellable", () => {
+    expect(firstCheckOut("2026-08-18", constraints())).toBeNull();
+  });
+});
+
+/*
+ * What a search card prints. The rule's own minimum, not the shortest thing the rules fail to
+ * forbid: a listing that published no minimum is silent, not selling single nights, and the
+ * price beside the dates is a weekly one.
+ */
+describe("offeredCheckOut", () => {
+  it("assumes a week where the rules state no minimum", () => {
+    const silent = constraints({ rules: [{ ...SAT_WEEK, minNights: null }] });
+    expect(offeredCheckOut("2026-08-15", silent)).toBe("2026-08-22");
+  });
+
+  it("assumes a week where the provider published no rule at all", () => {
+    expect(offeredCheckOut("2026-08-18", constraints({ rules: [] }))).toBe("2026-08-25");
+  });
+
+  it("takes the rule's minimum when it states one", () => {
+    expect(offeredCheckOut("2026-08-18", constraints({ rules: [ANY_DAY_MIN_3] }))).toBe(
+      "2026-08-21",
+    );
+    expect(offeredCheckOut("2026-08-15", constraints({ rules: [SAT_TO_FRI] }))).toBe("2026-08-21");
+  });
+
+  it("takes the shortest across alternatives", () => {
+    const either = constraints({ rules: [SAT_WEEK, ANY_DAY_MIN_3] });
+    expect(offeredCheckOut("2026-08-15", either)).toBe("2026-08-18");
+  });
+
+  it("falls back to a legal charter the rules did not describe", () => {
+    /* A maximum below the assumed week leaves the rule with no length of its own to offer. */
+    const capped = constraints({ rules: [{ ...ANY_DAY_MIN_1, minNights: null, maxNights: 3 }] });
+    expect(offeredCheckOut("2026-08-18", capped)).toBe("2026-08-19");
+  });
+});
+
+describe("firstBookablePeriod", () => {
+  it("walks forward to the first day that begins a charter", () => {
+    expect(firstBookablePeriod("2026-08-11", constraints())).toEqual({
+      startDate: "2026-08-15",
+      endDate: "2026-08-22",
+    });
+  });
+
+  it("skips a day that passes the cheap tests but begins nothing", () => {
+    const tightGap = constraints({
+      occupied: [{ startDate: "2026-08-20", endDate: "2026-09-05" }],
+    });
+    expect(firstBookablePeriod("2026-08-15", tightGap)).toEqual({
+      startDate: "2026-09-05",
+      endDate: "2026-09-12",
+    });
+  });
+
+  it("gives up rather than inventing a period in a closed season", () => {
+    expect(firstBookablePeriod("2027-08-14", constraints())).toBeNull();
   });
 });
 

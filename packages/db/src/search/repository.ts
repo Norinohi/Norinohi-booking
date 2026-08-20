@@ -878,6 +878,7 @@ const searchColumns = sql`
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
   doc.bookable_from as "bookableFrom",
+  doc.bookable_to as "bookableTo",
   doc.has_unconfirmed_availability as "hasUnconfirmedAvailability",
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;

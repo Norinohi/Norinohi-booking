@@ -2,7 +2,11 @@ import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import type { SeasonalPrice } from "../sync/price-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
-import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
+import {
+  CHARTER_TURNAROUND_WEEKDAY,
+  formatBookingManagerDateTime,
+  parseBookingManagerDate,
+} from "./dates";
 import { numberToMinor } from "./money";
 import { bookingManagerEndpoints, restPriceListSchema, type RestPrice } from "./endpoints";
 
@@ -25,7 +29,6 @@ import { bookingManagerEndpoints, restPriceListSchema, type RestPrice } from "./
  * fleet-wide regardless of who asked.
  */
 
-const SATURDAY = 6;
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
 
@@ -188,7 +191,7 @@ export function charterSaturdays(years: number[]): string[] {
   const end = Date.UTC(last, 11, 31);
 
   let cursor = Date.UTC(first, 0, 1);
-  cursor += ((SATURDAY - new Date(cursor).getUTCDay() + 7) % 7) * DAY_MS;
+  cursor += ((CHARTER_TURNAROUND_WEEKDAY - new Date(cursor).getUTCDay() + 7) % 7) * DAY_MS;
 
   const saturdays: string[] = [];
   for (; cursor <= end; cursor += WEEK_MS) {

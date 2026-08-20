@@ -53,8 +53,28 @@ export type RangeVerdict =
 
 const MS_PER_DAY = 86_400_000;
 
+/** The longest charter considered anywhere here. Three weeks covers the fortnight most cap at. */
+const MAX_NIGHTS = 21;
+
+/**
+ * The length assumed for a rule that states no minimum of its own.
+ *
+ * Only ever used to decide which legal charter to *offer*, never to decide what is legal: a
+ * listing whose provider published no minimum is not thereby selling single nights, it is a
+ * listing whose provider published nothing, and a card reading "20 Aug to 21 Aug" beside a
+ * weekly rate is an artefact of that silence rather than a period anyone wants.
+ */
+const ASSUMED_NIGHTS = 7;
+
+/** How far past the offered day `firstBookablePeriod` keeps looking. */
+const SEARCH_DAYS = 35;
+
 function toUtcMs(day: string): number {
   return Date.parse(`${day}T00:00:00.000Z`);
+}
+
+export function addDays(day: string, days: number): string {
+  return new Date(toUtcMs(day) + days * MS_PER_DAY).toISOString().slice(0, 10);
 }
 
 export function weekdayOf(day: string): number {
@@ -157,20 +177,120 @@ function wasRefused(
 
 /**
  * Whether a day could begin a charter at all, which is what a calendar grid needs before a
- * range exists. Deliberately cheap: it does not prove some legal check-out follows, so a day
- * this admits can still yield no valid range once the visitor picks an end.
+ * range exists.
+ *
+ * This proves a legal check-out follows, which is the whole point: the cheaper test — right
+ * weekday, not inside a booking, inside a published rate — admits the last days of a gap too
+ * short to sell and every mid-week day of a listing that only turns around on Saturdays. Those
+ * days are clickable and then lead nowhere, which reads as a broken picker, and the ones that
+ * escape into `bookable_from` send a card's "available from" date to a calendar that refuses it.
  */
 export function canCheckIn(day: string, constraints: CharterConstraints): boolean {
-  const weekday = weekdayOf(day);
-  const dayAllowed =
-    constraints.rules.length === 0 ||
-    constraints.rules.some(
-      (rule) => rule.checkinWeekday === null || rule.checkinWeekday === weekday,
-    );
-  if (!dayAllowed) return false;
-
+  if (!admitsWeekday(constraints.rules, day)) return false;
   if (constraints.occupied.some((period) => covers(period, day))) return false;
-  return constraints.priced.some((period) => covers(period, day));
+  if (!constraints.priced.some((period) => covers(period, day))) return false;
+
+  return firstCheckOut(day, constraints) !== null;
+}
+
+function admitsWeekday(rules: readonly CharterRule[], day: string): boolean {
+  if (rules.length === 0) return true;
+
+  const weekday = weekdayOf(day);
+  return rules.some((rule) => rule.checkinWeekday === null || rule.checkinWeekday === weekday);
+}
+
+/**
+ * Every check-out that completes a legal charter from `checkIn`, soonest first.
+ *
+ * A calendar needs the count as well as the days: where a listing's rules leave exactly one
+ * legal end, asking for a second click is asking the visitor to find the single day that is
+ * not greyed out, which is the strictest listings punishing their own customers hardest.
+ */
+export function legalCheckOuts(checkIn: string, constraints: CharterConstraints): string[] {
+  const days: string[] = [];
+  for (let nights = 1; nights <= MAX_NIGHTS; nights++) {
+    const checkOut = addDays(checkIn, nights);
+    if (rangeStatus(checkIn, checkOut, constraints) === "bookable") days.push(checkOut);
+  }
+  return days;
+}
+
+/**
+ * The shortest check-out that completes a legal charter from `checkIn`, or null.
+ *
+ * Every length is tried, including the ones no rule was written for, because this is what
+ * decides whether a calendar day is clickable at all: skipping a length here would disable a
+ * day the provider would happily sell.
+ */
+export function firstCheckOut(checkIn: string, constraints: CharterConstraints): string | null {
+  for (let nights = 1; nights <= MAX_NIGHTS; nights++) {
+    const checkOut = addDays(checkIn, nights);
+    if (rangeStatus(checkIn, checkOut, constraints) === "bookable") return checkOut;
+  }
+  return null;
+}
+
+/**
+ * The check-out to *offer* for a charter starting on `checkIn`, which is the shortest one the
+ * rules were written for rather than the shortest one they fail to forbid.
+ *
+ * Mirrored by the `bookable_to` lateral in packages/db/src/search/read-model.ts, which has to
+ * reach the same answer in SQL for the search card. Keep the two together: the shape is one
+ * length per rule, the rule's own minimum snapped up to its check-out weekday, smallest first.
+ */
+export function offeredCheckOut(checkIn: string, constraints: CharterConstraints): string | null {
+  for (const nights of offeredNights(constraints.rules, checkIn)) {
+    const checkOut = addDays(checkIn, nights);
+    if (rangeStatus(checkIn, checkOut, constraints) === "bookable") return checkOut;
+  }
+  /* The rules describe what is usually sold, not all of it; never claim nothing over a detail. */
+  return firstCheckOut(checkIn, constraints);
+}
+
+function offeredNights(rules: readonly CharterRule[], checkIn: string): number[] {
+  const lengths = new Set<number>();
+
+  for (const rule of rules.length === 0 ? [UNCONSTRAINED] : rules) {
+    const base = Math.max(rule.minNights ?? ASSUMED_NIGHTS, 1);
+    const nights =
+      rule.checkoutWeekday === null
+        ? base
+        : base + ((rule.checkoutWeekday - weekdayOf(addDays(checkIn, base)) + 7) % 7);
+
+    if (rule.maxNights !== null && nights > rule.maxNights) continue;
+    if (nights <= MAX_NIGHTS) lengths.add(nights);
+  }
+
+  return [...lengths].sort((a, b) => a - b);
+}
+
+const UNCONSTRAINED: CharterRule = {
+  checkinWeekday: null,
+  checkoutWeekday: null,
+  minNights: null,
+  maxNights: null,
+};
+
+/**
+ * The earliest charter this listing will sell from `from` onwards, or null.
+ *
+ * `from` is normally a day already meant to be a legal check-in — a card's materialised
+ * `bookableFrom`, say — so the walk forward is a tolerance for the listing having moved since
+ * that was written rather than a scan of the season.
+ */
+export function firstBookablePeriod(
+  from: string,
+  constraints: CharterConstraints,
+): DatePeriod | null {
+  for (let offset = 0; offset <= SEARCH_DAYS; offset++) {
+    const startDate = addDays(from, offset);
+    if (!admitsWeekday(constraints.rules, startDate)) continue;
+
+    const endDate = offeredCheckOut(startDate, constraints);
+    if (endDate !== null) return { startDate, endDate };
+  }
+  return null;
 }
 
 /** Whether a day may close the charter that began on `checkIn`. */

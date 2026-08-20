@@ -75,7 +75,7 @@ export default function BookingSidebar({
            free dates, but no published rate to open a season with. */
         datesOnRequest={
           listing
-            ? listing.availability.hasAvailableDates && listing.availability.bookableFrom === null
+            ? listing.availability.hasAvailableDates && listing.availability.bookablePeriod === null
             : false
         }
         actions={actions}

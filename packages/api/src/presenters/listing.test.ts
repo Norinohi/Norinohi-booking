@@ -50,6 +50,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   availableFrom: "2026-06-13",
   availableTo: "2026-08-29",
   bookableFrom: null,
+  bookableTo: null,
   hasUnconfirmedAvailability: false,
   hasTemporaryBooking: false,
   ...over,
