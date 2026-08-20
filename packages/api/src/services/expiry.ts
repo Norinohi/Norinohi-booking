@@ -301,13 +301,14 @@ async function releaseOption(
 }
 
 /**
- * How long a booking may sit in PAYMENT_PENDING before its checkout is presumed abandoned.
+ * How long a booking may sit at the payment step before its checkout is presumed abandoned.
  *
  * The clock is not what waits for money, and that is why it can be this short. Everything that
  * could still arrive is excluded below by something better than a timer: a delayed method in
  * flight by its `processing` status, and a bank transfer by its invoice's own due date. What
- * the cutoff governs is the remainder — an intent that was opened and never submitted, where
- * nothing is coming and the only question is how long to leave the slot standing.
+ * the cutoff governs is the remainder — an intent that was opened and never submitted, or one
+ * that was declined and never retried, where nothing is coming and the only question is how
+ * long to leave the slot standing.
  *
  * Five days answers that against measured provider behaviour rather than a guess. Real NauSYS
  * options run to about six days for a distant departure and as little as twenty hours for a
@@ -326,15 +327,17 @@ const ABANDONED_PAYMENT_MS = 5 * 24 * 60 * 60 * 1000;
 /**
  * Checkouts abandoned at the payment step.
  *
- * The two sweeps above leave PAYMENT_PENDING alone because money may be in flight and the
+ * The two sweeps above leave these states alone because money may be in flight and the
  * Stripe webhook is the authority on how that ends. True in the minutes after Pay, and the
- * reason nothing reaped this state at all: a customer who opened a payment and closed the tab
- * left a booking that no sweep would touch, holding `booking_provider_option_uq` against every
- * future booking of that slot. The operator releases their own option on `optionTill`; our row
- * outlived it indefinitely.
+ * reason nothing reaped them at all: a customer who opened a payment and closed the tab, or
+ * whose card was declined, left a booking that no sweep would touch, holding
+ * `booking_provider_option_uq` against every future booking of that slot. The operator releases
+ * their own option on `optionTill`; our row outlived it indefinitely.
  *
  * Three things keep a booking out of this: money that arrived or is still arriving, an invoice
- * whose terms have not run out, and the cutoff. What is left is genuinely abandoned.
+ * whose terms have not run out, and the cutoff. What is left is genuinely abandoned. A retry
+ * writes the booking back to PAYMENT_PENDING, and `updated_at` moves with it, so a customer
+ * working through a second card is measured from their last attempt rather than their first.
  */
 async function expireAbandonedPayments(
   db: Database,

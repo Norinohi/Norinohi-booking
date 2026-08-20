@@ -568,9 +568,11 @@ export async function cancelBooking(
     }
 
     /*
-     * Only the no-money branch. A cancelled CONFIRMED booking lands at REFUND_PENDING and is
-     * answered by the refund mail once the money actually moves, which is the one that can
-     * state an amount.
+     * A cancelled CONFIRMED booking lands at REFUND_PENDING and is answered by the refund mail
+     * once the money actually moves, which is the one that can state an amount. Everything else
+     * gets this mail — usually with nothing charged, but not always: a checkout cancelled after
+     * the card succeeded and before the provider answered, or with a transfer still clearing,
+     * ends here too, and `charged` is what keeps the mail from denying money we are holding.
      */
     if (moved.status === "CANCELLED" && row.booking.guestEmail) {
       await notifyBookingCancelled({
@@ -581,6 +583,7 @@ export async function cancelBooking(
         yachtName: row.booking.commercialSnapshot.listingTitle,
         checkIn: row.quote.checkIn,
         checkOut: row.quote.checkOut,
+        charged: await hasMoneyIn(db, moved.id),
         reason,
       });
     }
@@ -592,6 +595,25 @@ export async function cancelBooking(
     }
     throw error;
   }
+}
+
+/**
+ * Whether money has reached us on this booking, or is still on its way.
+ *
+ * `processing` counts with `succeeded` for the same reason the expiry sweep counts it: a SEPA
+ * debit that has not settled yet is money in flight, and a cancellation mail that calls it
+ * nothing charged is wrong by the time the transfer lands.
+ */
+async function hasMoneyIn(db: Database, bookingId: string): Promise<boolean> {
+  const [settled] = await db
+    .select({ id: payment.id })
+    .from(payment)
+    .where(
+      and(eq(payment.bookingId, bookingId), inArray(payment.status, ["succeeded", "processing"])),
+    )
+    .limit(1);
+
+  return Boolean(settled);
 }
 
 /**

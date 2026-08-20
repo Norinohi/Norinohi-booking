@@ -1,6 +1,8 @@
 import { env } from "@yacht-charter/env/server";
 import { sendEnquiryAnswerEmail, sendStaffAlertEmail } from "@yacht-charter/transactional";
 
+import { BOOKING_RECEIVED_STATES, type BookingStatus } from "./booking-state";
+
 /*
  * The two mails around a booking enquiry: the ping that tells staff one arrived, and the reply
  * that reaches the customer. Both are best-effort — a question that was recorded must stay
@@ -22,7 +24,26 @@ export type EnquiryAnswered = {
   question: string;
   answer: string;
   bookingId: string;
+  /** Decides where the button goes: a charter nobody has paid for needs the payment screen. */
+  bookingStatus: BookingStatus;
 };
+
+/**
+ * The one button on the reply.
+ *
+ * A question is most often asked while deciding whether to pay, and sending that customer to the
+ * booking page under "View your booking" was the complaint that started this: the answer they
+ * just read is the thing that unblocks the payment, and the mail pointed away from it.
+ * `BOOKING_RECEIVED_STATES` is the same list the holding mail uses to decide that its pay link is
+ * what this customer needs, so the two agree by construction rather than by memory.
+ */
+function answerCta(bookingId: string, status: BookingStatus): { url: string; label: string } {
+  const awaitingPayment: readonly BookingStatus[] = BOOKING_RECEIVED_STATES;
+
+  return awaitingPayment.includes(status)
+    ? { url: appUrl(`/bookings/${bookingId}/pay`), label: "Complete your payment" }
+    : { url: appUrl(`/bookings/${bookingId}`), label: "View your booking" };
+}
 
 export async function notifyEnquiryAnswered(enquiry: EnquiryAnswered): Promise<void> {
   try {
@@ -32,7 +53,7 @@ export async function notifyEnquiryAnswered(enquiry: EnquiryAnswered): Promise<v
       yachtName: enquiry.yachtName,
       question: enquiry.question,
       answer: enquiry.answer,
-      cta: { url: appUrl(`/bookings/${enquiry.bookingId}`), label: "View your booking" },
+      cta: answerCta(enquiry.bookingId, enquiry.bookingStatus),
     });
   } catch (cause) {
     console.error(`[email] enquiry answer for ${enquiry.reference} failed`, cause);

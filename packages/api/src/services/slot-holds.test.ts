@@ -12,7 +12,9 @@ import { HOLD_SWEEP, STALE_PAYMENT_SWEEP, type BookingStatus } from "./booking-s
  * The failure this guards is silent and expensive. A status nothing sweeps would take a
  * boat out of search permanently on one abandoned checkout, and nothing about it would
  * look wrong -- the booking is fine, the sync is fine, the listing is simply never
- * returned. Which is why PAYMENT_FAILED is excluded: nothing sweeps it today.
+ * returned. PAYMENT_FAILED was excluded for that reason until the payment sweep was
+ * widened to cover it; what admits a status here is having a way out, not how far
+ * along its checkout got.
  */
 
 /** Statuses no sweep moves, kept out of search anyway. Each needs a reason on this list. */
@@ -30,10 +32,6 @@ const RELEASED = [
   "QUOTED",
   "QUOTE_EXPIRED",
   "OPTION_EXPIRED",
-  // The vendor still holds this option and refuses the slot to anyone else, so the cost of
-  // leaving it out is a bounce at checkout. The cost of putting it in is a listing hidden
-  // for good, because no sweep moves PAYMENT_FAILED and only an admin can cancel it.
-  "PAYMENT_FAILED",
   "PROVIDER_REJECTED",
   "CANCELLED",
   "REFUND_PENDING",

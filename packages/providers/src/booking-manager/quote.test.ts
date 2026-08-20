@@ -17,13 +17,17 @@ function offerWith(extra: ExtraInput) {
   });
 }
 
-function mappingFor(extra: ExtraInput, labelFor?: OfferMapping["labelFor"]): OfferMapping {
+function mappingFor(
+  extra: ExtraInput,
+  labelFor?: OfferMapping["labelFor"],
+  guests = 4,
+): OfferMapping {
   return {
     offer: offerWith(extra),
     listingId: "lst_1",
     checkIn: "2026-06-01",
     checkOut: "2026-06-08",
-    guests: 4,
+    guests,
     requestedCurrency: "EUR",
     expiresAt: "2026-05-01T00:00:00.000Z",
     labelFor,
@@ -61,5 +65,35 @@ describe("mapOfferToProviderQuote extras", () => {
     );
 
     expect(quote.lines.find((line) => line.kind === "extra")?.label).toBe("Final cleaning");
+  });
+});
+
+/**
+ * The vendor prices per-person extras against the `passengersOnBoard` on the
+ * `/offers` query and returns the product, so the mapper must copy the figure
+ * across untouched. These two payloads are what the live API answered for one
+ * yacht at two headcounts: a per-person extra at 70 EUR each, the base price
+ * unmoved.
+ */
+describe("mapOfferToProviderQuote per-person extras", () => {
+  const towels = { id: "696570151400225", name: "Towels", obligatory: true };
+
+  function extraMinorFor(guests: number, price: number) {
+    const quote = mapOfferToProviderQuote(mappingFor({ ...towels, price }, undefined, guests));
+    return quote.lines.find((line) => line.kind === "extra")?.amount.amountMinor;
+  }
+
+  it("bills the headcount the vendor already priced in, not a unit price times guests", () => {
+    expect(extraMinorFor(2, 140)).toBe(14_000);
+    expect(extraMinorFor(5, 350)).toBe(35_000);
+  });
+
+  it("leaves the base line alone when only the headcount differs", () => {
+    const baseOf = (guests: number, price: number) =>
+      mapOfferToProviderQuote(mappingFor({ ...towels, price }, undefined, guests)).lines.find(
+        (line) => line.kind === "base",
+      )?.amount.amountMinor;
+
+    expect(baseOf(2, 140)).toBe(baseOf(5, 350));
   });
 });

@@ -168,6 +168,7 @@ export async function answerEnquiry(
     question: before.question,
     answer: input.answer,
     bookingId: before.bookingId,
+    bookingStatus: before.bookingStatus,
   });
 
   return present(await readOne(db, input.id));

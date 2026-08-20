@@ -47,13 +47,15 @@ export const bookingStatus = pgEnum("booking_status", [
  * when it gets stuck (`flagStaleConfirmations`), or a charter that really was sold.
  * That is the property `slot-holds.test.ts` pins: a status nothing ever moves out of
  * would hide a yacht from search for good, which is the failure this list must not
- * have. PAYMENT_FAILED is left out for exactly that reason -- nothing sweeps it, and
- * the vendor still refuses the slot to anyone else while it stands.
+ * have. Membership follows from that and not from how far along a checkout looks --
+ * PAYMENT_FAILED belongs here now that the payment sweep gives it up after five days,
+ * and did not before, when nothing did.
  */
 export const SLOT_HOLDING_STATUSES = [
   "OPTION_PENDING",
   "OPTION_HELD",
   "PAYMENT_PENDING",
+  "PAYMENT_FAILED",
   "CONFIRMING",
   "CONFIRMED",
 ] as const satisfies readonly (typeof bookingStatus.enumValues)[number][];

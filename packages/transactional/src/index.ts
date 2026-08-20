@@ -16,12 +16,24 @@ import { ResetPasswordEmail } from "./emails/reset-password";
 import { SetPasswordEmail } from "./emails/set-password";
 import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert";
 
+export type { RefundMethod } from "./emails/refund-issued";
+
 let client: Resend | undefined;
 
 function getClient() {
   if (!env.RESEND_API_KEY) return undefined;
   client ??= new Resend(env.RESEND_API_KEY);
   return client;
+}
+
+/*
+ * Whether an answer typed into a mail client reaches a person. `sendHtml` only sets `replyTo`
+ * when REPLY_TO_EMAIL is configured, and without it a reply goes to the sending identity, which
+ * is a noreply address on most domains. The two mails that invite a reply ask this before they
+ * promise one, so the copy and the header can never disagree.
+ */
+function isReplyable(): boolean {
+  return Boolean(env.REPLY_TO_EMAIL);
 }
 
 // Optional as a pair like the Google/Stripe keys: without RESEND_API_KEY and EMAIL_FROM
@@ -158,9 +170,15 @@ export async function sendRefundIssuedEmail(
 /** The acknowledgement an enquiry gets — quote request, charter expert, or consultation. */
 export async function sendLeadFollowUpEmail(
   to: string,
-  lead: Omit<LeadFollowUpEmailProps, "appUrl">,
+  lead: Omit<LeadFollowUpEmailProps, "appUrl" | "replyable">,
 ) {
-  const html = await render(createElement(LeadFollowUpEmail, { ...lead, appUrl: env.CORS_ORIGIN }));
+  const html = await render(
+    createElement(LeadFollowUpEmail, {
+      ...lead,
+      replyable: isReplyable(),
+      appUrl: env.CORS_ORIGIN,
+    }),
+  );
   return sendHtml(to, "We have your enquiry — YachtSkanner", html);
 }
 
@@ -170,10 +188,14 @@ export async function sendLeadFollowUpEmail(
  */
 export async function sendEnquiryAnswerEmail(
   to: string,
-  enquiry: Omit<EnquiryAnswerEmailProps, "appUrl">,
+  enquiry: Omit<EnquiryAnswerEmailProps, "appUrl" | "replyable">,
 ) {
   const html = await render(
-    createElement(EnquiryAnswerEmail, { ...enquiry, appUrl: env.CORS_ORIGIN }),
+    createElement(EnquiryAnswerEmail, {
+      ...enquiry,
+      replyable: isReplyable(),
+      appUrl: env.CORS_ORIGIN,
+    }),
   );
   const subject = enquiry.reference
     ? `Re: your question about booking ${enquiry.reference}`

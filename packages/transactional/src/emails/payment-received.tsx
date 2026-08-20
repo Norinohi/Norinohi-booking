@@ -7,13 +7,27 @@
  *
  * One payment, not the booking. A deposit charter pays twice and each one gets its own receipt,
  * which is why the amount here is the amount of this charge and the totals below it are the
- * booking's. Only the card's middle content lives here; the frame comes from EmailLayout. Keep
- * exactly one jsx-source annotation in this file.
+ * booking's. Only the card's middle content lives here; the frame comes from EmailLayout and
+ * every piece it is drawn with comes from ./_components/ui. Keep exactly one jsx-source
+ * annotation in this file.
  */
-import { Button, Column, Heading, Hr, Link, Row, Section, Text } from "@react-email/components";
 import * as React from "react";
 
-import { colors, EmailLayout, fontFamily } from "./_components/email-layout";
+import { EmailLayout } from "./_components/email-layout";
+import {
+  ActionButton,
+  Divider,
+  Eyebrow,
+  Fact,
+  FactList,
+  Intro,
+  Money,
+  Note,
+  Panel,
+  StatPair,
+  SupportLink,
+  Title,
+} from "./_components/ui";
 
 export type PaymentReceivedEmailProps = {
   guestName: string;
@@ -40,101 +54,41 @@ export type PaymentReceivedEmailProps = {
    * underpaid by exactly this much.
    */
   dueAtCheckIn?: string;
-  /** When the rest falls due. Absent once nothing is left to pay. */
+  /**
+   * Whether the booking owes us nothing further. Its own field rather than something read off
+   * `balanceDueAt`, which says when the rest falls due and is absent both when there is no rest
+   * and when the provider named no date for one.
+   */
+  settled: boolean;
+  /** When the rest falls due. Absent once nothing is left to pay, and where no date was given. */
   balanceDueAt?: string;
   bookingUrl: string;
   supportUrl?: string;
   appUrl?: string;
 };
 
-const styles = {
-  eyebrow: {
-    margin: "0 0 6px",
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-    color: colors.brand,
-  },
-  heading: {
-    margin: "0 0 10px",
-    fontFamily,
-    fontSize: "26px",
-    lineHeight: "1.2",
-    fontWeight: "800",
-    letterSpacing: "-0.02em",
-    color: colors.heading,
-  },
-  intro: { margin: "0 0 24px", fontSize: "15px", lineHeight: "1.6", color: colors.text },
+/**
+ * The line under the divider, which is the one place this mail speaks about what is left rather
+ * than about the payment it is a receipt for. Keyed on `settled`, because a deposit charter whose
+ * provider named no second-payment date has a balance and no date to state, and reading the date
+ * as the balance told that customer their charter was paid off.
+ */
+function closingNote({
+  settled,
+  balanceDueAt,
+  dueAtCheckIn,
+}: Pick<PaymentReceivedEmailProps, "settled" | "balanceDueAt" | "dueAtCheckIn">): string {
+  if (!settled) {
+    return balanceDueAt
+      ? `The rest is due by ${balanceDueAt}, and we will remind you before then.`
+      : "The rest is still to pay. You can settle it from your booking whenever suits you.";
+  }
 
-  amountBox: { padding: "18px 20px", backgroundColor: colors.page, borderRadius: "12px" },
-  amountLabel: {
-    margin: "0 0 4px",
-    fontSize: "11px",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    color: colors.muted,
-  },
-  amountValue: { margin: 0, fontSize: "26px", fontWeight: "800", color: colors.heading },
-  paidValue: { margin: 0, fontSize: "16px", fontWeight: "700", color: colors.heading },
-
-  factRow: {
-    margin: 0,
-    padding: "11px 0",
-    borderBottom: `1px solid ${colors.border}`,
-    fontSize: "14px",
-    lineHeight: "1.5",
-  },
-  factLabel: { color: colors.muted },
-  factValue: { fontWeight: "700", color: colors.heading },
-
-  moneyBox: {
-    margin: "20px 0 0",
-    padding: "18px 20px",
-    backgroundColor: colors.page,
-    borderRadius: "12px",
-  },
-  moneyRow: { margin: 0, padding: "4px 0", fontSize: "14px", color: colors.text },
-  moneyLabel: { color: colors.muted },
-  moneyValue: { fontWeight: "700", color: colors.heading, textAlign: "right" },
-
-  buttonRow: { margin: "28px 0 0", textAlign: "center" },
-  button: {
-    display: "inline-block",
-    backgroundColor: colors.brand,
-    color: "#ffffff",
-    fontFamily,
-    fontSize: "15px",
-    fontWeight: "700",
-    padding: "15px 34px",
-    borderRadius: "8px",
-    textDecoration: "none",
-  },
-  divider: { margin: "28px 0 18px", border: "none", borderTop: `1px solid ${colors.border}` },
-  note: { margin: "0 0 8px", fontSize: "13px", lineHeight: "1.6", color: colors.muted },
-  link: { fontSize: "13px", lineHeight: "1.6", color: colors.brand, fontWeight: "600" },
-} as const;
-
-function Fact({ label, value }: { label: string; value: string }): React.ReactElement {
-  return (
-    <Text style={styles.factRow}>
-      <span style={styles.factLabel}>{label}: </span>
-      <span style={styles.factValue}>{value}</span>
-    </Text>
-  );
-}
-
-function Money({ label, value }: { label: string; value: string }): React.ReactElement {
-  return (
-    <Row style={styles.moneyRow}>
-      <Column>
-        <Text style={{ ...styles.moneyRow, ...styles.moneyLabel }}>{label}</Text>
-      </Column>
-      <Column>
-        <Text style={{ ...styles.moneyRow, ...styles.moneyValue }}>{value}</Text>
-      </Column>
-    </Row>
-  );
+  // The marina line is part of the total and of nothing we charge, so "nothing left to pay" is
+  // true of us and false of the charter until the amount is placed where it is actually paid.
+  return dueAtCheckIn
+    ? `Nothing else is due to us. The ${dueAtCheckIn} above is settled with the base at check-in.`
+    : "Nothing is left to pay on this charter.";
 }
 
 export function PaymentReceivedEmail({
@@ -149,6 +103,7 @@ export function PaymentReceivedEmail({
   paidTotal,
   outstanding,
   dueAtCheckIn,
+  settled,
   balanceDueAt,
   bookingUrl,
   supportUrl,
@@ -160,55 +115,34 @@ export function PaymentReceivedEmail({
       eyebrow="Payment"
       appUrl={appUrl}
     >
-      <Text style={styles.eyebrow}>Booking {reference}</Text>
-      <Heading style={styles.heading}>We have your payment</Heading>
-      <Text style={styles.intro}>
+      <Eyebrow>Booking {reference}</Eyebrow>
+      <Title>We have your payment</Title>
+      <Intro>
         {guestName}, your {kind} for {yachtName} arrived. Keep this as your receipt.
-      </Text>
+      </Intro>
 
-      <Section style={styles.amountBox}>
-        <Row>
-          <Column>
-            <Text style={styles.amountLabel}>Received</Text>
-            <Text style={styles.amountValue}>{amount}</Text>
-          </Column>
-          <Column>
-            <Text style={styles.amountLabel}>On</Text>
-            <Text style={styles.paidValue}>{paidAt}</Text>
-          </Column>
-        </Row>
-      </Section>
+      <Panel>
+        <StatPair label="Received" value={amount} second={{ label: "On", value: paidAt }} />
+      </Panel>
 
-      <Section>
+      <FactList>
         <Fact label="Yacht" value={yachtName} />
         <Fact label="Paid by" value={method} />
         <Fact label="Reference" value={reference} />
-      </Section>
+      </FactList>
 
-      <Section style={styles.moneyBox}>
+      <Panel>
         <Money label="Charter total" value={total} />
         <Money label="Paid so far" value={paidTotal} />
         {dueAtCheckIn ? <Money label="Due at the marina" value={dueAtCheckIn} /> : null}
-        <Money label="Still to pay" value={outstanding} />
-      </Section>
+        <Money label="Still to pay" value={outstanding} total />
+      </Panel>
 
-      <Section style={styles.buttonRow}>
-        <Button href={bookingUrl} style={styles.button}>
-          View your booking
-        </Button>
-      </Section>
+      <ActionButton href={bookingUrl}>View your booking</ActionButton>
 
-      <Hr style={styles.divider} />
-      <Text style={styles.note}>
-        {balanceDueAt
-          ? `The rest is due by ${balanceDueAt}, and we will remind you before then.`
-          : "Nothing is left to pay on this charter."}
-      </Text>
-      {supportUrl ? (
-        <Link href={supportUrl} style={styles.link}>
-          Contact support →
-        </Link>
-      ) : null}
+      <Divider />
+      <Note>{closingNote({ settled, balanceDueAt, dueAtCheckIn })}</Note>
+      <SupportLink href={supportUrl} />
     </EmailLayout>
   );
 }
@@ -225,6 +159,7 @@ PaymentReceivedEmail.PreviewProps = {
   paidTotal: "€2,435",
   outstanding: "€2,310",
   dueAtCheckIn: "€125",
+  settled: false,
   balanceDueAt: "1 Aug 2026",
   bookingUrl: "https://example.com/en/bookings/bkg_preview",
   supportUrl: "https://example.com/en/support?booking=bkg_preview",

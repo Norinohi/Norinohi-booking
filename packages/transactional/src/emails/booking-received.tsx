@@ -8,13 +8,31 @@
  *
  * `setPasswordUrl` is present only for a guest checkout, whose account was provisioned from their
  * email and has no password yet — a signed-in customer already has one and gets no such block.
- * Only the card's middle content lives here; the frame and the hero come from EmailLayout. Keep
- * exactly one jsx-source annotation in this file.
+ * Only the card's middle content lives here; the frame and the hero come from EmailLayout and
+ * every piece it is drawn with comes from ./_components/ui. Keep exactly one jsx-source
+ * annotation in this file.
  */
-import { Button, Column, Heading, Hr, Link, Row, Section, Text } from "@react-email/components";
 import * as React from "react";
 
-import { colors, EmailLayout, fontFamily } from "./_components/email-layout";
+import { EmailLayout } from "./_components/email-layout";
+import {
+  ActionButton,
+  ActionLink,
+  Callout,
+  CalloutBody,
+  CalloutLink,
+  Divider,
+  Eyebrow,
+  Fact,
+  FactList,
+  Intro,
+  Money,
+  Note,
+  Panel,
+  SupportLink,
+  Title,
+  TripDates,
+} from "./_components/ui";
 
 export type BookingReceivedEmailProps = {
   guestName: string;
@@ -52,126 +70,6 @@ export type BookingReceivedEmailProps = {
   appUrl?: string;
 };
 
-const styles = {
-  eyebrow: {
-    margin: "0 0 6px",
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.16em",
-    textTransform: "uppercase",
-    color: colors.brand,
-  },
-  heading: {
-    margin: "0 0 10px",
-    fontFamily,
-    fontSize: "26px",
-    lineHeight: "1.2",
-    fontWeight: "800",
-    letterSpacing: "-0.02em",
-    color: colors.heading,
-  },
-  intro: { margin: "0 0 24px", fontSize: "15px", lineHeight: "1.6", color: colors.text },
-
-  /* The charter itself: two dates facing each other, the way the app's summary shows them. */
-  trip: {
-    padding: "18px 20px",
-    backgroundColor: colors.page,
-    borderRadius: "12px",
-    marginBottom: "8px",
-  },
-  tripLabel: {
-    margin: "0 0 4px",
-    fontSize: "11px",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    color: colors.muted,
-  },
-  tripValue: { margin: 0, fontSize: "16px", fontWeight: "700", color: colors.heading },
-  tripArrow: { margin: 0, fontSize: "16px", color: colors.muted, textAlign: "center" },
-
-  factRow: {
-    margin: 0,
-    padding: "11px 0",
-    borderBottom: `1px solid ${colors.border}`,
-    fontSize: "14px",
-    lineHeight: "1.5",
-  },
-  factLabel: { color: colors.muted },
-  factValue: { fontWeight: "700", color: colors.heading },
-
-  moneyBox: {
-    margin: "20px 0 0",
-    padding: "18px 20px",
-    backgroundColor: colors.page,
-    borderRadius: "12px",
-  },
-  moneyRow: { margin: 0, padding: "4px 0", fontSize: "14px", color: colors.text },
-  moneyLabel: { color: colors.muted },
-  moneyValue: { fontWeight: "700", color: colors.heading, textAlign: "right" },
-  moneyTotal: { fontSize: "20px", fontWeight: "800", color: colors.heading, textAlign: "right" },
-
-  buttonRow: { margin: "28px 0 0", textAlign: "center" },
-  button: {
-    display: "inline-block",
-    backgroundColor: colors.brand,
-    color: "#ffffff",
-    fontFamily,
-    fontSize: "15px",
-    fontWeight: "700",
-    padding: "15px 34px",
-    borderRadius: "8px",
-    textDecoration: "none",
-  },
-  callout: {
-    margin: "28px 0 0",
-    padding: "18px 20px",
-    backgroundColor: "#eef4fe",
-    borderRadius: "12px",
-  },
-  calloutTitle: {
-    margin: "0 0 6px",
-    fontSize: "14px",
-    fontWeight: "700",
-    color: colors.heading,
-  },
-  calloutBody: { margin: "0 0 10px", fontSize: "13px", lineHeight: "1.6", color: colors.text },
-  divider: { margin: "28px 0 18px", border: "none", borderTop: `1px solid ${colors.border}` },
-  note: { margin: "0 0 8px", fontSize: "13px", lineHeight: "1.6", color: colors.muted },
-  link: { fontSize: "13px", lineHeight: "1.6", color: colors.brand, fontWeight: "600" },
-} as const;
-
-function Fact({ label, value }: { label: string; value: string }): React.ReactElement {
-  return (
-    <Text style={styles.factRow}>
-      <span style={styles.factLabel}>{label}: </span>
-      <span style={styles.factValue}>{value}</span>
-    </Text>
-  );
-}
-
-function Money({
-  label,
-  value,
-  total = false,
-}: {
-  label: string;
-  value: string;
-  total?: boolean;
-}): React.ReactElement {
-  return (
-    <Row style={styles.moneyRow}>
-      <Column>
-        <Text style={{ ...styles.moneyRow, ...styles.moneyLabel }}>{label}</Text>
-      </Column>
-      <Column>
-        <Text style={total ? styles.moneyTotal : { ...styles.moneyRow, ...styles.moneyValue }}>
-          {value}
-        </Text>
-      </Column>
-    </Row>
-  );
-}
-
 export function BookingReceivedEmail({
   guestName,
   reference,
@@ -200,78 +98,50 @@ export function BookingReceivedEmail({
       hero={imageUrl ? { src: imageUrl, alt: yachtName } : undefined}
       appUrl={appUrl}
     >
-      <Text style={styles.eyebrow}>Booking {reference}</Text>
-      <Heading style={styles.heading}>We're holding {yachtName}</Heading>
-      <Text style={styles.intro}>
+      <Eyebrow>Booking {reference}</Eyebrow>
+      <Title>We're holding {yachtName}</Title>
+      <Intro>
         {guestName}, the slot is yours to take. It is booked once the payment goes through, and
         everything below is what you agreed at checkout.
         {holdExpiresAt ? ` The operator holds it until ${holdExpiresAt}.` : ""}
-      </Text>
+      </Intro>
 
-      <Section style={styles.trip}>
-        <Row>
-          <Column>
-            <Text style={styles.tripLabel}>Check-in</Text>
-            <Text style={styles.tripValue}>{checkIn}</Text>
-          </Column>
-          <Column style={{ width: "40px" }}>
-            <Text style={styles.tripArrow}>→</Text>
-          </Column>
-          <Column>
-            <Text style={styles.tripLabel}>Check-out</Text>
-            <Text style={styles.tripValue}>{checkOut}</Text>
-          </Column>
-        </Row>
-      </Section>
+      <Panel>
+        <TripDates checkIn={checkIn} checkOut={checkOut} />
+      </Panel>
 
-      <Section>
+      <FactList>
         <Fact label="Marina" value={marina} />
         <Fact label="Guests" value={String(guests)} />
         {crew ? <Fact label="Crew" value={crew} /> : null}
-      </Section>
+      </FactList>
 
-      <Section style={styles.moneyBox}>
-        <Money label="Total price" value={total} total />
+      <Panel>
+        <Money label="Total price" value={total} />
         <Money label="Paid so far" value={paid} />
         {dueAtCheckIn ? <Money label="Due at the marina" value={dueAtCheckIn} /> : null}
-        <Money label="Still to pay" value={outstanding} />
-      </Section>
+        <Money label="Still to pay" value={outstanding} total />
+      </Panel>
 
-      <Section style={styles.buttonRow}>
-        <Button href={payUrl} style={styles.button}>
-          Complete your payment
-        </Button>
-      </Section>
-
-      <Section style={{ ...styles.buttonRow, margin: "14px 0 0" }}>
-        <Link href={bookingUrl} style={styles.link}>
-          Or view your booking →
-        </Link>
-      </Section>
+      <ActionButton href={payUrl}>Complete your payment</ActionButton>
+      <ActionLink href={bookingUrl}>Or view your booking</ActionLink>
 
       {setPasswordUrl ? (
-        <Section style={styles.callout}>
-          <Text style={styles.calloutTitle}>Keep this booking in your account</Text>
-          <Text style={styles.calloutBody}>
+        <Callout title="Keep this booking in your account">
+          <CalloutBody>
             We opened an account with this email address. Set a password and this booking is waiting
             for you on any device.
-          </Text>
-          <Link href={setPasswordUrl} style={styles.link}>
-            Set your password →
-          </Link>
-        </Section>
+          </CalloutBody>
+          <CalloutLink href={setPasswordUrl}>Set your password</CalloutLink>
+        </Callout>
       ) : null}
 
-      <Hr style={styles.divider} />
-      <Text style={styles.note}>
+      <Divider />
+      <Note>
         Nothing has been charged yet. Questions about the charter, the dates or the payment? We
         answer within one working day.
-      </Text>
-      {supportUrl ? (
-        <Link href={supportUrl} style={styles.link}>
-          Contact support →
-        </Link>
-      ) : null}
+      </Note>
+      <SupportLink href={supportUrl} />
     </EmailLayout>
   );
 }

@@ -35,13 +35,21 @@ describe("every sweep writes a status the state machine allows", () => {
 });
 
 describe("no two sweeps can both claim the same booking", () => {
-  it("leaves PAYMENT_PENDING to the payment sweep alone", () => {
-    // The other two exclude it deliberately: money may be in flight and the Stripe webhook
-    // is the authority. `expireAbandonedPayments` is the only thing allowed to give up on it,
-    // and only long after any payment could still land.
-    expect(HOLD_SWEEP.from).not.toContain("PAYMENT_PENDING");
-    expect(DEAD_QUOTE_SWEEP.from).not.toContain("PAYMENT_PENDING");
-    expect(STALE_PAYMENT_SWEEP.from).toEqual(["PAYMENT_PENDING"]);
+  it.each(["PAYMENT_PENDING", "PAYMENT_FAILED"] as const)(
+    "leaves %s to the payment sweep alone",
+    (status) => {
+      // The other two exclude both deliberately: money may be in flight and the Stripe webhook
+      // is the authority. `expireAbandonedPayments` is the only thing allowed to give up on
+      // them, and only long after any payment could still land.
+      expect(HOLD_SWEEP.from).not.toContain(status);
+      expect(DEAD_QUOTE_SWEEP.from).not.toContain(status);
+      expect(STALE_PAYMENT_SWEEP.from).toContain(status);
+    },
+  );
+
+  it("gives up on nothing else at the payment step", () => {
+    // Exact, so widening this sweep stays a decision rather than a side effect.
+    expect(STALE_PAYMENT_SWEEP.from).toEqual(["PAYMENT_PENDING", "PAYMENT_FAILED"]);
   });
 
   it("overlap only on OPTION_PENDING, which is separated by hold_expires_at", () => {
