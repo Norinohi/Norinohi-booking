@@ -56,7 +56,10 @@ const TRANSITIONS = {
   CONFIRMED: ["REFUND_PENDING", "CANCELLED"],
   QUOTE_EXPIRED: ["QUOTED", "CANCELLED"],
   OPTION_EXPIRED: ["QUOTED", "CANCELLED"],
-  PAYMENT_FAILED: ["PAYMENT_PENDING", "CANCELLED"],
+  // A failed payment is retryable, and expires the same way an unfinished one does.
+  // Not to CANCELLED, which §6 originally named: that is terminal, and a declined
+  // card is a customer who should still be able to come back and reprice.
+  PAYMENT_FAILED: ["PAYMENT_PENDING", "OPTION_EXPIRED", "QUOTE_EXPIRED", "CANCELLED"],
   PROVIDER_REJECTED: ["REFUND_PENDING", "CANCELLED"],
   CANCELLED: [],
   REFUND_PENDING: ["REFUNDED"],
@@ -84,17 +87,22 @@ export const DEAD_QUOTE_SWEEP = {
 /**
  * Checkouts abandoned at the payment step.
  *
- * The other two sweeps leave PAYMENT_PENDING alone because money may be in flight, which is
- * right in the minutes after Pay and wrong a week later: nothing else moves this state, so an
+ * The other two sweeps leave both of these alone because money may be in flight, which is
+ * right in the minutes after Pay and wrong a week later: nothing else moves these states, so an
  * abandoned checkout used to hold its provider option against every future booking of that
  * slot. The expiry service is what decides a booking has waited long enough.
+ *
+ * PAYMENT_FAILED is here for the same reason and not as an afterthought: a declined card leaves
+ * a customer in exactly the position a closed tab does, holding the option with a live pay link,
+ * and it was the last state nothing could move a booking out of. Its clock runs off `updated_at`,
+ * so each retry starts the wait again.
  *
  * Two destinations, because the reason has to be true. A booking that held an option expired
  * the option; one whose provider grants none never had a hold to lapse, and only its quote can
  * be said to have run out.
  */
 export const STALE_PAYMENT_SWEEP = {
-  from: ["PAYMENT_PENDING"],
+  from: ["PAYMENT_PENDING", "PAYMENT_FAILED"],
   to: "QUOTE_EXPIRED",
   held: "OPTION_EXPIRED",
 } as const satisfies SweepSpec & { held: BookingStatus };

@@ -368,10 +368,11 @@ function toExtraLine(
     );
   }
 
-  // OPEN VENDOR QUESTION (Q-BM-EXTRA-UNIT): `price` is taken as the line total for
-  // the period. The payload carries a `unit` ("per week", "per person") but no
-  // quantity, so there is nothing to multiply by; if the vendor means a unit price
-  // this under-charges on multi-unit extras.
+  // `price` is the line total for the period, never a unit price: the vendor has
+  // already multiplied by the `passengersOnBoard` we sent. Verified against the
+  // live `/offers` on 2026-08-20 by re-reading one yacht at 1/2/4/6/8 passengers,
+  // where a per-person extra came back at 70, 140, 280, 420, 560 while the base
+  // price held. Multiplying by `guests` here would double-count the headcount.
   return {
     code: formatExtraCode(EXTRA_KIND, externalId),
     label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,

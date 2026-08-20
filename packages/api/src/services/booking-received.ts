@@ -1,3 +1,4 @@
+import { user } from "@yacht-charter/db/schema/auth";
 import { booking, payment } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import { and, eq } from "drizzle-orm";
@@ -17,9 +18,10 @@ import { outstandingMinor } from "./checkout-amounts";
  */
 export async function sendBookingReceivedNotice(db: Database, bookingId: string): Promise<void> {
   const [found] = await db
-    .select({ booking, quote })
+    .select({ booking, quote, ownerProvisionedAt: user.provisionedAt })
     .from(booking)
     .innerJoin(quote, eq(quote.id, booking.quoteId))
+    .innerJoin(user, eq(user.id, booking.userId))
     .where(eq(booking.id, bookingId))
     .limit(1);
 
@@ -39,9 +41,14 @@ export async function sendBookingReceivedNotice(db: Database, bookingId: string)
     // and `stillDescribes` has just established that it is still true.
     outstandingMinor: outstandingMinor(found.quote, 0),
     holdExpiresAt: found.booking.holdExpiresAt,
-    // The account was opened by checkout and has no password, so the mail carries the
-    // link that lets them claim it.
-    isGuest: found.booking.guestAccessTokenHash !== null,
+    /*
+     * Whether the account still has no password, not whether this checkout had a session.
+     * A customer who has an account and simply did not sign in books through the guest
+     * path and gets a booking-scoped token, so the token says nothing about a password;
+     * `provisionedAt` is stamped only by guest provisioning and cleared the moment one is
+     * chosen, which is the same test the invitation mail makes before it sends.
+     */
+    isGuest: found.ownerProvisionedAt !== null,
   });
 }
 

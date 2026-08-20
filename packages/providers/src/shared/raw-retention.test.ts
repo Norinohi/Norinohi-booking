@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalJson,
   type RawPayloadWriter,
-  retainRawPayload,
+  retainRawPayloads,
   stableSourceHash,
 } from "./raw-retention";
 
-type RawPayloadRow = Parameters<ReturnType<RawPayloadWriter["insert"]>["values"]>[0];
+/** The fake resolves the insert to nothing; the real driver resolves it to its own result. */
+type FakeWriter = RawPayloadWriter<void>;
+type RawPayloadRows = Parameters<ReturnType<FakeWriter["insert"]>["values"]>[0];
 
 /** A payload that points at itself, which is what the cycle guard exists for. */
 interface CyclicRecord {
@@ -63,33 +65,60 @@ describe("stableSourceHash", () => {
   });
 });
 
-describe("retainRawPayload", () => {
+describe("retainRawPayloads", () => {
   function fakeWriter() {
-    const values: RawPayloadRow[] = [];
-    const db: RawPayloadWriter = {
+    const statements: RawPayloadRows[] = [];
+    const db: FakeWriter = {
       insert: () => ({
-        values: (value) => {
-          values.push(value);
-          return { returning: () => Promise.resolve([{ id: "praw_1" }]) };
+        values: (rows) => {
+          statements.push(rows);
+          return Promise.resolve(undefined);
         },
       }),
     };
-    return { db, values };
+    return { db, statements };
   }
 
-  it("returns the inserted id", async () => {
+  it("returns an id per payload, in the order they were given", async () => {
+    const { db, statements } = fakeWriter();
+    const ids = await retainRawPayloads(db, "prv_nausys", [{ n: 1 }, { n: 2 }, { n: 3 }]);
+
+    expect(ids).toHaveLength(3);
+    expect(new Set(ids).size).toBe(3);
+    // The ids are the ones written, not ones read back out of RETURNING — that is
+    // what lets the caller reference them from the same batch.
+    expect(statements[0]?.map((row) => row.id)).toEqual(ids);
+    expect(statements[0]?.map((row) => row.payload)).toEqual([{ n: 1 }, { n: 2 }, { n: 3 }]);
+  });
+
+  it("mints ids the id() column helper would have accepted", async () => {
     const { db } = fakeWriter();
-    await expect(retainRawPayload(db, "prv_nausys", { status: "OK" })).resolves.toBe("praw_1");
+    const [first] = await retainRawPayloads(db, "prv_nausys", [{ status: "OK" }]);
+    expect(first).toMatch(/^praw_/);
+  });
+
+  it("writes one statement for the whole batch", async () => {
+    const { db, statements } = fakeWriter();
+    await retainRawPayloads(db, "prv_nausys", [{ n: 1 }, { n: 2 }]);
+    expect(statements).toHaveLength(1);
+  });
+
+  it("touches the database for nothing when there is nothing to retain", async () => {
+    const { db, statements } = fakeWriter();
+    await expect(retainRawPayloads(db, "prv_nausys", [])).resolves.toEqual([]);
+    expect(statements).toHaveLength(0);
   });
 
   it("redacts credentials before the payload is stored", async () => {
-    const { db, values } = fakeWriter();
-    await retainRawPayload(db, "prv_nausys", {
-      credentials: { username: "agency-user", password: "hunter2" },
-      periodFrom: "04.07.2026",
-    });
+    const { db, statements } = fakeWriter();
+    await retainRawPayloads(db, "prv_nausys", [
+      {
+        credentials: { username: "agency-user", password: "hunter2" },
+        periodFrom: "04.07.2026",
+      },
+    ]);
 
-    expect(JSON.stringify(values)).not.toContain("hunter2");
-    expect(JSON.stringify(values)).toContain("04.07.2026");
+    expect(JSON.stringify(statements)).not.toContain("hunter2");
+    expect(JSON.stringify(statements)).toContain("04.07.2026");
   });
 });

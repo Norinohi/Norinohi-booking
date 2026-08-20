@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentRefund, paymentSchedule } from "@yacht-charter/db/schema/booking";
+import type { RefundMethod } from "@yacht-charter/transactional";
 import { and, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 
@@ -97,6 +98,10 @@ export async function refundBooking(
 
   let refundedMinor = plan.alreadyRefundedMinor;
   let awaitingSettlement = 0;
+  // Kept apart from `refundedMinor` because the mail speaks about the money that moved in this
+  // call, and a booking part-paid by card and part by transfer sends it back both ways.
+  let cardSettledMinor = 0;
+  let manualSettledMinor = 0;
 
   if (viaStripe.length > 0) {
     const stripe = stripeClient();
@@ -116,8 +121,10 @@ export async function refundBooking(
         options.reason,
       );
 
-      if (settled) refundedMinor += item.outstandingMinor;
-      else awaitingSettlement += 1;
+      if (settled) {
+        refundedMinor += item.outstandingMinor;
+        cardSettledMinor += item.outstandingMinor;
+      } else awaitingSettlement += 1;
     }
   }
 
@@ -137,6 +144,7 @@ export async function refundBooking(
     });
 
     refundedMinor += item.outstandingMinor;
+    manualSettledMinor += item.outstandingMinor;
   }
 
   const after = await readPlan(db, bookingId);
@@ -165,6 +173,16 @@ export async function refundBooking(
   }
 
   /*
+   * What is left splits two ways and the mail must not merge them: a transfer nobody has sent
+   * back yet is money we owe, and printing it beside the refund as "Retained" reads as us
+   * keeping it. Card money left unrefunded is the share the cancellation policy actually keeps.
+   */
+  const awaitingTransferMinor = after.manual.reduce(
+    (total, item) => total + item.outstandingMinor,
+    0,
+  );
+
+  /*
    * Only for money that has actually moved. A refund Stripe has accepted but not settled tells
    * the customer nothing they can check, and `refund.updated` is what closes those out — mailing
    * on acceptance would announce a refund that can still fail.
@@ -177,8 +195,10 @@ export async function refundBooking(
       bookingId,
       reference: row.reference,
       yachtName: row.commercialSnapshot.listingTitle,
+      method: refundMethod(cardSettledMinor, manualSettledMinor),
       refundedMinor: settledNow,
-      outstandingMinor: after.outstandingMinor,
+      retainedMinor: after.outstandingMinor - awaitingTransferMinor,
+      awaitingTransferMinor,
       currency: row.currency,
       reason: options.reason,
     });
@@ -314,6 +334,16 @@ async function readPlan(db: DatabaseExecutor, bookingId: string) {
           );
 
   return planRefund(payments, refunds);
+}
+
+/**
+ * Which way this refund travelled, for the one sentence in the mail that tells the customer
+ * where to look for it. Card money is the default because it is the only channel a booking with
+ * no settled transfer can have used.
+ */
+function refundMethod(cardMinor: number, manualMinor: number): RefundMethod {
+  if (manualMinor === 0) return "card";
+  return cardMinor > 0 ? "mixed" : "transfer";
 }
 
 /**

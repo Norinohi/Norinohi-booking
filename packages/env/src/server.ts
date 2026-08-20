@@ -156,6 +156,28 @@ export const env = createEnv({
     // Booking Manager has not published a rate limit; pending vendor answer, this
     // is our own politeness margin.
     BOOKING_MANAGER_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),
+    /*
+     * How many catalogue reads the sweep keeps in flight, each on its own lane and
+     * each still spaced by MIN_INTERVAL_MS.
+     *
+     * The fleet is fetched one company at a time - `/yachts` takes a companyId and
+     * nothing wider - so a production credential's ~1300 companies were ~1300 reads
+     * end to end, an hour of wall clock at the latency the vendor answers with. The
+     * spend is almost entirely waiting, which is what makes overlapping them the
+     * whole fix. Unlike NauSYS, Booking Manager does not forbid parallel calls.
+     *
+     * 12 is measured rather than guessed: full-scale runs against a production
+     * credential on 2026-08-20 took 15.2 min of ingest at 6 and 7.3 min at 12, with
+     * no sync_error of any kind in either. Scaling that close to linear is what a
+     * purely latency-bound sweep looks like when the far end is not throttling.
+     *
+     * It stays a variable because the vendor has published no rate limit at all, so
+     * two clean runs are evidence and not a guarantee: a 429 appearing in sync_error
+     * is answered by lowering this, no deploy needed. Raising it much further is not
+     * worth much - by 12 the price sweep has stopped improving, and the ingest no
+     * longer dominates the run.
+     */
+    BOOKING_MANAGER_SWEEP_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(12),
     // We must release a hold before the vendor auto-expires it, otherwise we sell
     // a slot Booking Manager has already dropped.
     BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: z.coerce.number().int().nonnegative().default(15),

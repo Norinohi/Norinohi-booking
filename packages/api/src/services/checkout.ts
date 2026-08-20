@@ -156,6 +156,7 @@ export async function requestInvoice(
     amountMinor: created.amountMinor,
     currency: created.currency,
     dueAt: created.dueAt,
+    holdExpiresAt: row.booking.holdExpiresAt,
     checkIn: row.quote.checkIn,
     checkOut: row.quote.checkOut,
   });

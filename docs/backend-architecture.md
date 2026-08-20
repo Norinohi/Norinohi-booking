@@ -129,6 +129,7 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 - `listing_free_period(id, listing_id, listing_source_id, start_date, end_date)` — the complement of occupancy, written per year and only for years whose dump arrived whole.
 - `listing_price_period(id, listing_id, listing_source_id, start_date, end_date, kind:'weekly'|'daily', price_minor, currency)` — published rates. A date no row covers is a season the provider has not opened, and so is not sellable.
 - Whether a given charter is legal is **computed** from these plus `listing_checkin_rule`, by `packages/api/src/lib/availability-rules.ts`. Nothing enumerates offers. **ADR 0004.**
+- **Our own live bookings are subtracted at read time, not written into these tables.** They hold only what the provider stated and the hourly sync is their only writer, so a checkout that has just taken an option is invisible to them until the next run. `packages/db/src/search/slot-holds.ts` takes the periods held by a booking in `SLOT_HOLDING_STATUSES` off search, the calendar and the constraints, so the cache is never more optimistic than what we already know. Read-time because a written block would need a compensating delete on every expiry, cancellation and rejection path, and because the sync rewrites `listing_free_period` per year. This only ever narrows what we offer; the quote remains the authority.
 
 ### `quote` — priced snapshot _(M4)_
 
@@ -304,7 +305,7 @@ Plain-object routers on `appRouter`, Zod v4 `.input()/.output()`, `publicProcedu
 DRAFT ─► QUOTED ─► OPTION_PENDING ─► OPTION_HELD ─► PAYMENT_PENDING ─► CONFIRMING ─► CONFIRMED
    │        │            │               │                │               │
    │        │            │               │                │               └─► PROVIDER_REJECTED ─► REFUND_PENDING ─► REFUNDED
-   │        │            │               │                └─► PAYMENT_FAILED (retry ↺ or ─► CANCELLED)
+   │        │            │               │                └─► PAYMENT_FAILED (retry ↺ or ─► expiry)
    │        └─ QUOTE_EXPIRED             └─ OPTION_EXPIRED
    └─ (abandoned)
 CANCELLED reachable from any pre-CONFIRMED state (user/admin).
@@ -322,9 +323,9 @@ CANCELLED reachable from any pre-CONFIRMED state (user/admin).
 4. **CONFIRMING → CONFIRMED** via **Stripe webhook** (authoritative):
    - `payment_intent.succeeded` → `payment.succeeded`, enter **CONFIRMING**, call `confirmBooking` (or promote the option). Success → `CONFIRMED`, capture `provider_reservation_id`. Provider failure → `PROVIDER_REJECTED` → **REFUND_PENDING** → refund/void (test mode) → **REFUNDED**, surfaced to ops.
    - `payment_intent.processing` → `payment.processing`, booking unchanged. Delayed methods (SEPA debit and the rest of `automatic_payment_methods`) clear over days, and this is the only thing that tells the expiry sweeper money is still on its way; without it such a payment is indistinguishable from a checkout nobody submitted.
-   - `payment_intent.payment_failed` → `PAYMENT_FAILED`; retry until quote/hold expiry, else `CANCELLED`.
+   - `payment_intent.payment_failed` → `PAYMENT_FAILED`; retry until the expiry sweeper gives up on it (step 5), which returns it to `OPTION_EXPIRED`/`QUOTE_EXPIRED` and not to `CANCELLED` — a declined card is not a cancelled booking, and both expiry states leave the customer able to reprice.
    - **The endpoint must be subscribed to all six events we handle**, or the handler for a missing one never runs and the failure is silent: `payment_intent.succeeded`, `payment_intent.processing`, `payment_intent.payment_failed`, `refund.updated`, `charge.dispute.created`, `charge.dispute.closed`.
-5. **Expiry sweeper** (cron/worker): quotes past `expires_at` → `QUOTE_EXPIRED`; holds past `hold_expires_at` → release provider option → `OPTION_EXPIRED`. `PAYMENT_PENDING` is left alone while money can still arrive and reaped after five days, once no payment has succeeded or is processing and no invoice is still within its terms (those two exclusions, not the clock, are what wait for money; measured NauSYS options run 20 h to ~6 days, so five days releases at or before the vendor) → release option → `OPTION_EXPIRED`, or `QUOTE_EXPIRED` where no option was ever held. Without that last one an abandoned checkout holds its slot in `booking_provider_option_uq` forever.
+5. **Expiry sweeper** (cron/worker): quotes past `expires_at` → `QUOTE_EXPIRED`; holds past `hold_expires_at` → release provider option → `OPTION_EXPIRED`. `PAYMENT_PENDING` and `PAYMENT_FAILED` are left alone while money can still arrive and reaped after five days, once no payment has succeeded or is processing and no invoice is still within its terms (those two exclusions, not the clock, are what wait for money; measured NauSYS options run 20 h to ~6 days, so five days releases at or before the vendor) → release option → `OPTION_EXPIRED`, or `QUOTE_EXPIRED` where no option was ever held. Without that last one an abandoned checkout holds its slot in `booking_provider_option_uq` forever. The clock runs off `booking.updated_at`, so a retry restarts it and a customer working through a second card is measured from their last attempt.
 
 ### 6.2 Correctness properties
 

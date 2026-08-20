@@ -3,13 +3,13 @@
  * StaffAlertEmail — the internal ping when something lands that a person has to act on: a new
  * enquiry, or a new question on a booking. Deliberately plain and dense — it goes to a
  * colleague's inbox next to fifty others, so the subject and the first two lines have to say
- * what it is and how urgent, and the link does the rest. Keep exactly one jsx-source annotation
- * in this file.
+ * what it is and how urgent, and the link does the rest. Every piece it is drawn with comes
+ * from ./_components/ui. Keep exactly one jsx-source annotation in this file.
  */
-import { Button, Heading, Section, Text } from "@react-email/components";
 import * as React from "react";
 
-import { colors, EmailLayout, fontFamily } from "./_components/email-layout";
+import { EmailLayout } from "./_components/email-layout";
+import { ActionButton, Fact, FactList, Quote, Title } from "./_components/ui";
 
 export type StaffAlertEmailProps = {
   title: string;
@@ -22,50 +22,6 @@ export type StaffAlertEmailProps = {
   appUrl?: string;
 };
 
-const styles = {
-  heading: {
-    margin: "0 0 16px",
-    fontFamily,
-    fontSize: "22px",
-    lineHeight: "1.25",
-    fontWeight: "800",
-    letterSpacing: "-0.02em",
-    color: colors.heading,
-  },
-  row: {
-    margin: 0,
-    padding: "9px 0",
-    borderBottom: `1px solid ${colors.border}`,
-    fontSize: "14px",
-    lineHeight: "1.5",
-  },
-  label: { color: colors.muted },
-  value: { fontWeight: "700", color: colors.heading },
-  bodyLabel: { margin: "20px 0 6px", fontSize: "12px", lineHeight: "1.5", color: colors.muted },
-  body: {
-    margin: 0,
-    padding: "14px 16px",
-    backgroundColor: colors.page,
-    borderRadius: "10px",
-    fontSize: "14px",
-    lineHeight: "1.6",
-    color: colors.text,
-    whiteSpace: "pre-wrap",
-  },
-  buttonRow: { margin: "24px 0 0" },
-  button: {
-    display: "inline-block",
-    backgroundColor: colors.brand,
-    color: "#ffffff",
-    fontFamily,
-    fontSize: "15px",
-    fontWeight: "700",
-    padding: "13px 26px",
-    borderRadius: "8px",
-    textDecoration: "none",
-  },
-} as const;
-
 export function StaffAlertEmail({
   title,
   facts,
@@ -76,29 +32,17 @@ export function StaffAlertEmail({
 }: StaffAlertEmailProps): React.ReactElement {
   return (
     <EmailLayout preview={title} eyebrow="Internal" appUrl={appUrl}>
-      <Heading style={styles.heading}>{title}</Heading>
+      <Title>{title}</Title>
 
-      <Section>
+      <FactList>
         {facts.map((fact) => (
-          <Text key={fact.label} style={styles.row}>
-            <span style={styles.label}>{fact.label}: </span>
-            <span style={styles.value}>{fact.value}</span>
-          </Text>
+          <Fact key={fact.label} label={fact.label} value={fact.value} />
         ))}
-      </Section>
+      </FactList>
 
-      {body ? (
-        <>
-          <Text style={styles.bodyLabel}>Message</Text>
-          <Text style={styles.body}>{body}</Text>
-        </>
-      ) : null}
+      {body ? <Quote label="Message">{body}</Quote> : null}
 
-      <Section style={styles.buttonRow}>
-        <Button href={actionUrl} style={styles.button}>
-          {actionLabel}
-        </Button>
-      </Section>
+      <ActionButton href={actionUrl}>{actionLabel}</ActionButton>
     </EmailLayout>
   );
 }

@@ -1,4 +1,5 @@
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
+import { orderedWindow } from "../shared/ordered-window";
 import type { SeasonalPrice } from "../sync/price-writer";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
@@ -58,23 +59,41 @@ export function createBookingManagerSeasonalPriceLoader(
 
   async function runSweep(): Promise<Map<string, SeasonalPrice[]>> {
     const byYacht = new Map<string, SeasonalPrice[]>();
+    const concurrency = options.config.sweepConcurrency;
 
-    for (const checkIn of charterSaturdays(options.years)) {
+    /*
+     * One read per charter week, several weeks at a time. Two years is a hundred-odd
+     * fleet-wide responses and every one of them is a wait, so they overlap on the
+     * same lane fan-out the catalogue sweep uses.
+     *
+     * Delivered in week order all the same. A failure ends the sweep - the loader
+     * memoizes one attempt per run and the writer needs a whole price list, not most
+     * of one - and out-of-order delivery would decide which weeks made it in by
+     * which happened to be quick.
+     */
+    const weeks = orderedWindow(charterSaturdays(options.years), concurrency, (checkIn, slot) =>
+      client.get(
+        bookingManagerEndpoints.prices,
+        restPriceListSchema,
+        {
+          dateFrom: formatBookingManagerDateTime(checkIn),
+          dateTo: formatBookingManagerDateTime(addDays(checkIn, 7)),
+          companyId: companyScope,
+          // An undefined value is dropped from the query string, so no currency
+          // asks for the vendor's own default rather than for a blank one.
+          currency: options.currency || undefined,
+        },
+        client.sweepLane("prices", slot % Math.max(1, concurrency)),
+      ),
+    );
+
+    // Deliberately no yachtId: the vendor returns the whole fleet for the period,
+    // which is one call instead of one per batch of boats. A configured company
+    // scope still narrows it, so a staging run does not pull prices for twelve
+    // thousand boats it never imported.
+    for await (const { item: checkIn, result } of weeks) {
       const checkOut = addDays(checkIn, 7);
-      // Deliberately no yachtId: the vendor returns the whole fleet for the
-      // period, which is one call instead of one per batch of boats. A configured
-      // company scope still narrows it, so a staging run does not pull prices for
-      // twelve thousand boats it never imported.
-      const query = {
-        dateFrom: formatBookingManagerDateTime(checkIn),
-        dateTo: formatBookingManagerDateTime(checkOut),
-        companyId: companyScope,
-        // An undefined value is dropped from the query string, so no currency
-        // asks for the vendor's own default rather than for a blank one.
-        currency: options.currency || undefined,
-      };
-
-      const rows = await client.get(bookingManagerEndpoints.prices, restPriceListSchema, query);
+      const rows = await result;
 
       for (const row of rows) {
         // Keyed to the Saturday we asked for rather than the echoed `dateFrom`,

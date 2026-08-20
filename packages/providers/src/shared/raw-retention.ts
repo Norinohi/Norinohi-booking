@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { newId } from "@yacht-charter/db/schema/_shared";
 import { providerRawPayload } from "@yacht-charter/db/schema/provider";
 
 import { redactSecrets } from "./errors";
@@ -11,11 +12,14 @@ type RawPayloadInsert = typeof providerRawPayload.$inferInsert;
  * the `@yacht-charter/db/schema/*` subpath rather than the package root, which
  * opens a connection pool at import time; a transaction handle satisfies it too.
  */
-export interface RawPayloadWriter {
+export interface RawPayloadWriter<TInsertResult> {
   insert(table: typeof providerRawPayload): {
-    values(value: RawPayloadInsert): {
-      returning(fields: { id: typeof providerRawPayload.id }): PromiseLike<{ id: string }[]>;
-    };
+    /*
+     * Awaited for its effect only. The ids are the ones sent, so nothing here reads
+     * what comes back - and the driver's own result type is left as a parameter
+     * rather than pinned, so this stand-in does not have to restate it.
+     */
+    values(rows: RawPayloadInsert[]): PromiseLike<TInsertResult>;
   };
 }
 
@@ -71,22 +75,28 @@ export function stableSourceHash(payload: unknown): string {
 }
 
 /**
- * Persists the exact provider response before anything maps it. NauSYS repeats
- * plaintext credentials in every request body, so retention is the one place
- * that must never store a payload verbatim.
+ * Persists the exact provider responses before anything maps them, and returns
+ * their ids positionally. NauSYS repeats plaintext credentials in every request
+ * body, so retention is the one place that must never store a payload verbatim.
+ *
+ * Ids are minted here rather than read back out of `RETURNING`. The caller writes
+ * a `provider_record` pointing at each of these in the same batch, so it has to
+ * know which id belongs to which payload - and matching returned rows to inserted
+ * values by position would rest on an ordering Postgres does not guarantee.
  */
-export async function retainRawPayload(
-  db: RawPayloadWriter,
+export async function retainRawPayloads<TInsertResult>(
+  db: RawPayloadWriter<TInsertResult>,
   providerId: string,
-  payload: unknown,
-): Promise<string> {
-  const [row] = await db
-    .insert(providerRawPayload)
-    .values({ providerId, payload: redactSecrets(payload) })
-    .returning({ id: providerRawPayload.id });
+  payloads: readonly unknown[],
+): Promise<string[]> {
+  if (payloads.length === 0) return [];
 
-  if (!row) {
-    throw new Error("provider_raw_payload insert returned no row");
-  }
-  return row.id;
+  const rows = payloads.map((payload) => ({
+    id: newId("praw"),
+    providerId,
+    payload: redactSecrets(payload),
+  }));
+
+  await db.insert(providerRawPayload).values(rows);
+  return rows.map((row) => row.id);
 }

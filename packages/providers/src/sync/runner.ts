@@ -8,6 +8,7 @@ import { env } from "@yacht-charter/env/server";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { chunked, ROW_CHUNK } from "../shared/chunks";
 import { describeErrorChain } from "../shared/error-chain";
 
 import type { InventoryProvider } from "../provider";
@@ -15,7 +16,7 @@ import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import type { JsonField } from "../shared/json";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
-import { retainRawPayload, stableSourceHash } from "../shared/raw-retention";
+import { retainRawPayloads, stableSourceHash } from "../shared/raw-retention";
 import {
   createDrizzlePricePeriodStore,
   supportsSeasonalPrices,
@@ -164,7 +165,24 @@ export interface CatalogueSyncStore {
     resourceType: ProviderResourceType,
     externalIds: readonly string[],
   ): Promise<Map<string, ProviderRecordSnapshot>>;
-  writeRecord(input: WriteRecordInput): Promise<void>;
+  /**
+   * Writes a batch, all of it or none of it.
+   *
+   * Batched because this is the write side of the same hot path `findRecords`
+   * answers: a first import of a Booking Manager account is ~21k records, and one
+   * transaction per record is four round trips each against a database that is a
+   * network hop away. Nothing here reports *which* record failed - the caller
+   * re-runs a failed batch one input at a time to find that out, which costs the
+   * old per-record traffic only on the batches that actually broke.
+   *
+   * Duplicate `(resourceType, externalId)` pairs are collapsed, last one winning.
+   * They land in one statement, and Postgres refuses an ON CONFLICT DO UPDATE that
+   * would touch a row twice - the error that took out an availability sync on
+   * 2026-08-19. The ingest loop's `pending` map already makes them impossible; this
+   * is defended here anyway so a later caller inherits the protection rather than
+   * rediscovering the failure in production.
+   */
+  writeRecords(inputs: readonly WriteRecordInput[]): Promise<void>;
   /** Unchanged payloads: restamp only, and never write a second raw payload. */
   touchRecords(recordIds: readonly string[], seenAt: Date): Promise<void>;
   sweepScope(input: SweepScopeInput): Promise<number>;
@@ -323,6 +341,9 @@ export async function runCatalogueIngest(options: {
     // Collected per type so a failed restamp blocks exactly the types it left
     // unstamped, and no others.
     const touchIdsByType = new Map<ProviderResourceType, string[]>();
+    // Changed records, paired with what the database already held so the write can
+    // be counted as a create or an update once it lands.
+    const writes: Array<{ input: WriteRecordInput; existed: boolean }> = [];
 
     for (const { entity, sourceHash } of batch) {
       if (unreadable.has(entity.resourceType)) continue;
@@ -338,25 +359,50 @@ export async function runCatalogueIngest(options: {
         continue;
       }
 
-      try {
-        await store.writeRecord({
+      writes.push({
+        input: {
           resourceType: entity.resourceType,
           externalId: entity.externalId,
           scopeKey: entity.scopeKey,
           payload: entity.payload,
           sourceHash,
           seenAt: startedAt,
-        });
+        },
+        existed: existing !== undefined,
+      });
+    }
 
-        if (existing) updatedCount += 1;
-        else createdCount += 1;
+    const count = (written: { existed: boolean }) => {
+      if (written.existed) updatedCount += 1;
+      else createdCount += 1;
+    };
+
+    if (writes.length > 0) {
+      try {
+        await store.writeRecords(writes.map((written) => written.input));
+        for (const written of writes) count(written);
       } catch (error) {
         if (isFatal(error)) throw error;
-        await reporter.reportError(error, {
-          resourceType: entity.resourceType,
-          scopeKey: entity.scopeKey,
-          context: { externalId: entity.externalId },
-        });
+
+        /*
+         * The batch is all or nothing, so at this point none of it landed and the
+         * failure names no record. Re-running it one at a time is what turns "500
+         * records failed" into the one that actually broke - the old per-record
+         * traffic, but only on a batch that already failed.
+         */
+        for (const written of writes) {
+          try {
+            await store.writeRecords([written.input]);
+            count(written);
+          } catch (retried) {
+            if (isFatal(retried)) throw retried;
+            await reporter.reportError(retried, {
+              resourceType: written.input.resourceType,
+              scopeKey: written.input.scopeKey,
+              context: { externalId: written.input.externalId },
+            });
+          }
+        }
       }
     }
 
@@ -497,44 +543,73 @@ export function createDrizzleCatalogueSyncStore(options: DrizzleStoreOptions): C
       return found;
     },
 
-    async writeRecord(input) {
-      // Raw retention and the record that points at it land together or not at all.
-      await db.transaction(async (tx) => {
-        const rawPayloadId = await retainRawPayload(tx, providerId, input.payload);
+    async writeRecords(inputs) {
+      if (inputs.length === 0) return;
 
-        await tx
-          .insert(providerRecord)
-          .values({
+      /*
+       * Before chunking, not per chunk: a colliding pair that straddled a boundary
+       * would otherwise slip through as two statements. Last wins, which is what the
+       * upsert did with such a pair anyway.
+       */
+      const deduped = [
+        ...new Map(
+          inputs.map((input) => [recordKey(input.resourceType, input.externalId), input]),
+        ).values(),
+      ];
+
+      // Raw retention and the records that point at it land together or not at all.
+      await db.transaction(async (tx) => {
+        const updatedAt = new Date();
+
+        /*
+         * Chunked below Postgres' 65535 bind parameters. `provider_record` binds
+         * eleven columns a row, so `ROW_CHUNK` leaves an order of magnitude of head
+         * room - the ingest hands over 500 at a time anyway, and this is here so a
+         * caller that hands over more does not discover the ceiling in production.
+         */
+        for (const chunk of chunked(deduped, ROW_CHUNK)) {
+          const rawPayloadIds = await retainRawPayloads(
+            tx,
             providerId,
-            resourceType: input.resourceType,
-            externalId: input.externalId,
-            scopeKey: input.scopeKey ?? null,
-            rawPayloadId,
-            sourceHash: input.sourceHash,
-            importedAt: input.seenAt,
-            active: true,
-            lastSeenAt: input.seenAt,
-            lastSeenSyncRunId: syncRunId,
-          })
-          .onConflictDoUpdate({
-            target: [
-              providerRecord.providerId,
-              providerRecord.resourceType,
-              providerRecord.externalId,
-            ],
-            set: {
-              scopeKey: sql`excluded.scope_key`,
-              rawPayloadId: sql`excluded.raw_payload_id`,
-              sourceHash: sql`excluded.source_hash`,
-              importedAt: sql`excluded.imported_at`,
-              // Reactivation is symmetric with the sweep: a record that reappears
-              // in a dump is live again.
-              active: true,
-              lastSeenAt: sql`excluded.last_seen_at`,
-              lastSeenSyncRunId: sql`excluded.last_seen_sync_run_id`,
-              updatedAt: new Date(),
-            },
-          });
+            chunk.map((input) => input.payload),
+          );
+
+          await tx
+            .insert(providerRecord)
+            .values(
+              chunk.map((input, index) => ({
+                providerId,
+                resourceType: input.resourceType,
+                externalId: input.externalId,
+                scopeKey: input.scopeKey ?? null,
+                rawPayloadId: rawPayloadIds[index] ?? null,
+                sourceHash: input.sourceHash,
+                importedAt: input.seenAt,
+                active: true,
+                lastSeenAt: input.seenAt,
+                lastSeenSyncRunId: syncRunId,
+              })),
+            )
+            .onConflictDoUpdate({
+              target: [
+                providerRecord.providerId,
+                providerRecord.resourceType,
+                providerRecord.externalId,
+              ],
+              set: {
+                scopeKey: sql`excluded.scope_key`,
+                rawPayloadId: sql`excluded.raw_payload_id`,
+                sourceHash: sql`excluded.source_hash`,
+                importedAt: sql`excluded.imported_at`,
+                // Reactivation is symmetric with the sweep: a record that reappears
+                // in a dump is live again.
+                active: true,
+                lastSeenAt: sql`excluded.last_seen_at`,
+                lastSeenSyncRunId: sql`excluded.last_seen_sync_run_id`,
+                updatedAt,
+              },
+            });
+        }
       });
     },
 

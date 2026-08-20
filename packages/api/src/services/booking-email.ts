@@ -2,6 +2,7 @@ import type { CommercialSnapshot, payment } from "@yacht-charter/db/schema/booki
 import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
 import {
+  type RefundMethod,
   sendBalanceReminderEmail,
   sendBookingCancelledEmail,
   sendBookingConfirmedEmail,
@@ -80,7 +81,7 @@ export type BookingReceivedEmail = {
   outstandingMinor: number;
   /** When the operator's hold lapses. Null for a provider that grants no option. */
   holdExpiresAt: Date | null;
-  /** True for a guest checkout, whose account was provisioned here and has no password yet. */
+  /** True while the account has no password of its own, which is what the callout offers to fix. */
   isGuest: boolean;
 };
 
@@ -221,6 +222,7 @@ export async function notifyPaymentReceived(paid: PaymentReceivedEmail): Promise
       paidTotal: money(paid.paidTotalMinor, paid.currency),
       outstanding: money(paid.outstandingMinor, paid.currency),
       dueAtCheckIn: paid.atCheckInMinor > 0 ? money(paid.atCheckInMinor, paid.currency) : undefined,
+      settled: paid.outstandingMinor === 0,
       // Only while something is left: a settled charter with a policy date would otherwise be
       // told to expect a payment it has already made.
       balanceDueAt:
@@ -243,6 +245,8 @@ export type InvoiceIssuedEmail = {
   amountMinor: number;
   currency: string;
   dueAt: Date;
+  /** When the operator's option lapses. Null for a provider that grants no option. */
+  holdExpiresAt: Date | null;
   checkIn: string;
   checkOut: string;
 };
@@ -262,6 +266,15 @@ export async function notifyInvoiceIssued(invoice: InvoiceIssuedEmail): Promise<
       yachtName: invoice.yachtName,
       amount: money(invoice.amountMinor, invoice.currency),
       dueAt: day(invoice.dueAt.toISOString()),
+      /*
+       * Only where the option is the binding deadline. Our terms run seven days and stop at the
+       * departure; a provider option is commonly shorter than that, and the mail used to promise
+       * a hold until the due date over a boat the operator had already taken back.
+       */
+      holdExpiresAt:
+        invoice.holdExpiresAt && invoice.holdExpiresAt < invoice.dueAt
+          ? day(invoice.holdExpiresAt.toISOString())
+          : undefined,
       checkIn: day(invoice.checkIn),
       checkOut: day(invoice.checkOut),
       bank: COMPANY.bank,
@@ -280,9 +293,16 @@ export type RefundIssuedEmail = {
   bookingId: string;
   reference: string;
   yachtName: string;
+  /** Which way the money settled in this call, which is what the mail tells them to watch. */
+  method: RefundMethod;
   refundedMinor: number;
   /** What the booking keeps. Zero sends no retained figure at all rather than "€0". */
-  outstandingMinor: number;
+  retainedMinor: number;
+  /**
+   * Money that came in by transfer and still has to be sent back by hand. Kept out of
+   * `retainedMinor` because it is the opposite of retained: we owe it and have not sent it.
+   */
+  awaitingTransferMinor: number;
   currency: string;
   reason?: string;
 };
@@ -293,9 +313,13 @@ export async function notifyRefundIssued(refund: RefundIssuedEmail): Promise<voi
       guestName: refund.guestName,
       reference: refund.reference,
       yachtName: refund.yachtName,
+      method: refund.method,
       refunded: money(refund.refundedMinor, refund.currency),
-      outstanding:
-        refund.outstandingMinor > 0 ? money(refund.outstandingMinor, refund.currency) : undefined,
+      retained: refund.retainedMinor > 0 ? money(refund.retainedMinor, refund.currency) : undefined,
+      awaitingTransfer:
+        refund.awaitingTransferMinor > 0
+          ? money(refund.awaitingTransferMinor, refund.currency)
+          : undefined,
       reason: refund.reason,
       bookingUrl: appUrl(`/bookings/${refund.bookingId}`),
       supportUrl: appUrl(`/support?booking=${refund.bookingId}`),
@@ -344,15 +368,18 @@ export type BookingCancelledEmail = {
   yachtName: string;
   checkIn: string;
   checkOut: string;
+  /** Whether money had landed, or was still clearing, when the booking was cancelled. */
+  charged: boolean;
   reason?: string;
 };
 
 /**
- * A cancellation with no money in it.
+ * The cancellation that is not a refund.
  *
- * Only for the branch that ends at CANCELLED. A booking that was paid for goes to
- * REFUND_PENDING instead and is answered by the refund mail, which states the amount — sending
- * both would tell the same customer twice, once without the figure that matters.
+ * Only for the branch that ends at CANCELLED. A confirmed booking goes to REFUND_PENDING instead
+ * and is answered by the refund mail, which states the amount, and sending both would tell the
+ * same customer twice, once without the figure that matters. `charged` covers the case that is
+ * neither: a checkout cancelled with money already in, where the mail must not claim otherwise.
  */
 export async function notifyBookingCancelled(booking: BookingCancelledEmail): Promise<void> {
   try {
@@ -362,6 +389,7 @@ export async function notifyBookingCancelled(booking: BookingCancelledEmail): Pr
       yachtName: booking.yachtName,
       checkIn: day(booking.checkIn),
       checkOut: day(booking.checkOut),
+      charged: booking.charged,
       reason: booking.reason,
       searchUrl: appUrl("/yachts"),
       supportUrl: appUrl(`/support?booking=${booking.bookingId}`),

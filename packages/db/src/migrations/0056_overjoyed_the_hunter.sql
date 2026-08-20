@@ -1,0 +1,1 @@
+CREATE INDEX "booking_slot_hold_idx" ON "booking" USING btree ("listing_id","quote_id") WHERE "booking"."status" in ('OPTION_PENDING', 'OPTION_HELD', 'PAYMENT_PENDING', 'CONFIRMING', 'CONFIRMED');

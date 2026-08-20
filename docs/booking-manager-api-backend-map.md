@@ -101,6 +101,30 @@ Unlike NauSYS this is a precaution rather than a contractual requirement -
 Booking Manager has published no concurrency rule, and no rate limit either
 (§9).
 
+That is what lets the two sweeps that are one-read-per-item widen themselves. The
+catalogue's `/yachts` walk (one read per charter company, ~1300 on a production
+key) and the price loader's `/prices` walk (one read per charter week, ~104 for a
+two-year window) each run `BOOKING_MANAGER_SWEEP_CONCURRENCY` reads at a time (12 by
+default), spread over that many queue lanes so every lane keeps the same spacing.
+Results are still delivered in list order, because the catalogue resume cursor is a
+position in the company list. Setting the variable to 1 restores the
+strictly-sequential walk.
+
+Two full-scale runs against a production credential on 2026-08-20, all 1307 companies
+with only the vendor's test company excluded, fixed the default:
+
+| Width | Ingest   | Price sweep | Total   | `sync_error` |
+| ----- | -------- | ----------- | ------- | ------------ |
+| 6     | 15.2 min | 4.0 min     | ~25 min | 0            |
+| 12    | 7.3 min  | 3.6 min     | ~18 min | 0            |
+
+Both wrote identical results (15,176 records, 10,980 listings, 656,254 price periods).
+The ingest scaled 2.09x for 2x the width, which is what a latency-bound sweep does
+when the far end is not throttling. The price sweep barely moved, and would not: ~104
+reads at width 6 is already only ~18 rounds, so what is left is per-request latency on
+fleet-wide payloads rather than queueing. Widening past 12 is therefore mostly buying
+nothing, against a vendor tolerance nobody can see.
+
 ## 3. Endpoint inventory
 
 Paths below are relative to the base URL and are the literal values in
