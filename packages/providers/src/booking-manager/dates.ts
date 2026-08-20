@@ -9,6 +9,17 @@ import { requireJsonString, type JsonField } from "../shared/json";
  * a zone suffix, so both are naked CET/CEST wall clocks.
  */
 const BM_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/;
+
+/**
+ * The weekday this integration charters on, 6 for Saturday in `Date#getUTCDay` terms.
+ *
+ * Not a fact about the vendor so much as about us: `/prices` is swept one Saturday-to-Saturday
+ * pair at a time, as the vendor's own integration guide prescribes, so a Saturday week is the
+ * only period we ever learn a price for. `checkinRulesOf` reads the same constant, which is the
+ * point of it being one — a catalogue that claimed a turnaround the sweep never priced put
+ * mid-week dates on the calendar that `/offers` then refused.
+ */
+export const CHARTER_TURNAROUND_WEEKDAY = 6;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**

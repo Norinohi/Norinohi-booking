@@ -121,8 +121,12 @@ export const listingSummarySchema = z.object({
     hasUnconfirmedAvailability: z.boolean(),
     hasAvailableDates: z.boolean(),
     hasTemporaryBooking: z.boolean(),
-    /** Earliest day a charter may begin, for a card with no period of its own. Null once past. */
-    bookableFrom: z.string().nullable(),
+    /**
+     * The first charter this listing would sell, for a card with no period of its own. Both
+     * ends or neither: a start day on its own proves no legal check-out follows it, which is
+     * how cards came to advertise dates the detail calendar then refused. Null once past.
+     */
+    bookablePeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),

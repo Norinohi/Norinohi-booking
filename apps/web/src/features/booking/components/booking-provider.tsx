@@ -16,13 +16,13 @@ import {
 } from "react";
 
 import type { CharterConstraints, DatePeriod } from "@yacht-charter/api/lib/availability-rules";
-import { rangeStatus } from "@yacht-charter/api/lib/availability-rules";
+import { firstBookablePeriod, rangeStatus } from "@yacht-charter/api/lib/availability-rules";
 
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
 import type { CrewType } from "@/components/shared/data-display/booking-summary";
 import { useListingDetail } from "@/features/yachts";
 import { detailPeriodParsers } from "@/features/yachts/lib/search-params";
-import { firstBookablePeriod } from "@/lib/charter-period";
+
 import { dayFromNative, dayToNative } from "@/lib/date";
 
 import { availabilityConstraintsQueryOptions, type Quote } from "../api/queries";
@@ -110,8 +110,9 @@ export function BookingProvider({
       ? { checkIn: carried.checkIn, checkOut: carried.checkOut }
       : null;
   const searchedCheckOut = searchedPeriod?.checkOut;
-  /* The listing's own first sellable day, which the undated result card offers in place of dates. */
-  const bookableFrom = listing?.availability.bookableFrom ?? null;
+  /* The listing's own first sellable charter, which the undated result card shows as its dates. */
+  const bookablePeriod = listing?.availability.bookablePeriod ?? null;
+  const bookableCheckOut = bookablePeriod?.checkOut;
 
   const calWindow = useMemo(() => {
     const from = startOfMonth(new Date());
@@ -119,17 +120,19 @@ export function BookingProvider({
     /*
      * A carried period can fall past the default horizon — people book a year out. Constraints
      * the window does not cover come back empty, which reads as season-closed, and the sidebar
-     * would refuse to price the very dates it was handed. `bookableFrom` is the same story for
-     * a boat sold out until next season: it is the one day worth opening on, so the window has
-     * to reach it.
+     * would refuse to price the very dates it was handed. The materialised period is the same
+     * story for a boat sold out until next season: it is the one charter worth opening on, so
+     * the window has to reach it.
      */
-    const beyond = [searchedCheckOut, bookableFrom].filter((day) => day != null && day > horizon);
+    const beyond = [searchedCheckOut, bookableCheckOut].filter(
+      (day) => day != null && day > horizon,
+    );
     const furthest = dayToNative(beyond.sort().at(-1) ?? null);
     return {
       from: dayFromNative(from),
       to: furthest ? dayFromNative(endOfMonth(furthest)) : horizon,
     };
-  }, [searchedCheckOut, bookableFrom]);
+  }, [searchedCheckOut, bookableCheckOut]);
 
   const { data: published } = useQuery({
     ...availabilityConstraintsQueryOptions({
@@ -190,15 +193,19 @@ export function BookingProvider({
   }, [quote]);
 
   /*
-   * Without a searched period, the listing's own first bookable day opens the panel instead.
-   * `bookableFrom` names a day a charter may begin but proves no legal check-out follows, so
-   * the end comes from the same published constraints the calendar draws — the shortest
-   * charter this operator sells from that day.
+   * Without a searched period, the listing's own first bookable charter opens the panel instead.
+   * That period is materialised against the same rules the calendar draws from, so it normally
+   * stands as sent; the walk forward only earns its keep when the read model has gone stale
+   * under it, where the alternative is a panel that opens on nothing.
    */
-  const suggestedPeriod = useMemo(
-    () => (bookableFrom && published ? firstBookablePeriod(bookableFrom, constraints) : null),
-    [bookableFrom, published, constraints],
-  );
+  const suggestedPeriod = useMemo(() => {
+    if (!bookablePeriod || !published) return null;
+    if (rangeStatus(bookablePeriod.checkIn, bookablePeriod.checkOut, constraints) === "bookable") {
+      return bookablePeriod;
+    }
+    const found = firstBookablePeriod(bookablePeriod.checkIn, constraints);
+    return found ? { checkIn: found.startDate, checkOut: found.endDate } : null;
+  }, [bookablePeriod, published, constraints]);
 
   /*
    * Prices that period once, as soon as the published constraints are in — before them every

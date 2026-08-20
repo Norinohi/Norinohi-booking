@@ -31,6 +31,8 @@ export function toBoatCard(
   period?: CharterPeriod,
 ): BoatCardProps & { id: string } {
   const unavailable = !listing.availability.hasAvailableDates;
+  /* An undated search still sends a period, both ends null; that is no period at all. */
+  const searched = period?.checkIn && period.checkOut ? period : null;
 
   return {
     ...boatCardIdentity(t, listing),
@@ -46,13 +48,13 @@ export function toBoatCard(
       checkOut: period?.checkOut ?? null,
     }) as AppPathname,
     marina: toMarina(listing.base),
-    ...(period?.checkIn && period.checkOut
-      ? {
-          start: { day: period.checkIn, time: listing.base.checkInTime },
-          end: { day: period.checkOut, time: listing.base.checkOutTime },
-        }
-      : /* No charter to show, so the card offers the day one could start instead. */
-        { availableFrom: listing.availability.bookableFrom ?? undefined }),
+    /*
+     * The searched charter, or on an undated search the first one this boat would sell. Both
+     * print as the same pair of dates, which is the point: a card that named only a start day
+     * left the customer to guess the length, and the day it named was not one the detail
+     * calendar could always honour.
+     */
+    ...charterDates(listing, searched ?? listing.availability.bookablePeriod),
     priceLabel: t("priceFor", { days: listing.priceDetails.periodDays }),
     price: boatCardPrice(t, listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
@@ -68,5 +70,13 @@ export function toBoatCard(
           tooltip: t("securityDepositInfo"),
         }
       : null,
+  };
+}
+
+function charterDates(listing: ResultListing, period: CharterPeriod | null) {
+  if (!period?.checkIn || !period.checkOut) return null;
+  return {
+    start: { day: period.checkIn, time: listing.base.checkInTime },
+    end: { day: period.checkOut, time: listing.base.checkOutTime },
   };
 }

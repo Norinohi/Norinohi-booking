@@ -154,17 +154,29 @@ describe("check-in rules", () => {
     ).toEqual([{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined }]);
   });
 
-  it("emits a rule per day for a yacht that takes any", () => {
-    // The vendor writes this as defaultCheckInDay -1 plus a full list; collapsing
-    // it to one turnaround would hide six sevenths of the boat's availability.
+  it("narrows a yacht that claims every day to the turnaround we can price", () => {
+    /*
+     * The vendor writes this as defaultCheckInDay -1 plus a full list, and taking it
+     * literally is what broke listing five-o-sun-odyssey-509: seven paired rules, a
+     * charter-period line naming all seven, and mid-week starts on the calendar that
+     * /offers refused because /prices is only ever swept Saturday to Saturday.
+     */
     const rules = rulesOf({
       defaultCheckInDay: -1,
       allCheckInDays: [1, 2, 3, 4, 5, 6, 7],
       minimumCharterDuration: 0,
     });
 
-    expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([0, 1, 2, 3, 4, 5, 6]);
-    expect(rules?.every((rule) => rule.minNights === undefined)).toBe(true);
+    expect(rules).toEqual([
+      { checkinWeekday: 6, checkoutWeekday: 6, minNights: undefined, maxNights: undefined },
+    ]);
+  });
+
+  it("keeps the days a yacht offers when none of them is the turnaround", () => {
+    // No rate behind either day, so inventing a Saturday would be a different lie.
+    const rules = rulesOf({ defaultCheckInDay: -1, allCheckInDays: [2, 5] });
+
+    expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([1, 4]);
   });
 
   it("falls back to the default day when no list is sent", () => {

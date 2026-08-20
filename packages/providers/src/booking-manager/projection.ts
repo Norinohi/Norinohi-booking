@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
+import { CHARTER_TURNAROUND_WEEKDAY } from "./dates";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
@@ -536,14 +537,20 @@ function textKindOf(category: string | undefined): TextKind {
 }
 
 /**
- * One rule per day the vendor accepts a check-in on.
+ * One rule per day this integration will actually sell a check-in on.
  *
- * `allCheckInDays` is preferred over `defaultCheckInDay`: a yacht that takes any
- * day sends `[1..7]` with a default of `-1`, and collapsing that to a single
- * turnaround would hide six sevenths of its availability.
+ * `allCheckInDays` is read first, but it is narrowed to `CHARTER_TURNAROUND_WEEKDAY` whenever
+ * it offers that day, and that narrowing is the point. A yacht that takes any day sends
+ * `[1..7]` with a default of `-1`, and taking it at its word produced two visible failures:
+ * seven paired rules turned the detail page's charter-period line into "Sunday to Sunday, or
+ * Monday to Monday, ..." through all seven days, and the calendar offered mid-week starts that
+ * `/offers` then refused, because `/prices` is only ever swept Saturday to Saturday so no other
+ * turnaround has a rate behind it. Widening this again means widening the sweep first.
  *
- * Check-out is taken to fall on the same weekday, which is what a whole-week
- * charter does.
+ * A yacht whose days exclude the turnaround keeps them, unnarrowed: we have no price for it
+ * either way, and inventing a Saturday it never offered would be a different lie.
+ *
+ * Check-out is taken to fall on the same weekday, which is what a whole-week charter does.
  */
 function checkinRulesOf(yacht: RestYacht) {
   const minNights = positiveInt(yacht.minimumCharterDuration);
@@ -551,7 +558,10 @@ function checkinRulesOf(yacht: RestYacht) {
   const days = Array.isArray(yacht.allCheckInDays)
     ? yacht.allCheckInDays.map(weekdayOf).filter((day): day is number => day !== undefined)
     : [];
-  const weekdays = days.length > 0 ? days : [weekdayOf(yacht.defaultCheckInDay)];
+  const offered = days.length > 0 ? days : [weekdayOf(yacht.defaultCheckInDay)];
+  const weekdays = offered.includes(CHARTER_TURNAROUND_WEEKDAY)
+    ? [CHARTER_TURNAROUND_WEEKDAY]
+    : offered;
 
   const rules = weekdays
     .filter((day): day is number => day !== undefined)

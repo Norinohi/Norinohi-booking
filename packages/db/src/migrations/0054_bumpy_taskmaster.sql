@@ -1,0 +1,1 @@
+ALTER TABLE "listing_search_doc" ADD COLUMN "bookable_to" date;

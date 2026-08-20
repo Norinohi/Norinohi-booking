@@ -4,6 +4,7 @@ import {
   canCheckIn,
   canCheckOut,
   type CharterConstraints,
+  legalCheckOuts,
 } from "@yacht-charter/api/lib/availability-rules";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { cn } from "@yacht-charter/ui/lib/utils";
@@ -70,11 +71,27 @@ export default function CharterDateField({
   }
 
   function handleChange(next: DateRange | undefined) {
+    if (next?.from && !next.to) {
+      /*
+       * A listing whose rules leave one legal end needs no second click, and asking for one is
+       * worst on exactly the listings whose calendars are emptiest: the visitor is sent hunting
+       * for the single day that is not greyed out.
+       */
+      const forced = onlyCheckOut(dayFromNative(next.from), constraints);
+      if (forced) {
+        commit({ checkIn: dayFromNative(next.from), checkOut: forced });
+        return;
+      }
+    }
+
     setPending(next);
     if (!next?.from || !next.to) return;
 
-    /* Both ends are in, so close: leaving the month grid up hides the price it just bought. */
-    const period = { checkIn: dayFromNative(next.from), checkOut: dayFromNative(next.to) };
+    commit({ checkIn: dayFromNative(next.from), checkOut: dayFromNative(next.to) });
+  }
+
+  /* Both ends are in, so close: leaving the month grid up hides the price it just bought. */
+  function commit(period: CharterPeriod) {
     setPending(undefined);
     setOpen(false);
     onSelect(period);
@@ -106,4 +123,10 @@ export default function CharterDateField({
 
 function alwaysDisabled(): boolean {
   return true;
+}
+
+/** The one legal check-out for this check-in, or null where the visitor still has a choice. */
+function onlyCheckOut(checkIn: string, constraints: CharterConstraints): string | null {
+  const days = legalCheckOuts(checkIn, constraints);
+  return days.length === 1 ? (days[0] ?? null) : null;
 }
