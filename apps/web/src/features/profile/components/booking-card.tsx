@@ -25,11 +25,6 @@ import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dial
  * Cancel action (no Figma yet) — is added here, never on the shared BoatCard.
  */
 
-const FORMATS = {
-  day: { day: "numeric", month: "long", year: "numeric" },
-  time: { hour: "2-digit", minute: "2-digit", hour12: false },
-} as const;
-
 export type BookingCardProps = BoatCardProps & {
   bookingId: string;
   cancellable: boolean;
@@ -49,7 +44,7 @@ function Stamp({ value }: { value: BoatCardCharterDate }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs font-semibold leading-[1.3] text-foreground">
-        {format.dateTime(dayToDisplay(value.day), FORMATS.day)}
+        {format.dateTime(dayToDisplay(value.day), "dayShort")}
       </span>
       {value.time ? (
         <span className="text-sm font-medium leading-[1.3] text-natural-500">{value.time}</span>

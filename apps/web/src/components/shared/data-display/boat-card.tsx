@@ -16,11 +16,6 @@ import CardNote from "./card-note";
 import type { CardNote as CardNoteData } from "./card-note";
 import CardPhotos from "./card-photos";
 
-const FORMATS = {
-  day: { day: "numeric", month: "long", year: "numeric" },
-  time: { hour: "2-digit", minute: "2-digit", hour12: false },
-} as const;
-
 export type BoatCardBadge = {
   label: string;
   icon?: ReactNode;
@@ -278,7 +273,7 @@ function CharterDate({ value, className }: { value: BoatCardCharterDate; classNa
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       <span className="text-xs font-semibold leading-[1.3] text-foreground">
-        {format.dateTime(dayToDisplay(value.day), FORMATS.day)}
+        {format.dateTime(dayToDisplay(value.day), "dayShort")}
       </span>
       {value.time ? (
         <span className="text-sm font-medium leading-[1.3] text-natural-500">{value.time}</span>
@@ -322,7 +317,7 @@ function Action({
       </div>
 
       {start && end ? (
-        <div className="flex w-full items-center justify-center gap-3 md:justify-start xl:justify-center">
+        <div className="flex w-full items-center justify-center gap-3 md:justify-start ">
           <CharterDate value={start} className="flex-1 items-center md:flex-none md:items-start" />
           <ArrowRight className="size-4 shrink-0 text-foreground" />
           <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
