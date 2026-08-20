@@ -36,6 +36,29 @@ export const bookingStatus = pgEnum("booking_status", [
 ]);
 
 /**
+ * The states in which a booking still owns the dates it was made for.
+ *
+ * Cached availability is written only by the hourly sync, so between a checkout and
+ * the next run our own tables still advertise a period we have just asked the vendor
+ * to hold. These statuses are what search and the calendar subtract at read time, so
+ * the cache is never more optimistic than what we already know.
+ *
+ * Every member is either swept (`HOLD_SWEEP`, `STALE_PAYMENT_SWEEP`), reported to ops
+ * when it gets stuck (`flagStaleConfirmations`), or a charter that really was sold.
+ * That is the property `slot-holds.test.ts` pins: a status nothing ever moves out of
+ * would hide a yacht from search for good, which is the failure this list must not
+ * have. PAYMENT_FAILED is left out for exactly that reason -- nothing sweeps it, and
+ * the vendor still refuses the slot to anyone else while it stands.
+ */
+export const SLOT_HOLDING_STATUSES = [
+  "OPTION_PENDING",
+  "OPTION_HELD",
+  "PAYMENT_PENDING",
+  "CONFIRMING",
+  "CONFIRMED",
+] as const satisfies readonly (typeof bookingStatus.enumValues)[number][];
+
+/**
  * The booking sidebar shows three legs, not two: prepayment now, a second payment
  * on a date, then extras plus the refundable security deposit at check-in.
  * `security_deposit` rows are tracked but never counted as revenue.
@@ -240,6 +263,14 @@ export const booking = pgTable(
     index("booking_status_idx").on(t.status),
     index("booking_listing_idx").on(t.listingId),
     index("booking_hold_expires_idx").on(t.holdExpiresAt),
+    // Serves the read-time hold subtraction, which runs on every dated search and on
+    // every calendar read. Partial because only these statuses can contribute a held
+    // period, and they are a small minority of the rows once expiries accumulate.
+    index("booking_slot_hold_idx")
+      .on(t.listingId, t.quoteId)
+      .where(
+        sql`${t.status} in (${sql.raw(SLOT_HOLDING_STATUSES.map((status) => `'${status}'`).join(", "))})`,
+      ),
     // Two *live* bookings must never share one provider option (§6.2). Partial on
     // purpose: a cancelled or expired booking has released its option, and a plain
     // unique index would lock that slot out of ever being booked again.

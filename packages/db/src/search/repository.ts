@@ -10,6 +10,7 @@ import {
   type SearchCursor,
 } from "./cursor";
 import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
+import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
@@ -611,6 +612,14 @@ export async function listAvailabilityCalendar(
       and slot.start_date >= ${input.from}
       and slot.end_date <= ${input.to}
       and (slot.currency is null or slot.currency = ${input.currency ?? "EUR"})
+      /*
+       * Only the offers. A row the provider already marks taken is reported as it stands,
+       * but one it still offers and we have since sold is not something to list back.
+       */
+      and (
+        slot.status <> 'available'
+        or not ${overlapsSlotHold(sql`slot.listing_id`, sql`slot.start_date`, sql`slot.end_date`)}
+      )
     order by slot.start_date asc, slot.end_date asc
   `);
 
@@ -664,12 +673,15 @@ export async function listAvailabilityConstraints(
       endDate: string;
       status: "option" | "occupied" | "blocked";
     }>(sql`
-      select slot.start_date as "startDate", slot.end_date as "endDate", slot.status
+      /* Both arms cast to text: a union cannot find a common type for the enum and the case. */
+      select slot.start_date as "startDate", slot.end_date as "endDate", slot.status::text as status
       from availability_slot slot
       where slot.listing_id = ${input.listingId}
         and slot.status <> 'available'
         and ${overlapsWindow}
-      order by slot.start_date asc
+      union all
+      ${slotHoldsAsOccupancy(input.listingId, input.from, input.to)}
+      order by "startDate" asc
     `),
     db.execute<{
       startDate: string;
@@ -1021,6 +1033,13 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
         and free.start_date <= ${availabilityWindow.checkIn}
         and free.end_date >= ${availabilityWindow.checkOut}
     )`);
+    /*
+     * A free period is the provider's last word, which is up to a sync cycle old. Our own
+     * live checkouts are current, so they come off here rather than waiting to be told.
+     */
+    parts.push(
+      sql`not ${overlapsSlotHold(sql`doc.listing_id`, availabilityWindow.checkIn, availabilityWindow.checkOut)}`,
+    );
   }
   /*
    * Length is different from the weekday above, and is filtered even with no dates attached.
