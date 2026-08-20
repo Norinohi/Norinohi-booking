@@ -5,6 +5,7 @@ import type { JsonObject } from "../shared/json";
 import type { JsonValue } from "../shared/json";
 import { idOf, objectsOf } from "../shared/projection-helpers";
 import { type CompanyScope, unscopedCompanies } from "../shared/company-scope";
+import { orderedWindow } from "../shared/ordered-window";
 import { retireOutOfScopeCompanies } from "../sync/retire-companies";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
@@ -152,6 +153,12 @@ export interface BookingManagerCatalogueOptions {
   listImportedCompanyIds?: () => Promise<readonly string[]>;
   /** Recoverable failures go here so the stream survives them; see below. */
   reporter?: Pick<SyncReporter, "reportError">;
+  /**
+   * `/yachts` reads in flight at once. Defaults to the client's configured
+   * `sweepConcurrency`; see the note on the yacht sweep below for why it is more
+   * than one here and exactly one for NauSYS.
+   */
+  concurrency?: number;
 }
 
 /**
@@ -258,18 +265,41 @@ export async function* syncBookingManagerCatalogue(
   }
 
   const startCompany = resumeCompanyIndex(resume, companyIds);
+  const concurrency = options.concurrency ?? client.config.sweepConcurrency;
 
-  for (const [index, companyId] of companyIds.entries()) {
-    if (index < startCompany) continue;
+  /*
+   * The fleet, several operators at a time but delivered one at a time.
+   *
+   * `/yachts` takes a companyId filter and nothing wider, so the fleet is
+   * necessarily one read per operator - on a production credential ~1300 of them,
+   * and end to end that is the hour this run used to take. Almost all of it is
+   * waiting on the vendor, so the reads overlap; the results still arrive in
+   * company order because the resume cursor is a position in this list, and a
+   * cursor saved for company 40 while 37 was still in flight would tell the next
+   * run 37 had landed.
+   *
+   * Each lane keeps the client's `minIntervalMs` spacing, so this widens the sweep
+   * without also removing the politeness margin. Unlike NauSYS, Booking Manager
+   * does not forbid parallel calls on one credential; it has published no limit at
+   * all, which is why the width is a variable and 1 restores the old walk.
+   */
+  const sweep = orderedWindow(companyIds.slice(startCompany), concurrency, (companyId, slot) =>
+    client.get(
+      bookingManagerEndpoints.yachts,
+      restYachtListSchema,
+      { ...YACHT_QUERY, companyId },
+      client.sweepLane("yachts", slot % Math.max(1, concurrency)),
+    ),
+  );
+
+  for await (const { index: offset, item: companyId, result } of sweep) {
+    const index = startCompany + offset;
 
     let items: JsonValue[];
     try {
-      // `/yachts` takes a companyId filter, so the fleet is swept one operator at a
-      // time and a single operator's failure cannot deactivate anyone else's boats.
-      items = await client.get(bookingManagerEndpoints.yachts, restYachtListSchema, {
-        ...YACHT_QUERY,
-        companyId,
-      });
+      // Awaited at this company's turn, not at launch: a failure must be reported
+      // against the operator it belongs to, and reported in order.
+      items = await result;
     } catch (error) {
       if (isFatal(error)) throw error;
       await options.reporter?.reportError(error, {

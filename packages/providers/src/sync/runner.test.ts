@@ -44,6 +44,10 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
   /* Round trips, which is the whole point of batching them. */
   let findCalls = 0;
   let touchCalls = 0;
+  /* The external ids handed to each writeRecords call, one entry per statement. */
+  const writeCalls: string[][] = [];
+  /* External id → the failure the store answers a batch containing it with. */
+  const writeRejections = new Map<string, Error>();
 
   const keyOf = (resourceType: ProviderResourceType, externalId: string) =>
     `${resourceType}::${externalId}`;
@@ -76,19 +80,31 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
       }
       return found;
     },
-    async writeRecord(input) {
-      const key = keyOf(input.resourceType, input.externalId);
-      const existing = records.get(key);
-      records.set(key, {
-        id: existing?.id ?? `prec_${nextId++}`,
-        resourceType: input.resourceType,
-        externalId: input.externalId,
-        scopeKey: input.scopeKey,
-        sourceHash: input.sourceHash,
-        active: true,
-        lastSeenAt: input.seenAt,
-        rawPayloadWrites: (existing?.rawPayloadWrites ?? 0) + 1,
-      });
+    async writeRecords(inputs) {
+      writeCalls.push(inputs.map((input) => input.externalId));
+
+      // All or nothing, like the real store: a batch that throws leaves the
+      // database exactly as it found it, which is what the caller's fallback
+      // assumes when it re-runs the same inputs one at a time.
+      for (const input of inputs) {
+        const rejection = writeRejections.get(input.externalId);
+        if (rejection) throw rejection;
+      }
+
+      for (const input of inputs) {
+        const key = keyOf(input.resourceType, input.externalId);
+        const existing = records.get(key);
+        records.set(key, {
+          id: existing?.id ?? `prec_${nextId++}`,
+          resourceType: input.resourceType,
+          externalId: input.externalId,
+          scopeKey: input.scopeKey,
+          sourceHash: input.sourceHash,
+          active: true,
+          lastSeenAt: input.seenAt,
+          rawPayloadWrites: (existing?.rawPayloadWrites ?? 0) + 1,
+        });
+      }
     },
     async touchRecords(recordIds, seenAt) {
       touchCalls += 1;
@@ -137,7 +153,10 @@ function fakeStore(seed: Partial<StoredRecord>[] = []) {
     closed,
     records,
     startedAt: () => started,
-    roundTrips: () => ({ find: findCalls, touch: touchCalls }),
+    roundTrips: () => ({ find: findCalls, touch: touchCalls, write: writeCalls.length }),
+    writeBatches: () => writeCalls,
+    /** Makes any batch carrying this external id throw, the way one bad row does. */
+    rejectWrite: (externalId: string, error: Error) => writeRejections.set(externalId, error),
     record: (resourceType: ProviderResourceType, externalId: string) =>
       records.get(keyOf(resourceType, externalId)),
   };
@@ -225,7 +244,8 @@ describe("runCatalogueIngest", () => {
 
     expect(summary).toMatchObject({ skippedCount: 40, status: "success" });
     // The whole point: 40 unchanged records used to cost 80 sequential queries.
-    expect(fake.roundTrips()).toEqual({ find: 1, touch: 1 });
+    // No write at all, because none of them changed.
+    expect(fake.roundTrips()).toEqual({ find: 1, touch: 1, write: 0 });
   });
 
   it("restamps the batch before a sweep can read it as absent", async () => {
@@ -500,5 +520,101 @@ describe("fromRawEntities", () => {
 
     expect(summary).toMatchObject({ aborted: true, sweptScopes: 0 });
     expect(fake.record("yacht", "gone")?.active).toBe(true);
+  });
+});
+
+/*
+ * The write side of the same hot path `findRecords` batches. A first Booking Manager
+ * import is ~21k records, and a transaction each is four round trips each against a
+ * database a network hop away.
+ */
+describe("runCatalogueIngest write batching", () => {
+  const changed = (externalId: string) =>
+    ({
+      type: "entity",
+      entity: entity("yacht", externalId, { id: externalId }, "102701"),
+    }) satisfies CatalogueSyncEvent;
+
+  it("writes a whole flush in one statement", async () => {
+    const fake = fakeStore();
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        changed("1"),
+        changed("2"),
+        changed("3"),
+        { type: "scope-complete", resourceType: "yacht", scopeKey: "102701" },
+      ]),
+    });
+
+    expect(summary).toMatchObject({ status: "success", createdCount: 3 });
+    expect(fake.roundTrips().write).toBe(1);
+    expect(fake.writeBatches()).toEqual([["1", "2", "3"]]);
+  });
+
+  it("still counts a create apart from an update", async () => {
+    const fake = fakeStore([
+      { resourceType: "yacht", externalId: "1", sourceHash: "old", scopeKey: "102701" },
+    ]);
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([changed("1"), changed("2")]),
+    });
+
+    expect(summary).toMatchObject({ createdCount: 1, updatedCount: 1 });
+  });
+
+  it("re-runs a failed batch one at a time so the blame lands on the right record", async () => {
+    const fake = fakeStore();
+    fake.rejectWrite("2", new TransientError("duplicate key"));
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([changed("1"), changed("2"), changed("3")]),
+    });
+
+    // One failure, and the two innocent records in the same batch still landed.
+    expect(summary).toMatchObject({ status: "partial", createdCount: 2, failedCount: 1 });
+    expect(fake.record("yacht", "1")).toBeDefined();
+    expect(fake.record("yacht", "3")).toBeDefined();
+    expect(fake.record("yacht", "2")).toBeUndefined();
+    // The batch, then one statement per record in it.
+    expect(fake.writeBatches()).toEqual([["1", "2", "3"], ["1"], ["2"], ["3"]]);
+  });
+
+  it("blocks the sweep of a scope whose record could not be written", async () => {
+    const fake = fakeStore([
+      // Present from an earlier run and absent from this dump, so a sweep that was
+      // allowed to run would deactivate it.
+      { resourceType: "yacht", externalId: "9", sourceHash: "old", scopeKey: "102701" },
+    ]);
+    fake.rejectWrite("2", new TransientError("duplicate key"));
+
+    await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([
+        changed("1"),
+        changed("2"),
+        { type: "scope-complete", resourceType: "yacht", scopeKey: "102701" },
+      ]),
+    });
+
+    expect(fake.record("yacht", "9")?.active).toBe(true);
+  });
+
+  it("aborts the run rather than retrying when the batch fails fatally", async () => {
+    const fake = fakeStore();
+    fake.rejectWrite("2", new AuthError("credentials rejected"));
+
+    const summary = await runCatalogueIngest({
+      store: fake.store,
+      source: streamOf([changed("1"), changed("2"), changed("3")]),
+    });
+
+    expect(summary).toMatchObject({ status: "failed", aborted: true });
+    // No per-record retry: an auth failure repeats on every one of them.
+    expect(fake.writeBatches()).toEqual([["1", "2", "3"]]);
   });
 });

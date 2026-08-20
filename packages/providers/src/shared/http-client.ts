@@ -85,7 +85,15 @@ export interface ProviderHttpClientOptions {
 
 export type QueryValue = string | number | boolean | Array<string | number>;
 
-/** Per-call overrides. Today only the serialization lane, which NauSYS varies. */
+/**
+ * Per-call overrides. Today only the serialization lane.
+ *
+ * Two callers vary it, for opposite reasons. NauSYS gives a live call a key nothing
+ * else uses so it is not queued behind a sweep; Booking Manager's catalogue sweep
+ * spreads itself over a fixed set of keys so several of its reads run at once. Both
+ * still pay the queue's spacing - per lane, which is what makes the second one a
+ * concurrency setting rather than a way around the interval.
+ */
 export interface ProviderRequestOptions {
   /**
    * Lane this one call serializes on, instead of the client's own. Calls sharing
@@ -104,6 +112,7 @@ export interface ProviderHttpClient {
   get(
     endpoint: string,
     query?: Record<string, QueryValue | undefined>,
+    options?: ProviderRequestOptions,
   ): Promise<ProviderHttpResult>;
   del(endpoint: string): Promise<ProviderHttpResult>;
   put(endpoint: string, body?: JsonRequestValue): Promise<ProviderHttpResult>;
@@ -272,8 +281,14 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     post(endpoint, body, requestOptions) {
       return send("POST", endpoint, body, true, requestOptions?.queueKey);
     },
-    get(endpoint, query) {
-      return send("GET", `${endpoint}${query ? buildQueryString(query) : ""}`, null, false);
+    get(endpoint, query, requestOptions) {
+      return send(
+        "GET",
+        `${endpoint}${query ? buildQueryString(query) : ""}`,
+        null,
+        false,
+        requestOptions?.queueKey,
+      );
     },
     del(endpoint) {
       return send("DELETE", endpoint, null, false);

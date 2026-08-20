@@ -3,10 +3,22 @@ import { nanoid } from "nanoid";
 
 // Shared column helpers — see docs/backend-architecture.md Appendix A.
 
+/**
+ * The id `id()` would have generated, callable on its own.
+ *
+ * Drizzle runs `$defaultFn` per row while it builds the statement, so a multi-row
+ * insert already mints these client-side - but it hands them back only through
+ * `RETURNING`, and correlating those rows to the values that produced them means
+ * trusting an ordering Postgres does not promise. A writer that needs to know an
+ * id before it inserts (to reference it from the same batch, say) mints it here
+ * instead and passes it explicitly.
+ */
+export const newId = (prefix: string) => `${prefix}_${nanoid()}`;
+
 export const id = (prefix: string) =>
   text("id")
     .primaryKey()
-    .$defaultFn(() => `${prefix}_${nanoid()}`);
+    .$defaultFn(() => newId(prefix));
 
 export const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),

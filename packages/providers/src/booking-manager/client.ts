@@ -6,6 +6,7 @@ import {
   createProviderHttpClient,
   type FetchLike,
   type ProviderHttpClient,
+  type ProviderRequestOptions,
   type QueryValue,
   type RawResponseEvent,
 } from "../shared/http-client";
@@ -50,13 +51,24 @@ export class BookingManagerClient {
     });
   }
 
+  /**
+   * `options.queueKey` puts this one read on a lane of its own. The catalogue sweep
+   * uses it to run a handful of `/yachts` reads at once; everything else leaves it
+   * alone and shares the credential's single lane.
+   */
   async get<TOut>(
     endpoint: string,
     schema: z.ZodType<TOut>,
     query?: Record<string, QueryValue | undefined>,
+    options?: ProviderRequestOptions,
   ): Promise<TOut> {
-    const response = await this.http.get(endpoint, query);
+    const response = await this.http.get(endpoint, query, options);
     return this.parse(endpoint, schema, response.body);
+  }
+
+  /** Lane `slot` of the sweep's fan-out, spaced by `minIntervalMs` like any other. */
+  sweepLane(name: string, slot: number): ProviderRequestOptions {
+    return { queueKey: `${this.config.queueKey}:${name}#${slot}` };
   }
 
   async post<TOut>(

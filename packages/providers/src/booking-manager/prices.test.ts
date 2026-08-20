@@ -21,6 +21,7 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_API_KEY: "t0ken",
   BOOKING_MANAGER_TIMEOUT_MS: 30_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 0,
+  BOOKING_MANAGER_SWEEP_CONCURRENCY: 4,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
   BOOKING_MANAGER_TIMEZONE: "Europe/Zagreb",
 });
@@ -46,6 +47,9 @@ function fakeClient(get: (query: PriceQuery) => Promise<RestPrice[]>): BookingMa
   // absent, so reaching for one is a TypeError rather than a wrong answer.
   return Object.assign({} as BookingManagerClient, {
     get: (_endpoint: string, _schema: z.ZodType<RestPrice[]>, query: PriceQuery = {}) => get(query),
+    // The sweep spreads itself over lanes; the stub has no queue, so the name is
+    // all that is asserted here and the real spacing is covered by queue.test.ts.
+    sweepLane: (name: string, slot: number) => ({ queueKey: `${name}#${slot}` }),
   });
 }
 

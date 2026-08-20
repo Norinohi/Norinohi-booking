@@ -10,6 +10,8 @@ export interface BookingManagerConfig {
   apiToken: string;
   timeoutMs: number;
   minIntervalMs: number;
+  /** Reads the catalogue and price sweeps keep in flight; see the env note. */
+  sweepConcurrency: number;
   /** `holdExpiresAt = expirationDate − this`, so our sweeper releases first. */
   optionSafetyMarginMinutes: number;
   /**
@@ -37,6 +39,7 @@ export interface BookingManagerEnvSource {
   BOOKING_MANAGER_EXCLUDED_COMPANY_IDS?: string | undefined;
   BOOKING_MANAGER_TIMEOUT_MS: number;
   BOOKING_MANAGER_MIN_INTERVAL_MS: number;
+  BOOKING_MANAGER_SWEEP_CONCURRENCY: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
   BOOKING_MANAGER_TIMEZONE: string;
 }
@@ -75,6 +78,7 @@ export function resolveBookingManagerConfig(
     ),
     timeoutMs: source.BOOKING_MANAGER_TIMEOUT_MS,
     minIntervalMs: source.BOOKING_MANAGER_MIN_INTERVAL_MS,
+    sweepConcurrency: source.BOOKING_MANAGER_SWEEP_CONCURRENCY,
     optionSafetyMarginMinutes: source.BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES,
     timeZone: source.BOOKING_MANAGER_TIMEZONE,
     queueKey: bookingManagerQueueKey(apiToken),
