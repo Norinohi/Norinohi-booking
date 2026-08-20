@@ -1,16 +1,15 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { IconButton } from "@yacht-charter/ui/components/actions/icon-button";
 import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import {
   Carousel,
+  CarouselNav,
   CarouselSlide,
   CarouselViewport,
-  useCarousel,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { useQuery } from "@tanstack/react-query";
-import { Anchor, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Anchor, ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Suspense } from "react";
@@ -22,33 +21,6 @@ import { boatCardPrice } from "@/lib/boat-card-fields";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 import { popularYachtsQueryOptions } from "../api/queries";
-
-function CarouselNav() {
-  const t = useTranslations("Home.PopularYachts");
-  const { api, canScrollPrev, canScrollNext } = useCarousel();
-  return (
-    <div className="flex shrink-0 items-center gap-2">
-      <IconButton
-        variant="neutral"
-        size="sm"
-        aria-label={t("previous")}
-        disabled={!canScrollPrev}
-        onClick={() => api?.scrollPrev()}
-      >
-        <ChevronLeft />
-      </IconButton>
-      <IconButton
-        variant="neutral"
-        size="sm"
-        aria-label={t("next")}
-        disabled={!canScrollNext}
-        onClick={() => api?.scrollNext()}
-      >
-        <ChevronRight />
-      </IconButton>
-    </div>
-  );
-}
 
 /*
  * The listing cards are the only request-backed part. Isolated so `useQuery`'s clock read stays
@@ -106,7 +78,7 @@ export default function PopularYachts() {
             className="mb-8 flex flex-col items-center gap-4 md:flex-row md:justify-between xl:mb-10"
           >
             <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px]">{t("heading")}</h2>
-            <CarouselNav />
+            <CarouselNav previousLabel={t("previous")} nextLabel={t("next")} />
           </motion.div>
 
           <CarouselViewport>

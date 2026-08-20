@@ -617,6 +617,8 @@
   "Home": {
     "BoatTypes": {
       "heading": "Elige tu tipo de barco",
+      "previous": "Tipos de barco anteriores",
+      "next": "Tipos de barco siguientes",
       "luxury": {
         "title": "Yate de lujo",
         "description": "Los barcos más grandes de la flota, con tripulación y equipados con estándar hotelero.",

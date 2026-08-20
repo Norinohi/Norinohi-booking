@@ -3,12 +3,12 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   Carousel,
+  CarouselNav,
   CarouselSlide,
   CarouselViewport,
-  useCarousel,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { DestinationCard } from "@yacht-charter/ui/components/data-display/card-destination";
-import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
@@ -18,36 +18,6 @@ import { useFilterOptions } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
 import { RISE, VIEWPORT } from "@/lib/motion";
-
-function NavArrows() {
-  const t = useTranslations("Home.PopularDestinations");
-  const { api, canScrollPrev, canScrollNext } = useCarousel();
-
-  return (
-    <div className="flex shrink-0 items-center gap-1">
-      <Button
-        type="button"
-        variant="neutral"
-        size="icon-md"
-        aria-label={t("previous")}
-        disabled={!canScrollPrev}
-        onClick={() => api?.scrollPrev()}
-      >
-        <ChevronLeft />
-      </Button>
-      <Button
-        type="button"
-        variant="neutral"
-        size="icon-md"
-        aria-label={t("next")}
-        disabled={!canScrollNext}
-        onClick={() => api?.scrollNext()}
-      >
-        <ChevronRight />
-      </Button>
-    </div>
-  );
-}
 
 /*
  * The slides are the only facet-dependent part. Isolated so `useQuery`'s clock read stays out of
@@ -102,7 +72,7 @@ export default function PopularDestinations() {
             className="flex items-center justify-between gap-4 px-4 md:px-13.5 xl:px-17.5"
           >
             <h2 className="text-h2 text-foreground">{t("heading")}</h2>
-            <NavArrows />
+            <CarouselNav previousLabel={t("previous")} nextLabel={t("next")} />
           </motion.div>
 
           <CarouselViewport className="pl-4 md:pl-13.5 xl:pl-17.5">

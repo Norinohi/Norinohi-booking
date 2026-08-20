@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -164,6 +165,44 @@ function CarouselArrow({
 }
 
 /**
+ * The prev/next pair a section heading carries, as against `CarouselArrow`, which floats over the
+ * slides. Labels are passed in because they are translated and this package holds no messages.
+ */
+function CarouselNav({
+  previousLabel,
+  nextLabel,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { previousLabel: string; nextLabel: string }) {
+  const { api, canScrollPrev, canScrollNext } = useCarousel();
+
+  return (
+    <div className={cn("flex shrink-0 items-center gap-1", className)} {...props}>
+      <Button
+        type="button"
+        variant="neutral"
+        size="icon-md"
+        aria-label={previousLabel}
+        disabled={!canScrollPrev}
+        onClick={() => api?.scrollPrev()}
+      >
+        <ChevronLeft />
+      </Button>
+      <Button
+        type="button"
+        variant="neutral"
+        size="icon-md"
+        aria-label={nextLabel}
+        disabled={!canScrollNext}
+        onClick={() => api?.scrollNext()}
+      >
+        <ChevronRight />
+      </Button>
+    </div>
+  );
+}
+
+/**
  * A second Embla instance whose slides act as controls for the main one.
  * `containScroll: "keepSnaps"` keeps every thumb reachable, and the strip
  * auto-scrolls so the active thumb never ends up off-screen.
@@ -233,6 +272,7 @@ export {
   CarouselSlide,
   CarouselBars,
   CarouselArrow,
+  CarouselNav,
   CarouselThumbs,
   useCarousel,
 };

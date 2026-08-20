@@ -617,6 +617,8 @@
   "Home": {
     "BoatTypes": {
       "heading": "Choose Your Boat Type",
+      "previous": "Previous boat types",
+      "next": "Next boat types",
       "luxury": {
         "title": "Luxury yacht",
         "description": "The largest boats in the fleet, crewed and specified to hotel standard.",
