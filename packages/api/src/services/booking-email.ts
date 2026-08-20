@@ -80,7 +80,7 @@ export type BookingReceivedEmail = {
   outstandingMinor: number;
   /** When the operator's hold lapses. Null for a provider that grants no option. */
   holdExpiresAt: Date | null;
-  /** True for a guest checkout, whose account was provisioned here and has no password yet. */
+  /** True while the account has no password of its own, which is what the callout offers to fix. */
   isGuest: boolean;
 };
 
