@@ -26,6 +26,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 
+import { STAT_TONE } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import CharterDateField, { type CharterPeriod } from "@/components/shared/form/charter-date-field";
 import Loader from "@/components/shared/feedback/loader";
@@ -429,9 +430,13 @@ export default function BookingSummary({
             dropped, and the block goes with it when both are. */}
         {stats && (stats.booked > 0 || stats.viewed > 0) ? (
           <>
-            <div className="flex w-full flex-col gap-2 p-4 text-sm leading-4.5 font-medium text-foreground">
-              {stats.booked > 0 ? <p>{tCard("stats.booked", { count: stats.booked })}</p> : null}
-              {stats.viewed > 0 ? <p>{tCard("stats.viewed", { count: stats.viewed })}</p> : null}
+            <div className="flex w-full flex-col gap-2 p-4 text-sm leading-4.5 font-medium">
+              {stats.booked > 0 ? (
+                <p className={STAT_TONE.booked}>{tCard("stats.booked", { count: stats.booked })}</p>
+              ) : null}
+              {stats.viewed > 0 ? (
+                <p className={STAT_TONE.viewed}>{tCard("stats.viewed", { count: stats.viewed })}</p>
+              ) : null}
             </div>
             <Separator />
           </>

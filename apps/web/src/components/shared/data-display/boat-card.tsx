@@ -33,6 +33,15 @@ export type BoatCardSpec = {
   icon?: ReactNode;
 };
 export type BoatCardAmenity = { icon: ReactNode; label: string };
+
+/** Which line this is, kept apart from its wording so both surfaces can colour it the same. */
+export type BoatCardStat = { kind: "booked" | "viewed"; label: string };
+
+/** Bookings are proof someone committed, views only that someone looked. */
+export const STAT_TONE = {
+  booked: "text-positive-600",
+  viewed: "text-gold",
+} as const;
 /**
  * A charter endpoint: the calendar day, and the marina's wall-clock time for it.
  *
@@ -59,7 +68,7 @@ export type BoatCardProps = {
   crew: string;
   specs: BoatCardSpec[];
   amenities?: BoatCardAmenity[];
-  stats?: string[];
+  stats?: BoatCardStat[];
   /**
    * The charter the dates describe: the one that was searched for, or, on an undated search,
    * the first one this boat would sell. Absent where no period is in play at all — the wishlist
@@ -310,9 +319,11 @@ function Action({
 
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 p-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:p-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:pl-0">
-      <div className="flex flex-col items-center gap-2 text-sm font-medium leading-[1.3] text-foreground md:items-start">
+      <div className="flex flex-col items-center gap-2 text-sm font-medium leading-[1.3] md:items-start">
         {stats?.map((stat) => (
-          <p key={stat}>{stat}</p>
+          <p key={stat.kind} className={STAT_TONE[stat.kind]}>
+            {stat.label}
+          </p>
         ))}
       </div>
 
