@@ -1135,7 +1135,8 @@
     },
     "route": {
       "start": "Start",
-      "finish": "Finish"
+      "finish": "Finish",
+      "day": "Day {day}"
     },
     "review": {
       "count": "({count, plural, one {# review} other {# reviews}})",

@@ -42,10 +42,14 @@ const unprojectY = (y: number) => {
   return (Math.atan(Math.sinh(n)) * 180) / Math.PI;
 };
 
+export type StillPosition = { leftPercent: number; topPercent: number };
+
 export type StaticMapFrame = {
   url: string;
   /** Each point's place on the still, in percent, ready for `left`/`top`. */
-  markers: { leftPercent: number; topPercent: number }[];
+  markers: StillPosition[];
+  /** The same maths for any other coordinate, so a route can be drawn over the still. */
+  project: (point: Point) => StillPosition;
 };
 
 /**
@@ -86,11 +90,14 @@ export function staticMapFrame(
   const centreY = (minY + maxY) / 2;
   const worldSize = TILE_SIZE * 2 ** zoom;
 
+  const project = (point: Point): StillPosition => ({
+    leftPercent: ((projectX(point.lng) - centreX) * worldSize + width / 2) / (width / 100),
+    topPercent: ((projectY(point.lat) - centreY) * worldSize + height / 2) / (height / 100),
+  });
+
   return {
     url: `${BASE}/${unprojectX(centreX)},${unprojectY(centreY)},${zoom}/${width}x${height}@2x?access_token=${env.NEXT_PUBLIC_MAPBOX_TOKEN}`,
-    markers: points.map((point, index) => ({
-      leftPercent: (((xs[index] ?? centreX) - centreX) * worldSize + width / 2) / (width / 100),
-      topPercent: (((ys[index] ?? centreY) - centreY) * worldSize + height / 2) / (height / 100),
-    })),
+    markers: points.map(project),
+    project,
   };
 }

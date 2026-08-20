@@ -1135,7 +1135,8 @@
     },
     "route": {
       "start": "Старт",
-      "finish": "Фініш"
+      "finish": "Фініш",
+      "day": "День {day}"
     },
     "review": {
       "count": "({count, plural, one {# відгук} few {# відгуки} many {# відгуків} other {# відгуку}})",

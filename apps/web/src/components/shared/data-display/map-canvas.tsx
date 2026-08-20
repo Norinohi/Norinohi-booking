@@ -3,6 +3,7 @@
 import { env } from "@yacht-charter/env/web";
 import { usePathname } from "next/navigation";
 import { Component, type ReactNode, useRef, useState } from "react";
+import type { ComponentProps } from "react";
 import Map, { type MapEvent } from "react-map-gl/mapbox";
 
 import { MAP_STYLE_URL } from "@/lib/mapbox";
@@ -26,7 +27,13 @@ function styleBasemap({ target: map }: MapEvent, opacity: number) {
 
 export type MapInstance = MapEvent["target"];
 
-export type MapViewState = { longitude: number; latitude: number; zoom: number };
+/*
+ * The library's own camera type, which also accepts `bounds`. Worth taking whole rather than
+ * narrowing to a centre and a zoom: bounds are resolved while the map is being constructed, from
+ * the real size of the container, so a map that has to frame several places opens already framed
+ * instead of opening somewhere else and jumping.
+ */
+export type MapViewState = NonNullable<ComponentProps<typeof Map>["initialViewState"]>;
 
 type MapCanvasProps = {
   children?: ReactNode;

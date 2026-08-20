@@ -33,7 +33,7 @@ export default function MapDialogCanvas({
       <Marker longitude={point.lng} latitude={point.lat} anchor="center">
         <span
           aria-label={title}
-          className="flex size-21 items-center justify-center rounded-full border border-white/50 bg-white/25"
+          className="flex size-21 items-center justify-center rounded-full border border-white/50 bg-white/25 duration-300 animate-in fade-in-0 zoom-in-50"
         >
           <MapPin className="size-6 fill-brand text-white" />
         </span>

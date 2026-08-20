@@ -46,14 +46,12 @@ export function routePoints(stops: RouteStop[]): RoutePoint[] {
 /**
  * What a place is to the itinerary, where that is worth saying at all.
  *
- * Only the ends get named. The middle of a route is already spelled out day by day in the list
- * under the map, and numbering every marker there said the wrong thing anyway: a number in a
- * badge is what the search map uses for *how many boats are here*, so on a route it read as a
- * count rather than an order.
+ * The ends are named rather than numbered, because a bare numeral by a marker is what the search
+ * map uses for *how many boats are here*.
  */
-export type RoutePointRole = "start" | "finish" | "start-finish";
+type RoutePointRole = "start" | "finish" | "start-finish";
 
-export function routePointRole(point: RoutePoint, stops: RouteStop[]): RoutePointRole | null {
+function routePointRole(point: RoutePoint, stops: RouteStop[]): RoutePointRole | null {
   const days = stops.map((stop) => stop.day);
   const first = Math.min(...days);
   const last = Math.max(...days);
@@ -67,12 +65,105 @@ export function routePointRole(point: RoutePoint, stops: RouteStop[]): RoutePoin
   return null;
 }
 
-/** Joined here so the still and the live map word a shared start-and-finish the same way. */
-export function routeCaption(
-  role: RoutePointRole,
-  words: { start: string; finish: string },
-): string {
+export type RouteWords = {
+  start: string;
+  finish: string;
+  /** Worded, never a bare number: a numeral by a marker reads as a count, not as an order. */
+  day: (day: number) => string;
+};
+
+/** Worded here so the still and the live map label the same place the same way. */
+export function routeCaption(point: RoutePoint, stops: RouteStop[], words: RouteWords): string {
+  const role = routePointRole(point, stops);
+
+  if (role === "start-finish") return `${words.start} · ${words.finish}`;
   if (role === "start") return words.start;
   if (role === "finish") return words.finish;
-  return `${words.start} · ${words.finish}`;
+  return words.day(Math.min(...point.days));
+}
+
+/** How long the whole itinerary takes to draw. Shared so both maps run at one speed. */
+export const ROUTE_DRAW_MS = 2400;
+
+/** Dense enough that a leg reads as a curve rather than a chain of chords. */
+const SAMPLES_PER_LEG = 24;
+
+const placeKey = (point: { lat: number; lng: number }) => `${point.lat},${point.lng}`;
+
+/** Catmull-Rom, which unlike a plain Bézier passes through its control points. */
+function spline(a: number, b: number, c: number, d: number, t: number): number {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
+  );
+}
+
+export type RouteCurve = {
+  /** The curve in order, ready to project onto a still or hand to a GeoJSON LineString. */
+  points: { lat: number; lng: number }[];
+  /** How far along the curve each place is first reached, 0–1, keyed as `routePoints` keys. */
+  arrivals: Map<string, number>;
+};
+
+/**
+ * The itinerary as one smooth curve, plus where each stop sits along it.
+ *
+ * Built from the stops in day order, not from `routePoints`: those are grouped by place, so a
+ * charter that returns to its base would lose the leg home. `arrivals` is what lets a marker
+ * appear exactly when the drawn line reaches it rather than on a guessed timer.
+ */
+export function routeCurve(stops: RouteStop[]): RouteCurve {
+  const ordered = [...stops].sort((a, b) => a.day - b.day);
+  if (ordered.length < 2) {
+    return {
+      points: ordered.map((stop) => ({ lat: stop.lat, lng: stop.lng })),
+      arrivals: new Map(),
+    };
+  }
+
+  const at = (index: number) => ordered[Math.min(Math.max(index, 0), ordered.length - 1)];
+
+  const points: { lat: number; lng: number }[] = [];
+  /** Index into `points` where each leg starts, so a stop can be located along the curve. */
+  const vertexAt: number[] = [];
+
+  for (let leg = 0; leg < ordered.length - 1; leg++) {
+    const [a, b, c, d] = [at(leg - 1), at(leg), at(leg + 1), at(leg + 2)];
+    vertexAt.push(points.length);
+
+    for (let step = 0; step < SAMPLES_PER_LEG; step++) {
+      const t = step / SAMPLES_PER_LEG;
+      points.push({
+        lat: spline(a.lat, b.lat, c.lat, d.lat, t),
+        lng: spline(a.lng, b.lng, c.lng, d.lng, t),
+      });
+    }
+  }
+
+  const last = at(ordered.length - 1);
+  vertexAt.push(points.length);
+  points.push({ lat: last.lat, lng: last.lng });
+
+  const lengths = [0];
+  for (let i = 1; i < points.length; i++) {
+    const dx = points[i].lng - points[i - 1].lng;
+    const dy = points[i].lat - points[i - 1].lat;
+    lengths.push(lengths[i - 1] + Math.hypot(dx, dy));
+  }
+  const total = lengths[lengths.length - 1] || 1;
+
+  const arrivals = new Map<string, number>();
+  ordered.forEach((stop, index) => {
+    const key = placeKey(stop);
+    /* First arrival wins: a base that is both day 1 and day 7 is on screen from the start. */
+    if (!arrivals.has(key)) arrivals.set(key, lengths[vertexAt[index]] / total);
+  });
+
+  return { points, arrivals };
+}
+
+/** Looks a place up in `arrivals`, which is keyed the same way `routePoints` groups. */
+export function arrivalOf(curve: RouteCurve, point: { lat: number; lng: number }): number {
+  return curve.arrivals.get(placeKey(point)) ?? 0;
 }
