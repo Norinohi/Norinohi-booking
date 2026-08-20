@@ -147,9 +147,9 @@ export default function MapPreview(props: MapPreviewProps) {
          */}
         <span
           aria-hidden
-          className="absolute right-3 bottom-3 flex size-8 items-center justify-center rounded-lg bg-black/40 text-white transition-colors group-hover:bg-black/60"
+          className="absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-lg bg-black/40 text-white transition-colors group-hover:bg-black/60"
         >
-          <Maximize2 className="size-4" />
+          <Maximize2 className="size-3.5" />
         </span>
       </button>
 
