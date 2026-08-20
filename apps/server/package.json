@@ -16,7 +16,8 @@
     "remind:payments": "node dist/payment-reminders.mjs",
     "drain:outbox": "node dist/drain-outbox.mjs",
     "seed:facets": "node dist/seed-facets.mjs",
-    "publish:listings": "node dist/publish-listings.mjs"
+    "publish:listings": "node dist/publish-listings.mjs",
+    "rebuild:search-docs": "node dist/rebuild-search-docs.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",
