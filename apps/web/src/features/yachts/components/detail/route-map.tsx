@@ -228,6 +228,9 @@ export default function RouteMap({ stops }: { stops: Stop[] }) {
         settleOnStops(instance, stops, !reduced);
         drawRoute(instance, curve, !reduced);
       }}
+      /* A style swap drops the route's source and layers, so they go back on — already drawn,
+         since the visitor has watched it once and is now looking at the map, not the reveal. */
+      onStyleChange={(instance) => drawRoute(instance, curve, false)}
       onBackgroundPress={() => setSelected(null)}
     >
       {points.map((point, index) => (

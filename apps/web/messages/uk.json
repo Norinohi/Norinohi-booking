@@ -465,7 +465,9 @@
       "viewDetails": "Детальніше"
     },
     "map": {
-      "open": "Відкрити мапу: {place}"
+      "open": "Відкрити мапу: {place}",
+      "satellite": "Супутник",
+      "streets": "Карта"
     },
     "leadForm": {
       "fields": {

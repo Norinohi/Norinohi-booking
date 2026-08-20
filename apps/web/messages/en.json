@@ -465,7 +465,9 @@
       "viewDetails": "View Details"
     },
     "map": {
-      "open": "Open the map of {place}"
+      "open": "Open the map of {place}",
+      "satellite": "Satellite",
+      "streets": "Map"
     },
     "leadForm": {
       "fields": {

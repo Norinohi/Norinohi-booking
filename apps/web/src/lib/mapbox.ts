@@ -5,6 +5,10 @@ import { env } from "@yacht-charter/env/web";
 export const MAP_STYLE_ID = "mapbox/satellite-streets-v12";
 export const MAP_STYLE_URL = `mapbox://styles/${MAP_STYLE_ID}`;
 
+/* The street map a dialog can switch to. Stills stay satellite: only the live maps offer the
+   choice, and a still is a picture of the map that opens by default. */
+export const MAP_STYLE_STREETS_URL = "mapbox://styles/mapbox/streets-v12";
+
 type Point = { lat: number; lng: number };
 
 const BASE = `https://api.mapbox.com/styles/v1/${MAP_STYLE_ID}/static`;
