@@ -7,7 +7,12 @@ import type { MapMarkerData } from "../api/queries";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 
 const CLUSTER_RADIUS = 60;
-const CLUSTER_MAX_ZOOM = 16;
+/*
+ * Mapbox's own ceiling, so clusters exist at every zoom the map can reach. Stopping lower let the
+ * index hand back raw points past that level, and boats sharing a marina's coordinates went back to
+ * sitting on top of each other with no cluster left to click.
+ */
+const CLUSTER_MAX_ZOOM = 22;
 
 type Viewport = { bbox: [number, number, number, number]; zoom: number };
 
