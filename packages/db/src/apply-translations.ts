@@ -19,6 +19,7 @@ import { z } from "zod";
 
 import { db } from "./index";
 import { extraLabels } from "./translations/extra-labels";
+import { facetLabels } from "./translations/facet-labels";
 import { ukTranslations } from "./translations/uk";
 import { facetMedia, facetMediaKind, facetMediaTranslation } from "./schema/facet-media";
 import {
@@ -27,6 +28,7 @@ import {
   providerExtraTranslation,
 } from "./schema/listing-source";
 
+/** The locale `translations/uk.ts` is written in; the other two files name their own. */
 const LOCALE = "uk";
 const apply = process.argv.slice(2).includes("--apply");
 
@@ -45,12 +47,21 @@ const translationsSchema = z.object({
   extras: z.record(z.string().min(1), z.record(z.string().min(1), z.string().min(1))),
 });
 
+const facetLabelsSchema = z.partialRecord(
+  z.enum(facetMediaKind.enumValues),
+  z.record(z.string().min(1), labelsSchema),
+);
+
 const extraKeySchema = z
   .string()
   .transform((key) => key.split(":"))
   .pipe(z.tuple([z.enum(providerExtraKind.enumValues), z.string().min(1)]));
 
 const translations = translationsSchema.parse(ukTranslations);
+
+type FacetKindValue = (typeof facetMediaKind.enumValues)[number];
+
+const curatedFacets = facetLabelsSchema.parse(facetLabels);
 
 /**
  * Facet rows for everything this file names, creating the ones the sync has not.
@@ -61,6 +72,27 @@ const translations = translationsSchema.parse(ukTranslations);
  * than skipped. The count is printed: a spelling mistake in the file shows up as a facet
  * created where none was expected, which is the failure this would otherwise hide.
  */
+/**
+ * Both facet files as one `value -> locale -> label` map for a kind.
+ *
+ * `translations/uk.ts` is a single-locale set produced for the vocabulary providers do name in
+ * their own languages; `translations/facet-labels.ts` names the handful they never do, in all
+ * three. Nothing appears in both, and if something ever does, the multi-locale file wins,
+ * because it is the one that can answer for every locale.
+ */
+function mergedFacetLabels(kind: FacetKindValue) {
+  const merged = new Map<string, Record<string, string>>();
+
+  for (const [value, label] of Object.entries(translations.facets[kind] ?? {})) {
+    merged.set(value, { [LOCALE]: label });
+  }
+  for (const [value, byLocale] of Object.entries(curatedFacets[kind] ?? {})) {
+    merged.set(value, { ...merged.get(value), ...byLocale });
+  }
+
+  return merged;
+}
+
 async function facetRows(): Promise<{
   rows: (typeof facetMediaTranslation.$inferInsert)[];
   created: number;
@@ -69,9 +101,8 @@ async function facetRows(): Promise<{
   let created = 0;
 
   for (const kind of facetMediaKind.enumValues) {
-    const labels = translations.facets[kind];
-    if (!labels) continue;
-    const values = Object.keys(labels);
+    const labels = mergedFacetLabels(kind);
+    const values = [...labels.keys()];
     if (values.length === 0) continue;
 
     if (apply) {
@@ -89,10 +120,12 @@ async function facetRows(): Promise<{
       .where(and(eq(facetMedia.kind, kind), inArray(facetMedia.value, values)));
     const idByValue = new Map(found.map((row) => [row.value, row.id]));
 
-    for (const [value, label] of Object.entries(labels)) {
+    for (const [value, byLocale] of labels) {
       const facetMediaId = idByValue.get(value);
       if (!facetMediaId) continue;
-      rows.push({ facetMediaId, locale: LOCALE, label, source: "generated" });
+      for (const [locale, label] of Object.entries(byLocale)) {
+        rows.push({ facetMediaId, locale, label, source: "generated" });
+      }
     }
   }
 
@@ -154,8 +187,8 @@ async function main(): Promise<void> {
 
   const perKind = facetMediaKind.enumValues
     .flatMap((kind) => {
-      const labels = translations.facets[kind];
-      return labels ? [`${kind} ${Object.keys(labels).length}`] : [];
+      const count = mergedFacetLabels(kind).size;
+      return count === 0 ? [] : [`${kind} ${count}`];
     })
     .join(", ");
   console.log(`facets: ${facets.length} of ${perKind}`);

@@ -87,7 +87,7 @@ export default function Testimonials() {
 
       <div className="mx-auto mt-8 flex max-w-384 justify-center px-4 lg:mt-10">
         <Button variant="neutral" size="md" className="w-full md:w-auto">
-          Coming Soon
+          {t("comingSoon")}
         </Button>
       </div>
 

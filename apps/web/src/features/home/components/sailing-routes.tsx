@@ -67,7 +67,7 @@ export default function SailingRoutes() {
 
         <motion.div variants={RISE} className="flex justify-center">
           <Button variant="neutral" size="md" className="w-full md:w-auto">
-            Coming Soon
+            {t("comingSoon")}
           </Button>
         </motion.div>
       </motion.div>

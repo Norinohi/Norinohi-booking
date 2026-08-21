@@ -11,6 +11,7 @@ import { WishlistButton } from "@/features/wishlist";
 import { Link } from "@/i18n/navigation";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
+import { badgeLabel } from "@/lib/badge-label";
 import { crewLabel } from "@/lib/crew-label";
 import { toMarina } from "../../lib/to-marina";
 
@@ -20,6 +21,7 @@ export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
+  const tBadge = useTranslations("Common.boatCard.badges");
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -41,7 +43,7 @@ export default function TitleBlock() {
       <div className="flex flex-wrap items-start gap-1.5 md:col-start-1 md:row-start-1">
         {/* Same rule as the search card: an unbookable yacht has nothing to promote. */}
         {data.availability.hasAvailableDates ? (
-          data.badges.map((badge) => <Chip key={badge.code}>{badge.label}</Chip>)
+          data.badges.map((badge) => <Chip key={badge.code}>{badgeLabel(tBadge, badge)}</Chip>)
         ) : (
           <Chip variant="neutral">{tCard("badges.unavailable")}</Chip>
         )}

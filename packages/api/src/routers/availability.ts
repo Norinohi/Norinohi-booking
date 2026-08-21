@@ -1,5 +1,11 @@
-import { listAvailabilityCalendar, listAvailabilityConstraints } from "@yacht-charter/db/search";
+import {
+  listAvailabilityCalendar,
+  listAvailabilityConstraints,
+  type LocalizableQuoteLine,
+  localizeQuoteLines,
+} from "@yacht-charter/db/search";
 import { quoteRequestWithDiscountSchema } from "@yacht-charter/providers";
+import { z } from "zod";
 
 import {
   availabilityCalendarInputSchema,
@@ -7,10 +13,29 @@ import {
   availabilityConstraintsSchema,
 } from "../contracts/catalog";
 import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
+import type { Database } from "../context";
 import { publicProcedure } from "../index";
 import { providerForListing, providerForQuote } from "../services/provider-routing";
 import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
+
+/** Display only, and optional: an omitted locale reads the provider's own wording. */
+const localeInputSchema = z.string().min(2).max(10).optional();
+
+/**
+ * A freshly persisted quote, read back in the caller's language.
+ *
+ * The row keeps the provider's wording - an invoice, a confirmation email and an operator's
+ * admin view all read it, so one visitor's locale must not decide the language of the others.
+ * Only what goes over the wire to that visitor is swapped.
+ */
+async function withLocalizedLines<T extends { listingId: string; lines: LocalizableQuoteLine[] }>(
+  db: Database,
+  quote: T,
+  locale: string | undefined,
+): Promise<T> {
+  return { ...quote, lines: await localizeQuoteLines(db, quote.listingId, quote.lines, locale) };
+}
 
 export const availabilityRouter = {
   calendar: publicProcedure
@@ -73,16 +98,17 @@ export const availabilityRouter = {
         currency: "EUR",
       }),
     })
-    .input(quoteRequestWithDiscountSchema)
+    .input(quoteRequestWithDiscountSchema.extend({ locale: localeInputSchema }))
     .output(persistedQuoteSchema)
-    .handler(async ({ context, input }) =>
-      createQuote(
+    .handler(async ({ context, input }) => {
+      const quote = await createQuote(
         context.db,
         await providerForListing(context.db, context.provider, input.listingId),
         input,
         context.session?.user.id ?? null,
-      ),
-    ),
+      );
+      return withLocalizedLines(context.db, quote, input.locale);
+    }),
   reprice: publicProcedure
     .route({
       method: "POST",
@@ -103,8 +129,8 @@ export const availabilityRouter = {
     })
     .input(repriceInputSchema)
     .output(persistedQuoteSchema)
-    .handler(async ({ context, input }) =>
-      repriceQuote(
+    .handler(async ({ context, input }) => {
+      const quote = await repriceQuote(
         context.db,
         await providerForQuote(context.db, context.provider, input.quoteId),
         input.quoteId,
@@ -119,6 +145,7 @@ export const availabilityRouter = {
           discountCode: input.discountCode,
           applyCredit: input.applyCredit,
         },
-      ),
-    ),
+      );
+      return withLocalizedLines(context.db, quote, input.locale);
+    }),
 };

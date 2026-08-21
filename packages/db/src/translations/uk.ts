@@ -37,8 +37,6 @@ export const ukTranslations = {
       "Wooden yacht": "Дерев’яна яхта",
     },
     country: {
-      "Bonaire, Sint Eustatius and Saba": "Бонайре, Сінт-Естатіус і Саба",
-      "United Kingdom": "Велика Британія",
       Afghanistan: "Афганістан",
       Albania: "Албанія",
       Algeria: "Алжир",
@@ -288,9 +286,6 @@ export const ukTranslations = {
       "Åland Islands": "Аландські острови",
     },
     equipment: {
-      "Air condition": "Кондиціонер",
-      Bimini: "Біміні-тент",
-      "Coffee maker": "Кавоварка",
       "108% Dacron genoa": "Дакронова генуя 108%",
       "108% genoa": "Генуя 108%",
       "109% Genoa": "Генуя 109%",
@@ -1410,10 +1405,6 @@ export const ukTranslations = {
       "mp3 player": "MP3-програвач",
     },
     region: {
-      "Northern America": "Північна Америка",
-      "Northern Europe": "Північна Європа",
-      "Southern Europe": "Південна Європа",
-      "Western Europe": "Західна Європа",
       Aegean: "Егейське море",
       Antigua: "Антигуа",
       "Athens area/Saronic/Peloponese": "Афіни / Саронічна затока / Пелопоннес",
@@ -1432,12 +1423,6 @@ export const ukTranslations = {
       "St. Martin": "Сен-Мартен",
       "Zadar region": "Задарський регіон",
       "Šibenik region": "Шибеницький регіон",
-    },
-    sail_type: {
-      "classic/standard": "Класичний / стандартний",
-      "full batten": "На повних латах",
-      "furling/roll": "Закруточний",
-      "self tacking jib": "Самотакелажний стаксель",
     },
   },
   extras: {

@@ -421,22 +421,20 @@ export async function getListingDetailByIdOrSlug(
        */
       yachtPickup: { time: info?.checkInTime ?? null },
       yachtDropOff: { time: info?.checkOutTime ?? null },
-      cancellationPaymentPolicies:
-        "Cancellation and prepayment policies vary according to your selection. Payment conditions are confirmed during quote and booking.",
-      sailingLicenseRequired:
-        listing.crewType === "bareboat"
-          ? "Valid sailing license or local equivalent required."
-          : "No license is needed when booking with crew or skipper.",
+      cancellationPaymentPolicies: "varies_by_selection",
+      sailingLicenseRequired: listing.crewType === "bareboat" ? "required" : "not_required",
       /*
        * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
        * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"
        * into "not permitted" on 109 listings. Ask the base instead of inventing its policy.
        */
-      pets: listing.petsAllowed
-        ? "Pets are allowed on this yacht with charter company confirmation."
-        : "Pet policy is set by the charter base — ask before booking.",
+      pets: listing.petsAllowed ? "allowed_with_confirmation" : "ask_base",
       paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
-      marinaInformation: `${listing.baseName} is located in ${listing.location}, ${listing.country}. Check-in and check-out times are provided by the charter base.`,
+      marinaInformation: {
+        marina: listing.baseName,
+        location: listing.location,
+        country: listing.country,
+      },
       marinaContact: {
         name: listing.baseName,
         address: `${listing.baseName}, ${listing.location}, ${listing.country}`,
@@ -479,7 +477,9 @@ export async function listSearchFacets(
     listFacetOptions(db, input, sql`doc.crew_type`, ["crew"], "crew"),
     listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"], "sail_type"),
     listEquipmentFacetOptions(db, input),
-    listFacetOptions(db, input, sql`doc.year_built::text`, ["yearFrom", "yearTo"]),
+    /* `nullif` for the same reason the range filters it: a year of zero is "not stated", and it
+       was being offered as a selectable build year in the dropdown. */
+    listFacetOptions(db, input, sql`nullif(doc.year_built, 0)::text`, ["yearFrom", "yearTo"]),
     db.execute<{
       minLength: string | null;
       maxLength: string | null;
@@ -512,8 +512,11 @@ export async function listSearchFacets(
         max(doc.heads) as "maxBathrooms",
         min(doc.price_from_minor) as "minMinor",
         max(doc.price_from_minor) as "maxMinor",
-        min(doc.year_built) as "minYear",
-        max(doc.year_built) as "maxYear",
+        /* Zero is how a vendor writes a build year it does not know, and it reached the range as
+           a real one: the age slider then offered "up to 2026 years old". Filtered rather than
+           coalesced, because a fleet where nobody stated a year has no range to show. */
+        min(doc.year_built) filter (where doc.year_built > 0) as "minYear",
+        max(doc.year_built) filter (where doc.year_built > 0) as "maxYear",
         min(doc.rating) as "minRating",
         max(doc.rating) as "maxRating",
         bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
@@ -1464,6 +1467,13 @@ function pricingTypeOf(
   return calculationType === "ADVANCE_PAYMENT" ? "per_booking" : "pay_at_check_in";
 }
 
+/**
+ * The spec rows, as data rather than as sentences.
+ *
+ * Every English word that used to live here — the labels, "Not specified", "Unknown", the
+ * "Yacht" fallback — is now the web app's to write, per locale. What stays is the number and
+ * its SI unit, which read the same in all four.
+ */
 function overviewFor(
   listing: ListingSearchDoc,
   info:
@@ -1476,42 +1486,57 @@ function overviewFor(
         waterCapacity: number | null;
       }
     | undefined,
-): { code: string; label: string; value: string }[] {
+): { code: string; label: string; value: string | null }[] {
   return [
     { code: "location", label: "Location", value: `${listing.location}, ${listing.country}` },
-    { code: "year", label: "Year", value: String(listing.yearBuilt ?? "Unknown") },
-    { code: "boat-type", label: "Boat type", value: listing.category ?? "Yacht" },
+    {
+      code: "year",
+      label: "Year",
+      value: listing.yearBuilt === null ? null : String(listing.yearBuilt),
+    },
+    { code: "boat-type", label: "Boat type", value: listing.category },
     { code: "cabins", label: "Cabins", value: String(listing.cabins ?? 0) },
     { code: "bathrooms", label: "Bathrooms", value: String(listing.heads ?? 0) },
     ...(listing.showers === null
       ? []
       : [{ code: "showers", label: "Showers", value: String(listing.showers) }]),
     { code: "length", label: "Length", value: metresValue(listing.lengthM) },
-    { code: "mainsail", label: "Type of mainsail", value: listing.sailType ?? "Not specified" },
+    { code: "mainsail", label: "Type of mainsail", value: listing.sailType },
     { code: "draught", label: "Draught", value: metresValue(info?.draftM) },
     { code: "beam", label: "Beam", value: metresValue(info?.beamM) },
     {
       code: "fuel-tank",
       label: "Fuel tank",
-      value: info?.fuelCapacity ? `${info.fuelCapacity} l` : "Not specified",
+      value: info?.fuelCapacity ? `${info.fuelCapacity} l` : null,
     },
     {
       code: "water-tank",
       label: "Water tank",
-      value: info?.waterCapacity ? `${info.waterCapacity} l` : "Not specified",
+      value: info?.waterCapacity ? `${info.waterCapacity} l` : null,
     },
     {
       code: "engine",
       label: "Engine",
-      value: [info?.engines, info?.enginePower].filter(Boolean).join(" x ") || "Not specified",
+      value: [info?.engines, info?.enginePower].filter(Boolean).join(" x ") || null,
     },
   ];
 }
 
-function metresValue(value: string | null | undefined): string {
-  return value ? `${Number(value).toFixed(2)} m` : "Not specified";
+function metresValue(value: string | null | undefined): string | null {
+  return value ? `${Number(value).toFixed(2)} m` : null;
 }
 
+/**
+ * The itinerary, as a shape the web can write in its own language.
+ *
+ * `kind` says which stop this is and `place` carries the only part of it that is real data - the
+ * marina's name, or the region's. Everything else here is generated copy, so the words belong in
+ * the message files with the rest of the generated copy; `title` and `description` stay as the
+ * English fallback for a kind the web has no message for yet.
+ *
+ * The section itself is invented, not sourced - see docs/generated-content-audit.md. Translating
+ * it changes only which language it is invented in.
+ */
 function suggestedRouteFor(listing: ListingSearchDoc): ListingDetail["suggestedRoute"] {
   const lat = listing.lat ?? 0;
   const lng = listing.lng ?? 0;
@@ -1519,9 +1544,12 @@ function suggestedRouteFor(listing: ListingSearchDoc): ListingDetail["suggestedR
 
   return {
     title: `7-day itinerary through ${listing.region}`,
+    region: listing.region,
     map: { lat, lng },
     stops: places.map((place, index) => ({
       day: index + 1,
+      kind: place.kind,
+      place: place.place,
       title: `Day ${index + 1} - ${place.title}`,
       description: place.description,
       lat: lat + place.latOffset,
@@ -1534,83 +1562,121 @@ function routePlacesFor(region: string, location: string) {
   if (region.toLowerCase().includes("dalmatia")) {
     return [
       {
+        kind: "base_evening" as const,
+        place: location,
         title: location,
         description: "Check-in and evening in the marina.",
         latOffset: 0,
         lngOffset: 0,
       },
       {
+        kind: "hvar" as const,
+        place: null,
         title: "Hvar",
         description: "Sail to a lively island stop with protected bays.",
         latOffset: -0.18,
         lngOffset: 0.15,
       },
       {
+        kind: "vis" as const,
+        place: null,
         title: "Vis",
         description: "Continue to clear water and quiet anchorages.",
         latOffset: -0.38,
         lngOffset: 0.04,
       },
       {
+        kind: "blue_cave" as const,
+        place: null,
         title: "Blue Cave",
         description: "Visit one of the Adriatic's best-known natural sights.",
         latOffset: -0.47,
         lngOffset: -0.1,
       },
       {
+        kind: "korcula" as const,
+        place: null,
         title: "Korcula",
         description: "Explore old-town streets and a sheltered overnight stop.",
         latOffset: -0.56,
         lngOffset: 0.42,
       },
       {
+        kind: "brac" as const,
+        place: null,
         title: "Brac",
         description: "Return through island beaches and swim stops.",
         latOffset: -0.26,
         lngOffset: 0.32,
       },
-      { title: location, description: "Final morning return to base.", latOffset: 0, lngOffset: 0 },
+      {
+        kind: "base_morning" as const,
+        place: location,
+        title: location,
+        description: "Final morning return to base.",
+        latOffset: 0,
+        lngOffset: 0,
+      },
     ];
   }
 
   return [
     {
+      kind: "base" as const,
+      place: location,
       title: location,
       description: "Check-in and provisioning at the charter base.",
       latOffset: 0,
       lngOffset: 0,
     },
     {
+      kind: "region_coast" as const,
+      place: region,
       title: `${region} coast`,
       description: "Short sail to a protected anchorage.",
       latOffset: 0.12,
       lngOffset: 0.16,
     },
     {
+      kind: "island_bay" as const,
+      place: null,
       title: "Island bay",
       description: "Swimming stop and relaxed overnight.",
       latOffset: 0.18,
       lngOffset: -0.12,
     },
     {
+      kind: "old_town" as const,
+      place: null,
       title: "Old town",
       description: "Harbor visit with restaurants ashore.",
       latOffset: -0.12,
       lngOffset: 0.18,
     },
     {
+      kind: "quiet_cove" as const,
+      place: null,
       title: "Quiet cove",
       description: "Sheltered bay for paddleboarding and snorkeling.",
       latOffset: -0.18,
       lngOffset: -0.08,
     },
     {
+      kind: "marina_approach" as const,
+      place: null,
       title: "Marina approach",
       description: "Easy sail back toward the base area.",
       latOffset: 0.08,
       lngOffset: -0.2,
     },
-    { title: location, description: "Check-out at the home marina.", latOffset: 0, lngOffset: 0 },
+    {
+      kind: "base_return" as const,
+      place: location,
+      title: location,
+      description: "Check-out at the home marina.",
+      latOffset: 0,
+      lngOffset: 0,
+    },
   ];
 }
 

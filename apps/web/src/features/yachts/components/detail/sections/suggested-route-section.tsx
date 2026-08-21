@@ -294,21 +294,37 @@ function RouteStill({ route }: { route: { title: string; stops: RouteStop[] } })
 
 export default function SuggestedRouteSection() {
   const t = useTranslations("YachtDetail");
+  const tRoute = useTranslations("YachtDetail.route");
+  const tPlace = useTranslations("YachtDetail.route.place");
+  const tLeg = useTranslations("YachtDetail.route.description");
   const { data } = useListingDetail();
 
   if (!data) return null;
 
   const route = data.suggestedRoute;
-  const stops: Stop[] = route.stops.map((stop) => ({ title: stop.title, text: stop.description }));
-  const mid = Math.ceil(stops.length / 2);
-  const columns = [stops.slice(0, mid), stops.slice(mid)];
+  /*
+   * The itinerary is generated, so its words live in the message files rather than in the read
+   * model - which sends `kind` and the one real name each stop carries. `place` is interpolated
+   * even where a kind ignores it, because next-intl needs every value its template might name.
+   */
+  const stops: RouteStop[] = route.stops.map((stop) => ({
+    ...stop,
+    title: tRoute("stopTitle", {
+      day: stop.day,
+      place: tPlace(stop.kind, { place: stop.place ?? "" }),
+    }),
+    description: tLeg(stop.kind),
+  }));
+  const days: Stop[] = stops.map((stop) => ({ title: stop.title, text: stop.description }));
+  const mid = Math.ceil(days.length / 2);
+  const columns = [days.slice(0, mid), days.slice(mid)];
 
   return (
     <DetailSection id="suggested-route" title={t("sections.suggestedRoute")}>
       <div className="flex flex-col gap-3">
-        <p className="text-xl text-foreground">{route.title}</p>
+        <p className="text-xl text-foreground">{tRoute("itinerary", { region: route.region })}</p>
 
-        {route.stops.length ? <RouteStill route={route} /> : null}
+        {stops.length ? <RouteStill route={{ title: route.title, stops }} /> : null}
 
         <DayLists columns={columns} />
       </div>

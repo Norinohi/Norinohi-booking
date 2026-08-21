@@ -171,7 +171,8 @@ export const listingsByIdsInputSchema = z.object({
 export const listingDetailSchema = listingSummarySchema.extend({
   /* Null when the provider ships no prose in the requested locale; the client writes its own. */
   description: z.string().nullable(),
-  overview: z.array(includedItemSchema.extend({ value: z.string() })),
+  /* Null where the catalogue does not know; the web writes "not specified" in its own locale. */
+  overview: z.array(includedItemSchema.extend({ value: z.string().nullable() })),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
   optionalExtras: z.array(optionalItemSchema),
@@ -192,11 +193,16 @@ export const listingDetailSchema = listingSummarySchema.extend({
     /* Times only: a listing page has no charter, so it has no pickup date to state. */
     yachtPickup: z.object({ time: z.string().nullable() }),
     yachtDropOff: z.object({ time: z.string().nullable() }),
-    cancellationPaymentPolicies: z.string(),
-    sailingLicenseRequired: z.string(),
-    pets: z.string(),
+    /* Which sentence applies, not the sentence: the copy is in the web app's message files. */
+    cancellationPaymentPolicies: z.literal("varies_by_selection"),
+    sailingLicenseRequired: z.enum(["required", "not_required"]),
+    pets: z.enum(["allowed_with_confirmation", "ask_base"]),
     paymentMethodsAcceptedByCharterCompany: z.array(z.string()),
-    marinaInformation: z.string(),
+    marinaInformation: z.object({
+      marina: z.string(),
+      location: z.string(),
+      country: z.string(),
+    }),
     marinaContact: z.object({
       name: z.string(),
       address: z.string(),
@@ -210,7 +216,11 @@ export const listingDetailSchema = listingSummarySchema.extend({
     }),
   }),
   suggestedRoute: z.object({
+    /* `title` and each stop's `title`/`description` are English fallbacks: the itinerary is
+       generated copy, so the words a visitor reads come from the web app's message files,
+       keyed by `kind` and filled from `region`/`place`. */
     title: z.string(),
+    region: z.string(),
     map: z.object({
       lat: z.number(),
       lng: z.number(),
@@ -218,6 +228,23 @@ export const listingDetailSchema = listingSummarySchema.extend({
     stops: z.array(
       z.object({
         day: z.number().int(),
+        kind: z.enum([
+          "base",
+          "base_evening",
+          "base_morning",
+          "base_return",
+          "hvar",
+          "vis",
+          "blue_cave",
+          "korcula",
+          "brac",
+          "region_coast",
+          "island_bay",
+          "old_town",
+          "quiet_cove",
+          "marina_approach",
+        ]),
+        place: z.string().nullable(),
         title: z.string(),
         description: z.string(),
         lat: z.number(),

@@ -14,6 +14,7 @@ import { type ResultListing, toBoatCard } from "../../lib/to-boat-card";
 export default async function CatalogCards({ listings }: { listings: ResultListing[] }) {
   const t = await getTranslations("Common.boatCard");
   const tCrew = await getTranslations("Common.crewTypes");
+  const tBadge = await getTranslations("Common.boatCard.badges");
   const format = await getFormatter();
   const formatMoney = (amountMinor: number) => format.number(amountMinor / 100, "eur");
 
@@ -22,7 +23,7 @@ export default async function CatalogCards({ listings }: { listings: ResultListi
       {listings.map((listing, index) => (
         <BoatCard
           key={listing.id}
-          {...toBoatCard(t, tCrew, formatMoney, listing)}
+          {...toBoatCard(t, tCrew, tBadge, formatMoney, listing)}
           priority={index === 0}
         />
       ))}
