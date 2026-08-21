@@ -22,12 +22,12 @@ import {
   yachtCategory,
   yachtModel,
 } from "@yacht-charter/db/schema/taxonomy";
-import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
-import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { MAX_MONEY_MINOR, newId } from "@yacht-charter/db/schema/_shared";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
 import { canonicalCategoryName } from "../shared/category-groups";
+import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
 import type {
   CanonicalCatalogue,
@@ -37,6 +37,18 @@ import type {
 } from "../types";
 
 type CanonicalListing = CanonicalCatalogue["listings"][number];
+
+/**
+ * Listings resolved and written together.
+ *
+ * Must stay at or below `ID_CHUNK`: the child replaces name a whole batch in one
+ * `IN (...)`, and splitting that would mean a delete running against listings whose
+ * replacement rows are still two statements away.
+ */
+const LISTING_BATCH_SIZE = Math.min(500, ID_CHUNK);
+
+/** Suffixed slugs tried before falling back to a stamped one. */
+const SLUG_ATTEMPTS = 20;
 
 /** Phase B input: every record ingested so far, not just this run's. */
 export async function loadProviderRecordSet(
@@ -75,14 +87,6 @@ export interface ExistingSourceLink {
   listingSourceId: string;
   listingId: string | null;
   matchStatus: MatchStatus;
-}
-
-/** The `listing_source` match columns, written as one group. */
-interface ListingSourceMatchFields {
-  matchStatus: MatchStatus;
-  matchConfidence?: string | null;
-  matchedBy?: string;
-  matchedAt?: Date;
 }
 
 export interface ListingMatchDecision {
@@ -188,6 +192,18 @@ export interface CatalogueWriteSummary {
   listingsHidden: number;
   duplicateCandidates: number;
   touchedListingIds: string[];
+  /**
+   * Every listing whose search document this run invalidated: the ones it touched,
+   * the ones the orphan sweep hid, and the drafts auto-publish promoted.
+   *
+   * Returned rather than rebuilt here. The rebuild used to close this function and
+   * then run a second time after the price phase, because phase B necessarily
+   * writes the documents before the rates exist and `bookable_from` and the card's
+   * "from" figure are materialised from `listing_price_period`. Two full rebuilds
+   * over eleven thousand listings to publish one correct set of documents; the
+   * caller now runs it once, after the prices.
+   */
+  rebuildListingIds: string[];
 }
 
 const decimal = (value: number | undefined): string | null =>
@@ -343,32 +359,49 @@ export async function writeCanonicalCatalogue(
     listingsHidden: 0,
     duplicateCandidates: 0,
     touchedListingIds: [],
+    rebuildListingIds: [],
   };
 
-  for (const item of catalogue.listings) {
-    /*
-     * One listing's failure costs that listing, not the projection.
-     *
-     * This loop ran unguarded, so anything a single boat could raise - a price
-     * beyond its column, a text field longer than its own, a not-null we mis-derived
-     * - threw out of writeCanonicalCatalogue and lost all eleven thousand. Every
-     * other loop in this sync already works the other way: the ingest reports per
-     * entity and continues, occupancy quarantines a yacht rather than failing its
-     * scope, and one company's outage costs that company's fleet.
-     *
-     * What a caught listing is not is clean. The steps here run in order and the
-     * listing row is written first, so a failure further down - its specification,
-     * its extras, its check-in rules - leaves the row updated and those tables
-     * holding what the last good run put there. Stale, but coherent: every one of
-     * them is a replace, so nothing is half applied.
-     *
-     * What is guaranteed is that it does not reach `touchedListingIds`. The price
-     * sweep therefore does not price it and no search document is rebuilt from it,
-     * so a listing we could not fully write is never the one a customer is shown a
-     * new rate for. The orphan sweep leaves it alone too: its provider records were
-     * ingested and are still active, which is what that sweep reads.
-     */
-    try {
+  /*
+   * Listings in batches, the way the ingest walks provider records.
+   *
+   * One listing is sixteen statements: its own row, an upsert and a replace for
+   * each of seven child tables, its source link, and the pointer back to that
+   * link. Run one boat at a time that is a hundred and seventy thousand sequential
+   * round trips for an eleven thousand listing account, and almost all of that time
+   * is the network rather than Postgres. Batched, the same work is roughly eighteen
+   * statements per five hundred listings, because every one of those steps is a set
+   * operation that was being asked one row at a time.
+   *
+   * `INGEST_BATCH_SIZE` carries the same reasoning for phase A. Five hundred is well
+   * clear of the point where batching stops paying, and low enough that a batch is
+   * still a small unit of work to lose and replay.
+   */
+  const context: ListingWriteContext = {
+    db,
+    providerKey,
+    amenityIds,
+    autoPublish: options.autoPublish === true,
+    now,
+  };
+
+  const recordWritten = (plan: ListingPlan) => {
+    if (plan.isCreate) summary.listingsCreated += 1;
+    else summary.listingsUpdated += 1;
+    summary.touchedListingIds.push(plan.listingId);
+    if (plan.listingSourceId) {
+      existingLinks.set(plan.item.externalId, {
+        listingSourceId: plan.listingSourceId,
+        listingId: plan.listingId,
+        matchStatus: plan.decision.matchStatus,
+      });
+    }
+  };
+
+  for (const batch of chunked(catalogue.listings, LISTING_BATCH_SIZE)) {
+    const plans: ListingPlan[] = [];
+
+    for (const item of batch) {
       const operatorId = operatorIds.get(item.externalCompanyId);
       const homeBaseId = baseIds.get(item.externalBaseId);
       const providerRecordId = yachtRecordIds.get(item.externalId);
@@ -422,55 +455,63 @@ export async function writeCanonicalCatalogue(
         freshnessAt: now,
       };
 
-      let listingId = decision.listingId;
-      if (listingId) {
-        await db.update(listing).set(columns).where(eq(listing.id, listingId));
-        summary.listingsUpdated += 1;
-      } else {
-        const created = await insertListingWithFreeSlug(db, item.slug, {
-          ...columns,
-          // Draft unless the provider is explicitly trusted: thousands of unreviewed
-          // yachts must not go live on the first run of a new connector.
-          status: options.autoPublish ? "published" : "draft",
-        });
-        if (!created) {
-          summary.listingsSkipped += 1;
-          continue;
-        }
-        listingId = created.id;
-        summary.listingsCreated += 1;
-        matchCandidates.set(incomingKey, listingId);
-      }
+      /*
+       * The id is minted here rather than read back from the insert, so that a
+       * second yacht in this same batch carrying the same match tuple resolves to
+       * this listing instead of creating its own. Resolving a whole batch before
+       * writing any of it is what makes that necessary: the sequential loop this
+       * replaced had already inserted the first boat by the time it judged the
+       * second, and `newId` exists for exactly this (see schema/_shared.ts).
+       */
+      const listingId = decision.listingId ?? newId("ylst");
+      if (decision.listingId === null) matchCandidates.set(incomingKey, listingId);
 
-      await writeListingChildren(db, providerKey, listingId, item, amenityIds);
-
-      const sourceId = await upsertListingSource(db, {
-        existing: existingLinks.get(item.externalId) ?? null,
+      plans.push({
+        item,
         listingId,
+        isCreate: decision.listingId === null,
+        rowWritten: false,
         providerRecordId,
-        externalYachtId: item.externalId,
-        externalCompanyId: item.externalCompanyId,
-        externalBaseId: item.externalBaseId,
         decision,
-        now,
+        columns,
+        listingSourceId: null,
       });
+    }
 
-      if (sourceId) {
-        await db
-          .update(listing)
-          .set({ primarySourceId: sourceId })
-          .where(eq(listing.id, listingId));
-        existingLinks.set(item.externalId, {
-          listingSourceId: sourceId,
-          listingId,
-          matchStatus: decision.matchStatus,
-        });
+    if (plans.length === 0) continue;
+
+    try {
+      const skipped = await writeListingPlans(context, plans);
+      summary.listingsSkipped += skipped.size;
+      for (const plan of plans) {
+        if (!skipped.has(plan)) recordWritten(plan);
       }
-
-      summary.touchedListingIds.push(listingId);
-    } catch (error) {
-      summary.listingsFailed += 1;
-      await options.reportListingError?.({ externalId: item.externalId, error });
+    } catch {
+      /*
+       * A statement is all or nothing, so one listing Postgres refuses takes the
+       * other four hundred and ninety-nine down with it - a rate beyond its column,
+       * a text field longer than its own, a not-null we mis-derived. Replayed one at
+       * a time, which is what this loop did for every listing before it batched, so
+       * the boat that cannot be written is the only one lost.
+       *
+       * Replay is safe because every step is an upsert or a whole-scope replace, and
+       * because `rowWritten` records which listings the failed attempt already
+       * inserted - re-inserting one of those would collide on its primary key rather
+       * than on its slug, and the slug retry is not built to see that.
+       *
+       * The batch's own error is dropped: the replay raises it again against the one
+       * listing that caused it, which is the error worth reporting.
+       */
+      for (const plan of plans) {
+        try {
+          const skipped = await writeListingPlans(context, [plan]);
+          if (skipped.size > 0) summary.listingsSkipped += 1;
+          else recordWritten(plan);
+        } catch (error) {
+          summary.listingsFailed += 1;
+          await options.reportListingError?.({ externalId: plan.item.externalId, error });
+        }
+      }
     }
   }
 
@@ -488,9 +529,7 @@ export async function writeCanonicalCatalogue(
   const published = options.autoPublish ? await publishDrafts(db, providerId) : [];
   summary.listingsPublished = published.length;
 
-  await rebuildSearchReadModelsAfterSync(db, {
-    listingIds: [...new Set([...summary.touchedListingIds, ...hidden, ...published])],
-  });
+  summary.rebuildListingIds = [...new Set([...summary.touchedListingIds, ...hidden, ...published])];
 
   return summary;
 }
@@ -615,39 +654,6 @@ async function ensureAmenityCategory(db: Database, name: string): Promise<string
   return found?.id ?? null;
 }
 
-/**
- * Two providers can both mint `bora-2019`; the first one there keeps it.
- *
- * The insert is part of the search rather than a step after it. `listing.slug` is
- * unique, so checking and then inserting is a race, and losing it used to raise
- * out of the per-listing loop and fail the entire projection over one collision.
- * Here a taken slug is just the signal to try the next suffix.
- */
-async function insertListingWithFreeSlug(
-  db: Database,
-  candidate: string,
-  columns: Omit<typeof listing.$inferInsert, "slug">,
-): Promise<{ id: string } | null> {
-  const seed = candidate === "" ? "listing" : candidate;
-
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const slug = attempt === 0 ? seed : `${seed}-${attempt + 1}`;
-    const [created] = await db
-      .insert(listing)
-      .values({ ...columns, slug })
-      .onConflictDoNothing({ target: listing.slug })
-      .returning({ id: listing.id });
-    if (created) return created;
-  }
-
-  const [fallback] = await db
-    .insert(listing)
-    .values({ ...columns, slug: `${seed}-${Date.now()}` })
-    .onConflictDoNothing({ target: listing.slug })
-    .returning({ id: listing.id });
-  return fallback ?? null;
-}
-
 async function loadYachtRecordIds(db: Database, providerId: string) {
   const rows = await db
     .select({ id: providerRecord.id, externalId: providerRecord.externalId })
@@ -720,72 +726,340 @@ async function loadMatchCandidates(db: Database, providerId: string) {
   return candidates;
 }
 
-async function upsertListingSource(
-  db: Database,
-  input: {
-    existing: ExistingSourceLink | null;
-    listingId: string;
-    providerRecordId: string;
-    externalYachtId: string;
-    externalCompanyId: string;
-    externalBaseId: string;
-    decision: ListingMatchDecision;
-    now: Date;
-  },
-): Promise<string | null> {
-  // An unmatched decision leaves the previous match provenance untouched rather
-  // than blanking it, so those three columns are only written together.
-  const matchFields: ListingSourceMatchFields = { matchStatus: input.decision.matchStatus };
-  if (input.decision.matchedBy) {
-    matchFields.matchConfidence = input.decision.matchConfidence?.toFixed(4) ?? null;
-    matchFields.matchedBy = input.decision.matchedBy;
-    matchFields.matchedAt = input.now;
+/**
+ * Shared by every listing in a batch: the parts that do not vary per boat.
+ */
+interface ListingWriteContext {
+  db: Database;
+  providerKey: ProviderKey;
+  amenityIds: Map<string, string>;
+  autoPublish: boolean;
+  now: Date;
+}
+
+/**
+ * One listing resolved against the catalogue's taxonomy, ready to be written.
+ *
+ * Mutable in two places on purpose. `rowWritten` records that the listing row now
+ * exists, so a replay after a failed batch updates it instead of inserting it a
+ * second time; `listingSourceId` is what the source upsert decided, read back by
+ * the caller to update its own index of links.
+ */
+interface ListingPlan {
+  item: CanonicalListing;
+  listingId: string;
+  isCreate: boolean;
+  rowWritten: boolean;
+  providerRecordId: string;
+  decision: ListingMatchDecision;
+  columns: Omit<typeof listing.$inferInsert, "id" | "slug" | "status">;
+  listingSourceId: string | null;
+}
+
+/**
+ * Writes a batch of resolved listings, and returns the ones it did not write.
+ *
+ * Unwritten means skipped, not failed: a listing that could not be given a free
+ * slug, or one whose row has disappeared since the run read it. A listing Postgres
+ * refused is a throw, which the caller answers by replaying the batch a listing at
+ * a time.
+ *
+ * Every step is an upsert or a whole-scope replace, so calling this again with the
+ * same plans is safe - which is what makes that replay possible.
+ */
+async function writeListingPlans(
+  ctx: ListingWriteContext,
+  plans: readonly ListingPlan[],
+): Promise<Set<ListingPlan>> {
+  const unwritten = new Set<ListingPlan>();
+
+  // Split before either runs: a create that lands here becomes an update on the
+  // next pass, and must not also be updated on this one.
+  const creates = plans.filter((plan) => plan.isCreate && !plan.rowWritten);
+  const updates = plans.filter((plan) => !plan.isCreate || plan.rowWritten);
+
+  await insertNewListings(ctx, creates, unwritten);
+  await updateExistingListings(ctx, updates, unwritten);
+
+  const written = plans.filter((plan) => !unwritten.has(plan));
+  if (written.length === 0) return unwritten;
+
+  /*
+   * Two external yachts can resolve to one listing - the same match tuple twice in
+   * a vendor's dump, or a second yacht matched onto the first - and the row then has
+   * two candidate versions of its children. Last one wins, which is what the
+   * sequential loop did by overwriting as it went; batched, writing both would leave
+   * the listing holding the union of two dumps. Their source links are both kept:
+   * two provider records legitimately point at one listing.
+   */
+  const byListing = new Map<string, ListingPlan>();
+  for (const plan of written) byListing.set(plan.listingId, plan);
+
+  await writeListingChildren(ctx, [...byListing.values()]);
+  await writeListingSources(ctx, written);
+
+  return unwritten;
+}
+
+/** Runs `write` over `rows` a statement at a time, or not at all when there are none. */
+async function insertRows<T>(rows: T[], write: (chunk: T[]) => Promise<void>): Promise<void> {
+  for (const chunk of chunked(rows, ROW_CHUNK)) {
+    await write(chunk);
+  }
+}
+
+/**
+ * Two providers can both mint `bora-2019`; the first one there keeps it.
+ *
+ * The insert is part of the search rather than a step after it. `listing.slug` is
+ * unique, so checking and then inserting is a race, and losing it used to raise
+ * out of the per-listing loop and fail the entire projection over one collision.
+ * Here a taken slug is just the signal to try the next suffix - and `DO NOTHING`
+ * settles the batch's own collisions the same way, so two boats that project the
+ * same slug behave exactly as they did when they were inserted one after the other.
+ *
+ * Ids are supplied rather than returned. A multi-row insert reports back only the
+ * rows it wrote and in no promised order, so `RETURNING id` alone cannot say which
+ * listing got which; minted up front, the returned ids are the answer to "which of
+ * these landed" instead.
+ */
+async function insertNewListings(
+  ctx: ListingWriteContext,
+  creates: readonly ListingPlan[],
+  unwritten: Set<ListingPlan>,
+): Promise<void> {
+  if (creates.length === 0) return;
+
+  // Draft unless the provider is explicitly trusted: thousands of unreviewed
+  // yachts must not go live on the first run of a new connector.
+  const status: (typeof listing.$inferInsert)["status"] = ctx.autoPublish ? "published" : "draft";
+  let pending = [...creates];
+
+  for (let attempt = 0; attempt <= SLUG_ATTEMPTS && pending.length > 0; attempt += 1) {
+    const values = pending.map((plan, index) => ({
+      ...plan.columns,
+      id: plan.listingId,
+      slug: slugAttempt(plan.item.slug, attempt, index),
+      status,
+    }));
+
+    const landed = new Set<string>();
+    for (const chunk of chunked(values, ROW_CHUNK)) {
+      const rows = await ctx.db
+        .insert(listing)
+        .values(chunk)
+        .onConflictDoNothing({ target: listing.slug })
+        .returning({ id: listing.id });
+      for (const row of rows) landed.add(row.id);
+    }
+
+    for (const plan of pending) {
+      if (landed.has(plan.listingId)) plan.rowWritten = true;
+    }
+    pending = pending.filter((plan) => !plan.rowWritten);
   }
 
-  if (input.existing) {
-    await db
-      .update(listingSource)
-      .set({
-        listingId: input.listingId,
-        providerRecordId: input.providerRecordId,
-        externalCompanyId: input.externalCompanyId,
-        externalBaseId: input.externalBaseId,
-        ...matchFields,
+  // Twenty suffixes and a timestamped one all taken is no longer a slug problem.
+  for (const plan of pending) unwritten.add(plan);
+}
+
+/** `seed`, `seed-2` … `seed-20`, then one stamped attempt that cannot collide. */
+function slugAttempt(candidate: string, attempt: number, index: number): string {
+  const seed = candidate === "" ? "listing" : candidate;
+  if (attempt === 0) return seed;
+  if (attempt < SLUG_ATTEMPTS) return `${seed}-${attempt + 1}`;
+  return `${seed}-${Date.now()}-${index}`;
+}
+
+/**
+ * The listing rows that already exist, restated from their plans.
+ *
+ * An `ON CONFLICT (id) DO UPDATE` rather than an `UPDATE ... FROM (VALUES ...)`,
+ * which is why it first reads back each row's slug and status: those two are NOT
+ * NULL and this run has no opinion on either, so they are carried through the
+ * insert untouched. That read is one statement per batch, and it buys a write with
+ * no positional contract between a column list and a row of parameters - the kind
+ * where two text columns swapped round is silent.
+ *
+ * A listing whose id has disappeared since the run started is left alone rather
+ * than re-created from a stale plan. The plain `UPDATE` this replaced was a no-op
+ * against a missing row too.
+ */
+async function updateExistingListings(
+  ctx: ListingWriteContext,
+  updates: readonly ListingPlan[],
+  unwritten: Set<ListingPlan>,
+): Promise<void> {
+  if (updates.length === 0) return;
+
+  const stored = await ctx.db
+    .select({ id: listing.id, slug: listing.slug, status: listing.status })
+    .from(listing)
+    .where(
+      inArray(
+        listing.id,
+        updates.map((plan) => plan.listingId),
+      ),
+    );
+
+  const identities = new Map(stored.map((row) => [row.id, row]));
+
+  /*
+   * Keyed by id, because two external yachts can already be linked to one listing -
+   * the second run over a vendor that ships the same match tuple twice - and
+   * Postgres refuses an `ON CONFLICT DO UPDATE` that would touch one row twice in a
+   * single statement. Last one wins, which is what the sequential loop did by
+   * issuing the two updates in order. Both yachts still get their own source link.
+   */
+  const values = new Map<string, typeof listing.$inferInsert>();
+  for (const plan of updates) {
+    const identity = identities.get(plan.listingId);
+    if (!identity) {
+      unwritten.add(plan);
+      continue;
+    }
+    values.set(plan.listingId, {
+      ...plan.columns,
+      id: plan.listingId,
+      slug: identity.slug,
+      status: identity.status,
+    });
+  }
+  if (values.size === 0) return;
+
+  for (const chunk of chunked([...values.values()], ROW_CHUNK)) {
+    await ctx.db
+      .insert(listing)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: listing.id,
+        set: {
+          title: sql`excluded.title`,
+          operatorId: sql`excluded.operator_id`,
+          homeBaseId: sql`excluded.home_base_id`,
+          builderId: sql`excluded.builder_id`,
+          modelId: sql`excluded.model_id`,
+          categoryId: sql`excluded.category_id`,
+          defaultCurrency: sql`excluded.default_currency`,
+          crewType: sql`excluded.crew_type`,
+          securityDepositMinor: sql`excluded.security_deposit_minor`,
+          securityDepositCurrency: sql`excluded.security_deposit_currency`,
+          paymentPolicy: sql`excluded.payment_policy`,
+          providerRating: sql`excluded.provider_rating`,
+          providerReviewCount: sql`excluded.provider_review_count`,
+          freshnessAt: sql`excluded.freshness_at`,
+          // Drizzle's `$onUpdate` fires for `.update()`, not for a conflict clause.
+          updatedAt: sql`now()`,
+        },
+      });
+  }
+}
+
+/**
+ * The provider's source link for each listing, and the pointer back to it.
+ *
+ * Arbitrated on `provider_record_id`, which carries its own unique index, so the
+ * upsert covers a new link and an existing one in one statement and this does not
+ * need to know which it is. `listing.primary_source_id` is a second statement
+ * rather than a column of the first only because the id it points at is the one
+ * this insert decides.
+ */
+async function writeListingSources(
+  ctx: ListingWriteContext,
+  plans: readonly ListingPlan[],
+): Promise<void> {
+  // A provider record links to exactly one source row, so a repeated record in one
+  // batch is one write, last one winning - what the sequential loop did anyway.
+  const byRecord = new Map<string, ListingPlan>();
+  for (const plan of plans) byRecord.set(plan.providerRecordId, plan);
+
+  const values = [...byRecord.values()].map((plan) => ({
+    id: newId("lsrc"),
+    listingId: plan.listingId,
+    providerRecordId: plan.providerRecordId,
+    externalYachtId: plan.item.externalId,
+    externalCompanyId: plan.item.externalCompanyId,
+    externalBaseId: plan.item.externalBaseId,
+    matchStatus: plan.decision.matchStatus,
+    matchConfidence: plan.decision.matchedBy
+      ? (plan.decision.matchConfidence?.toFixed(4) ?? null)
+      : null,
+    matchedBy: plan.decision.matchedBy,
+    matchedAt: plan.decision.matchedBy ? ctx.now : null,
+  }));
+
+  const sourceIds = new Map<string, string>();
+  for (const chunk of chunked(values, ROW_CHUNK)) {
+    const written = await ctx.db
+      .insert(listingSource)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: listingSource.providerRecordId,
+        set: {
+          listingId: sql`excluded.listing_id`,
+          externalCompanyId: sql`excluded.external_company_id`,
+          externalBaseId: sql`excluded.external_base_id`,
+          matchStatus: sql`excluded.match_status`,
+          /*
+           * An unmatched decision leaves the previous match provenance untouched
+           * rather than blanking it, so those three columns are only written
+           * together. A null `matched_by` is the signal that this run reached no
+           * verdict of its own, which is also how the row arrives here.
+           */
+          matchConfidence: sql`case when excluded.matched_by is null then ${listingSource.matchConfidence} else excluded.match_confidence end`,
+          matchedBy: sql`case when excluded.matched_by is null then ${listingSource.matchedBy} else excluded.matched_by end`,
+          matchedAt: sql`case when excluded.matched_by is null then ${listingSource.matchedAt} else excluded.matched_at end`,
+          updatedAt: sql`now()`,
+        },
       })
-      .where(eq(listingSource.id, input.existing.listingSourceId));
-    return input.existing.listingSourceId;
+      .returning({ id: listingSource.id, providerRecordId: listingSource.providerRecordId });
+
+    for (const row of written) sourceIds.set(row.providerRecordId, row.id);
   }
 
-  const [row] = await db
-    .insert(listingSource)
-    .values({
-      listingId: input.listingId,
-      providerRecordId: input.providerRecordId,
-      externalYachtId: input.externalYachtId,
-      externalCompanyId: input.externalCompanyId,
-      externalBaseId: input.externalBaseId,
-      ...matchFields,
-    })
-    .returning({ id: listingSource.id });
+  // Deduplicated because `UPDATE ... FROM` picks arbitrarily among rows that match
+  // the same target, and two external yachts can share one listing.
+  const pointers = new Map<string, string>();
+  for (const plan of plans) {
+    const sourceId = sourceIds.get(plan.providerRecordId);
+    if (!sourceId) continue;
+    plan.listingSourceId = sourceId;
+    pointers.set(plan.listingId, sourceId);
+  }
+  if (pointers.size === 0) return;
 
-  return row?.id ?? null;
+  const rows = sql.join(
+    [...pointers].map(([listingId, sourceId]) => sql`(${listingId}, ${sourceId})`),
+    sql`, `,
+  );
+
+  await ctx.db.execute(sql`
+    update ${listing}
+       set primary_source_id = v.source_id, updated_at = now()
+      from (values ${rows}) as v(listing_id, source_id)
+     where ${listing.id} = v.listing_id
+  `);
 }
 
 /**
  * Provider-owned child rows are replaced wholesale rather than diffed: the dump is
  * the complete truth for this listing, and a diff would leave rows the provider has
  * dropped behind forever.
+ *
+ * One delete and one insert per table for the whole batch. The delete can name the
+ * batch's listings in a single `IN (...)` because `LISTING_BATCH_SIZE` is held
+ * below `ID_CHUNK`; the inserts still chunk, because five hundred listings is tens
+ * of thousands of media rows.
  */
 async function writeListingChildren(
-  db: Database,
-  providerKey: ProviderKey,
-  listingId: string,
-  item: CanonicalListing,
-  amenityIds: Map<string, string>,
+  ctx: ListingWriteContext,
+  plans: readonly ListingPlan[],
 ): Promise<void> {
-  await db
-    .insert(listingSpecification)
-    .values({
+  const { db, providerKey } = ctx;
+  const listingIds = plans.map((plan) => plan.listingId);
+
+  await insertRows(
+    plans.map(({ listingId, item }) => ({
       listingId,
       lengthM: decimal(item.spec.lengthM),
       beamM: decimal(item.spec.beamM),
@@ -799,31 +1073,37 @@ async function writeListingChildren(
       fuelCapacity: item.spec.fuelCapacity ?? null,
       waterCapacity: item.spec.waterCapacity ?? null,
       sailType: item.spec.sailType ?? null,
-    })
-    .onConflictDoUpdate({
-      target: listingSpecification.listingId,
-      set: {
-        lengthM: sql`excluded.length_m`,
-        beamM: sql`excluded.beam_m`,
-        draftM: sql`excluded.draft_m`,
-        yearBuilt: sql`excluded.year_built`,
-        cabins: sql`excluded.cabins`,
-        berths: sql`excluded.berths`,
-        heads: sql`excluded.heads`,
-        showers: sql`excluded.showers`,
-        engines: sql`excluded.engines`,
-        fuelCapacity: sql`excluded.fuel_capacity`,
-        waterCapacity: sql`excluded.water_capacity`,
-        sailType: sql`excluded.sail_type`,
-      },
-    });
+    })),
+    async (chunk) => {
+      await db
+        .insert(listingSpecification)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: listingSpecification.listingId,
+          set: {
+            lengthM: sql`excluded.length_m`,
+            beamM: sql`excluded.beam_m`,
+            draftM: sql`excluded.draft_m`,
+            yearBuilt: sql`excluded.year_built`,
+            cabins: sql`excluded.cabins`,
+            berths: sql`excluded.berths`,
+            heads: sql`excluded.heads`,
+            showers: sql`excluded.showers`,
+            engines: sql`excluded.engines`,
+            fuelCapacity: sql`excluded.fuel_capacity`,
+            waterCapacity: sql`excluded.water_capacity`,
+            sailType: sql`excluded.sail_type`,
+          },
+        });
+    },
+  );
 
   // Scoped by source so a second provider's media on a merged listing survives.
   await db
     .delete(listingMedia)
-    .where(and(eq(listingMedia.listingId, listingId), eq(listingMedia.source, providerKey)));
-  if (item.media.length > 0) {
-    await db.insert(listingMedia).values(
+    .where(and(inArray(listingMedia.listingId, listingIds), eq(listingMedia.source, providerKey)));
+  await insertRows(
+    plans.flatMap(({ listingId, item }) =>
       item.media.map((media) => ({
         listingId,
         source: providerKey,
@@ -833,34 +1113,42 @@ async function writeListingChildren(
         role: media.role,
         sortOrder: media.sortOrder,
       })),
-    );
-  }
+    ),
+    async (chunk) => {
+      await db.insert(listingMedia).values(chunk);
+    },
+  );
 
-  await db.delete(listingText).where(eq(listingText.listingId, listingId));
-  if (item.texts.length > 0) {
-    await db.insert(listingText).values(
+  await db.delete(listingText).where(inArray(listingText.listingId, listingIds));
+  await insertRows(
+    plans.flatMap(({ listingId, item }) =>
       item.texts.map((text) => ({
         listingId,
         kind: text.kind,
         locale: text.locale,
         value: text.value,
       })),
-    );
-  }
-
-  await db.delete(listingAmenity).where(eq(listingAmenity.listingId, listingId));
-  const resolvedAmenities = [
-    ...new Set(
-      item.amenities
-        .map((externalId) => amenityIds.get(externalId))
-        .filter((id): id is string => Boolean(id)),
     ),
-  ];
-  if (resolvedAmenities.length > 0) {
-    await db
-      .insert(listingAmenity)
-      .values(resolvedAmenities.map((amenityId) => ({ listingId, amenityId })));
-  }
+    async (chunk) => {
+      await db.insert(listingText).values(chunk);
+    },
+  );
+
+  await db.delete(listingAmenity).where(inArray(listingAmenity.listingId, listingIds));
+  await insertRows(
+    plans.flatMap(({ listingId, item }) =>
+      [
+        ...new Set(
+          item.amenities
+            .map((externalId) => ctx.amenityIds.get(externalId))
+            .filter((amenityId): amenityId is string => Boolean(amenityId)),
+        ),
+      ].map((amenityId) => ({ listingId, amenityId })),
+    ),
+    async (chunk) => {
+      await db.insert(listingAmenity).values(chunk);
+    },
+  );
 
   // Scoped by source for the same reason media is: a merged listing must keep the
   // other provider's extras when this one resyncs.
@@ -868,32 +1156,13 @@ async function writeListingChildren(
     .delete(providerExtraCatalogue)
     .where(
       and(
-        eq(providerExtraCatalogue.listingId, listingId),
+        inArray(providerExtraCatalogue.listingId, listingIds),
         eq(providerExtraCatalogue.source, providerKey),
       ),
     );
-  /*
-   * An extra priced beyond what the column holds is dropped, not thrown.
-   *
-   * `provider_extra_catalogue.price_minor` is an integer like every money column
-   * here, and this insert is one statement per listing, so a single over-range
-   * extra fails all of them. Worse, there is no per-listing catch in this loop -
-   * the throw leaves `writeCanonicalCatalogue` entirely, so one boat's optional
-   * transfer fee would cost the projection of every listing in the run. Losing one
-   * extra from one boat is the smaller loss by a very wide margin.
-   */
-  const extras = item.extras.filter(
-    (extra) =>
-      Number.isSafeInteger(extra.priceMinor) && Math.abs(extra.priceMinor) <= MAX_MONEY_MINOR,
-  );
-  if (extras.length !== item.extras.length) {
-    console.warn(
-      `[catalogue] listing ${listingId}: dropped ${item.extras.length - extras.length} extra(s) priced beyond price_minor`,
-    );
-  }
-  if (extras.length > 0) {
-    await db.insert(providerExtraCatalogue).values(
-      extras.map((extra) => ({
+  await insertRows(
+    plans.flatMap(({ listingId, item }) =>
+      priceableExtras(listingId, item).map((extra) => ({
         listingId,
         source: providerKey,
         kind: extra.kind,
@@ -913,12 +1182,15 @@ async function writeListingChildren(
         externalSeasonId: extra.externalSeasonId ?? null,
         externalBaseId: extra.externalBaseId ?? null,
       })),
-    );
-  }
+    ),
+    async (chunk) => {
+      await db.insert(providerExtraCatalogue).values(chunk);
+    },
+  );
 
-  await db.delete(listingCheckinRule).where(eq(listingCheckinRule.listingId, listingId));
-  if (item.checkinRules.length > 0) {
-    await db.insert(listingCheckinRule).values(
+  await db.delete(listingCheckinRule).where(inArray(listingCheckinRule.listingId, listingIds));
+  await insertRows(
+    plans.flatMap(({ listingId, item }) =>
       item.checkinRules.map((rule) => ({
         listingId,
         checkinWeekday: rule.checkinWeekday ?? null,
@@ -926,20 +1198,48 @@ async function writeListingChildren(
         minNights: rule.minNights ?? null,
         maxNights: rule.maxNights ?? null,
       })),
-    );
-  }
+    ),
+    async (chunk) => {
+      await db.insert(listingCheckinRule).values(chunk);
+    },
+  );
 
-  await db.delete(listingOneWayRule).where(eq(listingOneWayRule.listingId, listingId));
-  if (item.oneWayRules.length > 0) {
-    await db.insert(listingOneWayRule).values(
+  await db.delete(listingOneWayRule).where(inArray(listingOneWayRule.listingId, listingIds));
+  await insertRows(
+    plans.flatMap(({ listingId, item }) =>
       item.oneWayRules.map((rule) => ({
         listingId,
         startDate: rule.startDate,
         endDate: rule.endDate,
         isOneWay: rule.isOneWay,
       })),
+    ),
+    async (chunk) => {
+      await db.insert(listingOneWayRule).values(chunk);
+    },
+  );
+}
+
+/**
+ * An extra priced beyond what the column holds is dropped, not thrown.
+ *
+ * `provider_extra_catalogue.price_minor` is an integer like every money column
+ * here, and the insert covers a whole batch of listings, so a single over-range
+ * extra would cost every one of them its extras and send the batch through the
+ * per-listing replay to find out why. Losing one extra from one boat is the smaller
+ * loss by a very wide margin.
+ */
+function priceableExtras(listingId: string, item: CanonicalListing) {
+  const extras = item.extras.filter(
+    (extra) =>
+      Number.isSafeInteger(extra.priceMinor) && Math.abs(extra.priceMinor) <= MAX_MONEY_MINOR,
+  );
+  if (extras.length !== item.extras.length) {
+    console.warn(
+      `[catalogue] listing ${listingId}: dropped ${item.extras.length - extras.length} extra(s) priced beyond price_minor`,
     );
   }
+  return extras;
 }
 
 /**

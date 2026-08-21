@@ -916,6 +916,30 @@ export async function runCatalogueSyncJob(
 
   options.onPhase?.("project");
 
+  /** The run is over and nothing further will land: record why and close the row. */
+  const failRun = async (error: unknown, phase: CatalogueSyncPhase) => {
+    await store.recordError({
+      errorType: toSyncErrorType(error),
+      message: messageOf(error),
+      context: contextOf(error, { phase }),
+    });
+    await store.closeRun({
+      status: "failed",
+      createdCount: ingest.createdCount,
+      updatedCount: ingest.updatedCount,
+      skippedCount: ingest.skippedCount,
+      failedCount: ingest.failedCount + 1,
+      finishedAt: now(),
+    });
+
+    return {
+      ...ingest,
+      ...empty,
+      status: "failed" as const,
+      failedCount: ingest.failedCount + 1,
+    };
+  };
+
   let written: Awaited<ReturnType<typeof writeCanonicalCatalogue>>;
   try {
     const records = await loadProviderRecordSet(db, providerId);
@@ -936,26 +960,7 @@ export async function runCatalogueSyncJob(
       now: now(),
     });
   } catch (error) {
-    await store.recordError({
-      errorType: toSyncErrorType(error),
-      message: messageOf(error),
-      context: contextOf(error, { phase: "project" }),
-    });
-    await store.closeRun({
-      status: "failed",
-      createdCount: ingest.createdCount,
-      updatedCount: ingest.updatedCount,
-      skippedCount: ingest.skippedCount,
-      failedCount: ingest.failedCount + 1,
-      finishedAt: now(),
-    });
-
-    return {
-      ...ingest,
-      ...empty,
-      status: "failed",
-      failedCount: ingest.failedCount + 1,
-    };
+    return await failRun(error, "project");
   }
 
   /*
@@ -977,18 +982,6 @@ export async function runCatalogueSyncJob(
         listingIds: written.touchedListingIds,
         loadSeasonalPrices: (listingIds) => provider.loadSeasonalPrices(listingIds),
       });
-
-      /*
-       * Rebuilt again, because phase B already rebuilt these documents and did it
-       * before the rates existed. `bookable_from` and the card's "from" price are
-       * materialised from `listing_price_period`, so a first run would otherwise
-       * publish a boat whose detail-page calendar opens and whose card beside it
-       * reports no availability - and it would stay that way until some later run
-       * happened to rebuild the document for another reason.
-       */
-      if (pricePeriods > 0) {
-        await rebuildSearchReadModelsAfterSync(db, { listingIds: written.touchedListingIds });
-      }
     } catch (error) {
       priceFailures = 1;
       await store.recordError({
@@ -997,6 +990,31 @@ export async function runCatalogueSyncJob(
         context: contextOf(error, { phase: "prices" }),
       });
     }
+  }
+
+  /*
+   * The search documents, once, and last.
+   *
+   * `bookable_from` and the card's "from" figure are materialised from
+   * `listing_price_period`, so a rebuild that runs before phase C describes a boat
+   * the vendor has priced as one with no season open. That used to be handled by
+   * rebuilding twice - once to close the projection, once more after the rates - and
+   * a full rebuild over eleven thousand listings is not a thing to do twice to
+   * publish one correct set of documents.
+   *
+   * It runs even when the price phase failed. Everything phase B wrote is still
+   * correct and still invisible until its document exists, and the rows this reads
+   * are last night's prices, which is exactly what the failed phase left in place.
+   *
+   * What this does give up is a crash between the projection and here: the run dies
+   * with the documents unrebuilt, where before phase B had already published them.
+   * The run is a failure at that point either way, and the next one rebuilds the
+   * same set.
+   */
+  try {
+    await rebuildSearchReadModelsAfterSync(db, { listingIds: written.rebuildListingIds });
+  } catch (error) {
+    return await failRun(error, "project");
   }
 
   /*

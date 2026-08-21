@@ -6,7 +6,8 @@ import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../registry";
-import { chunked, ROW_CHUNK } from "../shared/chunks";
+import { chunked } from "../shared/chunks";
+import { runPooled } from "../shared/pooled";
 
 /**
  * The provider's published rates, written on the catalogue's cadence.
@@ -23,6 +24,26 @@ import { chunked, ROW_CHUNK } from "../shared/chunks";
  * behaviour, and a card still quotes "from" off them. They are simply refreshed once
  * a day with the rest of the catalogue instead of once an hour.
  */
+
+/**
+ * Rows per `listing_price_period` insert, well above the shared `ROW_CHUNK`.
+ *
+ * That constant is sized for the widest table in the sync at thirteen bound
+ * parameters a row; this one binds eight, so Postgres's 65535 allows eight
+ * thousand rather than five hundred. The difference is not academic here: a
+ * Booking Manager sweep is a hundred-odd charter weeks for eleven thousand boats,
+ * and at 500 a statement that is two thousand sequential round trips to restate a
+ * price list the vendor has not touched since the night before.
+ */
+const PRICE_ROW_CHUNK = 4000;
+
+/**
+ * Chunks in flight at once. Deliberately short of the ten clients node-postgres
+ * pools by default: the catalogue run's progress poller and its error recorder
+ * each need one, and a writer that takes the pool to its ceiling makes them wait
+ * on a price list.
+ */
+const PRICE_WRITE_CONCURRENCY = 4;
 
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO yyyy-MM-dd date");
 
@@ -163,7 +184,10 @@ export function createDrizzlePricePeriodStore(options: {
       const found = new Map<string, string | null>();
       if (listingIds.length === 0) return found;
 
-      for (const chunk of chunked(listingIds)) {
+      // Chunked for the `IN (...)` ceiling, overlapped because the chunks are
+      // independent reads: eleven thousand listings is a dozen of these, and there
+      // is no reason for the twelfth to wait on the first.
+      await runPooled(chunked(listingIds), PRICE_WRITE_CONCURRENCY, async (chunk) => {
         const rows = await db
           .select({ listingId: listingSource.listingId, listingSourceId: listingSource.id })
           .from(listingSource)
@@ -180,7 +204,7 @@ export function createDrizzlePricePeriodStore(options: {
         for (const row of rows) {
           if (row.listingId) found.set(row.listingId, row.listingSourceId);
         }
-      }
+      });
 
       return found;
     },
@@ -196,7 +220,12 @@ export function createDrizzlePricePeriodStore(options: {
       }
       if (rows.length === 0) return 0;
 
-      for (const chunk of chunked(rows, ROW_CHUNK)) {
+      /*
+       * Chunks are disjoint on the conflict target - `dedupePricePeriodRows` keyed
+       * them before they were split - so two of them in flight cannot contend for a
+       * row, and the order they land in is not observable.
+       */
+      await runPooled(chunked(rows, PRICE_ROW_CHUNK), PRICE_WRITE_CONCURRENCY, async (chunk) => {
         await db
           .insert(listingPricePeriod)
           .values(chunk)
@@ -212,9 +241,25 @@ export function createDrizzlePricePeriodStore(options: {
               currency: sql`excluded.currency`,
               updatedAt: sql`now()`,
             },
+            /*
+             * A published season's price list is the same list it was last night, so
+             * without this the nightly run rewrites a million rows to restate figures
+             * that have not moved - a million dead tuples, every index on the table
+             * rewritten with them, and autovacuum left to clean up after a write that
+             * changed nothing. Postgres skips the row entirely when this is false.
+             */
+            setWhere: sql`${listingPricePeriod.priceMinor} is distinct from excluded.price_minor
+              or ${listingPricePeriod.currency} is distinct from excluded.currency`,
           });
-      }
+      });
 
+      /*
+       * Periods in the price list, not rows Postgres actually rewrote. The two used
+       * to be the same number and are not since `setWhere`; reporting the second
+       * would collapse `pricePeriods` to near zero on every run after the first,
+       * which reads as a sync that has stopped working rather than as one whose
+       * prices are already correct.
+       */
       return rows.length;
     },
   };
