@@ -32,6 +32,8 @@ export function elementsLocale(locale: Locale): StripeElementLocale {
       return "en";
     case "es":
       return "es";
+    case "de":
+      return "de";
     default:
       return "auto";
   }

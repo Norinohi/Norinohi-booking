@@ -11,7 +11,7 @@ import {
 } from "@yacht-charter/ui/components/data-display/table";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useMoney } from "@/hooks/use-money";
@@ -37,15 +37,17 @@ const SKELETON_WIDTHS = ["w-3/4", "w-24", "w-20", "w-28", "w-16", "w-12"];
 export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount) => void }) {
   const t = useTranslations("Discounts");
   const formatMoney = useMoney();
+  const format = useFormatter();
   const [page, setPage] = useState(1);
 
   const { data, isPending, isError } = useDiscounts({ page });
 
   // Percentage discounts show "10%"; fixed amounts the EUR-formatted value (referrals convention).
+  // `valuePct` is a whole-or-fractional percent (0–100); the locale decides the sign placement.
   const typeValue = (discount: Discount) =>
     discount.type === "percentage"
       ? discount.valuePct !== null
-        ? `${discount.valuePct}%`
+        ? format.number(discount.valuePct / 100, { style: "percent", maximumFractionDigits: 2 })
         : "—"
       : discount.value !== null
         ? formatMoney(discount.value.amountMinor)

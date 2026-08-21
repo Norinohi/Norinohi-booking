@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { BookingSupportScreen } from "@/features/booking";
@@ -14,10 +15,11 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const t = await getTranslations("Seo.Support");
   return buildMetadata({
     locale,
-    title: "Support",
-    description: "Ask us anything about your booking.",
+    title: t("title"),
+    description: t("description"),
     path: "/support",
     noIndex: true,
   });

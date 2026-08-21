@@ -1,12 +1,5 @@
-const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
-
-/**
- * `crewType` is a provider code until the API finds a `facet_media` translation for it, after
- * which it arrives as a display label. Recognising the code is what tells the two apart.
- */
-export function crewKey(value: string | null | undefined): (typeof CREW_KEYS)[number] | null {
-  return CREW_KEYS.find((key) => key === value) ?? null;
-}
+/* Lives in lib so the card mappers can share it; re-exported here for the detail route's SEO copy. */
+export { crewKey } from "@/lib/crew-label";
 
 /**
  * Joins sentences while they fit, so a description ends on a full stop rather than mid-word.

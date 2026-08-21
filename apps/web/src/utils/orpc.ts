@@ -6,6 +6,7 @@ import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { getQueryErrorLabels } from "@/lib/query-error-labels";
 import { isBrowser } from "@/utils/runtime";
 
 export const QUERY_DEFAULTS = { queries: { staleTime: 60_000 } } as const;
@@ -19,9 +20,11 @@ export function createQueryClient() {
            falls back to sign-in or a contact form — passes `meta: { silent: true }`, because a
            toast on top of the state that already explains it is noise. */
         if (query.meta?.silent === true) return;
-        toast.error(`Error: ${error.message}`, {
+        const labels = getQueryErrorLabels();
+        toast.error(labels.title, {
+          description: error.message,
           action: {
-            label: "retry",
+            label: labels.retry,
             onClick: () => {
               query.invalidate();
             },

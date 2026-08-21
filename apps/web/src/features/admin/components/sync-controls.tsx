@@ -35,6 +35,7 @@ const CAPABILITY_KEYS = [
 
 export default function SyncControls() {
   const t = useTranslations("Admin.Sync.controls");
+  const tProviders = useTranslations("Admin.providers");
   const [provider, setProvider] = useState(ALL);
   const catalogue = useStartSync("catalogue");
   const availability = useStartSync("availability");
@@ -71,7 +72,7 @@ export default function SyncControls() {
             onValueChange={setProvider}
             options={[
               { value: ALL, label: t("allProviders") },
-              ...PROVIDERS.map((key) => ({ value: key, label: key })),
+              ...PROVIDERS.map((key) => ({ value: key, label: tProviders(key) })),
             ]}
           />
         </div>
@@ -103,7 +104,7 @@ export default function SyncControls() {
           {/* Named, because the chips describe whichever adapter PROVIDER_MODE selected for
               checkout — not the provider chosen in the sync dropdown above. */}
           <span className="text-sm leading-4.5 font-medium text-natural-500">
-            {t("capabilities", { provider: capabilities.provider })}
+            {t("capabilities", { provider: tProviders(capabilities.provider) })}
           </span>
           {CAPABILITY_KEYS.map((key) => (
             <Chip key={key} variant={capabilities[key] ? "success" : "outline"}>

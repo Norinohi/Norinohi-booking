@@ -525,6 +525,41 @@
     "countryPicker": {
       "search": "Search countries",
       "empty": "No countries match that"
+    },
+    "errors": {
+      "requestFailed": "Something went wrong",
+      "retry": "Retry"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you are looking for doesn't exist or has been moved.",
+      "home": "Back to home",
+      "browse": "Browse yachts"
+    },
+    "error": {
+      "title": "Something went wrong",
+      "description": "We couldn't load this page. Please try again, or come back in a moment.",
+      "retry": "Try again",
+      "home": "Back to home"
+    },
+    "ui": {
+      "close": "Close",
+      "previousPage": "Go to previous page",
+      "nextPage": "Go to next page",
+      "pagination": "Pagination",
+      "breadcrumb": "Breadcrumb",
+      "previousPhoto": "Previous photo",
+      "nextPhoto": "Next photo",
+      "goToPhoto": "Go to photo {index} of {total}",
+      "showPhoto": "Show photo {index}",
+      "clear": "Clear {label}",
+      "noOptions": "No options",
+      "noMatches": "No matches",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "rating": "Rating {rating} out of {max}"
     }
   },
   "Filters": {
@@ -1277,7 +1312,8 @@
       "search": "Search",
       "noLocations": "No matching destinations",
       "clearLocation": "Clear location"
-    }
+    },
+    "paginationSummary": "Showing {from}-{to} of {total}"
   },
   "YachtsMap": {
     "title": "Yachts on the map",
@@ -1423,6 +1459,14 @@
       "description": "Compare {count, plural, one {# yacht} other {# yachts}} for charter. Filter by dates, guests, cabins and price, then check availability for your trip.",
       "siblings": "Also worth a look",
       "empty": "No boats match right now. Try the full catalogue."
+    },
+    "Support": {
+      "title": "Support",
+      "description": "Ask us anything about your booking."
+    },
+    "Consultation": {
+      "title": "Get in touch",
+      "description": "Book a call or send us a message about your trip."
     }
   },
   "Profile": {
@@ -1489,7 +1533,8 @@
     "emptyDescription": "Start exploring and save your favorites for later",
     "someUnavailable": "Some of your saved yachts are no longer available.",
     "toggleFailed": "Couldn't update your wishlist. Please try again.",
-    "merged": "{count, plural, one {# saved yacht} other {# saved yachts}} added to your account."
+    "merged": "{count, plural, one {# saved yacht} other {# saved yachts}} added to your account.",
+    "paginationSummary": "Showing {from}-{to} of {total}"
   },
   "Auth": {
     "SignIn": {
@@ -1939,11 +1984,11 @@
       "maintenance": {
         "sweep": "Expire stale holds",
         "remind": "Send balance reminders",
-        "swept": "{count} booking(s) expired, {reaped} sync run(s) reaped.",
-        "staleConfirmations": "{count} booking(s) stuck confirming. Ask the provider whether the reservation exists.",
-        "releaseFailures": "{count} provider slot(s) could not be released.",
-        "reminded": "{count} reminder(s) sent.",
-        "remindSkipped": "{count} booking(s) have no email address to send to.",
+        "swept": "{count, plural, one {# booking expired} other {# bookings expired}}, {reaped, plural, one {# sync run reaped} other {# sync runs reaped}}.",
+        "staleConfirmations": "{count, plural, one {# booking is stuck confirming} other {# bookings are stuck confirming}}. Ask the provider whether the reservation exists.",
+        "releaseFailures": "{count, plural, one {# provider slot could not be released} other {# provider slots could not be released}}.",
+        "reminded": "{count, plural, one {# reminder sent} other {# reminders sent}}.",
+        "remindSkipped": "{count, plural, one {# booking has no email address to send to} other {# bookings have no email address to send to}}.",
         "hint": "Both run on a schedule already. Running one by hand is safe: expiries are compare-and-set, and each installment is only ever reminded once."
       },
       "filters": {
@@ -1977,10 +2022,10 @@
         "partial": "Partial"
       },
       "counts": {
-        "created": "created",
-        "updated": "updated",
-        "skipped": "skipped",
-        "failed": "failed"
+        "created": "{count, plural, one {# created} other {# created}}",
+        "updated": "{count, plural, one {# updated} other {# updated}}",
+        "skipped": "{count, plural, one {# skipped} other {# skipped}}",
+        "failed": "{count, plural, one {# failed} other {# failed}}"
       },
       "empty": "No sync runs yet",
       "error": "Couldn't load sync runs",
@@ -2194,12 +2239,7 @@
         "confirm": "Publish drafts",
         "publishing": "Publishing...",
         "published": "{count, plural, =0 {No drafts left to publish for {provider}.} one {# draft published for {provider}.} other {# drafts published for {provider}.}}",
-        "failed": "Couldn't publish the drafts",
-        "provider": {
-          "mock": "Mock",
-          "booking_manager": "Booking Manager",
-          "nausys": "NauSYS"
-        }
+        "failed": "Couldn't publish the drafts"
       },
       "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar."
     },
@@ -2302,7 +2342,7 @@
         "refunding": "Refunding…",
         "refunded": "{amount} returned.",
         "partial": "{amount} returned. {outstanding} still owed back.",
-        "manualPending": "Card payments returned. {count} bank transfer(s) still have to be sent by hand.",
+        "manualPending": "Card payments returned. {count, plural, one {# bank transfer still has} other {# bank transfers still have}} to be sent by hand.",
         "failed": "Could not process the refund."
       }
     },
@@ -2311,7 +2351,7 @@
       "staffOnly": "Staff view — this is a customer's booking. Do not share this page.",
       "error": "Could not load this booking.",
       "guestAccount": "Guest account",
-      "guests": "{count} guests",
+      "guests": "{count, plural, one {# guest} other {# guests}}",
       "noReservationId": "No reservation id yet",
       "outstanding": "{amount} outstanding",
       "dueAtCheckIn": "{amount} due at the marina",
@@ -2349,6 +2389,9 @@
         "methods": {
           "card": "Card",
           "transfer": "Bank transfer"
+        },
+        "disputeStatus": {
+          "open": "open"
         }
       },
       "schedule": {
@@ -2357,7 +2400,13 @@
         "amount": "Amount",
         "dueAt": "Due",
         "status": "Status",
-        "empty": "No schedule on this booking."
+        "empty": "No schedule on this booking.",
+        "statuses": {
+          "pending": "Pending",
+          "paid": "Paid",
+          "cancelled": "Cancelled",
+          "refunded": "Refunded"
+        }
       },
       "priceLines": {
         "title": "Price breakdown"
@@ -2369,6 +2418,11 @@
         "excludedAt": "Excluded from the queues and totals {at}",
         "help": "An excluded booking keeps its status, its payments and its provider reservation. It only stops being counted by staff queues and money totals."
       }
+    },
+    "providers": {
+      "mock": "Mock",
+      "booking_manager": "Booking Manager",
+      "nausys": "NauSYS"
     }
   }
 }

@@ -525,6 +525,41 @@
     "countryPicker": {
       "search": "Buscar países",
       "empty": "Ningún país coincide"
+    },
+    "errors": {
+      "requestFailed": "Algo salió mal",
+      "retry": "Reintentar"
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "description": "La página que buscas no existe o se ha movido.",
+      "home": "Volver al inicio",
+      "browse": "Ver yates"
+    },
+    "error": {
+      "title": "Algo salió mal",
+      "description": "No hemos podido cargar esta página. Inténtalo de nuevo o vuelve en un momento.",
+      "retry": "Intentar de nuevo",
+      "home": "Volver al inicio"
+    },
+    "ui": {
+      "close": "Cerrar",
+      "previousPage": "Ir a la página anterior",
+      "nextPage": "Ir a la página siguiente",
+      "pagination": "Paginación",
+      "breadcrumb": "Ruta de navegación",
+      "previousPhoto": "Foto anterior",
+      "nextPhoto": "Foto siguiente",
+      "goToPhoto": "Ir a la foto {index} de {total}",
+      "showPhoto": "Mostrar la foto {index}",
+      "clear": "Borrar {label}",
+      "noOptions": "Sin opciones",
+      "noMatches": "Sin coincidencias",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "previousMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "rating": "Valoración {rating} de {max}"
     }
   },
   "Filters": {
@@ -1277,7 +1312,8 @@
       "search": "Buscar",
       "noLocations": "No hay destinos coincidentes",
       "clearLocation": "Borrar destino"
-    }
+    },
+    "paginationSummary": "Mostrando {from}-{to} de {total}"
   },
   "YachtsMap": {
     "title": "Yates en el mapa",
@@ -1423,6 +1459,14 @@
       "description": "Compara {count, plural, one {# yate} other {# yates}} de alquiler. Filtra por fechas, huéspedes, camarotes y precio, y comprueba la disponibilidad.",
       "siblings": "También te puede interesar",
       "empty": "Ahora mismo no hay barcos que coincidan. Prueba el catálogo completo."
+    },
+    "Support": {
+      "title": "Soporte",
+      "description": "Pregúntanos lo que quieras sobre tu reserva."
+    },
+    "Consultation": {
+      "title": "Contáctanos",
+      "description": "Reserva una llamada o envíanos un mensaje sobre tu viaje."
     }
   },
   "Profile": {
@@ -1489,7 +1533,8 @@
     "emptyDescription": "Empieza a explorar y guarda tus favoritos para más adelante",
     "someUnavailable": "Algunos de tus yates guardados ya no están disponibles.",
     "toggleFailed": "No se pudieron actualizar tus favoritos. Inténtalo de nuevo.",
-    "merged": "Se {count, plural, one {añadió # yate guardado} other {añadieron # yates guardados}} a tu cuenta."
+    "merged": "Se {count, plural, one {añadió # yate guardado} other {añadieron # yates guardados}} a tu cuenta.",
+    "paginationSummary": "Mostrando {from}-{to} de {total}"
   },
   "Auth": {
     "SignIn": {
@@ -1939,11 +1984,11 @@
       "maintenance": {
         "sweep": "Caducar reservas provisionales",
         "remind": "Enviar recordatorios de saldo",
-        "swept": "{count} reserva(s) caducada(s), {reaped} ejecución(es) de sincronización recuperada(s).",
-        "staleConfirmations": "{count} reserva(s) atascada(s) al confirmar. Pregunta al proveedor si la reserva existe.",
-        "releaseFailures": "No se pudieron liberar {count} espacio(s) del proveedor.",
-        "reminded": "{count} recordatorio(s) enviado(s).",
-        "remindSkipped": "{count} reserva(s) no tienen dirección de correo.",
+        "swept": "{count, plural, one {# reserva caducada} other {# reservas caducadas}}, {reaped, plural, one {# ejecución de sincronización recuperada} other {# ejecuciones de sincronización recuperadas}}.",
+        "staleConfirmations": "{count, plural, one {# reserva atascada al confirmar} other {# reservas atascadas al confirmar}}. Pregunta al proveedor si la reserva existe.",
+        "releaseFailures": "{count, plural, one {No se pudo liberar # espacio del proveedor} other {No se pudieron liberar # espacios del proveedor}}.",
+        "reminded": "{count, plural, one {# recordatorio enviado} other {# recordatorios enviados}}.",
+        "remindSkipped": "{count, plural, one {# reserva no tiene dirección de correo} other {# reservas no tienen dirección de correo}}.",
         "hint": "Ambos ya se ejecutan de forma programada. Hacerlo a mano es seguro: las caducidades son compare-and-set y cada plazo solo se recuerda una vez."
       },
       "filters": {
@@ -1977,10 +2022,10 @@
         "partial": "Parcial"
       },
       "counts": {
-        "created": "creados",
-        "updated": "actualizados",
-        "skipped": "omitidos",
-        "failed": "fallidos"
+        "created": "{count, plural, one {# creado} other {# creados}}",
+        "updated": "{count, plural, one {# actualizado} other {# actualizados}}",
+        "skipped": "{count, plural, one {# omitido} other {# omitidos}}",
+        "failed": "{count, plural, one {# fallido} other {# fallidos}}"
       },
       "empty": "Todavía no hay sincronizaciones",
       "error": "No se pudieron cargar las sincronizaciones",
@@ -2194,12 +2239,7 @@
         "confirm": "Publicar borradores",
         "publishing": "Publicando...",
         "published": "{count, plural, =0 {No quedan borradores por publicar de {provider}.} one {# borrador publicado de {provider}.} other {# borradores publicados de {provider}.}}",
-        "failed": "No se pudieron publicar los borradores",
-        "provider": {
-          "mock": "Mock",
-          "booking_manager": "Booking Manager",
-          "nausys": "NauSYS"
-        }
+        "failed": "No se pudieron publicar los borradores"
       },
       "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío."
     },
@@ -2302,7 +2342,7 @@
         "refunding": "Reembolsando…",
         "refunded": "{amount} devuelto.",
         "partial": "{amount} devuelto. Quedan {outstanding} por devolver.",
-        "manualPending": "Pagos con tarjeta devueltos. Quedan {count} transferencia(s) por enviar a mano.",
+        "manualPending": "Pagos con tarjeta devueltos. {count, plural, one {Queda # transferencia} other {Quedan # transferencias}} por enviar a mano.",
         "failed": "No se pudo procesar el reembolso."
       }
     },
@@ -2311,7 +2351,7 @@
       "staffOnly": "Vista de personal: esta es la reserva de un cliente. No compartas esta página.",
       "error": "No se pudo cargar esta reserva.",
       "guestAccount": "Cuenta de invitado",
-      "guests": "{count} huéspedes",
+      "guests": "{count, plural, one {# huésped} other {# huéspedes}}",
       "noReservationId": "Aún sin id de reserva",
       "outstanding": "{amount} pendiente",
       "dueAtCheckIn": "{amount} a pagar en la marina",
@@ -2349,6 +2389,9 @@
         "methods": {
           "card": "Tarjeta",
           "transfer": "Transferencia"
+        },
+        "disputeStatus": {
+          "open": "abierta"
         }
       },
       "schedule": {
@@ -2357,7 +2400,13 @@
         "amount": "Importe",
         "dueAt": "Vence",
         "status": "Estado",
-        "empty": "Esta reserva no tiene calendario."
+        "empty": "Esta reserva no tiene calendario.",
+        "statuses": {
+          "pending": "Pendiente",
+          "paid": "Pagado",
+          "cancelled": "Cancelado",
+          "refunded": "Reembolsado"
+        }
       },
       "priceLines": {
         "title": "Desglose de precio"
@@ -2369,6 +2418,11 @@
         "excludedAt": "Excluida de las colas y los totales el {at}",
         "help": "Una reserva excluida conserva su estado, sus pagos y su reserva con el proveedor. Solo deja de contarse en las colas de personal y en los totales de dinero."
       }
+    },
+    "providers": {
+      "mock": "Mock",
+      "booking_manager": "Booking Manager",
+      "nausys": "NauSYS"
     }
   }
 }

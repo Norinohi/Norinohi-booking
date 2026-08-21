@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import { Image } from "@/components/shared/data-display/image";
 
 import type { ComparisonRow } from "../lib/duplicates";
-import type { DuplicateSide as Side } from "../types";
+import { type DuplicateSide as Side, toProviderKey } from "../types";
 
 /*
  * DuplicateSide — one half of a duplicate pair: its image, title and provider chip over the
@@ -37,7 +37,10 @@ export default function DuplicateSide({
   keepDisabled?: boolean;
 }) {
   const t = useTranslations("Admin.Duplicates");
+  const tProviders = useTranslations("Admin.providers");
   const listing = side.listing;
+  /* A connector key this build ships gets its name; any other code is shown as stored. */
+  const providerKey = toProviderKey(side.provider);
 
   return (
     <div className="flex min-w-0 flex-col gap-4 rounded-lg border border-natural-100 p-4">
@@ -45,7 +48,7 @@ export default function DuplicateSide({
         <span className="text-sm leading-[1.3] font-semibold text-natural-500">
           {which === "a" ? t("sideA") : t("sideB")}
         </span>
-        <Chip variant="neutral">{side.provider}</Chip>
+        <Chip variant="neutral">{providerKey ? tProviders(providerKey) : side.provider}</Chip>
       </div>
 
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-natural-50">

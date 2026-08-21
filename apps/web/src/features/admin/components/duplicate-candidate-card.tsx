@@ -12,10 +12,10 @@ import {
   useConfirmDuplicate,
   useRejectDuplicate,
 } from "../hooks/use-duplicates";
-import type { DuplicateCandidate } from "../types";
+import { type DuplicateCandidate, toProviderKey } from "../types";
 import DuplicateSide from "./duplicate-side";
 
-/* The two comparison rows whose raw value is a code with a translated label. */
+/* The comparison rows whose raw value is a code with a translated label; `provider` is the third. */
 const LISTING_STATUSES = ["draft", "published", "hidden"] as const;
 const MATCH_STATUSES = ["unmatched", "auto", "confirmed", "rejected"] as const;
 
@@ -30,6 +30,7 @@ const MATCH_STATUSES = ["unmatched", "auto", "confirmed", "rejected"] as const;
 
 export default function DuplicateCandidateCard({ candidate }: { candidate: DuplicateCandidate }) {
   const t = useTranslations("Admin.Duplicates");
+  const tProviders = useTranslations("Admin.providers");
   const format = useFormatter();
   const confirmDuplicate = useConfirmDuplicate();
   const rejectDuplicate = useRejectDuplicate();
@@ -41,6 +42,10 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
 
   const value = (key: ComparisonKey, raw: string | number | null): string => {
     if (raw === null) return EMPTY_VALUE;
+    if (key === "provider") {
+      const provider = toProviderKey(String(raw));
+      return provider ? tProviders(provider) : String(raw);
+    }
     if (key === "status") {
       const status = LISTING_STATUSES.find((option) => option === raw);
       return status ? t(`listingStatus.${status}`) : String(raw);

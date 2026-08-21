@@ -22,6 +22,7 @@ import type {
   BoatCardSpec,
 } from "@/components/shared/data-display/boat-card";
 import type { Marina } from "@/components/shared/overlay/marina-popover";
+import { type CrewTranslator, crewLabel } from "@/lib/crew-label";
 import { slugToLabel } from "@/lib/slug-to-label";
 
 /*
@@ -155,7 +156,11 @@ function boatCardStats(t: BoatCardTranslator, stats: BoatCardListing["bookingSta
 }
 
 /** The BoatCard fields that depend only on the boat — shared by the catalogue and My Bookings. */
-export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing) {
+export function boatCardIdentity(
+  t: BoatCardTranslator,
+  tCrew: CrewTranslator,
+  listing: BoatCardListing,
+) {
   return {
     id: listing.id,
     images: listing.gallery.length ? listing.gallery : listing.mainImage ? [listing.mainImage] : [],
@@ -166,7 +171,7 @@ export function boatCardIdentity(t: BoatCardTranslator, listing: BoatCardListing
     // only place that distinction can be put back.
     rating: listing.rating > 0 ? String(listing.rating) : undefined,
     charterType: listing.category ?? "",
-    crew: listing.crewType ? slugToLabel(listing.crewType) : "",
+    crew: listing.crewType ? crewLabel(tCrew, listing.crewType) : "",
     specs: boatSpecs(t, listing.specs),
     amenities: amenityItems(listing.amenities),
     stats: boatCardStats(t, listing.bookingStats),

@@ -6,6 +6,7 @@ import { CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 
 /*
  * MultiSelect — checkbox picker built on base-ui Combobox (`multiple`), so the
@@ -22,10 +23,13 @@ export type MultiSelectProps = {
   onValueChange: (value: string[]) => void;
   placeholder: string;
   searchPlaceholder?: string;
+  /** Shown when the filter matches nothing; falls back to `UiLabelsProvider`. */
   emptyMessage?: string;
   icon?: ReactNode;
   /** Shows a reset button once something is selected. */
   clearable?: boolean;
+  /** Accessible name of the reset button; falls back to `UiLabelsProvider` with `placeholder`. */
+  clearLabel?: string;
   disabled?: boolean;
   className?: string;
   contentClassName?: string;
@@ -37,13 +41,15 @@ function MultiSelect({
   onValueChange,
   placeholder,
   searchPlaceholder,
-  emptyMessage = "No matches",
+  emptyMessage,
   icon,
   clearable = true,
+  clearLabel,
   disabled,
   className,
   contentClassName,
 }: MultiSelectProps) {
+  const uiLabels = useUiLabels();
   const labels = new Map(options.map((option) => [option.value, option.label]));
   const selected = value.filter((item) => labels.has(item));
   const showClear = clearable && selected.length > 0 && !disabled;
@@ -86,7 +92,10 @@ function MultiSelect({
         </Combobox.Trigger>
 
         {showClear ? (
-          <FieldClear label={`Clear ${placeholder}`} onClear={() => onValueChange([])} />
+          <FieldClear
+            label={clearLabel ?? uiLabels.clear(placeholder)}
+            onClear={() => onValueChange([])}
+          />
         ) : null}
       </div>
 
@@ -113,7 +122,7 @@ function MultiSelect({
             ) : null}
 
             <Combobox.Empty className="px-4 py-3 text-base text-natural-500 empty:m-0 empty:p-0">
-              {emptyMessage}
+              {emptyMessage ?? uiLabels.noMatches}
             </Combobox.Empty>
 
             <Combobox.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain">

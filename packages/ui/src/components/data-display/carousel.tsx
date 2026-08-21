@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
@@ -118,6 +119,7 @@ function CarouselBars({
   ...props
 }: React.ComponentProps<"div"> & { barClassName?: string; maxBars?: number }) {
   const { api, selected, snapCount } = useCarousel();
+  const labels = useUiLabels();
   if (snapCount <= 1) return null;
 
   const visible = Math.min(maxBars, snapCount);
@@ -149,7 +151,7 @@ function CarouselBars({
           <button
             key={index}
             type="button"
-            aria-label={`Go to photo ${index + 1} of ${snapCount}`}
+            aria-label={labels.goToPhoto(index + 1, snapCount)}
             aria-current={index === selected || undefined}
             tabIndex={outside ? -1 : undefined}
             onClick={() => api?.scrollTo(index)}
@@ -174,13 +176,14 @@ function CarouselArrow({
   ...props
 }: React.ComponentProps<"button"> & { direction: "prev" | "next" }) {
   const { api, canScrollPrev, canScrollNext } = useCarousel();
+  const labels = useUiLabels();
   const isPrev = direction === "prev";
 
   return (
     <button
       type="button"
       data-slot={`carousel-${direction}`}
-      aria-label={isPrev ? "Previous photo" : "Next photo"}
+      aria-label={isPrev ? labels.previousPhoto : labels.nextPhoto}
       disabled={isPrev ? !canScrollPrev : !canScrollNext}
       onClick={() => (isPrev ? api?.scrollPrev() : api?.scrollNext())}
       className={cn(
@@ -256,6 +259,7 @@ function CarouselThumbs({
   itemClassName?: string;
 }) {
   const { api, selected } = useCarousel();
+  const labels = useUiLabels();
   const [thumbsRef, thumbsApi] = useEmblaCarousel({
     containScroll: "keepSnaps",
     dragFree: true,
@@ -277,7 +281,7 @@ function CarouselThumbs({
           <button
             key={index}
             type="button"
-            aria-label={`Show photo ${index + 1}`}
+            aria-label={labels.showPhoto(index + 1)}
             aria-current={index === selected || undefined}
             onClick={() => api?.scrollTo(index)}
             className={cn(

@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 
 /*
  * Breadcrumb — Figma "Breadcrumbs" (node 811-169083).
@@ -6,7 +9,8 @@ import { cn } from "@yacht-charter/ui/lib/utils";
  * current page = bold foreground.
  */
 function Breadcrumb(props: React.ComponentProps<"nav">) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
+  const labels = useUiLabels();
+  return <nav aria-label={labels.breadcrumb} data-slot="breadcrumb" {...props} />;
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {

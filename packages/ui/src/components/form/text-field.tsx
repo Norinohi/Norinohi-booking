@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import { cva, type VariantProps } from "class-variance-authority";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import * as React from "react";
@@ -95,10 +96,13 @@ function TextField(props: TextFieldProps) {
     id: idProp,
     multiline = false,
     disabled,
-    showPasswordLabel = "Show password",
-    hidePasswordLabel = "Hide password",
+    showPasswordLabel: showPasswordProp,
+    hidePasswordLabel: hidePasswordProp,
     ...rest
   } = props;
+  const labels = useUiLabels();
+  const showPasswordLabel = showPasswordProp ?? labels.showPassword;
+  const hidePasswordLabel = hidePasswordProp ?? labels.hidePassword;
 
   const invalid = rest["aria-invalid"] === true || rest["aria-invalid"] === "true";
   const status = statusProp ?? (invalid ? "error" : "default");
