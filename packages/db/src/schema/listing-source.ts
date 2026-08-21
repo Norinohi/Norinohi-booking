@@ -109,6 +109,36 @@ export const providerExtraCatalogue = pgTable(
   ],
 );
 
+/**
+ * Per-locale display names for a provider's priced extras.
+ *
+ * Keyed by the extra's identity in the provider's own id space rather than by a
+ * `provider_extra_catalogue` row, because that table holds one row per listing per season
+ * per duration band: one boat cleaning fee is thousands of rows naming the same service.
+ * NauSYS names its services and equipment in eighteen languages, so this is a dictionary of
+ * about eighteen hundred entries behind all of them.
+ *
+ * A missing row leaves `provider_extra_catalogue.name` in place, so a locale the provider
+ * does not name degrades to the vendor's own wording rather than to a blank line item.
+ */
+export const providerExtraTranslation = pgTable(
+  "provider_extra_translation",
+  {
+    id: id("pxtt"),
+    /* Mirrors provider_extra_catalogue.source, so two providers' id spaces stay apart. */
+    source: text("source").notNull(),
+    kind: providerExtraKind("kind").notNull(),
+    externalId: text("external_id").notNull(),
+    locale: text("locale").notNull(),
+    label: text("label").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("provider_extra_translation_uq").on(t.source, t.kind, t.externalId, t.locale),
+    index("provider_extra_translation_lookup_idx").on(t.source, t.kind, t.externalId),
+  ],
+);
+
 export const listingSource = pgTable(
   "listing_source",
   {

@@ -12,6 +12,7 @@ import {
   listingDuplicateCandidate,
   listingSource,
   providerExtraCatalogue,
+  providerExtraTranslation,
 } from "@yacht-charter/db/schema/listing-source";
 import { listingText } from "@yacht-charter/db/schema/listing-text";
 import { operator } from "@yacht-charter/db/schema/operator";
@@ -199,6 +200,8 @@ export interface CatalogueWriteSummary {
    * what the sync had to say rather than what it changed.
    */
   facetTranslations: number;
+  /** The same, for the priced extras dictionary. Nothing editorial writes there. */
+  extraTranslations: number;
   touchedListingIds: string[];
   /**
    * Every listing whose search document this run invalidated: the ones it touched,
@@ -355,6 +358,7 @@ export async function writeCanonicalCatalogue(
   }
 
   const facetTranslations = await writeFacetTranslations(db, catalogue);
+  const extraTranslations = await writeExtraTranslations(db, providerKey, catalogue);
 
   const yachtRecordIds = await loadYachtRecordIds(db, providerId);
   const existingLinks = await loadExistingLinks(db, providerId);
@@ -369,6 +373,7 @@ export async function writeCanonicalCatalogue(
     listingsHidden: 0,
     duplicateCandidates: 0,
     facetTranslations,
+    extraTranslations,
     touchedListingIds: [],
     rebuildListingIds: [],
   };
@@ -779,6 +784,68 @@ export async function writeFacetTranslations(
         target: [facetMediaTranslation.facetMediaId, facetMediaTranslation.locale],
         set: { label: sql`excluded.label`, updatedAt: sql`now()` },
         setWhere: sql`${facetMediaTranslation.source} = 'provider'`,
+      });
+  }
+
+  return rows.length;
+}
+
+/**
+ * Publishes the provider's own names for its priced extras.
+ *
+ * Deduplicated to the provider's id space on the way in: extras arrive attached to listings,
+ * and one fleet's boat cleaning is the same service named on every boat in it.
+ *
+ * A plain upsert, unlike the facet writer above. `provider_extra_translation` has no editorial
+ * half to protect, so an upstream rename simply lands.
+ */
+export async function writeExtraTranslations(
+  db: Database,
+  providerKey: ProviderKey,
+  catalogue: CanonicalCatalogue,
+): Promise<number> {
+  type Entry = {
+    kind: CanonicalListing["extras"][number]["kind"];
+    externalId: string;
+    translations: Record<string, string>;
+  };
+
+  const byKey = new Map<string, Entry>();
+  for (const item of catalogue.listings) {
+    for (const extra of item.extras) {
+      const translations = servedLocales(extra.translations);
+      if (!translations) continue;
+      byKey.set(`${extra.kind}:${extra.externalId}`, {
+        kind: extra.kind,
+        externalId: extra.externalId,
+        translations,
+      });
+    }
+  }
+
+  const rows = [...byKey.values()].flatMap((entry) =>
+    Object.entries(entry.translations).map(([locale, label]) => ({
+      source: providerKey,
+      kind: entry.kind,
+      externalId: entry.externalId,
+      locale,
+      label,
+    })),
+  );
+  if (rows.length === 0) return 0;
+
+  for (const chunk of chunked(rows, ROW_CHUNK)) {
+    await db
+      .insert(providerExtraTranslation)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [
+          providerExtraTranslation.source,
+          providerExtraTranslation.kind,
+          providerExtraTranslation.externalId,
+          providerExtraTranslation.locale,
+        ],
+        set: { label: sql`excluded.label`, updatedAt: sql`now()` },
       });
   }
 

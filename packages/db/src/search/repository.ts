@@ -237,6 +237,7 @@ export async function getListingDetailByIdOrSlug(
         kind: string;
         externalId: string;
         label: string;
+        sourceLabel: string;
         obligatory: boolean;
         crewRole: string | null;
         priceMinor: number | null;
@@ -247,20 +248,29 @@ export async function getListingDetailByIdOrSlug(
         oneWayOnly: boolean;
       }>(sql`
       select
-        source,
-        kind,
-        external_id as "externalId",
-        name as label,
-        obligatory,
-        crew_role as "crewRole",
-        price_minor as "priceMinor",
-        price_currency as "priceCurrency",
-        price_measure as "priceMeasure",
-        calculation_type as "calculationType",
-        payable_in_base as "payableInBase",
-        one_way_only as "oneWayOnly"
-      from provider_extra_catalogue
-      where listing_id = ${listing.listingId}
+        extra.source,
+        extra.kind,
+        extra.external_id as "externalId",
+        /* The vendor's own wording in the requested locale, falling back to the name it
+           shipped with the listing. English matches nothing here by design: the fallback
+           already is English. */
+        coalesce(translation.label, extra.name) as label,
+        extra.name as "sourceLabel",
+        extra.obligatory,
+        extra.crew_role as "crewRole",
+        extra.price_minor as "priceMinor",
+        extra.price_currency as "priceCurrency",
+        extra.price_measure as "priceMeasure",
+        extra.calculation_type as "calculationType",
+        extra.payable_in_base as "payableInBase",
+        extra.one_way_only as "oneWayOnly"
+      from provider_extra_catalogue extra
+      left join provider_extra_translation translation
+        on translation.source = extra.source
+        and translation.kind = extra.kind
+        and translation.external_id = extra.external_id
+        and translation.locale = ${locale}
+      where extra.listing_id = ${listing.listingId}
         /*
          * Only fees whose season overlaps what we actually sell.
          *
@@ -272,12 +282,14 @@ export async function getListingDetailByIdOrSlug(
          * sell yet. Rows stating no season are kept at both ends: silence is not an expiry,
          * and a fee somebody still has to pay is the wrong thing to hide.
          */
-        and (season_end is null or season_end >= current_date)
+        and (extra.season_end is null or extra.season_end >= current_date)
         and (
-          season_start is null
-          or season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+          extra.season_start is null
+          or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
         )
-      order by obligatory desc, price_minor, name asc
+      /* Ordered on the vendor's name, not the translated one, so the sections keep the same
+         order in every locale. */
+      order by extra.obligatory desc, extra.price_minor, extra.name asc
     `),
       db.execute<{ id: string; question: string; answer: string }>(sql`
       select id, question, answer
@@ -315,6 +327,7 @@ export async function getListingDetailByIdOrSlug(
   const extras = extraRows.rows.map((item) => ({
     code: `${item.kind}:${item.externalId}`,
     label: item.label,
+    sourceLabel: item.sourceLabel,
     obligatory: item.obligatory,
     crewRole: item.crewRole,
     priceMinor: item.priceMinor,
@@ -1350,26 +1363,28 @@ function isSelectableExtra(source: string, kind: string): boolean {
  * route are - the booking sidebar shows that, priced, off the live offer. Listing all five
  * side by side read as five separate charges totalling 805 euro against a 809 euro boat.
  *
- * Folded on the label because that is the only thing the variants share: the vendor gives them
- * distinct ids and no grouping key of its own.
+ * Folded on the vendor's own name because that is the only thing the variants share: the vendor
+ * gives them distinct ids and no grouping key of its own. Deliberately not the translated label:
+ * each variant is a separate dictionary entry, and one of them missing a locale would split a
+ * fee back into the several rows this exists to merge.
  */
 function foldFeeVariants(
-  items: Parameters<typeof pricedItem>[0][],
+  items: (Parameters<typeof pricedItem>[0] & { sourceLabel: string })[],
   fallbackCurrency: string | null,
 ): ListingPricedItem[] {
   const byLabel = new Map<string, ListingPricedItem>();
 
   for (const item of items) {
     const next = pricedItem(item, fallbackCurrency);
-    const seen = byLabel.get(next.label);
+    const seen = byLabel.get(item.sourceLabel);
     if (!seen) {
-      byLabel.set(next.label, next);
+      byLabel.set(item.sourceLabel, next);
       continue;
     }
 
     const low = Math.min(seen.price.amountMinor, next.price.amountMinor);
     const high = Math.max(seen.priceToMinor ?? seen.price.amountMinor, next.price.amountMinor);
-    byLabel.set(next.label, {
+    byLabel.set(item.sourceLabel, {
       ...(seen.price.amountMinor <= next.price.amountMinor ? seen : next),
       price: { ...seen.price, amountMinor: low },
       priceToMinor: high > low ? high : null,

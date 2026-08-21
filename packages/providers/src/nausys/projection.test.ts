@@ -599,6 +599,14 @@ describe("projectNausysCatalogue", () => {
    * as included.
    */
   describe("extras", () => {
+    it("carries the vendor's own name for the extra in every locale the site serves", () => {
+      const listing = listingOf(maria());
+      const cleaning = listing?.extras.find((extra) => extra.externalId === "52");
+
+      expect(cleaning?.name).toBe("Final cleaning");
+      expect(cleaning?.translations).toEqual({ de: "Endreinigung", es: "Limpieza final" });
+    });
+
     it("reads the obligatory service the vendor prices on the season entry", () => {
       const listing = listingOf(maria());
 

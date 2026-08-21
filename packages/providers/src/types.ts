@@ -522,6 +522,7 @@ export const canonicalExtraSchema = z.object({
   kind: z.enum(["service", "equipment"]),
   externalId: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
   obligatory: z.boolean(),
   priceMinor: z.number().int(),
   priceCurrency: z.string().length(3),

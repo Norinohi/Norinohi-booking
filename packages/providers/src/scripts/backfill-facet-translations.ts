@@ -1,5 +1,6 @@
 /**
- * Fills `facet_media_translation` from provider payloads already on disk.
+ * Fills `facet_media_translation` and `provider_extra_translation` from provider payloads
+ * already on disk.
  *
  * The catalogue sync writes these on every run from now on, but the labels it writes have
  * been arriving since the first import and getting dropped in the projection, so every
@@ -7,8 +8,8 @@
  * stored `provider_raw_payload` rows and writes only the facet translations.
  *
  * No vendor call, so it is safe to run against production during a sync: it reads
- * `provider_record`, writes `facet_media` and `facet_media_translation`, and touches
- * nothing else. Listings, prices and availability are all out of its reach.
+ * `provider_record`, writes the two translation tables plus the `facet_media` rows they hang
+ * off, and touches nothing else. Listings, prices and availability are all out of its reach.
  *
  *   pnpm --filter @yacht-charter/providers facets:backfill
  *   pnpm --filter @yacht-charter/providers facets:backfill -- --apply
@@ -20,6 +21,7 @@ import { createInventoryProvider } from "../registry";
 import {
   facetLabels,
   loadProviderRecordSet,
+  writeExtraTranslations,
   writeFacetTranslations,
 } from "../sync/catalogue-writer";
 import { revalidateCatalogCache } from "../sync/revalidate";
@@ -71,10 +73,24 @@ async function main(): Promise<void> {
         .map(([key, count]) => `${key} ${count}`)
         .join(", ") || "none";
 
-    console.log(`${target.code}: ${labels.length} facets — ${summarise(perKind)}`);
-    console.log(`${target.code}: labels by locale — ${summarise(perLocale)}`);
+    const extras = new Map<string, number>();
+    for (const item of catalogue.listings) {
+      for (const extra of item.extras) {
+        if (!extra.translations) continue;
+        for (const locale of Object.keys(extra.translations)) {
+          extras.set(`${extra.kind}:${extra.externalId}:${locale}`, 1);
+        }
+      }
+    }
 
-    if (apply) written += await writeFacetTranslations(db, catalogue);
+    console.log(`${target.code}: ${labels.length} facets — ${summarise(perKind)}`);
+    console.log(`${target.code}: facet labels by locale — ${summarise(perLocale)}`);
+    console.log(`${target.code}: ${extras.size} extra labels`);
+
+    if (apply) {
+      written += await writeFacetTranslations(db, catalogue);
+      written += await writeExtraTranslations(db, providerKey.data, catalogue);
+    }
   }
 
   if (!apply) {

@@ -111,6 +111,10 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       return label === undefined ? [] : [[String(item.id), label] as const];
     }),
   );
+  /* The same two lists again, in the locales the site serves. Keyed by vendor id rather than
+     by label because that is what the extras on a yacht reference. */
+  const equipmentTranslationsById = localeMapsById(equipment);
+  const serviceTranslationsById = localeMapsById(services);
   const priceMeasureById = new Map(
     priceMeasures.flatMap((item) => {
       const label = name(item.name);
@@ -158,6 +162,8 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
         sailTypeById,
         equipmentNameById,
         serviceNameById,
+        equipmentTranslationsById,
+        serviceTranslationsById,
         priceMeasureById,
       }),
     )
@@ -243,6 +249,8 @@ type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 type ExtraNaming = {
   equipmentNameById: Map<string, string>;
   serviceNameById: Map<string, string>;
+  equipmentTranslationsById: Map<string, Record<string, string>>;
+  serviceTranslationsById: Map<string, Record<string, string>>;
   priceMeasureById: Map<string, string>;
 };
 
@@ -549,6 +557,17 @@ function name(value: JsonField): string | undefined {
  * responses carry es and de on 100% of equipment, services, categories, regions, locations
  * and countries; uk is absent, and ru is deliberately not served in its place.
  */
+function localeMapsById(
+  items: readonly { id: number; name: JsonField }[],
+): Map<string, Record<string, string>> {
+  return new Map(
+    items.flatMap((item) => {
+      const served = translations(item.name);
+      return served === undefined ? [] : [[String(item.id), served] as const];
+    }),
+  );
+}
+
 function translations(value: JsonField): Record<string, string> | undefined {
   const locales = toLocaleMap(value);
   const wanted = Object.entries(locales).filter(([locale]) =>
@@ -640,6 +659,7 @@ function serviceExtraOf(
     kind: "service",
     externalId,
     name: label,
+    translations: context.serviceTranslationsById.get(externalId),
     obligatory: item.obligatory === true,
     priceMinor,
     priceCurrency,
@@ -678,6 +698,7 @@ function equipmentExtraOf(
     kind: "equipment",
     externalId,
     name: label,
+    translations: context.equipmentTranslationsById.get(externalId),
     // Additional equipment carries no obligatory flag; it is an opt-in add-on.
     obligatory: false,
     priceMinor,
