@@ -84,6 +84,10 @@ export const listingPriceListQueryOptions = (input: {
     staleTime: 30_000,
   });
 
+/** The single row behind the Edit Price dialog, addressed by id so it never depends on paging. */
+export const listingPriceQueryOptions = (listingId: string) =>
+  orpc.admin.listingPrice.get.queryOptions({ input: { listingId }, staleTime: 30_000 });
+
 /** The catalogue's category/location dropdown options — changes only on catalogue sync. */
 export const listingPriceFiltersQueryOptions = () =>
   orpc.admin.listingPrice.filters.queryOptions({ input: {}, staleTime: 300_000 });

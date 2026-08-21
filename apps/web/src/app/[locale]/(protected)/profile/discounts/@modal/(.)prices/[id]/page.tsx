@@ -1,7 +1,7 @@
 import Hydrated from "@/components/shared/layout/hydrated";
 
 import { requireStaffPage } from "@/features/admin";
-import { prefetchListingPrices, PriceRouteModal } from "@/features/profile";
+import { prefetchListingPrice, PriceRouteModal } from "@/features/profile";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -13,7 +13,7 @@ export default async function EditPriceModal({ params }: { params: Promise<{ id:
   const { id } = await params;
 
   return (
-    <Hydrated prefetch={prefetchListingPrices}>
+    <Hydrated prefetch={(queryClient) => prefetchListingPrice(queryClient, id)}>
       <PriceRouteModal listingId={id} />
     </Hydrated>
   );

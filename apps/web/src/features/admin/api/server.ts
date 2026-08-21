@@ -4,7 +4,9 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import {
   auditListQueryOptions,
+  BOOKINGS_PAGE_SIZE,
   bookingDetailQueryOptions,
+  bookingQueueQueryOptions,
   duplicateQueueQueryOptions,
   enquiryListQueryOptions,
   invoiceListQueryOptions,
@@ -28,6 +30,16 @@ export function prefetchInbox(queryClient: QueryClient) {
  */
 export function prefetchPayments(queryClient: QueryClient) {
   return queryClient.prefetchQuery(invoiceListQueryOptions({ status: "pending", page: 1 }));
+}
+
+/**
+ * Server prefetch for /staff/bookings: the first page of every booking, unfiltered, which is
+ * the state the table opens in.
+ */
+export function prefetchAdminBookings(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(
+    bookingQueueQueryOptions({ page: 1, pageSize: BOOKINGS_PAGE_SIZE }),
+  );
 }
 
 /** Server prefetch for /staff/bookings/[id]. */

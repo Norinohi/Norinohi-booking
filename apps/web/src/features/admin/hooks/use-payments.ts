@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
 
@@ -37,9 +37,12 @@ export function useInvoices(input: { status?: InvoiceStatus; page: number }) {
 export function useBookingQueue(input: {
   status?: readonly BookingStatus[];
   query?: string;
+  includeExcluded?: boolean;
   page: number;
 }) {
-  return useQuery(bookingQueueQueryOptions(input));
+  /* Kept across a page or filter change so the table does not blank out between fetches;
+     the queues do without it because they are short and rarely paged. */
+  return useQuery({ ...bookingQueueQueryOptions(input), placeholderData: keepPreviousData });
 }
 
 export function useAdminBooking(id: string) {

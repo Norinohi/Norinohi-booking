@@ -11,6 +11,7 @@ import {
   discountQueryOptions,
   listingPriceFiltersQueryOptions,
   listingPriceListQueryOptions,
+  listingPriceQueryOptions,
   profileQueryOptions,
   referralHistoryQueryOptions,
   referralSummaryQueryOptions,
@@ -59,11 +60,7 @@ export function prefetchDiscount(queryClient: QueryClient, id: string) {
   return queryClient.prefetchQuery(discountQueryOptions(id));
 }
 
-/*
- * /profile/discounts/prices/[id] has no single-row endpoint (admin.listingPrice.get does
- * not exist yet), so the standalone price modal reads its row out of a one-page list
- * fetch. Fine for the mock catalogue; revisit when the API grows a get-by-id.
- */
-export function prefetchListingPrices(queryClient: QueryClient) {
-  return queryClient.prefetchQuery(listingPriceListQueryOptions({ page: 1, pageSize: 100 }));
+/** Server prefetch for /profile/discounts/prices/[id] — the one row behind the price modal. */
+export function prefetchListingPrice(queryClient: QueryClient, listingId: string) {
+  return queryClient.prefetchQuery(listingPriceQueryOptions(listingId));
 }

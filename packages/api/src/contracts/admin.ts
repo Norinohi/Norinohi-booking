@@ -455,6 +455,8 @@ export const listingPriceUpdateInputSchema = z
   })
   .superRefine(endsAtNotBeforeStartsAt);
 
+export const listingPriceGetInputSchema = z.object({ listingId: idSchema });
+
 export const listingPriceClearInputSchema = z.object({ listingId: idSchema });
 
 /* --------------------------------------------------- listing administration */

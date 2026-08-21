@@ -870,6 +870,7 @@
       "sync": "Sync History",
       "audit": "Audit Log",
       "inbox": "Inbox",
+      "staffBookings": "Bookings",
       "payments": "Payments",
       "listings": "Listings",
       "sections": {
@@ -1393,6 +1394,10 @@
       "title": "Booking (staff)",
       "description": "Staff view of a customer booking."
     },
+    "StaffBookings": {
+      "title": "Bookings (staff)",
+      "description": "Every booking on the platform, for staff."
+    },
     "CatalogPage": {
       "country": "Yacht Charter in {place}",
       "geo": "Yacht Charter in {place}, {country}",
@@ -1797,6 +1802,45 @@
     }
   },
   "Admin": {
+    "Bookings": {
+      "title": "Bookings",
+      "subtitle": "Every booking on the platform, newest first. Open one to settle it.",
+      "createdAt": "Booked {at}",
+      "excluded": "Not real business",
+      "empty": "No booking matches these filters.",
+      "error": "The bookings could not be loaded.",
+      "filters": {
+        "search": "Search by reference, name or email",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "includeExcluded": "Include bookings marked as test"
+      },
+      "table": {
+        "reference": "Reference",
+        "customer": "Customer",
+        "charter": "Yacht",
+        "dates": "Dates",
+        "total": "Total",
+        "collected": "Collected",
+        "status": "Status"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "QUOTED": "Quoted",
+        "OPTION_PENDING": "Holding",
+        "OPTION_HELD": "Held",
+        "OPTION_EXPIRED": "Hold expired",
+        "QUOTE_EXPIRED": "Quote expired",
+        "PAYMENT_PENDING": "Awaiting payment",
+        "PAYMENT_FAILED": "Payment failed",
+        "CONFIRMING": "Confirming",
+        "CONFIRMED": "Confirmed",
+        "PROVIDER_REJECTED": "Provider refused",
+        "CANCELLED": "Cancelled",
+        "REFUND_PENDING": "Refund due",
+        "REFUNDED": "Refunded"
+      }
+    },
     "Duplicates": {
       "title": "Duplicate Review",
       "subtitle": "Merge the look-alike listings two providers sent for the same yacht.",

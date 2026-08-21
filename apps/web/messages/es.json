@@ -870,6 +870,7 @@
       "sync": "Historial de sincronización",
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
+      "staffBookings": "Reservas",
       "payments": "Pagos",
       "listings": "Anuncios",
       "sections": {
@@ -1393,6 +1394,10 @@
       "title": "Reserva (personal)",
       "description": "Vista de personal de una reserva."
     },
+    "StaffBookings": {
+      "title": "Reservas (personal)",
+      "description": "Todas las reservas de la plataforma, para el personal."
+    },
     "CatalogPage": {
       "country": "Alquiler de yates en {place}",
       "geo": "Alquiler de yates en {place}, {country}",
@@ -1797,6 +1802,45 @@
     }
   },
   "Admin": {
+    "Bookings": {
+      "title": "Reservas",
+      "subtitle": "Todas las reservas de la plataforma, las más recientes primero. Abre una para gestionarla.",
+      "createdAt": "Reservada el {at}",
+      "excluded": "No es negocio real",
+      "empty": "Ninguna reserva coincide con estos filtros.",
+      "error": "No se pudieron cargar las reservas.",
+      "filters": {
+        "search": "Buscar por referencia, nombre o correo",
+        "status": "Estado",
+        "allStatuses": "Todos los estados",
+        "includeExcluded": "Incluir reservas marcadas como prueba"
+      },
+      "table": {
+        "reference": "Referencia",
+        "customer": "Cliente",
+        "charter": "Yate",
+        "dates": "Fechas",
+        "total": "Total",
+        "collected": "Cobrado",
+        "status": "Estado"
+      },
+      "status": {
+        "DRAFT": "Borrador",
+        "QUOTED": "Presupuestada",
+        "OPTION_PENDING": "Reservando",
+        "OPTION_HELD": "Retenida",
+        "OPTION_EXPIRED": "Retención caducada",
+        "QUOTE_EXPIRED": "Presupuesto caducado",
+        "PAYMENT_PENDING": "Pendiente de pago",
+        "PAYMENT_FAILED": "Pago fallido",
+        "CONFIRMING": "Confirmando",
+        "CONFIRMED": "Confirmada",
+        "PROVIDER_REJECTED": "Rechazada por el proveedor",
+        "CANCELLED": "Cancelada",
+        "REFUND_PENDING": "Reembolso pendiente",
+        "REFUNDED": "Reembolsada"
+      }
+    },
     "Duplicates": {
       "title": "Revisión de duplicados",
       "subtitle": "Fusiona los anuncios que dos proveedores enviaron para el mismo yate.",
