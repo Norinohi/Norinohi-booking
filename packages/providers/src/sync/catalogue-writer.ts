@@ -1177,6 +1177,8 @@ async function writeListingChildren(
         payableInBase: extra.payableInBase ?? null,
         seasonStart: extra.seasonStart ?? null,
         seasonEnd: extra.seasonEnd ?? null,
+        validNightsFrom: extra.validNightsFrom ?? null,
+        validNightsTo: extra.validNightsTo ?? null,
         oneWayOnly: extra.oneWayOnly ?? false,
         onRequestOnly: extra.onRequestOnly,
         externalSeasonId: extra.externalSeasonId ?? null,

@@ -17,6 +17,7 @@ import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
 import { numberToMinor } from "./money";
+import { allInPrice, isOneWay, rankOffers } from "./offer-ranking";
 import {
   bookingManagerEndpoints,
   restOfferListSchema,
@@ -275,29 +276,6 @@ function routeOf(offer: RestOffer): ProviderQuote["route"] {
   return route;
 }
 
-/** Same-base before one-way, then cheapest all-in. A stable sort keeps vendor order as the tie. */
-function rankOffers(candidates: readonly RestOffer[]): RestOffer[] {
-  return [...candidates].sort(
-    (left, right) =>
-      Number(isOneWay(left)) - Number(isOneWay(right)) || allInPrice(left) - allInPrice(right),
-  );
-}
-
-function isOneWay(offer: RestOffer): boolean {
-  return (
-    offer.startBaseId != null && offer.endBaseId != null && offer.startBaseId !== offer.endBaseId
-  );
-}
-
-/**
- * What the charter costs together, in the vendor's major units, because the obligatory extras
- * are the whole point: two offers for this hull quote the same 809 EUR and differ by a 155 EUR
- * fee attached to one of them. A missing figure sorts last rather than as free.
- */
-function allInPrice(offer: RestOffer): number {
-  const price = offer.price ?? Number.MAX_SAFE_INTEGER;
-  return price + (offer.obligatoryExtrasPrice ?? 0);
-}
 
 export interface OfferTimes {
   checkInTime: string | undefined;

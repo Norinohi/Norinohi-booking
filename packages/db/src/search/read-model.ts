@@ -144,7 +144,8 @@ export async function rebuildListingSearchDocs(
        */
       case
         when coalesce(week.price_minor, rate.price_from_minor) is null then null
-        else coalesce(week.price_minor, rate.price_from_minor) + coalesce(fees.unavoidable_minor, 0)
+        else coalesce(week.price_minor, rate.price_from_minor)
+             + coalesce(week.obligatory_extras_minor, fees.unavoidable_minor, 0)
       end,
       coalesce(rate.currency, l.default_currency),
       avail.available_from,
@@ -256,30 +257,6 @@ export async function rebuildListingSearchDocs(
         )
     ) rate on true
     /*
-     * What every charter of this listing pays on top of the rate, at its cheapest.
-     *
-     * One row per fee, taking the lowest variant, which is the same fold the detail page shows
-     * as a range and the right end of it for a "from" price. Scoped to seasons that overlap
-     * what we sell, so next-decade pricing the provider has already filed does not leak into
-     * today's card, and excluding route-conditional fees.
-     */
-    left join lateral (
-      select sum(cheapest.price_minor)::int as unavoidable_minor
-      from (
-        select min(extra.price_minor) as price_minor
-        from provider_extra_catalogue extra
-        where extra.listing_id = l.id
-          and extra.obligatory
-          and not extra.one_way_only
-          and (extra.season_end is null or extra.season_end >= current_date)
-          and (
-            extra.season_start is null
-            or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
-          )
-        group by extra.name
-      ) cheapest
-    ) fees on true
-    /*
      * Availability is the span of the free stretches, which are the complement of occupancy.
      * A stretch counts as unconfirmed unless the provider priced that exact period on request,
      * which is what has_unconfirmed_availability has always meant: we inferred this.
@@ -389,7 +366,29 @@ export async function rebuildListingSearchDocs(
      * answer: nothing is being advertised for particular dates.
      */
     left join lateral (
-      select price.price_minor
+      select
+        price.price_minor,
+        /*
+         * The provider's own obligatory-extras total for this exact charter, where a confirmed
+         * offer recorded one.
+         *
+         * Preferred over anything reassembled from the catalogue, which prices the same fees as
+         * a ladder across season, charter length, party size, base, route and
+         * percentage-of-charter - dimensions that differ per operator and are not all published
+         * on every account. Rebuilding the sum there was wrong by a night's band on the Shannon
+         * fleet and by a party-size band elsewhere; this is the number the quote will charge,
+         * because both read the same offer.
+         */
+        (
+          select slot.obligatory_extras_minor
+          from availability_slot slot
+          where slot.listing_id = l.id
+            and slot.start_date = checkin.bookable_from
+            and slot.end_date = checkin.bookable_to
+            and slot.availability_confirmed
+            and slot.obligatory_extras_minor is not null
+          limit 1
+        ) as obligatory_extras_minor
       from listing_price_period price
       where price.listing_id = l.id
         and price.kind = 'weekly'
@@ -398,6 +397,48 @@ export async function rebuildListingSearchDocs(
       order by price.price_minor
       limit 1
     ) week on true
+    /*
+     * What the advertised charter pays on top of the rate.
+     *
+     * One row per fee, choosing the variant that actually applies to the week on the card
+     * rather than the cheapest anywhere. Providers file a fee as a ladder - Le Boat's moorings
+     * fee is one row per night count, 60 EUR to six nights and 90 from seven - so the minimum
+     * is a one-night price, and taking it advertised a weekly charter 30 EUR under the quote.
+     *
+     * Scoped to seasons overlapping what we sell, and excluding route-conditional fees: a
+     * one-way fee is charged on a route the customer picks, and folding it in would inflate
+     * every card for a charter almost none of them book.
+     *
+     * The night count falls back to a week when no bookable period is known, which is the
+     * length the card's own label claims, and the price falls back to the cheapest variant
+     * when the provider files no ladder at all.
+     */
+    left join lateral (
+      select sum(applicable.price_minor)::int as unavoidable_minor
+      from (
+        select distinct on (extra.name) extra.price_minor
+        from provider_extra_catalogue extra
+        cross join lateral (
+          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
+        ) span
+        where extra.listing_id = l.id
+          and extra.obligatory
+          and not extra.one_way_only
+          and (extra.season_end is null or extra.season_end >= current_date)
+          and (
+            extra.season_start is null
+            or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+          )
+        order by
+          extra.name,
+          /* A variant whose ladder covers this charter wins outright; otherwise cheapest. */
+          (
+            (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
+            and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
+          ) desc,
+          extra.price_minor
+      ) applicable
+    ) fees on true
     left join lateral (
       select bool_or(slot.status = 'option') as has_temporary_booking
       from availability_slot slot

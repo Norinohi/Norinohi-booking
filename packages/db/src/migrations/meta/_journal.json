@@ -442,6 +442,20 @@
       "when": 1787322531455,
       "tag": "0062_damp_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1787330261696,
+      "tag": "0063_little_black_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1787330799433,
+      "tag": "0064_shiny_bedlam",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   index,
+  integer,
   jsonb,
   numeric,
   pgEnum,
@@ -85,6 +86,13 @@ export const providerExtraCatalogue = pgTable(
      */
     seasonStart: date("season_start"),
     seasonEnd: date("season_end"),
+    /**
+     * The charter lengths in nights this variant is charged for. Providers file a duration
+     * ladder as one row per night count, so a fee can differ by length as well as by season:
+     * this fleet's moorings fee is 60 EUR up to six nights and 90 from seven.
+     */
+    validNightsFrom: integer("valid_nights_from"),
+    validNightsTo: integer("valid_nights_to"),
     /**
      * Charged only where the charter ends at a different base than it started. Booking Manager
      * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.

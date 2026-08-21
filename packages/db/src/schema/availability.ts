@@ -26,6 +26,14 @@ export const availabilitySlot = pgTable(
     status: availabilitySlotStatus("status").notNull(),
     availabilityConfirmed: boolean("availability_confirmed").default(true).notNull(),
     priceMinor: integer("price_minor"),
+    /**
+     * The unavoidable extras the provider quoted alongside `price_minor` for this exact period.
+     *
+     * Only a confirmed offer carries one, and it is the number the search card adds to the rate:
+     * the catalogue prices the same fees as a ladder across season, length, party size, base and
+     * route, and reassembling it there guessed wrong twice before this column existed.
+     */
+    obligatoryExtrasMinor: integer("obligatory_extras_minor"),
     currency: text("currency"),
     minNights: integer("min_nights"),
     checkinWeekday: integer("checkin_weekday"),

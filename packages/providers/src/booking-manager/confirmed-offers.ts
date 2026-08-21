@@ -10,6 +10,7 @@ import type { BookingManagerConfig } from "./config";
 import { formatBookingManagerDateTime } from "./dates";
 import { bookingManagerEndpoints, restOfferListSchema, type RestOffer } from "./endpoints";
 import { numberToMinor } from "./money";
+import { rankOffers } from "./offer-ranking";
 import { charterSaturdays } from "./prices";
 import { z } from "zod";
 
@@ -57,12 +58,20 @@ export interface BookingManagerConfirmedOfferOptions {
 }
 
 /**
- * One `ConfirmedOffer` per yacht per week, at the cheapest price the vendor quoted.
+ * One `ConfirmedOffer` per yacht per week, for the charter the quote would sell.
  *
- * A single week comes back once per sellable base pair - up to four rows for a fleet that
- * sells one-way - and they are the same charter offered from different ends. The slot this
- * feeds carries one price, and the cheapest is the one the card should advertise, so the
- * others are folded away here rather than written as competing periods.
+ * A week comes back once per sellable base pair - up to four rows for a fleet that runs
+ * one-way - and they are the same charter offered from different ends. `rankOffers` is the
+ * same order `selectOffer` applies at quote time, deliberately: this row is what the search
+ * card advertises, and if the two ranked differently the card would price a charter the
+ * sidebar then refuses to quote.
+ *
+ * `obligatoryExtrasMinor` is carried because it is the only trustworthy answer to what the
+ * unavoidable fees cost. The catalogue files them as a ladder across season, charter length,
+ * party size, base, route and percentage-of-charter - dimensions that differ per operator and
+ * are not all published on every account - so reconstructing the total from it is guesswork
+ * that has already been wrong twice. The vendor computes it for the exact charter; this stores
+ * that number.
  *
  * Keyed to the Saturday we asked about, not the echoed `dateFrom`: the vendor substitutes
  * the base's real handover time, and the writer looks a period up by the date it requested.
@@ -73,15 +82,24 @@ export function foldOffersToConfirmed(
   checkOut: string,
   fallbackCurrency?: string,
 ): ConfirmedOffer[] {
-  const cheapest = new Map<string, ConfirmedOffer>();
+  const chosen = new Map<string, ConfirmedOffer>();
 
-  for (const row of rows) {
+  // Ranked once, then first-wins per hull, so the winner is the same offer `selectOffer` picks.
+  for (const row of rankOffers(rows)) {
     const currency = row.currency?.trim() || fallbackCurrency;
     if (!currency || currency.length !== 3 || row.price == null) continue;
 
+    const externalYachtId = String(row.yachtId);
+    if (chosen.has(externalYachtId)) continue;
+
     let priceMinor: number;
+    let obligatoryExtrasMinor: number | undefined;
     try {
-      priceMinor = numberToMinor(row.price, currency, `yacht ${row.yachtId} offer`);
+      priceMinor = numberToMinor(row.price, currency, `yacht ${externalYachtId} offer`);
+      obligatoryExtrasMinor =
+        row.obligatoryExtrasPrice == null
+          ? undefined
+          : numberToMinor(row.obligatoryExtrasPrice, currency, `yacht ${externalYachtId} extras`);
     } catch {
       continue;
     }
@@ -89,21 +107,28 @@ export function foldOffersToConfirmed(
     // nothing is not a free charter, and writing it would advertise the boat at nothing.
     if (priceMinor <= 0) continue;
 
-    const externalYachtId = String(row.yachtId);
-    const existing = cheapest.get(externalYachtId);
-    if (existing && existing.priceMinor <= priceMinor) continue;
-
-    cheapest.set(externalYachtId, {
+    const offer: ConfirmedOffer = {
       externalYachtId,
       startDate: checkIn,
       endDate: checkOut,
       priceMinor,
       currency,
-      sourceHash: stableSourceHash({ yachtId: externalYachtId, checkIn, priceMinor, currency }),
-    });
+      sourceHash: stableSourceHash({
+        yachtId: externalYachtId,
+        checkIn,
+        priceMinor,
+        obligatoryExtrasMinor: obligatoryExtrasMinor ?? null,
+        currency,
+      }),
+    };
+    // Zero is a real answer here - plenty of charters carry no obligatory fee at all - so it
+    // is kept, and only the vendor saying nothing leaves the field unset.
+    if (obligatoryExtrasMinor !== undefined) offer.obligatoryExtrasMinor = obligatoryExtrasMinor;
+
+    chosen.set(externalYachtId, offer);
   }
 
-  return [...cheapest.values()];
+  return [...chosen.values()];
 }
 
 export async function* streamBookingManagerConfirmedOffers(

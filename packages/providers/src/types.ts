@@ -526,6 +526,14 @@ export const canonicalExtraSchema = z.object({
   seasonStart: z.string().optional(),
   seasonEnd: z.string().optional(),
   /**
+   * The charter lengths in nights this price is for, where the provider prices a fee by
+   * duration. Le Boat's moorings fee is 60 EUR for one to six nights and 90 for seven or
+   * more, filed as one row per night count; taking the cheapest advertised a weekly charter
+   * 30 EUR under what the offer then charged.
+   */
+  validNightsFrom: z.number().int().optional(),
+  validNightsTo: z.number().int().optional(),
+  /**
    * Charged only when the charter ends somewhere other than it started. Listing one of these as
    * an unconditional mandatory extra overstates every return charter by its amount.
    */
