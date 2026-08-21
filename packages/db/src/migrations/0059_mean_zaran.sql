@@ -1,0 +1,1 @@
+ALTER TABLE "provider_extra_catalogue" ADD COLUMN "payable_in_base" boolean;

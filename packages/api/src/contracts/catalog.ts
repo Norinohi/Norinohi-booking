@@ -46,12 +46,16 @@ export const includedItemSchema = z.object({
 
 const pricedItemSchema = includedItemSchema.extend({
   price: moneySchema,
+  /** Top of the range where one fee has several provider variants; null when there is one. */
+  priceToMinor: z.number().int().nullable(),
   /**
    * What `price` is the price of, in the vendor's own words — "per person",
    * "per booking". Rendered as given: it is operator copy, not an enum we can
    * translate, and stating the wrong unit is what this exists to stop.
    */
   priceMeasure: z.string().nullable(),
+  /** Where the fee is collected; null where the provider said nothing, so the page says nothing. */
+  payableInBase: z.boolean().nullable(),
   pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
 });
 
@@ -492,6 +496,8 @@ export const availabilityConstraintsSchema = z.object({
       confirmed: z.boolean(),
     }),
   ),
+  /** Exact periods the provider declined to sell; matched on both ends, never by overlap. */
+  refused: z.array(z.object({ startDate: z.string(), endDate: z.string() })),
   oneWay: z.array(
     z.object({
       startDate: z.string().nullable(),

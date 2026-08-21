@@ -1,4 +1,8 @@
-import { availabilitySlot, listingFreePeriod } from "@yacht-charter/db/schema/availability";
+import {
+  availabilitySlot,
+  listingFreePeriod,
+  listingRefusedPeriod,
+} from "@yacht-charter/db/schema/availability";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
@@ -114,10 +118,29 @@ export function normalizeOccupancyDump(result: OccupancyFetchResult): OccupancyD
   return Array.isArray(result) ? { intervals: result } : result;
 }
 
+/**
+ * A period the source asked about for its whole scope, so that the offers it returned are
+ * the complete set and an absence among them is the vendor declining, not a gap in the walk.
+ *
+ * Only a source that sweeps period-by-period can say this. NauSYS pages a search and says
+ * nothing, so its silence keeps meaning "not asked yet".
+ */
+export interface SweptPeriod {
+  startDate: string;
+  endDate: string;
+  /**
+   * The provider-side company ids the sweep covered, or null when it covered the account.
+   * A listing outside them was never asked about and must not be judged by this silence.
+   */
+  scopeKeys: readonly string[] | null;
+}
+
 export interface ConfirmedOfferPage {
   offers: ConfirmedOffer[];
   /** Where a resumed run should start; already past everything in this page. */
   cursor: unknown;
+  /** Set only when `offers` is the complete answer for one period; see `SweptPeriod`. */
+  swept?: SweptPeriod;
 }
 
 export interface AvailabilitySource {
@@ -232,6 +255,15 @@ export interface AvailabilitySyncStore {
   writeFreePeriods(writes: readonly FreePeriodWrite[], years: readonly number[]): Promise<void>;
   /** False when the period is held by an occupied slot, which the vendor's own dump wins. */
   confirmSlot(input: ConfirmSlotInput): Promise<boolean>;
+  /**
+   * Restates which listings the provider declined to sell one exact period to.
+   *
+   * Replaces the period's rows wholesale rather than adding to them, so a week that has
+   * since opened up loses its refusal. The store decides who is eligible to be refused -
+   * priced for exactly this period and free across it - because that is a join, and offers
+   * only ever name the listings that said yes.
+   */
+  replaceRefusedPeriods(input: RefusedPeriodWrite): Promise<number>;
   sweepScope(input: AvailabilitySweepInput): Promise<number>;
   recordError(input: {
     errorType: ReturnType<typeof toSyncErrorType>;
@@ -241,6 +273,12 @@ export interface AvailabilitySyncStore {
   saveCursor(cursor: unknown): Promise<void>;
   closeRun(input: AvailabilityCloseRunInput): Promise<void>;
   rebuildSearch(listingIds: string[]): Promise<void>;
+}
+
+export interface RefusedPeriodWrite {
+  period: SweptPeriod;
+  /** Listings the provider did offer this period, which are the ones not refused. */
+  offeredListingIds: readonly string[];
 }
 
 /* ------------------------------------------------------------ free periods */
@@ -350,6 +388,11 @@ export interface AvailabilitySyncSummary {
   occupiedSlots: number;
   freePeriods: number;
   confirmedSlots: number;
+  /**
+   * Periods the provider was asked about and declined. Non-zero only for a source that
+   * sweeps period-by-period; a jump to the whole fleet means the sweep lost its scope.
+   */
+  refusedPeriods: number;
   skippedYachts: number;
   /**
    * A few of the external yacht ids the dump named and the catalogue has no
@@ -431,6 +474,7 @@ export async function runAvailabilitySync(
   let occupiedSlots = 0;
   let freePeriods = 0;
   let confirmedSlots = 0;
+  let refusedPeriods = 0;
   let skippedYachts = 0;
   const unresolved = new Set<string>();
   const quarantined = new Set<string>();
@@ -600,6 +644,7 @@ export async function runAvailabilitySync(
       const deadline = startedAt.getTime() + budgetMs;
       try {
         for await (const page of source.searchConfirmed(options.resume)) {
+          const offeredListingIds = new Set<string>();
           for (const offer of page.offers) {
             const ref = await store.resolveListing(offer.externalYachtId);
             if (!ref) {
@@ -607,6 +652,7 @@ export async function runAvailabilitySync(
               if (unresolved.size < UNRESOLVED_SAMPLE_LIMIT) unresolved.add(offer.externalYachtId);
               continue;
             }
+            offeredListingIds.add(ref.listingId);
             const changed = await store.confirmSlot({
               ...ref,
               startDate: offer.startDate,
@@ -620,6 +666,19 @@ export async function runAvailabilitySync(
               confirmedSlots += 1;
               touched.add(ref.listingId);
             }
+          }
+
+          /*
+           * Reached only for a page that yielded whole, which is what makes the absences in it
+           * mean something. A throw skips this and leaves the previous run's refusals standing,
+           * which is the safe direction: a stale refusal hides one sellable week, where a
+           * refusal invented from a half-finished sweep hides every week the sweep never got to.
+           */
+          if (page.swept) {
+            refusedPeriods += await store.replaceRefusedPeriods({
+              period: page.swept,
+              offeredListingIds: [...offeredListingIds],
+            });
           }
 
           await store.saveCursor(page.cursor);
@@ -677,6 +736,7 @@ export async function runAvailabilitySync(
   return {
     syncRunId: store.syncRunId,
     status,
+    refusedPeriods,
     occupiedSlots,
     freePeriods,
     confirmedSlots,
@@ -965,6 +1025,78 @@ export function createDrizzleAvailabilitySyncStore(
       return true;
     },
 
+    async replaceRefusedPeriods({ period, offeredListingIds }) {
+      const { startDate, endDate, scopeKeys } = period;
+      if (scopeKeys !== null && scopeKeys.length === 0) return 0;
+
+      /*
+       * Who could have been offered this period: our listings for this provider, inside the
+       * scope the sweep actually covered, carrying a rate for exactly this period and with
+       * nothing sold across it. Anything else is already unbookable for a reason we hold, and
+       * recording a refusal for it would say the vendor declined something nobody asked about.
+       */
+      const eligible = await db.execute<{ listingId: string; listingSourceId: string | null }>(sql`
+        select ls.listing_id as "listingId", ls.id as "listingSourceId"
+        from listing_source ls
+        join provider_record pr on pr.id = ls.provider_record_id
+        where pr.provider_id = ${providerId}
+          and pr.active
+          and ls.listing_id is not null
+          ${scopeKeys === null ? sql`` : sql`and ls.external_company_id in ${scopeKeys}`}
+          and exists (
+            select 1 from listing_price_period p
+            where p.listing_id = ls.listing_id
+              and p.start_date = ${startDate}
+              and p.end_date = ${endDate}
+          )
+          and not exists (
+            select 1 from availability_slot s
+            where s.listing_id = ls.listing_id
+              and s.status <> 'available'
+              and s.start_date < ${endDate}
+              and s.end_date > ${startDate}
+          )
+      `);
+
+      const offered = new Set(offeredListingIds);
+      const refused = eligible.rows.filter((row) => !offered.has(row.listingId));
+
+      /*
+       * Replaced, not merged: a listing the vendor has since opened up has to lose the refusal
+       * it no longer earns, and only a delete keyed on this exact period can do that without
+       * touching periods the sweep has not reached. Scoped to the eligible set for the same
+       * reason - a listing that has since sold the week is no longer ours to judge.
+       */
+      for (const chunk of chunked(eligible.rows)) {
+        await db.delete(listingRefusedPeriod).where(
+          and(
+            eq(listingRefusedPeriod.startDate, startDate),
+            eq(listingRefusedPeriod.endDate, endDate),
+            inArray(
+              listingRefusedPeriod.listingId,
+              chunk.map((row) => row.listingId),
+            ),
+          ),
+        );
+      }
+
+      for (const chunk of chunked(refused, ROW_CHUNK)) {
+        await db
+          .insert(listingRefusedPeriod)
+          .values(
+            chunk.map((row) => ({
+              listingId: row.listingId,
+              listingSourceId: row.listingSourceId,
+              startDate,
+              endDate,
+            })),
+          )
+          .onConflictDoNothing();
+      }
+
+      return refused.length;
+    },
+
     async sweepScope(input) {
       if (input.listings.length === 0) return 0;
 
@@ -1081,6 +1213,7 @@ export async function runAvailabilitySyncJob(
       occupiedSlots: 0,
       freePeriods: 0,
       confirmedSlots: 0,
+      refusedPeriods: 0,
       skippedYachts: 0,
       unresolvedYachtIdSample: [],
       quarantinedYachts: 0,

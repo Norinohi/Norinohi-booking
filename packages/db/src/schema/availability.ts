@@ -112,3 +112,39 @@ export const listingFreePeriod = pgTable(
     index("listing_free_period_lookup_idx").on(t.listingId, t.startDate, t.endDate),
   ],
 );
+
+/**
+ * Exact charter periods the provider was asked to price and declined to offer.
+ *
+ * Occupancy says what is sold and `listing_price_period` says what season is open, and a
+ * week can pass both and still be unsellable: Booking Manager publishes a rate for periods
+ * its offers engine then refuses, because the boat is at the wrong base, or a turnaround
+ * has nowhere to fit. Measured across the account, 250 to 400 boats a week are free, priced
+ * and unbookable, and we were advertising every one of them.
+ *
+ * Rows are the vendor's answer about one exact period, never a statement about the days it
+ * spans, which is why `availability-rules` matches them on both ends. A refused fortnight
+ * says nothing about the free week that starts the same Saturday.
+ *
+ * Written only from a sweep that completed. A partial answer means "not asked yet", and
+ * turning that into a refusal would hide sellable weeks on the strength of not having looked.
+ */
+export const listingRefusedPeriod = pgTable(
+  "listing_refused_period",
+  {
+    id: id("lrp"),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listing.id, { onDelete: "cascade" }),
+    listingSourceId: text("listing_source_id").references(() => listingSource.id, {
+      onDelete: "set null",
+    }),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("listing_refused_period_uq").on(t.listingId, t.startDate, t.endDate),
+    index("listing_refused_period_lookup_idx").on(t.listingId, t.startDate, t.endDate),
+  ],
+);

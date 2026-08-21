@@ -242,6 +242,7 @@ export async function getListingDetailByIdOrSlug(
         priceCurrency: string | null;
         priceMeasure: string | null;
         calculationType: string | null;
+        payableInBase: boolean | null;
       }>(sql`
       select
         source,
@@ -253,7 +254,8 @@ export async function getListingDetailByIdOrSlug(
         price_minor as "priceMinor",
         price_currency as "priceCurrency",
         price_measure as "priceMeasure",
-        calculation_type as "calculationType"
+        calculation_type as "calculationType",
+        payable_in_base as "payableInBase"
       from provider_extra_catalogue
       where listing_id = ${listing.listingId}
       order by obligatory desc, price_minor, name asc
@@ -295,11 +297,13 @@ export async function getListingDetailByIdOrSlug(
     priceCurrency: item.priceCurrency,
     priceMeasure: item.priceMeasure,
     calculationType: item.calculationType,
+    payableInBase: item.payableInBase,
     selectable: isSelectableExtra(item.source, item.kind),
   }));
-  const mandatoryExtras = extras
-    .filter((item) => item.obligatory)
-    .map((item) => pricedItem(item, listing.currency));
+  const mandatoryExtras = foldFeeVariants(
+    extras.filter((item) => item.obligatory),
+    listing.currency,
+  );
   // Crew is deliberately not in optionalExtras: the sidebar buys it through the
   // Crew control, and listing it twice would let the customer add a skipper the
   // crew type does not include.
@@ -652,7 +656,7 @@ export async function listAvailabilityConstraints(
    */
   const overlapsWindow = sql`slot.start_date < ${input.to} and slot.end_date > ${input.from}`;
 
-  const [rules, occupied, priced, oneWay] = await Promise.all([
+  const [rules, occupied, priced, refused, oneWay] = await Promise.all([
     db.execute<{
       checkinWeekday: number | null;
       checkoutWeekday: number | null;
@@ -718,6 +722,21 @@ export async function listAvailabilityConstraints(
         and price.end_date > ${input.from}
       order by price.start_date asc
     `),
+    db.execute<{ startDate: string; endDate: string }>(sql`
+      /*
+       * Exact periods the provider was asked to price and declined, which occupancy and the
+       * rate list cannot express between them: a week can be unsold, in an open season, and
+       * still refused. Overlap, not containment, only to bound the read - the caller matches
+       * these on both ends, because a refused fortnight says nothing about the free week
+       * starting the same day.
+       */
+      select r.start_date as "startDate", r.end_date as "endDate"
+      from listing_refused_period r
+      where r.listing_id = ${input.listingId}
+        and r.start_date < ${input.to}
+        and r.end_date > ${input.from}
+      order by r.start_date asc
+    `),
     db.execute<{
       startDate: string | null;
       endDate: string | null;
@@ -738,6 +757,7 @@ export async function listAvailabilityConstraints(
     rules: rules.rows,
     occupied: occupied.rows,
     priced: priced.rows,
+    refused: refused.rows,
     oneWay: oneWay.rows,
   };
 }
@@ -1296,6 +1316,46 @@ function isSelectableExtra(source: string, kind: string): boolean {
   return false;
 }
 
+/**
+ * One row per fee, not one per variant the provider keys separately.
+ *
+ * Booking Manager publishes an obligatory extra per base pair and boat class, so this hull
+ * carries three "Boat Cleaning" ids at 150/155/160 and two "One Way Fee" ids at 155/185.
+ * Exactly one of each is ever charged, and which one is not decided until the dates and the
+ * route are - the booking sidebar shows that, priced, off the live offer. Listing all five
+ * side by side read as five separate charges totalling 805 euro against a 809 euro boat.
+ *
+ * Folded on the label because that is the only thing the variants share: the vendor gives them
+ * distinct ids and no grouping key of its own.
+ */
+function foldFeeVariants(
+  items: Parameters<typeof pricedItem>[0][],
+  fallbackCurrency: string | null,
+): ListingPricedItem[] {
+  const byLabel = new Map<string, ListingPricedItem>();
+
+  for (const item of items) {
+    const next = pricedItem(item, fallbackCurrency);
+    const seen = byLabel.get(next.label);
+    if (!seen) {
+      byLabel.set(next.label, next);
+      continue;
+    }
+
+    const low = Math.min(seen.price.amountMinor, next.price.amountMinor);
+    const high = Math.max(seen.priceToMinor ?? seen.price.amountMinor, next.price.amountMinor);
+    byLabel.set(next.label, {
+      ...(seen.price.amountMinor <= next.price.amountMinor ? seen : next),
+      price: { ...seen.price, amountMinor: low },
+      priceToMinor: high > low ? high : null,
+      // Variants that disagree on where the fee is collected say nothing together.
+      payableInBase: seen.payableInBase === next.payableInBase ? seen.payableInBase : null,
+    });
+  }
+
+  return [...byLabel.values()];
+}
+
 function pricedItem(
   item: {
     code: string;
@@ -1304,6 +1364,7 @@ function pricedItem(
     priceCurrency: string | null;
     priceMeasure?: string | null;
     calculationType?: string | null;
+    payableInBase?: boolean | null;
   },
   fallbackCurrency: string | null,
 ): ListingPricedItem {
@@ -1314,7 +1375,9 @@ function pricedItem(
       amountMinor: item.priceMinor ?? 0,
       currency: item.priceCurrency ?? fallbackCurrency ?? "EUR",
     },
+    priceToMinor: null,
     priceMeasure: item.priceMeasure ?? null,
+    payableInBase: item.payableInBase ?? null,
     pricingType: pricingTypeOf(item.calculationType),
   };
 }

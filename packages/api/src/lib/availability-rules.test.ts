@@ -313,18 +313,43 @@ describe("a refused period", () => {
     expect(rangeStatus("2026-11-07", "2026-11-14", refused())).toBe("bookable");
   });
 
-  it("leaves a longer charter from the same day bookable", () => {
-    expect(rangeStatus("2026-11-07", "2026-11-28", refused())).toBe("bookable");
+  /*
+   * A charter needs the boat for every day it spans, so one that swallows a refused stretch
+   * cannot happen either. Measured rather than assumed: of twelve refused weeks sampled from
+   * the Booking Manager sweep on 2026-08-21, none had a fortnight or a three-week charter on
+   * offer from the same day, against a control week where both were offered.
+   */
+  it("refuses a longer charter that contains the refused period", () => {
+    expect(rangeStatus("2026-11-07", "2026-11-28", refused())).toBe("refused");
   });
 
   it("leaves a charter ending on the same day bookable", () => {
     expect(rangeStatus("2026-11-14", "2026-11-21", refused())).toBe("bookable");
   });
 
-  it("still lets the calendar offer that start date", () => {
+  it("still lets the calendar offer that start date, on the lengths that survive", () => {
     expect(canCheckIn("2026-11-07", refused())).toBe(true);
     expect(canCheckOut("2026-11-14", "2026-11-07", refused())).toBe(true);
     expect(canCheckOut("2026-11-21", "2026-11-07", refused())).toBe(false);
+  });
+
+  /*
+   * The whole-week case the Booking Manager sweep actually produces: the vendor publishes a
+   * rate for the week of 19 September and no offer for it, and every longer charter from that
+   * Saturday is refused too, so the day leaves the calendar entirely rather than staying
+   * clickable on a fortnight nobody priced.
+   */
+  it("closes the start day when every legal length from it is refused", () => {
+    const weekly = constraints({
+      rules: [{ checkinWeekday: 6, checkoutWeekday: 6, minNights: null, maxNights: null }],
+      priced: [{ startDate: "2026-09-19", endDate: "2026-10-24" }],
+      refused: [{ startDate: "2026-09-19", endDate: "2026-09-26" }],
+    });
+
+    expect(rangeStatus("2026-09-19", "2026-09-26", weekly)).toBe("refused");
+    expect(rangeStatus("2026-09-19", "2026-10-03", weekly)).toBe("refused");
+    expect(canCheckIn("2026-09-19", weekly)).toBe(false);
+    expect(canCheckIn("2026-09-26", weekly)).toBe(true);
   });
 
   it("is absent by default, so nothing changes for constraints that carry none", () => {

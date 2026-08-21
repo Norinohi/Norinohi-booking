@@ -905,6 +905,7 @@ async function writeListingChildren(
         priceCurrency: extra.priceCurrency,
         priceMeasure: extra.priceMeasure ?? null,
         calculationType: extra.calculationType ?? null,
+        payableInBase: extra.payableInBase ?? null,
         onRequestOnly: extra.onRequestOnly,
         externalSeasonId: extra.externalSeasonId ?? null,
         externalBaseId: extra.externalBaseId ?? null,

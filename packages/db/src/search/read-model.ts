@@ -325,6 +325,19 @@ export async function rebuildListingSearchDocs(
         and c.candidate < least(free.end_date, price.end_date)
         and (rule.max_nights is null or n.nights <= rule.max_nights)
         and c.candidate + n.nights <= free.end_date
+        /*
+         * A charter that swallows a period the provider refused is one it will not sell either,
+         * which is the containment rule wasRefused applies. Without this the card advertised the
+         * cheapest week of the Shannon fleet -- free, priced, and declined by the vendor's own
+         * offers engine -- and sent the visitor to a calendar that then greyed it out.
+         */
+        and not exists (
+          select 1
+          from listing_refused_period refused
+          where refused.listing_id = l.id
+            and refused.start_date >= c.candidate
+            and refused.end_date <= c.candidate + n.nights
+        )
       order by c.candidate, n.nights
       limit 1
     ) checkin on true

@@ -382,7 +382,19 @@
     },
     "extras": {
       "payAtCheckIn": "Оплата при заїзді",
-      "perBooking": "{price} за бронювання"
+      "payNow": "Входить у передоплату",
+      "measure": {
+        "booking": "{price} за бронювання",
+        "day": "{price} за день",
+        "night": "{price} за ніч",
+        "week": "{price} за тиждень",
+        "person": "{price} за особу",
+        "nightPerson": "{price} за особу за ніч",
+        "dayWithFood": "{price} за день, харчування включено",
+        "oneWayPerson": "{price} за особу в один бік",
+        "set": "{price} за комплект",
+        "service": "{price} за послугу"
+      }
     },
     "resultsCount": "{count, plural, one {# яхта знайдена} few {# яхти знайдено} many {# яхт знайдено} other {# яхти знайдено}}",
     "removeFilter": "Прибрати фільтр {label}",
@@ -2297,7 +2309,7 @@
       }
     },
     "StaffBooking": {
-      "back": "Платежі",
+      "back": "Бронювання",
       "staffOnly": "Службовий перегляд — це бронювання клієнта. Не діліться цією сторінкою.",
       "error": "Не вдалося завантажити це бронювання.",
       "guestAccount": "Гостьовий акаунт",

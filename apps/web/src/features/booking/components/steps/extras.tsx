@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
+import { useExtraPrice } from "@/hooks/use-extra-price";
 import { useMoney } from "@/hooks/use-money";
 
 import type { BookingValues } from "../../lib/booking-form";
@@ -42,6 +43,7 @@ function ExtraRow({
 }) {
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
+  const extraPrice = useExtraPrice();
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered
@@ -60,9 +62,7 @@ function ExtraRow({
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
         {offered
           ? money(offered.amount.amountMinor)
-          : item.priceMeasure
-            ? `${money(item.price.amountMinor)} ${item.priceMeasure}`
-            : tExtras("perBooking", { price: money(item.price.amountMinor) })}
+          : extraPrice(item.price.amountMinor, item.priceMeasure)}
       </span>
     </>
   );

@@ -69,6 +69,13 @@ export const providerExtraCatalogue = pgTable(
     ...money("price"),
     priceMeasure: text("price_measure"),
     calculationType: text("calculation_type"),
+    /**
+     * Whether the charter base collects this extra on arrival, rather than it being part of
+     * what the booking prepays. Nullable because the two vendors state it differently and
+     * neither always states it: Booking Manager sends `payableInBase` on the offer's extras,
+     * NauSYS implies it through `calculationType`, and a null means nobody said.
+     */
+    payableInBase: boolean("payable_in_base"),
     onRequestOnly: boolean("on_request_only").default(false).notNull(),
     externalSeasonId: text("external_season_id"),
     externalBaseId: text("external_base_id"),

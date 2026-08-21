@@ -382,7 +382,19 @@
     },
     "extras": {
       "payAtCheckIn": "Pago al llegar",
-      "perBooking": "{price} por reserva"
+      "payNow": "Incluido en el pago inicial",
+      "measure": {
+        "booking": "{price} por reserva",
+        "day": "{price} por día",
+        "night": "{price} por noche",
+        "week": "{price} por semana",
+        "person": "{price} por persona",
+        "nightPerson": "{price} por persona y noche",
+        "dayWithFood": "{price} por día, comida incluida",
+        "oneWayPerson": "{price} por persona, solo ida",
+        "set": "{price} por juego",
+        "service": "{price} por servicio"
+      }
     },
     "resultsCount": "{count, plural, one {# yate encontrado} other {# yates encontrados}}",
     "removeFilter": "Quitar filtro {label}",
@@ -2297,7 +2309,7 @@
       }
     },
     "StaffBooking": {
-      "back": "Pagos",
+      "back": "Reservas",
       "staffOnly": "Vista de personal: esta es la reserva de un cliente. No compartas esta página.",
       "error": "No se pudo cargar esta reserva.",
       "guestAccount": "Cuenta de invitado",

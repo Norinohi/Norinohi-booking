@@ -8,6 +8,10 @@ import {
   type OccupancyDump,
   type OccupiedInterval,
 } from "../sync/availability-writer";
+import {
+  confirmedOfferCursorSchema,
+  streamBookingManagerConfirmedOffers,
+} from "./confirmed-offers";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
 import { parseBookingManagerDate, parseBookingManagerDateTime } from "./dates";
@@ -274,6 +278,27 @@ export function createBookingManagerAvailabilitySource(
         year: scope.year,
       });
       return mapBookingManagerOccupancyDump(rows, config);
+    },
+
+    /*
+     * The accurate pass, and for this vendor an authoritative one: `/offers` answers for the
+     * whole scope a week at a time, so a yacht missing from a week's answer is a yacht the
+     * vendor declined to sell it to. `fetchOccupancy` above cannot see that - it lists sales,
+     * and a refused week has no sale in it.
+     */
+    searchConfirmed(resume) {
+      // The writer hands back whatever the jsonb cursor column held; an unreadable one is a
+      // sweep that starts over, which costs calls rather than correctness.
+      const from = confirmedOfferCursorSchema.safeParse(resume).data ?? { weekIndex: 0 };
+      return streamBookingManagerConfirmedOffers(
+        {
+          client,
+          config,
+          companyIds: scopeKeys.filter((key) => key !== ACCOUNT_WIDE_SCOPE),
+          years: options.years,
+        },
+        from,
+      );
     },
 
     /*

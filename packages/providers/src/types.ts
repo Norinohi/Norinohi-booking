@@ -464,6 +464,12 @@ export const canonicalExtraSchema = z.object({
   /** Vendor's billing unit (per booking, per day, per person); display only. */
   priceMeasure: z.string().optional(),
   calculationType: z.string().optional(),
+  /**
+   * Whether the operator collects this at the base rather than in the prepayment. Left unset
+   * where the provider says nothing, which is not the same as false: claiming a fee is due on
+   * arrival when it was already charged is the error this replaced.
+   */
+  payableInBase: z.boolean().optional(),
   /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
   onRequestOnly: z.boolean(),
   /**

@@ -27,6 +27,8 @@ interface FakeStoreSeed {
   listings?: Record<string, ListingRef[]>;
   yachts?: Record<string, ListingRef>;
   slots?: StoredSlot[];
+  /** Who is priced-and-free for a period, which is what the real store works out in SQL. */
+  refusable?: Record<string, ListingRef[]>;
 }
 
 /**
@@ -39,6 +41,7 @@ type RecordedError = Parameters<AvailabilitySyncStore["recordError"]>[0];
 function fakeStore(seed: FakeStoreSeed = {}) {
   const slots = new Map<string, StoredSlot>();
   const freePeriods = new Map<string, FreePeriod & { listingId: string }>();
+  const refused = new Map<string, FreePeriod & { listingId: string }>();
   const errors: RecordedError[] = [];
   // How many listings each batched write carried, so a regression back to one
   // statement per boat shows up as a test failure rather than as a slow sync.
@@ -96,6 +99,23 @@ function fakeStore(seed: FakeStoreSeed = {}) {
           updatedAt: seenAt,
         });
       }
+    },
+    async replaceRefusedPeriods({ period, offeredListingIds }) {
+      const eligible = seed.refusable?.[`${period.startDate}|${period.endDate}`] ?? [];
+      for (const ref of eligible) {
+        refused.delete(keyOf(ref.listingId, period.startDate, period.endDate));
+      }
+
+      const offered = new Set(offeredListingIds);
+      const written = eligible.filter((ref) => !offered.has(ref.listingId));
+      for (const ref of written) {
+        refused.set(keyOf(ref.listingId, period.startDate, period.endDate), {
+          listingId: ref.listingId,
+          startDate: period.startDate,
+          endDate: period.endDate,
+        });
+      }
+      return written.length;
     },
     async confirmSlot(input) {
       const key = keyOf(input.listingId, input.startDate, input.endDate);
@@ -161,6 +181,12 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     rebuilt,
     slots,
     freePeriodBatchSizes,
+    refusedOf(listingId: string) {
+      return [...refused.values()]
+        .filter((period) => period.listingId === listingId)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))
+        .map((period) => ({ startDate: period.startDate, endDate: period.endDate }));
+    },
     freeOf(listingId: string) {
       return [...freePeriods.values()]
         .filter((period) => period.listingId === listingId)

@@ -38,13 +38,7 @@ export type MapPopupProps = {
  * but not in how the card is hung: mapbox's own popup chrome stripped, the app's arrow under it,
  * and a nudge on open so the card clears the top of the map.
  */
-export default function MapPopup({
-  coordinates,
-  map,
-  children,
-  className,
-  onOpen,
-}: MapPopupProps) {
+export default function MapPopup({ coordinates, map, children, className, onOpen }: MapPopupProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const onOpenRef = useRef(onOpen);
   onOpenRef.current = onOpen;
@@ -85,7 +79,10 @@ export default function MapPopup({
     >
       <div
         ref={cardRef}
-        className={cn("relative origin-top duration-200 animate-in fade-in-0 zoom-in-95", className)}
+        className={cn(
+          "relative origin-top duration-200 animate-in fade-in-0 zoom-in-95",
+          className,
+        )}
       >
         <span
           aria-hidden

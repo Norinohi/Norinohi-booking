@@ -382,7 +382,19 @@
     },
     "extras": {
       "payAtCheckIn": "Pay at check-in",
-      "perBooking": "{price} per booking"
+      "payNow": "Included in prepayment",
+      "measure": {
+        "booking": "{price} per booking",
+        "day": "{price} per day",
+        "night": "{price} per night",
+        "week": "{price} per week",
+        "person": "{price} per person",
+        "nightPerson": "{price} per person / night",
+        "dayWithFood": "{price} per day incl. food",
+        "oneWayPerson": "{price} one-way per person",
+        "set": "{price} per set",
+        "service": "{price} per service"
+      }
     },
     "resultsCount": "{count, plural, one {# yacht found} other {# yachts found}}",
     "removeFilter": "Remove filter {label}",
@@ -2297,7 +2309,7 @@
       }
     },
     "StaffBooking": {
-      "back": "Payments",
+      "back": "Bookings",
       "staffOnly": "Staff view — this is a customer's booking. Do not share this page.",
       "error": "Could not load this booking.",
       "guestAccount": "Guest account",
