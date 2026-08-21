@@ -9,6 +9,7 @@ export const ACCOUNT_ITEMS = ["profile", "bookings", "referrals", "credits"] as 
 
 export const ADMIN_ITEMS = [
   "inbox",
+  "staffBookings",
   "payments",
   "listings",
   "discount",
@@ -28,6 +29,9 @@ export const ACCOUNT_NAV_HREFS = new Map<AccountNavItem, AppPathname>([
   ["discount", "/profile/discounts"],
   /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
   ["inbox", "/inbox"],
+  /* Not "bookings": that key is the customer's own /profile/bookings, and both rows are on
+     screen at once for a staff session. */
+  ["staffBookings", "/staff/bookings"],
   ["payments", "/payments"],
   ["listings", "/listings"],
   ["duplicates", "/duplicates"],

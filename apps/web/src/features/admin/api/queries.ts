@@ -27,6 +27,7 @@ export const INBOX_PAGE_SIZE = 20;
 export const SYNC_RUNS_PAGE_SIZE = 20;
 export const PAYMENTS_PAGE_SIZE = 20;
 export const LISTINGS_PAGE_SIZE = 20;
+export const BOOKINGS_PAGE_SIZE = 20;
 
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
@@ -88,6 +89,8 @@ export const invoiceListQueryOptions = (input: {
 export const bookingQueueQueryOptions = (input: {
   status?: readonly BookingStatus[];
   query?: string;
+  /** Bring back the bookings someone marked as not real business; off unless asked for. */
+  includeExcluded?: boolean;
   page: number;
   pageSize?: number;
 }) =>
@@ -95,6 +98,7 @@ export const bookingQueueQueryOptions = (input: {
     input: {
       ...input,
       status: input.status ? [...input.status] : undefined,
+      includeExcluded: input.includeExcluded ?? false,
       pageSize: input.pageSize ?? PAYMENTS_PAGE_SIZE,
     },
     staleTime: 15_000,
