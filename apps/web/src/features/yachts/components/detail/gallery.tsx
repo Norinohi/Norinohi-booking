@@ -71,10 +71,8 @@ export default function Gallery() {
 
         <CarouselArrow direction="prev" className={`left-4 md:left-8 ${ARROW}`} />
         <CarouselArrow direction="next" className={`right-4 md:right-8 ${ARROW}`} />
-        <CarouselBars
-          className="absolute inset-x-4 bottom-4 mx-auto max-w-105 md:inset-x-0"
-          barClassName="w-auto flex-1"
-        />
+        {/* Not stretched: the bars window past a handful now, and each sets its own width. */}
+        <CarouselBars className="absolute inset-x-0 bottom-4" />
       </div>
 
       <CarouselThumbs
