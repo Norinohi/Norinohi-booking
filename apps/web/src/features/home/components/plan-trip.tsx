@@ -1,11 +1,12 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowUpRight, Check } from "lucide-react";
 import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
+
+import ScrollTimeline from "./scroll-timeline";
 
 const CHECKLIST = ["questions", "recommendation", "explore"] as const;
 
@@ -53,30 +54,17 @@ export default function PlanTrip() {
         </motion.div>
 
         {/* Right — vertical timeline */}
-        <motion.ol variants={GROUP} className="flex flex-col xl:mt-4.5 xl:w-142">
-          {STEPS.map((step, index) => {
-            const isLast = index === STEPS.length - 1;
-            return (
-              <motion.li key={step} variants={RISE} className="flex gap-4 md:gap-6">
-                <div className="flex flex-col items-center self-stretch">
-                  <span className="mt-1.5 size-4 shrink-0 rounded-full bg-brand" />
-                  {!isLast && <span className="w-px grow bg-brand-100" />}
-                </div>
-                <div
-                  className={cn(
-                    "flex flex-col gap-1.5 xl:gap-2",
-                    isLast ? "md:pb-4 xl:pb-0" : "pb-8 xl:pb-10",
-                  )}
-                >
-                  <h3 className="text-h5 text-foreground">{t(`steps.${step}.title`)}</h3>
-                  <p className="text-base leading-[1.4] text-natural-600 md:text-xl">
-                    {t(`steps.${step}.description`)}
-                  </p>
-                </div>
-              </motion.li>
-            );
-          })}
-        </motion.ol>
+        <ScrollTimeline
+          className="xl:mt-4.5 xl:w-142"
+          titleClassName="text-h5 text-foreground"
+          gapClassName="pb-8 xl:pb-10"
+          lastClassName="md:pb-4 xl:pb-0"
+          steps={STEPS.map((step) => ({
+            key: step,
+            title: t(`steps.${step}.title`),
+            description: t(`steps.${step}.description`),
+          }))}
+        />
       </motion.div>
     </section>
   );

@@ -4,9 +4,11 @@ import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-import Timeline from "./how-it-works-timeline";
+import ScrollTimeline from "./scroll-timeline";
 
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
+
+const STEPS = ["destination", "yacht", "book"] as const;
 
 export default function HowItWorks() {
   const t = useTranslations("Home.HowItWorks");
@@ -42,7 +44,14 @@ export default function HowItWorks() {
           </Button>
         </motion.div>
 
-        <Timeline />
+        <ScrollTimeline
+          className="md:w-142"
+          steps={STEPS.map((step) => ({
+            key: step,
+            title: t(`steps.${step}.title`),
+            description: t(`steps.${step}.description`),
+          }))}
+        />
       </motion.div>
     </section>
   );
