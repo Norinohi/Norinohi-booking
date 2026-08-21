@@ -173,6 +173,18 @@ async function providerDescription(
   return rows.rows[0]?.value;
 }
 
+/**
+ * Folds an extra's name the way `extra_label_translation.name_key` is written.
+ *
+ * Mirrors normalizedKey in localize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
+ * Case and punctuation only: "Beach towel" and "Beach towels" stay separate entries, because
+ * collapsing a plural is a judgement the dictionary should make explicitly rather than the
+ * join make silently.
+ */
+function extraNameKeySql(column: SQL): SQL {
+  return sql`regexp_replace(replace(lower(${column}), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
+}
+
 export async function getListingDetailByIdOrSlug(
   db: NodePgDatabase<typeof schema>,
   idOrSlug: string,
@@ -251,10 +263,11 @@ export async function getListingDetailByIdOrSlug(
         extra.source,
         extra.kind,
         extra.external_id as "externalId",
-        /* The vendor's own wording in the requested locale, falling back to the name it
-           shipped with the listing. English matches nothing here by design: the fallback
-           already is English. */
-        coalesce(translation.label, extra.name) as label,
+        /* Three sources in order of authority: the provider's own wording for this exact id,
+           the curated label for a fee written that way by any provider, then the name it
+           shipped with. English matches nothing in either table by design, because the last
+           fallback already is English. */
+        coalesce(translation.label, curated.label, extra.name) as label,
         extra.name as "sourceLabel",
         extra.obligatory,
         extra.crew_role as "crewRole",
@@ -270,6 +283,9 @@ export async function getListingDetailByIdOrSlug(
         and translation.kind = extra.kind
         and translation.external_id = extra.external_id
         and translation.locale = ${locale}
+      left join extra_label_translation curated
+        on curated.name_key = ${extraNameKeySql(sql`extra.name`)}
+        and curated.locale = ${locale}
       where extra.listing_id = ${listing.listingId}
         /*
          * Only fees whose season overlaps what we actually sell.
@@ -298,7 +314,12 @@ export async function getListingDetailByIdOrSlug(
       order by sort_order asc, created_at asc
     `),
       listListingReviews(db, listing.listingId),
-      listSimilarListings(db, listing.listingId),
+      /* Localized with the same translator as the page around them: these render as ordinary
+         search cards, and a Ukrainian page whose "popular yachts" strip says "Sailing yacht"
+         next to its own "Вітрильна яхта" is the drift the shared table exists to prevent. */
+      listSimilarListings(db, listing.listingId).then((docs) =>
+        localizeSearchDocs(db, docs, locale, translate),
+      ),
       providerDescription(db, listing.listingId, locale),
     ]);
   const info = infoRows.rows[0];

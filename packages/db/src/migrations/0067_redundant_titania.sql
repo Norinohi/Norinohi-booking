@@ -1,0 +1,1 @@
+ALTER TYPE "public"."facet_translation_source" ADD VALUE 'generated';

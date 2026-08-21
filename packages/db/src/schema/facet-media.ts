@@ -10,8 +10,17 @@ import { id, timestamps } from "./_shared";
  * leaves editorial ones alone. Without the distinction the two writers fight: either the
  * sync overwrites hand-written copy, or a first-write-wins guard freezes seven hundred
  * provider labels at whatever they said the day they were first imported.
+ *
+ * `generated` is the third case and the reason this is an enum rather than a boolean:
+ * Ukrainian has no provider behind it at all, so its labels are produced rather than sourced.
+ * Marking them says so — they are the rows to re-run when the vocabulary is reviewed, and the
+ * rows a real vendor translation should be allowed to replace.
  */
-export const facetTranslationSource = pgEnum("facet_translation_source", ["editorial", "provider"]);
+export const facetTranslationSource = pgEnum("facet_translation_source", [
+  "editorial",
+  "provider",
+  "generated",
+]);
 
 export const facetMediaKind = pgEnum("facet_media_kind", [
   "country",
