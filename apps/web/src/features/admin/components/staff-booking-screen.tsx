@@ -106,7 +106,19 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
     value ? format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short" }) : "—";
   const day = (value: string) => format.dateTime(new Date(value), { dateStyle: "medium" });
 
-  const outstandingMinor = booking.total.amountMinor - booking.paid.amountMinor;
+  /*
+   * The base collects the check-in lines on the day, so they sit in the total and in nothing we
+   * charge. Subtracting them is what stops this panel reporting money as owed that no queue will
+   * ever chase — the same arithmetic `outstandingMinor` does server-side for the customer card.
+   */
+  const atCheckInMinor = booking.priceLines
+    .filter((line) => line.payWhen === "at_check_in")
+    .reduce((total, line) => total + line.amount.amountMinor, 0);
+
+  const outstandingMinor = Math.max(
+    booking.total.amountMinor - atCheckInMinor - booking.paid.amountMinor,
+    0,
+  );
 
   return (
     <>
@@ -156,6 +168,16 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
                 }),
               })}
             </span>
+            {atCheckInMinor > 0 ? (
+              <span className="block text-sm text-natural-500">
+                {t("dueAtCheckIn", {
+                  amount: amount({
+                    amountMinor: atCheckInMinor,
+                    currency: booking.total.currency,
+                  }),
+                })}
+              </span>
+            ) : null}
           </Field>
           <Field label={t("fields.timeline")}>
             <span className="block text-sm text-natural-500">

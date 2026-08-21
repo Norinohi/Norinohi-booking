@@ -263,10 +263,23 @@ function appliesToLabel(targets: Discount["targets"]): string {
   if (targets.length === 0) return "Nothing";
   if (targets.some((target) => target.targetType === "all")) return "All yachts";
 
-  const named = targets.map((target) => target.targetLabel ?? target.targetId ?? "Unknown");
+  const named = targets.map(namedTarget);
   // The table cell is narrow; beyond two names it reads better as a count.
   if (named.length <= 2) return named.join(", ");
   return `${named[0]} +${named.length - 1} more`;
+}
+
+/**
+ * One target as staff should read it.
+ *
+ * A target whose row has since been deleted resolves to no label, and printing the bare id
+ * reads as a broken cell rather than as the dangling reference it is. Naming the type keeps
+ * the id useful for tracking down what the discount was pointed at.
+ */
+function namedTarget(target: Discount["targets"][number]): string {
+  if (target.targetLabel) return target.targetLabel;
+  if (!target.targetId) return "Unknown";
+  return `Missing ${target.targetType} (${target.targetId})`;
 }
 
 /** One lookup per target type, so the "Applies to" cell never N+1s. */

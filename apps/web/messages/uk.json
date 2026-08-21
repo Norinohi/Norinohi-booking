@@ -1873,7 +1873,7 @@
         "started": "{count, plural, one {Запущено # запуск} few {Запущено # запуски} many {Запущено # запусків} other {Запущено # запуску}}",
         "skipped": "{count, plural, one {# провайдер уже імпортує} few {# провайдери вже імпортують} many {# провайдерів уже імпортують} other {# провайдера вже імпортує}}",
         "noProviders": "Жоден конектор не активний.",
-        "capabilities": "Активний конектор:",
+        "capabilities": "Активний конектор: {provider}",
         "capability": {
           "supportsLiveQuote": "Живий прорахунок",
           "supportsOptions": "Опції",
@@ -1981,7 +1981,8 @@
         "invoice_request": "Рахунок",
         "lead": "Звернення",
         "listing": "Оголошення",
-        "listing_duplicate_candidate": "Дублікат"
+        "listing_duplicate_candidate": "Дублікат",
+        "maintenance": "Обслуговування"
       },
       "details": {
         "show": "Показати",
@@ -2259,6 +2260,7 @@
       "guests": "{count} гостей",
       "noReservationId": "Ще немає номера резервації",
       "outstanding": "{amount} до сплати",
+      "dueAtCheckIn": "{amount} до сплати в марині",
       "createdAt": "Створено {at}",
       "holdExpiresAt": "Опція діє до {at}",
       "confirmedAt": "Підтверджено {at}",

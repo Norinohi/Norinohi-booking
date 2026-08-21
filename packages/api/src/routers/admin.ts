@@ -1,11 +1,7 @@
 import { ORPCError } from "@orpc/server";
-import {
-  type InventoryProvider,
-  providerCapabilitiesSchema,
-  type ProviderKey,
-} from "@yacht-charter/providers";
+import { type InventoryProvider, type ProviderKey } from "@yacht-charter/providers";
 
-import { getEnabledInventoryProviders } from "../context";
+import { type Database, getEnabledInventoryProviders } from "../context";
 
 import {
   auditListInputSchema,
@@ -71,6 +67,7 @@ import {
   enquirySetStatusInputSchema,
 } from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
+import { activeConnectorSchema } from "../contracts/provider";
 import {
   outboxDrainResultSchema,
   reminderResultSchema,
@@ -84,7 +81,7 @@ import {
   leadSetStatusInputSchema,
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
-import { listAuditLog } from "../services/audit";
+import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
   confirmDuplicateCandidate,
   listDuplicateCandidates,
@@ -159,6 +156,31 @@ async function resolveSyncTargets(
   return [target];
 }
 
+/**
+ * Runs one maintenance job and records who asked for it.
+ *
+ * The jobs themselves are shared with the cron routes, which have no actor to attribute, so the
+ * entry is written here rather than inside the service. Without it a hand-run sweep moves real
+ * bookings and leaves the history claiming nobody touched them — the one thing §5.7 says the log
+ * must never do.
+ */
+async function runMaintenance<Result>(
+  db: Database,
+  actorUserId: string,
+  job: "sweep_expiries" | "payment_reminders" | "drain_outbox",
+  run: () => Promise<Result>,
+): Promise<Result> {
+  const result = await run();
+  await writeAuditLog(db, {
+    actorUserId,
+    action: "update",
+    entityType: "maintenance",
+    entityId: job,
+    after: result,
+  });
+  return result;
+}
+
 async function resolveSyncProvider(
   context: { provider: InventoryProvider },
   requested: ProviderKey | undefined,
@@ -183,8 +205,11 @@ export const adminRouter = {
         spec: withJsonBodyExample({}),
       })
       .input(emptyInputSchema)
-      .output(providerCapabilitiesSchema)
-      .handler(({ context }) => context.provider.capabilities()),
+      .output(activeConnectorSchema)
+      .handler(({ context }) => ({
+        provider: context.provider.key,
+        ...context.provider.capabilities(),
+      })),
     syncCatalogue: adminProcedure
       .route({
         method: "POST",
@@ -524,7 +549,11 @@ export const adminRouter = {
       })
       .input(emptyInputSchema)
       .output(sweepResultSchema)
-      .handler(({ context }) => sweepExpiries(context.db, context.provider)),
+      .handler(({ context }) =>
+        runMaintenance(context.db, context.session.user.id, "sweep_expiries", () =>
+          sweepExpiries(context.db, context.provider),
+        ),
+      ),
     sendPaymentReminders: adminProcedure
       .route({
         method: "POST",
@@ -539,7 +568,11 @@ export const adminRouter = {
       })
       .input(emptyInputSchema)
       .output(reminderResultSchema)
-      .handler(({ context }) => sendBalanceReminders(context.db)),
+      .handler(({ context }) =>
+        runMaintenance(context.db, context.session.user.id, "payment_reminders", () =>
+          sendBalanceReminders(context.db),
+        ),
+      ),
     drainOutbox: adminProcedure
       .route({
         method: "POST",
@@ -554,7 +587,11 @@ export const adminRouter = {
       })
       .input(emptyInputSchema)
       .output(outboxDrainResultSchema)
-      .handler(({ context }) => drainOutbox(context.db)),
+      .handler(({ context }) =>
+        runMaintenance(context.db, context.session.user.id, "drain_outbox", () =>
+          drainOutbox(context.db),
+        ),
+      ),
   },
   lead: {
     list: adminProcedure
