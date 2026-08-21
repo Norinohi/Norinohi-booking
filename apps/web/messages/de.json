@@ -1,0 +1,2428 @@
+{
+  "Booking": {
+    "confirmBooking": "Buchung bestätigen",
+    "review": {
+      "title": "Buchungsübersicht",
+      "yacht": "Yacht",
+      "dates": "Zeitraum",
+      "crew": "Crew",
+      "people": "Personen",
+      "extras": "Extras",
+      "noExtras": "Keine ausgewählt",
+      "boatPrice": "Bootspreis (voller Mietpreis)",
+      "deposit": "Rückzahlbare Kaution",
+      "secondPayment": "2. Zahlung (fällig am: {date})",
+      "totalPrice": "Gesamtpreis",
+      "dueNow": "Jetzt fällig",
+      "terms": "Ich akzeptiere die <b>AGB und den Chartervertrag</b>.",
+      "cancellation": "Ich akzeptiere die <b>Stornierungsbedingungen</b> (kostenlose Stornierung bis 7. Juni)."
+    },
+    "extras": {
+      "mandatory": "Obligatorisch",
+      "optional": "Optionale Extras",
+      "included": "Inklusive",
+      "arrangeAtBase": "Mit der Basis vereinbaren",
+      "notOnTheseDates": "In diesem Zeitraum nicht verfügbar"
+    },
+    "guestDetails": {
+      "notice": "Mit diesen Angaben bestätigen wir Ihre Buchung und stimmen uns mit dem Basismanager ab.",
+      "guestNotice": "Zum Buchen ist kein Konto nötig. Wir legen eines für diese Reservierung an und senden Ihnen per E-Mail einen Link, mit dem Sie jederzeit ein Passwort wählen können.",
+      "fullName": "Vollständiger Name",
+      "fullNamePlaceholder": "Max Mustermann",
+      "email": "E-Mail-Adresse",
+      "emailPlaceholder": "name@example.com",
+      "phone": "Telefonnummer",
+      "phonePlaceholder": "+49 151 23456789",
+      "country": "Land",
+      "countryPlaceholder": "Land auswählen",
+      "specialRequests": "Besondere Wünsche (optional)",
+      "specialRequestsPlaceholder": "Bitte früher Check-in"
+    },
+    "errors": {
+      "fullName": "Geben Sie Ihren vollständigen Namen ein",
+      "email": "Geben Sie eine gültige E-Mail-Adresse ein",
+      "phone": "Geben Sie eine gültige Telefonnummer ein",
+      "country": "Wählen Sie Ihr Land aus",
+      "terms": "Akzeptieren Sie die Bedingungen, um fortzufahren",
+      "cancellation": "Akzeptieren Sie die Stornierungsbedingungen, um fortzufahren",
+      "paymentMessage": "Geben Sie Ihre Frage oder Anfrage ein",
+      "confirmFailed": "Ihre Buchung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut.",
+      "billingName": "Geben Sie den Rechnungsnamen ein",
+      "billingAddress": "Geben Sie die Rechnungsadresse ein",
+      "city": "Geben Sie die Stadt ein"
+    },
+    "backToYacht": "Zurück zu {name}",
+    "panels": {
+      "main": "Buchungsdetails",
+      "aside": "Buchungsübersicht"
+    },
+    "continue": "Weiter",
+    "steps": {
+      "guestDetails": "Gastdaten",
+      "extras": "Extras",
+      "reviewAndBook": "Prüfen & buchen",
+      "payment": "Zahlung"
+    },
+    "payment": {
+      "heading": "Wählen Sie, wie Sie fortfahren möchten",
+      "submitFailed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "tabs": {
+        "card": "Mit Karte zahlen",
+        "invoice": "Rechnung anfordern",
+        "question": "Frage stellen"
+      },
+      "card": {
+        "notice": "Sichern Sie sich Ihre Buchung sofort mit einer Online-Zahlung.",
+        "unavailable": "Die Online-Kartenzahlung ist derzeit nicht verfügbar. Bitte nutzen Sie „Rechnung anfordern“ oder „Frage stellen“.",
+        "quoteExpired": "Ihr Preis ist abgelaufen. Gehen Sie zurück und aktualisieren Sie das Angebot, bevor Sie zahlen.",
+        "notPayable": "Diese Buchung kann nicht mehr bezahlt werden. Bitte starten Sie eine neue Buchung.",
+        "failed": "Die Zahlung konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
+        "cta": "{amount} zahlen",
+        "orCard": "oder mit Karte zahlen",
+        "preparing": "Zahlungsoptionen werden vorbereitet"
+      },
+      "invoice": {
+        "email": "Rechnungs-E-Mail",
+        "emailPlaceholder": "billing@gmail.com",
+        "company": "Firmenname (optional)",
+        "companyPlaceholder": "Yachts Adventures",
+        "vat": "USt-IdNr. (optional)",
+        "vatPlaceholder": "DE123456789",
+        "notice": "Lieber offline zahlen? Wir senden Ihnen eine Rechnung, die Sie per Banküberweisung begleichen können.",
+        "cta": "Rechnung anfordern (über {amount})",
+        "name": "Rechnungsname",
+        "namePlaceholder": "Erika Mustermann",
+        "addressLine1": "Adresse",
+        "addressLine1Placeholder": "Hafenstraße 12",
+        "addressLine2": "Adresszusatz (optional)",
+        "addressLine2Placeholder": "Wohnung, Etage, c/o",
+        "city": "Stadt",
+        "cityPlaceholder": "Split",
+        "postalCode": "Postleitzahl (optional)",
+        "postalCodePlaceholder": "21000",
+        "country": "Land",
+        "countryPlaceholder": "Land auswählen",
+        "registration": "Handelsregisternummer (optional)",
+        "registrationPlaceholder": "HRB 12345"
+      },
+      "question": {
+        "label": "Ihre Frage oder Anfrage",
+        "placeholder": "Senden Sie vor der Buchung eine Anfrage (z. B. Führerscheinprüfung, besondere Anforderungen)",
+        "cta": "Anfrage senden"
+      }
+    },
+    "confirmation": {
+      "reserved": "Ihre Yacht ist reserviert!",
+      "notFound": "Buchung nicht gefunden",
+      "browse": "Yachten entdecken",
+      "remaining": "Die restlichen {amount} werden beim Check-in bezahlt.",
+      "emailed": "Wir haben Ihnen die Details per E-Mail gesendet und melden uns erneut, sobald der Anbieter bestätigt",
+      "guestEmailed": "Wir haben Ihnen die Details per E-Mail gesendet – mit einem Link, um ein Passwort festzulegen und diese Buchung in Ihrem Konto zu behalten",
+      "viewBooking": "Buchung ansehen",
+      "summaryTitle": "Buchungsübersicht",
+      "quote": "„Diese Yacht ist ideal für Inselhopping in Kroatien – stabil, geräumig und perfekt für Gruppenreisen. Ihre Route führt über Hvar und Vis, zwei der schönsten Inseln der Adria.“",
+      "shareTrip": "Reise teilen",
+      "downloadReceipt": "Beleg herunterladen",
+      "summary": {
+        "yacht": "Yacht",
+        "dates": "Zeitraum",
+        "crew": "Crew",
+        "mandatory": "Obligatorisch",
+        "selectedExtras": "Gewählte Extras",
+        "boatPrice": "Bootspreis (voller Mietpreis)",
+        "deposit": "Rückzahlbare Kaution",
+        "secondPayment": "2. Zahlung (fällig am: {date})",
+        "secondPaymentAtCheckIn": "2. Zahlung (fällig beim Check-in)",
+        "totalPrice": "Gesamtpreis",
+        "perPerson": "~ {price} pro Person",
+        "dueNow": "Jetzt fällig"
+      },
+      "viewInvoice": "Rechnung ansehen",
+      "settling": {
+        "title": "Zahlung eingegangen",
+        "body": "Wir bestätigen Ihre Buchung gerade mit der Charterbasis. Das dauert in der Regel nur wenige Sekunden."
+      },
+      "failed": {
+        "title": "Wir konnten diese Buchung nicht bestätigen",
+        "body": "Die Charterbasis konnte diese Reservierung nicht annehmen. Eine bereits geleistete Zahlung wird zurückerstattet."
+      },
+      "shareText": "Wir chartern {name}, {dates}!",
+      "shareCopied": "Link kopiert",
+      "shareFailed": "Der Link konnte nicht kopiert werden"
+    },
+    "invoice": {
+      "title": "Rechnung",
+      "print": "Drucken / als PDF speichern",
+      "backToBookings": "Zurück zu den Buchungen",
+      "browse": "Yachten entdecken",
+      "issuedOn": "Ausgestellt am {date}",
+      "dueOn": "Fällig am {date}",
+      "status": {
+        "pending": "Zahlung ausstehend",
+        "sent": "Gesendet",
+        "paid": "Bezahlt",
+        "cancelled": "Storniert"
+      },
+      "from": "Von",
+      "billTo": "Rechnung an",
+      "vat": "USt-IdNr. {value}",
+      "registration": "Reg.-Nr. {value}",
+      "summary": {
+        "reference": "Buchungsnummer",
+        "yacht": "Yacht",
+        "base": "Basis",
+        "dates": "Charterzeitraum",
+        "guests": "Gäste"
+      },
+      "lines": {
+        "description": "Beschreibung",
+        "collected": "Eingezogen",
+        "amount": "Betrag"
+      },
+      "payWhen": {
+        "now": "Mit dieser Rechnung",
+        "at_check_in": "Beim Check-in"
+      },
+      "totals": {
+        "charterTotal": "Charter gesamt",
+        "paid": "Bereits bezahlt",
+        "dueNow": "Jetzt fällig",
+        "balance": "Restbetrag",
+        "securityDeposit": "Eine rückzahlbare Kaution von {amount} wird beim Check-in hinterlegt und ist nicht Teil dieser Rechnung."
+      },
+      "payment": {
+        "title": "Zahlungsdetails",
+        "beneficiary": "Empfänger",
+        "bank": "Bank",
+        "iban": "IBAN",
+        "bic": "BIC / SWIFT",
+        "reference": "Verwendungszweck",
+        "amount": "Zu überweisender Betrag",
+        "note": "Geben Sie bei der Überweisung den Verwendungszweck an, damit wir die Zahlung Ihrer Buchung zuordnen können. Ihre Reservierung ist bestätigt, sobald der Betrag eingegangen ist."
+      },
+      "footnote": "Ausgestellt von {company}. Diese Rechnung wurde elektronisch erstellt und ist ohne Unterschrift gültig.",
+      "error": {
+        "title": "Die Rechnung konnte nicht geladen werden",
+        "description": "Bitte versuchen Sie es gleich noch einmal."
+      },
+      "missing": {
+        "title": "Keine Rechnung für diese Buchung",
+        "description": "Diese Buchung wurde nicht per Banküberweisung bezahlt, daher wurde keine Rechnung ausgestellt."
+      }
+    },
+    "balance": {
+      "title": "Restbetrag zahlen",
+      "titleUnpaid": "Zahlung abschließen",
+      "reference": "Buchung {reference}",
+      "pay": "{amount} zahlen",
+      "notFound": "Wir konnten diese Buchung nicht finden",
+      "browse": "Yachten entdecken",
+      "viewBookings": "Meine Buchungen",
+      "unavailable": "Die Online-Zahlung ist derzeit nicht verfügbar. Bitte kontaktieren Sie uns, um diese Buchung zu begleichen.",
+      "summary": {
+        "total": "Gesamtpreis",
+        "paid": "Bereits bezahlt",
+        "atCheckIn": "Fällig in der Marina",
+        "due": "Jetzt fällig"
+      },
+      "paid": {
+        "title": "Ihre Buchung ist vollständig bezahlt",
+        "body": "Für Buchung {reference} ist nichts mehr zu zahlen. Extras und die Kaution werden in der Marina abgerechnet.",
+        "viewBooking": "Buchung ansehen"
+      },
+      "notPayable": {
+        "title": "Dieser Preis ist abgelaufen",
+        "body": "Wir können für diese Buchung keine Zahlung mehr annehmen: Der angebotene Preis und die Reservierung beim Anbieter sind beide abgelaufen. Prüfen Sie die Daten erneut, und wir erstellen Ihnen ein neues Angebot.",
+        "action": "Verfügbarkeit prüfen"
+      },
+      "settling": {
+        "title": "Zahlung eingegangen",
+        "body": "Wir aktualisieren Ihre Buchung. Das dauert in der Regel nur wenige Sekunden."
+      },
+      "received": {
+        "title": "Zahlung eingegangen",
+        "body": "Vielen Dank. Für diesen Charter sind noch {outstanding} offen – wir erinnern Sie rechtzeitig vor der Fälligkeit.",
+        "viewBooking": "Buchung ansehen"
+      }
+    },
+    "detail": {
+      "notFound": "Wir konnten diese Buchung nicht finden",
+      "browse": "Yachten entdecken",
+      "reference": "Buchung {reference}",
+      "guests": "{count} Gäste",
+      "payBalance": "{amount} zahlen",
+      "completePayment": "Zahlung abschließen {amount}",
+      "viewInvoice": "Rechnung ansehen",
+      "priceTitle": "Preisaufstellung",
+      "total": "Gesamtpreis",
+      "paymentsTitle": "Zahlungen",
+      "paid": "Bisher bezahlt",
+      "outstanding": "Noch zu zahlen",
+      "dueAtCheckIn": "Fällig in der Marina",
+      "atMarina": "in der Marina bezahlt",
+      "noPayments": "Für diese Buchung wurden noch keine Zahlungen geleistet.",
+      "disputed": "strittig",
+      "kind": {
+        "deposit": "Erste Zahlung",
+        "balance": "Zweite Zahlung",
+        "full": "Vollständige Zahlung",
+        "checkin_extras": "Extras beim Check-in",
+        "security_deposit": "Kaution"
+      },
+      "method": {
+        "card": "Karte",
+        "transfer": "Banküberweisung"
+      },
+      "paymentStatus": {
+        "requires_payment": "Nicht bezahlt",
+        "processing": "In Bearbeitung",
+        "succeeded": "Bezahlt",
+        "failed": "Fehlgeschlagen",
+        "refunded": "Erstattet"
+      },
+      "status": {
+        "DRAFT": "Entwurf",
+        "QUOTED": "Angebot erstellt",
+        "OPTION_PENDING": "Wird reserviert",
+        "OPTION_HELD": "Reserviert",
+        "PAYMENT_PENDING": "Zahlung ausstehend",
+        "CONFIRMING": "Wird bestätigt",
+        "CONFIRMED": "Bestätigt",
+        "QUOTE_EXPIRED": "Abgelaufen",
+        "OPTION_EXPIRED": "Abgelaufen",
+        "PAYMENT_FAILED": "Zahlung fehlgeschlagen",
+        "PROVIDER_REJECTED": "Nicht verfügbar",
+        "CANCELLED": "Storniert",
+        "REFUND_PENDING": "Wird erstattet",
+        "REFUNDED": "Erstattet"
+      },
+      "backToBookings": "Zurück zu meinen Buchungen",
+      "panels": {
+        "main": "Buchung",
+        "aside": "Preis"
+      },
+      "charterTitle": "Charter",
+      "dates": "Zeitraum",
+      "guestsLabel": "Gäste",
+      "crew": "Crew",
+      "marina": "Marina",
+      "referenceLabel": "Buchungsnummer",
+      "settled": "Nichts mehr zu zahlen",
+      "viewYacht": "Yachtseite ansehen",
+      "supportTitle": "Brauchen Sie Hilfe?",
+      "supportBody": "Fragen zu Ihrem Charter, Änderungen am Zeitraum oder etwas anderes – unser Team antwortet innerhalb eines Werktags.",
+      "contactSupport": "Support kontaktieren",
+      "supportSubject": "Buchung {reference}",
+      "marinaContact": "Kontakt zur Marina",
+      "signInTitle": "Melden Sie sich an, um diese Buchung zu sehen",
+      "signInBody": "Diese Buchung ist mit Ihrem Konto verknüpft. Melden Sie sich mit der E-Mail-Adresse an, mit der Sie gebucht haben, und wir bringen Sie direkt hierher zurück.",
+      "signIn": "Anmelden",
+      "cancelledOn": "Storniert am",
+      "cancelReason": "Grund",
+      "requestCancel": "Stornierung anfragen",
+      "crewList": {
+        "title": "Crewliste",
+        "notice": "Das Charterunternehmen muss den Behörden vor dem Ablegen eine Liste aller Personen an Bord übermitteln. Füllen Sie sie hier aus, und wir leiten sie weiter – fehlende Angaben erfragt die Basis bei Ihrer Ankunft am Schalter.",
+        "loading": "Ihre Crewliste wird geladen…",
+        "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste – fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
+        "member": "Crewmitglied {number}",
+        "remove": "Crewmitglied {number} entfernen",
+        "add": "Crewmitglied hinzufügen",
+        "save": "Crewliste speichern",
+        "saved": "Crewliste gespeichert",
+        "saveFailed": "Ihre Crewliste konnte nicht gespeichert werden",
+        "fullName": "Vollständiger Name",
+        "fullNamePlaceholder": "Wie im Reisepass angegeben",
+        "role": "Rolle",
+        "rolePlaceholder": "Skipper, Gast…",
+        "dateOfBirth": "Geburtsdatum",
+        "documentNumber": "Reisepass- oder Ausweisnummer",
+        "documentNumberPlaceholder": "X1234567",
+        "nationality": "Staatsangehörigkeit",
+        "nationalityPlaceholder": "Land auswählen",
+        "errors": {
+          "fullName": "Geben Sie den vollständigen Namen dieser Person ein",
+          "dateOfBirth": "Geben Sie ein gültiges Datum ein"
+        }
+      }
+    },
+    "support": {
+      "title": "Wie können wir helfen?",
+      "subtitle": "Schreiben Sie uns eine Nachricht, und wir melden uns innerhalb eines Werktags bei Ihnen.",
+      "messageLabel": "Ihre Nachricht",
+      "messagePlaceholder": "Sagen Sie uns, wobei Sie Hilfe brauchen – Zeitraum, Boot, Zahlung, was auch immer.",
+      "required": "Schreiben Sie zuerst eine Nachricht",
+      "send": "Nachricht senden",
+      "sent": "Nachricht gesendet",
+      "sentTitle": "Nachricht gesendet",
+      "sentBody": "Wir haben sie erhalten, zusammen mit Ihren Buchungsdetails. Sie hören per E-Mail von uns.",
+      "backToBooking": "Zurück zu meiner Buchung",
+      "failed": "Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+      "marinaContact": "Oder kontaktieren Sie die Marina direkt",
+      "cancellation": {
+        "title": "Stornierung anfragen",
+        "subtitle": "Senden Sie uns die Anfrage, und wir melden uns mit dem, was Ihre Stornierungsbedingungen zulassen.",
+        "messageLabel": "Warum möchten Sie stornieren?",
+        "messagePlaceholder": "Alles, was uns hilft – geänderte Pläne, Termine, Wetter, eine Erkrankung.",
+        "template": "Ich möchte die Buchung {reference} ({dates}) stornieren.\n\nGrund: ",
+        "send": "Stornierungsanfrage senden",
+        "sentTitle": "Stornierung angefragt",
+        "sentBody": "Ihre Buchung bleibt unverändert, bis unser Team die Anfrage geprüft hat. Sie hören per E-Mail von uns, was Ihre Stornierungsbedingungen zulassen."
+      }
+    },
+    "booked": "Gebucht",
+    "saveAndContinue": "Speichern & weiter",
+    "extrasSkipped": "Werfen Sie zuerst einen Blick auf die optionalen Extras – und bestätigen Sie dann."
+  },
+  "Common": {
+    "crewTypes": {
+      "bareboat": "Bareboat",
+      "skipper": "Skipper",
+      "full-crew": "Volle Crew"
+    },
+    "extras": {
+      "payAtCheckIn": "Zahlung beim Check-in",
+      "payNow": "In der Anzahlung enthalten",
+      "measure": {
+        "booking": "{price} pro Buchung",
+        "day": "{price} pro Tag",
+        "night": "{price} pro Nacht",
+        "week": "{price} pro Woche",
+        "person": "{price} pro Person",
+        "nightPerson": "{price} pro Person / Nacht",
+        "dayWithFood": "{price} pro Tag inkl. Verpflegung",
+        "oneWayPerson": "{price} einfache Strecke pro Person",
+        "set": "{price} pro Set",
+        "service": "{price} pro Leistung"
+      },
+      "oneWayOnly": "Nur für One-Way-Charter"
+    },
+    "resultsCount": "{count, plural, one {# Yacht gefunden} other {# Yachten gefunden}}",
+    "removeFilter": "Filter {label} entfernen",
+    "passwordToggle": {
+      "show": "Passwort anzeigen",
+      "hide": "Passwort ausblenden"
+    },
+    "sorting": {
+      "label": "Sortieren nach: {value}",
+      "recommended": "Empfohlen",
+      "price-asc": "Preis: aufsteigend",
+      "price-desc": "Preis: absteigend",
+      "rating": "Gästebewertung",
+      "newest": "Neueste zuerst"
+    },
+    "boatCard": {
+      "save": "Zur Merkliste hinzufügen",
+      "remove": "Von der Merkliste entfernen",
+      "viewDetails": "Details ansehen",
+      "imageAlt": "{name} vor Anker in {marina}",
+      "openGallery": "Fotogalerie öffnen",
+      "priceFor": "Preis für {days, plural, one {# Tag} other {# Tage}}",
+      "priceOnRequest": "Auf Anfrage",
+      "priceUnavailable": "Nicht verfügbar",
+      "perPerson": "{price} pro Person",
+      "perPersonApprox": "~ {price} pro Person",
+      "prepayment": "Anzahlung bei Buchung: {amount}",
+      "prepaymentInfo": "Dies ist der Teil des Charterpreises, der im Voraus gezahlt wird, um die Buchung zu sichern. Er wird auf den Gesamtpreis angerechnet; der Restbetrag ist vor dem Check-in fällig.",
+      "securityDeposit": "Rückzahlbare Kaution: {amount}",
+      "securityDepositInfo": "Eine rückzahlbare Kaution, die die Charterbasis als Sicherheit für Schäden während Ihres Törns einbehält. Sie wird beim Check-in hinterlegt, ist nicht Teil des Preises und wird nach dem Check-out zurückerstattet, wenn alles in gutem Zustand ist.",
+      "specs": {
+        "year": "Baujahr",
+        "people": "Personen",
+        "toilets": "WC",
+        "showers": "Duschen",
+        "mainsail": "Großsegeltyp",
+        "cabins": "Kabinen",
+        "length": "Länge"
+      },
+      "battenMainsail": "Lattengroßsegel",
+      "badges": {
+        "unavailable": "Nicht verfügbar",
+        "bestForFamilies": "Ideal für Familien",
+        "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+        "new": "Neu",
+        "discount": "{percent}% RABATT"
+      },
+      "stats": {
+        "booked": "{count, plural, one {# Mal diesen Monat gebucht} other {# Mal diesen Monat gebucht}}",
+        "viewed": "{count, plural, one {# Person hat heute angesehen} other {# Personen haben heute angesehen}}"
+      },
+      "amenities": {
+        "wifi": "Kostenloses WLAN",
+        "solar": "3 Solarpaneele",
+        "paddle": "Kostenloses Stand-up-Paddle",
+        "air": "Klimaanlage",
+        "waterToys": "Wasserspielzeug",
+        "galley": "Voll ausgestattete Pantry",
+        "fridge": "Kühl- & Gefrierschrank",
+        "tender": "Beiboot mit Außenborder"
+      },
+      "charterTypes": {
+        "bareboat": "Bareboat",
+        "bareboatSailingYacht": "Segelyacht ohne Crew",
+        "catamaran": "Katamaran"
+      },
+      "crews": {
+        "fullCrew": "Volle Crew",
+        "skipperOptional": "Skipper optional"
+      }
+    },
+    "gallery": {
+      "close": "Schließen",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern"
+    },
+    "marina": {
+      "viewDetails": "Details ansehen"
+    },
+    "map": {
+      "open": "Karte von {place} öffnen",
+      "satellite": "Satellit",
+      "streets": "Karte"
+    },
+    "leadForm": {
+      "fields": {
+        "name": {
+          "label": "Vollständiger Name",
+          "placeholder": "Erika Mustermann"
+        },
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "erika@beispiel.de"
+        },
+        "phone": {
+          "label": "Telefon (optional)",
+          "placeholder": "+49 170 1234567"
+        },
+        "message": {
+          "label": "Nachricht (optional)",
+          "placeholder": "Gibt es noch etwas, das wir über Ihre Reise wissen sollten?"
+        }
+      },
+      "errors": {
+        "nameRequired": "Bitte geben Sie Ihren Namen ein",
+        "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+        "submitFailed": "Ihre Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+      }
+    },
+    "charterPeriod": {
+      "or": " oder ",
+      "daysAndNights": "{days}, {nights}",
+      "weekdayRange": "{from} bis {to}",
+      "wholeWeeksAnyDay": "Beliebiger Starttag, in ganzen Wochen",
+      "wholeWeeksFromDays": "Start {days}, in ganzen Wochen",
+      "weekdaysToDay": "Start {days}, Ende {to}",
+      "weekdayStart": "Start am {day}",
+      "weekdayEnd": "Ende am {day}",
+      "nightsExact": "{count, plural, one {# Nacht} other {# Nächte}}",
+      "nightsFrom": "ab {count, plural, one {# Nacht} other {# Nächten}}",
+      "nightsUpTo": "bis zu {count, plural, one {# Nacht} other {# Nächten}}",
+      "nightsRange": "{min} bis {max} Nächte",
+      "label": "Charterzeitraum"
+    },
+    "countryPicker": {
+      "search": "Länder suchen",
+      "empty": "Keine passenden Länder"
+    },
+    "errors": {
+      "requestFailed": "Etwas ist schiefgelaufen",
+      "retry": "Erneut versuchen"
+    },
+    "notFound": {
+      "title": "Seite nicht gefunden",
+      "description": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+      "home": "Zur Startseite",
+      "browse": "Yachten ansehen"
+    },
+    "error": {
+      "title": "Etwas ist schiefgelaufen",
+      "description": "Diese Seite konnte nicht geladen werden. Bitte versuchen Sie es erneut oder kommen Sie später wieder.",
+      "retry": "Erneut versuchen",
+      "home": "Zur Startseite"
+    },
+    "ui": {
+      "close": "Schließen",
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite",
+      "pagination": "Seitennavigation",
+      "breadcrumb": "Brotkrümelnavigation",
+      "previousPhoto": "Vorheriges Foto",
+      "nextPhoto": "Nächstes Foto",
+      "goToPhoto": "Zu Foto {index} von {total}",
+      "showPhoto": "Foto {index} anzeigen",
+      "clear": "{label} zurücksetzen",
+      "noOptions": "Keine Optionen",
+      "noMatches": "Keine Treffer",
+      "showPassword": "Passwort anzeigen",
+      "hidePassword": "Passwort verbergen",
+      "previousMonth": "Vorheriger Monat",
+      "nextMonth": "Nächster Monat",
+      "rating": "Bewertung {rating} von {max}"
+    }
+  },
+  "Filters": {
+    "title": "Alle Filter ({count})",
+    "clearAll": "Alle löschen",
+    "close": "Filter schließen",
+    "apply": "Filter anwenden ({count})",
+    "trigger": "Filter ({count})",
+    "needHelp": "Brauchen Sie Hilfe?",
+    "contactExpert": "Charter-Experten kontaktieren",
+    "clearField": "{label} löschen",
+    "clearSelection": "Auswahl löschen",
+    "unitAria": "Einheit für {label}",
+    "sections": {
+      "where": "Wohin?",
+      "when": "Wann?",
+      "boat": "Boot & Crew",
+      "specs": "Bootsdaten",
+      "additional": "Weitere Filter",
+      "ratings": "Bewertungen"
+    },
+    "labels": {
+      "country": "Land",
+      "sailingArea": "Segelrevier",
+      "charterCompany": "Charterunternehmen",
+      "marina": "Marina",
+      "startDate": "Startdatum",
+      "duration": "Dauer",
+      "dateFlexibility": "Datumsflexibilität",
+      "boatType": "Bootstyp",
+      "model": "Modell",
+      "crew": "Crew",
+      "mainsailType": "Großsegeltyp",
+      "equipment": "Ausstattung",
+      "length": "Länge",
+      "cabins": "Kabinen",
+      "berths": "Kojen (Schlafplätze)",
+      "bathrooms": "Bäder",
+      "price": "Preis (für gewählten Zeitraum)",
+      "boatAge": "Bootsalter",
+      "year": "Baujahr",
+      "yearFrom": "Baujahr ab",
+      "yearTo": "Baujahr bis",
+      "guestRating": "Gästebewertung"
+    },
+    "placeholders": {
+      "allCountries": "Alle Länder",
+      "searchCountries": "Länder suchen...",
+      "allRegions": "Alle Regionen",
+      "allCompanies": "Alle Unternehmen",
+      "allMarinas": "Alle Marinas",
+      "searchMarinas": "Marinas suchen...",
+      "allBoats": "Alle Boote",
+      "allModels": "Alle Modelle",
+      "searchModels": "Modelle suchen...",
+      "anyCrew": "Beliebige Crew",
+      "allTypes": "Alle Typen",
+      "anyEquipment": "Beliebige Ausstattung",
+      "anyDate": "Beliebiges Datum"
+    },
+    "aria": {
+      "builtFrom": "Baujahr ab",
+      "builtTo": "Baujahr bis"
+    },
+    "toggles": {
+      "withoutAvailabilityConfirmation": "Yachten ohne Verfügbarkeitsbestätigung anzeigen",
+      "underTemporaryBooking": "Yachten mit vorläufiger Buchung anzeigen",
+      "depositInsurance": "Kautionsversicherung inklusive",
+      "petsAllowed": "Haustiere erlaubt"
+    },
+    "units": {
+      "years": "{count, plural, one {# Jahr} other {# Jahre}}"
+    },
+    "chips": {
+      "more": "{names} +{count}",
+      "none": "—",
+      "any": "beliebig",
+      "country": "Land: {value}",
+      "sailingArea": "Segelrevier: {value}",
+      "city": "Stadt: {value}",
+      "charterCompany": "Charterunternehmen: {value}",
+      "marina": "Marina: {value}",
+      "startDate": "Start: {value}",
+      "duration": "Dauer: {count, plural, one {# Tag} other {# Tage}}",
+      "dateFlexibility": "Flexibilität: {value}",
+      "boatType": "Bootstyp: {value}",
+      "builder": "Werft: {value}",
+      "model": "Modell: {value}",
+      "crew": "Crew: {value}",
+      "mainsailType": "Großsegel: {value}",
+      "equipment": "Ausstattung: {value}",
+      "length": "Länge: {value}",
+      "cabins": "Kabinen: {value}",
+      "berths": "Kojen: {value}",
+      "bathrooms": "Bäder: {value}",
+      "price": "Preis: {value}",
+      "year": "Baujahr: {from}–{to}",
+      "withoutAvailabilityConfirmation": "Ohne Verfügbarkeitsbestätigung",
+      "underTemporaryBooking": "Vorläufig gebucht",
+      "depositInsurance": "Kautionsversicherung",
+      "petsAllowed": "Haustiere erlaubt",
+      "guestRating": "Bewertung: {value}"
+    }
+  },
+  "Home": {
+    "BoatTypes": {
+      "heading": "Wählen Sie Ihren Bootstyp",
+      "previous": "Vorherige Bootstypen",
+      "next": "Nächste Bootstypen",
+      "luxury": {
+        "title": "Luxusyacht",
+        "description": "Die größten Boote der Flotte, mit Crew und Ausstattung auf Hotelniveau.",
+        "imageAlt": "Luxusyacht vor Anker"
+      }
+    },
+    "BudgetFinder": {
+      "heading": "Yachten nach Budget finden",
+      "viewResults": "Ergebnisse anzeigen",
+      "labels": {
+        "budget": "Budget",
+        "people": "Personen",
+        "skipper": "Skipper",
+        "destinations": "Reiseziele (optional)"
+      },
+      "options": {
+        "any": "Beliebig",
+        "skipperYes": "Ja",
+        "skipperNo": "Nein",
+        "destinationsAll": "Alle Reiseziele"
+      }
+    },
+    "EarnCta": {
+      "heading": "Verdienen Sie mit Ihrer Yacht",
+      "description": "Listen Sie Ihre Yacht auf unserer Plattform und erhalten Sie Buchungen von Reisenden aus aller Welt. Wir sorgen für Sichtbarkeit, Nachfrage und Tools – Sie behalten die Kontrolle über Termine und Preise.",
+      "cta": "Yacht inserieren"
+    },
+    "Hero": {
+      "tagline": "Über 30.000 Yachten in 1.200 Reisezielen. Charter ab 120 €/Tag",
+      "heading": "Entdecken Sie die Welt per Yacht",
+      "wherePlaceholder": "Wohin?",
+      "datesPlaceholder": "Beliebige Daten",
+      "clearDates": "Daten löschen",
+      "boatPlaceholder": "Beliebiges Boot",
+      "captainPlaceholder": "Mit Skipper",
+      "search": "Suchen",
+      "dontKnow": "Unsicher bei der Auswahl?",
+      "helpPlan": "Reise planen lassen",
+      "options": {
+        "croatia": "Kroatien",
+        "greece": "Griechenland",
+        "italy": "Italien",
+        "turkey": "Türkei",
+        "caribbean": "Karibik",
+        "thailand": "Thailand",
+        "catamaran": "Katamaran",
+        "sailingYacht": "Segelyacht",
+        "motorYacht": "Motoryacht",
+        "gulet": "Gulet",
+        "luxuryYacht": "Luxusyacht",
+        "withCaptain": "Mit Skipper",
+        "bareboat": "Ohne Crew",
+        "skippered": "Mit Skipper"
+      },
+      "stats": {
+        "yachts": {
+          "label": "Yachten"
+        },
+        "destinations": {
+          "label": "Reiseziele"
+        },
+        "travelers": {
+          "label": "zufriedene Gäste"
+        },
+        "rating": {
+          "label": "Durchschnittsbewertung"
+        }
+      }
+    },
+    "HowItWorks": {
+      "heading": "So funktioniert's",
+      "intro": "Eine Yacht zu buchen ist einfacher, als Sie denken.",
+      "introSecondLine": "Wir begleiten Sie von der Wahl des Reiseziels bis an Bord – ganz ohne Vorkenntnisse.",
+      "cta": "Yachten finden",
+      "steps": {
+        "destination": {
+          "title": "Reiseziel wählen",
+          "description": "Entdecken Sie über 1.200 Segelreviere weltweit. Von Kroatien bis zur Karibik – wählen Sie den Ort, der zu Ihrer Reise passt."
+        },
+        "yacht": {
+          "title": "Yacht auswählen",
+          "description": "Durchsuchen Sie Yachten nach Gruppengröße, Budget und Wünschen. Vergleichen Sie die Optionen und finden Sie die passende Yacht für Ihre Reise."
+        },
+        "book": {
+          "title": "Reise buchen",
+          "description": "Bestätigen Sie Ihre Termine, ergänzen Sie bei Bedarf Extras und sichern Sie Ihre Buchung online. Dann kann es losgehen."
+        }
+      }
+    },
+    "PlanTrip": {
+      "heading": "Noch unentschlossen? Planen Sie Ihren perfekten Yachttörn in 30 Sekunden",
+      "cta": "Reise planen lassen",
+      "checklist": {
+        "questions": "Beantworten Sie ein paar einfache Fragen",
+        "recommendation": "Erhalten Sie eine persönliche Empfehlung",
+        "explore": "Entdecken Sie die besten Yachten für Ihre Reise"
+      },
+      "steps": {
+        "preferences": {
+          "title": "Wünsche angeben",
+          "description": "Nennen Sie Ihre Wunschziele – von den türkisfarbenen Küsten Palawans bis zu den historischen Häfen Vallettas."
+        },
+        "recommendation": {
+          "title": "Empfehlung erhalten",
+          "description": "Wir schlagen Ihnen Yachten vor, die zu den Bedürfnissen Ihrer Gruppe passen. Prüfen Sie unsere Empfehlungen und wählen Sie die perfekte Yacht."
+        },
+        "yachts": {
+          "title": "Yachten ansehen",
+          "description": "Legen Sie die Details fest, ergänzen Sie Extras und buchen Sie. Dann heißt es nur noch: Vorfreude auf ein unvergessliches Yachtabenteuer."
+        }
+      }
+    },
+    "PopularDestinations": {
+      "heading": "Beliebte Reiseziele",
+      "previous": "Vorherige Reiseziele",
+      "next": "Nächste Reiseziele",
+      "seeAll": "Alle Reiseziele ansehen",
+      "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}"
+    },
+    "PopularYachts": {
+      "heading": "Beliebte Yachten",
+      "previous": "Vorherige Yachten",
+      "next": "Nächste Yachten",
+      "seeAll": "Alle Yachten ansehen",
+      "from": "Ab",
+      "viewDetails": "Details ansehen",
+      "perDay": "/ pro Tag"
+    },
+    "SailingRoutes": {
+      "heading": "Beliebte Segelrouten",
+      "allRoutes": "Alle Routen",
+      "exploreRoute": "Route entdecken",
+      "days": "{count, plural, one {# Tag} other {# Tage}}",
+      "levels": {
+        "easy": "Leicht",
+        "moderate": "Mittel",
+        "advanced": "Anspruchsvoll"
+      },
+      "items": {
+        "dalmatianCoast": {
+          "title": "Dalmatinische Küste",
+          "description": "Entdecken Sie die versteckten Buchten von Brač, das lebendige Nachtleben von Hvar und die ruhige Schönheit von Vis.",
+          "imageAlt": "Segelyacht vor Anker in einer bewaldeten dalmatinischen Bucht"
+        },
+        "greekCyclades": {
+          "title": "Griechische Kykladen",
+          "description": "Segeln Sie durch das Herz der Ägäis – vom kosmopolitischen Mykonos bis zum atemberaubenden Santorini.",
+          "imageAlt": "Weiß getünchte Kapelle über einer griechischen Inselbucht"
+        },
+        "amalfiCoast": {
+          "title": "Amalfiküste",
+          "description": "Kreuzen Sie entlang der Klippen von Positano und der Grotten von Capri an Italiens glamourösester Küste.",
+          "imageAlt": "Kathedralkuppel von Positano über der Amalfiküste"
+        }
+      }
+    },
+    "Testimonials": {
+      "heading": "Das sagen unsere Kunden",
+      "allReviews": "Alle Bewertungen",
+      "comingSoon": "Demnächst",
+      "items": {
+        "weber": {
+          "quote": "Wir haben zum ersten Mal eine Yacht in Kroatien gebucht, und alles hat einfach funktioniert. Der Ablauf war unkompliziert und das Boot genau so, wie wir es erwartet hatten.",
+          "location": "Deutschland"
+        },
+        "martin": {
+          "quote": "Ich hatte keine Segelerfahrung, aber über die Plattform war es leicht, einen Skipper zu finden und die ganze Reise zu planen. Es fühlte sich an wie ein normaler Urlaub – nur besser.",
+          "location": "Frankreich"
+        },
+        "carter": {
+          "quote": "Die Preistransparenz war die größte Überraschung. Wir konnten die Gesamtkosten vorab sehen und unter Freunden aufteilen – super praktisch.",
+          "location": "Vereinigtes Königreich"
+        },
+        "rossi": {
+          "quote": "Wir haben ein paar Yachten verglichen und die perfekte für unsere Gruppe gefunden. Die Routenvorschläge waren wirklich hilfreich – wir mussten nichts selbst planen.",
+          "location": "Italien"
+        },
+        "kowalska": {
+          "quote": "Große Auswahl an Booten und sehr übersichtliche Filter. Wir haben in wenigen Minuten genau das gefunden, was wir brauchten.",
+          "location": "Polen"
+        },
+        "jensen": {
+          "quote": "Von der Buchung bis zum Boarding lief alles mühelos. Klare Kommunikation, keine versteckten Gebühren und ein Boot, das in echt noch besser aussah.",
+          "location": "Dänemark"
+        }
+      }
+    }
+  },
+  "Layout": {
+    "Footer": {
+      "tagline": "Entdecken Sie die Welt per Yacht.",
+      "description": "Über 30.000 Boote weltweit – bereit für Ihre nächste Reise.",
+      "columns": {
+        "destinations": "Reiseziele",
+        "charterTypes": "Charterarten",
+        "explore": "Entdecken"
+      },
+      "links": {
+        "croatia": "Kroatien",
+        "greece": "Griechenland",
+        "italy": "Italien",
+        "turkey": "Türkei",
+        "caribbean": "Karibik",
+        "thailand": "Thailand",
+        "catamaran": "Katamaran",
+        "sailingYacht": "Segelyacht",
+        "motorYacht": "Motoryacht",
+        "bareboat": "Ohne Crew",
+        "skippered": "Mit Skipper",
+        "planTrip": "Reise planen lassen",
+        "popularYachts": "Beliebte Yachten",
+        "customerReviews": "Das sagen unsere Kunden",
+        "howItWorks": "So funktioniert's"
+      },
+      "privacy": "Datenschutz",
+      "terms": "Nutzungsbedingungen",
+      "copyright": "© {year} YachtSkanner Platform. Alle Rechte vorbehalten."
+    },
+    "Nav": {
+      "boatTypes": "Bootstypen",
+      "closeMenu": "Menü schließen",
+      "destinations": "Reiseziele",
+      "findByBudget": "Nach Budget suchen",
+      "findYacht": "Yacht finden",
+      "helpPlan": "Reise planen lassen",
+      "language": "Sprache",
+      "openMenu": "Menü öffnen",
+      "popularRoutes": "Beliebte Routen",
+      "saved": "Merkliste",
+      "tryIt": "Ausprobieren"
+    },
+    "Sidebar": {
+      "menu": "Kontomenü",
+      "greeting": "Hallo, {name}!",
+      "profile": "Mein Profil",
+      "bookings": "Meine Buchungen",
+      "referrals": "Empfehlungen",
+      "credits": "Guthaben & Saldo",
+      "discount": "Rabattverwaltung",
+      "logout": "Abmelden",
+      "duplicates": "Duplikatprüfung",
+      "sync": "Sync-Verlauf",
+      "audit": "Audit-Log",
+      "inbox": "Posteingang",
+      "staffBookings": "Buchungen",
+      "payments": "Zahlungen",
+      "listings": "Inserate",
+      "sections": {
+        "account": "Konto",
+        "admin": "Admin"
+      }
+    },
+    "UserMenu": {
+      "account": "Konto",
+      "signIn": "Anmelden",
+      "signOut": "Abmelden",
+      "profile": "Mein Profil",
+      "bookings": "Meine Buchungen",
+      "referrals": "Empfehlungen",
+      "credits": "Guthaben & Saldo"
+    },
+    "description": "Yachten und Katamarane weltweit chartern. Vergleichen Sie Boote, Termine und Preise und buchen Sie Ihren nächsten Segeltörn in wenigen Minuten.",
+    "title": "YachtSkanner — Yacht- & Katamaran-Charter weltweit"
+  },
+  "PlanMyTrip": {
+    "title": "Hilf mir, meine Reise zu planen",
+    "close": "Planer schließen",
+    "progress": "Schritt {current} von {total}",
+    "stepHeading": "Schritt {current}",
+    "placeholder": "Die Frage und ihre Optionen erscheinen hier im nächsten Schritt.",
+    "back": "Zurück",
+    "next": "Weiter",
+    "steps": {
+      "destination": {
+        "question": "Wohin möchten Sie segeln?",
+        "subtitle": "Wählen Sie ein Reiseziel oder lassen Sie sich von uns die beste Option vorschlagen",
+        "options": {
+          "croatia": {
+            "label": "Kroatien",
+            "description": "Ideal für Inselhopping und Segelneulinge. Ruhige Gewässer, kurze Distanzen zwischen den Inseln und eine riesige Routenauswahl — perfekt für Einsteiger und entspannte Törns."
+          },
+          "greece": {
+            "label": "Griechenland",
+            "description": "Ideal für malerische Routen und kulturelle Vielfalt. Segeln Sie durch ikonische Inseln mit kristallklarem Wasser, historischen Städten und einer Balance aus Abenteuer und Komfort."
+          },
+          "italy": {
+            "label": "Italien",
+            "description": "Ideal für Premium-Erlebnisse und Küstenpanoramen. Wunderschöne Küstenrouten, erstklassige Marinas und unvergessliche Ziele wie Amalfi — ideal für eine luxuriösere Reise."
+          },
+          "spain": {
+            "label": "Spanien",
+            "description": "Ideal für Lifestyle und gesellige Stimmung. Tolles Wetter, lebendige Atmosphäre und Ziele wie Ibiza oder Mallorca — perfekt für Spaß, Gruppen und aktive Reisen."
+          },
+          "notSure": {
+            "label": "Noch unsicher"
+          }
+        }
+      },
+      "groupSize": {
+        "question": "Wie viele Personen kommen mit?",
+        "subtitle": "Die Gruppengröße beeinflusst Yachttyp, Platz und den Gesamtpreis pro Person",
+        "options": {
+          "twoToFour": {
+            "label": "2–4 Personen",
+            "description": "Mehr Privatsphäre, höhere Kosten pro Person"
+          },
+          "fiveToEight": {
+            "label": "5–8 Personen",
+            "description": "Beste Balance aus Komfort und Preis"
+          },
+          "ninePlus": {
+            "label": "9+ Personen",
+            "description": "Erfordert größere Yachten oder mehrere Boote"
+          },
+          "notSure": {
+            "label": "Noch unsicher"
+          }
+        }
+      },
+      "experience": {
+        "question": "Haben Sie Segelerfahrung?",
+        "options": {
+          "none": {
+            "label": "Keine Erfahrung",
+            "description": "Ich brauche einen Skipper, der das Boot segelt"
+          },
+          "some": {
+            "label": "Etwas Erfahrung",
+            "description": "Ich bin schon gesegelt, brauche aber einen Skipper"
+          },
+          "licensed": {
+            "label": "Mit Lizenz",
+            "description": "Ich habe einen gültigen Schein und segle selbst"
+          }
+        }
+      },
+      "tripVibe": {
+        "question": "Welche Art von Reise suchen Sie?",
+        "subtitle": "Die Gruppengröße beeinflusst Yachttyp, Platz und den Gesamtpreis pro Person",
+        "options": {
+          "adventure": {
+            "label": "Abenteuer",
+            "description": "Aktives Segeln und Erkunden. Mehr Bewegung, längere Routen und selbst mit anpacken"
+          },
+          "relax": {
+            "label": "Entspannung",
+            "description": "Gemächliches Tempo, Natur und ruhige Buchten. Perfekt für ruhiges Segeln, Schwimmen und Abschalten."
+          },
+          "family": {
+            "label": "Familie",
+            "description": "Sicher, komfortabel und geräumig. Ideal für Kinder, Stabilität und einfache Routen."
+          },
+          "luxury": {
+            "label": "Luxus",
+            "description": "Premium-Yachten und Full-Service-Erlebnis. Crew, Komfort und exklusive Ziele."
+          },
+          "party": {
+            "label": "Party",
+            "description": "Musik, Nachtleben und gesellige Atmosphäre. Ideal für Routen im Ibiza-Stil und Gruppenenergie."
+          }
+        }
+      },
+      "duration": {
+        "question": "Wie lange soll Ihre Reise dauern?",
+        "subtitle": "Wählen Sie die Dauer, die am besten zu Ihren Plänen passt. So können wir die passenden Yachten, Routen und das Gesamterlebnis vorschlagen.",
+        "options": {
+          "week": {
+            "label": "7 Tage"
+          },
+          "twoWeeks": {
+            "label": "14 Tage"
+          },
+          "threeWeeks": {
+            "label": "21 Tage"
+          },
+          "more": {
+            "label": "21+ Tage"
+          }
+        }
+      },
+      "budget": {
+        "question": "Welches Budget fühlt sich angenehm an?",
+        "subtitle": "Ihr Reisestil bestimmt den Yachttyp, die Route und das Erlebnis an Bord.",
+        "perPersonWeek": "pro Person/Woche",
+        "options": {
+          "low": {
+            "label": "€300–600"
+          },
+          "mid": {
+            "label": "€600-1000"
+          },
+          "high": {
+            "label": "€1000-1200"
+          },
+          "premium": {
+            "label": "€2000+"
+          }
+        }
+      }
+    },
+    "result": {
+      "title": "Ihre perfekte Yachtreise",
+      "subtitle": "Basierend auf Ihren Angaben empfehlen wir Folgendes.",
+      "perPersonWeek": "pro Person/Woche",
+      "labels": {
+        "yachtType": "Yachttyp",
+        "skipper": "Skipper",
+        "style": "Stil",
+        "duration": "Dauer",
+        "estPrice": "Ca. Preis"
+      },
+      "yachtType": {
+        "sailing": "Segelyacht",
+        "catamaran": "Katamaran",
+        "gulet": "Gulet"
+      },
+      "skipper": {
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "difficulty": {
+        "easy": "Leicht",
+        "moderate": "Mittel",
+        "advanced": "Anspruchsvoll"
+      },
+      "getConsultation": "Beratung anfragen",
+      "viewDetails": "Details ansehen",
+      "seeAllMatches": "Alle Treffer ansehen",
+      "durationDays": "{days, plural, one {# Tag} other {# Tage}}",
+      "boat": {
+        "location": "Aphines, Griechenland",
+        "title": "Lagoon 42",
+        "tagBareboat": "Bareboat",
+        "tagFullCrew": "Mit Crew",
+        "from": "Ab",
+        "perPerson": "/ pro Person"
+      },
+      "noMatch": {
+        "title": "Noch kein exakter Treffer",
+        "description": "Wir konnten keine Yacht finden, die zu jeder Antwort passt, aber so würden wir suchen.",
+        "seeAllMatches": "Alle Yachten ansehen"
+      },
+      "error": {
+        "title": "Etwas ist schiefgelaufen",
+        "description": "Wir konnten Ihre Empfehlung nicht laden. Bitte versuchen Sie es erneut.",
+        "retry": "Erneut versuchen"
+      },
+      "consultationDialog": {
+        "title": "Kostenlose Beratung anfragen",
+        "description": "Sagen Sie uns, wie wir Sie erreichen, und einer unserer Charter-Experten meldet sich mit passenden Optionen.",
+        "submit": "Anfrage senden",
+        "cancel": "Abbrechen",
+        "success": "Danke! Wir melden uns in Kürze."
+      }
+    },
+    "consultation": {
+      "close": "Schließen",
+      "title": "Kontakt aufnehmen",
+      "subtitle": "Buchen Sie einen Anruf oder schreiben Sie uns, ganz wie es Ihnen passt.",
+      "options": {
+        "call": {
+          "title": "Kurzen Anruf buchen",
+          "description": "Wählen Sie eine passende Zeit — ein kurzes Gespräch mit einem Charter-Experten."
+        },
+        "message": {
+          "title": "Nachricht senden",
+          "description": "Erzählen Sie uns von Ihrer Reise und wir melden uns per E-Mail."
+        }
+      },
+      "placeholder": {
+        "title": "Terminbuchung folgt in Kürze",
+        "description": "Die Online-Terminvergabe ist noch nicht bereit. Schreiben Sie uns eine Nachricht und wir finden eine passende Zeit.",
+        "cta": "Stattdessen Nachricht senden"
+      },
+      "submitted": {
+        "title": "Danke — wir melden uns",
+        "description": "Einer unserer Charter-Experten meldet sich in Kürze."
+      },
+      "error": {
+        "title": "Etwas ist schiefgelaufen",
+        "description": "Wir konnten Ihre Reisedetails nicht laden. Bitte versuchen Sie es erneut.",
+        "retry": "Erneut versuchen"
+      }
+    }
+  },
+  "YachtDetail": {
+    "backToSearch": "Zurück zur Suche",
+    "breadcrumbSearch": "Suche",
+    "share": "Teilen",
+    "linkCopied": "Link kopiert",
+    "seeOnMap": "Auf Karte anzeigen",
+    "addToWishlist": "Zur Wunschliste",
+    "removeFromWishlist": "Von Wunschliste entfernen",
+    "included": "Inklusive",
+    "importantInfo": {
+      "charterCompany": "Charterunternehmen",
+      "pickUpAddress": "Übernahmeadresse der Yacht",
+      "pickUp": "Yachtübernahme",
+      "dropOff": "Yachtrückgabe",
+      "policies": "Storno- / Zahlungsbedingungen",
+      "license": "Segelschein erforderlich",
+      "pets": "Haustiere",
+      "paymentMethods": "Vom Charterunternehmen akzeptierte Zahlungsmethoden",
+      "marinaInfo": "Informationen zur Marina"
+    },
+    "popular": {
+      "from": "Ab",
+      "perPerson": "/ pro Person",
+      "seeAll": "Alle Yachten ansehen",
+      "previous": "Vorherige Yachten",
+      "next": "Nächste Yachten"
+    },
+    "route": {
+      "start": "Start",
+      "finish": "Ziel",
+      "day": "Tag {day}"
+    },
+    "review": {
+      "count": "({count, plural, one {# Bewertung} other {# Bewertungen}})",
+      "summary": "{shown} von {total} angezeigt",
+      "empty": "Noch keine schriftlichen Bewertungen",
+      "operatorRated": "Die Punktzahl stammt aus {count, plural, one {# Gästebewertung} other {# Gästebewertungen}}, die der Charteranbieter gesammelt hat."
+    },
+    "sidebar": {
+      "crew": "Crew",
+      "people": "Personen",
+      "datesPlaceholder": "Daten wählen",
+      "selectDates": "Wählen Sie Ihre Daten, um den Preis zu sehen",
+      "unavailable": "Diese Yacht hat keine verfügbaren Termine",
+      "unavailableHint": "Fragen Sie uns nach anderen Terminen oder einer ähnlichen Yacht.",
+      "slotRefused": "Diese Daten sind nicht buchbar. Bitte wählen Sie einen anderen Zeitraum.",
+      "prepayment": "{percent}% Anzahlung für das Boot",
+      "boatPrice": "Bootspreis",
+      "boatPriceHint": "Voller Mietpreis",
+      "deposit": "Erstattbare Kaution",
+      "howItWorks": "So funktioniert es",
+      "groups": {
+        "mandatory": "Obligatorische Extras",
+        "selectedExtras": "Ausgewählte Extras",
+        "crew": "Crew"
+      },
+      "payNow": "Anzahlung für das Boot (jetzt zahlen)",
+      "payAt": "Zahlbar am: {date}",
+      "payAtCheckIn": "Zahlbar beim Check-in: {date}",
+      "firstPayment": "{amount} (1. Zahlung)",
+      "secondPayment": "{amount} (2. Zahlung)",
+      "extrasPayment": "{amount} (Extras)",
+      "depositNote": "+ {amount} (erstattbare Kaution)",
+      "totalPrice": "Gesamtpreis",
+      "dueNow": "Jetzt fällig",
+      "payNowCta": "Jetzt {amount} zahlen",
+      "requestQuote": "Angebot anfordern",
+      "promo": {
+        "label": "Promo-Code",
+        "placeholder": "Code eingeben",
+        "apply": "Einlösen",
+        "remove": "Entfernen",
+        "applied": "{amount} Rabatt",
+        "rejected": {
+          "unknown_code": "Diesen Code kennen wir nicht.",
+          "inactive": "Dieser Code ist nicht mehr aktiv.",
+          "not_started": "Dieser Code ist noch nicht gültig.",
+          "expired": "Dieser Code ist abgelaufen.",
+          "usage_limit_reached": "Dieser Code wurde bereits vollständig eingelöst.",
+          "not_applicable": "Dieser Code gilt nicht für diese Yacht."
+        }
+      },
+      "credit": {
+        "label": "Empfehlungsguthaben",
+        "available": "{amount} für diese Buchung verfügbar",
+        "applied": "{amount} angewendet",
+        "apply": "Einlösen",
+        "remove": "Entfernen"
+      },
+      "onRequest": "Preis für diese Yacht auf Anfrage",
+      "onRequestHint": "Wir haben Termine dafür, aber kein veröffentlichter Tarif deckt sie ab. Sagen Sie uns, wann Sie segeln möchten, und wir melden uns mit einem Preis.",
+      "dropOff": "Rückgabemarina",
+      "pickUp": "Übernahme: {marina}"
+    },
+    "panels": {
+      "details": "Yachtdetails",
+      "booking": "Buchungsübersicht"
+    },
+    "tabs": {
+      "overview": "Überblick",
+      "amenities": "Ausstattung",
+      "mandatory-extras": "Obligatorische Extras",
+      "optional-extras": "Optionale Extras",
+      "description": "Beschreibung",
+      "important-info": "Wichtige Infos",
+      "suggested-route": "Routenvorschlag",
+      "review": "Bewertungen",
+      "faq": "FAQ",
+      "popular-yachts": "Beliebte Yachten"
+    },
+    "sections": {
+      "overview": "Überblick",
+      "amenities": "Ausstattung",
+      "mandatoryExtras": "Obligatorische Extras",
+      "optionalExtras": "Optionale Extras",
+      "description": "Beschreibung",
+      "importantInfo": "Wichtige Informationen",
+      "suggestedRoute": "Routenvorschlag",
+      "review": "Bewertungen",
+      "faq": "FAQ",
+      "popularYachts": "Weitere beliebte Yachten"
+    },
+    "overview": {
+      "location": "Standort",
+      "mainsail": "Großsegeltyp",
+      "year": "Baujahr",
+      "draught": "Tiefgang",
+      "boatType": "Bootstyp",
+      "beam": "Breite",
+      "cabins": "Kabinen",
+      "fuelTank": "Kraftstofftank",
+      "bathrooms": "Bäder",
+      "waterTank": "Wassertank",
+      "length": "Länge",
+      "engine": "Motor"
+    },
+    "quoteDialog": {
+      "title": "Angebot anfordern",
+      "description": "Hinterlassen Sie Ihre Daten und ein Charter-Experte sendet Ihnen ein maßgeschneidertes Angebot für diese Daten.",
+      "submit": "Anfrage senden",
+      "success": "Danke! Wir melden uns in Kürze."
+    }
+  },
+  "Yachts": {
+    "heading": "Yachtcharter-Suche",
+    "searchByMap": "Auf der Karte suchen",
+    "emptyTitle": "Keine Yachten für Ihre Filter gefunden",
+    "emptyDescription": "Passen Sie Termine, Budget oder Ort an – wir helfen Ihnen, die passende Yacht zu finden.",
+    "searchBar": {
+      "location": "Ort",
+      "startTyping": "Tippen Sie los",
+      "searchCountries": "Länder suchen...",
+      "addDates": "Daten wählen",
+      "clearDates": "Daten löschen",
+      "anyBoat": "Beliebiges Boot",
+      "search": "Suchen",
+      "noLocations": "Keine passenden Reiseziele",
+      "clearLocation": "Ort löschen"
+    },
+    "paginationSummary": "{from}–{to} von {total}"
+  },
+  "YachtsMap": {
+    "title": "Yachten auf der Karte",
+    "backToSearch": "Zurück zur Suche",
+    "showAllList": "Ganze Liste anzeigen",
+    "closeList": "Liste schließen",
+    "marker": "Marina {name}",
+    "clusterCount": "{count, plural, one {# Yacht} other {# Yachten}}",
+    "previousBoat": "Vorherige Yacht",
+    "nextBoat": "Nächste Yacht"
+  },
+  "Seo": {
+    "Yachts": {
+      "title": "Yachtcharter-Suche",
+      "description": "Suchen Sie Yachten und Katamarane zum Chartern im Mittelmeer und darüber hinaus. Filtern Sie nach Reiseziel, Terminen, Gästen und Preis."
+    },
+    "YachtsMap": {
+      "title": "Yachten auf der Karte",
+      "description": "Durchstöbern Sie verfügbare Yachten und Katamarane auf einer interaktiven Karte. Entdecken Sie Marinas und Reiseziele und filtern Sie nach Terminen, Gästen und Preis."
+    },
+    "YachtDetail": {
+      "title": "Yachtdetails",
+      "description": "Fotos, technische Daten, Crew-Optionen und Preise dieser Yacht ansehen und die Verfügbarkeit für Ihre Termine prüfen.",
+      "titleAtPlace": "{boat} chartern in {place}",
+      "titlePlain": "{boat} chartern",
+      "metaSpecs": "{category} mit {cabins, plural, one {# Kabine} other {# Kabinen}} für bis zu {guests} Gäste.",
+      "metaPlace": "Charter {crew} ab {place}.",
+      "metaPrice": "Ab {price} pro Woche.",
+      "metaCta": "Verfügbarkeit für Ihre Termine prüfen."
+    },
+    "Booking": {
+      "title": "Yacht buchen",
+      "description": "Schließen Sie Ihre Yachtcharter-Buchung ab – Gästedaten, Extras und sichere Zahlung."
+    },
+    "BookingConfirmation": {
+      "title": "Buchung bestätigt",
+      "description": "Ihre Yachtcharter-Buchung ist bestätigt. Sehen Sie sich Ihre Reisedetails und die nächsten Schritte an."
+    },
+    "PlanMyTrip": {
+      "title": "Meine Reise planen",
+      "description": "Erzählen Sie uns von Ihrer Wunschreise – wir schlagen Ihnen passende Yachten, Routen und Termine vor."
+    },
+    "Login": {
+      "title": "Anmelden",
+      "description": "Melden Sie sich bei Ihrem YachtSkanner-Konto an, um Buchungen und gemerkte Yachten zu verwalten."
+    },
+    "Register": {
+      "title": "Konto erstellen",
+      "description": "Erstellen Sie ein YachtSkanner-Konto, um Yachten zu buchen, Favoriten zu speichern und Ihre Reisen zu verwalten."
+    },
+    "Wishlist": {
+      "title": "Ihre Merkliste",
+      "description": "Die Yachten und Katamarane, die Sie gespeichert haben. Vergleichen Sie Ihre Favoriten und prüfen Sie die Verfügbarkeit für Ihre Termine."
+    },
+    "Profile": {
+      "title": "Ihr Profil",
+      "description": "Verwalten Sie Ihre YachtSkanner-Kontodaten, Kontaktinformationen und Einstellungen."
+    },
+    "Bookings": {
+      "title": "Meine Buchungen",
+      "description": "Überblick über Ihre Yachtcharter-Buchungen, Reisedetails und Buchungsverlauf."
+    },
+    "Referrals": {
+      "title": "Ihre Empfehlungen",
+      "description": "Verfolgen Sie die Freunde, die Sie zu YachtSkanner eingeladen haben, und Ihre verdienten Prämien."
+    },
+    "Credits": {
+      "title": "Guthaben & Saldo",
+      "description": "Sehen Sie Ihr verfügbares Empfehlungsguthaben, was bald abläuft, und jede Buchung hinter dem Saldo."
+    },
+    "Discounts": {
+      "title": "Rabatt- & Preisverwaltung",
+      "description": "Verwalten Sie Aktionscodes und Yachtpreise für Ihre Inserate."
+    },
+    "Duplicates": {
+      "title": "Duplikatprüfung",
+      "description": "Prüfen und führen Sie ähnliche Yachtinserate zusammen, die der Katalog-Sync vorschlägt."
+    },
+    "Sync": {
+      "title": "Sync-Verlauf",
+      "description": "Katalog- und Verfügbarkeits-Sync-Läufe mit ihren Zahlen und Fehlern."
+    },
+    "Listings": {
+      "title": "Inserate",
+      "description": "Prüfen Sie importierte Yachtinserate und geben Sie Entwürfe für den Katalog frei."
+    },
+    "Audit": {
+      "title": "Audit-Log",
+      "description": "Jede Mitarbeiteraktion zu einer Buchung, einem Inserat, einem Rabatt oder einer Anfrage."
+    },
+    "Invoice": {
+      "title": "Rechnung",
+      "description": "Die Rechnung für Ihre Yachtcharter-Buchung mit Zahlungsdetails."
+    },
+    "ForgotPassword": {
+      "title": "Passwort vergessen",
+      "description": "Setzen Sie das Passwort Ihres YachtSkanner-Kontos zurück."
+    },
+    "ResetPassword": {
+      "title": "Passwort zurücksetzen",
+      "description": "Wählen Sie ein neues Passwort für Ihr YachtSkanner-Konto."
+    },
+    "SetPassword": {
+      "title": "Passwort festlegen",
+      "description": "Wählen Sie ein Passwort für Ihr YachtSkanner-Konto."
+    },
+    "Balance": {
+      "title": "Restbetrag bezahlen",
+      "description": "Begleichen Sie den offenen Betrag Ihrer Yachtcharter-Buchung."
+    },
+    "BookingDetail": {
+      "title": "Ihre Buchung",
+      "description": "Details, Zahlungen und Dokumente zu Ihrer Yachtcharter-Buchung."
+    },
+    "Inbox": {
+      "title": "Posteingang",
+      "description": "Kundenfragen und Anfragen, die auf eine Antwort warten."
+    },
+    "Payments": {
+      "title": "Zahlungen",
+      "description": "Rechnungsanforderungen und Erstattungen, die auf Bearbeitung warten."
+    },
+    "StaffBooking": {
+      "title": "Buchung (Mitarbeiter)",
+      "description": "Mitarbeiteransicht einer Kundenbuchung."
+    },
+    "StaffBookings": {
+      "title": "Buchungen (Mitarbeiter)",
+      "description": "Alle Buchungen auf der Plattform, für Mitarbeiter."
+    },
+    "CatalogPage": {
+      "country": "Yachtcharter in {place}",
+      "geo": "Yachtcharter in {place}, {country}",
+      "marina": "Yachtcharter ab {place}",
+      "type": "{type} chartern",
+      "typeCountry": "{type} chartern in {place}",
+      "typeGeo": "{type} chartern in {place}, {country}",
+      "typeMarina": "{type} chartern ab {place}",
+      "builder": "{brand} Yachtcharter",
+      "model": "{model} chartern",
+      "intro": "{count, plural, one {# Boot} other {# Boote}} verfügbar, ab {price} pro Woche.",
+      "introNoPrice": "{count, plural, one {# Boot} other {# Boote}} verfügbar.",
+      "description": "Vergleichen Sie {count, plural, one {# Yacht} other {# Yachten}} zum Chartern. Filtern Sie nach Terminen, Gästen, Kabinen und Preis und prüfen Sie die Verfügbarkeit für Ihre Reise.",
+      "siblings": "Auch einen Blick wert",
+      "empty": "Derzeit passt kein Boot. Probieren Sie den gesamten Katalog."
+    },
+    "Support": {
+      "title": "Support",
+      "description": "Fragen Sie uns alles rund um Ihre Buchung."
+    },
+    "Consultation": {
+      "title": "Kontakt aufnehmen",
+      "description": "Vereinbaren Sie einen Anruf oder schreiben Sie uns zu Ihrer Reise."
+    }
+  },
+  "Profile": {
+    "home": "Startseite",
+    "title": "Ihr Profil",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "email": "E-Mail-Adresse",
+    "phone": "Telefonnummer",
+    "password": "Passwort",
+    "changePassword": "Passwort ändern",
+    "save": "Änderungen speichern",
+    "deactivate": "Konto deaktivieren",
+    "saved": "Profil erfolgreich aktualisiert",
+    "dismiss": "Schließen",
+    "deactivateTitle": "Konto deaktivieren?",
+    "deactivateDescription": "Deaktivieren Sie Ihr Konto vorübergehend und blenden Sie Ihr Profil aus. Sie können den Zugang jederzeit durch erneutes Anmelden wiederherstellen.",
+    "changePasswordTitle": "Passwort ändern",
+    "changePasswordDescription": "Geben Sie Ihr aktuelles Passwort ein und wählen Sie ein neues. Sie werden auf allen anderen Geräten abgemeldet.",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "passwordChanged": "Passwort erfolgreich geändert",
+    "cancel": "Abbrechen",
+    "errors": {
+      "firstNameRequired": "Vorname ist erforderlich",
+      "lastNameRequired": "Nachname ist erforderlich",
+      "emailInvalid": "Ungültige E-Mail-Adresse",
+      "currentPasswordRequired": "Geben Sie Ihr aktuelles Passwort ein",
+      "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein",
+      "passwordMismatch": "Die Passwörter stimmen nicht überein",
+      "updateFailed": "Ihr Profil konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+      "emailChangeFailed": "Ihre E-Mail-Adresse konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+      "passwordChangeFailed": "Ihr Passwort konnte nicht geändert werden. Prüfen Sie Ihr aktuelles Passwort und versuchen Sie es erneut.",
+      "deactivateFailed": "Ihr Konto konnte nicht deaktiviert werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "Bookings": {
+    "title": "Meine Buchungen",
+    "history": "Verlauf",
+    "anyDates": "Beliebiger Zeitraum",
+    "clearDates": "Zeitraum löschen",
+    "emptyTitle": "Noch keine Yachten",
+    "emptyDescription": "Entdecken Sie Yachten und planen Sie Ihre erste Reise – Ihre Buchungen erscheinen hier.",
+    "cancel": {
+      "action": "Buchung stornieren",
+      "title": "Diese Buchung stornieren?",
+      "description": "Das lässt sich nicht rückgängig machen, und das Charterunternehmen wird benachrichtigt.",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "Sagen Sie uns, warum Sie stornieren",
+      "confirm": "Buchung stornieren",
+      "keep": "Buchung behalten",
+      "success": "Ihre Buchung wurde storniert.",
+      "error": "Ihre Buchung konnte nicht storniert werden. Bitte versuchen Sie es erneut."
+    },
+    "statusCancelled": "Storniert",
+    "payBalance": "{amount} zahlen",
+    "completePayment": "Zahlung abschließen {amount}"
+  },
+  "Wishlist": {
+    "title": "Ihre Merkliste",
+    "back": "Zurück",
+    "emptyTitle": "Noch keine gemerkten Yachten",
+    "emptyDescription": "Entdecken Sie Yachten und merken Sie sich Ihre Favoriten für später",
+    "someUnavailable": "Einige Ihrer gemerkten Yachten sind nicht mehr verfügbar.",
+    "toggleFailed": "Ihre Merkliste konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.",
+    "merged": "{count, plural, one {# gemerkte Yacht} other {# gemerkte Yachten}} zu Ihrem Konto hinzugefügt.",
+    "paginationSummary": "{from}–{to} von {total}"
+  },
+  "Auth": {
+    "SignIn": {
+      "welcome": "Willkommen zurück",
+      "cardTitle": "Planen Sie Ihre Reise weiter",
+      "email": {
+        "label": "E-Mail",
+        "placeholder": "example@gmail.com"
+      },
+      "password": {
+        "label": "Passwort",
+        "placeholder": "Passwort eingeben"
+      },
+      "submit": "Anmelden",
+      "submitting": "Anmeldung läuft…",
+      "or": "Oder",
+      "google": "Mit Google anmelden",
+      "googleUnavailable": "Die Anmeldung mit Google folgt in Kürze",
+      "noAccount": "Noch kein Konto?",
+      "createAccount": "Konto erstellen",
+      "success": "Anmeldung erfolgreich",
+      "forgotPassword": "Passwort vergessen?",
+      "errors": {
+        "emailInvalid": "Ungültige E-Mail-Adresse",
+        "passwordMin": "Das Passwort muss mindestens 8 Zeichen lang sein"
+      }
+    },
+    "SignUp": {
+      "welcome": "Willkommen bei YachtSkanner",
+      "cardTitle": "Registrieren Sie sich, um loszulegen",
+      "email": {
+        "label": "E-Mail",
+        "placeholder": "example@gmail.com"
+      },
+      "phone": {
+        "label": "Telefonnummer",
+        "placeholder": "+48"
+      },
+      "name": {
+        "label": "Vollständiger Name",
+        "placeholder": "Max Mustermann"
+      },
+      "password": {
+        "label": "Passwort",
+        "placeholder": "Passwort eingeben"
+      },
+      "submit": "Registrieren",
+      "submitting": "Registrierung läuft…",
+      "or": "Oder",
+      "google": "Mit Google registrieren",
+      "googleUnavailable": "Die Registrierung mit Google folgt in Kürze",
+      "haveAccount": "Sie haben bereits ein Konto?",
+      "signIn": "Anmelden, um fortzufahren",
+      "success": "Registrierung erfolgreich",
+      "errors": {
+        "emailInvalid": "Ungültige E-Mail-Adresse",
+        "nameMin": "Der Name muss mindestens 2 Zeichen lang sein",
+        "passwordMin": "Das Passwort muss mindestens 8 Zeichen lang sein",
+        "emailRegistered": "Diese E-Mail-Adresse ist bereits registriert"
+      },
+      "referralApplied": "Empfehlungscode angewendet"
+    },
+    "ForgotPassword": {
+      "welcome": "Passwort vergessen?",
+      "cardTitle": "Passwort zurücksetzen",
+      "description": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.",
+      "email": {
+        "label": "E-Mail",
+        "placeholder": "example@gmail.com"
+      },
+      "submit": "Link zum Zurücksetzen senden",
+      "submitting": "Wird gesendet…",
+      "success": {
+        "title": "Prüfen Sie Ihre E-Mails",
+        "body": "Falls ein Konto mit dieser Adresse existiert, haben wir einen Link zum Zurücksetzen Ihres Passworts gesendet."
+      },
+      "backToLogin": "Zurück zur Anmeldung",
+      "errors": {
+        "emailInvalid": "Ungültige E-Mail-Adresse"
+      }
+    },
+    "ResetPassword": {
+      "welcome": "Neues Passwort festlegen",
+      "cardTitle": "Neues Passwort wählen",
+      "newPassword": {
+        "label": "Neues Passwort",
+        "placeholder": "Neues Passwort eingeben"
+      },
+      "confirmPassword": {
+        "label": "Passwort bestätigen",
+        "placeholder": "Neues Passwort bestätigen"
+      },
+      "submit": "Passwort zurücksetzen",
+      "submitting": "Wird zurückgesetzt…",
+      "success": "Passwort aktualisiert. Sie können sich jetzt anmelden.",
+      "invalid": {
+        "title": "Dieser Link ist ungültig oder abgelaufen",
+        "body": "Links zum Zurücksetzen des Passworts laufen nach 1 Stunde ab und können nur einmal verwendet werden. Fordern Sie einen neuen an, um fortzufahren.",
+        "action": "Neuen Link anfordern"
+      },
+      "firstPassword": {
+        "welcome": "Passwort festlegen",
+        "cardTitle": "Passwort wählen",
+        "newPassword": {
+          "label": "Passwort",
+          "placeholder": "Passwort eingeben"
+        },
+        "submit": "Passwort festlegen",
+        "submitting": "Wird gespeichert…",
+        "success": "Passwort festgelegt. Sie können sich jetzt anmelden.",
+        "confirmPassword": {
+          "label": "Passwort bestätigen",
+          "placeholder": "Passwort bestätigen"
+        }
+      },
+      "errors": {
+        "passwordMin": "Das Passwort muss mindestens 8 Zeichen lang sein",
+        "passwordMismatch": "Die Passwörter stimmen nicht überein"
+      }
+    }
+  },
+  "Referrals": {
+    "title": "Ihre Empfehlungen",
+    "invite": {
+      "heading": "Freunde einladen. Segelguthaben verdienen.",
+      "description": "Schenken Sie Ihren Freunden €100 für ihre erste Buchung und erhalten Sie selbst €100 Guthaben, sobald sie segeln.",
+      "copy": "Empfehlungslink kopieren",
+      "copied": "Link kopiert",
+      "generate": "Neuen Code erstellen",
+      "generated": "Neuer Empfehlungscode erstellt",
+      "generateFailed": "Es konnte kein neuer Code erstellt werden. Bitte versuchen Sie es erneut.",
+      "information": "Informationen",
+      "rules": {
+        "minBooking": "Guthaben kann für jede Yachtbuchung über €1000 eingesetzt werden.",
+        "expiry": "Empfehlungsguthaben verfällt 12 Monate nach dem Erhalt.",
+        "cash": "Guthaben kann nicht bar ausgezahlt werden.",
+        "firstTime": "Gilt nur für Erstbuchungen eingeladener Freunde."
+      },
+      "stats": {
+        "invited": "Eingeladene Nutzer",
+        "completed": "Abgeschlossene Buchungen",
+        "earned": "Insgesamt verdient",
+        "balance": "Verfügbares Guthaben"
+      }
+    },
+    "how": {
+      "title": "So funktioniert es",
+      "steps": {
+        "share": {
+          "title": "Link teilen",
+          "description": "Senden Sie Ihren persönlichen Empfehlungslink an reisebegeisterte Freunde"
+        },
+        "book": {
+          "title": "Freund bucht",
+          "description": "Sie erhalten €100 Rabatt auf ihre erste Yachtbuchung über €1000"
+        },
+        "credit": {
+          "title": "Sie erhalten Guthaben",
+          "description": "Sobald die Reise abgeschlossen ist, erhalten Sie €100 Guthaben"
+        }
+      },
+      "level": {
+        "title": "Ihr Level",
+        "current": "Aktuell:",
+        "next": "Nächstes: {level}",
+        "left": "Noch {count, plural, one {# Buchung} other {# Buchungen}} bis zum nächsten Level",
+        "perks": {
+          "extra": "5% Extra-Guthaben auf alle Empfehlungen",
+          "early": "Frühzeitiger Zugang zu Luxus-Angeboten",
+          "concierge": "Persönlicher Concierge-Service"
+        }
+      }
+    },
+    "history": {
+      "title": "Empfehlungsverlauf",
+      "today": "Heute",
+      "daysAgo": "{count, plural, one {vor # Tag} other {vor # Tagen}}",
+      "credited": "Abgeschlossen",
+      "pending": "Ausstehend",
+      "void": "Storniert",
+      "empty": "Noch keine Empfehlungen. Teilen Sie Ihren Link, um loszulegen."
+    }
+  },
+  "Credits": {
+    "title": "Guthaben & Saldo",
+    "balance": {
+      "label": "Verfügbares Guthaben",
+      "expiringSoon": "{amount} verfällt innerhalb von 30 Tagen",
+      "hint": "Guthaben kann für jede Yachtbuchung über 1000 € eingesetzt werden und wird von Ihrer heutigen Zahlung abgezogen."
+    },
+    "ledger": {
+      "title": "Guthabenverlauf",
+      "expires": "Verfällt am {date}",
+      "emptyTitle": "Noch kein Guthaben",
+      "emptyDescription": "Laden Sie Freunde ein – Sie erhalten Guthaben, sobald diese ihre Reise abgeschlossen haben.",
+      "kind": {
+        "referral_reward": "Empfehlungsprämie",
+        "booking_redemption": "Auf Buchung angerechnet",
+        "expiry": "Verfallen",
+        "adjustment": "Anpassung"
+      }
+    }
+  },
+  "Discounts": {
+    "title": "Rabatt- & Preisverwaltung",
+    "subtitle": "Verwalten Sie Aktionscodes und Yachtpreise.",
+    "create": "Rabatt erstellen",
+    "tabs": {
+      "discounts": "Rabatte",
+      "managePrices": "Preise verwalten"
+    },
+    "table": {
+      "name": "Rabattname",
+      "code": "Code",
+      "typeValue": "Typ & Wert",
+      "appliesTo": "Gilt für",
+      "status": "Status",
+      "usage": "Nutzung",
+      "empty": "Keine Rabatte gefunden",
+      "error": "Rabatte konnten nicht geladen werden"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "scheduled": "Geplant",
+      "expired": "Abgelaufen"
+    },
+    "type": {
+      "percentage": "Prozentual",
+      "fixed_amount": "Festbetrag"
+    },
+    "applies": {
+      "allYachts": "Alle Yachten",
+      "allCatamarans": "Alle Katamarane",
+      "allGullets": "Alle Gulets",
+      "allMotorboats": "Alle Motorboote",
+      "allMotorYachts": "Alle Motoryachten",
+      "allSailboats": "Alle Segelboote",
+      "specific": "Bestimmte Yachten",
+      "allSailingYachts": "Alle Segelyachten",
+      "allLuxuryYachts": "Alle Luxusyachten"
+    },
+    "dialog": {
+      "createTitle": "Neuen Rabatt erstellen",
+      "editTitle": "Rabatt bearbeiten",
+      "name": {
+        "label": "Rabattname",
+        "placeholder": "z. B. Sommer 2026"
+      },
+      "code": {
+        "label": "Rabattcode",
+        "placeholder": "z. B. SUMMER2026"
+      },
+      "type": {
+        "label": "Rabatttyp"
+      },
+      "price": {
+        "label": "Rabattwert",
+        "placeholder": "10"
+      },
+      "expiration": {
+        "label": "Ablaufdatum",
+        "placeholder": "Beliebiges Datum"
+      },
+      "appliesTo": {
+        "label": "Rabatttyp"
+      },
+      "search": {
+        "placeholder": "Yacht suchen"
+      },
+      "submitCreate": "Rabatt erstellen",
+      "submitSave": "Änderungen speichern",
+      "created": "Rabatt erstellt",
+      "saved": "Rabatt aktualisiert",
+      "errors": {
+        "nameRequired": "Geben Sie einen Rabattnamen ein",
+        "codeRequired": "Geben Sie einen Rabattcode ein",
+        "priceRequired": "Geben Sie einen Rabattwert ein",
+        "appliesRequired": "Wählen Sie, wofür der Rabatt gilt",
+        "usageLimitInvalid": "Geben Sie eine ganze Zahl an Nutzungen ein oder lassen Sie das Feld leer"
+      },
+      "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+      "usageLimit": {
+        "label": "Nutzungslimit",
+        "placeholder": "Unbegrenzt",
+        "hint": "Leer lassen für unbegrenzte Nutzung"
+      },
+      "active": {
+        "label": "Aktiv",
+        "on": "Rabatt aktiviert",
+        "off": "Rabatt deaktiviert"
+      }
+    },
+    "prices": {
+      "search": "Nach Name suchen",
+      "allTypes": "Alle Typen",
+      "allLocations": "Alle Standorte",
+      "table": {
+        "yacht": "Yacht",
+        "location": "Standort",
+        "basePrice": "Basispreis",
+        "currentPrice": "Aktueller Preis",
+        "edit": "Preis bearbeiten"
+      },
+      "dialog": {
+        "title": "Preis bearbeiten",
+        "basePrice": "Basispreis",
+        "newPrice": "Neuer Preis",
+        "newPricePlaceholder": "z. B. €14.539",
+        "submit": "Preis aktualisieren",
+        "updated": "Preis aktualisiert",
+        "errors": {
+          "priceRequired": "Geben Sie einen neuen Preis ein"
+        },
+        "reset": "Auf Anbieterpreis zurücksetzen",
+        "cleared": "Preis auf den Anbieterpreis zurückgesetzt"
+      },
+      "empty": "Keine Yachten gefunden",
+      "error": "Preise konnten nicht geladen werden"
+    }
+  },
+  "Admin": {
+    "Bookings": {
+      "title": "Buchungen",
+      "subtitle": "Alle Buchungen auf der Plattform, neueste zuerst. Öffnen Sie eine, um sie abzuwickeln.",
+      "createdAt": "Gebucht {at}",
+      "excluded": "Kein echtes Geschäft",
+      "empty": "Keine Buchung entspricht diesen Filtern.",
+      "error": "Die Buchungen konnten nicht geladen werden.",
+      "filters": {
+        "search": "Suche nach Referenz, Name oder E-Mail",
+        "status": "Status",
+        "allStatuses": "Alle Status",
+        "includeExcluded": "Als Test markierte Buchungen einbeziehen"
+      },
+      "table": {
+        "reference": "Referenz",
+        "customer": "Kunde",
+        "charter": "Yacht",
+        "dates": "Daten",
+        "total": "Gesamt",
+        "collected": "Eingegangen",
+        "status": "Status"
+      },
+      "status": {
+        "DRAFT": "Entwurf",
+        "QUOTED": "Angebot erstellt",
+        "OPTION_PENDING": "Wird reserviert",
+        "OPTION_HELD": "Reserviert",
+        "OPTION_EXPIRED": "Reservierung abgelaufen",
+        "QUOTE_EXPIRED": "Angebot abgelaufen",
+        "PAYMENT_PENDING": "Zahlung ausstehend",
+        "PAYMENT_FAILED": "Zahlung fehlgeschlagen",
+        "CONFIRMING": "Wird bestätigt",
+        "CONFIRMED": "Bestätigt",
+        "PROVIDER_REJECTED": "Vom Anbieter abgelehnt",
+        "CANCELLED": "Storniert",
+        "REFUND_PENDING": "Erstattung fällig",
+        "REFUNDED": "Erstattet"
+      }
+    },
+    "Duplicates": {
+      "title": "Duplikatprüfung",
+      "subtitle": "Führen Sie ähnliche Inserate zusammen, die zwei Anbieter für dieselbe Yacht gesendet haben.",
+      "filter": {
+        "label": "Entscheidung",
+        "pending": "Ausstehend",
+        "confirmed": "Bestätigt",
+        "rejected": "Abgelehnt"
+      },
+      "empty": {
+        "pending": "Nichts zu prüfen. Alle Duplikat-Kandidaten wurden bearbeitet.",
+        "confirmed": "Es wurden noch keine Zusammenführungen bestätigt.",
+        "rejected": "Es wurden noch keine Paare abgelehnt."
+      },
+      "error": "Die Duplikat-Warteschlange konnte nicht geladen werden",
+      "confidence": "{value} % Übereinstimmung",
+      "confidenceUnknown": "Konfidenz unbekannt",
+      "proposed": "Vorgeschlagen {date}",
+      "reviewed": "Geprüft {date}",
+      "signals": "Übereinstimmung bei {signals}",
+      "sideA": "Seite A",
+      "sideB": "Seite B",
+      "keep": "Dieses Inserat behalten",
+      "keeping": "Wird zusammengeführt…",
+      "reject": "Kein Duplikat",
+      "differs": "abweichend",
+      "differsLegend": "Hervorgehobene Werte unterscheiden sich zwischen den beiden Seiten.",
+      "noImage": "Kein Bild",
+      "unavailable": {
+        "title": "Inserat nicht verfügbar",
+        "description": "Dieses Inserat wurde gelöscht, nachdem das Paar vorgeschlagen wurde."
+      },
+      "fields": {
+        "provider": "Anbieter",
+        "externalId": "Anbieter-ID",
+        "status": "Inseratsstatus",
+        "matchStatus": "Abgleichstatus",
+        "operator": "Betreiber",
+        "model": "Modell",
+        "year": "Baujahr",
+        "length": "Länge",
+        "cabins": "Kabinen",
+        "berths": "Kojen",
+        "base": "Heimathafen",
+        "location": "Standort"
+      },
+      "lengthValue": "{value} m",
+      "listingStatus": {
+        "draft": "Entwurf",
+        "published": "Veröffentlicht",
+        "hidden": "Ausgeblendet"
+      },
+      "matchStatus": {
+        "unmatched": "Nicht zugeordnet",
+        "auto": "Automatisch zugeordnet",
+        "confirmed": "Bestätigt",
+        "rejected": "Abgelehnt"
+      },
+      "toast": {
+        "confirmed": "Zusammengeführt. {count} Anbieterquellen verweisen jetzt auf das behaltene Inserat.",
+        "rejected": "Als zwei verschiedene Yachten erfasst.",
+        "conflict": "Jemand anderes hat dieses Paar bereits geprüft. Die Warteschlange wird neu geladen.",
+        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+      }
+    },
+    "Sync": {
+      "title": "Synchronisierungsverlauf",
+      "subtitle": "Alle Katalog- und Verfügbarkeitsläufe, neueste zuerst.",
+      "controls": {
+        "provider": "Zu synchronisierender Anbieter",
+        "allProviders": "Alle Anbieter",
+        "startCatalogue": "Katalog synchronisieren",
+        "startAvailability": "Verfügbarkeit synchronisieren",
+        "started": "{count, plural, one {# Lauf gestartet} other {# Läufe gestartet}}",
+        "skipped": "{count, plural, one {# Anbieter importiert bereits} other {# Anbieter importieren bereits}}",
+        "noProviders": "Kein Connector ist aktiviert.",
+        "capabilities": "Aktiver Connector: {provider}",
+        "capability": {
+          "supportsLiveQuote": "Live-Angebot",
+          "supportsOptions": "Reservierungen",
+          "supportsExtrasMutation": "Bearbeitbare Extras",
+          "supportsWebhooks": "Webhooks"
+        },
+        "hint": "Ein Lauf wird sofort gestartet und läuft weiter, nachdem diese Seite geschlossen wurde. Sein Ergebnis erscheint in der Tabelle unten."
+      },
+      "maintenance": {
+        "sweep": "Abgelaufene Reservierungen freigeben",
+        "remind": "Restzahlungserinnerungen senden",
+        "swept": "{count, plural, one {# Buchung abgelaufen} other {# Buchungen abgelaufen}}, {reaped, plural, one {# Synchronisierungslauf bereinigt} other {# Synchronisierungsläufe bereinigt}}.",
+        "staleConfirmations": "{count, plural, one {# Buchung hängt in der Bestätigung fest} other {# Buchungen hängen in der Bestätigung fest}}. Fragen Sie beim Anbieter nach, ob die Reservierung existiert.",
+        "releaseFailures": "{count, plural, one {# Anbieter-Slot konnte nicht freigegeben werden} other {# Anbieter-Slots konnten nicht freigegeben werden}}.",
+        "reminded": "{count, plural, one {# Erinnerung gesendet} other {# Erinnerungen gesendet}}.",
+        "remindSkipped": "{count, plural, one {# Buchung hat keine E-Mail-Adresse für den Versand} other {# Buchungen haben keine E-Mail-Adresse für den Versand}}.",
+        "hint": "Beide laufen bereits nach Zeitplan. Ein manueller Start ist sicher: Abläufe sind Compare-and-Set, und an jede Rate wird nur ein einziges Mal erinnert."
+      },
+      "filters": {
+        "provider": "Anbieter",
+        "kind": "Art",
+        "status": "Status",
+        "allProviders": "Alle Anbieter",
+        "allKinds": "Alle Arten",
+        "allStatuses": "Alle Status"
+      },
+      "table": {
+        "provider": "Anbieter",
+        "kind": "Art",
+        "status": "Status",
+        "results": "Ergebnisse",
+        "errors": "Fehler",
+        "started": "Gestartet",
+        "finished": "Beendet",
+        "details": "Details"
+      },
+      "kind": {
+        "catalogue": "Katalog",
+        "availability": "Verfügbarkeit",
+        "pricing": "Preise"
+      },
+      "status": {
+        "pending": "Ausstehend",
+        "running": "Läuft",
+        "success": "Erfolgreich",
+        "failed": "Fehlgeschlagen",
+        "partial": "Teilweise"
+      },
+      "counts": {
+        "created": "{count, plural, one {# erstellt} other {# erstellt}}",
+        "updated": "{count, plural, one {# aktualisiert} other {# aktualisiert}}",
+        "skipped": "{count, plural, one {# übersprungen} other {# übersprungen}}",
+        "failed": "{count, plural, one {# fehlgeschlagen} other {# fehlgeschlagen}}"
+      },
+      "empty": "Noch keine Synchronisierungsläufe",
+      "error": "Synchronisierungsläufe konnten nicht geladen werden",
+      "pending": "Nicht gestartet",
+      "details": {
+        "show": "Fehler anzeigen",
+        "hide": "Fehler ausblenden",
+        "title": "Fehler aus diesem Lauf",
+        "empty": "Dieser Lauf hat keine Fehler protokolliert.",
+        "error": "Dieser Lauf konnte nicht geladen werden",
+        "unavailable": "Für diesen Anbieter sind keine Fehlerdetails verfügbar."
+      },
+      "errorType": {
+        "rate_limited": "Ratenlimit",
+        "transient": "Vorübergehend",
+        "auth": "Auth",
+        "not_found": "Nicht gefunden",
+        "contract": "Vertrag"
+      }
+    },
+    "Audit": {
+      "title": "Audit-Protokoll",
+      "subtitle": "Jede Mitarbeiteraktion, neueste zuerst. Einträge werden einmal geschrieben und nie bearbeitet.",
+      "filters": {
+        "entityType": "Entitätstyp",
+        "allEntities": "Alle Entitäten",
+        "action": "Aktion",
+        "allActions": "Alle Aktionen",
+        "entityId": "Entitäts-ID",
+        "entityIdPlaceholder": "Vollständige ID einfügen"
+      },
+      "table": {
+        "when": "Wann",
+        "actor": "Wer",
+        "action": "Aktion",
+        "entity": "Entität",
+        "entityId": "ID",
+        "details": "Details"
+      },
+      "action": {
+        "create": "Erstellt",
+        "update": "Aktualisiert",
+        "delete": "Gelöscht",
+        "sync": "Synchronisiert",
+        "merge": "Zusammengeführt",
+        "price_adjustment": "Preisänderung"
+      },
+      "entity": {
+        "booking": "Buchung",
+        "booking_enquiry": "Buchungsfrage",
+        "discount": "Gutscheincode",
+        "invoice_request": "Rechnung",
+        "lead": "Anfrage",
+        "listing": "Inserat",
+        "listing_duplicate_candidate": "Duplikat",
+        "maintenance": "Wartungsjob"
+      },
+      "details": {
+        "show": "Anzeigen",
+        "hide": "Ausblenden",
+        "before": "Vorher",
+        "after": "Nachher",
+        "metadata": "Kontext"
+      },
+      "actorGone": "Gelöschtes Konto",
+      "empty": "Noch nichts protokolliert.",
+      "error": "Das Audit-Protokoll konnte nicht geladen werden."
+    },
+    "Inbox": {
+      "title": "Posteingang",
+      "subtitle": "Fragen zu bestehenden Buchungen und Anfragen von Interessenten, die noch auswählen.",
+      "tabs": {
+        "enquiries": "Buchungsfragen",
+        "leads": "Anfragen"
+      },
+      "enquiries": {
+        "filters": {
+          "status": "Status",
+          "allStatuses": "Alle Status",
+          "search": "Suche nach E-Mail oder Buchungsreferenz"
+        },
+        "status": {
+          "open": "Offen",
+          "answered": "Beantwortet",
+          "closed": "Geschlossen"
+        },
+        "table": {
+          "received": "Eingegangen",
+          "customer": "Kunde",
+          "question": "Frage",
+          "status": "Status",
+          "booking": "Buchung",
+          "actions": "Aktionen"
+        },
+        "actions": {
+          "reply": "Antworten",
+          "replyAgain": "Erneut antworten",
+          "close": "Schließen",
+          "reopen": "Wieder öffnen"
+        },
+        "answered": "Beantwortet: {answer}",
+        "empty": "Nichts hier — keine Fragen entsprechen diesen Filtern.",
+        "error": "Die Fragen konnten nicht geladen werden."
+      },
+      "leads": {
+        "filters": {
+          "status": "Status",
+          "allStatuses": "Alle Status",
+          "kind": "Art",
+          "allKinds": "Alle Arten",
+          "search": "Suche nach Name oder E-Mail"
+        },
+        "status": {
+          "new": "Neu",
+          "contacted": "Kontaktiert",
+          "closed": "Geschlossen"
+        },
+        "kind": {
+          "quote_request": "Angebotsanfrage",
+          "charter_expert": "Charter-Experte",
+          "consultation": "Beratung"
+        },
+        "table": {
+          "received": "Eingegangen",
+          "from": "Von",
+          "kind": "Art",
+          "message": "Nachricht",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "actions": {
+          "reply": "Antworten",
+          "replyAgain": "Erneut antworten",
+          "contacted": "Als kontaktiert markieren",
+          "close": "Schließen",
+          "reopen": "Wieder öffnen"
+        },
+        "empty": "Nichts hier — keine Anfragen entsprechen diesen Filtern.",
+        "error": "Die Anfragen konnten nicht geladen werden.",
+        "answered": "Beantwortet: {answer}"
+      },
+      "answer": {
+        "title": "Auf diese Frage antworten",
+        "description": "Buchung {reference}. Ihre Antwort wird dem Kunden per E-Mail zugestellt.",
+        "label": "Ihre Antwort",
+        "placeholder": "Beantworten Sie die Frage vollständig — genau das erhält der Kunde.",
+        "close": "Diese Frage nach dem Senden schließen",
+        "cancel": "Abbrechen",
+        "send": "Antwort senden",
+        "sent": "Antwort gesendet",
+        "failed": "Die Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+      },
+      "leadAnswer": {
+        "title": "Auf diese Anfrage antworten",
+        "description": "Ihre Antwort wird per E-Mail an {name} gesendet.",
+        "noMessage": "Es wurde keine Nachricht hinterlassen.",
+        "label": "Ihre Antwort",
+        "placeholder": "Beantworten Sie die Anfrage vollständig — genau das wird zugestellt.",
+        "close": "Diese Anfrage nach dem Senden schließen",
+        "cancel": "Abbrechen",
+        "send": "Antwort senden",
+        "sent": "Antwort gesendet",
+        "failed": "Die Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+      }
+    },
+    "Listings": {
+      "title": "Inserate",
+      "subtitle": "Alle Inserate, die Mitarbeiter bearbeiten können, einschließlich Entwürfe. Importierter Bestand bleibt ein Entwurf, bis er hier freigegeben wird.",
+      "filters": {
+        "provider": "Anbieter",
+        "status": "Status",
+        "allProviders": "Alle Anbieter",
+        "allStatuses": "Alle Status",
+        "search": "Suche nach Titel oder Slug"
+      },
+      "table": {
+        "listing": "Inserat",
+        "provider": "Anbieter",
+        "operator": "Betreiber",
+        "model": "Modell & Baujahr",
+        "place": "Heimathafen & Standort",
+        "price": "Ab",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "status": {
+        "draft": "Entwurf",
+        "published": "Veröffentlicht",
+        "hidden": "Ausgeblendet"
+      },
+      "actions": {
+        "publish": "Veröffentlichen",
+        "unpublish": "Ausblenden",
+        "draft": "Zurück zum Entwurf"
+      },
+      "moved": "{title} ist jetzt {status}.",
+      "noProvider": "Kein Anbieter",
+      "noPrice": "Noch kein Preis",
+      "notSet": "Nicht festgelegt",
+      "noImage": "Kein Foto",
+      "empty": "Keine Inserate entsprechen diesen Filtern",
+      "error": "Inserate konnten nicht geladen werden",
+      "publishDrafts": {
+        "providerLabel": "Freizugebender Anbieter",
+        "choose": "Anbieter wählen",
+        "action": "Alle Entwürfe veröffentlichen",
+        "hint": "Gibt alle Entwürfe des gewählten Anbieters frei. Ein Anbieter muss angegeben werden: Diese Ansicht veröffentlicht nie den gesamten Katalog auf einmal.",
+        "confirmTitle": "Alle Entwürfe veröffentlichen?",
+        "confirmBody": "Alle von {provider} importierten Entwürfe werden sofort für Kunden sichtbar. Entwürfe anderer Anbieter bleiben unberührt.",
+        "cancel": "Abbrechen",
+        "confirm": "Entwürfe veröffentlichen",
+        "publishing": "Wird veröffentlicht...",
+        "published": "{count, plural, =0 {Keine Entwürfe mehr für {provider} zu veröffentlichen.} one {# Entwurf für {provider} veröffentlicht.} other {# Entwürfe für {provider} veröffentlicht.}}",
+        "failed": "Die Entwürfe konnten nicht veröffentlicht werden"
+      },
+      "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt."
+    },
+    "Payments": {
+      "title": "Zahlungen",
+      "subtitle": "Überweisungen, die noch zu verbuchen sind, und Beträge, die Kunden zurückgezahlt werden müssen.",
+      "tabs": {
+        "invoices": "Rechnungsanforderungen",
+        "refunds": "Fällige Erstattungen"
+      },
+      "invoices": {
+        "filters": {
+          "status": "Nach Status filtern",
+          "allStatuses": "Alle Status"
+        },
+        "table": {
+          "issued": "Ausgestellt",
+          "invoice": "Rechnung",
+          "customer": "Kunde",
+          "booking": "Buchung",
+          "amount": "Betrag",
+          "status": "Status",
+          "actions": "Aktionen"
+        },
+        "status": {
+          "pending": "Ausstehend",
+          "sent": "Gesendet",
+          "paid": "Bezahlt",
+          "cancelled": "Zurückgezogen"
+        },
+        "due": "Fällig {date}",
+        "settledAt": "Verbucht {date}",
+        "actions": {
+          "settle": "Überweisung eingegangen",
+          "withdraw": "Zurückziehen"
+        },
+        "empty": "Keine Rechnungsanforderungen vorhanden.",
+        "error": "Rechnungsanforderungen konnten nicht geladen werden."
+      },
+      "refunds": {
+        "filters": {
+          "search": "Suche nach Referenz, Name oder E-Mail"
+        },
+        "table": {
+          "cancelled": "Storniert",
+          "customer": "Kunde",
+          "booking": "Buchung",
+          "charter": "Charter",
+          "collected": "Eingegangen",
+          "actions": "Aktionen"
+        },
+        "ofTotal": "von {total}",
+        "actions": {
+          "refund": "Geld zurückzahlen"
+        },
+        "empty": "Derzeit sind keine Rückzahlungen offen.",
+        "error": "Die Erstattungs-Warteschlange konnte nicht geladen werden."
+      },
+      "settle": {
+        "title": "Eingegangene Überweisung erfassen",
+        "description": "Buchung {reference} wird beim Betreiber verbindlich bestätigt, sobald dies erfasst ist.",
+        "invoiced": "Rechnung {number} · {amount} in Rechnung gestellt",
+        "amountLabel": "Eingegangener Betrag ({currency})",
+        "amountHint": "Ändern Sie dies, falls wegen Bankgebühren ein anderer Betrag eingegangen ist.",
+        "noteLabel": "Notiz",
+        "notePlaceholder": "Verwendungszweck der Überweisung, wer sie bestätigt hat…",
+        "cancel": "Abbrechen",
+        "confirm": "Überweisung erfassen",
+        "settling": "Wird erfasst…",
+        "settled": "Überweisung erfasst — Buchung {reference} ist bestätigt.",
+        "rejected": "Überweisung erfasst, aber der Betreiber hat abgelehnt: {reason}. Für die Buchung ist nun eine Erstattung fällig.",
+        "failed": "Die Überweisung konnte nicht erfasst werden."
+      },
+      "withdraw": {
+        "title": "Diese Rechnungsanforderung zurückziehen",
+        "description": "Buchung {reference} wird storniert und die Option des Betreibers freigegeben.",
+        "reasonLabel": "Grund",
+        "reasonPlaceholder": "Keine Rückmeldung nach drei Erinnerungen…",
+        "cancel": "Behalten",
+        "confirm": "Zurückziehen und stornieren",
+        "withdrawing": "Wird zurückgezogen…",
+        "withdrawn": "Rechnung zurückgezogen und Buchung {reference} storniert.",
+        "failed": "Die Rechnung konnte nicht zurückgezogen werden."
+      },
+      "refund": {
+        "title": "Geld zurückzahlen",
+        "description": "Zahlt für Buchung {reference} eingegangenes Geld zurück.",
+        "collected": "{amount} eingegangen",
+        "cancelReason": "Storniert: {reason}",
+        "amountLabel": "Zurückzuzahlender Betrag",
+        "amountPlaceholder": "Alles ({amount})",
+        "amountHint": "Leer lassen, um alles zurückzuzahlen. Weniger eingeben, um den laut Stornobedingungen einbehaltenen Teil zu behalten.",
+        "amountInvalid": "Geben Sie einen Betrag zwischen 0 und dem eingegangenen Betrag ein.",
+        "reasonLabel": "Grund",
+        "reasonPlaceholder": "Betreiber hat die Yacht zurückgezogen…",
+        "manualLabel": "Ich habe die Überweisung zurückgesendet",
+        "manualHint": "Nur ankreuzen, wenn das Geld tatsächlich abgebucht wurde. Kartenzahlungen werden automatisch über Stripe zurückerstattet.",
+        "cancel": "Abbrechen",
+        "confirm": "Erstatten",
+        "refunding": "Wird erstattet…",
+        "refunded": "{amount} zurückgezahlt.",
+        "partial": "{amount} zurückgezahlt. {outstanding} noch offen.",
+        "manualPending": "Kartenzahlungen zurückerstattet. {count, plural, one {# Überweisung muss} other {# Überweisungen müssen}} noch manuell gesendet werden.",
+        "failed": "Die Erstattung konnte nicht verarbeitet werden."
+      }
+    },
+    "StaffBooking": {
+      "back": "Buchungen",
+      "staffOnly": "Mitarbeiteransicht — dies ist die Buchung eines Kunden. Teilen Sie diese Seite nicht.",
+      "error": "Diese Buchung konnte nicht geladen werden.",
+      "guestAccount": "Gastkonto",
+      "guests": "{count, plural, one {# Gast} other {# Gäste}}",
+      "noReservationId": "Noch keine Reservierungs-ID",
+      "outstanding": "{amount} ausstehend",
+      "dueAtCheckIn": "{amount} fällig in der Marina",
+      "createdAt": "Erstellt {at}",
+      "holdExpiresAt": "Reservierung läuft ab {at}",
+      "confirmedAt": "Bestätigt {at}",
+      "cancelledAt": "Storniert {at}",
+      "cancelReason": "Stornierungsgrund: {reason}",
+      "fields": {
+        "customer": "Kunde",
+        "charter": "Charter",
+        "provider": "Anbieter",
+        "total": "Gesamt",
+        "collected": "Eingegangen",
+        "timeline": "Verlauf"
+      },
+      "invoice": {
+        "title": "Rechnungsanforderung",
+        "number": "Nummer",
+        "amount": "Betrag",
+        "status": "Status",
+        "billedTo": "Rechnungsempfänger",
+        "issued": "Ausgestellt",
+        "due": "Fällig"
+      },
+      "payments": {
+        "title": "Zahlungen",
+        "kind": "Rate",
+        "amount": "Betrag",
+        "method": "Methode",
+        "status": "Status",
+        "paidAt": "Bezahlt",
+        "empty": "Es ist noch nichts eingegangen.",
+        "disputed": "Beanstandet: {state}",
+        "methods": {
+          "card": "Karte",
+          "transfer": "Überweisung"
+        },
+        "disputeStatus": {
+          "open": "offen"
+        }
+      },
+      "schedule": {
+        "title": "Zahlungsplan",
+        "kind": "Rate",
+        "amount": "Betrag",
+        "dueAt": "Fällig",
+        "status": "Status",
+        "empty": "Kein Zahlungsplan für diese Buchung.",
+        "statuses": {
+          "pending": "Ausstehend",
+          "paid": "Bezahlt",
+          "cancelled": "Storniert",
+          "refunded": "Erstattet"
+        }
+      },
+      "priceLines": {
+        "title": "Preisaufschlüsselung"
+      },
+      "excluded": {
+        "chip": "Kein echtes Geschäft",
+        "exclude": "Als Testbuchung markieren",
+        "restore": "In die Warteschlangen zurückholen",
+        "excludedAt": "Aus Warteschlangen und Summen ausgeschlossen {at}",
+        "help": "Eine ausgeschlossene Buchung behält ihren Status, ihre Zahlungen und ihre Anbieterreservierung. Sie wird lediglich nicht mehr in Mitarbeiter-Warteschlangen und Geldsummen mitgezählt."
+      }
+    },
+    "providers": {
+      "mock": "Mock",
+      "booking_manager": "Booking Manager",
+      "nausys": "NauSYS"
+    }
+  }
+}
