@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   index,
+  integer,
   jsonb,
   numeric,
   pgEnum,
@@ -86,6 +87,13 @@ export const providerExtraCatalogue = pgTable(
     seasonStart: date("season_start"),
     seasonEnd: date("season_end"),
     /**
+     * The charter lengths in nights this variant is charged for. Providers file a duration
+     * ladder as one row per night count, so a fee can differ by length as well as by season:
+     * this fleet's moorings fee is 60 EUR up to six nights and 90 from seven.
+     */
+    validNightsFrom: integer("valid_nights_from"),
+    validNightsTo: integer("valid_nights_to"),
+    /**
      * Charged only where the charter ends at a different base than it started. Booking Manager
      * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.
      */
@@ -99,6 +107,69 @@ export const providerExtraCatalogue = pgTable(
     unique("provider_extra_catalogue_uq").on(t.listingId, t.source, t.kind, t.externalId),
     index("provider_extra_catalogue_listing_idx").on(t.listingId),
   ],
+);
+
+/**
+ * Per-locale display names for a provider's priced extras.
+ *
+ * Keyed by the extra's identity in the provider's own id space rather than by a
+ * `provider_extra_catalogue` row, because that table holds one row per listing per season
+ * per duration band: one boat cleaning fee is thousands of rows naming the same service.
+ * NauSYS names its services and equipment in eighteen languages, so this is a dictionary of
+ * about eighteen hundred entries behind all of them.
+ *
+ * A missing row leaves `provider_extra_catalogue.name` in place, so a locale the provider
+ * does not name degrades to the vendor's own wording rather than to a blank line item.
+ */
+export const providerExtraTranslation = pgTable(
+  "provider_extra_translation",
+  {
+    id: id("pxtt"),
+    /* Mirrors provider_extra_catalogue.source, so two providers' id spaces stay apart. */
+    source: text("source").notNull(),
+    kind: providerExtraKind("kind").notNull(),
+    externalId: text("external_id").notNull(),
+    locale: text("locale").notNull(),
+    label: text("label").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("provider_extra_translation_uq").on(t.source, t.kind, t.externalId, t.locale),
+    index("provider_extra_translation_lookup_idx").on(t.source, t.kind, t.externalId),
+  ],
+);
+
+/**
+ * Locale labels for a priced extra keyed by its name instead of its id.
+ *
+ * `provider_extra_translation` above needs the provider to publish a dictionary, and Booking
+ * Manager has none: it keys 19,482 service ids for 12,827 distinct names, so "Moorings Fee" is
+ * 5,628 separate ids for one fee. An id-keyed row per id would be five thousand rows saying the
+ * same word, and would still miss the next fleet that keys it differently.
+ *
+ * Deliberately not scoped to a provider. These are generic charter fees, and one entry for
+ * "Boat Cleaning" is meant to serve whichever vendor writes it that way. That makes it editorial
+ * content rather than sourced content: it is curated in `translations/extra-labels.ts` and only
+ * ever consulted where the id-keyed table has nothing, so a provider that does publish its own
+ * wording always wins.
+ *
+ * The long tail is deliberately absent. Most of those 12,827 names are free text — insurance
+ * terms, package contents, a boat's own name — and translating them by machine would turn
+ * contractual wording into an approximation of it.
+ */
+export const extraLabelTranslation = pgTable(
+  "extra_label_translation",
+  {
+    id: id("xlbl"),
+    /** `name` folded the way the read join folds it: lowercase, `&` as "and", alphanumerics. */
+    nameKey: text("name_key").notNull(),
+    /** The English name as written, kept so a row can be reviewed without decoding its key. */
+    name: text("name").notNull(),
+    locale: text("locale").notNull(),
+    label: text("label").notNull(),
+    ...timestamps,
+  },
+  (t) => [unique("extra_label_translation_uq").on(t.nameKey, t.locale)],
 );
 
 export const listingSource = pgTable(

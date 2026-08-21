@@ -21,6 +21,44 @@ import type { ReactNode } from "react";
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
 
+/**
+ * The read model's `code` to this section's message key.
+ *
+ * The two spellings differ because the codes are kebab-case in the API and the messages are
+ * camelCase like every other key in the file; a code with no entry falls back to the English
+ * label the read model still carries, so a new spec row renders rather than throwing.
+ */
+type OverviewLabelKey =
+  | "location"
+  | "year"
+  | "boatType"
+  | "cabins"
+  | "bathrooms"
+  | "showers"
+  | "length"
+  | "mainsail"
+  | "draught"
+  | "beam"
+  | "fuelTank"
+  | "waterTank"
+  | "engine";
+
+const OVERVIEW_LABEL_KEY = new Map<string, OverviewLabelKey>([
+  ["location", "location"],
+  ["year", "year"],
+  ["boat-type", "boatType"],
+  ["cabins", "cabins"],
+  ["bathrooms", "bathrooms"],
+  ["showers", "showers"],
+  ["length", "length"],
+  ["mainsail", "mainsail"],
+  ["draught", "draught"],
+  ["beam", "beam"],
+  ["fuel-tank", "fuelTank"],
+  ["water-tank", "waterTank"],
+  ["engine", "engine"],
+]);
+
 const OVERVIEW_ICON = new Map<string, ReactNode>(
   Object.entries({
     location: <MapPin />,
@@ -40,9 +78,15 @@ const OVERVIEW_ICON = new Map<string, ReactNode>(
 
 export default function OverviewSection() {
   const t = useTranslations("YachtDetail");
+  const tOverview = useTranslations("YachtDetail.overview");
   const { data } = useListingDetail();
 
   if (!data) return null;
+
+  const labelOf = (code: string, fallback: string) => {
+    const key = OVERVIEW_LABEL_KEY.get(code);
+    return key ? tOverview(key) : fallback;
+  };
 
   return (
     <DetailSection id="overview" title={t("sections.overview")}>
@@ -59,10 +103,10 @@ export default function OverviewSection() {
           >
             {OVERVIEW_ICON.get(item.code)}
             <span className="shrink-0 text-sm font-semibold tracking-wide text-foreground">
-              {item.label}:
+              {labelOf(item.code, item.label)}:
             </span>
             <span className="min-w-0 flex-1 text-sm font-medium text-natural-600">
-              {item.value}
+              {item.value ?? tOverview("notSpecified")}
             </span>
           </div>
         ))}

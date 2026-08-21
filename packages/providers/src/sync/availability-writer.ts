@@ -68,6 +68,15 @@ export const confirmedOfferSchema = z.object({
   startDate: isoDateSchema,
   endDate: isoDateSchema,
   priceMinor: z.number().int().nonnegative(),
+  /**
+   * What the provider says the charter's unavoidable extras come to, for this exact period.
+   *
+   * Unset where it does not say. Worth carrying rather than deriving: providers file a fee as a
+   * ladder across season, charter length, party size, base, route and percentage-of-charter, not
+   * every operator publishes the same dimensions, and a card that reconstructs the total from
+   * the catalogue has been wrong by a night's difference and by a party-size band already.
+   */
+  obligatoryExtrasMinor: z.number().int().nonnegative().optional(),
   currency: z.string().length(3),
   sourceHash: z.string().min(1),
 });
@@ -207,6 +216,8 @@ export interface ConfirmSlotInput extends ListingRef {
   startDate: string;
   endDate: string;
   priceMinor: number;
+  /** The provider's own obligatory-extras total, or null where it stated none. */
+  obligatoryExtrasMinor: number | null;
   currency: string;
   sourceHash: string;
   seenAt: Date;
@@ -658,6 +669,7 @@ export async function runAvailabilitySync(
               startDate: offer.startDate,
               endDate: offer.endDate,
               priceMinor: offer.priceMinor,
+              obligatoryExtrasMinor: offer.obligatoryExtrasMinor ?? null,
               currency: offer.currency,
               sourceHash: offer.sourceHash,
               seenAt: startedAt,
@@ -1002,6 +1014,7 @@ export function createDrizzleAvailabilitySyncStore(
       const values = {
         availabilityConfirmed: true,
         priceMinor: input.priceMinor,
+        obligatoryExtrasMinor: input.obligatoryExtrasMinor,
         currency: input.currency,
         sourceHash: input.sourceHash,
         updatedAt: input.seenAt,

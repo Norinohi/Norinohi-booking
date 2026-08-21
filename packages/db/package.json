@@ -21,6 +21,7 @@
     "db:watch": "docker compose up",
     "db:stop": "docker compose stop",
     "db:down": "docker compose down",
+    "translations:apply": "node --env-file-if-exists=../../apps/server/.env --import tsx src/apply-translations.ts",
     "seed": "node --env-file-if-exists=../../apps/server/.env --import tsx src/seed-cli.ts"
   },
   "dependencies": {

@@ -90,6 +90,11 @@ export const repriceInputSchema = z
     discountCode: z.string().trim().max(64).nullable().optional(),
     /** Spend available referral credit. Ignored for anonymous visitors. */
     applyCredit: z.boolean().optional(),
+    /**
+     * Which language to read the line labels back in. Display only: the quote is persisted with
+     * the provider's own wording, because an invoice and a confirmation email read the same row.
+     */
+    locale: z.string().min(2).max(10).optional(),
   })
   .superRefine(
     dateRangeRefinement("checkIn", "checkOut", "checkOut must be after checkIn", {

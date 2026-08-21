@@ -33,11 +33,12 @@ function charterStamp(iso: string): BoatCardCharterDate {
 export function useBookingCards() {
   const t = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
+  const tBadge = useTranslations("Common.boatCard.badges");
   const formatMoney = useMoney();
 
   function toBookingCard(booking: BookingSummary): BoatCardProps {
     return {
-      ...boatCardIdentity(t, tCrew, booking.listing),
+      ...boatCardIdentity(t, tCrew, tBadge, booking.listing),
       imageAlt: t("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
       /* The booking, not the listing: this card is history, and the yacht page cannot say
          what was paid, what is owed, or where the invoice is. */

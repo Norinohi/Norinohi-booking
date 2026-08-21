@@ -2,6 +2,8 @@ import type { z } from "zod";
 
 import { parseNausysDate } from "../shared/dates";
 import { stripHtml } from "../shared/html-text";
+import { CONTENT_LOCALES } from "@yacht-charter/db/search/localize";
+
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
 import type { JsonField, JsonObject } from "../shared/json";
@@ -109,6 +111,10 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       return label === undefined ? [] : [[String(item.id), label] as const];
     }),
   );
+  /* The same two lists again, in the locales the site serves. Keyed by vendor id rather than
+     by label because that is what the extras on a yacht reference. */
+  const equipmentTranslationsById = localeMapsById(equipment);
+  const serviceTranslationsById = localeMapsById(services);
   const priceMeasureById = new Map(
     priceMeasures.flatMap((item) => {
       const label = name(item.name);
@@ -156,6 +162,8 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
         sailTypeById,
         equipmentNameById,
         serviceNameById,
+        equipmentTranslationsById,
+        serviceTranslationsById,
         priceMeasureById,
       }),
     )
@@ -167,16 +175,19 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       // ISO-2 first: it is what makes the same country from two providers one row.
       code: text(item.code2) ?? text(item.code) ?? `${PROVIDER_PREFIX}-${item.id}`,
       name: name(item.name) ?? `Country ${item.id}`,
+      translations: translations(item.name),
     })),
     regions: regions.map((item) => ({
       externalId: String(item.id),
       externalCountryId: String(item.countryId),
       name: name(item.name) ?? `Region ${item.id}`,
+      translations: translations(item.name),
     })),
     locations: locations.map((item) => ({
       externalId: String(item.id),
       externalRegionId: String(item.regionId),
       name: name(item.name) ?? `Location ${item.id}`,
+      translations: translations(item.name),
     })),
     bases: projectedBases,
     operators: companies.map((item) => ({
@@ -211,6 +222,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       externalId: String(item.id),
       code: `${PROVIDER_PREFIX}:${item.id}`,
       name: name(item.name) ?? `Category ${item.id}`,
+      translations: translations(item.name),
     })),
     amenityCategories: equipmentCategories.map((item) => ({
       externalId: String(item.id),
@@ -223,6 +235,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       // shape is load-bearing, not cosmetic.
       code: `${PROVIDER_PREFIX}:${item.id}`,
       name: name(item.name) ?? `Equipment ${item.id}`,
+      translations: translations(item.name),
     })),
     listings,
   });
@@ -236,6 +249,8 @@ type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 type ExtraNaming = {
   equipmentNameById: Map<string, string>;
   serviceNameById: Map<string, string>;
+  equipmentTranslationsById: Map<string, Record<string, string>>;
+  serviceTranslationsById: Map<string, Record<string, string>>;
   priceMeasureById: Map<string, string>;
 };
 
@@ -534,6 +549,34 @@ function name(value: JsonField): string | undefined {
 }
 
 /**
+ * The same reference name in the locales the site serves, or undefined when it ships none
+ * of them.
+ *
+ * Every NauSYS reference list is `RestInternationalText`, so this data has always been on
+ * the wire and `name()` above was throwing seventeen languages away to keep one. Recorded
+ * responses carry es and de on 100% of equipment, services, categories, regions, locations
+ * and countries; uk is absent, and ru is deliberately not served in its place.
+ */
+function localeMapsById(
+  items: readonly { id: number; name: JsonField }[],
+): Map<string, Record<string, string>> {
+  return new Map(
+    items.flatMap((item) => {
+      const served = translations(item.name);
+      return served === undefined ? [] : [[String(item.id), served] as const];
+    }),
+  );
+}
+
+function translations(value: JsonField): Record<string, string> | undefined {
+  const locales = toLocaleMap(value);
+  const wanted = Object.entries(locales).filter(([locale]) =>
+    CONTENT_LOCALES.some((served) => served === locale),
+  );
+  return wanted.length === 0 ? undefined : Object.fromEntries(wanted);
+}
+
+/**
  * Zero is how the vendor writes a tank it has not measured, on the yacht and on
  * the model alike, so it falls through to the model and then to unset rather than
  * publishing a boat that carries no water.
@@ -616,6 +659,7 @@ function serviceExtraOf(
     kind: "service",
     externalId,
     name: label,
+    translations: context.serviceTranslationsById.get(externalId),
     obligatory: item.obligatory === true,
     priceMinor,
     priceCurrency,
@@ -654,6 +698,7 @@ function equipmentExtraOf(
     kind: "equipment",
     externalId,
     name: label,
+    translations: context.equipmentTranslationsById.get(externalId),
     // Additional equipment carries no obligatory flag; it is an opt-in add-on.
     obligatory: false,
     priceMinor,

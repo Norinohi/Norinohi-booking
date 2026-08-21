@@ -10,6 +10,7 @@ import { type CharterPeriod, type ResultListing, toBoatCard } from "../lib/to-bo
 export function useListingCards() {
   const t = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
+  const tBadge = useTranslations("Common.boatCard.badges");
   const formatMoney = useMoney();
 
   /*
@@ -18,7 +19,7 @@ export function useListingCards() {
    * 14-night October search still read "July 7 - July 14". No period, no dates.
    */
   function toCard(listing: ResultListing, period?: CharterPeriod) {
-    return toBoatCard(t, tCrew, formatMoney, listing, period);
+    return toBoatCard(t, tCrew, tBadge, formatMoney, listing, period);
   }
 
   function toMapCard(

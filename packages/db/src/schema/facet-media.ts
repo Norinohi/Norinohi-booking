@@ -3,6 +3,25 @@ import { index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-co
 
 import { id, timestamps } from "./_shared";
 
+/**
+ * Who wrote a translation row.
+ *
+ * The catalogue sync refreshes its own rows on every run so an upstream rename lands, and
+ * leaves editorial ones alone. Without the distinction the two writers fight: either the
+ * sync overwrites hand-written copy, or a first-write-wins guard freezes seven hundred
+ * provider labels at whatever they said the day they were first imported.
+ *
+ * `generated` is the third case and the reason this is an enum rather than a boolean:
+ * Ukrainian has no provider behind it at all, so its labels are produced rather than sourced.
+ * Marking them says so — they are the rows to re-run when the vocabulary is reviewed, and the
+ * rows a real vendor translation should be allowed to replace.
+ */
+export const facetTranslationSource = pgEnum("facet_translation_source", [
+  "editorial",
+  "provider",
+  "generated",
+]);
+
 export const facetMediaKind = pgEnum("facet_media_kind", [
   "country",
   "region",
@@ -63,6 +82,8 @@ export const facetMediaTranslation = pgTable(
     locale: text("locale").notNull(),
     label: text("label"),
     description: text("description"),
+    /* Existing rows are the hand-written seed, hence the default. */
+    source: facetTranslationSource("source").default("editorial").notNull(),
     ...timestamps,
   },
   (t) => [

@@ -32,6 +32,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const t = useTranslations("PlanMyTrip.result");
   const tv = useTranslations("PlanMyTrip.steps.tripVibe");
   const tCard = useTranslations("Common.boatCard");
+  const tBadge = useTranslations("Common.boatCard.badges");
   const formatMoney = useMoney();
   const { data: recommendation, isPending, isError, refetch } = usePlannerRecommendation(answers);
 
@@ -73,6 +74,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
 
   const boatCard = recommendation.listing
     ? toBoatCardProps(
+        tBadge,
         recommendation.listing,
         boatCardPrice(tCard, recommendation.listing, formatMoney),
       )

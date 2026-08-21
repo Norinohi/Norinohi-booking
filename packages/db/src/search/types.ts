@@ -119,10 +119,38 @@ export type ListingSearchResult = {
   pagination?: ListingSearchPagination;
 };
 
+/**
+ * The stops a generated itinerary is made of.
+ *
+ * Named rather than free text so the copy can live per locale in the web app. The Dalmatian
+ * islands have their own kinds because that route names real places; every other region falls
+ * through to the generic set.
+ */
+export type RouteStopKind =
+  | "base"
+  | "base_evening"
+  | "base_morning"
+  | "base_return"
+  | "hvar"
+  | "vis"
+  | "blue_cave"
+  | "korcula"
+  | "brac"
+  | "region_coast"
+  | "island_bay"
+  | "old_town"
+  | "quiet_cove"
+  | "marina_approach";
+
 export type ListingDetail = ListingSearchDoc & {
   /** The provider's own prose in the requested locale; null when it ships none. */
   description: string | null;
-  overview: { code: string; label: string; value: string }[];
+  /**
+   * `value` is null where the catalogue does not know, so each locale writes its own "not
+   * specified" rather than inheriting the English one. `label` is the English fallback for a
+   * code the web has no message for yet.
+   */
+  overview: { code: string; label: string; value: string | null }[];
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingOptionalItem[];
@@ -136,11 +164,20 @@ export type ListingDetail = ListingSearchDoc & {
     yachtPickupAddress: string;
     yachtPickup: { time: string | null };
     yachtDropOff: { time: string | null };
-    cancellationPaymentPolicies: string;
-    sailingLicenseRequired: string;
-    pets: string;
+    /*
+     * Which sentence to render, not the sentence.
+     *
+     * These four used to be English prose composed here, which put four paragraphs of
+     * customer-facing copy in the database package where no locale could reach them. The
+     * wording lives in the web app's message files now; what this decides is which of them
+     * applies, which is a data question and belongs here.
+     */
+    cancellationPaymentPolicies: "varies_by_selection";
+    sailingLicenseRequired: "required" | "not_required";
+    pets: "allowed_with_confirmation" | "ask_base";
+    /** Slugs, rendered by the web: `card`, `bank_transfer`, `cash`. */
     paymentMethodsAcceptedByCharterCompany: string[];
-    marinaInformation: string;
+    marinaInformation: { marina: string; location: string; country: string };
     marinaContact: {
       name: string;
       address: string;
@@ -151,10 +188,17 @@ export type ListingDetail = ListingSearchDoc & {
     map: { lat: number; lng: number };
   };
   suggestedRoute: {
+    /** English fallback for the heading; the web writes it per locale from `region`. */
     title: string;
+    region: string;
     map: { lat: number; lng: number };
     stops: {
       day: number;
+      /** Which stop of the itinerary this is, and so which line of copy describes it. */
+      kind: RouteStopKind;
+      /** The marina or region this stop names, where it names one at all. */
+      place: string | null;
+      /** English fallbacks, for a kind the web has no message for yet. */
       title: string;
       description: string;
       lat: number;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import { useState } from "react";
 
 import type { Quote, QuoteInput, RepriceInput } from "../api/queries";
@@ -31,25 +32,28 @@ export function useQuote(listingId: string) {
    * promo button forever. Verified by toggling this directive against a live reprice.
    */
   "use no memo";
+  /* Display only: the quote row keeps the provider's wording, and this decides what the sidebar
+     reads it back as. Sent on every call because a reprice returns a whole new quote. */
+  const locale = useLocale();
   const [quote, setQuote] = useState<Quote | null>(null);
   const create = useMutation(quoteMutationOptions());
   const reprice = useMutation(repriceMutationOptions());
 
   async function quoteFor(selection: QuoteSelection) {
-    const next = await create.mutateAsync({ listingId, ...selection });
+    const next = await create.mutateAsync({ listingId, locale, ...selection });
     setQuote(next);
     return next;
   }
 
   async function load(quoteId: string) {
-    const next = await reprice.mutateAsync({ quoteId });
+    const next = await reprice.mutateAsync({ quoteId, locale });
     setQuote(next);
     return next;
   }
 
   async function repriceWith(changes: Omit<RepriceInput, "quoteId">) {
     if (!quote) return null;
-    const next = await reprice.mutateAsync({ quoteId: quote.quoteId, ...changes });
+    const next = await reprice.mutateAsync({ quoteId: quote.quoteId, locale, ...changes });
     setQuote(next);
     return next;
   }

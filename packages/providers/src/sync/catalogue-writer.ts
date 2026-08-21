@@ -1,3 +1,4 @@
+import { facetMedia, facetMediaTranslation } from "@yacht-charter/db/schema/facet-media";
 import { base, country, location, region } from "@yacht-charter/db/schema/geography";
 import {
   listing,
@@ -11,6 +12,7 @@ import {
   listingDuplicateCandidate,
   listingSource,
   providerExtraCatalogue,
+  providerExtraTranslation,
 } from "@yacht-charter/db/schema/listing-source";
 import { listingText } from "@yacht-charter/db/schema/listing-text";
 import { operator } from "@yacht-charter/db/schema/operator";
@@ -23,6 +25,7 @@ import {
   yachtModel,
 } from "@yacht-charter/db/schema/taxonomy";
 import { MAX_MONEY_MINOR, newId } from "@yacht-charter/db/schema/_shared";
+import { CONTENT_LOCALES, normalizedKey } from "@yacht-charter/db/search/localize";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
@@ -191,6 +194,14 @@ export interface CatalogueWriteSummary {
   listingsFailed: number;
   listingsHidden: number;
   duplicateCandidates: number;
+  /**
+   * Provider-sourced label rows offered to `facet_media_translation`. Rows whose facet
+   * already carries editorial copy for that locale are counted but left alone, so this is
+   * what the sync had to say rather than what it changed.
+   */
+  facetTranslations: number;
+  /** The same, for the priced extras dictionary. Nothing editorial writes there. */
+  extraTranslations: number;
   touchedListingIds: string[];
   /**
    * Every listing whose search document this run invalidated: the ones it touched,
@@ -346,6 +357,9 @@ export async function writeCanonicalCatalogue(
     if (row) amenityIds.set(item.externalId, row.id);
   }
 
+  const facetTranslations = await writeFacetTranslations(db, catalogue);
+  const extraTranslations = await writeExtraTranslations(db, providerKey, catalogue);
+
   const yachtRecordIds = await loadYachtRecordIds(db, providerId);
   const existingLinks = await loadExistingLinks(db, providerId);
   const matchCandidates = await loadMatchCandidates(db, providerId);
@@ -358,6 +372,8 @@ export async function writeCanonicalCatalogue(
     listingsFailed: 0,
     listingsHidden: 0,
     duplicateCandidates: 0,
+    facetTranslations,
+    extraTranslations,
     touchedListingIds: [],
     rebuildListingIds: [],
   };
@@ -652,6 +668,188 @@ async function ensureAmenityCategory(db: Database, name: string): Promise<string
     .where(eq(amenityCategory.name, name))
     .limit(1);
   return found?.id ?? null;
+}
+
+type FacetKind = (typeof facetMedia.$inferInsert)["kind"];
+
+export type FacetLabel = {
+  kind: FacetKind;
+  value: string;
+  translations: Record<string, string>;
+};
+
+/** A canonical reference entry the search cards name a facet after. */
+type TranslatableFacet = { name: string; translations?: Record<string, string> };
+
+/**
+ * Which canonical list names each translatable facet.
+ *
+ * `marina`, `crew` and `sail_type` are translatable kinds with no list behind them yet:
+ * bases are named after their location and the other two are derived on the listing, so
+ * neither arrives here as a reference entry with a locale map attached.
+ */
+const FACET_LISTS: readonly [FacetKind, (catalogue: CanonicalCatalogue) => TranslatableFacet[]][] =
+  [
+    ["country", (catalogue) => catalogue.countries],
+    ["region", (catalogue) => catalogue.regions],
+    ["location", (catalogue) => catalogue.locations],
+    ["category", (catalogue) => catalogue.categories],
+    ["equipment", (catalogue) => catalogue.amenities],
+  ];
+
+/** Drops locales the site does not serve, and facets the provider named in one language. */
+function servedLocales(
+  translations: Record<string, string> | undefined,
+): Record<string, string> | undefined {
+  if (!translations) return undefined;
+  const served = Object.entries(translations).filter(([locale]) =>
+    CONTENT_LOCALES.some((wanted) => wanted === locale),
+  );
+  return served.length === 0 ? undefined : Object.fromEntries(served);
+}
+
+export function facetLabels(catalogue: CanonicalCatalogue): FacetLabel[] {
+  const byKey = new Map<string, FacetLabel>();
+
+  for (const [kind, list] of FACET_LISTS) {
+    for (const item of list(catalogue)) {
+      const translations = servedLocales(item.translations);
+      if (!translations) continue;
+
+      /* The read join normalizes both sides, so "Bow thruster" and "bow-thruster" are one
+         facet. Folding here too keeps the writer from inserting a second row that the join
+         would then shadow with whichever one the map happened to keep. */
+      const key = `${kind}:${normalizedKey(item.name)}`;
+      if (!byKey.has(key)) byKey.set(key, { kind, value: item.name, translations });
+    }
+  }
+
+  return [...byKey.values()];
+}
+
+/**
+ * Publishes the provider's own display names into `facet_media_translation`.
+ *
+ * NauSYS names every reference list in eighteen languages and the projection used to keep
+ * only English, which left the search cards and the yacht page in English under every
+ * locale but the twelve facets somebody had translated by hand.
+ *
+ * Two rules make this safe to run next to that hand-written copy: facet rows are only ever
+ * added, never updated, so curated imagery and sort order survive; and translation rows are
+ * refreshed only where the sync wrote them, so an upstream rename lands without overwriting
+ * an editor.
+ */
+export async function writeFacetTranslations(
+  db: Database,
+  catalogue: CanonicalCatalogue,
+): Promise<number> {
+  const labels = facetLabels(catalogue);
+  if (labels.length === 0) return 0;
+
+  for (const chunk of chunked(labels, ROW_CHUNK)) {
+    await db
+      .insert(facetMedia)
+      .values(chunk.map((label) => ({ kind: label.kind, value: label.value })))
+      .onConflictDoNothing({ target: [facetMedia.kind, facetMedia.value] });
+  }
+
+  const facetIds = new Map<string, string>();
+  for (const kind of new Set(labels.map((label) => label.kind))) {
+    const values = labels.filter((label) => label.kind === kind).map((label) => label.value);
+    for (const chunk of chunked(values, ID_CHUNK)) {
+      const rows = await db
+        .select({ id: facetMedia.id, value: facetMedia.value })
+        .from(facetMedia)
+        .where(and(eq(facetMedia.kind, kind), inArray(facetMedia.value, chunk)));
+      for (const row of rows) facetIds.set(`${kind}:${row.value}`, row.id);
+    }
+  }
+
+  const rows = labels.flatMap((label) => {
+    const facetMediaId = facetIds.get(`${label.kind}:${label.value}`);
+    if (!facetMediaId) return [];
+    return Object.entries(label.translations).map(([locale, text]) => ({
+      facetMediaId,
+      locale,
+      label: text,
+      source: "provider" as const,
+    }));
+  });
+
+  for (const chunk of chunked(rows, ROW_CHUNK)) {
+    await db
+      .insert(facetMediaTranslation)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [facetMediaTranslation.facetMediaId, facetMediaTranslation.locale],
+        set: { label: sql`excluded.label`, updatedAt: sql`now()` },
+        setWhere: sql`${facetMediaTranslation.source} = 'provider'`,
+      });
+  }
+
+  return rows.length;
+}
+
+/**
+ * Publishes the provider's own names for its priced extras.
+ *
+ * Deduplicated to the provider's id space on the way in: extras arrive attached to listings,
+ * and one fleet's boat cleaning is the same service named on every boat in it.
+ *
+ * A plain upsert, unlike the facet writer above. `provider_extra_translation` has no editorial
+ * half to protect, so an upstream rename simply lands.
+ */
+export async function writeExtraTranslations(
+  db: Database,
+  providerKey: ProviderKey,
+  catalogue: CanonicalCatalogue,
+): Promise<number> {
+  type Entry = {
+    kind: CanonicalListing["extras"][number]["kind"];
+    externalId: string;
+    translations: Record<string, string>;
+  };
+
+  const byKey = new Map<string, Entry>();
+  for (const item of catalogue.listings) {
+    for (const extra of item.extras) {
+      const translations = servedLocales(extra.translations);
+      if (!translations) continue;
+      byKey.set(`${extra.kind}:${extra.externalId}`, {
+        kind: extra.kind,
+        externalId: extra.externalId,
+        translations,
+      });
+    }
+  }
+
+  const rows = [...byKey.values()].flatMap((entry) =>
+    Object.entries(entry.translations).map(([locale, label]) => ({
+      source: providerKey,
+      kind: entry.kind,
+      externalId: entry.externalId,
+      locale,
+      label,
+    })),
+  );
+  if (rows.length === 0) return 0;
+
+  for (const chunk of chunked(rows, ROW_CHUNK)) {
+    await db
+      .insert(providerExtraTranslation)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: [
+          providerExtraTranslation.source,
+          providerExtraTranslation.kind,
+          providerExtraTranslation.externalId,
+          providerExtraTranslation.locale,
+        ],
+        set: { label: sql`excluded.label`, updatedAt: sql`now()` },
+      });
+  }
+
+  return rows.length;
 }
 
 async function loadYachtRecordIds(db: Database, providerId: string) {
@@ -1177,6 +1375,8 @@ async function writeListingChildren(
         payableInBase: extra.payableInBase ?? null,
         seasonStart: extra.seasonStart ?? null,
         seasonEnd: extra.seasonEnd ?? null,
+        validNightsFrom: extra.validNightsFrom ?? null,
+        validNightsTo: extra.validNightsTo ?? null,
         oneWayOnly: extra.oneWayOnly ?? false,
         onRequestOnly: extra.onRequestOnly,
         externalSeasonId: extra.externalSeasonId ?? null,

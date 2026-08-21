@@ -9,7 +9,7 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
+import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
 import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
@@ -173,6 +173,18 @@ async function providerDescription(
   return rows.rows[0]?.value;
 }
 
+/**
+ * Folds an extra's name the way `extra_label_translation.name_key` is written.
+ *
+ * Mirrors normalizedKey in localize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
+ * Case and punctuation only: "Beach towel" and "Beach towels" stay separate entries, because
+ * collapsing a plural is a judgement the dictionary should make explicitly rather than the
+ * join make silently.
+ */
+function extraNameKeySql(column: SQL): SQL {
+  return sql`regexp_replace(replace(lower(${column}), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
+}
+
 export async function getListingDetailByIdOrSlug(
   db: NodePgDatabase<typeof schema>,
   idOrSlug: string,
@@ -181,7 +193,8 @@ export async function getListingDetailByIdOrSlug(
   const raw = await getListingByIdOrSlug(db, idOrSlug);
   if (!raw) return undefined;
 
-  const [localized] = await localizeSearchDocs(db, [raw], locale);
+  const translate = await facetTranslator(db, locale);
+  const [localized] = await localizeSearchDocs(db, [raw], locale, translate);
   const listing = localized ?? raw;
 
   const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose] =
@@ -236,6 +249,7 @@ export async function getListingDetailByIdOrSlug(
         kind: string;
         externalId: string;
         label: string;
+        sourceLabel: string;
         obligatory: boolean;
         crewRole: string | null;
         priceMinor: number | null;
@@ -246,20 +260,33 @@ export async function getListingDetailByIdOrSlug(
         oneWayOnly: boolean;
       }>(sql`
       select
-        source,
-        kind,
-        external_id as "externalId",
-        name as label,
-        obligatory,
-        crew_role as "crewRole",
-        price_minor as "priceMinor",
-        price_currency as "priceCurrency",
-        price_measure as "priceMeasure",
-        calculation_type as "calculationType",
-        payable_in_base as "payableInBase",
-        one_way_only as "oneWayOnly"
-      from provider_extra_catalogue
-      where listing_id = ${listing.listingId}
+        extra.source,
+        extra.kind,
+        extra.external_id as "externalId",
+        /* Three sources in order of authority: the provider's own wording for this exact id,
+           the curated label for a fee written that way by any provider, then the name it
+           shipped with. English matches nothing in either table by design, because the last
+           fallback already is English. */
+        coalesce(translation.label, curated.label, extra.name) as label,
+        extra.name as "sourceLabel",
+        extra.obligatory,
+        extra.crew_role as "crewRole",
+        extra.price_minor as "priceMinor",
+        extra.price_currency as "priceCurrency",
+        extra.price_measure as "priceMeasure",
+        extra.calculation_type as "calculationType",
+        extra.payable_in_base as "payableInBase",
+        extra.one_way_only as "oneWayOnly"
+      from provider_extra_catalogue extra
+      left join provider_extra_translation translation
+        on translation.source = extra.source
+        and translation.kind = extra.kind
+        and translation.external_id = extra.external_id
+        and translation.locale = ${locale}
+      left join extra_label_translation curated
+        on curated.name_key = ${extraNameKeySql(sql`extra.name`)}
+        and curated.locale = ${locale}
+      where extra.listing_id = ${listing.listingId}
         /*
          * Only fees whose season overlaps what we actually sell.
          *
@@ -271,12 +298,14 @@ export async function getListingDetailByIdOrSlug(
          * sell yet. Rows stating no season are kept at both ends: silence is not an expiry,
          * and a fee somebody still has to pay is the wrong thing to hide.
          */
-        and (season_end is null or season_end >= current_date)
+        and (extra.season_end is null or extra.season_end >= current_date)
         and (
-          season_start is null
-          or season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+          extra.season_start is null
+          or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
         )
-      order by obligatory desc, price_minor, name asc
+      /* Ordered on the vendor's name, not the translated one, so the sections keep the same
+         order in every locale. */
+      order by extra.obligatory desc, extra.price_minor, extra.name asc
     `),
       db.execute<{ id: string; question: string; answer: string }>(sql`
       select id, question, answer
@@ -285,7 +314,12 @@ export async function getListingDetailByIdOrSlug(
       order by sort_order asc, created_at asc
     `),
       listListingReviews(db, listing.listingId),
-      listSimilarListings(db, listing.listingId),
+      /* Localized with the same translator as the page around them: these render as ordinary
+         search cards, and a Ukrainian page whose "popular yachts" strip says "Sailing yacht"
+         next to its own "Вітрильна яхта" is the drift the shared table exists to prevent. */
+      listSimilarListings(db, listing.listingId).then((docs) =>
+        localizeSearchDocs(db, docs, locale, translate),
+      ),
       providerDescription(db, listing.listingId, locale),
     ]);
   const info = infoRows.rows[0];
@@ -293,9 +327,14 @@ export async function getListingDetailByIdOrSlug(
     ...item,
     code: item.code ?? valueForLabel(item.label),
   }));
+  /* Translated after the code is derived, never before: the code is what the amenity filter
+     matches on, and a Spanish one matches nothing. */
   const includedAmenities = amenities
     .filter((item) => !item.crew && item.priceMinor === null)
-    .map((item) => ({ code: item.code, label: item.label }));
+    .map((item) => ({
+      code: item.code,
+      label: translate ? translate("equipment", item.label) : item.label,
+    }));
   /*
    * Extras come from provider_extra_catalogue, not from listing_amenity. The two
    * answer different questions — what the yacht has versus what it costs extra —
@@ -309,6 +348,7 @@ export async function getListingDetailByIdOrSlug(
   const extras = extraRows.rows.map((item) => ({
     code: `${item.kind}:${item.externalId}`,
     label: item.label,
+    sourceLabel: item.sourceLabel,
     obligatory: item.obligatory,
     crewRole: item.crewRole,
     priceMinor: item.priceMinor,
@@ -381,22 +421,20 @@ export async function getListingDetailByIdOrSlug(
        */
       yachtPickup: { time: info?.checkInTime ?? null },
       yachtDropOff: { time: info?.checkOutTime ?? null },
-      cancellationPaymentPolicies:
-        "Cancellation and prepayment policies vary according to your selection. Payment conditions are confirmed during quote and booking.",
-      sailingLicenseRequired:
-        listing.crewType === "bareboat"
-          ? "Valid sailing license or local equivalent required."
-          : "No license is needed when booking with crew or skipper.",
+      cancellationPaymentPolicies: "varies_by_selection",
+      sailingLicenseRequired: listing.crewType === "bareboat" ? "required" : "not_required",
       /*
        * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
        * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"
        * into "not permitted" on 109 listings. Ask the base instead of inventing its policy.
        */
-      pets: listing.petsAllowed
-        ? "Pets are allowed on this yacht with charter company confirmation."
-        : "Pet policy is set by the charter base — ask before booking.",
+      pets: listing.petsAllowed ? "allowed_with_confirmation" : "ask_base",
       paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
-      marinaInformation: `${listing.baseName} is located in ${listing.location}, ${listing.country}. Check-in and check-out times are provided by the charter base.`,
+      marinaInformation: {
+        marina: listing.baseName,
+        location: listing.location,
+        country: listing.country,
+      },
       marinaContact: {
         name: listing.baseName,
         address: `${listing.baseName}, ${listing.location}, ${listing.country}`,
@@ -439,7 +477,9 @@ export async function listSearchFacets(
     listFacetOptions(db, input, sql`doc.crew_type`, ["crew"], "crew"),
     listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"], "sail_type"),
     listEquipmentFacetOptions(db, input),
-    listFacetOptions(db, input, sql`doc.year_built::text`, ["yearFrom", "yearTo"]),
+    /* `nullif` for the same reason the range filters it: a year of zero is "not stated", and it
+       was being offered as a selectable build year in the dropdown. */
+    listFacetOptions(db, input, sql`nullif(doc.year_built, 0)::text`, ["yearFrom", "yearTo"]),
     db.execute<{
       minLength: string | null;
       maxLength: string | null;
@@ -472,8 +512,11 @@ export async function listSearchFacets(
         max(doc.heads) as "maxBathrooms",
         min(doc.price_from_minor) as "minMinor",
         max(doc.price_from_minor) as "maxMinor",
-        min(doc.year_built) as "minYear",
-        max(doc.year_built) as "maxYear",
+        /* Zero is how a vendor writes a build year it does not know, and it reached the range as
+           a real one: the age slider then offered "up to 2026 years old". Filtered rather than
+           coalesced, because a fleet where nobody stated a year has no range to show. */
+        min(doc.year_built) filter (where doc.year_built > 0) as "minYear",
+        max(doc.year_built) filter (where doc.year_built > 0) as "maxYear",
         min(doc.rating) as "minRating",
         max(doc.rating) as "maxRating",
         bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
@@ -1344,26 +1387,28 @@ function isSelectableExtra(source: string, kind: string): boolean {
  * route are - the booking sidebar shows that, priced, off the live offer. Listing all five
  * side by side read as five separate charges totalling 805 euro against a 809 euro boat.
  *
- * Folded on the label because that is the only thing the variants share: the vendor gives them
- * distinct ids and no grouping key of its own.
+ * Folded on the vendor's own name because that is the only thing the variants share: the vendor
+ * gives them distinct ids and no grouping key of its own. Deliberately not the translated label:
+ * each variant is a separate dictionary entry, and one of them missing a locale would split a
+ * fee back into the several rows this exists to merge.
  */
 function foldFeeVariants(
-  items: Parameters<typeof pricedItem>[0][],
+  items: (Parameters<typeof pricedItem>[0] & { sourceLabel: string })[],
   fallbackCurrency: string | null,
 ): ListingPricedItem[] {
   const byLabel = new Map<string, ListingPricedItem>();
 
   for (const item of items) {
     const next = pricedItem(item, fallbackCurrency);
-    const seen = byLabel.get(next.label);
+    const seen = byLabel.get(item.sourceLabel);
     if (!seen) {
-      byLabel.set(next.label, next);
+      byLabel.set(item.sourceLabel, next);
       continue;
     }
 
     const low = Math.min(seen.price.amountMinor, next.price.amountMinor);
     const high = Math.max(seen.priceToMinor ?? seen.price.amountMinor, next.price.amountMinor);
-    byLabel.set(next.label, {
+    byLabel.set(item.sourceLabel, {
       ...(seen.price.amountMinor <= next.price.amountMinor ? seen : next),
       price: { ...seen.price, amountMinor: low },
       priceToMinor: high > low ? high : null,
@@ -1422,6 +1467,13 @@ function pricingTypeOf(
   return calculationType === "ADVANCE_PAYMENT" ? "per_booking" : "pay_at_check_in";
 }
 
+/**
+ * The spec rows, as data rather than as sentences.
+ *
+ * Every English word that used to live here — the labels, "Not specified", "Unknown", the
+ * "Yacht" fallback — is now the web app's to write, per locale. What stays is the number and
+ * its SI unit, which read the same in all four.
+ */
 function overviewFor(
   listing: ListingSearchDoc,
   info:
@@ -1434,42 +1486,57 @@ function overviewFor(
         waterCapacity: number | null;
       }
     | undefined,
-): { code: string; label: string; value: string }[] {
+): { code: string; label: string; value: string | null }[] {
   return [
     { code: "location", label: "Location", value: `${listing.location}, ${listing.country}` },
-    { code: "year", label: "Year", value: String(listing.yearBuilt ?? "Unknown") },
-    { code: "boat-type", label: "Boat type", value: listing.category ?? "Yacht" },
+    {
+      code: "year",
+      label: "Year",
+      value: listing.yearBuilt === null ? null : String(listing.yearBuilt),
+    },
+    { code: "boat-type", label: "Boat type", value: listing.category },
     { code: "cabins", label: "Cabins", value: String(listing.cabins ?? 0) },
     { code: "bathrooms", label: "Bathrooms", value: String(listing.heads ?? 0) },
     ...(listing.showers === null
       ? []
       : [{ code: "showers", label: "Showers", value: String(listing.showers) }]),
     { code: "length", label: "Length", value: metresValue(listing.lengthM) },
-    { code: "mainsail", label: "Type of mainsail", value: listing.sailType ?? "Not specified" },
+    { code: "mainsail", label: "Type of mainsail", value: listing.sailType },
     { code: "draught", label: "Draught", value: metresValue(info?.draftM) },
     { code: "beam", label: "Beam", value: metresValue(info?.beamM) },
     {
       code: "fuel-tank",
       label: "Fuel tank",
-      value: info?.fuelCapacity ? `${info.fuelCapacity} l` : "Not specified",
+      value: info?.fuelCapacity ? `${info.fuelCapacity} l` : null,
     },
     {
       code: "water-tank",
       label: "Water tank",
-      value: info?.waterCapacity ? `${info.waterCapacity} l` : "Not specified",
+      value: info?.waterCapacity ? `${info.waterCapacity} l` : null,
     },
     {
       code: "engine",
       label: "Engine",
-      value: [info?.engines, info?.enginePower].filter(Boolean).join(" x ") || "Not specified",
+      value: [info?.engines, info?.enginePower].filter(Boolean).join(" x ") || null,
     },
   ];
 }
 
-function metresValue(value: string | null | undefined): string {
-  return value ? `${Number(value).toFixed(2)} m` : "Not specified";
+function metresValue(value: string | null | undefined): string | null {
+  return value ? `${Number(value).toFixed(2)} m` : null;
 }
 
+/**
+ * The itinerary, as a shape the web can write in its own language.
+ *
+ * `kind` says which stop this is and `place` carries the only part of it that is real data - the
+ * marina's name, or the region's. Everything else here is generated copy, so the words belong in
+ * the message files with the rest of the generated copy; `title` and `description` stay as the
+ * English fallback for a kind the web has no message for yet.
+ *
+ * The section itself is invented, not sourced - see docs/generated-content-audit.md. Translating
+ * it changes only which language it is invented in.
+ */
 function suggestedRouteFor(listing: ListingSearchDoc): ListingDetail["suggestedRoute"] {
   const lat = listing.lat ?? 0;
   const lng = listing.lng ?? 0;
@@ -1477,9 +1544,12 @@ function suggestedRouteFor(listing: ListingSearchDoc): ListingDetail["suggestedR
 
   return {
     title: `7-day itinerary through ${listing.region}`,
+    region: listing.region,
     map: { lat, lng },
     stops: places.map((place, index) => ({
       day: index + 1,
+      kind: place.kind,
+      place: place.place,
       title: `Day ${index + 1} - ${place.title}`,
       description: place.description,
       lat: lat + place.latOffset,
@@ -1492,83 +1562,121 @@ function routePlacesFor(region: string, location: string) {
   if (region.toLowerCase().includes("dalmatia")) {
     return [
       {
+        kind: "base_evening" as const,
+        place: location,
         title: location,
         description: "Check-in and evening in the marina.",
         latOffset: 0,
         lngOffset: 0,
       },
       {
+        kind: "hvar" as const,
+        place: null,
         title: "Hvar",
         description: "Sail to a lively island stop with protected bays.",
         latOffset: -0.18,
         lngOffset: 0.15,
       },
       {
+        kind: "vis" as const,
+        place: null,
         title: "Vis",
         description: "Continue to clear water and quiet anchorages.",
         latOffset: -0.38,
         lngOffset: 0.04,
       },
       {
+        kind: "blue_cave" as const,
+        place: null,
         title: "Blue Cave",
         description: "Visit one of the Adriatic's best-known natural sights.",
         latOffset: -0.47,
         lngOffset: -0.1,
       },
       {
+        kind: "korcula" as const,
+        place: null,
         title: "Korcula",
         description: "Explore old-town streets and a sheltered overnight stop.",
         latOffset: -0.56,
         lngOffset: 0.42,
       },
       {
+        kind: "brac" as const,
+        place: null,
         title: "Brac",
         description: "Return through island beaches and swim stops.",
         latOffset: -0.26,
         lngOffset: 0.32,
       },
-      { title: location, description: "Final morning return to base.", latOffset: 0, lngOffset: 0 },
+      {
+        kind: "base_morning" as const,
+        place: location,
+        title: location,
+        description: "Final morning return to base.",
+        latOffset: 0,
+        lngOffset: 0,
+      },
     ];
   }
 
   return [
     {
+      kind: "base" as const,
+      place: location,
       title: location,
       description: "Check-in and provisioning at the charter base.",
       latOffset: 0,
       lngOffset: 0,
     },
     {
+      kind: "region_coast" as const,
+      place: region,
       title: `${region} coast`,
       description: "Short sail to a protected anchorage.",
       latOffset: 0.12,
       lngOffset: 0.16,
     },
     {
+      kind: "island_bay" as const,
+      place: null,
       title: "Island bay",
       description: "Swimming stop and relaxed overnight.",
       latOffset: 0.18,
       lngOffset: -0.12,
     },
     {
+      kind: "old_town" as const,
+      place: null,
       title: "Old town",
       description: "Harbor visit with restaurants ashore.",
       latOffset: -0.12,
       lngOffset: 0.18,
     },
     {
+      kind: "quiet_cove" as const,
+      place: null,
       title: "Quiet cove",
       description: "Sheltered bay for paddleboarding and snorkeling.",
       latOffset: -0.18,
       lngOffset: -0.08,
     },
     {
+      kind: "marina_approach" as const,
+      place: null,
       title: "Marina approach",
       description: "Easy sail back toward the base area.",
       latOffset: 0.08,
       lngOffset: -0.2,
     },
-    { title: location, description: "Check-out at the home marina.", latOffset: 0, lngOffset: 0 },
+    {
+      kind: "base_return" as const,
+      place: location,
+      title: location,
+      description: "Check-out at the home marina.",
+      latOffset: 0,
+      lngOffset: 0,
+    },
   ];
 }
 

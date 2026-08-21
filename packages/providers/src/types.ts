@@ -419,22 +419,35 @@ export type ProviderCapabilities = z.infer<typeof providerCapabilitiesSchema>;
  * `listing_source`, which is also what keeps two providers' ids from colliding.
  */
 
+/**
+ * Display names in the locales the site serves, keyed by BCP 47 tag. Absent where the
+ * provider publishes one language only.
+ *
+ * The English name stays on `name`: it is what the search filters and `listing_search_doc`
+ * match against, so a translated value would silently unmatch every listing carrying it.
+ * These are labels for display and nothing else.
+ */
+const canonicalTranslationsSchema = z.record(z.string(), z.string()).optional();
+
 const canonicalCountrySchema = z.object({
   externalId: z.string(),
   code: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalRegionSchema = z.object({
   externalId: z.string(),
   externalCountryId: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalLocationSchema = z.object({
   externalId: z.string(),
   externalRegionId: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalBaseSchema = z.object({
@@ -476,6 +489,7 @@ const canonicalCategorySchema = z.object({
   externalId: z.string(),
   code: z.string().optional(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalAmenityCategorySchema = z.object({
@@ -488,6 +502,7 @@ const canonicalAmenitySchema = z.object({
   externalAmenityCategoryId: z.string(),
   code: z.string().optional(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 /**
@@ -507,6 +522,7 @@ export const canonicalExtraSchema = z.object({
   kind: z.enum(["service", "equipment"]),
   externalId: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
   obligatory: z.boolean(),
   priceMinor: z.number().int(),
   priceCurrency: z.string().length(3),
@@ -525,6 +541,14 @@ export const canonicalExtraSchema = z.object({
    */
   seasonStart: z.string().optional(),
   seasonEnd: z.string().optional(),
+  /**
+   * The charter lengths in nights this price is for, where the provider prices a fee by
+   * duration. Le Boat's moorings fee is 60 EUR for one to six nights and 90 for seven or
+   * more, filed as one row per night count; taking the cheapest advertised a weekly charter
+   * 30 EUR under what the offer then charged.
+   */
+  validNightsFrom: z.number().int().optional(),
+  validNightsTo: z.number().int().optional(),
   /**
    * Charged only when the charter ends somewhere other than it started. Listing one of these as
    * an unconditional mandatory extra overstates every return charter by its amount.

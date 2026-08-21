@@ -1,0 +1,1 @@
+ALTER TABLE "availability_slot" ADD COLUMN "obligatory_extras_minor" integer;

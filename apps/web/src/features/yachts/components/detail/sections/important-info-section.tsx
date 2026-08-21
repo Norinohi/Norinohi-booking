@@ -22,6 +22,21 @@ type RowKey =
   | "paymentMethods"
   | "marinaInfo";
 
+/* The read model answers which sentence applies; the sentences themselves are here. */
+const POLICY_KEY = {
+  varies_by_selection: "policiesVariesBySelection",
+  required: "licenseRequired",
+  not_required: "licenseNotRequired",
+  allowed_with_confirmation: "petsAllowedWithConfirmation",
+  ask_base: "petsAskBase",
+} as const;
+
+const PAYMENT_METHOD_KEY = new Map<string, "card" | "bank_transfer" | "cash">([
+  ["card", "card"],
+  ["bank_transfer", "bank_transfer"],
+  ["cash", "cash"],
+]);
+
 type Row = {
   key: RowKey;
   value: string;
@@ -31,6 +46,8 @@ type Row = {
 
 export default function ImportantInfoSection() {
   const t = useTranslations("YachtDetail");
+  const tInfo = useTranslations("YachtDetail.importantInfo");
+  const tMethod = useTranslations("YachtDetail.importantInfo.paymentMethod");
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -43,14 +60,21 @@ export default function ImportantInfoSection() {
     { key: "pickUpAddress", value: info.yachtPickupAddress, mapPoint: info.map },
     { key: "pickUp", value: info.yachtPickup.time ?? "" },
     { key: "dropOff", value: info.yachtDropOff.time ?? "" },
-    { key: "policies", value: info.cancellationPaymentPolicies },
-    { key: "license", value: info.sailingLicenseRequired },
-    { key: "pets", value: info.pets },
+    { key: "policies", value: tInfo(POLICY_KEY[info.cancellationPaymentPolicies]) },
+    { key: "license", value: tInfo(POLICY_KEY[info.sailingLicenseRequired]) },
+    { key: "pets", value: tInfo(POLICY_KEY[info.pets]) },
     {
       key: "paymentMethods",
-      value: info.paymentMethodsAcceptedByCharterCompany.map(slugToLabel).join(", "),
+      /* A method the messages do not name still shows, spelled out of its slug rather than
+         dropped: an unlisted way to pay is not the same as no way to pay. */
+      value: info.paymentMethodsAcceptedByCharterCompany
+        .map((method) => {
+          const key = PAYMENT_METHOD_KEY.get(method);
+          return key ? tMethod(key) : slugToLabel(method);
+        })
+        .join(", "),
     },
-    { key: "marinaInfo", value: info.marinaInformation },
+    { key: "marinaInfo", value: tInfo("marinaInfoText", info.marinaInformation) },
   ];
 
   return (

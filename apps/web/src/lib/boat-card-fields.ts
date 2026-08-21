@@ -22,6 +22,7 @@ import type {
   BoatCardSpec,
 } from "@/components/shared/data-display/boat-card";
 import type { Marina } from "@/components/shared/overlay/marina-popover";
+import { type BadgeTranslator, badgeLabel } from "@/lib/badge-label";
 import { type CrewTranslator, crewLabel } from "@/lib/crew-label";
 import { slugToLabel } from "@/lib/slug-to-label";
 
@@ -115,7 +116,8 @@ export type BoatCardListing = {
   amenities: string[];
   /* Absent on a My Bookings card: the counts describe a boat someone is still choosing. */
   bookingStats?: { bookedThisMonth: number; viewedToday: number };
-  badges: { label: string }[];
+  /* `code` is what the label is chosen by; the label itself is the presenter's English. */
+  badges: { code?: string; label: string }[];
 };
 
 type PricedListing = {
@@ -159,12 +161,13 @@ function boatCardStats(t: BoatCardTranslator, stats: BoatCardListing["bookingSta
 export function boatCardIdentity(
   t: BoatCardTranslator,
   tCrew: CrewTranslator,
+  tBadge: BadgeTranslator,
   listing: BoatCardListing,
 ) {
   return {
     id: listing.id,
     images: listing.gallery.length ? listing.gallery : listing.mainImage ? [listing.mainImage] : [],
-    badges: listing.badges.map((badge) => ({ label: badge.label })),
+    badges: listing.badges.map((badge) => ({ label: badgeLabel(tBadge, badge) })),
     name: listing.title,
     // A listing nobody has scored is not a listing scored zero, and a gold "0" reads as the
     // worst rating on the site. The read model coalesces an absent score to 0, so this is the

@@ -442,6 +442,48 @@
       "when": 1787322531455,
       "tag": "0062_damp_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1787330261696,
+      "tag": "0063_little_black_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1787330799433,
+      "tag": "0064_shiny_bedlam",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1787332082674,
+      "tag": "0065_quick_the_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1787333228479,
+      "tag": "0066_regular_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1787334251896,
+      "tag": "0067_redundant_titania",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1787340363823,
+      "tag": "0068_cultured_the_professor",
+      "breakpoints": true
     }
   ]
 }

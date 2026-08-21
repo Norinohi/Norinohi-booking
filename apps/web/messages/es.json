@@ -15,7 +15,7 @@
       "totalPrice": "Precio total",
       "dueNow": "A pagar ahora",
       "terms": "Acepto los <b>Términos y Condiciones y el Contrato de Alquiler</b>.",
-      "cancellation": "Acepto la <b>Política de Cancelación</b> (cancelación gratuita hasta el 7 de junio)."
+      "cancellation": "Acepto la <b>Política de Cancelación</b>."
     },
     "extras": {
       "mandatory": "Obligatorio",
@@ -441,7 +441,10 @@
         "bestForFamilies": "Ideal para familias",
         "bestValue": "Mejor relación calidad-precio",
         "new": "Nuevo",
-        "discount": "{percent}% DTO."
+        "discount": "{percent}% DTO.",
+        "petsAllowed": "Se admiten mascotas",
+        "depositInsurance": "Seguro de fianza incluido",
+        "topRated": "Mejor valorado"
       },
       "stats": {
         "booked": "{count, plural, one {# reserva este mes} other {# reservas este mes}}",
@@ -560,6 +563,10 @@
       "previousMonth": "Mes anterior",
       "nextMonth": "Mes siguiente",
       "rating": "Valoración {rating} de {max}"
+    },
+    "quoteLines": {
+      "referral-welcome": "Descuento de bienvenida por recomendación",
+      "referral-credit": "Crédito por recomendación"
     }
   },
   "Filters": {
@@ -662,6 +669,17 @@
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
       "guestRating": "Valoración: {value}"
+    },
+    "options": {
+      "duration": "{days, plural, one {# día} other {# días}}",
+      "anyYear": "Cualquier año",
+      "dateFlexibility": {
+        "on-day": "El mismo día",
+        "1-3-days": "En 1-3 días",
+        "1-week": "En 1 semana",
+        "2-weeks": "En 2 semanas",
+        "1-month": "En 1 mes"
+      }
     }
   },
   "Home": {
@@ -823,7 +841,8 @@
           "description": "Navega junto a los acantilados de Positano y las grutas de Capri por el litoral más glamuroso de Italia.",
           "imageAlt": "Cúpula de la catedral de Positano sobre la costa de Amalfi"
         }
-      }
+      },
+      "comingSoon": "Próximamente"
     },
     "Testimonials": {
       "heading": "Lo que dicen nuestros clientes",
@@ -1172,7 +1191,18 @@
       "license": "Licencia de navegación requerida",
       "pets": "Mascotas",
       "paymentMethods": "Métodos de pago aceptados por la empresa",
-      "marinaInfo": "Información sobre la marina"
+      "marinaInfo": "Información sobre la marina",
+      "policiesVariesBySelection": "Las condiciones de cancelación y de pago anticipado varían según la opción elegida. Se confirman al generar el presupuesto y la reserva.",
+      "licenseRequired": "Se requiere una titulación náutica válida o su equivalente local.",
+      "licenseNotRequired": "No se necesita titulación al reservar con tripulación o patrón.",
+      "petsAllowedWithConfirmation": "Se admiten mascotas en este barco con la confirmación de la empresa de chárter.",
+      "petsAskBase": "La política de mascotas la fija la base de chárter: consúltala antes de reservar.",
+      "marinaInfoText": "{marina} se encuentra en {location}, {country}. Los horarios de entrada y salida los indica la base de chárter.",
+      "paymentMethod": {
+        "card": "Tarjeta",
+        "bank_transfer": "Transferencia bancaria",
+        "cash": "Efectivo"
+      }
     },
     "popular": {
       "from": "Desde",
@@ -1184,7 +1214,41 @@
     "route": {
       "start": "Inicio",
       "finish": "Fin",
-      "day": "Día {day}"
+      "day": "Día {day}",
+      "itinerary": "Itinerario de 7 días por {region}",
+      "stopTitle": "Día {day} - {place}",
+      "place": {
+        "base": "{place}",
+        "base_evening": "{place}",
+        "base_morning": "{place}",
+        "base_return": "{place}",
+        "hvar": "Hvar",
+        "vis": "Vis",
+        "blue_cave": "Cueva Azul",
+        "korcula": "Korčula",
+        "brac": "Brač",
+        "region_coast": "Costa de {place}",
+        "island_bay": "Cala de la isla",
+        "old_town": "Casco antiguo",
+        "quiet_cove": "Cala tranquila",
+        "marina_approach": "Aproximación al puerto"
+      },
+      "description": {
+        "base": "Registro y aprovisionamiento en la base de chárter.",
+        "base_evening": "Registro y tarde en el puerto deportivo.",
+        "base_morning": "Regreso a la base la última mañana.",
+        "base_return": "Salida en el puerto de origen.",
+        "hvar": "Navegación hasta una isla animada con calas protegidas.",
+        "vis": "Se sigue hacia aguas claras y fondeaderos tranquilos.",
+        "blue_cave": "Visita a uno de los parajes naturales más conocidos del Adriático.",
+        "korcula": "Paseo por el casco antiguo y amarre resguardado para pasar la noche.",
+        "brac": "Regreso entre playas de la isla y paradas de baño.",
+        "region_coast": "Travesía corta hasta un fondeadero protegido.",
+        "island_bay": "Parada de baño y noche tranquila.",
+        "old_town": "Visita al puerto con restaurantes en tierra.",
+        "quiet_cove": "Cala resguardada para paddle surf y snorkel.",
+        "marina_approach": "Navegación tranquila de vuelta hacia la base."
+      }
     },
     "review": {
       "count": "({count, plural, one {# opinión} other {# opiniones}})",
@@ -1288,7 +1352,9 @@
       "bathrooms": "Baños",
       "waterTank": "Depósito de agua",
       "length": "Eslora",
-      "engine": "Motor"
+      "engine": "Motor",
+      "showers": "Duchas",
+      "notSpecified": "Sin especificar"
     },
     "quoteDialog": {
       "title": "Solicita un presupuesto",

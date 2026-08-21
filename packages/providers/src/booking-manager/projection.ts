@@ -690,6 +690,8 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
         payableInBase: item.payableInBase ?? undefined,
         seasonStart: sailingDateOf(item.sailingDateFrom),
         seasonEnd: sailingDateOf(item.sailingDateTo),
+        validNightsFrom: positiveInt(item.validDaysFrom),
+        validNightsTo: positiveInt(item.validDaysTo),
         // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
         oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
         onRequestOnly: false,
