@@ -4,7 +4,7 @@ export {
   prefetchCredits,
   prefetchDiscount,
   prefetchDiscountManager,
-  prefetchListingPrices,
+  prefetchListingPrice,
   prefetchProfile,
   prefetchReferrals,
 } from "./api/server";

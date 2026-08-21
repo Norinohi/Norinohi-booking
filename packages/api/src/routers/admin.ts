@@ -22,6 +22,7 @@ import {
   listingAdminListSchema,
   listingPriceClearInputSchema,
   listingPriceFiltersSchema,
+  listingPriceGetInputSchema,
   listingPriceListInputSchema,
   listingPriceListSchema,
   listingPriceRowSchema,
@@ -127,6 +128,7 @@ import {
 } from "../services/provider-sync";
 import {
   clearListingPrice,
+  getListingPrice,
   listListingPriceFilters,
   listListingPrices,
   updateListingPrice,
@@ -864,6 +866,21 @@ export const adminRouter = {
       ),
   },
   listingPrice: {
+    get: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing-price/get",
+        operationId: "getListingPrice",
+        summary: "Get one listing's base and current price",
+        description:
+          "The single row behind the Edit Price dialog: the provider's recommended price, the price after the active manual override, and the rule responsible for the difference. Addressed by id rather than found inside a `list` page, which is capped at 100 rows and so could not reach a large catalogue's tail.",
+        tags: ["Admin"],
+        successDescription: "The listing's prices.",
+        spec: withJsonBodyExample({ listingId: "ylst_yacht-lagoon-42-aurora" }),
+      })
+      .input(listingPriceGetInputSchema)
+      .output(listingPriceRowSchema)
+      .handler(({ context, input }) => getListingPrice(context.db, input.listingId)),
     list: adminProcedure
       .route({
         method: "POST",

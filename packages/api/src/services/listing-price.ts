@@ -14,7 +14,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
-import { loadAdjustmentsForListings, resolveAdjustedPrice } from "./pricing";
+import { loadAdjustmentsForListings, type PriceAdjustment, resolveAdjustedPrice } from "./pricing";
 
 type ListInput = z.infer<typeof listingPriceListInputSchema>;
 type ListResult = z.infer<typeof listingPriceListSchema>;
@@ -23,6 +23,87 @@ type Filters = z.infer<typeof listingPriceFiltersSchema>;
 type UpdateInput = z.infer<typeof listingPriceUpdateInputSchema>;
 
 const RULE_NAME_PREFIX = "Manual price override";
+
+/** The search-doc columns a price row is built from; shared so `get` and `list` cannot drift. */
+const ROW_COLUMNS = {
+  listingId: listingSearchDoc.listingId,
+  title: listingSearchDoc.title,
+  baseName: listingSearchDoc.baseName,
+  location: listingSearchDoc.location,
+  country: listingSearchDoc.country,
+  priceFromMinor: listingSearchDoc.priceFromMinor,
+  currency: listingSearchDoc.currency,
+};
+
+type PriceDoc = {
+  listingId: string;
+  title: string;
+  baseName: string;
+  location: string;
+  country: string;
+  priceFromMinor: number | null;
+  currency: string | null;
+};
+
+/**
+ * One search doc plus the rules standing over it, as the table and the edit dialog show it.
+ *
+ * A listing with no synced price has no base to adjust, so it carries neither price rather
+ * than a current price resolved from nothing.
+ */
+function toRow(doc: PriceDoc, adjustments: readonly PriceAdjustment[]): Row {
+  const currency = doc.currency ?? "EUR";
+  const basePrice =
+    doc.priceFromMinor === null ? null : { amountMinor: doc.priceFromMinor, currency };
+
+  const identity = {
+    listingId: doc.listingId,
+    title: doc.title,
+    baseName: doc.baseName,
+    locationName: doc.location,
+    countryName: doc.country,
+  };
+
+  if (!basePrice) {
+    return {
+      ...identity,
+      basePrice: null,
+      currentPrice: null,
+      activeRuleId: null,
+      activeRuleLabel: null,
+    };
+  }
+
+  const resolved = resolveAdjustedPrice(basePrice.amountMinor, adjustments);
+
+  return {
+    ...identity,
+    basePrice,
+    currentPrice: { amountMinor: resolved.amountMinor, currency },
+    activeRuleId: resolved.appliedRuleId,
+    activeRuleLabel: resolved.appliedRuleLabel,
+  };
+}
+
+/**
+ * One row by id, for the Edit Price dialog.
+ *
+ * The dialog used to find its row inside a `list` page capped at 100, so every listing past
+ * the hundredth title reported "Couldn't load prices" and could never be repriced. Addressing
+ * the row directly is what makes the dialog independent of how big the catalogue gets.
+ */
+export async function getListingPrice(db: Database, listingId: string): Promise<Row> {
+  const [doc] = await db
+    .select(ROW_COLUMNS)
+    .from(listingSearchDoc)
+    .where(eq(listingSearchDoc.listingId, listingId))
+    .limit(1);
+
+  if (!doc) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+
+  const adjustments = await loadAdjustmentsForListings(db, [doc.listingId]);
+  return toRow(doc, adjustments.get(doc.listingId) ?? []);
+}
 
 export async function listListingPrices(db: Database, input: ListInput): Promise<ListResult> {
   const filters = [];
@@ -35,15 +116,7 @@ export async function listListingPrices(db: Database, input: ListInput): Promise
 
   const [docs, [totals]] = await Promise.all([
     db
-      .select({
-        listingId: listingSearchDoc.listingId,
-        title: listingSearchDoc.title,
-        baseName: listingSearchDoc.baseName,
-        location: listingSearchDoc.location,
-        country: listingSearchDoc.country,
-        priceFromMinor: listingSearchDoc.priceFromMinor,
-        currency: listingSearchDoc.currency,
-      })
+      .select(ROW_COLUMNS)
       .from(listingSearchDoc)
       .where(where)
       .orderBy(asc(listingSearchDoc.title), asc(listingSearchDoc.listingId))
@@ -57,42 +130,7 @@ export async function listListingPrices(db: Database, input: ListInput): Promise
     docs.map((doc) => doc.listingId),
   );
 
-  const items: Row[] = docs.map((doc) => {
-    const currency = doc.currency ?? "EUR";
-    const basePrice =
-      doc.priceFromMinor === null ? null : { amountMinor: doc.priceFromMinor, currency };
-
-    if (!basePrice) {
-      return {
-        listingId: doc.listingId,
-        title: doc.title,
-        baseName: doc.baseName,
-        locationName: doc.location,
-        countryName: doc.country,
-        basePrice: null,
-        currentPrice: null,
-        activeRuleId: null,
-        activeRuleLabel: null,
-      };
-    }
-
-    const resolved = resolveAdjustedPrice(
-      basePrice.amountMinor,
-      adjustments.get(doc.listingId) ?? [],
-    );
-
-    return {
-      listingId: doc.listingId,
-      title: doc.title,
-      baseName: doc.baseName,
-      locationName: doc.location,
-      countryName: doc.country,
-      basePrice,
-      currentPrice: { amountMinor: resolved.amountMinor, currency },
-      activeRuleId: resolved.appliedRuleId,
-      activeRuleLabel: resolved.appliedRuleLabel,
-    };
-  });
+  const items = docs.map((doc) => toRow(doc, adjustments.get(doc.listingId) ?? []));
 
   return {
     items,

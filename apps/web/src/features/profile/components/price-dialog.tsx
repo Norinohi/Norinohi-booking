@@ -23,7 +23,7 @@ import { useMoney } from "@/hooks/use-money";
 
 import {
   useClearListingPrice,
-  useListingPrices,
+  useListingPrice,
   useUpdateListingPrice,
 } from "../hooks/use-discounts";
 
@@ -54,11 +54,9 @@ export default function PriceDialog({
   const t = useTranslations("Discounts");
   const formatMoney = useMoney();
 
-  /* No admin.listingPrice.get exists yet, so the row comes out of a one-page list fetch —
-   * mirroring prefetchListingPrices in ../api/server.ts. Swap for a get-by-id once the API
-   * grows one. */
-  const { data, isPending } = useListingPrices({ page: 1, pageSize: 100 });
-  const row = data?.items.find((item) => item.listingId === listingId);
+  /* Addressed by id. Finding the row inside a `list` page instead capped the dialog at the
+   * first 100 titles, so every listing past them could be opened but never repriced. */
+  const { data: row, isPending } = useListingPrice(listingId);
 
   const updatePrice = useUpdateListingPrice();
   const clearPrice = useClearListingPrice();
@@ -153,7 +151,7 @@ export default function PriceDialog({
             <Loader />
           </div>
         ) : !row ? (
-          /* Loaded but the id is not in the catalogue page — the list error copy. */
+          /* No such listing — the API answered NOT_FOUND, so show the list error copy. */
           <div className="w-full p-4 pb-6 md:p-5">
             <p className="text-center text-sm font-medium text-natural-500">{t("prices.error")}</p>
           </div>

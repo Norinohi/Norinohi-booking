@@ -10,6 +10,7 @@ import {
   discountYachtOptionsQueryOptions,
   listingPriceFiltersQueryOptions,
   listingPriceListQueryOptions,
+  listingPriceQueryOptions,
 } from "../api/queries";
 
 /*
@@ -71,6 +72,10 @@ export function useListingPrices(input: {
   pageSize?: number;
 }) {
   return useQuery(listingPriceListQueryOptions(input));
+}
+
+export function useListingPrice(listingId: string) {
+  return useQuery(listingPriceQueryOptions(listingId));
 }
 
 export function useListingPriceFilters() {
