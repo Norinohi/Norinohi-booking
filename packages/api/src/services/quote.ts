@@ -612,6 +612,8 @@ async function insertQuote(
       discountId: input.discountId,
       discountCode: input.discountCode,
       creditAppliedMinor: input.creditAppliedMinor,
+      // The base pair the provider priced, so the hold opens the charter that was quoted.
+      route: input.priced.route,
       priceSourceHash: input.priced.priceSourceHash,
       expiresAt: new Date(input.priced.expiresAt),
     })

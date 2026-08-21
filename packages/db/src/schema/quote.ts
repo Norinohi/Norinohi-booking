@@ -73,6 +73,15 @@ export const quote = pgTable(
     creditAppliedMinor: integer("credit_applied_minor").default(0).notNull(),
     // Re-fetched and compared by every state-advancing call, so a moved provider
     // price cannot pass silently (§6.2).
+    /**
+     * The provider-side bases this quote was priced for, where the offer named them.
+     *
+     * Persisted rather than re-derived because the reservation is opened from the stored quote,
+     * often minutes later, and a fleet that sells one-way prices each base pair differently. The
+     * hold used to send the listing's home base for both ends, which quietly booked a pairing the
+     * vendor had not offered whenever the boat was moored at the other end of its run.
+     */
+    route: jsonb("route").$type<{ startBaseId?: string; endBaseId?: string }>(),
     priceSourceHash: text("price_source_hash").notNull(),
     status: quoteStatus("status").default("active").notNull(),
     expiresAt: timestamp("expires_at").notNull(),

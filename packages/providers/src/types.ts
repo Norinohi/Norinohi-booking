@@ -211,6 +211,21 @@ export const providerQuoteSchema = z.object({
     )
     .nullable()
     .default(null),
+  /**
+   * The provider-side bases this price is for, where the offer named them.
+   *
+   * Load-bearing, not informational. A fleet that sells one-way is quoted one offer per base
+   * pair and they differ in money, so the pair the customer was priced on is the pair the
+   * reservation has to open. The booking used to send the listing's home base for both ends
+   * regardless, which is wrong the moment a boat is not at home: on the week of 26 September
+   * 2026 every offer for this hull started at Portumna while its listing says Carrick.
+   *
+   * Null where the provider does not state bases; the booking then falls back to the listing's.
+   */
+  route: z
+    .object({ startBaseId: z.string().optional(), endBaseId: z.string().optional() })
+    .nullable()
+    .default(null),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
@@ -233,6 +248,10 @@ export const bookingDraftSchema = z.object({
    * provider-side artifact this is the only link between the two moments.
    */
   priceSourceHash: z.string(),
+  /** The bases the quote was priced for; see `route` on `providerQuoteSchema`. */
+  route: z
+    .object({ startBaseId: z.string().optional(), endBaseId: z.string().optional() })
+    .nullish(),
   customer: z.object({
     name: z.string(),
     surname: z.string().optional(),

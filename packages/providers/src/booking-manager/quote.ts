@@ -184,6 +184,14 @@ export function selectOffer(
   return rankOffers(ofProduct.length > 0 ? ofProduct : candidates)[0];
 }
 
+/** The offer's own bases, or null where it named neither. */
+function routeOf(offer: RestOffer): { startBaseId?: string; endBaseId?: string } | null {
+  const startBaseId = offer.startBaseId ?? undefined;
+  const endBaseId = offer.endBaseId ?? undefined;
+  if (startBaseId === undefined && endBaseId === undefined) return null;
+  return { ...(startBaseId ? { startBaseId } : {}), ...(endBaseId ? { endBaseId } : {}) };
+}
+
 /** Same-base before one-way, then cheapest all-in. A stable sort keeps vendor order as the tie. */
 function rankOffers(candidates: readonly RestOffer[]): RestOffer[] {
   return [...candidates].sort(
@@ -316,6 +324,13 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
     total: { amountMinor: totalMinor, currency },
     deposit: { amountMinor: depositMinor, currency },
     paymentPolicy: policy,
+    /*
+     * The pair this offer was priced for, carried so the reservation opens the same charter.
+     * `selectOffer` may well have picked a base the listing does not call home - a boat left
+     * at the other end of the run is offered from there - and the booking used to overwrite
+     * both ends with the listing's own base.
+     */
+    route: routeOf(offer),
     priceSourceHash,
     repriced: false,
     expiresAt: input.expiresAt,
