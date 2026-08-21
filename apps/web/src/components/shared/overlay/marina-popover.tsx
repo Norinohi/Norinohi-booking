@@ -148,7 +148,7 @@ export function MarinaPopover({ marina, className }: MarinaPopoverProps) {
         delay={200}
         closeDelay={100}
         className={cn(
-          "max-w-full truncate rounded-sm text-left text-base font-bold leading-[1.4] text-foreground underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+          "max-w-full w-fit truncate rounded-sm text-left text-base font-bold leading-[1.4] text-foreground underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
           className,
         )}
       >
