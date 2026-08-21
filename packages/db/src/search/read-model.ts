@@ -143,8 +143,8 @@ export async function rebuildListingSearchDocs(
        * of them will book.
        */
       case
-        when rate.price_from_minor is null then null
-        else rate.price_from_minor + coalesce(fees.unavoidable_minor, 0)
+        when coalesce(week.price_minor, rate.price_from_minor) is null then null
+        else coalesce(week.price_minor, rate.price_from_minor) + coalesce(fees.unavoidable_minor, 0)
       end,
       coalesce(rate.currency, l.default_currency),
       avail.available_from,
@@ -377,6 +377,27 @@ export async function rebuildListingSearchDocs(
       order by c.candidate, n.nights
       limit 1
     ) checkin on true
+    /*
+     * The rate for the week the card actually advertises, not the cheapest of the season.
+     *
+     * The card prints a price directly beside the bookable dates, so the two have to
+     * describe one charter. Reading the season minimum instead put "EUR 4,557" next to 29 August
+     * on a hull whose 29 August week is EUR 5,460 -- a EUR 1,533 understatement, and the quote
+     * that follows the click is the one that has to be right.
+     *
+     * Null for a listing with no bookable period at all, where the minimum is still the honest
+     * answer: nothing is being advertised for particular dates.
+     */
+    left join lateral (
+      select price.price_minor
+      from listing_price_period price
+      where price.listing_id = l.id
+        and price.kind = 'weekly'
+        and price.start_date <= checkin.bookable_from
+        and price.end_date > checkin.bookable_from
+      order by price.price_minor
+      limit 1
+    ) week on true
     left join lateral (
       select bool_or(slot.status = 'option') as has_temporary_booking
       from availability_slot slot
