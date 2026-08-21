@@ -29,7 +29,7 @@ import MapBoatPopup from "./map-boat-popup";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 import MapClusterMarker from "./map-cluster-marker";
 import MapListPanel from "./map-list-panel";
-import MapMarker from "./map-marker";
+import MapMarker from "@/components/shared/data-display/map-marker";
 
 // Above this expansion zoom a cluster is a single marina whose boats never separate; list them instead.
 const CLUSTER_EXPAND_MAX_ZOOM = 16;

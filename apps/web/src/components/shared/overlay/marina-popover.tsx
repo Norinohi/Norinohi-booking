@@ -50,8 +50,6 @@ export type MarinaCardProps = {
 };
 
 export function MarinaCard({ marina, className, onMapOpenChange }: MarinaCardProps) {
-  const t = useTranslations("Common.marina");
-
   return (
     <article className={cn("w-full overflow-hidden rounded-2xl", className)}>
       <div className="flex flex-col md:flex-row md:items-stretch md:gap-4">
@@ -65,47 +63,60 @@ export function MarinaCard({ marina, className, onMapOpenChange }: MarinaCardPro
           /* Smaller than the default disc, but the standard white: this map is 228px wide, and the
              faint one it used to carry disappeared once the basemap became satellite imagery. */
           pinClassName="size-16"
+          popup={<MarinaDetails marina={marina} className="w-72 rounded-2xl bg-card p-4" />}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4 px-4 py-4 md:pl-0">
-          <div className="flex flex-col gap-1.5 md:gap-2">
-            <p className="truncate text-base font-bold leading-[1.4] text-foreground">
-              {marina.name}
-            </p>
-            <p className="text-base leading-[1.4] text-natural-500">
-              {[marina.address, marina.city, marina.country].filter(Boolean).join(", ")}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-1.5 md:gap-2">
-            {marina.phone ? (
-              <ContactRow icon={<Smartphone className="size-6" />}>{marina.phone}</ContactRow>
-            ) : null}
-            {marina.website ? (
-              <ContactRow icon={<Globe className="size-6" />}>{marina.website}</ContactRow>
-            ) : null}
-            {marina.email ? (
-              <ContactRow icon={<Mail className="size-6" />}>{marina.email}</ContactRow>
-            ) : null}
-          </div>
-
-          {marina.website ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={
-                <a href={withProtocol(marina.website)} target="_blank" rel="noopener noreferrer" />
-              }
-              className="w-fit capitalize"
-            >
-              {t("viewDetails")}
-              <ArrowUpRight className="size-4 shrink-0" />
-            </Button>
-          ) : null}
-        </div>
+        <MarinaDetails marina={marina} className="flex-1 px-4 py-4 md:pl-0" />
       </div>
     </article>
+  );
+}
+
+/**
+ * A marina in words — everything the card shows beside its map.
+ *
+ * Its own component because the same block is what a pin opens inside the map dialog, and the card
+ * cannot be reused there: the card contains that very map, so nesting it would recurse.
+ */
+export function MarinaDetails({ marina, className }: { marina: Marina; className?: string }) {
+  const t = useTranslations("Common.marina");
+
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-4", className)}>
+      <div className="flex flex-col gap-1.5 md:gap-2">
+        <p className="truncate text-base font-bold leading-[1.4] text-foreground">{marina.name}</p>
+        <p className="text-base leading-[1.4] text-natural-500">
+          {[marina.address, marina.city, marina.country].filter(Boolean).join(", ")}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1.5 md:gap-2">
+        {marina.phone ? (
+          <ContactRow icon={<Smartphone className="size-6" />}>{marina.phone}</ContactRow>
+        ) : null}
+        {marina.website ? (
+          <ContactRow icon={<Globe className="size-6" />}>{marina.website}</ContactRow>
+        ) : null}
+        {marina.email ? (
+          <ContactRow icon={<Mail className="size-6" />}>{marina.email}</ContactRow>
+        ) : null}
+      </div>
+
+      {marina.website ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={
+            <a href={withProtocol(marina.website)} target="_blank" rel="noopener noreferrer" />
+          }
+          className="w-fit capitalize"
+        >
+          {t("viewDetails")}
+          <ArrowUpRight className="size-4 shrink-0" />
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
