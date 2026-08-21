@@ -201,6 +201,14 @@ export type ListingPricedItem = {
    * both into the prepayment. Silence is now silence rather than a guess.
    */
   payableInBase: boolean | null;
+  /**
+   * Charged only when the charter ends at a base other than the one it started from.
+   *
+   * Presenting one of these as an unconditional mandatory extra overstates every return
+   * charter by its amount: this fleet's one-way fee is 155 or 185 depending on direction, and
+   * the same-base charter the quote now prefers pays neither.
+   */
+  oneWayOnly: boolean;
   pricingType: "per_booking" | "per_week" | "pay_at_check_in";
 };
 

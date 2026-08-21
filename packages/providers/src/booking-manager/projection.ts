@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
-import { CHARTER_TURNAROUND_WEEKDAY } from "./dates";
+import { CHARTER_TURNAROUND_WEEKDAY, parseBookingManagerDate } from "./dates";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
@@ -688,11 +688,32 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
         calculationType: undefined,
         // `false` here is a real statement, so it is kept apart from the vendor saying nothing.
         payableInBase: item.payableInBase ?? undefined,
+        seasonStart: sailingDateOf(item.sailingDateFrom),
+        seasonEnd: sailingDateOf(item.sailingDateTo),
+        // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
+        oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
         onRequestOnly: false,
       });
     }
   }
   return [...chosen.values()];
+}
+
+/**
+ * The sailing date bounding a seasonal price, or undefined for one the vendor left open.
+ *
+ * Total, unlike `parseBookingManagerDate`: a malformed bound should cost the extra its season
+ * window, not drop the fee or fail the catalogue. An extra with no window is simply never
+ * filtered out by season, which is the safe direction for a fee someone still has to pay.
+ */
+function sailingDateOf(value: JsonField): string | undefined {
+  const raw = text(value);
+  if (raw === undefined) return undefined;
+  try {
+    return parseBookingManagerDate(raw);
+  } catch {
+    return undefined;
+  }
 }
 
 /**

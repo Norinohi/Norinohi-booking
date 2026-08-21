@@ -27,10 +27,14 @@ export default function MandatoryExtrasSection() {
               <p className="text-base leading-5.5 text-foreground">{item.label}</p>
               {/* Silent where the provider never said where it collects; the line used to
                   claim "Pay at check-in" for every fee, including ones the sidebar was
-                  counting into the prepayment on the same screen. */}
-              {item.payableInBase !== null && (
+                  counting into the prepayment on the same screen. A route-conditional fee
+                  says so instead: it is not charged on the same-base charter most of these
+                  listings sell, so presenting it flatly overstates the trip. */}
+              {(item.oneWayOnly || item.payableInBase !== null) && (
                 <p className="text-xs font-semibold text-natural-300">
-                  {tExtras(item.payableInBase ? "payAtCheckIn" : "payNow")}
+                  {item.oneWayOnly
+                    ? tExtras("oneWayOnly")
+                    : tExtras(item.payableInBase ? "payAtCheckIn" : "payNow")}
                 </p>
               )}
             </div>

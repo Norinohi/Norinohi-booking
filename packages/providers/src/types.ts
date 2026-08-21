@@ -470,6 +470,17 @@ export const canonicalExtraSchema = z.object({
    * arrival when it was already charged is the error this replaced.
    */
   payableInBase: z.boolean().optional(),
+  /**
+   * The sailing dates this price is for, where the provider versions a fee by season. Both ends
+   * optional: a fee that never changes carries neither, and one that only opens carries a start.
+   */
+  seasonStart: z.string().optional(),
+  seasonEnd: z.string().optional(),
+  /**
+   * Charged only when the charter ends somewhere other than it started. Listing one of these as
+   * an unconditional mandatory extra overstates every return charter by its amount.
+   */
+  oneWayOnly: z.boolean().optional(),
   /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
   onRequestOnly: z.boolean(),
   /**

@@ -383,6 +383,7 @@
     "extras": {
       "payAtCheckIn": "Оплата при заїзді",
       "payNow": "Входить у передоплату",
+      "oneWayOnly": "Лише для рейсів в один бік",
       "measure": {
         "booking": "{price} за бронювання",
         "day": "{price} за день",

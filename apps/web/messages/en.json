@@ -383,6 +383,7 @@
     "extras": {
       "payAtCheckIn": "Pay at check-in",
       "payNow": "Included in prepayment",
+      "oneWayOnly": "One-way charters only",
       "measure": {
         "booking": "{price} per booking",
         "day": "{price} per day",

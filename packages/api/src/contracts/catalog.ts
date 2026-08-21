@@ -56,6 +56,8 @@ const pricedItemSchema = includedItemSchema.extend({
   priceMeasure: z.string().nullable(),
   /** Where the fee is collected; null where the provider said nothing, so the page says nothing. */
   payableInBase: z.boolean().nullable(),
+  /** Charged only on a charter that ends at a different base than it started. */
+  oneWayOnly: z.boolean(),
   pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
 });
 

@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
   jsonb,
   numeric,
@@ -76,6 +77,19 @@ export const providerExtraCatalogue = pgTable(
      * NauSYS implies it through `calculationType`, and a null means nobody said.
      */
     payableInBase: boolean("payable_in_base"),
+    /**
+     * The sailing dates this price is for. Providers version a fee by season rather than
+     * replacing it, so one listing holds the same fee several times over: the Shannon fleet's
+     * boat cleaning is 150 for 2026, 155 for 2027 and 160 for 2028, all three live at once.
+     * Without these the catalogue page showed all of them as though they were alternatives.
+     */
+    seasonStart: date("season_start"),
+    seasonEnd: date("season_end"),
+    /**
+     * Charged only where the charter ends at a different base than it started. Booking Manager
+     * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.
+     */
+    oneWayOnly: boolean("one_way_only").default(false).notNull(),
     onRequestOnly: boolean("on_request_only").default(false).notNull(),
     externalSeasonId: text("external_season_id"),
     externalBaseId: text("external_base_id"),

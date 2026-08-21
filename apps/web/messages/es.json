@@ -383,6 +383,7 @@
     "extras": {
       "payAtCheckIn": "Pago al llegar",
       "payNow": "Incluido en el pago inicial",
+      "oneWayOnly": "Solo en trayectos de ida",
       "measure": {
         "booking": "{price} por reserva",
         "day": "{price} por día",

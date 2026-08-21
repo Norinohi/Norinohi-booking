@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
 import { restExtrasSchema, restOfferSchema } from "./endpoints";
-import { mapOfferToProviderQuote, type OfferMapping } from "./quote";
+import { mapOfferToProviderQuote, type OfferMapping, selectOffer } from "./quote";
 
 type ExtraInput = z.input<typeof restExtrasSchema>;
 
@@ -95,5 +95,67 @@ describe("mapOfferToProviderQuote per-person extras", () => {
       )?.amount.amountMinor;
 
     expect(baseOf(2, 140)).toBe(baseOf(5, 350));
+  });
+});
+
+/*
+ * The vendor answers a one-way fleet with one offer per sellable base pair, ordered by product
+ * rather than by route, so the first is whichever pair it happened to list. Taking it charged a
+ * one-way nobody asked for: on the week of 26 September 2026 this hull's first candidate ran
+ * Portumna to Carrick with a 155 EUR one-way fee, and the same-base return sat behind it.
+ */
+describe("selectOffer", () => {
+  const pair = (startBaseId: string, endBaseId: string, obligatoryExtrasPrice: number) =>
+    restOfferSchema.parse({
+      yachtId: "9001",
+      dateFrom: "2026-09-26 15:00:00",
+      dateTo: "2026-10-03 09:00:00",
+      price: 809,
+      currency: "EUR",
+      product: "Bareboat",
+      startBaseId,
+      endBaseId,
+      obligatoryExtrasPrice,
+    });
+
+  const oneWay = pair("100", "200", 305);
+  const sameBase = pair("100", "100", 150);
+
+  it("prefers a charter that returns to its own base over the vendor's first answer", () => {
+    const chosen = selectOffer([oneWay, sameBase], "9001", "2026-09-26", "2026-10-03", undefined);
+
+    expect(chosen?.endBaseId).toBe("100");
+    expect(chosen?.obligatoryExtrasPrice).toBe(150);
+  });
+
+  it("takes the cheapest all-in where both charters return to base", () => {
+    const dearer = pair("200", "200", 400);
+    const chosen = selectOffer([dearer, sameBase], "9001", "2026-09-26", "2026-10-03", undefined);
+
+    expect(chosen?.obligatoryExtrasPrice).toBe(150);
+  });
+
+  it("still answers when only a one-way is on offer", () => {
+    expect(selectOffer([oneWay], "9001", "2026-09-26", "2026-10-03", undefined)).toBe(oneWay);
+  });
+
+  it("keeps product ahead of route, because a product is a different charter", () => {
+    const crewed = restOfferSchema.parse({
+      ...JSON.parse(JSON.stringify(oneWay)),
+      product: "Crewed",
+    });
+    const chosen = selectOffer([sameBase, crewed], "9001", "2026-09-26", "2026-10-03", "Crewed");
+
+    expect(chosen?.product).toBe("Crewed");
+  });
+
+  it("ignores offers the vendor echoed for other dates", () => {
+    const otherWeek = restOfferSchema.parse({
+      ...JSON.parse(JSON.stringify(sameBase)),
+      dateFrom: "2026-10-03 15:00:00",
+      dateTo: "2026-10-10 09:00:00",
+    });
+
+    expect(selectOffer([otherWeek], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
   });
 });

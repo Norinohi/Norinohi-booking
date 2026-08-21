@@ -243,6 +243,7 @@ export async function getListingDetailByIdOrSlug(
         priceMeasure: string | null;
         calculationType: string | null;
         payableInBase: boolean | null;
+        oneWayOnly: boolean;
       }>(sql`
       select
         source,
@@ -255,9 +256,26 @@ export async function getListingDetailByIdOrSlug(
         price_currency as "priceCurrency",
         price_measure as "priceMeasure",
         calculation_type as "calculationType",
-        payable_in_base as "payableInBase"
+        payable_in_base as "payableInBase",
+        one_way_only as "oneWayOnly"
       from provider_extra_catalogue
       where listing_id = ${listing.listingId}
+        /*
+         * Only fees whose season overlaps what we actually sell.
+         *
+         * Providers version a fee by season rather than replacing it, so this listing carries
+         * boat cleaning three times at once - 150 for 2026, 155 for 2027, 160 for 2028 - and
+         * showing all three made the page quote a 150-160 range no bookable charter could land
+         * in. The upper bound is the end of next year because that is the horizon both provider
+         * syncs fetch (this year and the next), so a 2028 price is for dates nothing here can
+         * sell yet. Rows stating no season are kept at both ends: silence is not an expiry,
+         * and a fee somebody still has to pay is the wrong thing to hide.
+         */
+        and (season_end is null or season_end >= current_date)
+        and (
+          season_start is null
+          or season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+        )
       order by obligatory desc, price_minor, name asc
     `),
       db.execute<{ id: string; question: string; answer: string }>(sql`
@@ -298,6 +316,7 @@ export async function getListingDetailByIdOrSlug(
     priceMeasure: item.priceMeasure,
     calculationType: item.calculationType,
     payableInBase: item.payableInBase,
+    oneWayOnly: item.oneWayOnly,
     selectable: isSelectableExtra(item.source, item.kind),
   }));
   const mandatoryExtras = foldFeeVariants(
@@ -1350,6 +1369,8 @@ function foldFeeVariants(
       priceToMinor: high > low ? high : null,
       // Variants that disagree on where the fee is collected say nothing together.
       payableInBase: seen.payableInBase === next.payableInBase ? seen.payableInBase : null,
+      // Conditional only where every variant is; one unconditional variant is always charged.
+      oneWayOnly: seen.oneWayOnly && next.oneWayOnly,
     });
   }
 
@@ -1365,6 +1386,7 @@ function pricedItem(
     priceMeasure?: string | null;
     calculationType?: string | null;
     payableInBase?: boolean | null;
+    oneWayOnly?: boolean | null;
   },
   fallbackCurrency: string | null,
 ): ListingPricedItem {
@@ -1378,6 +1400,7 @@ function pricedItem(
     priceToMinor: null,
     priceMeasure: item.priceMeasure ?? null,
     payableInBase: item.payableInBase ?? null,
+    oneWayOnly: item.oneWayOnly ?? false,
     pricingType: pricingTypeOf(item.calculationType),
   };
 }
