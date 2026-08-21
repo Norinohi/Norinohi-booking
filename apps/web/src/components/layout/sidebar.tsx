@@ -73,8 +73,14 @@ export default function Sidebar({
       aria-label={t("menu")}
       className={cn(
         /* Sticky from lg (where it sits beside the content): pinned 96px below the top —
-           the 72px sticky navbar plus the page's 24px block padding (80px navbar at 2xl). */
-        "w-full max-w-[334px] overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 2xl:top-26",
+           the 72px sticky navbar plus the page's 24px block padding (80px navbar at 2xl).
+           Capped to what is left of the viewport and scrolling inside that, because a staff
+           menu is ~976px tall: taller than the pin leaves, so without the cap `sticky` has
+           nothing to pin and the menu rides the page down. Someone reading the bottom of a
+           long table would have to scroll all the way back up to change screen.
+           `overflow-hidden` still governs the x axis, which is what keeps the header art
+           inside the rounded corners. */
+        "w-full max-w-[334px] overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:[scrollbar-width:thin] 2xl:top-26 2xl:max-h-[calc(100dvh-8rem)]",
         className,
       )}
     >

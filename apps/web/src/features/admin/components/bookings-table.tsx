@@ -199,22 +199,26 @@ export default function BookingsTable() {
                           {t("createdAt", { at: day(booking.createdAt) })}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      {/* Capped and truncated: an address is longer than every other cell and
+                          would otherwise set the column width, pushing Status off the row. The
+                          name above is what identifies the customer; the address is for the
+                          click, and the link carries it in full either way. */}
+                      <TableCell className="max-w-52">
                         <div className="flex flex-col">
-                          <span className="font-medium text-foreground">
+                          <span className="truncate font-medium text-foreground">
                             {booking.customerName ?? "—"}
                           </span>
                           {/* The list is where staff pick a booking out of a phone call, and
                               mailing the customer back is often the next move. */}
                           <a
                             href={`mailto:${booking.customerEmail}`}
-                            className="text-sm text-natural-500 transition-colors hover:text-brand"
+                            className="truncate text-sm text-natural-500 transition-colors hover:text-brand"
                           >
                             {booking.customerEmail}
                           </a>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-72">
+                      <TableCell className="max-w-64">
                         <p className="line-clamp-2 text-foreground">{booking.listingTitle}</p>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
