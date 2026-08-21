@@ -74,7 +74,9 @@ export default function DetailTabs() {
         const next = SECTIONS.find((id) => id === value);
         if (next) goTo(next);
       }}
-      className="sticky top-[calc(var(--header-h)+66px)] z-10 bg-background xl:top-(--header-h)"
+      /* Sticks a pixel high and pads it back, so the bar tucks under the chrome above instead of
+         meeting it edge to edge, where a rounding seam can let the page show through. */
+      className="sticky top-[calc(var(--header-h)+65px)] z-10 bg-background pt-px xl:top-[calc(var(--header-h)-1px)]"
     >
       <TabsList className="overflow-x-auto">
         {sections.map((id) => (

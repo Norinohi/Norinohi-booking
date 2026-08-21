@@ -1,9 +1,10 @@
 "use client";
 
-import { MapPin } from "lucide-react";
-import { Marker } from "react-map-gl/mapbox";
+import { type ReactNode, useState } from "react";
 
 import MapCanvas from "@/components/shared/data-display/map-canvas";
+import MapPopup from "@/components/shared/data-display/map-popup";
+import MapMarker from "@/components/shared/data-display/map-marker";
 
 import type { Coordinates } from "./marina-popover";
 
@@ -20,24 +21,31 @@ export default function MapDialogCanvas({
   point,
   title,
   zoom,
+  popup,
 }: {
   point: Coordinates;
   title: string;
   zoom: number;
+  /** Opened by a tap on the pin, the way the search map's markers behave. */
+  popup?: ReactNode;
 }) {
+  const [map, setMap] = useState<Parameters<typeof MapPopup>[0]["map"]>(null);
+  const [open, setOpen] = useState(false);
+
   return (
     <MapCanvas
       dimOpacity={DIALOG_DIM_OPACITY}
       initialViewState={{ longitude: point.lng, latitude: point.lat, zoom }}
+      onReady={setMap}
+      onBackgroundPress={() => setOpen(false)}
     >
-      <Marker longitude={point.lng} latitude={point.lat} anchor="center">
-        <span
-          aria-label={title}
-          className="flex size-21 items-center justify-center rounded-full border border-white/50 bg-white/25 duration-300 animate-in fade-in-0 zoom-in-50"
-        >
-          <MapPin className="size-6 fill-brand text-white" />
-        </span>
-      </Marker>
+      <MapMarker coordinates={point} label={title} selected={open} onSelect={() => setOpen(true)} />
+
+      {popup && open ? (
+        <MapPopup coordinates={point} map={map}>
+          {popup}
+        </MapPopup>
+      ) : null}
     </MapCanvas>
   );
 }

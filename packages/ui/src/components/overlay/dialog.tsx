@@ -2,6 +2,7 @@
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import { X } from "lucide-react";
 
 /*
@@ -29,9 +30,12 @@ function DialogContent({
   mobileSheet = false,
   backdropClassName,
   closeClassName,
+  closeLabel,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showClose?: boolean;
+  /** Accessible name of the close control; falls back to `UiLabelsProvider`. */
+  closeLabel?: string;
   mobileSheet?: boolean;
   /** Restyle the dimmed backdrop, e.g. `max-md:bg-transparent` for page-like mobile overlays. */
   backdropClassName?: string;
@@ -41,6 +45,7 @@ function DialogContent({
    */
   closeClassName?: string;
 }) {
+  const labels = useUiLabels();
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
@@ -67,7 +72,7 @@ function DialogContent({
         {showClose ? (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            aria-label="Close"
+            aria-label={closeLabel ?? labels.close}
             className={cn(
               "absolute top-4 right-4 cursor-pointer text-natural-400 transition-colors hover:text-foreground [&_svg]:size-6",
               closeClassName,

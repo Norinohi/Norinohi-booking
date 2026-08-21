@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
@@ -100,13 +101,30 @@ function CarouselSlide({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/** How many bars are on screen at once. Beyond this the row windows rather than grows. */
+const MAX_BARS = 5;
+
+/** Keeps the selected bar mid-row: a bar per photo thins to a hair once there are many. */
+function barOffset(selected: number, snapCount: number, visible: number) {
+  return Math.min(
+    Math.max(selected - Math.floor(visible / 2), 0),
+    Math.max(snapCount - visible, 0),
+  );
+}
+
 function CarouselBars({
   className,
   barClassName,
+  maxBars = MAX_BARS,
   ...props
-}: React.ComponentProps<"div"> & { barClassName?: string }) {
+}: React.ComponentProps<"div"> & { barClassName?: string; maxBars?: number }) {
   const { api, selected, snapCount } = useCarousel();
+  const labels = useUiLabels();
   if (snapCount <= 1) return null;
+
+  const visible = Math.min(maxBars, snapCount);
+  const start = barOffset(selected, snapCount, visible);
+  const end = start + visible;
 
   return (
     <div
@@ -116,23 +134,38 @@ function CarouselBars({
        * would otherwise swallow hover and clicks across the whole width — including any cursor the
        * photo underneath sets for itself. Only the bars take pointer events back.
        */
-      className={cn("pointer-events-none flex items-center justify-center gap-1 p-1", className)}
+      className={cn("pointer-events-none flex items-center justify-center p-1", className)}
       {...props}
     >
-      {Array.from({ length: snapCount }, (_, index) => (
-        <button
-          key={index}
-          type="button"
-          aria-label={`Go to photo ${index + 1}`}
-          aria-current={index === selected || undefined}
-          onClick={() => api?.scrollTo(index)}
-          className={cn(
-            "pointer-events-auto h-1 w-4 cursor-pointer rounded-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/70",
-            index === selected ? "bg-white" : "bg-white/12 hover:bg-white/40",
-            barClassName,
-          )}
-        />
-      ))}
+      {/* All stay mounted and the hidden ones collapse to nothing — rendering only the visible
+          few made them jump rather than travel. */}
+      {Array.from({ length: snapCount }, (_, index) => {
+        const outside = index < start || index >= end;
+        /* Distance to an end that hides more; `Infinity` where the row already reaches it. */
+        const distance = Math.min(
+          start > 0 ? index - start : Number.POSITIVE_INFINITY,
+          end < snapCount ? end - 1 - index : Number.POSITIVE_INFINITY,
+        );
+
+        return (
+          <button
+            key={index}
+            type="button"
+            aria-label={labels.goToPhoto(index + 1, snapCount)}
+            aria-current={index === selected || undefined}
+            tabIndex={outside ? -1 : undefined}
+            onClick={() => api?.scrollTo(index)}
+            className={cn(
+              "pointer-events-auto h-1 shrink-0 cursor-pointer rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.45)] transition-[width,margin,background-color] duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-white/70",
+              index === selected ? "bg-white" : "bg-white/50 hover:bg-white/80",
+              barClassName,
+              /* Half the gap each side, so every pair is spaced alike whatever their widths. */
+              outside ? "mx-0 w-0" : "mx-0.5",
+              !outside && (distance === 0 ? "w-1" : distance === 1 ? "w-2" : "w-4"),
+            )}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -143,13 +176,14 @@ function CarouselArrow({
   ...props
 }: React.ComponentProps<"button"> & { direction: "prev" | "next" }) {
   const { api, canScrollPrev, canScrollNext } = useCarousel();
+  const labels = useUiLabels();
   const isPrev = direction === "prev";
 
   return (
     <button
       type="button"
       data-slot={`carousel-${direction}`}
-      aria-label={isPrev ? "Previous photo" : "Next photo"}
+      aria-label={isPrev ? labels.previousPhoto : labels.nextPhoto}
       disabled={isPrev ? !canScrollPrev : !canScrollNext}
       onClick={() => (isPrev ? api?.scrollPrev() : api?.scrollNext())}
       className={cn(
@@ -225,6 +259,7 @@ function CarouselThumbs({
   itemClassName?: string;
 }) {
   const { api, selected } = useCarousel();
+  const labels = useUiLabels();
   const [thumbsRef, thumbsApi] = useEmblaCarousel({
     containScroll: "keepSnaps",
     dragFree: true,
@@ -246,7 +281,7 @@ function CarouselThumbs({
           <button
             key={index}
             type="button"
-            aria-label={`Show photo ${index + 1}`}
+            aria-label={labels.showPhoto(index + 1)}
             aria-current={index === selected || undefined}
             onClick={() => api?.scrollTo(index)}
             className={cn(

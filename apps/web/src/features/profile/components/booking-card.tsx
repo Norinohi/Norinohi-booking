@@ -34,7 +34,8 @@ export type BookingCardProps = BoatCardProps & {
    * the second installment themselves rather than waiting to be chased.
    */
   payBalanceHref?: string;
-  /** What that button says — the wording depends on whether anything has been paid yet. */
+  /** What that button says — the wording depends on whether anything has been paid yet. Required
+   *  alongside `payBalanceHref`: a Pay button with no amount is never right. */
   payBalanceLabel?: string;
 };
 
@@ -164,14 +165,14 @@ export default function BookingCard({
 
         {/* Action */}
         <div className="flex flex-col items-center justify-center gap-3 py-6 pr-6">
-          {payBalanceHref ? (
+          {payBalanceHref && payBalanceLabel ? (
             <Button
               variant="brand"
               size="md"
               nativeButton={false}
               render={<Link href={payBalanceHref} />}
             >
-              {payBalanceLabel ?? tBookings("payBalance", { amount: "" })}
+              {payBalanceLabel}
             </Button>
           ) : null}
           <Button

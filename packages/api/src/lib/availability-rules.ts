@@ -164,14 +164,26 @@ export function rangeStatus(
   return "bookable";
 }
 
-/** Both ends, deliberately: see `refused` on CharterConstraints. */
+/**
+ * Containment, one way only: a charter is refused when it *contains* a period the provider
+ * refused, never when it merely overlaps or sits inside one.
+ *
+ * The direction is the whole point. A charter needs the boat for every day it spans, so if the
+ * vendor will not hand it over across some inner stretch, no longer charter over that stretch
+ * is possible either — refusing the week from 19 September refuses the fortnight that starts
+ * with it. The converse does not hold and must not be inferred: refusing a fortnight says only
+ * that the fortnight is too long, and folding that into the week starting the same Saturday
+ * hid charters the vendor would have sold.
+ *
+ * An exact match is the common case, since the sweep asks in whole weeks.
+ */
 function wasRefused(
   refused: readonly DatePeriod[] | undefined,
   checkIn: string,
   checkOut: string,
 ): boolean {
   return (
-    refused?.some((period) => period.startDate === checkIn && period.endDate === checkOut) ?? false
+    refused?.some((period) => checkIn <= period.startDate && period.endDate <= checkOut) ?? false
   );
 }
 

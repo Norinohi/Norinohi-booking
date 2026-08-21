@@ -18,7 +18,7 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
 import { useAmount } from "../hooks/use-amount";
 import { useAdminBooking, useSetBookingExcluded } from "../hooks/use-payments";
-import type { BookingAdminDetail } from "../types";
+import { type BookingAdminDetail, toProviderKey } from "../types";
 
 /*
  * StaffBookingScreen — /staff/bookings/[id]: one booking as support sees it.
@@ -64,13 +64,27 @@ function chipVariant(map: Record<string, ChipVariant>, key: string): ChipVariant
   return map[key] ?? "neutral";
 }
 
+/*
+ * `crewType` is a provider code until the API finds a translation for it, after which it arrives
+ * as a display label. Recognising the code is what tells the two apart — a label is printed as
+ * it came, a code is mapped. Mirrors `crewKey` in the yachts feature, which is not on its public
+ * index; the list is three entries and the contract's, not that feature's.
+ */
+const CREW_KEYS = ["bareboat", "skipper", "full-crew"] as const;
+
+function crewKey(value: string): (typeof CREW_KEYS)[number] | null {
+  return CREW_KEYS.find((key) => key === value) ?? null;
+}
+
 export default function StaffBookingScreen({ id }: { id: string }) {
   const t = useTranslations("Admin.StaffBooking");
   const { data, isPending, isError } = useAdminBooking(id);
 
   return (
     <div className="flex flex-col">
-      <AppBreadcrumbs items={[]} backLabel="Admin.StaffBooking.back" backHref="/payments" />
+      {/* Back to the bookings list, not to whichever queue was used to get here: this screen
+          is reached from four of them, and the list is the one place every booking is. */}
+      <AppBreadcrumbs items={[]} backLabel="Admin.StaffBooking.back" backHref="/staff/bookings" />
 
       <div className="px-4 py-6 md:px-13.5">
         <div className="mx-auto flex w-full max-w-349 flex-col gap-5">
@@ -99,8 +113,25 @@ export default function StaffBookingScreen({ id }: { id: string }) {
    exists to prevent. */
 function Detail({ booking }: { booking: BookingAdminDetail }) {
   const t = useTranslations("Admin.StaffBooking");
+  const tStatus = useTranslations("Admin.Bookings.status");
+  const tInvoiceStatus = useTranslations("Admin.Payments.invoices.status");
+  const tProviders = useTranslations("Admin.providers");
+  const tCrew = useTranslations("Common.crewTypes");
+  const tDetail = useTranslations("Booking.detail");
   const format = useFormatter();
   const amount = useAmount();
+
+  /* Enum codes from the contract, each rendered through the map that already names it elsewhere.
+     The provider and crew values are plain strings on the wire, so those two fall back to the raw
+     code when it is one this build does not know. */
+  const providerLabel = (code: string) => {
+    const key = toProviderKey(code);
+    return key ? tProviders(key) : code;
+  };
+  const crewLabel = (value: string) => {
+    const key = crewKey(value);
+    return key ? tCrew(key) : value;
+  };
 
   const at = (value: string | null) =>
     value ? format.dateTime(new Date(value), { dateStyle: "medium", timeStyle: "short" }) : "—";
@@ -125,7 +156,9 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
       <section className="flex flex-col gap-4 rounded-2xl border border-natural-100 bg-card p-5">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl leading-[1.3] font-bold text-foreground">{booking.reference}</h1>
-          <Chip variant={chipVariant(STATUS_VARIANTS, booking.status)}>{booking.status}</Chip>
+          <Chip variant={chipVariant(STATUS_VARIANTS, booking.status)}>
+            {tStatus(booking.status)}
+          </Chip>
           {booking.isGuestAccount ? <Chip variant="outline">{t("guestAccount")}</Chip> : null}
           {booking.excludedAt ? <Chip variant="neutral">{t("excluded.chip")}</Chip> : null}
         </div>
@@ -148,11 +181,11 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
             {day(booking.checkIn)} → {day(booking.checkOut)}
             <span className="block text-sm text-natural-500">
               {t("guests", { count: booking.guests })}
-              {booking.crewType ? ` · ${booking.crewType}` : ""}
+              {booking.crewType ? ` · ${crewLabel(booking.crewType)}` : ""}
             </span>
           </Field>
           <Field label={t("fields.provider")}>
-            {booking.provider}
+            {providerLabel(booking.provider)}
             <span className="block text-sm text-natural-500">
               {booking.providerReservationId ?? t("noReservationId")}
             </span>
@@ -214,7 +247,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
           <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field label={t("invoice.number")}>{booking.invoice.number}</Field>
             <Field label={t("invoice.amount")}>{amount(booking.invoice.amount)}</Field>
-            <Field label={t("invoice.status")}>{booking.invoice.status}</Field>
+            <Field label={t("invoice.status")}>{tInvoiceStatus(booking.invoice.status)}</Field>
             <Field label={t("invoice.billedTo")}>
               <span className="block">{booking.invoice.billingName ?? "—"}</span>
               <span className="block text-sm text-natural-500">{booking.invoice.billingEmail}</span>
@@ -252,7 +285,9 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
               <TableBody>
                 {booking.payments.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="whitespace-nowrap">{entry.kind}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {tDetail(`kind.${entry.kind}`)}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap font-medium text-foreground">
                       {amount(entry.amount)}
                     </TableCell>
@@ -260,13 +295,17 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
                     <TableCell>
                       <div className="flex flex-wrap items-center gap-2">
                         <Chip variant={chipVariant(PAYMENT_VARIANTS, entry.status)}>
-                          {entry.status}
+                          {tDetail(`paymentStatus.${entry.status}`)}
                         </Chip>
                         {/* A chargeback is the one thing on this table that changes what staff
-                            should do next, so it is called out rather than left to `status`. */}
+                            should do next, so it is called out rather than left to `status`.
+                            The state is Stripe's own word for where the dispute stands and is
+                            shown as it came; only the "no state yet" fallback is ours. */}
                         {entry.disputedAt ? (
                           <Chip variant="error">
-                            {t("payments.disputed", { state: entry.disputeStatus ?? "open" })}
+                            {t("payments.disputed", {
+                              state: entry.disputeStatus ?? t("payments.disputeStatus.open"),
+                            })}
                           </Chip>
                         ) : null}
                       </div>
@@ -302,14 +341,16 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
               <TableBody>
                 {booking.paymentSchedule.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="whitespace-nowrap">{entry.kind}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {tDetail(`kind.${entry.kind}`)}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap font-medium text-foreground">
                       {amount(entry.amount)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-natural-500">
                       {at(entry.dueAt)}
                     </TableCell>
-                    <TableCell>{entry.status}</TableCell>
+                    <TableCell>{t(`schedule.statuses.${entry.status}`)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

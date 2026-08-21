@@ -63,6 +63,7 @@ const FAILED_STATUSES = new Set([
 export default function BookingDetailScreen({ bookingId }: { bookingId: string }) {
   const t = useTranslations("Booking.detail");
   const tCard = useTranslations("Common.boatCard");
+  const tCrew = useTranslations("Common.crewTypes");
 
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const signedIn = Boolean(session?.user);
@@ -128,7 +129,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
    * after the listing is renamed, re-photographed or withdrawn by the provider.
    */
   const boat = {
-    ...boatCardIdentity(tCard, booking.listing),
+    ...boatCardIdentity(tCard, tCrew, booking.listing),
     imageAlt: tCard("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
     marina: bookingMarina(booking.listing.id, booking.base),
     priceLabel: "",

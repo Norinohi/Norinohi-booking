@@ -32,6 +32,7 @@ export default function BookingSidebar({
     slotError,
     selectPeriod,
     setCrew,
+    setDropOff,
     setGuests,
     applyPromo,
     applyCredit,
@@ -68,6 +69,7 @@ export default function BookingSidebar({
         crewType={crewType}
         crewOptions={crewOptions}
         onCrewChange={setCrew}
+        onDropOffChange={actions ? setDropOff : undefined}
         guests={guests}
         onGuestsChange={setGuests}
         unavailable={listing ? !listing.availability.hasAvailableDates : false}

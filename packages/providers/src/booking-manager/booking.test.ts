@@ -1,5 +1,6 @@
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import type { Database } from "../registry";
 import type { CatalogueResolver } from "../shared/catalogue-resolver";
@@ -146,5 +147,83 @@ describe("confirmBooking", () => {
     );
 
     expect(error).toBeInstanceOf(ContractError);
+  });
+});
+
+/**
+ * Which bases a reservation opens on.
+ *
+ * The vendor prices a one-way fleet one offer per base pair, so the pair the customer was
+ * quoted has to be the pair the reservation names. This sent the listing's own base for both
+ * ends regardless, which held the wrong charter whenever the boat was moored elsewhere - the
+ * measured case being a hull whose listing says Carrick while every offer that week departed
+ * Portumna.
+ */
+describe("createOption bases", () => {
+  function capturing() {
+    /* Only the two fields these tests assert on; the vendor sends ids as bare numbers. */
+    const bodySchema = z.object({
+      baseFromId: z.number().optional(),
+      baseToId: z.number().optional(),
+    });
+    const sent: z.infer<typeof bodySchema>[] = [];
+    const client = new BookingManagerClient({
+      config,
+      queue: new SequentialQueue(),
+      retry: { maxAttempts: 1 },
+      fetchImpl: (_url, init) => {
+        const body: unknown = init.body === undefined ? undefined : JSON.parse(String(init.body));
+        const parsed = bodySchema.safeParse(body);
+        if (parsed.success) sent.push(parsed.data);
+        return Promise.resolve({
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              `{"id":${CHARTER_ID},"status":2,"expirationDate":"2027-05-08 12:00:00"}`,
+            ),
+        });
+      },
+    });
+
+    const service = createBookingManagerBookingService({
+      client,
+      resolver: fakeResolver(),
+      config,
+      db: fakeDb(),
+      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      recordEvent: () => Promise.resolve(),
+    });
+
+    return { sent, service };
+  }
+
+  it("opens the reservation on the bases the quote was priced for", async () => {
+    const { sent, service } = capturing();
+    await service.createOption({
+      ...draft,
+      route: { startBaseId: "1179998490000100000", endBaseId: "1179998490000100000" },
+    });
+
+    expect(sent[0]?.baseFromId).toBe(1179998490000100000);
+    expect(sent[0]?.baseToId).toBe(1179998490000100000);
+  });
+
+  it("carries a genuine one-way through as two different bases", async () => {
+    const { sent, service } = capturing();
+    await service.createOption({
+      ...draft,
+      route: { startBaseId: "1179998490000100000", endBaseId: "1179994180000100000" },
+    });
+
+    expect(sent[0]?.baseFromId).toBe(1179998490000100000);
+    expect(sent[0]?.baseToId).toBe(1179994180000100000);
+  });
+
+  it("falls back to the listing's own base when the offer named none", async () => {
+    const { sent, service } = capturing();
+    await service.createOption(draft);
+
+    expect(sent[0]?.baseFromId).toBe(194);
+    expect(sent[0]?.baseToId).toBe(194);
   });
 });

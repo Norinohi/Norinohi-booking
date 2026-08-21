@@ -185,6 +185,15 @@ export const restExtrasSchema = looseJsonObject({
   includedDepositWaiver: z.boolean().optional().nullable(),
   validDaysFrom: optionalNumeric,
   validDaysTo: optionalNumeric,
+  /**
+   * The season the extra is charged for, which is how the vendor versions a fee across years:
+   * this fleet's boat cleaning arrives three times, at 150 for 2026, 155 for 2027 and 160 for
+   * 2028. Distinct from `validDateFrom`/`validDateTo`, which bound when it may be *booked* and
+   * are set to sentinels a century out.
+   */
+  sailingDateFrom: optionalText,
+  sailingDateTo: optionalText,
+  /** Present only on a fee that applies to one route, which is what a one-way fee is. */
   validForBases: z.array(restValidForBasesSchema).optional().nullable(),
   validDateFrom: optionalText,
   validDateTo: optionalText,

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
@@ -39,32 +39,118 @@ const STILL = { width: 960, height: 480 };
 
 type Stop = { title: string; text: string };
 
-function DayList({ days }: { days: Stop[] }) {
+type Progress = ReturnType<typeof useTransform<number, number>>;
+
+/*
+ * The route fills in as the reader scrolls — the same motion as the steps on the home page. One
+ * progress covers both columns so the line runs day 1 to the last day, left column first, rather
+ * than both columns filling side by side. Each stop reads the slice of the progress that is its own.
+ */
+function DayLists({ columns }: { columns: Stop[][] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const total = columns.reduce((sum, column) => sum + column.length, 0);
+
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "end 0.55"] });
+  const smoothed = useSpring(scrollYProgress, {
+    stiffness: 45,
+    damping: 20,
+    mass: 0.6,
+    restDelta: 0.001,
+  });
+  const progress = useTransform(smoothed, (value) => (reduced ? 1 : value));
+
+  let offset = 0;
   return (
-    <ol className="relative flex min-w-0 flex-1 flex-col ">
+    <div ref={ref} className="flex flex-col gap-10 pt-3 md:flex-row md:items-start">
+      {columns.map((column, index) => {
+        const first = offset;
+        offset += column.length;
+        return (
+          <DayList key={index} days={column} first={first} total={total} progress={progress} />
+        );
+      })}
+    </div>
+  );
+}
+
+function DayList({
+  days,
+  first,
+  total,
+  progress,
+}: {
+  days: Stop[];
+  first: number;
+  total: number;
+  progress: Progress;
+}) {
+  return (
+    <ol className="relative flex min-w-0 flex-1 flex-col">
       <span aria-hidden className="absolute inset-y-2 left-0.5 w-3 rounded-full bg-brand-50/50" />
-      <span
-        aria-hidden
-        className="absolute inset-y-2 left-1.5 border-l-4 border-dotted border-brand-100"
-      />
 
       {days.map((day, index) => (
-        <li key={day.title} className="flex gap-4">
-          <div className="flex w-4 shrink-0 justify-center">
-            <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card" />
-          </div>
-          <div
-            className={cn(
-              "flex min-w-0 flex-1 flex-col gap-1.5",
-              index < days.length - 1 && "pb-10.5",
-            )}
-          >
-            <h3 className="text-xl leading-6.5 font-bold text-foreground">{day.title}</h3>
-            <p className="text-base leading-5.5 text-foreground">{day.text}</p>
-          </div>
-        </li>
+        <DayItem
+          key={day.title}
+          day={day}
+          position={first + index}
+          total={total}
+          isLast={index === days.length - 1}
+          progress={progress}
+        />
       ))}
     </ol>
+  );
+}
+
+function DayItem({
+  day,
+  position,
+  total,
+  isLast,
+  progress,
+}: {
+  day: Stop;
+  position: number;
+  total: number;
+  isLast: boolean;
+  progress: Progress;
+}) {
+  const span = Math.max(total - 1, 1);
+  const start = position / span;
+  const end = Math.min((position + 1) / span, 1);
+
+  // The stop fills just as the line reaches it; the first one is filled from the start.
+  const dotOpacity = useTransform(progress, [Math.max(start - 0.08, 0), start], [0, 1]);
+  const fillScale = useTransform(progress, [start, end], [0, 1]);
+
+  return (
+    <li className="flex gap-4">
+      <div className="flex w-4 shrink-0 flex-col items-center">
+        <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card">
+          <motion.span
+            aria-hidden
+            style={{ opacity: dotOpacity }}
+            className="absolute -inset-0.5 rounded-full bg-brand"
+          />
+        </span>
+        {!isLast && (
+          <span
+            aria-hidden
+            className="relative w-1 flex-1 border-l-4 border-dotted border-brand-100"
+          >
+            <motion.span
+              style={{ scaleY: fillScale }}
+              className="absolute inset-y-0 -left-1 w-1 origin-top bg-brand"
+            />
+          </span>
+        )}
+      </div>
+      <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", !isLast && "pb-10.5")}>
+        <h3 className="text-xl leading-6.5 font-bold text-foreground">{day.title}</h3>
+        <p className="text-base leading-5.5 text-foreground">{day.text}</p>
+      </div>
+    </li>
   );
 }
 
@@ -224,11 +310,7 @@ export default function SuggestedRouteSection() {
 
         {route.stops.length ? <RouteStill route={route} /> : null}
 
-        <div className="flex flex-col gap-10 pt-3 md:flex-row md:items-start">
-          {columns.map((column, index) => (
-            <DayList key={index} days={column} />
-          ))}
-        </div>
+        <DayLists columns={columns} />
       </div>
     </DetailSection>
   );

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import { useMoney } from "@/hooks/use-money";
+import { useExtraPrice } from "@/hooks/use-extra-price";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
@@ -10,7 +10,7 @@ import DetailSection from "./detail-section";
 export default function MandatoryExtrasSection() {
   const t = useTranslations("YachtDetail");
   const tExtras = useTranslations("Common.extras");
-  const formatMoney = useMoney();
+  const extraPrice = useExtraPrice();
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -25,14 +25,23 @@ export default function MandatoryExtrasSection() {
           >
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="text-base leading-5.5 text-foreground">{item.label}</p>
-              <p className="text-xs font-semibold text-natural-300">{tExtras("payAtCheckIn")}</p>
+              {/* Silent where the provider never said where it collects; the line used to
+                  claim "Pay at check-in" for every fee, including ones the sidebar was
+                  counting into the prepayment on the same screen. A route-conditional fee
+                  says so instead: it is not charged on the same-base charter most of these
+                  listings sell, so presenting it flatly overstates the trip. */}
+              {(item.oneWayOnly || item.payableInBase !== null) && (
+                <p className="text-xs font-semibold text-natural-300">
+                  {item.oneWayOnly
+                    ? tExtras("oneWayOnly")
+                    : tExtras(item.payableInBase ? "payAtCheckIn" : "payNow")}
+                </p>
+              )}
             </div>
             {/* The operator's own measure, where it gave one: a per-person extra quoted
                 as "per booking" understates what the charter will be billed. */}
             <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
-              {item.priceMeasure
-                ? `${formatMoney(item.price.amountMinor)} ${item.priceMeasure}`
-                : tExtras("perBooking", { price: formatMoney(item.price.amountMinor) })}
+              {extraPrice(item.price.amountMinor, item.priceMeasure, item.priceToMinor)}
             </p>
           </div>
         ))}

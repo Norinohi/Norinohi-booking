@@ -621,6 +621,7 @@ function serviceExtraOf(
     priceCurrency,
     priceMeasure: measureOf(item.priceMeasureId, context),
     calculationType: text(item.calculationType),
+    payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: item.onRequestOnly === true,
     ...scope,
   };
@@ -659,9 +660,29 @@ function equipmentExtraOf(
     priceCurrency,
     priceMeasure: measureOf(item.priceMeasureId, context),
     calculationType: text(item.calculationType),
+    payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: false,
     ...scope,
   };
+}
+
+/**
+ * Where the operator collects an extra, read off the same field the quote reads.
+ *
+ * `payWhenFor` in quote.ts is the authority at booking time and throws on a literal it does
+ * not know, which is right there: misreading it misstates what is owed today. A catalogue has
+ * no such stake, so an unknown literal leaves this unset and the page simply says nothing
+ * rather than guessing, and the two never disagree on the values both recognise.
+ */
+function payableInBaseOf(calculationType: JsonField): boolean | undefined {
+  switch (text(calculationType)) {
+    case "ADVANCE_PAYMENT":
+      return false;
+    case "SEPARATE_PAYMENT":
+      return true;
+    default:
+      return undefined;
+  }
 }
 
 /**

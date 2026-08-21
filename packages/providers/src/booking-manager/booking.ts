@@ -145,11 +145,23 @@ export function createBookingManagerBookingService(
       sendNotification,
     };
     if (productName) body.productName = productName;
-    // One-way charters are not modelled yet, so the start base is also the end
-    // base; a real one-way period would need both ids from the offer.
-    if (baseId !== undefined && /^[1-9]\d*$/.test(baseId)) {
-      body.baseFromId = exactJsonNumber(baseId);
-      body.baseToId = exactJsonNumber(baseId);
+    /*
+     * The bases the offer was priced for, falling back to the listing's own only when the quote
+     * carries none.
+     *
+     * The fallback used to be the whole story, and it was wrong whenever the boat was not at
+     * home: a hull left at the far end of its run is offered from there, so quoting the week of
+     * 26 September 2026 priced a Portumna departure while this sent Carrick, opening a
+     * reservation on a pairing the vendor never offered. `route` is exactly what `selectOffer`
+     * chose, carried through the stored quote.
+     */
+    const startBase = draft.route?.startBaseId?.trim() || baseId;
+    const endBase = draft.route?.endBaseId?.trim() || startBase;
+    if (startBase !== undefined && /^[1-9]\d*$/.test(startBase)) {
+      body.baseFromId = exactJsonNumber(startBase);
+    }
+    if (endBase !== undefined && /^[1-9]\d*$/.test(endBase)) {
+      body.baseToId = exactJsonNumber(endBase);
     }
     if (clientId !== undefined) body.clientId = clientId;
     return body;

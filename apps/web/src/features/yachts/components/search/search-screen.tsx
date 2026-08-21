@@ -177,6 +177,7 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
           pageSize={pagination.pageSize}
           total={pagination.totalItems}
           onPageChange={setPage}
+          summary={(range) => t("paginationSummary", range)}
         />
       ) : null}
     </>

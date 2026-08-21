@@ -26,7 +26,7 @@ so links minted before this change still resolve.
 
 ## Consequences
 
-- All three locales get distinct URLs, so `hreflang` and per-locale canonicals are now emitted.
+- All locales get distinct URLs, so `hreflang` and per-locale canonicals are now emitted.
   Previously `buildMetadata` returned the same canonical for all three (`lib/seo.ts`).
 - `next/link` and `next/navigation` are replaced by next-intl's `createNavigation` wrappers, so
   `href` strings stay locale-relative and unchanged at the call sites. `notFound` and `useParams`

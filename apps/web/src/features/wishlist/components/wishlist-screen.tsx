@@ -80,6 +80,7 @@ export default function WishlistScreen() {
                       pageSize={pageSize}
                       total={totalItems}
                       onPageChange={setPage}
+                      summary={(range) => t("paginationSummary", range)}
                     />
                   </div>
                 ) : null}

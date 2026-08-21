@@ -81,6 +81,11 @@ export const repriceInputSchema = z
     extras: z.array(z.string().min(1)).optional(),
     /** The sidebar's Crew control. Omitted keeps the previous quote's choice. */
     crewType: crewTypeSchema.optional(),
+    /**
+     * The sidebar's drop-off control, for a fleet that sells one-way. Omitted keeps the
+     * previous quote's choice; pass null to go back to finishing where the charter started.
+     */
+    endBaseId: z.string().min(1).nullable().optional(),
     /** Pass null to clear a previously applied code. */
     discountCode: z.string().trim().max(64).nullable().optional(),
     /** Spend available referral credit. Ignored for anonymous visitors. */

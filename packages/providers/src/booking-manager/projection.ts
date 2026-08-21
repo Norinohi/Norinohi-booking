@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
-import { CHARTER_TURNAROUND_WEEKDAY } from "./dates";
+import { CHARTER_TURNAROUND_WEEKDAY, parseBookingManagerDate } from "./dates";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import {
@@ -247,7 +247,7 @@ function projectGeography(
     projectedBases.push({
       externalId: String(item.id),
       externalLocationId: locationExternalId,
-      name: text(item.name) ?? text(item.city) ?? `Base ${item.id}`,
+      name: baseNameOf(item),
       // Declared as strings in the spec, so they are parsed here rather than trusted.
       lat: coordinateOf(item.latitude),
       lng: coordinateOf(item.longitude),
@@ -259,6 +259,23 @@ function projectGeography(
     locations: [...locations.values()],
     bases: projectedBases,
   };
+}
+
+/**
+ * `city / name`, which is the form the vendor itself returns on `/offers`.
+ *
+ * The name alone does not locate anything: Le Boat moors boats at bases called "The Marina"
+ * in several countries, and the detail page pairs the base name with its sailing area, so an
+ * Irish canal boat read as "The Marina, European Inland, Ireland" with no town in it. The city
+ * is already in the payload and was being dropped. Folded in only when the name does not
+ * already carry it, so "Kastela / Marina Kastela" does not become a stutter.
+ */
+function baseNameOf(item: RestBase): string {
+  const name = text(item.name);
+  const city = text(item.city);
+  if (name === undefined) return city ?? `Base ${item.id}`;
+  if (city === undefined || name.toLowerCase().includes(city.toLowerCase())) return name;
+  return `${city} / ${name}`;
 }
 
 /** The vendor's only statement of a base's turnaround times is on the boats moored there. */
@@ -669,11 +686,34 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
         priceCurrency,
         priceMeasure: text(item.unit),
         calculationType: undefined,
+        // `false` here is a real statement, so it is kept apart from the vendor saying nothing.
+        payableInBase: item.payableInBase ?? undefined,
+        seasonStart: sailingDateOf(item.sailingDateFrom),
+        seasonEnd: sailingDateOf(item.sailingDateTo),
+        // `validForBases` pairs a start base with an end base, which only a one-way fee needs.
+        oneWayOnly: (item.validForBases ?? []).length > 0 || undefined,
         onRequestOnly: false,
       });
     }
   }
   return [...chosen.values()];
+}
+
+/**
+ * The sailing date bounding a seasonal price, or undefined for one the vendor left open.
+ *
+ * Total, unlike `parseBookingManagerDate`: a malformed bound should cost the extra its season
+ * window, not drop the fee or fail the catalogue. An extra with no window is simply never
+ * filtered out by season, which is the safe direction for a fee someone still has to pay.
+ */
+function sailingDateOf(value: JsonField): string | undefined {
+  const raw = text(value);
+  if (raw === undefined) return undefined;
+  try {
+    return parseBookingManagerDate(raw);
+  } catch {
+    return undefined;
+  }
 }
 
 /**

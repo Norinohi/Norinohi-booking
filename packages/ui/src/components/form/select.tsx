@@ -3,6 +3,7 @@
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { FieldClear } from "@yacht-charter/ui/components/form/field-clear";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -152,7 +153,7 @@ function Select({
   placeholder,
   icon,
   isLoading = false,
-  emptyLabel = "No options",
+  emptyLabel,
   clearable = false,
   onClear,
   clearLabel,
@@ -184,6 +185,7 @@ function Select({
   ariaLabel?: string;
   disabled?: boolean;
 }) {
+  const labels = useUiLabels();
   return (
     <SelectRoot
       value={value}
@@ -226,7 +228,9 @@ function Select({
             ))}
           </div>
         ) : options.length === 0 ? (
-          <p className="py-2 text-center text-sm font-medium text-natural-500">{emptyLabel}</p>
+          <p className="py-2 text-center text-sm font-medium text-natural-500">
+            {emptyLabel ?? labels.noOptions}
+          </p>
         ) : (
           options.map((option) => (
             <SelectItem key={option.value} value={option.value} disabled={option.disabled}>

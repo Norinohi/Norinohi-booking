@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
 
@@ -154,9 +155,12 @@ function Calendar(props: CalendarProps) {
     weekStartsOn = 0,
     disabled,
     locale,
-    previousMonthLabel = "Previous month",
-    nextMonthLabel = "Next month",
+    previousMonthLabel: previousMonthProp,
+    nextMonthLabel: nextMonthProp,
   } = props;
+  const uiLabels = useUiLabels();
+  const previousMonthLabel = previousMonthProp ?? uiLabels.previousMonth;
+  const nextMonthLabel = nextMonthProp ?? uiLabels.nextMonth;
   const isRange = props.mode === "range";
 
   const anchor = isRange

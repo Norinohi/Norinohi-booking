@@ -11,7 +11,7 @@ import { WishlistButton } from "@/features/wishlist";
 import { Link } from "@/i18n/navigation";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
-import { slugToLabel } from "@/lib/slug-to-label";
+import { crewLabel } from "@/lib/crew-label";
 import { toMarina } from "../../lib/to-marina";
 
 const ACTION = "w-full md:w-auto";
@@ -19,6 +19,7 @@ const ACTION = "w-full md:w-auto";
 export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
+  const tCrew = useTranslations("Common.crewTypes");
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -68,7 +69,7 @@ export default function TitleBlock() {
           {data.crewType ? (
             <Chip variant="neutral">
               <Users />
-              {slugToLabel(data.crewType)}
+              {crewLabel(tCrew, data.crewType)}
             </Chip>
           ) : null}
         </div>

@@ -57,6 +57,7 @@ const SKELETON_WIDTHS = ["w-40", "w-20", "w-24", "w-24", "w-28", "w-20", "w-16",
 
 export default function ListingsTable() {
   const t = useTranslations("Admin.Listings");
+  const tProviders = useTranslations("Admin.providers");
   const format = useFormatter();
   const [provider, setProvider] = useState(ALL);
   const [status, setStatus] = useState(ALL);
@@ -77,7 +78,7 @@ export default function ListingsTable() {
   const providerLabel = (code: string | null) => {
     if (!code) return t("noProvider");
     const key = toProviderKey(code);
-    return key ? t(`publishDrafts.provider.${key}`) : code;
+    return key ? tProviders(key) : code;
   };
 
   /* Null until availability has been synced and priced, which is the normal state of a
@@ -136,7 +137,7 @@ export default function ListingsTable() {
               { value: ALL, label: t("filters.allProviders") },
               ...PROVIDERS.map((key) => ({
                 value: key,
-                label: t(`publishDrafts.provider.${key}`),
+                label: tProviders(key),
               })),
             ]}
           />

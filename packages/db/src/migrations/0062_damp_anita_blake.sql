@@ -1,0 +1,1 @@
+ALTER TABLE "quote" ADD COLUMN "route_options" jsonb DEFAULT '[]'::jsonb NOT NULL;

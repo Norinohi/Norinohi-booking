@@ -4,37 +4,11 @@ import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
+import ScrollTimeline from "./scroll-timeline";
+
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
 const STEPS = ["destination", "yacht", "book"] as const;
-
-function Timeline() {
-  const t = useTranslations("Home.HowItWorks.steps");
-
-  return (
-    <motion.ol variants={GROUP} className="flex flex-col md:w-142">
-      {STEPS.map((step, index) => {
-        const isLast = index === STEPS.length - 1;
-        return (
-          <motion.li key={step} variants={RISE} className="flex gap-4 md:gap-6">
-            <div className="flex flex-col items-center">
-              <span className="mt-1.5 size-4 shrink-0 rounded-full bg-brand" />
-              {!isLast && <span className="w-0.5 flex-1 bg-brand-100" />}
-            </div>
-            <div className={isLast ? "" : "pb-8 xl:pb-10.5"}>
-              <h3 className="text-xl leading-[1.1] font-semibold text-foreground md:text-2xl">
-                {t(`${step}.title`)}
-              </h3>
-              <p className="mt-1.5 text-base leading-[1.4] text-natural-600 md:text-xl">
-                {t(`${step}.description`)}
-              </p>
-            </div>
-          </motion.li>
-        );
-      })}
-    </motion.ol>
-  );
-}
 
 export default function HowItWorks() {
   const t = useTranslations("Home.HowItWorks");
@@ -70,7 +44,14 @@ export default function HowItWorks() {
           </Button>
         </motion.div>
 
-        <Timeline />
+        <ScrollTimeline
+          className="md:w-142"
+          steps={STEPS.map((step) => ({
+            key: step,
+            title: t(`steps.${step}.title`),
+            description: t(`steps.${step}.description`),
+          }))}
+        />
       </motion.div>
     </section>
   );

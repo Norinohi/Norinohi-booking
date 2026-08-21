@@ -2,16 +2,16 @@
 
 import { useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
-import { Popup } from "react-map-gl/mapbox";
+import { useState } from "react";
 
 import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
+import MapPopup from "@/components/shared/data-display/map-popup";
 import MapCanvas, {
   type MapInstance,
   type MapViewState,
 } from "@/components/shared/data-display/map-canvas";
-import MapMarker from "../map/map-marker";
+import MapMarker from "@/components/shared/data-display/map-marker";
 import {
   arrivalOf,
   ROUTE_DRAW_MS,
@@ -24,16 +24,12 @@ import {
 
 type Stop = { day: number; title: string; description: string; lat: number; lng: number };
 
-const RESET_MAPBOX_CHROME =
-  "[&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:hidden";
-const PIN_CLEARANCE = 46;
 const ROUTE_SOURCE = "route-curve";
 /* The marker's own colours — white ring, brand core — so the route reads as one piece with them. */
 const ROUTE_LAYERS = [
   { id: "route-curve-casing", color: "#ffffff", opacity: 0.9, width: 6 },
   { id: "route-curve-line", color: "#2f80ed", opacity: 1, width: 3 },
 ];
-const RECENTRE_MS = 500;
 const FIT_PADDING = 80;
 const ZOOM_OUT_LIMIT = 1;
 /* Constructed this much wider than it settles at, so opening reads as easing in rather than a cut. */
@@ -73,53 +69,17 @@ function RouteStopPopup({
   stops: Stop[];
   map: MapInstance | null;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!map) return;
-
-    const frame = requestAnimationFrame(() => {
-      const height = cardRef.current?.getBoundingClientRect().height ?? 0;
-
-      map.easeTo({
-        center: [coordinates.lng, coordinates.lat],
-        offset: [0, -(PIN_CLEARANCE + height / 2)],
-        duration: RECENTRE_MS,
-      });
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [map, coordinates.lng, coordinates.lat]);
-
   return (
-    <Popup
-      longitude={coordinates.lng}
-      latitude={coordinates.lat}
-      anchor="top"
-      offset={PIN_CLEARANCE}
-      closeButton={false}
-      closeOnClick={false}
-      maxWidth="none"
-      className={RESET_MAPBOX_CHROME}
-    >
-      <div
-        ref={cardRef}
-        className="relative w-72 origin-top duration-200 animate-in fade-in-0 zoom-in-95"
-      >
-        <span
-          aria-hidden
-          className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-card"
-        />
-        <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]">
-          {stops.map((stop) => (
-            <div key={stop.day} className="flex flex-col gap-1.5">
-              <p className="text-base leading-5.5 font-bold text-foreground">{stop.title}</p>
-              <p className="text-sm leading-4.5 text-natural-500">{stop.description}</p>
-            </div>
-          ))}
-        </div>
+    <MapPopup coordinates={coordinates} map={map} className="w-72">
+      <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]">
+        {stops.map((stop) => (
+          <div key={stop.day} className="flex flex-col gap-1.5">
+            <p className="text-base leading-5.5 font-bold text-foreground">{stop.title}</p>
+            <p className="text-sm leading-4.5 text-natural-500">{stop.description}</p>
+          </div>
+        ))}
       </div>
-    </Popup>
+    </MapPopup>
   );
 }
 

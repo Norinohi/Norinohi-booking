@@ -64,12 +64,15 @@ export type MapPreviewProps = CommonProps &
         imageSize?: string;
         /** A ready-made still, where one was stored with the record. */
         imageUrl?: string;
+        /** Shown when the pin in the dialog is tapped. Without it the pin is just a mark. */
+        popup?: ReactNode;
         children?: undefined;
       }
     | {
         point?: undefined;
         zoom?: undefined;
         imageSize?: undefined;
+        popup?: undefined;
         imageUrl: string;
         /** What the dialog shows. Mounted only while it is open. */
         children: ReactNode;
@@ -148,7 +151,14 @@ export default function MapPreview(props: MapPreviewProps) {
               ? { zoom: props.zoom ?? 13, size: props.imageSize }
               : { zoom: props.zoom ?? 13 },
           ),
-        dialogBody: <MapDialogCanvas point={props.point} title={title} zoom={DIALOG_ZOOM} />,
+        dialogBody: (
+          <MapDialogCanvas
+            point={props.point}
+            title={title}
+            zoom={DIALOG_ZOOM}
+            popup={props.popup}
+          />
+        ),
         /* One place, so this marks it. A route's still carries a pin per stop already. */
         showPin: true,
       }

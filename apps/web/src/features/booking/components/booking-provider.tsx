@@ -2,7 +2,7 @@
 
 import { ORPCError } from "@orpc/client";
 import { useQuery } from "@tanstack/react-query";
-import { addMonths, endOfMonth, startOfMonth } from "date-fns";
+import { endOfMonth, startOfMonth } from "date-fns";
 import { useParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import {
@@ -38,8 +38,20 @@ function isSlotConflict(error: Error): boolean {
 }
 
 const DEFAULT_GUESTS = 2;
-const CALENDAR_MONTHS = 6;
 const REPRICE_DEBOUNCE_MS = 400;
+
+/**
+ * The last day the sidebar asks about, which is the last day either provider has an
+ * answer for: both sweep occupancy and rates over `[thisYear, thisYear + 1]`.
+ *
+ * This used to be a flat six months. Constraints outside the window come back empty and
+ * empty reads as season-closed, so every boat whose current season had ended showed a
+ * calendar that was grey to the horizon while its next season was fully published. The
+ * Shannon fleet lost all thirty sellable weeks of 2027 that way.
+ */
+function constraintsHorizon(today: Date): Date {
+  return endOfMonth(new Date(today.getFullYear() + 1, 11, 1));
+}
 
 type ListingDetail = ReturnType<typeof useListingDetail>["data"];
 
@@ -57,6 +69,11 @@ type BookingContextValue = {
   slotError: boolean;
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
+  /**
+   * Where the charter finishes, for a fleet that sells one-way. Null returns the yacht to the
+   * base it left from, which is what a charter does unless someone says otherwise.
+   */
+  setDropOff: (endBaseId: string | null) => void;
   setGuests: (next: number) => void;
   /** The optional extras currently on the quote, so a checkbox can read its own state. */
   extras: readonly string[];
@@ -116,7 +133,7 @@ export function BookingProvider({
 
   const calWindow = useMemo(() => {
     const from = startOfMonth(new Date());
-    const horizon = dayFromNative(endOfMonth(addMonths(from, CALENDAR_MONTHS)));
+    const horizon = dayFromNative(constraintsHorizon(from));
     /*
      * A carried period can fall past the default horizon — people book a year out. Constraints
      * the window does not cover come back empty, which reads as season-closed, and the sidebar
@@ -158,12 +175,18 @@ export function BookingProvider({
    * blocked every overlapping range without ever asking: refuse a fortnight from a Saturday
    * and the free week starting the same day vanished with it.
    */
+  /*
+   * Two sources of refusal, and they mean the same thing. The sync records the periods the
+   * provider declined when its offers were swept, which is what keeps a week the vendor will
+   * not sell off the calendar before anyone clicks it; this session adds the ones a live quote
+   * turned down since. Both are exact periods, so they concatenate.
+   */
   const constraints: CharterConstraints = useMemo(
     () => ({
       rules: published?.rules ?? [],
       occupied: published?.occupied ?? [],
       priced: published?.priced ?? [],
-      refused: refusedPeriods,
+      refused: [...(published?.refused ?? []), ...refusedPeriods],
     }),
     [published, refusedPeriods],
   );
@@ -244,6 +267,15 @@ export function BookingProvider({
   function setCrew(next: CrewType) {
     setCrewChoice(next);
     if (quote) void repriceWith({ crewType: next });
+  }
+
+  /*
+   * Re-prices rather than adjusting a total, because a one-way is a different charter: the
+   * vendor quotes it as its own offer with its own directional fee, and only it knows which
+   * pairings it will sell that week.
+   */
+  function setDropOff(endBaseId: string | null) {
+    if (quote) void repriceWith({ endBaseId });
   }
 
   function setGuests(next: number) {
@@ -327,6 +359,7 @@ export function BookingProvider({
     slotError,
     selectPeriod,
     setCrew,
+    setDropOff,
     setGuests,
     extras,
     selectExtras,

@@ -120,6 +120,14 @@ export const quoteRequestSchema = z.object({
   extras: z.array(z.string()).default([]),
   /** Omitted means the customer has not chosen; adapters add no crew for it. */
   crewType: crewTypeSchema.optional(),
+  /**
+   * Provider-side base to drop the yacht at, for a fleet that sells one-way.
+   *
+   * Omitted means the customer has not asked to finish anywhere in particular, and the adapter
+   * prices the charter that returns to its own base. It is never inferred: a one-way costs more
+   * and lands the customer in a different town, so it has to be something they chose.
+   */
+  endBaseId: z.string().optional(),
   currency: z.string().length(3).default("EUR"),
 });
 
@@ -211,6 +219,43 @@ export const providerQuoteSchema = z.object({
     )
     .nullable()
     .default(null),
+  /**
+   * The provider-side bases this price is for, where the offer named them.
+   *
+   * Load-bearing, not informational. A fleet that sells one-way is quoted one offer per base
+   * pair and they differ in money, so the pair the customer was priced on is the pair the
+   * reservation has to open. The booking used to send the listing's home base for both ends
+   * regardless, which is wrong the moment a boat is not at home: on the week of 26 September
+   * 2026 every offer for this hull started at Portumna while its listing says Carrick.
+   *
+   * Null where the provider does not state bases; the booking then falls back to the listing's.
+   */
+  route: z
+    .object({ startBaseId: z.string().optional(), endBaseId: z.string().optional() })
+    .nullable()
+    .default(null),
+  /**
+   * Every route the provider would sell for this exact period, priced all-in.
+   *
+   * The provider answers a one-way fleet with one offer per base pair, and until now all but
+   * one were discarded. They are the only honest source for a drop-off control: the catalogue
+   * says which pairs exist in principle, this says which are sellable that week and what each
+   * costs, including the directional one-way fee.
+   *
+   * A single entry means the charter has one shape and the customer has nothing to choose.
+   */
+  routeOptions: z
+    .array(
+      z.object({
+        startBaseId: z.string().optional(),
+        endBaseId: z.string().optional(),
+        startBaseName: z.string().optional(),
+        endBaseName: z.string().optional(),
+        isOneWay: z.boolean(),
+        total: moneySchema,
+      }),
+    )
+    .default([]),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),
@@ -233,6 +278,10 @@ export const bookingDraftSchema = z.object({
    * provider-side artifact this is the only link between the two moments.
    */
   priceSourceHash: z.string(),
+  /** The bases the quote was priced for; see `route` on `providerQuoteSchema`. */
+  route: z
+    .object({ startBaseId: z.string().optional(), endBaseId: z.string().optional() })
+    .nullish(),
   customer: z.object({
     name: z.string(),
     surname: z.string().optional(),
@@ -464,6 +513,23 @@ export const canonicalExtraSchema = z.object({
   /** Vendor's billing unit (per booking, per day, per person); display only. */
   priceMeasure: z.string().optional(),
   calculationType: z.string().optional(),
+  /**
+   * Whether the operator collects this at the base rather than in the prepayment. Left unset
+   * where the provider says nothing, which is not the same as false: claiming a fee is due on
+   * arrival when it was already charged is the error this replaced.
+   */
+  payableInBase: z.boolean().optional(),
+  /**
+   * The sailing dates this price is for, where the provider versions a fee by season. Both ends
+   * optional: a fee that never changes carries neither, and one that only opens carries a start.
+   */
+  seasonStart: z.string().optional(),
+  seasonEnd: z.string().optional(),
+  /**
+   * Charged only when the charter ends somewhere other than it started. Listing one of these as
+   * an unconditional mandatory extra overstates every return charter by its amount.
+   */
+  oneWayOnly: z.boolean().optional(),
   /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
   onRequestOnly: z.boolean(),
   /**

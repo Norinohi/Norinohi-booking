@@ -10,6 +10,7 @@ import Footer from "@/components/layout/footer";
 import { FooterGate } from "@/components/layout/footer-gate";
 import NavigationBar from "@/components/layout/navigation-bar";
 import Providers from "@/components/layout/providers";
+import QueryErrorLabels from "@/components/layout/query-error-labels";
 import { routing } from "@/i18n/routing";
 import { getCopyrightYear } from "@/lib/copyright-year";
 import { buildMetadata, SITE_NAME } from "@/lib/seo";
@@ -65,7 +66,7 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }> & LocaleParams) {
   const { locale } = await params;
 
-  // An unknown prefix (`/de/...`) reaches here only if the middleware let it through; 404 rather
+  // An unknown prefix (`/fr/...`) reaches here only if the middleware let it through; 404 rather
   // than silently falling back, so bad locales never render as the default one.
   if (!hasLocale(routing.locales, locale)) {
     notFound();
@@ -79,13 +80,14 @@ export default async function RootLayout({
   const year = await getCopyrightYear();
 
   return (
-    <html lang={locale} suppressHydrationWarning className="motion-safe:scroll-smooth">
+    <html lang={locale} className="light motion-safe:scroll-smooth" data-scroll-behavior="smooth">
       <body className={`${manrope.variable} antialiased`}>
         <noscript>
           <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
         </noscript>
         <NextIntlClientProvider>
           <Providers>
+            <QueryErrorLabels />
             <div className="grid min-h-svh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-x-clip">
               <NavigationBar />
               {children}

@@ -36,6 +36,7 @@ const UNSET = "";
 
 export default function PublishDraftsControls() {
   const t = useTranslations("Admin.Listings.publishDrafts");
+  const tProviders = useTranslations("Admin.providers");
   const [provider, setProvider] = useState<string>(UNSET);
   const [confirming, setConfirming] = useState(false);
   const publishDrafts = usePublishDrafts();
@@ -47,9 +48,7 @@ export default function PublishDraftsControls() {
 
     try {
       const result = await publishDrafts.mutateAsync({ provider: target });
-      toast.success(
-        t("published", { count: result.publishedCount, provider: t(`provider.${target}`) }),
-      );
+      toast.success(t("published", { count: result.publishedCount, provider: tProviders(target) }));
       setConfirming(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("failed"));
@@ -66,7 +65,7 @@ export default function PublishDraftsControls() {
             value={provider}
             placeholder={t("choose")}
             onValueChange={setProvider}
-            options={PROVIDERS.map((key) => ({ value: key, label: t(`provider.${key}`) }))}
+            options={PROVIDERS.map((key) => ({ value: key, label: tProviders(key) }))}
           />
         </div>
 
@@ -88,7 +87,7 @@ export default function PublishDraftsControls() {
           <DialogHeader>
             <DialogTitle>{t("confirmTitle")}</DialogTitle>
             <DialogDescription>
-              {target ? t("confirmBody", { provider: t(`provider.${target}`) }) : ""}
+              {target ? t("confirmBody", { provider: tProviders(target) }) : ""}
             </DialogDescription>
           </DialogHeader>
 

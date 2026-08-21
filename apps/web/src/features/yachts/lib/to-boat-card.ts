@@ -4,6 +4,7 @@ import type { useTranslations } from "next-intl";
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import type { AppPathname } from "@/i18n/navigation";
 import { boatCardIdentity, boatCardPrice } from "@/lib/boat-card-fields";
+import type { CrewTranslator } from "@/lib/crew-label";
 
 import { serializeDetailPeriod } from "./search-params";
 import { toMarina } from "./to-marina";
@@ -26,6 +27,7 @@ type CardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
  */
 export function toBoatCard(
   t: CardTranslator,
+  tCrew: CrewTranslator,
   formatMoney: (amountMinor: number) => string,
   listing: ResultListing,
   period?: CharterPeriod,
@@ -35,7 +37,7 @@ export function toBoatCard(
   const searched = period?.checkIn && period.checkOut ? period : null;
 
   return {
-    ...boatCardIdentity(t, listing),
+    ...boatCardIdentity(t, tCrew, listing),
     /* An unbookable yacht has nothing to sell, so the tag replaces the promotional badges. */
     ...(unavailable
       ? { unavailable, badges: [{ label: t("badges.unavailable"), muted: true }] }

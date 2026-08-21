@@ -64,6 +64,7 @@ const SKELETON_WIDTHS = ["w-24", "w-20", "w-16", "w-3/4", "w-10", "w-28", "w-28"
 
 export default function SyncRunsTable() {
   const t = useTranslations("Admin.Sync");
+  const tProviders = useTranslations("Admin.providers");
   const format = useFormatter();
   const [provider, setProvider] = useState(ALL);
   const [kind, setKind] = useState(ALL);
@@ -94,10 +95,10 @@ export default function SyncRunsTable() {
 
   const counts = (run: SyncRunRow) =>
     [
-      `${run.createdCount} ${t("counts.created")}`,
-      `${run.updatedCount} ${t("counts.updated")}`,
-      `${run.skippedCount} ${t("counts.skipped")}`,
-      `${run.failedCount} ${t("counts.failed")}`,
+      t("counts.created", { count: run.createdCount }),
+      t("counts.updated", { count: run.updatedCount }),
+      t("counts.skipped", { count: run.skippedCount }),
+      t("counts.failed", { count: run.failedCount }),
     ].join(" · ");
 
   const messageRow = (message: string) => (
@@ -122,7 +123,7 @@ export default function SyncRunsTable() {
             onValueChange={onFilterChange(setProvider)}
             options={[
               { value: ALL, label: t("filters.allProviders") },
-              ...PROVIDERS.map((key) => ({ value: key, label: key })),
+              ...PROVIDERS.map((key) => ({ value: key, label: tProviders(key) })),
             ]}
           />
         </div>

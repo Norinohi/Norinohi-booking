@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
@@ -21,9 +22,10 @@ const paginationItemVariants = cva(
 );
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+  const labels = useUiLabels();
   return (
     <nav
-      aria-label="pagination"
+      aria-label={labels.pagination}
       data-slot="pagination"
       className={cn("flex items-center gap-1", className)}
       {...props}
@@ -47,16 +49,18 @@ function PaginationItem({ className, active, ...props }: PaginationItemProps) {
 }
 
 function PaginationPrevious({ className, ...props }: PaginationItemProps) {
+  const labels = useUiLabels();
   return (
-    <PaginationItem aria-label="Go to previous page" className={className} {...props}>
+    <PaginationItem aria-label={labels.previousPage} className={className} {...props}>
       <ChevronLeft />
     </PaginationItem>
   );
 }
 
 function PaginationNext({ className, ...props }: PaginationItemProps) {
+  const labels = useUiLabels();
   return (
-    <PaginationItem aria-label="Go to next page" className={className} {...props}>
+    <PaginationItem aria-label={labels.nextPage} className={className} {...props}>
       <ChevronRight />
     </PaginationItem>
   );

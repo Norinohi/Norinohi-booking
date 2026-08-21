@@ -3,9 +3,11 @@
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
+import { MarinaDetails } from "@/components/shared/overlay/marina-popover";
 import MapPreview from "@/components/shared/overlay/map-preview";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
+import { toMarina } from "../../../lib/to-marina";
 import { slugToLabel } from "@/lib/slug-to-label";
 import DetailSection from "./detail-section";
 
@@ -34,6 +36,8 @@ export default function ImportantInfoSection() {
   if (!data) return null;
 
   const info = data.importantInformation;
+  /* The pin here marks the same marina the popover does, so tapping it says the same thing. */
+  const marina = toMarina(data.base);
   const rows: Row[] = [
     { key: "charterCompany", value: info.charterCompany },
     { key: "pickUpAddress", value: info.yachtPickupAddress, mapPoint: info.map },
@@ -87,6 +91,7 @@ export default function ImportantInfoSection() {
                   imageSize="500x236@2x"
                   imageSizes="501px"
                   className="h-37 w-full rounded-2xl md:h-59"
+                  popup={<MarinaDetails marina={marina} className="w-72 rounded-2xl bg-card p-4" />}
                 />
               ) : null}
             </dd>

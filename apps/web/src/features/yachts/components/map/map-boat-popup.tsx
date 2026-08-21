@@ -2,18 +2,14 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
-import { Popup } from "react-map-gl/mapbox";
+import { useState } from "react";
 
 import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
+import MapPopup, { PIN_CLEARANCE } from "@/components/shared/data-display/map-popup";
 
-const RESET_MAPBOX_CHROME =
-  "[&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:hidden";
-
-const PIN_CLEARANCE = 46;
 const RECENTRE_MS = 500;
 // On a phone, leave just this gap under the popup so the pager clears the map attribution/edge.
 const BOTTOM_SAFE = 32;
@@ -33,112 +29,84 @@ export type MapBoatPopupProps = {
 
 export default function MapBoatPopup({ coordinates, boats, map, focusZoom }: MapBoatPopupProps) {
   const t = useTranslations("YachtsMap");
-  const cardRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
   const active = Math.min(index, boats.length - 1);
   const many = boats.length > 1;
 
-  useEffect(() => {
+  /* Not the shell's default nudge: a paged card is tall, so on a phone it is pinned near the
+     bottom, and a deep link flies to a boat that is usually off screen entirely. */
+  function recentre(height: number) {
     if (!map) return;
 
-    const frame = requestAnimationFrame(() => {
-      const height = cardRef.current?.getBoundingClientRect().height ?? 0;
-      const container = map.getContainer();
-      const viewportH = container.clientHeight;
+    const container = map.getContainer();
+    const viewportH = container.clientHeight;
+    const pinY =
+      container.clientWidth < MOBILE_MAX
+        ? viewportH - BOTTOM_SAFE - PIN_CLEARANCE - height
+        : viewportH / 2 - PIN_CLEARANCE - height / 2;
 
-      // On a phone, pin the popup to the bottom so the pager clears the map's edge with only a small
-      // gap; on wider screens there's room to centre it around the marker.
-      const pinY =
-        container.clientWidth < MOBILE_MAX
-          ? viewportH - BOTTOM_SAFE - PIN_CLEARANCE - height
-          : viewportH / 2 - PIN_CLEARANCE - height / 2;
+    const center: [number, number] = [coordinates.lng, coordinates.lat];
+    const offset: [number, number] = [0, pinY - viewportH / 2];
 
-      if (focusZoom != null) {
-        // Deep link: the boat is usually far from the default view, so fly (arc + auto-pacing) there.
-        map.flyTo({
-          center: [coordinates.lng, coordinates.lat],
-          offset: [0, pinY - viewportH / 2],
-          zoom: focusZoom,
-        });
-      } else {
-        // A tap on a visible marker only needs a short nudge to clear the pin above the card.
-        map.easeTo({
-          center: [coordinates.lng, coordinates.lat],
-          offset: [0, pinY - viewportH / 2],
-          duration: RECENTRE_MS,
-        });
-      }
-    });
+    if (focusZoom != null) {
+      map.flyTo({ center, offset, zoom: focusZoom });
+      return;
+    }
 
-    return () => cancelAnimationFrame(frame);
-    // focusZoom is read once on open; it must not re-trigger the recenter (that would undo the zoom).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, coordinates.lng, coordinates.lat]);
+    map.easeTo({ center, offset, duration: RECENTRE_MS });
+  }
 
   return (
-    <Popup
-      longitude={coordinates.lng}
-      latitude={coordinates.lat}
-      anchor="top"
-      offset={PIN_CLEARANCE}
-      closeButton={false}
-      closeOnClick={false}
-      maxWidth="none"
-      className={RESET_MAPBOX_CHROME}
+    <MapPopup
+      coordinates={coordinates}
+      map={map}
+      onOpen={recentre}
+      className="flex flex-col items-center gap-2"
     >
-      <div
-        ref={cardRef}
-        className="relative flex origin-top flex-col items-center gap-2 duration-200 animate-in fade-in-0 zoom-in-95"
-      >
-        <span
-          aria-hidden
-          className="absolute -top-2 left-1/2 size-4 -translate-x-1/2 rotate-45 bg-card"
-        />
-        <div className="relative w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:w-150.25">
-          <div
-            className="flex transition-transform duration-300 ease-out"
-            style={{ transform: `translateX(-${active * 100}%)` }}
-          >
-            {boats.map((item) => (
-              <div key={item.id} className="w-full shrink-0">
-                <MapBoatCard layout="popup" {...item} className="border-0 shadow-none" />
-              </div>
-            ))}
-          </div>
+      <div className="relative w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:w-150.25">
+        <div
+          className="flex transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${active * 100}%)` }}
+        >
+          {boats.map((item) => (
+            <div key={item.id} className="w-full shrink-0">
+              <MapBoatCard layout="popup" {...item} className="border-0 shadow-none" />
+            </div>
+          ))}
         </div>
-
-        {many ? (
-          <div
-            // Keep the tap on the pager, not on the map underneath, or MapCanvas dismisses the popup.
-            onMouseDown={(event) => event.stopPropagation()}
-            onTouchStart={(event) => event.stopPropagation()}
-            className="flex items-center gap-1 rounded-full bg-card p-1 shadow-[4px_4px_15px_rgba(0,0,0,0.1)]"
-          >
-            <button
-              type="button"
-              aria-label={t("previousBoat")}
-              disabled={active === 0}
-              onClick={() => setIndex(active - 1)}
-              className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
-            >
-              <ChevronLeft className="size-5" />
-            </button>
-            <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-foreground">
-              {active + 1} / {boats.length}
-            </span>
-            <button
-              type="button"
-              aria-label={t("nextBoat")}
-              disabled={active === boats.length - 1}
-              onClick={() => setIndex(active + 1)}
-              className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
-            >
-              <ChevronRight className="size-5" />
-            </button>
-          </div>
-        ) : null}
       </div>
-    </Popup>
+
+      {many ? (
+        <div
+          // Keep the tap on the pager, not on the map underneath, or MapCanvas dismisses the popup.
+          onMouseDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          className="flex items-center gap-1 rounded-full bg-card p-1 shadow-[4px_4px_15px_rgba(0,0,0,0.1)]"
+        >
+          <button
+            type="button"
+            aria-label={t("previousBoat")}
+            disabled={active === 0}
+            onClick={() => setIndex(active - 1)}
+            className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-foreground">
+            {active + 1} / {boats.length}
+          </span>
+          <button
+            type="button"
+            aria-label={t("nextBoat")}
+            disabled={active === boats.length - 1}
+            onClick={() => setIndex(active + 1)}
+            className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      ) : null}
+    </MapPopup>
   );
 }

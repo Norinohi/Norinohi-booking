@@ -174,6 +174,16 @@ export type ListingPricedItem = {
     currency: string;
   };
   /**
+   * The top of the range when the provider keys several variants of one fee separately, else
+   * null. `price` is the bottom.
+   *
+   * Booking Manager publishes an obligatory extra per base pair, so a boat that sells one-way
+   * carries three "Boat Cleaning" ids at three prices. Exactly one applies to any given
+   * charter, and which one is not known until dates and route are, so a catalogue with no
+   * dates can only honestly quote the span.
+   */
+  priceToMinor: number | null;
+  /**
    * What `price` is the price *of*, in the vendor's own words — "per person",
    * "one-way / person", "per booking". Null where the provider ships none.
    *
@@ -182,6 +192,23 @@ export type ListingPricedItem = {
    * "per booking" told the customer €10 for a Tour the quote then charged €100 for.
    */
   priceMeasure: string | null;
+  /**
+   * Whether the charter base collects this on arrival, or null where the provider never said.
+   *
+   * Three states on purpose. The page used to assert "Pay at check-in" on every mandatory
+   * extra, which on Booking Manager was backwards: it sends `payableInBase: false` for the
+   * Shannon fleet's cleaning and one-way fees, and the booking sidebar right beside it counted
+   * both into the prepayment. Silence is now silence rather than a guess.
+   */
+  payableInBase: boolean | null;
+  /**
+   * Charged only when the charter ends at a base other than the one it started from.
+   *
+   * Presenting one of these as an unconditional mandatory extra overstates every return
+   * charter by its amount: this fleet's one-way fee is 155 or 185 depending on direction, and
+   * the same-base charter the quote now prefers pays neither.
+   */
+  oneWayOnly: boolean;
   pricingType: "per_booking" | "per_week" | "pay_at_check_in";
 };
 
@@ -354,6 +381,12 @@ export type AvailabilityConstraints = {
     endDate: string;
     status: "option" | "occupied" | "blocked";
   }[];
+  /**
+   * Exact periods the provider was asked to price and refused, which nothing else here can
+   * express: a week can be unsold, inside an open season, and still not for sale. Matched on
+   * both ends by the rules, so a refused fortnight never buries the free week inside it.
+   */
+  refused: { startDate: string; endDate: string }[];
   /**
    * Periods carrying a published rate. Absence is meaningful: the provider does not
    * price a season it has not opened, so a date no entry covers is not sellable yet.

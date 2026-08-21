@@ -44,7 +44,9 @@ export default function Gallery() {
    */
   return (
     <Carousel className="flex flex-col gap-3 md:gap-4" options={{ loop: true }}>
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl">
+      {/* Wider than 16:9 from a tablet up, where that shape pushed the thumbs below the fold;
+          a phone keeps it, since 21:9 there is a 160px strip. */}
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl md:aspect-[21/9]">
         <CarouselViewport>
           {photos.map((photo, index) => (
             <CarouselSlide key={photo.src}>
@@ -71,10 +73,8 @@ export default function Gallery() {
 
         <CarouselArrow direction="prev" className={`left-4 md:left-8 ${ARROW}`} />
         <CarouselArrow direction="next" className={`right-4 md:right-8 ${ARROW}`} />
-        <CarouselBars
-          className="absolute inset-x-4 bottom-4 mx-auto max-w-105 md:inset-x-0"
-          barClassName="w-auto flex-1"
-        />
+        {/* Not stretched: the bars window past a handful now, and each sets its own width. */}
+        <CarouselBars className="absolute inset-x-0 bottom-4" />
       </div>
 
       <CarouselThumbs

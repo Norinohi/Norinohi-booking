@@ -133,7 +133,19 @@ export async function rebuildListingSearchDocs(
       media.main_image,
       coalesce(media.gallery, '[]'::jsonb),
       coalesce(amn.amenities, '[]'::jsonb),
-      rate.price_from_minor,
+      /*
+       * The all-in weekly price, because that is what the customer is asked to pay and what the
+       * detail page totals. The rate alone advertised EUR 809 beside a booking summary charging
+       * EUR 959: the difference is a cleaning fee nobody can decline, on every Shannon hull.
+       *
+       * Only fees that apply whatever the customer chooses. A one-way fee is charged on a route
+       * they have to pick, and folding it in would inflate every card for a charter almost none
+       * of them will book.
+       */
+      case
+        when coalesce(week.price_minor, rate.price_from_minor) is null then null
+        else coalesce(week.price_minor, rate.price_from_minor) + coalesce(fees.unavoidable_minor, 0)
+      end,
       coalesce(rate.currency, l.default_currency),
       avail.available_from,
       avail.available_to,
@@ -244,6 +256,30 @@ export async function rebuildListingSearchDocs(
         )
     ) rate on true
     /*
+     * What every charter of this listing pays on top of the rate, at its cheapest.
+     *
+     * One row per fee, taking the lowest variant, which is the same fold the detail page shows
+     * as a range and the right end of it for a "from" price. Scoped to seasons that overlap
+     * what we sell, so next-decade pricing the provider has already filed does not leak into
+     * today's card, and excluding route-conditional fees.
+     */
+    left join lateral (
+      select sum(cheapest.price_minor)::int as unavoidable_minor
+      from (
+        select min(extra.price_minor) as price_minor
+        from provider_extra_catalogue extra
+        where extra.listing_id = l.id
+          and extra.obligatory
+          and not extra.one_way_only
+          and (extra.season_end is null or extra.season_end >= current_date)
+          and (
+            extra.season_start is null
+            or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+          )
+        group by extra.name
+      ) cheapest
+    ) fees on true
+    /*
      * Availability is the span of the free stretches, which are the complement of occupancy.
      * A stretch counts as unconfirmed unless the provider priced that exact period on request,
      * which is what has_unconfirmed_availability has always meant: we inferred this.
@@ -325,9 +361,43 @@ export async function rebuildListingSearchDocs(
         and c.candidate < least(free.end_date, price.end_date)
         and (rule.max_nights is null or n.nights <= rule.max_nights)
         and c.candidate + n.nights <= free.end_date
+        /*
+         * A charter that swallows a period the provider refused is one it will not sell either,
+         * which is the containment rule wasRefused applies. Without this the card advertised the
+         * cheapest week of the Shannon fleet -- free, priced, and declined by the vendor's own
+         * offers engine -- and sent the visitor to a calendar that then greyed it out.
+         */
+        and not exists (
+          select 1
+          from listing_refused_period refused
+          where refused.listing_id = l.id
+            and refused.start_date >= c.candidate
+            and refused.end_date <= c.candidate + n.nights
+        )
       order by c.candidate, n.nights
       limit 1
     ) checkin on true
+    /*
+     * The rate for the week the card actually advertises, not the cheapest of the season.
+     *
+     * The card prints a price directly beside the bookable dates, so the two have to
+     * describe one charter. Reading the season minimum instead put "EUR 4,557" next to 29 August
+     * on a hull whose 29 August week is EUR 5,460 -- a EUR 1,533 understatement, and the quote
+     * that follows the click is the one that has to be right.
+     *
+     * Null for a listing with no bookable period at all, where the minimum is still the honest
+     * answer: nothing is being advertised for particular dates.
+     */
+    left join lateral (
+      select price.price_minor
+      from listing_price_period price
+      where price.listing_id = l.id
+        and price.kind = 'weekly'
+        and price.start_date <= checkin.bookable_from
+        and price.end_date > checkin.bookable_from
+      order by price.price_minor
+      limit 1
+    ) week on true
     left join lateral (
       select bool_or(slot.status = 'option') as has_temporary_booking
       from availability_slot slot

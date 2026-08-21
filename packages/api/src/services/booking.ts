@@ -456,6 +456,8 @@ async function holdOption(
       // The provider re-prices before holding and refuses if this no longer
       // matches what the customer agreed to.
       priceSourceHash: priced.priceSourceHash,
+      // The base pair the price was for, which is not always the listing's own.
+      route: priced.route,
       customer: {
         name: account.name,
         email: account.email,

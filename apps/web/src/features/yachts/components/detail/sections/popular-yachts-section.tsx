@@ -21,7 +21,7 @@ import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import { boatCardPrice } from "@/lib/boat-card-fields";
-import { slugToLabel } from "@/lib/slug-to-label";
+import { crewLabel } from "@/lib/crew-label";
 import DetailSection from "./detail-section";
 
 function CarouselNav() {
@@ -47,6 +47,7 @@ function CarouselNav() {
 export default function PopularYachtsSection() {
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
+  const tCrew = useTranslations("Common.crewTypes");
   const formatMoney = useMoney();
   const { data } = useListingDetail();
 
@@ -80,7 +81,7 @@ export default function PopularYachtsSection() {
                 tags={[
                   { label: yacht.category, icon: <Anchor /> },
                   ...(yacht.crewType
-                    ? [{ label: slugToLabel(yacht.crewType), icon: <Users /> }]
+                    ? [{ label: crewLabel(tCrew, yacht.crewType), icon: <Users /> }]
                     : []),
                 ]}
                 price={boatCardPrice(tCard, yacht, formatMoney)}
