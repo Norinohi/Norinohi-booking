@@ -1,0 +1,2 @@
+CREATE TYPE "public"."facet_translation_source" AS ENUM('editorial', 'provider');--> statement-breakpoint
+ALTER TABLE "facet_media_translation" ADD COLUMN "source" "facet_translation_source" DEFAULT 'editorial' NOT NULL;

@@ -20,6 +20,7 @@
     "listings:visibility": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/set-provider-visibility.ts",
     "listings:purge": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/purge-provider-data.ts",
     "probe:crewlist": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-crewlist-link.ts",
+    "facets:backfill": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/backfill-facet-translations.ts",
     "probe:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-booking-manager.ts"
   },
   "dependencies": {

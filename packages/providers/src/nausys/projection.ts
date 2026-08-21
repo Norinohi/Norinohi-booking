@@ -2,6 +2,8 @@ import type { z } from "zod";
 
 import { parseNausysDate } from "../shared/dates";
 import { stripHtml } from "../shared/html-text";
+import { CONTENT_LOCALES } from "@yacht-charter/db/search/localize";
+
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
 import type { JsonField, JsonObject } from "../shared/json";
@@ -167,16 +169,19 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       // ISO-2 first: it is what makes the same country from two providers one row.
       code: text(item.code2) ?? text(item.code) ?? `${PROVIDER_PREFIX}-${item.id}`,
       name: name(item.name) ?? `Country ${item.id}`,
+      translations: translations(item.name),
     })),
     regions: regions.map((item) => ({
       externalId: String(item.id),
       externalCountryId: String(item.countryId),
       name: name(item.name) ?? `Region ${item.id}`,
+      translations: translations(item.name),
     })),
     locations: locations.map((item) => ({
       externalId: String(item.id),
       externalRegionId: String(item.regionId),
       name: name(item.name) ?? `Location ${item.id}`,
+      translations: translations(item.name),
     })),
     bases: projectedBases,
     operators: companies.map((item) => ({
@@ -211,6 +216,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       externalId: String(item.id),
       code: `${PROVIDER_PREFIX}:${item.id}`,
       name: name(item.name) ?? `Category ${item.id}`,
+      translations: translations(item.name),
     })),
     amenityCategories: equipmentCategories.map((item) => ({
       externalId: String(item.id),
@@ -223,6 +229,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
       // shape is load-bearing, not cosmetic.
       code: `${PROVIDER_PREFIX}:${item.id}`,
       name: name(item.name) ?? `Equipment ${item.id}`,
+      translations: translations(item.name),
     })),
     listings,
   });
@@ -531,6 +538,23 @@ function decimalOf(value: JsonField): number | undefined {
 function name(value: JsonField): string | undefined {
   const locales = toLocaleMap(value);
   return locales.en ?? Object.values(locales)[0];
+}
+
+/**
+ * The same reference name in the locales the site serves, or undefined when it ships none
+ * of them.
+ *
+ * Every NauSYS reference list is `RestInternationalText`, so this data has always been on
+ * the wire and `name()` above was throwing seventeen languages away to keep one. Recorded
+ * responses carry es and de on 100% of equipment, services, categories, regions, locations
+ * and countries; uk is absent, and ru is deliberately not served in its place.
+ */
+function translations(value: JsonField): Record<string, string> | undefined {
+  const locales = toLocaleMap(value);
+  const wanted = Object.entries(locales).filter(([locale]) =>
+    CONTENT_LOCALES.some((served) => served === locale),
+  );
+  return wanted.length === 0 ? undefined : Object.fromEntries(wanted);
 }
 
 /**

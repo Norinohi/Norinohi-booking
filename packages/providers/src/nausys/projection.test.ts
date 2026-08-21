@@ -144,6 +144,26 @@ describe("projectNausysCatalogue", () => {
     expect(catalogue.categories.map((item) => item.code)).toContain("nausys:51");
   });
 
+  it("keeps the vendor's own names for the locales the site serves", () => {
+    const catalogue = projectNausysCatalogue(fixtureRecords());
+    const propeller = catalogue.amenities.find((item) => item.externalId === "113410");
+
+    expect(propeller?.name).toBe("3 blade folding propeller");
+    expect(propeller?.translations).toEqual({
+      de: "3-Blatt Faltpropeller",
+      es: "Hélice plegable de 3 palas",
+    });
+  });
+
+  it("leaves translations unset where none of the served locales are named", () => {
+    const catalogue = projectNausysCatalogue(fixtureRecords());
+
+    // uk is the case this has to express: NauSYS ships eighteen languages and none is it.
+    for (const item of catalogue.amenities) {
+      expect(item.translations?.uk).toBeUndefined();
+    }
+  });
+
   it("drops equipment the vendor sends without a category", () => {
     const catalogue = projectNausysCatalogue(fixtureRecords());
 

@@ -9,7 +9,7 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { DEFAULT_LOCALE, localizeSearchDocs } from "./localize";
+import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
 import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
@@ -181,7 +181,8 @@ export async function getListingDetailByIdOrSlug(
   const raw = await getListingByIdOrSlug(db, idOrSlug);
   if (!raw) return undefined;
 
-  const [localized] = await localizeSearchDocs(db, [raw], locale);
+  const translate = await facetTranslator(db, locale);
+  const [localized] = await localizeSearchDocs(db, [raw], locale, translate);
   const listing = localized ?? raw;
 
   const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose] =
@@ -293,9 +294,14 @@ export async function getListingDetailByIdOrSlug(
     ...item,
     code: item.code ?? valueForLabel(item.label),
   }));
+  /* Translated after the code is derived, never before: the code is what the amenity filter
+     matches on, and a Spanish one matches nothing. */
   const includedAmenities = amenities
     .filter((item) => !item.crew && item.priceMinor === null)
-    .map((item) => ({ code: item.code, label: item.label }));
+    .map((item) => ({
+      code: item.code,
+      label: translate ? translate("equipment", item.label) : item.label,
+    }));
   /*
    * Extras come from provider_extra_catalogue, not from listing_amenity. The two
    * answer different questions — what the yacht has versus what it costs extra —

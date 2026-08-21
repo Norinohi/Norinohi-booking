@@ -276,7 +276,6 @@ function routeOf(offer: RestOffer): ProviderQuote["route"] {
   return route;
 }
 
-
 export interface OfferTimes {
   checkInTime: string | undefined;
   checkOutTime: string | undefined;

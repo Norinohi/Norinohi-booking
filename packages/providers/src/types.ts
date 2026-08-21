@@ -419,22 +419,35 @@ export type ProviderCapabilities = z.infer<typeof providerCapabilitiesSchema>;
  * `listing_source`, which is also what keeps two providers' ids from colliding.
  */
 
+/**
+ * Display names in the locales the site serves, keyed by BCP 47 tag. Absent where the
+ * provider publishes one language only.
+ *
+ * The English name stays on `name`: it is what the search filters and `listing_search_doc`
+ * match against, so a translated value would silently unmatch every listing carrying it.
+ * These are labels for display and nothing else.
+ */
+const canonicalTranslationsSchema = z.record(z.string(), z.string()).optional();
+
 const canonicalCountrySchema = z.object({
   externalId: z.string(),
   code: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalRegionSchema = z.object({
   externalId: z.string(),
   externalCountryId: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalLocationSchema = z.object({
   externalId: z.string(),
   externalRegionId: z.string(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalBaseSchema = z.object({
@@ -476,6 +489,7 @@ const canonicalCategorySchema = z.object({
   externalId: z.string(),
   code: z.string().optional(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 const canonicalAmenityCategorySchema = z.object({
@@ -488,6 +502,7 @@ const canonicalAmenitySchema = z.object({
   externalAmenityCategoryId: z.string(),
   code: z.string().optional(),
   name: z.string(),
+  translations: canonicalTranslationsSchema,
 });
 
 /**
