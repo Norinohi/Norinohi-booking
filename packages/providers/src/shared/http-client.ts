@@ -232,10 +232,37 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
 
     const durationMs = now() - startedAt;
 
-    let parsed: JsonValue;
+    // An unparseable body is not classified here: a failing host answers its own
+    // 504 and its 500 with an HTML page, and parsing first turned both into a
+    // permanent ContractError that withRetry refuses to retry. Measured against
+    // Booking Manager on 2026-08-20: `/offers` and `/yachts` return an HTML
+    // `504 Gateway Time-out` under load, and a malformed bearer token returns a
+    // 500 Tomcat page rather than the 401 the vendor's own client comment assumes.
+    // The status is the reliable signal, so classification gets it first and only a
+    // 2xx that failed to parse is a contract failure.
+    let parsed: JsonValue = null;
+    let parseFailure: unknown;
+    let parseFailed = false;
     try {
       parsed = text.trim() === "" ? null : parseJson(text);
     } catch (cause) {
+      parseFailed = true;
+      parseFailure = cause;
+    }
+
+    const result = { body: parsed, httpStatus: response.status, durationMs, requestId };
+
+    // Before classification: a retained error body is exactly what makes a
+    // vendor dispute arguable. An HTML error page is retained too, as `null` here
+    // with the text carried on the error's payload below.
+    await onRawResponse?.({ endpoint, ...result });
+
+    const error = classifyResponse(response.status, parsed, { endpoint });
+    if (error) {
+      throw error;
+    }
+
+    if (parseFailed) {
       // The status and the first line of the body are in the payload too, but only the
       // message survives into a log line or a rejected booking's cancel_reason, and
       // "not JSON" alone cannot distinguish a vendor 500 from a proxy's HTML error page.
@@ -243,22 +270,12 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
         `Response from ${endpoint} was not JSON — HTTP ${response.status}, body starts: ${preview(text)}`,
         {
           endpoint,
-          cause,
+          cause: parseFailure,
           payload: { httpStatus: response.status, bodyPreview: text.slice(0, 500) },
         },
       );
     }
 
-    const result = { body: parsed, httpStatus: response.status, durationMs, requestId };
-
-    // Before classification: a retained error body is exactly what makes a
-    // vendor dispute arguable.
-    await onRawResponse?.({ endpoint, ...result });
-
-    const error = classifyResponse(response.status, parsed, { endpoint });
-    if (error) {
-      throw error;
-    }
     return result;
   }
 

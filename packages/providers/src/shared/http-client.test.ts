@@ -135,6 +135,63 @@ describe("createProviderHttpClient", () => {
     expect(error.endpoint).toBe("/x");
   });
 
+  it("retries a 5xx whose body is an HTML error page", async () => {
+    // Booking Manager answers an overloaded /offers with an HTML 504 and a
+    // malformed bearer token with an HTML 500. Parsing before classifying turned
+    // both into a permanent ContractError, so neither was ever retried.
+    let attempts = 0;
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test",
+      queueKey: "k",
+      queue: new SequentialQueue(),
+      retry: { maxAttempts: 3, baseDelayMs: 0 },
+      fetchImpl: () => {
+        attempts += 1;
+        return Promise.resolve({
+          status: 504,
+          text: () => Promise.resolve("<html><body>504 Gateway Time-out</body></html>"),
+        });
+      },
+    });
+
+    const error = await providerRejection(client.post("/offers", {}));
+    expect(error).toBeInstanceOf(TransientError);
+    expect(attempts).toBe(3);
+  });
+
+  it("still refuses a 2xx whose body is an HTML error page", async () => {
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test",
+      queueKey: "k",
+      queue: new SequentialQueue(),
+      retry: noRetry,
+      fetchImpl: () =>
+        Promise.resolve({ status: 200, text: () => Promise.resolve("<html>hello</html>") }),
+    });
+
+    const error = await providerRejection(client.post("/x", {}));
+    expect(error).toBeInstanceOf(ContractError);
+    expect(error.message).toContain("was not JSON");
+  });
+
+  it("retains an unparseable error body through onRawResponse", async () => {
+    const seen: unknown[] = [];
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test",
+      queueKey: "k",
+      queue: new SequentialQueue(),
+      retry: noRetry,
+      onRawResponse: (event) => {
+        seen.push(event.httpStatus);
+      },
+      fetchImpl: () =>
+        Promise.resolve({ status: 500, text: () => Promise.resolve("<html>NPE</html>") }),
+    });
+
+    await providerRejection(client.post("/x", {}));
+    expect(seen).toEqual([500]);
+  });
+
   it("treats an empty body as null rather than a parse failure", async () => {
     const client = createProviderHttpClient({
       baseUrl: "https://provider.test",
