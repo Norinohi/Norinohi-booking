@@ -859,11 +859,6 @@
       "findYacht": "Find Yacht",
       "helpPlan": "Help Me Plan My Trip",
       "language": "Language",
-      "languages": {
-        "en": "English",
-        "es": "Spanish",
-        "uk": "Ukrainian"
-      },
       "openMenu": "Open menu",
       "popularRoutes": "Popular routes",
       "saved": "Saved",

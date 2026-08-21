@@ -10,7 +10,7 @@ import {
 import { Check, Globe } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-import { locales } from "@/i18n/config";
+import { localeNames, locales } from "@/i18n/config";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { isBrowser } from "@/utils/runtime";
 
@@ -18,7 +18,9 @@ import { isBrowser } from "@/utils/runtime";
  * LanguageSwitcher — Figma "Menu Item" (node 972:54534). A white 8px-radius card with a 1px
  * natural-100 border and a 4/4/10 shadow, holding 14 SemiBold rows; the active row carries a
  * brand check. The check keeps its box on inactive rows so the label column never reflows.
- * Language names are translated (per the design) rather than endonyms.
+ * Language names are always in English, whatever the active locale: a visitor who landed on the
+ * wrong language needs to find their own in a list they can read, and the English names are the
+ * ones that read the same to everyone.
  */
 export default function LanguageSwitcher() {
   const t = useTranslations("Layout.Nav");
@@ -59,7 +61,7 @@ export default function LanguageSwitcher() {
             }}
             className="-mx-4 gap-2 px-4 py-2 text-sm font-semibold capitalize leading-[1.2] tracking-[0.02em] text-foreground focus:bg-natural-50 focus:text-foreground"
           >
-            <span className="flex-1 truncate">{t(`languages.${locale}`)}</span>
+            <span className="flex-1 truncate">{localeNames[locale]}</span>
             <Check
               aria-hidden
               className={locale === active ? "size-6 text-brand" : "invisible size-6"}
