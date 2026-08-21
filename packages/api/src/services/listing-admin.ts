@@ -48,14 +48,27 @@ const providerCodeColumn = sql<string | null>`(
 )`;
 
 /**
- * The same "cheapest available slot" the search read model publishes, read
- * straight from `availability_slot` because `listing_search_doc` only holds
- * published listings and this table exists to show the drafts.
+ * The cheapest price staff can quote this listing from.
+ *
+ * The "cheapest available slot" the search read model publishes, read straight from
+ * `availability_slot` because `listing_search_doc` only holds published listings and this
+ * table exists to show the drafts — falling back to the cheapest published weekly period.
+ *
+ * The fallback is not decoration. A connector may send one without the other: Booking Manager
+ * reports occupancy rather than free-with-price slots, so an availability-only read called
+ * every one of its listings unpriced while their weekly rates sat in `listing_price_period`.
  */
-const priceFromMinorColumn = sql<number | null>`(
-  select min(slot.price_minor)::int
-  from availability_slot slot
-  where slot.listing_id = ${listing.id} and slot.status = 'available'
+const priceFromMinorColumn = sql<number | null>`coalesce(
+  (
+    select min(slot.price_minor)::int
+    from availability_slot slot
+    where slot.listing_id = ${listing.id} and slot.status = 'available'
+  ),
+  (
+    select min(pp.price_minor)::int
+    from listing_price_period pp
+    where pp.listing_id = ${listing.id} and pp.kind = 'weekly'
+  )
 )`;
 
 const currencyColumn = sql<string | null>`coalesce(
@@ -65,6 +78,11 @@ const currencyColumn = sql<string | null>`coalesce(
     where slot.listing_id = ${listing.id}
       and slot.status = 'available'
       and slot.price_minor is not null
+  ),
+  (
+    select min(pp.currency)
+    from listing_price_period pp
+    where pp.listing_id = ${listing.id} and pp.kind = 'weekly'
   ),
   ${listing.defaultCurrency}
 )`;

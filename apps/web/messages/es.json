@@ -1873,7 +1873,7 @@
         "started": "{count, plural, one {# ejecución iniciada} other {# ejecuciones iniciadas}}",
         "skipped": "{count, plural, one {# proveedor ya está importando} other {# proveedores ya están importando}}",
         "noProviders": "No hay ningún conector activo.",
-        "capabilities": "Conector activo:",
+        "capabilities": "Conector activo: {provider}",
         "capability": {
           "supportsLiveQuote": "Precio en vivo",
           "supportsOptions": "Reservas provisionales",
@@ -1981,7 +1981,8 @@
         "invoice_request": "Factura",
         "lead": "Consulta",
         "listing": "Anuncio",
-        "listing_duplicate_candidate": "Duplicado"
+        "listing_duplicate_candidate": "Duplicado",
+        "maintenance": "Tarea de mantenimiento"
       },
       "details": {
         "show": "Ver",
@@ -2259,6 +2260,7 @@
       "guests": "{count} huéspedes",
       "noReservationId": "Aún sin id de reserva",
       "outstanding": "{amount} pendiente",
+      "dueAtCheckIn": "{amount} a pagar en la marina",
       "createdAt": "Creada {at}",
       "holdExpiresAt": "La opción vence {at}",
       "confirmedAt": "Confirmada {at}",

@@ -100,8 +100,10 @@ export default function SyncControls() {
 
       {capabilities ? (
         <div className="flex flex-wrap items-center gap-2">
+          {/* Named, because the chips describe whichever adapter PROVIDER_MODE selected for
+              checkout — not the provider chosen in the sync dropdown above. */}
           <span className="text-sm leading-4.5 font-medium text-natural-500">
-            {t("capabilities")}
+            {t("capabilities", { provider: capabilities.provider })}
           </span>
           {CAPABILITY_KEYS.map((key) => (
             <Chip key={key} variant={capabilities[key] ? "success" : "outline"}>

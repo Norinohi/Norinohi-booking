@@ -1873,7 +1873,7 @@
         "started": "{count, plural, one {# run started} other {# runs started}}",
         "skipped": "{count, plural, one {# provider is already importing} other {# providers are already importing}}",
         "noProviders": "No connector is enabled.",
-        "capabilities": "Active connector:",
+        "capabilities": "Active connector: {provider}",
         "capability": {
           "supportsLiveQuote": "Live quote",
           "supportsOptions": "Holds",
@@ -1981,7 +1981,8 @@
         "invoice_request": "Invoice",
         "lead": "Enquiry",
         "listing": "Listing",
-        "listing_duplicate_candidate": "Duplicate"
+        "listing_duplicate_candidate": "Duplicate",
+        "maintenance": "Maintenance job"
       },
       "details": {
         "show": "Show",
@@ -2259,6 +2260,7 @@
       "guests": "{count} guests",
       "noReservationId": "No reservation id yet",
       "outstanding": "{amount} outstanding",
+      "dueAtCheckIn": "{amount} due at the marina",
       "createdAt": "Created {at}",
       "holdExpiresAt": "Hold expires {at}",
       "confirmedAt": "Confirmed {at}",

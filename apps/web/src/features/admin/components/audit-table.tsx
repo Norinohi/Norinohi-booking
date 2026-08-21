@@ -44,6 +44,7 @@ const ENTITY_TYPES = [
   "lead",
   "listing",
   "listing_duplicate_candidate",
+  "maintenance",
 ] as const;
 
 const ACTIONS: readonly AuditAction[] = [
