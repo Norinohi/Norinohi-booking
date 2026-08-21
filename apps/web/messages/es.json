@@ -1209,7 +1209,9 @@
         "remove": "Quitar"
       },
       "onRequest": "Este yate se cotiza a petición",
-      "onRequestHint": "Tenemos fechas para este barco, pero ninguna tarifa publicada las cubre. Dinos cuándo te gustaría navegar y te daremos un precio."
+      "onRequestHint": "Tenemos fechas para este barco, pero ninguna tarifa publicada las cubre. Dinos cuándo te gustaría navegar y te daremos un precio.",
+      "dropOff": "Puerto de entrega",
+      "pickUp": "Recogida: {marina}"
     },
     "panels": {
       "details": "Detalles del yate",

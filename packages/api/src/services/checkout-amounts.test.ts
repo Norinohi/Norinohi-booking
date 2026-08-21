@@ -46,6 +46,7 @@ const quoteRow = (lines: QuoteLine[], over: Partial<QuoteRow> = {}): QuoteRow =>
     discountCode: null,
     creditAppliedMinor: 0,
     route: null,
+    routeOptions: [],
     priceSourceHash: "hash",
     status: "active",
     expiresAt: new Date("2026-08-01T00:00:00.000Z"),

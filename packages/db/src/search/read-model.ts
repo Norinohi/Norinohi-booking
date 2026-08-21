@@ -133,7 +133,19 @@ export async function rebuildListingSearchDocs(
       media.main_image,
       coalesce(media.gallery, '[]'::jsonb),
       coalesce(amn.amenities, '[]'::jsonb),
-      rate.price_from_minor,
+      /*
+       * The all-in weekly price, because that is what the customer is asked to pay and what the
+       * detail page totals. The rate alone advertised EUR 809 beside a booking summary charging
+       * EUR 959: the difference is a cleaning fee nobody can decline, on every Shannon hull.
+       *
+       * Only fees that apply whatever the customer chooses. A one-way fee is charged on a route
+       * they have to pick, and folding it in would inflate every card for a charter almost none
+       * of them will book.
+       */
+      case
+        when rate.price_from_minor is null then null
+        else rate.price_from_minor + coalesce(fees.unavoidable_minor, 0)
+      end,
       coalesce(rate.currency, l.default_currency),
       avail.available_from,
       avail.available_to,
@@ -243,6 +255,30 @@ export async function rebuildListingSearchDocs(
             and free.end_date > price.start_date
         )
     ) rate on true
+    /*
+     * What every charter of this listing pays on top of the rate, at its cheapest.
+     *
+     * One row per fee, taking the lowest variant, which is the same fold the detail page shows
+     * as a range and the right end of it for a "from" price. Scoped to seasons that overlap
+     * what we sell, so next-decade pricing the provider has already filed does not leak into
+     * today's card, and excluding route-conditional fees.
+     */
+    left join lateral (
+      select sum(cheapest.price_minor)::int as unavoidable_minor
+      from (
+        select min(extra.price_minor) as price_minor
+        from provider_extra_catalogue extra
+        where extra.listing_id = l.id
+          and extra.obligatory
+          and not extra.one_way_only
+          and (extra.season_end is null or extra.season_end >= current_date)
+          and (
+            extra.season_start is null
+            or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+          )
+        group by extra.name
+      ) cheapest
+    ) fees on true
     /*
      * Availability is the span of the free stretches, which are the complement of occupancy.
      * A stretch counts as unconfirmed unless the provider priced that exact period on request,

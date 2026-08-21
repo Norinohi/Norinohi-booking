@@ -161,14 +161,19 @@ describe("confirmBooking", () => {
  */
 describe("createOption bases", () => {
   function capturing() {
-    const sent: Record<string, unknown>[] = [];
+    /* Only the two fields these tests assert on; the vendor sends ids as bare numbers. */
+    const bodySchema = z.object({
+      baseFromId: z.number().optional(),
+      baseToId: z.number().optional(),
+    });
+    const sent: z.infer<typeof bodySchema>[] = [];
     const client = new BookingManagerClient({
       config,
       queue: new SequentialQueue(),
       retry: { maxAttempts: 1 },
       fetchImpl: (_url, init) => {
         const body: unknown = init.body === undefined ? undefined : JSON.parse(String(init.body));
-        const parsed = z.record(z.string(), z.unknown()).safeParse(body);
+        const parsed = bodySchema.safeParse(body);
         if (parsed.success) sent.push(parsed.data);
         return Promise.resolve({
           status: 200,

@@ -61,6 +61,8 @@ export type RepriceChanges = {
   guests?: number;
   extras?: string[];
   crewType?: CrewType;
+  /** Null clears a one-way and prices the charter back to its own base. */
+  endBaseId?: string | null;
   discountCode?: string | null;
   applyCredit?: boolean;
 };
@@ -121,6 +123,14 @@ export async function repriceQuote(
     await assertSelectableExtras(db, existing.listingId, changes.extras);
   }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
+  /*
+   * Distinguishes "not mentioned" from "cleared". Omitted keeps the drop-off the customer
+   * already chose, so changing guests does not silently turn their one-way into a return;
+   * null is the control being switched back and has to survive the `??` that carries values
+   * forward.
+   */
+  const requestedEndBaseId =
+    changes.endBaseId === undefined ? existing.route?.endBaseId : (changes.endBaseId ?? undefined);
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
@@ -134,6 +144,7 @@ export async function repriceQuote(
   };
 
   if (requestedCrewType) request.crewType = requestedCrewType;
+  if (requestedEndBaseId) request.endBaseId = requestedEndBaseId;
 
   const priced = await priceOrConflict(provider, request);
 
@@ -612,8 +623,10 @@ async function insertQuote(
       discountId: input.discountId,
       discountCode: input.discountCode,
       creditAppliedMinor: input.creditAppliedMinor,
-      // The base pair the provider priced, so the hold opens the charter that was quoted.
+      // The base pair the provider priced, so the hold opens the charter that was quoted,
+      // and the alternatives it offered, so the choice survives a reload.
       route: input.priced.route,
+      routeOptions: input.priced.routeOptions,
       priceSourceHash: input.priced.priceSourceHash,
       expiresAt: new Date(input.priced.expiresAt),
     })

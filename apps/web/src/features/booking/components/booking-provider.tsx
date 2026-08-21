@@ -69,6 +69,11 @@ type BookingContextValue = {
   slotError: boolean;
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
+  /**
+   * Where the charter finishes, for a fleet that sells one-way. Null returns the yacht to the
+   * base it left from, which is what a charter does unless someone says otherwise.
+   */
+  setDropOff: (endBaseId: string | null) => void;
   setGuests: (next: number) => void;
   /** The optional extras currently on the quote, so a checkbox can read its own state. */
   extras: readonly string[];
@@ -264,6 +269,15 @@ export function BookingProvider({
     if (quote) void repriceWith({ crewType: next });
   }
 
+  /*
+   * Re-prices rather than adjusting a total, because a one-way is a different charter: the
+   * vendor quotes it as its own offer with its own directional fee, and only it knows which
+   * pairings it will sell that week.
+   */
+  function setDropOff(endBaseId: string | null) {
+    if (quote) void repriceWith({ endBaseId });
+  }
+
   function setGuests(next: number) {
     setGuestsState(next);
     if (!quote) return;
@@ -345,6 +359,7 @@ export function BookingProvider({
     slotError,
     selectPeriod,
     setCrew,
+    setDropOff,
     setGuests,
     extras,
     selectExtras,

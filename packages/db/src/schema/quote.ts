@@ -42,6 +42,16 @@ export type QuotePaymentPolicy = {
 // Immutable priced snapshot (§1.5): a reprice supersedes with a new row rather
 // than mutating, so a booking is always traceable to the numbers agreed to.
 // userId is nullable because quoting is public.
+/** One sellable start/end base pair for a charter, priced all-in. */
+export type QuoteRouteOption = {
+  startBaseId?: string;
+  endBaseId?: string;
+  startBaseName?: string;
+  endBaseName?: string;
+  isOneWay: boolean;
+  total: { amountMinor: number; currency: string };
+};
+
 export const quote = pgTable(
   "quote",
   {
@@ -82,6 +92,12 @@ export const quote = pgTable(
      * vendor had not offered whenever the boat was moored at the other end of its run.
      */
     route: jsonb("route").$type<{ startBaseId?: string; endBaseId?: string }>(),
+    /**
+     * The other routes the provider offered for this charter, priced all-in, so a sidebar that
+     * comes back to a stored quote can still show the choice rather than losing it on reload.
+     * A snapshot like `lines`, and just as stale-able: the quote's own TTL governs both.
+     */
+    routeOptions: jsonb("route_options").$type<QuoteRouteOption[]>().default([]).notNull(),
     priceSourceHash: text("price_source_hash").notNull(),
     status: quoteStatus("status").default("active").notNull(),
     expiresAt: timestamp("expires_at").notNull(),

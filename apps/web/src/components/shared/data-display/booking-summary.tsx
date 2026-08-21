@@ -76,6 +76,8 @@ export type BookingSummaryProps = {
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   onCrewChange: (next: CrewType) => void;
+  /** Null clears a one-way, returning the yacht to the base it left from. */
+  onDropOffChange?: (endBaseId: string | null) => void;
   guests: number;
   onGuestsChange: (next: number) => void;
 
@@ -386,6 +388,7 @@ export default function BookingSummary({
   crewType,
   crewOptions,
   onCrewChange,
+  onDropOffChange,
   guests,
   onGuestsChange,
   unavailable = false,
@@ -400,6 +403,41 @@ export default function BookingSummary({
   const t = useTranslations("YachtDetail");
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
+
+  /*
+   * Where this charter may finish, given where it starts.
+   *
+   * The provider varies both ends independently, so a week can come back with four routes of
+   * which two share a drop-off - Carrick to Carrick and Portumna to Carrick both end at
+   * Carrick. Offering those raw gave the select duplicate values and let a drop-off control
+   * silently move the pickup, which is not a thing the customer was asked about. Pinning the
+   * start to the route already quoted leaves exactly one decision: where to leave the yacht.
+   */
+  const startBaseId = quote?.route?.startBaseId;
+  const dropOffOptions = (quote?.routeOptions ?? []).filter(
+    (option) => option.startBaseId === startBaseId,
+  );
+  /*
+   * Where the charter actually begins, which is not always the base the listing advertises.
+   * A hull left at the far end of its run is offered from there, so the Shannon boat whose page
+   * says Carrick on Shannon departs Portumna on some weeks. Without this the drop-off control
+   * read as a choice between "the charter base" and somewhere else, and picking what looked
+   * like the charter base added a one-way fee that was, against the real start, entirely correct.
+   */
+  const pickUpBaseName = dropOffOptions[0]?.startBaseName;
+
+  /*
+   * Where this particular charter is collected, which is not always where the listing lives.
+   *
+   * A hull left at the far end of a one-way run is offered from there for the following weeks,
+   * so the page can advertise Carrick while every offer that week departs Portumna. Without
+   * this the drop-off control read as a choice between the same marina and a different one,
+   * and picking "Carrick" looked like staying put when it was in fact the one-way.
+   *
+   * Shown only when it tells the customer something they could not already see: a departure
+   * away from the advertised base, or a week where the ending is theirs to choose.
+   */
+
   const money = useMoney();
   const peoplePercent = ((guests - PEOPLE_MIN) / (PEOPLE_MAX - PEOPLE_MIN)) * 100;
   /*
@@ -477,6 +515,36 @@ export default function BookingSummary({
               }}
             />
           </div>
+
+          {/* Only where the provider offered a real choice of ending. One drop-off is not a
+              decision, and a fleet that never sells one-way must not grow a control implying
+              it does. */}
+          {onDropOffChange && dropOffOptions.length > 1 ? (
+            <div className="flex flex-col gap-1.5">
+              {pickUpBaseName ? (
+                <span className="text-sm leading-4.25 font-medium text-natural-300">
+                  {t("sidebar.pickUp", { marina: pickUpBaseName })}
+                </span>
+              ) : null}
+              <span className="text-sm leading-4.25 font-semibold text-foreground">
+                {t("sidebar.dropOff")}
+              </span>
+              <Select
+                className="h-12"
+                options={dropOffOptions.map((option) => ({
+                  value: option.endBaseId ?? "",
+                  label: option.endBaseName ?? "",
+                }))}
+                value={quote?.route?.endBaseId ?? ""}
+                onValueChange={(value) => {
+                  const chosen = dropOffOptions.find((option) => option.endBaseId === value);
+                  // Returning to the start base is the absence of a one-way, not a one-way to
+                  // where you began, so it clears the choice rather than restating it.
+                  onDropOffChange(chosen && chosen.isOneWay ? value : null);
+                }}
+              />
+            </div>
+          ) : null}
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-4.25 font-semibold text-foreground">

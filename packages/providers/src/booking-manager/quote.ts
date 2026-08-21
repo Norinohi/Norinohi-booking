@@ -116,7 +116,14 @@ export function createBookingManagerQuoteService(
         offerQuery,
       );
 
-      const offer = selectOffer(offers, yachtId, parsed.checkIn, parsed.checkOut, productName);
+      const offer = selectOffer(
+        offers,
+        yachtId,
+        parsed.checkIn,
+        parsed.checkOut,
+        productName,
+        parsed.endBaseId,
+      );
       if (!offer) {
         throw new SlotUnavailableError(
           `Booking Manager has no offer for yacht ${yachtId} from ${parsed.checkIn} to ${parsed.checkOut}`,
@@ -140,6 +147,16 @@ export function createBookingManagerQuoteService(
         labelFor: (externalId) =>
           extraLabels?.get(formatExtraCode(EXTRA_KIND, externalId)) ??
           options.labelFor?.(externalId),
+        // Every pair the vendor would sell this week, so the sidebar can offer the choice
+        // rather than have one made for the customer by array order.
+        routeOptions: routeOptionsFor(
+          offers,
+          yachtId,
+          parsed.checkIn,
+          parsed.checkOut,
+          productName,
+          parsed.currency,
+        ),
       });
     },
   };
@@ -167,7 +184,30 @@ export function selectOffer(
   checkIn: string,
   checkOut: string,
   productName: string | undefined,
+  endBaseId?: string,
 ): RestOffer | undefined {
+  const ofProduct = offersForPeriod(offers, yachtId, checkIn, checkOut, productName);
+
+  /*
+   * A chosen drop-off narrows rather than ranks, and an empty result is not silently widened:
+   * pricing a return charter for someone who asked to finish elsewhere would quote a trip they
+   * did not ask for, and the caller reads "no offer" as the vendor declining, which it did.
+   */
+  if (endBaseId !== undefined) {
+    return rankOffers(ofProduct.filter((offer) => offer.endBaseId === endBaseId))[0];
+  }
+
+  return rankOffers(ofProduct)[0];
+}
+
+/** The offers for exactly this charter, narrowed to the product when one was asked for. */
+function offersForPeriod(
+  offers: readonly RestOffer[],
+  yachtId: string,
+  checkIn: string,
+  checkOut: string,
+  productName: string | undefined,
+): RestOffer[] {
   const candidates = offers.filter(
     (offer) =>
       offer.yachtId === yachtId &&
@@ -181,22 +221,65 @@ export function selectOffer(
     ? candidates.filter((offer) => offer.product === productName)
     : candidates;
 
-  return rankOffers(ofProduct.length > 0 ? ofProduct : candidates)[0];
+  return ofProduct.length > 0 ? ofProduct : candidates;
+}
+
+/**
+ * The routes on offer for one charter, cheapest first, deduplicated by base pair.
+ *
+ * Priced all-in because that is the number the choice turns on: the same hull at the same
+ * 809 EUR is 959 EUR finishing where it started and 1,114 EUR finishing across the county.
+ */
+export function routeOptionsFor(
+  offers: readonly RestOffer[],
+  yachtId: string,
+  checkIn: string,
+  checkOut: string,
+  productName: string | undefined,
+  currency: string,
+): ProviderQuote["routeOptions"] {
+  const byPair = new Map<string, ProviderQuote["routeOptions"][number]>();
+
+  for (const offer of rankOffers(
+    offersForPeriod(offers, yachtId, checkIn, checkOut, productName),
+  )) {
+    const key = `${offer.startBaseId ?? ""}>${offer.endBaseId ?? ""}`;
+    if (byPair.has(key)) continue;
+
+    const option: ProviderQuote["routeOptions"][number] = {
+      isOneWay: isOneWay(offer),
+      total: {
+        amountMinor: numberToMinor(allInPrice(offer), currency, `yacht ${offer.yachtId} route`),
+        currency,
+      },
+    };
+    if (offer.startBaseId) option.startBaseId = offer.startBaseId;
+    if (offer.endBaseId) option.endBaseId = offer.endBaseId;
+    if (offer.startBase) option.startBaseName = offer.startBase;
+    if (offer.endBase) option.endBaseName = offer.endBase;
+    byPair.set(key, option);
+  }
+
+  return [...byPair.values()];
 }
 
 /** The offer's own bases, or null where it named neither. */
-function routeOf(offer: RestOffer): { startBaseId?: string; endBaseId?: string } | null {
+function routeOf(offer: RestOffer): ProviderQuote["route"] {
   const startBaseId = offer.startBaseId ?? undefined;
   const endBaseId = offer.endBaseId ?? undefined;
   if (startBaseId === undefined && endBaseId === undefined) return null;
-  return { ...(startBaseId ? { startBaseId } : {}), ...(endBaseId ? { endBaseId } : {}) };
+
+  const route: NonNullable<ProviderQuote["route"]> = {};
+  if (startBaseId) route.startBaseId = startBaseId;
+  if (endBaseId) route.endBaseId = endBaseId;
+  return route;
 }
 
 /** Same-base before one-way, then cheapest all-in. A stable sort keeps vendor order as the tie. */
 function rankOffers(candidates: readonly RestOffer[]): RestOffer[] {
   return [...candidates].sort(
     (left, right) =>
-      Number(isOneWay(left)) - Number(isOneWay(right)) || allInMinor(left) - allInMinor(right),
+      Number(isOneWay(left)) - Number(isOneWay(right)) || allInPrice(left) - allInPrice(right),
   );
 }
 
@@ -207,11 +290,11 @@ function isOneWay(offer: RestOffer): boolean {
 }
 
 /**
- * What the charter costs together, because the obligatory extras are the whole point: two offers
- * for this hull quote the same 809 EUR and differ by a 155 EUR fee attached to one of them.
- * A missing figure sorts last rather than as free.
+ * What the charter costs together, in the vendor's major units, because the obligatory extras
+ * are the whole point: two offers for this hull quote the same 809 EUR and differ by a 155 EUR
+ * fee attached to one of them. A missing figure sorts last rather than as free.
  */
-function allInMinor(offer: RestOffer): number {
+function allInPrice(offer: RestOffer): number {
   const price = offer.price ?? Number.MAX_SAFE_INTEGER;
   return price + (offer.obligatoryExtrasPrice ?? 0);
 }
@@ -239,6 +322,8 @@ export interface OfferMapping {
   checkOut: string;
   guests: number;
   crewType?: CrewType | undefined;
+  /** Every route the vendor offered for this charter; see `routeOptions` on the quote. */
+  routeOptions?: ProviderQuote["routeOptions"];
   requestedCurrency: string;
   expiresAt: string;
   labelFor?: ((externalId: string) => string | undefined) | undefined;
@@ -331,6 +416,7 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
      * both ends with the listing's own base.
      */
     route: routeOf(offer),
+    routeOptions: input.routeOptions ?? [],
     priceSourceHash,
     repriced: false,
     expiresAt: input.expiresAt,

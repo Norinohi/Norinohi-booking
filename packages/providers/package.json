@@ -15,6 +15,7 @@
     "test": "vitest run",
     "import:nausys": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-nausys.ts",
     "import:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-booking-manager.ts",
+    "import:booking-manager-yacht": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/import-booking-manager-yacht.ts",
     "prices:sync": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/sync-prices.ts",
     "listings:visibility": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/set-provider-visibility.ts",
     "listings:purge": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/purge-provider-data.ts",

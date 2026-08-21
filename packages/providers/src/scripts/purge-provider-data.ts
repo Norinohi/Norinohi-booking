@@ -20,6 +20,14 @@
  *
  *   pnpm --filter @yacht-charter/providers listings:purge -- --provider mock
  *   pnpm --filter @yacht-charter/providers listings:purge -- --provider mock --confirm
+ *
+ * `--keep-company` and `--keep-yacht` (repeatable) narrow it to a partial purge:
+ * every listing of the provider EXCEPT the ones they name goes, and the reference
+ * data, sync history and raw payloads stay untouched because the provider is still
+ * present. Without either flag the purge is total, as above.
+ *
+ *   pnpm --filter @yacht-charter/providers listings:purge -- \
+ *     --provider booking_manager --keep-company 225 --keep-yacht 6463214670000102746
  */
 import { db } from "@yacht-charter/db";
 import { availabilitySlot } from "@yacht-charter/db/schema/availability";
@@ -42,6 +50,17 @@ const at = argv.indexOf("--provider");
 const providerCode = at === -1 ? "mock" : (argv[at + 1] ?? "mock");
 const confirmed = argv.includes("--confirm");
 
+/** Every value given to a repeatable flag, e.g. `--keep-yacht a --keep-yacht b`. */
+function valuesOf(flag: string): string[] {
+  return argv
+    .map((arg, index) => (arg === flag ? argv[index + 1] : undefined))
+    .filter((value): value is string => value !== undefined && !value.startsWith("--"));
+}
+
+const keptCompanies = new Set(valuesOf("--keep-company"));
+const keptYachts = new Set(valuesOf("--keep-yacht"));
+const partial = keptCompanies.size > 0 || keptYachts.size > 0;
+
 async function main(): Promise<void> {
   const [row] = await db
     .select({ id: provider.id })
@@ -52,18 +71,31 @@ async function main(): Promise<void> {
   if (!row) throw new Error(`No provider row with code "${providerCode}"`);
   const providerId = row.id;
 
-  const listingIds = (
-    await db
-      .selectDistinct({ id: listingSource.listingId })
-      .from(listingSource)
-      .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
-      .where(eq(providerRecord.providerId, providerId))
-  )
-    .map((item) => item.id)
-    .filter((id): id is string => id !== null);
+  const sources = await db
+    .select({
+      listingSourceId: listingSource.id,
+      listingId: listingSource.listingId,
+      providerRecordId: listingSource.providerRecordId,
+      externalYachtId: listingSource.externalYachtId,
+      externalCompanyId: listingSource.externalCompanyId,
+    })
+    .from(listingSource)
+    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+    .where(eq(providerRecord.providerId, providerId));
+
+  const doomed = sources.filter(
+    (source) =>
+      !keptYachts.has(source.externalYachtId) &&
+      !(source.externalCompanyId !== null && keptCompanies.has(source.externalCompanyId)),
+  );
+
+  const listingIds = [
+    ...new Set(doomed.map((source) => source.listingId).filter((id): id is string => id !== null)),
+  ];
 
   const counts = {
     listings: listingIds.length,
+    kept: sources.length - doomed.length,
     bookings: 0,
     quotes: 0,
     slots: 0,
@@ -87,7 +119,7 @@ async function main(): Promise<void> {
     ).length;
   }
 
-  console.log(`provider "${providerCode}" (${providerId})`);
+  console.log(`provider "${providerCode}" (${providerId})${partial ? ", partial purge" : ""}`);
   console.table(counts);
 
   if (!confirmed) {
@@ -112,20 +144,26 @@ async function main(): Promise<void> {
 
     // `listing_source.listing_id` is ON DELETE SET NULL, so the provenance rows
     // outlive their listings and have to be cleared explicitly.
-    const recordIds = (
-      await tx
-        .select({ id: providerRecord.id })
-        .from(providerRecord)
-        .where(eq(providerRecord.providerId, providerId))
-    ).map((item) => item.id);
+    const recordIds = partial
+      ? [...new Set(doomed.map((source) => source.providerRecordId))]
+      : (
+          await tx
+            .select({ id: providerRecord.id })
+            .from(providerRecord)
+            .where(eq(providerRecord.providerId, providerId))
+        ).map((item) => item.id);
 
     if (recordIds.length > 0) {
       await tx.delete(listingSource).where(inArray(listingSource.providerRecordId, recordIds));
-      await tx.delete(providerRecord).where(eq(providerRecord.providerId, providerId));
+      await tx.delete(providerRecord).where(inArray(providerRecord.id, recordIds));
     }
 
-    await tx.delete(syncRun).where(eq(syncRun.providerId, providerId));
-    await tx.delete(providerRawPayload).where(eq(providerRawPayload.providerId, providerId));
+    // Only on a total purge: a partial one leaves the provider in place, and its
+    // reference data, cursors and raw payloads still belong to the fleet that stays.
+    if (!partial) {
+      await tx.delete(syncRun).where(eq(syncRun.providerId, providerId));
+      await tx.delete(providerRawPayload).where(eq(providerRawPayload.providerId, providerId));
+    }
   });
 
   const revalidated = await revalidateCatalogCache();

@@ -120,6 +120,14 @@ export const quoteRequestSchema = z.object({
   extras: z.array(z.string()).default([]),
   /** Omitted means the customer has not chosen; adapters add no crew for it. */
   crewType: crewTypeSchema.optional(),
+  /**
+   * Provider-side base to drop the yacht at, for a fleet that sells one-way.
+   *
+   * Omitted means the customer has not asked to finish anywhere in particular, and the adapter
+   * prices the charter that returns to its own base. It is never inferred: a one-way costs more
+   * and lands the customer in a different town, so it has to be something they chose.
+   */
+  endBaseId: z.string().optional(),
   currency: z.string().length(3).default("EUR"),
 });
 
@@ -226,6 +234,28 @@ export const providerQuoteSchema = z.object({
     .object({ startBaseId: z.string().optional(), endBaseId: z.string().optional() })
     .nullable()
     .default(null),
+  /**
+   * Every route the provider would sell for this exact period, priced all-in.
+   *
+   * The provider answers a one-way fleet with one offer per base pair, and until now all but
+   * one were discarded. They are the only honest source for a drop-off control: the catalogue
+   * says which pairs exist in principle, this says which are sellable that week and what each
+   * costs, including the directional one-way fee.
+   *
+   * A single entry means the charter has one shape and the customer has nothing to choose.
+   */
+  routeOptions: z
+    .array(
+      z.object({
+        startBaseId: z.string().optional(),
+        endBaseId: z.string().optional(),
+        startBaseName: z.string().optional(),
+        endBaseName: z.string().optional(),
+        isOneWay: z.boolean(),
+        total: moneySchema,
+      }),
+    )
+    .default([]),
   priceSourceHash: z.string(),
   expiresAt: z.string(),
   repriced: z.boolean(),

@@ -115,6 +115,7 @@ export const availabilityRouter = {
           guests: input.guests,
           extras: input.extras,
           crewType: input.crewType,
+          endBaseId: input.endBaseId,
           discountCode: input.discountCode,
           applyCredit: input.applyCredit,
         },
