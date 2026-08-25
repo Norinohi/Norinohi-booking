@@ -164,6 +164,7 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
     ...present({ booking: row.booking, quote: row.quote, customer: owner, paidMinor }),
     provider: row.booking.provider,
     providerReservationId: row.booking.providerReservationId,
+    providerStatus: row.booking.providerStatus,
     holdExpiresAt: row.booking.holdExpiresAt?.toISOString() ?? null,
     confirmedAt: row.booking.confirmedAt?.toISOString() ?? null,
     crewType: row.quote.crewType,

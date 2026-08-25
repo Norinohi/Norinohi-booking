@@ -484,6 +484,13 @@
       "when": 1787340363823,
       "tag": "0068_cultured_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1787649485267,
+      "tag": "0069_bumpy_toad_men",
+      "breakpoints": true
     }
   ]
 }

@@ -70,6 +70,14 @@ export type BookingSummaryProps = {
   onPeriodSelect: (period: CharterPeriod) => void;
   /** The provider refused the last pick — shown under the date control. */
   slotError?: boolean;
+  /**
+   * The quote this screen was opened with could not be read at all, so there is nothing to
+   * price and nothing the date controls can fix. Separate from `slotError`, which is the
+   * provider declining one period out of a working quote.
+   */
+  loadError?: boolean;
+  /** Asks for that quote again. Omitted where nothing was loaded by id in the first place. */
+  onRetryLoad?: () => void;
   /** The marina's wall-clock check-in/out, shown beneath each charter date. */
   checkInTime?: string | null;
   checkOutTime?: string | null;
@@ -404,6 +412,8 @@ export default function BookingSummary({
   selectedPeriod,
   onPeriodSelect,
   slotError = false,
+  loadError = false,
+  onRetryLoad,
   checkInTime,
   checkOutTime,
   crewType,
@@ -595,6 +605,32 @@ export default function BookingSummary({
             </div>
           </div>
 
+          {/* Where the breakdown would be. A failed load leaves the controls usable - picking a
+              period prices a fresh quote and needs no retry - so this replaces the numbers
+              rather than the panel.
+
+              A known failure outranks `loading` here and in the placeholder below, rather than
+              the two racing: the sidebar was showing this message above a spinner, which is two
+              answers to one question, and a `loading` left stale by a rejected read would spin
+              forever under it. `loadError` is cleared the moment a retry starts, so the spinner
+              is what shows while one is actually running. */}
+          {loadError && !quote ? (
+            <div className="flex flex-col items-start gap-2 rounded-lg bg-error-50 px-4 py-3">
+              <span className="text-sm leading-4.5 font-medium text-error-600">
+                {t("sidebar.loadFailed")}
+              </span>
+              {onRetryLoad ? (
+                <button
+                  type="button"
+                  onClick={onRetryLoad}
+                  className="text-sm leading-4.5 font-bold text-error-600 underline underline-offset-2"
+                >
+                  {t("sidebar.loadRetry")}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           {quote ? (
             <>
               <div className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-4 py-3">
@@ -783,7 +819,7 @@ export default function BookingSummary({
           </>
         ) : (
           <div className="flex min-h-56 flex-col items-center justify-center gap-4 p-6 text-center">
-            {loading && !unavailable ? (
+            {loading && !unavailable && !loadError ? (
               <Loader />
             ) : (
               <>

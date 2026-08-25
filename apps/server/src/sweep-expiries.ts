@@ -17,6 +17,9 @@
 import { inventoryProvider } from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
 import { db } from "@yacht-charter/db";
+import { startJob } from "./job";
+
+const job = startJob("sweep-expiries");
 
 const result = await sweepExpiries(db, inventoryProvider);
 
@@ -24,9 +27,21 @@ console.log(JSON.stringify(result, null, 2));
 
 await db.$client.end();
 
+const metrics = {
+  quotesExpired: result.quotesExpired,
+  holdsExpired: result.holdsExpired,
+  paymentsAbandoned: result.paymentsAbandoned,
+  syncRunsReaped: result.syncRunsReaped,
+  staleConfirmations: result.staleConfirmations.length,
+  releaseFailures: result.releaseFailures.length,
+};
+
 if (result.releaseFailures.length > 0) {
   console.error(
     `${result.releaseFailures.length} provider option release(s) failed; the vendor is still holding them`,
   );
+  await job.failed("provider option releases failed", metrics);
   process.exit(1);
 }
+
+await job.done(metrics);

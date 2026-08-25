@@ -144,6 +144,9 @@ importers:
       '@yacht-charter/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@yacht-charter/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@yacht-charter/providers':
         specifier: workspace:*
         version: link:../../packages/providers
@@ -217,6 +220,9 @@ importers:
       '@yacht-charter/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@yacht-charter/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@yacht-charter/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -460,6 +466,22 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.1.1
+      '@yacht-charter/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/observability:
+    dependencies:
+      evlog:
+        specifier: 'catalog:'
+        version: 2.22.1(@orpc/server@1.14.8(ws@8.21.1))(express@5.2.1)(hono@4.12.31)(next@16.3.0(@playwright/test@1.62.1)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

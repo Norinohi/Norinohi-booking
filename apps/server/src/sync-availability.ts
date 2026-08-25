@@ -7,9 +7,19 @@
  * dates for), but still bootstraps the provider row via ensureProviderId rather
  * than assuming sync-catalogue.ts already ran in this process — either order
  * against an empty database ends up in the same state.
+ *
+ * Takes `--provider <code>` for the same reason sync-catalogue.ts does:
+ *
+ *   pnpm --filter server sync:availability -- --provider booking_manager
  */
 import { db } from "@yacht-charter/db";
-import { createEnabledInventoryProviders } from "@yacht-charter/providers";
+import { startJob } from "./job";
+import {
+  createEnabledInventoryProviders,
+  scopeToRequestedProvider,
+  type InventoryProvider,
+  type ProviderKey,
+} from "@yacht-charter/providers";
 import {
   HOT_WINDOW_CURSOR_SCOPE,
   openAvailabilitySyncRun,
@@ -19,16 +29,30 @@ import { readSyncCursor } from "@yacht-charter/providers/sync/cursor";
 import { ensureProviderId } from "@yacht-charter/providers/sync/runner";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 
+const job = startJob("sync-availability");
+
 /*
  * Every enabled provider, not the one PROVIDER_MODE names: that variable selects
- * who we transact through, not who we import from. See sync-catalogue.ts for why
- * this runs one vendor at a time.
+ * who we transact through, not who we import from. `--provider <code>` narrows it
+ * to one. See sync-catalogue.ts for why this runs one vendor at a time.
  */
-const providers = await createEnabledInventoryProviders({ db });
+let providers: Map<ProviderKey, InventoryProvider>;
+try {
+  providers = scopeToRequestedProvider(
+    await createEnabledInventoryProviders({ db }),
+    process.argv.slice(2),
+  );
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  await db.$client.end();
+  await job.failed(error instanceof Error ? error.message : "could not resolve providers");
+  process.exit(1);
+}
 
 if (providers.size === 0) {
   console.error("No enabled provider rows; nothing to sync");
   await db.$client.end();
+  await job.failed("no enabled provider rows");
   process.exit(1);
 }
 
@@ -80,4 +104,11 @@ await revalidateCatalogCache();
 await db.$client.end();
 
 if (skipped > 0) console.warn(`${skipped} provider(s) skipped: a sync of theirs is still running`);
-if (failed > 0) process.exit(1);
+
+const metrics = { providers: providers.size, failed, skipped };
+if (failed > 0) {
+  await job.failed(`${failed} provider sync(s) failed`, metrics);
+  process.exit(1);
+}
+
+await job.done(metrics);

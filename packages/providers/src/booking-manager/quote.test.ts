@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
+import { bookingDraftSchema } from "../types";
 import { restExtrasSchema, restOfferSchema } from "./endpoints";
-import { mapOfferToProviderQuote, type OfferMapping, selectOffer } from "./quote";
+import {
+  mapOfferToProviderQuote,
+  type OfferMapping,
+  repriceRequestFor,
+  selectOffer,
+} from "./quote";
 
 type ExtraInput = z.input<typeof restExtrasSchema>;
 
@@ -36,6 +42,18 @@ function mappingFor(
 
 describe("mapOfferToProviderQuote extras", () => {
   const cleaning = { id: "77", price: 150, obligatory: true };
+
+  it("refuses a percentage-priced extra rather than billing its zero price", () => {
+    expect(() =>
+      mapOfferToProviderQuote(mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 })),
+    ).toThrow(/priced as a percentage/);
+  });
+
+  it("bills a currency-priced extra as the amount it states", () => {
+    const quote = mapOfferToProviderQuote(mappingFor({ ...cleaning, kind: 1 }));
+
+    expect(quote.lines.find((line) => line.kind === "extra")?.amount.amountMinor).toBe(15000);
+  });
 
   it("codes an extra in the canonical space the listing page uses", () => {
     const quote = mapOfferToProviderQuote(mappingFor({ ...cleaning, name: "Final cleaning" }));
@@ -157,5 +175,106 @@ describe("selectOffer", () => {
     });
 
     expect(selectOffer([otherWeek], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
+  });
+});
+
+describe("repriceRequestFor", () => {
+  const draft = (route: { startBaseId?: string; endBaseId?: string } | null) =>
+    bookingDraftSchema.parse({
+      listingId: "lst_1",
+      quoteId: "qt_1",
+      checkIn: "2026-09-26",
+      checkOut: "2026-10-03",
+      guests: 4,
+      extras: ["service:77"],
+      crewType: "bareboat",
+      priceSourceHash: "hash",
+      route,
+      customer: { name: "Ada", email: "ada@example.com" },
+    });
+
+  it("asks for the drop-off the quote was priced on", () => {
+    expect(repriceRequestFor(draft({ startBaseId: "100", endBaseId: "200" }), "EUR")).toMatchObject(
+      {
+        listingId: "lst_1",
+        checkIn: "2026-09-26",
+        checkOut: "2026-10-03",
+        guests: 4,
+        extras: ["service:77"],
+        crewType: "bareboat",
+        currency: "EUR",
+        endBaseId: "200",
+      },
+    );
+  });
+
+  it("states the base pair even where the charter returns to its own base", () => {
+    // `route` is the pair the chosen offer named, not a request the customer made, so stating
+    // it re-prices that same offer rather than re-running the ranking and trusting it to land
+    // the same way twice.
+    expect(repriceRequestFor(draft({ startBaseId: "100", endBaseId: "100" }), "EUR")).toMatchObject(
+      {
+        endBaseId: "100",
+      },
+    );
+  });
+
+  it("asks unfiltered where the provider named no bases", () => {
+    expect(repriceRequestFor(draft(null), "EUR")).not.toHaveProperty("endBaseId");
+  });
+});
+
+describe("priceSourceHash and the payment plan", () => {
+  const offerPaying = (plan: { date: string; amount: number }[]) =>
+    restOfferSchema.parse({
+      yachtId: "9001",
+      dateFrom: "29.08.2026 17:00",
+      dateTo: "05.09.2026 09:00",
+      price: 5400,
+      currency: "EUR",
+      paymentPlan: plan,
+    });
+
+  const hashOf = (plan: { date: string; amount: number }[]) =>
+    mapOfferToProviderQuote({
+      offer: offerPaying(plan),
+      listingId: "lst_1",
+      checkIn: "2026-08-29",
+      checkOut: "2026-09-05",
+      guests: 2,
+      requestedCurrency: "EUR",
+      expiresAt: "2026-08-25T12:00:00.000Z",
+    }).priceSourceHash;
+
+  it("ignores the clock reading on the pay-now instalment", () => {
+    /*
+     * The vendor stamps the first instalment with the moment it answered, so two identical
+     * `/offers` calls seconds apart differ here and nowhere else. Hashing it refused every
+     * hold on a pay-in-full yacht with PRICE_CHANGED for a price that had not moved.
+     */
+    expect(hashOf([{ date: "2026-08-25 10:07:18", amount: 5400 }])).toBe(
+      hashOf([{ date: "2026-08-25 10:07:29", amount: 5400 }]),
+    );
+  });
+
+  it("still refuses a quote whose amount moved", () => {
+    expect(hashOf([{ date: "2026-08-25 10:07:18", amount: 5400 }])).not.toBe(
+      hashOf([{ date: "2026-08-25 10:07:18", amount: 5900 }]),
+    );
+  });
+
+  it("still refuses a quote whose balance due date moved", () => {
+    // A later instalment's date is a term the customer agreed to, not a clock reading:
+    // `toPaymentPolicy` reads it into `balanceDueAt`.
+    const early = [
+      { date: "2026-08-25 10:07:18", amount: 1400 },
+      { date: "2026-07-01 00:00:00", amount: 4000 },
+    ];
+    const late = [
+      { date: "2026-08-25 10:07:18", amount: 1400 },
+      { date: "2026-08-01 00:00:00", amount: 4000 },
+    ];
+
+    expect(hashOf(early)).not.toBe(hashOf(late));
   });
 });

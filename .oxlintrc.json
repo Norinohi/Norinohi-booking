@@ -1,7 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc"],
-  "jsPlugins": [{ "name": "anti-slop", "specifier": "./tools/oxlint/anti-slop/index.ts" }],
+  "jsPlugins": [
+    {
+      "name": "anti-slop",
+      "specifier": "./tools/oxlint/anti-slop/index.ts"
+    }
+  ],
   "categories": {
     "correctness": "error"
   },
@@ -27,23 +32,22 @@
   },
   "overrides": [
     {
-      "files": ["packages/providers/src/shared/json-source.ts"],
-      "rules": {
-        "anti-slop/no-unknown-parameters": "off",
-        "anti-slop/no-unknown-returns": "off"
-      }
-    },
-    {
-      "files": [
-        "packages/providers/src/shared/errors.ts",
-        "packages/providers/src/shared/reservation-log.ts"
-      ],
+      "files": ["packages/providers/src/shared/errors.ts"],
       "rules": {
         "anti-slop/no-known-value-widening": "off",
         "anti-slop/no-runtime-typeof": "off",
         "anti-slop/no-unknown-parameters": "off",
         "anti-slop/no-unknown-returns": "off",
         "anti-slop/no-unsafe-dictionary-type": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/providers/src/shared/reservation-log.ts",
+        "packages/ui/src/components/form/form.tsx"
+      ],
+      "rules": {
+        "anti-slop/no-runtime-typeof": "off"
       }
     },
     {
@@ -55,43 +59,33 @@
     },
     {
       "files": [
-        "packages/providers/src/sync/runner.ts",
-        "packages/providers/src/sync/availability-writer.ts"
-      ],
-      "rules": {
-        "anti-slop/no-unknown-parameters": "off",
-        "anti-slop/no-unsafe-dictionary-type": "off"
-      }
-    },
-    {
-      "files": ["packages/providers/src/sync/cursor.ts"],
-      "rules": {
-        "anti-slop/no-unknown-parameters": "off",
-        "anti-slop/no-unknown-returns": "off"
-      }
-    },
-    {
-      "files": [
-        "packages/api/src/context.ts",
         "packages/api/src/services/pg-errors.ts",
-        "packages/providers/src/shared/retry.ts",
-        "packages/providers/src/scripts/*.ts",
-        "packages/providers/src/mapping/mock.ts",
         "packages/providers/src/booking-manager/catalogue.ts",
         "packages/providers/src/booking-manager/prices.ts",
-        "packages/providers/src/booking-manager/provider.ts",
+        "packages/providers/src/mapping/mock.ts",
         "packages/providers/src/nausys/catalogue.ts",
         "packages/providers/src/nausys/occupancy.ts",
-        "packages/providers/src/nausys/provider.ts"
+        "packages/providers/src/scripts/backfill-facet-translations.ts",
+        "packages/providers/src/scripts/import-booking-manager-yacht.ts",
+        "packages/providers/src/scripts/import-booking-manager.ts",
+        "packages/providers/src/scripts/import-nausys.ts",
+        "packages/providers/src/scripts/probe-booking-manager.ts",
+        "packages/providers/src/scripts/purge-provider-data.ts",
+        "packages/providers/src/scripts/set-provider-visibility.ts",
+        "packages/providers/src/scripts/sync-prices.ts",
+        "packages/providers/src/shared/retry.ts",
+        "packages/providers/src/sync/availability-writer.ts",
+        "packages/providers/src/sync/runner.ts"
       ],
       "rules": {
         "anti-slop/no-unknown-parameters": "off"
       }
     },
     {
-      "files": ["packages/ui/src/components/form/form.tsx"],
+      "files": ["packages/providers/src/shared/json-source.ts"],
       "rules": {
-        "anti-slop/no-runtime-typeof": "off"
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off"
       }
     }
   ]

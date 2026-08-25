@@ -8,7 +8,16 @@ import { looseJsonObject } from "../shared/json";
  * additive vendor change cannot fail a whole catalogue sync - the same posture as
  * `nausys/endpoints.ts`.
  *
- * Contract: SwaggerHub `mmksystems/bm-api` v2.1.4.
+ * Contract: SwaggerHub `mmksystems/bm-api` v2.2.1, surveyed against 2.1.4 on
+ * 2026-08-25. The vendor publishes no changelog, so the delta was taken by
+ * diffing the two definitions: 2.1.5 added `/yachtsOnSale`, 2.2.0 added
+ * `/requests`, the `/payments` family and `/objects/{entity}/search/`, and 2.2.1
+ * added `agencyPaymentPlan` and the `adults`/`children`/`seniors` parameters to
+ * `/offers` - which the vendor changelog calls an alternative to
+ * `passengersOnBoard` rather than a refinement of it, so the single headcount
+ * `quote.ts` sends stays correct. Bump this line only alongside the same diff - several
+ * fields below were absorbed from live payloads before the spec caught up, so
+ * the version here is a statement about what was *checked*, not what compiles.
  */
 
 export const bookingManagerEndpoints = {
@@ -37,6 +46,35 @@ export const bookingManagerEndpoints = {
   reservationsByYear: (year: number) => `reservations/${year}`,
   availability: (year: number) => `availability/${year}`,
   shortAvailability: (year: number) => `shortAvailability/${year}`,
+  requests: "requests",
+} as const;
+
+/**
+ * `POST /requests` types, added in v2.2.0. This is the vendor's only documented
+ * route to cancelling a CONFIRMED reservation: `DELETE` refuses one outright
+ * ("An already confirmed booking is not possible to cancel automatically"), and a
+ * request is a message to the operator rather than a state change.
+ *
+ * Measured on 2026-08-25 against a confirmed booking on company 225, and none of
+ * it is in the specification:
+ *
+ * - It takes the AGENCY-side id. The charter-side twin answers `400 Illegal
+ *   access to entity.`, which is a permission boundary rather than a bad request:
+ *   we hold the agency record and not the charter's.
+ * - It is NOT idempotent. The first call answers `200` with an empty body; an
+ *   identical repeat answers `400 Error creating entity. Action not applicable
+ *   for given reservation`, indistinguishable from a request that was never
+ *   allowed. `withRetry` retries POST, so wiring this up needs the retry
+ *   suppressed here - a lost 200 would otherwise turn into an unclassifiable 400.
+ * - Nothing is observable afterwards. Both records still read `status 1` with no
+ *   new field, so there is no way to ask whether a request is pending.
+ *
+ * Left uncalled until the vendor says who approves one, which status an approval
+ * lands on, and what it costs the guest.
+ */
+export const BM_REQUEST_TYPE = {
+  OPTION_EXTENSION: 0,
+  RESERVATION_CANCELLATION: 1,
 } as const;
 
 /**
@@ -174,6 +212,12 @@ export const restDiscountSchema = looseJsonObject({
   currency: optionalText,
 });
 
+/** `Extras.kind`, documented from v2.2.0. See the field comment below. */
+export const BM_EXTRA_KIND = {
+  PERCENTAGE: 0,
+  CURRENCY: 1,
+} as const;
+
 export const restExtrasSchema = looseJsonObject({
   id: optionalId,
   name: optionalText,
@@ -181,6 +225,15 @@ export const restExtrasSchema = looseJsonObject({
   price: optionalNumeric,
   currency: optionalText,
   unit: optionalText,
+  /**
+   * `0` charges a percentage of the charter and `1` a currency amount, and the
+   * spec is explicit that only the matching field is populated: a `kind: 0` extra
+   * carries its value in `percentage` and leaves `price` at zero. Reading `price`
+   * alone on such an extra silently under-bills the guest, so `toExtraLine`
+   * refuses one rather than treating the zero as free.
+   */
+  kind: optionalNumeric,
+  percentage: optionalNumeric,
   payableInBase: z.boolean().optional().nullable(),
   includedDepositWaiver: z.boolean().optional().nullable(),
   validDaysFrom: optionalNumeric,
@@ -458,6 +511,8 @@ export const restShortAvailabilitySchema = looseJsonObject({
 });
 
 export const restInvoiceItemSchema = looseJsonObject({
+  /** `discount` or `extra`. A reservation's `items[]` mixes both. */
+  type: optionalText,
   name: optionalText,
   quantity: optionalNumeric,
   unit: optionalText,
@@ -488,6 +543,7 @@ export const restReservationSchema = looseJsonObject({
   commission: optionalNumeric,
   finalPrice: optionalNumeric,
   clientPrice: optionalNumeric,
+  securityDeposit: optionalNumeric,
   items: z.array(restInvoiceItemSchema).optional().nullable(),
   paymentPlan: z.array(restPaymentSchema).optional().nullable(),
   /**
@@ -497,9 +553,12 @@ export const restReservationSchema = looseJsonObject({
    * 600.00 commission, `paymentPlan` was 2 x 2250.00 and `agencyPaymentPlan` was
    * 2 x 1950.00, i.e. `clientPrice - commission`. Neither can be derived from the
    * `/offers` plan, which covers `price` alone and excludes non-`payableInBase`
-   * extras.
+   * extras. Measured before the spec described it; v2.2.1 documents the shape and
+   * marks it required, which the `.optional()` here deliberately does not trust -
+   * the agency-side twin still answers `null`.
    */
   agencyPaymentPlan: z.array(restPaymentSchema).optional().nullable(),
+  promoCode: optionalText,
   bankDetails: optionalText,
   termsOfPayment: optionalText,
   remarks: optionalText,

@@ -26,10 +26,10 @@ export type QuoteSelection = {
  */
 export function useQuote(listingId: string) {
   /*
-   * Opted out of the React Compiler. Compiled, the mutation status this hook reads is cached and
-   * never re-read once the memo is populated, so `isPending` stays true for the rest of the visit:
-   * the reprice resolves, the quote renders, and the sidebar sits on skeletons and a spinning
-   * promo button forever. Verified by toggling this directive against a live reprice.
+   * Opted out of the React Compiler, kept from the first attempt at the stuck-skeleton bug: the
+   * status this hook read was cached and never re-read once the memo was populated. It was not
+   * the whole cause - see `inFlight` below - but the distrust was earned, and this hook is small
+   * enough that not memoising it costs nothing.
    */
   "use no memo";
   /* Display only: the quote row keeps the provider's wording, and this decides what the sidebar
@@ -39,21 +39,51 @@ export function useQuote(listingId: string) {
   const create = useMutation(quoteMutationOptions());
   const reprice = useMutation(repriceMutationOptions());
 
+  /*
+   * What is in flight, counted here rather than read off `create.isPending` / `reprice.isPending`.
+   *
+   * The directive above was the first attempt at the same bug and is not enough on its own: the
+   * mutation's own status still went `pending -> idle -> pending` across renders after a single
+   * resolved call, with nothing on the wire in between, and the panel it fed sat on skeletons
+   * and a spinning promo button over a quote it already had. Traced with a per-render log: one
+   * `mutateAsync`, one resolution, one `setQuote`, and a status that contradicted all three.
+   *
+   * A counter of our own cannot drift like that. It is incremented before the call and
+   * decremented in a `finally`, so it answers "are we waiting" from what this hook actually did
+   * rather than from an observer whose identity the renderer may swap underneath it.
+   *
+   * A count, not a boolean: the extras control debounces into a reprice while a promo apply can
+   * still be settling, and two overlapping calls must not have the first to finish declare the
+   * panel idle.
+   */
+  const [inFlight, setInFlight] = useState(0);
+
+  async function tracked<T>(run: () => Promise<T>): Promise<T> {
+    setInFlight((count) => count + 1);
+    try {
+      return await run();
+    } finally {
+      setInFlight((count) => count - 1);
+    }
+  }
+
   async function quoteFor(selection: QuoteSelection) {
-    const next = await create.mutateAsync({ listingId, locale, ...selection });
+    const next = await tracked(() => create.mutateAsync({ listingId, locale, ...selection }));
     setQuote(next);
     return next;
   }
 
   async function load(quoteId: string) {
-    const next = await reprice.mutateAsync({ quoteId, locale });
+    const next = await tracked(() => reprice.mutateAsync({ quoteId, locale }));
     setQuote(next);
     return next;
   }
 
   async function repriceWith(changes: Omit<RepriceInput, "quoteId">) {
     if (!quote) return null;
-    const next = await reprice.mutateAsync({ quoteId: quote.quoteId, locale, ...changes });
+    const next = await tracked(() =>
+      reprice.mutateAsync({ quoteId: quote.quoteId, locale, ...changes }),
+    );
     setQuote(next);
     return next;
   }
@@ -63,6 +93,6 @@ export function useQuote(listingId: string) {
     quoteFor,
     load,
     repriceWith,
-    isPending: create.isPending || reprice.isPending,
+    isPending: inFlight > 0,
   };
 }

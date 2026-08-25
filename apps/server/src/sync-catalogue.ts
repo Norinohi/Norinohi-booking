@@ -5,7 +5,13 @@
  * firing it and returning, so the run's outcome prints before the process exits.
  *
  * A full NauSYS catalogue is a multi-hour walk (see services/provider-sync.ts in
- * packages/api) — expect this to take a while on a real account.
+ * packages/api) — expect this to take a while on a real account. `--provider <code>`
+ * runs one vendor instead of every enabled one, which is what you want by hand:
+ *
+ *   pnpm --filter server sync:catalogue -- --provider booking_manager
+ *
+ * Unscoped, this imports from both vendors, so a Booking Manager run you expected to
+ * take a minute drags a NauSYS walk along behind it.
  *
  * Unlike the admin procedure, this creates the provider row on first run rather
  * than requiring it to already exist — meant to also work against a database
@@ -18,7 +24,13 @@
  * up mean it's burning the run on retries.
  */
 import { db } from "@yacht-charter/db";
-import { createEnabledInventoryProviders } from "@yacht-charter/providers";
+import { startJob } from "./job";
+import {
+  createEnabledInventoryProviders,
+  scopeToRequestedProvider,
+  type InventoryProvider,
+  type ProviderKey,
+} from "@yacht-charter/providers";
 import {
   type CatalogueSyncPhase,
   ensureProviderId,
@@ -29,6 +41,8 @@ import {
 import { readSyncCursor } from "@yacht-charter/providers/sync/cursor";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 
+const job = startJob("sync-catalogue");
+
 const PROGRESS_INTERVAL_MS = 30_000;
 
 /*
@@ -36,16 +50,31 @@ const PROGRESS_INTERVAL_MS = 30_000;
  * who we transact through, which is a different question from who we import from,
  * and reading it here meant a deployment could only ever sync one vendor.
  *
+ * `--provider <code>` narrows it to one, for the by-hand runs where importing the
+ * other vendor as well is a multi-hour accident.
+ *
  * Sequential on purpose. The providers do not contend for anything (each has its
  * own credential, lane and sync_run lock), but a multi-hour NauSYS walk running
  * beside a Booking Manager one would interleave their progress lines into
  * something no operator can read.
  */
-const providers = await createEnabledInventoryProviders({ db });
+let providers: Map<ProviderKey, InventoryProvider>;
+try {
+  providers = scopeToRequestedProvider(
+    await createEnabledInventoryProviders({ db }),
+    process.argv.slice(2),
+  );
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  await db.$client.end();
+  await job.failed(error instanceof Error ? error.message : "could not resolve providers");
+  process.exit(1);
+}
 
 if (providers.size === 0) {
   console.error("No enabled provider rows; nothing to sync");
   await db.$client.end();
+  await job.failed("no enabled provider rows");
   process.exit(1);
 }
 
@@ -142,4 +171,11 @@ await revalidateCatalogCache();
 await db.$client.end();
 
 if (skipped > 0) console.warn(`${skipped} provider(s) skipped: a sync of theirs is still running`);
-if (failed > 0) process.exit(1);
+
+const metrics = { providers: providers.size, failed, skipped };
+if (failed > 0) {
+  await job.failed(`${failed} provider sync(s) failed`, metrics);
+  process.exit(1);
+}
+
+await job.done(metrics);

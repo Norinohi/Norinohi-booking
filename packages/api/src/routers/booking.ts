@@ -131,7 +131,7 @@ export const bookingRouter = {
       operationId: "cancelBooking",
       summary: "Cancel a booking",
       description:
-        "Cancels one of the authenticated user's bookings. Only bookings that have not been confirmed can be cancelled this way; a confirmed booking has to go through admin.booking.cancel so it enters the refund flow.",
+        "Cancels one of the authenticated user's bookings. Only bookings that have not been confirmed can be cancelled this way; a confirmed booking has to go through admin.booking.cancel so it enters the refund flow. `providerReleased` reports whether the provider let the slot go; `providerReleaseError` is admin-only and always null here.",
       tags: ["Booking"],
       successDescription: "The booking's status after cancellation.",
       spec: withJsonBodyExample({ id: "bkg_example", reason: "Changed plans" }),
@@ -240,7 +240,7 @@ export const checkoutRouter = {
       operationId: "createCheckoutHold",
       summary: "Turn a quote into a held booking",
       description:
-        "Re-validates the quote, creates a booking with the guest details from step 1, records acceptance of the terms and the cancellation policy, and holds a provider option when the active provider supports options. Sign-in is not required: a booking made without a session provisions an account from the guest email and returns an accessToken, which is how that customer reaches the rest of their own checkout until they set a password. Both consents must be true — an unticked box fails validation here, not just in the browser. Idempotent on idempotencyKey: retrying the same submit returns the original booking instead of holding a second option. An expired quote is rejected with QUOTE_EXPIRED so the caller reprices first.",
+        "Re-validates the quote, creates a booking with the guest details from step 1, records acceptance of the terms and the cancellation policy, and holds a provider option when the active provider supports options. Sign-in is not required: a booking made without a session provisions an account from the guest email and returns an accessToken, which is how that customer reaches the rest of their own checkout until they set a password. Both consents must be true — an unticked box fails validation here, not just in the browser. Idempotent on idempotencyKey: retrying the same submit returns the original booking instead of holding a second option. Two refusals come out of that replay rather than a booking — HOLD_IN_PROGRESS while the first attempt is still with the provider, meaning send the same key again shortly, and a plain conflict carrying the provider's reason once an attempt has failed for good, meaning reprice. An expired quote is rejected with QUOTE_EXPIRED so the caller reprices first.",
       tags: ["Checkout"],
       successDescription: "The booking created for this quote, with its hold expiry.",
       spec: withJsonBodyExample({

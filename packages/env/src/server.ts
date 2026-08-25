@@ -100,6 +100,28 @@ export const env = createEnv({
     // storing readable passport numbers. Generate with:
     //   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
     ENCRYPTION_KEY: z.string().min(1).optional(),
+    /*
+     * Error tracking. Optional like every other credential here: unset means the
+     * Sentry drain is never registered, so wide events keep going to stdout only
+     * and nothing changes. The DSN is not a secret in the usual sense, but it is
+     * per environment, so it stays a variable rather than a constant.
+     */
+    SENTRY_DSN: z.url().optional(),
+    /*
+     * Product analytics, same shape as the Sentry pair. The host differs by region
+     * (eu.i.posthog.com for an EU project), and sending to the wrong one silently
+     * drops every event, so it is explicit rather than inferred from the key.
+     */
+    POSTHOG_API_KEY: z.string().min(1).optional(),
+    POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
+    /*
+     * How both vendors group what they receive. Unset falls back to NODE_ENV,
+     * which cannot tell staging from production because both run as "production".
+     */
+    OBSERVABILITY_ENVIRONMENT: z.string().min(1).optional(),
+    // Ties an error to the deploy that introduced it. Railway exposes the commit
+    // as RAILWAY_GIT_COMMIT_SHA; map it to this in the service variables.
+    OBSERVABILITY_RELEASE: z.string().min(1).optional(),
     NAUSYS_BASE_URL: z.url().default("https://ws.nausys.com"),
     // Optional like the Stripe pair: without both, PROVIDER_MODE=nausys refuses to
     // construct the adapter instead of the server failing to boot.

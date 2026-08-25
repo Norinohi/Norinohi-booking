@@ -13,7 +13,7 @@ import { BookingManagerInventoryProvider } from "./booking-manager/provider";
 import { resolveBookingManagerConfig } from "./booking-manager/config";
 import { AuthError } from "./shared/errors";
 import type { Database } from "./registry";
-import { createInventoryProvider, syncCandidateKeys } from "./registry";
+import { createInventoryProvider, scopeToRequestedProvider, syncCandidateKeys } from "./registry";
 
 // SAFETY: the registry only stores the handle; nothing here reaches the database.
 const db = {} as Database;
@@ -156,5 +156,56 @@ describe("syncCandidateKeys", () => {
 
   it("returns every real provider for an empty database", () => {
     expect(syncCandidateKeys([])).toEqual(["booking_manager", "nausys"]);
+  });
+});
+
+describe("scopeToRequestedProvider", () => {
+  /* Stands in for the adapters; this function only ever moves them between maps. */
+  const enabled = new Map([
+    ["booking_manager", "bm-adapter"],
+    ["nausys", "nausys-adapter"],
+  ] as const);
+
+  it("leaves an unflagged run fanning out over everything", () => {
+    expect([...scopeToRequestedProvider(enabled, []).keys()]).toEqual([
+      "booking_manager",
+      "nausys",
+    ]);
+  });
+
+  it("keeps only the provider asked for, with its adapter", () => {
+    const scoped = scopeToRequestedProvider(enabled, ["--provider", "booking_manager"]);
+
+    expect([...scoped.entries()]).toEqual([["booking_manager", "bm-adapter"]]);
+  });
+
+  it("copies rather than narrowing the caller's map", () => {
+    // The scripts read `providers.size` after this and iterate it; handing back the same
+    // Map with entries removed would edit what the caller still believes it holds.
+    scopeToRequestedProvider(enabled, ["--provider", "nausys"]);
+
+    expect(enabled.size).toBe(2);
+  });
+
+  it("refuses a provider this deployment cannot sync", () => {
+    // Disabled, credential-less and mock all arrive here the same way: absent from the map.
+    expect(() => scopeToRequestedProvider(enabled, ["--provider", "mock"])).toThrow(
+      /not one this deployment can sync/,
+    );
+  });
+
+  it("refuses a code that is not a provider at all", () => {
+    expect(() => scopeToRequestedProvider(enabled, ["--provider", "bookingmanager"])).toThrow(
+      /Unknown provider/,
+    );
+  });
+
+  it("refuses the flag with nothing after it", () => {
+    // Bare, and followed by the next flag: `--provider --confirm` would otherwise read
+    // "--confirm" as the provider code and fail with a less useful message.
+    expect(() => scopeToRequestedProvider(enabled, ["--provider"])).toThrow(/needs a code/);
+    expect(() => scopeToRequestedProvider(enabled, ["--provider", "--confirm"])).toThrow(
+      /needs a code/,
+    );
   });
 });

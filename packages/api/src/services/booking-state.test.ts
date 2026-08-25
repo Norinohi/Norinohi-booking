@@ -4,6 +4,7 @@ import {
   BOOKING_RECEIVED_STATES,
   DEAD_QUOTE_SWEEP,
   HOLD_SWEEP,
+  NEVER_HELD,
   STALE_PAYMENT_SWEEP,
   type BookingStatus,
   InvalidTransitionError,
@@ -228,5 +229,40 @@ describe("the states the booking-received mail is true of", () => {
     ];
 
     expect(swept.filter((status) => listed.includes(status))).toEqual([]);
+  });
+});
+
+/*
+ * `NEVER_HELD` is what `checkout.createHold` refuses to replay and what `booking.list` hides,
+ * so it is a claim about the table above rather than two convenience filters.
+ *
+ * The failure it guards is the one staging hit on 2026-08-25: a hold the vendor refused stayed
+ * under its idempotency key, the retry replayed it as a 200, the client opened its payment step
+ * on it, and the customer met NOT_PAYABLE two screens later. Anything unpayable that createHold
+ * hands back reproduces that, so the list has to cover every unpayable end of a first attempt.
+ */
+describe("NEVER_HELD", () => {
+  it("holds nothing a payment could start from", () => {
+    for (const status of NEVER_HELD) {
+      expect([status, canTransition(status, "PAYMENT_PENDING")]).toEqual([status, false]);
+    }
+  });
+
+  it("lets a held slot and an option-less booking through", () => {
+    // The two ends a first attempt reaches with something to pay for: the provider held the
+    // slot, or it grants no options and the payment is what commits the booking.
+    expect(NEVER_HELD).not.toContain("OPTION_HELD");
+    expect(NEVER_HELD).not.toContain("QUOTED");
+  });
+
+  it("does not claim OPTION_PENDING, which is unanswered rather than refused", () => {
+    /*
+     * Unpayable, and still outside this list on purpose: it means the first attempt is inside
+     * provider.createOption right now, and "please reprice" would be false while the provider
+     * may yet say yes. createHold answers it with HOLD_IN_PROGRESS instead - the same key
+     * again shortly - so it needs its own branch rather than a fourth entry here.
+     */
+    expect(NEVER_HELD).not.toContain("OPTION_PENDING");
+    expect(canTransition("OPTION_PENDING", "PAYMENT_PENDING")).toBe(false);
   });
 });

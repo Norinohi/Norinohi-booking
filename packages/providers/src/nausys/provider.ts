@@ -290,7 +290,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   }
 }
 
-function parseResume(value: unknown): NausysCatalogueCursor | null {
+function parseResume(value: JsonField): NausysCatalogueCursor | null {
   return parseNausysCatalogueCursor(value);
 }
 

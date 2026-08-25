@@ -47,6 +47,7 @@
       "cancellation": "Akzeptieren Sie die Stornierungsbedingungen, um fortzufahren",
       "paymentMessage": "Geben Sie Ihre Frage oder Anfrage ein",
       "confirmFailed": "Ihre Buchung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut.",
+      "holdInProgress": "Ihr letzter Versuch wird noch abgeschlossen. Bitte warten Sie einen Moment und bestätigen Sie erneut.",
       "billingName": "Geben Sie den Rechnungsnamen ein",
       "billingAddress": "Geben Sie die Rechnungsadresse ein",
       "city": "Geben Sie die Stadt ein"
@@ -116,6 +117,10 @@
       "notFound": "Buchung nicht gefunden",
       "browse": "Yachten entdecken",
       "remaining": "Die restlichen {amount} werden beim Check-in bezahlt.",
+      "invoiceSent": "Rechnung gesendet",
+      "invoiceHold": "Wir halten Ihre Yacht reserviert, bis Ihre Überweisung über {amount} eingeht — fällig bis {date}.",
+      "invoiceEmailed": "Wir haben Ihnen Rechnung {number} mit den Bankdaten geschickt und bestätigen, sobald die Überweisung eingeht",
+      "remainingBy": "Der Restbetrag von {amount} ist bis zum {date} fällig.",
       "emailed": "Wir haben Ihnen die Details per E-Mail gesendet und melden uns erneut, sobald der Anbieter bestätigt",
       "guestEmailed": "Wir haben Ihnen die Details per E-Mail gesendet – mit einem Link, um ein Passwort festzulegen und diese Buchung in Ihrem Konto zu behalten",
       "viewBooking": "Buchung ansehen",
@@ -1264,6 +1269,8 @@
       "unavailable": "Diese Yacht hat keine verfügbaren Termine",
       "unavailableHint": "Fragen Sie uns nach anderen Terminen oder einer ähnlichen Yacht.",
       "slotRefused": "Diese Daten sind nicht buchbar. Bitte wählen Sie einen anderen Zeitraum.",
+      "loadFailed": "Der Preis für diese Buchung konnte nicht geladen werden.",
+      "loadRetry": "Erneut versuchen",
       "prepayment": "{percent}% Anzahlung für das Boot",
       "boatPrice": "Bootspreis",
       "boatPriceHint": "Voller Mietpreis",
@@ -2483,6 +2490,25 @@
         "restore": "In die Warteschlangen zurückholen",
         "excludedAt": "Aus Warteschlangen und Summen ausgeschlossen {at}",
         "help": "Eine ausgeschlossene Buchung behält ihren Status, ihre Zahlungen und ihre Anbieterreservierung. Sie wird lediglich nicht mehr in Mitarbeiter-Warteschlangen und Geldsummen mitgezählt."
+      },
+      "cancel": {
+        "action": "Buchung stornieren",
+        "title": "Diese Buchung stornieren?",
+        "description": "{reference} für {customer}",
+        "confirmedWarning": "Diese Buchung ist bestätigt. Die Stornierung verschiebt sie in die Erstattungsliste; das Geld wird erst zurückgezahlt, wenn es dort erstattet wird.",
+        "reasonLabel": "Grund (optional)",
+        "reasonPlaceholder": "Anbieter hat die Yacht zurückgezogen",
+        "keep": "Behalten",
+        "confirm": "Buchung stornieren",
+        "success": "Buchung storniert.",
+        "successRefund": "Buchung storniert und in die Erstattungsliste verschoben.",
+        "providerHeld": "Hier storniert, aber {provider} hat die Reservierung behalten: {error}",
+        "providerHeldUnknown": "der Anbieter nannte keinen Grund",
+        "error": "Diese Buchung konnte nicht storniert werden."
+      },
+      "providerHold": {
+        "title": "{provider} hält diese Reservierung weiterhin",
+        "body": "Wir haben auf unserer Seite storniert, der Anbieter hat die Reservierung aber nicht freigegeben. Der Charter besteht beim Vercharterer weiter. Klären Sie das mit ihm, bevor eine Erstattung ausgezahlt wird, sonst geht das Geld für eine Woche zurück, die uns weiterhin berechnet wird."
       }
     },
     "providers": {

@@ -24,6 +24,7 @@ import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { generateAuthOpenApiSchema } from "./auth-openapi";
+import { flushObservabilityOnShutdown, observability } from "./observability";
 import { apiHandler, rpcHandler } from "./orpc";
 
 // Transport wiring only — logic lives in packages/api. Middleware order is
@@ -31,7 +32,10 @@ import { apiHandler, rpcHandler } from "./orpc";
 
 initLogger({
   env: { service: "yacht-charter-server" },
+  drain: observability.drain,
 });
+
+flushObservabilityOnShutdown();
 
 // SAFETY: evlog only calls `api.getSession`, which this instance has. It types the
 // resolved user and session as `Record<string, unknown>`, and better-auth returns

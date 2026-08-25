@@ -16,6 +16,7 @@ import type {
 } from "../contracts/booking";
 import { writeAuditLog } from "./audit";
 import { confirmBookingWithProvider } from "./booking-confirm";
+import { releaseProviderOption } from "./provider-option";
 import { paginatedQuery, totalFrom } from "./pagination";
 import { announcePaymentReceived } from "./payment-receipt";
 type ListInput = z.infer<typeof invoiceListInputSchema>;
@@ -168,6 +169,7 @@ export async function settleInvoiceRequest(
 /** Withdraws an invoice request and cancels the booking waiting on it. */
 export async function cancelInvoiceRequest(
   db: Database,
+  provider: InventoryProvider,
   actorUserId: string,
   id: string,
   reason?: string,
@@ -195,7 +197,7 @@ export async function cancelInvoiceRequest(
       .where(eq(invoiceRequest.id, id))
       .returning();
 
-    await tx
+    const [failed] = await tx
       .update(payment)
       .set({ status: "failed", failureReason: reason ?? "Invoice request cancelled" })
       .where(
@@ -203,14 +205,30 @@ export async function cancelInvoiceRequest(
           eq(payment.bookingId, found.invoice.bookingId),
           eq(payment.idempotencyKey, `invoice:${found.invoice.id}`),
         ),
-      );
+      )
+      .returning({ scheduleId: payment.scheduleId });
+
+    /*
+     * And the instalment behind it, or `nextPaymentDueAt` keeps naming a payment nobody will
+     * ever collect. Through the payment's own `scheduleId` rather than every pending row on the
+     * booking: withdrawing one invoice of a two-instalment charter must leave the other's alone.
+     */
+    if (failed?.scheduleId) {
+      await tx
+        .update(paymentSchedule)
+        .set({ status: "cancelled" })
+        .where(
+          and(eq(paymentSchedule.id, failed.scheduleId), eq(paymentSchedule.status, "pending")),
+        );
+    }
 
     // The booking exists only because of this invoice; leaving it at
     // PAYMENT_PENDING would hold the provider option for nothing.
-    await tx
+    const [cancelled] = await tx
       .update(booking)
       .set({ status: "CANCELLED", cancelledAt: new Date(), cancelReason: reason ?? null })
-      .where(and(eq(booking.id, found.invoice.bookingId), eq(booking.status, "PAYMENT_PENDING")));
+      .where(and(eq(booking.id, found.invoice.bookingId), eq(booking.status, "PAYMENT_PENDING")))
+      .returning();
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -222,10 +240,28 @@ export async function cancelInvoiceRequest(
       metadata: reason ? { reason } : undefined,
     });
 
-    return row;
+    return { row, cancelled };
   });
 
-  if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!updated.row) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+  /*
+   * Only where this actually cancelled the booking, and only after the rows are committed.
+   *
+   * The update above is conditional: a balance invoice is withdrawn from a CONFIRMED charter
+   * that stays confirmed, and releasing that one's option would give away a slot the customer
+   * has already paid for. `returning()` is what says which of the two happened.
+   *
+   * Resolved by the booking's own provider rather than whatever PROVIDER_MODE names, the same
+   * way `settleInvoiceRequest` does it: import and checkout are different questions.
+   */
+  if (updated.cancelled) {
+    await releaseProviderOption(
+      db,
+      await providerByKey(provider, updated.cancelled.provider),
+      updated.cancelled,
+    );
+  }
 
   const [after] = await db
     .select({ status: booking.status })
@@ -234,7 +270,7 @@ export async function cancelInvoiceRequest(
     .limit(1);
 
   return present(
-    updated,
+    updated.row,
     { ...found.booking, status: after?.status ?? found.booking.status },
     found.listingTitle,
   );

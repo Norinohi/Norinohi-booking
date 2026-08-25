@@ -15,7 +15,9 @@ import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { chunked, ROW_CHUNK } from "../shared/chunks";
+import type { JsonField, JsonValue } from "../shared/json";
 import { clearSyncCursor, writeSyncCursor } from "./cursor";
+import type { SyncCursor } from "./cursor";
 import { openSyncRun, releaseSyncRun } from "./run";
 import type { SyncErrorContext } from "./runner";
 
@@ -147,7 +149,7 @@ export interface SweptPeriod {
 export interface ConfirmedOfferPage {
   offers: ConfirmedOffer[];
   /** Where a resumed run should start; already past everything in this page. */
-  cursor: unknown;
+  cursor: SyncCursor | null;
   /** Set only when `offers` is the complete answer for one period; see `SweptPeriod`. */
   swept?: SweptPeriod;
 }
@@ -163,7 +165,7 @@ export interface AvailabilitySource {
    * The accurate pass. Pages are yielded rather than collected so the caller can
    * abandon the walk on a wall-clock budget without having bought the rest of it.
    */
-  searchConfirmed?(resume: unknown): AsyncIterable<ConfirmedOfferPage>;
+  searchConfirmed?(resume: JsonField): AsyncIterable<ConfirmedOfferPage>;
   /**
    * Whether an error from `fetchOccupancy` will repeat on every remaining scope,
    * and so must stop the run rather than cost one scope.
@@ -185,7 +187,7 @@ export interface AvailabilitySource {
  * catalogue cadence now - see `sync/price-writer.ts` for why.
  */
 export interface AvailabilitySyncProvider {
-  createAvailabilitySource(options: { resume?: unknown }): AvailabilitySource;
+  createAvailabilitySource(options: { resume?: JsonValue }): AvailabilitySource;
 }
 
 export function supportsAvailabilitySync(
@@ -279,9 +281,9 @@ export interface AvailabilitySyncStore {
   recordError(input: {
     errorType: ReturnType<typeof toSyncErrorType>;
     message: string;
-    context: Record<string, unknown>;
+    context: SyncErrorContext;
   }): Promise<void>;
-  saveCursor(cursor: unknown): Promise<void>;
+  saveCursor(cursor: SyncCursor | null): Promise<void>;
   closeRun(input: AvailabilityCloseRunInput): Promise<void>;
   rebuildSearch(listingIds: string[]): Promise<void>;
 }
@@ -438,7 +440,7 @@ export interface RunAvailabilitySyncOptions {
   source: AvailabilitySource;
   horizonMonths?: number;
   hotWindowBudgetMs?: number;
-  resume?: unknown;
+  resume?: JsonValue;
   now?: () => Date;
 }
 
@@ -449,9 +451,14 @@ function messageOf(error: unknown): string {
   return thrownStringSchema.safeParse(error).data ?? "Unknown availability sync failure";
 }
 
-function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
+const errorContextSchema: z.ZodType<Record<string, JsonValue>> = z.record(z.string(), z.json());
+
+function contextOf(error: unknown, extra: SyncErrorContext | undefined): SyncErrorContext {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
-  return { ...base, ...extra };
+  // The merged context carries a redacted vendor payload, which is only typed as
+  // far as `redactSecrets` can promise. Encoding it here is the same round trip
+  // the jsonb column makes anyway, and it is what names the stored shape.
+  return errorContextSchema.parse(JSON.parse(JSON.stringify({ ...base, ...extra })));
 }
 
 /** Auth and contract failures repeat on every subsequent call; nothing else does. */
@@ -1200,7 +1207,7 @@ export interface AvailabilitySyncJobOptions {
   provider: InventoryProvider;
   providerId: string;
   syncRunId: string;
-  resume?: unknown;
+  resume?: JsonValue;
   horizonMonths?: number;
   hotWindowBudgetMs?: number;
   cursorScope?: string;

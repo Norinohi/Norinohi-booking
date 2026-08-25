@@ -40,14 +40,16 @@ export const inventoryProvider = createInventoryProvider({ db: contextDb });
 let enabledProviders: Promise<Map<string, InventoryProvider>> | null = null;
 
 export function getEnabledInventoryProviders(): Promise<Map<string, InventoryProvider>> {
+  if (enabledProviders) return enabledProviders;
+  const pending = createEnabledInventoryProviders({ db: contextDb });
   // Reset on failure so a boot-time database blip is retried rather than cached
-  // as an empty fleet that silently syncs nothing.
-  return (enabledProviders ??= createEnabledInventoryProviders({ db: contextDb }).catch(
-    (error: unknown) => {
-      enabledProviders = null;
-      throw error;
-    },
-  ));
+  // as an empty fleet that silently syncs nothing. Callers still see the original
+  // rejection, because they await `pending` itself rather than this handler.
+  void pending.catch(() => {
+    enabledProviders = null;
+  });
+  enabledProviders = pending;
+  return pending;
 }
 
 export type CreateContextOptions = {

@@ -22,6 +22,7 @@
     "@tanstack/react-query": "^5.101.4",
     "@yacht-charter/api": "workspace:*",
     "@yacht-charter/env": "workspace:*",
+    "@yacht-charter/observability": "workspace:*",
     "@yacht-charter/ui": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "catalog:",

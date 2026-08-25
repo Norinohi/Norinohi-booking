@@ -16,7 +16,16 @@ import { id, timestamps } from "./_shared";
  * deploy landing in the half-second between the response and the send would lose both, and
  * neither has anywhere else to come from.
  */
-export const outboxKind = pgEnum("outbox_kind", ["account_invitation", "booking_received"]);
+/*
+ * `release_option` is the odd one out: not a message to anybody, but the same problem shaped the
+ * same way. A provider option we failed to hand back has to be retried until it lands or is
+ * given up on loudly, and this table already owns claim, backoff, attempts and exhaustion.
+ */
+export const outboxKind = pgEnum("outbox_kind", [
+  "account_invitation",
+  "booking_received",
+  "release_option",
+]);
 
 export const outboxStatus = pgEnum("outbox_status", ["pending", "sent", "failed"]);
 

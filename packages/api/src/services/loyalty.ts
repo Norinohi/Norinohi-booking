@@ -27,17 +27,33 @@ export type { TierProgress };
  */
 
 const BASE_REWARD_MINOR = 10_000;
-const REWARD_CURRENCY = "EUR";
 const CREDIT_TTL_MONTHS = 12;
 
-/** Unexpired balance. Summed from the ledger so it can never drift from its entries. */
-export async function creditBalanceMinor(db: Database, userId: string): Promise<number> {
+/*
+ * The currency credit is minted in, and the only one it can be spent in.
+ *
+ * `credit_ledger` carries a currency per row, so every balance has to be read within one:
+ * summing the column across currencies produces a number that is not an amount of money,
+ * and spending it against a booking priced in another currency hands the customer whatever
+ * the exchange rate happens to be, one to one. There is no FX source on this side of the
+ * app and there is not meant to be: a quote holds one currency, and multi-currency is
+ * handled by re-quoting (docs/open-questions-and-decisions.md §4).
+ */
+export const CREDIT_CURRENCY = "EUR";
+
+/** Unexpired balance in one currency. Summed from the ledger so it cannot drift from its entries. */
+export async function creditBalanceMinor(
+  db: Database,
+  userId: string,
+  currency: string,
+): Promise<number> {
   const [row] = await db
     .select({ total: sum(creditLedger.amountMinor) })
     .from(creditLedger)
     .where(
       and(
         eq(creditLedger.userId, userId),
+        eq(creditLedger.currency, currency),
         or(isNull(creditLedger.expiresAt), gt(creditLedger.expiresAt, new Date())),
       ),
     );
@@ -45,14 +61,19 @@ export async function creditBalanceMinor(db: Database, userId: string): Promise<
   return Number(row?.total ?? 0);
 }
 
-/** Everything ever earned, ignoring what has since been spent or expired. */
-export async function totalEarnedMinor(db: Database, userId: string): Promise<number> {
+/** Everything ever earned in one currency, ignoring what has since been spent or expired. */
+export async function totalEarnedMinor(
+  db: Database,
+  userId: string,
+  currency: string,
+): Promise<number> {
   const [row] = await db
     .select({ total: sum(creditLedger.amountMinor) })
     .from(creditLedger)
     .where(
       and(
         eq(creditLedger.userId, userId),
+        eq(creditLedger.currency, currency),
         sql`${creditLedger.amountMinor} > 0`,
         eq(creditLedger.kind, "referral_reward"),
       ),
@@ -151,7 +172,7 @@ export async function awardReferralCredit(
     userId: owner.userId,
     kind: "referral_reward",
     amountMinor,
-    currency: REWARD_CURRENCY,
+    currency: CREDIT_CURRENCY,
     bookingId,
     referralRedemptionId: claim.id,
     expiresAt,
@@ -206,6 +227,11 @@ export async function invitedCount(db: Database, userId: string): Promise<number
  * booking over €1000". Same headline figure as the referrer's reward, but a
  * different rule — no tier bonus applies, since levelling up is the referrer's
  * perk and the invitee has no tier yet.
+ *
+ * Both figures, and `MIN_BOOKING_FOR_CREDIT_MINOR` with them, are amounts in
+ * `CREDIT_CURRENCY`. The copy on the Referrals screen states them with a euro sign, so
+ * they are a promise in one currency rather than a bare number to be re-read as whatever
+ * the quote happens to be priced in.
  */
 const INVITEE_WELCOME_MINOR = 10_000;
 
@@ -219,14 +245,21 @@ const INVITEE_WELCOME_MINOR = 10_000;
  * `credited` when the first booking confirms, so the discount is unavailable on
  * every booking after that one — which is what "first-time bookings of invited
  * friends" means.
+ *
+ * A quote in another currency comes off nothing, for the reason credit cannot be spent on
+ * one: €100 is not 100 of whatever the quote is priced in, and the eligibility threshold
+ * is not either. The redemption stays `pending`, so the invitee still has the discount
+ * waiting on the first quote we can honour it against.
  */
 export async function welcomeDiscountMinor(
   db: DatabaseExecutor,
   userId: string | null,
+  currency: string,
   bookingTotalMinor: number,
   payableNowMinor: number,
 ): Promise<number> {
   if (!userId) return 0;
+  if (currency !== CREDIT_CURRENCY) return 0;
   if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
 
   const [pending] = await db
@@ -242,17 +275,29 @@ export async function welcomeDiscountMinor(
   return Math.max(Math.min(INVITEE_WELCOME_MINOR, payableNowMinor), 0);
 }
 
-/** How much credit this quote may absorb: never more than the balance or the bill. */
+/**
+ * How much credit this quote may absorb: never more than the balance or the bill.
+ *
+ * A quote in any other currency absorbs nothing. Both the balance and the minimum-booking
+ * threshold are denominated in `CREDIT_CURRENCY`, so there is no comparison to make against
+ * a bill priced elsewhere, and converting one would be inventing a rate.
+ */
 export async function spendableCreditMinor(
   db: Database,
   userId: string | null,
+  currency: string,
   bookingTotalMinor: number,
   payableNowMinor: number,
 ): Promise<number> {
   if (!userId) return 0;
+  if (currency !== CREDIT_CURRENCY) return 0;
   if (bookingTotalMinor < MIN_BOOKING_FOR_CREDIT_MINOR) return 0;
 
-  return spendableFrom(await creditBalanceMinor(db, userId), bookingTotalMinor, payableNowMinor);
+  return spendableFrom(
+    await creditBalanceMinor(db, userId, currency),
+    bookingTotalMinor,
+    payableNowMinor,
+  );
 }
 
 /**
@@ -262,6 +307,11 @@ export async function spendableCreditMinor(
  * priced minutes ago, and credit could have been spent elsewhere since. Spends
  * whatever is actually left rather than trusting the quote, and reports it so the
  * caller can tell the difference.
+ *
+ * That re-read is scoped to the booking's own currency, which is also what stops a
+ * balance held in another one from paying this bill. `spendableCreditMinor` has already
+ * refused such a quote, so reaching here with a mismatch means the quote was priced
+ * before that rule existed: it spends nothing rather than trusting the stored figure.
  */
 export async function redeemCredit(
   tx: DatabaseExecutor,
@@ -275,6 +325,7 @@ export async function redeemCredit(
     .where(
       and(
         eq(creditLedger.userId, input.userId),
+        eq(creditLedger.currency, input.currency),
         or(isNull(creditLedger.expiresAt), gt(creditLedger.expiresAt, new Date())),
       ),
     );

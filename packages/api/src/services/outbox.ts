@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { Database } from "../context";
 import { sendAccountInvitation } from "./account-invitation";
 import { sendBookingReceivedNotice } from "./booking-received";
+import { retryOptionRelease } from "./provider-option";
 import { LEASE_MS, backoffMs, isExhausted } from "./outbox-retry";
 
 /*
@@ -27,6 +28,7 @@ export type OutboxKind = (typeof outboxMessage.kind.enumValues)[number];
 const HANDLERS = {
   account_invitation: sendAccountInvitation,
   booking_received: sendBookingReceivedNotice,
+  release_option: retryOptionRelease,
 } satisfies Record<OutboxKind, (db: Database, subjectId: string) => Promise<void>>;
 
 /** One drain claims at most this many messages, so a backlog is worked through in batches. */

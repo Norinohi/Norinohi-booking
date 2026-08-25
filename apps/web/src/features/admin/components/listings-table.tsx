@@ -20,6 +20,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Image } from "@/components/shared/data-display/image";
+import { Link } from "@/i18n/navigation";
 
 import { useListings, useSetListingStatus } from "../hooks/use-listings";
 import {
@@ -220,9 +221,18 @@ export default function ListingsTable() {
                             )}
                           </div>
                           <div className="flex min-w-0 flex-col">
-                            <span className="truncate font-medium text-foreground">
+                            {/* A new tab because the filters above are component state —
+                                returning would land on page one, unfiltered. An unpublished row
+                                404s until the detail route grows a staff preview: the page reads
+                                listing_search_doc, which projects published listings only. */}
+                            <Link
+                              href={`/yachts/${listing.slug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="truncate font-medium text-brand hover:underline"
+                            >
                               {listing.title}
-                            </span>
+                            </Link>
                             <span className="truncate text-sm text-natural-500">
                               {listing.slug}
                             </span>

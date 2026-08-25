@@ -241,6 +241,23 @@ something.
 further and exit non-zero on the failures that would otherwise pass unseen, so a red
 run in Railway is the signal.
 
+A red run is only a signal to whoever looks, though, and nobody looks at 03:00. So all
+five entry points call `startJob(name)` from `apps/server/src/job.ts` before they do
+anything and emit one wide event when they end — `action: job.<name>`, an outcome, the
+run's duration and its own counters — through the same Sentry/PostHog drain the servers
+use (see the repo `AGENTS.md`). That event is what an alert fires on. It costs nothing
+until `SENTRY_DSN` or `POSTHOG_API_KEY` is set, and it does not replace the console
+output, which is still what an operator running one of these by hand reads.
+
+`startJob` also installs `unhandledRejection` and `uncaughtException` handlers, so a job
+that throws past its top-level await reports before it dies — the failure most worth
+hearing about, and the one no explicit call site can cover. It prints the stack first,
+because taking over from Node's default handler would otherwise swallow it.
+
+The by-hand scripts (`seed-facets.ts`, `publish-listings.ts`, `repair-bm-ids.ts`,
+`rebuild-search-docs.ts`) deliberately skip all of this: somebody is watching the
+terminal, which is the whole reason the event exists for the other five.
+
 For the sweep that is a failed provider release. Our side of that booking expired
 either way; the vendor is still holding the option. Stale confirmations do not fail
 the run, since `expiry.ts` reports rather than moves them precisely because guessing

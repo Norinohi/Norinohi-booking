@@ -14,6 +14,7 @@ import type {
   referralSummarySchema,
 } from "../contracts/referral";
 import {
+  CREDIT_CURRENCY,
   creditBalanceMinor,
   invitedCount,
   projectedRewardMinor,
@@ -30,7 +31,6 @@ type Balance = z.infer<typeof creditBalanceSchema>;
 type LedgerInput = z.infer<typeof creditLedgerInputSchema>;
 type Ledger = z.infer<typeof creditLedgerSchema>;
 
-const CURRENCY = "EUR";
 const EXPIRING_SOON_DAYS = 30;
 
 /** One call for the whole Referrals screen above the history table. */
@@ -38,8 +38,8 @@ export async function referralSummary(db: Database, userId: string): Promise<Sum
   const [code, invited, earned, balance, progress] = await Promise.all([
     getOrCreateReferralCode(db, userId),
     invitedCount(db, userId),
-    totalEarnedMinor(db, userId),
-    creditBalanceMinor(db, userId),
+    totalEarnedMinor(db, userId, CREDIT_CURRENCY),
+    creditBalanceMinor(db, userId, CREDIT_CURRENCY),
     tierProgress(db, userId),
   ]);
 
@@ -48,8 +48,8 @@ export async function referralSummary(db: Database, userId: string): Promise<Sum
     urlPath: code.urlPath,
     invitedCount: invited,
     completedBookingsCount: progress.completedBookings,
-    totalEarned: { amountMinor: earned, currency: CURRENCY },
-    availableBalance: { amountMinor: balance, currency: CURRENCY },
+    totalEarned: { amountMinor: earned, currency: CREDIT_CURRENCY },
+    availableBalance: { amountMinor: balance, currency: CREDIT_CURRENCY },
     tier: progress.tier,
     nextTier: progress.nextTier,
     remainingToNext: progress.remainingToNext,
@@ -135,10 +135,12 @@ function amountFor(
   projectedMinor: number,
 ): { amountMinor: number; currency: string } | null {
   if (row.rewardMinor !== null) {
-    return { amountMinor: row.rewardMinor, currency: row.rewardCurrency ?? CURRENCY };
+    return { amountMinor: row.rewardMinor, currency: row.rewardCurrency ?? CREDIT_CURRENCY };
   }
 
-  return row.status === "pending" ? { amountMinor: projectedMinor, currency: CURRENCY } : null;
+  return row.status === "pending"
+    ? { amountMinor: projectedMinor, currency: CREDIT_CURRENCY }
+    : null;
 }
 
 export async function creditBalance(db: Database, userId: string): Promise<Balance> {
@@ -146,13 +148,14 @@ export async function creditBalance(db: Database, userId: string): Promise<Balan
   soon.setDate(soon.getDate() + EXPIRING_SOON_DAYS);
 
   const [balance, [expiring]] = await Promise.all([
-    creditBalanceMinor(db, userId),
+    creditBalanceMinor(db, userId, CREDIT_CURRENCY),
     db
       .select({ total: sum(creditLedger.amountMinor) })
       .from(creditLedger)
       .where(
         and(
           eq(creditLedger.userId, userId),
+          eq(creditLedger.currency, CREDIT_CURRENCY),
           isNotNull(creditLedger.expiresAt),
           gt(creditLedger.expiresAt, new Date()),
           lte(creditLedger.expiresAt, soon),
@@ -161,8 +164,8 @@ export async function creditBalance(db: Database, userId: string): Promise<Balan
   ]);
 
   return {
-    balance: { amountMinor: balance, currency: CURRENCY },
-    expiringSoon: { amountMinor: Number(expiring?.total ?? 0), currency: CURRENCY },
+    balance: { amountMinor: balance, currency: CREDIT_CURRENCY },
+    expiringSoon: { amountMinor: Number(expiring?.total ?? 0), currency: CREDIT_CURRENCY },
   };
 }
 

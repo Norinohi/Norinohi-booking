@@ -19,11 +19,15 @@
 import { drainOutbox } from "@yacht-charter/api/services/outbox";
 import { db } from "@yacht-charter/db";
 import { env } from "@yacht-charter/env/server";
+import { startJob } from "./job";
+
+const job = startJob("drain-outbox");
 
 if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
   console.error(
     "RESEND_API_KEY and EMAIL_FROM are required here: without them every pending message is marked sent and nothing leaves",
   );
+  await job.failed("no mailer configured");
   process.exit(1);
 }
 
@@ -36,9 +40,14 @@ console.log(JSON.stringify(result, null, 2));
 // still in progress and skips every tick behind it.
 await db.$client.end();
 
+const metrics = { sent: result.sent, retrying: result.retrying, failed: result.failed };
+
 if (result.failed > 0) {
   console.error(
     `${result.failed} outbox message(s) ran out of attempts; each one is a mail a customer never received`,
   );
+  await job.failed("outbox messages exhausted their attempts", metrics);
   process.exit(1);
 }
+
+await job.done(metrics);

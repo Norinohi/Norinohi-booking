@@ -1,7 +1,22 @@
 import { syncCursor } from "@yacht-charter/db/schema/provider";
 import { and, eq } from "drizzle-orm";
+import { z } from "zod";
 
 import type { Database } from "../registry";
+import type { JsonValue } from "../shared/json";
+
+/** JSON.parse always satisfies this; the check exists to name the parsed type. */
+const cursorSchema: z.ZodType<JsonValue> = z.json();
+
+/**
+ * A cursor on its way to storage. Wider than what comes back: objects may hold
+ * undefined values, because `JSON.stringify` drops those keys rather than
+ * encoding them, so a writer never has to strip them itself.
+ */
+export type SyncCursor =
+  | JsonValue
+  | readonly SyncCursor[]
+  | { [key: string]: SyncCursor | undefined };
 
 export type SyncCursorKind = (typeof syncCursor.kind)["enumValues"][number];
 
@@ -17,7 +32,7 @@ export interface SyncCursorKey {
  * stored JSON-encoded in a text column: the shape differs per provider and per
  * sync kind, and the reader is the only party that knows how to interpret it.
  */
-export async function readSyncCursor(db: Database, key: SyncCursorKey): Promise<unknown> {
+export async function readSyncCursor(db: Database, key: SyncCursorKey): Promise<JsonValue | null> {
   const [row] = await db
     .select({ cursor: syncCursor.cursor })
     .from(syncCursor)
@@ -33,7 +48,7 @@ export async function readSyncCursor(db: Database, key: SyncCursorKey): Promise<
   if (!row?.cursor) return null;
 
   try {
-    return JSON.parse(row.cursor);
+    return cursorSchema.parse(JSON.parse(row.cursor));
   } catch {
     // A cursor we cannot read is a resume we must not attempt: restarting from
     // zero is always correct, restarting from a misread position is not.
@@ -44,9 +59,9 @@ export async function readSyncCursor(db: Database, key: SyncCursorKey): Promise<
 export async function writeSyncCursor(
   db: Database,
   key: SyncCursorKey,
-  value: unknown,
+  value: SyncCursor | null,
 ): Promise<void> {
-  const encoded = value === null || value === undefined ? null : JSON.stringify(value);
+  const encoded = value === null ? null : JSON.stringify(value);
 
   await db
     .insert(syncCursor)

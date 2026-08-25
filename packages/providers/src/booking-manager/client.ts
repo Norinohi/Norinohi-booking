@@ -14,6 +14,7 @@ import { parseExactJson } from "../shared/exact-json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
 import type { RetryPolicy } from "../shared/retry";
 import type { BookingManagerConfig } from "./config";
+import { bookingManagerEndpoints } from "./endpoints";
 
 export interface BookingManagerClientOptions {
   config: BookingManagerConfig;
@@ -22,6 +23,23 @@ export interface BookingManagerClientOptions {
   retry?: Partial<RetryPolicy>;
   /** Raw retention hook; fires before classification, so error bodies land too. */
   onRawResponse?: (event: RawResponseEvent) => void | Promise<void>;
+}
+
+/**
+ * `POST /requests` files a vendor-side request and is not idempotent: measured on
+ * 2026-08-25, the first call answers `200` with an empty body and an identical
+ * repeat answers `400 Error creating entity. Action not applicable for given
+ * reservation`. A retry after a lost 200 therefore turns a filed request into an
+ * error indistinguishable from one that was never permitted, and nothing on the
+ * reservation can be read back to tell them apart.
+ *
+ * This is enforced here rather than left to the call site because the hazard is
+ * precisely that someone wires the endpoint up and does not know about it.
+ */
+const NON_IDEMPOTENT_ENDPOINTS = new Set<string>([bookingManagerEndpoints.requests]);
+
+function retryOptionsFor(endpoint: string): ProviderRequestOptions | undefined {
+  return NON_IDEMPOTENT_ENDPOINTS.has(endpoint) ? { retry: { maxAttempts: 1 } } : undefined;
 }
 
 /**
@@ -76,7 +94,7 @@ export class BookingManagerClient {
     schema: z.ZodType<TOut>,
     body: JsonRequestValue,
   ): Promise<TOut> {
-    const response = await this.http.post(endpoint, body);
+    const response = await this.http.post(endpoint, body, retryOptionsFor(endpoint));
     return this.parse(endpoint, schema, response.body);
   }
 

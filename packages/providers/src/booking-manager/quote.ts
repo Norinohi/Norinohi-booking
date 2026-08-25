@@ -8,6 +8,7 @@ import { stableSourceHash } from "../shared/raw-retention";
 import {
   providerQuoteSchema,
   quoteRequestSchema,
+  type BookingDraft,
   type CrewType,
   type Money,
   type ProviderQuote,
@@ -19,6 +20,7 @@ import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
 import { numberToMinor } from "./money";
 import { allInPrice, isOneWay, rankOffers } from "./offer-ranking";
 import {
+  BM_EXTRA_KIND,
   bookingManagerEndpoints,
   restOfferListSchema,
   type RestExtras,
@@ -161,6 +163,29 @@ export function createBookingManagerQuoteService(
       });
     },
   };
+}
+
+/**
+ * The quote request a stored quote was priced on, rebuilt from the draft the hold carries.
+ *
+ * The hold re-prices to check the number has not moved, and that check is only honest if it
+ * asks for the same charter. `/offers` answers one offer per sellable base pair and
+ * `selectOffer` narrows to a pair only when it is given one, so a re-price that drops the
+ * customer's drop-off prices the same-base return `rankOffers` puts first - and refuses every
+ * one-way with PRICE_CHANGED for a price that never moved.
+ */
+export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteRequest {
+  const request: QuoteRequest = {
+    listingId: draft.listingId,
+    checkIn: draft.checkIn,
+    checkOut: draft.checkOut,
+    guests: draft.guests,
+    extras: draft.extras,
+    currency,
+  };
+  if (draft.crewType) request.crewType = draft.crewType;
+  if (draft.route?.endBaseId) request.endBaseId = draft.route.endBaseId;
+  return request;
 }
 
 /**
@@ -477,6 +502,18 @@ function toExtraLine(
       { endpoint: bookingManagerEndpoints.offers },
     );
   }
+  // A `kind: 0` extra is a percentage of the charter and leaves `price` at zero,
+  // so the amount below would bill nothing. It is refused rather than guessed:
+  // deriving it would mean picking a base (price? price plus extras?) the vendor
+  // has never stated, and quoting the wrong one under-bills a real charter. None
+  // has been seen on the fleets we sync - if one appears, this is where to answer
+  // it, once the vendor has said what the percentage applies to.
+  if (extra.kind === BM_EXTRA_KIND.PERCENTAGE) {
+    throw new ContractError(
+      `Booking Manager obligatory extra ${externalId} on yacht ${offer.yachtId} is priced as a percentage (${extra.percentage ?? "unknown"}%), which has no documented base`,
+      { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
+    );
+  }
   if (extra.price == null) {
     throw new ContractError(
       `Booking Manager obligatory extra ${externalId} on yacht ${offer.yachtId} carries no price`,
@@ -596,9 +633,24 @@ function priceObservationHash(offer: RestOffer, currency: string): string {
         const right = String(b.id ?? b.name ?? "");
         return left < right ? -1 : left > right ? 1 : 0;
       }),
-    // Order is semantic: the first instalment is the deposit.
-    paymentPlan: (offer.paymentPlan ?? []).map((entry) => ({
-      date: entry.date ?? null,
+    /*
+     * Order is semantic: the first instalment is the deposit, and its date is dropped.
+     *
+     * That date is not a term of the offer, it is a clock reading. The vendor stamps the
+     * pay-now instalment with the moment it answered — two identical `/offers` calls eleven
+     * seconds apart came back `2026-08-25 10:07:18` and `2026-08-25 10:07:29` on an otherwise
+     * byte-identical offer — so hashing it made the fingerprint change on every read. Every
+     * `createHold` against a pay-in-full yacht was refused with PRICE_CHANGED for a price
+     * that had not moved, which is the whole checkout for company 225.
+     *
+     * Only the first is dropped, and only its date. A later instalment's date is a real due
+     * date the customer is agreeing to — `toPaymentPolicy` reads exactly that one into
+     * `balanceDueAt` — and it moving is a change worth refusing a stale quote over. This
+     * mirrors what the policy mapper already does: it takes the first entry's amount and
+     * never its date.
+     */
+    paymentPlan: (offer.paymentPlan ?? []).map((entry, index) => ({
+      date: index === 0 ? null : (entry.date ?? null),
       amount: entry.amount ?? null,
     })),
     securityDeposit: offer.securityDeposit ?? null,
