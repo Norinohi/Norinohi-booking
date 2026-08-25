@@ -90,9 +90,18 @@ before it needs code.
    section goes.
 10. **Payment methods** are hardcoded identically for every operator, under that operator's name.
     No provider has the field.
-11. **Pickup and drop-off dates** show the availability window rather than the charter's dates. The
-    times beside them are real. Either show the times alone, or move the block behind a selected
-    period.
+11. ~~**Pickup and drop-off dates** show the availability window rather than the charter's dates.~~
+    **Already fixed in the current tree.** `repository.ts` returns `yachtPickup: { time }` with no
+    date, and `important-info-section.tsx` renders only `info.yachtPickup.time`, so the block shows
+    the time alone, which was one of the proposed options. What remains is whether we also want the
+    dates there: `BookingProvider` wraps the whole `YachtDetailScreen`, so the selected period is
+    available to the section from context, with no API change and no effect on the cacheable public
+    read (ADR 0002). It cannot come through `useListingDetail`, whose query key is only
+    `(id, locale)`. The time itself is deliberately date-independent: `bs.check_in_time` and
+    `bs.check_out_time` are one value per base, not per period, and the sidebar reads the same
+    source (`booking-sidebar.tsx` passes `listing.base.checkInTime`). No provider publishes seasonal
+    hours: every NauSYS `checkInPeriods` entry spans 1970-2099, and Booking Manager exposes only
+    `defaultCheckInDay`.
 12. **FAQ** has a table and no rows for real listings. Options: (A) one shared set with variations
     by yacht type, (B) a one-off AI generation into the seed with a human read-through, (C) AI at
     runtime (subscription, per-request cost, and the risk of inventing facts about a specific
@@ -159,13 +168,14 @@ SEO landing pages, and the legal pages Stripe needs for verification.
 
 ### 3.4 Decisions before release
 
-1. **Default payment policy**: 50% or 100%, and whether we charge before or after the provider
-   confirms.
+1. ~~**Default payment policy**~~ **answered 2026-08-21, see §3.6**: 50% when booked more than two
+   months out, otherwise 100%; charge after the provider confirms.
 2. The card versus detail prepayment discrepancy (§2.1 item 3), if it reproduces on the deployed
    build.
 3. The two "payable now" formulas (§2.1 item 2).
 4. Credits not filtered by currency (§2.1 item 1).
-5. **Referral programme**: amount, validity period, conditions.
+5. ~~**Referral programme**~~ **answered 2026-08-21, see §3.6**: brackets by yacht price, equal
+   on both sides, credit valid 12 months, admin-editable.
 6. **Duplicates**: currently the cheaper option for the customer, with Booking Manager winning ties.
    Confirm or change.
 7. **Auto-publish or moderation** for imported listings.
@@ -175,6 +185,65 @@ SEO landing pages, and the legal pages Stripe needs for verification.
 
 How many staff accounts; where alerts about sync failures and Stripe webhook lag should go; database
 backups; and who makes the first real-money test booking on production.
+
+### 3.6 Client answers (2026-08-21)
+
+Three items from §3.4 are closed, and each changes more code than it looks.
+
+**Payment policy (§3.4 #1) — decided.** 50% is available when the booking is more than two months
+before charter start; under two months is 100%. Charge after the provider confirms.
+
+1. `resolvePaymentPolicy` has no lead-time rule at all: listing override, then provider plan, then
+   the 50% default. Lead time has to become its own step. Confirm whether two months means calendar
+   months or 60 days, and which wins when the provider's own plan disagrees.
+2. When the remaining 50% falls due was not answered. `balanceDueAt` comes from the provider, so
+   listings without that field carry no date. A default is needed.
+3. "Charge after confirmation" breaks the current ordering. Today it is
+   `OPTION_HELD → PAYMENT_PENDING → CONFIRMING → CONFIRMED`: money is taken before we approach the
+   provider, and a rejection unwinds through `REFUND_PENDING → REFUNDED`. Charging afterwards needs
+   `capture_method: "manual"` in `intentParams` (absent today, so capture is immediate): authorize
+   at checkout, confirm with the provider, then capture. Worth telling the client: an authorization
+   lives about seven days, capture can be for less but never more, and the customer sees a hold on
+   their statement. If an operator takes longer than a week, the authorization lapses.
+
+**Referral programme (§3.4 #5) — decided, current model differs.** Fixed amounts bracketed by yacht
+price, both sides equal, credit valid 12 months, invitee's first booking only, no self-referral,
+credit neither withdrawable nor transferable, reward void on full cancellation. Admin must be able
+to edit the figures.
+
+| Yacht price     | Friend's discount | Referrer's bonus |
+| --------------- | ----------------- | ---------------- |
+| €2,000 – 2,999  | €30               | €30              |
+| €3,000 – 4,999  | €50               | €50              |
+| €5,000 – 7,999  | €75               | €75              |
+| €8,000 – 11,999 | €100              | €100             |
+| €12,000 +       | €150              | €150             |
+
+1. Today the amounts are **flat and independent of yacht price**: `INVITEE_WELCOME_MINOR` is exactly
+   €100, and the referrer gets `rewardMinor(BASE_REWARD_MINOR, bonusPct)` where the percentage comes
+   from their loyalty tier. There are no brackets, and the referrer's reward turns on a different
+   variable than the one the client named. A bracket table (price bounds, discount, bonus, currency)
+   with admin CRUD is needed. Open: does the loyalty ladder stay at all?
+2. The table says nothing below €2,000. Confirm there is no discount there.
+3. The 12-month TTL already matches `CREDIT_TTL_MONTHS`; voiding on cancellation fits the
+   append-only ledger as a negative row; self-referral and first-booking-only are already held by
+   `referral_redemption`'s unique index.
+4. The brackets are in euro, which matches `CREDIT_CURRENCY` after the §2.1 #1 fix.
+
+**FAQ (§3.4 #8) — list received, but it does not fit the current schema.** Twenty questions in six
+categories (Booking, Payment, Prices, Licences, Travel, Cancellation).
+
+1. It is a **site-wide FAQ, and the `faq` table has `listing_id NOT NULL`**. Either `listing_id`
+   becomes nullable with a category column, or a separate site FAQ table.
+2. Questions arrived without answers. Answer copy is needed per locale.
+3. Two answers depend on undecided things: "do I pay 100% up front" is the two-month rule above,
+   and "what are the cancellation terms" varies per operator, where we currently show a generic
+   disclaimer.
+4. "What is a Charter Pack" exists in the code only as the vendor extra label
+   `Standard charter pack`. Without a definition from the client the answer would be invented.
+
+**Not understood by the client.** The operator payment-methods and pickup/drop-off item needs
+rephrasing: both are §2.3 blocks on the yacht page that show something other than their label.
 
 ## 4. Waiting on the vendors
 

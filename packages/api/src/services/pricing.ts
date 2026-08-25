@@ -4,6 +4,7 @@ import type { QuoteLine, QuotePaymentPolicy } from "@yacht-charter/db/schema/quo
 import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 
 import type { Database } from "../context";
+import { monthsBefore } from "../lib/dates";
 
 /*
  * The internal pricing pipeline (docs/backend-architecture.md §1.5, §6.3):
@@ -234,24 +235,64 @@ export type ListingPaymentPolicy = {
 export const MARKETPLACE_DEFAULT = { mode: "deposit" as const, depositPct: 0.5 };
 
 /**
+ * How far ahead of the charter a booking has to be for a deposit to be offered
+ * at all. Inside this window the customer pays in full.
+ *
+ * [ASSUMPTION] Two calendar months, not 60 days. The client stated the rule in
+ * months and the two readings differ by up to two days, so whichever is wrong
+ * is wrong for a handful of bookings a year rather than silently for all of
+ * them. Switching to days means replacing `monthsBefore` here and nothing else.
+ */
+export const DEPOSIT_LEAD_TIME_MONTHS = 2;
+
+/**
  * §6.3: explicit listing override → the provider's own plan → the marketplace
  * default. Never a hardcoded 50/100 — this is what makes a listing able to demand
  * full prepayment while its neighbour takes half.
+ *
+ * Lead time is applied on top, and only ever tightens. A charter starting inside
+ * `DEPOSIT_LEAD_TIME_MONTHS` is payable in full whatever the sources said, while
+ * one starting later keeps whichever plan they chose, including a provider that
+ * demands full prepayment months out. Written as a tightening rather than another
+ * link in the chain because both directions are rules about the same money and
+ * the stricter one has to survive: an operator's terms are not ours to relax, and
+ * our own floor is not theirs to.
  */
 export function resolvePaymentPolicy(
   listingOverride: ListingPaymentPolicy,
   providerPolicy: { mode: "deposit" | "full"; depositPct: number; balanceDueAt?: string },
   currency: string,
+  charter: { checkIn: string; asOf: Date },
 ): QuotePaymentPolicy {
   const chosen = listingOverride ?? providerPolicy ?? MARKETPLACE_DEFAULT;
-  const mode = chosen.mode ?? MARKETPLACE_DEFAULT.mode;
+  const depositsClose = monthsBefore(charter.checkIn, DEPOSIT_LEAD_TIME_MONTHS);
+  const today = charter.asOf.toISOString().slice(0, 10);
+
+  /*
+   * Exactly two months out is already too late: the client's rule is "more than
+   * two months". An unparseable check-in leaves `depositsClose` null and the
+   * deposit on offer, which is the pre-lead-time behaviour rather than a refusal
+   * to quote — a quote with no usable period cannot reach this far anyway.
+   */
+  const insideWindow = depositsClose !== null && today >= depositsClose;
+  const mode = insideWindow ? "full" : (chosen.mode ?? MARKETPLACE_DEFAULT.mode);
 
   return {
     mode,
     // Paying in full is 100% by definition; a deposit falls back to the default
     // percentage when the source did not say.
     depositPct: mode === "full" ? 1 : (chosen.depositPct ?? MARKETPLACE_DEFAULT.depositPct),
-    balanceDueAt: chosen.balanceDueAt ?? providerPolicy?.balanceDueAt,
+    /*
+     * [ASSUMPTION] A deposit nobody dated is due when deposits stop being offered.
+     * Most listings carry no `balanceDueAt` at all, and the alternative was an
+     * empty date on the one screen that has to say when the rest is owed. This
+     * reuses the lead time rather than inventing a second number, so confirming
+     * one confirms both.
+     */
+    balanceDueAt:
+      chosen.balanceDueAt ??
+      providerPolicy?.balanceDueAt ??
+      (mode === "deposit" ? (depositsClose ?? undefined) : undefined),
     currency,
   };
 }

@@ -395,13 +395,20 @@ function applyReferralCredit(
   ];
 }
 
-/** Stage 5. Reads the listing override, then derives the deposit from the policy. */
+/**
+ * Stage 5. Reads the listing override, then derives the deposit from the policy.
+ *
+ * `charter` carries the lead time: how close to departure this quote is decides
+ * whether a deposit is on offer at all, so the policy cannot be resolved from
+ * the listing alone.
+ */
 async function resolveDeposit(
   db: DatabaseExecutor,
   listingId: string,
   providerPolicy: ProviderQuote["paymentPolicy"],
   lines: QuoteLine[],
   currency: string,
+  charter: { checkIn: string; asOf: Date },
 ): Promise<{ paymentPolicy: QuotePaymentPolicy; total: number; depositMinor: number }> {
   const [listingRow] = await db
     .select({ paymentPolicy: listing.paymentPolicy })
@@ -413,6 +420,7 @@ async function resolveDeposit(
     listingRow?.paymentPolicy ?? null,
     providerPolicy,
     currency,
+    charter,
   );
 
   const payable = payableNowMinor(lines);
@@ -502,6 +510,7 @@ async function persistPricedQuote(
     priced.paymentPolicy,
     lines,
     currency,
+    { checkIn: priced.checkIn, asOf: new Date() },
   );
 
   const appliedDiscount = promo?.discount ?? null;

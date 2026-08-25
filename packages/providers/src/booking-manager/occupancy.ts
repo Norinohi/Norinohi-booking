@@ -57,21 +57,41 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
   [BM_RESERVATION_STATUS.OPTION, "option"],
   [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
   [BM_RESERVATION_STATUS.SERVICE, "blocked"],
+  // Named unavailable by the vendor on 2026-08-25. They would land on
+  // UNKNOWN_STATUS anyway; listing them means a reader can tell a deliberate
+  // block from an unrecognised one.
+  [BM_RESERVATION_STATUS.OWNER_WEEK, "blocked"],
+  [BM_RESERVATION_STATUS.REGATTA, "blocked"],
+  [BM_RESERVATION_STATUS.SLEEP_ABOARD, "blocked"],
 ]);
 
 /**
- * A status outside the documented four, or a row with none, still arrived in a feed
- * that only lists taken periods, so it is unbookable. It is deliberately NOT a
- * throw: a fifth state added by the vendor would otherwise stall availability for
- * the whole account until we shipped a patch, and `blocked` is the reading that
- * cannot oversell.
+ * A status not named above, or a row with none, still arrived in a feed that only
+ * lists taken periods, so it is unbookable. The vendor computes exactly this
+ * judgement itself and does not share it over REST: the SOAP booking sheet carries
+ * a `blocksavailability` (1/0) per term, described as the only field that matters
+ * to an availability sync, and `/availability` carries no equivalent - its rows
+ * are `id`, `dateFrom`, `dateTo`, `yachtId`, `status`, `baseFromId`, `baseToId`
+ * and `optionExpirationDate`. So the map above exists to reconstruct a flag the
+ * vendor already has, which is also why measurement beats their status legend. Deliberately NOT a throw: a new state
+ * would otherwise stall availability for the whole account until we shipped a
+ * patch, and `blocked` is the reading that cannot oversell.
  *
- * Q-BM-STATUS is answered, and the answer is that the enum is NOT closed at 4.
- * Measured 2026-08-20 over the unfiltered account: status `11` is live, 387 rows in
- * 2026 and 119 in 2027, mostly single days, and it is undocumented. It lands here.
- * `OPTION_IN_EXPIRATION` was checked at the same time and is genuinely still
- * holding the week: five status-3 periods were each absent from `/offers`, with a
- * control yacht offered for an adjacent free week and refused for its status-3 one.
+ * Q-BM-STATUS is answered. The vendor's full list arrived on 2026-08-25 and runs
+ * to `11`, so this is now a guard against a future addition rather than against
+ * the gaps we had.
+ *
+ * The vendor calls `5`, `7` and `8` bookable, which raised the worry that landing
+ * them here hides sellable weeks. It does not: measured 2026-08-25 across the
+ * unfiltered account, `/availability` emits only `1`, `2`, `3`, `4` and `11` -
+ * 241,273 rows for 2026 and 17,671 for 2027, with no `5`, `7` or `8` in either.
+ * The feed lists taken periods, and those three describe a free boat, so they are
+ * simply never in it. Nothing is being over-blocked.
+ *
+ * If one ever does appear, do not unblock it on the vendor's word alone. `3` is
+ * documented as available and measurably holds the boat: five status-3 periods
+ * were each absent from `/offers` on 2026-08-20, with a control yacht offered for
+ * an adjacent free week and refused for its status-3 one.
  */
 const UNKNOWN_STATUS: OccupiedInterval["status"] = "blocked";
 
@@ -141,8 +161,12 @@ export function mapBookingManagerAvailability(
   // is not malformed, so it must not fail the scope. The writer's intervals are
   // half-open, where startDate === endDate would overlap nothing and quietly
   // advertise the day as free, so it is widened to the one day it describes.
-  // VENDOR QUESTION Q-BM-DATETO: is `dateTo` the exclusive check-out day (assumed
-  // here) or the inclusive last day? If inclusive, every interval is a night short.
+  // Q-BM-DATETO, and the evidence now leans our way: the SOAP manual
+  // (availability_service_description v1.26, 1.4 getBookingSheet) documents the
+  // same field on the same data as "dateto - date of the checkout", which is the
+  // exclusive reading assumed here. Not a REST statement and not conclusive, so
+  // the question stays open - if it were the inclusive last day, every interval
+  // would be a night short.
   const endDate = rawEndDate === startDate ? addOneDay(startDate) : rawEndDate;
 
   const status = row.status ?? null;

@@ -1,0 +1,364 @@
+"use client";
+
+import { cn } from "@yacht-charter/ui/lib/utils";
+import {
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "motion/react";
+import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
+
+import { MapPin } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+import MapPreview from "@/components/shared/overlay/map-preview";
+import { staticMapFrame } from "@/lib/mapbox";
+
+import {
+  arrivalOf,
+  ROUTE_DRAW_MS,
+  type RouteStop,
+  routeCaption,
+  routeCurve,
+  routePoints,
+} from "../../../lib/route-points";
+
+/*
+ * The itinerary itself — the still with the drawn line over it, and the two columns of days.
+ *
+ * Split out of `suggested-route-section` so the admin route editor can preview exactly what it
+ * is about to publish. The section reads the listing detail query; this reads nothing, so a route
+ * that exists only in a form can be rendered through the same code the public page runs.
+ */
+
+/*
+ * Mapbox is ~1.8MB, and initialising it ran forced reflows that tied up the main thread — which is
+ * what made navigating *away* from a listing slow (measured: 767ms to home, 1493ms to search). It
+ * used to be held back by `dynamic(ssr:false)` plus a viewport gate, so anyone who scrolled this
+ * far still paid it. Behind a still that opens on demand, only a visitor who asks for the map does.
+ */
+const RouteMap = dynamic(() => import("../route-map"), {
+  ssr: false,
+  loading: () => <div className="size-full bg-natural-100" />,
+});
+
+/* The still is ordered at this size; the frame maths needs the same numbers to place the marks. */
+const STILL = { width: 960, height: 480 };
+
+type Stop = { title: string; text: string | null };
+
+type Progress = ReturnType<typeof useTransform<number, number>>;
+
+/* One second per leg reads as travel rather than a page effect; seven stops take six. */
+const SECONDS_PER_DAY = 1;
+
+/*
+ * The route plays itself: once the list scrolls into view the line runs from day 1 to the last
+ * day on a clock, not on the scroll position — like the drawing on the map still above it. One
+ * progress covers both columns, so the left column fills before the right rather than both
+ * together, and each stop reads the slice of the progress that is its own.
+ */
+function DayLists({ columns }: { columns: Stop[][] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const total = columns.reduce((sum, column) => sum + column.length, 0);
+
+  const progress = useMotionValue(0);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -100px 0px" });
+
+  useEffect(() => {
+    if (!inView) return;
+    if (reduced) {
+      progress.set(1);
+      return;
+    }
+
+    const controls = animate(progress, 1, {
+      duration: (total - 1) * SECONDS_PER_DAY,
+      ease: "easeInOut",
+    });
+    return () => controls.stop();
+  }, [inView, progress, reduced, total]);
+
+  let offset = 0;
+  return (
+    <div ref={ref} className="flex flex-col gap-10 pt-3 md:flex-row md:items-start">
+      {columns.map((column, index) => {
+        const first = offset;
+        offset += column.length;
+        return (
+          <DayList key={index} days={column} first={first} total={total} progress={progress} />
+        );
+      })}
+    </div>
+  );
+}
+
+function DayList({
+  days,
+  first,
+  total,
+  progress,
+}: {
+  days: Stop[];
+  first: number;
+  total: number;
+  progress: Progress;
+}) {
+  return (
+    <ol className="flex min-w-0 flex-1 flex-col">
+      {days.map((day, index) => (
+        <DayItem
+          key={day.title}
+          day={day}
+          position={first + index}
+          total={total}
+          isFirst={index === 0}
+          isLast={index === days.length - 1}
+          progress={progress}
+        />
+      ))}
+    </ol>
+  );
+}
+
+function DayItem({
+  day,
+  position,
+  total,
+  isFirst,
+  isLast,
+  progress,
+}: {
+  day: Stop;
+  position: number;
+  total: number;
+  isFirst: boolean;
+  isLast: boolean;
+  progress: Progress;
+}) {
+  const span = Math.max(total - 1, 1);
+  const start = position / span;
+  const end = Math.min((position + 1) / span, 1);
+
+  // The stop fills just as the line reaches it; the first one is filled from the start.
+  const dotOpacity = useTransform(progress, [Math.max(start - 0.08, 0), start], [0, 1]);
+  const fillScale = useTransform(progress, [start, end], [0, 1]);
+
+  return (
+    <li className="flex gap-4">
+      <div className="relative flex w-4 shrink-0 flex-col items-center">
+        {/* The soft track behind the dots, drawn per row so it ends at the last dot instead of
+            running on past it to the bottom of the column's text. */}
+        <span
+          aria-hidden
+          className={cn(
+            "absolute left-0.5 w-3 bg-brand-50/50",
+            isFirst ? "top-2 rounded-t-full" : "top-0",
+            isLast ? "h-5.5 rounded-b-full" : "bottom-0",
+          )}
+        />
+        <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card">
+          <motion.span
+            aria-hidden
+            style={{ opacity: dotOpacity }}
+            className="absolute -inset-0.5 rounded-full bg-brand"
+          />
+        </span>
+        {!isLast && (
+          <span
+            aria-hidden
+            className="relative w-1 flex-1 border-l-4 border-dotted border-brand-100"
+          >
+            <motion.span
+              style={{ scaleY: fillScale }}
+              className="absolute inset-y-0 -left-1 w-1 origin-top bg-brand"
+            />
+          </span>
+        )}
+      </div>
+      <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", !isLast && "pb-10.5")}>
+        <h3 className="text-xl leading-6.5 font-bold text-foreground">{day.title}</h3>
+        {day.text ? <p className="text-base leading-5.5 text-foreground">{day.text}</p> : null}
+      </div>
+    </li>
+  );
+}
+
+/*
+ * The still, marked with the app's own markers rather than the teardrops Mapbox draws.
+ *
+ * Same shape the live map used, so the section reads the same whether it is open or not. The
+ * positions come from the frame the still was ordered in — see `staticMapFrame`.
+ */
+function RouteStill({ route }: { route: { title: string; stops: RouteStop[] } }) {
+  const t = useTranslations("YachtDetail.route");
+  const still = useReducedMotion();
+  const words = {
+    start: t("start"),
+    finish: t("finish"),
+    day: (day: number) => t("day", { day }),
+  };
+  const points = routePoints(route.stops);
+  const frame = staticMapFrame(points, STILL);
+  const curve = routeCurve(route.stops);
+
+  /*
+   * The overlay is measured rather than given a fixed viewBox, so its coordinates are its own
+   * pixels. A percentage viewBox stretched to a non-square box scales the axes differently, and
+   * `pathLength` normalisation is computed against the unstretched length — which turned the drawn
+   * line into a dashed one. Matching the box removes the mismatch instead of compensating for it.
+   */
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    /* Measured here and not only in the observer: a `ResizeObserver` callback is delivered at the
+       end of a frame, so a tab that is not painting would never draw the route at all. */
+    const measure = () => {
+      const { width, height } = svg.getBoundingClientRect();
+      if (width <= 0 || height <= 0) return;
+      setBox((previous) =>
+        previous?.width === width && previous.height === height ? previous : { width, height },
+      );
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
+
+  const path = box
+    ? curve.points
+        .map((point, index) => {
+          const { leftPercent, topPercent } = frame.project(point);
+          const x = ((leftPercent / 100) * box.width).toFixed(1);
+          const y = ((topPercent / 100) * box.height).toFixed(1);
+          return `${index === 0 ? "M" : "L"}${x},${y}`;
+        })
+        .join(" ")
+    : "";
+
+  const draw = still
+    ? undefined
+    : { initial: { pathLength: 0 }, whileInView: { pathLength: 1 }, viewport: { once: true } };
+
+  return (
+    <MapPreview
+      title={route.title}
+      imageUrl={frame.url}
+      imageSizes="(min-width: 768px) 960px, 100vw"
+      className="h-78 w-full rounded-2xl md:h-108.75"
+      overlay={
+        <>
+          {curve.points.length > 1 ? (
+            <svg
+              ref={svgRef}
+              aria-hidden
+              viewBox={box ? `0 0 ${box.width} ${box.height}` : undefined}
+              preserveAspectRatio="none"
+              className="absolute inset-0 size-full"
+            >
+              {/* Two passes, the marker's own colours: a white casing carrying the brand core. */}
+              {path
+                ? ["stroke-white/90", "stroke-brand"].map((stroke, index) => (
+                    <motion.path
+                      key={stroke}
+                      d={path}
+                      fill="none"
+                      strokeWidth={index === 0 ? 4 : 2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={stroke}
+                      {...draw}
+                      transition={{ duration: ROUTE_DRAW_MS / 1000, ease: "easeInOut" }}
+                    />
+                  ))
+                : null}
+            </svg>
+          ) : null}
+
+          {frame.markers.map((marker, index) => {
+            const point = points[index];
+            if (!point) return null;
+
+            const caption = routeCaption(point, route.stops, words);
+
+            return (
+              <motion.span
+                key={`${point.lat},${point.lng}`}
+                aria-hidden
+                style={{ left: `${marker.leftPercent}%`, top: `${marker.topPercent}%` }}
+                className="absolute flex size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-white/25 md:size-21"
+                {...(still
+                  ? {}
+                  : {
+                      initial: { opacity: 0, scale: 0.6 },
+                      whileInView: { opacity: 1, scale: 1 },
+                      viewport: { once: true },
+                      /* Meets the line rather than racing it: the delay is the share of the
+                         curve's length that runs before this stop. */
+                      transition: {
+                        duration: 0.35,
+                        delay: (arrivalOf(curve, point) * ROUTE_DRAW_MS) / 1000,
+                      },
+                    })}
+              >
+                <MapPin className="size-6 fill-brand text-white" />
+                <span className="absolute top-full left-1/2 mt-1 -translate-x-1/2 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap text-brand-foreground shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:text-xs">
+                  {caption}
+                </span>
+              </motion.span>
+            );
+          })}
+        </>
+      }
+    >
+      <RouteMap stops={route.stops} />
+    </MapPreview>
+  );
+}
+
+/** One authored route, exactly as the listing page draws it. */
+export type SuggestedRouteViewProps = {
+  title: string;
+  description: string | null;
+  /** In day order. `day` is the number the page prints, not the row's `sort_order`. */
+  stops: { day: number; name: string; note: string | null; lat: number; lng: number }[];
+};
+
+export default function SuggestedRouteView({ title, description, stops }: SuggestedRouteViewProps) {
+  const t = useTranslations("YachtDetail.route");
+
+  /* The only thing the web still writes is the "Day N - place" line; the place and the note are
+     the author's own words and are rendered as written. */
+  const routeStops: RouteStop[] = stops.map((stop) => ({
+    day: stop.day,
+    title: t("stopTitle", { day: stop.day, place: stop.name }),
+    description: stop.note,
+    lat: stop.lat,
+    lng: stop.lng,
+  }));
+  const days: Stop[] = routeStops.map((stop) => ({ title: stop.title, text: stop.description }));
+  const mid = Math.ceil(days.length / 2);
+  const columns = [days.slice(0, mid), days.slice(mid)];
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xl text-foreground">{title}</p>
+      {description ? <p className="text-base leading-5.5 text-natural-500">{description}</p> : null}
+
+      <RouteStill route={{ title, stops: routeStops }} />
+
+      <DayLists columns={columns} />
+    </div>
+  );
+}

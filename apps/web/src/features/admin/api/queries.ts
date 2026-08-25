@@ -2,6 +2,11 @@ import { orpc } from "@/utils/orpc";
 
 import type {
   AuditAction,
+  FaqCategory,
+  FaqGap,
+  FaqLocale,
+  FaqScope,
+  RouteKind,
   BookingStatus,
   DuplicateDecision,
   EnquiryStatus,
@@ -28,6 +33,8 @@ export const SYNC_RUNS_PAGE_SIZE = 20;
 export const PAYMENTS_PAGE_SIZE = 20;
 export const LISTINGS_PAGE_SIZE = 20;
 export const BOOKINGS_PAGE_SIZE = 20;
+export const ROUTES_PAGE_SIZE = 20;
+export const FAQ_PAGE_SIZE = 20;
 
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
@@ -171,3 +178,56 @@ export const syncRunsQueryOptions = (input: {
  */
 export const syncRunStatusQueryOptions = (input: { syncRunId: string; provider: ProviderKey }) =>
   orpc.admin.provider.syncStatus.queryOptions({ input, staleTime: 10_000 });
+
+/*
+ * The hand-authored route library. Nothing syncs into it and nothing else writes it, so it goes
+ * stale only when a colleague authors one — the same reason the review queues carry a short
+ * staleTime rather than none.
+ */
+export const routeListQueryOptions = (input: {
+  query?: string;
+  kind?: RouteKind;
+  countryId?: string;
+  active?: boolean;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.route.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? ROUTES_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+/**
+ * Countries, regions and bases for the target picker.
+ *
+ * Geography is written by the catalogue sync and read here; it changes when a provider ships a
+ * new marina, which is not within one authoring session. Kept for the life of the tab.
+ */
+export const geographyOptionsQueryOptions = (input: { countryId?: string; query?: string } = {}) =>
+  orpc.admin.geography.options.queryOptions({
+    input: { ...input, limit: 200 },
+    staleTime: 5 * 60_000,
+  });
+
+/*
+ * The FAQ, one row per question rather than one per locale.
+ *
+ * Hand-written and hand-translated, so it moves only when a colleague edits it — the same short
+ * staleTime the review queues carry, for the same reason. `locale` is part of the key because it
+ * changes what the answer says, not only what is shown: it is the language the gap counts and
+ * the search are asked about.
+ */
+export const faqListQueryOptions = (input: {
+  scope: FaqScope;
+  listingId?: string;
+  category?: FaqCategory;
+  locale?: FaqLocale;
+  query?: string;
+  gap?: FaqGap;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.faq.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? FAQ_PAGE_SIZE },
+    staleTime: 15_000,
+  });

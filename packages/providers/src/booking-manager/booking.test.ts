@@ -159,6 +159,75 @@ describe("confirmBooking", () => {
  * measured case being a hull whose listing says Carrick while every offer that week departed
  * Portumna.
  */
+/**
+ * The vendor asked us not to send `status` on create: POST can only open an
+ * option, so the field decides nothing, and their guidance is explicit about
+ * leaving it out (Diego Pacifico, MMK, 2026-08-25). It stays on the update, which
+ * is a replace rather than a patch and the one call where the value means
+ * something.
+ */
+describe("reservation body status", () => {
+  function capturing() {
+    /* Only the fields these tests assert on; `status` stays optional so its
+       absence on the create body is what the assertion can see. */
+    const bodySchema = z.object({
+      status: z.number().optional(),
+      passengersOnBoard: z.number().optional(),
+      clientName: z.string().optional(),
+    });
+    const sent: { method: string; body: z.infer<typeof bodySchema> }[] = [];
+    const client = new BookingManagerClient({
+      config,
+      queue: new SequentialQueue(),
+      retry: { maxAttempts: 1 },
+      fetchImpl: (_url, init) => {
+        if (init.body !== undefined) {
+          const parsed = bodySchema.safeParse(JSON.parse(String(init.body)));
+          if (parsed.success) sent.push({ method: init.method ?? "", body: parsed.data });
+        }
+        return Promise.resolve({
+          status: 200,
+          text: () =>
+            Promise.resolve(`{"id":${AGENCY_ID},"charterReservationId":${CHARTER_ID},"status":1}`),
+        });
+      },
+    });
+
+    const service = createBookingManagerBookingService({
+      client,
+      resolver: fakeResolver(),
+      config,
+      db: fakeDb(),
+      verifyPrice: () => Promise.resolve(PRICE_HASH),
+      recordEvent: () => Promise.resolve(),
+    });
+
+    return { sent, service };
+  }
+
+  it("omits status when opening an option", async () => {
+    const { sent, service } = capturing();
+
+    // The stubbed answer is a confirmed reservation, which createOption rightly
+    // refuses; the assertion is on what went out, which is already captured.
+    await service.createOption(draft).catch(() => undefined);
+
+    expect(sent[0]?.method).toBe("POST");
+    expect(sent[0]?.body).not.toHaveProperty("status");
+    // The rest of the body is untouched: this is a removal, not a rebuild.
+    expect(sent[0]?.body).toMatchObject({ passengersOnBoard: 4, clientName: "Ana Horvat" });
+  });
+
+  it("still sends status on the confirming update", async () => {
+    const { sent, service } = capturing();
+
+    await service.confirmBooking(draft);
+
+    expect(sent[0]?.method).toBe("PUT");
+    expect(sent[0]?.body).toMatchObject({ status: 1 });
+  });
+});
+
 describe("createOption bases", () => {
   function capturing() {
     /* Only the two fields these tests assert on; the vendor sends ids as bare numbers. */

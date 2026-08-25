@@ -33,6 +33,7 @@ import {
   parseBookingManagerCatalogueCursor,
 } from "./catalogue";
 import type { BookingManagerConfig } from "./config";
+import { BM_COLD_START_NOTICE_MS } from "./warmup";
 import { resolveBookingManagerConfig } from "./config";
 import { BookingManagerClient } from "./client";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
@@ -136,6 +137,16 @@ export class BookingManagerInventoryProvider
       resume: parseResume(options.resume),
       companyScope: this.config.companyScope,
       listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
+      onWarmup: (result) => {
+        // Silent when it worked: a warm server and a successful warm-up look the
+        // same from here, and the sweep's own timings already show the benefit.
+        if (result.warmed === result.attempted && result.slowestMs < BM_COLD_START_NOTICE_MS) {
+          return;
+        }
+        console.warn(
+          `Booking Manager warm-up: ${result.warmed}/${result.attempted} answered, slowest ${result.slowestMs} ms; the sweep may still pay a cold start`,
+        );
+      },
     });
   }
 

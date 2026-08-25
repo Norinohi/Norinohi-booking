@@ -1,3 +1,4 @@
+import { faqCategory } from "@yacht-charter/db/schema/content";
 import { crewTypeSchema } from "@yacht-charter/providers";
 import { z } from "zod";
 
@@ -122,6 +123,14 @@ export const listingSummarySchema = z.object({
   policies: z.object({
     depositInsuranceIncluded: z.boolean(),
     petsAllowed: z.boolean(),
+    /**
+     * The operator's full terms and conditions, verbatim and in their own
+     * language, carrying the cancellation policy the checkout asks a guest to
+     * accept. Rendered as given: it is their copy, not an enum we can localize,
+     * and paraphrasing a contract someone is about to agree to would put our
+     * words on their terms. Null where the operator published none (55% of them).
+     */
+    termsAndConditions: z.string().nullable(),
   }),
   availability: z.object({
     hasUnconfirmedAvailability: z.boolean(),
@@ -215,49 +224,32 @@ export const listingDetailSchema = listingSummarySchema.extend({
       lng: z.number(),
     }),
   }),
-  suggestedRoute: z.object({
-    /* `title` and each stop's `title`/`description` are English fallbacks: the itinerary is
-       generated copy, so the words a visitor reads come from the web app's message files,
-       keyed by `kind` and filled from `region`/`place`. */
-    title: z.string(),
-    region: z.string(),
-    map: z.object({
-      lat: z.number(),
-      lng: z.number(),
-    }),
-    stops: z.array(
-      z.object({
-        day: z.number().int(),
-        kind: z.enum([
-          "base",
-          "base_evening",
-          "base_morning",
-          "base_return",
-          "hvar",
-          "vis",
-          "blue_cave",
-          "korcula",
-          "brac",
-          "region_coast",
-          "island_bay",
-          "old_town",
-          "quiet_cove",
-          "marina_approach",
-        ]),
-        place: z.string().nullable(),
-        title: z.string(),
-        description: z.string(),
-        lat: z.number(),
-        lng: z.number(),
-      }),
-    ),
-  }),
+  /* Null on most listings: a route exists only where somebody wrote one for the charter base or
+     its sailing region, and the detail page drops the section rather than showing an empty one. */
+  suggestedRoute: z
+    .object({
+      title: z.string(),
+      description: z.string().nullable(),
+      stops: z.array(
+        z.object({
+          day: z.number().int(),
+          name: z.string(),
+          note: z.string().nullable(),
+          lat: z.number(),
+          lng: z.number(),
+        }),
+      ),
+    })
+    .nullable(),
   reviews: z.array(reviewSchema),
+  /* Site-wide entries carry one of the six categories the page groups under; a listing's own
+     entries carry none and render ahead of the groups. */
   faq: z.array(
     z.object({
       id: z.string(),
       question: z.string(),
       answer: z.string(),
+      category: z.enum(faqCategory.enumValues).nullable(),
     }),
   ),
   popularYachts: z.array(listingSummarySchema),

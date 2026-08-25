@@ -15,7 +15,8 @@
       "totalPrice": "Gesamtpreis",
       "dueNow": "Jetzt fällig",
       "terms": "Ich akzeptiere die <b>AGB und den Chartervertrag</b>.",
-      "cancellation": "Ich akzeptiere die <b>Stornierungsbedingungen</b>."
+      "cancellation": "Ich akzeptiere die <b>Stornierungsbedingungen</b>.",
+      "operatorTerms": "Bedingungen des Anbieters, einschliesslich Stornierungsbedingungen"
     },
     "extras": {
       "mandatory": "Obligatorisch",
@@ -940,10 +941,12 @@
       "staffBookings": "Buchungen",
       "payments": "Zahlungen",
       "listings": "Inserate",
+      "routes": "Routenvorschläge",
       "sections": {
         "account": "Konto",
         "admin": "Admin"
-      }
+      },
+      "faq": "FAQ"
     },
     "UserMenu": {
       "account": "Konto",
@@ -1220,40 +1223,7 @@
       "start": "Start",
       "finish": "Ziel",
       "day": "Tag {day}",
-      "itinerary": "7-Tage-Route durch {region}",
-      "stopTitle": "Tag {day} - {place}",
-      "place": {
-        "base": "{place}",
-        "base_evening": "{place}",
-        "base_morning": "{place}",
-        "base_return": "{place}",
-        "hvar": "Hvar",
-        "vis": "Vis",
-        "blue_cave": "Blaue Grotte",
-        "korcula": "Korčula",
-        "brac": "Brač",
-        "region_coast": "Küste von {place}",
-        "island_bay": "Inselbucht",
-        "old_town": "Altstadt",
-        "quiet_cove": "Stille Bucht",
-        "marina_approach": "Anfahrt zur Marina"
-      },
-      "description": {
-        "base": "Check-in und Proviant an der Charterbasis.",
-        "base_evening": "Check-in und Abend in der Marina.",
-        "base_morning": "Rückkehr zur Basis am letzten Morgen.",
-        "base_return": "Check-out in der Heimatmarina.",
-        "hvar": "Schlag zu einer lebhaften Insel mit geschützten Buchten.",
-        "vis": "Weiter zu klarem Wasser und ruhigen Ankerplätzen.",
-        "blue_cave": "Besuch einer der bekanntesten Naturschönheiten der Adria.",
-        "korcula": "Altstadtgassen und ein geschützter Übernachtungsplatz.",
-        "brac": "Rückweg über Inselstrände und Badestopps.",
-        "region_coast": "Kurzer Schlag zu einem geschützten Ankerplatz.",
-        "island_bay": "Badestopp und ruhige Nacht.",
-        "old_town": "Hafenbesuch mit Restaurants an Land.",
-        "quiet_cove": "Geschützte Bucht zum Paddeln und Schnorcheln.",
-        "marina_approach": "Entspannter Schlag zurück Richtung Basis."
-      }
+      "stopTitle": "Tag {day} - {place}"
     },
     "review": {
       "count": "({count, plural, one {# Bewertung} other {# Bewertungen}})",
@@ -1346,6 +1316,14 @@
       "review": "Bewertungen",
       "faq": "FAQ",
       "popularYachts": "Weitere beliebte Yachten"
+    },
+    "faqCategories": {
+      "booking": "Buchung",
+      "payment": "Zahlung",
+      "prices": "Preise",
+      "licences": "Lizenzen",
+      "travel": "Reise",
+      "cancellation": "Stornierung"
     },
     "overview": {
       "location": "Standort",
@@ -1473,6 +1451,10 @@
       "title": "Inserate",
       "description": "Prüfen Sie importierte Yachtinserate und geben Sie Entwürfe für den Katalog frei."
     },
+    "Routes": {
+      "title": "Routenvorschläge",
+      "description": "Schreiben Sie die Segelrouten, die auf einer Inseratseite erscheinen, Basis für Basis."
+    },
     "Audit": {
       "title": "Audit-Log",
       "description": "Jede Mitarbeiteraktion zu einer Buchung, einem Inserat, einem Rabatt oder einer Anfrage."
@@ -1540,6 +1522,10 @@
     "Consultation": {
       "title": "Kontakt aufnehmen",
       "description": "Vereinbaren Sie einen Anruf oder schreiben Sie uns zu Ihrer Reise."
+    },
+    "Faq": {
+      "title": "FAQ",
+      "description": "Die Fragen auf den Yachtseiten schreiben und übersetzen."
     }
   },
   "Profile": {
@@ -2316,6 +2302,140 @@
       },
       "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt."
     },
+    "Routes": {
+      "title": "Routenvorschläge",
+      "subtitle": "Von Hand geschriebene Routen. Eine Route gehört zu einer Charterbasis oder einem Segelrevier, und eine Inseratseite zeigt sie nur dort, wo jemand eine geschrieben hat — hier wird nichts generiert.",
+      "filters": {
+        "country": "Land",
+        "allCountries": "Alle Länder",
+        "kind": "Art",
+        "allKinds": "Alle Arten",
+        "status": "Status",
+        "allStatuses": "Alle Status",
+        "search": "Nach Titel suchen"
+      },
+      "table": {
+        "title": "Route",
+        "target": "Basis oder Revier",
+        "kind": "Art",
+        "nights": "Nächte",
+        "stops": "Stopps",
+        "status": "Status",
+        "actions": "Aktionen"
+      },
+      "kinds": {
+        "seven_days": "7 Tage",
+        "fourteen_days": "14 Tage",
+        "family": "Familie",
+        "first_time_sailors": "Segelneulinge",
+        "active_sailing": "Aktives Segeln"
+      },
+      "status": {
+        "live": "Live",
+        "draft": "Entwurf"
+      },
+      "actions": {
+        "create": "Neue Route",
+        "stops": "Stopps",
+        "preview": "Vorschau",
+        "edit": "Bearbeiten",
+        "publish": "Veröffentlichen",
+        "unpublish": "Zurückziehen",
+        "delete": "Löschen"
+      },
+      "stopCount": "{count, plural, =0 {Keine Stopps} one {# Stopp} other {# Stopps}}",
+      "published": "{title} ist live.",
+      "unpublished": "{title} ist wieder ein Entwurf.",
+      "deleted": "{title} wurde gelöscht.",
+      "empty": "Keine Routen passen zu diesen Filtern",
+      "error": "Routen konnten nicht geladen werden",
+      "target": {
+        "country": "Land",
+        "allCountries": "Alle Länder",
+        "level": "Zuordnen zu",
+        "levelBase": "Einer Charterbasis",
+        "levelRegion": "Einem Segelrevier",
+        "base": "Basis",
+        "region": "Revier",
+        "searchBase": "Marina oder Ort suchen",
+        "searchRegion": "Revier suchen",
+        "chooseBase": "Basis wählen",
+        "chooseRegion": "Revier wählen",
+        "baseOption": "{base} · {place} ({count, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}})",
+        "regionOption": "{region} · {country} ({count, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}})",
+        "noMatches": "Keine Treffer für diese Suche",
+        "hint": "Eine Route gehört zu einer Basis oder zu einem Revier, nie zu beiden. Eine Basisroute schlägt eine Revierroute bei jeder dort liegenden Yacht. Beide Listen sind danach sortiert, wie viele veröffentlichte Yachten hinter jedem Eintrag stehen."
+      },
+      "dialog": {
+        "createTitle": "Neue Route",
+        "editTitle": "Route bearbeiten",
+        "description": "Die Angaben der Route selbst. Ihre Stopps werden auf dem nächsten Bildschirm auf einer Karte gesetzt.",
+        "fields": {
+          "title": "Titel",
+          "titlePlaceholder": "Von Split nach Vis und zurück",
+          "kind": "Art",
+          "nights": "Nächte",
+          "sortOrder": "Reihenfolge",
+          "sortOrderHint": "Niedrigste zuerst, wenn eine Basis mehrere Routen hat",
+          "description": "Beschreibung",
+          "descriptionPlaceholder": "Wie sich diese Route segelt, in ein bis zwei Sätzen."
+        },
+        "errors": {
+          "target": "Wählen Sie eine Basis oder ein Revier für diese Route",
+          "nights": "Zwischen 1 und 28 Nächten",
+          "failed": "Route konnte nicht gespeichert werden"
+        },
+        "cancel": "Abbrechen",
+        "create": "Route anlegen",
+        "save": "Änderungen speichern",
+        "created": "{title} wurde angelegt. Fügen Sie als Nächstes die Stopps hinzu.",
+        "updated": "{title} wurde gespeichert."
+      },
+      "stops": {
+        "subtitle": "{target} · {nights} Nächte",
+        "listTitle": "Route ({count})",
+        "add": "Stopp hinzufügen",
+        "day": "Tag {day}",
+        "moveUp": "Nach vorn schieben",
+        "moveDown": "Nach hinten schieben",
+        "edit": "Bearbeiten",
+        "remove": "Stopp entfernen",
+        "empty": {
+          "title": "Noch keine Stopps",
+          "body": "Die Route existiert, hat aber nichts zu zeichnen: Sie lässt sich nicht veröffentlichen und erscheint auf keiner Inseratseite. Suchen Sie rechts einen Hafen oder tippen Sie auf die Karte, benennen Sie den Stopp und fügen Sie ihn hinzu."
+        },
+        "form": {
+          "addTitle": "Stopp hinzufügen",
+          "editTitle": "Diesen Stopp bearbeiten",
+          "name": "Name des Stopps",
+          "namePlaceholder": "Stadt Vis",
+          "note": "Notiz",
+          "notePlaceholder": "Was hier passiert — die Ankerbucht, der Spaziergang, das Restaurant.",
+          "placed": "Pin bei {lat}, {lng}. Ziehen Sie ihn, um den Stopp zu verschieben.",
+          "unplaced": "Noch keine Position. Suchen Sie einen Ort oder tippen Sie auf die Karte, um den Pin zu setzen.",
+          "save": "Stopp speichern",
+          "append": "Zur Route hinzufügen",
+          "cancelEdit": "Abbrechen"
+        },
+        "search": {
+          "label": "Ort finden",
+          "placeholder": "Vis, Hvar, Bol…",
+          "hint": "Setzt den Pin auf das Ergebnis. Ziehen Sie ihn danach, wenn die Ankerbucht nicht der Ort ist.",
+          "searching": "Wird gesucht…"
+        },
+        "preview": "Vorschau",
+        "close": "Schließen",
+        "saved": "{name} wurde gespeichert.",
+        "added": "{name} wurde hinzugefügt.",
+        "removed": "{name} wurde entfernt.",
+        "failed": "Stopp konnte nicht gespeichert werden"
+      },
+      "previewDialog": {
+        "title": "Routenvorschau",
+        "subtitle": "Genau so, wie sie bei einer Yacht in {target} erscheint.",
+        "empty": "Fügen Sie einen Stopp hinzu, bevor Sie eine Vorschau ansehen — es gibt noch nichts zu zeichnen."
+      }
+    },
     "Payments": {
       "title": "Zahlungen",
       "subtitle": "Überweisungen, die noch zu verbuchen sind, und Beträge, die Kunden zurückgezahlt werden müssen.",
@@ -2515,6 +2635,130 @@
       "mock": "Mock",
       "booking_manager": "Booking Manager",
       "nausys": "NauSYS"
+    },
+    "Faq": {
+      "title": "FAQ",
+      "subtitle": "Jede Frage der Website, mit allen vier Sprachen in einer Zeile. Eine Frage erscheint nur in den Sprachen auf einer Seite, in denen sie beantwortet ist.",
+      "scope": {
+        "site": "Seitenweit",
+        "listing": "Eine Yacht"
+      },
+      "categories": {
+        "booking": "Buchung",
+        "payment": "Zahlung",
+        "prices": "Preise",
+        "licences": "Führerscheine",
+        "travel": "Anreise",
+        "cancellation": "Stornierung"
+      },
+      "locales": {
+        "en": "Englisch",
+        "de": "Deutsch",
+        "es": "Spanisch",
+        "uk": "Ukrainisch"
+      },
+      "localeCodes": {
+        "en": "EN",
+        "de": "DE",
+        "es": "ES",
+        "uk": "UK"
+      },
+      "state": {
+        "answered": "Beantwortet — auf der öffentlichen Seite",
+        "unanswered": "Noch ohne Antwort — auf der Seite ausgeblendet",
+        "missing": "Keine Übersetzung"
+      },
+      "gaps": {
+        "missing_answer": "Ohne Antwort",
+        "missing_locale": "Ohne Übersetzung"
+      },
+      "filters": {
+        "scope": "Geltungsbereich",
+        "category": "Kategorie",
+        "locale": "Zu prüfende Sprache",
+        "gap": "Anzeige",
+        "allCategories": "Alle Kategorien",
+        "anyLocale": "Beliebige Sprache",
+        "allEntries": "Alle Einträge",
+        "search": "Fragen und Antworten durchsuchen",
+        "listing": "Yacht",
+        "listingSearch": "Yachten nach Namen suchen"
+      },
+      "legend": {
+        "title": "Sprachstatus:"
+      },
+      "table": {
+        "order": "Reihenfolge",
+        "question": "Frage",
+        "locales": "Sprachen",
+        "category": "Kategorie",
+        "actions": "Aktionen"
+      },
+      "actions": {
+        "create": "Neuer Eintrag",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "moveUp": "Nach oben",
+        "moveDown": "Nach unten"
+      },
+      "reorderDisabled": "Zum Sortieren eine Kategorie und eine Sprache wählen und Suche und Filter zurücksetzen.",
+      "reordered": "Reihenfolge in allen Sprachen gespeichert.",
+      "deleted": "{count, plural, one {# Übersetzung gelöscht.} other {# Übersetzungen gelöscht.}}",
+      "unpublished": "Noch auf keiner Seite",
+      "noCategory": "Keine Kategorie",
+      "noQuestion": "Ohne Titel",
+      "chooseListing": "Wählen Sie eine Yacht, um ihre eigenen Einträge zu sehen",
+      "empty": "Keine Einträge passen zu diesen Filtern",
+      "error": "FAQ konnte nicht geladen werden",
+      "summary": {
+        "missingAnswer": "{count} von {total} Einträgen haben noch keine Antwort und fehlen deshalb auf der öffentlichen Seite. Geprüft: {locale}.",
+        "missingLocale": "{count} von {total} Einträgen fehlt eine Übersetzung. Geprüft: {locale}."
+      },
+      "dialog": {
+        "createTitle": "Neuer FAQ-Eintrag",
+        "editTitle": "FAQ-Eintrag bearbeiten",
+        "description": "Eine Frage, alle vier Sprachen. Eine leer gelassene Sprache behält, was sie hatte — mit „Diese Übersetzung entfernen“ nehmen Sie eine von der Website.",
+        "scope": {
+          "label": "Wo der Eintrag erscheint"
+        },
+        "category": {
+          "label": "Kategorie",
+          "placeholder": "Kategorie wählen"
+        },
+        "listing": {
+          "label": "Yacht",
+          "search": "Yachten nach Namen suchen",
+          "clear": "Gewählte Yacht entfernen",
+          "noResults": "Keine Yacht mit diesem Namen"
+        },
+        "question": {
+          "label": "Frage",
+          "placeholder": "Die Frage in dieser Sprache schreiben"
+        },
+        "answer": {
+          "label": "Antwort",
+          "placeholder": "Leer lassen, bis die Antwort geschrieben ist",
+          "hint": "Ohne Antwort bleibt die Frage hier und erreicht die öffentliche Seite nie."
+        },
+        "removeTranslation": "Diese Übersetzung entfernen",
+        "translationRemoved": "Die Übersetzung ({locale}) wurde entfernt.",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "create": "Anlegen",
+        "created": "Eintrag angelegt.",
+        "saved": "Eintrag gespeichert.",
+        "failed": "Eintrag konnte nicht gespeichert werden",
+        "cacheRefreshing": "Die öffentliche Seite wird zwischengespeichert; geben Sie ihr einen Moment.",
+        "cacheStale": "Gespeichert, aber der Cache der öffentlichen Seite ließ sich nicht leeren — sie zeigt womöglich noch eine Weile den alten Text.",
+        "errors": {
+          "listingRequired": "Wählen Sie eine Yacht für diesen Eintrag",
+          "categoryRequired": "Ein seitenweiter Eintrag braucht eine Kategorie — er hat keine Yachtseite, auf der er stehen könnte",
+          "questionRequired": "Schreiben Sie die Frage in mindestens einer Sprache",
+          "answerWithoutQuestion": "Diese Sprache hat eine Antwort, aber keine Frage",
+          "questionTooLong": "Die Frage darf höchstens 500 Zeichen haben",
+          "answerTooLong": "Die Antwort darf höchstens 8000 Zeichen haben"
+        }
+      }
     }
   }
 }

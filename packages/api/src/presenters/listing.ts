@@ -68,6 +68,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
     policies: {
       depositInsuranceIncluded: doc.depositInsuranceIncluded,
       petsAllowed: doc.petsAllowed,
+      termsAndConditions: doc.operatorTermsAndConditions,
     },
     availability: {
       hasUnconfirmedAvailability: doc.hasUnconfirmedAvailability,

@@ -4,6 +4,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import {
   auditListQueryOptions,
+  faqListQueryOptions,
   BOOKINGS_PAGE_SIZE,
   bookingDetailQueryOptions,
   bookingQueueQueryOptions,
@@ -11,6 +12,7 @@ import {
   enquiryListQueryOptions,
   invoiceListQueryOptions,
   listingAdminListQueryOptions,
+  routeListQueryOptions,
   syncRunsQueryOptions,
 } from "./queries";
 
@@ -63,4 +65,14 @@ export function prefetchListings(queryClient: QueryClient) {
 /** Server prefetch for /sync — the first page of the unfiltered run history. */
 export function prefetchSyncRuns(queryClient: QueryClient) {
   return queryClient.prefetchQuery(syncRunsQueryOptions({ page: 1 }));
+}
+
+/** Server prefetch for /routes — the first page of the whole route library, drafts included. */
+export function prefetchRoutes(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(routeListQueryOptions({ page: 1 }));
+}
+
+/** Server prefetch for /faq — the site-wide list, every category, which is how the screen opens. */
+export function prefetchFaq(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(faqListQueryOptions({ scope: "site", page: 1 }));
 }

@@ -262,8 +262,13 @@ export async function writeCanonicalCatalogue(
         name: item.name,
         slug: item.slug,
         country: item.country ?? null,
+        // Was missing from the insert while the conflict branch read
+        // `excluded.city`, so every operator's city resolved to null on both
+        // paths - the update copied the value the insert never supplied.
+        city: item.city ?? null,
         email: item.email ?? null,
         phone: item.phone ?? null,
+        termsAndConditions: item.termsAndConditions ?? null,
       })
       .onConflictDoUpdate({
         target: operator.slug,
@@ -273,6 +278,7 @@ export async function writeCanonicalCatalogue(
           city: sql`excluded.city`,
           email: sql`excluded.email`,
           phone: sql`excluded.phone`,
+          termsAndConditions: sql`excluded.terms_and_conditions`,
         },
       })
       .returning({ id: operator.id });

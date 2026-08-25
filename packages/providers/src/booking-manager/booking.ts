@@ -95,7 +95,10 @@ type ReservationBody = {
   dateFrom: string;
   dateTo: string;
   yachtId: RawJSON;
-  status: number;
+  /**
+   * Omitted on create, sent on update. See `reservationBody`.
+   */
+  status?: number;
   clientName: string;
   passengersOnBoard: number;
   currency: string;
@@ -119,8 +122,16 @@ export function createBookingManagerBookingService(
    * is read as a replace rather than a patch: the spec documents one reservation
    * resource and no partial-update semantics, so sending only `{status}` risks
    * the vendor clearing the fields we omitted (Q-BM-PUT).
+   *
+   * `status` is omitted entirely on create. POST can only ever open an option, so
+   * the field says nothing the endpoint does not already decide, and the vendor
+   * asked us not to send it: "you do not need to specify the status ... I strongly
+   * recommend not including the status field" (Diego Pacifico, MMK, 2026-08-25).
+   * Only `dateFrom`, `dateTo` and `yachtId` are mandatory there. It stays on the
+   * update, which is the call that moves an option to a reservation and the one
+   * place the value carries meaning.
    */
-  async function reservationBody(draft: BookingDraft, status: number): Promise<ReservationBody> {
+  async function reservationBody(draft: BookingDraft, status?: number): Promise<ReservationBody> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toExactPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
@@ -138,12 +149,12 @@ export function createBookingManagerBookingService(
       // The vendor declares these as `Long`, so they go out unquoted and whole.
       // `JSON.stringify` on a number would re-round the digits we just preserved.
       yachtId: exactJsonNumber(yachtId),
-      status,
       clientName: fullName(draft.customer),
       passengersOnBoard: draft.guests,
       currency,
       sendNotification,
     };
+    if (status !== undefined) body.status = status;
     if (productName) body.productName = productName;
     /*
      * The bases the offer was priced for, falling back to the listing's own only when the quote
@@ -188,7 +199,7 @@ export function createBookingManagerBookingService(
     const response = await client.post(
       bookingManagerEndpoints.reservation,
       restReservationSchema,
-      await reservationBody(parsed, BM_RESERVATION_STATUS.OPTION),
+      await reservationBody(parsed),
     );
 
     await logEvent(parsed.quoteId, "option_created", response);
@@ -275,6 +286,13 @@ export function createBookingManagerBookingService(
    * silently issuing the call and reporting `cancelled` would tell our own state
    * machine a charter was released while the vendor still holds the customer to it.
    *
+   * There is no way around this, in either API. The SOAP service carries the same
+   * limitation verbatim - `cancelReservation` "Cancels a option. An already
+   * confirmed booking is not possible to cancel automatically"
+   * (availability_service_description v1.26, 1.13) - and the vendor confirmed in
+   * writing on 2026-08-25 that a confirmed reservation is cancelled by contacting
+   * the charter company, through neither the API nor their own UI.
+   *
    * A confirmed reservation has one documented route, `POST /requests` with
    * `BM_REQUEST_TYPE.RESERVATION_CANCELLATION` (v2.2.0). It is deliberately not
    * called here. It files a message for the operator rather than cancelling
@@ -326,6 +344,18 @@ export function createBookingManagerBookingService(
     });
   }
 
+  /**
+   * The REST API genuinely has no endpoint for this, confirmed by the vendor on
+   * 2026-08-25. Their SOAP service does - `insertOptionItem(userId, username,
+   * password, reservationId, optionItemId, amount)`, with `insertDiscountItem`
+   * and `removeInvoiceItem` alongside it (availability_service_description v1.26,
+   * 3.12-3.14).
+   *
+   * Reaching it is not a small change and is not attempted here: SOAP
+   * authenticates with a userId/username/password triple rather than the bearer
+   * token this adapter holds, so it is a second credential to obtain, store and
+   * rotate for one call.
+   */
   async function addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     const parsed = providerExtrasMutationSchema.parse(input);
     throw new ContractError(

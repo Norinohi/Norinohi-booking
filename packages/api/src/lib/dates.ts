@@ -53,3 +53,30 @@ export function effectivePeriod(input: {
 
   return { checkIn: undefined, checkOut: undefined, duration: input.duration };
 }
+
+/**
+ * The same calendar day this many months earlier, or null when the date does not
+ * parse. Clamped rather than overflowed: two months before 30 April is 28
+ * February, not 2 March, because a window that quietly grows is one we would
+ * discover by underbilling.
+ *
+ * Accepts a `yyyy-MM-dd` prefix, so a provider that returns a full datetime for
+ * a period boundary is handled without a second parse at every call site.
+ * `ProviderQuote.checkIn` is typed as a bare string, so that does happen.
+ */
+export function monthsBefore(date: string, months: number): string | null {
+  const at = new Date(`${date.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(at.getTime())) return null;
+
+  const dayOfMonth = at.getUTCDate();
+  const shifted = new Date(at);
+  shifted.setUTCDate(1);
+  shifted.setUTCMonth(shifted.getUTCMonth() - months);
+
+  const lastOfTarget = new Date(
+    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  shifted.setUTCDate(Math.min(dayOfMonth, lastOfTarget));
+
+  return shifted.toISOString().slice(0, 10);
+}

@@ -54,11 +54,17 @@ export default function DetailTabs() {
   const { data } = useListingDetail();
 
   /*
-   * FAQ is the one section that can be absent: no provider publishes per-listing questions, so
-   * `FaqSection` renders nothing without them. Its tab has to go with it — `goTo` no-ops on a
-   * missing id, so the tab would look enabled and simply do nothing when pressed.
+   * Two sections can be absent, and their tabs have to go with them — `goTo` no-ops on a missing
+   * id, so the tab would look enabled and simply do nothing when pressed. The FAQ is empty until
+   * an entry exists in the page's locale with an answer written, and a suggested route exists
+   * only where somebody wrote one for the
+   * charter base or its sailing region.
    */
-  const sections = SECTIONS.filter((id) => id !== "faq" || (data?.faq.length ?? 0) > 0);
+  const sections = SECTIONS.filter(
+    (id) =>
+      (id !== "faq" || (data?.faq.length ?? 0) > 0) &&
+      (id !== "suggested-route" || data?.suggestedRoute != null),
+  );
 
   function goTo(id: string) {
     setActive(id);

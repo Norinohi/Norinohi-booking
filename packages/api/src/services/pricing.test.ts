@@ -136,26 +136,41 @@ describe("resolveAdjustedPrice", () => {
 describe("resolvePaymentPolicy", () => {
   const provider = { mode: "deposit" as const, depositPct: 0.3 };
 
+  /*
+   * Two months before this check-in is 2026-08-10, so `farOut` sits well before
+   * deposits close and `insideWindow` sits after. Every assertion that is not
+   * about lead time uses `farOut`, so the rule cannot quietly decide it.
+   */
+  const farOut = { checkIn: "2026-10-10", asOf: new Date("2026-01-01T00:00:00.000Z") };
+  const insideWindow = { checkIn: "2026-10-10", asOf: new Date("2026-09-01T00:00:00.000Z") };
+
   it("expresses depositPct as a 0-1 ratio, unlike PriceAdjustment.valuePct", () => {
-    expect(resolvePaymentPolicy(null, provider, "EUR").depositPct).toBe(0.3);
+    expect(resolvePaymentPolicy(null, provider, "EUR", farOut).depositPct).toBe(0.3);
   });
 
   it("prefers an explicit listing override over the provider plan", () => {
-    expect(resolvePaymentPolicy({ mode: "deposit", depositPct: 0.25 }, provider, "EUR")).toEqual({
+    expect(
+      resolvePaymentPolicy({ mode: "deposit", depositPct: 0.25 }, provider, "EUR", farOut),
+    ).toEqual({
       mode: "deposit",
       depositPct: 0.25,
-      balanceDueAt: undefined,
+      balanceDueAt: "2026-08-10",
       currency: "EUR",
     });
   });
 
   it("forces 100% when the mode is full, whatever depositPct said", () => {
-    const policy = resolvePaymentPolicy({ mode: "full", depositPct: 0.25 }, provider, "EUR");
+    const policy = resolvePaymentPolicy(
+      { mode: "full", depositPct: 0.25 },
+      provider,
+      "EUR",
+      farOut,
+    );
     expect(policy).toMatchObject({ mode: "full", depositPct: 1 });
   });
 
   it("falls back to the marketplace default of half when nobody specifies", () => {
-    const policy = resolvePaymentPolicy({ mode: "deposit" }, provider, "EUR");
+    const policy = resolvePaymentPolicy({ mode: "deposit" }, provider, "EUR", farOut);
     expect(policy.depositPct).toBe(0.5);
   });
 
@@ -164,12 +179,67 @@ describe("resolvePaymentPolicy", () => {
       { mode: "deposit", depositPct: 0.25 },
       { ...provider, balanceDueAt: "2026-07-01" },
       "EUR",
+      farOut,
     );
     expect(policy.balanceDueAt).toBe("2026-07-01");
   });
 
   it("carries the currency through untouched, including case", () => {
-    expect(resolvePaymentPolicy(null, provider, "usd").currency).toBe("usd");
+    expect(resolvePaymentPolicy(null, provider, "usd", farOut).currency).toBe("usd");
+  });
+
+  describe("lead time", () => {
+    it("takes the whole amount for a charter starting inside two months", () => {
+      const policy = resolvePaymentPolicy(
+        { mode: "deposit", depositPct: 0.25 },
+        provider,
+        "EUR",
+        insideWindow,
+      );
+      expect(policy).toMatchObject({ mode: "full", depositPct: 1 });
+    });
+
+    it("treats exactly two months out as too late, since the rule is *more* than two", () => {
+      const policy = resolvePaymentPolicy(null, provider, "EUR", {
+        checkIn: "2026-10-10",
+        asOf: new Date("2026-08-10T00:00:00.000Z"),
+      });
+      expect(policy.mode).toBe("full");
+    });
+
+    it("still offers the deposit the day before deposits close", () => {
+      const policy = resolvePaymentPolicy(null, provider, "EUR", {
+        checkIn: "2026-10-10",
+        asOf: new Date("2026-08-09T23:59:59.000Z"),
+      });
+      expect(policy).toMatchObject({ mode: "deposit", depositPct: 0.3 });
+    });
+
+    it("only tightens: a provider demanding full prepayment months out keeps it", () => {
+      const policy = resolvePaymentPolicy(null, { mode: "full", depositPct: 1 }, "EUR", farOut);
+      expect(policy).toMatchObject({ mode: "full", depositPct: 1 });
+    });
+
+    it("leaves the deposit on offer when the check-in date does not parse", () => {
+      const policy = resolvePaymentPolicy(null, provider, "EUR", {
+        checkIn: "not-a-date",
+        asOf: new Date("2026-09-01T00:00:00.000Z"),
+      });
+      expect(policy).toMatchObject({ mode: "deposit", balanceDueAt: undefined });
+    });
+
+    it("dates an undated deposit at the moment deposits close", () => {
+      const policy = resolvePaymentPolicy(null, { mode: "deposit", depositPct: 0.5 }, "EUR", {
+        checkIn: "2026-04-30",
+        asOf: new Date("2026-01-01T00:00:00.000Z"),
+      });
+      expect(policy.balanceDueAt).toBe("2026-02-28");
+    });
+
+    it("leaves a full-prepayment policy with no balance date, there being no balance", () => {
+      const policy = resolvePaymentPolicy(null, provider, "EUR", insideWindow);
+      expect(policy.balanceDueAt).toBeUndefined();
+    });
   });
 });
 

@@ -36,6 +36,7 @@ export async function rebuildListingSearchDocs(
       model,
       model_canonical,
       operator,
+      operator_terms_and_conditions,
       base_id,
       base_name,
       city,
@@ -95,6 +96,7 @@ export async function rebuildListingSearchDocs(
       -- group on.
       coalesce(mdl.canonical_name, mdl.name),
       op.name,
+      op.terms_and_conditions,
       bs.id,
       bs.name,
       loc.city,
@@ -466,6 +468,7 @@ export async function rebuildListingSearchDocs(
       model = excluded.model,
       model_canonical = excluded.model_canonical,
       operator = excluded.operator,
+      operator_terms_and_conditions = excluded.operator_terms_and_conditions,
       base_id = excluded.base_id,
       base_name = excluded.base_name,
       city = excluded.city,

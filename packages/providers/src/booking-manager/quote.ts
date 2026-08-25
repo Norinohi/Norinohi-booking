@@ -488,6 +488,21 @@ function buildCharterLines(offer: RestOffer, currency: string, priceMinor: numbe
   ];
 }
 
+/**
+ * The charter price is the whole base, per the vendor: obligatory extras are
+ * excluded, so this cannot be derived from the running subtotal. Rounded half-up
+ * on the minor unit, which is what reconciled against `obligatoryExtrasPrice`.
+ */
+function percentageOfCharter(offer: RestOffer, percentage: number, currency: string): number {
+  if (offer.price == null) {
+    throw new ContractError(
+      `Booking Manager offer for yacht ${offer.yachtId} carries a percentage extra but no charter price to take it on`,
+      { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
+    );
+  }
+  return Math.round((customerPriceMinor(offer, offer.price, currency) * percentage) / 100);
+}
+
 function toExtraLine(
   extra: RestExtras,
   currency: string,
@@ -502,17 +517,30 @@ function toExtraLine(
       { endpoint: bookingManagerEndpoints.offers },
     );
   }
-  // A `kind: 0` extra is a percentage of the charter and leaves `price` at zero,
-  // so the amount below would bill nothing. It is refused rather than guessed:
-  // deriving it would mean picking a base (price? price plus extras?) the vendor
-  // has never stated, and quoting the wrong one under-bills a real charter. None
-  // has been seen on the fleets we sync - if one appears, this is where to answer
-  // it, once the vendor has said what the percentage applies to.
+  // A `kind: 0` extra leaves `price` at zero and carries its value in
+  // `percentage`, taken on the charter price alone - the other obligatory extras
+  // are NOT in the base (Diego Pacifico, MMK, 2026-08-25; undocumented). Reading
+  // `price` here would bill nothing at all.
+  //
+  // The rounded figure is not merely trusted: `mapOfferToProviderQuote` asserts
+  // every extra line against the vendor's own `obligatoryExtrasPrice`, so a
+  // wrong base or a wrong rounding direction fails the quote rather than
+  // mispricing it.
   if (extra.kind === BM_EXTRA_KIND.PERCENTAGE) {
-    throw new ContractError(
-      `Booking Manager obligatory extra ${externalId} on yacht ${offer.yachtId} is priced as a percentage (${extra.percentage ?? "unknown"}%), which has no documented base`,
-      { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
-    );
+    if (extra.percentage == null) {
+      throw new ContractError(
+        `Booking Manager obligatory extra ${externalId} on yacht ${offer.yachtId} is priced as a percentage but carries none`,
+        { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
+      );
+    }
+    return {
+      code: formatExtraCode(EXTRA_KIND, externalId),
+      label: input.labelFor?.(externalId) ?? extra.name?.trim() ?? DEFAULT_LABELS.extra,
+      amount: { amountMinor: percentageOfCharter(offer, extra.percentage, currency), currency },
+      payWhen: extra.payableInBase ? "at_check_in" : "now",
+      kind: "extra",
+      group: "mandatory",
+    };
   }
   if (extra.price == null) {
     throw new ContractError(

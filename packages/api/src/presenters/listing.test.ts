@@ -14,6 +14,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   model: "Predator 60",
   modelCanonical: "Predator 60",
   operator: "Alimos Charter",
+  operatorTermsAndConditions: null,
   baseId: "base_1",
   baseName: "Alimos Marina",
   city: "Athens",
