@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daysBetween, effectivePeriod } from "./dates";
+import { daysBetween, effectivePeriod, monthsBefore } from "./dates";
 
 describe("daysBetween", () => {
   it("counts the nights in a charter week", () => {
@@ -100,5 +100,31 @@ describe("effectivePeriod", () => {
       checkOut: undefined,
       duration: undefined,
     });
+  });
+});
+
+describe("monthsBefore", () => {
+  it("keeps the day of month when the target month is long enough", () => {
+    expect(monthsBefore("2026-10-10", 2)).toBe("2026-08-10");
+  });
+
+  it("clamps rather than overflowing into the next month", () => {
+    expect(monthsBefore("2026-04-30", 2)).toBe("2026-02-28");
+  });
+
+  it("clamps to the real end of February in a leap year", () => {
+    expect(monthsBefore("2028-04-30", 2)).toBe("2028-02-29");
+  });
+
+  it("crosses the year boundary", () => {
+    expect(monthsBefore("2026-01-15", 2)).toBe("2025-11-15");
+  });
+
+  it("accepts a datetime and reads only its date", () => {
+    expect(monthsBefore("2026-10-10T17:30:00.000Z", 2)).toBe("2026-08-10");
+  });
+
+  it("returns null for a date it cannot parse", () => {
+    expect(monthsBefore("not-a-date", 2)).toBeNull();
   });
 });
