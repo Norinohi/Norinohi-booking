@@ -24,6 +24,7 @@ export const lineGroupSchema = z.enum(["mandatory", "optional", "crew"]);
 export const paymentStatusSchema = z.enum([
   "requires_payment",
   "processing",
+  "authorized",
   "succeeded",
   "failed",
   "refunded",

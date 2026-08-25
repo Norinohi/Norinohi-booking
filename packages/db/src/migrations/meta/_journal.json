@@ -505,6 +505,20 @@
       "when": 1787669924660,
       "tag": "0071_numerous_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1787672334072,
+      "tag": "0072_bouncy_juggernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1787672424004,
+      "tag": "0073_serious_kate_bishop",
+      "breakpoints": true
     }
   ]
 }

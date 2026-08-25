@@ -15,6 +15,7 @@ function paymentRow(overrides: Partial<Payment> = {}): Payment {
     status: "succeeded",
     stripePaymentIntentId: "pi_1",
     failureReason: null,
+    authorizedAt: null,
     paidAt: new Date("2026-08-01T10:00:00Z"),
     refundedAt: null,
     disputedAt: null,

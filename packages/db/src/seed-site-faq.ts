@@ -79,10 +79,10 @@ const entries: SiteFaqEntry[] = [
       uk: "Коли бронювання вважається підтвердженим?",
     },
     answer: {
-      en: "Once the charter company has confirmed it in its own system. Until then the booking is being processed. If the operator declines, we cancel the booking and refund the money in full.",
-      de: "Sobald das Charterunternehmen sie in seinem eigenen System bestätigt hat. Bis dahin wird die Buchung bearbeitet. Lehnt der Anbieter ab, stornieren wir die Buchung und erstatten den Betrag vollständig.",
-      es: "Cuando la empresa de chárter la confirma en su propio sistema. Hasta entonces la reserva está en trámite. Si el operador la rechaza, cancelamos la reserva y devolvemos el importe íntegro.",
-      uk: "Після того як чартерна компанія підтвердить його у своїй системі. До того бронювання перебуває в обробці. Якщо оператор відмовить, ми скасовуємо бронювання і повертаємо гроші повністю.",
+      en: "Once the charter company has confirmed it in its own system. Until then the booking is being processed and your card is only held, not charged. If the operator declines, the hold is released and you pay nothing.",
+      de: "Sobald das Charterunternehmen sie in seinem eigenen System bestätigt hat. Bis dahin wird die Buchung bearbeitet und Ihre Karte nur reserviert, nicht belastet. Lehnt der Anbieter ab, wird die Reservierung freigegeben und Sie zahlen nichts.",
+      es: "Cuando la empresa de chárter la confirma en su propio sistema. Hasta entonces la reserva está en trámite y tu tarjeta solo está retenida, no cobrada. Si el operador la rechaza, se libera la retención y no pagas nada.",
+      uk: "Після того як чартерна компанія підтвердить його у своїй системі. До того бронювання перебуває в обробці, а кошти на картці лише заблоковані, не списані. Якщо оператор відмовить, блокування знімається і ви нічого не платите.",
     },
   },
   {

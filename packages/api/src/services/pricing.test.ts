@@ -137,7 +137,7 @@ describe("resolvePaymentPolicy", () => {
   const provider = { mode: "deposit" as const, depositPct: 0.3 };
 
   /*
-   * Two months before this check-in is 2026-08-10, so `farOut` sits well before
+   * Sixty days before this check-in is 2026-08-11, so `farOut` sits well before
    * deposits close and `insideWindow` sits after. Every assertion that is not
    * about lead time uses `farOut`, so the rule cannot quietly decide it.
    */
@@ -154,7 +154,7 @@ describe("resolvePaymentPolicy", () => {
     ).toEqual({
       mode: "deposit",
       depositPct: 0.25,
-      balanceDueAt: "2026-08-10",
+      balanceDueAt: "2026-08-11",
       currency: "EUR",
     });
   });
@@ -189,7 +189,7 @@ describe("resolvePaymentPolicy", () => {
   });
 
   describe("lead time", () => {
-    it("takes the whole amount for a charter starting inside two months", () => {
+    it("takes the whole amount for a charter starting inside 60 days", () => {
       const policy = resolvePaymentPolicy(
         { mode: "deposit", depositPct: 0.25 },
         provider,
@@ -199,10 +199,10 @@ describe("resolvePaymentPolicy", () => {
       expect(policy).toMatchObject({ mode: "full", depositPct: 1 });
     });
 
-    it("treats exactly two months out as too late, since the rule is *more* than two", () => {
+    it("treats exactly 60 days out as too late, since the rule is *more* than two months", () => {
       const policy = resolvePaymentPolicy(null, provider, "EUR", {
         checkIn: "2026-10-10",
-        asOf: new Date("2026-08-10T00:00:00.000Z"),
+        asOf: new Date("2026-08-11T00:00:00.000Z"),
       });
       expect(policy.mode).toBe("full");
     });
@@ -210,7 +210,7 @@ describe("resolvePaymentPolicy", () => {
     it("still offers the deposit the day before deposits close", () => {
       const policy = resolvePaymentPolicy(null, provider, "EUR", {
         checkIn: "2026-10-10",
-        asOf: new Date("2026-08-09T23:59:59.000Z"),
+        asOf: new Date("2026-08-10T23:59:59.000Z"),
       });
       expect(policy).toMatchObject({ mode: "deposit", depositPct: 0.3 });
     });
@@ -233,7 +233,7 @@ describe("resolvePaymentPolicy", () => {
         checkIn: "2026-04-30",
         asOf: new Date("2026-01-01T00:00:00.000Z"),
       });
-      expect(policy.balanceDueAt).toBe("2026-02-28");
+      expect(policy.balanceDueAt).toBe("2026-03-01");
     });
 
     it("leaves a full-prepayment policy with no balance date, there being no balance", () => {

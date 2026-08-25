@@ -74,7 +74,7 @@
         "question": "Ask a question"
       },
       "card": {
-        "notice": "Secure your booking instantly with an online payment.",
+        "notice": "Your card is held now and charged only once the operator confirms the booking. If they can't take it, the hold is released and you pay nothing.",
         "unavailable": "Online card payment is not available right now. Please use Request invoice or Ask a question.",
         "quoteExpired": "Your price has expired. Go back and refresh the quote before paying.",
         "notPayable": "This booking can no longer be paid for. Please start a new one.",
@@ -282,6 +282,7 @@
       "paymentStatus": {
         "requires_payment": "Not paid",
         "processing": "Processing",
+        "authorized": "Held on card",
         "succeeded": "Paid",
         "failed": "Failed",
         "refunded": "Refunded"

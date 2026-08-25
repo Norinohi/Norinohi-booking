@@ -80,3 +80,15 @@ export function monthsBefore(date: string, months: number): string | null {
 
   return shifted.toISOString().slice(0, 10);
 }
+
+/**
+ * The calendar day this many days earlier, or null when the date does not parse.
+ * Accepts a `yyyy-MM-dd` prefix for the same reason as `monthsBefore`.
+ */
+export function daysBefore(date: string, days: number): string | null {
+  const at = new Date(`${date.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(at.getTime())) return null;
+
+  at.setUTCDate(at.getUTCDate() - days);
+  return at.toISOString().slice(0, 10);
+}
