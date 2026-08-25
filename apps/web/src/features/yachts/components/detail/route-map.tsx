@@ -22,7 +22,7 @@ import {
   routePoints,
 } from "../../lib/route-points";
 
-type Stop = { day: number; title: string; description: string; lat: number; lng: number };
+type Stop = { day: number; title: string; description: string | null; lat: number; lng: number };
 
 const ROUTE_SOURCE = "route-curve";
 /* The marker's own colours — white ring, brand core — so the route reads as one piece with them. */
@@ -75,7 +75,9 @@ function RouteStopPopup({
         {stops.map((stop) => (
           <div key={stop.day} className="flex flex-col gap-1.5">
             <p className="text-base leading-5.5 font-bold text-foreground">{stop.title}</p>
-            <p className="text-sm leading-4.5 text-natural-500">{stop.description}</p>
+            {stop.description ? (
+              <p className="text-sm leading-4.5 text-natural-500">{stop.description}</p>
+            ) : null}
           </div>
         ))}
       </div>

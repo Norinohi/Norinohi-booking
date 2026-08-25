@@ -6,6 +6,7 @@
  * ops script. This file is the one place that actually triggers the run.
  */
 import { insertFacetMedia, main } from "./seed";
+import { seedSiteFaq } from "./seed-site-faq";
 
 const args = new Set(process.argv.slice(2));
 
@@ -20,6 +21,15 @@ async function run(): Promise<void> {
     );
     return;
   }
+
+  // The site-wide FAQ references no listing either, so it seeds a provider-synced
+  // database on its own the same way the facet media does.
+  if (args.has("--faq-only")) {
+    const seeded = await seedSiteFaq();
+    console.log(`Seeded ${seeded} site-wide FAQ entries.`);
+    return;
+  }
+
   await main();
 }
 

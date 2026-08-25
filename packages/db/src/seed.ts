@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "./index";
 import { rebuildListingSearchDocs } from "./search";
+import { seedSiteFaq } from "./seed-site-faq";
 import {
   amenity,
   amenityCategory,
@@ -30,6 +31,8 @@ import {
   providerRawPayload,
   region,
   review,
+  suggestedRoute,
+  suggestedRouteStop,
   syncRun,
   yachtCategory,
   yachtModel,
@@ -261,6 +264,55 @@ const bases = [
     website: "www.aopograndmarina.com",
     checkInTime: "15:00",
     checkOutTime: "10:00",
+  },
+];
+
+/*
+ * Two hand-authored itineraries from the client, the first entries in the route library. The
+ * generated 7-day plan they replace put every stop at the base plus a fixed offset; these
+ * coordinates are the harbours themselves, taken from public marina and port positions.
+ *
+ * `note` is left null throughout: the client writes the wording, and filling it here would put
+ * back the invented copy this change exists to remove.
+ */
+const suggestedRoutes = [
+  {
+    id: "srt_dalmatia_split",
+    baseId: "base_split",
+    regionId: null,
+    title: "Central Dalmatia round trip from Split",
+    kind: "seven_days" as const,
+    nights: 7,
+    sortOrder: 0,
+    stops: [
+      { name: "ACI Marina Split", lat: 43.503, lng: 16.43 },
+      { name: "Maslinica, Šolta", lat: 43.3961, lng: 16.2072 },
+      { name: "Vis", lat: 43.0603, lng: 16.1836 },
+      { name: "Hvar", lat: 43.1729, lng: 16.4414 },
+      { name: "Palmižana, Pakleni Islands", lat: 43.1583, lng: 16.3833 },
+      { name: "Bol, Brač", lat: 43.2622, lng: 16.6533 },
+      { name: "Stomorska, Šolta", lat: 43.3892, lng: 16.3542 },
+      { name: "ACI Marina Split", lat: 43.503, lng: 16.43 },
+    ],
+  },
+  {
+    id: "srt_lefkada",
+    baseId: "base_lefkada",
+    regionId: null,
+    title: "Lefkada round trip",
+    kind: "seven_days" as const,
+    /* Six, not seven: the client's list is seven stops, so it is six nights afloat. */
+    nights: 6,
+    sortOrder: 0,
+    stops: [
+      { name: "Lefkas Marina", lat: 38.8339, lng: 20.7119 },
+      { name: "Vathy, Meganisi", lat: 38.6664, lng: 20.7825 },
+      { name: "Vathy, Ithaca", lat: 38.3672, lng: 20.7194 },
+      { name: "Fiskardo, Kefalonia", lat: 38.4581, lng: 20.5761 },
+      { name: "Kalamos", lat: 38.6247, lng: 20.9269 },
+      { name: "Kastos", lat: 38.5789, lng: 20.9114 },
+      { name: "Lefkas Marina", lat: 38.8339, lng: 20.7119 },
+    ],
   },
 ];
 
@@ -1878,6 +1930,35 @@ const insertStaticData = async () => {
         website: sql`excluded.website`,
       },
     });
+  await db
+    .insert(suggestedRoute)
+    .values(
+      suggestedRoutes.map(({ id, baseId, regionId, title, kind, nights, sortOrder }) => ({
+        id,
+        baseId,
+        regionId,
+        title,
+        kind,
+        nights,
+        sortOrder,
+      })),
+    )
+    .onConflictDoNothing();
+  await db
+    .insert(suggestedRouteStop)
+    .values(
+      suggestedRoutes.flatMap((route) =>
+        route.stops.map((stop, index) => ({
+          id: `srts_${route.id.slice("srt_".length)}_${index}`,
+          routeId: route.id,
+          name: stop.name,
+          lat: stop.lat,
+          lng: stop.lng,
+          sortOrder: index,
+        })),
+      ),
+    )
+    .onConflictDoNothing();
   await db.insert(builder).values(builders).onConflictDoNothing();
   await db.insert(yachtModel).values(models).onConflictDoNothing();
   await db.insert(yachtCategory).values(categories).onConflictDoNothing();
@@ -2274,9 +2355,11 @@ export async function main() {
     )
     .onConflictDoNothing();
 
+  const siteFaqCount = await seedSiteFaq();
+
   await rebuildListingSearchDocs(db);
 
   console.log(
-    `Seeded ${yachts.length} mock yacht listings and ${slots.length} availability slots across ${countries.length} countries.`,
+    `Seeded ${yachts.length} mock yacht listings and ${slots.length} availability slots across ${countries.length} countries, plus ${siteFaqCount} site-wide FAQ entries.`,
   );
 }

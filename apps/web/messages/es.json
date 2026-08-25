@@ -940,10 +940,12 @@
       "staffBookings": "Reservas",
       "payments": "Pagos",
       "listings": "Anuncios",
+      "routes": "Rutas sugeridas",
       "sections": {
         "account": "Cuenta",
         "admin": "Administración"
-      }
+      },
+      "faq": "Preguntas frecuentes"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1220,40 +1222,7 @@
       "start": "Inicio",
       "finish": "Fin",
       "day": "Día {day}",
-      "itinerary": "Itinerario de 7 días por {region}",
-      "stopTitle": "Día {day} - {place}",
-      "place": {
-        "base": "{place}",
-        "base_evening": "{place}",
-        "base_morning": "{place}",
-        "base_return": "{place}",
-        "hvar": "Hvar",
-        "vis": "Vis",
-        "blue_cave": "Cueva Azul",
-        "korcula": "Korčula",
-        "brac": "Brač",
-        "region_coast": "Costa de {place}",
-        "island_bay": "Cala de la isla",
-        "old_town": "Casco antiguo",
-        "quiet_cove": "Cala tranquila",
-        "marina_approach": "Aproximación al puerto"
-      },
-      "description": {
-        "base": "Registro y aprovisionamiento en la base de chárter.",
-        "base_evening": "Registro y tarde en el puerto deportivo.",
-        "base_morning": "Regreso a la base la última mañana.",
-        "base_return": "Salida en el puerto de origen.",
-        "hvar": "Navegación hasta una isla animada con calas protegidas.",
-        "vis": "Se sigue hacia aguas claras y fondeaderos tranquilos.",
-        "blue_cave": "Visita a uno de los parajes naturales más conocidos del Adriático.",
-        "korcula": "Paseo por el casco antiguo y amarre resguardado para pasar la noche.",
-        "brac": "Regreso entre playas de la isla y paradas de baño.",
-        "region_coast": "Travesía corta hasta un fondeadero protegido.",
-        "island_bay": "Parada de baño y noche tranquila.",
-        "old_town": "Visita al puerto con restaurantes en tierra.",
-        "quiet_cove": "Cala resguardada para paddle surf y snorkel.",
-        "marina_approach": "Navegación tranquila de vuelta hacia la base."
-      }
+      "stopTitle": "Día {day} - {place}"
     },
     "review": {
       "count": "({count, plural, one {# opinión} other {# opiniones}})",
@@ -1346,6 +1315,14 @@
       "review": "Opiniones",
       "faq": "Preguntas frecuentes",
       "popularYachts": "Otros yates populares"
+    },
+    "faqCategories": {
+      "booking": "Reservas",
+      "payment": "Pago",
+      "prices": "Precios",
+      "licences": "Licencias",
+      "travel": "Viaje",
+      "cancellation": "Cancelación"
     },
     "overview": {
       "location": "Ubicación",
@@ -1473,6 +1450,10 @@
       "title": "Anuncios",
       "description": "Revisa los anuncios de yates importados y publica los borradores en el catálogo."
     },
+    "Routes": {
+      "title": "Rutas sugeridas",
+      "description": "Redacta los itinerarios de navegación que aparecen en la página de un anuncio, base por base."
+    },
     "Audit": {
       "title": "Registro de auditoría",
       "description": "Cada acción del personal registrada sobre una reserva, un anuncio, un descuento o una consulta."
@@ -1540,6 +1521,10 @@
     "Consultation": {
       "title": "Contáctanos",
       "description": "Reserva una llamada o envíanos un mensaje sobre tu viaje."
+    },
+    "Faq": {
+      "title": "Preguntas frecuentes",
+      "description": "Escribe y traduce las preguntas que aparecen en las páginas de yates."
     }
   },
   "Profile": {
@@ -2316,6 +2301,140 @@
       },
       "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío."
     },
+    "Routes": {
+      "title": "Rutas sugeridas",
+      "subtitle": "Itinerarios escritos a mano. Una ruta pertenece a una base de chárter o a una región de navegación, y la página de un anuncio solo la muestra donde alguien la ha escrito: aquí no se genera nada.",
+      "filters": {
+        "country": "País",
+        "allCountries": "Todos los países",
+        "kind": "Tipo",
+        "allKinds": "Todos los tipos",
+        "status": "Estado",
+        "allStatuses": "Todos los estados",
+        "search": "Buscar por título"
+      },
+      "table": {
+        "title": "Ruta",
+        "target": "Base o región",
+        "kind": "Tipo",
+        "nights": "Noches",
+        "stops": "Paradas",
+        "status": "Estado",
+        "actions": "Acciones"
+      },
+      "kinds": {
+        "seven_days": "7 días",
+        "fourteen_days": "14 días",
+        "family": "Familia",
+        "first_time_sailors": "Primera navegación",
+        "active_sailing": "Navegación activa"
+      },
+      "status": {
+        "live": "Publicada",
+        "draft": "Borrador"
+      },
+      "actions": {
+        "create": "Nueva ruta",
+        "stops": "Paradas",
+        "preview": "Vista previa",
+        "edit": "Editar",
+        "publish": "Publicar",
+        "unpublish": "Despublicar",
+        "delete": "Eliminar"
+      },
+      "stopCount": "{count, plural, =0 {Sin paradas} one {# parada} other {# paradas}}",
+      "published": "{title} está publicada.",
+      "unpublished": "{title} vuelve a ser un borrador.",
+      "deleted": "{title} se ha eliminado.",
+      "empty": "Ninguna ruta coincide con estos filtros",
+      "error": "No se pudieron cargar las rutas",
+      "target": {
+        "country": "País",
+        "allCountries": "Todos los países",
+        "level": "Asociar a",
+        "levelBase": "Una base de chárter",
+        "levelRegion": "Una región de navegación",
+        "base": "Base",
+        "region": "Región",
+        "searchBase": "Buscar un puerto o una localidad",
+        "searchRegion": "Buscar una región",
+        "chooseBase": "Elige una base",
+        "chooseRegion": "Elige una región",
+        "baseOption": "{base} · {place} ({count, plural, =0 {sin yates} one {# yate} other {# yates}})",
+        "regionOption": "{region} · {country} ({count, plural, =0 {sin yates} one {# yate} other {# yates}})",
+        "noMatches": "No hay coincidencias para esa búsqueda",
+        "hint": "Una ruta se asocia a una base o a una región, nunca a ambas. La ruta de una base gana sobre la de su región en cualquier yate amarrado allí. Ambas listas se ordenan por cuántos yates publicados hay detrás de cada entrada."
+      },
+      "dialog": {
+        "createTitle": "Nueva ruta",
+        "editTitle": "Editar ruta",
+        "description": "Los datos de la propia ruta. Sus paradas se dibujan sobre un mapa en la pantalla siguiente.",
+        "fields": {
+          "title": "Título",
+          "titlePlaceholder": "De Split a Vis y vuelta",
+          "kind": "Tipo",
+          "nights": "Noches",
+          "sortOrder": "Orden",
+          "sortOrderHint": "El más bajo primero cuando una base tiene varias rutas",
+          "description": "Descripción",
+          "descriptionPlaceholder": "Cómo se navega este itinerario, en una o dos frases."
+        },
+        "errors": {
+          "target": "Elige una base o una región para esta ruta",
+          "nights": "Entre 1 y 28 noches",
+          "failed": "No se pudo guardar la ruta"
+        },
+        "cancel": "Cancelar",
+        "create": "Crear ruta",
+        "save": "Guardar cambios",
+        "created": "{title} se ha creado. Añade ahora sus paradas.",
+        "updated": "{title} se ha guardado."
+      },
+      "stops": {
+        "subtitle": "{target} · {nights} noches",
+        "listTitle": "Itinerario ({count})",
+        "add": "Añadir parada",
+        "day": "Día {day}",
+        "moveUp": "Mover antes",
+        "moveDown": "Mover después",
+        "edit": "Editar",
+        "remove": "Quitar parada",
+        "empty": {
+          "title": "Todavía no hay paradas",
+          "body": "La ruta existe pero no tiene nada que dibujar, así que no puede publicarse y ninguna página de anuncio la mostrará. Busca un puerto a la derecha, o toca el mapa, ponle nombre a la parada y añádela."
+        },
+        "form": {
+          "addTitle": "Añadir una parada",
+          "editTitle": "Editar esta parada",
+          "name": "Nombre de la parada",
+          "namePlaceholder": "Vis pueblo",
+          "note": "Nota",
+          "notePlaceholder": "Qué ocurre aquí: el fondeadero, el paseo, el restaurante.",
+          "placed": "Marcador en {lat}, {lng}. Arrástralo para mover la parada.",
+          "unplaced": "Todavía sin posición. Busca un lugar o toca el mapa para colocar el marcador.",
+          "save": "Guardar parada",
+          "append": "Añadir al itinerario",
+          "cancelEdit": "Cancelar"
+        },
+        "search": {
+          "label": "Buscar un lugar",
+          "placeholder": "Vis, Hvar, Bol…",
+          "hint": "Coloca el marcador sobre el resultado. Arrástralo después si el fondeadero no es el pueblo.",
+          "searching": "Buscando…"
+        },
+        "preview": "Vista previa",
+        "close": "Cerrar",
+        "saved": "{name} se ha guardado.",
+        "added": "{name} se ha añadido.",
+        "removed": "{name} se ha quitado.",
+        "failed": "No se pudo guardar la parada"
+      },
+      "previewDialog": {
+        "title": "Vista previa de la ruta",
+        "subtitle": "Tal como aparece en un yate de {target}.",
+        "empty": "Añade una parada antes de ver la vista previa: todavía no hay nada que dibujar."
+      }
+    },
     "Payments": {
       "title": "Pagos",
       "subtitle": "Transferencias pendientes de conciliar y dinero que debe devolverse.",
@@ -2515,6 +2634,129 @@
       "mock": "Mock",
       "booking_manager": "Booking Manager",
       "nausys": "NauSYS"
+    },
+    "Faq": {
+      "title": "Preguntas frecuentes",
+      "subtitle": "Todas las preguntas del sitio, con los cuatro idiomas en una sola fila. Una pregunta llega a la página solo en los idiomas que tienen respuesta.",
+      "scope": {
+        "site": "Todo el sitio",
+        "listing": "Un yate"
+      },
+      "categories": {
+        "booking": "Reserva",
+        "payment": "Pago",
+        "prices": "Precios",
+        "licences": "Titulaciones",
+        "travel": "Viaje",
+        "cancellation": "Cancelación"
+      },
+      "locales": {
+        "en": "Inglés",
+        "de": "Alemán",
+        "es": "Español",
+        "uk": "Ucraniano"
+      },
+      "localeCodes": {
+        "en": "EN",
+        "de": "DE",
+        "es": "ES",
+        "uk": "UK"
+      },
+      "state": {
+        "answered": "Respondida — visible en la página",
+        "unanswered": "Sin respuesta — oculta en la página",
+        "missing": "Sin traducción"
+      },
+      "gaps": {
+        "missing_answer": "Sin respuesta",
+        "missing_locale": "Sin traducción"
+      },
+      "filters": {
+        "scope": "Alcance",
+        "category": "Categoría",
+        "locale": "Idioma a revisar",
+        "gap": "Qué mostrar",
+        "allCategories": "Todas las categorías",
+        "anyLocale": "Cualquier idioma",
+        "allEntries": "Todas las entradas",
+        "search": "Buscar en preguntas y respuestas",
+        "listing": "Yate",
+        "listingSearch": "Buscar yates por nombre"
+      },
+      "legend": {
+        "title": "Estado por idioma:"
+      },
+      "table": {
+        "order": "Orden",
+        "question": "Pregunta",
+        "locales": "Idiomas",
+        "category": "Categoría",
+        "actions": "Acciones"
+      },
+      "actions": {
+        "create": "Nueva entrada",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "moveUp": "Subir",
+        "moveDown": "Bajar"
+      },
+      "reorderDisabled": "Elige una categoría y un idioma, y quita la búsqueda y los filtros, para reordenar.",
+      "reordered": "Orden guardado en todos los idiomas.",
+      "deleted": "{count, plural, one {# traducción eliminada.} other {# traducciones eliminadas.}}",
+      "unpublished": "Todavía en ninguna página",
+      "noCategory": "Sin categoría",
+      "noQuestion": "Sin título",
+      "chooseListing": "Elige un yate para ver sus propias entradas",
+      "empty": "Ninguna entrada coincide con estos filtros",
+      "error": "No se pudieron cargar las preguntas",
+      "summary": {
+        "missingAnswer": "{count} de {total} entradas aún no tienen respuesta, así que la página pública las omite. Revisando: {locale}.",
+        "missingLocale": "A {count} de {total} entradas les falta una traducción. Revisando: {locale}."
+      },
+      "dialog": {
+        "createTitle": "Nueva entrada",
+        "editTitle": "Editar entrada",
+        "description": "Una pregunta, los cuatro idiomas. Un idioma que dejes en blanco conserva lo que ya tenía; usa «Eliminar esta traducción» para quitarla del sitio.",
+        "scope": {
+          "label": "Dónde aparece"
+        },
+        "category": {
+          "label": "Categoría",
+          "placeholder": "Elige una categoría"
+        },
+        "listing": {
+          "label": "Yate",
+          "search": "Buscar yates por nombre",
+          "clear": "Quitar el yate elegido"
+        },
+        "question": {
+          "label": "Pregunta",
+          "placeholder": "Escribe la pregunta en este idioma"
+        },
+        "answer": {
+          "label": "Respuesta",
+          "placeholder": "Déjalo vacío hasta que haya respuesta",
+          "hint": "Sin respuesta, la pregunta se queda aquí y nunca llega a la página pública."
+        },
+        "removeTranslation": "Eliminar esta traducción",
+        "translationRemoved": "Se eliminó la traducción al {locale}.",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "create": "Crear",
+        "created": "Entrada creada.",
+        "saved": "Entrada guardada.",
+        "failed": "No se pudo guardar la entrada",
+        "cacheRefreshing": "La página pública está en caché; dale un momento para actualizarse.",
+        "cacheStale": "Guardado, pero no se pudo vaciar la caché de la página pública: puede mostrar el texto anterior durante un rato.",
+        "errors": {
+          "listingRequired": "Elige un yate para esta entrada",
+          "categoryRequired": "Una entrada de todo el sitio necesita categoría: no tiene página de yate donde situarse",
+          "questionRequired": "Escribe la pregunta al menos en un idioma",
+          "answerWithoutQuestion": "Este idioma tiene respuesta pero no pregunta",
+          "questionTooLong": "La pregunta no puede pasar de 500 caracteres",
+          "answerTooLong": "La respuesta no puede pasar de 8000 caracteres"
+        }
+      }
     }
   }
 }

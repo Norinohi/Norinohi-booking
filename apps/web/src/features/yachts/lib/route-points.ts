@@ -1,7 +1,8 @@
 export type RouteStop = {
   day: number;
   title: string;
-  description: string;
+  /** The author's note about this stop, where they wrote one. */
+  description: string | null;
   lat: number;
   lng: number;
 };

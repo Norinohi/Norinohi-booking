@@ -16,6 +16,7 @@ import type {
   AvailabilityCalendarInput,
   AvailabilityConstraints,
   FacetMediaKind,
+  FaqCategory,
   ListingDetail,
   ListingFacets,
   ListingFacetOption,
@@ -28,6 +29,7 @@ import type {
   ListingSearchResult,
   ListingSuggestion,
   SearchSort,
+  SuggestedRoute,
 } from "./types";
 
 type SearchRow = ListingSearchDoc;
@@ -197,7 +199,7 @@ export async function getListingDetailByIdOrSlug(
   const [localized] = await localizeSearchDocs(db, [raw], locale, translate);
   const listing = localized ?? raw;
 
-  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose] =
+  const [infoRows, amenityRows, extraRows, faqRows, reviews, popularYachts, prose, route] =
     await Promise.all([
       db.execute<{
         beamM: string | null;
@@ -307,11 +309,30 @@ export async function getListingDetailByIdOrSlug(
          order in every locale. */
       order by extra.obligatory desc, extra.price_minor, extra.name asc
     `),
-      db.execute<{ id: string; question: string; answer: string }>(sql`
-      select id, question, answer
+      /*
+       * Listing-specific entries and site-wide ones in one read, the listing's own first.
+       * A site-wide entry is the row with a null listing_id; `category` groups it on the page
+       * and orders it here by the enum's declaration order, which is the client's order.
+       *
+       * An entry with no answer is dropped rather than returned blank: the client sent the
+       * questions before the answers, and a question rendered under a heading with nothing
+       * under it reads as a broken page rather than as work in progress.
+       *
+       * Locale is matched exactly, with no fallback, for the same reason providerDescription
+       * refuses one: an English answer served under lang="uk" is worse than a shorter page.
+       */
+      db.execute<{
+        id: string;
+        question: string;
+        answer: string;
+        category: FaqCategory | null;
+      }>(sql`
+      select id, question, answer, category
       from faq
-      where listing_id = ${listing.listingId}
-      order by sort_order asc, created_at asc
+      where (listing_id = ${listing.listingId} or listing_id is null)
+        and locale = ${locale}
+        and nullif(btrim(answer), '') is not null
+      order by (listing_id is null), category, sort_order asc, created_at asc
     `),
       listListingReviews(db, listing.listingId),
       /* Localized with the same translator as the page around them: these render as ordinary
@@ -321,6 +342,7 @@ export async function getListingDetailByIdOrSlug(
         localizeSearchDocs(db, docs, locale, translate),
       ),
       providerDescription(db, listing.listingId, locale),
+      suggestedRouteFor(db, listing.baseId),
     ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
@@ -444,7 +466,7 @@ export async function getListingDetailByIdOrSlug(
       },
       map: { lat: listing.lat ?? 0, lng: listing.lng ?? 0 },
     },
-    suggestedRoute: suggestedRouteFor(listing),
+    suggestedRoute: route,
     reviews,
     faq: faqRows.rows,
     popularYachts,
@@ -1527,157 +1549,64 @@ function metresValue(value: string | null | undefined): string | null {
 }
 
 /**
- * The itinerary, as a shape the web can write in its own language.
+ * The itinerary written for this listing's charter base, or for its sailing region.
  *
- * `kind` says which stop this is and `place` carries the only part of it that is real data - the
- * marina's name, or the region's. Everything else here is generated copy, so the words belong in
- * the message files with the rest of the generated copy; `title` and `description` stay as the
- * English fallback for a kind the web has no message for yet.
+ * Nothing is composed here. A route exists because somebody wrote it, and where nobody has this
+ * returns null and the section does not render - which replaces a generated 7-day plan whose
+ * stops were the marina shifted by a fixed offset (docs/generated-content-audit.md §1).
  *
- * The section itself is invented, not sourced - see docs/generated-content-audit.md. Translating
- * it changes only which language it is invented in.
+ * A route attached to the base wins over one attached to its region, then `sort_order`. Joining
+ * the stops rather than fetching them separately also drops a route that has none, which has no
+ * itinerary to show.
  */
-function suggestedRouteFor(listing: ListingSearchDoc): ListingDetail["suggestedRoute"] {
-  const lat = listing.lat ?? 0;
-  const lng = listing.lng ?? 0;
-  const places = routePlacesFor(listing.region, listing.location);
+async function suggestedRouteFor(
+  db: NodePgDatabase<typeof schema>,
+  baseId: string,
+): Promise<SuggestedRoute | null> {
+  const rows = await db.execute<{
+    title: string;
+    description: string | null;
+    name: string;
+    note: string | null;
+    lat: number;
+    lng: number;
+  }>(sql`
+    with picked as (
+      select r.id, r.title, r.description
+      from suggested_route r
+      where r.active
+        and (
+          r.base_id = ${baseId}
+          or r.region_id = (
+            select l.region_id
+            from base b
+            join location l on l.id = b.location_id
+            where b.id = ${baseId}
+          )
+        )
+      order by (r.base_id is null), r.sort_order asc, r.created_at asc
+      limit 1
+    )
+    select p.title, p.description, s.name, s.lat, s.lng, s.note
+    from picked p
+    join suggested_route_stop s on s.route_id = p.id
+    order by s.sort_order asc
+  `);
+
+  const first = rows.rows[0];
+  if (!first) return null;
 
   return {
-    title: `7-day itinerary through ${listing.region}`,
-    region: listing.region,
-    map: { lat, lng },
-    stops: places.map((place, index) => ({
+    title: first.title,
+    description: first.description,
+    stops: rows.rows.map((stop, index) => ({
       day: index + 1,
-      kind: place.kind,
-      place: place.place,
-      title: `Day ${index + 1} - ${place.title}`,
-      description: place.description,
-      lat: lat + place.latOffset,
-      lng: lng + place.lngOffset,
+      name: stop.name,
+      note: stop.note,
+      lat: stop.lat,
+      lng: stop.lng,
     })),
   };
-}
-
-function routePlacesFor(region: string, location: string) {
-  if (region.toLowerCase().includes("dalmatia")) {
-    return [
-      {
-        kind: "base_evening" as const,
-        place: location,
-        title: location,
-        description: "Check-in and evening in the marina.",
-        latOffset: 0,
-        lngOffset: 0,
-      },
-      {
-        kind: "hvar" as const,
-        place: null,
-        title: "Hvar",
-        description: "Sail to a lively island stop with protected bays.",
-        latOffset: -0.18,
-        lngOffset: 0.15,
-      },
-      {
-        kind: "vis" as const,
-        place: null,
-        title: "Vis",
-        description: "Continue to clear water and quiet anchorages.",
-        latOffset: -0.38,
-        lngOffset: 0.04,
-      },
-      {
-        kind: "blue_cave" as const,
-        place: null,
-        title: "Blue Cave",
-        description: "Visit one of the Adriatic's best-known natural sights.",
-        latOffset: -0.47,
-        lngOffset: -0.1,
-      },
-      {
-        kind: "korcula" as const,
-        place: null,
-        title: "Korcula",
-        description: "Explore old-town streets and a sheltered overnight stop.",
-        latOffset: -0.56,
-        lngOffset: 0.42,
-      },
-      {
-        kind: "brac" as const,
-        place: null,
-        title: "Brac",
-        description: "Return through island beaches and swim stops.",
-        latOffset: -0.26,
-        lngOffset: 0.32,
-      },
-      {
-        kind: "base_morning" as const,
-        place: location,
-        title: location,
-        description: "Final morning return to base.",
-        latOffset: 0,
-        lngOffset: 0,
-      },
-    ];
-  }
-
-  return [
-    {
-      kind: "base" as const,
-      place: location,
-      title: location,
-      description: "Check-in and provisioning at the charter base.",
-      latOffset: 0,
-      lngOffset: 0,
-    },
-    {
-      kind: "region_coast" as const,
-      place: region,
-      title: `${region} coast`,
-      description: "Short sail to a protected anchorage.",
-      latOffset: 0.12,
-      lngOffset: 0.16,
-    },
-    {
-      kind: "island_bay" as const,
-      place: null,
-      title: "Island bay",
-      description: "Swimming stop and relaxed overnight.",
-      latOffset: 0.18,
-      lngOffset: -0.12,
-    },
-    {
-      kind: "old_town" as const,
-      place: null,
-      title: "Old town",
-      description: "Harbor visit with restaurants ashore.",
-      latOffset: -0.12,
-      lngOffset: 0.18,
-    },
-    {
-      kind: "quiet_cove" as const,
-      place: null,
-      title: "Quiet cove",
-      description: "Sheltered bay for paddleboarding and snorkeling.",
-      latOffset: -0.18,
-      lngOffset: -0.08,
-    },
-    {
-      kind: "marina_approach" as const,
-      place: null,
-      title: "Marina approach",
-      description: "Easy sail back toward the base area.",
-      latOffset: 0.08,
-      lngOffset: -0.2,
-    },
-    {
-      kind: "base_return" as const,
-      place: location,
-      title: location,
-      description: "Check-out at the home marina.",
-      latOffset: 0,
-      lngOffset: 0,
-    },
-  ];
 }
 
 /**

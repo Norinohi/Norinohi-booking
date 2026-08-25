@@ -1,4 +1,7 @@
+import type { faqCategory } from "../schema/content";
 import type { CrewType } from "./crew";
+
+export type FaqCategory = (typeof faqCategory)["enumValues"][number];
 
 export type SearchSort = "recommended" | "price-asc" | "price-desc" | "rating" | "newest";
 
@@ -120,27 +123,24 @@ export type ListingSearchResult = {
 };
 
 /**
- * The stops a generated itinerary is made of.
+ * A hand-authored itinerary, read from the route library rather than composed here.
  *
- * Named rather than free text so the copy can live per locale in the web app. The Dalmatian
- * islands have their own kinds because that route names real places; every other region falls
- * through to the generic set.
+ * Every field is somebody's editorial text and every coordinate is the place itself, so nothing
+ * in it is translated or derived - which is also why the whole thing is nullable. Most bases have
+ * no route, and the section renders only where one exists.
  */
-export type RouteStopKind =
-  | "base"
-  | "base_evening"
-  | "base_morning"
-  | "base_return"
-  | "hvar"
-  | "vis"
-  | "blue_cave"
-  | "korcula"
-  | "brac"
-  | "region_coast"
-  | "island_bay"
-  | "old_town"
-  | "quiet_cove"
-  | "marina_approach";
+export type SuggestedRoute = {
+  title: string;
+  description: string | null;
+  stops: {
+    /** Position in the itinerary, from 1. Not a calendar date: a route is not a charter. */
+    day: number;
+    name: string;
+    note: string | null;
+    lat: number;
+    lng: number;
+  }[];
+};
 
 export type ListingDetail = ListingSearchDoc & {
   /** The provider's own prose in the requested locale; null when it ships none. */
@@ -187,26 +187,10 @@ export type ListingDetail = ListingSearchDoc & {
     };
     map: { lat: number; lng: number };
   };
-  suggestedRoute: {
-    /** English fallback for the heading; the web writes it per locale from `region`. */
-    title: string;
-    region: string;
-    map: { lat: number; lng: number };
-    stops: {
-      day: number;
-      /** Which stop of the itinerary this is, and so which line of copy describes it. */
-      kind: RouteStopKind;
-      /** The marina or region this stop names, where it names one at all. */
-      place: string | null;
-      /** English fallbacks, for a kind the web has no message for yet. */
-      title: string;
-      description: string;
-      lat: number;
-      lng: number;
-    }[];
-  };
+  suggestedRoute: SuggestedRoute | null;
   reviews: ListingReview[];
-  faq: { id: string; question: string; answer: string }[];
+  /** `category` is null on a listing's own entries; the six codes are the site-wide taxonomy. */
+  faq: { id: string; question: string; answer: string; category: FaqCategory | null }[];
   popularYachts: ListingSearchDoc[];
 };
 

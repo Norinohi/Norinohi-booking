@@ -940,10 +940,12 @@
       "staffBookings": "Bookings",
       "payments": "Payments",
       "listings": "Listings",
+      "routes": "Suggested Routes",
       "sections": {
         "account": "Account",
         "admin": "Admin"
-      }
+      },
+      "faq": "FAQ"
     },
     "UserMenu": {
       "account": "Account",
@@ -1220,40 +1222,7 @@
       "start": "Start",
       "finish": "Finish",
       "day": "Day {day}",
-      "itinerary": "7-day itinerary through {region}",
-      "stopTitle": "Day {day} - {place}",
-      "place": {
-        "base": "{place}",
-        "base_evening": "{place}",
-        "base_morning": "{place}",
-        "base_return": "{place}",
-        "hvar": "Hvar",
-        "vis": "Vis",
-        "blue_cave": "Blue Cave",
-        "korcula": "Korcula",
-        "brac": "Brac",
-        "region_coast": "{place} coast",
-        "island_bay": "Island bay",
-        "old_town": "Old town",
-        "quiet_cove": "Quiet cove",
-        "marina_approach": "Marina approach"
-      },
-      "description": {
-        "base": "Check-in and provisioning at the charter base.",
-        "base_evening": "Check-in and evening in the marina.",
-        "base_morning": "Final morning return to base.",
-        "base_return": "Check-out at the home marina.",
-        "hvar": "Sail to a lively island stop with protected bays.",
-        "vis": "Continue to clear water and quiet anchorages.",
-        "blue_cave": "Visit one of the Adriatic's best-known natural sights.",
-        "korcula": "Explore old-town streets and a sheltered overnight stop.",
-        "brac": "Return through island beaches and swim stops.",
-        "region_coast": "Short sail to a protected anchorage.",
-        "island_bay": "Swimming stop and relaxed overnight.",
-        "old_town": "Harbor visit with restaurants ashore.",
-        "quiet_cove": "Sheltered bay for paddleboarding and snorkeling.",
-        "marina_approach": "Easy sail back toward the base area."
-      }
+      "stopTitle": "Day {day} - {place}"
     },
     "review": {
       "count": "({count, plural, one {# review} other {# reviews}})",
@@ -1346,6 +1315,14 @@
       "review": "Review",
       "faq": "FAQ",
       "popularYachts": "Other popular yachts"
+    },
+    "faqCategories": {
+      "booking": "Booking",
+      "payment": "Payment",
+      "prices": "Prices",
+      "licences": "Licences",
+      "travel": "Travel",
+      "cancellation": "Cancellation"
     },
     "overview": {
       "location": "Location",
@@ -1473,6 +1450,10 @@
       "title": "Listings",
       "description": "Review imported yacht listings and release drafts to the catalogue."
     },
+    "Routes": {
+      "title": "Suggested routes",
+      "description": "Write the sailing itineraries shown on a listing page, base by base."
+    },
     "Audit": {
       "title": "Audit Log",
       "description": "Every staff action recorded against a booking, listing, discount or enquiry."
@@ -1540,6 +1521,10 @@
     "Consultation": {
       "title": "Get in touch",
       "description": "Book a call or send us a message about your trip."
+    },
+    "Faq": {
+      "title": "FAQ",
+      "description": "Write and translate the questions shown on yacht pages."
     }
   },
   "Profile": {
@@ -2316,6 +2301,140 @@
       },
       "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar."
     },
+    "Routes": {
+      "title": "Suggested routes",
+      "subtitle": "Hand-authored itineraries. A route belongs to one charter base or one sailing region, and a listing page shows it only where somebody wrote one — nothing here is generated.",
+      "filters": {
+        "country": "Country",
+        "allCountries": "All countries",
+        "kind": "Kind",
+        "allKinds": "All kinds",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "search": "Search by title"
+      },
+      "table": {
+        "title": "Route",
+        "target": "Base or region",
+        "kind": "Kind",
+        "nights": "Nights",
+        "stops": "Stops",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "kinds": {
+        "seven_days": "7 days",
+        "fourteen_days": "14 days",
+        "family": "Family",
+        "first_time_sailors": "First-time sailors",
+        "active_sailing": "Active sailing"
+      },
+      "status": {
+        "live": "Live",
+        "draft": "Draft"
+      },
+      "actions": {
+        "create": "New route",
+        "stops": "Stops",
+        "preview": "Preview",
+        "edit": "Edit",
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "delete": "Delete"
+      },
+      "stopCount": "{count, plural, =0 {No stops} one {# stop} other {# stops}}",
+      "published": "{title} is live.",
+      "unpublished": "{title} is back to draft.",
+      "deleted": "{title} was deleted.",
+      "empty": "No routes match these filters",
+      "error": "Couldn't load routes",
+      "target": {
+        "country": "Country",
+        "allCountries": "All countries",
+        "level": "Attach to",
+        "levelBase": "A charter base",
+        "levelRegion": "A sailing region",
+        "base": "Base",
+        "region": "Region",
+        "searchBase": "Search a marina or town",
+        "searchRegion": "Search a region",
+        "chooseBase": "Choose a base",
+        "chooseRegion": "Choose a region",
+        "baseOption": "{base} · {place} ({count, plural, =0 {no yachts} one {# yacht} other {# yachts}})",
+        "regionOption": "{region} · {country} ({count, plural, =0 {no yachts} one {# yacht} other {# yachts}})",
+        "noMatches": "Nothing matches that search",
+        "hint": "A route attaches to a base or to a region, never to both. A base route wins over a region one on any yacht moored there. Both lists are ordered by how many published yachts sit behind each entry."
+      },
+      "dialog": {
+        "createTitle": "New route",
+        "editTitle": "Edit route",
+        "description": "The route's own details. Its stops are drawn on a map on the next screen.",
+        "fields": {
+          "title": "Title",
+          "titlePlaceholder": "Split to Vis and back",
+          "kind": "Kind",
+          "nights": "Nights",
+          "sortOrder": "Order",
+          "sortOrderHint": "Lowest first when a base has several routes",
+          "description": "Description",
+          "descriptionPlaceholder": "What this itinerary is like to sail, in a sentence or two."
+        },
+        "errors": {
+          "target": "Choose a base or a region for this route",
+          "nights": "Between 1 and 28 nights",
+          "failed": "Couldn't save the route"
+        },
+        "cancel": "Cancel",
+        "create": "Create route",
+        "save": "Save changes",
+        "created": "{title} was created. Add its stops next.",
+        "updated": "{title} was saved."
+      },
+      "stops": {
+        "subtitle": "{target} · {nights} nights",
+        "listTitle": "Itinerary ({count})",
+        "add": "Add stop",
+        "day": "Day {day}",
+        "moveUp": "Move earlier",
+        "moveDown": "Move later",
+        "edit": "Edit",
+        "remove": "Remove stop",
+        "empty": {
+          "title": "No stops yet",
+          "body": "The route exists but has nothing to draw, so it cannot be published and no listing page will show it. Search for a harbour on the right, or tap the map, then name the stop and add it."
+        },
+        "form": {
+          "addTitle": "Add a stop",
+          "editTitle": "Edit this stop",
+          "name": "Stop name",
+          "namePlaceholder": "Vis town",
+          "note": "Note",
+          "notePlaceholder": "What happens here — the anchorage, the walk, the restaurant.",
+          "placed": "Pin at {lat}, {lng}. Drag it to move the stop.",
+          "unplaced": "No position yet. Search for a place or tap the map to drop the pin.",
+          "save": "Save stop",
+          "append": "Add to itinerary",
+          "cancelEdit": "Cancel"
+        },
+        "search": {
+          "label": "Find a place",
+          "placeholder": "Vis, Hvar, Bol…",
+          "hint": "Picks the pin up and drops it on the result. Drag it afterwards if the anchorage is not the town.",
+          "searching": "Searching…"
+        },
+        "preview": "Preview",
+        "close": "Close",
+        "saved": "{name} was saved.",
+        "added": "{name} was added.",
+        "removed": "{name} was removed.",
+        "failed": "Couldn't save the stop"
+      },
+      "previewDialog": {
+        "title": "Route preview",
+        "subtitle": "Exactly as it appears on a yacht at {target}.",
+        "empty": "Add a stop before previewing — there is nothing to draw yet."
+      }
+    },
     "Payments": {
       "title": "Payments",
       "subtitle": "Bank transfers waiting to be settled, and money owed back to customers.",
@@ -2515,6 +2634,129 @@
       "mock": "Mock",
       "booking_manager": "Booking Manager",
       "nausys": "NauSYS"
+    },
+    "Faq": {
+      "title": "FAQ",
+      "subtitle": "Every question on the site, with all four languages on one row. A question reaches a page only in the languages that have an answer.",
+      "scope": {
+        "site": "Site-wide",
+        "listing": "One yacht"
+      },
+      "categories": {
+        "booking": "Booking",
+        "payment": "Payment",
+        "prices": "Prices",
+        "licences": "Licences",
+        "travel": "Travel",
+        "cancellation": "Cancellation"
+      },
+      "locales": {
+        "en": "English",
+        "de": "German",
+        "es": "Spanish",
+        "uk": "Ukrainian"
+      },
+      "localeCodes": {
+        "en": "EN",
+        "de": "DE",
+        "es": "ES",
+        "uk": "UK"
+      },
+      "state": {
+        "answered": "Answered — on the public page",
+        "unanswered": "No answer yet — hidden from the page",
+        "missing": "No translation"
+      },
+      "gaps": {
+        "missing_answer": "Missing an answer",
+        "missing_locale": "Missing a translation"
+      },
+      "filters": {
+        "scope": "Scope",
+        "category": "Category",
+        "locale": "Language to check",
+        "gap": "What to show",
+        "allCategories": "All categories",
+        "anyLocale": "Any language",
+        "allEntries": "All entries",
+        "search": "Search questions and answers",
+        "listing": "Yacht",
+        "listingSearch": "Search yachts by name"
+      },
+      "legend": {
+        "title": "Language status:"
+      },
+      "table": {
+        "order": "Order",
+        "question": "Question",
+        "locales": "Languages",
+        "category": "Category",
+        "actions": "Actions"
+      },
+      "actions": {
+        "create": "New entry",
+        "edit": "Edit",
+        "delete": "Delete",
+        "moveUp": "Move up",
+        "moveDown": "Move down"
+      },
+      "reorderDisabled": "Pick one category and one language, and clear the search and filters, to reorder.",
+      "reordered": "Order saved, in every language.",
+      "deleted": "{count, plural, one {# translation deleted.} other {# translations deleted.}}",
+      "unpublished": "On no page yet",
+      "noCategory": "No category",
+      "noQuestion": "Untitled",
+      "chooseListing": "Choose a yacht to see its own entries",
+      "empty": "No entries match these filters",
+      "error": "Couldn't load the FAQ",
+      "summary": {
+        "missingAnswer": "{count} of {total} entries have no answer yet, so the public page leaves them out. Checking: {locale}.",
+        "missingLocale": "{count} of {total} entries are missing a translation. Checking: {locale}."
+      },
+      "dialog": {
+        "createTitle": "New FAQ entry",
+        "editTitle": "Edit FAQ entry",
+        "description": "One question, all four languages. A language left blank keeps whatever it already had — use Remove this translation to take one off the site.",
+        "scope": {
+          "label": "Where it appears"
+        },
+        "category": {
+          "label": "Category",
+          "placeholder": "Choose a category"
+        },
+        "listing": {
+          "label": "Yacht",
+          "search": "Search yachts by name",
+          "clear": "Clear the chosen yacht"
+        },
+        "question": {
+          "label": "Question",
+          "placeholder": "Write the question in this language"
+        },
+        "answer": {
+          "label": "Answer",
+          "placeholder": "Leave empty until the answer is written",
+          "hint": "Without an answer the question stays here and never reaches the public page."
+        },
+        "removeTranslation": "Remove this translation",
+        "translationRemoved": "The {locale} translation was removed.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create",
+        "created": "Entry created.",
+        "saved": "Entry saved.",
+        "failed": "Couldn't save the entry",
+        "cacheRefreshing": "The public page is cached, so give it a moment to catch up.",
+        "cacheStale": "Saved, but the public page's cache could not be cleared — it may show the old text for a while.",
+        "errors": {
+          "listingRequired": "Choose a yacht for this entry",
+          "categoryRequired": "A site-wide entry needs a category — it has no yacht page to sit on",
+          "questionRequired": "Write the question in at least one language",
+          "answerWithoutQuestion": "This language has an answer but no question",
+          "questionTooLong": "Keep the question under 500 characters",
+          "answerTooLong": "Keep the answer under 8000 characters"
+        }
+      }
     }
   }
 }
