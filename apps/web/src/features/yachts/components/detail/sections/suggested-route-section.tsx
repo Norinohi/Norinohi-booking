@@ -1,7 +1,14 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
+import {
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "motion/react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
@@ -41,24 +48,36 @@ type Stop = { title: string; text: string };
 
 type Progress = ReturnType<typeof useTransform<number, number>>;
 
+/* One second per leg reads as travel rather than a page effect; seven stops take six. */
+const SECONDS_PER_DAY = 1;
+
 /*
- * The route fills in as the reader scrolls — the same motion as the steps on the home page. One
- * progress covers both columns so the line runs day 1 to the last day, left column first, rather
- * than both columns filling side by side. Each stop reads the slice of the progress that is its own.
+ * The route plays itself: once the list scrolls into view the line runs from day 1 to the last
+ * day on a clock, not on the scroll position — like the drawing on the map still above it. One
+ * progress covers both columns, so the left column fills before the right rather than both
+ * together, and each stop reads the slice of the progress that is its own.
  */
 function DayLists({ columns }: { columns: Stop[][] }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const total = columns.reduce((sum, column) => sum + column.length, 0);
 
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "end 0.55"] });
-  const smoothed = useSpring(scrollYProgress, {
-    stiffness: 45,
-    damping: 20,
-    mass: 0.6,
-    restDelta: 0.001,
-  });
-  const progress = useTransform(smoothed, (value) => (reduced ? 1 : value));
+  const progress = useMotionValue(0);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -100px 0px" });
+
+  useEffect(() => {
+    if (!inView) return;
+    if (reduced) {
+      progress.set(1);
+      return;
+    }
+
+    const controls = animate(progress, 1, {
+      duration: (total - 1) * SECONDS_PER_DAY,
+      ease: "easeInOut",
+    });
+    return () => controls.stop();
+  }, [inView, progress, reduced, total]);
 
   let offset = 0;
   return (
