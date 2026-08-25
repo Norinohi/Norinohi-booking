@@ -13,6 +13,7 @@
  *   pnpm --filter server sync:availability -- --provider booking_manager
  */
 import { db } from "@yacht-charter/db";
+import { startJob } from "./job";
 import {
   createEnabledInventoryProviders,
   scopeToRequestedProvider,
@@ -28,6 +29,8 @@ import { readSyncCursor } from "@yacht-charter/providers/sync/cursor";
 import { ensureProviderId } from "@yacht-charter/providers/sync/runner";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 
+const job = startJob("sync-availability");
+
 /*
  * Every enabled provider, not the one PROVIDER_MODE names: that variable selects
  * who we transact through, not who we import from. `--provider <code>` narrows it
@@ -42,12 +45,14 @@ try {
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   await db.$client.end();
+  await job.failed(error instanceof Error ? error.message : "could not resolve providers");
   process.exit(1);
 }
 
 if (providers.size === 0) {
   console.error("No enabled provider rows; nothing to sync");
   await db.$client.end();
+  await job.failed("no enabled provider rows");
   process.exit(1);
 }
 
@@ -99,4 +104,11 @@ await revalidateCatalogCache();
 await db.$client.end();
 
 if (skipped > 0) console.warn(`${skipped} provider(s) skipped: a sync of theirs is still running`);
-if (failed > 0) process.exit(1);
+
+const metrics = { providers: providers.size, failed, skipped };
+if (failed > 0) {
+  await job.failed(`${failed} provider sync(s) failed`, metrics);
+  process.exit(1);
+}
+
+await job.done(metrics);

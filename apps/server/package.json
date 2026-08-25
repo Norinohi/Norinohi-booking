@@ -28,6 +28,7 @@
     "@yacht-charter/auth": "workspace:*",
     "@yacht-charter/db": "workspace:*",
     "@yacht-charter/env": "workspace:*",
+    "@yacht-charter/observability": "workspace:*",
     "@yacht-charter/providers": "workspace:*",
     "better-auth": "catalog:",
     "dotenv": "catalog:",

@@ -1,0 +1,3 @@
+{
+  "extends": "@yacht-charter/config/tsconfig.base.json"
+}

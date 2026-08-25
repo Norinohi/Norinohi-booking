@@ -9,14 +9,14 @@ one list somebody can act on.
 
 ## 1. Where the build actually stands
 
-| Milestone                      | Doc says | Code says                                                                                                                                                  |
-| ------------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M2 schema, contracts, mock     | done     | done                                                                                                                                                       |
-| M3 search and availability     | mostly   | done, bar two deliberate deferrals (`facet_dictionary`, the production-scale perf pass)                                                                    |
-| M4 pricing                     | **todo** | **done**. `services/pricing.ts` runs provider price, then `price_adjustment_rule`, then discount, then payment policy, and the Manage Prices screen exists |
-| M5 booking and Stripe          | **todo** | **done**. 14-state machine, Stripe PaymentIntents, signed webhook, refunds, expiry sweeper, encrypted traveller PII                                        |
-| M6 observability               | todo     | **not started**. No Sentry package anywhere; the env vars are scaffolding only                                                                             |
-| M7 availability as constraints | partly   | as documented; the open items in §2.4 are real                                                                                                             |
+| Milestone                      | Doc says | Code says                                                                                                                                                                                 |
+| ------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M2 schema, contracts, mock     | done     | done                                                                                                                                                                                      |
+| M3 search and availability     | mostly   | done, bar two deliberate deferrals (`facet_dictionary`, the production-scale perf pass)                                                                                                   |
+| M4 pricing                     | **todo** | **done**. `services/pricing.ts` runs provider price, then `price_adjustment_rule`, then discount, then payment policy, and the Manage Prices screen exists                                |
+| M5 booking and Stripe          | **todo** | **done**. 14-state machine, Stripe PaymentIntents, signed webhook, refunds, expiry sweeper, encrypted traveller PII                                                                       |
+| M6 observability               | todo     | **partly**. Sentry and PostHog are wired as evlog drains on both servers, plus a browser `track()`; all dormant until credentials are set. No domain fields on the wide events, no alerts |
+| M7 availability as constraints | partly   | as documented; the open items in §2.4 are real                                                                                                                                            |
 
 Also shipped and not in that table: two live connectors (NauSYS and Booking Manager) with
 raw-payload retention and sync runs, five Railway cron services, a staff panel (bookings, payments,
@@ -57,9 +57,14 @@ These are ours to fix, not questions for anyone.
 
 ### 2.2 Blocks taking real money
 
-4. **Observability (M6).** Nothing is wired: no Sentry, no domain fields on the evlog wide events,
-   no alerts on sync failure, webhook lag or provider error rate. The first production payment
-   failure is currently invisible.
+4. **Observability (M6).** The transport exists: `packages/observability` registers Sentry and
+   PostHog as evlog drains on both the Hono and the Next.js server, `src/lib/analytics.ts`
+   covers the browser, and the five scheduled entry points emit one wide event per run
+   (`apps/server/src/job.ts`). It is dormant until someone sets `SENTRY_DSN` / `POSTHOG_API_KEY`, so the
+   first production payment failure is still invisible today. Missing beyond the credentials:
+   domain fields on the wide events (`booking_id`, `sync_run_id`), alerts on sync failure, webhook
+   lag and provider error rate, and browser error tracking, which needs `@sentry/nextjs` and its
+   source-map build step rather than a drain.
 5. **NauSYS crew-list submission.** The panel on `/bookings/[id]` collects and encrypts crew data
    that reaches no operator, because `crewlist/v6/set2` is not discoverable on our credential. The
    customer is promised something we do not do. Blocked on the vendor spec (§4).
@@ -128,8 +133,8 @@ before it needs code.
 | Cloudinary   | dev (`demo`) | Production cloud name plus a plan; 109 listings is roughly 2-3k transformations  |
 | Google OAuth | unset        | Client id and secret, redirect URI `${BETTER_AUTH_URL}/api/auth/callback/google` |
 | Stripe       | test sandbox | Live keys plus a webhook endpoint on the production URL                          |
-| Sentry       | none         | DSN for server and web, plus a plan                                              |
-| Analytics    | none         | Which tool and whose account: GA4/GTM, PostHog or Plausible                      |
+| Sentry       | none         | `SENTRY_DSN` for both servers, plus a plan; the wiring is in place and waiting   |
+| PostHog      | none         | Project API key and region host; server key and browser key are set separately   |
 
 Already in hand: Resend, Calendly, the production domain and DNS.
 

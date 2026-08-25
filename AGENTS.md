@@ -55,7 +55,7 @@ Absent by design or not yet built — do not invent these:
 
 ## Architecture
 
-Nine pnpm workspace projects: two apps (`apps/web`, `apps/server`) and six packages (`packages/{api,auth,db,env,ui,config}`), plus the root. The web app never talks to the database — it calls the server over oRPC, and the server composes `packages/api`, `packages/auth`, and `packages/db`.
+Twelve pnpm workspace projects: two apps (`apps/web`, `apps/server`) and nine packages (`packages/{api,auth,config,db,env,observability,providers,transactional,ui}`), plus the root. The web app never talks to the database — it calls the server over oRPC, and the server composes `packages/api`, `packages/auth`, and `packages/db`.
 
 ### API layer — the seam
 
@@ -92,6 +92,8 @@ Adding a better-auth plugin that needs tables means editing `packages/db/src/sch
 ### Logging
 
 `evlog` is wired in three places: `initLogger` in `apps/server/src/index.ts`, `createEvlog`/`createInstrumentation` in `apps/web/src/lib/evlog.ts`, and `evlogMiddleware` in `apps/web/src/proxy.ts` (matcher `/api/:path*`). `apps/web/instrumentation.ts` defers to `src/lib/evlog`.
+
+Sentry and PostHog hang off that, as evlog drains rather than their own SDKs: `packages/observability` turns credentials into one batched drain, and each server registers it once (`apps/server/src/observability.ts`, `apps/web/src/lib/evlog.ts`). Register the drain on the _global_ logger only, never also on `createEvlog`, or the middleware sends every event twice. With no credentials set `createObservability` returns `drain: undefined` and logging is unchanged, so the integration is dormant rather than broken. Browser-side product analytics is separate and hand-rolled in `apps/web/src/lib/analytics.ts`; browser error tracking is not wired at all.
 
 ### Deployment
 

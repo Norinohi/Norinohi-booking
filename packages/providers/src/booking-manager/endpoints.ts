@@ -12,8 +12,10 @@ import { looseJsonObject } from "../shared/json";
  * 2026-08-25. The vendor publishes no changelog, so the delta was taken by
  * diffing the two definitions: 2.1.5 added `/yachtsOnSale`, 2.2.0 added
  * `/requests`, the `/payments` family and `/objects/{entity}/search/`, and 2.2.1
- * added the `adults`/`children`/`seniors` parameters to `/offers` and formalised
- * `agencyPaymentPlan`. Bump this line only alongside the same diff - several
+ * added `agencyPaymentPlan` and the `adults`/`children`/`seniors` parameters to
+ * `/offers` - which the vendor changelog calls an alternative to
+ * `passengersOnBoard` rather than a refinement of it, so the single headcount
+ * `quote.ts` sends stays correct. Bump this line only alongside the same diff - several
  * fields below were absorbed from live payloads before the spec caught up, so
  * the version here is a statement about what was *checked*, not what compiles.
  */
@@ -527,6 +529,7 @@ export const restReservationSchema = looseJsonObject({
   commission: optionalNumeric,
   finalPrice: optionalNumeric,
   clientPrice: optionalNumeric,
+  securityDeposit: optionalNumeric,
   items: z.array(restInvoiceItemSchema).optional().nullable(),
   paymentPlan: z.array(restPaymentSchema).optional().nullable(),
   /**

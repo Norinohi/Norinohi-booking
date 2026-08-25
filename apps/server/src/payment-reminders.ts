@@ -16,11 +16,15 @@
 import { sendBalanceReminders } from "@yacht-charter/api/services/payment-reminders";
 import { db } from "@yacht-charter/db";
 import { env } from "@yacht-charter/env/server";
+import { startJob } from "./job";
+
+const job = startJob("payment-reminders");
 
 if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
   console.error(
     "RESEND_API_KEY and EMAIL_FROM are required here: without them every due installment is claimed as reminded and nothing is sent",
   );
+  await job.failed("no mailer configured");
   process.exit(1);
 }
 
@@ -32,3 +36,5 @@ console.log(JSON.stringify(result, null, 2));
 // walks away, fatal on a schedule: Railway reads a container that never exits as a run
 // still in progress and skips every tick behind it.
 await db.$client.end();
+
+await job.done({ sent: result.sent, skipped: result.skipped });
