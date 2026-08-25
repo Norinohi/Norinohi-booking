@@ -43,6 +43,18 @@ function mappingFor(
 describe("mapOfferToProviderQuote extras", () => {
   const cleaning = { id: "77", price: 150, obligatory: true };
 
+  it("refuses a percentage-priced extra rather than billing its zero price", () => {
+    expect(() =>
+      mapOfferToProviderQuote(mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 })),
+    ).toThrow(/priced as a percentage/);
+  });
+
+  it("bills a currency-priced extra as the amount it states", () => {
+    const quote = mapOfferToProviderQuote(mappingFor({ ...cleaning, kind: 1 }));
+
+    expect(quote.lines.find((line) => line.kind === "extra")?.amount.amountMinor).toBe(15000);
+  });
+
   it("codes an extra in the canonical space the listing page uses", () => {
     const quote = mapOfferToProviderQuote(mappingFor({ ...cleaning, name: "Final cleaning" }));
 

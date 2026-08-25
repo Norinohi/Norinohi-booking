@@ -20,6 +20,7 @@ import { formatBookingManagerDateTime, parseBookingManagerDate } from "./dates";
 import { numberToMinor } from "./money";
 import { allInPrice, isOneWay, rankOffers } from "./offer-ranking";
 import {
+  BM_EXTRA_KIND,
   bookingManagerEndpoints,
   restOfferListSchema,
   type RestExtras,
@@ -499,6 +500,18 @@ function toExtraLine(
     throw new ContractError(
       `Booking Manager extra ${externalId} is priced in ${extra.currency}, the charter in ${currency}`,
       { endpoint: bookingManagerEndpoints.offers },
+    );
+  }
+  // A `kind: 0` extra is a percentage of the charter and leaves `price` at zero,
+  // so the amount below would bill nothing. It is refused rather than guessed:
+  // deriving it would mean picking a base (price? price plus extras?) the vendor
+  // has never stated, and quoting the wrong one under-bills a real charter. None
+  // has been seen on the fleets we sync - if one appears, this is where to answer
+  // it, once the vendor has said what the percentage applies to.
+  if (extra.kind === BM_EXTRA_KIND.PERCENTAGE) {
+    throw new ContractError(
+      `Booking Manager obligatory extra ${externalId} on yacht ${offer.yachtId} is priced as a percentage (${extra.percentage ?? "unknown"}%), which has no documented base`,
+      { endpoint: bookingManagerEndpoints.offers, providerCode: "PERCENTAGE_EXTRA" },
     );
   }
   if (extra.price == null) {

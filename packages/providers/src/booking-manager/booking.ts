@@ -270,10 +270,19 @@ export function createBookingManagerBookingService(
   }
 
   /**
-   * DELETE releases an OPTION only. A confirmed reservation is cancelled by the
-   * operator out of band, so the current state is read first: silently issuing
-   * the call and reporting `cancelled` would tell our own state machine a charter
-   * was released while the vendor still holds the customer to it.
+   * DELETE releases an OPTION only; the spec says so and the API enforces it with
+   * `400 Reservation already confirmed.`. So the current state is read first:
+   * silently issuing the call and reporting `cancelled` would tell our own state
+   * machine a charter was released while the vendor still holds the customer to it.
+   *
+   * A confirmed reservation has one documented route, `POST /requests` with
+   * `BM_REQUEST_TYPE.RESERVATION_CANCELLATION` (v2.2.0). It is deliberately not
+   * called here. It files a message for the operator rather than cancelling
+   * anything, returns a bare 200 that says nothing about acceptance, and leaves no
+   * trace on the reservation to poll - so a `cancelled` returned from it would be a
+   * claim we cannot support. Wiring it up needs the vendor to say who approves,
+   * which status an approval lands on, and what it costs the guest; those are
+   * open questions in `docs/vendor/booking-manager-reply-2026-08-25.md`.
    */
   async function cancelOption(ref: ProviderReservationRef): Promise<ProviderReservation> {
     const parsed = providerReservationRefSchema.parse(ref);
@@ -287,7 +296,7 @@ export function createBookingManagerBookingService(
 
     if (existing.status === BM_RESERVATION_STATUS.RESERVATION) {
       throw new ContractError(
-        `Booking Manager reservation ${id} is confirmed and cannot be cancelled through the API; the operator must cancel it`,
+        `Booking Manager reservation ${id} is confirmed and cannot be cancelled through the API; it needs a cancellation request the operator approves out of band`,
         { endpoint, providerCode: "RESERVATION_NOT_CANCELLABLE" },
       );
     }

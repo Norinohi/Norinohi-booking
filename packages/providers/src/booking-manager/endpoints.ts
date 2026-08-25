@@ -8,7 +8,14 @@ import { looseJsonObject } from "../shared/json";
  * additive vendor change cannot fail a whole catalogue sync - the same posture as
  * `nausys/endpoints.ts`.
  *
- * Contract: SwaggerHub `mmksystems/bm-api` v2.1.4.
+ * Contract: SwaggerHub `mmksystems/bm-api` v2.2.1, surveyed against 2.1.4 on
+ * 2026-08-25. The vendor publishes no changelog, so the delta was taken by
+ * diffing the two definitions: 2.1.5 added `/yachtsOnSale`, 2.2.0 added
+ * `/requests`, the `/payments` family and `/objects/{entity}/search/`, and 2.2.1
+ * added the `adults`/`children`/`seniors` parameters to `/offers` and formalised
+ * `agencyPaymentPlan`. Bump this line only alongside the same diff - several
+ * fields below were absorbed from live payloads before the spec caught up, so
+ * the version here is a statement about what was *checked*, not what compiles.
  */
 
 export const bookingManagerEndpoints = {
@@ -37,6 +44,21 @@ export const bookingManagerEndpoints = {
   reservationsByYear: (year: number) => `reservations/${year}`,
   availability: (year: number) => `availability/${year}`,
   shortAvailability: (year: number) => `shortAvailability/${year}`,
+  requests: "requests",
+} as const;
+
+/**
+ * `POST /requests` types, added in v2.2.0. This is the vendor's only documented
+ * route to cancelling a CONFIRMED reservation: `DELETE` refuses one outright
+ * ("An already confirmed booking is not possible to cancel automatically"), and
+ * a request is a message to the operator rather than a state change. Nothing in
+ * the 200 says whether it was accepted, the reservation carries no field for a
+ * pending request, and there is no webhook, so the outcome is only observable by
+ * re-reading the status later. Unexercised so far - see the vendor letter.
+ */
+export const BM_REQUEST_TYPE = {
+  OPTION_EXTENSION: 0,
+  RESERVATION_CANCELLATION: 1,
 } as const;
 
 /**
@@ -174,6 +196,12 @@ export const restDiscountSchema = looseJsonObject({
   currency: optionalText,
 });
 
+/** `Extras.kind`, documented from v2.2.0. See the field comment below. */
+export const BM_EXTRA_KIND = {
+  PERCENTAGE: 0,
+  CURRENCY: 1,
+} as const;
+
 export const restExtrasSchema = looseJsonObject({
   id: optionalId,
   name: optionalText,
@@ -181,6 +209,15 @@ export const restExtrasSchema = looseJsonObject({
   price: optionalNumeric,
   currency: optionalText,
   unit: optionalText,
+  /**
+   * `0` charges a percentage of the charter and `1` a currency amount, and the
+   * spec is explicit that only the matching field is populated: a `kind: 0` extra
+   * carries its value in `percentage` and leaves `price` at zero. Reading `price`
+   * alone on such an extra silently under-bills the guest, so `toExtraLine`
+   * refuses one rather than treating the zero as free.
+   */
+  kind: optionalNumeric,
+  percentage: optionalNumeric,
   payableInBase: z.boolean().optional().nullable(),
   includedDepositWaiver: z.boolean().optional().nullable(),
   validDaysFrom: optionalNumeric,
@@ -458,6 +495,8 @@ export const restShortAvailabilitySchema = looseJsonObject({
 });
 
 export const restInvoiceItemSchema = looseJsonObject({
+  /** `discount` or `extra`. A reservation's `items[]` mixes both. */
+  type: optionalText,
   name: optionalText,
   quantity: optionalNumeric,
   unit: optionalText,
@@ -497,9 +536,12 @@ export const restReservationSchema = looseJsonObject({
    * 600.00 commission, `paymentPlan` was 2 x 2250.00 and `agencyPaymentPlan` was
    * 2 x 1950.00, i.e. `clientPrice - commission`. Neither can be derived from the
    * `/offers` plan, which covers `price` alone and excludes non-`payableInBase`
-   * extras.
+   * extras. Measured before the spec described it; v2.2.1 documents the shape and
+   * marks it required, which the `.optional()` here deliberately does not trust -
+   * the agency-side twin still answers `null`.
    */
   agencyPaymentPlan: z.array(restPaymentSchema).optional().nullable(),
+  promoCode: optionalText,
   bankDetails: optionalText,
   termsOfPayment: optionalText,
   remarks: optionalText,
