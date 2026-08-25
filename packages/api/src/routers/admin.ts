@@ -82,6 +82,8 @@ import {
   leadSetStatusInputSchema,
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
+import { faqAdminRouter } from "./admin-faq";
+import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
   confirmDuplicateCandidate,
@@ -193,6 +195,13 @@ async function resolveSyncProvider(
 }
 
 export const adminRouter = {
+  /* The suggested-route library and the geography picker it targets, in their own module: this
+     file is already the largest router and the two are one screen's worth of contract. */
+  route: routeAdminRouter,
+  geography: geographyAdminRouter,
+  /* The FAQ editor, likewise its own module: it speaks in translation groups rather than rows
+     and none of that shape is shared with anything else in here. */
+  faq: faqAdminRouter,
   provider: {
     capabilities: adminProcedure
       .route({
