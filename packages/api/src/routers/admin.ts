@@ -443,7 +443,7 @@ export const adminRouter = {
         operationId: "adminCancelBooking",
         summary: "Cancel any booking",
         description:
-          "Cancels a booking on behalf of a customer, including a confirmed one — a confirmed booking moves to REFUND_PENDING so the money is returned rather than being silently dropped. Requires an authenticated admin user.",
+          "Cancels a booking on behalf of a customer, including a confirmed one — a confirmed booking moves to REFUND_PENDING so the money is returned rather than being silently dropped. Check `providerReleased` before paying that refund: false means we cancelled our side and the provider kept the reservation, which Booking Manager does for every confirmed one, so the charter still stands with the operator and has to be settled by hand. `providerReleaseError` carries their refusal. Requires an authenticated admin user.",
         tags: ["Admin"],
         successDescription: "The booking's status after cancellation.",
         spec: withJsonBodyExample({ id: "bkg_example", reason: "Operator withdrew the yacht" }),
@@ -533,7 +533,13 @@ export const adminRouter = {
       .input(invoiceCancelInputSchema)
       .output(invoiceAdminRowSchema)
       .handler(({ context, input }) =>
-        cancelInvoiceRequest(context.db, context.session.user.id, input.id, input.reason),
+        cancelInvoiceRequest(
+          context.db,
+          context.provider,
+          context.session.user.id,
+          input.id,
+          input.reason,
+        ),
       ),
   },
   maintenance: {

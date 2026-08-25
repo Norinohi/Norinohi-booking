@@ -211,3 +211,58 @@ describe("repriceRequestFor", () => {
     expect(repriceRequestFor(draft(null), "EUR")).not.toHaveProperty("endBaseId");
   });
 });
+
+describe("priceSourceHash and the payment plan", () => {
+  const offerPaying = (plan: { date: string; amount: number }[]) =>
+    restOfferSchema.parse({
+      yachtId: "9001",
+      dateFrom: "29.08.2026 17:00",
+      dateTo: "05.09.2026 09:00",
+      price: 5400,
+      currency: "EUR",
+      paymentPlan: plan,
+    });
+
+  const hashOf = (plan: { date: string; amount: number }[]) =>
+    mapOfferToProviderQuote({
+      offer: offerPaying(plan),
+      listingId: "lst_1",
+      checkIn: "2026-08-29",
+      checkOut: "2026-09-05",
+      guests: 2,
+      requestedCurrency: "EUR",
+      expiresAt: "2026-08-25T12:00:00.000Z",
+    }).priceSourceHash;
+
+  it("ignores the clock reading on the pay-now instalment", () => {
+    /*
+     * The vendor stamps the first instalment with the moment it answered, so two identical
+     * `/offers` calls seconds apart differ here and nowhere else. Hashing it refused every
+     * hold on a pay-in-full yacht with PRICE_CHANGED for a price that had not moved.
+     */
+    expect(hashOf([{ date: "2026-08-25 10:07:18", amount: 5400 }])).toBe(
+      hashOf([{ date: "2026-08-25 10:07:29", amount: 5400 }]),
+    );
+  });
+
+  it("still refuses a quote whose amount moved", () => {
+    expect(hashOf([{ date: "2026-08-25 10:07:18", amount: 5400 }])).not.toBe(
+      hashOf([{ date: "2026-08-25 10:07:18", amount: 5900 }]),
+    );
+  });
+
+  it("still refuses a quote whose balance due date moved", () => {
+    // A later instalment's date is a term the customer agreed to, not a clock reading:
+    // `toPaymentPolicy` reads it into `balanceDueAt`.
+    const early = [
+      { date: "2026-08-25 10:07:18", amount: 1400 },
+      { date: "2026-07-01 00:00:00", amount: 4000 },
+    ];
+    const late = [
+      { date: "2026-08-25 10:07:18", amount: 1400 },
+      { date: "2026-08-01 00:00:00", amount: 4000 },
+    ];
+
+    expect(hashOf(early)).not.toBe(hashOf(late));
+  });
+});

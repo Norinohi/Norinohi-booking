@@ -620,9 +620,24 @@ function priceObservationHash(offer: RestOffer, currency: string): string {
         const right = String(b.id ?? b.name ?? "");
         return left < right ? -1 : left > right ? 1 : 0;
       }),
-    // Order is semantic: the first instalment is the deposit.
-    paymentPlan: (offer.paymentPlan ?? []).map((entry) => ({
-      date: entry.date ?? null,
+    /*
+     * Order is semantic: the first instalment is the deposit, and its date is dropped.
+     *
+     * That date is not a term of the offer, it is a clock reading. The vendor stamps the
+     * pay-now instalment with the moment it answered — two identical `/offers` calls eleven
+     * seconds apart came back `2026-08-25 10:07:18` and `2026-08-25 10:07:29` on an otherwise
+     * byte-identical offer — so hashing it made the fingerprint change on every read. Every
+     * `createHold` against a pay-in-full yacht was refused with PRICE_CHANGED for a price
+     * that had not moved, which is the whole checkout for company 225.
+     *
+     * Only the first is dropped, and only its date. A later instalment's date is a real due
+     * date the customer is agreeing to — `toPaymentPolicy` reads exactly that one into
+     * `balanceDueAt` — and it moving is a change worth refusing a stale quote over. This
+     * mirrors what the policy mapper already does: it takes the first entry's amount and
+     * never its date.
+     */
+    paymentPlan: (offer.paymentPlan ?? []).map((entry, index) => ({
+      date: index === 0 ? null : (entry.date ?? null),
       amount: entry.amount ?? null,
     })),
     securityDeposit: offer.securityDeposit ?? null,

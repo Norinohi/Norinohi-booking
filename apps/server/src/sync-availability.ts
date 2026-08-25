@@ -7,9 +7,18 @@
  * dates for), but still bootstraps the provider row via ensureProviderId rather
  * than assuming sync-catalogue.ts already ran in this process — either order
  * against an empty database ends up in the same state.
+ *
+ * Takes `--provider <code>` for the same reason sync-catalogue.ts does:
+ *
+ *   pnpm --filter server sync:availability -- --provider booking_manager
  */
 import { db } from "@yacht-charter/db";
-import { createEnabledInventoryProviders } from "@yacht-charter/providers";
+import {
+  createEnabledInventoryProviders,
+  scopeToRequestedProvider,
+  type InventoryProvider,
+  type ProviderKey,
+} from "@yacht-charter/providers";
 import {
   HOT_WINDOW_CURSOR_SCOPE,
   openAvailabilitySyncRun,
@@ -21,10 +30,20 @@ import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate
 
 /*
  * Every enabled provider, not the one PROVIDER_MODE names: that variable selects
- * who we transact through, not who we import from. See sync-catalogue.ts for why
- * this runs one vendor at a time.
+ * who we transact through, not who we import from. `--provider <code>` narrows it
+ * to one. See sync-catalogue.ts for why this runs one vendor at a time.
  */
-const providers = await createEnabledInventoryProviders({ db });
+let providers: Map<ProviderKey, InventoryProvider>;
+try {
+  providers = scopeToRequestedProvider(
+    await createEnabledInventoryProviders({ db }),
+    process.argv.slice(2),
+  );
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  await db.$client.end();
+  process.exit(1);
+}
 
 if (providers.size === 0) {
   console.error("No enabled provider rows; nothing to sync");

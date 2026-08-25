@@ -345,7 +345,13 @@ async function applyWelcomeDiscount(
   userId: string | null,
   currency: string,
 ): Promise<{ lines: QuoteLine[] }> {
-  const off = await welcomeDiscountMinor(db, userId, totalMinor(lines), payableNowMinor(lines));
+  const off = await welcomeDiscountMinor(
+    db,
+    userId,
+    currency,
+    totalMinor(lines),
+    payableNowMinor(lines),
+  );
 
   if (off <= 0) return { lines };
 
@@ -481,6 +487,7 @@ async function persistPricedQuote(
   const spendableMinor = await spendableCreditMinor(
     db,
     options.userId,
+    currency,
     totalMinor(lines),
     payableNowMinor(lines),
   );

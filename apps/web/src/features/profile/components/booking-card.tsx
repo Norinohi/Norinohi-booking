@@ -98,9 +98,16 @@ export default function BookingCard({
       />
 
       {/* Desktop — the simplified history card. */}
+      {/*
+       * The action column is a min-content track and cannot shrink: `Button` is `whitespace-nowrap`
+       * and `shrink-0`, so a label as long as "Complete payment EUR 1,900" sets its width outright.
+       * The photo is therefore the track that gives — at 452px it left the info column ~50px at
+       * 1280, which truncated the boat name and pushed the dates over the divider. It widens again
+       * at 2xl, where the panel is wide enough to afford it.
+       */}
       <article
         className={cn(
-          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,452px)_minmax(0,1fr)_auto] xl:items-stretch xl:gap-6",
+          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_auto] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)_auto]",
           className,
         )}
       >
@@ -110,7 +117,7 @@ export default function BookingCard({
             images={booking.images}
             imageAlt={booking.imageAlt}
             priority={booking.priority}
-            sizes="(min-width: 1280px) 30vw, 100vw"
+            sizes="(min-width: 1536px) 380px, (min-width: 1280px) 260px, 100vw"
           />
 
           <div className="absolute top-4 left-4">
@@ -154,7 +161,7 @@ export default function BookingCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {booking.start ? <Stamp value={booking.start} /> : null}
             <ArrowRight className="size-4 shrink-0 text-foreground" />
             {booking.end ? <Stamp value={booking.end} /> : null}

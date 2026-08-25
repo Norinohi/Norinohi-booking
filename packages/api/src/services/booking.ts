@@ -5,14 +5,14 @@ import {
   bookingExtra,
   payment,
   paymentSchedule,
-  providerReservationEvent,
   type CommercialSnapshot,
 } from "@yacht-charter/db/schema/booking";
+import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { base } from "@yacht-charter/db/schema/geography";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
-import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
+import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import type { z } from "zod";
 
@@ -43,6 +43,7 @@ import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { recordEvent, releaseProviderOption, type ProviderRelease } from "./provider-option";
 import { isUniqueViolation, violatedConstraint } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { asCrewType, assertQuoteIsFresh } from "./quote";
@@ -127,12 +128,22 @@ export async function listBookings(
 export async function getBooking(db: Database, userId: string, id: string): Promise<Detail> {
   const row = await readOwnedBooking(db, userId, id);
 
-  const [extras, schedules, payments, money] = await Promise.all([
+  const [extras, schedules, payments, money, invoices] = await Promise.all([
     db.select().from(bookingExtra).where(eq(bookingExtra.bookingId, id)),
     db.select().from(paymentSchedule).where(eq(paymentSchedule.bookingId, id)),
     db.select().from(payment).where(eq(payment.bookingId, id)),
     loadMoney(db, [id]),
+    /* Newest first, and only one: a later instalment's request supersedes the earlier one for
+       anything a customer-facing screen asks. Same read the admin detail makes. */
+    db
+      .select()
+      .from(invoiceRequest)
+      .where(eq(invoiceRequest.bookingId, id))
+      .orderBy(desc(invoiceRequest.createdAt))
+      .limit(1),
   ]);
+
+  const [invoice] = invoices;
 
   const summary = presentSummary(row.booking, row.quote, money.get(id));
 
@@ -189,6 +200,15 @@ export async function getBooking(db: Database, userId: string, id: string): Prom
       disputedAt: row_.disputedAt?.toISOString() ?? null,
       disputeStatus: row_.disputeStatus,
     })),
+    invoice: invoice
+      ? {
+          number: invoice.number,
+          issuedAt: invoice.issuedAt.toISOString(),
+          dueAt: invoice.dueAt.toISOString(),
+          amount: { amountMinor: invoice.amountMinor, currency: invoice.currency },
+          status: invoice.status,
+        }
+      : null,
   };
 }
 
@@ -566,6 +586,11 @@ export async function cancelBooking(
       cancelledAt: new Date(),
     });
 
+    await withdrawOpenInvoices(db, moved.id, reason);
+
+    /* Nothing was ever held, so nothing is still held. */
+    let release: ProviderRelease = { released: true, reason: null };
+
     if (row.booking.providerOptionId) {
       await recordEvent(
         db,
@@ -578,7 +603,7 @@ export async function cancelBooking(
         },
       );
 
-      await releaseProviderOption(db, provider, row.booking);
+      release = await releaseProviderOption(db, provider, row.booking);
     }
 
     /*
@@ -602,13 +627,92 @@ export async function cancelBooking(
       });
     }
 
-    return { id: moved.id, status: moved.status };
+    return {
+      id: moved.id,
+      status: moved.status,
+      providerReleased: release.released,
+      providerReleaseError: actor.isAdmin ? release.reason : null,
+    };
   } catch (error) {
     if (error instanceof InvalidTransitionError) {
       throw new ORPCError("CONFLICT", { message: error.message });
     }
     throw error;
   }
+}
+
+/**
+ * Withdraws any invoice still waiting on a transfer, and fails the payment row standing for it.
+ *
+ * The mirror of `cancelInvoiceRequest`, which cancels the booking when staff withdraw the
+ * invoice. Only that direction existed, so cancelling the booking left the request behind:
+ * `invoice_request` stayed `pending` on a CANCELLED booking, the staff queue listed it as money
+ * still expected, and a customer reading the emailed invoice would wire against a charter that
+ * no longer exists.
+ *
+ * A settled request is left alone. Money that already arrived is a refund, which the refund
+ * branch owns; withdrawing the document it arrived against would only lose the trail.
+ *
+ * Plural because a deposit-policy charter is invoiced twice and both can be open at once — the
+ * second is raised against a confirmed booking, which is exactly the one an admin cancellation
+ * sends to REFUND_PENDING.
+ */
+async function withdrawOpenInvoices(
+  db: Database,
+  bookingId: string,
+  reason: string | undefined,
+): Promise<void> {
+  const open = await db
+    .select({ id: invoiceRequest.id })
+    .from(invoiceRequest)
+    .where(
+      and(
+        eq(invoiceRequest.bookingId, bookingId),
+        inArray(invoiceRequest.status, ["pending", "sent"]),
+      ),
+    );
+
+  if (open.length === 0) return;
+
+  const ids = open.map((request) => request.id);
+
+  await db
+    .update(invoiceRequest)
+    .set({ status: "cancelled" })
+    .where(inArray(invoiceRequest.id, ids));
+
+  /* The same key `requestInvoice` books the payment row under, so the two stay paired. */
+  const failed = await db
+    .update(payment)
+    .set({ status: "failed", failureReason: reason ?? "Booking cancelled" })
+    .where(
+      and(
+        eq(payment.bookingId, bookingId),
+        inArray(
+          payment.idempotencyKey,
+          ids.map((id) => `invoice:${id}`),
+        ),
+      ),
+    )
+    .returning({ scheduleId: payment.scheduleId });
+
+  /*
+   * And the instalment the payment stood for, or the booking keeps an instalment nobody will
+   * ever collect: `nextPaymentDueAt` reads the schedule, so a cancelled booking went on
+   * naming a next payment.
+   *
+   * Reached through the payment's own `scheduleId` - the link `requestInvoice` wrote - rather
+   * than by sweeping every pending row on the booking the way `settleInvoice` does. Two open
+   * instalments are possible, and withdrawing one invoice must not cancel the other's.
+   */
+  const scheduleIds = failed.map((row) => row.scheduleId).filter((id): id is string => id !== null);
+
+  if (scheduleIds.length === 0) return;
+
+  await db
+    .update(paymentSchedule)
+    .set({ status: "cancelled" })
+    .where(and(inArray(paymentSchedule.id, scheduleIds), eq(paymentSchedule.status, "pending")));
 }
 
 /**
@@ -638,41 +742,6 @@ async function hasMoneyIn(db: Database, bookingId: string): Promise<boolean> {
  * cancellation has already succeeded, and a provider that refuses here must not
  * undo it. The failure is recorded for the reconciliation pass instead.
  */
-async function releaseProviderOption(
-  db: Database,
-  provider: InventoryProvider,
-  row: BookingRow,
-): Promise<void> {
-  if (!provider.capabilities().supportsOptions || !row.providerOptionId) return;
-
-  const reservationId = row.providerReservationId ?? row.providerOptionId;
-
-  try {
-    const released = await provider.cancelOption({
-      providerReservationId: reservationId,
-      securityToken: row.providerReservationUuid ?? undefined,
-    });
-
-    await db
-      .update(booking)
-      .set({
-        providerReservationUuid: released.securityToken ?? row.providerReservationUuid,
-        providerStatus: released.status,
-      })
-      .where(eq(booking.id, row.id));
-
-    await recordEvent(db, row.id, "cancel_succeeded", row.provider, reservationId, {
-      reservation: released,
-    });
-  } catch (error) {
-    // `provider_reservation_event_kind` has no cancel_failed; the sweeper reports
-    // the same outcome the same way, as an attempted release that did not land.
-    await recordEvent(db, row.id, "option_released", row.provider, reservationId, {
-      released: false,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
 
 /**
  * Consumes the promo code and the referral credit the quote was priced with.
@@ -795,30 +864,6 @@ async function insertBooking(
     throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not allocate a booking" });
   }
   return row;
-}
-
-/** The jsonb body of a provider_reservation_event; `kind` says which arm applies. */
-type ProviderEventPayload =
-  | { reservation: ProviderReservation }
-  | { message: string | null }
-  | { reason: string | null }
-  | { released: boolean; error: string };
-
-async function recordEvent(
-  db: DatabaseExecutor,
-  bookingId: string,
-  kind: typeof providerReservationEvent.$inferInsert.kind,
-  provider: string,
-  providerReference: string | null | undefined,
-  payload: ProviderEventPayload,
-): Promise<void> {
-  await db.insert(providerReservationEvent).values({
-    bookingId,
-    kind,
-    provider,
-    providerReference: providerReference ?? null,
-    payload: payload ?? null,
-  });
 }
 
 /**

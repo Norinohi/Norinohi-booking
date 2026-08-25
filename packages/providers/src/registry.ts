@@ -86,6 +86,48 @@ export async function createEnabledInventoryProviders(
   return providers;
 }
 
+/**
+ * Narrows a sync fan-out to the provider `--provider <code>` names, or leaves it whole.
+ *
+ * `createEnabledInventoryProviders` answers who this deployment *could* import from, which is
+ * the right question on a schedule: a deployment holding two vendors' keys wants both walked
+ * nightly. It is usually the wrong one by hand, where the reason to run a sync is that vendor
+ * alone — and the workaround was flipping `provider.enabled` in the database around the run,
+ * which leaves the other vendor switched off for good if the run dies before flipping it back.
+ *
+ * A code this deployment cannot sync raises rather than answering with nothing, because an
+ * empty fan-out and a mistyped flag are the same silent success otherwise.
+ */
+export function scopeToRequestedProvider<T>(
+  providers: ReadonlyMap<ProviderKey, T>,
+  argv: readonly string[],
+): Map<ProviderKey, T> {
+  const at = argv.indexOf("--provider");
+  if (at === -1) return new Map(providers);
+
+  const requested = argv[at + 1];
+  if (requested === undefined || requested.startsWith("--")) {
+    throw new Error("--provider needs a code, e.g. --provider booking_manager");
+  }
+
+  const parsed = providerKeySchema.safeParse(requested);
+  if (!parsed.success) {
+    throw new Error(
+      `Unknown provider "${requested}"; expected one of ${providerKeySchema.options.join(", ")}`,
+    );
+  }
+
+  const only = providers.get(parsed.data);
+  if (!only) {
+    throw new Error(
+      `Provider "${requested}" is not one this deployment can sync: its row is disabled, its ` +
+        "credentials are missing, or it is the mock, which is never imported",
+    );
+  }
+
+  return new Map([[parsed.data, only]]);
+}
+
 export function createInventoryProvider(
   deps: ProviderDeps,
   mode = env.PROVIDER_MODE,

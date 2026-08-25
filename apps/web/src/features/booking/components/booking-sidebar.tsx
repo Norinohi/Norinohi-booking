@@ -30,6 +30,8 @@ export default function BookingSidebar({
     guests,
     isPending,
     slotError,
+    loadError,
+    retryLoad,
     selectPeriod,
     setCrew,
     setDropOff,
@@ -64,6 +66,8 @@ export default function BookingSidebar({
         selectedPeriod={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
         onPeriodSelect={selectPeriod}
         slotError={slotError}
+        loadError={loadError}
+        onRetryLoad={retryLoad}
         checkInTime={listing?.base.checkInTime}
         checkOutTime={listing?.base.checkOutTime}
         crewType={crewType}

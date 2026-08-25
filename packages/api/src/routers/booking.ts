@@ -131,7 +131,7 @@ export const bookingRouter = {
       operationId: "cancelBooking",
       summary: "Cancel a booking",
       description:
-        "Cancels one of the authenticated user's bookings. Only bookings that have not been confirmed can be cancelled this way; a confirmed booking has to go through admin.booking.cancel so it enters the refund flow.",
+        "Cancels one of the authenticated user's bookings. Only bookings that have not been confirmed can be cancelled this way; a confirmed booking has to go through admin.booking.cancel so it enters the refund flow. `providerReleased` reports whether the provider let the slot go; `providerReleaseError` is admin-only and always null here.",
       tags: ["Booking"],
       successDescription: "The booking's status after cancellation.",
       spec: withJsonBodyExample({ id: "bkg_example", reason: "Changed plans" }),

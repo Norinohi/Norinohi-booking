@@ -33,12 +33,15 @@ translations.
 
 These are ours to fix, not questions for anyone.
 
-1. **Credits ignore currency.** `creditBalanceMinor` and `redeemCredit` in
-   `services/loyalty.ts` sum `credit_ledger.amount_minor` filtered only by user and expiry, and the
-   debit row is written in whatever currency the booking used. A EUR credit therefore pays down a
-   USD booking one to one, and the ledger then sums two currencies as one number. The same applies
-   to the `MIN_BOOKING_FOR_CREDIT_MINOR` threshold. Fix is a currency predicate on both queries and
-   a decision about what happens to a balance in a currency the booking is not in.
+1. ~~**Referral money ignored currency.**~~ **Fixed 2026-08-25.** Every summing read of
+   `credit_ledger` is now scoped to one currency, `CREDIT_CURRENCY` names the one credit is minted
+   in, and `spendableCreditMinor` refuses a quote priced in any other rather than converting at an
+   invented rate. `redeemCredit` repeats the scope inside the transaction, so a quote priced before
+   the rule existed spends nothing instead of trusting its stored figure. `welcomeDiscountMinor`
+   carries the same guard: the €100 invitee discount and the €1000 eligibility threshold are amounts
+   in one currency, not bare numbers to be re-read as whatever the quote is priced in, and a quote
+   we cannot honour them against leaves the redemption pending for the next one. The Referrals and
+   Credits screens also stop labelling a cross-currency sum as EUR.
 2. **Two definitions of "payable now" coexist.** `pricing.payableNowMinor` sums the lines marked
    `now`, while `checkout-amounts.amountDue` subtracts the at-check-in lines from the stored
    `total_minor`. They agree only while no clamp fires. `totalMinor` clamps at zero, so a discount

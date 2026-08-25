@@ -216,6 +216,15 @@ export const bookingPaymentSchema = z.object({
  * Detail for "View Details". Travellers are deliberately absent: §10 forbids
  * returning crew and passport data from this endpoint.
  */
+/** The customer's view of a bank-transfer request; see `invoice` on `bookingDetailSchema`. */
+export const bookingInvoiceSchema = z.object({
+  number: z.string(),
+  issuedAt: z.string(),
+  dueAt: z.string(),
+  amount: moneySchema,
+  status: z.enum(["pending", "sent", "paid", "cancelled"]),
+});
+
 export const bookingDetailSchema = bookingSummarySchema.extend({
   provider: z.string(),
   providerReservationId: z.string().nullable(),
@@ -255,6 +264,20 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
   dueNow: moneySchema,
   paymentSchedule: z.array(bookingScheduleEntrySchema),
   payments: z.array(bookingPaymentSchema),
+  /**
+   * The most recent bank-transfer request, when the customer asked to be invoiced.
+   *
+   * Narrower than the admin detail's `invoiceRequestSchema` on purpose. What a customer-facing
+   * screen needs is which document it is, what it is for and by when — the billed party, the
+   * seller's tax details and the bank account belong to the printable document, and
+   * `booking.invoice` already assembles those. Repeating them here would put a second copy of a
+   * tax record on an endpoint that has no use for it.
+   *
+   * Most recent rather than open: a deposit-policy charter is invoiced twice, and a screen that
+   * wants to know whether money is outstanding reads `status` rather than being handed only the
+   * rows that happen to be unpaid.
+   */
+  invoice: bookingInvoiceSchema.nullable(),
 });
 
 /* --------------------------------------------------------------- travellers */
@@ -308,6 +331,15 @@ export const bookingCancelInputSchema = z.object({
 export const bookingCancelSchema = z.object({
   id: z.string(),
   status: bookingStatusSchema,
+  /*
+   * False when we cancelled our side and the provider kept the reservation. Booking Manager
+   * refuses to release a confirmed one through the API, so the charter stands with the operator
+   * and has to be settled by hand before any refund is paid. Reporting the cancellation without
+   * this would have us return the guest's money on a charter we are still being billed for.
+   */
+  providerReleased: z.boolean(),
+  /** The provider's refusal, verbatim. Null for a customer, who is owed no vendor detail. */
+  providerReleaseError: z.string().nullable(),
 });
 
 /*

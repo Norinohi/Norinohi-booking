@@ -38,6 +38,7 @@ import {
   provider,
   providerRawPayload,
   providerRecord,
+  syncCursor,
   syncRun,
 } from "@yacht-charter/db/schema/provider";
 import { quote } from "@yacht-charter/db/schema/quote";
@@ -163,6 +164,14 @@ async function main(): Promise<void> {
     if (!partial) {
       await tx.delete(syncRun).where(eq(syncRun.providerId, providerId));
       await tx.delete(providerRawPayload).where(eq(providerRawPayload.providerId, providerId));
+      /*
+       * The cursors last, and they are not optional bookkeeping. `sync_cursor` is where the
+       * walk resumes from, so a total purge that leaves them behind deletes the fleet and
+       * keeps the position in it: the next sync picks up mid-catalogue and re-imports the
+       * tail of what was just removed. Deleting a provider's whole inventory has to mean the
+       * next run starts over.
+       */
+      await tx.delete(syncCursor).where(eq(syncCursor.providerId, providerId));
     }
   });
 

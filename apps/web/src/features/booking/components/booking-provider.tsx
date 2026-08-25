@@ -67,6 +67,13 @@ type BookingContextValue = {
   isPending: boolean;
   /** The last selection was refused by the provider; the sidebar asks for another date. */
   slotError: boolean;
+  /**
+   * The quote named in the URL could not be read. Distinct from `slotError`, which is the
+   * provider declining a period: this is the wizard unable to show anything at all.
+   */
+  loadError: boolean;
+  /** Asks for the URL's quote again after `loadError`. */
+  retryLoad: () => void;
   selectPeriod: (period: CharterPeriod) => void;
   setCrew: (next: CrewType) => void;
   /**
@@ -191,12 +198,38 @@ export function BookingProvider({
     [published, refusedPeriods],
   );
 
-  const loadedRef = useRef(false);
+  const [loadError, setLoadError] = useState(false);
+  /*
+   * Bumped by `retryLoad`, which is the whole mechanism: the effect keys on it, so asking again
+   * is a re-run of the one load path rather than a second one that could drift from it.
+   */
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  /*
+   * Which (quote, attempt) has already been sent, rather than a bare "have we loaded" flag.
+   *
+   * The flag could only ever be set, never cleared, so a single refused read - a restarted dev
+   * server, a slow vendor, a stale id - left the sidebar on its "select dates" empty state for
+   * the rest of the visit: nothing retried, nothing was shown, and the rejection surfaced only
+   * as an uncaught promise in the console. Clearing it in the catch is not the fix either:
+   * `load` is redefined every render, so the effect re-runs on the re-render that recording the
+   * failure causes, and a cleared flag turns that into an endless retry loop against the same
+   * dead quote. Keying on the attempt is what makes "once per ask" precise.
+   */
+  const startedRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (loadedRef.current || !quoteId) return;
-    loadedRef.current = true;
-    void load(quoteId);
-  }, [quoteId, load]);
+    if (!quoteId) return;
+    const attempt = `${quoteId}#${loadAttempt}`;
+    if (startedRef.current === attempt) return;
+    startedRef.current = attempt;
+
+    setLoadError(false);
+    load(quoteId).catch(() => setLoadError(true));
+  }, [quoteId, load, loadAttempt]);
+
+  function retryLoad() {
+    setLoadAttempt((attempt) => attempt + 1);
+  }
 
   useEffect(() => {
     if (!quote) return;
@@ -357,6 +390,8 @@ export function BookingProvider({
     guests,
     isPending,
     slotError,
+    loadError,
+    retryLoad,
     selectPeriod,
     setCrew,
     setDropOff,

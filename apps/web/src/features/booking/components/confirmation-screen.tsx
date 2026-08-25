@@ -198,13 +198,27 @@ export default function BookingConfirmationScreen() {
     );
   }
 
-  if (hasFailed(checkout?.status)) {
+  /*
+   * Which status answers "did this go through". Card waits on the polled checkout status,
+   * because Stripe returning success is not the same as the booking existing. A transfer has no
+   * such poll - the query above is disabled for it, since an invoiced booking rests at
+   * PAYMENT_PENDING by design - so its own status is the answer.
+   *
+   * Without this the failure branch never fired for a transfer at all: `checkout` was undefined,
+   * `hasFailed(undefined)` is false, and a cancelled invoice booking read "Invoice sent, we're
+   * holding your yacht until your transfer arrives". Only for the refusal - `isSettling` stays
+   * card-only below, or every invoice would sit under a spinner waiting for money that is
+   * supposed to take days.
+   */
+  const outcomeStatus = method === "card" ? checkout?.status : booking.status;
+
+  if (hasFailed(outcomeStatus)) {
     return (
       <div className="flex min-h-full items-center justify-center p-4 md:p-8">
         <EmptyState
           title={t("failed.title")}
           /* The server's own reason where it has one; it is written for the customer. */
-          description={checkout?.failureReason ?? t("failed.body")}
+          description={checkout?.failureReason ?? booking.cancelReason ?? t("failed.body")}
           action={
             <Button variant="brand" nativeButton={false} render={<Link href="/yachts" />}>
               {t("browse")}
@@ -278,6 +292,18 @@ export default function BookingConfirmationScreen() {
       toast.error(t("shareFailed"));
     }
   };
+
+  /*
+   * A transfer that has not landed. `method` is how the customer chose to pay; the invoice's own
+   * status is whether we are still waiting on it, which is what decides the copy - once it is
+   * settled the booking leaves PAYMENT_PENDING and the ordinary confirmed wording is the true
+   * one. A cancelled request is nobody's outstanding balance either.
+   */
+  const invoice = booking.invoice;
+  const awaitingTransfer =
+    method === "invoice" &&
+    invoice !== null &&
+    (invoice.status === "pending" || invoice.status === "sent");
 
   const security = booking.paymentSchedule.find((entry) => entry.kind === "security_deposit");
   const dueNowMinor = booking.dueNow.amountMinor;
@@ -394,13 +420,44 @@ export default function BookingConfirmationScreen() {
             </motion.div>
             <div className="flex flex-col items-center gap-4 pt-3 text-center">
               <h1 className="text-[28px] leading-[1.1] font-medium text-foreground md:text-[32px]">
-                {t("reserved")}
+                {awaitingTransfer ? t("invoiceSent") : t("reserved")}
               </h1>
-              <p className="text-base leading-[1.4] text-foreground opacity-80">
-                {t("remaining", { amount: money(booking.balanceDue.amountMinor) })}
-              </p>
+              {/*
+               * What the customer has to do next, which is not the same sentence for both ways
+               * of paying. A transfer leaves the booking at PAYMENT_PENDING with nothing
+               * received, so the card copy - "reserved", and the rest owed at check-in - told
+               * someone who had just asked for an invoice that they were done and that the
+               * money they still owe today was owed in September.
+               */}
+              {awaitingTransfer ? (
+                <p className="text-base leading-[1.4] text-foreground opacity-80">
+                  {t("invoiceHold", {
+                    /* The invoiced figure, frozen when the request was raised, rather than what
+                       the quote would charge today. That document is what the customer is
+                       paying against. */
+                    amount: money(invoice.amount.amountMinor),
+                    date: day(invoice.dueAt),
+                  })}
+                </p>
+              ) : (
+                /* Nothing left to say where the card settled the whole charter. */
+                booking.balanceDue.amountMinor > 0 && (
+                  <p className="text-base leading-[1.4] text-foreground opacity-80">
+                    {balanceDate
+                      ? t("remainingBy", {
+                          amount: money(booking.balanceDue.amountMinor),
+                          date: day(balanceDate),
+                        })
+                      : t("remaining", { amount: money(booking.balanceDue.amountMinor) })}
+                  </p>
+                )
+              )}
               <p className="text-sm leading-[1.3] font-medium text-natural-600">
-                {isGuest ? t("guestEmailed") : t("emailed")}
+                {awaitingTransfer
+                  ? t("invoiceEmailed", { number: invoice.number })
+                  : isGuest
+                    ? t("guestEmailed")
+                    : t("emailed")}
               </p>
             </div>
             {/* Both destinations need an account: My Bookings for a signed-in customer, and the
