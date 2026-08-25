@@ -255,7 +255,7 @@ export default function FaqTable() {
         {/* `className` lands on the input; the bordered field is `fieldClassName`, which is
             what has to match the Select's 48px. */}
         <TextField
-          containerClassName="min-w-0 md:flex-1"
+          containerClassName="min-w-0 md:min-w-64 md:flex-1 md:basis-64"
           fieldClassName="h-12"
           value={query}
           startIcon={<Search />}

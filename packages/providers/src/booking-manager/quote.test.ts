@@ -43,10 +43,33 @@ function mappingFor(
 describe("mapOfferToProviderQuote extras", () => {
   const cleaning = { id: "77", price: 150, obligatory: true };
 
-  it("refuses a percentage-priced extra rather than billing its zero price", () => {
+  it("prices a percentage extra off the charter price, not its zero price field", () => {
+    const mapping = mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 });
+    // 5% of the 1000.00 charter. Declared by the vendor too, so the subtotal
+    // assertion in mapOfferToProviderQuote has to agree with what we computed.
+    const quote = mapOfferToProviderQuote({
+      ...mapping,
+      offer: { ...mapping.offer, obligatoryExtrasPrice: 50 },
+    });
+
+    expect(quote.lines.find((line) => line.kind === "extra")?.amount.amountMinor).toBe(5000);
+  });
+
+  it("fails the quote when a percentage extra disagrees with the vendor subtotal", () => {
+    const mapping = mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 });
+
     expect(() =>
-      mapOfferToProviderQuote(mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 })),
-    ).toThrow(/priced as a percentage/);
+      mapOfferToProviderQuote({
+        ...mapping,
+        offer: { ...mapping.offer, obligatoryExtrasPrice: 60 },
+      }),
+    ).toThrow(/sum to 5000, declared 6000/);
+  });
+
+  it("refuses a percentage extra that carries no percentage", () => {
+    expect(() => mapOfferToProviderQuote(mappingFor({ id: "77", kind: 0, price: 0 }))).toThrow(
+      /carries none/,
+    );
   });
 
   it("bills a currency-priced extra as the amount it states", () => {

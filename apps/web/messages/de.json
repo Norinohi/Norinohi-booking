@@ -2727,7 +2727,8 @@
         "listing": {
           "label": "Yacht",
           "search": "Yachten nach Namen suchen",
-          "clear": "Gewählte Yacht entfernen"
+          "clear": "Gewählte Yacht entfernen",
+          "noResults": "Keine Yacht mit diesem Namen"
         },
         "question": {
           "label": "Frage",

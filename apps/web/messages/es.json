@@ -2727,7 +2727,8 @@
         "listing": {
           "label": "Yate",
           "search": "Buscar yates por nombre",
-          "clear": "Quitar el yate elegido"
+          "clear": "Quitar el yate elegido",
+          "noResults": "Ningún yate coincide con ese nombre"
         },
         "question": {
           "label": "Pregunta",

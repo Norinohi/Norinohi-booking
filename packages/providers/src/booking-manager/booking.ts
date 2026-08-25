@@ -95,7 +95,10 @@ type ReservationBody = {
   dateFrom: string;
   dateTo: string;
   yachtId: RawJSON;
-  status: number;
+  /**
+   * Omitted on create, sent on update. See `reservationBody`.
+   */
+  status?: number;
   clientName: string;
   passengersOnBoard: number;
   currency: string;
@@ -119,8 +122,16 @@ export function createBookingManagerBookingService(
    * is read as a replace rather than a patch: the spec documents one reservation
    * resource and no partial-update semantics, so sending only `{status}` risks
    * the vendor clearing the fields we omitted (Q-BM-PUT).
+   *
+   * `status` is omitted entirely on create. POST can only ever open an option, so
+   * the field says nothing the endpoint does not already decide, and the vendor
+   * asked us not to send it: "you do not need to specify the status ... I strongly
+   * recommend not including the status field" (Diego Pacifico, MMK, 2026-08-25).
+   * Only `dateFrom`, `dateTo` and `yachtId` are mandatory there. It stays on the
+   * update, which is the call that moves an option to a reservation and the one
+   * place the value carries meaning.
    */
-  async function reservationBody(draft: BookingDraft, status: number): Promise<ReservationBody> {
+  async function reservationBody(draft: BookingDraft, status?: number): Promise<ReservationBody> {
     const ref = await resolver.toExternalListing(draft.listingId);
     const yachtId = toExactPositiveIntId(ref.externalYachtId, {
       provider: "Booking Manager",
@@ -138,12 +149,12 @@ export function createBookingManagerBookingService(
       // The vendor declares these as `Long`, so they go out unquoted and whole.
       // `JSON.stringify` on a number would re-round the digits we just preserved.
       yachtId: exactJsonNumber(yachtId),
-      status,
       clientName: fullName(draft.customer),
       passengersOnBoard: draft.guests,
       currency,
       sendNotification,
     };
+    if (status !== undefined) body.status = status;
     if (productName) body.productName = productName;
     /*
      * The bases the offer was priced for, falling back to the listing's own only when the quote
@@ -188,7 +199,7 @@ export function createBookingManagerBookingService(
     const response = await client.post(
       bookingManagerEndpoints.reservation,
       restReservationSchema,
-      await reservationBody(parsed, BM_RESERVATION_STATUS.OPTION),
+      await reservationBody(parsed),
     );
 
     await logEvent(parsed.quoteId, "option_created", response);

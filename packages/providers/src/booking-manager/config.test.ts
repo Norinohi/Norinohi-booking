@@ -24,6 +24,18 @@ const source: BookingManagerEnvSource = {
 };
 
 describe("resolveBookingManagerConfig", () => {
+  it("refuses a sweep concurrency that could trip the vendor's 20-call ceiling", () => {
+    expect(() =>
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 17 }),
+    ).toThrow(/SWEEP_CONCURRENCY/);
+  });
+
+  it("allows the sweep right up to its share of the ceiling", () => {
+    expect(
+      resolveBookingManagerConfig({ ...source, BOOKING_MANAGER_SWEEP_CONCURRENCY: 16 }),
+    ).toMatchObject({ sweepConcurrency: 16 });
+  });
+
   it("reads the env slice", () => {
     expect(resolveBookingManagerConfig(source)).toMatchObject({
       baseUrl: "https://www.booking-manager.com/api/v2",

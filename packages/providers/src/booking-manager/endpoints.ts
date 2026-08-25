@@ -78,44 +78,61 @@ export const BM_REQUEST_TYPE = {
 } as const;
 
 /**
- * Documented reservation states. `4` (Service) is the vendor's own maintenance
- * or delivery block rather than a sale - the NauSYS import hit the same concept
- * as an undocumented `SERVICE` type and had to treat it as blocked inventory, so
- * it is named here rather than left as a bare number.
+ * The vendor's full status list, supplied in writing on 2026-08-25 (Diego
+ * Pacifico, MMK) and in the specification only as far as `4` plus `B`. Every
+ * value below `12` is accounted for; the enum is closed as of that date.
+ *
+ * The vendor annotates each with whether the boat is bookable, and that column is
+ * a statement of INTENT rather than of what the feeds do - see
+ * `OCCUPANCY_STATUS` in `occupancy.ts`, where `3` is documented as "available"
+ * and measurably is not. Do not turn his list into occupancy rules without
+ * measuring the status against `/offers` first.
  */
 export const BM_RESERVATION_STATUS = {
+  AVAILABLE: 0,
   RESERVATION: 1,
   OPTION: 2,
   OPTION_IN_EXPIRATION: 3,
   SERVICE: 4,
-  /**
-   * Undocumented, and the only status a successful DELETE ever answers with: the
-   * vendor transitions the record rather than removing it. Measured 2026-08-20 on
-   * company 225 across five deleted options, and the delete is idempotent (a
-   * repeat returns 200 and status 5 again).
-   */
   CANCELLED: 5,
+  OWNER_WEEK: 6,
+  OFFER_SENT: 7,
+  CUSTOM: 8,
+  OPTION_ON_WAITING: 9,
+  REGATTA: 10,
+  SLEEP_ABOARD: 11,
 } as const;
 
 /**
- * Two further values are live and undocumented, named here so they log as
- * something other than "unknown" (both measured 2026-08-20):
+ * What we measured before the list arrived, kept because it is stronger evidence
+ * than the list for the two values we exercised (both 2026-08-20):
  *
- * - `9`: a create that soft-conflicts with an existing hold. It carries no
- *   `expirationDate`, never appears in `/reservations/{year}` or
- *   `/availability/{year}`, and blocks nothing - a ghost record.
- * - `11`: a short vendor-side block, 387 rows across the account in 2026 and 119
- *   in 2027, mostly single days. Occupancy treats it as blocked; see
- *   `UNKNOWN_STATUS` in `occupancy.ts`.
+ * - `5` is what a successful DELETE answers with: the vendor transitions the
+ *   record rather than removing it, across five deleted options, and a repeat
+ *   returns 200 and `5` again.
+ * - `9` is what a create soft-conflicting with an existing hold produces. It
+ *   carries no `expirationDate`, never appears in `/reservations/{year}` or
+ *   `/availability/{year}`, and blocks nothing. That matches the vendor's
+ *   "second option, becomes active when the first expires".
+ * - `11` ran to 388 rows in 2026 and 125 in 2027 (re-counted 2026-08-25), mostly
+ *   single days, which fits Sleep Aboard.
+ *
+ * Only `1`, `2`, `3`, `4` and `11` are ever emitted by `/availability`; the other
+ * seven describe a free boat or a record the agency feed never carries.
  */
 export const BM_RESERVATION_STATUS_NAMES = new Map<number, string>([
+  [BM_RESERVATION_STATUS.AVAILABLE, "AVAILABLE"],
   [BM_RESERVATION_STATUS.RESERVATION, "RESERVATION"],
   [BM_RESERVATION_STATUS.OPTION, "OPTION"],
   [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "OPTION_IN_EXPIRATION"],
   [BM_RESERVATION_STATUS.SERVICE, "SERVICE"],
   [BM_RESERVATION_STATUS.CANCELLED, "CANCELLED"],
-  [9, "CONFLICTING_CREATE"],
-  [11, "VENDOR_BLOCK"],
+  [BM_RESERVATION_STATUS.OWNER_WEEK, "OWNER_WEEK"],
+  [BM_RESERVATION_STATUS.OFFER_SENT, "OFFER_SENT"],
+  [BM_RESERVATION_STATUS.CUSTOM, "CUSTOM"],
+  [BM_RESERVATION_STATUS.OPTION_ON_WAITING, "OPTION_ON_WAITING"],
+  [BM_RESERVATION_STATUS.REGATTA, "REGATTA"],
+  [BM_RESERVATION_STATUS.SLEEP_ABOARD, "SLEEP_ABOARD"],
 ]);
 
 /** `format=3` on /shortAvailability: one character per day. */
@@ -397,6 +414,12 @@ export const restCompanySchema = looseJsonObject({
   email: optionalText,
   web: optionalText,
   bankAccountNumber: optionalText,
+  /**
+   * The vendor's answer to "where is the cancellation policy": it is here, on the
+   * company, and not on the reservation, offer or yacht (Diego Pacifico, MMK,
+   * 2026-08-25). Free text, and present on some charters only. Parsed but not yet
+   * carried anywhere - nothing downstream stores it.
+   */
   termsAndConditions: optionalText,
   checkoutNote: optionalText,
   maxDiscountFromCommissionPercentage: optionalNumeric,

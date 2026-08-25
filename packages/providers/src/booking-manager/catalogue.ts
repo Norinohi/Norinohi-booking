@@ -10,6 +10,7 @@ import { retireOutOfScopeCompanies } from "../sync/retire-companies";
 import type { CatalogueSyncEvent, CatalogueSyncSource, SyncReporter } from "../sync/runner";
 import type { ProviderResourceType } from "../types";
 import type { BookingManagerClient } from "./client";
+import { type BookingManagerWarmupResult, warmBookingManagerServers } from "./warmup";
 import {
   bookingManagerEndpoints,
   restBaseListSchema,
@@ -159,6 +160,18 @@ export interface BookingManagerCatalogueOptions {
    * than one here and exactly one for NauSYS.
    */
   concurrency?: number;
+  /**
+   * Skips the cold-start warm-up. Off by default; set on a resumed run, where the
+   * servers this process already talked to are warm and the pings would be spent
+   * re-warming them.
+   */
+  skipWarmup?: boolean;
+  /**
+   * Called once with the warm-up outcome. The stream has no event for something
+   * that produces no records, and widening `CatalogueSyncEvent` for a diagnostic
+   * would put it in front of every consumer that only wants entities.
+   */
+  onWarmup?: (result: BookingManagerWarmupResult) => void;
 }
 
 /**
@@ -196,6 +209,15 @@ export async function* syncBookingManagerCatalogue(
   options: BookingManagerCatalogueOptions = {},
 ): AsyncIterable<CatalogueSyncEvent> {
   const resume = options.resume ?? null;
+
+  // Before the first read rather than between steps: the vendor's servers restart
+  // nightly, so this run is usually the first traffic any of them sees. Skipped on
+  // a resume, where they are warm already. Best-effort - see
+  // `warmBookingManagerServers`, which never throws.
+  if (!options.skipWarmup && resume === null) {
+    options.onWarmup?.(await warmBookingManagerServers(client, options.reporter));
+  }
+
   const startStep = resume?.step ?? 0;
   const scope = options.companyScope ?? unscopedCompanies;
   const inScope = (companyId: string) => scope.inScope(companyId);

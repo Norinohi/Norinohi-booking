@@ -268,8 +268,11 @@ export default function FaqEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showClose className="max-w-172 items-stretch">
-        <DialogHeader>
+      <DialogContent
+        showClose
+        className="max-h-[calc(100dvh-2rem)] max-w-172 items-stretch overflow-hidden"
+      >
+        <DialogHeader className="shrink-0">
           <DialogTitle>{t(isEdit ? "dialog.editTitle" : "dialog.createTitle")}</DialogTitle>
           <DialogDescription>{t("dialog.description")}</DialogDescription>
         </DialogHeader>
@@ -277,172 +280,184 @@ export default function FaqEntryDialog({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((values) => void onSubmit(values))}
-            className="flex w-full flex-col gap-5 text-left"
+            className="flex min-h-0 w-full flex-1 flex-col gap-5 text-left"
           >
-            <div className="grid items-start gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="scope"
-                render={({ field }) => (
-                  <FormItem className="gap-3">
-                    <FormLabel>{t("dialog.scope.label")}</FormLabel>
-                    <RadioGroup value={field.value} onValueChange={field.onChange}>
-                      <div className="flex flex-wrap gap-4">
-                        {SCOPES.map((option) => (
-                          <label
-                            key={option}
-                            className="flex w-fit cursor-pointer items-center gap-2 text-base leading-[1.4] text-foreground"
-                          >
-                            <Radio value={option} />
-                            {t(`scope.${option}`)}
-                          </label>
-                        ))}
-                      </div>
-                    </RadioGroup>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* The four language panes make this the tallest dialog in the admin, so the fields
+                scroll and the footer stays where the editor left it. */}
+            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto [scrollbar-width:thin]">
+              <div className="grid items-start gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="scope"
+                  render={({ field }) => (
+                    <FormItem className="gap-3">
+                      <FormLabel>{t("dialog.scope.label")}</FormLabel>
+                      <RadioGroup value={field.value} onValueChange={field.onChange}>
+                        <div className="flex flex-wrap gap-4">
+                          {SCOPES.map((option) => (
+                            <label
+                              key={option}
+                              className="flex w-fit cursor-pointer items-center gap-2 text-base leading-[1.4] text-foreground"
+                            >
+                              <Radio value={option} />
+                              {t(`scope.${option}`)}
+                            </label>
+                          ))}
+                        </div>
+                      </RadioGroup>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("dialog.category.label")}</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder={t("dialog.category.placeholder")}
-                        options={FAQ_CATEGORIES.map((option) => ({
-                          value: option,
-                          label: t(`categories.${option}`),
-                        }))}
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("dialog.category.label")}</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder={t("dialog.category.placeholder")}
+                          options={FAQ_CATEGORIES.map((option) => ({
+                            value: option,
+                            label: t(`categories.${option}`),
+                          }))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {scope === "listing" ? (
+                <FormField
+                  control={form.control}
+                  name="listingId"
+                  render={({ field }) => (
+                    <FormItem className="gap-2">
+                      <FormLabel>{t("dialog.listing.label")}</FormLabel>
+                      {selectedYacht ? (
+                        <Chip
+                          variant="brand"
+                          className="w-fit"
+                          onRemove={() => field.onChange("")}
+                          removeLabel={t("dialog.listing.clear")}
+                        >
+                          {selectedYacht.title}
+                        </Chip>
+                      ) : null}
+                      <TextField
+                        startIcon={<Search />}
+                        placeholder={t("dialog.listing.search")}
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <div className="flex max-h-44 flex-col overflow-y-auto rounded-lg border border-natural-100 [scrollbar-width:thin]">
+                        {yachts.length === 0 ? (
+                          <p className="px-3 py-3 text-sm leading-[1.4] text-natural-500">
+                            {t("dialog.listing.noResults")}
+                          </p>
+                        ) : (
+                          yachts.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => field.onChange(option.id)}
+                              className="cursor-pointer border-b border-natural-50 px-3 py-2.5 text-left text-base leading-[1.4] text-foreground last:border-b-0 hover:bg-natural-50"
+                            >
+                              {option.title}
+                              <span className="ml-2 text-sm text-natural-500">
+                                {option.baseName}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+
+              <Tabs
+                value={locale}
+                onValueChange={(next) => {
+                  const picked = FAQ_LOCALES.find((code) => code === next);
+                  if (picked) setLocale(picked);
+                }}
+              >
+                <TabsList>
+                  {FAQ_LOCALES.map((code) => {
+                    const state = group ? faqTranslationState(group, code) : "missing";
+                    return (
+                      <TabsTab key={code} value={code} className="flex items-center gap-2">
+                        <span
+                          aria-hidden
+                          className={`size-2 shrink-0 rounded-full ${STATE_DOT[state]}`}
+                        />
+                        {t(`locales.${code}`)}
+                        <span className="sr-only">{t(`state.${state}`)}</span>
+                      </TabsTab>
+                    );
+                  })}
+                </TabsList>
+
+                {FAQ_LOCALES.map((code) => (
+                  <TabsPanel key={code} value={code} className="flex flex-col gap-4 pt-2">
+                    <FormField
+                      control={form.control}
+                      name={`translations.${code}.question`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("dialog.question.label")}</FormLabel>
+                          <FormControl>
+                            <TextField placeholder={t("dialog.question.placeholder")} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`translations.${code}.answer`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("dialog.answer.label")}</FormLabel>
+                          <FormControl>
+                            <TextField
+                              multiline
+                              className="min-h-32"
+                              placeholder={t("dialog.answer.placeholder")}
+                              supportingText={t("dialog.answer.hint")}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {group?.translations.some((entry) => entry.locale === code) ? (
+                      <Button
+                        type="button"
+                        variant="subtle"
+                        size="sm"
+                        className="w-fit text-error-500"
+                        disabled={deleteEntry.isPending}
+                        onClick={() => void removeTranslation(code)}
+                      >
+                        {t("dialog.removeTranslation")}
+                      </Button>
+                    ) : null}
+                  </TabsPanel>
+                ))}
+              </Tabs>
             </div>
 
-            {scope === "listing" ? (
-              <FormField
-                control={form.control}
-                name="listingId"
-                render={({ field }) => (
-                  <FormItem className="gap-2">
-                    <FormLabel>{t("dialog.listing.label")}</FormLabel>
-                    {selectedYacht ? (
-                      <Chip
-                        variant="brand"
-                        className="w-fit"
-                        onRemove={() => field.onChange("")}
-                        removeLabel={t("dialog.listing.clear")}
-                      >
-                        {selectedYacht.title}
-                      </Chip>
-                    ) : null}
-                    <TextField
-                      startIcon={<Search />}
-                      placeholder={t("dialog.listing.search")}
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                    />
-                    <div className="flex max-h-56 flex-col overflow-y-auto [scrollbar-width:thin]">
-                      {yachts.map((option) => (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => field.onChange(option.id)}
-                          className="cursor-pointer border-b border-natural-50 px-1 py-3 text-left text-base leading-[1.4] text-foreground last:border-b-0 hover:bg-natural-50"
-                        >
-                          {option.title}
-                          <span className="ml-2 text-sm text-natural-500">{option.baseName}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : null}
-
-            <Tabs
-              value={locale}
-              onValueChange={(next) => {
-                const picked = FAQ_LOCALES.find((code) => code === next);
-                if (picked) setLocale(picked);
-              }}
-            >
-              <TabsList>
-                {FAQ_LOCALES.map((code) => {
-                  const state = group ? faqTranslationState(group, code) : "missing";
-                  return (
-                    <TabsTab key={code} value={code} className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className={`size-2 shrink-0 rounded-full ${STATE_DOT[state]}`}
-                      />
-                      {t(`locales.${code}`)}
-                      <span className="sr-only">{t(`state.${state}`)}</span>
-                    </TabsTab>
-                  );
-                })}
-              </TabsList>
-
-              {FAQ_LOCALES.map((code) => (
-                <TabsPanel key={code} value={code} className="flex flex-col gap-4 pt-2">
-                  <FormField
-                    control={form.control}
-                    name={`translations.${code}.question`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("dialog.question.label")}</FormLabel>
-                        <FormControl>
-                          <TextField placeholder={t("dialog.question.placeholder")} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`translations.${code}.answer`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("dialog.answer.label")}</FormLabel>
-                        <FormControl>
-                          <TextField
-                            multiline
-                            className="min-h-32"
-                            placeholder={t("dialog.answer.placeholder")}
-                            supportingText={t("dialog.answer.hint")}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {group?.translations.some((entry) => entry.locale === code) ? (
-                    <Button
-                      type="button"
-                      variant="subtle"
-                      size="sm"
-                      className="w-fit text-error-500"
-                      disabled={deleteEntry.isPending}
-                      onClick={() => void removeTranslation(code)}
-                    >
-                      {t("dialog.removeTranslation")}
-                    </Button>
-                  ) : null}
-                </TabsPanel>
-              ))}
-            </Tabs>
-
-            <DialogFooter>
+            <DialogFooter className="shrink-0">
               <Button type="button" variant="neutral" onClick={() => onOpenChange(false)}>
                 {t("dialog.cancel")}
               </Button>

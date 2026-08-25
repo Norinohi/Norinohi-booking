@@ -57,21 +57,35 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
   [BM_RESERVATION_STATUS.OPTION, "option"],
   [BM_RESERVATION_STATUS.OPTION_IN_EXPIRATION, "option"],
   [BM_RESERVATION_STATUS.SERVICE, "blocked"],
+  // Named unavailable by the vendor on 2026-08-25. They would land on
+  // UNKNOWN_STATUS anyway; listing them means a reader can tell a deliberate
+  // block from an unrecognised one.
+  [BM_RESERVATION_STATUS.OWNER_WEEK, "blocked"],
+  [BM_RESERVATION_STATUS.REGATTA, "blocked"],
+  [BM_RESERVATION_STATUS.SLEEP_ABOARD, "blocked"],
 ]);
 
 /**
- * A status outside the documented four, or a row with none, still arrived in a feed
- * that only lists taken periods, so it is unbookable. It is deliberately NOT a
- * throw: a fifth state added by the vendor would otherwise stall availability for
- * the whole account until we shipped a patch, and `blocked` is the reading that
- * cannot oversell.
+ * A status not named above, or a row with none, still arrived in a feed that only
+ * lists taken periods, so it is unbookable. Deliberately NOT a throw: a new state
+ * would otherwise stall availability for the whole account until we shipped a
+ * patch, and `blocked` is the reading that cannot oversell.
  *
- * Q-BM-STATUS is answered, and the answer is that the enum is NOT closed at 4.
- * Measured 2026-08-20 over the unfiltered account: status `11` is live, 387 rows in
- * 2026 and 119 in 2027, mostly single days, and it is undocumented. It lands here.
- * `OPTION_IN_EXPIRATION` was checked at the same time and is genuinely still
- * holding the week: five status-3 periods were each absent from `/offers`, with a
- * control yacht offered for an adjacent free week and refused for its status-3 one.
+ * Q-BM-STATUS is answered. The vendor's full list arrived on 2026-08-25 and runs
+ * to `11`, so this is now a guard against a future addition rather than against
+ * the gaps we had.
+ *
+ * The vendor calls `5`, `7` and `8` bookable, which raised the worry that landing
+ * them here hides sellable weeks. It does not: measured 2026-08-25 across the
+ * unfiltered account, `/availability` emits only `1`, `2`, `3`, `4` and `11` -
+ * 241,273 rows for 2026 and 17,671 for 2027, with no `5`, `7` or `8` in either.
+ * The feed lists taken periods, and those three describe a free boat, so they are
+ * simply never in it. Nothing is being over-blocked.
+ *
+ * If one ever does appear, do not unblock it on the vendor's word alone. `3` is
+ * documented as available and measurably holds the boat: five status-3 periods
+ * were each absent from `/offers` on 2026-08-20, with a control yacht offered for
+ * an adjacent free week and refused for its status-3 one.
  */
 const UNKNOWN_STATUS: OccupiedInterval["status"] = "blocked";
 
