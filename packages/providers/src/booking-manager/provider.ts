@@ -231,7 +231,7 @@ export class BookingManagerInventoryProvider
   }
 }
 
-function parseResume(value: unknown): BookingManagerCatalogueCursor | null {
+function parseResume(value: JsonField): BookingManagerCatalogueCursor | null {
   return parseBookingManagerCatalogueCursor(value);
 }
 

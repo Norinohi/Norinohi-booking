@@ -14,7 +14,7 @@ import { describeErrorChain } from "../shared/error-chain";
 import type { InventoryProvider } from "../provider";
 import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
-import type { JsonField } from "../shared/json";
+import type { JsonField, JsonValue } from "../shared/json";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { retainRawPayloads, stableSourceHash } from "../shared/raw-retention";
 import {
@@ -25,6 +25,7 @@ import {
 import { openSyncRun, releaseSyncRun } from "./run";
 import type { ProviderResourceType, RawEntity } from "../types";
 import { clearSyncCursor, readSyncCursor, writeSyncCursor } from "./cursor";
+import type { SyncCursor } from "./cursor";
 import { loadProviderRecordSet, writeCanonicalCatalogue } from "./catalogue-writer";
 
 /* --------------------------------------------------------- ingest protocol */
@@ -51,7 +52,7 @@ export type CatalogueSyncEvent =
        */
       scopeKey?: string;
       /** Resume marker covering everything up to and including this scope. */
-      cursor?: unknown;
+      cursor?: SyncCursor;
     };
 
 /**
@@ -77,7 +78,7 @@ export type CatalogueSyncSource = (reporter: SyncReporter) => AsyncIterable<Cata
 
 /** A provider that can report scope completion; `syncCatalogue` cannot. */
 export interface ScopedCatalogueProvider {
-  createCatalogueSyncSource(options: { resume?: unknown }): CatalogueSyncSource;
+  createCatalogueSyncSource(options: { resume?: JsonValue }): CatalogueSyncSource;
 }
 
 export function supportsScopedCatalogueSync(
@@ -189,9 +190,9 @@ export interface CatalogueSyncStore {
   recordError(input: {
     errorType: ReturnType<typeof toSyncErrorType>;
     message: string;
-    context: Record<string, unknown>;
+    context: SyncErrorContext;
   }): Promise<void>;
-  saveCursor(cursor: unknown): Promise<void>;
+  saveCursor(cursor: SyncCursor | null): Promise<void>;
   closeRun(input: CloseRunInput): Promise<void>;
 }
 
@@ -221,9 +222,14 @@ function messageOf(error: unknown): string {
   return thrownStringSchema.safeParse(error).data ?? "Unknown sync failure";
 }
 
-function contextOf(error: unknown, extra: SyncErrorContext | undefined) {
+const errorContextSchema: z.ZodType<Record<string, JsonValue>> = z.record(z.string(), z.json());
+
+function contextOf(error: unknown, extra: SyncErrorContext | undefined): SyncErrorContext {
   const base = error instanceof ProviderError ? error.sanitizedContext() : {};
-  return { ...base, ...extra };
+  // The merged context carries a redacted vendor payload, which is only typed as
+  // far as `redactSecrets` can promise. Encoding it here is the same round trip
+  // the jsonb column makes anyway, and it is what names the stored shape.
+  return errorContextSchema.parse(JSON.parse(JSON.stringify({ ...base, ...extra })));
 }
 
 /**
@@ -842,7 +848,7 @@ export interface CatalogueSyncJobOptions {
   provider: InventoryProvider;
   providerId: string;
   syncRunId: string;
-  resume?: unknown;
+  resume?: JsonValue;
   cursorScope?: string;
   now?: () => Date;
   /**

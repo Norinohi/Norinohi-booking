@@ -9,9 +9,10 @@ type ReservationEventInsert = typeof providerReservationEvent.$inferInsert;
 export type ReservationEventKind = ReservationEventInsert["kind"];
 
 /** Structural subset of the Drizzle executor; see `raw-retention.ts`. */
-export interface ReservationEventWriter {
+export interface ReservationEventWriter<TInsertResult = unknown> {
   insert(table: typeof providerReservationEvent): {
-    values(value: ReservationEventInsert): PromiseLike<unknown>;
+    /* Awaited for its effect only, so the driver's result type stays a parameter. */
+    values(value: ReservationEventInsert): PromiseLike<TInsertResult>;
   };
 }
 
@@ -20,7 +21,7 @@ export interface ReservationEventInput {
   kind: ReservationEventKind;
   provider: string;
   providerReference?: string | null;
-  payload?: unknown;
+  payload?: ReservationEventPayload;
 }
 
 /**
@@ -86,7 +87,21 @@ function isDropped(key: string): boolean {
   return DROPPED_KEYS.has(key.replaceAll(/[^a-z0-9]/gi, "").toLowerCase());
 }
 
-function sanitize(value: unknown, seen: WeakSet<object>): unknown {
+/**
+ * What a provider hands the event log: JSON, plus `Date` and `undefined`, which
+ * the projections carry before anything serialises them.
+ */
+export type ReservationEventPayload =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Date
+  | readonly ReservationEventPayload[]
+  | { readonly [key: string]: ReservationEventPayload };
+
+function sanitize(value: ReservationEventPayload, seen: WeakSet<object>): ReservationEventPayload {
   if (value === null || typeof value !== "object") {
     return value;
   }
@@ -102,7 +117,7 @@ function sanitize(value: unknown, seen: WeakSet<object>): unknown {
     return value.toISOString();
   }
 
-  const result: Record<string, unknown> = {};
+  const result: Record<string, ReservationEventPayload> = {};
   for (const [key, item] of Object.entries(value)) {
     if (isDropped(key)) {
       continue;
@@ -117,12 +132,14 @@ function sanitize(value: unknown, seen: WeakSet<object>): unknown {
  * Dropping rather than masking: a masked key still tells a reader the field was
  * present, but leaves the shape available for someone to "restore" later.
  */
-export function sanitizeReservationPayload(payload: unknown): unknown {
+export function sanitizeReservationPayload(
+  payload: ReservationEventPayload,
+): ReservationEventPayload {
   return sanitize(payload, new WeakSet());
 }
 
-export async function recordReservationEvent(
-  db: ReservationEventWriter,
+export async function recordReservationEvent<TInsertResult>(
+  db: ReservationEventWriter<TInsertResult>,
   input: ReservationEventInput,
 ): Promise<void> {
   await db.insert(providerReservationEvent).values({
@@ -139,7 +156,7 @@ export interface QuoteReservationEventInput {
   quoteId: string;
   kind: ReservationEventKind;
   providerReference?: string | null;
-  payload?: unknown;
+  payload?: ReservationEventPayload;
 }
 
 export type ReservationEventRecorder = (event: QuoteReservationEventInput) => Promise<void>;

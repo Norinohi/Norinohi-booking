@@ -32,14 +32,15 @@ import {
 import { z } from "zod";
 
 import type { QueryValue } from "../shared/http-client";
+import type { JsonField, JsonValue } from "../shared/json";
 
 /* The probe reports on payloads it has no type for, so each read is its own parse. */
-const rowsSchema = z.array(z.unknown());
+const rowsSchema = z.array(z.json());
 const keyedSchema = z.record(z.string(), z.unknown());
 const errorPayloadSchema = z.object({ payload: z.unknown() });
 
 /** The vendor's own field names, which is the whole point of a contract probe. */
-function keysOf(value: unknown): string | null {
+function keysOf(value: JsonField): string | null {
   const parsed = keyedSchema.safeParse(value);
   return parsed.success ? Object.keys(parsed.data).sort().join(", ") : null;
 }
@@ -50,7 +51,7 @@ const TEST_COMPANY_ID = 225;
 const config = resolveBookingManagerConfig();
 
 /** Kept so a schema failure can be shown against the payload that caused it. */
-const lastRaw = new Map<string, unknown>();
+const lastRaw = new Map<string, JsonValue>();
 
 const client = new BookingManagerClient({
   config,
