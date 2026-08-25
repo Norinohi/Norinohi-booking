@@ -2490,6 +2490,25 @@
         "restore": "Restore to the queues",
         "excludedAt": "Excluded from the queues and totals {at}",
         "help": "An excluded booking keeps its status, its payments and its provider reservation. It only stops being counted by staff queues and money totals."
+      },
+      "cancel": {
+        "action": "Cancel booking",
+        "title": "Cancel this booking?",
+        "description": "{reference} for {customer}",
+        "confirmedWarning": "This booking is confirmed. Cancelling moves it to the refund queue; the money is not returned until someone refunds it there.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "Operator withdrew the yacht",
+        "keep": "Keep it",
+        "confirm": "Cancel booking",
+        "success": "Booking cancelled.",
+        "successRefund": "Booking cancelled and moved to the refund queue.",
+        "providerHeld": "Cancelled here, but {provider} kept the reservation: {error}",
+        "providerHeldUnknown": "the provider gave no reason",
+        "error": "Could not cancel this booking."
+      },
+      "providerHold": {
+        "title": "{provider} still holds this reservation",
+        "body": "We cancelled our side and the provider did not let go. The charter still stands with the operator, so settle it with them before any refund is paid, or the money goes back on a week we are still billed for."
       }
     },
     "providers": {

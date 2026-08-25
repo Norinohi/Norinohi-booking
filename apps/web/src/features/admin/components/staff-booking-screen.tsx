@@ -12,13 +12,14 @@ import {
 } from "@yacht-charter/ui/components/data-display/table";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
 import { useAmount } from "../hooks/use-amount";
 import { useAdminBooking, useSetBookingExcluded } from "../hooks/use-payments";
 import { type BookingAdminDetail, toProviderKey } from "../types";
+import AdminCancelBookingDialog from "./admin-cancel-booking-dialog";
 
 /*
  * StaffBookingScreen — /staff/bookings/[id]: one booking as support sees it.
@@ -63,6 +64,26 @@ const PAYMENT_VARIANTS = {
 function chipVariant(map: Record<string, ChipVariant>, key: string): ChipVariant {
   return map[key] ?? "neutral";
 }
+
+/*
+ * The vendor's last word, when it is one that means the boat is still theirs to give back.
+ * `cancelled` and a null (a provider that was never asked) are the other side of this.
+ */
+const PROVIDER_HOLDS = ["confirmed", "option_held"];
+
+/*
+ * Statuses that say we let the slot go. Cancelling a CONFIRMED booking lands at REFUND_PENDING
+ * rather than CANCELLED, so both belong here: the pair with a provider that still holds is
+ * exactly the case where money is about to be returned on a charter we are still billed for.
+ */
+const RELEASED_BY_US = ["CANCELLED", "REFUND_PENDING"];
+
+/*
+ * Where cancelling is refused, so the button is not offered. CONFIRMING is out because the money
+ * is already with the provider and their answer is a moment away — the state machine sends it to
+ * CONFIRMED or PROVIDER_REJECTED and nowhere else. The last three are already finished.
+ */
+const UNCANCELLABLE = ["CONFIRMING", "CANCELLED", "REFUND_PENDING", "REFUNDED"];
 
 /*
  * `crewType` is a provider code until the API finds a translation for it, after which it arrives
@@ -151,8 +172,22 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
     0,
   );
 
+  const providerStillHolds =
+    RELEASED_BY_US.includes(booking.status) &&
+    booking.providerStatus !== null &&
+    PROVIDER_HOLDS.includes(booking.providerStatus);
+
   return (
     <>
+      {providerStillHolds ? (
+        <section className="flex flex-col gap-1 rounded-2xl border border-error-200 bg-error-50 px-5 py-4">
+          <p className="text-sm font-semibold text-error-600">
+            {t("providerHold.title", { provider: providerLabel(booking.provider) })}
+          </p>
+          <p className="text-sm text-error-600">{t("providerHold.body")}</p>
+        </section>
+      ) : null}
+
       <section className="flex flex-col gap-4 rounded-2xl border border-natural-100 bg-card p-5">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl leading-[1.3] font-bold text-foreground">{booking.reference}</h1>
@@ -162,7 +197,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
           {booking.isGuestAccount ? <Chip variant="outline">{t("guestAccount")}</Chip> : null}
           {booking.excludedAt ? <Chip variant="neutral">{t("excluded.chip")}</Chip> : null}
         </div>
-        <ExcludeControl booking={booking} />
+        <StaffActions booking={booking} providerLabel={providerLabel(booking.provider)} />
         <p className="text-base text-natural-500">
           {booking.listingTitle} · {booking.base.name}, {booking.base.countryName}
         </p>
@@ -388,15 +423,32 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
  * decision that costs nothing to undo. Cancelling a booking, which does move real
  * money, keeps its dialog.
  */
-function ExcludeControl({ booking }: { booking: BookingAdminDetail }) {
+/*
+ * The two writes this screen can make, in one strip rather than two: both act on the booking as
+ * a whole, and a colleague deciding between them is choosing whether this was real business at
+ * all or business that is not happening.
+ */
+function StaffActions({
+  booking,
+  providerLabel,
+}: {
+  booking: BookingAdminDetail;
+  providerLabel: string;
+}) {
   const t = useTranslations("Admin.StaffBooking");
   const format = useFormatter();
   const setExcluded = useSetBookingExcluded();
+  const [cancelling, setCancelling] = useState(false);
   const isExcluded = booking.excludedAt !== null;
 
   return (
     <div className="flex flex-col gap-2 border-t border-natural-100 pt-4">
       <div className="flex flex-wrap items-center gap-3">
+        {UNCANCELLABLE.includes(booking.status) ? null : (
+          <Button variant="destructive" size="sm" onClick={() => setCancelling(true)}>
+            {t("cancel.action")}
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -417,6 +469,13 @@ function ExcludeControl({ booking }: { booking: BookingAdminDetail }) {
         ) : null}
       </div>
       <p className="text-sm text-natural-500">{t("excluded.help")}</p>
+
+      <AdminCancelBookingDialog
+        booking={booking}
+        providerLabel={providerLabel}
+        open={cancelling}
+        onOpenChange={setCancelling}
+      />
     </div>
   );
 }

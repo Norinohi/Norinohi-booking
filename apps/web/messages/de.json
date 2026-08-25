@@ -2490,6 +2490,25 @@
         "restore": "In die Warteschlangen zurückholen",
         "excludedAt": "Aus Warteschlangen und Summen ausgeschlossen {at}",
         "help": "Eine ausgeschlossene Buchung behält ihren Status, ihre Zahlungen und ihre Anbieterreservierung. Sie wird lediglich nicht mehr in Mitarbeiter-Warteschlangen und Geldsummen mitgezählt."
+      },
+      "cancel": {
+        "action": "Buchung stornieren",
+        "title": "Diese Buchung stornieren?",
+        "description": "{reference} für {customer}",
+        "confirmedWarning": "Diese Buchung ist bestätigt. Die Stornierung verschiebt sie in die Erstattungsliste; das Geld wird erst zurückgezahlt, wenn es dort erstattet wird.",
+        "reasonLabel": "Grund (optional)",
+        "reasonPlaceholder": "Anbieter hat die Yacht zurückgezogen",
+        "keep": "Behalten",
+        "confirm": "Buchung stornieren",
+        "success": "Buchung storniert.",
+        "successRefund": "Buchung storniert und in die Erstattungsliste verschoben.",
+        "providerHeld": "Hier storniert, aber {provider} hat die Reservierung behalten: {error}",
+        "providerHeldUnknown": "der Anbieter nannte keinen Grund",
+        "error": "Diese Buchung konnte nicht storniert werden."
+      },
+      "providerHold": {
+        "title": "{provider} hält diese Reservierung weiterhin",
+        "body": "Wir haben auf unserer Seite storniert, der Anbieter hat die Reservierung aber nicht freigegeben. Der Charter besteht beim Vercharterer weiter. Klären Sie das mit ihm, bevor eine Erstattung ausgezahlt wird, sonst geht das Geld für eine Woche zurück, die uns weiterhin berechnet wird."
       }
     },
     "providers": {

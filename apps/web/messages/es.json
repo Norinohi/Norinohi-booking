@@ -2490,6 +2490,25 @@
         "restore": "Devolver a las colas",
         "excludedAt": "Excluida de las colas y los totales el {at}",
         "help": "Una reserva excluida conserva su estado, sus pagos y su reserva con el proveedor. Solo deja de contarse en las colas de personal y en los totales de dinero."
+      },
+      "cancel": {
+        "action": "Cancelar reserva",
+        "title": "¿Cancelar esta reserva?",
+        "description": "{reference} de {customer}",
+        "confirmedWarning": "Esta reserva está confirmada. Al cancelarla pasa a la cola de reembolsos; el dinero no se devuelve hasta que alguien lo reembolse allí.",
+        "reasonLabel": "Motivo (opcional)",
+        "reasonPlaceholder": "El operador retiró el barco",
+        "keep": "Mantenerla",
+        "confirm": "Cancelar reserva",
+        "success": "Reserva cancelada.",
+        "successRefund": "Reserva cancelada y enviada a la cola de reembolsos.",
+        "providerHeld": "Cancelada aquí, pero {provider} mantuvo la reserva: {error}",
+        "providerHeldUnknown": "el proveedor no dio ningún motivo",
+        "error": "No se pudo cancelar esta reserva."
+      },
+      "providerHold": {
+        "title": "{provider} sigue reteniendo esta reserva",
+        "body": "Cancelamos por nuestra parte y el proveedor no la liberó. El chárter sigue en pie con el operador, así que resuélvelo con él antes de pagar cualquier reembolso, o el dinero se devolverá por una semana que se nos sigue facturando."
       }
     },
     "providers": {

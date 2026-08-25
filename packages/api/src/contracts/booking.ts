@@ -580,6 +580,12 @@ export const adminBookingIdInputSchema = z.object({ id: idSchema });
 export const bookingAdminDetailSchema = bookingAdminRowSchema.extend({
   provider: z.string(),
   providerReservationId: z.string().nullable(),
+  /*
+   * The provider's own last word on the reservation, which is not ours to infer. Read against
+   * `status`: a cancelled booking still reading `confirmed` or `option_held` here is one the
+   * vendor never let go of, and staff have to settle that by hand before the refund is paid.
+   */
+  providerStatus: z.string().nullable(),
   holdExpiresAt: z.string().nullable(),
   confirmedAt: z.string().nullable(),
   crewType: z.string().nullable(),
