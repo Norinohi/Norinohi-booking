@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
+import { bookingDraftSchema } from "../types";
 import { restExtrasSchema, restOfferSchema } from "./endpoints";
-import { mapOfferToProviderQuote, type OfferMapping, selectOffer } from "./quote";
+import {
+  mapOfferToProviderQuote,
+  type OfferMapping,
+  repriceRequestFor,
+  selectOffer,
+} from "./quote";
 
 type ExtraInput = z.input<typeof restExtrasSchema>;
 
@@ -157,5 +163,51 @@ describe("selectOffer", () => {
     });
 
     expect(selectOffer([otherWeek], "9001", "2026-09-26", "2026-10-03", undefined)).toBeUndefined();
+  });
+});
+
+describe("repriceRequestFor", () => {
+  const draft = (route: { startBaseId?: string; endBaseId?: string } | null) =>
+    bookingDraftSchema.parse({
+      listingId: "lst_1",
+      quoteId: "qt_1",
+      checkIn: "2026-09-26",
+      checkOut: "2026-10-03",
+      guests: 4,
+      extras: ["service:77"],
+      crewType: "bareboat",
+      priceSourceHash: "hash",
+      route,
+      customer: { name: "Ada", email: "ada@example.com" },
+    });
+
+  it("asks for the drop-off the quote was priced on", () => {
+    expect(repriceRequestFor(draft({ startBaseId: "100", endBaseId: "200" }), "EUR")).toMatchObject(
+      {
+        listingId: "lst_1",
+        checkIn: "2026-09-26",
+        checkOut: "2026-10-03",
+        guests: 4,
+        extras: ["service:77"],
+        crewType: "bareboat",
+        currency: "EUR",
+        endBaseId: "200",
+      },
+    );
+  });
+
+  it("states the base pair even where the charter returns to its own base", () => {
+    // `route` is the pair the chosen offer named, not a request the customer made, so stating
+    // it re-prices that same offer rather than re-running the ranking and trusting it to land
+    // the same way twice.
+    expect(repriceRequestFor(draft({ startBaseId: "100", endBaseId: "100" }), "EUR")).toMatchObject(
+      {
+        endBaseId: "100",
+      },
+    );
+  });
+
+  it("asks unfiltered where the provider named no bases", () => {
+    expect(repriceRequestFor(draft(null), "EUR")).not.toHaveProperty("endBaseId");
   });
 });

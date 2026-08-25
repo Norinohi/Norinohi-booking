@@ -33,6 +33,7 @@ import {
   assertTransition,
   InvalidTransitionError,
   isUserCancellable,
+  NEVER_HELD,
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
@@ -42,7 +43,7 @@ import { enqueueOutbox, kickOutbox } from "./outbox";
 import { redeemDiscount } from "./discount-redemption";
 import { redeemCredit } from "./loyalty";
 import { paginatedQuery, totalFrom } from "./pagination";
-import { isUniqueViolation } from "./pg-errors";
+import { isUniqueViolation, violatedConstraint } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { asCrewType, assertQuoteIsFresh } from "./quote";
 import type { GuestAccessToken } from "./guest-access";
@@ -70,20 +71,6 @@ const REFERENCE_LENGTH = 8;
 
 /* --------------------------------------------------------------------- reads */
 
-/*
- * Never reached the customer as a booking: the provider refused or the hold ran out before
- * anything was secured, and no money moved. The rows are kept — they carry the consents, the
- * idempotency key and the vendor's reason — but a failed submit must not leave a card in the
- * customer's history. Asking for one of these statuses explicitly still returns it, which is
- * how support and admin see what was attempted.
- */
-const NEVER_HELD: BookingStatus[] = [
-  "DRAFT",
-  "QUOTE_EXPIRED",
-  "OPTION_EXPIRED",
-  "PROVIDER_REJECTED",
-];
-
 export async function listBookings(
   db: Database,
   userId: string,
@@ -93,7 +80,7 @@ export async function listBookings(
   if (input.status?.length) {
     filters.push(inArray(booking.status, input.status));
   } else {
-    filters.push(notInArray(booking.status, NEVER_HELD));
+    filters.push(notInArray(booking.status, [...NEVER_HELD]));
   }
 
   // The date filter is on the charter period, which lives on the quote — that is
@@ -256,6 +243,31 @@ export async function createHold(
   const userId = actor.userId;
   const existing = await findHoldByKey(db, userId, idempotencyKey);
   if (existing) {
+    /*
+     * The first attempt for this key has not answered yet: it is inside `provider.createOption`
+     * right now, or it died there and no sweep has reached the row. Nothing can be handed back
+     * either way - OPTION_PENDING cannot reach PAYMENT_PENDING - and telling the customer to
+     * reprice would be a lie while the provider may still be about to say yes.
+     */
+    if (existing.status === "OPTION_PENDING") holdInProgress();
+
+    /*
+     * A replay answers with what the first attempt actually did, and these statuses mean it
+     * secured nothing: the provider refused, or the hold ran out. Returning one as a hold was
+     * a 200 carrying a dead booking - the row never reached the provider a second time, the
+     * client opened its payment step on it, and `assertPayable` refused with NOT_PAYABLE two
+     * screens later. The 409 below is the one the first attempt raised, restated.
+     *
+     * Not solved by skipping the row and booking afresh: `booking_user_idempotency_uq` owns
+     * this pair, so a second insert on the same key is a unique violation. The way forward is
+     * a reprice, which mints a new quote and with it a new key.
+     */
+    if (NEVER_HELD.includes(existing.status)) {
+      throw new ORPCError("CONFLICT", {
+        message: existing.cancelReason ?? "This slot could not be held — please reprice",
+      });
+    }
+
     const reissued = await rehashGuestAccess(db, existing, actor);
     return presentHold(reissued.row, reissued.applied ? (actor.guestAccess?.token ?? null) : null);
   }
@@ -742,16 +754,41 @@ async function transition(
   return updated;
 }
 
+/**
+ * Refuses a submit whose first attempt is still running, rather than answering with a booking
+ * that is not one yet. Named so the client can tell "wait" apart from "reprice": what is needed
+ * here is the same key again in a moment, and the reprice refusals mean the opposite.
+ */
+function holdInProgress(): never {
+  throw new ORPCError("CONFLICT", {
+    message: "This booking is still being confirmed — try again in a moment",
+    data: { code: "HOLD_IN_PROGRESS" },
+  });
+}
+
 async function insertBooking(
   db: Database,
   values: Omit<typeof booking.$inferInsert, "reference">,
 ): Promise<BookingRow> {
   const row = await withUniqueRetry(5, async () => {
-    const [inserted] = await db
-      .insert(booking)
-      .values({ ...values, reference: `NB-${randomCode(REFERENCE_LENGTH)}` })
-      .returning();
-    return inserted;
+    try {
+      const [inserted] = await db
+        .insert(booking)
+        .values({ ...values, reference: `NB-${randomCode(REFERENCE_LENGTH)}` })
+        .returning();
+      return inserted;
+    } catch (error) {
+      /*
+       * The retry exists to mint another reference, and the reference is the only thing it
+       * changes. A collision on the idempotency key is a second request for the same submit
+       * that got past `findHoldByKey` before the first insert landed, so retrying it four more
+       * times only spends the attempts and ends in "Could not allocate a booking" - a 500 for
+       * what is an ordinary double submit. Same race as the OPTION_PENDING replay above, one
+       * window earlier, and it gets the same answer.
+       */
+      if (violatedConstraint(error) === "booking_user_idempotency_uq") holdInProgress();
+      throw error;
+    }
   });
 
   if (!row) {

@@ -47,6 +47,7 @@
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
       "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo.",
+      "holdInProgress": "Todavía estamos finalizando tu intento anterior. Espera un momento y vuelve a confirmar.",
       "billingName": "Introduce el nombre de facturación",
       "billingAddress": "Introduce la dirección de facturación",
       "city": "Introduce la ciudad"

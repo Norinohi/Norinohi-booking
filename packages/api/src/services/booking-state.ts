@@ -67,6 +67,25 @@ const TRANSITIONS = {
 } satisfies Record<BookingStatus, readonly BookingStatus[]>;
 
 /*
+ * Never reached the customer as a booking: the provider refused or the hold ran out before
+ * anything was secured, and no money moved. The rows are kept - they carry the consents, the
+ * idempotency key and the vendor's reason - but a failed submit must not leave a card in the
+ * customer's history, and `checkout.createHold` must not replay one as a hold. Asking for one
+ * of these statuses explicitly still returns it, which is how support and admin see what was
+ * attempted.
+ *
+ * A claim about the table above, and tested against it: none of these can reach
+ * PAYMENT_PENDING, so a customer sent onward with one could only ever be refused at the
+ * payment step. The way out of all four is a reprice.
+ */
+export const NEVER_HELD: readonly BookingStatus[] = [
+  "DRAFT",
+  "QUOTE_EXPIRED",
+  "OPTION_EXPIRED",
+  "PROVIDER_REJECTED",
+];
+
+/*
  * What the expiry sweeper moves, and to what.
  *
  * These live here rather than in expiry.ts because they are claims about

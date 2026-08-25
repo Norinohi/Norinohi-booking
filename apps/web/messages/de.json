@@ -47,6 +47,7 @@
       "cancellation": "Akzeptieren Sie die Stornierungsbedingungen, um fortzufahren",
       "paymentMessage": "Geben Sie Ihre Frage oder Anfrage ein",
       "confirmFailed": "Ihre Buchung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut.",
+      "holdInProgress": "Ihr letzter Versuch wird noch abgeschlossen. Bitte warten Sie einen Moment und bestätigen Sie erneut.",
       "billingName": "Geben Sie den Rechnungsnamen ein",
       "billingAddress": "Geben Sie die Rechnungsadresse ein",
       "city": "Geben Sie die Stadt ein"

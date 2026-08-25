@@ -8,6 +8,7 @@ import { stableSourceHash } from "../shared/raw-retention";
 import {
   providerQuoteSchema,
   quoteRequestSchema,
+  type BookingDraft,
   type CrewType,
   type Money,
   type ProviderQuote,
@@ -161,6 +162,29 @@ export function createBookingManagerQuoteService(
       });
     },
   };
+}
+
+/**
+ * The quote request a stored quote was priced on, rebuilt from the draft the hold carries.
+ *
+ * The hold re-prices to check the number has not moved, and that check is only honest if it
+ * asks for the same charter. `/offers` answers one offer per sellable base pair and
+ * `selectOffer` narrows to a pair only when it is given one, so a re-price that drops the
+ * customer's drop-off prices the same-base return `rankOffers` puts first - and refuses every
+ * one-way with PRICE_CHANGED for a price that never moved.
+ */
+export function repriceRequestFor(draft: BookingDraft, currency: string): QuoteRequest {
+  const request: QuoteRequest = {
+    listingId: draft.listingId,
+    checkIn: draft.checkIn,
+    checkOut: draft.checkOut,
+    guests: draft.guests,
+    extras: draft.extras,
+    currency,
+  };
+  if (draft.crewType) request.crewType = draft.crewType;
+  if (draft.route?.endBaseId) request.endBaseId = draft.route.endBaseId;
+  return request;
 }
 
 /**

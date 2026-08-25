@@ -38,7 +38,7 @@ import { BookingManagerClient } from "./client";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
 import { createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
-import { createBookingManagerQuoteService } from "./quote";
+import { createBookingManagerQuoteService, repriceRequestFor } from "./quote";
 import { createBookingManagerBookingService } from "./booking";
 
 import type { JsonField } from "../shared/json";
@@ -112,15 +112,9 @@ export class BookingManagerInventoryProvider
       // that moved between quote and checkout is refused rather than held at a
       // price the vendor will not honour.
       verifyPrice: async (draft) => {
-        const quote = await this.quotes.getBookingManagerQuote({
-          listingId: draft.listingId,
-          checkIn: draft.checkIn,
-          checkOut: draft.checkOut,
-          guests: draft.guests,
-          extras: draft.extras,
-          crewType: draft.crewType,
-          currency: this.currency,
-        });
+        const quote = await this.quotes.getBookingManagerQuote(
+          repriceRequestFor(draft, this.currency),
+        );
         return quote.priceSourceHash;
       },
     });

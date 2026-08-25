@@ -32,3 +32,21 @@ export function isSettling(status: Status | undefined): boolean {
 export function hasFailed(status: Status | undefined): boolean {
   return status !== undefined && FAILED.includes(status);
 }
+
+/*
+ * The statuses the payment step can be opened on, as a positive list rather than a list of
+ * failures - the failures are open-ended and a status missed from one reads as "pay for this".
+ *
+ * Mirrors `assertPayable` (packages/api/src/services/payment-guards.ts), which is
+ * `canTransition(status, "PAYMENT_PENDING")`, plus PAYMENT_PENDING itself: a customer who
+ * abandoned a 3-D Secure challenge resumes the intent they already have.
+ *
+ * Load-bearing because `checkout.createHold` answers a repeated idempotency key with the
+ * earlier attempt rather than a fresh hold, so what comes back is not always a booking the
+ * customer can pay for.
+ */
+const PAYABLE: readonly Status[] = ["QUOTED", "OPTION_HELD", "PAYMENT_PENDING", "PAYMENT_FAILED"];
+
+export function canPay(status: Status | undefined): boolean {
+  return status !== undefined && PAYABLE.includes(status);
+}

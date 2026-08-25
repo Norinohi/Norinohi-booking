@@ -7,6 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@yacht-charter/ui/components/layout/accordion";
+import { ORPCError } from "@orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -16,7 +17,9 @@ import { toast } from "sonner";
 
 import { createHoldMutationOptions } from "../api/queries";
 import type { BookingValues } from "../lib/booking-form";
+import { canPay } from "../lib/checkout-status";
 import { rememberGuestAccess } from "../lib/guest-access";
+import { holdFailureSchema } from "../lib/hold";
 import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
 import GuestDetailsStep from "./steps/guest-details";
@@ -101,6 +104,8 @@ export default function BookingSteps() {
    * stops both a silently dropped change and a pointless supersede when nothing moved.
    */
   const committedExtras = useRef<string | null>(null);
+  /* Guards the awaits before the hold; see `confirmBooking`. */
+  const confirming = useRef(false);
 
   /*
    * The wizard is entered with a `quoteId` and nothing else, so the form has no idea what was
@@ -135,6 +140,24 @@ export default function BookingSteps() {
   }
 
   /*
+   * Synchronous, and deliberately not `createHold.isPending`: everything `runConfirm` does
+   * before the mutation is awaited - committing the extras is a network reprice on its own -
+   * so `isPending` is still false through the window a second click actually lands in. That
+   * window is the double submit the idempotency key was added for, and it now answers
+   * HOLD_IN_PROGRESS rather than minting a second booking; this stops the second click
+   * leaving the browser at all.
+   */
+  async function confirmBooking() {
+    if (confirming.current) return;
+    confirming.current = true;
+    try {
+      await runConfirm();
+    } finally {
+      confirming.current = false;
+    }
+  }
+
+  /*
    * Confirm holds the booking with the guest details and consents. It does not gate on sign-in:
    * an anonymous visitor gets an account provisioned from their email and a booking-scoped token
    * back, which is remembered here and carried by every later call in the flow. The `bookingId`
@@ -144,7 +167,7 @@ export default function BookingSteps() {
    * guest block reaches `createHold` and comes back as a server validation error with no field
    * to point at.
    */
-  async function confirmBooking() {
+  async function runConfirm() {
     /*
      * Already held. Confirm stays on screen because Review can be reopened to re-read what was
      * booked, but pressing it again must not mint a second booking — it only returns to payment.
@@ -204,11 +227,30 @@ export default function BookingSteps() {
         },
         consents: { terms: true, cancellationPolicy: true },
       });
+      /*
+       * A resolved mutation is not a slot the customer can pay for. `createHold` replays an
+       * earlier attempt when the idempotency key repeats, and an attempt the provider refused
+       * comes back as itself - unlocking payment on one sent the customer to a card form for a
+       * booking the server would refuse. `optionHeld` is not the test either: a provider with
+       * no option support answers QUOTED, and that is a booking to pay for.
+       */
+      if (!canPay(hold.status)) {
+        toast.error(t("errors.confirmFailed"));
+        return;
+      }
+
       rememberGuestAccess(hold.bookingId, hold.accessToken);
       setBookingId(hold.bookingId);
       setCompleted((prev) => new Set(prev).add("reviewAndBook"));
       setOpen("payment");
     } catch (error) {
+      const stillRunning = holdFailureSchema.safeParse(
+        error instanceof ORPCError ? error.data : null,
+      ).success;
+      if (stillRunning) {
+        toast.error(t("errors.holdInProgress"));
+        return;
+      }
       toast.error(error instanceof Error ? error.message : t("errors.confirmFailed"));
     }
   }

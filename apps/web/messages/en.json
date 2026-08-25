@@ -47,6 +47,7 @@
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",
       "confirmFailed": "Could not confirm your booking. Please try again.",
+      "holdInProgress": "Still finishing your last attempt. Give it a moment, then confirm again.",
       "billingName": "Enter the name to bill",
       "billingAddress": "Enter the billing address",
       "city": "Enter the city"
