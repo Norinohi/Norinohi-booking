@@ -19,7 +19,13 @@ import { canTransition, type BookingStatus } from "./booking-state";
  * invite a second one for the same booking.
  */
 export function assertIntentIsResumable(status: Stripe.PaymentIntent.Status): void {
-  if (status === "succeeded" || status === "processing") {
+  /*
+   * `requires_capture` is the manual-capture path's version of "already paid": the customer
+   * authorized, the hold is live, and the provider is being asked. Handing the client secret
+   * back there would invite a second authorization for the same booking while the first is
+   * still held against their card.
+   */
+  if (status === "succeeded" || status === "processing" || status === "requires_capture") {
     throw new ORPCError("CONFLICT", {
       message: "This payment has already gone through",
       data: { code: "ALREADY_PAID" },
@@ -27,10 +33,11 @@ export function assertIntentIsResumable(status: Stripe.PaymentIntent.Status): vo
   }
 
   /*
-   * Nothing here cancels intents, so this is Stripe's own lifecycle expiring one.
-   * It cannot be confirmed, and a fresh create would reuse the same
-   * Idempotency-Key and hand the cancelled intent straight back, so the booking
-   * has to be repriced rather than silently retried.
+   * Either Stripe's own lifecycle expiring one, or an authorization we released because the
+   * provider refused. Both mean the same thing to a customer standing at the pay button, and
+   * the second is why the message no longer claims only expiry. It cannot be confirmed, and a
+   * fresh create would reuse the same Idempotency-Key and hand the cancelled intent straight
+   * back, so the booking has to be repriced rather than silently retried.
    */
   if (status === "canceled") {
     throw new ORPCError("CONFLICT", {

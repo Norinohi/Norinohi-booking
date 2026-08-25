@@ -74,7 +74,7 @@
         "question": "Hacer una pregunta"
       },
       "card": {
-        "notice": "Asegura tu reserva al instante con un pago en línea.",
+        "notice": "Tu tarjeta se retiene ahora y solo se cobra cuando el operador confirma la reserva. Si no puede aceptarla, la retención se libera y no pagas nada.",
         "unavailable": "El pago con tarjeta no está disponible ahora mismo. Usa Solicitar factura o Hacer una pregunta.",
         "quoteExpired": "Tu precio ha caducado. Vuelve atrás y actualiza el presupuesto antes de pagar.",
         "notPayable": "Esta reserva ya no se puede pagar. Empieza una nueva.",
@@ -282,6 +282,7 @@
       "paymentStatus": {
         "requires_payment": "Sin pagar",
         "processing": "Procesando",
+        "authorized": "Retenido en la tarjeta",
         "succeeded": "Pagado",
         "failed": "Fallido",
         "refunded": "Reembolsado"

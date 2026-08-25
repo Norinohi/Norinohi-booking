@@ -193,12 +193,25 @@ Three items from §3.4 are closed, and each changes more code than it looks.
 **Payment policy (§3.4 #1) — decided.** 50% is available when the booking is more than two months
 before charter start; under two months is 100%. Charge after the provider confirms.
 
-1. `resolvePaymentPolicy` has no lead-time rule at all: listing override, then provider plan, then
-   the 50% default. Lead time has to become its own step. Confirm whether two months means calendar
-   months or 60 days, and which wins when the provider's own plan disagrees.
+1. ~~Lead time is not a step in `resolvePaymentPolicy`.~~ **Done.** It tightens the resolved policy:
+   a charter starting within `DEPOSIT_LEAD_TIME_DAYS` is payable in full whatever the listing or the
+   provider said, and a provider demanding full prepayment further out keeps it. The client
+   confirmed on 2026-08-25 that two months means **60 days**, so it counts days, not calendar
+   months.
 2. When the remaining 50% falls due was not answered. `balanceDueAt` comes from the provider, so
    listings without that field carry no date. A default is needed.
-3. "Charge after confirmation" breaks the current ordering. Today it is
+3. ~~"Charge after confirmation" breaks the current ordering.~~ **Done 2026-08-25.** Every charge
+   that runs before the provider has answered is now an authorization: `capture_method: "manual"`
+   on the intent, `payment_intent.amount_capturable_updated` confirms with the provider, and only
+   an accepted reservation captures it. A refusal cancels the intent instead of refunding, so the
+   customer sees a hold drop off rather than a charge and a refund. `payment_intent.canceled`
+   catches the lapsed-authorization case and returns the booking to PAYMENT_FAILED so they can
+   authorize again. A balance payment on a CONFIRMED booking still captures immediately. The
+   Stripe endpoint now needs eight event types subscribed, not six. **Tell the client:** an
+   authorization lives about seven days (`AUTHORIZATION_TTL_DAYS`), so an operator who takes
+   longer than a week leaves us with a lapsed hold and a customer who has to pay again.
+
+   The original finding, for the record: today it is
    `OPTION_HELD → PAYMENT_PENDING → CONFIRMING → CONFIRMED`: money is taken before we approach the
    provider, and a rejection unwinds through `REFUND_PENDING → REFUNDED`. Charging afterwards needs
    `capture_method: "manual"` in `intentParams` (absent today, so capture is immediate): authorize

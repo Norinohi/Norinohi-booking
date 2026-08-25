@@ -74,7 +74,7 @@
         "question": "Frage stellen"
       },
       "card": {
-        "notice": "Sichern Sie sich Ihre Buchung sofort mit einer Online-Zahlung.",
+        "notice": "Ihre Karte wird jetzt nur reserviert und erst belastet, wenn der Anbieter die Buchung bestätigt. Kann er sie nicht annehmen, wird die Reservierung freigegeben und Sie zahlen nichts.",
         "unavailable": "Die Online-Kartenzahlung ist derzeit nicht verfügbar. Bitte nutzen Sie „Rechnung anfordern“ oder „Frage stellen“.",
         "quoteExpired": "Ihr Preis ist abgelaufen. Gehen Sie zurück und aktualisieren Sie das Angebot, bevor Sie zahlen.",
         "notPayable": "Diese Buchung kann nicht mehr bezahlt werden. Bitte starten Sie eine neue Buchung.",
@@ -282,6 +282,7 @@
       "paymentStatus": {
         "requires_payment": "Nicht bezahlt",
         "processing": "In Bearbeitung",
+        "authorized": "Auf der Karte reserviert",
         "succeeded": "Bezahlt",
         "failed": "Fehlgeschlagen",
         "refunded": "Erstattet"

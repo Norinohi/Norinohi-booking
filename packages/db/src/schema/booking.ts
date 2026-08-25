@@ -93,9 +93,16 @@ export const paymentScheduleStatus = pgEnum("payment_schedule_status", [
   "refunded",
 ]);
 
+/*
+ * `authorized` is the manual-capture step: the customer's card is held but not charged,
+ * because a charter is only committed once the operator confirms it. Between authorization
+ * and capture the money is neither ours nor spendable by the customer, so everything that
+ * asks "is money in flight?" has to count it alongside `processing`.
+ */
 export const paymentStatus = pgEnum("payment_status", [
   "requires_payment",
   "processing",
+  "authorized",
   "succeeded",
   "failed",
   "refunded",
@@ -382,6 +389,13 @@ export const payment = pgTable(
     // client_secret is deliberately absent: it is transient, returned straight to
     // the caller, and must never be at rest.
     failureReason: text("failure_reason"),
+    /*
+     * When the card was held, on the manual-capture path. Its own column rather than a reading
+     * of `updated_at` because the authorization expires about a week later and support's
+     * question is "how long has the operator had this one?" — a column every later write would
+     * move cannot answer it.
+     */
+    authorizedAt: timestamp("authorized_at"),
     paidAt: timestamp("paid_at"),
     refundedAt: timestamp("refunded_at"),
     /*

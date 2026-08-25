@@ -54,6 +54,8 @@ const STATUS_VARIANTS = {
 const PAYMENT_VARIANTS = {
   succeeded: "success",
   processing: "warning",
+  // A hold, not a charge: the operator still has to answer before it becomes money.
+  authorized: "warning",
   requires_payment: "warning",
   failed: "error",
   refunded: "neutral",

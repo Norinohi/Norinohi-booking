@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daysBetween, effectivePeriod, monthsBefore } from "./dates";
+import { daysBefore, daysBetween, effectivePeriod, monthsBefore } from "./dates";
 
 describe("daysBetween", () => {
   it("counts the nights in a charter week", () => {
@@ -126,5 +126,23 @@ describe("monthsBefore", () => {
 
   it("returns null for a date it cannot parse", () => {
     expect(monthsBefore("not-a-date", 2)).toBeNull();
+  });
+});
+
+describe("daysBefore", () => {
+  it("counts days rather than calendar months, so 60 before 10 October is 11 August", () => {
+    expect(daysBefore("2026-10-10", 60)).toBe("2026-08-11");
+  });
+
+  it("crosses a leap day without losing one", () => {
+    expect(daysBefore("2028-03-01", 1)).toBe("2028-02-29");
+  });
+
+  it("accepts a full datetime", () => {
+    expect(daysBefore("2026-10-10T17:30:00.000Z", 60)).toBe("2026-08-11");
+  });
+
+  it("returns null for an unparseable date", () => {
+    expect(daysBefore("not-a-date", 60)).toBeNull();
   });
 });

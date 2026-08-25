@@ -362,9 +362,10 @@ async function expireAbandonedPayments(
         inArray(booking.status, [...STALE_PAYMENT_SWEEP.from]),
         lte(booking.updatedAt, cutoff),
         /*
-         * `processing` as well as `succeeded`: an async payment method that has not settled
-         * yet is money on its way, and cancelling underneath it would take a customer's
-         * transfer for a charter we just released.
+         * `processing` and `authorized` as well as `succeeded`: an async payment method that
+         * has not settled yet is money on its way, and an authorization is a live hold on a
+         * customer's card. Cancelling underneath either would release a charter we are still
+         * holding their money against.
          */
         notExists(
           db
@@ -373,7 +374,7 @@ async function expireAbandonedPayments(
             .where(
               and(
                 eq(payment.bookingId, booking.id),
-                inArray(payment.status, ["succeeded", "processing"]),
+                inArray(payment.status, ["succeeded", "processing", "authorized"]),
               ),
             ),
         ),

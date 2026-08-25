@@ -718,16 +718,20 @@ async function withdrawOpenInvoices(
 /**
  * Whether money has reached us on this booking, or is still on its way.
  *
- * `processing` counts with `succeeded` for the same reason the expiry sweep counts it: a SEPA
- * debit that has not settled yet is money in flight, and a cancellation mail that calls it
- * nothing charged is wrong by the time the transfer lands.
+ * `processing` and `authorized` count with `succeeded` for the same reason the expiry sweep
+ * counts them: a SEPA debit that has not settled yet is money in flight, and an authorization
+ * is a hold the customer can see on their statement. A cancellation mail that calls either one
+ * nothing charged is wrong by the time the transfer lands or the hold is captured.
  */
 async function hasMoneyIn(db: Database, bookingId: string): Promise<boolean> {
   const [settled] = await db
     .select({ id: payment.id })
     .from(payment)
     .where(
-      and(eq(payment.bookingId, bookingId), inArray(payment.status, ["succeeded", "processing"])),
+      and(
+        eq(payment.bookingId, bookingId),
+        inArray(payment.status, ["succeeded", "processing", "authorized"]),
+      ),
     )
     .limit(1);
 

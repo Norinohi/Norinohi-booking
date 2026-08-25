@@ -7,7 +7,7 @@ import {
 } from "@yacht-charter/db/schema/booking";
 import { env } from "@yacht-charter/env/server";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import type Stripe from "stripe";
 import { z } from "zod";
 
@@ -85,6 +85,10 @@ export async function handleStripeWebhook(
   try {
     if (event.type === "payment_intent.succeeded") {
       note = await onSucceeded(db, provider, event.data.object);
+    } else if (event.type === "payment_intent.amount_capturable_updated") {
+      note = await onAuthorized(db, provider, event.data.object);
+    } else if (event.type === "payment_intent.canceled") {
+      await onIntentCanceled(db, event.data.object);
     } else if (event.type === "payment_intent.processing") {
       await onProcessing(db, event.data.object);
     } else if (event.type === "payment_intent.payment_failed") {
@@ -340,6 +344,133 @@ async function onProcessing(db: Database, intent: Stripe.PaymentIntent): Promise
     .update(payment)
     .set({ status: "processing" })
     .where(and(eq(payment.id, row.payment.id), eq(payment.status, "requires_payment")));
+}
+
+/**
+ * The customer authorized, and nobody has been charged yet.
+ *
+ * This is the client's "capture after the operator confirms" rule, and it is where the
+ * ordering now lives: the card is held, the provider is asked, and only an accepted
+ * reservation turns that hold into a charge. A refusal releases it, so a customer whose
+ * charter never existed sees a hold drop off rather than a charge and a refund days later.
+ *
+ * The capture itself produces `payment_intent.succeeded`, which is what marks the payment paid
+ * and sends the receipt. `onSucceeded` re-runs the provider commit there and finds the booking
+ * already CONFIRMED, which is a no-op — the two handlers share one path to CONFIRMED rather
+ * than each having their own.
+ *
+ * An authorization Stripe reports as capturable a second time re-enters here; the payment
+ * update is conditional, `confirmBookingWithProvider` refuses a booking that is no longer
+ * confirmable, and the capture carries an idempotency key, so a redelivery cannot charge twice.
+ */
+async function onAuthorized(
+  db: Database,
+  provider: InventoryProvider,
+  intent: Stripe.PaymentIntent,
+): Promise<string | undefined> {
+  const stripe = stripeClient();
+  const row = await findByIntent(db, intent.id);
+  if (!stripe || !row) return undefined;
+
+  await db
+    .update(payment)
+    .set({ status: "authorized", authorizedAt: new Date() })
+    .where(
+      and(
+        eq(payment.id, row.payment.id),
+        inArray(payment.status, ["requires_payment", "processing"]),
+      ),
+    );
+
+  const outcome = await confirmBookingWithProvider(
+    db,
+    await providerByKey(provider, row.booking.provider),
+    row.booking.id,
+  );
+
+  /*
+   * Left held rather than captured or released. "Skipped" means the booking moved under us —
+   * cancelled by the customer, swept, already being confirmed by a concurrent delivery — and
+   * none of those are ours to decide a charge on. The hold lapses on its own within
+   * `AUTHORIZATION_TTL_DAYS` if nothing else resolves it, which is the safe direction.
+   */
+  if (outcome.outcome === "skipped") return outcome.reason;
+
+  if (outcome.outcome === "confirmed") {
+    // Not guarded: a capture that fails leaves the event unprocessed for Stripe to redeliver,
+    // which is what we want when the charter exists and the money has not been taken.
+    await stripe.paymentIntents.capture(intent.id, undefined, {
+      idempotencyKey: `capture:${intent.id}`,
+    });
+
+    return undefined;
+  }
+
+  await releaseAuthorization(db, stripe, row.payment.id, intent.id, outcome.message);
+
+  return outcome.message;
+}
+
+/**
+ * Gives the customer their hold back on a charter the provider refused.
+ *
+ * `confirmBookingWithProvider` has already put the booking in REFUND_PENDING, because on the
+ * captured path that is exactly what is owed. Here nothing was captured, so there is no money
+ * to send back and `settleWhenFullyRefunded` finds nothing outstanding and closes the booking
+ * as REFUNDED. That word is thin for a charge that never happened, but it is the state the
+ * machine has for "the money question is settled", and inventing a fifteenth status for the
+ * difference would put the distinction somewhere nothing reads it.
+ */
+async function releaseAuthorization(
+  db: Database,
+  stripe: Stripe,
+  paymentId: string,
+  intentId: string,
+  reason: string,
+): Promise<void> {
+  await stripe.paymentIntents.cancel(intentId, { cancellation_reason: "abandoned" });
+
+  await db
+    .update(payment)
+    .set({ status: "failed", failureReason: reason })
+    .where(eq(payment.id, paymentId));
+}
+
+/**
+ * An authorization that is gone: released by us on a refusal, cancelled in the Dashboard, or
+ * expired because the operator took longer than `AUTHORIZATION_TTL_DAYS` to answer. That last
+ * one is the reason this handler exists at all — nothing in our own code fires when a hold
+ * lapses, so without it the booking sat at PAYMENT_PENDING against money the bank had already
+ * released, and the customer had no way back to a pay button.
+ */
+async function onIntentCanceled(db: Database, intent: Stripe.PaymentIntent): Promise<void> {
+  const row = await findByIntent(db, intent.id);
+  if (!row) return;
+
+  const reason = intent.cancellation_reason
+    ? `Authorization cancelled (${intent.cancellation_reason})`
+    : "Authorization expired before the operator confirmed";
+
+  await db
+    .update(payment)
+    .set({ status: "failed", failureReason: row.payment.failureReason ?? reason })
+    .where(and(eq(payment.id, row.payment.id), ne(payment.status, "succeeded")));
+
+  const current = row.booking.status;
+
+  if (canTransition(current, "PAYMENT_FAILED")) {
+    // Retryable, exactly like a declined card: the customer can authorize again while the
+    // quote and the provider hold are still good.
+    await db
+      .update(booking)
+      .set({ status: "PAYMENT_FAILED" })
+      .where(and(eq(booking.id, row.booking.id), eq(booking.status, current)));
+    return;
+  }
+
+  // The refusal path got here first and already put the booking in REFUND_PENDING; with
+  // nothing captured there is nothing to send back.
+  await settleWhenFullyRefunded(db, row.booking.id);
 }
 
 async function onFailed(db: Database, intent: Stripe.PaymentIntent): Promise<void> {

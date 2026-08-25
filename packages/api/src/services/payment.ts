@@ -234,6 +234,7 @@ function intentParams(
     amount: amountMinor,
     currency: row.currency.toLowerCase(),
     automatic_payment_methods: { enabled: true },
+    capture_method: capturesOnAuthorization(row.status) ? "automatic" : "manual",
     // Shown on the receipt and in the Dashboard, where "€1,224" alone identifies nothing.
     description: `${row.commercialSnapshot.listingTitle} (${row.reference})`,
     // The webhook is authoritative and looks the booking up by these.
@@ -250,6 +251,30 @@ function intentParams(
   if (suffix) params.statement_descriptor_suffix = suffix;
 
   return params;
+}
+
+/**
+ * How long an authorization survives before the bank releases it.
+ *
+ * Not enforced here — Stripe cancels the intent itself and we hear about it as
+ * `payment_intent.canceled` — but it is the number the whole "charge after the operator
+ * confirms" rule rests on. An operator who takes longer than this to answer leaves us with a
+ * lapsed hold and a customer who has to pay again, so it belongs somewhere a reader will find
+ * it rather than in a comment on the webhook.
+ */
+export const AUTHORIZATION_TTL_DAYS = 7;
+
+/**
+ * Whether a charge on this booking may be taken outright.
+ *
+ * The client's rule is that money is captured only once the provider has confirmed, so every
+ * charge that runs *before* that answer is an authorization: the card is held, the provider is
+ * asked, and only then is the hold captured (or released, if they refuse). A booking that is
+ * already CONFIRMED has its answer — the outstanding balance on a charter that exists is a
+ * plain charge, and holding it for a week would be a hold nobody is waiting on.
+ */
+function capturesOnAuthorization(status: BookingStatus): boolean {
+  return status === "CONFIRMED";
 }
 
 /**

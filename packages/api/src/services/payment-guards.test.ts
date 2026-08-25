@@ -37,6 +37,10 @@ describe("assertIntentIsResumable", () => {
     expect(codeOf(() => assertIntentIsResumable("processing"))).toBe("ALREADY_PAID");
   });
 
+  it("refuses an authorization awaiting capture, which is a live hold on the same card", () => {
+    expect(codeOf(() => assertIntentIsResumable("requires_capture"))).toBe("ALREADY_PAID");
+  });
+
   it("sends a cancelled intent back to repricing rather than a silent retry", () => {
     // A fresh create would reuse the same Idempotency-Key and return this very intent.
     expect(codeOf(() => assertIntentIsResumable("canceled"))).toBe("QUOTE_EXPIRED");
