@@ -100,6 +100,12 @@ export interface ProviderRequestOptions {
    * a key run one at a time; a key nothing else uses runs immediately.
    */
   queueKey?: string;
+  /**
+   * Overrides the client's retry policy for this one call, merged over it. A
+   * `maxAttempts: 1` here is how a non-idempotent write opts out: replaying it
+   * would file the vendor-side effect twice.
+   */
+  retry?: Partial<RetryPolicy>;
 }
 
 export interface ProviderHttpClient {
@@ -287,16 +293,17 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     body: JsonRequestValue,
     hasBody: boolean,
     lane = queueKey,
+    retry?: Partial<RetryPolicy>,
   ): Promise<ProviderHttpResult> {
-    return withRetry(
-      () => queue.run(lane, () => attempt(method, endpoint, body, hasBody)),
-      options.retry,
-    );
+    return withRetry(() => queue.run(lane, () => attempt(method, endpoint, body, hasBody)), {
+      ...options.retry,
+      ...retry,
+    });
   }
 
   return {
     post(endpoint, body, requestOptions) {
-      return send("POST", endpoint, body, true, requestOptions?.queueKey);
+      return send("POST", endpoint, body, true, requestOptions?.queueKey, requestOptions?.retry);
     },
     get(endpoint, query, requestOptions) {
       return send(
@@ -305,6 +312,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
         null,
         false,
         requestOptions?.queueKey,
+        requestOptions?.retry,
       );
     },
     del(endpoint) {

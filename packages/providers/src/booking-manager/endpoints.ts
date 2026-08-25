@@ -52,11 +52,25 @@ export const bookingManagerEndpoints = {
 /**
  * `POST /requests` types, added in v2.2.0. This is the vendor's only documented
  * route to cancelling a CONFIRMED reservation: `DELETE` refuses one outright
- * ("An already confirmed booking is not possible to cancel automatically"), and
- * a request is a message to the operator rather than a state change. Nothing in
- * the 200 says whether it was accepted, the reservation carries no field for a
- * pending request, and there is no webhook, so the outcome is only observable by
- * re-reading the status later. Unexercised so far - see the vendor letter.
+ * ("An already confirmed booking is not possible to cancel automatically"), and a
+ * request is a message to the operator rather than a state change.
+ *
+ * Measured on 2026-08-25 against a confirmed booking on company 225, and none of
+ * it is in the specification:
+ *
+ * - It takes the AGENCY-side id. The charter-side twin answers `400 Illegal
+ *   access to entity.`, which is a permission boundary rather than a bad request:
+ *   we hold the agency record and not the charter's.
+ * - It is NOT idempotent. The first call answers `200` with an empty body; an
+ *   identical repeat answers `400 Error creating entity. Action not applicable
+ *   for given reservation`, indistinguishable from a request that was never
+ *   allowed. `withRetry` retries POST, so wiring this up needs the retry
+ *   suppressed here - a lost 200 would otherwise turn into an unclassifiable 400.
+ * - Nothing is observable afterwards. Both records still read `status 1` with no
+ *   new field, so there is no way to ask whether a request is pending.
+ *
+ * Left uncalled until the vendor says who approves one, which status an approval
+ * lands on, and what it costs the guest.
  */
 export const BM_REQUEST_TYPE = {
   OPTION_EXTENSION: 0,
