@@ -110,15 +110,14 @@ function DayList({
   progress: Progress;
 }) {
   return (
-    <ol className="relative flex min-w-0 flex-1 flex-col">
-      <span aria-hidden className="absolute inset-y-2 left-0.5 w-3 rounded-full bg-brand-50/50" />
-
+    <ol className="flex min-w-0 flex-1 flex-col">
       {days.map((day, index) => (
         <DayItem
           key={day.title}
           day={day}
           position={first + index}
           total={total}
+          isFirst={index === 0}
           isLast={index === days.length - 1}
           progress={progress}
         />
@@ -131,12 +130,14 @@ function DayItem({
   day,
   position,
   total,
+  isFirst,
   isLast,
   progress,
 }: {
   day: Stop;
   position: number;
   total: number;
+  isFirst: boolean;
   isLast: boolean;
   progress: Progress;
 }) {
@@ -150,7 +151,17 @@ function DayItem({
 
   return (
     <li className="flex gap-4">
-      <div className="flex w-4 shrink-0 flex-col items-center">
+      <div className="relative flex w-4 shrink-0 flex-col items-center">
+        {/* The soft track behind the dots, drawn per row so it ends at the last dot instead of
+            running on past it to the bottom of the column's text. */}
+        <span
+          aria-hidden
+          className={cn(
+            "absolute left-0.5 w-3 bg-brand-50/50",
+            isFirst ? "top-2 rounded-t-full" : "top-0",
+            isLast ? "h-5.5 rounded-b-full" : "bottom-0",
+          )}
+        />
         <span className="relative size-4 shrink-0 rounded-full border-2 border-brand bg-card">
           <motion.span
             aria-hidden
