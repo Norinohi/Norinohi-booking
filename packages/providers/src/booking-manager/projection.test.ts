@@ -58,6 +58,33 @@ describe("country codes across both vendor spellings", () => {
  * only source for the listing's mandatory and optional extras sections; the
  * equipment lists say what the yacht carries, not what it costs to add.
  */
+/**
+ * The vendor publishes a cancellation policy in exactly one place - inside the
+ * company's `termsAndConditions` - and the checkout asks the guest to accept it,
+ * so losing it here means asking someone to agree to a document we never show.
+ */
+describe("operator terms and conditions", () => {
+  function companies(payload: JsonValue): ProviderRecordSet {
+    return new Map([["company" as const, [{ externalId: "1", payload }]]]);
+  }
+
+  it("carries the company terms onto the operator", () => {
+    const { operators } = projectBookingManagerCatalogue(
+      companies({ id: 225, name: "Adriatic Charter", termsAndConditions: "1. CHARTER FEE ..." }),
+    );
+
+    expect(operators[0]?.termsAndConditions).toBe("1. CHARTER FEE ...");
+  });
+
+  it("leaves the field unset for the operators that publish none", () => {
+    const { operators } = projectBookingManagerCatalogue(
+      companies({ id: 225, name: "Adriatic Charter" }),
+    );
+
+    expect(operators[0]?.termsAndConditions).toBeUndefined();
+  });
+});
+
 describe("product extras", () => {
   /** Only the fields projectYacht needs to keep the boat, plus the products under test. */
   const yacht = (products: JsonValue[]) => ({

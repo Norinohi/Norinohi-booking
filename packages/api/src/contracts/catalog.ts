@@ -123,6 +123,14 @@ export const listingSummarySchema = z.object({
   policies: z.object({
     depositInsuranceIncluded: z.boolean(),
     petsAllowed: z.boolean(),
+    /**
+     * The operator's full terms and conditions, verbatim and in their own
+     * language, carrying the cancellation policy the checkout asks a guest to
+     * accept. Rendered as given: it is their copy, not an enum we can localize,
+     * and paraphrasing a contract someone is about to agree to would put our
+     * words on their terms. Null where the operator published none (55% of them).
+     */
+    termsAndConditions: z.string().nullable(),
   }),
   availability: z.object({
     hasUnconfirmedAvailability: z.boolean(),

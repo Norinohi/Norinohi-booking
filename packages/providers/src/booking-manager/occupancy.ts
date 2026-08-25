@@ -67,7 +67,13 @@ const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
 
 /**
  * A status not named above, or a row with none, still arrived in a feed that only
- * lists taken periods, so it is unbookable. Deliberately NOT a throw: a new state
+ * lists taken periods, so it is unbookable. The vendor computes exactly this
+ * judgement itself and does not share it over REST: the SOAP booking sheet carries
+ * a `blocksavailability` (1/0) per term, described as the only field that matters
+ * to an availability sync, and `/availability` carries no equivalent - its rows
+ * are `id`, `dateFrom`, `dateTo`, `yachtId`, `status`, `baseFromId`, `baseToId`
+ * and `optionExpirationDate`. So the map above exists to reconstruct a flag the
+ * vendor already has, which is also why measurement beats their status legend. Deliberately NOT a throw: a new state
  * would otherwise stall availability for the whole account until we shipped a
  * patch, and `blocked` is the reading that cannot oversell.
  *
@@ -155,8 +161,12 @@ export function mapBookingManagerAvailability(
   // is not malformed, so it must not fail the scope. The writer's intervals are
   // half-open, where startDate === endDate would overlap nothing and quietly
   // advertise the day as free, so it is widened to the one day it describes.
-  // VENDOR QUESTION Q-BM-DATETO: is `dateTo` the exclusive check-out day (assumed
-  // here) or the inclusive last day? If inclusive, every interval is a night short.
+  // Q-BM-DATETO, and the evidence now leans our way: the SOAP manual
+  // (availability_service_description v1.26, 1.4 getBookingSheet) documents the
+  // same field on the same data as "dateto - date of the checkout", which is the
+  // exclusive reading assumed here. Not a REST statement and not conclusive, so
+  // the question stays open - if it were the inclusive last day, every interval
+  // would be a night short.
   const endDate = rawEndDate === startDate ? addOneDay(startDate) : rawEndDate;
 
   const status = row.status ?? null;

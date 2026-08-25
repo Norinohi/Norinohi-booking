@@ -112,6 +112,25 @@ export default function ReviewAndBookStep() {
       <span aria-hidden className="block h-px w-full bg-border" />
 
       <section className="flex flex-col gap-4 p-5">
+        {/*
+          Both boxes below ask the guest to accept the operator's terms, and until
+          now the page never said what they were. Shown above the consents rather
+          than beside one of them because a single document covers both, and
+          collapsed because these run from 5k to 26k characters. Only 45% of
+          operators publish one, so the block is absent more often than not.
+        */}
+        {listing?.policies.termsAndConditions ? (
+          <details className="rounded-lg border border-border">
+            <summary className="cursor-pointer px-4 py-3 text-base leading-[1.4] font-medium text-foreground">
+              {t("operatorTerms")}
+            </summary>
+            {/* The operator's own copy, in their own language: never reworded. */}
+            <p className="max-h-64 overflow-y-auto px-4 pb-4 text-sm leading-[1.4] whitespace-pre-line text-natural-600">
+              {listing.policies.termsAndConditions}
+            </p>
+          </details>
+        ) : null}
+
         {CONSENTS.map((consent) => (
           <Controller
             key={consent}

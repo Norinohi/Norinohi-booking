@@ -15,7 +15,8 @@
       "totalPrice": "Precio total",
       "dueNow": "A pagar ahora",
       "terms": "Acepto los <b>Términos y Condiciones y el Contrato de Alquiler</b>.",
-      "cancellation": "Acepto la <b>Política de Cancelación</b>."
+      "cancellation": "Acepto la <b>Política de Cancelación</b>.",
+      "operatorTerms": "Términos del operador, incluida la política de cancelación"
     },
     "extras": {
       "mandatory": "Obligatorio",

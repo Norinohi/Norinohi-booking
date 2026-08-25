@@ -471,6 +471,12 @@ const canonicalOperatorSchema = z.object({
   city: z.string().optional(),
   email: z.string().optional(),
   phone: z.string().optional(),
+  /**
+   * The operator's full terms, in their own words and language, shown to a guest
+   * before they commit because they carry the cancellation policy. Optional:
+   * Booking Manager publishes one for 45% of companies, NauSYS for none.
+   */
+  termsAndConditions: z.string().optional(),
 });
 
 const canonicalBuilderSchema = z.object({

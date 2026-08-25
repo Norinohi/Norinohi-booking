@@ -139,6 +139,9 @@ export function projectBookingManagerCatalogue(records: ProviderRecordSet): Cano
         city: text(item.city),
         email: text(item.email),
         phone: text(item.telephone) ?? text(item.mobile) ?? text(item.telephone2),
+        // The only place the vendor publishes a cancellation policy, inside the
+        // wider terms; see `termsAndConditions` on `restCompanySchema`.
+        termsAndConditions: text(item.termsAndConditions),
       };
     }),
     builders: shipyards.map((item) => {

@@ -959,6 +959,7 @@ const searchColumns = sql`
   doc.model,
   doc.model_canonical as "modelCanonical",
   doc.operator,
+  doc.operator_terms_and_conditions as "operatorTermsAndConditions",
   doc.base_id as "baseId",
   doc.base_name as "baseName",
   doc.city,

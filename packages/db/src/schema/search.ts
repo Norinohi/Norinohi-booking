@@ -29,6 +29,8 @@ export const listingSearchDoc = pgTable(
     /* The model without its cabin configuration — what model pages and grouping read. */
     modelCanonical: text("model_canonical"),
     operator: text("operator").notNull(),
+    /* Denormalised from `operator.terms_and_conditions`; see the column there. */
+    operatorTermsAndConditions: text("operator_terms_and_conditions"),
     baseId: text("base_id").notNull(),
     baseName: text("base_name").notNull(),
     /* The town, which the vendors do not model — see `base.city`. Null until its base is mapped. */

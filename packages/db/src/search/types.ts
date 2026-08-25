@@ -70,6 +70,8 @@ export type ListingSearchDoc = {
   /** The model without its cabin configuration; null when the vendor name carries none. */
   modelCanonical: string | null;
   operator: string;
+  /** The operator's full terms, free text; null where they published none. */
+  operatorTermsAndConditions: string | null;
   baseId: string;
   baseName: string;
   /** The town the base is reached from; null until its vendor location is mapped. */
