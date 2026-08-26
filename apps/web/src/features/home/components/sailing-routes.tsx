@@ -50,7 +50,14 @@ export default function SailingRoutes() {
               <TripCard
                 image={route.image}
                 imageAlt={t(`items.${route.key}.imageAlt`)}
-                title={t(`items.${route.key}.title`)}
+                title={
+                  <Link
+                    href="/yachts"
+                    className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+                  >
+                    {t(`items.${route.key}.title`)}
+                  </Link>
+                }
                 description={t(`items.${route.key}.description`)}
                 actionLabel={t("exploreRoute")}
                 actionRender={<Link href="/yachts" />}

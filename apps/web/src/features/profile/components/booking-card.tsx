@@ -140,7 +140,16 @@ export default function BookingCard({
 
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="min-w-0 truncate text-[32px] font-medium leading-[1.1] text-foreground">
-                {booking.name}
+                {booking.detailHref ? (
+                  <Link
+                    href={booking.detailHref}
+                    className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+                  >
+                    {booking.name}
+                  </Link>
+                ) : (
+                  booking.name
+                )}
               </h3>
               <Chip className="shrink-0 bg-transparent p-1.5 text-gold">
                 <Star className="fill-current" />

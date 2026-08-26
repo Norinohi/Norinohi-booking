@@ -45,7 +45,14 @@ function PopularYachtSlides() {
             image={listing.gallery[0] ?? listing.mainImage}
             imageAlt={listing.title}
             location={`${listing.base.location}, ${listing.base.country}`}
-            title={listing.title}
+            title={
+              <Link
+                href={`/yachts/${listing.slug}`}
+                className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                {listing.title}
+              </Link>
+            }
             rating={listing.rating > 0 ? listing.rating : undefined}
             tags={[{ label: listing.category, icon: <Anchor /> }]}
             price={boatCardPrice(tCard, listing, (amountMinor) =>
