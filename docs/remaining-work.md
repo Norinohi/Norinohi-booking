@@ -15,7 +15,7 @@ one list somebody can act on.
 | M3 search and availability     | mostly   | done, bar two deliberate deferrals (`facet_dictionary`, the production-scale perf pass)                                                                                                   |
 | M4 pricing                     | **todo** | **done**. `services/pricing.ts` runs provider price, then `price_adjustment_rule`, then discount, then payment policy, and the Manage Prices screen exists                                |
 | M5 booking and Stripe          | **todo** | **done**. 14-state machine, Stripe PaymentIntents, signed webhook, refunds, expiry sweeper, encrypted traveller PII                                                                       |
-| M6 observability               | todo     | **partly**. Sentry and PostHog are wired as evlog drains on both servers, plus a browser `track()`; all dormant until credentials are set. No domain fields on the wide events, no alerts |
+| M6 observability               | todo     | **partly**. Sentry is wired as an evlog drain on both servers and configured in production; GA4 covers the browser behind a consent banner. No domain fields on the wide events           |
 | M7 availability as constraints | partly   | as documented; the open items in §2.4 are real                                                                                                                                            |
 
 Also shipped and not in that table: two live connectors (NauSYS and Booking Manager) with
@@ -57,11 +57,10 @@ These are ours to fix, not questions for anyone.
 
 ### 2.2 Blocks taking real money
 
-4. **Observability (M6).** The transport exists: `packages/observability` registers Sentry and
-   PostHog as evlog drains on both the Hono and the Next.js server, `src/lib/analytics.ts`
-   covers the browser, and the five scheduled entry points emit one wide event per run
-   (`apps/server/src/job.ts`). It is dormant until someone sets `SENTRY_DSN` / `POSTHOG_API_KEY`, so the
-   first production payment failure is still invisible today. Missing beyond the credentials:
+4. **Observability (M6).** The transport exists: `packages/observability` registers Sentry as an
+   evlog drain on both the Hono and the Next.js server, GA4 covers the browser, and the five
+   scheduled entry points emit one wide event per run (`apps/server/src/job.ts`). `SENTRY_DSN` is
+   set on both environments. Missing beyond the credentials:
    domain fields on the wide events (`booking_id`, `sync_run_id`), alerts on sync failure, webhook
    lag and provider error rate, and browser error tracking, which needs `@sentry/nextjs` and its
    source-map build step rather than a drain.
@@ -142,8 +141,8 @@ before it needs code.
 | Cloudinary   | dev (`demo`) | Production cloud name plus a plan; 109 listings is roughly 2-3k transformations  |
 | Google OAuth | unset        | Client id and secret, redirect URI `${BETTER_AUTH_URL}/api/auth/callback/google` |
 | Stripe       | test sandbox | Live keys plus a webhook endpoint on the production URL                          |
-| Sentry       | none         | `SENTRY_DSN` for both servers, plus a plan; the wiring is in place and waiting   |
-| PostHog      | none         | Project API key and region host; server key and browser key are set separately   |
+| Sentry       | configured   | EU region, projects `yachtskanner-server` and `yachtskanner-web`; log-based alerts |
+| GA4          | configured   | `NEXT_PUBLIC_GA_ID` on production only; consent banner gates it                   |
 
 Already in hand: Resend, Calendly, the production domain and DNS.
 

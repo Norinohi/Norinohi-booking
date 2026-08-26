@@ -244,9 +244,9 @@ run in Railway is the signal.
 A red run is only a signal to whoever looks, though, and nobody looks at 03:00. So all
 five entry points call `startJob(name)` from `apps/server/src/job.ts` before they do
 anything and emit one wide event when they end — `action: job.<name>`, an outcome, the
-run's duration and its own counters — through the same Sentry/PostHog drain the servers
+run's duration and its own counters — through the same Sentry drain the servers
 use (see the repo `AGENTS.md`). That event is what an alert fires on. It costs nothing
-until `SENTRY_DSN` or `POSTHOG_API_KEY` is set, and it does not replace the console
+until `SENTRY_DSN` is set, and it does not replace the console
 output, which is still what an operator running one of these by hand reads.
 
 `startJob` also installs `unhandledRejection` and `uncaughtException` handlers, so a job

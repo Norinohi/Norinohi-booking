@@ -17,8 +17,6 @@ export const env = createEnv({
      * the Hono server's copy. Unset registers no drain at all.
      */
     SENTRY_DSN: z.url().optional(),
-    POSTHOG_API_KEY: z.string().min(1).optional(),
-    POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
     OBSERVABILITY_ENVIRONMENT: z.string().min(1).optional(),
     OBSERVABILITY_RELEASE: z.string().min(1).optional(),
   },
@@ -37,14 +35,11 @@ export const env = createEnv({
     // without it, the "book a call" option falls back to the send-a-message form.
     NEXT_PUBLIC_CALENDLY_URL: z.url().optional(),
     /*
-     * Browser-side analytics. Separate from POSTHOG_API_KEY above because the
-     * server key is read at request time and this one is inlined into the client
-     * bundle: a PostHog project key is publishable, a rotation story is not shared
-     * between the two, and only this half can measure anything the user does
-     * without hitting our server. Unset makes `track()` a no-op.
+     * GA4 measurement id. Optional and production-only on purpose: set on staging it
+     * would mix our own traffic into the client's reports with nothing to separate it
+     * by afterwards. Unset renders neither the tag nor the consent banner.
      */
-    NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).optional(),
-    NEXT_PUBLIC_POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
+    NEXT_PUBLIC_GA_ID: z.string().startsWith("G-").optional(),
   },
   runtimeEnv: {
     REVALIDATE_SECRET: process.env.REVALIDATE_SECRET,
@@ -54,11 +49,8 @@ export const env = createEnv({
     NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_CALENDLY_URL: process.env.NEXT_PUBLIC_CALENDLY_URL,
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
-    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID,
     SENTRY_DSN: process.env.SENTRY_DSN,
-    POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
-    POSTHOG_HOST: process.env.POSTHOG_HOST,
     OBSERVABILITY_ENVIRONMENT: process.env.OBSERVABILITY_ENVIRONMENT,
     OBSERVABILITY_RELEASE: process.env.OBSERVABILITY_RELEASE,
   },

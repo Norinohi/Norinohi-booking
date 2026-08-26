@@ -108,14 +108,7 @@ export const env = createEnv({
      */
     SENTRY_DSN: z.url().optional(),
     /*
-     * Product analytics, same shape as the Sentry pair. The host differs by region
-     * (eu.i.posthog.com for an EU project), and sending to the wrong one silently
-     * drops every event, so it is explicit rather than inferred from the key.
-     */
-    POSTHOG_API_KEY: z.string().min(1).optional(),
-    POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
-    /*
-     * How both vendors group what they receive. Unset falls back to NODE_ENV,
+     * How Sentry groups what it receives. Unset falls back to NODE_ENV,
      * which cannot tell staging from production because both run as "production".
      */
     OBSERVABILITY_ENVIRONMENT: z.string().min(1).optional(),

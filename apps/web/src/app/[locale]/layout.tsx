@@ -1,17 +1,21 @@
+import { GoogleAnalytics } from "@next/third-parties/google";
 import { env } from "@yacht-charter/env/web";
 import type { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
+import Script from "next/script";
 
 import "../../index.css";
 import Footer from "@/components/layout/footer";
+import { CookieConsent } from "@/components/layout/cookie-consent";
 import { FooterGate } from "@/components/layout/footer-gate";
 import NavigationBar from "@/components/layout/navigation-bar";
 import Providers from "@/components/layout/providers";
 import QueryErrorLabels from "@/components/layout/query-error-labels";
 import { routing } from "@/i18n/routing";
+import { CONSENT_BOOTSTRAP } from "@/lib/consent";
 import { getCopyrightYear } from "@/lib/copyright-year";
 import { buildMetadata, SITE_NAME } from "@/lib/seo";
 
@@ -79,8 +83,20 @@ export default async function RootLayout({
   // Cached, so awaiting it here does not make the layout blocking. See lib/copyright-year.
   const year = await getCopyrightYear();
 
+  // Unset outside production on purpose: staging traffic in the client's reports cannot be
+  // separated out afterwards. No id means no tag and no banner — see packages/env/src/web.ts.
+  const gaId = env.NEXT_PUBLIC_GA_ID;
+
   return (
     <html lang={locale} className="light motion-safe:scroll-smooth" data-scroll-behavior="smooth">
+      {/* Order is load-bearing: this declares the denied default before `gtag.js` runs, so the
+          tag cannot write a cookie ahead of an answer. `beforeInteractive` is what puts it in the
+          initial HTML rather than after hydration, and it only works from the root layout. */}
+      {gaId ? (
+        <Script id="consent-bootstrap" strategy="beforeInteractive">
+          {CONSENT_BOOTSTRAP}
+        </Script>
+      ) : null}
       <body className={`${manrope.variable} antialiased`}>
         <noscript>
           <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
@@ -95,9 +111,11 @@ export default async function RootLayout({
                 <Footer year={year} />
               </FooterGate>
             </div>
+            {gaId ? <CookieConsent /> : null}
           </Providers>
         </NextIntlClientProvider>
       </body>
+      {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
     </html>
   );
 }
