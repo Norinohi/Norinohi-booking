@@ -947,7 +947,11 @@
         "account": "Cuenta",
         "admin": "Administración"
       },
-      "faq": "Preguntas frecuentes"
+      "faq": "Preguntas frecuentes",
+      "groups": {
+        "fleet": "Yates",
+        "content": "Contenido del sitio"
+      }
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -959,7 +963,13 @@
       "credits": "Créditos y saldo"
     },
     "description": "Alquila yates y catamaranes en todo el mundo. Compara barcos, fechas y precios, y reserva tu próxima travesía en minutos.",
-    "title": "YachtSkanner — Alquiler de Yates y Catamaranes"
+    "title": "YachtSkanner — Alquiler de Yates y Catamaranes",
+    "CookieConsent": {
+      "title": "Cookies",
+      "description": "Usamos cookies analíticas para ver cómo se utiliza el sitio y mejorarlo. No se recopila nada hasta que aceptes.",
+      "accept": "Aceptar",
+      "decline": "Rechazar"
+    }
   },
   "PlanMyTrip": {
     "title": "Ayúdame a planificar mi viaje",

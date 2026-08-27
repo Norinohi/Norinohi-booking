@@ -43,6 +43,21 @@ export const SPARKS = [
   { x: -6, y: 26, size: 4, delay: 0.03 },
 ];
 
+export const BANNER_DURATION = 0.28;
+
+/** Bottom-anchored chrome that overlays the page: rises into place, drops back the same way. */
+export const BANNER = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0 },
+};
+
+/** Same fade without the travel, for `prefers-reduced-motion`. A banner that slides into view
+ *  unprompted is exactly the motion that setting exists to suppress. */
+export const BANNER_STILL = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1 },
+};
+
 export const SLIDE_DURATION = 0.25;
 
 /** `custom` carries the direction: 1 moves forward, -1 back. Client-only — these are functions. */

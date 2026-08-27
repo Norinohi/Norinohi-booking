@@ -10,8 +10,6 @@ import { createInstrumentation } from "evlog/next/instrumentation/create";
  */
 const observability = createObservability({
   sentryDsn: env.SENTRY_DSN,
-  posthogApiKey: env.POSTHOG_API_KEY,
-  posthogHost: env.POSTHOG_HOST,
   environment: env.OBSERVABILITY_ENVIRONMENT ?? process.env.NODE_ENV,
   release: env.OBSERVABILITY_RELEASE,
 });

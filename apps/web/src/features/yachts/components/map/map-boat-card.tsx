@@ -119,7 +119,12 @@ export default function MapBoatCard({
 
           <div className="flex items-center gap-2">
             <h3 className={cn("min-w-0 truncate leading-[1.3] text-foreground", style.name)}>
-              {name}
+              <Link
+                href={detailHref ?? DETAIL_HREF}
+                className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                {name}
+              </Link>
             </h3>
             {rating ? (
               <Chip className="shrink-0 bg-transparent p-1.5 text-gold">

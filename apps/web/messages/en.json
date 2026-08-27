@@ -947,7 +947,11 @@
         "account": "Account",
         "admin": "Admin"
       },
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "groups": {
+        "fleet": "Yachts",
+        "content": "Website Content"
+      }
     },
     "UserMenu": {
       "account": "Account",
@@ -959,7 +963,13 @@
       "credits": "Credits & Balance"
     },
     "description": "Charter yachts and catamarans worldwide. Compare boats, dates and prices, and book your next sailing trip in minutes.",
-    "title": "YachtSkanner — Yacht & Catamaran Rentals Worldwide"
+    "title": "YachtSkanner — Yacht & Catamaran Rentals Worldwide",
+    "CookieConsent": {
+      "title": "Cookies",
+      "description": "We use analytics cookies to see how the site is used, so we can make it better. Nothing is measured until you agree.",
+      "accept": "Accept",
+      "decline": "Decline"
+    }
   },
   "PlanMyTrip": {
     "title": "Help me plan my trip",

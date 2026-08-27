@@ -126,7 +126,14 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
               image={boatCard.image}
               imageAlt={boatCard.imageAlt}
               location={boatCard.location}
-              title={boatCard.title}
+              title={
+                <Link
+                  href={boatCard.detailHref}
+                  className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+                >
+                  {boatCard.title}
+                </Link>
+              }
               rating={boatCard.rating}
               tags={boatCard.tags}
               price={boatCard.price}

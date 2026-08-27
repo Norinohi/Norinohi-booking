@@ -1,24 +1,20 @@
 import type { DrainContext } from "evlog";
 import { createDrainPipeline } from "evlog/pipeline";
-import { createPostHogDrain } from "evlog/posthog";
 import { createSentryDrain } from "evlog/sentry";
 
 /*
- * Error tracking (Sentry) and product analytics (PostHog) as evlog drains rather
- * than as their own SDKs. Every request already produces one wide event carrying
- * the user, route, status and duration, so a drain is the whole integration: no
- * second instrumentation layer to keep in sync, and nothing new in the dependency
- * tree — evlog ships both adapters.
+ * Error tracking (Sentry) as an evlog drain rather than as its own SDK. Every request
+ * already produces one wide event carrying the user, route, status and duration, so a
+ * drain is the whole integration: no second instrumentation layer to keep in sync, and
+ * nothing new in the dependency tree — evlog ships the adapter.
  *
- * Every field below is optional on purpose. Credentials arrive later, and until
- * they do `createObservability` returns no drain at all, which leaves logging
- * exactly as it is today instead of failing a boot or posting to a dead endpoint.
+ * Every field below is optional on purpose. Credentials arrive later, and until they do
+ * `createObservability` returns no drain at all, which leaves logging exactly as it is
+ * today instead of failing a boot or posting to a dead endpoint.
  */
 export interface ObservabilityConfig {
   sentryDsn?: string | undefined;
-  posthogApiKey?: string | undefined;
-  posthogHost?: string | undefined;
-  /** Both vendors group by this; leave unset to inherit the event's own values. */
+  /** Sentry groups by this; leave unset to inherit the event's own values. */
   environment?: string | undefined;
   release?: string | undefined;
 }
@@ -45,43 +41,26 @@ export interface Observability {
 const BATCH = { batch: { size: 50, intervalMs: 5_000 } } as const;
 
 export function createObservability(config: ObservabilityConfig): Observability {
-  const drains: Array<(ctx: DrainContext) => void | Promise<void>> = [];
-  const flushes: Array<() => Promise<void>> = [];
-
-  if (config.sentryDsn) {
-    const drain = createDrainPipeline<DrainContext>(BATCH)(
-      createSentryDrain({
-        dsn: config.sentryDsn,
-        environment: config.environment,
-        release: config.release,
-      }),
-    );
-    drains.push(drain);
-    flushes.push(drain.flush);
+  if (!config.sentryDsn) {
+    return { drain: undefined, flush: async () => {} };
   }
 
-  if (config.posthogApiKey) {
-    const drain = createDrainPipeline<DrainContext>(BATCH)(
-      createPostHogDrain({
-        apiKey: config.posthogApiKey,
-        host: config.posthogHost,
-      }),
-    );
-    drains.push(drain);
-    flushes.push(drain.flush);
-  }
+  const drain = createDrainPipeline<DrainContext>(BATCH)(
+    createSentryDrain({
+      dsn: config.sentryDsn,
+      environment: config.environment,
+      release: config.release,
+    }),
+  );
 
   return {
-    // One slow vendor must not delay the other, and neither may reject into a
-    // logging call site: a failed drain is a dropped event, not a failed request.
-    drain:
-      drains.length === 0
-        ? undefined
-        : async (ctx) => {
-            await Promise.allSettled(drains.map((drain) => drain(ctx)));
-          },
+    // A failed drain is a dropped event, not a failed request: this must never reject
+    // into a logging call site.
+    drain: async (ctx) => {
+      await Promise.allSettled([drain(ctx)]);
+    },
     flush: async () => {
-      await Promise.allSettled(flushes.map((flush) => flush()));
+      await Promise.allSettled([drain.flush()]);
     },
   };
 }
