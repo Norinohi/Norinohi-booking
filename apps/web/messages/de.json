@@ -947,7 +947,11 @@
         "account": "Konto",
         "admin": "Admin"
       },
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "groups": {
+        "fleet": "Yachten",
+        "content": "Website-Inhalte"
+      }
     },
     "UserMenu": {
       "account": "Konto",

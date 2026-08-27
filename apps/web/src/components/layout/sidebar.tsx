@@ -1,21 +1,30 @@
 "use client";
 
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useId, useState } from "react";
 
 import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
-import { ACCOUNT_ITEMS, ACCOUNT_NAV_HREFS, ADMIN_ITEMS, type AccountNavItem } from "./account-nav";
+import {
+  ACCOUNT_NAV,
+  ACCOUNT_NAV_HREFS,
+  ADMIN_NAV,
+  type AccountNavItem,
+  type AdminGroupKey,
+  type NavEntry,
+} from "./account-nav";
 
 /*
  * Sidebar — Figma "Sidebar" (Reusable Sections, nodes 845:207497 User / 853:58498 Admin).
  * Account menu card: a greeting header over a soft wash, then rows with an active highlight
  * (brand-50 + brand text) and a destructive "Log Out". Admin adds "Inbox", "Payments",
- * "Listings", "Discount Manager", "Duplicate Review", "Sync History" and "Audit Log".
- * Rows with a route render as links and read their active state from the pathname; rows whose
- * page doesn't exist yet stay as inert buttons highlighted only by `defaultActive`.
+ * "Yachts", "Content", "Discount Manager" and "Audit Log", the middle two expanding into
+ * their own rows. Rows with a route render as links and read their active state from the
+ * pathname; rows whose page doesn't exist yet stay as inert buttons highlighted only by
+ * `defaultActive`.
  *
  * Staff see two labelled groups rather than one long list, because the two halves answer to
  * different people: "My Bookings" is the reader's own charter, "Payments" is everyone's money.
@@ -53,13 +62,18 @@ export default function Sidebar({
   useEffect(() => setHydrated(true), []);
   const isStaff = variant === "admin" || (hydrated && isStaffUser);
 
+  /* Only the groups the reader has touched are recorded; the rest fall back to "open iff the
+   * current page is inside it", so arriving on /listings shows where you are without a click
+   * and collapsing it afterwards still sticks. */
+  const [toggled, setToggled] = useState<Partial<Record<AdminGroupKey, boolean>>>({});
+
   const headingId = useId();
-  const groups: readonly { key: "account" | "admin"; items: readonly AccountNavItem[] }[] = isStaff
+  const groups: readonly { key: "account" | "admin"; entries: readonly NavEntry[] }[] = isStaff
     ? [
-        { key: "account", items: ACCOUNT_ITEMS },
-        { key: "admin", items: ADMIN_ITEMS },
+        { key: "account", entries: ACCOUNT_NAV },
+        { key: "admin", entries: ADMIN_NAV },
       ]
-    : [{ key: "account", items: ACCOUNT_ITEMS }];
+    : [{ key: "account", entries: ACCOUNT_NAV }];
   const showHeadings = groups.length > 1;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */
@@ -119,11 +133,29 @@ export default function Sidebar({
               aria-labelledby={showHeadings ? `${headingId}-${group.key}` : undefined}
               className="flex flex-col"
             >
-              {group.items.map((item) => (
-                <li key={item}>
-                  <Row item={item} isActive={active === item} label={t(item)} />
-                </li>
-              ))}
+              {group.entries.map((entry) =>
+                entry.kind === "group" ? (
+                  <li key={entry.group}>
+                    <ExpandableRow
+                      label={t(`groups.${entry.group}`)}
+                      panelId={`${headingId}-${entry.group}`}
+                      isOpen={toggled[entry.group] ?? entry.items.includes(active)}
+                      hasActiveChild={entry.items.includes(active)}
+                      onToggle={(open) => setToggled((prev) => ({ ...prev, [entry.group]: open }))}
+                    >
+                      {entry.items.map((item) => (
+                        <li key={item}>
+                          <Row item={item} isActive={active === item} label={t(item)} nested />
+                        </li>
+                      ))}
+                    </ExpandableRow>
+                  </li>
+                ) : (
+                  <li key={entry.item}>
+                    <Row item={entry.item} isActive={active === entry.item} label={t(entry.item)} />
+                  </li>
+                ),
+              )}
             </ul>
           </div>
         ))}
@@ -147,14 +179,19 @@ function Row({
   item,
   isActive,
   label,
+  nested = false,
 }: {
   item: AccountNavItem;
   isActive: boolean;
   label: string;
+  nested?: boolean;
 }) {
   const href = ACCOUNT_NAV_HREFS.get(item);
   const className = cn(
     "block w-full cursor-pointer px-4 py-4 text-left text-base leading-[1.4] outline-none transition-colors focus-visible:bg-natural-50",
+    /* Children are indented rather than shrunk: at 14px they would read as secondary
+       navigation, when they are the same kind of destination one level in. */
+    nested && "pl-9",
     isActive
       ? "bg-brand-50 font-semibold text-brand"
       : "font-medium text-foreground hover:bg-natural-50",
@@ -172,5 +209,51 @@ function Row({
     <Link href={href} aria-current={isActive ? "page" : undefined} className={className}>
       {label}
     </Link>
+  );
+}
+
+/* A parent row goes nowhere, so it never takes the active highlight even while the page is
+   inside it - that would put two highlights on screen and leave the reader guessing which one
+   is the page. Collapsed with a child active it just stays semibold. */
+function ExpandableRow({
+  label,
+  panelId,
+  isOpen,
+  hasActiveChild,
+  onToggle,
+  children,
+}: {
+  label: string;
+  panelId: string;
+  isOpen: boolean;
+  hasActiveChild: boolean;
+  onToggle: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={() => onToggle(!isOpen)}
+        className={cn(
+          "flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-4 text-left text-base leading-[1.4] text-foreground outline-none transition-colors hover:bg-natural-50 focus-visible:bg-natural-50",
+          hasActiveChild ? "font-semibold" : "font-medium",
+        )}
+      >
+        {label}
+        <ChevronDown
+          aria-hidden
+          className={cn(
+            "size-5 shrink-0 text-natural-500 transition-transform",
+            isOpen && "rotate-180",
+          )}
+        />
+      </button>
+      <ul id={panelId} hidden={!isOpen} className="flex flex-col bg-natural-50/40">
+        {children}
+      </ul>
+    </>
   );
 }

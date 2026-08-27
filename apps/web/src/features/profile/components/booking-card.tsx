@@ -73,20 +73,19 @@ export default function BookingCard({
     </Chip>
   ) : null;
 
-  const renderCancel = (fullWidth: boolean) =>
-    cancellable ? (
-      <Button
-        variant="subtle"
-        size="md"
-        onClick={() => setCancelOpen(true)}
-        className={cn(
-          "text-error-600 hover:text-error-700",
-          fullWidth ? "w-full border-border" : "hover:border-transparent",
-        )}
-      >
-        {tBookings("cancel.action")}
-      </Button>
-    ) : null;
+  /* The three actions share one shell - same height from size="md", same width from the
+     column's stretch, same bordered surface - so only colour separates them. Cancel had been
+     borderless, which at the bottom of the stack read as a link rather than the third choice. */
+  const cancel = cancellable ? (
+    <Button
+      variant="neutral"
+      size="md"
+      onClick={() => setCancelOpen(true)}
+      className="w-full border-error-200 text-error-600 hover:border-error-300 hover:bg-error-50 hover:text-error-700"
+    >
+      {tBookings("cancel.action")}
+    </Button>
+  ) : null;
 
   return (
     <>
@@ -94,20 +93,21 @@ export default function BookingCard({
       <BoatCard
         {...booking}
         className={cn("xl:hidden", className)}
-        footer={cancellable ? renderCancel(true) : isCancelled ? cancelledChip : null}
+        footer={cancel ?? (isCancelled ? cancelledChip : null)}
       />
 
       {/* Desktop — the simplified history card. */}
       {/*
-       * The action column is a min-content track and cannot shrink: `Button` is `whitespace-nowrap`
-       * and `shrink-0`, so a label as long as "Complete payment EUR 1,900" sets its width outright.
-       * The photo is therefore the track that gives — at 452px it left the info column ~50px at
-       * 1280, which truncated the boat name and pushed the dates over the divider. It widens again
-       * at 2xl, where the panel is wide enough to afford it.
+       * The action track is a fixed 15rem rather than `auto`. Sized to content it came out
+       * different on every row — a card offering only "View Details" was ~80px narrower than one
+       * that also cancels, and wider again where a "Complete payment EUR 1,224" button appears —
+       * so a column of cards had a ragged right edge and no two buttons lined up. 15rem is what
+       * the longest of those labels needs; the photo is the track that gives, and it widens
+       * again at 2xl where the panel is wide enough to afford it.
        */}
       <article
         className={cn(
-          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_auto] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)_auto]",
+          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_15rem] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)_15rem]",
           className,
         )}
       >
@@ -180,13 +180,19 @@ export default function BookingCard({
         </div>
 
         {/* Action */}
-        <div className="flex flex-col items-center justify-center gap-3 py-6 pr-6">
+        {/* items-stretch, not items-center: the widest label sets the track, and the other two
+            match it instead of each sizing to its own text. */}
+        <div className="flex flex-col items-stretch justify-center gap-3 py-6 pr-6">
           {payBalanceHref && payBalanceLabel ? (
             <Button
               variant="brand"
               size="md"
               nativeButton={false}
               render={<Link href={payBalanceHref} />}
+              /* The only label carrying a number, so the only one that can outgrow the track in
+                 some locale or at some amount. It wraps there instead of forcing the column
+                 wider; at the usual length it stays one line and h-12 like its neighbours. */
+              className="h-auto min-h-12 py-2 text-center leading-tight whitespace-normal"
             >
               {payBalanceLabel}
             </Button>
@@ -200,7 +206,7 @@ export default function BookingCard({
           >
             {t("viewDetails")}
           </Button>
-          {renderCancel(false)}
+          {cancel}
         </div>
       </article>
 

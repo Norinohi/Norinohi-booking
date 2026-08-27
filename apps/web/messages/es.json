@@ -947,7 +947,11 @@
         "account": "Cuenta",
         "admin": "Administración"
       },
-      "faq": "Preguntas frecuentes"
+      "faq": "Preguntas frecuentes",
+      "groups": {
+        "fleet": "Yates",
+        "content": "Contenido del sitio"
+      }
     },
     "UserMenu": {
       "account": "Cuenta",
