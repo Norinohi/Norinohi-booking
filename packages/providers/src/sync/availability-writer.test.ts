@@ -7,6 +7,7 @@ import {
   freePeriodsFrom,
   isFatalAuthOnly,
   runAvailabilitySync,
+  storableMinor,
   type AvailabilityScope,
   type AvailabilitySlotWrite,
   type AvailabilitySource,
@@ -296,6 +297,26 @@ describe("freePeriodsFrom", () => {
       { startDate: "2026-07-01", endDate: "2026-07-31" },
       { startDate: "2026-09-01", endDate: "2026-09-30" },
     ]);
+  });
+});
+
+describe("storableMinor", () => {
+  it("accepts a null, which is a slot with no rate rather than a bad one", () => {
+    expect(storableMinor(null)).toBe(true);
+  });
+
+  it("accepts int32's ceiling and refuses the value that broke the sweep", () => {
+    expect(storableMinor(2_147_483_647)).toBe(true);
+    expect(storableMinor(2_147_483_648)).toBe(false);
+    // The Booking Manager rate that failed a whole chunk on 2026-08-28.
+    expect(storableMinor(8_883_888_500)).toBe(false);
+  });
+
+  it("refuses a negative beyond the floor, and anything not a whole number", () => {
+    expect(storableMinor(-2_147_483_648)).toBe(false);
+    expect(storableMinor(1.5)).toBe(false);
+    expect(storableMinor(Number.NaN)).toBe(false);
+    expect(storableMinor(Number.POSITIVE_INFINITY)).toBe(false);
   });
 });
 

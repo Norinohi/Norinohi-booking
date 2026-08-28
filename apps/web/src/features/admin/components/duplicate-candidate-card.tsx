@@ -6,14 +6,41 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { type ComparisonKey, comparisonRows, EMPTY_VALUE, formatSignals } from "../lib/duplicates";
+import {
+  type ComparisonKey,
+  comparisonRows,
+  EMPTY_VALUE,
+  formatSignals,
+  matchSignals,
+} from "../lib/duplicates";
 import {
   isResolvedElsewhere,
   useConfirmDuplicate,
   useRejectDuplicate,
 } from "../hooks/use-duplicates";
 import { type DuplicateCandidate, toProviderKey } from "../types";
+import DuplicateDetailDialog from "./duplicate-detail-dialog";
 import DuplicateSide from "./duplicate-side";
+
+/* The matcher rules and criteria this build ships labels for; anything else is shown as stored. */
+const MATCH_TYPES = [
+  "name+model+year",
+  "base+model+year",
+  "model+year",
+  "model+yearBuilt",
+] as const;
+
+const SIGNAL_FIELDS = [
+  "name",
+  "base",
+  "area",
+  "length",
+  "cabins",
+  "berths",
+  "heads",
+  "builder",
+  "operator",
+] as const;
 
 /* The comparison rows whose raw value is a code with a translated label; `provider` is the third. */
 const LISTING_STATUSES = ["draft", "published", "hidden"] as const;
@@ -36,6 +63,7 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
   const rejectDuplicate = useRejectDuplicate();
   /* Which side's button was pressed, so only that one shows the pending label. */
   const [keeping, setKeeping] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const pending = candidate.decision === "pending";
   const busy = confirmDuplicate.isPending || rejectDuplicate.isPending;
@@ -59,7 +87,19 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
   };
 
   const rows = comparisonRows(candidate, value);
-  const signals = formatSignals(candidate.signals);
+  const signals = matchSignals(candidate.signals);
+  /* A pair proposed before the matcher recorded its criteria still has something to say. */
+  const legacySignals = signals ? null : formatSignals(candidate.signals);
+
+  const matchTypeLabel = (kind: string) => {
+    const known = MATCH_TYPES.find((option) => option === kind);
+    return known ? t(`matchType.${known}`) : kind;
+  };
+
+  const signalLabel = (field: string) => {
+    const known = SIGNAL_FIELDS.find((option) => option === field);
+    return known ? t(`signalFields.${known}`) : field;
+  };
   const day = (date: string) => format.dateTime(new Date(date), "dayShort");
 
   const onError = (error: Error) => {
@@ -103,17 +143,40 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
             </span>
           </div>
           {signals ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {signals.matchedOn ? (
+                <span className="text-sm leading-[1.3] font-medium text-natural-500">
+                  {t("signals", { signals: matchTypeLabel(signals.matchedOn) })}
+                </span>
+              ) : null}
+              {signals.agreed.map((field) => (
+                <Chip key={`agreed-${field}`} variant="success">
+                  {signalLabel(field)}
+                </Chip>
+              ))}
+              {signals.differed.map((field) => (
+                <Chip key={`differed-${field}`} variant="warning">
+                  {signalLabel(field)}
+                </Chip>
+              ))}
+            </div>
+          ) : legacySignals ? (
             <p className="truncate text-sm leading-[1.3] font-medium text-natural-500">
-              {t("signals", { signals })}
+              {t("signals", { signals: legacySignals })}
             </p>
           ) : null}
         </div>
 
-        {pending ? (
-          <Button variant="neutral" onClick={reject} disabled={busy}>
-            {t("reject")}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="subtle" onClick={() => setDetailOpen(true)}>
+            {t("showDetail")}
           </Button>
-        ) : null}
+          {pending ? (
+            <Button variant="neutral" onClick={reject} disabled={busy}>
+              {t("reject")}
+            </Button>
+          ) : null}
+        </div>
       </header>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
@@ -133,6 +196,8 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
           );
         })}
       </div>
+
+      <DuplicateDetailDialog candidate={candidate} open={detailOpen} onOpenChange={setDetailOpen} />
 
       {rows.some((row) => row.differs) ? (
         <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("differsLegend")}</p>

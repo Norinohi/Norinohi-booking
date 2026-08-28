@@ -6,10 +6,21 @@ type AdminClient = AppRouterClient["admin"];
 export type DuplicateQueue = Awaited<ReturnType<AdminClient["match"]["queue"]>>;
 export type DuplicateCandidate = DuplicateQueue["items"][number];
 export type DuplicateDecision = DuplicateCandidate["decision"];
+export type DuplicateQueueSummary = DuplicateQueue["summary"];
+export type DuplicateConfidenceBand = DuplicateQueueSummary["confidenceBands"][number]["band"];
+/** The band filter, plus the "any band" the queue opens on. */
+export type DuplicateConfidenceFilter = DuplicateConfidenceBand | "all";
 /** Whatever the matcher recorded on the candidate, as the contract hands it over. */
 export type DuplicateSignals = NonNullable<DuplicateCandidate["signals"]>;
 export type DuplicateSide = DuplicateCandidate["sideA"];
 export type DuplicateSideListing = NonNullable<DuplicateSide["listing"]>;
+
+export type DuplicatePhoto = DuplicateSideListing["photos"][number];
+
+/** The on-demand second read: the long tail of specs behind a pair, per side. */
+export type DuplicateDetail = Awaited<ReturnType<AdminClient["match"]["detail"]>>;
+export type DuplicateDetailSide = DuplicateDetail["sideA"];
+export type DuplicateDetailListing = NonNullable<DuplicateDetailSide["listing"]>;
 
 export type EnquiryList = Awaited<ReturnType<AdminClient["enquiry"]["list"]>>;
 export type EnquiryRow = EnquiryList["items"][number];

@@ -5,6 +5,7 @@ import {
 } from "@yacht-charter/db/schema/availability";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
+import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -850,10 +851,26 @@ export function dedupeSlotsByPeriod<
   return [...byPeriod.values()];
 }
 
+/**
+ * True for an amount `availability_slot`'s `integer` columns can actually hold.
+ *
+ * The same bargain `dedupePricePeriodRows` and `priceableExtras` already strike, and
+ * for the same reason: a Booking Manager rate of 8883888500 is four times int32's
+ * ceiling, and both slot paths hand the vendor's number straight to Postgres. The
+ * batched one loses its whole chunk to a single such rate; the confirmation one
+ * throws out of the offer loop and ends the pass. See `MAX_MONEY_MINOR`.
+ */
+export function storableMinor(value: number | null): boolean {
+  return value === null || (Number.isSafeInteger(value) && Math.abs(value) <= MAX_MONEY_MINOR);
+}
+
 export function createDrizzleAvailabilitySyncStore(
   options: DrizzleAvailabilityStoreOptions,
 ): AvailabilitySyncStore {
   const { db, providerId, syncRunId } = options;
+  /* Counted rather than logged per row: an account-wide sweep would otherwise print
+     a line per offer, and the total is the number worth acting on. */
+  let unstorablePrices = 0;
   const cursorKey = {
     providerId,
     kind: "availability" as const,
@@ -995,6 +1012,8 @@ export function createDrizzleAvailabilitySyncStore(
       // Chunked for the same reason the other bulk writes are, and more urgently: a
       // slot binds thirteen parameters, so an account-wide dump in one statement
       // would blow the 65535 ceiling long before it ran out of rows.
+      unstorablePrices += deduped.filter((slot) => !storableMinor(slot.priceMinor)).length;
+
       for (const chunk of chunked(deduped, ROW_CHUNK)) {
         await db
           .insert(availabilitySlot)
@@ -1006,7 +1025,9 @@ export function createDrizzleAvailabilitySyncStore(
               endDate: slot.endDate,
               status: slot.status,
               availabilityConfirmed: slot.availabilityConfirmed,
-              priceMinor: slot.priceMinor,
+              // The row asserts availability; the rate is a bonus it can go without.
+              // Dropping the slot instead would leave the week looking unsynced.
+              priceMinor: storableMinor(slot.priceMinor) ? slot.priceMinor : null,
               currency: slot.currency,
               minNights: slot.minNights,
               checkinWeekday: slot.checkinWeekday,
@@ -1055,6 +1076,16 @@ export function createDrizzleAvailabilitySyncStore(
         .limit(1);
 
       if (existing && existing.status !== "available") return false;
+
+      /*
+       * Confirming without the rate would publish a bookable week we cannot quote,
+       * and nulling only the extras would understate the total. The synthesized slot
+       * keeps its catalogue price and its unconfirmed flag, which is the honest state.
+       */
+      if (!storableMinor(input.priceMinor) || !storableMinor(input.obligatoryExtrasMinor)) {
+        unstorablePrices += 1;
+        return false;
+      }
 
       const values = {
         availabilityConfirmed: true,
@@ -1210,6 +1241,12 @@ export function createDrizzleAvailabilitySyncStore(
     },
 
     async closeRun(input) {
+      if (unstorablePrices > 0) {
+        console.warn(
+          `[availability] ${unstorablePrices} vendor amount(s) exceeded price_minor and were not stored`,
+        );
+      }
+
       await db
         .update(syncRun)
         .set({

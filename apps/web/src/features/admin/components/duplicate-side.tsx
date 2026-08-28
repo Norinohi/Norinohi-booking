@@ -3,17 +3,17 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { ImageOff } from "lucide-react";
 import { useTranslations } from "next-intl";
-
-import { Image } from "@/components/shared/data-display/image";
 
 import type { ComparisonRow } from "../lib/duplicates";
 import { type DuplicateSide as Side, toProviderKey } from "../types";
+import DuplicatePhotos from "./duplicate-photos";
 
 /*
- * DuplicateSide — one half of a duplicate pair: its image, title and provider chip over the
- * comparison rows, then the "keep this listing" affordance that names the survivor.
+ * DuplicateSide — one half of a duplicate pair: its photos, title and provider chip over the
+ * comparison rows, then the "keep this listing" affordance that names the survivor. The photos
+ * are a carousel from the first render rather than a cover shot: a pair is usually settled by
+ * looking at the boats, and making that a second click made every review two.
  * Both panels render the same rows in the same order at the same fixed row height, so the
  * highlighted mismatches line up across the gap and read as a single table.
  * A side whose listing was deleted after the pair was proposed renders as unavailable and
@@ -51,22 +51,7 @@ export default function DuplicateSide({
         <Chip variant="neutral">{providerKey ? tProviders(providerKey) : side.provider}</Chip>
       </div>
 
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-natural-50">
-        {listing?.primaryImageUrl ? (
-          <Image
-            fill
-            src={listing.primaryImageUrl}
-            alt={listing.title}
-            sizes="(min-width: 1024px) 400px, 100vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-natural-500">
-            <ImageOff className="size-6" />
-            <span className="text-sm font-medium">{t("noImage")}</span>
-          </div>
-        )}
-      </div>
+      <DuplicatePhotos photos={listing?.photos ?? []} title={listing?.title ?? ""} />
 
       {listing ? (
         <h3 className="truncate text-base leading-[1.3] font-bold text-foreground">

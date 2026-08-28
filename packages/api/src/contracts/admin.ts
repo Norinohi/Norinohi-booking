@@ -120,6 +120,18 @@ export const duplicateDecisionSchema = z.enum(["pending", "confirmed", "rejected
 
 export const listingStatusSchema = z.enum(["draft", "published", "hidden"]);
 
+export const mediaRoleSchema = z.enum(["main", "layout", "gallery"]);
+
+/** One photo, in the order the gallery shows them: main first, then galleries, then layouts. */
+export const duplicatePhotoSchema = z.object({
+  // Verbatim vendor URL rather than z.url(): these are stored exactly as the
+  // provider shipped them, and one malformed row must not fail the whole page.
+  url: z.string(),
+  role: mediaRoleSchema,
+  /** The connector whose feed carried the photo; null on hand-added media. */
+  source: z.string().nullable(),
+});
+
 /** Null throughout when the side's listing was deleted out from under the pair. */
 export const duplicateSideListingSchema = z.object({
   id: z.string(),
@@ -134,9 +146,11 @@ export const duplicateSideListingSchema = z.object({
   berths: z.number().int().nullable(),
   baseName: z.string().nullable(),
   locationName: z.string().nullable(),
-  // Verbatim vendor URL rather than z.url(): these are stored exactly as the
-  // provider shipped them, and one malformed row must not fail the whole page.
-  primaryImageUrl: z.string().nullable(),
+  /**
+   * The whole set, not a cover: a duplicate is usually settled by the photos, so the
+   * queue card carries the carousel rather than making the reviewer open something.
+   */
+  photos: z.array(duplicatePhotoSchema),
 });
 
 export const duplicateSideSchema = z.object({
@@ -147,8 +161,20 @@ export const duplicateSideSchema = z.object({
   listing: duplicateSideListingSchema.nullable(),
 });
 
-/** Whatever the matcher recorded, e.g. `{ matchedOn: "model+yearBuilt" }`. */
-export const duplicateSignalsSchema = z.record(z.string(), z.unknown()).nullable();
+/**
+ * What the matcher recorded. Loose rather than strict: the shape has changed once
+ * already, and a candidate proposed by an older sync must still open.
+ */
+export const duplicateSignalsSchema = z
+  .looseObject({
+    /** Which rule carried the pair: `name+model+year`, `base+model+year`, `model+year`. */
+    matchedOn: z.string().optional(),
+    score: z.number().optional(),
+    /** Criteria compared on both sides — `name`, `base`, `length`, `cabins`, … */
+    agreed: z.array(z.string()).optional(),
+    differed: z.array(z.string()).optional(),
+  })
+  .nullable();
 
 export const duplicateCandidateSchema = z.object({
   id: z.string(),
@@ -163,14 +189,48 @@ export const duplicateCandidateSchema = z.object({
 
 const DUPLICATE_PAGE_SIZE = 20;
 
+/** Bands over `confidence`; `unknown` is the matcher having declined to score the pair. */
+const DUPLICATE_CONFIDENCE_BANDS = ["high", "medium", "low", "unknown"] as const;
+
+export const duplicateConfidenceBandSchema = z.enum(DUPLICATE_CONFIDENCE_BANDS);
+export const duplicateConfidenceFilterSchema = z.enum(["all", ...DUPLICATE_CONFIDENCE_BANDS]);
+
 export const duplicateQueueInputSchema = z
   .object({
     decision: duplicateDecisionSchema.default("pending"),
+    confidence: duplicateConfidenceFilterSchema.default("all"),
+    /** `signals.matchedOn` — which rule proposed the pair, e.g. `model+yearBuilt`. */
+    matchedOn: z.string().trim().max(100).optional(),
     ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: DUPLICATE_PAGE_SIZE }),
   })
-  .default({ ...paginationInputDefault(DUPLICATE_PAGE_SIZE), decision: "pending" });
+  .default({
+    ...paginationInputDefault(DUPLICATE_PAGE_SIZE),
+    decision: "pending",
+    confidence: "all",
+  });
 
-export const duplicateQueueSchema = paginatedSchema(duplicateCandidateSchema);
+/**
+ * The numbers the queue is judged by, and the facets its two filters are built from.
+ * Counted over everything the decision matches, not just the page — and the facets
+ * ignore the filter they populate, so choosing one never empties its own menu.
+ */
+export const duplicateQueueSummarySchema = z.object({
+  decisionCounts: z.object({
+    pending: z.number().int(),
+    confirmed: z.number().int(),
+    rejected: z.number().int(),
+  }),
+  /** Distinct listings the filtered pairs touch: one yacht can sit in several pairs. */
+  listingCount: z.number().int(),
+  matchTypes: z.array(z.object({ value: z.string(), count: z.number().int() })),
+  confidenceBands: z.array(
+    z.object({ band: duplicateConfidenceBandSchema, count: z.number().int() }),
+  ),
+});
+
+export const duplicateQueueSchema = paginatedSchema(duplicateCandidateSchema).extend({
+  summary: duplicateQueueSummarySchema,
+});
 
 /** The reviewer picks the survivor; the pair's other listing is the one hidden. */
 export const duplicateConfirmInputSchema = z.object({
@@ -187,6 +247,59 @@ export const duplicateResolutionSchema = z.object({
   hiddenListingId: z.string().nullable(),
   /** How many `listing_source` rows were repointed at the survivor. */
   movedSourceCount: z.number().int(),
+});
+
+/* ------------------------------------------ duplicate review, full detail */
+
+/**
+ * The specs the queue row leaves out — the ones that only matter once two plausible
+ * look-alikes have to be told apart. Photos are not here: they ride on the queue row,
+ * because the card shows them before anyone opens anything.
+ */
+export const duplicateDetailListingSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  categoryName: z.string().nullable(),
+  builderName: z.string().nullable(),
+  crewType: z.string().nullable(),
+  beamM: z.number().nullable(),
+  draftM: z.number().nullable(),
+  heads: z.number().int().nullable(),
+  showers: z.number().int().nullable(),
+  engines: z.number().int().nullable(),
+  enginePower: z.string().nullable(),
+  fuelType: z.string().nullable(),
+  fuelCapacity: z.number().int().nullable(),
+  waterCapacity: z.number().int().nullable(),
+  propulsionType: z.string().nullable(),
+  steeringType: z.string().nullable(),
+  sailType: z.string().nullable(),
+  securityDepositMinor: z.number().int().nullable(),
+  securityDepositCurrency: z.string().nullable(),
+  depositInsuranceIncluded: z.boolean(),
+  petsAllowed: z.boolean(),
+  defaultCurrency: z.string().nullable(),
+  providerRating: z.number().nullable(),
+  providerReviewCount: z.number().int().nullable(),
+  amenities: z.array(z.string()),
+  description: z.string().nullable(),
+  /** When the connector last confirmed the listing, which dates a stale-looking spec. */
+  freshnessAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+});
+
+export const duplicateDetailSideSchema = z.object({
+  sourceId: z.string(),
+  listing: duplicateDetailListingSchema.nullable(),
+});
+
+export const duplicateDetailInputSchema = z.object({ candidateId: idSchema });
+
+export const duplicateDetailSchema = z.object({
+  candidateId: z.string(),
+  sideA: duplicateDetailSideSchema,
+  sideB: duplicateDetailSideSchema,
 });
 
 /* ---------------------------------------------------------------- audit log */

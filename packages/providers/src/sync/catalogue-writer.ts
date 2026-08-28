@@ -32,6 +32,8 @@ import type { Database } from "../registry";
 import { canonicalCategoryName } from "../shared/category-groups";
 import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
+import { scoreDuplicatePair } from "./duplicate-score";
+import type { DuplicatePairFacts, DuplicateSignals } from "./duplicate-score";
 import type {
   CanonicalCatalogue,
   ProviderKey,
@@ -1451,6 +1453,12 @@ function priceableExtras(listingId: string, item: CanonicalListing) {
 /**
  * Cross-provider look-alikes are never merged, only proposed: same model, same
  * build year, different provider. A human decides in `listing_duplicate_candidate`.
+ *
+ * That gate is weak on its own — two sister ships in two countries pass it — so
+ * `scoreDuplicatePair` weighs what else the two sides agree on and the queue is
+ * ordered and filtered by the result. Pairs this run touches that are still
+ * pending are re-scored, so a change to the weights reaches the backlog on the
+ * next full sync rather than only the pairs proposed after it.
  */
 async function recordDuplicateCandidates(
   db: Database,
@@ -1459,17 +1467,137 @@ async function recordDuplicateCandidates(
 ): Promise<number> {
   if (listingIds.length === 0) return 0;
 
-  const rows = await db.execute<{
-    sourceAId: string;
-    sourceBId: string;
-    modelId: string;
-    yearBuilt: number;
-  }>(sql`
-    select distinct
+  const pairs = await selectDuplicatePairs(db, providerId, listingIds);
+  if (pairs.length === 0) return 0;
+
+  const scored = pairs.map((row) => ({ row, ...scoreDuplicatePair(pairFacts(row)) }));
+  const fresh = scored.filter(({ row }) => row.candidateId === null);
+
+  await insertRows(
+    fresh.map(({ row, confidence, signals }) => ({
+      sourceAId: row.sourceAId,
+      sourceBId: row.sourceBId,
+      signals,
+      confidence: confidence.toFixed(4),
+      decision: "pending" as const,
+    })),
+    async (chunk) => {
+      // The pair index is orientation-independent; two providers syncing at once both
+      // pass the "no candidate yet" read above and one of them arrives second.
+      await db.insert(listingDuplicateCandidate).values(chunk).onConflictDoNothing();
+    },
+  );
+
+  await rescorePendingCandidates(
+    db,
+    scored.filter(({ row }) => row.candidateId !== null && row.decision === "pending"),
+  );
+
+  return fresh.length;
+}
+
+type DuplicatePairRow = {
+  sourceAId: string;
+  sourceBId: string;
+  /** Null when the pair has not been proposed yet, which is what makes it new. */
+  candidateId: string | null;
+  decision: string | null;
+  modelName: string | null;
+  titleA: string;
+  titleB: string;
+  lengthA: string | null;
+  lengthB: string | null;
+  cabinsA: number | null;
+  cabinsB: number | null;
+  berthsA: number | null;
+  berthsB: number | null;
+  headsA: number | null;
+  headsB: number | null;
+  baseA: string | null;
+  baseB: string | null;
+  locationA: string | null;
+  locationB: string | null;
+  latA: number | null;
+  latB: number | null;
+  lngA: number | null;
+  lngB: number | null;
+  builderA: string | null;
+  builderB: string | null;
+  operatorA: string | null;
+  operatorB: string | null;
+};
+
+function pairFacts(row: DuplicatePairRow): DuplicatePairFacts {
+  return {
+    modelName: row.modelName,
+    a: {
+      title: row.titleA,
+      lengthM: row.lengthA === null ? null : Number(row.lengthA),
+      cabins: row.cabinsA,
+      berths: row.berthsA,
+      heads: row.headsA,
+      homeBaseId: row.baseA,
+      locationId: row.locationA,
+      lat: row.latA,
+      lng: row.lngA,
+      builderId: row.builderA,
+      operatorName: row.operatorA,
+    },
+    b: {
+      title: row.titleB,
+      lengthM: row.lengthB === null ? null : Number(row.lengthB),
+      cabins: row.cabinsB,
+      berths: row.berthsB,
+      heads: row.headsB,
+      homeBaseId: row.baseB,
+      locationId: row.locationB,
+      lat: row.latB,
+      lng: row.lngB,
+      builderId: row.builderB,
+      operatorName: row.operatorB,
+    },
+  };
+}
+
+/**
+ * Every cross-provider pair this run's listings take part in, with both sides' facts
+ * and whichever candidate row already stands for it. One read serves both the pairs
+ * that are new and the ones only being re-scored.
+ */
+async function selectDuplicatePairs(
+  db: Database,
+  providerId: string,
+  listingIds: string[],
+): Promise<DuplicatePairRow[]> {
+  const rows = await db.execute<DuplicatePairRow>(sql`
+    select
       a.id as "sourceAId",
       b.id as "sourceBId",
-      la.model_id as "modelId",
-      sa.year_built as "yearBuilt"
+      d.id as "candidateId",
+      d.decision::text as "decision",
+      m.name as "modelName",
+      la.title as "titleA",
+      lb.title as "titleB",
+      sa.length_m as "lengthA",
+      sb.length_m as "lengthB",
+      sa.cabins as "cabinsA",
+      sb.cabins as "cabinsB",
+      sa.berths as "berthsA",
+      sb.berths as "berthsB",
+      sa.heads as "headsA",
+      sb.heads as "headsB",
+      la.home_base_id as "baseA",
+      lb.home_base_id as "baseB",
+      bsa.location_id as "locationA",
+      bsb.location_id as "locationB",
+      bsa.lat as "latA",
+      bsb.lat as "latB",
+      bsa.lng as "lngA",
+      bsb.lng as "lngB",
+      la.builder_id as "builderA",
+      lb.builder_id as "builderB",
+      oa.name as "operatorA",
+      ob.name as "operatorB"
     from listing_source a
     join provider_record pra on pra.id = a.provider_record_id
     join listing la on la.id = a.listing_id
@@ -1478,6 +1606,14 @@ async function recordDuplicateCandidates(
     join listing_specification sb on sb.listing_id = lb.id and sb.year_built = sa.year_built
     join listing_source b on b.listing_id = lb.id
     join provider_record prb on prb.id = b.provider_record_id
+    left join yacht_model m on m.id = la.model_id
+    left join base bsa on bsa.id = la.home_base_id
+    left join base bsb on bsb.id = lb.home_base_id
+    left join operator oa on oa.id = la.operator_id
+    left join operator ob on ob.id = lb.operator_id
+    left join listing_duplicate_candidate d
+      on least(d.source_a_id, d.source_b_id) = least(a.id, b.id)
+     and greatest(d.source_a_id, d.source_b_id) = greatest(a.id, b.id)
     where pra.provider_id = ${providerId}
       and prb.provider_id <> ${providerId}
       and la.model_id is not null
@@ -1486,27 +1622,34 @@ async function recordDuplicateCandidates(
         listingIds.map((id) => sql`${id}`),
         sql`, `,
       )})
-      and not exists (
-        select 1 from listing_duplicate_candidate d
-        where (d.source_a_id = a.id and d.source_b_id = b.id)
-           or (d.source_a_id = b.id and d.source_b_id = a.id)
-      )
   `);
 
-  const pending = rows.rows;
-  if (pending.length === 0) return 0;
+  return rows.rows;
+}
 
-  await db.insert(listingDuplicateCandidate).values(
-    pending.map((row) => ({
-      sourceAId: row.sourceAId,
-      sourceBId: row.sourceBId,
-      signals: { modelId: row.modelId, yearBuilt: row.yearBuilt, matchedOn: "model+yearBuilt" },
-      confidence: "0.5000",
-      decision: "pending" as const,
-    })),
-  );
+/**
+ * A reviewed pair is never touched: the verdict is the record, and re-scoring it
+ * would rewrite the evidence someone already decided on.
+ */
+async function rescorePendingCandidates(
+  db: Database,
+  scored: { row: DuplicatePairRow; confidence: number; signals: DuplicateSignals }[],
+): Promise<void> {
+  for (const chunk of chunked(scored, ROW_CHUNK)) {
+    const values = chunk.map(
+      ({ row, confidence, signals }) =>
+        sql`(${row.candidateId}, ${confidence.toFixed(4)}::numeric, ${JSON.stringify(signals)}::jsonb)`,
+    );
 
-  return pending.length;
+    await db.execute(sql`
+      update listing_duplicate_candidate as d
+      set confidence = v.confidence, signals = v.signals, updated_at = now()
+      from (values ${sql.join(values, sql`, `)}) as v(id, confidence, signals)
+      where d.id = v.id
+        and d.decision = 'pending'
+        and (d.confidence is distinct from v.confidence or d.signals is distinct from v.signals)
+    `);
+  }
 }
 
 /**

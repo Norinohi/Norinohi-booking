@@ -14,6 +14,8 @@ import {
   discountSetActiveInputSchema,
   discountUpdateInputSchema,
   duplicateConfirmInputSchema,
+  duplicateDetailInputSchema,
+  duplicateDetailSchema,
   duplicateQueueInputSchema,
   duplicateQueueSchema,
   duplicateRejectInputSchema,
@@ -87,6 +89,7 @@ import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
   confirmDuplicateCandidate,
+  getDuplicateCandidateDetail,
   listDuplicateCandidates,
   rejectDuplicateCandidate,
 } from "../services/match";
@@ -304,14 +307,35 @@ export const adminRouter = {
         operationId: "listDuplicateCandidates",
         summary: "List duplicate candidates awaiting review",
         description:
-          "Cross-provider look-alikes proposed by the catalogue sync, highest confidence first. Each row hydrates both sides — provider, operator, model, year, length, cabins, berths, base and primary image — so the pair can be judged without opening two tabs. Nothing merges automatically; until a candidate is resolved the same yacht appears twice in search. Pass decision to read the confirmed or rejected history instead.",
+          "Cross-provider look-alikes proposed by the catalogue sync, highest confidence first. Each row hydrates both sides — provider, operator, model, year, length, cabins, berths, base and every photo — so the pair can be judged without opening two tabs. Nothing merges automatically; until a candidate is resolved the same yacht appears twice in search. Pass decision to read the confirmed or rejected history instead, confidence to take one band of the queue at a time, and matchedOn to take the pairs one matcher rule proposed. The summary carries the counts the queue is judged by: how many pairs sit under each decision, how many distinct yachts the filtered pairs touch, and the facets behind both filters.",
         tags: ["Admin"],
-        successDescription: "A page of duplicate candidates.",
-        spec: withJsonBodyExample({ decision: "pending", page: 1, pageSize: 20 }),
+        successDescription: "A page of duplicate candidates, with the queue's counts and facets.",
+        spec: withJsonBodyExample({
+          decision: "pending",
+          confidence: "all",
+          matchedOn: "model+yearBuilt",
+          page: 1,
+          pageSize: 20,
+        }),
       })
       .input(duplicateQueueInputSchema)
       .output(duplicateQueueSchema)
       .handler(({ context, input }) => listDuplicateCandidates(context.db, input)),
+    detail: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/detail",
+        operationId: "getDuplicateCandidateDetail",
+        summary: "Read both sides of a duplicate pair in full",
+        description:
+          "The specs the queue row leaves out, fetched only when a reviewer opens a pair: beam, draft, heads, showers, engine, tank capacities, rig, category, builder, deposit, amenities and the provider description. Photos ride on the queue row instead, because the card carries them before anything is opened.",
+        tags: ["Admin"],
+        successDescription: "Both sides' photos and full specification.",
+        spec: withJsonBodyExample({ candidateId: "ldup_example" }),
+      })
+      .input(duplicateDetailInputSchema)
+      .output(duplicateDetailSchema)
+      .handler(({ context, input }) => getDuplicateCandidateDetail(context.db, input)),
     confirm: adminProcedure
       .route({
         method: "POST",
