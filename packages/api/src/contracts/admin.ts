@@ -247,6 +247,12 @@ export const duplicateResolutionSchema = z.object({
   hiddenListingId: z.string().nullable(),
   /** How many `listing_source` rows were repointed at the survivor. */
   movedSourceCount: z.number().int(),
+  /**
+   * Other pending pairs the merge left with one listing on both sides, closed with it.
+   * Zero on a rejection, and usually zero on a merge — it is only the boats that sit in
+   * several look-alike pairs at once that produce any.
+   */
+  closedCandidateCount: z.number().int(),
 });
 
 /* ------------------------------------------ duplicate review, full detail */

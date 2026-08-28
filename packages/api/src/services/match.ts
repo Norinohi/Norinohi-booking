@@ -550,7 +550,8 @@ async function loadDescriptions(db: Database, listingIds: string[]): Promise<Map
  * The loser is hidden rather than deleted: bookings, quotes and payments still
  * reference it. Its sources are repointed first so the surviving listing carries
  * both providers' inventory, and both are stamped `confirmed`, which is the state
- * the catalogue writer refuses to overwrite on the next sync.
+ * the catalogue writer refuses to overwrite on the next sync. Any other pending pair
+ * the repoint collapsed onto a single listing closes with it.
  */
 export async function confirmDuplicateCandidate(
   db: Database,
@@ -601,6 +602,31 @@ export async function confirmDuplicateCandidate(
       .set({ decision: "confirmed", reviewer: actorUserId, reviewedAt: now })
       .where(eq(listingDuplicateCandidate.id, candidate.id));
 
+    /*
+     * One listing takes part in as many pairs as it has look-alikes, so repointing the
+     * loser's sources can leave another pending pair with the same listing on both
+     * sides. There is nothing left to decide on that card — the two sources are already
+     * one listing — so it closes here rather than being handed to a reviewer. Its own
+     * `confirmed` is the truth: the pair did end in a merge, this one.
+     */
+    const collapsed = await tx
+      .update(listingDuplicateCandidate)
+      .set({ decision: "confirmed", reviewer: actorUserId, reviewedAt: now })
+      .where(
+        and(
+          eq(listingDuplicateCandidate.decision, "pending"),
+          sql`exists (
+            select 1
+            from listing_source sa
+            join listing_source sb on sb.id = ${listingDuplicateCandidate.sourceBId}
+            where sa.id = ${listingDuplicateCandidate.sourceAId}
+              and sa.listing_id is not null
+              and sa.listing_id = sb.listing_id
+          )`,
+        ),
+      )
+      .returning({ id: listingDuplicateCandidate.id });
+
     if (losingListingId) {
       await tx.update(listing).set({ status: "hidden" }).where(eq(listing.id, losingListingId));
     }
@@ -621,6 +647,7 @@ export async function confirmDuplicateCandidate(
         keptListingId: input.keepListingId,
         hiddenListingId: losingListingId,
         movedSourceIds: moved.map((row) => row.id),
+        collapsedCandidateIds: collapsed.map((row) => row.id),
       },
     });
 
@@ -630,6 +657,7 @@ export async function confirmDuplicateCandidate(
       keptListingId: input.keepListingId,
       hiddenListingId: losingListingId,
       movedSourceCount: moved.length,
+      closedCandidateCount: collapsed.length,
     };
   });
 
@@ -643,8 +671,16 @@ export async function confirmDuplicateCandidate(
 }
 
 /**
- * Records that the pair is not the same yacht. Both sources move to `rejected`,
- * which stops the writer re-proposing them and keeps each listing where it is.
+ * Records that the pair is not the same yacht: the candidate closes, and both
+ * listings stay exactly where they are.
+ *
+ * The verdict stops at the pair. `listing_source.match_status` is a property of the
+ * source, and one listing takes part in as many pairs as it has look-alikes — up to
+ * 26 of them here — so stamping the sources `rejected` labelled a boat rejected in
+ * every other pair nobody had looked at yet. Nothing needed that stamp: the
+ * candidate row is what stops the writer re-proposing the pair, and the auto-matcher
+ * only ever links sources from the same provider, so it could not merge these two
+ * on its own regardless.
  */
 export async function rejectDuplicateCandidate(
   db: Database,
@@ -655,11 +691,6 @@ export async function rejectDuplicateCandidate(
 
   return db.transaction(async (tx) => {
     const candidate = await lockPendingCandidate(tx, candidateId);
-
-    await tx
-      .update(listingSource)
-      .set({ matchStatus: "rejected", matchedBy: `admin:${actorUserId}`, matchedAt: now })
-      .where(inArray(listingSource.id, [candidate.sourceAId, candidate.sourceBId]));
 
     await tx
       .update(listingDuplicateCandidate)
@@ -684,6 +715,7 @@ export async function rejectDuplicateCandidate(
       keptListingId: null,
       hiddenListingId: null,
       movedSourceCount: 0,
+      closedCandidateCount: 0,
     };
   });
 }

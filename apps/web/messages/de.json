@@ -2099,6 +2099,7 @@
       },
       "toast": {
         "confirmed": "Zusammengeführt. {count} Anbieterquellen verweisen jetzt auf das behaltene Inserat.",
+        "confirmedWithClosed": "Zusammengeführt. {count} Anbieterquellen zeigen jetzt auf das behaltene Inserat, und {closed} weitere Paare wurden mit geschlossen.",
         "rejected": "Als zwei verschiedene Yachten erfasst.",
         "conflict": "Jemand anderes hat dieses Paar bereits geprüft. Die Warteschlange wird neu geladen.",
         "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."

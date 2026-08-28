@@ -112,7 +112,14 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
       { candidateId: candidate.id, keepListingId },
       {
         onSuccess: (result) =>
-          toast.success(t("toast.confirmed", { count: result.movedSourceCount })),
+          toast.success(
+            result.closedCandidateCount > 0
+              ? t("toast.confirmedWithClosed", {
+                  count: result.movedSourceCount,
+                  closed: result.closedCandidateCount,
+                })
+              : t("toast.confirmed", { count: result.movedSourceCount }),
+          ),
         onError,
         onSettled: () => setKeeping(null),
       },

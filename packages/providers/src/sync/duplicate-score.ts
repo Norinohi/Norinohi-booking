@@ -149,6 +149,24 @@ export function scoreDuplicatePair(facts: DuplicatePairFacts): DuplicateScore {
 }
 
 /**
+ * Whether a scored pair is worth putting in front of a reviewer.
+ *
+ * The SQL gate pairs every hull of a model with every other of the same year, so a
+ * fleet of eight identical Bavarias proposes 28 pairs — and the queue filled with
+ * sister ships nobody would ever merge. A pair whose boats carry different names and
+ * lie in different marinas is one of those: two facts disagree and only the model and
+ * the year agree, which is what a sister ship is.
+ *
+ * Deliberately not a score threshold. A name match can still score below any cutoff
+ * worth setting when the rest of the record is thin, and that is the one signal never
+ * worth discarding. Silence is not disagreement either: a title that is nothing but
+ * the model leaves the name unreadable, and those pairs stay.
+ */
+export function worthReviewing(signals: DuplicateSignals): boolean {
+  return !(signals.matchedOn === "model+year" && signals.differed.includes("name"));
+}
+
+/**
  * The headline the review queue filters on: what the pair was actually matched by,
  * as against the gate it merely passed.
  */
