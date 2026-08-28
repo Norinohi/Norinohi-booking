@@ -435,6 +435,24 @@ export interface AvailabilitySyncSummary {
   aborted: boolean;
 }
 
+/**
+ * The three passes, in the order they run.
+ *
+ * Nothing a caller can poll distinguishes them: `availability_slot` carries no run
+ * id, and the cursor only moves during confirmation - so an occupancy pass and a
+ * hung one look identical from the database. The catalogue run has the same problem
+ * and solves it the same way, with `CatalogueSyncJobOptions.onPhase`.
+ */
+export type AvailabilitySyncPhase = "occupancy" | "confirmation" | "rebuild-search";
+
+export interface AvailabilitySyncProgress {
+  phase: AvailabilitySyncPhase;
+  /** Scopes finished. Only the occupancy pass walks them, so it stops climbing after it. */
+  scopeIndex: number;
+  /** Zero until `listScopes` answers, which is a vendor call and can be slow. */
+  scopeTotal: number;
+}
+
 export interface RunAvailabilitySyncOptions {
   store: AvailabilitySyncStore;
   source: AvailabilitySource;
@@ -442,6 +460,12 @@ export interface RunAvailabilitySyncOptions {
   hotWindowBudgetMs?: number;
   resume?: JsonValue;
   now?: () => Date;
+  /**
+   * Pushed rather than polled, unlike the catalogue's counters: the scope index
+   * exists only in this loop. A caller that stores it and prints on its own timer
+   * still sees a stall as a frozen number beside a climbing clock.
+   */
+  onProgress?: (progress: AvailabilitySyncProgress) => void;
 }
 
 const thrownStringSchema = z.string();
@@ -512,7 +536,13 @@ export async function runAvailabilitySync(
     });
   };
 
+  let scopeIndex = 0;
+  let scopeTotal = 0;
+  const emitProgress = (phase: AvailabilitySyncPhase) =>
+    options.onProgress?.({ phase, scopeIndex, scopeTotal });
+
   try {
+    emitProgress("occupancy");
     const scopes = await source.listScopes();
     const yearsByScope = new Map<string, number[]>();
     for (const scope of scopes) {
@@ -520,6 +550,9 @@ export async function runAvailabilitySync(
       years.push(scope.year);
       yearsByScope.set(scope.scopeKey, years);
     }
+
+    scopeTotal = yearsByScope.size;
+    emitProgress("occupancy");
 
     for (const [scopeKey, years] of yearsByScope) {
       const cleanYears: number[] = [];
@@ -656,9 +689,13 @@ export async function runAvailabilitySync(
         });
         sweptScopes += 1;
       }
+
+      scopeIndex += 1;
+      emitProgress("occupancy");
     }
 
     if (source.searchConfirmed) {
+      emitProgress("confirmation");
       const deadline = startedAt.getTime() + budgetMs;
       try {
         for await (const page of source.searchConfirmed(options.resume)) {
@@ -733,6 +770,7 @@ export async function runAvailabilitySync(
   }
 
   if (touched.size > 0) {
+    emitProgress("rebuild-search");
     try {
       await store.rebuildSearch([...touched]);
     } catch (error) {
@@ -1202,6 +1240,22 @@ export function openAvailabilitySyncRun(db: Database, providerId: string): Promi
   return openSyncRun(db, providerId, "availability");
 }
 
+/**
+ * `sync_error` rows this run has written. The counterpart to the pushed progress:
+ * that says where the run is, this says what it cost to get there.
+ */
+export async function readAvailabilitySyncErrorTotal(
+  db: Database,
+  syncRunId: string,
+): Promise<number> {
+  const [errors] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(syncError)
+    .where(eq(syncError.syncRunId, syncRunId));
+
+  return errors?.total ?? 0;
+}
+
 export interface AvailabilitySyncJobOptions {
   db: Database;
   provider: InventoryProvider;
@@ -1212,6 +1266,7 @@ export interface AvailabilitySyncJobOptions {
   hotWindowBudgetMs?: number;
   cursorScope?: string;
   now?: () => Date;
+  onProgress?: (progress: AvailabilitySyncProgress) => void;
 }
 
 export async function runAvailabilitySyncJob(
@@ -1260,6 +1315,7 @@ export async function runAvailabilitySyncJob(
   if (options.hotWindowBudgetMs !== undefined) {
     runOptions.hotWindowBudgetMs = options.hotWindowBudgetMs;
   }
+  if (options.onProgress) runOptions.onProgress = options.onProgress;
 
   return runAvailabilitySync(runOptions);
 }

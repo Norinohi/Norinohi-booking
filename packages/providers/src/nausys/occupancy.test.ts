@@ -164,7 +164,7 @@ describe("fetchNausysOccupancy", () => {
 
 describe("mapOccupancyReservation", () => {
   it("maps RESERVATION to occupied and OPTION to option, on ISO dates", () => {
-    const intervals = mapOccupancyDump({
+    const { intervals } = mapOccupancyDump({
       companyId: "102701",
       year: 2026,
       reservations: occupancyReservations(),
@@ -192,7 +192,7 @@ describe("mapOccupancyReservation", () => {
     const first = mapOccupancyReservation(reservation);
     const second = mapOccupancyReservation(structuredClone(reservation));
 
-    expect(first.sourceHash).toBe(second.sourceHash);
+    expect(first?.sourceHash).toBe(second?.sourceHash);
   });
 
   it("throws on a malformed period rather than dropping it", () => {
@@ -205,9 +205,45 @@ describe("mapOccupancyReservation", () => {
 
   it("throws when a period ends before it starts", () => {
     const reservation = firstReservation();
-    reservation.periodTo = reservation.periodFrom;
+    reservation.periodTo = "26.06.2026";
 
     expect(() => mapOccupancyReservation(reservation)).toThrow(ContractError);
+  });
+
+  it("drops a same-day reservation instead of refusing it", () => {
+    const reservation = firstReservation();
+    reservation.periodTo = reservation.periodFrom;
+
+    // NauSYS publishes these routinely and they block no night, so the row is worth
+    // nothing and its yacht is worth keeping.
+    expect(mapOccupancyReservation(reservation)).toBeNull();
+  });
+
+  it("keeps the rest of the fleet when one yacht's period runs backwards", () => {
+    const reservations = occupancyReservations();
+    const [bad] = reservations;
+    if (!bad) throw new Error("fixture lost its first reservation");
+    bad.periodTo = "26.06.2026";
+
+    const dump = mapOccupancyDump({ companyId: "102701", year: 2026, reservations });
+
+    expect(dump.quarantinedYachtIds).toEqual([String(bad.yachtId)]);
+    expect(dump.issues).toHaveLength(1);
+    // The other yacht's calendar is untouched; only 4711001 loses its rows.
+    expect(dump.intervals.every((interval) => interval.externalYachtId !== "4711001")).toBe(true);
+    expect(dump.intervals.map((interval) => interval.externalYachtId)).toContain("4711002");
+  });
+
+  it("drops same-day rows without quarantining anything", () => {
+    const reservations = occupancyReservations();
+    const [first] = reservations;
+    if (!first) throw new Error("fixture lost its first reservation");
+    first.periodTo = first.periodFrom;
+
+    const dump = mapOccupancyDump({ companyId: "102701", year: 2026, reservations });
+
+    expect(dump.quarantinedYachtIds).toBeUndefined();
+    expect(dump.intervals).toHaveLength(reservations.length - 1);
   });
 });
 

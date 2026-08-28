@@ -12,6 +12,7 @@ import type {
   AvailabilitySource,
   ConfirmedOffer,
   ConfirmedOfferPage,
+  OccupancyDump,
   OccupiedInterval,
 } from "../sync/availability-writer";
 import type { SeasonalPrice } from "../sync/price-writer";
@@ -80,10 +81,14 @@ export async function fetchNausysOccupancy(
 }
 
 /**
- * Total or throwing, never lossy. A dropped reservation is a week we would then
- * advertise as free, so a malformed record fails the whole scope: the writer treats
- * a throw as "this company-year was not fetched" and neither synthesizes nor sweeps
- * inside it.
+ * Lossy for one yacht, never for the scope - the same bargain
+ * `mapBookingManagerOccupancyDump` struck, and for the same reason.
+ *
+ * A dropped reservation is a week we would then advertise as free, so a row that
+ * cannot be read still costs its yacht the whole calendar rather than being
+ * silently skipped. What it must not cost is every other company: a throw out of
+ * here is a `ContractError`, which `isFatalByDefault` treats as terminal, so before
+ * this one unreadable row aborted the entire account's availability sync.
  */
 const OCCUPANCY_STATUS = {
   RESERVATION: "occupied",
@@ -94,16 +99,36 @@ const OCCUPANCY_STATUS = {
   OccupiedInterval["status"]
 >;
 
-export function mapOccupancyReservation(reservation: RestOccupancyReservation): OccupiedInterval {
+/** How many of a dump's messages are worth carrying; the rest repeat. */
+const MAX_REPORTED_ISSUES = 5;
+
+/**
+ * Null for a reservation that asserts nothing, which is not the same as one that
+ * cannot be read.
+ *
+ * NauSYS publishes same-day RESERVATION rows as a matter of course - 33 of one
+ * company's 5122, spread across 16 of its 282 yachts, on the run that first surfaced
+ * this. They block no night: an interval whose end equals its start consumes nothing
+ * in `freePeriodsFrom` and would persist as a zero-length `availability_slot`, so
+ * dropping it is exactly equivalent to keeping it, minus the row.
+ *
+ * A period that runs backwards is the different case this used to be lumped in with.
+ * There is no safe reading of it, so it still throws and its yacht is quarantined.
+ */
+export function mapOccupancyReservation(
+  reservation: RestOccupancyReservation,
+): OccupiedInterval | null {
   const startDate = parseNausysDate(reservation.periodFrom);
   const endDate = parseNausysDate(reservation.periodTo);
 
-  if (endDate <= startDate) {
+  if (endDate < startDate) {
     throw new ContractError(
-      `NauSYS reservation ${reservation.id} ends ${endDate} on or before it starts ${startDate}`,
+      `NauSYS reservation ${reservation.id} ends ${endDate} before it starts ${startDate}`,
       { endpoint: "occupancy", payload: { id: reservation.id, yachtId: reservation.yachtId } },
     );
   }
+
+  if (endDate === startDate) return null;
 
   return {
     externalYachtId: String(reservation.yachtId),
@@ -117,8 +142,37 @@ export function mapOccupancyReservation(reservation: RestOccupancyReservation): 
   };
 }
 
-export function mapOccupancyDump(dump: NausysOccupancyDump): OccupiedInterval[] {
-  return dump.reservations.map(mapOccupancyReservation);
+export function mapOccupancyDump(dump: NausysOccupancyDump): OccupancyDump {
+  const intervals: OccupiedInterval[] = [];
+  const quarantinedYachtIds = new Set<string>();
+  const issues: string[] = [];
+
+  for (const reservation of dump.reservations) {
+    try {
+      const interval = mapOccupancyReservation(reservation);
+      if (interval) intervals.push(interval);
+    } catch (error) {
+      quarantinedYachtIds.add(String(reservation.yachtId));
+      if (issues.length < MAX_REPORTED_ISSUES) {
+        issues.push(error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+
+  // A quarantined yacht's readable rows go too: half a calendar is not a calendar,
+  // and the sweep it is excluded from is the only thing that would have tidied up
+  // the slots it did restamp.
+  const kept =
+    quarantinedYachtIds.size === 0
+      ? intervals
+      : intervals.filter((interval) => !quarantinedYachtIds.has(interval.externalYachtId));
+
+  const mapped: OccupancyDump = { intervals: kept };
+  if (quarantinedYachtIds.size > 0) {
+    mapped.quarantinedYachtIds = [...quarantinedYachtIds];
+    mapped.issues = issues;
+  }
+  return mapped;
 }
 
 /* ------------------------------------------------------- freeYachtsSearch */
