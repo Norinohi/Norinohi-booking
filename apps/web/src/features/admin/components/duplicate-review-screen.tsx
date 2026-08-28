@@ -4,6 +4,7 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Tabs, TabsList, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
+import { ListFilter } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
@@ -74,6 +75,20 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
     return known ? t(`matchType.${known}`) : value;
   };
 
+  /* The trigger names the field it filters: the bands read like a sort order otherwise,
+     and the queue is always ordered by confidence regardless of what is selected. */
+  const confidenceTrigger = (selected: string) => {
+    const band = BANDS.find((option) => option === selected);
+    return t("filters.confidenceValue", {
+      value: band ? t(`confidenceBand.${band}`) : t("filters.any"),
+    });
+  };
+
+  const matchTypeTrigger = (selected: string) =>
+    t("filters.matchTypeValue", {
+      value: selected === ANY ? t("filters.any") : matchTypeLabel(selected),
+    });
+
   /* Both filters are facets of the decision they were counted over, so a tab switch clears
      them rather than leaving a selection the new tab has no rows for. */
   const changeDecision = (next: string) => {
@@ -123,6 +138,8 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
                   <div className="min-w-0 sm:w-56">
                     <Select
                       className="h-12 min-w-0"
+                      icon={<ListFilter className="size-4 shrink-0 text-natural-500" />}
+                      renderValue={confidenceTrigger}
                       ariaLabel={t("filters.confidence")}
                       value={confidence}
                       onValueChange={(next) => {
@@ -141,6 +158,8 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
                   <div className="min-w-0 sm:w-56">
                     <Select
                       className="h-12 min-w-0"
+                      icon={<ListFilter className="size-4 shrink-0 text-natural-500" />}
+                      renderValue={matchTypeTrigger}
                       ariaLabel={t("filters.matchType")}
                       value={matchedOn}
                       onValueChange={(next) => {
@@ -165,6 +184,7 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
                     pairs: data.pagination.totalItems,
                     yachts: summary.listingCount,
                   })}
+                  {` · ${t("sortNote")}`}
                 </p>
               ) : null}
 

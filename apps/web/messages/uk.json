@@ -2063,12 +2063,16 @@
         "updated": "Останнє оновлення"
       },
       "summary": "{pairs, plural, =0 {Немає пар} one {# пара} few {# пари} many {# пар} other {# пари}} · {yachts, plural, =0 {немає яхт} one {# яхта} few {# яхти} many {# яхт} other {# яхти}}",
+      "sortNote": "спочатку найвищий збіг",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Рівень збігу",
         "anyConfidence": "Будь-який рівень",
         "matchType": "Зіставлено за",
-        "anyMatchType": "Будь-яке правило"
+        "anyMatchType": "Будь-яке правило",
+        "any": "Будь-який",
+        "confidenceValue": "Збіг: {value}",
+        "matchTypeValue": "Правило: {value}"
       },
       "confidenceBand": {
         "high": "Високий (90%+)",

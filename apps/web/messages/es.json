@@ -2063,12 +2063,16 @@
         "updated": "Última actualización"
       },
       "summary": "{pairs, plural, =0 {Sin parejas} one {# pareja} other {# parejas}} · {yachts, plural, =0 {ningún yate} one {# yate} other {# yates}}",
+      "sortNote": "mayor confianza primero",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Confianza de coincidencia",
         "anyConfidence": "Cualquier confianza",
         "matchType": "Coincide por",
-        "anyMatchType": "Cualquier regla"
+        "anyMatchType": "Cualquier regla",
+        "any": "Cualquiera",
+        "confidenceValue": "Confianza: {value}",
+        "matchTypeValue": "Regla: {value}"
       },
       "confidenceBand": {
         "high": "Alta (90 % o más)",

@@ -2063,12 +2063,16 @@
         "updated": "Zuletzt aktualisiert"
       },
       "summary": "{pairs, plural, =0 {Keine Paare} one {# Paar} other {# Paare}} · {yachts, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}}",
+      "sortNote": "höchste Übereinstimmung zuerst",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Übereinstimmung",
         "anyConfidence": "Beliebige Übereinstimmung",
         "matchType": "Abgeglichen nach",
-        "anyMatchType": "Beliebige Regel"
+        "anyMatchType": "Beliebige Regel",
+        "any": "Alle",
+        "confidenceValue": "Übereinstimmung: {value}",
+        "matchTypeValue": "Regel: {value}"
       },
       "confidenceBand": {
         "high": "Hoch (ab 90 %)",

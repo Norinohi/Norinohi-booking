@@ -2063,12 +2063,16 @@
         "updated": "Last updated"
       },
       "summary": "{pairs, plural, =0 {No pairs} one {# pair} other {# pairs}} · {yachts, plural, =0 {no yachts} one {# yacht} other {# yachts}}",
+      "sortNote": "highest confidence first",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Match confidence",
         "anyConfidence": "Any confidence",
         "matchType": "Matched on",
-        "anyMatchType": "Any rule"
+        "anyMatchType": "Any rule",
+        "any": "Any",
+        "confidenceValue": "Confidence: {value}",
+        "matchTypeValue": "Rule: {value}"
       },
       "confidenceBand": {
         "high": "High (90%+)",
