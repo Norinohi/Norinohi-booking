@@ -8,6 +8,7 @@ import type {
   FaqScope,
   RouteKind,
   BookingStatus,
+  DuplicateConfidenceFilter,
   DuplicateDecision,
   EnquiryStatus,
   InvoiceStatus,
@@ -39,16 +40,33 @@ export const FAQ_PAGE_SIZE = 20;
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
 
-/* page/decision stay explicit so each filter combination keeps its own cache key. */
+/* Every filter stays explicit so each combination keeps its own cache key, and so the
+   server prefetch and the client's first render agree on it down to the last field. */
 export const duplicateQueueQueryOptions = (input: {
   decision: DuplicateDecision;
+  confidence?: DuplicateConfidenceFilter;
+  matchedOn?: string;
   page: number;
   pageSize?: number;
 }) =>
   orpc.admin.match.queue.queryOptions({
-    input: { ...input, pageSize: input.pageSize ?? DUPLICATES_PAGE_SIZE },
+    input: {
+      decision: input.decision,
+      confidence: input.confidence ?? "all",
+      matchedOn: input.matchedOn,
+      page: input.page,
+      pageSize: input.pageSize ?? DUPLICATES_PAGE_SIZE,
+    },
     staleTime: 30_000,
   });
+
+/*
+ * The pair's photos and full specs, fetched only once a reviewer opens one — 20 pairs'
+ * worth of galleries is not something the queue should pay for. Cached longer than the
+ * queue because a synced listing's specs do not move while the tab is open.
+ */
+export const duplicateDetailQueryOptions = (candidateId: string) =>
+  orpc.admin.match.detail.queryOptions({ input: { candidateId }, staleTime: 300_000 });
 
 /*
  * The staff inbox reads two unrelated queues side by side: questions about existing bookings

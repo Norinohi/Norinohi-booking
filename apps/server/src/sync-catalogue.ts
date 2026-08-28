@@ -10,8 +10,8 @@
  *
  *   pnpm --filter server sync:catalogue -- --provider booking_manager
  *
- * Unscoped, this imports from both vendors, so a Booking Manager run you expected to
- * take a minute drags a NauSYS walk along behind it.
+ * Unscoped, this imports from both vendors at once, so a Booking Manager run you
+ * expected to take a minute stays alive until the NauSYS walk beside it is done.
  *
  * Unlike the admin procedure, this creates the provider row on first run rather
  * than requiring it to already exist — meant to also work against a database
@@ -53,10 +53,11 @@ const PROGRESS_INTERVAL_MS = 30_000;
  * `--provider <code>` narrows it to one, for the by-hand runs where importing the
  * other vendor as well is a multi-hour accident.
  *
- * Sequential on purpose. The providers do not contend for anything (each has its
- * own credential, lane and sync_run lock), but a multi-hour NauSYS walk running
- * beside a Booking Manager one would interleave their progress lines into
- * something no operator can read.
+ * Run side by side. The providers do not contend for anything - each has its own
+ * credential, sweep lanes and sync_run lock - so a nightly tick costs the slowest
+ * vendor rather than the sum of both. Every line a run prints carries its
+ * `[provider.key]` prefix, which is what keeps two interleaved progress streams
+ * readable; anything logged from in here needs that prefix too.
  */
 let providers: Map<ProviderKey, InventoryProvider>;
 try {
@@ -81,7 +82,7 @@ if (providers.size === 0) {
 let failed = 0;
 let skipped = 0;
 
-for (const provider of providers.values()) {
+const syncProvider = async (provider: InventoryProvider) => {
   const providerId = await ensureProviderId(db, provider.key);
   const resume = await readSyncCursor(db, { providerId, kind: "catalogue", scope: "full" });
 
@@ -98,7 +99,7 @@ for (const provider of providers.values()) {
      */
     skipped += 1;
     console.warn(`Skipped "${provider.key}": ${error instanceof Error ? error.message : error}`);
-    continue;
+    return;
   }
 
   console.log(`Started catalogue sync ${syncRunId} for provider "${provider.key}"`);
@@ -149,7 +150,9 @@ for (const provider of providers.values()) {
         console.log(`[${provider.key}] phase: ${next}`);
       },
     });
-    console.log(JSON.stringify(result, null, 2));
+    for (const line of JSON.stringify(result, null, 2).split("\n")) {
+      console.log(`[${provider.key}] ${line}`);
+    }
     console.log(`Catalogue sync ${syncRunId} finished for "${provider.key}"`);
     if (result.status === "failed") failed += 1;
   } catch (error) {
@@ -159,7 +162,9 @@ for (const provider of providers.values()) {
   } finally {
     clearInterval(progressTimer);
   }
-}
+};
+
+await Promise.all([...providers.values()].map(syncProvider));
 
 // Once, after every provider: the cache is shared, so dropping it per provider
 // would only refill it from a catalogue still mid-import.

@@ -7,9 +7,11 @@ import {
   freePeriodsFrom,
   isFatalAuthOnly,
   runAvailabilitySync,
+  storableMinor,
   type AvailabilityScope,
   type AvailabilitySlotWrite,
   type AvailabilitySource,
+  type AvailabilitySyncProgress,
   type AvailabilitySyncStore,
   type ConfirmedOfferPage,
   type FreePeriod,
@@ -298,6 +300,26 @@ describe("freePeriodsFrom", () => {
   });
 });
 
+describe("storableMinor", () => {
+  it("accepts a null, which is a slot with no rate rather than a bad one", () => {
+    expect(storableMinor(null)).toBe(true);
+  });
+
+  it("accepts int32's ceiling and refuses the value that broke the sweep", () => {
+    expect(storableMinor(2_147_483_647)).toBe(true);
+    expect(storableMinor(2_147_483_648)).toBe(false);
+    // The Booking Manager rate that failed a whole chunk on 2026-08-28.
+    expect(storableMinor(8_883_888_500)).toBe(false);
+  });
+
+  it("refuses a negative beyond the floor, and anything not a whole number", () => {
+    expect(storableMinor(-2_147_483_648)).toBe(false);
+    expect(storableMinor(1.5)).toBe(false);
+    expect(storableMinor(Number.NaN)).toBe(false);
+    expect(storableMinor(Number.POSITIVE_INFINITY)).toBe(false);
+  });
+});
+
 describe("runAvailabilitySync", () => {
   it("writes occupancy as occupied and option slots", async () => {
     const store = fakeStore({ yachts: { "4711001": MARLIN } });
@@ -479,6 +501,55 @@ describe("runAvailabilitySync", () => {
     expect(summary.budgetExhausted).toBe(true);
     // Resumes where it stopped rather than restarting the walk.
     expect(store.cursors.at(-1)).toEqual({ windowIndex: 0, page: 4 });
+  });
+
+  it("reports each phase, and counts a scope once it is swept", async () => {
+    const store = fakeStore({ yachts: { "4711001": MARLIN }, listings: { "102701": [MARLIN] } });
+    const seen: AvailabilitySyncProgress[] = [];
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        scopes: [
+          { scopeKey: "102701", year: 2026 },
+          { scopeKey: "102702", year: 2026 },
+        ],
+        fetchOccupancy: () => Promise.resolve([occupied()]),
+        searchConfirmed: async function* () {
+          yield { offers: [], cursor: null };
+        },
+      }),
+      onProgress: (progress) => seen.push({ ...progress }),
+      now: () => RUN_AT,
+    });
+
+    // The first is emitted before listScopes answers, so the total is not known yet.
+    expect(seen[0]).toEqual({ phase: "occupancy", scopeIndex: 0, scopeTotal: 0 });
+    expect(seen).toContainEqual({ phase: "occupancy", scopeIndex: 2, scopeTotal: 2 });
+
+    // The index stops climbing once the scopes are walked, so a later phase must not
+    // be mistaken for occupancy still making progress.
+    expect(seen.at(-1)).toEqual({ phase: "rebuild-search", scopeIndex: 2, scopeTotal: 2 });
+    expect(seen.map((progress) => progress.phase)).toContain("confirmation");
+  });
+
+  it("still reports the phase it reached when the occupancy pass aborts", async () => {
+    const store = fakeStore();
+    const seen: AvailabilitySyncProgress[] = [];
+
+    const summary = await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        fetchOccupancy: () => Promise.reject(new AuthError("credential rejected")),
+      }),
+      onProgress: (progress) => seen.push({ ...progress }),
+      now: () => RUN_AT,
+    });
+
+    expect(summary.aborted).toBe(true);
+    // Nothing was swept, so nothing may claim to have been: a stalled run that
+    // reported a scope done would send an operator looking in the wrong place.
+    expect(seen.every((progress) => progress.scopeIndex === 0)).toBe(true);
   });
 
   it("clears the cursor once the hot pass runs out of pages", async () => {

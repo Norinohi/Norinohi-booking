@@ -5,16 +5,26 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
 
-import { duplicateQueueQueryOptions } from "../api/queries";
-import type { DuplicateDecision } from "../types";
+import { duplicateDetailQueryOptions, duplicateQueueQueryOptions } from "../api/queries";
+import type { DuplicateConfidenceFilter, DuplicateDecision } from "../types";
 
 /*
  * Hooks over the admin duplicate-review procedures. Both verdicts invalidate the whole
  * `admin.match` segment, so every decision tab reflects a resolution at once.
  */
 
-export function useDuplicateQueue(input: { decision: DuplicateDecision; page: number }) {
+export function useDuplicateQueue(input: {
+  decision: DuplicateDecision;
+  confidence: DuplicateConfidenceFilter;
+  matchedOn?: string;
+  page: number;
+}) {
   return useQuery(duplicateQueueQueryOptions(input));
+}
+
+/** Callers mount this only once a pair is opened, which is what keeps the queue cheap. */
+export function useDuplicateDetail(candidateId: string) {
+  return useQuery(duplicateDetailQueryOptions(candidateId));
 }
 
 /**

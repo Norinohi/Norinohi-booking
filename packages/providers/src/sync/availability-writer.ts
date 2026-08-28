@@ -5,6 +5,7 @@ import {
 } from "@yacht-charter/db/schema/availability";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
+import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { and, eq, gte, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -435,6 +436,24 @@ export interface AvailabilitySyncSummary {
   aborted: boolean;
 }
 
+/**
+ * The three passes, in the order they run.
+ *
+ * Nothing a caller can poll distinguishes them: `availability_slot` carries no run
+ * id, and the cursor only moves during confirmation - so an occupancy pass and a
+ * hung one look identical from the database. The catalogue run has the same problem
+ * and solves it the same way, with `CatalogueSyncJobOptions.onPhase`.
+ */
+export type AvailabilitySyncPhase = "occupancy" | "confirmation" | "rebuild-search";
+
+export interface AvailabilitySyncProgress {
+  phase: AvailabilitySyncPhase;
+  /** Scopes finished. Only the occupancy pass walks them, so it stops climbing after it. */
+  scopeIndex: number;
+  /** Zero until `listScopes` answers, which is a vendor call and can be slow. */
+  scopeTotal: number;
+}
+
 export interface RunAvailabilitySyncOptions {
   store: AvailabilitySyncStore;
   source: AvailabilitySource;
@@ -442,6 +461,12 @@ export interface RunAvailabilitySyncOptions {
   hotWindowBudgetMs?: number;
   resume?: JsonValue;
   now?: () => Date;
+  /**
+   * Pushed rather than polled, unlike the catalogue's counters: the scope index
+   * exists only in this loop. A caller that stores it and prints on its own timer
+   * still sees a stall as a frozen number beside a climbing clock.
+   */
+  onProgress?: (progress: AvailabilitySyncProgress) => void;
 }
 
 const thrownStringSchema = z.string();
@@ -512,7 +537,13 @@ export async function runAvailabilitySync(
     });
   };
 
+  let scopeIndex = 0;
+  let scopeTotal = 0;
+  const emitProgress = (phase: AvailabilitySyncPhase) =>
+    options.onProgress?.({ phase, scopeIndex, scopeTotal });
+
   try {
+    emitProgress("occupancy");
     const scopes = await source.listScopes();
     const yearsByScope = new Map<string, number[]>();
     for (const scope of scopes) {
@@ -520,6 +551,9 @@ export async function runAvailabilitySync(
       years.push(scope.year);
       yearsByScope.set(scope.scopeKey, years);
     }
+
+    scopeTotal = yearsByScope.size;
+    emitProgress("occupancy");
 
     for (const [scopeKey, years] of yearsByScope) {
       const cleanYears: number[] = [];
@@ -656,9 +690,13 @@ export async function runAvailabilitySync(
         });
         sweptScopes += 1;
       }
+
+      scopeIndex += 1;
+      emitProgress("occupancy");
     }
 
     if (source.searchConfirmed) {
+      emitProgress("confirmation");
       const deadline = startedAt.getTime() + budgetMs;
       try {
         for await (const page of source.searchConfirmed(options.resume)) {
@@ -733,6 +771,7 @@ export async function runAvailabilitySync(
   }
 
   if (touched.size > 0) {
+    emitProgress("rebuild-search");
     try {
       await store.rebuildSearch([...touched]);
     } catch (error) {
@@ -812,10 +851,26 @@ export function dedupeSlotsByPeriod<
   return [...byPeriod.values()];
 }
 
+/**
+ * True for an amount `availability_slot`'s `integer` columns can actually hold.
+ *
+ * The same bargain `dedupePricePeriodRows` and `priceableExtras` already strike, and
+ * for the same reason: a Booking Manager rate of 8883888500 is four times int32's
+ * ceiling, and both slot paths hand the vendor's number straight to Postgres. The
+ * batched one loses its whole chunk to a single such rate; the confirmation one
+ * throws out of the offer loop and ends the pass. See `MAX_MONEY_MINOR`.
+ */
+export function storableMinor(value: number | null): boolean {
+  return value === null || (Number.isSafeInteger(value) && Math.abs(value) <= MAX_MONEY_MINOR);
+}
+
 export function createDrizzleAvailabilitySyncStore(
   options: DrizzleAvailabilityStoreOptions,
 ): AvailabilitySyncStore {
   const { db, providerId, syncRunId } = options;
+  /* Counted rather than logged per row: an account-wide sweep would otherwise print
+     a line per offer, and the total is the number worth acting on. */
+  let unstorablePrices = 0;
   const cursorKey = {
     providerId,
     kind: "availability" as const,
@@ -957,6 +1012,8 @@ export function createDrizzleAvailabilitySyncStore(
       // Chunked for the same reason the other bulk writes are, and more urgently: a
       // slot binds thirteen parameters, so an account-wide dump in one statement
       // would blow the 65535 ceiling long before it ran out of rows.
+      unstorablePrices += deduped.filter((slot) => !storableMinor(slot.priceMinor)).length;
+
       for (const chunk of chunked(deduped, ROW_CHUNK)) {
         await db
           .insert(availabilitySlot)
@@ -968,7 +1025,9 @@ export function createDrizzleAvailabilitySyncStore(
               endDate: slot.endDate,
               status: slot.status,
               availabilityConfirmed: slot.availabilityConfirmed,
-              priceMinor: slot.priceMinor,
+              // The row asserts availability; the rate is a bonus it can go without.
+              // Dropping the slot instead would leave the week looking unsynced.
+              priceMinor: storableMinor(slot.priceMinor) ? slot.priceMinor : null,
               currency: slot.currency,
               minNights: slot.minNights,
               checkinWeekday: slot.checkinWeekday,
@@ -1017,6 +1076,16 @@ export function createDrizzleAvailabilitySyncStore(
         .limit(1);
 
       if (existing && existing.status !== "available") return false;
+
+      /*
+       * Confirming without the rate would publish a bookable week we cannot quote,
+       * and nulling only the extras would understate the total. The synthesized slot
+       * keeps its catalogue price and its unconfirmed flag, which is the honest state.
+       */
+      if (!storableMinor(input.priceMinor) || !storableMinor(input.obligatoryExtrasMinor)) {
+        unstorablePrices += 1;
+        return false;
+      }
 
       const values = {
         availabilityConfirmed: true,
@@ -1172,6 +1241,12 @@ export function createDrizzleAvailabilitySyncStore(
     },
 
     async closeRun(input) {
+      if (unstorablePrices > 0) {
+        console.warn(
+          `[availability] ${unstorablePrices} vendor amount(s) exceeded price_minor and were not stored`,
+        );
+      }
+
       await db
         .update(syncRun)
         .set({
@@ -1202,6 +1277,22 @@ export function openAvailabilitySyncRun(db: Database, providerId: string): Promi
   return openSyncRun(db, providerId, "availability");
 }
 
+/**
+ * `sync_error` rows this run has written. The counterpart to the pushed progress:
+ * that says where the run is, this says what it cost to get there.
+ */
+export async function readAvailabilitySyncErrorTotal(
+  db: Database,
+  syncRunId: string,
+): Promise<number> {
+  const [errors] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(syncError)
+    .where(eq(syncError.syncRunId, syncRunId));
+
+  return errors?.total ?? 0;
+}
+
 export interface AvailabilitySyncJobOptions {
   db: Database;
   provider: InventoryProvider;
@@ -1212,6 +1303,7 @@ export interface AvailabilitySyncJobOptions {
   hotWindowBudgetMs?: number;
   cursorScope?: string;
   now?: () => Date;
+  onProgress?: (progress: AvailabilitySyncProgress) => void;
 }
 
 export async function runAvailabilitySyncJob(
@@ -1260,6 +1352,7 @@ export async function runAvailabilitySyncJob(
   if (options.hotWindowBudgetMs !== undefined) {
     runOptions.hotWindowBudgetMs = options.hotWindowBudgetMs;
   }
+  if (options.onProgress) runOptions.onProgress = options.onProgress;
 
   return runAvailabilitySync(runOptions);
 }
