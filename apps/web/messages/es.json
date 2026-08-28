@@ -2099,6 +2099,7 @@
       },
       "toast": {
         "confirmed": "Fusionado. {count} fuentes ahora apuntan al anuncio conservado.",
+        "confirmedWithClosed": "Fusionado. {count} fuentes de proveedor apuntan ahora al anuncio conservado y se cerraron {closed} parejas más con él.",
         "rejected": "Registrado como dos yates diferentes.",
         "conflict": "Otra persona ya revisó este par. Recargando la cola.",
         "error": "Algo salió mal. Inténtalo de nuevo."

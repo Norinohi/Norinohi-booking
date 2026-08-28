@@ -32,7 +32,7 @@ import type { Database } from "../registry";
 import { canonicalCategoryName } from "../shared/category-groups";
 import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
-import { scoreDuplicatePair } from "./duplicate-score";
+import { scoreDuplicatePair, worthReviewing } from "./duplicate-score";
 import type { DuplicatePairFacts, DuplicateSignals } from "./duplicate-score";
 import type {
   CanonicalCatalogue,
@@ -1455,10 +1455,11 @@ function priceableExtras(listingId: string, item: CanonicalListing) {
  * build year, different provider. A human decides in `listing_duplicate_candidate`.
  *
  * That gate is weak on its own — two sister ships in two countries pass it — so
- * `scoreDuplicatePair` weighs what else the two sides agree on and the queue is
- * ordered and filtered by the result. Pairs this run touches that are still
- * pending are re-scored, so a change to the weights reaches the backlog on the
- * next full sync rather than only the pairs proposed after it.
+ * `scoreDuplicatePair` weighs what else the two sides agree on, and `worthReviewing`
+ * throws out the pairs that agree on nothing but the model and the year. Pairs this
+ * run touches that are still pending are re-scored, and pending pairs the rule no
+ * longer proposes are deleted, so a change to either reaches the backlog on the next
+ * full sync rather than only the pairs proposed after it.
  */
 async function recordDuplicateCandidates(
   db: Database,
@@ -1471,7 +1472,8 @@ async function recordDuplicateCandidates(
   if (pairs.length === 0) return 0;
 
   const scored = pairs.map((row) => ({ row, ...scoreDuplicatePair(pairFacts(row)) }));
-  const fresh = scored.filter(({ row }) => row.candidateId === null);
+  const [reviewable, sisterShips] = partition(scored, (pair) => worthReviewing(pair.signals));
+  const fresh = reviewable.filter(({ row }) => row.candidateId === null);
 
   await insertRows(
     fresh.map(({ row, confidence, signals }) => ({
@@ -1490,10 +1492,58 @@ async function recordDuplicateCandidates(
 
   await rescorePendingCandidates(
     db,
-    scored.filter(({ row }) => row.candidateId !== null && row.decision === "pending"),
+    reviewable.filter(({ row }) => row.candidateId !== null && row.decision === "pending"),
+  );
+
+  await dropUnreviewableCandidates(
+    db,
+    sisterShips.filter(({ row }) => row.candidateId !== null && row.decision === "pending"),
   );
 
   return fresh.length;
+}
+
+function partition<T>(rows: T[], keep: (row: T) => boolean): [T[], T[]] {
+  const kept: T[] = [];
+  const dropped: T[] = [];
+  for (const row of rows) (keep(row) ? kept : dropped).push(row);
+  return [kept, dropped];
+}
+
+/**
+ * Removes pending pairs the current rule would not propose, so a change to the rule
+ * reaches the backlog instead of only the pairs proposed after it. Only `pending`
+ * rows: a reviewed pair is a person's decision and stays on the record whatever the
+ * matcher would say about it today.
+ */
+async function dropUnreviewableCandidates(
+  db: Database,
+  scored: { row: DuplicatePairRow }[],
+): Promise<void> {
+  if (scored.length === 0) return;
+
+  let dropped = 0;
+  for (const chunk of chunked(scored, ID_CHUNK)) {
+    const removed = await db
+      .delete(listingDuplicateCandidate)
+      .where(
+        and(
+          inArray(
+            listingDuplicateCandidate.id,
+            chunk.map(({ row }) => row.candidateId).filter((id): id is string => id !== null),
+          ),
+          eq(listingDuplicateCandidate.decision, "pending"),
+        ),
+      )
+      .returning({ id: listingDuplicateCandidate.id });
+    dropped += removed.length;
+  }
+
+  if (dropped > 0) {
+    console.info(
+      `[catalogue] dropped ${dropped} sister-ship duplicate candidate(s) from the queue`,
+    );
+  }
 }
 
 type DuplicatePairRow = {

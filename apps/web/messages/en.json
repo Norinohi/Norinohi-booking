@@ -2099,6 +2099,7 @@
       },
       "toast": {
         "confirmed": "Merged. {count} provider sources now point at the kept listing.",
+        "confirmedWithClosed": "Merged. {count} provider sources now point at the kept listing, and {closed} further pairs closed with it.",
         "rejected": "Recorded as two different yachts.",
         "conflict": "Someone else already reviewed this pair. Reloading the queue.",
         "error": "Something went wrong. Please try again."

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { scoreDuplicatePair, yachtNameKey } from "./duplicate-score";
+import { scoreDuplicatePair, worthReviewing, yachtNameKey } from "./duplicate-score";
 import type { DuplicateSideFacts } from "./duplicate-score";
 
 const side = (overrides: Partial<DuplicateSideFacts> = {}): DuplicateSideFacts => ({
@@ -127,5 +127,63 @@ describe("scoreDuplicatePair", () => {
     });
 
     expect(score.signals.agreed).toContain("length");
+  });
+});
+
+describe("worthReviewing", () => {
+  const pair = (b: Partial<DuplicateSideFacts>) =>
+    scoreDuplicatePair({ modelName: "Sun Odyssey 449", a: side(), b: side(b) }).signals;
+
+  it("drops two differently named boats in different marinas", () => {
+    const signals = pair({
+      title: "Calia Sun Odyssey 449",
+      homeBaseId: "bse_blue_lagoon",
+      lat: 13.1339,
+      lng: -61.2213,
+    });
+
+    expect(signals.matchedOn).toBe("model+year");
+    expect(worthReviewing(signals)).toBe(false);
+  });
+
+  it("keeps a name match however thin the rest of the record is", () => {
+    const signals = scoreDuplicatePair({
+      modelName: "Sun Odyssey 449",
+      a: side({ lengthM: null, cabins: null, berths: null, heads: null, builderId: null }),
+      b: side({
+        lengthM: null,
+        cabins: null,
+        berths: null,
+        heads: null,
+        builderId: null,
+        homeBaseId: "bse_blue_lagoon",
+        lat: 13.1339,
+        lng: -61.2213,
+        operatorName: "Horizon Yacht Charters",
+      }),
+    }).signals;
+
+    expect(signals.matchedOn).toBe("name+model+year");
+    expect(signals.score).toBeLessThan(0.7);
+    expect(worthReviewing(signals)).toBe(true);
+  });
+
+  it("keeps two differently named boats at the same berth", () => {
+    const signals = pair({ title: "Poseidon Sun Odyssey 449" });
+
+    expect(signals.matchedOn).toBe("base+model+year");
+    expect(worthReviewing(signals)).toBe(true);
+  });
+
+  it("keeps a pair whose titles carry no name to compare", () => {
+    const signals = scoreDuplicatePair({
+      modelName: "Sun Odyssey 449",
+      a: side({ title: "Sun Odyssey 449" }),
+      b: side({ title: "Sun Odyssey 449", homeBaseId: "bse_alimos", lat: 37.9111, lng: 23.7 }),
+    }).signals;
+
+    expect(signals.matchedOn).toBe("model+year");
+    expect(signals.differed).not.toContain("name");
+    expect(worthReviewing(signals)).toBe(true);
   });
 });

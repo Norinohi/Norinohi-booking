@@ -343,7 +343,7 @@ export const adminRouter = {
         operationId: "confirmDuplicateCandidate",
         summary: "Merge a duplicate pair onto one listing",
         description:
-          "Merges the pair onto keepListingId: every listing_source of the other listing is repointed at the survivor, both sources are stamped confirmed so the next sync will not undo the verdict, and the losing listing is hidden rather than deleted because bookings still reference it. Rejects a candidate that has already been reviewed with CONFLICT, so a double-click cannot merge twice. Rebuilds the search document afterwards and writes an audit log entry carrying both listing ids.",
+          "Merges the pair onto keepListingId: every listing_source of the other listing is repointed at the survivor, both sources are stamped confirmed so the next sync will not undo the verdict, and the losing listing is hidden rather than deleted because bookings still reference it. Any other pending pair the repoint left with one listing on both sides closes with it, so a boat that sat in several look-alike pairs does not come back with cards that have nothing to decide. Rejects a candidate that has already been reviewed with CONFLICT, so a double-click cannot merge twice. Rebuilds the search document afterwards and writes an audit log entry carrying both listing ids.",
         tags: ["Admin"],
         successDescription: "Which listing survived and what moved.",
         spec: withJsonBodyExample({
@@ -363,7 +363,7 @@ export const adminRouter = {
         operationId: "rejectDuplicateCandidate",
         summary: "Record that a duplicate pair is two different yachts",
         description:
-          "Closes the candidate and moves both sources to rejected, which stops the sync re-proposing the pair and leaves each listing exactly where it is. Rejects an already-reviewed candidate with CONFLICT. Writes an audit log entry.",
+          "Closes the candidate and leaves each listing exactly where it is. The verdict stops at the pair: the candidate row is what stops the sync re-proposing it, so the two sources keep their own match status and a boat is not labelled rejected in the other pairs nobody has reviewed yet. Rejects an already-reviewed candidate with CONFLICT. Writes an audit log entry.",
         tags: ["Admin"],
         successDescription: "The rejected candidate.",
         spec: withJsonBodyExample({ candidateId: "ldup_example" }),
