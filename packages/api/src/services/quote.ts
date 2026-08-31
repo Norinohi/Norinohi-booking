@@ -381,6 +381,21 @@ async function priceOrConflict(
     // Matched on the type, not the wording: a provider rephrasing its message must
     // not silently turn a sold-out week into a 500.
     if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+      /*
+       * Reported for the same reason the first quote is: this is every date, guest and crew
+       * change a visitor makes on the listing, and a refusal here reaches them as "not
+       * available" with nothing written down anywhere. The vendor is the only thing that can
+       * refuse on this path -- anything else rethrows above -- so it is always its answer.
+       */
+      reportRefusal(input, [
+        {
+          outcome: "unavailable",
+          offerId: "",
+          providerCode: provider.key,
+          reason: error.name,
+          latencyMs: null,
+        },
+      ]);
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;

@@ -117,6 +117,8 @@ export function createBookingManagerQuoteService(
         bookingManagerEndpoints.offers,
         restOfferListSchema,
         offerQuery,
+        /* Somebody is waiting on this one; see `liveLane`. */
+        client.liveLane(),
       );
 
       const offer = selectOffer(
@@ -364,19 +366,38 @@ export function mapOfferToProviderQuote(input: OfferMapping): ProviderQuote {
    * declared subtotal to the cent, the sole exception being a pro-rated `per_week`
    * extra on a 4-night charter, off by 0.003 at the total.
    *
-   * The assertion below stays: it is what makes the reading falsifiable, and a
-   * payload where the extras do not sum to the vendor's own subtotal should fail
-   * here rather than mispricing a booking downstream.
+   * That exception is why the check is a tolerance rather than an equality now. Each line is
+   * rounded to the cent on its own, so a subtotal assembled from n of them can sit up to n
+   * cents from the one the vendor rounded once - and an equality turned that into a refusal
+   * for the whole charter, on every date, forever. Yacht 5823396120000107041 was unbookable
+   * over a single cent: 38451 against a declared 38452.
+   *
+   * Inside the tolerance the vendor's own subtotal wins and the difference is absorbed into
+   * the largest line, so what the customer is shown still adds up to what Booking Manager
+   * says the extras cost. Outside it the throw stands: that is a payload we have misread, and
+   * mispricing a booking downstream is worse than refusing to price it.
    */
-  const extrasMinor = sumMinor(extraLines);
+  const summedMinor = sumMinor(extraLines);
+  let extrasMinor = summedMinor;
   if (offer.obligatoryExtrasPrice != null) {
     const declared = numberToMinor(offer.obligatoryExtrasPrice, currency, "obligatoryExtrasPrice");
-    if (declared !== extrasMinor) {
+    const drift = declared - summedMinor;
+    if (Math.abs(drift) > Math.max(1, extraLines.length)) {
       throw new ContractError(
-        `Booking Manager obligatory extras for yacht ${offer.yachtId} sum to ${extrasMinor}, declared ${declared}`,
+        `Booking Manager obligatory extras for yacht ${offer.yachtId} sum to ${summedMinor}, declared ${declared}`,
         { endpoint: bookingManagerEndpoints.offers },
       );
     }
+
+    const largest = extraLines.reduce<QuoteLine | null>(
+      (top, line) =>
+        top === null || line.amount.amountMinor > top.amount.amountMinor ? line : top,
+      null,
+    );
+    if (drift !== 0 && largest) {
+      largest.amount = { ...largest.amount, amountMinor: largest.amount.amountMinor + drift };
+    }
+    extrasMinor = largest ? declared : summedMinor;
   }
 
   const lines = [...charterLines, ...extraLines];

@@ -147,7 +147,7 @@ function ExtraRow({
    * carries neither caption nor figure: the offer prices it at zero, and the catalogue's own
    * list value would read as a charge the customer is not being asked for.
    */
-  const included = item.pricingType === "included";
+  const included = item.pricingType === "included" || item.price.amountMinor === 0;
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered

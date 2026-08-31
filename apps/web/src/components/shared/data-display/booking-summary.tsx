@@ -349,14 +349,18 @@ function PriceGroup({
                 <div className="flex items-start gap-2 px-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="text-base leading-5.5 text-foreground">{line.label}</p>
-                    {line.payWhen === "at_check_in" ? (
+                    {/* A line the charter already covers is collected nowhere, so naming a
+                        moment to pay it is naming a payment nobody will make. */}
+                    {line.payWhen === "at_check_in" && line.amount.amountMinor !== 0 ? (
                       <p className="text-xs font-semibold text-natural-500">
                         {tExtras("payAtCheckIn")}
                       </p>
                     ) : null}
                   </div>
                   <p className="shrink-0 text-base leading-5.5 font-bold text-foreground">
-                    {money(line.amount.amountMinor, line.amount.currency)}
+                    {line.amount.amountMinor === 0
+                      ? tExtras("includedInPrice")
+                      : money(line.amount.amountMinor, line.amount.currency)}
                   </p>
                 </div>
               </div>
@@ -496,6 +500,14 @@ export default function BookingSummary({
       : quote.paymentPolicy.depositPct
     : 0;
   const prepaymentPercent = rawPct > 1 ? Math.round(rawPct) : Math.round(rawPct * 100);
+  /*
+   * A zero deposit is the operator saying it takes none, which the card already reads that way
+   * and omits. The sidebar printed it as "Refundable deposit EUR 0" beside a gulet whose crew,
+   * linen and cleaning it was also pricing at zero -- a column of nothings where the honest
+   * answer is one fewer line.
+   */
+  const deposit =
+    quote?.securityDeposit && quote.securityDeposit.amountMinor > 0 ? quote.securityDeposit : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
@@ -655,7 +667,7 @@ export default function BookingSummary({
               <div
                 className={cn(
                   "grid grid-flow-col grid-rows-[auto_auto_auto] gap-x-1.5 gap-y-1",
-                  quote.securityDeposit ? "grid-cols-2" : "grid-cols-1",
+                  deposit ? "grid-cols-2" : "grid-cols-1",
                 )}
               >
                 <p className="self-end text-sm leading-4.5 font-medium text-natural-500">
@@ -672,7 +684,7 @@ export default function BookingSummary({
                   {t("sidebar.boatPriceHint")}
                 </p>
 
-                {quote.securityDeposit ? (
+                {deposit ? (
                   <>
                     <p className="self-end text-right text-sm leading-4.5 font-medium text-natural-500">
                       {t("sidebar.deposit")}
@@ -681,7 +693,7 @@ export default function BookingSummary({
                       <Skeleton className="h-8 w-24 justify-self-end" />
                     ) : (
                       <p className="text-right text-2xl leading-8 font-semibold text-foreground">
-                        {money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency)}
+                        {money(deposit.amountMinor, deposit.currency)}
                       </p>
                     )}
                     <Tooltip>

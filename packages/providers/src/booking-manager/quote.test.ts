@@ -66,6 +66,37 @@ describe("mapOfferToProviderQuote extras", () => {
     ).toThrow(/sum to 5000, declared 6000/);
   });
 
+  /*
+   * Each line is rounded on its own, so a subtotal built from several can sit a cent or two
+   * from the one the vendor rounded once. Refusing over that made yacht 5823396120000107041
+   * unquotable on every date for a single cent: 38451 against a declared 38452.
+   */
+  it("absorbs a cent of rounding into the largest line rather than refusing the charter", () => {
+    const mapping = mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 });
+
+    const quote = mapOfferToProviderQuote({
+      ...mapping,
+      offer: { ...mapping.offer, obligatoryExtrasPrice: 50.01 },
+    });
+
+    expect(quote.lines.find((line) => line.kind === "extra")?.amount.amountMinor).toBe(5001);
+    /* And the total still adds up to the lines the customer is shown. */
+    expect(quote.total.amountMinor).toBe(
+      quote.lines.reduce((sum, line) => sum + line.amount.amountMinor, 0),
+    );
+  });
+
+  it("still refuses a subtotal that rounding cannot explain", () => {
+    const mapping = mappingFor({ id: "77", kind: 0, percentage: 5, price: 0 });
+
+    expect(() =>
+      mapOfferToProviderQuote({
+        ...mapping,
+        offer: { ...mapping.offer, obligatoryExtrasPrice: 60 },
+      }),
+    ).toThrow(/sum to 5000, declared 6000/);
+  });
+
   it("refuses a percentage extra that carries no percentage", () => {
     expect(() => mapOfferToProviderQuote(mappingFor({ id: "77", kind: 0, price: 0 }))).toThrow(
       /carries none/,

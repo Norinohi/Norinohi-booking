@@ -877,7 +877,35 @@ export async function listAvailabilityConstraints(
       where price.kind = 'weekly'
         and price.start_date < ${input.to}
         and price.end_date > ${input.from}
-      order by price.start_date asc
+
+      union all
+
+      /*
+       * A week the vendor itself priced opens its season as surely as a published rate does --
+       * more surely, since it is an answer about this exact charter rather than a band the
+       * season was cut into. Without it the rate list alone decided, and a confirming sweep
+       * that had just been told a price for a week outside every published band still read as
+       * a season nobody had opened: the calendar greyed it out and the card could not offer it.
+       */
+      select
+        slot.listing_offer_id as "offerId",
+        slot.start_date as "startDate",
+        slot.end_date as "endDate",
+        slot.price_minor as "priceMinor",
+        slot.currency,
+        true as "confirmed"
+      from availability_slot slot
+      join listing_offer o
+        on o.id = slot.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where slot.availability_confirmed
+        and slot.status = 'available'
+        and slot.price_minor is not null
+        and slot.currency is not null
+        and slot.start_date < ${input.to}
+        and slot.end_date > ${input.from}
+      order by "startDate" asc
     `),
     db.execute<{ offerId: string; startDate: string; endDate: string }>(sql`
       /*

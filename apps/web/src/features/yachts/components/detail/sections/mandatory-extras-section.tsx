@@ -20,13 +20,17 @@ export default function MandatoryExtrasSection() {
       <div className="flex flex-col">
         {data.mandatoryExtras.map((item) => {
           /*
-           * Named, never priced: the operator sells this one inside the charter price, and the
-           * price column still carries the list value NauSYS keeps sending with it. The quote
-           * charges nothing for it, so printing that figure here billed the customer on the
-           * page for a fee the sidebar beside it was not asking for. Where it is collected is
-           * the same silence, since it is not collected at all.
+           * Named, never priced.
+           *
+           * Two ways an operator says the charter already covers this. It can type the service
+           * INCLUDED_IN_PRICE, where the vendor keeps sending a list value the quote then
+           * charges nothing for; or it can simply file the obligatory line at zero, which is
+           * how 12,029 of them arrive -- "Outboard engine GRATIS", "End cleaning included in
+           * the price", "4 crew: 1 captain, 1 cook and 2 deckhands". Both read as "included",
+           * and both used to print "EUR 0 per booking" under a "Pay at check-in" caption, which
+           * names a payment nobody will ever make.
            */
-          const included = item.pricingType === "included";
+          const included = item.pricingType === "included" || item.price.amountMinor === 0;
 
           return (
             <div
