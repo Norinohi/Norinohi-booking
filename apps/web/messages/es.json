@@ -967,8 +967,30 @@
     "CookieConsent": {
       "title": "Cookies",
       "description": "Usamos cookies analíticas para ver cómo se utiliza el sitio y mejorarlo. No se recopila nada hasta que aceptes.",
+      "manage": "Configurar",
       "accept": "Aceptar",
-      "decline": "Rechazar"
+      "decline": "Rechazar",
+      "footerLink": "Cookies",
+      "dialog": {
+        "title": "Tu privacidad",
+        "description": "Elige qué cookies puede usar este sitio. Tu elección se guarda en este dispositivo y puedes cambiarla cuando quieras desde el pie de página.",
+        "close": "Cerrar",
+        "alwaysActive": "Siempre activas",
+        "necessary": {
+          "title": "Necesarias",
+          "description": "Mantienen tu sesión iniciada, protegen los pagos frente al fraude y recuerdan esta elección. Sin ellas el sitio no funciona."
+        },
+        "functional": {
+          "title": "Funcionales",
+          "description": "Recuerdan los barcos que has guardado y cuentan una sola vez una visita repetida a un anuncio. Se quedan en tu navegador."
+        },
+        "analytics": {
+          "title": "Analíticas",
+          "description": "Google Analytics, para ver qué páginas se usan y dónde se atascan las personas. Sin publicidad ni perfilado."
+        },
+        "save": "Guardar mi elección",
+        "acceptAll": "Aceptar todas"
+      }
     }
   },
   "PlanMyTrip": {

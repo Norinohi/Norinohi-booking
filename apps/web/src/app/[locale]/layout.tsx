@@ -89,21 +89,29 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="light motion-safe:scroll-smooth" data-scroll-behavior="smooth">
-      {/* Order is load-bearing: this declares the denied default before `gtag.js` runs, so the
-          tag cannot write a cookie ahead of an answer. `beforeInteractive` is what puts it in the
-          initial HTML rather than after hydration, and it only works from the root layout. */}
-      {gaId ? (
-        <Script id="consent-bootstrap" strategy="beforeInteractive">
-          {CONSENT_BOOTSTRAP}
-        </Script>
-      ) : null}
       <body className={`${manrope.variable} antialiased`}>
+        {/* Order is load-bearing: this declares the denied default before `gtag.js` runs, so the
+            tag cannot write a cookie ahead of an answer. `beforeInteractive` puts it in the initial
+            HTML, ahead of every Next module and of the afterInteractive tag below.
+
+            It sits inside <body> because that is where the docs put it and where HTML allows it —
+            as a sibling of <body> React renders a script directly under <html>, which is invalid
+            and throws three hydration errors in the dev overlay. */}
+        {gaId ? (
+          <Script id="consent-bootstrap" strategy="beforeInteractive">
+            {CONSENT_BOOTSTRAP}
+          </Script>
+        ) : null}
         <noscript>
           <style>{`[style*="opacity:0"]{opacity:1!important;transform:none!important}`}</style>
         </noscript>
         <NextIntlClientProvider>
           <Providers>
             <QueryErrorLabels />
+            {/* Before the page content, not after: the banner is `fixed`, so DOM order costs it
+                nothing visually, and placing it last put its buttons 40-odd tab stops into the
+                page. Consent has to be reachable, not buried. */}
+            {gaId ? <CookieConsent /> : null}
             <div className="grid min-h-svh grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] overflow-x-clip">
               <NavigationBar />
               {children}
@@ -111,7 +119,6 @@ export default async function RootLayout({
                 <Footer year={year} />
               </FooterGate>
             </div>
-            {gaId ? <CookieConsent /> : null}
           </Providers>
         </NextIntlClientProvider>
       </body>

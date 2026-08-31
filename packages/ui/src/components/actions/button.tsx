@@ -12,7 +12,9 @@ import { Loader2Icon } from "lucide-react";
  * Disabled is uniform across variants (bg natural-100 / text natural-300 / border natural-200).
  * `loading` is the in-flight state that shouldn't flash that grey: it keeps the variant's own
  * colours, dims them, adds a spinner and blocks pointer input. The button stays keyboard-focusable,
- * so guard the click handler against re-entry yourself.
+ * so guard the click handler against re-entry yourself. On the `icon*` sizes the spinner REPLACES
+ * the children — a square that fits one glyph cannot show a spinner beside it, and there is no
+ * label to keep. Name those buttons with `aria-label`, which is what carries through the swap.
  */
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-transparent font-semibold whitespace-nowrap leading-[1.25] transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:bg-natural-100 disabled:text-natural-300 disabled:border-natural-200 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -62,6 +64,8 @@ function Button({
   children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { loading?: boolean }) {
+  const iconOnly = size?.startsWith("icon") ?? false;
+
   return (
     <ButtonPrimitive
       data-slot="button"
@@ -75,9 +79,11 @@ function Button({
       {...props}
     >
       {/* Leads the label rather than replacing it: a button whose text vanishes mid-click
-          resizes under the cursor, and the label is what says which action is running. */}
+          resizes under the cursor, and the label is what says which action is running.
+          An icon size has no label to preserve and no room beside it, so there the spinner
+          takes the icon's place instead of crowding in next to it. */}
       {loading ? <Loader2Icon className="animate-spin" aria-hidden /> : null}
-      {children}
+      {loading && iconOnly ? null : children}
     </ButtonPrimitive>
   );
 }
