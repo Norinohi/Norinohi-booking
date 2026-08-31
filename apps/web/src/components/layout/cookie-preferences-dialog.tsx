@@ -22,16 +22,6 @@ import { useEffect, useId, useState } from "react";
  */
 const ALWAYS_ON = ["necessary", "functional"] as const;
 
-/*
- * TODO: neither page exists yet — there is no privacy or terms route under
- * `app/[locale]/(public)`, and the footer's own two links are dead for the same reason.
- * Kept as one constant so both hrefs become real in a single edit when the pages land.
- */
-const LEGAL_HREF = { privacy: "#", terms: "#" } as const;
-
-const LEGAL_LINK =
-  "cursor-pointer text-brand underline underline-offset-4 transition-colors hover:text-brand-hover";
-
 export type CookiePreferencesDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,20 +55,7 @@ export function CookiePreferencesDialog({
       >
         <DialogHeader className="items-start text-left">
           <DialogTitle>{t("title")}</DialogTitle>
-          <DialogDescription>
-            {t.rich("description", {
-              privacy: (chunks) => (
-                <a href={LEGAL_HREF.privacy} className={LEGAL_LINK}>
-                  {chunks}
-                </a>
-              ),
-              terms: (chunks) => (
-                <a href={LEGAL_HREF.terms} className={LEGAL_LINK}>
-                  {chunks}
-                </a>
-              ),
-            })}
-          </DialogDescription>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-5">

@@ -973,7 +973,7 @@
       "footerLink": "Cookies",
       "dialog": {
         "title": "Your privacy",
-        "description": "Choose which cookies this site may use. Your choice is stored on this device, and you can change it at any time from the footer. More in our <privacy>Privacy Policy</privacy> and <terms>Terms of Service</terms>.",
+        "description": "Choose which cookies this site may use. Your choice is stored on this device, and you can change it at any time from the footer.",
         "close": "Close",
         "alwaysActive": "Always active",
         "necessary": {

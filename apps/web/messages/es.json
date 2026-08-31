@@ -973,7 +973,7 @@
       "footerLink": "Cookies",
       "dialog": {
         "title": "Tu privacidad",
-        "description": "Elige qué cookies puede usar este sitio. Tu elección se guarda en este dispositivo y puedes cambiarla cuando quieras desde el pie de página. Más información en nuestra <privacy>Política de privacidad</privacy> y los <terms>Términos del servicio</terms>.",
+        "description": "Elige qué cookies puede usar este sitio. Tu elección se guarda en este dispositivo y puedes cambiarla cuando quieras desde el pie de página.",
         "close": "Cerrar",
         "alwaysActive": "Siempre activas",
         "necessary": {
