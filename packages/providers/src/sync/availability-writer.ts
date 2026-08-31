@@ -3,6 +3,7 @@ import {
   listingFreePeriod,
   listingRefusedPeriod,
 } from "@yacht-charter/db/schema/availability";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
@@ -93,6 +94,13 @@ export interface DateWindow {
 export interface ListingRef {
   listingId: string;
   listingSourceId: string | null;
+  /**
+   * The offer these rows belong to. Null only where the record is retired, and a null is what
+   * stops anything being written: every one of these tables now keys on the offer, because a
+   * hull two vendors sell has two calendars for one week and neither is the other's to
+   * overwrite.
+   */
+  listingOfferId: string | null;
 }
 
 /* ------------------------------------------------------------------ source */
@@ -202,6 +210,7 @@ export function supportsAvailabilitySync(
 export interface AvailabilitySlotWrite {
   listingId: string;
   listingSourceId: string | null;
+  listingOfferId: string;
   startDate: string;
   endDate: string;
   status: "available" | "option" | "occupied" | "blocked";
@@ -608,9 +617,20 @@ export async function runAvailabilitySync(
           bucket.push(interval);
           occupiedByListing.set(ref.listingId, bucket);
 
+          /*
+           * A retired record resolves to a listing but to no offer, and every one of these
+           * tables now keys on the offer. Its slots stay as they are rather than being
+           * rewritten under a vendor that no longer sells the boat.
+           */
+          if (ref.listingOfferId === null) {
+            skippedYachts += 1;
+            continue;
+          }
+
           writes.push({
             listingId: ref.listingId,
             listingSourceId: ref.listingSourceId,
+            listingOfferId: ref.listingOfferId,
             startDate: interval.startDate,
             endDate: interval.endDate,
             status: interval.status,
@@ -842,11 +862,11 @@ export interface DrizzleAvailabilityStoreOptions {
  * caller inherits the protection instead of rediscovering the error in production.
  */
 export function dedupeSlotsByPeriod<
-  T extends { listingId: string; startDate: string; endDate: string },
+  T extends { listingOfferId: string; startDate: string; endDate: string },
 >(slots: readonly T[]): T[] {
   const byPeriod = new Map<string, T>();
   for (const slot of slots) {
-    byPeriod.set(`${slot.listingId}::${slot.startDate}::${slot.endDate}`, slot);
+    byPeriod.set(`${slot.listingOfferId}::${slot.startDate}::${slot.endDate}`, slot);
   }
   return [...byPeriod.values()];
 }
@@ -893,10 +913,12 @@ export function createDrizzleAvailabilitySyncStore(
         externalYachtId: listingSource.externalYachtId,
         listingId: listingSource.listingId,
         listingSourceId: listingSource.id,
+        listingOfferId: listingOffer.id,
         active: providerRecord.active,
       })
       .from(listingSource)
       .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+      .leftJoin(listingOffer, eq(listingOffer.listingSourceId, listingSource.id))
       .where(and(eq(providerRecord.providerId, providerId), isNotNull(listingSource.listingId)))
       .then((rows) => {
         const index = new Map<string, ListingRef>();
@@ -911,6 +933,7 @@ export function createDrizzleAvailabilitySyncStore(
             // but contributes no source id, so the sweep will not scope by it. Kept
             // as the pair of queries this replaced behaved, not as a new rule.
             listingSourceId: row.active ? row.listingSourceId : null,
+            listingOfferId: row.active ? row.listingOfferId : null,
           });
         }
         return index;
@@ -935,9 +958,14 @@ export function createDrizzleAvailabilitySyncStore(
 
     async listListingsForScope(scopeKey) {
       const rows = await db
-        .select({ listingId: listingSource.listingId, listingSourceId: listingSource.id })
+        .select({
+          listingId: listingSource.listingId,
+          listingSourceId: listingSource.id,
+          listingOfferId: listingOffer.id,
+        })
         .from(listingSource)
         .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+        .leftJoin(listingOffer, eq(listingOffer.listingSourceId, listingSource.id))
         .where(
           and(
             eq(providerRecord.providerId, providerId),
@@ -953,7 +981,15 @@ export function createDrizzleAvailabilitySyncStore(
         );
 
       return rows.flatMap((row) =>
-        row.listingId ? [{ listingId: row.listingId, listingSourceId: row.listingSourceId }] : [],
+        row.listingId
+          ? [
+              {
+                listingId: row.listingId,
+                listingSourceId: row.listingSourceId,
+                listingOfferId: row.listingOfferId,
+              },
+            ]
+          : [],
       );
     },
 
@@ -972,30 +1008,37 @@ export function createDrizzleAvailabilitySyncStore(
         ),
       );
 
+      /*
+       * Only the offers this run actually answered for. Scoping the delete by listing was the
+       * sharpest of the merged-listing bugs: on a hull both vendors sell, whichever ran second
+       * erased the other's free periods outright, and the boat read as sold for the year.
+       */
+      const offerIds = writes.flatMap((write) =>
+        write.ref.listingOfferId === null ? [] : [write.ref.listingOfferId],
+      );
+      if (offerIds.length === 0) return;
+
       // One DELETE per chunk of listings covering every clean year, rather than one
       // statement per listing per year. The whole fleet arrives in a single call under
       // an account-wide scope, so this is the difference between two round-trips and
       // tens of thousands.
-      for (const chunk of chunked(writes)) {
-        await db.delete(listingFreePeriod).where(
-          and(
-            inArray(
-              listingFreePeriod.listingId,
-              chunk.map((write) => write.ref.listingId),
-            ),
-            or(...inAnyCleanYear),
-          ),
-        );
+      for (const chunk of chunked(offerIds)) {
+        await db
+          .delete(listingFreePeriod)
+          .where(and(inArray(listingFreePeriod.listingOfferId, [...chunk]), or(...inAnyCleanYear)));
       }
 
-      const rows = writes.flatMap((write) =>
-        write.periods.map((period) => ({
+      const rows = writes.flatMap((write) => {
+        const { listingOfferId } = write.ref;
+        if (listingOfferId === null) return [];
+        return write.periods.map((period) => ({
           listingId: write.ref.listingId,
           listingSourceId: write.ref.listingSourceId,
+          listingOfferId,
           startDate: period.startDate,
           endDate: period.endDate,
-        })),
-      );
+        }));
+      });
 
       // Chunked by row, not by listing: how many periods a boat has is the provider's
       // business, and the bind-parameter ceiling is per statement.
@@ -1021,6 +1064,7 @@ export function createDrizzleAvailabilitySyncStore(
             chunk.map((slot) => ({
               listingId: slot.listingId,
               listingSourceId: slot.listingSourceId,
+              listingOfferId: slot.listingOfferId,
               startDate: slot.startDate,
               endDate: slot.endDate,
               status: slot.status,
@@ -1038,11 +1082,12 @@ export function createDrizzleAvailabilitySyncStore(
           )
           .onConflictDoUpdate({
             target: [
-              availabilitySlot.listingId,
+              availabilitySlot.listingOfferId,
               availabilitySlot.startDate,
               availabilitySlot.endDate,
             ],
             set: {
+              listingId: sql`excluded.listing_id`,
               listingSourceId: sql`excluded.listing_source_id`,
               status: sql`excluded.status`,
               // A re-synthesized slot drops back to unconfirmed on purpose: a
@@ -1063,12 +1108,20 @@ export function createDrizzleAvailabilitySyncStore(
     },
 
     async confirmSlot(input) {
+      /* No offer, nowhere to put it: a retired record's confirmations are not ours to store. */
+      if (input.listingOfferId === null) return false;
+
+      /*
+       * Looked up by offer, not by listing. Scoped to the listing, one vendor's occupancy
+       * silently refused the other vendor's confirmed, priced offer for the same week, and a
+       * sellable boat read as taken.
+       */
       const [existing] = await db
         .select({ id: availabilitySlot.id, status: availabilitySlot.status })
         .from(availabilitySlot)
         .where(
           and(
-            eq(availabilitySlot.listingId, input.listingId),
+            eq(availabilitySlot.listingOfferId, input.listingOfferId),
             eq(availabilitySlot.startDate, input.startDate),
             eq(availabilitySlot.endDate, input.endDate),
           ),
@@ -1106,6 +1159,7 @@ export function createDrizzleAvailabilitySyncStore(
       await db.insert(availabilitySlot).values({
         listingId: input.listingId,
         listingSourceId: input.listingSourceId,
+        listingOfferId: input.listingOfferId,
         startDate: input.startDate,
         endDate: input.endDate,
         status: "available",
@@ -1124,23 +1178,34 @@ export function createDrizzleAvailabilitySyncStore(
        * nothing sold across it. Anything else is already unbookable for a reason we hold, and
        * recording a refusal for it would say the vendor declined something nobody asked about.
        */
-      const eligible = await db.execute<{ listingId: string; listingSourceId: string | null }>(sql`
-        select ls.listing_id as "listingId", ls.id as "listingSourceId"
+      const eligible = await db.execute<{
+        listingId: string;
+        listingSourceId: string | null;
+        listingOfferId: string;
+      }>(sql`
+        select ls.listing_id as "listingId", ls.id as "listingSourceId", o.id as "listingOfferId"
         from listing_source ls
         join provider_record pr on pr.id = ls.provider_record_id
+        join listing_offer o on o.listing_source_id = ls.id
         where pr.provider_id = ${providerId}
           and pr.active
+          and o.status = 'active'
           and ls.listing_id is not null
           ${scopeKeys === null ? sql`` : sql`and ls.external_company_id in ${scopeKeys}`}
+          /*
+           * Both tests are this offer's own. Read across the listing, one vendor's rate made
+           * the other vendor eligible and one vendor's occupancy suppressed the other's
+           * refusal, so the record said things neither provider had.
+           */
           and exists (
             select 1 from listing_price_period p
-            where p.listing_id = ls.listing_id
+            where p.listing_offer_id = o.id
               and p.start_date = ${startDate}
               and p.end_date = ${endDate}
           )
           and not exists (
             select 1 from availability_slot s
-            where s.listing_id = ls.listing_id
+            where s.listing_offer_id = o.id
               and s.status <> 'available'
               and s.start_date < ${endDate}
               and s.end_date > ${startDate}
@@ -1162,8 +1227,8 @@ export function createDrizzleAvailabilitySyncStore(
             eq(listingRefusedPeriod.startDate, startDate),
             eq(listingRefusedPeriod.endDate, endDate),
             inArray(
-              listingRefusedPeriod.listingId,
-              chunk.map((row) => row.listingId),
+              listingRefusedPeriod.listingOfferId,
+              chunk.map((row) => row.listingOfferId),
             ),
           ),
         );
@@ -1176,6 +1241,7 @@ export function createDrizzleAvailabilitySyncStore(
             chunk.map((row) => ({
               listingId: row.listingId,
               listingSourceId: row.listingSourceId,
+              listingOfferId: row.listingOfferId,
               startDate,
               endDate,
             })),
@@ -1190,26 +1256,23 @@ export function createDrizzleAvailabilitySyncStore(
       if (input.listings.length === 0) return 0;
 
       let deleted = 0;
-      // Chunked by listing, carrying each chunk's own source ids, so the pairing
-      // the source scoping relies on only ever narrows.
+      // Chunked by listing, carrying each chunk's own offer ids, so the pairing
+      // the offer scoping relies on only ever narrows.
       for (const chunk of chunked(input.listings)) {
-        const sourceIds = chunk
-          .map((ref) => ref.listingSourceId)
+        const offerIds = chunk
+          .map((ref) => ref.listingOfferId)
           .filter((id): id is string => id !== null);
 
         const rows = await db
           .delete(availabilitySlot)
           .where(
             and(
-              inArray(
-                availabilitySlot.listingId,
-                chunk.map((ref) => ref.listingId),
-              ),
-              // Scoped by source as well as by listing so a second provider's slots on
-              // a merged listing are not collateral damage.
-              sourceIds.length > 0
-                ? inArray(availabilitySlot.listingSourceId, sourceIds)
-                : sql`false`,
+              /*
+               * By offer alone. The listing leg is gone because it no longer narrows anything:
+               * the offer already names one vendor's rows on one listing, and keeping both
+               * meant the sweep could only reach rows whose ownership had not since flipped.
+               */
+              offerIds.length > 0 ? inArray(availabilitySlot.listingOfferId, offerIds) : sql`false`,
               gte(availabilitySlot.startDate, `${input.year}-01-01`),
               lte(availabilitySlot.startDate, `${input.year}-12-31`),
               lt(availabilitySlot.updatedAt, input.seenBefore),
