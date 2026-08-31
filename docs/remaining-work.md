@@ -175,8 +175,10 @@ SEO landing pages, and the legal pages Stripe needs for verification.
 4. Credits not filtered by currency (§2.1 item 1).
 5. ~~**Referral programme**~~ **answered 2026-08-21, see §3.6**: brackets by yacht price, equal
    on both sides, credit valid 12 months, admin-editable.
-6. **Duplicates**: currently the cheaper option for the customer, with Booking Manager winning ties.
-   Confirm or change.
+6. ~~**Duplicates**~~ **answered 2026-08-31**: the cheaper option for the customer including
+   obligatory extras, with Booking Manager winning ties, and availability ahead of price. Built:
+   one listing, many `listing_offer` rows, best offer chosen per request. See
+   `docs/adr/0005-a-listing-is-one-yacht-many-provider-offers.md`.
 7. **Auto-publish or moderation** for imported listings.
 8. **FAQ and reviews tabs in the admin panel**, and in which release.
 

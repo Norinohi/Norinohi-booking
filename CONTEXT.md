@@ -9,9 +9,18 @@ correctness requirements, which the language below makes explicit.
 ### The marketplace
 
 **Listing**:
-The sellable unit — one vessel offered by one operator, with its own pricing, calendar, and base
-location. This is the canonical term in code, and what the database and API model.
+One vessel, as the marketplace knows it: its identity, specification, photographs and home base.
+The canonical term in code, and the unit a customer browses and opens. Not the unit that is
+priced — see Offer.
 _Avoid_: Yacht, boat, charter (as a noun for the thing being sold)
+
+**Offer**:
+One provider's sellable proposition for a Listing: its calendar, its rates, its deposit, its
+extras and its booking terms. A hull both NauSYS and Booking Manager publish is one Listing with
+two Offers, and none of that is merged between them, because two vendors pricing the same week
+differently is not a fact about the boat. The customer sees one card carrying the best Offer for
+the dates they asked about, and books through the vendor that Offer belongs to.
+_Avoid_: Provider listing, source listing (a `listing_source` is the identity link, not the offer)
 
 **Yacht**:
 The physical vessel a Listing offers. Also the customer-facing word, so it stays in public URLs

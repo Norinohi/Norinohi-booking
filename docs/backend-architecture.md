@@ -161,16 +161,20 @@ Six groups. **Canonical** = we own the truth; **provider-derived** = imported, n
 1. **Keep source rows intact.** `provider_record` is append-updated per sync; one provider's data never overwrites another's.
 2. **Canonical identity = `listing`,** with 1..N `listing_source`. In one provider → 1 source; in both → 2 sources under one `listing`.
 3. **Matching is proposed, then reviewed.** A matcher scores `match_confidence` from stable signals (operator + base + model + length + year + fuzzy name; plus any stable cross-provider IDs — Q-DUP). Pairs land in `listing_duplicate_candidate`. States on `listing_source.source_status`: `unmatched` (own provisional listing) · `auto` (high-confidence, still listed for review, never published on `auto` alone) · `confirmed` (human-approved, audited) · `rejected` (won't re-propose).
-4. **Field precedence (per field-group), resolved when building the canonical listing:**
-   | Field group                                                                   | Winner                                                                    | Rationale                      |
-   | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------ |
-   | **Media / gallery**                                                           | **Booking Manager** preferred, NauSYS fallback                            | BM has better photos.          |
-   | Specs                                                                         | `primary_source_id` (default the more complete record; admin-overridable) | Deterministic.                 |
-   | Amenities                                                                     | union, de-duped by canonical `amenity_id`                                 | Superset is safer for filters. |
-   | **Live availability & price**                                                 | **reconciled at quote time — not merged**                                 | See §6.                        |
-   | Keep a per-field `selected_source` decision so any preference can be revised. |
-5. **Availability/price reconciled live, never merged.** The cache may hold hints from either source; the **quote** step calls the authoritative source and re-prices. A selected offer has exactly one provider source; its quote/option/booking stay with that source. **[ASSUMPTION]** default transacting source = lower client price at quote time, tie-break to BM — confirm (Q-DUP).
-6. **No unsafe automerge.** Publishing a merged listing requires `confirmed`; all merges/splits write `audit_log`.
+4. **Everything commercial hangs off `listing_offer`, one row per (listing, source).** Its calendar, rates, deposit, extras, prose and check-in rules are that vendor's and are never merged with the other's. `availability_slot`, `listing_price_period`, `listing_free_period`, `listing_refused_period`, `provider_extra_catalogue`, `listing_media`, `listing_text`, `listing_amenity`, `listing_checkin_rule` and `listing_one_way_rule` all key on the offer. `unique (listing_id, provider_id)` is what stops one vendor's two records bidding against each other.
+5. **Field precedence (per field-group), resolved when building the canonical listing.** No sync writes `listing` or `listing_specification`; each writes its own offer and `canonical-listing.ts` composes the listing from all of them, so two providers can both write in full and neither erases the other.
+
+   | Field group                                 | Winner                                                    | Rationale                      |
+   | ------------------------------------------- | --------------------------------------------------------- | ------------------------------ |
+   | **Media**                                   | **Booking Manager** preferred, NauSYS fallback            | BM photographs better.         |
+   | Specs, title                                | the more complete record, then the provider preference    | Deterministic.                 |
+   | Amenities                                   | per offer; the read unions them, de-duped by `amenity_id` | Superset is safer for filters. |
+   | Availability, price, deposit, extras, terms | **never merged — per offer**                              | See §6.                        |
+
+   `listing_field_source` records the winner per group. A `locked` row is an admin's decision and the resolver never overwrites it; the rest are the resolver showing its work.
+
+6. **Availability/price reconciled live, never merged.** The **quote** step asks every offer whose own published constraints admit the range, and takes the cheapest all-in of whoever answered. **Answered 2026-08-31:** the transacting source is the lower client price at quote time including obligatory extras, tie-break to Booking Manager; availability comes first, so an offer that cannot deliver the dates never competes on price. `quote.listing_offer_id` and `booking.listing_offer_id` carry the winner, and every later step reads the vendor from the sale rather than re-deriving it from the listing. `quote_offer_attempt` records who was asked and what they said.
+7. **No unsafe automerge.** Publishing a merged listing requires `confirmed`; all merges/splits write `audit_log`. Same-provider fuzzy matching was removed entirely: a vendor's own id space is the identity, and guessing past it by `company|base|model|year|name` fused 486 Booking Manager records onto 172 listings, because BM publishes no per-hull name.
 
 ---
 
