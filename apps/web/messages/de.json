@@ -2104,8 +2104,13 @@
         "confirmedWithClosed": "Zusammengeführt. {count} Anbieterquellen zeigen jetzt auf das behaltene Inserat, und {closed} weitere Paare wurden mit geschlossen.",
         "rejected": "Als zwei verschiedene Yachten erfasst.",
         "conflict": "Jemand anderes hat dieses Paar bereits geprüft. Die Warteschlange wird neu geladen.",
-        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
-      }
+        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+        "deferred": "Zurückgestellt. Zählt weder für noch gegen den Matcher."
+      },
+      "defer": "Zurückstellen",
+      "notePlaceholder": "Warum? (optional)",
+      "noteLabel": "Notiz des Prüfers",
+      "noteWas": "Notiz: {note}"
     },
     "Sync": {
       "title": "Synchronisierungsverlauf",

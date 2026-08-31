@@ -1,9 +1,4 @@
 import { ORPCError } from "@orpc/server";
-import {
-  availabilitySlot,
-  listingFreePeriod,
-  listingPricePeriod,
-} from "@yacht-charter/db/schema/availability";
 import { base, location } from "@yacht-charter/db/schema/geography";
 import {
   listing,
@@ -12,11 +7,13 @@ import {
   listingSpecification,
 } from "@yacht-charter/db/schema/listing";
 import { listingText } from "@yacht-charter/db/schema/listing-text";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { listingDuplicateCandidate, listingSource } from "@yacht-charter/db/schema/listing-source";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
 import { amenity, builder, yachtCategory, yachtModel } from "@yacht-charter/db/schema/taxonomy";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
+import { resolveCanonicalListings } from "@yacht-charter/providers/sync/canonical-listing-writer";
 import { and, asc, count, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import type { z } from "zod";
@@ -35,6 +32,9 @@ import type {
   duplicateQueueSchema,
   duplicateResolutionSchema,
   duplicateSideSchema,
+  duplicateMetricsSchema,
+  duplicateSplitInputSchema,
+  duplicateSplitSchema,
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginatedQuery, totalFrom } from "./pagination";
@@ -52,6 +52,9 @@ type DetailSide = z.infer<typeof duplicateDetailSideSchema>;
 type DetailListing = z.infer<typeof duplicateDetailListingSchema>;
 type Photo = z.infer<typeof duplicatePhotoSchema>;
 type Resolution = z.infer<typeof duplicateResolutionSchema>;
+type SplitInput = z.infer<typeof duplicateSplitInputSchema>;
+type SplitResult = z.infer<typeof duplicateSplitSchema>;
+type Metrics = z.infer<typeof duplicateMetricsSchema>;
 
 /** Every band, in the order the filter lists them, so an empty one is simply absent. */
 const BANDS: readonly ConfidenceBand[] = ["high", "medium", "low", "unknown"];
@@ -163,6 +166,7 @@ export async function listDuplicateCandidates(
     signals: duplicateSignalsSchema.safeParse(row.signals).data ?? null,
     createdAt: row.createdAt.toISOString(),
     reviewedAt: row.reviewedAt?.toISOString() ?? null,
+    reviewerNote: row.reviewerNote,
     sideA: sides.get(row.sourceAId) ?? missingSide(row.sourceAId),
     sideB: sides.get(row.sourceBId) ?? missingSide(row.sourceBId),
   }));
@@ -559,40 +563,37 @@ async function loadDescriptions(db: Database, listingIds: string[]): Promise<Map
  * the repoint collapsed onto a single listing closes with it.
  */
 /**
- * Which of these listings already hold a provider's prices or calendar.
+ * Every table that carries a denormalised `listing_id` beside its offer.
  *
- * `availability_slot`, `listing_price_period` and `listing_free_period` are keyed on
- * `(listing_id, dates)` with no room for a second provider, and the free-period write
- * deletes by listing alone. Putting two stocked sources under one listing therefore
- * does not keep both: the next sync of either vendor overwrites the other's weeks and
- * deletes its free periods outright, and the reviewer sees a merge that appeared to
- * work. Until the offer model lands, that merge is refused rather than half-performed.
+ * The pair has to move together. `listing_id` is kept on these because the search filters scan
+ * it directly, and a merge is the one moment the two can disagree — a row still naming the
+ * listing its offer has left would be read by search and quoted from somewhere else.
  */
-async function listingsHoldingInventory(
-  tx: DatabaseExecutor,
-  listingIds: readonly string[],
-): Promise<Set<string>> {
-  if (listingIds.length === 0) return new Set();
+const OFFER_CHILD_TABLES = [
+  "availability_slot",
+  "listing_price_period",
+  "listing_free_period",
+  "listing_refused_period",
+  "listing_media",
+  "provider_extra_catalogue",
+  "listing_text",
+  "listing_amenity",
+  "listing_checkin_rule",
+  "listing_one_way_rule",
+] as const;
 
-  const ids = [...listingIds];
-  const [slots, prices, free] = await Promise.all([
-    tx
-      .selectDistinct({ listingId: availabilitySlot.listingId })
-      .from(availabilitySlot)
-      .where(inArray(availabilitySlot.listingId, ids)),
-    tx
-      .selectDistinct({ listingId: listingPricePeriod.listingId })
-      .from(listingPricePeriod)
-      .where(inArray(listingPricePeriod.listingId, ids)),
-    tx
-      .selectDistinct({ listingId: listingFreePeriod.listingId })
-      .from(listingFreePeriod)
-      .where(inArray(listingFreePeriod.listingId, ids)),
-  ]);
-
-  return new Set([...slots, ...prices, ...free].map((row) => row.listingId));
-}
-
+/**
+ * Confirms that two providers are selling one yacht, and puts both offers under one listing.
+ *
+ * The offers move; nothing is discarded. That is the whole point of the model: the losing
+ * listing's inventory is not hidden, it is now a second way to buy the surviving one, and the
+ * quote picks between them per request. Before the offer model this merge kept whichever
+ * provider synced last, because prices and calendars were keyed on the listing.
+ *
+ * The emptied listing is marked `merged` rather than `hidden` and keeps a pointer to the
+ * survivor. It is not deleted because bookings and quotes still reference it, and `hidden`
+ * would be a lie: nobody withdrew it, its offers went somewhere else.
+ */
 export async function confirmDuplicateCandidate(
   db: Database,
   actorUserId: string,
@@ -617,24 +618,19 @@ export async function confirmDuplicateCandidate(
       });
     }
 
-    const stocked = await listingsHoldingInventory(tx, [...listingIds]);
-    if (stocked.size > 1) {
+    const losingListingId = [...listingIds].find((id) => id !== input.keepListingId) ?? null;
+    if (!losingListingId) {
       throw new ORPCError("CONFLICT", {
-        message:
-          "Both listings already carry a provider's prices or calendar, and the two cannot be held under one listing yet",
-        data: { code: "MERGE_WOULD_LOSE_INVENTORY", listingIds: [...stocked] },
+        message: "Both sources are already on this listing",
       });
     }
 
-    const losingListingId = [...listingIds].find((id) => id !== input.keepListingId) ?? null;
+    const moved = await moveOffers(tx, losingListingId, input.keepListingId);
 
-    const moved = losingListingId
-      ? await tx
-          .update(listingSource)
-          .set({ listingId: input.keepListingId })
-          .where(eq(listingSource.listingId, losingListingId))
-          .returning({ id: listingSource.id })
-      : [];
+    await tx
+      .update(listingSource)
+      .set({ listingId: input.keepListingId })
+      .where(eq(listingSource.listingId, losingListingId));
 
     await tx
       .update(listingSource)
@@ -648,7 +644,12 @@ export async function confirmDuplicateCandidate(
 
     await tx
       .update(listingDuplicateCandidate)
-      .set({ decision: "confirmed", reviewer: actorUserId, reviewedAt: now })
+      .set({
+        decision: "confirmed",
+        reviewer: actorUserId,
+        reviewerNote: input.note ?? null,
+        reviewedAt: now,
+      })
       .where(eq(listingDuplicateCandidate.id, candidate.id));
 
     /*
@@ -676,26 +677,30 @@ export async function confirmDuplicateCandidate(
       )
       .returning({ id: listingDuplicateCandidate.id });
 
-    if (losingListingId) {
-      await tx.update(listing).set({ status: "hidden" }).where(eq(listing.id, losingListingId));
-    }
+    await carryListingReferences(tx, losingListingId, input.keepListingId);
+
+    await tx
+      .update(listing)
+      .set({ status: "merged", mergedIntoListingId: input.keepListingId })
+      .where(eq(listing.id, losingListingId));
 
     await writeAuditLog(tx, {
       actorUserId,
       action: "merge",
       entityType: "listing",
       entityId: input.keepListingId,
-      // Both ids and the moved sources, so the merge can be undone by hand.
+      /* Enough to undo it: which offers moved, and where each came from. */
       before: {
         candidateId: candidate.id,
         decision: candidate.decision,
         listingIds: [...listingIds],
         sourceIds: sources.map((row) => ({ id: row.id, listingId: row.listingId })),
+        offers: moved.map((offer) => ({ id: offer.id, listingId: losingListingId })),
       },
       after: {
         keptListingId: input.keepListingId,
-        hiddenListingId: losingListingId,
-        movedSourceIds: moved.map((row) => row.id),
+        mergedListingId: losingListingId,
+        movedOfferIds: moved.map((offer) => offer.id),
         collapsedCandidateIds: collapsed.map((row) => row.id),
       },
     });
@@ -704,19 +709,384 @@ export async function confirmDuplicateCandidate(
       candidateId: candidate.id,
       decision: "confirmed" as const,
       keptListingId: input.keepListingId,
-      hiddenListingId: losingListingId,
-      movedSourceCount: moved.length,
+      mergedListingId: losingListingId,
+      movedOfferCount: moved.length,
       closedCandidateCount: collapsed.length,
     };
   });
 
-  // After the commit: the rebuild reads the merged state, and the loser's doc is
-  // dropped by the same call because it is no longer published.
+  /*
+   * After the commit. The keeper's canonical row is composed again because it now has an offer
+   * it did not have a moment ago, and the emptied listing's document is dropped by the same
+   * call because it is no longer published.
+   */
+  await resolveCanonicalListings(db, [result.keptListingId]);
   await rebuildSearchReadModelsAfterSync(db, {
-    listingIds: [result.keptListingId, ...(result.hiddenListingId ? [result.hiddenListingId] : [])],
+    listingIds: [result.keptListingId, result.mergedListingId],
   });
 
   return result;
+}
+
+/**
+ * Moves every offer of one listing onto another, with the rows that hang off them.
+ *
+ * Refuses rather than half-moves when the destination already sells through the same vendor:
+ * `listing_offer` is unique on (listing_id, provider_id) precisely so one provider's two
+ * records cannot bid against each other, and a pair that would break it is not two providers
+ * selling one yacht — it is a mis-proposed pair.
+ */
+async function moveOffers(
+  tx: DatabaseExecutor,
+  fromListingId: string,
+  toListingId: string,
+): Promise<{ id: string }[]> {
+  const clash = await tx.execute<{ count: number }>(sql`
+    select count(*)::int as count
+    from listing_offer moving
+    join listing_offer staying
+      on staying.listing_id = ${toListingId}
+     and staying.provider_id = moving.provider_id
+    where moving.listing_id = ${fromListingId}
+  `);
+
+  if (Number(clash.rows[0]?.count ?? 0) > 0) {
+    throw new ORPCError("CONFLICT", {
+      message: "Both listings are sold through the same provider, so they are not one yacht",
+      data: { code: "MERGE_SAME_PROVIDER" },
+    });
+  }
+
+  const moved = await tx
+    .update(listingOffer)
+    .set({ listingId: toListingId })
+    .where(eq(listingOffer.listingId, fromListingId))
+    .returning({ id: listingOffer.id });
+
+  if (moved.length === 0) return moved;
+
+  const offerIds = moved.map((offer) => offer.id);
+  for (const table of OFFER_CHILD_TABLES) {
+    await tx.execute(sql`
+      update ${sql.raw(table)}
+      set listing_id = ${toListingId}
+      where listing_offer_id in ${offerIds}
+    `);
+  }
+
+  return moved;
+}
+
+/**
+ * What the matcher gets right, per rule and confidence band.
+ *
+ * The number auto-approval turns on, and the queue's own counts cannot answer it: they say how
+ * much work is left, not how often the proposal was correct. A bucket only earns a rate once a
+ * human has decided something in it, and `undone` counts the confirmations a split reversed —
+ * a merge that had to be taken apart is a wrong answer however confidently it was proposed.
+ *
+ * Deferred pairs are outside the denominator on purpose. They are the ones nobody could call,
+ * and counting them against a rule would understate it on the cases it does settle.
+ */
+export async function duplicateMatchMetrics(db: Database): Promise<Metrics> {
+  const rows = await db.execute<{
+    matchedOn: string;
+    band: ConfidenceBand;
+    proposed: number;
+    confirmed: number;
+    rejected: number;
+    deferred: number;
+    pending: number;
+    undone: number;
+  }>(sql`
+    with bucketed as (
+      select
+        coalesce(d.signals ->> 'matchedOn', 'unscored') as "matchedOn",
+        case
+          when d.confidence is null then 'unknown'
+          when d.confidence >= ${HIGH_CONFIDENCE} then 'high'
+          when d.confidence >= ${MEDIUM_CONFIDENCE} then 'medium'
+          else 'low'
+        end as band,
+        d.decision,
+        /*
+         * A merge later taken apart. Matched through the audit trail rather than a column,
+         * because the candidate keeps its confirmed verdict: the merge did happen, and a
+         * split is a second decision rather than an erasure of the first.
+         */
+        exists (
+          select 1
+          from audit_log split
+          where split.after ->> 'split' = 'true'
+            and split.after ->> 'listingOfferId' in (
+              select o.id from listing_offer o
+              where o.listing_source_id in (d.source_a_id, d.source_b_id)
+            )
+        ) as undone
+      from listing_duplicate_candidate d
+    )
+    select
+      "matchedOn",
+      band,
+      count(*)::int as proposed,
+      count(*) filter (where decision = 'confirmed')::int as confirmed,
+      count(*) filter (where decision = 'rejected')::int as rejected,
+      count(*) filter (where decision = 'deferred')::int as deferred,
+      count(*) filter (where decision = 'pending')::int as pending,
+      count(*) filter (where decision = 'confirmed' and undone)::int as undone
+    from bucketed
+    group by "matchedOn", band
+    order by "matchedOn", band
+  `);
+
+  const measured = rows.rows.map((row) => {
+    /* A split undoes a confirmation, so it counts against the rule rather than for it. */
+    const right = row.confirmed - row.undone;
+    const decided = right + row.rejected + row.undone;
+    return {
+      ...row,
+      precision: decided === 0 ? null : Math.round((right / decided) * 10_000) / 10_000,
+    };
+  });
+
+  return {
+    rows: measured,
+    decided: measured.reduce((total, row) => total + row.confirmed + row.rejected, 0),
+  };
+}
+
+/**
+ * Takes one offer back out of a listing, which is how a merge is undone.
+ *
+ * A merge is a claim that two vendors are selling one hull, and claims are sometimes wrong.
+ * Splitting returns the offer to the listing it was merged out of where that listing is still
+ * there — its slug, its URL and its reviews come back with it — and gives it a new one
+ * otherwise.
+ *
+ * Bookings follow the offer rather than blocking the split. The vendor holding a reservation
+ * is holding *this* boat, so leaving the booking pointed at a listing the offer has left would
+ * describe a charter of something else.
+ *
+ * The source is stamped `rejected` so the next sync does not re-propose the pair, and the
+ * candidate row keeps its own `confirmed`: the merge did happen, and the record of a decision
+ * is not improved by pretending otherwise.
+ */
+export async function splitListingOffer(
+  db: Database,
+  actorUserId: string,
+  input: SplitInput,
+): Promise<SplitResult> {
+  const now = new Date();
+
+  const result = await db.transaction(async (tx) => {
+    const [offer] = await tx
+      .select({
+        id: listingOffer.id,
+        listingId: listingOffer.listingId,
+        listingSourceId: listingOffer.listingSourceId,
+        title: listingOffer.title,
+        operatorId: listingOffer.operatorId,
+        homeBaseId: listingOffer.homeBaseId,
+      })
+      .from(listingOffer)
+      .where(eq(listingOffer.id, input.listingOfferId))
+      .for("update")
+      .limit(1);
+
+    if (!offer) throw new ORPCError("NOT_FOUND", { message: "Unknown offer" });
+
+    const siblings = await tx
+      .select({ total: count() })
+      .from(listingOffer)
+      .where(eq(listingOffer.listingId, offer.listingId));
+
+    if ((siblings[0]?.total ?? 0) < 2) {
+      throw new ORPCError("CONFLICT", {
+        message: "This listing has only one offer, so there is nothing to split off",
+        data: { code: "NOTHING_TO_SPLIT" },
+      });
+    }
+
+    const origin = await findMergedOrigin(tx, offer.listingId, offer.listingSourceId);
+    const target = origin ?? (await createListingForOffer(tx, offer));
+
+    await tx.update(listingOffer).set({ listingId: target }).where(eq(listingOffer.id, offer.id));
+
+    for (const table of OFFER_CHILD_TABLES) {
+      await tx.execute(sql`
+        update ${sql.raw(table)}
+        set listing_id = ${target}
+        where listing_offer_id = ${offer.id}
+      `);
+    }
+
+    await tx
+      .update(listingSource)
+      .set({
+        listingId: target,
+        matchStatus: "rejected",
+        matchedBy: `admin:${actorUserId}`,
+        matchedAt: now,
+      })
+      .where(eq(listingSource.id, offer.listingSourceId));
+
+    const bookings = await tx.execute<{ id: string }>(sql`
+      update booking set listing_id = ${target}
+      where listing_offer_id = ${offer.id} and listing_id <> ${target}
+      returning id
+    `);
+
+    await tx.execute(sql`
+      update quote set listing_id = ${target}
+      where listing_offer_id = ${offer.id} and listing_id <> ${target}
+    `);
+
+    if (origin) {
+      await tx
+        .update(listing)
+        .set({ status: "published", mergedIntoListingId: null })
+        .where(eq(listing.id, origin));
+    }
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      action: "update",
+      entityType: "listing",
+      entityId: target,
+      before: { listingOfferId: offer.id, listingId: offer.listingId, note: input.note ?? null },
+      after: {
+        split: true,
+        listingOfferId: offer.id,
+        listingId: target,
+        restoredOrigin: origin !== null,
+        movedBookingIds: bookings.rows.map((row) => row.id),
+      },
+    });
+
+    return {
+      listingOfferId: offer.id,
+      listingId: target,
+      restoredOrigin: origin !== null,
+      movedBookingCount: bookings.rows.length,
+      previousListingId: offer.listingId,
+    };
+  });
+
+  await resolveCanonicalListings(db, [result.listingId, result.previousListingId]);
+  await rebuildSearchReadModelsAfterSync(db, {
+    listingIds: [result.listingId, result.previousListingId],
+  });
+
+  return {
+    listingOfferId: result.listingOfferId,
+    listingId: result.listingId,
+    restoredOrigin: result.restoredOrigin,
+    movedBookingCount: result.movedBookingCount,
+  };
+}
+
+/**
+ * The listing this offer was merged out of, if it is still standing and still empty.
+ *
+ * Returning an offer to its own listing keeps the URL, the slug and the reviews that went with
+ * it. A `merged` listing that has since acquired offers of its own is not that listing any
+ * more, so it is left alone and the offer gets a new one.
+ */
+async function findMergedOrigin(
+  tx: DatabaseExecutor,
+  currentListingId: string,
+  listingSourceId: string,
+): Promise<string | null> {
+  const rows = await tx.execute<{ id: string }>(sql`
+    select l.id
+    from listing l
+    where l.merged_into_listing_id = ${currentListingId}
+      and l.status = 'merged'
+      and not exists (select 1 from listing_offer o where o.listing_id = l.id)
+      and exists (
+        select 1 from audit_log a
+        where a.action = 'merge'
+          and a.after ->> 'mergedListingId' = l.id
+          and a.before -> 'sourceIds' @> ${JSON.stringify([{ id: listingSourceId }])}::jsonb
+      )
+    limit 1
+  `);
+
+  return rows.rows[0]?.id ?? null;
+}
+
+/** A listing of its own for an offer with nowhere to return to. */
+async function createListingForOffer(
+  tx: DatabaseExecutor,
+  offer: {
+    id: string;
+    title: string | null;
+    operatorId: string | null;
+    homeBaseId: string | null;
+  },
+): Promise<string> {
+  if (!offer.operatorId || !offer.homeBaseId) {
+    throw new ORPCError("CONFLICT", {
+      message: "This offer names no operator or base, so it cannot stand on its own listing",
+      data: { code: "OFFER_INCOMPLETE" },
+    });
+  }
+
+  const id = `ylst_split_${offer.id}`;
+  await tx
+    .insert(listing)
+    .values({
+      id,
+      /* Unique by construction: one split listing per offer, and an offer splits once. */
+      slug: `${slugify(offer.title ?? "yacht")}-${offer.id.slice(-8)}`,
+      title: offer.title ?? "",
+      operatorId: offer.operatorId,
+      homeBaseId: offer.homeBaseId,
+      status: "published",
+    })
+    .onConflictDoNothing();
+
+  return id;
+}
+
+function slugify(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "yacht"
+  );
+}
+
+/**
+ * The listing-level rows a customer would otherwise lose sight of.
+ *
+ * Reviews are about the boat, not about who sold it, so they follow. A wishlist entry follows
+ * only where the same wishlist does not already hold the survivor; the duplicate is dropped,
+ * because "saved twice" was only ever an artefact of the catalogue showing one yacht twice.
+ */
+async function carryListingReferences(
+  tx: DatabaseExecutor,
+  fromListingId: string,
+  toListingId: string,
+): Promise<void> {
+  await tx.execute(sql`
+    update review set listing_id = ${toListingId} where listing_id = ${fromListingId}
+  `);
+
+  await tx.execute(sql`
+    update wishlist_item w
+    set listing_id = ${toListingId}
+    where w.listing_id = ${fromListingId}
+      and not exists (
+        select 1 from wishlist_item held
+        where held.wishlist_id = w.wishlist_id and held.listing_id = ${toListingId}
+      )
+  `);
+
+  await tx.execute(sql`
+    delete from wishlist_item where listing_id = ${fromListingId}
+  `);
 }
 
 /**
@@ -734,16 +1104,45 @@ export async function confirmDuplicateCandidate(
 export async function rejectDuplicateCandidate(
   db: Database,
   actorUserId: string,
-  candidateId: string,
+  input: { candidateId: string; note?: string },
+): Promise<Resolution> {
+  return closeCandidate(db, actorUserId, input, "rejected");
+}
+
+/**
+ * "I looked and I cannot tell." Neither of the other two verdicts, and kept apart from both.
+ *
+ * The precision that will one day justify auto-approval is confirmed over confirmed-plus-
+ * rejected, so filing every hard pair as a rejection would sink the figure the decision rests
+ * on. A deferred pair leaves the queue and stays readable.
+ */
+export async function deferDuplicateCandidate(
+  db: Database,
+  actorUserId: string,
+  input: { candidateId: string; note?: string },
+): Promise<Resolution> {
+  return closeCandidate(db, actorUserId, input, "deferred");
+}
+
+async function closeCandidate(
+  db: Database,
+  actorUserId: string,
+  input: { candidateId: string; note?: string },
+  decision: "rejected" | "deferred",
 ): Promise<Resolution> {
   const now = new Date();
 
   return db.transaction(async (tx) => {
-    const candidate = await lockPendingCandidate(tx, candidateId);
+    const candidate = await lockPendingCandidate(tx, input.candidateId);
 
     await tx
       .update(listingDuplicateCandidate)
-      .set({ decision: "rejected", reviewer: actorUserId, reviewedAt: now })
+      .set({
+        decision,
+        reviewer: actorUserId,
+        reviewerNote: input.note ?? null,
+        reviewedAt: now,
+      })
       .where(eq(listingDuplicateCandidate.id, candidate.id));
 
     await writeAuditLog(tx, {
@@ -752,18 +1151,15 @@ export async function rejectDuplicateCandidate(
       entityType: "listing_duplicate_candidate",
       entityId: candidate.id,
       before: { decision: candidate.decision },
-      after: {
-        decision: "rejected",
-        sourceIds: [candidate.sourceAId, candidate.sourceBId],
-      },
+      after: { decision, sourceIds: [candidate.sourceAId, candidate.sourceBId] },
     });
 
     return {
       candidateId: candidate.id,
-      decision: "rejected" as const,
+      decision,
       keptListingId: null,
-      hiddenListingId: null,
-      movedSourceCount: 0,
+      mergedListingId: null,
+      movedOfferCount: 0,
       closedCandidateCount: 0,
     };
   });

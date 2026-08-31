@@ -18,7 +18,12 @@ import {
   duplicateDetailSchema,
   duplicateQueueInputSchema,
   duplicateQueueSchema,
+  duplicateDeferInputSchema,
+  duplicateMetricsInputSchema,
+  duplicateMetricsSchema,
   duplicateRejectInputSchema,
+  duplicateSplitInputSchema,
+  duplicateSplitSchema,
   duplicateResolutionSchema,
   listingAdminListInputSchema,
   listingAdminListSchema,
@@ -89,9 +94,12 @@ import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
   confirmDuplicateCandidate,
+  deferDuplicateCandidate,
+  duplicateMatchMetrics,
   getDuplicateCandidateDetail,
   listDuplicateCandidates,
   rejectDuplicateCandidate,
+  splitListingOffer,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
 import {
@@ -371,7 +379,59 @@ export const adminRouter = {
       .input(duplicateRejectInputSchema)
       .output(duplicateResolutionSchema)
       .handler(({ context, input }) =>
-        rejectDuplicateCandidate(context.db, context.session.user.id, input.candidateId),
+        rejectDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    defer: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/defer",
+        operationId: "deferDuplicateCandidate",
+        summary: "Set a duplicate pair aside without judging it",
+        description:
+          "Closes the candidate as undecidable and leaves both listings exactly where they are. Neither a merge nor a rejection on purpose: the precision figure that would justify auto-approval is confirmed over confirmed-plus-rejected, so filing a pair nobody could call as a rejection would sink the number the decision rests on. Takes an optional note. Rejects an already-reviewed candidate with CONFLICT. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The deferred candidate.",
+        spec: withJsonBodyExample({
+          candidateId: "ldup_example",
+          note: "Same base, but the hull numbers differ",
+        }),
+      })
+      .input(duplicateDeferInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        deferDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    metrics: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/metrics",
+        operationId: "duplicateMatchMetrics",
+        summary: "How often each matcher rule is right",
+        description:
+          "Precision per rule and confidence band, which is the number auto-approval turns on and the one the queue's own counts cannot answer: those say how much work is left, not how often the proposal was correct. Precision is confirmed over confirmed-plus-rejected, with merges a split later undid counted against the rule rather than for it. Deferred pairs are outside the denominator on purpose — they are the cases nobody could call, and counting them as failures would understate a rule that is doing fine on the ones it does settle. A band with nothing decided in it reports null rather than a rate invented from an empty sample.",
+        tags: ["Admin"],
+        successDescription: "One row per rule and band, with the sample they rest on.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(duplicateMetricsInputSchema)
+      .output(duplicateMetricsSchema)
+      .handler(({ context }) => duplicateMatchMetrics(context.db)),
+    split: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/split",
+        operationId: "splitListingOffer",
+        summary: "Take one provider's offer back out of a merged listing",
+        description:
+          "Undoes a merge, one offer at a time. The offer returns to the listing it was merged out of when that listing is still standing and still empty — bringing back its slug, its URL and its reviews — and gets a new listing otherwise. Its calendar, rates, extras and booking terms move with it, and so do any bookings, because the vendor holding a reservation is holding this boat and a booking left pointing at the other listing would describe a charter of something else. The source is stamped rejected so the sync does not re-propose the pair; the candidate keeps its confirmed verdict, because the merge did happen. Refuses with CONFLICT when the listing has only one offer. Rebuilds both search documents and writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "Where the offer went, and what followed it.",
+        spec: withJsonBodyExample({ listingOfferId: "loff_example" }),
+      })
+      .input(duplicateSplitInputSchema)
+      .output(duplicateSplitSchema)
+      .handler(({ context, input }) =>
+        splitListingOffer(context.db, context.session.user.id, input),
       ),
   },
   audit: {

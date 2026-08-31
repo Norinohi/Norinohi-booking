@@ -2104,8 +2104,13 @@
         "confirmedWithClosed": "Fusionado. {count} fuentes de proveedor apuntan ahora al anuncio conservado y se cerraron {closed} parejas más con él.",
         "rejected": "Registrado como dos yates diferentes.",
         "conflict": "Otra persona ya revisó este par. Recargando la cola.",
-        "error": "Algo salió mal. Inténtalo de nuevo."
-      }
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "deferred": "Aplazado. No cuenta ni a favor ni en contra del emparejador."
+      },
+      "defer": "Aplazar",
+      "notePlaceholder": "¿Por qué? (opcional)",
+      "noteLabel": "Nota del revisor",
+      "noteWas": "Nota: {note}"
     },
     "Sync": {
       "title": "Historial de sincronización",
