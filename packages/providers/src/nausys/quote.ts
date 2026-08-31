@@ -16,7 +16,7 @@ import {
   type QuoteRequest,
 } from "../types";
 import type { NausysClient } from "./client";
-import { extraLineMinor } from "./extras";
+import { extraLineMinor, isIncludedInCharterPrice } from "./extras";
 import type { NausysConfig } from "./config";
 import {
   nausysEndpoints,
@@ -496,7 +496,10 @@ function toExtraLine(
   group: NonNullable<QuoteLine["group"]>,
 ): QuoteLine {
   const identity = offerExtraIdentity(extra);
-  if (extra.currency !== currency) {
+  /* Only a line that will be billed has a currency to disagree about: one the charter price
+     already covers is quoted at zero, and refusing it would lose the listing over a figure
+     nobody is charged. */
+  if (extra.currency !== currency && !isIncludedInCharterPrice(extra)) {
     throw new ContractError(
       `NauSYS extra ${formatExtraCode(identity.kind, identity.externalId)} is priced in ${extra.currency}, the charter in ${currency}`,
     );
@@ -523,10 +526,17 @@ function toExtraLine(
  * what we collect today; SEPARATE_PAYMENT is paid at the base on arrival. Reading
  * this backwards misstates what the customer owes now, so an unrecognized literal
  * fails rather than defaulting.
+ *
+ * INCLUDED_IN_PRICE is neither: the service is inside the charter price, which is collected on
+ * our own schedule, so it takes the base line's `now` and `extraLineMinor` prices it at zero.
+ * It used to reach the default and throw, which cost the whole listing rather than the line:
+ * a ContractError out of the adapter is an errored offer, no winner, and a flat CONFLICT on
+ * every date, so Altair Dufour 412 could not be quoted at all while NauSYS held it FREE.
  */
 function payWhenFor(extra: RestExtra): QuoteLine["payWhen"] {
   switch (extra.calculationType) {
     case "ADVANCE_PAYMENT":
+    case "INCLUDED_IN_PRICE":
       return "now";
     // Absent on some services; the vendor bills those at the base.
     case "SEPARATE_PAYMENT":

@@ -794,13 +794,17 @@ export async function listAvailabilityConstraints(
       checkoutWeekday: number | null;
       minNights: number | null;
       maxNights: number | null;
+      seasonStart: string | null;
+      seasonEnd: string | null;
     }>(sql`
       select
         rule.listing_offer_id as "offerId",
         rule.checkin_weekday as "checkinWeekday",
         rule.checkout_weekday as "checkoutWeekday",
         rule.min_nights as "minNights",
-        rule.max_nights as "maxNights"
+        rule.max_nights as "maxNights",
+        rule.season_start as "seasonStart",
+        rule.season_end as "seasonEnd"
       from listing_checkin_rule rule
       join listing_offer o
         on o.id = rule.listing_offer_id
@@ -873,7 +877,35 @@ export async function listAvailabilityConstraints(
       where price.kind = 'weekly'
         and price.start_date < ${input.to}
         and price.end_date > ${input.from}
-      order by price.start_date asc
+
+      union all
+
+      /*
+       * A week the vendor itself priced opens its season as surely as a published rate does --
+       * more surely, since it is an answer about this exact charter rather than a band the
+       * season was cut into. Without it the rate list alone decided, and a confirming sweep
+       * that had just been told a price for a week outside every published band still read as
+       * a season nobody had opened: the calendar greyed it out and the card could not offer it.
+       */
+      select
+        slot.listing_offer_id as "offerId",
+        slot.start_date as "startDate",
+        slot.end_date as "endDate",
+        slot.price_minor as "priceMinor",
+        slot.currency,
+        true as "confirmed"
+      from availability_slot slot
+      join listing_offer o
+        on o.id = slot.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where slot.availability_confirmed
+        and slot.status = 'available'
+        and slot.price_minor is not null
+        and slot.currency is not null
+        and slot.start_date < ${input.to}
+        and slot.end_date > ${input.from}
+      order by "startDate" asc
     `),
     db.execute<{ offerId: string; startDate: string; endDate: string }>(sql`
       /*
@@ -1593,14 +1625,20 @@ function foldFeeVariants(
 
     const low = Math.min(seen.price.amountMinor, next.price.amountMinor);
     const high = Math.max(seen.priceToMinor ?? seen.price.amountMinor, next.price.amountMinor);
+    const cheaper = seen.price.amountMinor <= next.price.amountMinor ? seen : next;
+    const dearer = cheaper === seen ? next : seen;
     byLabel.set(item.sourceLabel, {
-      ...(seen.price.amountMinor <= next.price.amountMinor ? seen : next),
+      ...cheaper,
       price: { ...seen.price, amountMinor: low },
       priceToMinor: high > low ? high : null,
       // Variants that disagree on where the fee is collected say nothing together.
       payableInBase: seen.payableInBase === next.payableInBase ? seen.payableInBase : null,
       // Conditional only where every variant is; one unconditional variant is always charged.
       oneWayOnly: seen.oneWayOnly && next.oneWayOnly,
+      /* Included only where every variant is, for the same reason: a variant the operator
+         charges for is a charge. Read off the dearer row when the cheaper one is included,
+         since the spread above would otherwise hand the whole fee that variant's silence. */
+      pricingType: cheaper.pricingType === "included" ? dearer.pricingType : cheaper.pricingType,
     });
   }
 
@@ -1645,10 +1683,16 @@ function pricedItem(
  * disagree on individual extras — so this only answers for an extra no offer
  * covers. `per_booking` here carries no measure, only "not settled at the base";
  * what the price is per is `priceMeasure`'s job.
+ *
+ * INCLUDED_IN_PRICE is settled nowhere, because it is not a charge: the operator has priced
+ * the service inside the charter itself and NauSYS keeps sending the list value anyway. The
+ * quote drops that figure to zero, so answering "pay at check-in" here put a fee on the
+ * listing page that the sidebar beside it was not charging.
  */
 function pricingTypeOf(
   calculationType: string | null | undefined,
 ): ListingPricedItem["pricingType"] {
+  if (calculationType === "INCLUDED_IN_PRICE") return "included";
   return calculationType === "ADVANCE_PAYMENT" ? "per_booking" : "pay_at_check_in";
 }
 

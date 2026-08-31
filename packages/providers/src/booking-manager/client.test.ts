@@ -31,6 +31,31 @@ function clientWith(fetchImpl: FetchLike) {
   });
 }
 
+/*
+ * A quote's budget in offer-selection.ts covers the wait on this queue as well as the vendor's
+ * own work, so a customer call sharing one lane with every other customer times out under
+ * ordinary traffic and is reported to them as a week that cannot be priced.
+ */
+describe("BookingManagerClient live lanes", () => {
+  const client = clientWith(async () => new Response("[]", { status: 200 }));
+
+  it("keeps a customer call off the lane the sweeps share", () => {
+    expect(client.liveLane().queueKey).not.toBe(client.sweepLane("offers", 0).queueKey);
+  });
+
+  it("spreads consecutive customer calls across lanes rather than queueing them", () => {
+    const lanes = new Set(Array.from({ length: 4 }, () => client.liveLane().queueKey));
+
+    expect(lanes.size).toBe(4);
+  });
+
+  it("keeps a ceiling on how many run at once, since this vendor has not exempted them", () => {
+    const lanes = new Set(Array.from({ length: 40 }, () => client.liveLane().queueKey));
+
+    expect(lanes.size).toBe(4);
+  });
+});
+
 describe("BookingManagerClient retries", () => {
   it("does not replay POST /requests, which files a vendor-side request", async () => {
     let attempts = 0;

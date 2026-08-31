@@ -59,7 +59,8 @@ const pricedItemSchema = includedItemSchema.extend({
   payableInBase: z.boolean().nullable(),
   /** Charged only on a charter that ends at a different base than it started. */
   oneWayOnly: z.boolean(),
-  pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in"]),
+  /** `included` means the charter price already covers it, so the page names it without a price. */
+  pricingType: z.enum(["per_booking", "per_week", "pay_at_check_in", "included"]),
 });
 
 /**
@@ -505,6 +506,10 @@ export const offerConstraintsSchema = z.object({
       checkoutWeekday: z.number().int().min(0).max(6).nullable(),
       minNights: z.number().int().nullable(),
       maxNights: z.number().int().nullable(),
+      /* When the rule applies, judged against the check-in day and inclusive at both ends. A
+         rule out of season does not admit a charter; see `rulesOn` in availability-rules.ts. */
+      seasonStart: z.string().nullable(),
+      seasonEnd: z.string().nullable(),
     }),
   ),
   occupied: z.array(

@@ -36,6 +36,8 @@ import type { BookingManagerConfig } from "./config";
 import { BM_COLD_START_NOTICE_MS } from "./warmup";
 import { resolveBookingManagerConfig } from "./config";
 import { BookingManagerClient } from "./client";
+import { listAdvertisedCharterPeriods } from "@yacht-charter/db/search/read-model";
+import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
 import { createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
@@ -72,6 +74,8 @@ export class BookingManagerInventoryProvider
   private readonly client: BookingManagerClient;
   private readonly resolver: CatalogueResolver;
   private readonly years: number[];
+  /** Read once, so a long-lived process sweeps the same day it started from. */
+  private readonly today: string;
   private readonly currency: string;
   private readonly quotes: ReturnType<typeof createBookingManagerQuoteService>;
   private readonly bookings: ReturnType<typeof createBookingManagerBookingService>;
@@ -86,6 +90,7 @@ export class BookingManagerInventoryProvider
     const now = options.now ?? new Date();
     const thisYear = now.getUTCFullYear();
     this.years = options.years ?? [thisYear, thisYear + 1];
+    this.today = now.toISOString().slice(0, 10);
     this.currency = options.currency ?? "EUR";
 
     this.quotes = createBookingManagerQuoteService({
@@ -176,6 +181,16 @@ export class BookingManagerInventoryProvider
         .map(Number)
         .filter(Number.isFinite),
       years: this.years,
+      /*
+       * Read when the pass starts rather than now, for the reason NauSYS reads its own here:
+       * the advertised periods move as charters are sold and the read model re-mints them.
+       */
+      loadAdvertisedPeriods: () =>
+        listAdvertisedCharterPeriods(this.db, {
+          providerCode: this.key,
+          limit: ADVERTISED_PERIOD_LIMIT,
+        }),
+      today: this.today,
     });
   }
 

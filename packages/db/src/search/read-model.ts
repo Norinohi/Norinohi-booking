@@ -33,6 +33,13 @@ const PINNED_MEDIA_FIRST = sql`case when lm.listing_offer_id = ${PINNED_OFFER("m
 
 const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 1 else 2 end`;
 
+/**
+ * The nights a `listing_price_period.kind = 'weekly'` rate covers, and therefore the only
+ * charter length that rate can price. Mirrored by WEEKLY_RATE_DAYS in the API presenter,
+ * which captions the figure this projection chooses.
+ */
+const WEEKLY_RATE_NIGHTS = 7;
+
 export type RebuildListingSearchDocsOptions = {
   listingIds?: readonly string[];
 };
@@ -83,6 +90,16 @@ export async function rebuildListingSearchDocs(
          * almost none of them will book.
          */
         money.all_in_minor,
+        /*
+         * The currency the figure beside it is actually in.
+         *
+         * The doc used to label it with the rate list's currency, which is a different
+         * question: a confirmed slot answers in the money we asked the vendor for, while the
+         * published list carries whichever the charter company set. Where those differ the
+         * card printed a euro number with a dollar sign -- 95 listings here, all of them
+         * Caribbean, understating the price by whatever the pair was worth that day.
+         */
+        money.price_currency,
         /*
          * The same figure in one currency, for every comparison the catalogue makes across
          * listings -- the price sort, the price filter, the "from" aggregates, and the pick of
@@ -173,9 +190,97 @@ export async function rebuildListingSearchDocs(
        * Weekdays are stepped onto arithmetically rather than by walking a day at a time -- dow is
        * 0 Sunday, the numbering listing_checkin_rule stores. Past periods are excluded first, so
        * the row count stays proportional to the season ahead.
+       *
+       * Each rule is also confined to its own season, since a candidate start day outside it is
+       * a day that rule never governed.
        */
       left join lateral (
-        select c.candidate as bookable_from, c.candidate + n.nights as bookable_to
+        select candidates.bookable_from, candidates.bookable_to
+        from (
+        /*
+         * What the vendor itself said it would sell, and priced, ahead of anything this
+         * projection can work out for itself.
+         *
+         * The rest of this lateral is an inference: free stretches inverted from occupancy,
+         * cut by the turnaround rules we hold a copy of, inside a season somebody published a
+         * rate for. It is a good inference and it is all there is for a charter nobody has
+         * asked about -- but where the confirming sweep has asked, the answer beats it. On a
+         * random 25 dated cards, every card whose advertised week the vendor had priced quoted
+         * on open and to the cent; the two that failed were both advertising a week only the
+         * inference stood behind.
+         *
+         * The turnaround rules still apply to them, which is not obvious and was wrong the
+         * first time. The vendor's word beats our copy of its rules on the merits -- it sold
+         * the week -- but the detail page will not open on a period rangeStatus refuses, and
+         * the calendar greys those days out, so a card advertising one sends the customer to a
+         * picker that disagrees with it. 21 of 150 sampled cards landed in that state:
+         * Friday and Sunday check-ins the vendor had priced against a rule copy that says
+         * Saturday. Until the calendar itself learns to trust a confirmed slot, the honest
+         * ceiling for a card is what both of them accept.
+         */
+        select
+          slot.start_date as bookable_from,
+          slot.end_date as bookable_to,
+          0 as confirmed_first
+        from availability_slot slot
+        where slot.listing_offer_id = o.id
+          and slot.availability_confirmed
+          and slot.status = 'available'
+          and slot.price_minor is not null
+          and slot.start_date >= current_date
+          /* A refusal is the later word, and occupancy from a newer dump outranks both. */
+          and not exists (
+            select 1
+            from listing_refused_period refused
+            where refused.listing_offer_id = o.id
+              and refused.start_date >= slot.start_date
+              and refused.end_date <= slot.end_date
+              and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
+          )
+          and not exists (
+            select 1
+            from availability_slot taken
+            where taken.listing_offer_id = o.id
+              and taken.status <> 'available'
+              and taken.start_date < slot.end_date
+              and taken.end_date > slot.start_date
+          )
+          /*
+           * No published-rate test here, unlike the inferred candidates below. seasonOpen asks
+           * whether anyone has priced the stretch, and this row is the vendor pricing it: the
+           * constraints endpoint reads confirmed slots as rates for exactly that reason, so the
+           * calendar accepts these days too. Requiring a band as well hid 210 charters the
+           * vendor had quoted us a price for.
+           */
+          /* What rangeStatus asks of the same period: any rule in force on the check-in day
+             that admits this shape, or no published rule at all. */
+          and (
+            not exists (
+              select 1 from listing_checkin_rule any_rule
+              where any_rule.listing_offer_id = o.id
+            )
+            or exists (
+              select 1
+              from listing_checkin_rule rule
+              where rule.listing_offer_id = o.id
+                and (rule.season_start is null or slot.start_date >= rule.season_start)
+                and (rule.season_end is null or slot.start_date <= rule.season_end)
+                and (
+                  rule.checkin_weekday is null
+                  or extract(dow from slot.start_date)::int = rule.checkin_weekday
+                )
+                and (
+                  rule.checkout_weekday is null
+                  or extract(dow from slot.end_date)::int = rule.checkout_weekday
+                )
+                and (rule.min_nights is null or slot.end_date - slot.start_date >= rule.min_nights)
+                and (rule.max_nights is null or slot.end_date - slot.start_date <= rule.max_nights)
+            )
+          )
+
+        union all
+
+        select c.candidate as bookable_from, c.candidate + n.nights as bookable_to, 1
         from listing_free_period free
         join listing_price_period price
           on price.listing_offer_id = o.id
@@ -210,6 +315,15 @@ export async function rebuildListingSearchDocs(
           and (rule.max_nights is null or n.nights <= rule.max_nights)
           and c.candidate + n.nights <= free.end_date
           /*
+           * Only rules in force on the day the charter starts, which is how rulesOn reads them
+           * in availability-rules.ts. Turnaround terms lapse, and a lapsed one used to apply
+           * forever: the three-night any-day period NauSYS yacht 29476220 stopped selling in
+           * May 2025 minted a three-night September 2026 card that its offers engine refused
+           * while quoting the surrounding week happily.
+           */
+          and (rule.season_start is null or c.candidate >= rule.season_start)
+          and (rule.season_end is null or c.candidate <= rule.season_end)
+          /*
            * A charter that swallows a period the provider refused is one it will not sell either,
            * which is the containment rule wasRefused applies. Without this the card advertised the
            * cheapest week of the Shannon fleet -- free, priced, and declined by the vendor's own
@@ -224,7 +338,9 @@ export async function rebuildListingSearchDocs(
               /* Only refusals something has re-confirmed lately; see REFUSAL_TRUST_DAYS. */
               and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
           )
-        order by c.candidate, n.nights
+        ) candidates
+        /* Earliest of whichever kind wins, but a vendor-priced charter before an inferred one. */
+        order by candidates.confirmed_first, candidates.bookable_from, candidates.bookable_to
         limit 1
       ) checkin on true
       /*
@@ -244,7 +360,22 @@ export async function rebuildListingSearchDocs(
         where price.listing_offer_id = o.id
           and price.kind = 'weekly'
           and price.start_date <= checkin.bookable_from
-          and price.end_date > checkin.bookable_from
+          /*
+           * Every night of the charter, not merely the day it starts.
+           *
+           * Rate bands are seasonal and a charter can straddle two of them: 94 Booking Manager
+           * cards advertise a Monday-to-Monday week against Saturday-to-Saturday bands, and
+           * pricing those from the band the Monday falls in quoted one week's rate for a
+           * charter that spans two -- 2,574.00 printed where the two bands it covers are
+           * 2,320.00 and 2,356.00.
+           *
+           * The minus one is because the charter's last night is the day before its check-out
+           * morning, and because the two vendors end a band differently: NauSYS writes the
+           * Saturday week 3 Oct as 03..09 Oct, Booking Manager the same week as 29 Aug..5 Sep.
+           * Testing the check-out day itself would have read as uncovered for 57% of the NauSYS
+           * fleet, which is the projection deleting prices over a storage convention.
+           */
+          and price.end_date >= checkin.bookable_to - 1
         order by price.price_minor
         limit 1
       ) week on true
@@ -316,6 +447,75 @@ export async function rebuildListingSearchDocs(
             extra.price_minor
         ) applicable
       ) fees on true
+      /*
+       * The crew the customer cannot decline.
+       *
+       * A crewed listing is sold with people aboard, and the detail page opens on the listing's
+       * own first crew option rather than on a choice the visitor made -- so the sidebar prices
+       * the crew before they touch anything. The card was pricing the hull alone: Noe Sarnico
+       * 65 advertised EUR 41,142.85 beside a page that opened at EUR 43,542.85, the difference
+       * being a chef nobody could have declined.
+       *
+       * Which roles ride along mirrors crewServiceIdsFor in the NauSYS quote mapper, because
+       * that is what the sidebar will actually be quoted: everything for a full-crew charter,
+       * the skipper alone for a skippered one, nothing for a bareboat. Kept apart from the fees
+       * above rather than folded into them, because a vendor-confirmed offer brings its own
+       * obligatory-extras total and crew is not in it.
+       */
+      left join lateral (
+        select
+          sum(
+            applicable.price_minor
+            * case
+                /* What the vendor multiplies by, checked against its own arithmetic: a chef at
+                   EUR 300 "per day + food" on a seven-night charter was billed 2,400, which is
+                   the eight calendar days the boat is held, not the seven nights aboard. */
+                when applicable.measure like 'per day%' then span.nights + 1
+                when applicable.measure like 'per night%' then span.nights
+                when applicable.measure like 'per week%' then ceil(span.nights::numeric / 7)
+                else 1
+              end
+          )::int as crew_minor
+        from (
+          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
+        ) span
+        cross join lateral (
+          select distinct on (extra.name)
+            extra.price_minor,
+            coalesce(extra.price_measure, '') as measure
+          from provider_extra_catalogue extra
+          where extra.listing_offer_id = o.id
+            and extra.crew_role is not null
+            /*
+             * Only the crew nothing has counted yet. An operator that files its skipper as an
+             * obligatory extra has it in both fee totals already -- the catalogue sum beside
+             * this lateral, and the vendor's own subtotal on a confirmed offer -- so adding it
+             * here charged for the skipper twice: Sargantal advertised EUR 11,268 against a
+             * quote of EUR 9,268, the difference being one skipper.
+             */
+            and not extra.obligatory
+            and (
+              o.crew_type = 'full-crew'
+              or (o.crew_type = 'skipper' and extra.crew_role = 'skipper')
+            )
+            /* Priced by the hour or by the piece, this cannot be multiplied out from a
+               catalogue row: 97 of 13,518 crew rows, left out rather than guessed at. */
+            and coalesce(extra.price_measure, '') not like '%hour%'
+            and coalesce(extra.price_measure, '') not like '%piece%'
+            and (extra.season_end is null or extra.season_end >= current_date)
+            and (
+              extra.season_start is null
+              or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+            )
+          order by
+            extra.name,
+            (
+              (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
+              and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
+            ) desc,
+            extra.price_minor
+        ) applicable
+      ) crew on true
       left join lateral (
         select bool_or(slot.status = 'option') as has_temporary_booking
         from availability_slot slot
@@ -329,13 +529,37 @@ export async function rebuildListingSearchDocs(
        * The vendor's own answer wins outright, currency and all; the published list is the
        * fallback for a charter nobody has asked about. Whichever it is, the base and the fees
        * come from that one source, so the figure is in one currency throughout.
+       *
+       * The list rate is a rate for a week -- listing_price_period.kind = 'weekly' is what
+       * this reads -- so it can only stand beside a charter of a week. Where the advertised
+       * period is some other length and nobody has priced it, there is no figure to print:
+       * "Price for 3 days EUR 3,450" was a week's rate captioned with a three-night charter
+       * the vendor then quoted at EUR 1,621, and a fortnight would be understated by half the
+       * same way. A weekly rate cannot be prorated into either -- NauSYS prices short charters
+       * off a separate list precisely because they are not a seventh of the week each -- so
+       * the card says "on request" until the sweep asks about that exact period, which is
+       * now a period it asks about (see sweepWindows in the NauSYS adapter).
+       *
+       * Only the price is withheld. The dates stay: they are what this listing will sell, and
+       * the detail page opens its calendar and its quote on them.
        */
       cross join lateral (
         select
           case when confirmed.price_minor is not null then confirmed.currency
                else coalesce(rate.currency, o.default_currency) end as price_currency,
-          case when confirmed.price_minor is not null then confirmed.price_minor
-               else coalesce(week.price_minor, rate.price_from_minor) end as base_minor
+          case
+            when confirmed.price_minor is not null then confirmed.price_minor
+            when checkin.bookable_from is not null
+             and checkin.bookable_to - checkin.bookable_from <> ${WEEKLY_RATE_NIGHTS}
+            then null
+            /*
+             * A charter with dates is priced by the band that covers it or not at all. The
+             * season minimum below is a "from" price, which is honest for a card printing no
+             * dates and a different charter's rate beside one that does.
+             */
+            when checkin.bookable_from is not null then week.price_minor
+            else rate.price_from_minor
+          end as base_minor
       ) chosen
       cross join lateral (
         select
@@ -358,6 +582,9 @@ export async function rebuildListingSearchDocs(
                      fees.unavoidable_minor,
                      0
                    )
+                 /* Added to either source: a confirmed offer prices the charter and its
+                    obligatory extras, never the crew the page will select for the visitor. */
+                 + coalesce(crew.crew_minor, 0)
           end as all_in_minor
       ) money
       /* Resolved once per offer; the conversion reads it twice. */
@@ -499,9 +726,23 @@ export async function rebuildListingSearchDocs(
       spec.showers,
       spec.year_built,
       spec.sail_type,
-      -- Only ever shown as "plus a refundable deposit"; a zero is the provider
-      -- saying it takes none, so it is stored as null and the card omits the line.
-      nullif(coalesce(best.security_deposit_minor, l.security_deposit_minor), 0),
+      /*
+       * Only ever shown as "plus a refundable deposit"; a zero is the provider saying it takes
+       * none, so it is stored as null and the card omits the line.
+       *
+       * So is a deposit the card cannot state in its own money. The figure here is the
+       * catalogue's, in whatever currency the operator set, while the price beside it now
+       * follows the vendor's confirmed answer -- which is how 94 cards came to offer a EUR
+       * charter with a USD deposit under it. The vendor states the real one per period at
+       * quote time (depositAmount, which the sidebar shows), so the honest card omits the
+       * line rather than printing two currencies or inventing a conversion.
+       */
+      case
+        when coalesce(best.security_deposit_currency, l.security_deposit_currency) is null
+          or coalesce(best.security_deposit_currency, l.security_deposit_currency)
+             = coalesce(best.price_currency, best.currency, best.default_currency, l.default_currency)
+        then nullif(coalesce(best.security_deposit_minor, l.security_deposit_minor), 0)
+      end,
       case
         when coalesce(best.security_deposit_minor, l.security_deposit_minor) > 0
           then coalesce(best.security_deposit_currency, l.security_deposit_currency)
@@ -530,7 +771,7 @@ export async function rebuildListingSearchDocs(
        * of them will book.
        */
       best.all_in_minor,
-      coalesce(best.currency, best.default_currency, l.default_currency),
+      coalesce(best.price_currency, best.currency, best.default_currency, l.default_currency),
       best.all_in_minor_eur,
       best.offer_id,
       coalesce(spread.offer_count, 0),
@@ -728,6 +969,47 @@ export async function readListingSearchDocStats(db: NodePgDatabase<typeof schema
   `);
 
   return rows[0] ?? { docs: 0, priced: 0, bookable: 0 };
+}
+
+/**
+ * The charters the cards are currently advertising, most-advertised first.
+ *
+ * The confirming sweep exists to replace a published list rate with the price the vendor
+ * itself quotes, and it can only do that for periods it actually asks about. Asking about a
+ * fixed grid of Saturdays instead left the sweep and the cards describing different charters:
+ * roughly half the NauSYS fleet advertises a week the vendor discounts — 30% and 35% are
+ * ordinary — and every card whose week the sweep missed printed the undiscounted list price
+ * beside a quote that then came in hundreds of euro lower.
+ *
+ * Scoped by `best_offer_id`, which is the offer the card is priced from and therefore the
+ * vendor whose sweep should cover it. Past periods are excluded: they are what a stale doc
+ * advertises, not what anyone can buy.
+ */
+export async function listAdvertisedCharterPeriods(
+  db: NodePgDatabase<typeof schema>,
+  options: { providerCode: string; limit: number },
+): Promise<{ startDate: string; endDate: string; listings: number }[]> {
+  const { rows } = await db.execute<{
+    startDate: string;
+    endDate: string;
+    listings: number;
+  }>(sql`
+    select
+      doc.bookable_from as "startDate",
+      doc.bookable_to as "endDate",
+      count(*)::int as listings
+    from listing_search_doc doc
+    join listing_offer o on o.id = doc.best_offer_id
+    join provider p on p.id = o.provider_id
+    where doc.bookable_from is not null
+      and doc.bookable_from >= current_date
+      and p.code = ${options.providerCode}
+    group by doc.bookable_from, doc.bookable_to
+    order by count(*) desc, doc.bookable_from asc
+    limit ${options.limit}
+  `);
+
+  return rows;
 }
 
 export function rebuildListingSearchDocsForListings(

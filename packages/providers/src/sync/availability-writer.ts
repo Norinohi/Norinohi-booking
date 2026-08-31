@@ -1204,26 +1204,36 @@ export function createDrizzleAvailabilitySyncStore(
            * the other vendor eligible and one vendor's occupancy suppressed the other's
            * refusal, so the record said things neither provider had.
            *
-           * The rate test is containment, not equality: it has to cover the whole swept
-           * charter -- that is what makes the vendor's silence a refusal rather than an
-           * unpriced week -- but it does not have to be cut to the same dates.
+           * The rate test asks whether every night of the swept charter carries a published
+           * rate -- that is what makes the vendor's silence a refusal rather than an unpriced
+           * week. Nights rather than a containing row, because a rate list is a run of
+           * seasonal bands and a charter is free to straddle two of them. Requiring one row
+           * to contain the whole charter excluded, in this database:
            *
-           * Equality read the rate list as a calendar of weeks, and only a vendor that
-           * publishes one is legible to it. A season band -- 11 Aug to 19 Dec as a single row,
-           * which is how most of the Caribbean fleet is priced -- equals no week the sweep ever
-           * asks about, so those offers were never eligible and never got a refusal: 6,180 of
-           * 18,059 active offers, holding zero refusals between them, and 5,959 listings
-           * advertising dates off a projection nothing was allowed to correct.
+           *  - every Monday-to-Monday charter on Booking Manager, whose bands are cut
+           *    Saturday to Saturday. Eligible offers for the 31 August 2026 week: nought,
+           *    out of 8,779 that carry a rate for every night of it.
+           *  - two thirds of the NauSYS fleet on any week, through the boundary alone. NauSYS
+           *    writes the Saturday week of 3 October as 03..09 October -- the last night, not
+           *    the check-out morning -- so end_date >= endDate was false for a charter the
+           *    band prices exactly. 2,197 eligible against 6,487.
            *
-           * Still one row rather than a union of adjacent ones, so a charter straddling two
-           * bands stays out. That is the safe direction and the pre-existing one: not eligible
-           * means no refusal recorded, which is the state this whole clause defaults to.
+           * So it is the nights, ending the day before check-out, and a band counts as
+           * covering the days from its start to its end inclusive. That reads both vendors'
+           * conventions without either having to change.
+           *
+           * This only ever widens: a row that contained the whole charter still covers every
+           * night of it, so nothing that earned a refusal before stops earning one.
            */
-          and exists (
-            select 1 from listing_price_period p
-            where p.listing_offer_id = o.id
-              and p.start_date <= ${startDate}
-              and p.end_date >= ${endDate}
+          and not exists (
+            select 1
+            from generate_series(${startDate}::date, ${endDate}::date - 1, interval '1 day') night
+            where not exists (
+              select 1 from listing_price_period p
+              where p.listing_offer_id = o.id
+                and p.start_date <= night::date
+                and p.end_date >= night::date
+            )
           )
           and not exists (
             select 1 from availability_slot s

@@ -22,6 +22,7 @@ import {
 } from "../hooks/use-duplicates";
 import { type DuplicateCandidate, toProviderKey } from "../types";
 import DuplicateDetailDialog from "./duplicate-detail-dialog";
+import ListingSourcesDialog from "./listing-sources-dialog";
 import DuplicateSide from "./duplicate-side";
 
 /* The matcher rules and criteria this build ships labels for; anything else is shown as stored. */
@@ -79,8 +80,26 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
    */
   const [note, setNote] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
-  const pending = candidate.decision === "pending";
+  /*
+   * The listing this pair became, where it is still one. Confirming a merge repoints both
+   * sources at the survivor, so the two sides sharing an id IS the merge standing; a split
+   * moves one back out and they diverge again. That makes it the honest condition for
+   * offering the field-source panel, which only has something to say about a live merge.
+   */
+  const mergedListing =
+    candidate.sideA.listing !== null && candidate.sideA.listing.id === candidate.sideB.listing?.id
+      ? candidate.sideA.listing
+      : null;
+
+  /*
+   * Undecided, or a confirmation a split has taken apart — the server accepts a verdict on
+   * both, and an undone pair is exactly the one a reviewer needs to act on: either it was
+   * split by mistake and should go back together, or it was never a duplicate and should be
+   * recorded as such. Leaving it read-only stranded it in the audit tab.
+   */
+  const decidable = candidate.decision === "pending" || candidate.undone;
   const busy = confirmDuplicate.isPending || rejectDuplicate.isPending || deferDuplicate.isPending;
 
   const value = (key: ComparisonKey, raw: string | number | null): string => {
@@ -170,6 +189,12 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
                 ? t("confidenceUnknown")
                 : t("confidence", { value: Math.round(candidate.confidence * 100) })}
             </Chip>
+            {/*
+              The merge is confirmed and also no longer standing. Without this the Confirmed
+              tab reads as the list of merged listings, and a pair split back apart is
+              indistinguishable from one that held.
+            */}
+            {candidate.undone ? <Chip variant="warning">{t("undone")}</Chip> : null}
             <span className="text-sm leading-[1.3] font-medium text-natural-500">
               {candidate.reviewedAt
                 ? t("reviewed", { date: day(candidate.reviewedAt) })
@@ -205,7 +230,12 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
           <Button variant="subtle" onClick={() => setDetailOpen(true)}>
             {t("showDetail")}
           </Button>
-          {pending ? (
+          {mergedListing ? (
+            <Button variant="neutral" onClick={() => setSourcesOpen(true)}>
+              {t("showSources")}
+            </Button>
+          ) : null}
+          {decidable ? (
             <>
               <Button variant="neutral" onClick={defer} disabled={busy}>
                 {t("defer")}
@@ -218,7 +248,7 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
         </div>
       </header>
 
-      {pending ? (
+      {decidable ? (
         <TextField
           value={note}
           placeholder={t("notePlaceholder")}
@@ -241,7 +271,7 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
               which={index === 0 ? "a" : "b"}
               side={side}
               rows={rows}
-              onKeep={pending && listingId ? () => keep(listingId) : undefined}
+              onKeep={decidable && listingId ? () => keep(listingId) : undefined}
               keepPending={keeping !== null && keeping === listingId}
               keepDisabled={busy}
             />
@@ -250,6 +280,15 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
       </div>
 
       <DuplicateDetailDialog candidate={candidate} open={detailOpen} onOpenChange={setDetailOpen} />
+
+      {mergedListing ? (
+        <ListingSourcesDialog
+          listingId={mergedListing.id}
+          listingTitle={mergedListing.title}
+          open={sourcesOpen}
+          onOpenChange={setSourcesOpen}
+        />
+      ) : null}
 
       {rows.some((row) => row.differs) ? (
         <p className="text-sm leading-[1.3] font-medium text-natural-500">{t("differsLegend")}</p>

@@ -119,6 +119,50 @@ function bandCount(band: ConfidenceBand) {
   return sql<number>`count(*) filter (where ${confidenceCondition(band)})`.mapWith(Number);
 }
 
+/*
+ * A confirmed merge that is not standing: the pair's two sources no longer sit on one
+ * listing. The candidate keeps its `confirmed` verdict — the merge did happen — so this is
+ * a fact about the present, not a fourth decision.
+ *
+ * Read from where the sources point rather than from a split entry in the audit trail,
+ * because the trail only says a split once happened: after a re-merge it still says so, and
+ * the pair would read as undone forever. Only meaningful on a confirmed candidate, which is
+ * the only place either caller applies it.
+ *
+ * Written against the alias `d`, so a query using it must name the candidate table that.
+ */
+const undoneExpression = sql`
+  exists (
+    select 1
+    from listing_source sa, listing_source sb
+    where sa.id = d.source_a_id
+      and sb.id = d.source_b_id
+      and sa.listing_id is distinct from sb.listing_id
+  )
+`;
+
+/** Which of the page's confirmations were later split back apart. */
+async function loadUndone(
+  db: Database,
+  rows: readonly { id: string; decision: string }[],
+): Promise<Set<string>> {
+  /* Only a confirmation can be undone, and the queue is usually looking at other decisions. */
+  const ids = rows.filter((row) => row.decision === "confirmed").map((row) => row.id);
+  if (ids.length === 0) return new Set();
+
+  const found = await db.execute<{ id: string }>(sql`
+    select d.id
+    from listing_duplicate_candidate d
+    where d.id in (${sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    )})
+      and ${undoneExpression}
+  `);
+
+  return new Set(found.rows.map((row) => row.id));
+}
+
 export async function listDuplicateCandidates(
   db: Database,
   input: QueueInput,
@@ -139,9 +183,23 @@ export async function listDuplicateCandidates(
           .select()
           .from(listingDuplicateCandidate)
           .where(where)
+          /*
+           * Two different questions, so two orders. The work queue is triaged: the pairs
+           * most likely to be duplicates come first. The audit tabs are read the other way
+           * round — "what did we just decide" — where confidence is a property of the
+           * proposal and says nothing about recency, and a pair decided a minute ago could
+           * sit on page nine behind everything scored higher.
+           */
           .orderBy(
-            desc(listingDuplicateCandidate.confidence),
-            desc(listingDuplicateCandidate.createdAt),
+            ...(input.decision === "pending"
+              ? [
+                  desc(listingDuplicateCandidate.confidence),
+                  desc(listingDuplicateCandidate.createdAt),
+                ]
+              : [
+                  desc(listingDuplicateCandidate.reviewedAt),
+                  desc(listingDuplicateCandidate.updatedAt),
+                ]),
             desc(listingDuplicateCandidate.id),
           )
           .limit(limit)
@@ -154,10 +212,13 @@ export async function listDuplicateCandidates(
     loadQueueSummary(db, decisionWhere, where),
   ]);
 
-  const sides = await loadSides(
-    db,
-    rows.flatMap((row) => [row.sourceAId, row.sourceBId]),
-  );
+  const [sides, undone] = await Promise.all([
+    loadSides(
+      db,
+      rows.flatMap((row) => [row.sourceAId, row.sourceBId]),
+    ),
+    loadUndone(db, rows),
+  ]);
 
   const items: Candidate[] = rows.map((row) => ({
     id: row.id,
@@ -167,6 +228,7 @@ export async function listDuplicateCandidates(
     createdAt: row.createdAt.toISOString(),
     reviewedAt: row.reviewedAt?.toISOString() ?? null,
     reviewerNote: row.reviewerNote,
+    undone: undone.has(row.id),
     sideA: sides.get(row.sourceAId) ?? missingSide(row.sourceAId),
     sideB: sides.get(row.sourceBId) ?? missingSide(row.sourceBId),
   }));
@@ -602,7 +664,7 @@ export async function confirmDuplicateCandidate(
   const now = new Date();
 
   const result = await db.transaction(async (tx) => {
-    const candidate = await lockPendingCandidate(tx, input.candidateId);
+    const candidate = await lockDecidableCandidate(tx, input.candidateId);
 
     const sources = await tx
       .select({ id: listingSource.id, listingId: listingSource.listingId })
@@ -809,20 +871,7 @@ export async function duplicateMatchMetrics(db: Database): Promise<Metrics> {
           else 'low'
         end as band,
         d.decision,
-        /*
-         * A merge later taken apart. Matched through the audit trail rather than a column,
-         * because the candidate keeps its confirmed verdict: the merge did happen, and a
-         * split is a second decision rather than an erasure of the first.
-         */
-        exists (
-          select 1
-          from audit_log split
-          where split.after ->> 'split' = 'true'
-            and split.after ->> 'listingOfferId' in (
-              select o.id from listing_offer o
-              where o.listing_source_id in (d.source_a_id, d.source_b_id)
-            )
-        ) as undone
+        ${undoneExpression} as undone
       from listing_duplicate_candidate d
     )
     select
@@ -1133,7 +1182,7 @@ async function closeCandidate(
   const now = new Date();
 
   return db.transaction(async (tx) => {
-    const candidate = await lockPendingCandidate(tx, input.candidateId);
+    const candidate = await lockDecidableCandidate(tx, input.candidateId);
 
     await tx
       .update(listingDuplicateCandidate)
@@ -1166,11 +1215,14 @@ async function closeCandidate(
 }
 
 /**
+ * The candidates a verdict may still be written to: anything undecided, plus a confirmation
+ * whose merge a split has since taken apart.
+ *
  * `for update` plus the decision check inside the transaction: without the lock a
  * double-clicked Confirm runs the merge twice, and the second run hides the
  * listing the first one kept.
  */
-async function lockPendingCandidate(tx: DatabaseExecutor, candidateId: string) {
+async function lockDecidableCandidate(tx: DatabaseExecutor, candidateId: string) {
   const [candidate] = await tx
     .select()
     .from(listingDuplicateCandidate)
@@ -1179,9 +1231,29 @@ async function lockPendingCandidate(tx: DatabaseExecutor, candidateId: string) {
     .for("update");
 
   if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
-  if (candidate.decision !== "pending") {
-    throw new ORPCError("CONFLICT", { message: "This candidate has already been reviewed" });
+  if (candidate.decision === "pending") return candidate;
+
+  /*
+   * A confirmation a split has already taken apart is open again. Without this an
+   * accidental `Take out of this listing` is permanent: the pair never returns to the
+   * queue, and nothing re-proposes it — splitting stamps its sources `rejected` so the
+   * nightly matcher leaves them alone, and the pair is unique in this table, so it cannot
+   * be proposed a second time either.
+   *
+   * Read inside the same locked transaction as the verdict it guards, so a split racing a
+   * re-merge cannot both pass.
+   */
+  if (candidate.decision === "confirmed") {
+    const sources = await tx
+      .select({ id: listingSource.id, listingId: listingSource.listingId })
+      .from(listingSource)
+      .where(inArray(listingSource.id, [candidate.sourceAId, candidate.sourceBId]));
+
+    const [first, second] = sources;
+    if (sources.length === 2 && first !== undefined && second !== undefined) {
+      if (first.listingId !== second.listingId) return candidate;
+    }
   }
 
-  return candidate;
+  throw new ORPCError("CONFLICT", { message: "This candidate has already been reviewed" });
 }

@@ -19,14 +19,12 @@ import occupancyFixture from "./fixtures/occupancy.json" with { type: "json" };
 import priceListsFixture from "./fixtures/priceLists-recorded.json" with { type: "json" };
 import {
   createNausysAvailabilitySource,
-  fetchNausysFreeYachtsSearch,
   fetchNausysOccupancy,
   mapFreeYachtToConfirmedOffer,
   mapNausysPriceLists,
   mapOccupancyDump,
   mapOccupancyReservation,
   type NausysPriceListIssue,
-  parseNausysHotWindowCursor,
 } from "./occupancy";
 import { FakeNausysTransport } from "./testing/fake-transport";
 
@@ -247,68 +245,6 @@ describe("mapOccupancyReservation", () => {
   });
 });
 
-describe("fetchNausysFreeYachtsSearch", () => {
-  it("walks every page sequentially and stops at totalPages", async () => {
-    const { client, transport } = build();
-    for (const page of [1, 2, 3]) {
-      const body = searchResponse();
-      body.currentPage = page;
-      transport.respondOnceWith("freeYachtsSearch", body);
-    }
-
-    const pages: number[] = [];
-    for await (const page of fetchNausysFreeYachtsSearch(client, {
-      periodFrom: "2026-07-04",
-      periodTo: "2026-07-11",
-      resultsPerPage: 10,
-    })) {
-      pages.push(page.page);
-    }
-
-    expect(pages).toEqual([1, 2, 3]);
-    expect(transport.calls.map((call) => call.body.resultsPage)).toEqual([1, 2, 3]);
-    expect(transport.lastBody("freeYachtsSearch")).toMatchObject({
-      periodFrom: "04.07.2026",
-      periodTo: "11.07.2026",
-      resultsPerPage: 10,
-    });
-    // Occupancy runs on the sync lane, so the pages must have gone out one at a time.
-    expect(transport.maxConcurrent).toBe(1);
-  });
-
-  it("issues no further request once the consumer stops pulling", async () => {
-    const { client, transport } = build();
-
-    for await (const _page of fetchNausysFreeYachtsSearch(client, {
-      periodFrom: "2026-07-04",
-      periodTo: "2026-07-11",
-    })) {
-      break;
-    }
-
-    expect(transport.callCount("freeYachtsSearch")).toBe(1);
-  });
-
-  it("resumes from a page number", async () => {
-    const { client, transport } = build();
-    const body = searchResponse();
-    body.currentPage = 3;
-    transport.respondWith("freeYachtsSearch", body);
-
-    const pages = [];
-    for await (const page of fetchNausysFreeYachtsSearch(client, {
-      periodFrom: "2026-07-04",
-      periodTo: "2026-07-11",
-      startPage: 3,
-    })) {
-      pages.push(page.page);
-    }
-
-    expect(pages).toEqual([3]);
-    expect(transport.calls[0]?.body.resultsPage).toBe(3);
-  });
-});
-
 describe("mapFreeYachtToConfirmedOffer", () => {
   it("maps clientPrice to minor units", () => {
     const yacht = firstFreeYacht();
@@ -320,6 +256,40 @@ describe("mapFreeYachtToConfirmedOffer", () => {
       priceMinor: 334000,
       currency: "EUR",
     });
+  });
+
+  /*
+   * The card prints rate plus unavoidable fees as one figure, and the read model prefers this
+   * total over its own reconstruction from the catalogue ladder. Both halves have to come from
+   * the offer, or the card adds a vendor price to a guessed fee.
+   */
+  it("totals the offer's own obligatory extras", () => {
+    // The search fixture's one obligatory service, at 150.00 for one unit.
+    expect(mapFreeYachtToConfirmedOffer(firstFreeYacht())).toMatchObject({
+      obligatoryExtrasMinor: 15_000,
+    });
+  });
+
+  it("says nothing about fees when the offer lists none, leaving the catalogue to answer", () => {
+    const yacht = firstFreeYacht();
+    delete yacht.obligatoryExtras;
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("obligatoryExtrasMinor");
+  });
+
+  it("keeps an offer that really charges nothing as a zero", () => {
+    const yacht = firstFreeYacht();
+    yacht.obligatoryExtras = [];
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).toMatchObject({ obligatoryExtrasMinor: 0 });
+  });
+
+  it("refuses to total fees it cannot add up, rather than understating them", () => {
+    const yacht = firstFreeYacht();
+    const [extra] = yacht.obligatoryExtras ?? [];
+    if (extra) extra.currency = "HRK";
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("obligatoryExtrasMinor");
   });
 
   it("drops an UNDER_OPTION yacht", () => {
@@ -362,47 +332,56 @@ describe("createNausysAvailabilitySource", () => {
       client,
       companyIds: ["102701"],
       years: [2026],
+      loadYachtIds: () => Promise.resolve(["4711001"]),
     });
 
     expect(source.searchConfirmed).toBeUndefined();
   });
 
-  it("carries the resume position forward page by page", async () => {
+  /* The pass prices our own hulls by id, so with no ids there is nothing it could ask. */
+  it("has no hot pass when the fleet cannot be named", () => {
+    const { client } = build();
+    const source = createNausysAvailabilitySource({
+      client,
+      companyIds: ["102701"],
+      years: [2026],
+      hotWindows: [{ periodFrom: "2026-07-04", periodTo: "2026-07-11" }],
+    });
+
+    expect(source.searchConfirmed).toBeUndefined();
+  });
+
+  it("asks freeYachts for our own hulls, one page per period", async () => {
     const { client, transport } = build();
-    const body = searchResponse();
-    body.totalPages = 2;
-    body.currentPage = 1;
-    transport.respondOnceWith("freeYachtsSearch", body);
-    const second = searchResponse();
-    second.totalPages = 2;
-    second.currentPage = 2;
-    transport.respondWith("freeYachtsSearch", second);
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
       client,
-      companyIds: [],
+      companyIds: ["102701"],
       years: [],
       hotWindows: [
-        { periodFrom: "2026-07-04", periodTo: "2026-07-11", locations: [53271] },
+        { periodFrom: "2026-07-04", periodTo: "2026-07-11" },
         { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
       ],
+      loadYachtIds: () => Promise.resolve(["4711001", "4711002"]),
     });
 
-    const cursors: unknown[] = [];
-    for await (const page of source.searchConfirmed?.(null) ?? []) {
-      cursors.push(page.cursor);
-      if (cursors.length === 2) break;
-    }
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
 
-    expect(cursors).toEqual([
-      { windowIndex: 0, page: 2 },
+    expect(transport.calls.map((call) => call.body)).toMatchObject([
+      { periodFrom: "04.07.2026", periodTo: "11.07.2026", yachts: [4_711_001, 4_711_002] },
+      { periodFrom: "11.07.2026", periodTo: "18.07.2026", yachts: [4_711_001, 4_711_002] },
+    ]);
+    expect(pages.map((page) => page.cursor)).toEqual([
       { windowIndex: 1, page: 1 },
+      { windowIndex: 2, page: 1 },
     ]);
   });
 
-  it("restarts at the persisted window and page", async () => {
+  it("restarts at the persisted window", async () => {
     const { client, transport } = build();
-    transport.respondWith("freeYachtsSearch", searchResponse());
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
       client,
@@ -412,27 +391,12 @@ describe("createNausysAvailabilitySource", () => {
         { periodFrom: "2026-07-04", periodTo: "2026-07-11" },
         { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
       ],
+      loadYachtIds: () => Promise.resolve(["4711001"]),
     });
 
-    for await (const _page of source.searchConfirmed?.({ windowIndex: 1, page: 2 }) ?? []) {
-      break;
-    }
+    for await (const _page of source.searchConfirmed?.({ windowIndex: 1, page: 2 }) ?? []) break;
 
-    expect(transport.calls[0]?.body).toMatchObject({
-      periodFrom: "11.07.2026",
-      resultsPage: 2,
-    });
-  });
-});
-
-describe("parseNausysHotWindowCursor", () => {
-  it("rejects anything that is not a window and a page", () => {
-    expect(parseNausysHotWindowCursor({ windowIndex: 2, page: 7 })).toEqual({
-      windowIndex: 2,
-      page: 7,
-    });
-    expect(parseNausysHotWindowCursor({ step: 3 })).toBeNull();
-    expect(parseNausysHotWindowCursor(null)).toBeNull();
+    expect(transport.calls[0]?.body).toMatchObject({ periodFrom: "11.07.2026" });
   });
 });
 

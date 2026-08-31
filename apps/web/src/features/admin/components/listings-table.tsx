@@ -14,7 +14,7 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { ImageOff, Search } from "lucide-react";
+import { EyeOff, ImageOff, Layers, Search, Undo2, Upload } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -54,6 +54,13 @@ const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
  */
 const STATUSES: readonly MovableStatus[] = ["draft", "published", "hidden"];
 
+/*
+ * The filter answers a different question than the move menu, so it carries `merged`
+ * too: after a merge the absorbed listing stays in the table, and finding those is how
+ * a reviewer checks what a merge did or picks one to split back out.
+ */
+const FILTER_STATUSES: readonly ListingStatus[] = [...STATUSES, "merged"];
+
 const STATUS_VARIANTS = {
   draft: "warning",
   published: "success",
@@ -81,7 +88,7 @@ export default function ListingsTable() {
   const { data, isPending, isError } = useListings({
     /* The ALL sentinel is in neither list, so it drops out as `undefined`. */
     provider: PROVIDERS.find((option) => option === provider),
-    status: STATUSES.find((option) => option === status),
+    status: FILTER_STATUSES.find((option) => option === status),
     query: query.trim() || undefined,
     page,
   });
@@ -162,7 +169,7 @@ export default function ListingsTable() {
             onValueChange={onFilterChange(setStatus)}
             options={[
               { value: ALL, label: t("filters.allStatuses") },
-              ...STATUSES.map((value) => ({ value, label: t(`status.${value}`) })),
+              ...FILTER_STATUSES.map((value) => ({ value, label: t(`status.${value}`) })),
             ]}
           />
         </div>
@@ -275,10 +282,11 @@ export default function ListingsTable() {
                           */}
                           {listing.offerCount > 1 ? (
                             <Button
-                              variant="subtle"
+                              variant="neutral"
                               size="sm"
                               onClick={() => setSourcesFor(listing)}
                             >
+                              <Layers />
                               {t("actions.sources")}
                             </Button>
                           ) : null}
@@ -297,26 +305,29 @@ export default function ListingsTable() {
                                   disabled={setStatusMutation.isPending}
                                   onClick={() => move(listing, "published")}
                                 >
+                                  <Upload />
                                   {t("actions.publish")}
                                 </Button>
                               )}
                               {listing.status === "hidden" ? null : (
                                 <Button
-                                  variant="subtle"
+                                  variant="neutral"
                                   size="sm"
                                   disabled={setStatusMutation.isPending}
                                   onClick={() => move(listing, "hidden")}
                                 >
+                                  <EyeOff />
                                   {t("actions.unpublish")}
                                 </Button>
                               )}
                               {listing.status === "draft" ? null : (
                                 <Button
-                                  variant="subtle"
+                                  variant="neutral"
                                   size="sm"
                                   disabled={setStatusMutation.isPending}
                                   onClick={() => move(listing, "draft")}
                                 >
+                                  <Undo2 />
                                   {t("actions.draft")}
                                 </Button>
                               )}

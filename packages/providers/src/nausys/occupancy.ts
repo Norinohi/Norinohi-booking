@@ -3,14 +3,14 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../registry";
-import { formatNausysDate, parseNausysDate } from "../shared/dates";
+import { parseNausysDate } from "../shared/dates";
 import { ContractError } from "../shared/errors";
+import { nausysConfirmedCursorSchema, streamNausysConfirmedOffers } from "./confirmed-offers";
 import { decimalStringToMinor } from "../shared/money";
 import { stableSourceHash } from "../shared/raw-retention";
 import type {
   AvailabilityScope,
   AvailabilitySource,
-  ConfirmedOffer,
   ConfirmedOfferPage,
   OccupancyDump,
   OccupiedInterval,
@@ -21,9 +21,6 @@ import type { SyncReporter } from "../sync/runner";
 import type { NausysClient } from "./client";
 import {
   nausysEndpoints,
-  type restFreeYachtSchema,
-  restFreeYachtsSearchRequestSchema,
-  restFreeYachtsSearchResponseSchema,
   type restOccupancyReservationSchema,
   restOccupancyResponseSchema,
 } from "./endpoints";
@@ -44,7 +41,6 @@ import {
  */
 
 type RestOccupancyReservation = z.infer<typeof restOccupancyReservationSchema>;
-type RestFreeYacht = z.infer<typeof restFreeYachtSchema>;
 
 /** Occupancy is addressed by year, or by the vendor's own season id on `occupancy2`. */
 export type NausysOccupancyScope =
@@ -175,121 +171,9 @@ export function mapOccupancyDump(dump: NausysOccupancyDump): OccupancyDump {
   return mapped;
 }
 
-/* ------------------------------------------------------- freeYachtsSearch */
-
-export interface NausysSearchCriteria {
-  /** ISO `yyyy-MM-dd`; converted to the vendor's `dd.MM.yyyy` on the wire. */
-  periodFrom: string;
-  periodTo: string;
-  countries?: number[];
-  regions?: number[];
-  locations?: number[];
-  charterCompanies?: number[];
-  currency?: string;
-  resultsPerPage?: number;
-  /** 1-based, and the only resume handle the vendor offers. */
-  startPage?: number;
-  maxPages?: number;
-}
-
-export interface NausysSearchPage {
-  page: number;
-  totalPages: number;
-  totalCount: number;
-  offers: ConfirmedOffer[];
-}
-
-// Hoisted out of the paging loop: the omit rebuilds the schema on every call.
-const freeYachtsSearchRequestSchema = restFreeYachtsSearchRequestSchema.omit({
-  credentials: true,
-});
-type FreeYachtsSearchRequestInput = z.input<typeof freeYachtsSearchRequestSchema>;
-
-const DEFAULT_RESULTS_PER_PAGE = 50;
-/** A vendor `totalPages` we cannot trust must not turn into an unbounded walk. */
-const DEFAULT_MAX_PAGES = 200;
-
-/**
- * Page-number pagination, walked strictly one page at a time.
- *
- * Yielding page by page rather than returning an array is the point: the caller
- * stops on a wall-clock budget, and a generator that is not pulled from issues no
- * further request. Buffering thousands of rows would spend the whole lane before
- * anyone could decide it was too expensive.
- */
-export async function* fetchNausysFreeYachtsSearch(
-  client: NausysClient,
-  criteria: NausysSearchCriteria,
-): AsyncGenerator<NausysSearchPage> {
-  const resultsPerPage = criteria.resultsPerPage ?? DEFAULT_RESULTS_PER_PAGE;
-  const maxPages = criteria.maxPages ?? DEFAULT_MAX_PAGES;
-  const firstPage = criteria.startPage ?? 1;
-
-  let page = firstPage;
-  let totalPages = firstPage;
-
-  while (page <= totalPages && page < firstPage + maxPages) {
-    const requestInput: FreeYachtsSearchRequestInput = {
-      periodFrom: formatNausysDate(criteria.periodFrom),
-      periodTo: formatNausysDate(criteria.periodTo),
-      resultsPerPage,
-      resultsPage: page,
-    };
-    if (criteria.countries) requestInput.countries = criteria.countries;
-    if (criteria.regions) requestInput.regions = criteria.regions;
-    if (criteria.locations) requestInput.locations = criteria.locations;
-    if (criteria.charterCompanies) requestInput.charterCompanies = criteria.charterCompanies;
-    if (criteria.currency) requestInput.currency = criteria.currency;
-
-    const request = freeYachtsSearchRequestSchema.parse(requestInput);
-
-    const response = await client.bookingCall(
-      nausysEndpoints.availability.freeYachtsSearch,
-      restFreeYachtsSearchResponseSchema,
-      { ...request },
-    );
-
-    totalPages = response.totalPages ?? page;
-
-    yield {
-      page: response.currentPage ?? page,
-      totalPages,
-      totalCount: response.totalCount ?? 0,
-      offers: (response.freeYachtsInPeriod ?? []).flatMap((yacht) => {
-        const offer = mapFreeYachtToConfirmedOffer(yacht);
-        return offer ? [offer] : [];
-      }),
-    };
-
-    page += 1;
-  }
-}
-
-/**
- * `clientPrice` is the only customer-facing number; `agencyPrice` is our cost and
- * never appears on `freeYachtsSearch` results anyway. UNDER_OPTION is dropped
- * rather than mapped: it is not free, and a confirmed slot must mean bookable.
- */
-export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOffer | null {
-  if (yacht.status !== "FREE") return null;
-
-  const currency = yacht.price.currency;
-  return {
-    externalYachtId: String(yacht.yachtId),
-    startDate: parseNausysDate(yacht.periodFrom),
-    endDate: parseNausysDate(yacht.periodTo),
-    priceMinor: decimalStringToMinor(yacht.price.clientPrice, currency),
-    currency,
-    sourceHash: stableSourceHash({
-      yachtId: yacht.yachtId,
-      periodFrom: yacht.periodFrom,
-      periodTo: yacht.periodTo,
-      clientPrice: yacht.price.clientPrice,
-      currency,
-      status: yacht.status,
-    }),
-  };
-}
+/* Lives with the pass that produces them; re-exported because this is the module the
+   availability source is assembled in. */
+export { mapFreeYachtToConfirmedOffer } from "./confirmed-offers";
 
 /* -------------------------------------------------------------- hot window */
 
@@ -323,6 +207,11 @@ export interface NausysAvailabilitySourceOptions {
   years: number[];
   /** Destination and week combinations the accurate pass walks, in priority order. */
   hotWindows?: NausysHotWindow[];
+  /**
+   * Every NauSYS hull we list inside `companyIds`. Absent, the confirming pass is skipped:
+   * it prices our own fleet by id, so with no ids there is nothing to ask about.
+   */
+  loadYachtIds?: () => Promise<readonly string[]>;
   currency?: string;
   resultsPerPage?: number;
 }
@@ -353,38 +242,35 @@ export function createNausysAvailabilitySource(
     },
   };
 
-  if (hotWindows.length === 0) return source;
+  if (hotWindows.length === 0 || !options.loadYachtIds) return source;
+  const loadYachtIds = options.loadYachtIds;
 
   return {
     ...source,
-    async *searchConfirmed(resume): AsyncIterable<ConfirmedOfferPage> {
-      const from = parseNausysHotWindowCursor(resume) ?? { windowIndex: 0, page: 1 };
+    /*
+     * `freeYachts`, a batch of our own hulls at a time, rather than `freeYachtsSearch` a page
+     * of the vendor's fleet at a time. `streamNausysConfirmedOffers` carries the measurements
+     * behind that: the search endpoint costs ~28s per call whatever it is asked for and never
+     * returns the obligatory extras a card has to add to the rate.
+     */
+    searchConfirmed(resume): AsyncIterable<ConfirmedOfferPage> {
+      /* Parsed here, where the writer hands back whatever the jsonb cursor column held: an
+         unreadable one is a sweep that starts over, which costs calls rather than correctness. */
+      const from = nausysConfirmedCursorSchema.safeParse(resume).data ?? { windowIndex: 0 };
 
-      for (const [windowIndex, window] of hotWindows.entries()) {
-        if (windowIndex < from.windowIndex) continue;
-        const startPage = windowIndex === from.windowIndex ? from.page : 1;
-
-        const criteria: NausysSearchCriteria = {
-          periodFrom: window.periodFrom,
-          periodTo: window.periodTo,
-          startPage,
-        };
-        if (window.countries) criteria.countries = window.countries;
-        if (window.regions) criteria.regions = window.regions;
-        if (window.locations) criteria.locations = window.locations;
-        if (options.currency) criteria.currency = options.currency;
-        if (options.resultsPerPage) criteria.resultsPerPage = options.resultsPerPage;
-
-        for await (const page of fetchNausysFreeYachtsSearch(client, criteria)) {
-          const more = page.page < page.totalPages;
-          yield {
-            offers: page.offers,
-            cursor: more
-              ? { windowIndex, page: page.page + 1 }
-              : { windowIndex: windowIndex + 1, page: 1 },
-          };
-        }
-      }
+      return streamNausysConfirmedOffers(
+        {
+          client,
+          periods: hotWindows.map((window) => ({
+            startDate: window.periodFrom,
+            endDate: window.periodTo,
+          })),
+          loadYachtIds,
+          companyIds: options.companyIds,
+          ...(options.currency ? { currency: options.currency } : null),
+        },
+        from,
+      );
     },
   };
 }

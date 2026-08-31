@@ -35,11 +35,12 @@ export function summariseCharterRules(rules: readonly CharterRule[]): CharterPer
     if (constrainsNothing(rule)) continue;
 
     const wholeWeeks = rule.checkinWeekday !== null && rule.checkinWeekday === rule.checkoutWeekday;
+    const minNights = shortestLegal(rule);
     /* Everything but the check-in day, which is what these alternatives differ in. */
     const key = JSON.stringify([
       wholeWeeks,
       wholeWeeks ? null : rule.checkoutWeekday,
-      rule.minNights,
+      minNights,
       rule.maxNights,
     ]);
 
@@ -49,7 +50,7 @@ export function summariseCharterRules(rules: readonly CharterRule[]): CharterPer
         checkinWeekdays: rule.checkinWeekday === null ? null : [rule.checkinWeekday],
         checkoutWeekday: wholeWeeks ? null : rule.checkoutWeekday,
         wholeWeeks,
-        minNights: rule.minNights,
+        minNights,
         maxNights: rule.maxNights,
       });
       continue;
@@ -64,6 +65,33 @@ export function summariseCharterRules(rules: readonly CharterRule[]): CharterPer
   }
 
   return [...groups.values()].map(normalise);
+}
+
+/**
+ * The shortest charter the rule actually admits, which is not always the minimum it states.
+ *
+ * A check-out weekday fixes the length modulo a week: a Saturday-to-Wednesday rule sells 4
+ * nights, 11, 18, and a Saturday-to-Saturday one sells 7, 14, 21, whatever minimum sits
+ * beside it. Reading the stated minimum out loud produced sentences that contradicted
+ * themselves -- "in whole weeks, from 3 nights", on a listing whose shortest legal charter is
+ * seven -- and understated the trip a customer was being asked to plan.
+ *
+ * Only the floor moves. The rule is unchanged, and the calendar remains the thing that
+ * decides any particular pair of days.
+ */
+function shortestLegal(rule: CharterRule): number | null {
+  const stated = rule.minNights;
+  if (stated === null || rule.checkoutWeekday === null || rule.checkinWeekday === null) {
+    return stated;
+  }
+
+  /* The length every legal charter under this rule is congruent to, a full week when the
+     two weekdays match rather than the zero the arithmetic would otherwise give. */
+  const span = (rule.checkoutWeekday - rule.checkinWeekday + WEEKDAYS_IN_WEEK) % WEEKDAYS_IN_WEEK;
+  const step = span === 0 ? WEEKDAYS_IN_WEEK : span;
+  if (stated <= step) return step;
+
+  return step + Math.ceil((stated - step) / WEEKDAYS_IN_WEEK) * WEEKDAYS_IN_WEEK;
 }
 
 /** Naming all seven days is a longer way of saying the day does not matter. */

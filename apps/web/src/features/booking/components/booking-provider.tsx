@@ -314,6 +314,14 @@ export function BookingProvider({
    * either way and the calendar has to retire it. Only the click says so out loud: the seeded
    * period is a guess made from the read model, and answering an arrival with "those dates are
    * not bookable" blames the visitor for dates they never picked.
+   *
+   * Quiet for the visitor is not the same as quiet for us, and this used to be both. A seeded
+   * quote that failed left the sidebar on "select your dates to see the price" and said
+   * nothing anywhere: a NauSYS mapping bug made every date on one listing unquotable for as
+   * long as it was live, and the only symptom was an empty panel. Anything that is not the
+   * vendor declining these exact dates is written to the console with the listing and the
+   * period, whoever asked. The server names the same failure on its side; see `reportRefusal`
+   * in packages/api/src/services/quote.ts.
    */
   function pricePeriod(period: CharterPeriod, { report }: { report: boolean }) {
     /* The verdict names the offer that would sell it, which is the one a refusal belongs to. */
@@ -326,14 +334,27 @@ export function BookingProvider({
         ? repriceWith(period)
         : quoteFor({ ...period, guests, crewType, extras, currency: listingCurrency })
     ).catch((error: Error) => {
-      if (!isSlotConflict(error)) throw error;
+      const dates = `${period.checkIn}..${period.checkOut}`;
+      if (!isSlotConflict(error)) {
+        /*
+         * Logged rather than rethrown. The throw landed in a promise nobody awaited, so it
+         * surfaced as an unhandled rejection with no listing, no dates and no stack worth
+         * reading - which is how a broken listing looked like a quiet one.
+         */
+        console.error(`[booking] pricing ${slug} ${dates} failed`, error);
+        if (report) setSlotError(true);
+        return;
+      }
+
       if (refusedBy !== null) {
         setRefusedPeriods((current) => [
           ...current,
           { offerId: refusedBy, startDate: period.checkIn, endDate: period.checkOut },
         ]);
       }
+      /* A refusal of the dates this page chose for itself is worth one line, not a banner. */
       if (report) setSlotError(true);
+      else console.warn(`[booking] ${slug} opened on ${dates}, which the vendor refused`);
     });
   }
 

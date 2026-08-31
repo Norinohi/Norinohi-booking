@@ -390,6 +390,7 @@
     "extras": {
       "payAtCheckIn": "Pay at check-in",
       "payNow": "Included in prepayment",
+      "includedInPrice": "Included in the price",
       "oneWayOnly": "One-way charters only",
       "measure": {
         "booking": "{price} per booking",
@@ -2009,6 +2010,7 @@
       "confidenceUnknown": "Confidence unknown",
       "proposed": "Proposed {date}",
       "reviewed": "Reviewed {date}",
+      "undone": "Undone",
       "signals": "Matched on {signals}",
       "sideA": "Side A",
       "sideB": "Side B",
@@ -2049,6 +2051,7 @@
         "rejected": "Rejected"
       },
       "showDetail": "Review all details",
+      "showSources": "Sources",
       "detailTitle": "Full comparison",
       "detailSubtitle": "Every photo and specification both providers sent for this pair.",
       "detailError": "Couldn't load the full comparison",
@@ -2088,6 +2091,7 @@
       },
       "summary": "{pairs, plural, =0 {No pairs} one {# pair} other {# pairs}} · {yachts, plural, =0 {no yachts} one {# yacht} other {# yachts}}",
       "sortNote": "highest confidence first",
+      "sortNoteReviewed": "most recently decided first",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Match confidence",
@@ -2448,7 +2452,11 @@
         },
         "takeOut": "Take out of this listing",
         "splitRestored": "Taken out and returned to the listing it came from.",
-        "splitNew": "Taken out onto a listing of its own."
+        "splitNew": "Taken out onto a listing of its own.",
+        "confirmSplitBody": "The {provider} offer goes back to its own listing, and this listing stops carrying both providers. You can merge the pair again from the Confirmed tab of Duplicate Review.",
+        "confirmSplitAction": "Take it out",
+        "confirmSplitBusy": "Taking out…",
+        "confirmSplitCancel": "Cancel"
       }
     },
     "Routes": {

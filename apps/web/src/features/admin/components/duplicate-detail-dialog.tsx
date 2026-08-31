@@ -14,7 +14,12 @@ import { useFormatter, useTranslations } from "next-intl";
 
 import { useDuplicateDetail } from "../hooks/use-duplicates";
 import { type DetailKey, type DetailRow, detailRows, EMPTY_VALUE } from "../lib/duplicates";
-import type { DuplicateCandidate, DuplicateDetailListing, DuplicateSide } from "../types";
+import {
+  type DuplicateCandidate,
+  type DuplicateDetailListing,
+  type DuplicateSide,
+  toProviderKey,
+} from "../types";
 import DuplicatePhotos from "./duplicate-photos";
 
 /*
@@ -166,14 +171,22 @@ function DetailPanel({
   rows: DetailRow[] | null;
 }) {
   const t = useTranslations("Admin.Duplicates");
+  const tProviders = useTranslations("Admin.providers");
   const listing = side.listing;
+  /* A connector key this build ships gets its name; any other code is shown as stored. */
+  const providerKey = toProviderKey(side.provider);
 
   return (
     <div className="flex min-w-0 flex-col gap-4 rounded-lg border border-natural-100 p-4">
       <div className="flex flex-col gap-1">
-        <span className="text-sm leading-[1.3] font-semibold text-natural-500">
-          {which === "a" ? t("sideA") : t("sideB")}
-        </span>
+        {/* Same header as the queue card: which side, and whose feed it came from. Without
+            the provider the two panels are a comparison with no names on it. */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm leading-[1.3] font-semibold text-natural-500">
+            {which === "a" ? t("sideA") : t("sideB")}
+          </span>
+          <Chip variant="neutral">{providerKey ? tProviders(providerKey) : side.provider}</Chip>
+        </div>
         <h3 className="truncate text-base leading-[1.3] font-bold text-foreground">
           {listing ? listing.title : t("unavailable.title")}
         </h3>

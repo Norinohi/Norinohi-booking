@@ -12,6 +12,12 @@ import {
 } from "../shared/http-client";
 import { parseExactJson } from "../shared/exact-json";
 import { queueForInterval, SequentialQueue } from "../shared/queue";
+
+/**
+ * How many customer calls this credential will have in flight at once. Four is the sweep's own
+ * default fan-out, so it is a load the vendor already sees from us.
+ */
+const LIVE_LANES = 4;
 import type { RetryPolicy } from "../shared/retry";
 import type { BookingManagerConfig } from "./config";
 import { bookingManagerEndpoints } from "./endpoints";
@@ -52,6 +58,8 @@ export class BookingManagerClient {
   readonly config: BookingManagerConfig;
   private readonly http: ProviderHttpClient;
 
+  private liveCalls = 0;
+
   constructor(options: BookingManagerClientOptions) {
     this.config = options.config;
     this.http = createProviderHttpClient({
@@ -87,6 +95,25 @@ export class BookingManagerClient {
   /** Lane `slot` of the sweep's fan-out, spaced by `minIntervalMs` like any other. */
   sweepLane(name: string, slot: number): ProviderRequestOptions {
     return { queueKey: `${this.config.queueKey}:${name}#${slot}` };
+  }
+
+  /**
+   * A lane for one customer's own call, so their quote does not queue behind everybody else's.
+   *
+   * The credential has a single lane spaced by `minIntervalMs`, which is right for the sweeps
+   * that share it and wrong for the price check a visitor is waiting on: a quote's six-second
+   * budget in `offer-selection.ts` covers the wait in that queue as well as the vendor's own
+   * work, so past a few requests a second the budget expires before the call is even sent.
+   * That is a self-inflicted failure, and it grows with traffic -- eight of them showed up in
+   * one audit run, each reported to the customer as "we cannot price this week".
+   *
+   * Rotating over a small pool rather than a lane per call, which is what NauSYS does: that
+   * vendor has told us its live calls are exempt from the parallel-request rule and this one
+   * has not, so the pool keeps a ceiling on how much of it we ever use at once.
+   */
+  liveLane(): ProviderRequestOptions {
+    this.liveCalls = (this.liveCalls + 1) % LIVE_LANES;
+    return { queueKey: `${this.config.queueKey}:live#${this.liveCalls}` };
   }
 
   async post<TOut>(

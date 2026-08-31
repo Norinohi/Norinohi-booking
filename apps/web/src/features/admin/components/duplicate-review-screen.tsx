@@ -24,11 +24,13 @@ import DuplicateCandidateCard from "./duplicate-candidate-card";
 /*
  * DuplicateReviewScreen — /duplicates: the admin Sidebar beside the review queue, matching
  * the Discount Manager's shell (breadcrumb bar, 334px sidebar, bordered content card).
- * The decision tabs are the filter: "pending" is the work queue, the other two are the
- * audit trail, which is why resolved cards render without verdict buttons.
+ * The decision tabs are the filter: "pending" is the work queue, the other three are the
+ * audit trail, which is why resolved cards render without verdict buttons. "deferred" is
+ * there because a set-aside pair is meant to be come back to, and a queue that dropped it
+ * out of every tab was hiding work rather than deferring it.
  */
 
-const DECISIONS: readonly DuplicateDecision[] = ["pending", "confirmed", "rejected"];
+const DECISIONS: readonly DuplicateDecision[] = ["pending", "confirmed", "rejected", "deferred"];
 
 const BANDS: readonly DuplicateConfidenceBand[] = ["high", "medium", "low", "unknown"];
 
@@ -186,7 +188,8 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
                     pairs: data.pagination.totalItems,
                     yachts: summary.listingCount,
                   })}
-                  {` · ${t("sortNote")}`}
+                  {/* The order actually applied for this tab; see the queue's orderBy. */}
+                  {` · ${decision === "pending" ? t("sortNote") : t("sortNoteReviewed")}`}
                 </p>
               ) : null}
 
