@@ -172,6 +172,12 @@ async function askOffer(
 
   try {
     const priced = await withTimeout(provider.getQuote(input));
+    /*
+     * Compared on the vendor's own total, which is everything the customer must pay to sail:
+     * the rate, the obligatory fees, and the ones settled with the base on arrival. A rate
+     * alone reverses the order whenever one vendor's mandatory fee is heavier, and taking the
+     * quote's own figure is what keeps the comparison identical to the number we then show.
+     */
     return {
       provider,
       priced,
@@ -179,7 +185,7 @@ async function askOffer(
         outcome: "priced",
         offerId: offer.offerId,
         providerCode: offer.providerCode,
-        totalMinor: allInMinor(priced),
+        totalMinor: priced.total.amountMinor,
         currency: priced.currency,
         latencyMs: Date.now() - started,
       },
@@ -203,19 +209,6 @@ async function askOffer(
 
     return { provider, priced: null, attempt: { ...failure, latencyMs: Date.now() - started } };
   }
-}
-
-/**
- * What the customer must pay to sail, which is the only figure two vendors can be compared on.
- *
- * A rate alone is not it: the same hull is quoted 4,600 by one vendor and 5,000 by the other
- * with a mandatory fee that reverses the order. Lines payable at the marina are excluded for
- * the same reason the card excludes them — they are not part of what we take.
- */
-function allInMinor(priced: ProviderQuote): number {
-  return priced.lines
-    .filter((line) => line.payWhen !== "at_check_in")
-    .reduce((total, line) => total + line.amount.amountMinor, 0);
 }
 
 function ineligibleAttempts(

@@ -90,6 +90,26 @@ const CHECKS: Check[] = [
       )::int as count`,
   },
   {
+    name: "cards priced from an offer that is not theirs",
+    detail: "the card's price, dates and terms must all describe one live offer of that listing",
+    query: sql`
+      select count(*)::int as count
+      from listing_search_doc d
+      where d.best_offer_id is not null
+        and not exists (
+          select 1 from listing_offer o
+          where o.id = d.best_offer_id and o.listing_id = d.listing_id and o.status = 'active'
+        )`,
+  },
+  {
+    name: "priced cards with no offer behind them",
+    detail: "a price nobody can be asked to honour",
+    query: sql`
+      select count(*)::int as count
+      from listing_search_doc
+      where price_from_minor is not null and best_offer_id is null`,
+  },
+  {
     name: "merged listings still holding an offer",
     detail: "a listing is only merged once its offers have left; otherwise the inventory is hidden",
     query: sql`

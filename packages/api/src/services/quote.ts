@@ -109,7 +109,8 @@ export async function createQuote(
    */
   try {
     await recordOfferAttempts(db, {
-      quoteId: quote.id,
+      /* Our row id, not the vendor's own quote id, which `id` carries. */
+      quoteId: quote.quoteId,
       listingId: input.listingId,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
