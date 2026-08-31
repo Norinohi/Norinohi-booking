@@ -74,7 +74,7 @@ export default function Footer({ year }: { year: number }) {
 
   return (
     <footer className="bg-natural-900 text-white">
-      <div className="mx-auto flex max-w-[1536px] flex-col gap-10 px-4 py-[50px] md:px-[54px] xl:px-[70px] xl:py-[60px]">
+      <div className="mx-auto flex max-w-384 flex-col gap-10 px-4 py-12.5 md:px-13.5 xl:px-17.5 xl:py-15">
         {/* Top block: brand + columns (row on desktop, centred/stacked below 2xl) */}
         <div className="flex flex-col items-center gap-8 text-center xl:flex-row xl:items-start xl:justify-between xl:text-left">
           {/* Brand */}
