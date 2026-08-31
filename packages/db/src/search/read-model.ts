@@ -26,6 +26,303 @@ export async function rebuildListingSearchDocs(
   if (options.listingIds && listingIds?.length === 0) return;
 
   await db.execute(sql`
+    with offer_doc as (
+      /*
+       * One row per sellable offer, which is where every commercial answer is decided.
+       *
+       * All of this used to hang off the listing, so on a hull two vendors sell it read across
+       * both: the cheapest rate of either, paired with a free week from the other and check-in
+       * rules from a third place. That describes a charter neither vendor would honour. Every
+       * join below keys on the offer id, so an offer is only ever priced against its own calendar,
+       * its own rules and its own refusals.
+       */
+      select
+        o.listing_id,
+        o.id as offer_id,
+        /* Architecture section 3: Booking Manager takes a tie. */
+        case p.code when 'booking_manager' then 0 when 'nausys' then 1 else 2 end as provider_rank,
+        o.default_currency,
+        o.security_deposit_minor,
+        o.security_deposit_currency,
+        o.deposit_insurance_included,
+        o.crew_type,
+        rate.currency,
+        avail.available_from,
+        avail.available_to,
+        avail.has_unconfirmed_availability,
+        checkin.bookable_from,
+        checkin.bookable_to,
+        held.has_temporary_booking,
+        /*
+         * The all-in weekly price, because that is what the customer is asked to pay and what
+         * the detail page totals. The rate alone advertised EUR 809 beside a booking summary
+         * charging EUR 959: the difference is a cleaning fee nobody can decline, on every
+         * Shannon hull.
+         *
+         * Only fees that apply whatever the customer chooses. A one-way fee is charged on a
+         * route they have to pick, and folding it in would inflate every card for a charter
+         * almost none of them will book.
+         */
+        case
+          when coalesce(week.price_minor, rate.price_from_minor) is null then null
+          else coalesce(week.price_minor, rate.price_from_minor)
+               + coalesce(week.obligatory_extras_minor, fees.unavoidable_minor, 0)
+        end as all_in_minor
+      from listing_offer o
+      join provider p on p.id = o.provider_id
+      /*
+       * The cheapest week this listing could actually sell.
+       *
+       * Read from the rate list rather than from unsold slots, because that made the headline
+       * price depend on how the calendar had been cut and left a listing priceless wherever the
+       * cut missed. Weekly only: a daily rate is not comparable to it.
+       *
+       * But the rate list alone is not a price either. Taken whole it includes seasons already
+       * past and seasons the boat is booked solid through, and the minimum lands on one of them
+       * far more often than not -- a Bavaria 32 advertised at EUR 145 for seven days off a
+       * November rate, on a hull whose free dates are all the following year and carry no rate
+       * at all. The card then quoted a week nobody could buy beside a detail page correctly
+       * saying the yacht was priced on request.
+       *
+       * So a rate counts only if it still lies ahead and overlaps a stretch the provider has not
+       * sold. That is weaker than bookable_from below, which proves a whole legal charter
+       * fits; it is a "from" price and may name a week whose exact shape the rules refuse. It is
+       * not weaker in the way that matters: every listing priced here has something to sell, and
+       * a listing with nothing to sell is priced on request on both surfaces rather than one.
+       */
+      left join lateral (
+        select min(price.price_minor) as price_from_minor, min(price.currency) as currency
+        from listing_price_period price
+        where price.listing_offer_id = o.id
+          and price.kind = 'weekly'
+          and price.end_date > current_date
+          and exists (
+            select 1
+            from listing_free_period free
+            where free.listing_offer_id = o.id
+              and free.end_date > current_date
+              and free.start_date < price.end_date
+              and free.end_date > price.start_date
+          )
+      ) rate on true
+      /*
+       * Availability is the span of the free stretches, which are the complement of occupancy.
+       * A stretch counts as unconfirmed unless the provider priced that exact period on request,
+       * which is what has_unconfirmed_availability has always meant: we inferred this.
+       */
+      left join lateral (
+        select
+          min(free.start_date) as available_from,
+          max(free.end_date) as available_to,
+          bool_or(
+            not exists (
+              select 1
+              from availability_slot confirmed
+              where confirmed.listing_offer_id = o.id
+                and confirmed.status = 'available'
+                and confirmed.availability_confirmed
+                and confirmed.start_date <= free.start_date
+                and confirmed.end_date >= free.end_date
+            )
+          ) as has_unconfirmed_availability
+        from listing_free_period free
+        where free.listing_offer_id = o.id
+      ) avail on true
+      /*
+       * The first charter this listing would actually sell, which is what an undated search card
+       * shows in place of a period of its own. Mirrors canCheckIn and offeredCheckOut in
+       * packages/api/src/lib/availability-rules.ts, and has to keep mirroring them: the card sends
+       * the visitor to a calendar that evaluates those, and a period this invents that they refuse
+       * is exactly the dead end the pair exists to close.
+       *
+       * available_from cannot answer this: it is the first day nothing is sold, which is today for
+       * most of the fleet and, on a Saturday-to-Saturday boat, never a day anyone could board.
+       *
+       * Both ends, not just the start. A start day alone proves nothing follows it, so the tail of
+       * a gap too short to sell, and every mid-week day of a listing that turns around on
+       * Saturdays, read as bookable and sent the card's date to a calendar with no end to offer.
+       * Requiring the whole charter inside the free period is what rules those out.
+       *
+       * The lengths are the rules' own, one per rule: its minimum, stepped up to its check-out
+       * weekday, dropped if that overshoots its maximum. A rule that states no minimum is read as
+       * a week (ASSUMED_NIGHTS in availability-rules.ts) rather than as a single night, because it
+       * is a provider that published nothing, not one selling nights.
+       *
+       * Weekdays are stepped onto arithmetically rather than by walking a day at a time -- dow is
+       * 0 Sunday, the numbering listing_checkin_rule stores. Past periods are excluded first, so
+       * the row count stays proportional to the season ahead.
+       */
+      left join lateral (
+        select c.candidate as bookable_from, c.candidate + n.nights as bookable_to
+        from listing_free_period free
+        join listing_price_period price
+          on price.listing_offer_id = o.id
+         and price.kind = 'weekly'
+         and price.end_date > current_date
+         and price.start_date < free.end_date
+         and price.end_date > free.start_date
+        left join listing_checkin_rule rule on rule.listing_offer_id = o.id
+        cross join lateral (
+          select greatest(free.start_date, price.start_date, current_date) as opens
+        ) w
+        cross join lateral (
+          select case
+            when rule.checkin_weekday is null then w.opens
+            else w.opens + ((rule.checkin_weekday - extract(dow from w.opens)::int + 7) % 7)
+          end as candidate
+        ) c
+        cross join lateral (
+          select greatest(coalesce(rule.min_nights, 7), 1) as base
+        ) b
+        cross join lateral (
+          select case
+            when rule.checkout_weekday is null then b.base
+            else b.base
+               + ((rule.checkout_weekday
+                   - extract(dow from c.candidate + b.base)::int + 7) % 7)
+          end as nights
+        ) n
+        where free.listing_offer_id = o.id
+          and free.end_date > current_date
+          and c.candidate < least(free.end_date, price.end_date)
+          and (rule.max_nights is null or n.nights <= rule.max_nights)
+          and c.candidate + n.nights <= free.end_date
+          /*
+           * A charter that swallows a period the provider refused is one it will not sell either,
+           * which is the containment rule wasRefused applies. Without this the card advertised the
+           * cheapest week of the Shannon fleet -- free, priced, and declined by the vendor's own
+           * offers engine -- and sent the visitor to a calendar that then greyed it out.
+           */
+          and not exists (
+            select 1
+            from listing_refused_period refused
+            where refused.listing_offer_id = o.id
+              and refused.start_date >= c.candidate
+              and refused.end_date <= c.candidate + n.nights
+          )
+        order by c.candidate, n.nights
+        limit 1
+      ) checkin on true
+      /*
+       * The rate for the week the card actually advertises, not the cheapest of the season.
+       *
+       * The card prints a price directly beside the bookable dates, so the two have to
+       * describe one charter. Reading the season minimum instead put "EUR 4,557" next to 29 August
+       * on a hull whose 29 August week is EUR 5,460 -- a EUR 1,533 understatement, and the quote
+       * that follows the click is the one that has to be right.
+       *
+       * Null for a listing with no bookable period at all, where the minimum is still the honest
+       * answer: nothing is being advertised for particular dates.
+       */
+      left join lateral (
+        select
+          price.price_minor,
+          /*
+           * The provider's own obligatory-extras total for this exact charter, where a confirmed
+           * offer recorded one.
+           *
+           * Preferred over anything reassembled from the catalogue, which prices the same fees as
+           * a ladder across season, charter length, party size, base, route and
+           * percentage-of-charter - dimensions that differ per operator and are not all published
+           * on every account. Rebuilding the sum there was wrong by a night's band on the Shannon
+           * fleet and by a party-size band elsewhere; this is the number the quote will charge,
+           * because both read the same offer.
+           */
+          (
+            select slot.obligatory_extras_minor
+            from availability_slot slot
+            where slot.listing_offer_id = o.id
+              and slot.start_date = checkin.bookable_from
+              and slot.end_date = checkin.bookable_to
+              and slot.availability_confirmed
+              and slot.obligatory_extras_minor is not null
+            limit 1
+          ) as obligatory_extras_minor
+        from listing_price_period price
+        where price.listing_offer_id = o.id
+          and price.kind = 'weekly'
+          and price.start_date <= checkin.bookable_from
+          and price.end_date > checkin.bookable_from
+        order by price.price_minor
+        limit 1
+      ) week on true
+      /*
+       * What the advertised charter pays on top of the rate.
+       *
+       * One row per fee, choosing the variant that actually applies to the week on the card
+       * rather than the cheapest anywhere. Providers file a fee as a ladder - Le Boat's moorings
+       * fee is one row per night count, 60 EUR to six nights and 90 from seven - so the minimum
+       * is a one-night price, and taking it advertised a weekly charter 30 EUR under the quote.
+       *
+       * Scoped to seasons overlapping what we sell, and excluding route-conditional fees: a
+       * one-way fee is charged on a route the customer picks, and folding it in would inflate
+       * every card for a charter almost none of them book.
+       *
+       * The night count falls back to a week when no bookable period is known, which is the
+       * length the card's own label claims, and the price falls back to the cheapest variant
+       * when the provider files no ladder at all.
+       */
+      left join lateral (
+        select sum(applicable.price_minor)::int as unavoidable_minor
+        from (
+          select distinct on (extra.name) extra.price_minor
+          from provider_extra_catalogue extra
+          cross join lateral (
+            select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
+          ) span
+          where extra.listing_offer_id = o.id
+            and extra.obligatory
+            and not extra.one_way_only
+            and (extra.season_end is null or extra.season_end >= current_date)
+            and (
+              extra.season_start is null
+              or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+            )
+          order by
+            extra.name,
+            /* A variant whose ladder covers this charter wins outright; otherwise cheapest. */
+            (
+              (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
+              and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
+            ) desc,
+            extra.price_minor
+        ) applicable
+      ) fees on true
+      left join lateral (
+        select bool_or(slot.status = 'option') as has_temporary_booking
+        from availability_slot slot
+        where slot.listing_offer_id = o.id
+      ) held on true
+      where o.status = 'active'
+        and ${listingScope(sql`o.listing_id`, listingIds)}
+    ),
+    /*
+     * The offer the card is for: cheapest all-in, ties to Booking Manager, then the offer id so
+     * the document does not churn between two equal answers. Price, dates and terms all come
+     * from this one row, because a card pricing one vendor's week beside another vendor's dates
+     * would send the visitor to a quote that disagrees with it.
+     */
+    best as (
+      select distinct on (listing_id) *
+      from offer_doc
+      order by listing_id, all_in_minor asc nulls last, provider_rank, offer_id
+    ),
+    /*
+     * The questions that are about the boat rather than about one seller. It is free if any
+     * vendor says so, and the window is the union of theirs: search asks "is this boat free
+     * then", and the quote settles which vendor sells it.
+     */
+    spread as (
+      select
+        listing_id,
+        min(available_from) as available_from,
+        max(available_to) as available_to,
+        bool_or(has_unconfirmed_availability) as has_unconfirmed_availability,
+        bool_or(has_temporary_booking) as has_temporary_booking,
+        count(*)::int as offer_count
+      from offer_doc
+      group by listing_id
+    )
     insert into listing_search_doc (
       listing_id,
       slug,
@@ -68,6 +365,8 @@ export async function rebuildListingSearchDocs(
       amenities,
       price_from_minor,
       currency,
+      best_offer_id,
+      offer_count,
       available_from,
       available_to,
       bookable_from,
@@ -86,7 +385,7 @@ export async function rebuildListingSearchDocs(
       -- ungrouped vendor near-synonyms would each become their own facet. An
       -- unclassified category falls back to its own name rather than dropping out.
       coalesce(cat.canonical_name, cat.name),
-      l.crew_type,
+      coalesce(best.crew_type, l.crew_type),
       -- The brand, not the legal entity: providers send "Bavaria Yachtbau" and "Lagoon-Bénéteau",
       -- and grouped by those the same brand splits into several shipyard pages and filters.
       coalesce(bld.canonical_name, bld.name),
@@ -119,9 +418,12 @@ export async function rebuildListingSearchDocs(
       spec.sail_type,
       -- Only ever shown as "plus a refundable deposit"; a zero is the provider
       -- saying it takes none, so it is stored as null and the card omits the line.
-      nullif(l.security_deposit_minor, 0),
-      case when l.security_deposit_minor > 0 then l.security_deposit_currency end,
-      l.deposit_insurance_included,
+      nullif(coalesce(best.security_deposit_minor, l.security_deposit_minor), 0),
+      case
+        when coalesce(best.security_deposit_minor, l.security_deposit_minor) > 0
+          then coalesce(best.security_deposit_currency, l.security_deposit_currency)
+      end,
+      coalesce(best.deposit_insurance_included, l.deposit_insurance_included),
       l.pets_allowed,
       -- Our own reviews win outright; the provider aggregate only fills the gap
       -- for a listing nobody has reviewed here. The two are never averaged: they
@@ -144,18 +446,16 @@ export async function rebuildListingSearchDocs(
        * they have to pick, and folding it in would inflate every card for a charter almost none
        * of them will book.
        */
-      case
-        when coalesce(week.price_minor, rate.price_from_minor) is null then null
-        else coalesce(week.price_minor, rate.price_from_minor)
-             + coalesce(week.obligatory_extras_minor, fees.unavoidable_minor, 0)
-      end,
-      coalesce(rate.currency, l.default_currency),
-      avail.available_from,
-      avail.available_to,
-      checkin.bookable_from,
-      checkin.bookable_to,
-      coalesce(avail.has_unconfirmed_availability, false),
-      coalesce(held.has_temporary_booking, false),
+      best.all_in_minor,
+      coalesce(best.currency, best.default_currency, l.default_currency),
+      best.offer_id,
+      coalesce(spread.offer_count, 0),
+      spread.available_from,
+      spread.available_to,
+      best.bookable_from,
+      best.bookable_to,
+      coalesce(spread.has_unconfirmed_availability, false),
+      coalesce(spread.has_temporary_booking, false),
       concat_ws(
         ' ',
         l.title,
@@ -163,7 +463,7 @@ export async function rebuildListingSearchDocs(
         -- and one searching the group ("motor yacht") must both hit this listing.
         cat.name,
         cat.canonical_name,
-        l.crew_type,
+        coalesce(best.crew_type, l.crew_type),
         bld.name,
         bld.canonical_name,
         mdl.name,
@@ -223,229 +523,8 @@ export async function rebuildListingSearchDocs(
       join amenity a on a.id = la.amenity_id
       where la.listing_id = l.id
     ) amn on true
-    /*
-     * The cheapest week this listing could actually sell.
-     *
-     * Read from the rate list rather than from unsold slots, because that made the headline
-     * price depend on how the calendar had been cut and left a listing priceless wherever the
-     * cut missed. Weekly only: a daily rate is not comparable to it.
-     *
-     * But the rate list alone is not a price either. Taken whole it includes seasons already
-     * past and seasons the boat is booked solid through, and the minimum lands on one of them
-     * far more often than not -- a Bavaria 32 advertised at EUR 145 for seven days off a
-     * November rate, on a hull whose free dates are all the following year and carry no rate
-     * at all. The card then quoted a week nobody could buy beside a detail page correctly
-     * saying the yacht was priced on request.
-     *
-     * So a rate counts only if it still lies ahead and overlaps a stretch the provider has not
-     * sold. That is weaker than bookable_from below, which proves a whole legal charter
-     * fits; it is a "from" price and may name a week whose exact shape the rules refuse. It is
-     * not weaker in the way that matters: every listing priced here has something to sell, and
-     * a listing with nothing to sell is priced on request on both surfaces rather than one.
-     */
-    left join lateral (
-      select min(price.price_minor) as price_from_minor, min(price.currency) as currency
-      from listing_price_period price
-      where price.listing_id = l.id
-        and price.kind = 'weekly'
-        and price.end_date > current_date
-        and exists (
-          select 1
-          from listing_free_period free
-          where free.listing_id = l.id
-            and free.end_date > current_date
-            and free.start_date < price.end_date
-            and free.end_date > price.start_date
-        )
-    ) rate on true
-    /*
-     * Availability is the span of the free stretches, which are the complement of occupancy.
-     * A stretch counts as unconfirmed unless the provider priced that exact period on request,
-     * which is what has_unconfirmed_availability has always meant: we inferred this.
-     */
-    left join lateral (
-      select
-        min(free.start_date) as available_from,
-        max(free.end_date) as available_to,
-        bool_or(
-          not exists (
-            select 1
-            from availability_slot confirmed
-            where confirmed.listing_id = l.id
-              and confirmed.status = 'available'
-              and confirmed.availability_confirmed
-              and confirmed.start_date <= free.start_date
-              and confirmed.end_date >= free.end_date
-          )
-        ) as has_unconfirmed_availability
-      from listing_free_period free
-      where free.listing_id = l.id
-    ) avail on true
-    /*
-     * The first charter this listing would actually sell, which is what an undated search card
-     * shows in place of a period of its own. Mirrors canCheckIn and offeredCheckOut in
-     * packages/api/src/lib/availability-rules.ts, and has to keep mirroring them: the card sends
-     * the visitor to a calendar that evaluates those, and a period this invents that they refuse
-     * is exactly the dead end the pair exists to close.
-     *
-     * available_from cannot answer this: it is the first day nothing is sold, which is today for
-     * most of the fleet and, on a Saturday-to-Saturday boat, never a day anyone could board.
-     *
-     * Both ends, not just the start. A start day alone proves nothing follows it, so the tail of
-     * a gap too short to sell, and every mid-week day of a listing that turns around on
-     * Saturdays, read as bookable and sent the card's date to a calendar with no end to offer.
-     * Requiring the whole charter inside the free period is what rules those out.
-     *
-     * The lengths are the rules' own, one per rule: its minimum, stepped up to its check-out
-     * weekday, dropped if that overshoots its maximum. A rule that states no minimum is read as
-     * a week (ASSUMED_NIGHTS in availability-rules.ts) rather than as a single night, because it
-     * is a provider that published nothing, not one selling nights.
-     *
-     * Weekdays are stepped onto arithmetically rather than by walking a day at a time -- dow is
-     * 0 Sunday, the numbering listing_checkin_rule stores. Past periods are excluded first, so
-     * the row count stays proportional to the season ahead.
-     */
-    left join lateral (
-      select c.candidate as bookable_from, c.candidate + n.nights as bookable_to
-      from listing_free_period free
-      join listing_price_period price
-        on price.listing_id = l.id
-       and price.kind = 'weekly'
-       and price.end_date > current_date
-       and price.start_date < free.end_date
-       and price.end_date > free.start_date
-      left join listing_checkin_rule rule on rule.listing_id = l.id
-      cross join lateral (
-        select greatest(free.start_date, price.start_date, current_date) as opens
-      ) w
-      cross join lateral (
-        select case
-          when rule.checkin_weekday is null then w.opens
-          else w.opens + ((rule.checkin_weekday - extract(dow from w.opens)::int + 7) % 7)
-        end as candidate
-      ) c
-      cross join lateral (
-        select greatest(coalesce(rule.min_nights, 7), 1) as base
-      ) b
-      cross join lateral (
-        select case
-          when rule.checkout_weekday is null then b.base
-          else b.base
-             + ((rule.checkout_weekday
-                 - extract(dow from c.candidate + b.base)::int + 7) % 7)
-        end as nights
-      ) n
-      where free.listing_id = l.id
-        and free.end_date > current_date
-        and c.candidate < least(free.end_date, price.end_date)
-        and (rule.max_nights is null or n.nights <= rule.max_nights)
-        and c.candidate + n.nights <= free.end_date
-        /*
-         * A charter that swallows a period the provider refused is one it will not sell either,
-         * which is the containment rule wasRefused applies. Without this the card advertised the
-         * cheapest week of the Shannon fleet -- free, priced, and declined by the vendor's own
-         * offers engine -- and sent the visitor to a calendar that then greyed it out.
-         */
-        and not exists (
-          select 1
-          from listing_refused_period refused
-          where refused.listing_id = l.id
-            and refused.start_date >= c.candidate
-            and refused.end_date <= c.candidate + n.nights
-        )
-      order by c.candidate, n.nights
-      limit 1
-    ) checkin on true
-    /*
-     * The rate for the week the card actually advertises, not the cheapest of the season.
-     *
-     * The card prints a price directly beside the bookable dates, so the two have to
-     * describe one charter. Reading the season minimum instead put "EUR 4,557" next to 29 August
-     * on a hull whose 29 August week is EUR 5,460 -- a EUR 1,533 understatement, and the quote
-     * that follows the click is the one that has to be right.
-     *
-     * Null for a listing with no bookable period at all, where the minimum is still the honest
-     * answer: nothing is being advertised for particular dates.
-     */
-    left join lateral (
-      select
-        price.price_minor,
-        /*
-         * The provider's own obligatory-extras total for this exact charter, where a confirmed
-         * offer recorded one.
-         *
-         * Preferred over anything reassembled from the catalogue, which prices the same fees as
-         * a ladder across season, charter length, party size, base, route and
-         * percentage-of-charter - dimensions that differ per operator and are not all published
-         * on every account. Rebuilding the sum there was wrong by a night's band on the Shannon
-         * fleet and by a party-size band elsewhere; this is the number the quote will charge,
-         * because both read the same offer.
-         */
-        (
-          select slot.obligatory_extras_minor
-          from availability_slot slot
-          where slot.listing_id = l.id
-            and slot.start_date = checkin.bookable_from
-            and slot.end_date = checkin.bookable_to
-            and slot.availability_confirmed
-            and slot.obligatory_extras_minor is not null
-          limit 1
-        ) as obligatory_extras_minor
-      from listing_price_period price
-      where price.listing_id = l.id
-        and price.kind = 'weekly'
-        and price.start_date <= checkin.bookable_from
-        and price.end_date > checkin.bookable_from
-      order by price.price_minor
-      limit 1
-    ) week on true
-    /*
-     * What the advertised charter pays on top of the rate.
-     *
-     * One row per fee, choosing the variant that actually applies to the week on the card
-     * rather than the cheapest anywhere. Providers file a fee as a ladder - Le Boat's moorings
-     * fee is one row per night count, 60 EUR to six nights and 90 from seven - so the minimum
-     * is a one-night price, and taking it advertised a weekly charter 30 EUR under the quote.
-     *
-     * Scoped to seasons overlapping what we sell, and excluding route-conditional fees: a
-     * one-way fee is charged on a route the customer picks, and folding it in would inflate
-     * every card for a charter almost none of them book.
-     *
-     * The night count falls back to a week when no bookable period is known, which is the
-     * length the card's own label claims, and the price falls back to the cheapest variant
-     * when the provider files no ladder at all.
-     */
-    left join lateral (
-      select sum(applicable.price_minor)::int as unavoidable_minor
-      from (
-        select distinct on (extra.name) extra.price_minor
-        from provider_extra_catalogue extra
-        cross join lateral (
-          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
-        ) span
-        where extra.listing_id = l.id
-          and extra.obligatory
-          and not extra.one_way_only
-          and (extra.season_end is null or extra.season_end >= current_date)
-          and (
-            extra.season_start is null
-            or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
-          )
-        order by
-          extra.name,
-          /* A variant whose ladder covers this charter wins outright; otherwise cheapest. */
-          (
-            (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
-            and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
-          ) desc,
-          extra.price_minor
-      ) applicable
-    ) fees on true
-    left join lateral (
-      select bool_or(slot.status = 'option') as has_temporary_booking
-      from availability_slot slot
-      where slot.listing_id = l.id
-    ) held on true
+    left join best on best.listing_id = l.id
+    left join spread on spread.listing_id = l.id
     left join lateral (
       select lt.value as description
       from listing_text lt
@@ -499,6 +578,8 @@ export async function rebuildListingSearchDocs(
       gallery = excluded.gallery,
       amenities = excluded.amenities,
       price_from_minor = excluded.price_from_minor,
+      best_offer_id = excluded.best_offer_id,
+      offer_count = excluded.offer_count,
       currency = excluded.currency,
       available_from = excluded.available_from,
       available_to = excluded.available_to,

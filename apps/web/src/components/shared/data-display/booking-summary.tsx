@@ -2,7 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
-import type { CharterConstraints } from "@yacht-charter/api/lib/availability-rules";
+import type { OfferConstraints } from "@yacht-charter/api/lib/offer-availability";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
@@ -65,7 +65,7 @@ export type BookingSummaryProps = {
   loading?: boolean;
   stats?: { booked: number; viewed: number } | null;
 
-  constraints: CharterConstraints;
+  offers: readonly OfferConstraints[];
   selectedPeriod: CharterPeriod | undefined;
   onPeriodSelect: (period: CharterPeriod) => void;
   /** The provider refused the last pick — shown under the date control. */
@@ -408,7 +408,7 @@ export default function BookingSummary({
   quote,
   loading = false,
   stats,
-  constraints,
+  offers,
   selectedPeriod,
   onPeriodSelect,
   slotError = false,
@@ -521,7 +521,7 @@ export default function BookingSummary({
           ) : null}
 
           <CharterDateField
-            constraints={constraints}
+            offers={offers}
             value={selectedPeriod}
             onSelect={onPeriodSelect}
             disabled={unavailable}

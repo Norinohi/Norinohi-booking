@@ -15,8 +15,12 @@ import {
   useState,
 } from "react";
 
-import type { CharterConstraints, DatePeriod } from "@yacht-charter/api/lib/availability-rules";
-import { firstBookablePeriod, rangeStatus } from "@yacht-charter/api/lib/availability-rules";
+import type { DatePeriod } from "@yacht-charter/api/lib/availability-rules";
+import {
+  combinedFirstBookablePeriod,
+  combinedRangeStatus,
+  type OfferConstraints,
+} from "@yacht-charter/api/lib/offer-availability";
 
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
 import type { CrewType } from "@/components/shared/data-display/booking-summary";
@@ -60,7 +64,8 @@ type BookingContextValue = {
   slug: string;
   listing: ListingDetail;
   quote: Quote | null;
-  constraints: CharterConstraints;
+  /** What each vendor will sell, kept apart so the calendar can answer across them. */
+  offers: readonly OfferConstraints[];
   crewType: CrewType | undefined;
   crewOptions: readonly CrewType[];
   guests: number;
@@ -169,11 +174,16 @@ export function BookingProvider({
   });
 
   /*
-   * Periods a live quote refused. The constraints are what the provider published, and a
-   * refusal is it correcting them, so the period stays out for the rest of the visit rather
-   * than inviting the same 409 again.
+   * Periods a live quote refused, each against the offer that refused it. The published
+   * constraints are what the provider said in its dump, and a refusal is it correcting them,
+   * so the period stays out for the rest of the visit rather than inviting the same 409 again.
+   *
+   * Kept per offer rather than per listing: one vendor declining a week says nothing about the
+   * other, and applying it to both would hide a charter that is still for sale.
    */
-  const [refusedPeriods, setRefusedPeriods] = useState<readonly DatePeriod[]>([]);
+  const [refusedPeriods, setRefusedPeriods] = useState<
+    readonly (DatePeriod & { offerId: string })[]
+  >([]);
   const [slotError, setSlotError] = useState(false);
 
   /*
@@ -188,13 +198,19 @@ export function BookingProvider({
    * not sell off the calendar before anyone clicks it; this session adds the ones a live quote
    * turned down since. Both are exact periods, so they concatenate.
    */
-  const constraints: CharterConstraints = useMemo(
-    () => ({
-      rules: published?.rules ?? [],
-      occupied: published?.occupied ?? [],
-      priced: published?.priced ?? [],
-      refused: [...(published?.refused ?? []), ...refusedPeriods],
-    }),
+  const offers: OfferConstraints[] = useMemo(
+    () =>
+      (published?.offers ?? []).map((offer) => ({
+        offerId: offer.offerId,
+        providerCode: offer.provider,
+        rules: offer.rules,
+        occupied: offer.occupied,
+        priced: offer.priced,
+        refused: [
+          ...offer.refused,
+          ...refusedPeriods.filter((period) => period.offerId === offer.offerId),
+        ],
+      })),
     [published, refusedPeriods],
   );
 
@@ -256,12 +272,15 @@ export function BookingProvider({
    */
   const suggestedPeriod = useMemo(() => {
     if (!bookablePeriod || !published) return null;
-    if (rangeStatus(bookablePeriod.checkIn, bookablePeriod.checkOut, constraints) === "bookable") {
+    if (
+      combinedRangeStatus(bookablePeriod.checkIn, bookablePeriod.checkOut, offers).verdict ===
+      "bookable"
+    ) {
       return bookablePeriod;
     }
-    const found = firstBookablePeriod(bookablePeriod.checkIn, constraints);
+    const found = combinedFirstBookablePeriod(bookablePeriod.checkIn, offers);
     return found ? { checkIn: found.startDate, checkOut: found.endDate } : null;
-  }, [bookablePeriod, published, constraints]);
+  }, [bookablePeriod, published, offers]);
 
   /*
    * Prices that period once, as soon as the published constraints are in — before them every
@@ -275,21 +294,26 @@ export function BookingProvider({
     if (seededRef.current || quoteId || !published || !listingId) return;
     const period = searchedPeriod ?? suggestedPeriod;
     if (!period) return;
-    if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;
+    if (combinedRangeStatus(period.checkIn, period.checkOut, offers).verdict !== "bookable") return;
     seededRef.current = true;
     selectPeriod(period);
   });
 
   function selectPeriod(period: CharterPeriod) {
-    if (rangeStatus(period.checkIn, period.checkOut, constraints) !== "bookable") return;
+    /* The verdict names the offer that would sell it, which is the one a refusal belongs to. */
+    const verdict = combinedRangeStatus(period.checkIn, period.checkOut, offers);
+    if (verdict.verdict !== "bookable") return;
+    const refusedBy = verdict.offerId;
     setSlotError(false);
     void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType, extras })).catch(
       (error: Error) => {
         if (!isSlotConflict(error)) throw error;
-        setRefusedPeriods((current) => [
-          ...current,
-          { startDate: period.checkIn, endDate: period.checkOut },
-        ]);
+        if (refusedBy !== null) {
+          setRefusedPeriods((current) => [
+            ...current,
+            { offerId: refusedBy, startDate: period.checkIn, endDate: period.checkOut },
+          ]);
+        }
         setSlotError(true);
       },
     );
@@ -384,7 +408,7 @@ export function BookingProvider({
     slug,
     listing,
     quote,
-    constraints,
+    offers,
     crewType,
     crewOptions: listing?.crew.options ?? [],
     guests,

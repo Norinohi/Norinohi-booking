@@ -490,9 +490,10 @@ export const availabilityCalendarSchema = z.object({
   ),
 });
 
-export const availabilityConstraintsSchema = z.object({
-  listingId: z.string(),
-  window: z.object({ from: z.string(), to: z.string() }),
+/** One vendor's own answer: its calendar, its rules, its rates, its refusals. */
+export const offerConstraintsSchema = z.object({
+  offerId: z.string(),
+  provider: z.string(),
   rules: z.array(
     z.object({
       checkinWeekday: z.number().int().min(0).max(6).nullable(),
@@ -517,7 +518,7 @@ export const availabilityConstraintsSchema = z.object({
       confirmed: z.boolean(),
     }),
   ),
-  /** Exact periods the provider declined to sell; matched on both ends, never by overlap. */
+  /** Exact periods this provider declined to sell; matched on both ends, never by overlap. */
   refused: z.array(z.object({ startDate: z.string(), endDate: z.string() })),
   oneWay: z.array(
     z.object({
@@ -526,4 +527,18 @@ export const availabilityConstraintsSchema = z.object({
       isOneWay: z.boolean(),
     }),
   ),
+});
+
+/**
+ * One set per offer, deliberately not flattened.
+ *
+ * A yacht two vendors sell has two calendars and two sets of check-in rules, and merging them
+ * would describe a charter neither would honour: one vendor's free week closed on the other's
+ * turnaround day. The caller combines the answers instead, so a day is offered when any offer
+ * can deliver it.
+ */
+export const availabilityConstraintsSchema = z.object({
+  listingId: z.string(),
+  window: z.object({ from: z.string(), to: z.string() }),
+  offers: z.array(offerConstraintsSchema),
 });

@@ -288,7 +288,20 @@ export async function getListingDetailByIdOrSlug(
       left join extra_label_translation curated
         on curated.name_key = ${extraNameKeySql(sql`extra.name`)}
         and curated.locale = ${locale}
-      where extra.listing_id = ${listing.listingId}
+      /*
+       * Scoped to the offer the card is priced from, never to the listing.
+       *
+       * The page shows one price and one set of terms, and they have to be the same vendor's:
+       * across a merged listing the two vendors' cleaning fees folded into a single range
+       * neither of them charges. Falls back to the listing while a document has no best offer
+       * recorded yet, which is a listing with nothing sellable on it anyway.
+       */
+      where (
+        case
+          when ${listing.bestOfferId ?? null}::text is null then extra.listing_id = ${listing.listingId}
+          else extra.listing_offer_id = ${listing.bestOfferId ?? null}::text
+        end
+      )
         /*
          * Only fees whose season overlaps what we actually sell.
          *
@@ -610,6 +623,10 @@ export async function listMapMarkers(
       doc.lat,
       doc.lng,
       doc.price_from_minor as "priceFromMinor",
+      doc.best_offer_id as "bestOfferId",
+      doc.offer_count as "offerCount",
+  doc.best_offer_id as "bestOfferId",
+  doc.offer_count as "offerCount",
       doc.currency
     from listing_search_doc doc
     where ${whereClause(input)}
@@ -734,44 +751,71 @@ export async function listAvailabilityConstraints(
   input: AvailabilityCalendarInput,
 ): Promise<AvailabilityConstraints> {
   /*
+   * One constraint set per offer, never one per listing.
+   *
+   * A yacht two vendors sell has two calendars, two rate lists and two sets of check-in
+   * rules, and flattening them describes a charter neither would honour: one vendor's free
+   * week closed on the other vendor's turnaround day. `offer-availability.ts` combines the
+   * answers instead, so the sets stay whole and the customer still sees one card.
+   */
+  /*
    * Overlap, not containment, unlike the calendar above. A booking that starts before
    * the window and ends inside it still blocks candidate ranges at this end, and a
    * containment filter would drop it and let the caller offer a period that is taken.
    */
   const overlapsWindow = sql`slot.start_date < ${input.to} and slot.end_date > ${input.from}`;
 
-  const [rules, occupied, priced, refused, oneWay] = await Promise.all([
+  const [offers, rules, occupied, priced, refused, oneWay, holds] = await Promise.all([
+    db.execute<{ offerId: string; provider: string }>(sql`
+      select o.id as "offerId", p.code as provider
+      from listing_offer o
+      join provider p on p.id = o.provider_id
+      where o.listing_id = ${input.listingId} and o.status = 'active'
+      order by o.id
+    `),
     db.execute<{
+      offerId: string;
       checkinWeekday: number | null;
       checkoutWeekday: number | null;
       minNights: number | null;
       maxNights: number | null;
     }>(sql`
       select
+        rule.listing_offer_id as "offerId",
         rule.checkin_weekday as "checkinWeekday",
         rule.checkout_weekday as "checkoutWeekday",
         rule.min_nights as "minNights",
         rule.max_nights as "maxNights"
       from listing_checkin_rule rule
-      where rule.listing_id = ${input.listingId}
+      join listing_offer o
+        on o.id = rule.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
       order by rule.min_nights asc nulls first, rule.checkin_weekday asc nulls first
     `),
     db.execute<{
+      offerId: string;
       startDate: string;
       endDate: string;
       status: "option" | "occupied" | "blocked";
     }>(sql`
-      /* Both arms cast to text: a union cannot find a common type for the enum and the case. */
-      select slot.start_date as "startDate", slot.end_date as "endDate", slot.status::text as status
+      /* Cast to text for the same reason the union below does: an enum has no common type with a case. */
+      select
+        slot.listing_offer_id as "offerId",
+        slot.start_date as "startDate",
+        slot.end_date as "endDate",
+        slot.status::text as status
       from availability_slot slot
-      where slot.listing_id = ${input.listingId}
-        and slot.status <> 'available'
+      join listing_offer o
+        on o.id = slot.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where slot.status <> 'available'
         and ${overlapsWindow}
-      union all
-      ${slotHoldsAsOccupancy(input.listingId, input.from, input.to)}
       order by "startDate" asc
     `),
     db.execute<{
+      offerId: string;
       startDate: string;
       endDate: string;
       priceMinor: number;
@@ -785,6 +829,7 @@ export async function listAvailabilityConstraints(
        * instead of only the periods someone enumerated inside it.
        */
       select
+        price.listing_offer_id as "offerId",
         price.start_date as "startDate",
         price.end_date as "endDate",
         price.price_minor as "priceMinor",
@@ -792,21 +837,24 @@ export async function listAvailabilityConstraints(
         exists (
           select 1
           from availability_slot slot
-          where slot.listing_id = price.listing_id
+          where slot.listing_offer_id = price.listing_offer_id
             and slot.status = 'available'
             and slot.availability_confirmed
             and slot.start_date >= price.start_date
             and slot.end_date <= price.end_date
         ) as "confirmed"
       from listing_price_period price
-      where price.listing_id = ${input.listingId}
-        and price.kind = 'weekly'
+      join listing_offer o
+        on o.id = price.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where price.kind = 'weekly'
         and price.currency = ${input.currency ?? "EUR"}
         and price.start_date < ${input.to}
         and price.end_date > ${input.from}
       order by price.start_date asc
     `),
-    db.execute<{ startDate: string; endDate: string }>(sql`
+    db.execute<{ offerId: string; startDate: string; endDate: string }>(sql`
       /*
        * Exact periods the provider was asked to price and declined, which occupancy and the
        * rate list cannot express between them: a week can be unsold, in an open season, and
@@ -814,35 +862,77 @@ export async function listAvailabilityConstraints(
        * these on both ends, because a refused fortnight says nothing about the free week
        * starting the same day.
        */
-      select r.start_date as "startDate", r.end_date as "endDate"
+      select r.listing_offer_id as "offerId", r.start_date as "startDate", r.end_date as "endDate"
       from listing_refused_period r
-      where r.listing_id = ${input.listingId}
-        and r.start_date < ${input.to}
+      join listing_offer o
+        on o.id = r.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where r.start_date < ${input.to}
         and r.end_date > ${input.from}
       order by r.start_date asc
     `),
     db.execute<{
+      offerId: string;
       startDate: string | null;
       endDate: string | null;
       isOneWay: boolean;
     }>(sql`
-      select rule.start_date as "startDate", rule.end_date as "endDate", rule.is_one_way as "isOneWay"
+      select
+        rule.listing_offer_id as "offerId",
+        rule.start_date as "startDate",
+        rule.end_date as "endDate",
+        rule.is_one_way as "isOneWay"
       from listing_one_way_rule rule
-      where rule.listing_id = ${input.listingId}
-        and (rule.start_date is null or rule.start_date < ${input.to})
+      join listing_offer o
+        on o.id = rule.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where (rule.start_date is null or rule.start_date < ${input.to})
         and (rule.end_date is null or rule.end_date > ${input.from})
       order by rule.start_date asc nulls first
     `),
+    /*
+     * Our own live checkouts, which belong to the hull rather than to a seller: a hold taken
+     * through one vendor blocks the boat whoever else lists it. Appended to every offer.
+     */
+    db.execute<{
+      startDate: string;
+      endDate: string;
+      status: "option" | "occupied" | "blocked";
+    }>(sql`
+      select "startDate", "endDate", status from (
+        ${slotHoldsAsOccupancy(input.listingId, input.from, input.to)}
+      ) held
+    `),
   ]);
+
+  const byOffer = <T extends { offerId: string }>(rows: readonly T[]) => {
+    const grouped = new Map<string, Omit<T, "offerId">[]>();
+    for (const { offerId, ...rest } of rows) {
+      grouped.set(offerId, [...(grouped.get(offerId) ?? []), rest]);
+    }
+    return grouped;
+  };
+
+  const rulesByOffer = byOffer(rules.rows);
+  const occupiedByOffer = byOffer(occupied.rows);
+  const pricedByOffer = byOffer(priced.rows);
+  const refusedByOffer = byOffer(refused.rows);
+  const oneWayByOffer = byOffer(oneWay.rows);
 
   return {
     listingId: input.listingId,
     window: { from: input.from, to: input.to },
-    rules: rules.rows,
-    occupied: occupied.rows,
-    priced: priced.rows,
-    refused: refused.rows,
-    oneWay: oneWay.rows,
+    offers: offers.rows.map((offer) => ({
+      offerId: offer.offerId,
+      provider: offer.provider,
+      rules: rulesByOffer.get(offer.offerId) ?? [],
+      occupied: [...(occupiedByOffer.get(offer.offerId) ?? []), ...holds.rows],
+      priced: pricedByOffer.get(offer.offerId) ?? [],
+      refused: refusedByOffer.get(offer.offerId) ?? [],
+      oneWay: oneWayByOffer.get(offer.offerId) ?? [],
+    })),
   };
 }
 
@@ -991,6 +1081,8 @@ const searchColumns = sql`
   doc.gallery,
   doc.amenities,
   doc.price_from_minor as "priceFromMinor",
+  doc.best_offer_id as "bestOfferId",
+  doc.offer_count as "offerCount",
   doc.currency,
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
@@ -1155,17 +1247,30 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
    *
    * A listing with no published rule is kept, matching `availability-rules.ts`: the rules are
    * what the provider stated, and inventing one here would hide dates it would happily sell.
+   *
+   * Asked of each offer rather than of the listing, and satisfied when any one of them says
+   * yes. Across the listing, one vendor's rules vouched for the other's inventory: a boat one
+   * provider sells by the week and the other by the night read as available for three nights
+   * through both.
    */
   if (!skip.has("duration") && input.duration) {
-    parts.push(sql`(
-      not exists (select 1 from listing_checkin_rule rule where rule.listing_id = doc.listing_id)
-      or exists (
-        select 1
-        from listing_checkin_rule rule
-        where rule.listing_id = doc.listing_id
-          and (rule.min_nights is null or rule.min_nights <= ${input.duration})
-          and (rule.max_nights is null or rule.max_nights >= ${input.duration})
-      )
+    parts.push(sql`exists (
+      select 1
+      from listing_offer o
+      where o.listing_id = doc.listing_id
+        and o.status = 'active'
+        and (
+          not exists (
+            select 1 from listing_checkin_rule rule where rule.listing_offer_id = o.id
+          )
+          or exists (
+            select 1
+            from listing_checkin_rule rule
+            where rule.listing_offer_id = o.id
+              and (rule.min_nights is null or rule.min_nights <= ${input.duration})
+              and (rule.max_nights is null or rule.max_nights >= ${input.duration})
+          )
+        )
     )`);
   }
   return sql.join(parts, sql` and `);
@@ -1367,11 +1472,20 @@ function labelsFromOptions(options: ListingFacetOption[]): string[] {
 export async function listSelectableExtraCodes(
   db: NodePgDatabase<typeof schema>,
   listingId: string,
+  listingOfferId?: string | null,
 ): Promise<Set<string>> {
+  /*
+   * Narrowed to one offer where the caller knows which vendor it is quoting. An extra code
+   * belongs to the provider that published it, so across a merged listing the union would
+   * accept a code from the vendor that is not selling this charter, persist it onto the quote,
+   * and have the adapter drop it: billed nothing, told nobody. Without an offer this stays the
+   * listing-wide set, which is exactly right while a listing has one.
+   */
   const rows = await db.execute<{ source: string; kind: string; externalId: string }>(sql`
     select source, kind, external_id as "externalId"
     from provider_extra_catalogue
-    where listing_id = ${listingId} and obligatory = false
+    where obligatory = false
+      and ${listingOfferId ? sql`listing_offer_id = ${listingOfferId}` : sql`listing_id = ${listingId}`}
   `);
 
   return new Set(

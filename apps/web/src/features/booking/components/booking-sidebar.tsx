@@ -24,7 +24,7 @@ export default function BookingSidebar({
     slug,
     listing,
     quote,
-    constraints,
+    offers,
     crewType,
     crewOptions,
     guests,
@@ -62,7 +62,7 @@ export default function BookingSidebar({
               }
             : null
         }
-        constraints={constraints}
+        offers={offers}
         selectedPeriod={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
         onPeriodSelect={selectPeriod}
         slotError={slotError}

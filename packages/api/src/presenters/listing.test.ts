@@ -46,6 +46,8 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   mainImage: null,
   gallery: [],
   amenities: [],
+  bestOfferId: "loff_1",
+  offerCount: 1,
   priceFromMinor: 1_240_000,
   currency: "EUR",
   availableFrom: "2026-06-13",
