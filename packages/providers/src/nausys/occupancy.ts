@@ -6,6 +6,7 @@ import type { Database } from "../registry";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import { ContractError } from "../shared/errors";
 import { decimalStringToMinor } from "../shared/money";
+import { extraLineMinor } from "./extras";
 import { stableSourceHash } from "../shared/raw-retention";
 import type {
   AvailabilityScope,
@@ -269,17 +270,23 @@ export async function* fetchNausysFreeYachtsSearch(
  * `clientPrice` is the only customer-facing number; `agencyPrice` is our cost and
  * never appears on `freeYachtsSearch` results anyway. UNDER_OPTION is dropped
  * rather than mapped: it is not free, and a confirmed slot must mean bookable.
+ *
+ * `clientPrice` is also the discounted one, which is the whole reason this pass exists for
+ * the card: the catalogue rate list carries the operator's list price, and on NauSYS a
+ * quarter to a third of the fleet sells its weeks below it.
  */
 export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOffer | null {
   if (yacht.status !== "FREE") return null;
 
   const currency = yacht.price.currency;
+  const obligatoryExtrasMinor = obligatoryExtrasTotal(yacht, currency);
   return {
     externalYachtId: String(yacht.yachtId),
     startDate: parseNausysDate(yacht.periodFrom),
     endDate: parseNausysDate(yacht.periodTo),
     priceMinor: decimalStringToMinor(yacht.price.clientPrice, currency),
     currency,
+    ...(obligatoryExtrasMinor === undefined ? null : { obligatoryExtrasMinor }),
     sourceHash: stableSourceHash({
       yachtId: yacht.yachtId,
       periodFrom: yacht.periodFrom,
@@ -289,6 +296,28 @@ export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOff
       status: yacht.status,
     }),
   };
+}
+
+/**
+ * What this charter must pay on top of the rate, from the offer that priced it.
+ *
+ * The read model prefers this over the catalogue's own fee rows for the reason Booking
+ * Manager's equivalent already gives: the catalogue files a fee as a ladder across season,
+ * length, party size, base and route, and rebuilding the total from it is guesswork. The
+ * vendor computed it for this exact week.
+ *
+ * Undefined rather than a total wherever the answer would be a guess: an offer that lists no
+ * obligatory extras at all has said nothing, and one pricing a fee in another currency cannot
+ * be added up at all, so both leave the catalogue's reconstruction in place. An empty list is
+ * a real zero and is kept. Included-in-price services total zero through `extraLineMinor`,
+ * the same as they do on the quote.
+ */
+function obligatoryExtrasTotal(yacht: RestFreeYacht, currency: string): number | undefined {
+  const extras = yacht.obligatoryExtras;
+  if (extras === undefined) return undefined;
+  if (extras.some((extra) => extra.currency !== currency)) return undefined;
+
+  return extras.reduce((total, extra) => total + extraLineMinor(extra, currency), 0);
 }
 
 /* -------------------------------------------------------------- hot window */

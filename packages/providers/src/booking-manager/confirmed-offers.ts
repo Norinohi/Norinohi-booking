@@ -12,6 +12,7 @@ import { bookingManagerEndpoints, restOfferListSchema, type RestOffer } from "./
 import { numberToMinor } from "./money";
 import { rankOffers } from "./offer-ranking";
 import { charterSaturdays } from "./prices";
+import { sweepPeriods, type SweepPeriod } from "../shared/sweep-periods";
 import { z } from "zod";
 
 /**
@@ -55,6 +56,14 @@ export interface BookingManagerConfirmedOfferOptions {
   companyIds: readonly string[];
   years: readonly number[];
   currency?: string;
+  /**
+   * The charters the cards are advertising, most-advertised first. Read at sweep time rather
+   * than passed in whole, because it moves as charters are sold and the read model re-mints
+   * the periods this pass exists to price.
+   */
+  loadAdvertisedPeriods?: () => Promise<readonly SweepPeriod[]>;
+  /** Today, for dropping the weeks that are already over. Injectable so the walk is testable. */
+  today?: string;
 }
 
 /**
@@ -137,8 +146,27 @@ export async function* streamBookingManagerConfirmedOffers(
 ): AsyncIterable<ConfirmedOfferPage> {
   const { client, config } = options;
   const scopeKeys = options.companyIds.length > 0 ? [...options.companyIds] : null;
-  const weeks = charterSaturdays([...options.years]);
-  const pending = weeks.slice(from.weekIndex);
+  /*
+   * What the cards advertise, then the standing grid of charter Saturdays.
+   *
+   * The grid alone missed twice. It runs from 1 January, so a third of every budgeted run was
+   * spent asking about weeks that had already happened; and it names Saturday weeks only,
+   * while 539 dated Booking Manager cards advertise some other shape. A week this pass never
+   * reaches keeps the price the catalogue reconstruction gives it, which is a rate plus a fee
+   * total rebuilt from a ladder — it misses what only the offer states. That is how a gulet
+   * card read EUR 35,000 beside a quote of EUR 42,000: a mandatory Turkish VAT line that
+   * exists on the offer and nowhere in the catalogue.
+   */
+  const advertised = (await options.loadAdvertisedPeriods?.()) ?? [];
+  const grid = charterSaturdays([...options.years]).map((checkIn) => ({
+    startDate: checkIn,
+    endDate: addDays(checkIn, 7),
+  }));
+  const periods = sweepPeriods(advertised, grid, {
+    today: options.today ?? new Date().toISOString().slice(0, 10),
+  });
+
+  const pending = periods.slice(from.weekIndex);
   if (pending.length === 0) return;
 
   /*
@@ -147,13 +175,13 @@ export async function* streamBookingManagerConfirmedOffers(
    * which on a budget-truncated run decides which weeks got swept by which happened to be
    * quick - and an unswept week that looks swept is a fleet of false refusals.
    */
-  const responses = orderedWindow(pending, config.sweepConcurrency, (checkIn, slot) =>
+  const responses = orderedWindow(pending, config.sweepConcurrency, (period, slot) =>
     client.get(
       bookingManagerEndpoints.offers,
       restOfferListSchema,
       {
-        dateFrom: formatBookingManagerDateTime(checkIn),
-        dateTo: formatBookingManagerDateTime(addDays(checkIn, 7)),
+        dateFrom: formatBookingManagerDateTime(period.startDate),
+        dateTo: formatBookingManagerDateTime(period.endDate),
         companyId: scopeKeys ?? undefined,
         currency: options.currency || undefined,
       },
@@ -162,8 +190,9 @@ export async function* streamBookingManagerConfirmedOffers(
   );
 
   let weekIndex = from.weekIndex;
-  for await (const { item: checkIn, result } of responses) {
-    const checkOut = addDays(checkIn, 7);
+  for await (const { item: period, result } of responses) {
+    const checkIn = period.startDate;
+    const checkOut = period.endDate;
     const rows = await result;
     weekIndex += 1;
 

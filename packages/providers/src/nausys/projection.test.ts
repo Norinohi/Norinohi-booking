@@ -449,7 +449,14 @@ describe("projectNausysCatalogue", () => {
   describe("check-in rules", () => {
     it("maps the named weekday booleans to one rule", () => {
       expect(listingOf(maria())?.checkinRules).toEqual([
-        { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+        {
+          checkinWeekday: 6,
+          checkoutWeekday: 6,
+          minNights: 7,
+          maxNights: undefined,
+          seasonStart: "1970-01-01",
+          seasonEnd: "2099-12-31",
+        },
       ]);
     });
 
@@ -458,7 +465,14 @@ describe("projectNausysCatalogue", () => {
       const leelaa = recordedYacht(2);
 
       expect(listingOf(leelaa)?.checkinRules).toEqual([
-        { checkinWeekday: 6, checkoutWeekday: 5, minNights: 6, maxNights: undefined },
+        {
+          checkinWeekday: 6,
+          checkoutWeekday: 5,
+          minNights: 6,
+          maxNights: undefined,
+          seasonStart: "1970-01-01",
+          seasonEnd: "2099-12-31",
+        },
       ]);
     });
 
@@ -469,6 +483,8 @@ describe("projectNausysCatalogue", () => {
           checkoutWeekday: undefined,
           minNights: 3,
           maxNights: undefined,
+          seasonStart: "1970-01-01",
+          seasonEnd: "2099-12-31",
         },
       ]);
     });
@@ -489,12 +505,31 @@ describe("projectNausysCatalogue", () => {
       ];
 
       expect(listingOf(yacht)?.checkinRules).toEqual([
-        { checkinWeekday: 0, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
-        { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+        {
+          checkinWeekday: 0,
+          checkoutWeekday: 6,
+          minNights: 7,
+          maxNights: undefined,
+          seasonStart: "1970-01-01",
+          seasonEnd: "2099-12-31",
+        },
+        {
+          checkinWeekday: 6,
+          checkoutWeekday: 6,
+          minNights: 7,
+          maxNights: undefined,
+          seasonStart: "1970-01-01",
+          seasonEnd: "2099-12-31",
+        },
       ]);
     });
 
-    it("collapses two periods that state the same rule over different dates", () => {
+    /*
+     * These used to collapse into one rule, on the reading that the dates were noise. They are
+     * not: an operator states its terms per season and lets them lapse, and one rule spanning
+     * both seasons is a claim about the gap between them that nobody made.
+     */
+    it("keeps two periods that state the same rule over different seasons apart", () => {
       const yacht = maria();
       const [period] = payloadsSchema.parse(yacht.checkInPeriods);
       yacht.checkInPeriods = [
@@ -502,7 +537,52 @@ describe("projectNausysCatalogue", () => {
         { ...period, dateFrom: "01.01.2027", dateTo: "31.12.2027" },
       ];
 
-      expect(listingOf(yacht)?.checkinRules).toHaveLength(1);
+      expect(listingOf(yacht)?.checkinRules).toEqual([
+        expect.objectContaining({ seasonStart: "2026-01-01", seasonEnd: "2026-12-31" }),
+        expect.objectContaining({ seasonStart: "2027-01-01", seasonEnd: "2027-12-31" }),
+      ]);
+    });
+
+    it("carries a season the operator let lapse rather than dropping its dates", () => {
+      // Yacht 29476220's real shape: whole weeks, four months of three-night stays, whole weeks.
+      const yacht = maria();
+      const [period] = payloadsSchema.parse(yacht.checkInPeriods);
+      yacht.checkInPeriods = [
+        { ...period, dateFrom: "01.01.1970", dateTo: "31.12.2024" },
+        {
+          ...period,
+          checkInMonday: true,
+          checkInSunday: true,
+          checkOutMonday: true,
+          checkOutSunday: true,
+          dateFrom: "01.01.2025",
+          dateTo: "04.05.2025",
+          minimalReservationDuration: 3,
+        },
+        { ...period, dateFrom: "05.05.2025", dateTo: "01.01.2999" },
+      ];
+
+      const rules = listingOf(yacht)?.checkinRules ?? [];
+      const short = rules.filter((rule) => rule.minNights === 3);
+
+      expect(short.length).toBeGreaterThan(0);
+      for (const rule of short) {
+        expect(rule).toMatchObject({ seasonStart: "2025-01-01", seasonEnd: "2025-05-04" });
+      }
+    });
+
+    it("keeps a rule whose season is unreadable rather than dropping the turnaround", () => {
+      const yacht = maria();
+      const [period] = payloadsSchema.parse(yacht.checkInPeriods);
+      yacht.checkInPeriods = [{ ...period, dateFrom: "not a date", dateTo: "31.12.2099" }];
+
+      expect(listingOf(yacht)?.checkinRules).toEqual([
+        expect.objectContaining({
+          checkinWeekday: 6,
+          seasonStart: undefined,
+          seasonEnd: "2099-12-31",
+        }),
+      ]);
     });
 
     it("emits nothing for a period that constrains nothing", () => {

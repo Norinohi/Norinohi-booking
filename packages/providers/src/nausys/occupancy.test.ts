@@ -322,6 +322,40 @@ describe("mapFreeYachtToConfirmedOffer", () => {
     });
   });
 
+  /*
+   * The card prints rate plus unavoidable fees as one figure, and the read model prefers this
+   * total over its own reconstruction from the catalogue ladder. Both halves have to come from
+   * the offer, or the card adds a vendor price to a guessed fee.
+   */
+  it("totals the offer's own obligatory extras", () => {
+    // The search fixture's one obligatory service, at 150.00 for one unit.
+    expect(mapFreeYachtToConfirmedOffer(firstFreeYacht())).toMatchObject({
+      obligatoryExtrasMinor: 15_000,
+    });
+  });
+
+  it("says nothing about fees when the offer lists none, leaving the catalogue to answer", () => {
+    const yacht = firstFreeYacht();
+    delete yacht.obligatoryExtras;
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("obligatoryExtrasMinor");
+  });
+
+  it("keeps an offer that really charges nothing as a zero", () => {
+    const yacht = firstFreeYacht();
+    yacht.obligatoryExtras = [];
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).toMatchObject({ obligatoryExtrasMinor: 0 });
+  });
+
+  it("refuses to total fees it cannot add up, rather than understating them", () => {
+    const yacht = firstFreeYacht();
+    const [extra] = yacht.obligatoryExtras ?? [];
+    if (extra) extra.currency = "HRK";
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("obligatoryExtrasMinor");
+  });
+
   it("drops an UNDER_OPTION yacht", () => {
     const yacht = firstFreeYacht();
     yacht.status = "UNDER_OPTION";

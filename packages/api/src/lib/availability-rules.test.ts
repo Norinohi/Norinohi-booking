@@ -261,6 +261,57 @@ describe("offeredCheckOut", () => {
   });
 });
 
+/*
+ * The production shape this exists for. NauSYS yacht 29476220 publishes whole Saturday weeks,
+ * four months of three-night any-day stays in spring 2025, and whole Saturday weeks after
+ * that. Read as one permanent set of alternatives, the lapsed middle rule kept a three-night
+ * September 2026 charter on the card that the vendor's offers engine refused outright.
+ */
+describe("seasonal rules", () => {
+  const LAPSED_MIN_3: CharterRule = {
+    ...ANY_DAY_MIN_3,
+    seasonStart: "2025-01-01",
+    seasonEnd: "2025-05-04",
+  };
+  const SAT_WEEK_SINCE: CharterRule = { ...SAT_WEEK, seasonStart: "2025-05-05", seasonEnd: null };
+  const seasonal = constraints({ rules: [LAPSED_MIN_3, SAT_WEEK_SINCE] });
+
+  it("refuses a charter only a lapsed rule would have admitted", () => {
+    expect(rangeStatus("2026-08-18", "2026-08-21", seasonal)).toBe("checkin-day");
+  });
+
+  it("still sells the week the rule in force describes", () => {
+    expect(rangeStatus("2026-08-15", "2026-08-22", seasonal)).toBe("bookable");
+  });
+
+  it("would have admitted the same charter inside the lapsed rule's own season", () => {
+    const inSeason = constraints({
+      rules: [LAPSED_MIN_3],
+      priced: [{ startDate: "2025-01-01", endDate: "2025-06-01" }],
+    });
+    expect(rangeStatus("2025-03-04", "2025-03-07", inSeason)).toBe("bookable");
+  });
+
+  it("keeps a mid-week day out of the calendar once its rule has lapsed", () => {
+    expect(canCheckIn("2026-08-18", seasonal)).toBe(false);
+    expect(canCheckIn("2026-08-15", seasonal)).toBe(true);
+  });
+
+  it("offers the length of the rule in force, not the lapsed one", () => {
+    expect(offeredCheckOut("2026-08-15", seasonal)).toBe("2026-08-22");
+  });
+
+  it("sells nothing on a day every published rule has expired for", () => {
+    const allLapsed = constraints({ rules: [LAPSED_MIN_3] });
+    expect(rangeStatus("2026-08-15", "2026-08-22", allLapsed)).toBe("season-closed");
+    expect(canCheckIn("2026-08-15", allLapsed)).toBe(false);
+  });
+
+  it("treats a rule with no season as in force throughout, which is how BM writes them", () => {
+    expect(rangeStatus("2026-08-15", "2026-08-22", constraints())).toBe("bookable");
+  });
+});
+
 describe("firstBookablePeriod", () => {
   it("walks forward to the first day that begins a charter", () => {
     expect(firstBookablePeriod("2026-08-11", constraints())).toEqual({

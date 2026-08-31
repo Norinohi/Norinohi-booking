@@ -417,6 +417,57 @@ describe("NauSYS live quote", () => {
     });
   });
 
+  /*
+   * An operator marking an obligatory service INCLUDED_IN_PRICE used to reach the `default`
+   * arm of `payWhenFor` and throw, which took the listing with it: the adapter's error is an
+   * errored offer, no winner, and a CONFLICT on every date the customer could ask about.
+   */
+  describe("a service the charter price already covers", () => {
+    function includedResponse() {
+      const body = fixtureResponse();
+      const extra = firstObligatoryExtra(body);
+      extra.calculationType = "INCLUDED_IN_PRICE";
+      return body;
+    }
+
+    async function includedQuote(body: FreeYachtsResponse = includedResponse()) {
+      const { service, transport } = build();
+      transport.respondWith("freeYachts", body);
+      return service.getNausysQuote(request);
+    }
+
+    it("keeps it as a zero line rather than billing it twice", async () => {
+      const priced = await includedQuote();
+
+      expect(lineByCode(priced, "service:8001")).toMatchObject({
+        kind: "extra",
+        group: "mandatory",
+        payWhen: "now",
+        amount: { amountMinor: 0, currency: "EUR" },
+      });
+    });
+
+    it("leaves the total at the charter price plus what is actually charged", async () => {
+      const priced = await includedQuote();
+
+      // 3340.00 charter + 70.00 obligatory, with the 150.00 included one costing nothing.
+      expect(priced.total).toEqual({ amountMinor: 341_000, currency: "EUR" });
+      expect(sumOf(priced)).toBe(priced.total.amountMinor);
+    });
+
+    it("prices it at zero in a currency it could never be billed in", async () => {
+      const body = includedResponse();
+      firstObligatoryExtra(body).currency = "HRK";
+
+      const priced = await includedQuote(body);
+
+      expect(lineByCode(priced, "service:8001").amount).toEqual({
+        amountMinor: 0,
+        currency: "EUR",
+      });
+    });
+  });
+
   it("rejects an unknown calculationType rather than guessing when payment is due", async () => {
     const body = fixtureResponse();
     const extra = firstObligatoryExtra(body);

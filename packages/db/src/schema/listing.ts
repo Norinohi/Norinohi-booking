@@ -189,6 +189,19 @@ export const listingCheckinRule = pgTable(
     checkoutWeekday: integer("checkout_weekday"),
     minNights: integer("min_nights"),
     maxNights: integer("max_nights"),
+    /*
+     * When the rule is in force, both ends inclusive and both nullable for a provider that
+     * states no season at all.
+     *
+     * Turnaround terms are seasonal and operators do let them lapse. Without these columns
+     * every season's rule applied to every date: NauSYS yacht 29476220 carries a three-night
+     * any-weekday period that expired on 04.05.2025 beside the Saturday-to-Saturday week it
+     * actually sells, so the card advertised a three-night charter in September 2026 that the
+     * vendor's own offers engine refused outright. Roughly a tenth of the dated cards were
+     * advertising a period bought from a lapsed rule that way.
+     */
+    seasonStart: date("season_start"),
+    seasonEnd: date("season_end"),
     ...timestamps,
   },
   (t) => [

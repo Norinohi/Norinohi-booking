@@ -1402,6 +1402,8 @@ async function writeListingChildren(
         checkoutWeekday: rule.checkoutWeekday ?? null,
         minNights: rule.minNights ?? null,
         maxNights: rule.maxNights ?? null,
+        seasonStart: rule.seasonStart ?? null,
+        seasonEnd: rule.seasonEnd ?? null,
       })),
     ),
     async (chunk) => {

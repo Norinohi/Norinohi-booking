@@ -18,6 +18,16 @@ export type CharterRule = {
   checkoutWeekday: number | null;
   minNights: number | null;
   maxNights: number | null;
+  /**
+   * The season the rule governs, both ends inclusive against the check-in day; null at either
+   * end where the provider stated no bound there.
+   *
+   * A rule out of season is not a weaker rule, it is not a rule: an operator who sold three
+   * nights any day last spring and whole Saturday weeks since has published both, and reading
+   * them as one permanent set of alternatives sells the lapsed one forever.
+   */
+  seasonStart?: string | null;
+  seasonEnd?: string | null;
 };
 
 export type DatePeriod = { startDate: string; endDate: string };
@@ -115,17 +125,51 @@ function violationFor(rule: CharterRule, checkIn: string, checkOut: string): Rul
 }
 
 /**
+ * The rules a charter starting on this day is judged by.
+ *
+ * Bounded against the check-in, because that is what the vendor bounds: NauSYS calls these
+ * check-in periods, and the day a charter begins is the day its turnaround terms are read
+ * from. A charter that runs past the end of its season is still sold under the terms it
+ * started under.
+ */
+export function rulesOn(rules: readonly CharterRule[], checkIn: string): CharterRule[] {
+  return rules.filter(
+    (rule) =>
+      (rule.seasonStart == null || rule.seasonStart <= checkIn) &&
+      (rule.seasonEnd == null || checkIn <= rule.seasonEnd),
+  );
+}
+
+/**
+ * The rules still worth naming to a customer, which is every one that has not lapsed.
+ *
+ * For the detail page's charter-period sentence, where there is no single date to judge by:
+ * the calendar remains the precise answer, and this only keeps the sentence from quoting
+ * terms the operator retired.
+ */
+export function unexpiredRules(rules: readonly CharterRule[], today: string): CharterRule[] {
+  return rules.filter((rule) => rule.seasonEnd == null || today <= rule.seasonEnd);
+}
+
+/**
  * Empty rules admit any shape on purpose. The array is what the provider published, and
  * inventing a constraint it never stated would hide dates it would happily sell. The sync
  * takes the opposite default (Saturday to Saturday, seven nights) because it has to write
  * *something*; here there is a live quote behind the decision, so guessing is unnecessary.
+ *
+ * A listing that published rules but none covering this check-in is the opposite case, and
+ * `season-closed` is the honest verdict rather than a free pass: the operator described the
+ * days it sells and this is not one of them.
  */
 function violationAcrossRules(
-  rules: readonly CharterRule[],
+  allRules: readonly CharterRule[],
   checkIn: string,
   checkOut: string,
-): RuleViolation | null {
-  if (rules.length === 0) return null;
+): RuleViolation | "out-of-season" | null {
+  if (allRules.length === 0) return null;
+
+  const rules = rulesOn(allRules, checkIn);
+  if (rules.length === 0) return "out-of-season";
 
   const violations: RuleViolation[] = [];
   for (const rule of rules) {
@@ -155,6 +199,9 @@ export function rangeStatus(
   if (checkOut <= checkIn) return "invalid-range";
 
   const violation = violationAcrossRules(constraints.rules, checkIn, checkOut);
+  /* Out of season reads as a closed season, which is what it is; the other arms are rule
+     failures the customer can act on. */
+  if (violation === "out-of-season") return "season-closed";
   if (violation !== null) return violation;
 
   if (wasRefused(constraints.refused, checkIn, checkOut)) return "refused";
@@ -205,8 +252,11 @@ export function canCheckIn(day: string, constraints: CharterConstraints): boolea
   return firstCheckOut(day, constraints) !== null;
 }
 
-function admitsWeekday(rules: readonly CharterRule[], day: string): boolean {
-  if (rules.length === 0) return true;
+function admitsWeekday(allRules: readonly CharterRule[], day: string): boolean {
+  if (allRules.length === 0) return true;
+
+  const rules = rulesOn(allRules, day);
+  if (rules.length === 0) return false;
 
   const weekday = weekdayOf(day);
   return rules.some((rule) => rule.checkinWeekday === null || rule.checkinWeekday === weekday);
@@ -260,10 +310,11 @@ export function offeredCheckOut(checkIn: string, constraints: CharterConstraints
   return firstCheckOut(checkIn, constraints);
 }
 
-function offeredNights(rules: readonly CharterRule[], checkIn: string): number[] {
+function offeredNights(allRules: readonly CharterRule[], checkIn: string): number[] {
   const lengths = new Set<number>();
+  const rules = rulesOn(allRules, checkIn);
 
-  for (const rule of rules.length === 0 ? [UNCONSTRAINED] : rules) {
+  for (const rule of allRules.length === 0 ? [UNCONSTRAINED] : rules) {
     const base = Math.max(rule.minNights ?? ASSUMED_NIGHTS, 1);
     const nights =
       rule.checkoutWeekday === null

@@ -390,6 +390,7 @@
     "extras": {
       "payAtCheckIn": "Оплата при заїзді",
       "payNow": "Входить у передоплату",
+      "includedInPrice": "Включено у ціну",
       "oneWayOnly": "Лише для рейсів в один бік",
       "measure": {
         "booking": "{price} за бронювання",
@@ -2009,6 +2010,7 @@
       "confidenceUnknown": "Впевненість невідома",
       "proposed": "Запропоновано {date}",
       "reviewed": "Перевірено {date}",
+      "undone": "Скасовано",
       "signals": "Збіг за {signals}",
       "sideA": "Сторона A",
       "sideB": "Сторона B",
@@ -2049,6 +2051,7 @@
         "rejected": "Відхилено"
       },
       "showDetail": "Переглянути всі деталі",
+      "showSources": "Джерела",
       "detailTitle": "Повне порівняння",
       "detailSubtitle": "Усі фото та характеристики, які обидва постачальники надіслали для цієї пари.",
       "detailError": "Не вдалося завантажити повне порівняння",
@@ -2088,6 +2091,7 @@
       },
       "summary": "{pairs, plural, =0 {Немає пар} one {# пара} few {# пари} many {# пар} other {# пари}} · {yachts, plural, =0 {немає яхт} one {# яхта} few {# яхти} many {# яхт} other {# яхти}}",
       "sortNote": "спочатку найвищий збіг",
+      "sortNoteReviewed": "спочатку останні рішення",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Рівень збігу",
@@ -2448,7 +2452,11 @@
         },
         "takeOut": "Вивести з цього лістингу",
         "splitRestored": "Виведено і повернуто на лістинг, з якого прийшов.",
-        "splitNew": "Виведено на власний лістинг."
+        "splitNew": "Виведено на власний лістинг.",
+        "confirmSplitBody": "Пропозиція {provider} повернеться на власну картку, і ця картка перестане містити обох провайдерів. Пару можна об'єднати знову у вкладці Confirmed на екрані Duplicate Review.",
+        "confirmSplitAction": "Вилучити",
+        "confirmSplitBusy": "Вилучення…",
+        "confirmSplitCancel": "Скасувати"
       }
     },
     "Routes": {

@@ -44,12 +44,18 @@ function ExtraRow({
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
   const extraPrice = useExtraPrice();
+  /*
+   * An extra the charter price already covers is collected nowhere and costs nothing, so it
+   * carries neither caption nor figure: the offer prices it at zero, and the catalogue's own
+   * list value would read as a charge the customer is not being asked for.
+   */
+  const included = item.pricingType === "included";
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered
     ? offered.payWhen === "at_check_in"
     : item.pricingType === "pay_at_check_in";
-  const caption = note ?? (atCheckIn ? tExtras("payAtCheckIn") : null);
+  const caption = note ?? (atCheckIn && !included ? tExtras("payAtCheckIn") : null);
 
   return (
     <>
@@ -60,9 +66,11 @@ function ExtraRow({
         )}
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
-        {offered
-          ? money(offered.amount.amountMinor, offered.amount.currency)
-          : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
+        {included
+          ? tExtras("includedInPrice")
+          : offered
+            ? money(offered.amount.amountMinor, offered.amount.currency)
+            : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
       </span>
     </>
   );

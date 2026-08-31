@@ -33,6 +33,13 @@ const PINNED_MEDIA_FIRST = sql`case when lm.listing_offer_id = ${PINNED_OFFER("m
 
 const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 1 else 2 end`;
 
+/**
+ * The nights a `listing_price_period.kind = 'weekly'` rate covers, and therefore the only
+ * charter length that rate can price. Mirrored by WEEKLY_RATE_DAYS in the API presenter,
+ * which captions the figure this projection chooses.
+ */
+const WEEKLY_RATE_NIGHTS = 7;
+
 export type RebuildListingSearchDocsOptions = {
   listingIds?: readonly string[];
 };
@@ -173,6 +180,9 @@ export async function rebuildListingSearchDocs(
        * Weekdays are stepped onto arithmetically rather than by walking a day at a time -- dow is
        * 0 Sunday, the numbering listing_checkin_rule stores. Past periods are excluded first, so
        * the row count stays proportional to the season ahead.
+       *
+       * Each rule is also confined to its own season, since a candidate start day outside it is
+       * a day that rule never governed.
        */
       left join lateral (
         select c.candidate as bookable_from, c.candidate + n.nights as bookable_to
@@ -209,6 +219,15 @@ export async function rebuildListingSearchDocs(
           and c.candidate < least(free.end_date, price.end_date)
           and (rule.max_nights is null or n.nights <= rule.max_nights)
           and c.candidate + n.nights <= free.end_date
+          /*
+           * Only rules in force on the day the charter starts, which is how rulesOn reads them
+           * in availability-rules.ts. Turnaround terms lapse, and a lapsed one used to apply
+           * forever: the three-night any-day period NauSYS yacht 29476220 stopped selling in
+           * May 2025 minted a three-night September 2026 card that its offers engine refused
+           * while quoting the surrounding week happily.
+           */
+          and (rule.season_start is null or c.candidate >= rule.season_start)
+          and (rule.season_end is null or c.candidate <= rule.season_end)
           /*
            * A charter that swallows a period the provider refused is one it will not sell either,
            * which is the containment rule wasRefused applies. Without this the card advertised the
@@ -329,13 +348,31 @@ export async function rebuildListingSearchDocs(
        * The vendor's own answer wins outright, currency and all; the published list is the
        * fallback for a charter nobody has asked about. Whichever it is, the base and the fees
        * come from that one source, so the figure is in one currency throughout.
+       *
+       * The list rate is a rate for a week -- listing_price_period.kind = 'weekly' is what
+       * this reads -- so it can only stand beside a charter of a week. Where the advertised
+       * period is some other length and nobody has priced it, there is no figure to print:
+       * "Price for 3 days EUR 3,450" was a week's rate captioned with a three-night charter
+       * the vendor then quoted at EUR 1,621, and a fortnight would be understated by half the
+       * same way. A weekly rate cannot be prorated into either -- NauSYS prices short charters
+       * off a separate list precisely because they are not a seventh of the week each -- so
+       * the card says "on request" until the sweep asks about that exact period, which is
+       * now a period it asks about (see sweepWindows in the NauSYS adapter).
+       *
+       * Only the price is withheld. The dates stay: they are what this listing will sell, and
+       * the detail page opens its calendar and its quote on them.
        */
       cross join lateral (
         select
           case when confirmed.price_minor is not null then confirmed.currency
                else coalesce(rate.currency, o.default_currency) end as price_currency,
-          case when confirmed.price_minor is not null then confirmed.price_minor
-               else coalesce(week.price_minor, rate.price_from_minor) end as base_minor
+          case
+            when confirmed.price_minor is not null then confirmed.price_minor
+            when checkin.bookable_from is not null
+             and checkin.bookable_to - checkin.bookable_from <> ${WEEKLY_RATE_NIGHTS}
+            then null
+            else coalesce(week.price_minor, rate.price_from_minor)
+          end as base_minor
       ) chosen
       cross join lateral (
         select
@@ -728,6 +765,47 @@ export async function readListingSearchDocStats(db: NodePgDatabase<typeof schema
   `);
 
   return rows[0] ?? { docs: 0, priced: 0, bookable: 0 };
+}
+
+/**
+ * The charters the cards are currently advertising, most-advertised first.
+ *
+ * The confirming sweep exists to replace a published list rate with the price the vendor
+ * itself quotes, and it can only do that for periods it actually asks about. Asking about a
+ * fixed grid of Saturdays instead left the sweep and the cards describing different charters:
+ * roughly half the NauSYS fleet advertises a week the vendor discounts — 30% and 35% are
+ * ordinary — and every card whose week the sweep missed printed the undiscounted list price
+ * beside a quote that then came in hundreds of euro lower.
+ *
+ * Scoped by `best_offer_id`, which is the offer the card is priced from and therefore the
+ * vendor whose sweep should cover it. Past periods are excluded: they are what a stale doc
+ * advertises, not what anyone can buy.
+ */
+export async function listAdvertisedCharterPeriods(
+  db: NodePgDatabase<typeof schema>,
+  options: { providerCode: string; limit: number },
+): Promise<{ startDate: string; endDate: string; listings: number }[]> {
+  const { rows } = await db.execute<{
+    startDate: string;
+    endDate: string;
+    listings: number;
+  }>(sql`
+    select
+      doc.bookable_from as "startDate",
+      doc.bookable_to as "endDate",
+      count(*)::int as listings
+    from listing_search_doc doc
+    join listing_offer o on o.id = doc.best_offer_id
+    join provider p on p.id = o.provider_id
+    where doc.bookable_from is not null
+      and doc.bookable_from >= current_date
+      and p.code = ${options.providerCode}
+    group by doc.bookable_from, doc.bookable_to
+    order by count(*) desc, doc.bookable_from asc
+    limit ${options.limit}
+  `);
+
+  return rows;
 }
 
 export function rebuildListingSearchDocsForListings(

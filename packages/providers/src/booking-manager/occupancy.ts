@@ -14,6 +14,7 @@ import {
 } from "./confirmed-offers";
 import type { BookingManagerClient } from "./client";
 import type { BookingManagerConfig } from "./config";
+import type { SweepPeriod } from "../shared/sweep-periods";
 import { parseBookingManagerDate, parseBookingManagerDateTime } from "./dates";
 import {
   BM_RESERVATION_STATUS,
@@ -262,19 +263,19 @@ export interface BookingManagerAvailabilitySourceOptions {
    * company list here is what turned two calls into thirteen hundred.
    */
   companyIds?: number[];
+  /**
+   * The charters the cards are advertising, for the confirming pass to price first. Absent,
+   * the pass falls back to charter Saturdays alone, which is what it swept before.
+   */
+  loadAdvertisedPeriods?: () => Promise<readonly SweepPeriod[]>;
+  /** Today, so the pass can drop the weeks that are already over. */
+  today?: string;
 }
 
 /**
- * `searchConfirmed` is left unimplemented. The confirming pass exists to upgrade a
- * synthesized slot with a live price, and Booking Manager's `/offers` prices one
- * explicit `dateFrom`/`dateTo` at a time, so a useful walk needs the hot windows to
- * price. Nothing in these options carries them, and `createNausysAvailabilitySource`
- * makes the same call when its `hotWindows` list is empty. Slots stay
- * `availabilityConfirmed = false` until the quote path reconciles them live.
- *
- * (The vendor's guide points at a cheaper answer than the one that reasoning
- * assumes: one `/offers` per Saturday-to-Saturday returns the whole available fleet
- * priced, which is a complete confirming pass in ~52 calls a year. Not built here.)
+ * `searchConfirmed` walks the periods the cards advertise, then the charter Saturdays behind
+ * them: one `/offers` per period returns the whole available fleet priced, which is the
+ * cheap complete pass the vendor's own guide prescribes.
  */
 export function createBookingManagerAvailabilitySource(
   options: BookingManagerAvailabilitySourceOptions,
@@ -320,6 +321,10 @@ export function createBookingManagerAvailabilitySource(
           config,
           companyIds: scopeKeys.filter((key) => key !== ACCOUNT_WIDE_SCOPE),
           years: options.years,
+          ...(options.loadAdvertisedPeriods
+            ? { loadAdvertisedPeriods: options.loadAdvertisedPeriods }
+            : null),
+          ...(options.today ? { today: options.today } : null),
         },
         from,
       );

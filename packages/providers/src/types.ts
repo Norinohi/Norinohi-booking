@@ -637,6 +637,10 @@ const canonicalListingSchema = z.object({
       checkoutWeekday: z.number().int().min(0).max(6).optional(),
       minNights: z.number().int().positive().optional(),
       maxNights: z.number().int().positive().optional(),
+      /* `yyyy-MM-dd`, both ends inclusive: the season the rule governs, absent where the
+         provider states one set of terms for all time. */
+      seasonStart: z.string().optional(),
+      seasonEnd: z.string().optional(),
     }),
   ),
   oneWayRules: z.array(

@@ -12,6 +12,7 @@ import {
 } from "@yacht-charter/ui/components/overlay/dialog";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -83,6 +84,15 @@ function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () =>
   const { data, isPending, isError } = useListingFieldSources(listingId);
   const setSource = useSetListingFieldSource();
   const splitOffer = useSplitListingOffer();
+  /*
+   * Confirmed rather than immediate: the button sits beside eight one-click source toggles
+   * that are all trivially reversible, and this one is not the same kind of thing — it
+   * dismantles the merge and moves an offer to another listing.
+   *
+   * Asked inside the offer's own card rather than in a second dialog: this component is
+   * already inside one, and a dialog opened over a dialog did not take its own close.
+   */
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   if (isPending) return <Skeleton className="h-64 w-full" />;
   if (isError || !data) return <p className="text-sm text-danger-600">{t("error")}</p>;
@@ -107,6 +117,7 @@ function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () =>
       { listingOfferId },
       {
         onSuccess: (result) => {
+          setConfirmingId(null);
           toast.success(result.restoredOrigin ? t("splitRestored") : t("splitNew"));
           onSplit();
         },
@@ -122,7 +133,10 @@ function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () =>
           <OfferCard
             key={offer.id}
             offer={offer}
-            onTakeOut={data.offers.length > 1 ? () => takeOut(offer.id) : undefined}
+            onTakeOut={data.offers.length > 1 ? () => setConfirmingId(offer.id) : undefined}
+            confirming={confirmingId === offer.id}
+            onConfirm={() => takeOut(offer.id)}
+            onCancel={() => setConfirmingId(null)}
             busy={splitOffer.isPending}
           />
         ))}
@@ -196,10 +210,17 @@ function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () =>
 function OfferCard({
   offer,
   onTakeOut,
+  confirming,
+  onConfirm,
+  onCancel,
   busy,
 }: {
   offer: ListingOfferSummary;
+  /** Omitted on the last offer left: taking it out would empty the listing. */
   onTakeOut?: () => void;
+  confirming: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
   busy?: boolean;
 }) {
   const t = useTranslations("Admin.Listings.sources");
@@ -235,9 +256,25 @@ function OfferCard({
         ))}
       </dl>
       {onTakeOut ? (
-        <Button variant="neutral" size="sm" disabled={busy} onClick={onTakeOut}>
-          {t("takeOut")}
-        </Button>
+        confirming ? (
+          <div className="flex flex-col gap-2 rounded-md bg-warning-50 p-2">
+            <p className="text-sm leading-[1.3] text-foreground">
+              {t("confirmSplitBody", { provider: offer.provider })}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="neutral" size="sm" disabled={busy} onClick={onCancel}>
+                {t("confirmSplitCancel")}
+              </Button>
+              <Button variant="destructive" size="sm" disabled={busy} onClick={onConfirm}>
+                {busy ? t("confirmSplitBusy") : t("confirmSplitAction")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="neutral" size="sm" disabled={busy} onClick={onTakeOut}>
+            {t("takeOut")}
+          </Button>
+        )
       ) : null}
     </div>
   );

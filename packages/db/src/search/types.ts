@@ -256,7 +256,13 @@ export type ListingPricedItem = {
    * the same-base charter the quote now prefers pays neither.
    */
   oneWayOnly: boolean;
-  pricingType: "per_booking" | "per_week" | "pay_at_check_in";
+  /**
+   * `included` is not a way of paying but the absence of one: the operator sells the service
+   * inside the charter price, so the row exists to say the charter covers it and never to
+   * quote a figure. The live quote prices the same extra at zero, and a page still printing
+   * its list price beside that told the customer they owed a fee nobody was charging.
+   */
+  pricingType: "per_booking" | "per_week" | "pay_at_check_in" | "included";
 };
 
 /** An optional extra, plus whether the provider can price it at quote time. */
@@ -426,6 +432,9 @@ export type OfferConstraints = {
     checkoutWeekday: number | null;
     minNights: number | null;
     maxNights: number | null;
+    /** The season the rule governs, inclusive; null where the provider bounded nothing. */
+    seasonStart: string | null;
+    seasonEnd: string | null;
   }[];
   /**
    * Periods this provider says are taken, plus our own live checkouts. Half-open: `endDate` is

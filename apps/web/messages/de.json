@@ -390,6 +390,7 @@
     "extras": {
       "payAtCheckIn": "Zahlung beim Check-in",
       "payNow": "In der Anzahlung enthalten",
+      "includedInPrice": "Im Preis enthalten",
       "measure": {
         "booking": "{price} pro Buchung",
         "day": "{price} pro Tag",
@@ -2009,6 +2010,7 @@
       "confidenceUnknown": "Konfidenz unbekannt",
       "proposed": "Vorgeschlagen {date}",
       "reviewed": "Geprüft {date}",
+      "undone": "Rückgängig",
       "signals": "Übereinstimmung bei {signals}",
       "sideA": "Seite A",
       "sideB": "Seite B",
@@ -2049,6 +2051,7 @@
         "rejected": "Abgelehnt"
       },
       "showDetail": "Alle Details prüfen",
+      "showSources": "Quellen",
       "detailTitle": "Vollständiger Vergleich",
       "detailSubtitle": "Alle Fotos und technischen Daten, die beide Anbieter zu diesem Paar gesendet haben.",
       "detailError": "Der vollständige Vergleich konnte nicht geladen werden",
@@ -2088,6 +2091,7 @@
       },
       "summary": "{pairs, plural, =0 {Keine Paare} one {# Paar} other {# Paare}} · {yachts, plural, =0 {keine Yachten} one {# Yacht} other {# Yachten}}",
       "sortNote": "höchste Übereinstimmung zuerst",
+      "sortNoteReviewed": "zuletzt entschiedene zuerst",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Übereinstimmung",
@@ -2448,7 +2452,11 @@
         },
         "takeOut": "Aus diesem Inserat herauslösen",
         "splitRestored": "Herausgelöst und in sein ursprüngliches Inserat zurückgeführt.",
-        "splitNew": "In ein eigenes Inserat herausgelöst."
+        "splitNew": "In ein eigenes Inserat herausgelöst.",
+        "confirmSplitBody": "Das Angebot von {provider} geht zurück auf sein eigenes Listing, und dieses Listing führt dann nicht mehr beide Anbieter. Das Paar lässt sich im Tab „Confirmed“ der Dublettenprüfung erneut zusammenführen.",
+        "confirmSplitAction": "Herausnehmen",
+        "confirmSplitBusy": "Wird herausgenommen…",
+        "confirmSplitCancel": "Abbrechen"
       }
     },
     "Routes": {

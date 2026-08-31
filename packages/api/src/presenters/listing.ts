@@ -42,6 +42,11 @@ export function presentListingSummary(doc: ListingSearchDoc) {
    * beside "Nov 24 → Nov 28" described a charter three days longer than the one on sale. Only
    * where nothing is bookable does the figure fall back to the season minimum, and with no
    * dates printed beside it the rate's own week is the honest period to name.
+   *
+   * The other direction is settled upstream rather than here: a bookable period that is not a
+   * week has no price at all unless the vendor priced that exact charter, because the only
+   * other figure available is a weekly rate and no arithmetic turns it into a three-night one.
+   * So this count captions a figure of the same length or captions nothing.
    */
   const periodDays = bookablePeriod
     ? nightsBetween(bookablePeriod.checkIn, bookablePeriod.checkOut)

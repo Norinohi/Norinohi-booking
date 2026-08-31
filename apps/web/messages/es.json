@@ -390,6 +390,7 @@
     "extras": {
       "payAtCheckIn": "Pago al llegar",
       "payNow": "Incluido en el pago inicial",
+      "includedInPrice": "Incluido en el precio",
       "oneWayOnly": "Solo en trayectos de ida",
       "measure": {
         "booking": "{price} por reserva",
@@ -2009,6 +2010,7 @@
       "confidenceUnknown": "Confianza desconocida",
       "proposed": "Propuesto el {date}",
       "reviewed": "Revisado el {date}",
+      "undone": "Deshecho",
       "signals": "Coincide por {signals}",
       "sideA": "Lado A",
       "sideB": "Lado B",
@@ -2049,6 +2051,7 @@
         "rejected": "Rechazada"
       },
       "showDetail": "Revisar todos los detalles",
+      "showSources": "Fuentes",
       "detailTitle": "Comparación completa",
       "detailSubtitle": "Todas las fotos y especificaciones que ambos proveedores enviaron para esta pareja.",
       "detailError": "No se pudo cargar la comparación completa",
@@ -2088,6 +2091,7 @@
       },
       "summary": "{pairs, plural, =0 {Sin parejas} one {# pareja} other {# parejas}} · {yachts, plural, =0 {ningún yate} one {# yate} other {# yates}}",
       "sortNote": "mayor confianza primero",
+      "sortNoteReviewed": "las decididas más recientemente primero",
       "optionCount": "{label} ({count})",
       "filters": {
         "confidence": "Confianza de coincidencia",
@@ -2448,7 +2452,11 @@
         },
         "takeOut": "Sacar de este anuncio",
         "splitRestored": "Sacado y devuelto al anuncio del que vino.",
-        "splitNew": "Sacado a un anuncio propio."
+        "splitNew": "Sacado a un anuncio propio.",
+        "confirmSplitBody": "La oferta de {provider} vuelve a su propio anuncio, y este anuncio deja de incluir ambos proveedores. Puedes volver a fusionar el par desde la pestaña Confirmed de Duplicate Review.",
+        "confirmSplitAction": "Quitar",
+        "confirmSplitBusy": "Quitando…",
+        "confirmSplitCancel": "Cancelar"
       }
     },
     "Routes": {

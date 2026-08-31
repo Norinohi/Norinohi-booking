@@ -185,6 +185,12 @@ export const duplicateCandidateSchema = z.object({
   reviewedAt: z.string().nullable(),
   /** Why the reviewer decided as they did, where they said. */
   reviewerNote: z.string().nullable(),
+  /**
+   * A confirmed merge that a split has since taken apart. The verdict itself stays
+   * `confirmed` — the merge did happen — so this is what tells the audit tabs apart from
+   * the listings that are actually merged right now. Always false on an undecided pair.
+   */
+  undone: z.boolean(),
   sideA: duplicateSideSchema,
   sideB: duplicateSideSchema,
 });

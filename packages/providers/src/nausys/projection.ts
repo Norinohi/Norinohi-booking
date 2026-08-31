@@ -344,10 +344,17 @@ function projectYacht(
  * that is what a null column means downstream, and seven identical rows would only
  * multiply the availability synthesis by seven for the same answer.
  *
- * `dateFrom`/`dateTo` bound each period and are dropped here only because
- * `listing_checkin_rule` has no date columns to put them in. Every recorded period
- * spans 1970 to 2099, so nothing is lost today; an operator who changes turnaround
- * day mid-season will need those columns before this is honest.
+ * `dateFrom`/`dateTo` bound each period and are carried through to `season_start`/`season_end`,
+ * because operators do change turnaround terms mid-season and do let the old ones lapse. This
+ * used to drop them on the reading that every recorded period spans 1970 to 2099; production
+ * disagrees. Yacht 29476220 publishes three: whole Saturday weeks to 04.05.2025, three nights
+ * on any day for the four months after it, and whole Saturday weeks again to 2999. Flattening
+ * those made the expired middle one law forever, so the card offered a three-night charter in
+ * September 2026 that `freeYachts` refused while selling the surrounding week.
+ *
+ * A period that cannot be read as a date is kept without its bounds rather than dropped: the
+ * turnaround day is the part customers are shown, and losing it entirely would open the
+ * calendar wider than losing its season does.
  */
 /**
  * NauSYS splits the question in two: `charterType` says whether the boat is sold crewed, and
@@ -374,11 +381,15 @@ function checkinRulesOf(yacht: RestYacht) {
       checkoutWeekday: number | undefined;
       minNights: number | undefined;
       maxNights: undefined;
+      seasonStart: string | undefined;
+      seasonEnd: string | undefined;
     }
   >();
 
   for (const period of yacht.checkInPeriods ?? []) {
     const minNights = positiveInt(period.minimalReservationDuration);
+    const seasonStart = nausysDayOrUndefined(period.dateFrom);
+    const seasonEnd = nausysDayOrUndefined(period.dateTo);
 
     for (const checkinWeekday of enabledWeekdays(period, "checkIn")) {
       for (const checkoutWeekday of enabledWeekdays(period, "checkOut")) {
@@ -388,17 +399,32 @@ function checkinRulesOf(yacht: RestYacht) {
           minNights === undefined
         )
           continue;
-        rules.set(`${checkinWeekday}|${checkoutWeekday}|${minNights}`, {
+        /* The season is part of the identity now: two periods that agree on the turnaround
+           and differ only in when they apply are two rules, not one repeated. */
+        rules.set(`${checkinWeekday}|${checkoutWeekday}|${minNights}|${seasonStart}|${seasonEnd}`, {
           checkinWeekday,
           checkoutWeekday,
           minNights,
           maxNights: undefined,
+          seasonStart,
+          seasonEnd,
         });
       }
     }
   }
 
   return [...rules.values()];
+}
+
+/** `dd.MM.yyyy` as an ISO day, or nothing at all where the vendor sent something unreadable. */
+function nausysDayOrUndefined(value: JsonField): string | undefined {
+  const raw = text(value);
+  if (!raw) return undefined;
+  try {
+    return parseNausysDate(raw);
+  } catch {
+    return undefined;
+  }
 }
 
 function enabledWeekdays(

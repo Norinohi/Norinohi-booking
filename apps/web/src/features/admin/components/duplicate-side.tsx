@@ -5,6 +5,8 @@ import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
+import { Link } from "@/i18n/navigation";
+
 import type { ComparisonRow } from "../lib/duplicates";
 import { type DuplicateSide as Side, toProviderKey } from "../types";
 import DuplicatePhotos from "./duplicate-photos";
@@ -42,6 +44,14 @@ export default function DuplicateSide({
   /* A connector key this build ships gets its name; any other code is shown as stored. */
   const providerKey = toProviderKey(side.provider);
 
+  /*
+   * Only published listings exist publicly — the detail route reads the search read model —
+   * so a draft or hidden side gets plain text rather than a link that 404s. A merged pair
+   * needs no special case: confirming a merge repoints both sources at the surviving
+   * listing, so after it both sides of the card already resolve to the merged one.
+   */
+  const openSlug = listing !== null && listing.status === "published" ? listing.slug : null;
+
   return (
     <div className="flex min-w-0 flex-col gap-4 rounded-lg border border-natural-100 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -54,9 +64,22 @@ export default function DuplicateSide({
       <DuplicatePhotos photos={listing?.photos ?? []} title={listing?.title ?? ""} />
 
       {listing ? (
-        <h3 className="truncate text-base leading-[1.3] font-bold text-foreground">
-          {listing.title}
-        </h3>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h3 className="truncate text-base leading-[1.3] font-bold text-foreground">
+            {openSlug === null ? (
+              listing.title
+            ) : (
+              <Link
+                href={`/yachts/${openSlug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-brand hover:underline"
+              >
+                {listing.title}
+              </Link>
+            )}
+          </h3>
+        </div>
       ) : (
         <div className="flex flex-col gap-1">
           <h3 className="text-base leading-[1.3] font-bold text-foreground">

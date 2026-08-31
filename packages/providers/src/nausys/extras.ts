@@ -27,10 +27,25 @@ type RestExtra = z.infer<typeof restExtraSchema>;
  * different ways can only ever mean one of the two is wrong.
  */
 export function extraLineMinor(extra: RestExtra, currency: string): number {
+  if (isIncludedInCharterPrice(extra)) return 0;
+
   const amountMinor = decimalStringToMinor(extra.amount, currency);
   return extra.totalPrice === undefined
     ? Math.round(amountMinor * quantityOf(extra))
     : decimalStringToMinor(extra.totalPrice, currency);
+}
+
+/**
+ * Whether the operator has already priced this service inside the charter itself.
+ *
+ * NauSYS keeps sending the service's list value on an INCLUDED_IN_PRICE extra, and that value
+ * is not part of `clientPrice`: Altair Dufour 412 quotes 1590.00 less a 25% discount, exactly
+ * 1192.50, beside an obligatory 87.00 marked included. Billing it would charge the customer
+ * twice for one thing, so it costs nothing here and survives as a zero line naming what the
+ * charter already covers.
+ */
+export function isIncludedInCharterPrice(extra: RestExtra): boolean {
+  return extra.calculationType === "INCLUDED_IN_PRICE";
 }
 
 /** `quantity` is a decimal string ("1.00", "10.00"); absent or unreadable is one. */

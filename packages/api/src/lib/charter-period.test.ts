@@ -68,10 +68,71 @@ describe("summariseCharterRules", () => {
   it("does not fold across different lengths, which are different alternatives", () => {
     const summary = summariseCharterRules([
       rule({ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7 }),
-      rule({ checkinWeekday: 5, checkoutWeekday: 5, minNights: 3 }),
+      rule({ checkinWeekday: 6, checkoutWeekday: 3, minNights: 3 }),
     ]);
 
     expect(summary).toHaveLength(2);
+  });
+
+  /*
+   * The check-out weekday fixes the length modulo a week, so a stated minimum below it is a
+   * floor no charter can stand on. Saying it out loud produced "in whole weeks, from 3
+   * nights" on a listing whose shortest legal charter is seven.
+   */
+  describe("the shortest charter a rule really admits", () => {
+    it("reads a sub-week minimum on a whole-week rule as a week", () => {
+      expect(
+        summariseCharterRules([rule({ checkinWeekday: 6, checkoutWeekday: 6, minNights: 3 })]).at(
+          0,
+        ),
+      ).toMatchObject({ wholeWeeks: true, minNights: 7 });
+    });
+
+    it("takes the weekday pair's own span when the rule asks for less", () => {
+      // Saturday to Wednesday is four nights, whatever minimum sits beside it.
+      expect(
+        summariseCharterRules([rule({ checkinWeekday: 6, checkoutWeekday: 3, minNights: 3 })]).at(
+          0,
+        ),
+      ).toMatchObject({ checkoutWeekday: 3, minNights: 4 });
+    });
+
+    it("steps a longer minimum up to the next length the pair allows", () => {
+      // Saturday to Wednesday again: 4, 11, 18 - so a stated 6 is really 11.
+      expect(
+        summariseCharterRules([rule({ checkinWeekday: 6, checkoutWeekday: 3, minNights: 6 })]).at(
+          0,
+        ),
+      ).toMatchObject({ minNights: 11 });
+    });
+
+    it("leaves a minimum the pair already allows alone", () => {
+      expect(
+        summariseCharterRules([rule({ checkinWeekday: 6, checkoutWeekday: 6, minNights: 14 })]).at(
+          0,
+        ),
+      ).toMatchObject({ minNights: 14 });
+    });
+
+    it("says nothing new where no weekday is named, since any length could be legal", () => {
+      expect(
+        summariseCharterRules([
+          rule({ checkinWeekday: null, checkoutWeekday: null, minNights: 3 }),
+        ]).at(0),
+      ).toMatchObject({ minNights: 3 });
+    });
+
+    it("folds two turnarounds that only looked different into one alternative", () => {
+      // Both sell whole weeks from seven nights; the start day is all that differs.
+      const summary = summariseCharterRules([
+        rule({ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7 }),
+        rule({ checkinWeekday: 5, checkoutWeekday: 5, minNights: 3 }),
+      ]);
+
+      expect(summary).toEqual([
+        expect.objectContaining({ checkinWeekdays: [5, 6], wholeWeeks: true, minNights: 7 }),
+      ]);
+    });
   });
 
   it("keeps a check-out day that is not the day the charter began", () => {

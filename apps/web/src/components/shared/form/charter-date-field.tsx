@@ -1,5 +1,6 @@
 "use client";
 
+import { unexpiredRules } from "@yacht-charter/api/lib/availability-rules";
 import {
   combinedCanCheckIn,
   combinedCanCheckOut,
@@ -46,12 +47,22 @@ export default function CharterDateField({
   className?: string;
   triggerClassName?: string;
 }) {
-  /* Every shape on offer, so a boat two vendors sell describes both rather than one. */
-  const periodLabel = useCharterPeriodLabel(offers.flatMap((offer) => offer.rules));
   const [pending, setPending] = useState<DateRange | undefined>(undefined);
   const [open, setOpen] = useState(false);
   /* Read once per mount: a clock read during render would differ between server and client. */
   const [today] = useState(() => dayFromNative(new Date()));
+  /*
+   * Every shape on offer, so a boat two vendors sell describes both rather than one, minus the
+   * ones whose season has passed: an operator that sold three-night stays last spring and whole
+   * Saturday weeks since would otherwise be described as still selling both. The calendar below
+   * judges each day against the rules in force on it, so this only keeps the sentence honest.
+   */
+  const periodLabel = useCharterPeriodLabel(
+    unexpiredRules(
+      offers.flatMap((offer) => offer.rules),
+      today,
+    ),
+  );
 
   /* `dayToNative`/`dayFromNative` are the Calendar's matched pair: it is native-Date only. */
   const committed: DateRange | undefined = value
