@@ -72,6 +72,7 @@ export async function confirmBookingWithProvider(
       checkOut: priced.checkOut,
       guests: priced.guests,
       extras: priced.extras,
+      currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
       customer: {
         name: row.guestFullName ?? "Guest",

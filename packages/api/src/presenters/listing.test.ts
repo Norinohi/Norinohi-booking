@@ -93,4 +93,38 @@ describe("presentListingSummary", () => {
     expect(summary.priceFrom).toBeNull();
     expect(summary.priceDetails.securityDeposit?.amountMinor).toBe(310_000);
   });
+
+  /*
+   * The price and the dates are printed side by side on one card, so they have to describe one
+   * charter. A four-night period captioned "7 days" is the bug this pins: the projection prices
+   * the bookable week, not a nominal one.
+   */
+  it("captions the price with the bookable charter's own length", () => {
+    const summary = presentListingSummary(
+      doc({ bookableFrom: "2126-11-24", bookableTo: "2126-11-28" }),
+    );
+
+    expect(summary.availability.bookablePeriod).toEqual({
+      checkIn: "2126-11-24",
+      checkOut: "2126-11-28",
+    });
+    expect(summary.priceDetails.periodDays).toBe(4);
+  });
+
+  it("names the rate's own week where no charter is bookable", () => {
+    const summary = presentListingSummary(doc({ bookableFrom: null, bookableTo: null }));
+
+    expect(summary.availability.bookablePeriod).toBeNull();
+    expect(summary.priceDetails.periodDays).toBe(7);
+  });
+
+  /* A period already gone is dropped, so its length must not caption the price either. */
+  it("falls back to the week when the bookable period has passed", () => {
+    const summary = presentListingSummary(
+      doc({ bookableFrom: "2020-11-24", bookableTo: "2020-11-28" }),
+    );
+
+    expect(summary.availability.bookablePeriod).toBeNull();
+    expect(summary.priceDetails.periodDays).toBe(7);
+  });
 });

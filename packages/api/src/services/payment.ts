@@ -277,6 +277,14 @@ function capturesOnAuthorization(status: BookingStatus): boolean {
   return status === "CONFIRMED";
 }
 
+/*
+ * Whatever this decides, the Elements instance that confirms against the intent has to have
+ * been told the same thing: Stripe compares the two on a deferred intent and refuses a
+ * mismatch, which reaches the customer as a declined card rather than as a configuration
+ * error. The web sets it in `steps/payment/index.tsx` (always manual -- that panel runs before
+ * the provider answers) and in `balance-screen.tsx` (from the booking's own status, as here).
+ */
+
 /**
  * The half of the card statement line we control. A charter is booked months before
  * it sails and the charge is long forgotten by then, so carrying the reference is

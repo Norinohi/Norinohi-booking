@@ -717,7 +717,14 @@ export async function runAvailabilitySync(
 
     if (source.searchConfirmed) {
       emitProgress("confirmation");
-      const deadline = startedAt.getTime() + budgetMs;
+      /*
+       * Measured from here rather than from the run, because it is this pass's budget: the
+       * occupancy walk above is bounded by the fleet, not by the clock, and on an account whose
+       * walk runs long it was spending the whole allowance before the first search went out.
+       * A 503-scope account took 5m40s over a 5m budget, so the pass opened already expired,
+       * confirmed one page and broke -- 48 slots against a fleet of 6,753 offers, every run.
+       */
+      const deadline = now().getTime() + budgetMs;
       try {
         for await (const page of source.searchConfirmed(options.resume)) {
           const offeredListingIds = new Set<string>();

@@ -239,29 +239,7 @@ export async function rebuildListingSearchDocs(
        * answer: nothing is being advertised for particular dates.
        */
       left join lateral (
-        select
-          price.price_minor,
-          /*
-           * The provider's own obligatory-extras total for this exact charter, where a confirmed
-           * offer recorded one.
-           *
-           * Preferred over anything reassembled from the catalogue, which prices the same fees as
-           * a ladder across season, charter length, party size, base, route and
-           * percentage-of-charter - dimensions that differ per operator and are not all published
-           * on every account. Rebuilding the sum there was wrong by a night's band on the Shannon
-           * fleet and by a party-size band elsewhere; this is the number the quote will charge,
-           * because both read the same offer.
-           */
-          (
-            select slot.obligatory_extras_minor
-            from availability_slot slot
-            where slot.listing_offer_id = o.id
-              and slot.start_date = checkin.bookable_from
-              and slot.end_date = checkin.bookable_to
-              and slot.availability_confirmed
-              and slot.obligatory_extras_minor is not null
-            limit 1
-          ) as obligatory_extras_minor
+        select price.price_minor
         from listing_price_period price
         where price.listing_offer_id = o.id
           and price.kind = 'weekly'
@@ -270,6 +248,32 @@ export async function rebuildListingSearchDocs(
         order by price.price_minor
         limit 1
       ) week on true
+      /*
+       * What the vendor itself said this exact charter costs, where it was asked.
+       *
+       * The sweep asks freeYachtsSearch in the currency we transact in and stores the answer
+       * verbatim, so this is a price the vendor stands behind, in the money the quote will use.
+       * The published rate list cannot be either: catalogue/v6/priceLists takes no currency
+       * parameter and carries whichever one the charter company set, which is how a Bahamas
+       * fleet ends up advertised in USD beside a detail page quoting EUR.
+       *
+       * Price, currency and the obligatory-extras total are taken together or not at all. They
+       * are one answer about one charter, and mixing a rate from the list with a fee total from
+       * the offer adds two different currencies into one figure.
+       *
+       * Priced rows first, so an offer that recorded only a fee total still lends it below
+       * without displacing a slot that can price the whole charter.
+       */
+      left join lateral (
+        select slot.price_minor, slot.currency, slot.obligatory_extras_minor
+        from availability_slot slot
+        where slot.listing_offer_id = o.id
+          and slot.start_date = checkin.bookable_from
+          and slot.end_date = checkin.bookable_to
+          and slot.availability_confirmed
+        order by (slot.price_minor is null), slot.price_minor
+        limit 1
+      ) confirmed on true
       /*
        * What the advertised charter pays on top of the rate.
        *
@@ -321,14 +325,40 @@ export async function rebuildListingSearchDocs(
        * In a lateral rather than the select list because the published figure and its converted
        * twin are both built from it, and repeating the expression is how the two drift apart.
        */
+      /*
+       * The vendor's own answer wins outright, currency and all; the published list is the
+       * fallback for a charter nobody has asked about. Whichever it is, the base and the fees
+       * come from that one source, so the figure is in one currency throughout.
+       */
       cross join lateral (
         select
+          case when confirmed.price_minor is not null then confirmed.currency
+               else coalesce(rate.currency, o.default_currency) end as price_currency,
+          case when confirmed.price_minor is not null then confirmed.price_minor
+               else coalesce(week.price_minor, rate.price_from_minor) end as base_minor
+      ) chosen
+      cross join lateral (
+        select
+          chosen.price_currency,
           case
-            when coalesce(week.price_minor, rate.price_from_minor) is null then null
-            else coalesce(week.price_minor, rate.price_from_minor)
-                 + coalesce(week.obligatory_extras_minor, fees.unavoidable_minor, 0)
-          end as all_in_minor,
-          coalesce(rate.currency, o.default_currency) as price_currency
+            when chosen.base_minor is null then null
+            else chosen.base_minor
+                 + coalesce(
+                     /*
+                      * The offer's own fee total, which prices the ladder the catalogue makes us
+                      * reassemble across season, length, party size, base and route -- dimensions
+                      * not all published on every account, and wrong by a night's band on the
+                      * Shannon fleet when rebuilt. Only where it is in the money being quoted:
+                      * otherwise it is a correct number in the wrong currency.
+                      */
+                     case
+                       when confirmed.currency is not distinct from chosen.price_currency
+                       then confirmed.obligatory_extras_minor
+                     end,
+                     fees.unavoidable_minor,
+                     0
+                   )
+          end as all_in_minor
       ) money
       /* Resolved once per offer; the conversion reads it twice. */
       left join lateral (

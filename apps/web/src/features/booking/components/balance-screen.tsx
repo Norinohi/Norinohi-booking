@@ -259,6 +259,14 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
               amountMinor={payable}
               paidMinor={booking.paidTotal.amountMinor}
               currency={booking.total.currency}
+              /*
+               * Paired with `capturesOnAuthorization` in packages/api/src/services/payment.ts,
+               * which decides the same thing for the intent this confirms against. The two have
+               * to agree or Stripe refuses the confirmation and the customer reads it as a
+               * declined card. A balance on a charter that already exists is a plain charge; a
+               * booking still waiting on the provider is authorized and captured later.
+               */
+              captureMethod={booking.status === "CONFIRMED" ? "automatic" : "manual"}
             />
           </TabsPanel>
           <TabsPanel value="invoice">
@@ -308,12 +316,15 @@ function BalancePayment({
   amountMinor,
   paidMinor,
   currency,
+  captureMethod,
 }: {
   bookingId: string;
   amountMinor: number;
   /** What has been paid so far, handed to the landing URL so the poll knows what to outgrow. */
   paidMinor: number;
   currency: string;
+  /** Must equal the intent's own, or Stripe refuses the confirmation. */
+  captureMethod: "automatic" | "manual";
 }) {
   const t = useTranslations("Booking.balance");
   const locale = useLocale();
@@ -326,12 +337,13 @@ function BalancePayment({
       mode: "payment",
       amount: amountMinor,
       currency: currency.toLowerCase(),
+      captureMethod,
       locale: elementsLocale(locale),
       appearance: ELEMENTS_APPEARANCE,
       fonts: ELEMENTS_FONTS,
       paymentMethodOrder: PAYMENT_METHOD_ORDER,
     }),
-    [amountMinor, currency, locale],
+    [amountMinor, currency, captureMethod, locale],
   );
 
   const target = useMemo(

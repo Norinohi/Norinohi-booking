@@ -489,7 +489,9 @@ async function holdOption(
       guests: priced.guests,
       extras: priced.extras,
       // The provider re-prices before holding and refuses if this no longer
-      // matches what the customer agreed to.
+      // matches what the customer agreed to -- in the currency it was quoted in,
+      // which is what makes the two observations comparable.
+      currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
       // The base pair the price was for, which is not always the listing's own.
       route: priced.route,

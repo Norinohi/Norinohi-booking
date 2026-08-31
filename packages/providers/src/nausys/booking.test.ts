@@ -538,6 +538,40 @@ describe("price revalidation before the hold", () => {
     expect(events).toEqual([]);
   });
 
+  /*
+   * The vendor converts on request, so the same charter observed in two currencies hashes two
+   * different ways. Re-pricing the hold in the adapter's own currency rather than the quote's
+   * compared a USD observation against a EUR one and refused every Bahamas booking with
+   * PRICE_CHANGED -- a price that had not moved at all.
+   */
+  it("re-prices in the currency the quote was taken in", async () => {
+    const asked: (string | undefined)[] = [];
+    const { service } = build({
+      verifyPrice: (draftSeen) => {
+        asked.push(draftSeen.currency);
+        return Promise.resolve(PRICE_HASH);
+      },
+    });
+
+    await service.createOption({ ...draft, currency: "USD" });
+
+    expect(asked).toEqual(["USD"]);
+  });
+
+  it("leaves the currency unset for a quote that named none", async () => {
+    const asked: (string | undefined)[] = [];
+    const { service } = build({
+      verifyPrice: (draftSeen) => {
+        asked.push(draftSeen.currency);
+        return Promise.resolve(PRICE_HASH);
+      },
+    });
+
+    await service.createOption(draft);
+
+    expect(asked).toEqual([undefined]);
+  });
+
   it("holds when the hash still matches", async () => {
     const { service, transport } = build();
 

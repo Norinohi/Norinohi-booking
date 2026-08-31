@@ -59,6 +59,16 @@ export default function PaymentStep() {
       mode: "payment",
       amount: dueNowMinor,
       currency: currency.toLowerCase(),
+      /*
+       * Matches the intent `checkout.confirm` opens, which Stripe compares against these
+       * options before it will confirm: a deferred intent whose capture method disagrees with
+       * Elements is refused outright, and the customer is told their card was declined.
+       *
+       * Always manual here, and not a rule mirrored from the server: this panel only ever runs
+       * before the provider has answered, and the client's policy is that nothing is captured
+       * until it has. See `capturesOnAuthorization` in packages/api/src/services/payment.ts.
+       */
+      captureMethod: "manual",
       locale: elementsLocale(locale),
       appearance: ELEMENTS_APPEARANCE,
       fonts: ELEMENTS_FONTS,

@@ -139,6 +139,12 @@ export function BookingProvider({
       ? { checkIn: carried.checkIn, checkOut: carried.checkOut }
       : null;
   const searchedCheckOut = searchedPeriod?.checkOut;
+  /*
+   * The currency the card quoted, which the panel has to answer in. Undefined until the listing
+   * loads, and nothing is quoted before then, so the request never falls back to the default.
+   */
+  const listingCurrency =
+    listing?.priceFrom?.currency ?? listing?.priceDetails.securityDeposit?.currency;
   /* The listing's own first sellable charter, which the undated result card shows as its dates. */
   const bookablePeriod = listing?.availability.bookablePeriod ?? null;
   const bookableCheckOut = bookablePeriod?.checkOut;
@@ -315,18 +321,20 @@ export function BookingProvider({
     if (verdict.verdict !== "bookable") return;
     const refusedBy = verdict.offerId;
     setSlotError(false);
-    void (quote ? repriceWith(period) : quoteFor({ ...period, guests, crewType, extras })).catch(
-      (error: Error) => {
-        if (!isSlotConflict(error)) throw error;
-        if (refusedBy !== null) {
-          setRefusedPeriods((current) => [
-            ...current,
-            { offerId: refusedBy, startDate: period.checkIn, endDate: period.checkOut },
-          ]);
-        }
-        if (report) setSlotError(true);
-      },
-    );
+    void (
+      quote
+        ? repriceWith(period)
+        : quoteFor({ ...period, guests, crewType, extras, currency: listingCurrency })
+    ).catch((error: Error) => {
+      if (!isSlotConflict(error)) throw error;
+      if (refusedBy !== null) {
+        setRefusedPeriods((current) => [
+          ...current,
+          { offerId: refusedBy, startDate: period.checkIn, endDate: period.checkOut },
+        ]);
+      }
+      if (report) setSlotError(true);
+    });
   }
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
