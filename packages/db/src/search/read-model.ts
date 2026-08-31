@@ -3,6 +3,7 @@ import { and, eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
 import { listing } from "../schema/listing";
+import { normalizedKeySql } from "./localize";
 
 /**
  * Booking Manager photographs better than NauSYS, so its rows front a listing
@@ -531,15 +532,31 @@ export async function rebuildListingSearchDocs(
           where lm.listing_id = l.id
         ) as gallery
     ) media on true
+    /*
+     * Equipment, folded to one entry per thing however each vendor spells it.
+     *
+     * The two providers keep separate amenity taxonomies — codes are scoped per provider, so
+     * Autopilot exists once as each vendor's own row — and a listing both of them sell carries
+     * both. Thirty names overlap that way today, and unfolded they would each appear twice on
+     * the card and twice in the searchable text. Folded on the name the same way the facet
+     * dictionary folds it, since that is the only thing the two rows share.
+     *
+     * Included by any vendor counts as included: the array answers what the yacht has, and the
+     * priced crew roles are read from their own table.
+     */
     left join lateral (
       select
-        jsonb_agg(a.name order by a.name) filter (
-          where la.obligatory = false and la.price_minor is null
-        ) as amenities,
-        string_agg(a.name, ' ') as amenity_text
-      from listing_amenity la
-      join amenity a on a.id = la.amenity_id
-      where la.listing_id = l.id
+        jsonb_agg(folded.name order by folded.name) filter (where folded.included) as amenities,
+        string_agg(folded.name, ' ') as amenity_text
+      from (
+        select
+          min(a.name) as name,
+          bool_or(la.obligatory = false and la.price_minor is null) as included
+        from listing_amenity la
+        join amenity a on a.id = la.amenity_id
+        where la.listing_id = l.id
+        group by ${normalizedKeySql(sql`a.name`)}
+      ) folded
     ) amn on true
     left join best on best.listing_id = l.id
     left join spread on spread.listing_id = l.id

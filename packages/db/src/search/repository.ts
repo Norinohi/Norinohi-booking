@@ -9,7 +9,7 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
+import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs, normalizedKeySql } from "./localize";
 import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
@@ -183,10 +183,6 @@ async function providerDescription(
  * collapsing a plural is a judgement the dictionary should make explicitly rather than the
  * join make silently.
  */
-function extraNameKeySql(column: SQL): SQL {
-  return sql`regexp_replace(replace(lower(${column}), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
-}
-
 export async function getListingDetailByIdOrSlug(
   db: NodePgDatabase<typeof schema>,
   idOrSlug: string,
@@ -234,7 +230,16 @@ export async function getListingDetailByIdOrSlug(
         priceMinor: number | null;
         priceCurrency: string | null;
       }>(sql`
-      select
+      /*
+       * One row per piece of equipment, however each vendor spells it.
+       *
+       * The two providers keep separate amenity taxonomies — their codes are scoped per
+       * provider, so Autopilot exists once as each vendor's own row — and a listing both of
+       * them sell carries both. Folded on the name the same way the facet dictionary folds it,
+       * because that is the only thing the two rows have in common. An included row wins over
+       * a priced one: the list answers "what does this yacht have".
+       */
+      select distinct on (${normalizedKeySql(sql`a.name`)})
         a.code,
         a.name as label,
         a.crew,
@@ -244,7 +249,7 @@ export async function getListingDetailByIdOrSlug(
       from listing_amenity la
       join amenity a on a.id = la.amenity_id
       where la.listing_id = ${listing.listingId}
-      order by la.obligatory desc, la.price_minor nulls first, a.name asc
+      order by ${normalizedKeySql(sql`a.name`)}, la.price_minor nulls first, a.name asc
     `),
       db.execute<{
         source: string;
@@ -286,7 +291,7 @@ export async function getListingDetailByIdOrSlug(
         and translation.external_id = extra.external_id
         and translation.locale = ${locale}
       left join extra_label_translation curated
-        on curated.name_key = ${extraNameKeySql(sql`extra.name`)}
+        on curated.name_key = ${normalizedKeySql(sql`extra.name`)}
         and curated.locale = ${locale}
       /*
        * Scoped to the offer the card is priced from, never to the listing.

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
@@ -131,4 +131,15 @@ export function normalizedKey(value: string): string {
     .toLowerCase()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "");
+}
+
+/**
+ * `normalizedKey` as SQL, for the reads that have to fold a name they never loaded.
+ *
+ * Lives here so the two cannot drift: a writer folding one way and a read join folding the
+ * other produces rows the join can never reach, which is the failure this pairing exists to
+ * prevent.
+ */
+export function normalizedKeySql(column: SQL): SQL {
+  return sql`regexp_replace(replace(lower(coalesce(${column}, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
 }
