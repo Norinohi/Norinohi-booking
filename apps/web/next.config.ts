@@ -10,7 +10,24 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   typedRoutes: true,
   reactCompiler: true,
+  /*
+   * Prerendering enumerates ~3,900 catalog pages, and each one calls the API two or three times
+   * (scoped facets, then results). At Next's defaults the export fleet sizes itself to the build
+   * machine — 31 workers on Railway, 8 pages each — and puts several hundred concurrent requests
+   * on a single server, so every render queues past the 60s page limit and the build dies having
+   * generated 88% of the site. The failing URLs differ run to run, which is what identifies this
+   * as contention rather than a broken route.
+   *
+   * Capping concurrency is the half that fixes it: fewer requests in flight means each page
+   * answers in seconds instead of stacking, and wall-clock goes down rather than up. The raised
+   * timeout is headroom for the slowest pages, not the remedy.
+   *
+   * Both are workarounds for the per-page API cost. The scoped `getFacets(scope)` read in
+   * `prefetchSearch` is the one to profile before raising either number further.
+   */
+  staticPageGenerationTimeout: 180,
   experimental: {
+    staticGenerationMaxConcurrency: 2,
     /*
      * Exposes the testing API that `@next/playwright`'s `instant()` drives. Without it `instant()`
      * silently no-ops and the navigation tests pass while proving nothing — a green suite that is
