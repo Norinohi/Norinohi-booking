@@ -1973,12 +1973,14 @@
         "label": "Entscheidung",
         "pending": "Ausstehend",
         "confirmed": "Bestätigt",
-        "rejected": "Abgelehnt"
+        "rejected": "Abgelehnt",
+        "deferred": "Zurückgestellt"
       },
       "empty": {
         "pending": "Nichts zu prüfen. Alle Duplikat-Kandidaten wurden bearbeitet.",
         "confirmed": "Es wurden noch keine Zusammenführungen bestätigt.",
-        "rejected": "Es wurden noch keine Paare abgelehnt."
+        "rejected": "Es wurden noch keine Paare abgelehnt.",
+        "deferred": "Es wurden noch keine Paare zurückgestellt."
       },
       "error": "Die Duplikat-Warteschlange konnte nicht geladen werden",
       "confidence": "{value} % Übereinstimmung",
@@ -2358,7 +2360,8 @@
       "status": {
         "draft": "Entwurf",
         "published": "Veröffentlicht",
-        "hidden": "Ausgeblendet"
+        "hidden": "Ausgeblendet",
+        "merged": "Zusammengeführt"
       },
       "actions": {
         "publish": "Veröffentlichen",

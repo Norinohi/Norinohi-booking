@@ -1,0 +1,1 @@
+ALTER TYPE "public"."quote_offer_outcome" ADD VALUE 'unavailable' BEFORE 'error';

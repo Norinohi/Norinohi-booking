@@ -16,11 +16,23 @@ import {
 
 import { id, money, pct, timestamps } from "./_shared";
 import { listing } from "./listing";
+import { listingOffer } from "./listing-offer";
 import { providerRecord } from "./provider";
 
 export const matchStatus = pgEnum("match_status", ["unmatched", "auto", "confirmed", "rejected"]);
 
-export const duplicateDecision = pgEnum("duplicate_decision", ["pending", "confirmed", "rejected"]);
+/**
+ * `deferred` is "I looked and I cannot tell", which is neither of the other two. It exists
+ * so an undecidable pair can leave the queue without being counted as a rejection, because
+ * the precision figure that will one day justify auto-approval is confirmed over
+ * confirmed-plus-rejected, and filing every hard case as a rejection would sink it.
+ */
+export const duplicateDecision = pgEnum("duplicate_decision", [
+  "pending",
+  "confirmed",
+  "rejected",
+  "deferred",
+]);
 
 /**
  * Which of the provider's id spaces `external_id` belongs to. NauSYS numbers
@@ -61,6 +73,9 @@ export const providerExtraCatalogue = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     // Scoped like listing_media.source so a merged listing keeps each provider's rows.
     source: text("source").notNull(),
     kind: providerExtraKind("kind").notNull(),
@@ -104,7 +119,7 @@ export const providerExtraCatalogue = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("provider_extra_catalogue_uq").on(t.listingId, t.source, t.kind, t.externalId),
+    unique("provider_extra_catalogue_uq").on(t.listingOfferId, t.kind, t.externalId),
     index("provider_extra_catalogue_listing_idx").on(t.listingId),
   ],
 );
@@ -214,7 +229,16 @@ export const listingDuplicateCandidate = pgTable(
     confidence: numeric("confidence", { precision: 6, scale: 4 }),
     decision: duplicateDecision("decision").default("pending").notNull(),
     reviewer: text("reviewer"),
+    reviewerNote: text("reviewer_note"),
     reviewedAt: timestamp("reviewed_at"),
+    /**
+     * Whether the candidate auto-approval rule would have merged this pair.
+     *
+     * Computed on every run and acted on by nothing. Auto-approval is only worth turning on
+     * once we can say what it would have done to pairs a human has already judged, and that
+     * comparison needs the flag to exist before the verdicts do.
+     */
+    autoEligible: boolean("auto_eligible").default(false).notNull(),
     ...timestamps,
   },
   (t) => [

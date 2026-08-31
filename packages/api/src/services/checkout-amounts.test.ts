@@ -30,6 +30,7 @@ const quoteRow = (lines: QuoteLine[], over: Partial<QuoteRow> = {}): QuoteRow =>
     userId: "usr_1",
     provider: "mock",
     providerSourceId: "src_1",
+    listingOfferId: "loff_1",
     providerQuoteId: null,
     checkIn: "2026-08-08",
     checkOut: "2026-08-15",

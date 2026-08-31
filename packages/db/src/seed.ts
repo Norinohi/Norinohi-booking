@@ -21,6 +21,8 @@ import {
   listingAmenity,
   listingCheckinRule,
   listingMedia,
+  listingOffer,
+  listingOfferSpecification,
   listingSource,
   listingSpecification,
   location,
@@ -1693,6 +1695,7 @@ const slots = yachts.flatMap((item) => {
       id: `${key(item.externalId.replace("yacht-", ""))}_${key(startDate.replaceAll("-", "_"))}`,
       listingId: item.listingId,
       listingSourceId: item.sourceId,
+      listingOfferId: item.sourceId.replace("lsrc_", "loff_"),
       startDate,
       endDate: addWeek(startDate),
       status: slotStatusFor(random()),
@@ -1713,6 +1716,7 @@ const pricePeriods = slots.map((slot) => ({
   id: `lpp_${slot.id}`,
   listingId: slot.listingId,
   listingSourceId: slot.listingSourceId,
+  listingOfferId: slot.listingOfferId,
   startDate: slot.startDate,
   endDate: slot.endDate,
   kind: "weekly" as const,
@@ -1738,9 +1742,13 @@ const freePeriods = yachts.flatMap((item) => {
     id: `lfp_${key(item.externalId.replace("yacht-", ""))}_${index}`,
     listingId: item.listingId,
     listingSourceId: item.sourceId,
+    listingOfferId: item.sourceId.replace("lsrc_", "loff_"),
     ...period,
   }));
 });
+
+/** One offer per seeded source, derived so the fixtures stay as fixed as the source ids. */
+const offerIdFor = (sourceId: string) => sourceId.replace("lsrc_", "loff_");
 
 const crewTypeFor = (categoryId: string) => {
   if (categoryId === "cat_luxury" || categoryId === "cat_motor") return "full-crew";
@@ -2126,6 +2134,56 @@ export async function main() {
     )
     .onConflictDoNothing();
 
+  /*
+   * One offer per source. Everything commercial hangs off this rather than off the listing,
+   * and every child row below names it, so the seed has to mint them before any of them.
+   */
+  await db
+    .insert(listingOffer)
+    .values(
+      yachts.map((item) => ({
+        id: offerIdFor(item.sourceId),
+        listingId: item.listingId,
+        listingSourceId: item.sourceId,
+        providerId,
+        status: "active" as const,
+        title: item.title,
+        operatorId: item.operatorId,
+        homeBaseId: item.baseId,
+        builderId: item.builderId,
+        modelId: item.modelId,
+        categoryId: item.categoryId,
+        crewType: crewTypeFor(item.categoryId),
+        depositInsuranceIncluded: hasDepositInsurance(item.categoryId, item.yearBuilt),
+        petsAllowed: allowsPets(item.baseId, item.categoryId),
+        defaultCurrency: "EUR",
+        catalogueSyncedAt: new Date(),
+      })),
+    )
+    .onConflictDoNothing();
+
+  await db
+    .insert(listingOfferSpecification)
+    .values(
+      yachts.map((item) => ({
+        id: `lospec_${offerIdFor(item.sourceId)}`,
+        listingOfferId: offerIdFor(item.sourceId),
+        lengthM: item.lengthM,
+        beamM: specDetailsFor(item).beamM,
+        draftM: specDetailsFor(item).draftM,
+        yearBuilt: item.yearBuilt,
+        cabins: item.cabins,
+        berths: item.berths,
+        heads: item.heads,
+        engines: specDetailsFor(item).engines,
+        enginePower: specDetailsFor(item).enginePower,
+        fuelCapacity: specDetailsFor(item).fuelCapacity,
+        waterCapacity: specDetailsFor(item).waterCapacity,
+        sailType: sailTypeFor(item.categoryId, item.yearBuilt),
+      })),
+    )
+    .onConflictDoNothing();
+
   await db
     .insert(listingSpecification)
     .values(
@@ -2171,6 +2229,7 @@ export async function main() {
         item.media.map((externalUrl, index) => ({
           id: `lmed_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${index}`,
           listingId: item.listingId,
+          listingOfferId: offerIdFor(item.sourceId),
           externalUrl,
           role: index === 0 ? ("main" as const) : ("gallery" as const),
           sortOrder: index,
@@ -2203,6 +2262,7 @@ export async function main() {
         ].map(({ amenityId, priceMinor, priceCurrency }) => ({
           id: `lamn_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${amenityId.replace("amn_", "")}`,
           listingId: item.listingId,
+          listingOfferId: offerIdFor(item.sourceId),
           amenityId,
           obligatory: false,
           priceMinor,
@@ -2211,7 +2271,7 @@ export async function main() {
       ),
     )
     .onConflictDoUpdate({
-      target: [listingAmenity.listingId, listingAmenity.amenityId],
+      target: [listingAmenity.listingOfferId, listingAmenity.amenityId],
       set: {
         obligatory: sql.raw("excluded.obligatory"),
         priceMinor: sql.raw("excluded.price_minor"),
@@ -2226,6 +2286,7 @@ export async function main() {
         MOCK_EXTRAS.map((extra) => ({
           id: `pxtr_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_${extra.externalId.replaceAll("-", "_")}`,
           listingId: item.listingId,
+          listingOfferId: offerIdFor(item.sourceId),
           source: "mock",
           // The mock keeps one flat code space rather than the separate service and
           // equipment spaces a real vendor has; `equipment` is the arbitrary half of
@@ -2242,8 +2303,7 @@ export async function main() {
     )
     .onConflictDoUpdate({
       target: [
-        providerExtraCatalogue.listingId,
-        providerExtraCatalogue.source,
+        providerExtraCatalogue.listingOfferId,
         providerExtraCatalogue.kind,
         providerExtraCatalogue.externalId,
       ],
@@ -2261,6 +2321,7 @@ export async function main() {
       yachts.map((item) => ({
         id: `lcir_${item.listingId.replace("ylst_yacht-", "").replaceAll("-", "_")}_sat`,
         listingId: item.listingId,
+        listingOfferId: offerIdFor(item.sourceId),
         checkinWeekday: 6,
         checkoutWeekday: 6,
         minNights: 7,
@@ -2271,24 +2332,40 @@ export async function main() {
   await db
     .insert(availabilitySlot)
     .values(
-      slots.map(({ id, listingId, listingSourceId, startDate, endDate, status, priceMinor }) => ({
-        id: `avsl_${id}`,
-        listingId,
-        listingSourceId,
-        startDate,
-        endDate,
-        status,
-        availabilityConfirmed: hasConfirmedAvailability(id, status),
-        priceMinor,
-        currency: "EUR",
-        minNights: 7,
-        checkinWeekday: 6,
-        checkoutWeekday: 6,
-        sourceHash: `mock-${id}`,
-      })),
+      slots.map(
+        ({
+          id,
+          listingId,
+          listingSourceId,
+          listingOfferId,
+          startDate,
+          endDate,
+          status,
+          priceMinor,
+        }) => ({
+          id: `avsl_${id}`,
+          listingId,
+          listingSourceId,
+          listingOfferId,
+          startDate,
+          endDate,
+          status,
+          availabilityConfirmed: hasConfirmedAvailability(id, status),
+          priceMinor,
+          currency: "EUR",
+          minNights: 7,
+          checkinWeekday: 6,
+          checkoutWeekday: 6,
+          sourceHash: `mock-${id}`,
+        }),
+      ),
     )
     .onConflictDoUpdate({
-      target: [availabilitySlot.listingId, availabilitySlot.startDate, availabilitySlot.endDate],
+      target: [
+        availabilitySlot.listingOfferId,
+        availabilitySlot.startDate,
+        availabilitySlot.endDate,
+      ],
       set: {
         status: sql.raw("excluded.status"),
         availabilityConfirmed: sql.raw("excluded.availability_confirmed"),
@@ -2306,7 +2383,7 @@ export async function main() {
     .values(pricePeriods)
     .onConflictDoUpdate({
       target: [
-        listingPricePeriod.listingId,
+        listingPricePeriod.listingOfferId,
         listingPricePeriod.kind,
         listingPricePeriod.startDate,
         listingPricePeriod.endDate,

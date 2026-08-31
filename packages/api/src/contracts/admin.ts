@@ -116,9 +116,9 @@ export const syncRunListSchema = paginatedSchema(syncRunRowSchema);
 
 export const matchStatusSchema = z.enum(["unmatched", "auto", "confirmed", "rejected"]);
 
-export const duplicateDecisionSchema = z.enum(["pending", "confirmed", "rejected"]);
+export const duplicateDecisionSchema = z.enum(["pending", "confirmed", "rejected", "deferred"]);
 
-export const listingStatusSchema = z.enum(["draft", "published", "hidden"]);
+export const listingStatusSchema = z.enum(["draft", "published", "hidden", "merged"]);
 
 export const mediaRoleSchema = z.enum(["main", "layout", "gallery"]);
 
@@ -219,6 +219,7 @@ export const duplicateQueueSummarySchema = z.object({
     pending: z.number().int(),
     confirmed: z.number().int(),
     rejected: z.number().int(),
+    deferred: z.number().int(),
   }),
   /** Distinct listings the filtered pairs touch: one yacht can sit in several pairs. */
   listingCount: z.number().int(),
@@ -638,7 +639,12 @@ export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema).ext
 
 export const listingSetStatusInputSchema = z.object({
   id: idSchema,
-  status: listingStatusSchema,
+  /*
+   * The three a person may choose. `merged` is not one of them: it is written by a
+   * duplicate merge to record that this listing's offers moved elsewhere, and setting
+   * it by hand would retire a listing while leaving its inventory where it was.
+   */
+  status: z.enum(["draft", "published", "hidden"]),
 });
 
 export const listingSetStatusSchema = z.object({

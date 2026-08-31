@@ -1973,12 +1973,14 @@
         "label": "Decisión",
         "pending": "Pendientes",
         "confirmed": "Confirmados",
-        "rejected": "Rechazados"
+        "rejected": "Rechazados",
+        "deferred": "Aplazados"
       },
       "empty": {
         "pending": "Nada que revisar. Todos los duplicados están resueltos.",
         "confirmed": "Todavía no se ha confirmado ninguna fusión.",
-        "rejected": "Todavía no se ha rechazado ningún par."
+        "rejected": "Todavía no se ha rechazado ningún par.",
+        "deferred": "Aún no se ha aplazado ningún par."
       },
       "error": "No se pudo cargar la cola de duplicados",
       "confidence": "{value}% de coincidencia",
@@ -2358,7 +2360,8 @@
       "status": {
         "draft": "Borrador",
         "published": "Publicado",
-        "hidden": "Oculto"
+        "hidden": "Oculto",
+        "merged": "Fusionado"
       },
       "actions": {
         "publish": "Publicar",

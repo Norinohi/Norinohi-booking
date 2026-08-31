@@ -26,6 +26,7 @@ import { useListings, useSetListingStatus } from "../hooks/use-listings";
 import {
   type ListingAdminRow,
   type ListingStatus,
+  type MovableStatus,
   type ProviderKey,
   toProviderKey,
 } from "../types";
@@ -44,12 +45,18 @@ import {
 const ALL = "all";
 
 const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
-const STATUSES: readonly ListingStatus[] = ["draft", "published", "hidden"];
+/*
+ * The three a person can move a listing between. `merged` is absent on purpose: a merge
+ * writes it to record that this listing's offers moved to another one, and nothing here
+ * should offer it as a destination.
+ */
+const STATUSES: readonly MovableStatus[] = ["draft", "published", "hidden"];
 
 const STATUS_VARIANTS = {
   draft: "warning",
   published: "success",
   hidden: "neutral",
+  merged: "neutral",
 } as const satisfies Record<ListingStatus, string>;
 
 const COLUMN_COUNT = 8;
@@ -98,7 +105,7 @@ export default function ListingsTable() {
   const placeLabel = (listing: ListingAdminRow) =>
     [listing.baseName, listing.locationName].filter(Boolean).join(" · ") || t("notSet");
 
-  const move = (listing: ListingAdminRow, next: ListingStatus) => {
+  const move = (listing: ListingAdminRow, next: MovableStatus) => {
     setStatusMutation.mutate(
       { id: listing.id, status: next },
       {

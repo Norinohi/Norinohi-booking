@@ -2,6 +2,7 @@ import { boolean, date, index, integer, pgEnum, pgTable, text, unique } from "dr
 
 import { id, timestamps } from "./_shared";
 import { listing } from "./listing";
+import { listingOffer } from "./listing-offer";
 import { listingSource } from "./listing-source";
 
 export const availabilitySlotStatus = pgEnum("availability_slot_status", [
@@ -21,6 +22,9 @@ export const availabilitySlot = pgTable(
     listingSourceId: text("listing_source_id").references(() => listingSource.id, {
       onDelete: "set null",
     }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     status: availabilitySlotStatus("status").notNull(),
@@ -42,7 +46,7 @@ export const availabilitySlot = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("availability_slot_period_uq").on(t.listingId, t.startDate, t.endDate),
+    unique("availability_slot_period_uq").on(t.listingOfferId, t.startDate, t.endDate),
     index("availability_slot_listing_idx").on(t.listingId),
     index("availability_slot_dates_idx").on(t.startDate, t.endDate),
   ],
@@ -71,6 +75,9 @@ export const listingPricePeriod = pgTable(
     listingSourceId: text("listing_source_id").references(() => listingSource.id, {
       onDelete: "set null",
     }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     kind: pricePeriodKind("kind").notNull(),
@@ -79,7 +86,7 @@ export const listingPricePeriod = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("listing_price_period_uq").on(t.listingId, t.kind, t.startDate, t.endDate),
+    unique("listing_price_period_uq").on(t.listingOfferId, t.kind, t.startDate, t.endDate),
     index("listing_price_period_listing_idx").on(t.listingId),
     index("listing_price_period_dates_idx").on(t.startDate, t.endDate),
   ],
@@ -106,12 +113,15 @@ export const listingFreePeriod = pgTable(
     listingSourceId: text("listing_source_id").references(() => listingSource.id, {
       onDelete: "set null",
     }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     ...timestamps,
   },
   (t) => [
-    unique("listing_free_period_uq").on(t.listingId, t.startDate, t.endDate),
+    unique("listing_free_period_uq").on(t.listingOfferId, t.startDate, t.endDate),
     /*
      * Containment (`start <= checkIn and end >= checkOut`) is a range scan on this index. A
      * `daterange` with GiST would be the textbook answer and is worth revisiting at a fleet
@@ -147,12 +157,15 @@ export const listingRefusedPeriod = pgTable(
     listingSourceId: text("listing_source_id").references(() => listingSource.id, {
       onDelete: "set null",
     }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     ...timestamps,
   },
   (t) => [
-    unique("listing_refused_period_uq").on(t.listingId, t.startDate, t.endDate),
+    unique("listing_refused_period_uq").on(t.listingOfferId, t.startDate, t.endDate),
     index("listing_refused_period_lookup_idx").on(t.listingId, t.startDate, t.endDate),
   ],
 );

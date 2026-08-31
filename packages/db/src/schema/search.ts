@@ -68,6 +68,17 @@ export const listingSearchDoc = pgTable(
     amenities: jsonb("amenities").$type<string[]>().default([]).notNull(),
     priceFromMinor: integer("price_from_minor"),
     currency: text("currency"),
+    /**
+     * The offer the card's price, dates and terms describe, and the one a quote should be
+     * asked of first.
+     *
+     * Plain text rather than a foreign key: this table is a projection rebuilt wholesale, and
+     * a reference into it would make dropping an offer a cascade through the read model. The
+     * verify script checks that it names a live offer of this listing.
+     */
+    bestOfferId: text("best_offer_id"),
+    /** How many vendors sell this hull, so a merged card can be told from a single-source one. */
+    offerCount: integer("offer_count").default(0).notNull(),
     availableFrom: date("available_from"),
     availableTo: date("available_to"),
     /**

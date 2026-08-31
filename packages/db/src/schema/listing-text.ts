@@ -3,6 +3,7 @@ import { index, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 import { listing } from "./listing";
+import { listingOffer } from "./listing-offer";
 
 export const listingTextKind = pgEnum("listing_text_kind", [
   "description",
@@ -19,13 +20,16 @@ export const listingText = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     kind: listingTextKind("kind").notNull(),
     locale: text("locale").notNull(),
     value: text("value").notNull(),
     ...timestamps,
   },
   (t) => [
-    unique("listing_text_locale_uq").on(t.listingId, t.kind, t.locale),
+    unique("listing_text_locale_uq").on(t.listingOfferId, t.kind, t.locale),
     index("listing_text_listing_idx").on(t.listingId),
   ],
 );

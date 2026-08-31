@@ -1973,12 +1973,14 @@
         "label": "Decision",
         "pending": "Pending",
         "confirmed": "Confirmed",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "deferred": "Deferred"
       },
       "empty": {
         "pending": "Nothing to review. Every duplicate candidate has been resolved.",
         "confirmed": "No merges have been confirmed yet.",
-        "rejected": "No pairs have been rejected yet."
+        "rejected": "No pairs have been rejected yet.",
+        "deferred": "No pairs have been deferred yet."
       },
       "error": "Couldn't load the duplicate queue",
       "confidence": "{value}% match",
@@ -2358,7 +2360,8 @@
       "status": {
         "draft": "Draft",
         "published": "Published",
-        "hidden": "Hidden"
+        "hidden": "Hidden",
+        "merged": "Merged"
       },
       "actions": {
         "publish": "Publish",
