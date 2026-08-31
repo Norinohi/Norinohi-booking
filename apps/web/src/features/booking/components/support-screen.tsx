@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@yacht-charter/ui/components/actions/button";
@@ -164,8 +165,8 @@ function BookingQuestion({
         <ArrowUpRight className="size-4 shrink-0 text-natural-500" />
       </div>
       <span className="text-sm text-natural-600">
-        {day(booking.checkIn)} → {day(booking.checkOut)} · {booking.base.name},{" "}
-        {booking.base.countryName}
+        {day(booking.checkIn)} → {day(booking.checkOut)} ·{" "}
+        {placeLine(booking.base.name, booking.base.countryName)}
       </span>
     </Link>
   );

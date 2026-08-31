@@ -1,3 +1,4 @@
+import { placeLine } from "../lib/place-line";
 import { ORPCError } from "@orpc/server";
 import {
   booking,
@@ -1033,7 +1034,7 @@ function presentSummary(
       name: snapshot.baseName,
       locationName: snapshot.locationName,
       countryName: snapshot.countryName,
-      address: `${snapshot.baseName}, ${snapshot.locationName}, ${snapshot.countryName}`,
+      address: placeLine(snapshot.baseName, snapshot.locationName, snapshot.countryName),
       coordinates: { lat: snapshot.baseLat ?? 0, lng: snapshot.baseLng ?? 0 },
       timeZone: BASE_TIME_ZONE,
       phone: snapshot.basePhone ?? null,

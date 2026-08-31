@@ -46,6 +46,13 @@ export type ListingSearchInput = {
   underTemporaryBooking?: boolean;
   depositInsurance?: boolean;
   petsAllowed?: boolean;
+  /**
+   * Read by nothing since the price facets and filter moved onto `price_from_minor_eur`, which
+   * is always FX_BASE_CURRENCY. Kept because the contract still accepts it and it is where a
+   * "let the visitor pick a display currency" feature would plug in — but until something does,
+   * passing it changes nothing. Do not reintroduce it as a comparison currency: mixing a caller
+   * hint into what the aggregates compare is the bug F7 fixed.
+   */
   currency?: string;
   /*
    * Selects facet copy and card labels from facet_media_translation; an untranslated
@@ -109,6 +116,12 @@ export type ListingSearchDoc = {
   amenities: string[];
   priceFromMinor: number | null;
   currency: string | null;
+  /**
+   * `priceFromMinor` in one catalogue-wide currency, for comparison only. Never rendered, and
+   * null where no fresh rate covers the published currency. See the `price_from_minor_eur`
+   * column comment in schema/search.ts.
+   */
+  priceFromMinorEur: number | null;
   /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
   bestOfferId: string | null;
   /** How many vendors sell this hull. */

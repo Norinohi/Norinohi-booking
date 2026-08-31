@@ -24,6 +24,7 @@
  * up mean it's burning the run on retries.
  */
 import { db } from "@yacht-charter/db";
+import { refreshFxRates } from "@yacht-charter/db/fx/rates";
 import { startJob } from "./job";
 import {
   createEnabledInventoryProviders,
@@ -77,6 +78,26 @@ if (providers.size === 0) {
   await db.$client.end();
   await job.failed("no enabled provider rows");
   process.exit(1);
+}
+
+/*
+ * Ahead of the walk, because the projection each provider rebuilds at the end of its run reads
+ * these to fill price_from_minor_eur, and a rate fetched afterwards would not reach this run's
+ * documents until the next one.
+ *
+ * Never fatal. Without a fresh rate the affected listings keep their published price and fall
+ * out of the catalogue's price comparisons, which is a worse catalogue but a correct one -- and
+ * far better than losing the night's import because a public feed was down.
+ */
+let fxAsOf = "none";
+try {
+  const rates = await refreshFxRates(db);
+  fxAsOf = rates.asOf;
+  console.log(`[fx] ${rates.currencies} reference rates published ${rates.asOf}`);
+} catch (error) {
+  console.warn(
+    `[fx] Could not refresh reference rates: ${error instanceof Error ? error.message : error}`,
+  );
 }
 
 let failed = 0;
@@ -177,7 +198,12 @@ await db.$client.end();
 
 if (skipped > 0) console.warn(`${skipped} provider(s) skipped: a sync of theirs is still running`);
 
-const metrics = { providers: providers.size, failed, skipped };
+/*
+ * fxAsOf rather than a boolean, so an alert can see a feed that answers every night with the
+ * same stale date. That failure is invisible in a success/failure flag and silently drops every
+ * non-EUR listing out of the catalogue's price comparisons once it passes MAX_RATE_AGE_DAYS.
+ */
+const metrics = { providers: providers.size, failed, skipped, fxAsOf };
 if (failed > 0) {
   await job.failed(`${failed} provider sync(s) failed`, metrics);
   process.exit(1);

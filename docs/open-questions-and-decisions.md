@@ -245,7 +245,7 @@ Confirmed in the running app: the card for _Liburna Sunseeker Predator 50_ says 
 
 The constant was named during the refactor so the disagreement is visible in the code, but its value was not changed. Fixing it means the card calling the real policy, which changes a number shown on every search result.
 
-### F7 — Catalogue aggregates compare and sort minor units across currencies · **owner: product** · **needed by: before the USD fleet is promoted**
+### F7 — Catalogue aggregates compare and sort minor units across currencies · **DECIDED: normalise for comparison, keep publishing the provider's price** · Aug 2026
 
 `listing_search_doc.price_from_minor` is stored in whatever the provider publishes in, named by `listing_search_doc.currency`. Every catalogue-wide aggregation over that column treats the integers as if they were one unit.
 
@@ -289,4 +289,28 @@ The cost is coverage: British Virgin Islands is 228 EUR and 174 USD listings, so
 
 **D. Stopgap: exclude non-base listings from aggregates only.** Add `and doc.currency = 'EUR'` to the facet minimum, the range facet and the price `WHERE` clause, leaving the listings themselves searchable and sortable by everything else. The wrong destination prices go away the same day, at the cost of the 186 priced USD listings being unreachable through the price filter and carrying no contribution to any "from" price. Cheap, reversible, and it buys time for A or B without pretending to be either.
 
-**Decision needed:** which of A, B or C, and if A or B, where the rate comes from and how stale it may be. Ties to F2 above, which asks the same FX question about credit balances, and to the §4 assumption that multi-currency is handled by re-quoting rather than mixing. If both F2 and F7 land on "we have an FX source", it should be one source, wired once.
+**Decided: B, with D as its fallback.** Shipped August 2026.
+
+`listing_search_doc.price_from_minor_eur` holds the published price converted into one currency
+and is never rendered. The price sort, the price filter, the range facet behind the slider, every
+facet group's "from" price, the planner's estimate, and the pick of which offer a merged listing
+is priced from all read that column; `price_from_minor` and `currency` stay untouched and remain
+what a card shows. A facet group's "from" price is now chosen by the converted value and displayed
+as the published pair, so the number and its symbol come from one listing rather than from two
+independent aggregates.
+
+Rates come from the ECB daily reference feed into `fx_rate` — free, keyless, EUR-based. The
+catalogue sync refreshes them ahead of its projection rebuild and treats a failure as non-fatal;
+`pnpm --filter server refresh:fx` is the by-hand path. Staleness is `MAX_RATE_AGE_DAYS = 7` in
+`packages/db/src/fx/rates.ts`: past it a listing in that currency has a null normalised price,
+which is option D scoped to exactly the listings that need it — it keeps its published price on
+its card and falls out of ordering and filtering rather than ranking against units it does not
+share. The sync's job event carries `fxAsOf` so a feed that has quietly frozen is alertable.
+
+What this deliberately does not do: convert anything a customer is charged. §4's "one currency
+per quote" still holds, and F2's question about credit balances is still open — but it now has a
+rate source to answer with, and it should use this one rather than a second.
+
+Live consequence worth knowing: a euro-labelled price slider can return a card priced in dollars,
+because the filter compares converted amounts and the card shows the published one. That is the
+trade this option was chosen for.

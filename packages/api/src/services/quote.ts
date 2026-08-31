@@ -16,7 +16,14 @@ import type {
 } from "@yacht-charter/providers";
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
 
-import { type OfferSelection, recordOfferAttempts, selectBestOffer } from "./offer-selection";
+import {
+  NoSellableOfferError,
+  type OfferAttempt,
+  type OfferSelection,
+  recordLiveRefusals,
+  recordOfferAttempts,
+  selectBestOffer,
+} from "./offer-selection";
 import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -130,6 +137,12 @@ export async function createQuote(
 /**
  * The same CONFLICT a single vendor's refusal produces, so the caller sees one shape whether
  * one provider said no or all of them did.
+ *
+ * A total refusal is also the one moment the vendor's own offers engine tells us something
+ * our synced copy of its calendar does not know, so it is written down on the way past rather
+ * than left in the caller's session. Both writes are best-effort and outside the throw: this
+ * request has already failed, and losing the record of why must not change what the customer
+ * is told.
  */
 async function selectOrConflict(
   db: Database,
@@ -139,10 +152,56 @@ async function selectOrConflict(
   try {
     return await selectBestOffer(db, provider, input);
   } catch (error) {
+    if (error instanceof NoSellableOfferError) {
+      await learnFromRefusal(db, input, error.attempts);
+    }
     if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;
+  }
+}
+
+/**
+ * The audit `recordOfferAttempts` always promised on a total failure, plus the refusal itself.
+ *
+ * Kept together because they are the same event read two ways: the attempt row is the record
+ * that we asked, and the refused period is the answer, which the next visitor's card should
+ * not contradict.
+ */
+async function learnFromRefusal(
+  db: Database,
+  input: QuoteRequest,
+  attempts: readonly OfferAttempt[],
+): Promise<void> {
+  try {
+    await recordOfferAttempts(db, {
+      quoteId: null,
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      attempts,
+      winningOfferId: null,
+    });
+  } catch (error) {
+    console.warn(
+      "[quote] could not record offer attempts",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    await recordLiveRefusals(db, {
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      attempts,
+    });
+  } catch (error) {
+    console.warn(
+      "[quote] could not record live refusal",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 

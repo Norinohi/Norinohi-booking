@@ -2,6 +2,8 @@ import { sql, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
+import { REFUSAL_TRUST_DAYS } from "../schema/availability";
+import { FX_BASE_CURRENCY } from "../fx/rates";
 import { crewOptionsFor } from "./crew";
 import {
   decodeSearchCursor,
@@ -10,6 +12,7 @@ import {
   type SearchCursor,
 } from "./cursor";
 import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs, normalizedKeySql } from "./localize";
+import { placeLine, placeLineExcept } from "./place-line";
 import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
@@ -452,7 +455,7 @@ export async function getListingDetailByIdOrSlug(
     },
     importantInformation: {
       charterCompany: listing.operator,
-      yachtPickupAddress: `${listing.baseName}, ${listing.location}, ${listing.country}`,
+      yachtPickupAddress: placeLine(listing.baseName, listing.location, listing.country),
       /*
        * Times only. These carried `available_from`/`available_to`, which are the first and last
        * dates the boat is free anywhere in the horizon — not this charter's pickup and drop-off.
@@ -472,12 +475,17 @@ export async function getListingDetailByIdOrSlug(
       paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
       marinaInformation: {
         marina: listing.baseName,
-        location: listing.location,
+        /*
+         * The surroundings the marina's own name has not already given. A NauSYS base is named
+         * after its location, so the raw pair read "X is located in X, Bahamas"; the region is
+         * the next-widest thing to say once the location adds nothing.
+         */
+        location: placeLineExcept(listing.baseName, listing.location) || listing.region,
         country: listing.country,
       },
       marinaContact: {
         name: listing.baseName,
-        address: `${listing.baseName}, ${listing.location}, ${listing.country}`,
+        address: placeLine(listing.baseName, listing.location, listing.country),
         email: listing.baseEmail,
         phone: listing.basePhone,
         website: listing.baseWebsite,
@@ -550,8 +558,8 @@ export async function listSearchFacets(
         max(doc.berths) as "maxBerths",
         min(doc.heads) as "minBathrooms",
         max(doc.heads) as "maxBathrooms",
-        min(doc.price_from_minor) as "minMinor",
-        max(doc.price_from_minor) as "maxMinor",
+        min(doc.price_from_minor_eur) as "minMinor",
+        max(doc.price_from_minor_eur) as "maxMinor",
         /* Zero is how a vendor writes a build year it does not know, and it reached the range as
            a real one: the age slider then offered "up to 2026 years old". Filtered rather than
            coalesced, because a fleet where nobody stated a year has no range to show. */
@@ -562,18 +570,21 @@ export async function listSearchFacets(
         bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
         bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
         bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
-        bool_or(doc.pets_allowed) as "hasPetsAllowed",
-        coalesce(min(doc.currency), ${input.currency ?? "EUR"}) as currency
+        bool_or(doc.pets_allowed) as "hasPetsAllowed"
       from listing_search_doc doc
       where ${whereClause(input)}
     `),
   ]);
   const row = rangeRows.rows[0];
-  const currency = row?.currency ?? input.currency ?? "EUR";
+  /*
+   * The bounds are read off price_from_minor_eur, so the slider is in that currency whatever
+   * the fleet publishes in. Taking the label from min(doc.currency) instead put a euro sign on
+   * a range whose ends came from two currencies, and sent a euro bound to a dollar comparison.
+   */
   const priceRange = {
     minMinor: row?.minMinor ?? 0,
     maxMinor: row?.maxMinor ?? 0,
-    currency,
+    currency: FX_BASE_CURRENCY,
   };
   const yearRange = numberRange(row?.minYear, row?.maxYear);
 
@@ -880,6 +891,8 @@ export async function listAvailabilityConstraints(
        and o.status = 'active'
       where r.start_date < ${input.to}
         and r.end_date > ${input.from}
+        /* Only refusals something has re-confirmed lately; see REFUSAL_TRUST_DAYS. */
+        and r.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
       order by r.start_date asc
     `),
     db.execute<{
@@ -1014,7 +1027,7 @@ export async function listSimilarListings(
         or doc.country = ${listing.country}
         or doc.region = ${listing.region}
       )
-    order by doc.rating desc, doc.price_from_minor asc nulls last, doc.listing_id asc
+    order by doc.rating desc, doc.price_from_minor_eur asc nulls last, doc.listing_id asc
     limit ${limit}
   `);
 
@@ -1091,6 +1104,7 @@ const searchColumns = sql`
   doc.gallery,
   doc.amenities,
   doc.price_from_minor as "priceFromMinor",
+  doc.price_from_minor_eur as "priceFromMinorEur",
   doc.best_offer_id as "bestOfferId",
   doc.offer_count as "offerCount",
   doc.currency,
@@ -1204,11 +1218,17 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("maxBoatAge") && input.maxBoatAge !== undefined) {
     parts.push(sql`doc.year_built >= ${currentYear() - input.maxBoatAge}`);
   }
+  /*
+   * Both bounds arrive in FX_BASE_CURRENCY, matching the range facet that produced the slider,
+   * so they are compared against the converted column. A listing with no usable rate has a null
+   * there and drops out of a bounded search rather than being measured against a bound in a
+   * currency it does not share.
+   */
   if (!skip.has("minPriceMinor") && input.minPriceMinor) {
-    parts.push(sql`doc.price_from_minor >= ${input.minPriceMinor}`);
+    parts.push(sql`doc.price_from_minor_eur >= ${input.minPriceMinor}`);
   }
   if (!skip.has("maxPriceMinor") && input.maxPriceMinor) {
-    parts.push(sql`doc.price_from_minor <= ${input.maxPriceMinor}`);
+    parts.push(sql`doc.price_from_minor_eur <= ${input.maxPriceMinor}`);
   }
   if (!skip.has("withoutAvailabilityConfirmation") && input.withoutAvailabilityConfirmation) {
     parts.push(sql`doc.has_unconfirmed_availability = true`);
@@ -1322,9 +1342,9 @@ function orderClause(sort: SearchSort = "recommended"): SQL {
 function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): SearchCursor {
   switch (sort) {
     case "price-asc":
-      return { value: item.priceFromMinor ?? NULL_PRICE_ASC, listingId: item.listingId };
+      return { value: item.priceFromMinorEur ?? NULL_PRICE_ASC, listingId: item.listingId };
     case "price-desc":
-      return { value: item.priceFromMinor ?? NULL_PRICE_DESC, listingId: item.listingId };
+      return { value: item.priceFromMinorEur ?? NULL_PRICE_DESC, listingId: item.listingId };
     case "newest":
       return { value: item.yearBuilt ?? NULL_YEAR_DESC, listingId: item.listingId };
     case "rating":
@@ -1363,6 +1383,28 @@ function paginationFor(input: {
   };
 }
 
+/*
+ * The cheapest listing in a facet group, given as its own published price and currency.
+ *
+ * Two aggregates sharing one order, rather than min(price) beside min(currency). Those were
+ * independent: the number came from whichever listing held the smallest integer and the symbol
+ * from whichever currency sorted first, so British Virgin Islands rendered "From EUR 1,969" off
+ * a boat priced USD 1,969.
+ *
+ * The order is the converted column, so cheapest means cheapest rather than smallest-integer.
+ * What is displayed is still the published pair, so the card shows what the operator advertises.
+ * A group holding nothing comparable falls through to its own cheapest published amount, which
+ * is the right answer there: nothing to compare means the group is in one currency.
+ */
+const facetPriceOrder = sql`order by
+  doc.price_from_minor_eur asc nulls last,
+  doc.price_from_minor asc nulls last,
+  doc.listing_id asc`;
+
+const facetPriceColumns = sql`
+      (array_agg(doc.price_from_minor ${facetPriceOrder}))[1] as "priceFromMinor",
+      (array_agg(doc.currency ${facetPriceOrder}))[1] as currency`;
+
 async function listFacetOptions(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
@@ -1373,9 +1415,7 @@ async function listFacetOptions(
   const rows = await db.execute<FacetOptionRow>(sql`
     select
       ${expression} as label,
-      count(*)::integer as count,
-      min(doc.price_from_minor) as "priceFromMinor",
-      min(doc.currency) as currency
+      count(*)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     where ${whereClause(input, ignored)}
       and ${expression} is not null
@@ -1393,9 +1433,7 @@ async function listEquipmentFacetOptions(
   const rows = await db.execute<FacetOptionRow>(sql`
     select
       amenity.value as label,
-      count(distinct doc.listing_id)::integer as count,
-      min(doc.price_from_minor) as "priceFromMinor",
-      min(doc.currency) as currency
+      count(distinct doc.listing_id)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
     where ${whereClause(input, ["equipment"])}
@@ -1635,7 +1673,7 @@ function overviewFor(
     | undefined,
 ): { code: string; label: string; value: string | null }[] {
   return [
-    { code: "location", label: "Location", value: `${listing.location}, ${listing.country}` },
+    { code: "location", label: "Location", value: placeLine(listing.location, listing.country) },
     {
       code: "year",
       label: "Year",
@@ -1833,6 +1871,11 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
   };
 }
 
-const priceAscSortValue = sql`coalesce(doc.price_from_minor, ${NULL_PRICE_ASC})`;
-const priceDescSortValue = sql`coalesce(doc.price_from_minor, ${NULL_PRICE_DESC})`;
+/*
+ * Ordered on the converted column, and paired with the cursor values in `cursorFor`: the two
+ * have to read the same expression or a keyset page skips or repeats rows. A listing with no
+ * usable rate sorts with the unpriced ones, which is what "we cannot compare this" looks like.
+ */
+const priceAscSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_ASC})`;
+const priceDescSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

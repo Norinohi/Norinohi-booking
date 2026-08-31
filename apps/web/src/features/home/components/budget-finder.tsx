@@ -4,7 +4,7 @@ import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Suspense, useMemo, useState } from "react";
 
@@ -14,6 +14,7 @@ import {
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
+import { useMoney } from "@/hooks/use-money";
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
 const ANY = "any";
@@ -42,7 +43,7 @@ function BudgetFinderForm({
   isPending: boolean;
 }) {
   const t = useTranslations("Home.BudgetFinder");
-  const format = useFormatter();
+  const money = useMoney();
 
   const [budget, setBudget] = useState(ANY);
   const [people, setPeople] = useState(ANY);
@@ -61,11 +62,11 @@ function BudgetFinderForm({
       const price: [number, number] = [lo, hi];
       return {
         value: `${lo}-${hi}`,
-        label: `${format.number(lo, "eur")} – ${format.number(hi, "eur")}`,
+        label: `${money(lo * 100, range.currency)} – ${money(hi * 100, range.currency)}`,
         price,
       };
     });
-  }, [data?.priceRange, format]);
+  }, [data?.priceRange, money]);
 
   const berthsRange = data?.ranges.berths;
 

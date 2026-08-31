@@ -147,6 +147,24 @@ export const listingFreePeriod = pgTable(
  * Written only from a sweep that completed. A partial answer means "not asked yet", and
  * turning that into a refusal would hide sellable weeks on the strength of not having looked.
  */
+/**
+ * How long a refusal is trusted without being re-confirmed.
+ *
+ * A refusal is a fact with a shelf life: the vendor declined this charter when it was asked,
+ * which is not a promise about next month. Anything still true keeps its row fresh on its own
+ * -- the sweep deletes and re-writes every period it covers, and a live quote refused again
+ * bumps the row it already has -- so ageing out only ever drops refusals nothing has
+ * re-observed in a fortnight.
+ *
+ * The asymmetry is what sets the length. Trusting a stale refusal hides a charter the vendor
+ * would now sell, and hides it permanently, because nothing else clears it: the sweep only
+ * touches the Saturday-to-Saturday weeks it reaches, so a NauSYS listing or a midweek charter
+ * has no other way back. Retrying one too early costs a single visitor a 409, after which the
+ * refusal is recorded again within the same request. The cheap failure is the recoverable one,
+ * so this errs short rather than long.
+ */
+export const REFUSAL_TRUST_DAYS = 14;
+
 export const listingRefusedPeriod = pgTable(
   "listing_refused_period",
   {

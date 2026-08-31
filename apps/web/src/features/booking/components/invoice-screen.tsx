@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Printer } from "lucide-react";
@@ -196,11 +197,7 @@ function CharterSummary({ invoice }: { invoice: InvoiceDocument }) {
     { label: t("summary.yacht"), value: booking.listingTitle },
     {
       label: t("summary.base"),
-      // Deduplicated: NauSYS bases often carry the marina's full name as the location too,
-      // which would otherwise print "Komolac, ACI Marina, Komolac, ACI Marina, Croatia".
-      value: [...new Set([booking.baseName, booking.locationName, booking.countryName])]
-        .filter(Boolean)
-        .join(", "),
+      value: placeLine(booking.baseName, booking.locationName, booking.countryName),
     },
     {
       label: t("summary.dates"),

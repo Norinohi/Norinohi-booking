@@ -2,7 +2,9 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
+import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { listing } from "../schema/listing";
+import { toBaseMinorSql, usableRateSql } from "../fx/rates";
 import { normalizedKeySql } from "./localize";
 
 /**
@@ -80,11 +82,14 @@ export async function rebuildListingSearchDocs(
          * route they have to pick, and folding it in would inflate every card for a charter
          * almost none of them will book.
          */
-        case
-          when coalesce(week.price_minor, rate.price_from_minor) is null then null
-          else coalesce(week.price_minor, rate.price_from_minor)
-               + coalesce(week.obligatory_extras_minor, fees.unavoidable_minor, 0)
-        end as all_in_minor
+        money.all_in_minor,
+        /*
+         * The same figure in one currency, for every comparison the catalogue makes across
+         * listings -- the price sort, the price filter, the "from" aggregates, and the pick of
+         * the best offer immediately below. See the price_from_minor_eur column comment.
+         */
+        ${toBaseMinorSql(sql`money.all_in_minor`, sql`money.price_currency`, sql`fx.rate`)}
+          as all_in_minor_eur
       from listing_offer o
       join provider p on p.id = o.provider_id
       /*
@@ -216,6 +221,8 @@ export async function rebuildListingSearchDocs(
             where refused.listing_offer_id = o.id
               and refused.start_date >= c.candidate
               and refused.end_date <= c.candidate + n.nights
+              /* Only refusals something has re-confirmed lately; see REFUSAL_TRUST_DAYS. */
+              and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
           )
         order by c.candidate, n.nights
         limit 1
@@ -310,6 +317,23 @@ export async function rebuildListingSearchDocs(
         from availability_slot slot
         where slot.listing_offer_id = o.id
       ) held on true
+      /*
+       * In a lateral rather than the select list because the published figure and its converted
+       * twin are both built from it, and repeating the expression is how the two drift apart.
+       */
+      cross join lateral (
+        select
+          case
+            when coalesce(week.price_minor, rate.price_from_minor) is null then null
+            else coalesce(week.price_minor, rate.price_from_minor)
+                 + coalesce(week.obligatory_extras_minor, fees.unavoidable_minor, 0)
+          end as all_in_minor,
+          coalesce(rate.currency, o.default_currency) as price_currency
+      ) money
+      /* Resolved once per offer; the conversion reads it twice. */
+      left join lateral (
+        select ${usableRateSql(sql`money.price_currency`)} as rate
+      ) fx on true
       where o.status = 'active'
         and ${listingScope(sql`o.listing_id`, listingIds)}
     ),
@@ -322,7 +346,18 @@ export async function rebuildListingSearchDocs(
     best as (
       select distinct on (listing_id) *
       from offer_doc
-      order by listing_id, all_in_minor asc nulls last, provider_rank, offer_id
+      /*
+       * Ordered on the converted figure, because eight listings are sold by two vendors pricing
+       * in different currencies and this comparison decided between them on the raw integers.
+       * Falls back to the published one where no rate covers it, which is the single-currency
+       * case it was always right for.
+       */
+      order by
+        listing_id,
+        all_in_minor_eur asc nulls last,
+        all_in_minor asc nulls last,
+        provider_rank,
+        offer_id
     ),
     /*
      * The questions that are about the boat rather than about one seller. It is free if any
@@ -382,6 +417,7 @@ export async function rebuildListingSearchDocs(
       amenities,
       price_from_minor,
       currency,
+      price_from_minor_eur,
       best_offer_id,
       offer_count,
       available_from,
@@ -465,6 +501,7 @@ export async function rebuildListingSearchDocs(
        */
       best.all_in_minor,
       coalesce(best.currency, best.default_currency, l.default_currency),
+      best.all_in_minor_eur,
       best.offer_id,
       coalesce(spread.offer_count, 0),
       spread.available_from,
@@ -615,6 +652,7 @@ export async function rebuildListingSearchDocs(
       gallery = excluded.gallery,
       amenities = excluded.amenities,
       price_from_minor = excluded.price_from_minor,
+      price_from_minor_eur = excluded.price_from_minor_eur,
       best_offer_id = excluded.best_offer_id,
       offer_count = excluded.offer_count,
       currency = excluded.currency,

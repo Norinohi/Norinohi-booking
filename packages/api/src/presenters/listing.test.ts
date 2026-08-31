@@ -50,6 +50,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   offerCount: 1,
   priceFromMinor: 1_240_000,
   currency: "EUR",
+  priceFromMinorEur: 1_240_000,
   availableFrom: "2026-06-13",
   availableTo: "2026-08-29",
   bookableFrom: null,

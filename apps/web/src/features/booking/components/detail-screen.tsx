@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Notification } from "@yacht-charter/ui/components/feedback/notification";
@@ -266,7 +267,7 @@ function Charter({
         {booking.crewType ? (
           <Fact label={t("crew")} value={booking.crewType} className="capitalize" />
         ) : null}
-        <Fact label={t("marina")} value={`${booking.base.name}, ${booking.base.countryName}`} />
+        <Fact label={t("marina")} value={placeLine(booking.base.name, booking.base.countryName)} />
         <Fact label={t("referenceLabel")} value={booking.reference} className="font-mono" />
         {/* Once it is off, the two facts that explain it — the rest of the panel is history. */}
         {booking.cancelledAt ? (

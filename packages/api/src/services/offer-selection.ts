@@ -12,6 +12,7 @@
 import { listAvailabilityConstraints } from "@yacht-charter/db/search";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
+import { listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
 import { quoteOfferAttempt } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
@@ -49,7 +50,13 @@ export type OfferSelection = {
 
 export type OfferAttempt = OfferQuoteResult & { latencyMs: number | null };
 
-type OfferRow = { offerId: string; providerCode: string; currency: string | null };
+type OfferRow = {
+  offerId: string;
+  providerCode: string;
+  currency: string | null;
+  /* Carried only so a persisted refusal can name the source row the sweep would have named. */
+  listingSourceId: string | null;
+};
 
 /**
  * The best offer for this exact charter.
@@ -101,13 +108,13 @@ export async function selectBestOffer(
 
   if (!winner) {
     /* Reuse the path a single vendor's refusal already takes, so the caller sees one shape. */
-    throw new SlotUnavailableError("No provider will sell this period", {
+    throw new NoSellableOfferError("No provider will sell this period", attempts, {
       providerCode: offers[0]?.providerCode,
     });
   }
 
   const won = results.find((result) => result.attempt.offerId === winner.offerId);
-  if (!won?.priced) throw new SlotUnavailableError("No provider will sell this period");
+  if (!won?.priced) throw new NoSellableOfferError("No provider will sell this period", attempts);
 
   return {
     selected: {
@@ -126,6 +133,7 @@ async function listOffersForListing(db: Database, listingId: string): Promise<Of
       offerId: listingOffer.id,
       providerCode: providerTable.code,
       currency: listingOffer.defaultCurrency,
+      listingSourceId: listingOffer.listingSourceId,
     })
     .from(listingOffer)
     .innerJoin(providerTable, eq(providerTable.id, listingOffer.providerId))
@@ -227,6 +235,26 @@ function ineligibleAttempts(
     }));
 }
 
+/**
+ * Nothing could be sold, carrying who was asked and what they said.
+ *
+ * A subclass rather than a new shape, so every `instanceof SlotUnavailableError` on the way
+ * out still matches and the caller keeps seeing one CONFLICT. The attempts ride along because
+ * this is the only place that knows them and the throw is where they were being dropped: the
+ * audit `recordOfferAttempts` promises on a total failure never reached the table, and a
+ * vendor's refusal — the one fact here that is about the boat rather than about our cache —
+ * was learned and discarded on every request.
+ */
+export class NoSellableOfferError extends SlotUnavailableError {
+  constructor(
+    message: string,
+    readonly attempts: readonly OfferAttempt[],
+    options?: ConstructorParameters<typeof SlotUnavailableError>[1],
+  ) {
+    super(message, options);
+  }
+}
+
 class TimeoutError extends Error {}
 
 function withTimeout<T>(work: Promise<T>): Promise<T> {
@@ -234,6 +262,92 @@ function withTimeout<T>(work: Promise<T>): Promise<T> {
     const timer = setTimeout(() => reject(new TimeoutError()), OFFER_TIMEOUT_MS);
     work.then(resolve, reject).finally(() => clearTimeout(timer));
   });
+}
+
+/**
+ * Writes down the periods a vendor turned down when it was actually asked.
+ *
+ * This is the only place the marketplace ever hears the vendor's own offers engine say no
+ * about an exact charter. Its occupancy dump — which is all the sync reads, and all the card
+ * and the calendar are built from — says only what is *booked*, and a boat can be unbooked
+ * and still unsellable: at the wrong base, or with no room for a turnaround. The two
+ * disagree on 250 to 400 boats a week (see `listing_refused_period`), and until now the
+ * disagreement was resolved once per visitor, in their browser, and thrown away with the tab.
+ *
+ * The refusal sweep exists to close that gap but cannot reach every listing: it asks in whole
+ * Saturday-to-Saturday weeks over a short horizon, and a fleet selling four-night midweek
+ * charters further out is never asked about. A live quote is asked about exactly the charter
+ * someone wants, which is why this catches what the sweep structurally cannot.
+ *
+ * Only `unavailable` is written. `ineligible` is our own cache refusing before the vendor was
+ * reached, so recording it would just tell us what we already believed; `error` and `timeout`
+ * said nothing at all, and a vendor having a bad night must never look like a boat that is gone.
+ *
+ * Guarded on our own published constraints, which is what makes a public endpoint safe to
+ * learn from. Refusals are matched by containment, so a row for some short period inside a
+ * real charter suppresses that charter — without this guard anyone could post a couple of
+ * dates and empty a listing's calendar. After it, the only rows that can be written are ones
+ * where our data said yes and the vendor said no, which is exactly the disagreement worth
+ * keeping and is the vendor's call to make, not the caller's.
+ */
+export async function recordLiveRefusals(
+  db: Database,
+  input: {
+    listingId: string;
+    checkIn: string;
+    checkOut: string;
+    attempts: readonly OfferAttempt[];
+  },
+): Promise<number> {
+  const refused = input.attempts.filter((attempt) => attempt.outcome === "unavailable");
+  if (refused.length === 0) return 0;
+
+  const constraints = await listAvailabilityConstraints(db, {
+    listingId: input.listingId,
+    from: input.checkIn,
+    to: input.checkOut,
+  });
+  const byOffer = new Map(constraints.offers.map((offer) => [offer.offerId, offer]));
+
+  const offers = await listOffersForListing(db, input.listingId);
+  const sourceOf = new Map(offers.map((offer) => [offer.offerId, offer.listingSourceId]));
+
+  const rows = refused
+    .filter((attempt) => {
+      const published = byOffer.get(attempt.offerId);
+      /* No published constraints for the offer means nothing to contradict, so nothing learned. */
+      if (!published) return false;
+      return rangeStatus(input.checkIn, input.checkOut, published) === "bookable";
+    })
+    .map((attempt) => ({
+      listingId: input.listingId,
+      listingSourceId: sourceOf.get(attempt.offerId) ?? null,
+      listingOfferId: attempt.offerId,
+      startDate: input.checkIn,
+      endDate: input.checkOut,
+    }));
+
+  if (rows.length === 0) return 0;
+
+  /*
+   * The same period from the next visitor is the same fact, not a new one -- but it is a
+   * fresher telling of it, and freshness is what keeps the row trusted: readers ignore a
+   * refusal nothing has re-confirmed within REFUSAL_TRUST_DAYS. A vendor that keeps saying no
+   * keeps the dates hidden; one that quietly reopens them stops renewing the row and the
+   * charter comes back on its own.
+   */
+  await db
+    .insert(listingRefusedPeriod)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: [
+        listingRefusedPeriod.listingOfferId,
+        listingRefusedPeriod.startDate,
+        listingRefusedPeriod.endDate,
+      ],
+      set: { updatedAt: new Date() },
+    });
+  return rows.length;
 }
 
 /**

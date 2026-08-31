@@ -1,3 +1,4 @@
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { type BadgeTranslator, badgeLabel } from "@/lib/badge-label";
 
 import type { PlannerRecommendation } from "../types";
@@ -14,7 +15,7 @@ export function toBoatCardProps(
     id: listing.id,
     image: listing.mainImage,
     imageAlt: listing.title,
-    location: `${listing.base.name}, ${listing.base.country}`,
+    location: placeLine(listing.base.name, listing.base.country),
     title: listing.title,
     // Same rule as the catalogue card: an unrated listing shows no star, not a gold zero.
     rating: listing.rating > 0 ? listing.rating : undefined,
