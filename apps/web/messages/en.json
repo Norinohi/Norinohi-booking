@@ -536,7 +536,11 @@
     "map": {
       "open": "Open the map of {place}",
       "satellite": "Satellite",
-      "streets": "Map"
+      "streets": "Map",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "locate": "Show my location",
+      "locateUnavailable": "Location unavailable"
     },
     "leadForm": {
       "fields": {

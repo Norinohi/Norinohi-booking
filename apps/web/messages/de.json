@@ -536,7 +536,11 @@
     "map": {
       "open": "Karte von {place} öffnen",
       "satellite": "Satellit",
-      "streets": "Karte"
+      "streets": "Karte",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "locate": "Meinen Standort anzeigen",
+      "locateUnavailable": "Standort nicht verfügbar"
     },
     "leadForm": {
       "fields": {

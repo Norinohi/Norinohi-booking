@@ -536,7 +536,11 @@
     "map": {
       "open": "Відкрити мапу: {place}",
       "satellite": "Супутник",
-      "streets": "Карта"
+      "streets": "Карта",
+      "zoomIn": "Збільшити",
+      "zoomOut": "Зменшити",
+      "locate": "Показати моє місцезнаходження",
+      "locateUnavailable": "Місцезнаходження недоступне"
     },
     "leadForm": {
       "fields": {

@@ -166,8 +166,15 @@ export default function MapScreen() {
         </Link>
       </div>
 
-      <div className="relative min-h-0 flex-1">
-        <MapCanvas onReady={setMap} onBackgroundPress={dismissOverlays}>
+      <div
+        className={cn(
+          "relative min-h-0 flex-1",
+          // The popup covers the bottom-right zoom controls on phones (< 768px) the same way it
+          // covers the chrome below, so they go with it and come back from md up.
+          popupOpen && "[&_.mapboxgl-ctrl-group]:hidden md:[&_.mapboxgl-ctrl-group]:block",
+        )}
+      >
+        <MapCanvas locateControl onReady={setMap} onBackgroundPress={dismissOverlays}>
           {clusters.map((feature, index) => {
             const [lng, lat] = feature.geometry.coordinates;
 
