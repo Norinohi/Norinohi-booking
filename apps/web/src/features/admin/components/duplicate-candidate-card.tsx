@@ -32,6 +32,11 @@ const MATCH_TYPES = [
   "model+yearBuilt",
 ] as const;
 
+/*
+ * Every criterion `scoreDuplicatePair` can judge. A field missing here falls back to its raw
+ * key, which is how `model` and `year` shipped as untranslated chips when the name-and-berth
+ * gate turned them from a free assumption into things actually compared.
+ */
 const SIGNAL_FIELDS = [
   "name",
   "base",
@@ -40,6 +45,8 @@ const SIGNAL_FIELDS = [
   "cabins",
   "berths",
   "heads",
+  "model",
+  "year",
   "builder",
   "operator",
 ] as const;

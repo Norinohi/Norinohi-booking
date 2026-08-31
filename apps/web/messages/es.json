@@ -2120,7 +2120,9 @@
         "berths": "Literas",
         "heads": "Baños",
         "builder": "Astillero",
-        "operator": "Operador"
+        "operator": "Operador",
+        "model": "Modelo",
+        "year": "Año de construcción"
       },
       "toast": {
         "confirmed": "Fusionado. {count} fuentes ahora apuntan al anuncio conservado.",
@@ -2443,7 +2445,10 @@
           "operator": "Operador",
           "home_base": "Base de origen",
           "pets": "Mascotas permitidas"
-        }
+        },
+        "takeOut": "Sacar de este anuncio",
+        "splitRestored": "Sacado y devuelto al anuncio del que vino.",
+        "splitNew": "Sacado a un anuncio propio."
       }
     },
     "Routes": {

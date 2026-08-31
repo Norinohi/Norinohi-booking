@@ -75,3 +75,19 @@ export function useSetListingFieldSource() {
     }),
   );
 }
+
+/**
+ * Takes one provider's offer back out of a merged listing.
+ *
+ * Invalidates the whole listing segment: the offer leaves with its calendar and rates, so both
+ * the listing it left and the one it lands on change in the table behind the dialog.
+ */
+export function useSplitListingOffer() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.match.split.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listing.key() }),
+    }),
+  );
+}

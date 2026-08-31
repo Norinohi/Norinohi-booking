@@ -2120,7 +2120,9 @@
         "berths": "Berths",
         "heads": "Heads",
         "builder": "Builder",
-        "operator": "Operator"
+        "operator": "Operator",
+        "model": "Model",
+        "year": "Year built"
       },
       "toast": {
         "confirmed": "Merged. {count} provider sources now point at the kept listing.",
@@ -2443,7 +2445,10 @@
           "operator": "Operator",
           "home_base": "Home base",
           "pets": "Pets allowed"
-        }
+        },
+        "takeOut": "Take out of this listing",
+        "splitRestored": "Taken out and returned to the listing it came from.",
+        "splitNew": "Taken out onto a listing of its own."
       }
     },
     "Routes": {

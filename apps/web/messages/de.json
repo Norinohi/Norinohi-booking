@@ -2120,7 +2120,9 @@
         "berths": "Kojen",
         "heads": "Nasszellen",
         "builder": "Werft",
-        "operator": "Betreiber"
+        "operator": "Betreiber",
+        "model": "Modell",
+        "year": "Baujahr"
       },
       "toast": {
         "confirmed": "Zusammengeführt. {count} Anbieterquellen verweisen jetzt auf das behaltene Inserat.",
@@ -2443,7 +2445,10 @@
           "operator": "Betreiber",
           "home_base": "Heimatbasis",
           "pets": "Haustiere erlaubt"
-        }
+        },
+        "takeOut": "Aus diesem Inserat herauslösen",
+        "splitRestored": "Herausgelöst und in sein ursprüngliches Inserat zurückgeführt.",
+        "splitNew": "In ein eigenes Inserat herausgelöst."
       }
     },
     "Routes": {

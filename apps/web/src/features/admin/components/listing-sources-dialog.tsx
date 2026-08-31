@@ -14,7 +14,11 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import { useListingFieldSources, useSetListingFieldSource } from "../hooks/use-listings";
+import {
+  useListingFieldSources,
+  useSetListingFieldSource,
+  useSplitListingOffer,
+} from "../hooks/use-listings";
 import type { ListingFieldGroup, ListingOfferSummary } from "../types";
 
 /*
@@ -68,16 +72,17 @@ export default function ListingSourcesDialog({
         </DialogHeader>
 
         {/* Mounted only while open, so the offers are fetched on the click and not before. */}
-        {open ? <SourcesBody listingId={listingId} /> : null}
+        {open ? <SourcesBody listingId={listingId} onSplit={() => onOpenChange(false)} /> : null}
       </DialogContent>
     </Dialog>
   );
 }
 
-function SourcesBody({ listingId }: { listingId: string }) {
+function SourcesBody({ listingId, onSplit }: { listingId: string; onSplit: () => void }) {
   const t = useTranslations("Admin.Listings.sources");
   const { data, isPending, isError } = useListingFieldSources(listingId);
   const setSource = useSetListingFieldSource();
+  const splitOffer = useSplitListingOffer();
 
   if (isPending) return <Skeleton className="h-64 w-full" />;
   if (isError || !data) return <p className="text-sm text-danger-600">{t("error")}</p>;
@@ -92,11 +97,34 @@ function SourcesBody({ listingId }: { listingId: string }) {
     );
   };
 
+  /*
+   * Undoing the merge, which belongs here rather than in the review queue: the queue decides
+   * pairs, and by this point the pair is one listing with two vendors on it. Only offered while
+   * more than one is left, because taking the last one out would leave the listing empty.
+   */
+  const takeOut = (listingOfferId: string) => {
+    splitOffer.mutate(
+      { listingOfferId },
+      {
+        onSuccess: (result) => {
+          toast.success(result.restoredOrigin ? t("splitRestored") : t("splitNew"));
+          onSplit();
+        },
+        onError: (error: Error) => toast.error(error.message),
+      },
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
         {data.offers.map((offer) => (
-          <OfferCard key={offer.id} offer={offer} />
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            onTakeOut={data.offers.length > 1 ? () => takeOut(offer.id) : undefined}
+            busy={splitOffer.isPending}
+          />
         ))}
       </div>
 
@@ -165,7 +193,15 @@ function SourcesBody({ listingId }: { listingId: string }) {
 }
 
 /** Enough of each vendor's own reading of the boat to choose between them here. */
-function OfferCard({ offer }: { offer: ListingOfferSummary }) {
+function OfferCard({
+  offer,
+  onTakeOut,
+  busy,
+}: {
+  offer: ListingOfferSummary;
+  onTakeOut?: () => void;
+  busy?: boolean;
+}) {
   const t = useTranslations("Admin.Listings.sources");
   const dash = "—";
 
@@ -198,6 +234,11 @@ function OfferCard({ offer }: { offer: ListingOfferSummary }) {
           </div>
         ))}
       </dl>
+      {onTakeOut ? (
+        <Button variant="neutral" size="sm" disabled={busy} onClick={onTakeOut}>
+          {t("takeOut")}
+        </Button>
+      ) : null}
     </div>
   );
 }
