@@ -12,6 +12,22 @@ import { listing } from "../schema/listing";
  */
 const MEDIA_SOURCE_RANK = sql`case lm.source when 'booking_manager' then 0 when 'nausys' then 1 else 2 end`;
 
+/**
+ * An admin's pinned choice, ahead of the rule.
+ *
+ * `listing_field_source` is where the resolver records which offer supplies each group, and a
+ * `locked` row is a person overruling it. Media is resolved here rather than by the resolver —
+ * the rank below is the whole decision — so without this the override was recorded, shown as
+ * pinned, and changed nothing at all.
+ */
+const PINNED_OFFER = (field: string) => sql`(
+  select f.listing_offer_id
+  from listing_field_source f
+  where f.listing_id = l.id and f.field = ${sql.raw(`'${field}'`)} and f.locked
+)`;
+
+const PINNED_MEDIA_FIRST = sql`case when lm.listing_offer_id = ${PINNED_OFFER("media")} then 0 else 1 end`;
+
 const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 1 else 2 end`;
 
 export type RebuildListingSearchDocsOptions = {
@@ -504,11 +520,13 @@ export async function rebuildListingSearchDocs(
           select lm.external_url
           from listing_media lm
           where lm.listing_id = l.id
-          order by ${MEDIA_SOURCE_RANK}, ${MEDIA_ROLE_RANK}, lm.sort_order
+          order by ${PINNED_MEDIA_FIRST}, ${MEDIA_SOURCE_RANK}, ${MEDIA_ROLE_RANK}, lm.sort_order
           limit 1
         ) as main_image,
         (
-          select jsonb_agg(lm.external_url order by ${MEDIA_SOURCE_RANK}, lm.sort_order)
+          select jsonb_agg(
+            lm.external_url order by ${PINNED_MEDIA_FIRST}, ${MEDIA_SOURCE_RANK}, lm.sort_order
+          )
           from listing_media lm
           where lm.listing_id = l.id
         ) as gallery
@@ -529,6 +547,8 @@ export async function rebuildListingSearchDocs(
       select lt.value as description
       from listing_text lt
       where lt.listing_id = l.id and lt.kind = 'description' and lt.locale = 'en'
+      /* Same as the media above: a pinned vendor's prose wins, otherwise whichever is there. */
+      order by case when lt.listing_offer_id = ${PINNED_OFFER("description")} then 0 else 1 end
       limit 1
     ) txt on true
     left join lateral (

@@ -55,6 +55,12 @@ export type ListingStatus = ListingAdminRow["status"];
  */
 export type MovableStatus = Parameters<AdminClient["listing"]["setStatus"]>[0]["status"];
 
+/* Which vendor supplies each part of a merged listing, inferred from the contract. */
+export type ListingFieldSources = Awaited<ReturnType<AdminClient["listing"]["fieldSources"]>>;
+export type ListingOfferSummary = ListingFieldSources["offers"][number];
+export type ListingFieldDecision = ListingFieldSources["decisions"][number];
+export type ListingFieldGroup = ListingFieldDecision["field"];
+
 export type SyncRunList = Awaited<ReturnType<AdminClient["provider"]["syncRuns"]>>;
 export type SyncRunRow = SyncRunList["items"][number];
 export type SyncRunKind = SyncRunRow["kind"];

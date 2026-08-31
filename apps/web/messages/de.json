@@ -2372,7 +2372,8 @@
       "actions": {
         "publish": "Veröffentlichen",
         "unpublish": "Ausblenden",
-        "draft": "Zurück zum Entwurf"
+        "draft": "Zurück zum Entwurf",
+        "sources": "Quellen"
       },
       "moved": "{title} ist jetzt {status}.",
       "noProvider": "Kein Anbieter",
@@ -2394,7 +2395,34 @@
         "published": "{count, plural, =0 {Keine Entwürfe mehr für {provider} zu veröffentlichen.} one {# Entwurf für {provider} veröffentlicht.} other {# Entwürfe für {provider} veröffentlicht.}}",
         "failed": "Die Entwürfe konnten nicht veröffentlicht werden"
       },
-      "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt."
+      "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt.",
+      "sources": {
+        "subtitle": "Von welchem Anbieter jeder Teil dieses Inserats stammt. Eine fixierte Gruppe lässt die nächtliche Synchronisation unangetastet.",
+        "error": "Anbieter dieses Inserats konnten nicht geladen werden",
+        "field": "Teil des Inserats",
+        "takenFrom": "Übernommen von",
+        "locked": "Fixiert",
+        "automatic": "Automatisch",
+        "release": "Freigeben",
+        "pinned": "Auf diesen Anbieter fixiert. Die Synchronisation ändert das nicht.",
+        "released": "Wieder automatisch. Die Synchronisation entscheidet erneut.",
+        "model": "Modell",
+        "year": "Baujahr",
+        "base": "Basis",
+        "operator": "Betreiber",
+        "photos": "Fotos",
+        "descriptions": "Beschreibungen",
+        "fields": {
+          "media": "Fotos",
+          "title": "Name",
+          "spec": "Technische Daten",
+          "description": "Beschreibung",
+          "taxonomy": "Werft, Modell, Typ",
+          "operator": "Betreiber",
+          "home_base": "Heimatbasis",
+          "pets": "Haustiere erlaubt"
+        }
+      }
     },
     "Routes": {
       "title": "Routenvorschläge",

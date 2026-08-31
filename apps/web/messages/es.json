@@ -2372,7 +2372,8 @@
       "actions": {
         "publish": "Publicar",
         "unpublish": "Ocultar",
-        "draft": "Volver a borrador"
+        "draft": "Volver a borrador",
+        "sources": "Fuentes"
       },
       "moved": "{title} ahora está en estado {status}.",
       "noProvider": "Sin proveedor",
@@ -2394,7 +2395,34 @@
         "published": "{count, plural, =0 {No quedan borradores por publicar de {provider}.} one {# borrador publicado de {provider}.} other {# borradores publicados de {provider}.}}",
         "failed": "No se pudieron publicar los borradores"
       },
-      "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío."
+      "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío.",
+      "sources": {
+        "subtitle": "De qué proveedor se toma cada parte de este anuncio. La sincronización nocturna no toca un grupo fijado.",
+        "error": "No se pudieron cargar los proveedores de este anuncio",
+        "field": "Parte del anuncio",
+        "takenFrom": "Tomado de",
+        "locked": "Fijado",
+        "automatic": "Automático",
+        "release": "Liberar",
+        "pinned": "Fijado a ese proveedor. La sincronización no lo cambiará.",
+        "released": "De nuevo automático. La sincronización vuelve a decidir.",
+        "model": "Modelo",
+        "year": "Año",
+        "base": "Base",
+        "operator": "Operador",
+        "photos": "Fotos",
+        "descriptions": "Descripciones",
+        "fields": {
+          "media": "Fotos",
+          "title": "Nombre",
+          "spec": "Especificaciones",
+          "description": "Descripción",
+          "taxonomy": "Astillero, modelo, tipo",
+          "operator": "Operador",
+          "home_base": "Base de origen",
+          "pets": "Mascotas permitidas"
+        }
+      }
     },
     "Routes": {
       "title": "Rutas sugeridas",

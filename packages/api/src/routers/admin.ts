@@ -26,6 +26,9 @@ import {
   duplicateSplitSchema,
   duplicateResolutionSchema,
   listingAdminListInputSchema,
+  listingFieldSourcesInputSchema,
+  listingFieldSourcesSchema,
+  setListingFieldSourceInputSchema,
   listingAdminListSchema,
   listingPriceClearInputSchema,
   listingPriceFiltersSchema,
@@ -128,6 +131,8 @@ import {
 } from "../services/discount-admin";
 import {
   listAdminListings,
+  listListingFieldSources,
+  setListingFieldSource,
   publishListingDrafts,
   setListingStatus,
 } from "../services/listing-admin";
@@ -945,6 +950,42 @@ export const adminRouter = {
       .output(listingSetStatusSchema)
       .handler(({ context, input }) =>
         setListingStatus(context.db, context.session.user.id, input),
+      ),
+    fieldSources: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/fieldSources",
+        operationId: "listListingFieldSources",
+        summary: "Which vendor each part of a merged listing comes from",
+        description:
+          "Every provider offer on this listing, with its own reading of the boat, and which one currently supplies each field group. The resolver picks on its own — a locked override first, then the stated rule for media, then whichever record says more, then the provider preference — and writes its choice back, so this shows the decision rather than re-deriving it. A `locked` row is a person's decision and the nightly resolver leaves it alone; everything else is rewritten on every run. Only interesting on a listing several vendors sell, since a single-offer listing has one candidate per group.",
+        tags: ["Admin"],
+        successDescription: "The offers and the current field decisions.",
+        spec: withJsonBodyExample({ listingId: "ylst_yacht-lagoon-42-aurora" }),
+      })
+      .input(listingFieldSourcesInputSchema)
+      .output(listingFieldSourcesSchema)
+      .handler(({ context, input }) => listListingFieldSources(context.db, input)),
+    setFieldSource: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/setFieldSource",
+        operationId: "setListingFieldSource",
+        summary: "Pin one field group to one provider, or release it",
+        description:
+          "Locks a field group to the named offer, which is the one thing the nightly resolver will not overwrite: this is how staff say the photographs come from Booking Manager whatever the counts say. Passing a null offer releases the group back to the resolver, so it is recomputed on every run again. The listing is composed again and its search document rebuilt straight away, because an override nobody can see the effect of is indistinguishable from one that did not work. Rejects an offer belonging to another listing. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The field decisions after the change.",
+        spec: withJsonBodyExample({
+          listingId: "ylst_yacht-lagoon-42-aurora",
+          field: "media",
+          listingOfferId: "loff_example",
+        }),
+      })
+      .input(setListingFieldSourceInputSchema)
+      .output(listingFieldSourcesSchema)
+      .handler(({ context, input }) =>
+        setListingFieldSource(context.db, context.session.user.id, input),
       ),
     publishDrafts: adminProcedure
       .route({

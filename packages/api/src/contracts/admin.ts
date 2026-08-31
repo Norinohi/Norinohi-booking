@@ -694,7 +694,72 @@ export const listingAdminRowSchema = z.object({
   /** Cheapest available slot. Null until availability has been synced and priced. */
   priceFromMinor: z.number().int().nullable(),
   currency: z.string().nullable(),
+  /** How many vendors sell this hull. Above one, the field sources are worth reviewing. */
+  offerCount: z.number().int(),
   createdAt: z.string(),
+});
+
+/* ------------------------------------------- per-field source overrides */
+
+/** The field groups a listing is composed in, mirroring the `listing_field` enum. */
+export const listingFieldSchema = z.enum([
+  "title",
+  "spec",
+  "taxonomy",
+  "operator",
+  "home_base",
+  "pets",
+  "media",
+  "description",
+]);
+
+/**
+ * One vendor's candidacy for a listing's fields, with enough of its own reading of the boat
+ * for a reviewer to choose between them without opening two tabs.
+ */
+export const listingOfferSummarySchema = z.object({
+  id: z.string(),
+  provider: z.string(),
+  status: z.enum(["active", "suppressed", "retired"]),
+  title: z.string().nullable(),
+  modelName: z.string().nullable(),
+  operatorName: z.string().nullable(),
+  baseName: z.string().nullable(),
+  yearBuilt: z.number().int().nullable(),
+  lengthM: z.number().nullable(),
+  cabins: z.number().int().nullable(),
+  berths: z.number().int().nullable(),
+  /** What the resolver counts as completeness for the media and description groups. */
+  photoCount: z.number().int(),
+  descriptionCount: z.number().int(),
+});
+
+export const listingFieldDecisionSchema = z.object({
+  field: listingFieldSchema,
+  /** Null where nothing has been resolved for this group yet. */
+  listingOfferId: z.string().nullable(),
+  /**
+   * An admin's decision, which the nightly resolver never overwrites. Unlocked rows are the
+   * resolver showing its own work and are rewritten on every run.
+   */
+  locked: z.boolean(),
+  decidedBy: z.string().nullable(),
+  decidedAt: z.string().nullable(),
+});
+
+export const listingFieldSourcesSchema = z.object({
+  listingId: z.string(),
+  offers: z.array(listingOfferSummarySchema),
+  decisions: z.array(listingFieldDecisionSchema),
+});
+
+export const listingFieldSourcesInputSchema = z.object({ listingId: idSchema });
+
+/** Null `listingOfferId` releases the group back to the resolver. */
+export const setListingFieldSourceInputSchema = z.object({
+  listingId: idSchema,
+  field: listingFieldSchema,
+  listingOfferId: idSchema.nullable(),
 });
 
 export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema).extend({

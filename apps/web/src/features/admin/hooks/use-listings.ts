@@ -49,3 +49,29 @@ export function usePublishDrafts() {
     }),
   );
 }
+
+/**
+ * Which vendor each part of a merged listing is taken from.
+ *
+ * Only fetched while the dialog is open: on a single-offer listing there is nothing to choose
+ * between, and that is nearly every listing.
+ */
+export function useListingFieldSources(listingId: string) {
+  return useQuery(orpc.admin.listing.fieldSources.queryOptions({ input: { listingId } }));
+}
+
+/**
+ * Pins a field group to one vendor, or releases it back to the resolver.
+ *
+ * Invalidates the listing segment as well as its own query: pinning the media or the title
+ * changes the row's own photograph and name in the table behind the dialog.
+ */
+export function useSetListingFieldSource() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.listing.setFieldSource.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.listing.key() }),
+    }),
+  );
+}

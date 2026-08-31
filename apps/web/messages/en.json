@@ -2372,7 +2372,8 @@
       "actions": {
         "publish": "Publish",
         "unpublish": "Unpublish",
-        "draft": "Back to draft"
+        "draft": "Back to draft",
+        "sources": "Sources"
       },
       "moved": "{title} is now {status}.",
       "noProvider": "No provider",
@@ -2394,7 +2395,34 @@
         "published": "{count, plural, =0 {No drafts left to publish for {provider}.} one {# draft published for {provider}.} other {# drafts published for {provider}.}}",
         "failed": "Couldn't publish the drafts"
       },
-      "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar."
+      "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar.",
+      "sources": {
+        "subtitle": "Which provider each part of this listing is taken from. A pinned group is left alone by the nightly sync.",
+        "error": "Couldn't load this listing's providers",
+        "field": "Part of the listing",
+        "takenFrom": "Taken from",
+        "locked": "Pinned",
+        "automatic": "Automatic",
+        "release": "Release",
+        "pinned": "Pinned to that provider. The sync will leave it alone.",
+        "released": "Back to automatic. The sync decides it again.",
+        "model": "Model",
+        "year": "Year",
+        "base": "Base",
+        "operator": "Operator",
+        "photos": "Photos",
+        "descriptions": "Descriptions",
+        "fields": {
+          "media": "Photos",
+          "title": "Name",
+          "spec": "Specification",
+          "description": "Description",
+          "taxonomy": "Builder, model, type",
+          "operator": "Operator",
+          "home_base": "Home base",
+          "pets": "Pets allowed"
+        }
+      }
     },
     "Routes": {
       "title": "Suggested routes",
