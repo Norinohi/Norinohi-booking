@@ -50,8 +50,18 @@ export default function ReferralsInvite() {
   const stats: { label: (typeof STAT_KEYS)[number]; value: string | null }[] = [
     { label: "invited", value: summary ? String(summary.invitedCount) : null },
     { label: "completed", value: summary ? String(summary.completedBookingsCount) : null },
-    { label: "earned", value: summary ? formatMoney(summary.totalEarned.amountMinor) : null },
-    { label: "balance", value: summary ? formatMoney(summary.availableBalance.amountMinor) : null },
+    {
+      label: "earned",
+      value: summary
+        ? formatMoney(summary.totalEarned.amountMinor, summary.totalEarned.currency)
+        : null,
+    },
+    {
+      label: "balance",
+      value: summary
+        ? formatMoney(summary.availableBalance.amountMinor, summary.availableBalance.currency)
+        : null,
+    },
   ];
 
   const copyLink = () => {

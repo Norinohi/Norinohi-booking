@@ -125,6 +125,8 @@ export async function prefetchListingDetail(id: string, locale: string) {
       base: listing.base.name,
       country: listing.base.country,
       priceFromMinor: listing.priceFrom?.amountMinor ?? null,
+      /* Carried beside the amount: the catalogue is not priced in one currency. */
+      currency: listing.priceFrom?.currency ?? null,
     },
   };
 }

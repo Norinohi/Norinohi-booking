@@ -296,8 +296,8 @@ function Charter({
               render={<Link href={`/bookings/${bookingId}/pay`} />}
             >
               {booking.status === "CONFIRMED"
-                ? t("payBalance", { amount: money(payable) })
-                : t("completePayment", { amount: money(payable) })}
+                ? t("payBalance", { amount: money(payable, booking.total.currency) })
+                : t("completePayment", { amount: money(payable, booking.total.currency) })}
             </Button>
           ) : null}
 
@@ -387,7 +387,7 @@ function Payments({ booking }: { booking: BookingDetail }) {
                   {row.disputedAt ? ` · ${t("disputed")}` : ""}
                 </span>
               }
-              value={money(row.amount.amountMinor)}
+              value={money(row.amount.amountMinor, row.amount.currency)}
             />
           ))}
         </dl>
@@ -428,18 +428,27 @@ function PriceAside({ booking }: { booking: BookingDetail }) {
                 <span className="text-sm text-natural-500">{t("atMarina")}</span>
               ) : undefined
             }
-            value={money(line.amount.amountMinor)}
+            value={money(line.amount.amountMinor, line.amount.currency)}
           />
         ))}
-        <Row label={t("total")} value={money(booking.total.amountMinor)} emphasis />
+        <Row
+          label={t("total")}
+          value={money(booking.total.amountMinor, booking.total.currency)}
+          emphasis
+        />
       </dl>
 
       <dl className="flex w-full flex-col">
-        <Row label={t("paid")} value={money(booking.paidTotal.amountMinor)} />
-        {atCheckIn > 0 ? <Row label={t("dueAtCheckIn")} value={money(atCheckIn)} /> : null}
+        <Row
+          label={t("paid")}
+          value={money(booking.paidTotal.amountMinor, booking.paidTotal.currency)}
+        />
+        {atCheckIn > 0 ? (
+          <Row label={t("dueAtCheckIn")} value={money(atCheckIn, booking.total.currency)} />
+        ) : null}
         <Row
           label={outstanding > 0 ? t("outstanding") : t("settled")}
-          value={money(outstanding)}
+          value={money(outstanding, booking.total.currency)}
           emphasis
         />
       </dl>

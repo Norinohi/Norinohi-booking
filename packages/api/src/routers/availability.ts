@@ -52,7 +52,6 @@ export const availabilityRouter = {
         listingId: "ylst_yacht-sunreef-60-celeste",
         from: "2026-07-01",
         to: "2026-09-30",
-        currency: "EUR",
       }),
     })
     .input(availabilityCalendarInputSchema)
@@ -72,7 +71,6 @@ export const availabilityRouter = {
         listingId: "ylst_yacht-sunreef-60-celeste",
         from: "2026-07-01",
         to: "2026-09-30",
-        currency: "EUR",
       }),
     })
     .input(availabilityCalendarInputSchema)

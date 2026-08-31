@@ -366,7 +366,6 @@ export type AvailabilityCalendarInput = {
   listingId: string;
   from: string;
   to: string;
-  currency?: string;
 };
 
 export type AvailabilityCalendarSlot = {

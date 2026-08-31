@@ -86,7 +86,7 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (row: ListingPri
   ];
 
   const price = (money: ListingPriceRow["basePrice"]) =>
-    money ? formatMoney(money.amountMinor) : "—";
+    money ? formatMoney(money.amountMinor, money.currency) : "—";
 
   const messageRow = (message: string) => (
     <TableRow>

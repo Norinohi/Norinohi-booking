@@ -324,7 +324,7 @@ export default function BookingConfirmationScreen() {
       ? [
           {
             label: t("summary.boatPrice"),
-            value: money(base.amount.amountMinor),
+            value: money(base.amount.amountMinor, base.amount.currency),
             emphasis: "bold" as const,
           },
         ]
@@ -333,7 +333,7 @@ export default function BookingConfirmationScreen() {
       ? [
           {
             label: t("summary.deposit"),
-            value: money(security.amount.amountMinor),
+            value: money(security.amount.amountMinor, security.amount.currency),
             emphasis: "bold" as const,
           },
         ]
@@ -348,20 +348,27 @@ export default function BookingConfirmationScreen() {
             label: balanceDate
               ? t("summary.secondPayment", { date: day(balanceDate) })
               : t("summary.secondPaymentAtCheckIn"),
-            value: money(balanceMinor),
+            value: money(balanceMinor, booking.total.currency),
             emphasis: "bold" as const,
           },
         ]
       : []),
     {
       label: t("summary.totalPrice"),
-      value: money(booking.total.amountMinor),
+      value: money(booking.total.amountMinor, booking.total.currency),
       note: t("summary.perPerson", {
-        price: money(Math.round(booking.total.amountMinor / booking.guests)),
+        price: money(
+          Math.round(booking.total.amountMinor / booking.guests),
+          booking.total.currency,
+        ),
       }),
       emphasis: "strong",
     },
-    { label: t("summary.dueNow"), value: money(dueNowMinor), emphasis: "strong" },
+    {
+      label: t("summary.dueNow"),
+      value: money(dueNowMinor, booking.total.currency),
+      emphasis: "strong",
+    },
   ];
 
   async function downloadReceipt() {
@@ -435,7 +442,7 @@ export default function BookingConfirmationScreen() {
                     /* The invoiced figure, frozen when the request was raised, rather than what
                        the quote would charge today. That document is what the customer is
                        paying against. */
-                    amount: money(invoice.amount.amountMinor),
+                    amount: money(invoice.amount.amountMinor, invoice.amount.currency),
                     date: day(invoice.dueAt),
                   })}
                 </p>
@@ -445,10 +452,18 @@ export default function BookingConfirmationScreen() {
                   <p className="text-base leading-[1.4] text-foreground opacity-80">
                     {balanceDate
                       ? t("remainingBy", {
-                          amount: money(booking.balanceDue.amountMinor),
+                          amount: money(
+                            booking.balanceDue.amountMinor,
+                            booking.balanceDue.currency,
+                          ),
                           date: day(balanceDate),
                         })
-                      : t("remaining", { amount: money(booking.balanceDue.amountMinor) })}
+                      : t("remaining", {
+                          amount: money(
+                            booking.balanceDue.amountMinor,
+                            booking.balanceDue.currency,
+                          ),
+                        })}
                   </p>
                 )
               )}

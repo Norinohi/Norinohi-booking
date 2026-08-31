@@ -168,7 +168,11 @@ export default function PriceDialog({
                       placeholder. */}
                   <TextField
                     label={t("prices.dialog.basePrice")}
-                    value={row.basePrice ? formatMoney(row.basePrice.amountMinor) : "—"}
+                    value={
+                      row.basePrice
+                        ? formatMoney(row.basePrice.amountMinor, row.basePrice.currency)
+                        : "—"
+                    }
                     readOnly
                     tabIndex={-1}
                     containerClassName="opacity-50"

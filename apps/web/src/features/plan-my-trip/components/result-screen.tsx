@@ -62,8 +62,8 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const { min, max } = recommendation.estimatedPrice;
   const price =
     min.amountMinor === max.amountMinor
-      ? formatMoney(min.amountMinor)
-      : `${formatMoney(min.amountMinor)}–${formatMoney(max.amountMinor)}`;
+      ? formatMoney(min.amountMinor, min.currency)
+      : `${formatMoney(min.amountMinor, min.currency)}–${formatMoney(max.amountMinor, max.currency)}`;
 
   const stats = [
     { label: t("labels.yachtType"), value: recommendation.yachtType },

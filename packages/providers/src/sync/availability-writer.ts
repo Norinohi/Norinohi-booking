@@ -1174,8 +1174,8 @@ export function createDrizzleAvailabilitySyncStore(
 
       /*
        * Who could have been offered this period: our listings for this provider, inside the
-       * scope the sweep actually covered, carrying a rate for exactly this period and with
-       * nothing sold across it. Anything else is already unbookable for a reason we hold, and
+       * scope the sweep actually covered, carrying a rate across this period and with
+       * nothing sold over it. Anything else is already unbookable for a reason we hold, and
        * recording a refusal for it would say the vendor declined something nobody asked about.
        */
       const eligible = await db.execute<{
@@ -1196,12 +1196,27 @@ export function createDrizzleAvailabilitySyncStore(
            * Both tests are this offer's own. Read across the listing, one vendor's rate made
            * the other vendor eligible and one vendor's occupancy suppressed the other's
            * refusal, so the record said things neither provider had.
+           *
+           * The rate test is containment, not equality: it has to cover the whole swept
+           * charter -- that is what makes the vendor's silence a refusal rather than an
+           * unpriced week -- but it does not have to be cut to the same dates.
+           *
+           * Equality read the rate list as a calendar of weeks, and only a vendor that
+           * publishes one is legible to it. A season band -- 11 Aug to 19 Dec as a single row,
+           * which is how most of the Caribbean fleet is priced -- equals no week the sweep ever
+           * asks about, so those offers were never eligible and never got a refusal: 6,180 of
+           * 18,059 active offers, holding zero refusals between them, and 5,959 listings
+           * advertising dates off a projection nothing was allowed to correct.
+           *
+           * Still one row rather than a union of adjacent ones, so a charter straddling two
+           * bands stays out. That is the safe direction and the pre-existing one: not eligible
+           * means no refusal recorded, which is the state this whole clause defaults to.
            */
           and exists (
             select 1 from listing_price_period p
             where p.listing_offer_id = o.id
-              and p.start_date = ${startDate}
-              and p.end_date = ${endDate}
+              and p.start_date <= ${startDate}
+              and p.end_date >= ${endDate}
           )
           and not exists (
             select 1 from availability_slot s

@@ -168,7 +168,6 @@ export function BookingProvider({
       listingId,
       from: calWindow.from,
       to: calWindow.to,
-      currency: "EUR",
     }),
     enabled: Boolean(listingId),
   });
@@ -296,10 +295,21 @@ export function BookingProvider({
     if (!period) return;
     if (combinedRangeStatus(period.checkIn, period.checkOut, offers).verdict !== "bookable") return;
     seededRef.current = true;
-    selectPeriod(period);
+    pricePeriod(period, { report: false });
   });
 
   function selectPeriod(period: CharterPeriod) {
+    pricePeriod(period, { report: true });
+  }
+
+  /*
+   * `report` is what separates the visitor's own click from the period this page opened itself
+   * on. Both record the refusal, because the vendor turning a period down is the same fact
+   * either way and the calendar has to retire it. Only the click says so out loud: the seeded
+   * period is a guess made from the read model, and answering an arrival with "those dates are
+   * not bookable" blames the visitor for dates they never picked.
+   */
+  function pricePeriod(period: CharterPeriod, { report }: { report: boolean }) {
     /* The verdict names the offer that would sell it, which is the one a refusal belongs to. */
     const verdict = combinedRangeStatus(period.checkIn, period.checkOut, offers);
     if (verdict.verdict !== "bookable") return;
@@ -314,7 +324,7 @@ export function BookingProvider({
             { offerId: refusedBy, startDate: period.checkIn, endDate: period.checkOut },
           ]);
         }
-        setSlotError(true);
+        if (report) setSlotError(true);
       },
     );
   }

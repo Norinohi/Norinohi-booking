@@ -73,27 +73,41 @@ export default function ReviewAndBookStep() {
         { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
         { label: t("people"), value: String(quote.guests) },
         { label: t("extras"), value: optionalNames || t("noExtras") },
-        { label: t("boatPrice"), value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0) },
+        {
+          label: t("boatPrice"),
+          value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency),
+        },
         ...(quote.securityDeposit
-          ? [{ label: t("deposit"), value: money(quote.securityDeposit.amountMinor) }]
+          ? [
+              {
+                label: t("deposit"),
+                value: money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency),
+              },
+            ]
           : []),
         ...(balance
           ? [
               {
                 label: t("secondPayment", { date: balance.dueAt ? day(balance.dueAt) : "" }),
-                value: money(balance.amount.amountMinor),
+                value: money(balance.amount.amountMinor, balance.amount.currency),
               },
             ]
           : []),
         {
           label: t("totalPrice"),
-          value: money(quote.total.amountMinor),
+          value: money(quote.total.amountMinor, quote.total.currency),
           note: quote.perPerson
-            ? tCard("perPersonApprox", { price: money(quote.perPerson.amountMinor) })
+            ? tCard("perPersonApprox", {
+                price: money(quote.perPerson.amountMinor, quote.perPerson.currency),
+              })
             : undefined,
           strong: true,
         },
-        { label: t("dueNow"), value: money(quote.deposit.amountMinor), strong: true },
+        {
+          label: t("dueNow"),
+          value: money(quote.deposit.amountMinor, quote.deposit.currency),
+          strong: true,
+        },
       ]
     : [];
 

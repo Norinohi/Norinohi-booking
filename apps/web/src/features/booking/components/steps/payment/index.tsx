@@ -126,7 +126,7 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
   };
 
   /* Due-now, straight from the quote — the same figure `checkout.confirm` would charge. */
-  const amount = quote ? money(quote.deposit.amountMinor) : "";
+  const amount = quote ? money(quote.deposit.amountMinor, quote.deposit.currency) : "";
   const pending = requestInvoice.isPending || askQuestion.isPending;
 
   const cta = {

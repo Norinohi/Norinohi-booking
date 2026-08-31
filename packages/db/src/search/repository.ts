@@ -721,7 +721,6 @@ export async function listAvailabilityCalendar(
     where slot.listing_id = ${input.listingId}
       and slot.start_date >= ${input.from}
       and slot.end_date <= ${input.to}
-      and (slot.currency is null or slot.currency = ${input.currency ?? "EUR"})
       /*
        * Only the offers. A row the provider already marks taken is reported as it stands,
        * but one it still offers and we have since sold is not something to list back.
@@ -853,8 +852,14 @@ export async function listAvailabilityConstraints(
         on o.id = price.listing_offer_id
        and o.listing_id = ${input.listingId}
        and o.status = 'active'
+      /*
+       * Every currency the offer publishes in, not just the caller's. This list opens a season;
+       * it does not price one, and a Bahamas fleet quoting in USD has a season all the same.
+       * Filtering it by the caller's currency returned nothing for those offers, which read as
+       * season-closed on every day and greyed out a calendar the search card was still
+       * advertising dates from -- 190 listings with a live charter and a dead date picker.
+       */
       where price.kind = 'weekly'
-        and price.currency = ${input.currency ?? "EUR"}
         and price.start_date < ${input.to}
         and price.end_date > ${input.from}
       order by price.start_date asc

@@ -457,12 +457,17 @@ export const suggestionSchema = z.object({
   kind: z.enum(["country", "region", "location", "base"]),
 });
 
+/*
+ * No currency. Both endpoints answer with whatever the offer publishes in: the calendar's slots
+ * carry their own, and the constraint set's rate list is read as a season signal rather than a
+ * price. Narrowing either to one currency emptied them for an offer that quotes in another, and
+ * an empty rate list reads as season-closed on every day of the window.
+ */
 export const availabilityCalendarInputSchema = z
   .object({
     listingId: z.string(),
     from: dateStringSchema,
     to: dateStringSchema,
-    currency: currencySchema.default("EUR"),
   })
   .superRefine((input, context) => {
     if (input.from >= input.to) {

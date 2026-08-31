@@ -150,11 +150,14 @@ function PromoField({
   applied,
   rejected,
   pending,
+  currency,
   onApply,
 }: {
   applied: NonNullable<Quote>["discount"];
   rejected: NonNullable<Quote>["discountRejected"];
   pending: boolean;
+  /* The discount is a share of the quote and carries no currency of its own. */
+  currency: string;
   onApply: (code: string | null) => void;
 }) {
   const t = useTranslations("YachtDetail.sidebar.promo");
@@ -167,7 +170,7 @@ function PromoField({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="truncate text-base leading-5.5 font-bold text-foreground">{applied.code}</p>
           <p className="text-sm leading-4.5 font-medium text-positive-600">
-            {t("applied", { amount: money(applied.amountMinor) })}
+            {t("applied", { amount: money(applied.amountMinor, currency) })}
           </p>
         </div>
         <Button variant="subtle" size="sm" loading={pending} onClick={() => onApply(null)}>
@@ -252,7 +255,9 @@ function CreditField({
             applied ? "text-positive-600" : "text-natural-500",
           )}
         >
-          {t(applied ? "applied" : "available", { amount: money(offer.amountMinor) })}
+          {t(applied ? "applied" : "available", {
+            amount: money(offer.amountMinor, offer.currency),
+          })}
         </p>
       </div>
       <Button
@@ -304,7 +309,7 @@ function DiscountRows({ lines }: { lines: QuoteLine[] }) {
         <div key={line.code} className="flex items-start gap-2">
           <p className="min-w-0 flex-1 text-base leading-5.5 text-foreground">{labelOf(line)}</p>
           <p className="shrink-0 text-base leading-5.5 font-bold text-positive-600">
-            {money(line.amount.amountMinor)}
+            {money(line.amount.amountMinor, line.amount.currency)}
           </p>
         </div>
       ))}
@@ -351,7 +356,7 @@ function PriceGroup({
                     ) : null}
                   </div>
                   <p className="shrink-0 text-base leading-5.5 font-bold text-foreground">
-                    {money(line.amount.amountMinor)}
+                    {money(line.amount.amountMinor, line.amount.currency)}
                   </p>
                 </div>
               </div>
@@ -394,7 +399,7 @@ function PaymentSchedule({ entries }: { entries: Quote["paymentSchedule"] }) {
             </Chip>
             <p className="text-base leading-5.5 font-bold text-foreground">
               {t(`sidebar.${SCHEDULE_AMOUNT_KEY[entry.kind]}`, {
-                amount: money(entry.amount.amountMinor),
+                amount: money(entry.amount.amountMinor, entry.amount.currency),
               })}
             </p>
           </li>
@@ -660,7 +665,7 @@ export default function BookingSummary({
                   <Skeleton className="h-8 w-24" />
                 ) : (
                   <p className="text-2xl leading-8 font-semibold text-foreground">
-                    {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0)}
+                    {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency)}
                   </p>
                 )}
                 <p className="text-xs leading-4 font-medium text-natural-500">
@@ -676,7 +681,7 @@ export default function BookingSummary({
                       <Skeleton className="h-8 w-24 justify-self-end" />
                     ) : (
                       <p className="text-right text-2xl leading-8 font-semibold text-foreground">
-                        {money(quote.securityDeposit.amountMinor)}
+                        {money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency)}
                       </p>
                     )}
                     <Tooltip>
@@ -735,6 +740,7 @@ export default function BookingSummary({
                   applied={quote.discount}
                   rejected={quote.discountRejected}
                   pending={repricing}
+                  currency={quote.total.currency}
                   onApply={onApplyPromo}
                 />
               </>
@@ -774,12 +780,14 @@ export default function BookingSummary({
                 <Skeleton className="h-9 w-32" />
               ) : (
                 <p className="text-[32px] leading-9 font-bold text-foreground">
-                  {money(quote.total.amountMinor)}
+                  {money(quote.total.amountMinor, quote.total.currency)}
                 </p>
               )}
               {quote.perPerson ? (
                 <p className="text-sm leading-4.5 font-medium text-natural-500">
-                  {tCard("perPersonApprox", { price: money(quote.perPerson.amountMinor) })}
+                  {tCard("perPersonApprox", {
+                    price: money(quote.perPerson.amountMinor, quote.perPerson.currency),
+                  })}
                 </p>
               ) : null}
             </div>
@@ -795,7 +803,7 @@ export default function BookingSummary({
                   <Skeleton className="h-14 w-40" />
                 ) : (
                   <p className="text-[42px] leading-14 font-bold text-foreground">
-                    {money(quote.deposit.amountMinor)}
+                    {money(quote.deposit.amountMinor, quote.deposit.currency)}
                   </p>
                 )}
               </div>
@@ -808,7 +816,9 @@ export default function BookingSummary({
                     nativeButton={payNowReady ? false : undefined}
                     render={payNowReady ? <Link href={payNowHref} /> : undefined}
                   >
-                    {t("sidebar.payNowCta", { amount: money(quote.deposit.amountMinor) })}
+                    {t("sidebar.payNowCta", {
+                      amount: money(quote.deposit.amountMinor, quote.deposit.currency),
+                    })}
                   </Button>
                   <Button variant="neutral" onClick={onRequestQuote}>
                     {t("sidebar.requestQuote")}

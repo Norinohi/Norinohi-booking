@@ -55,8 +55,8 @@ function PopularYachtSlides() {
             }
             rating={listing.rating > 0 ? listing.rating : undefined}
             tags={[{ label: listing.category, icon: <Anchor /> }]}
-            price={boatCardPrice(tCard, listing, (amountMinor) =>
-              money(Math.round(amountMinor / listing.priceDetails.periodDays)),
+            price={boatCardPrice(tCard, listing, (amountMinor, currency) =>
+              money(Math.round(amountMinor / listing.priceDetails.periodDays), currency),
             )}
             priceSuffix={t("perDay")}
             priceLabel={t("from")}

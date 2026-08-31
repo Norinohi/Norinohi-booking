@@ -153,7 +153,9 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
           title={landed ? t("received.title") : t("settling.title")}
           description={
             landed
-              ? t("received.body", { outstanding: money(booking.outstanding.amountMinor) })
+              ? t("received.body", {
+                  outstanding: money(booking.outstanding.amountMinor, booking.outstanding.currency),
+                })
               : t("settling.body")
           }
           action={
@@ -219,12 +221,21 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
           figure `dueAtCheckIn` exists to make explicable on the booking record.
         */}
         <dl className="flex flex-col">
-          <Row label={t("summary.total")} value={money(booking.total.amountMinor)} />
-          <Row label={t("summary.paid")} value={money(booking.paidTotal.amountMinor)} />
+          <Row
+            label={t("summary.total")}
+            value={money(booking.total.amountMinor, booking.total.currency)}
+          />
+          <Row
+            label={t("summary.paid")}
+            value={money(booking.paidTotal.amountMinor, booking.paidTotal.currency)}
+          />
           {booking.dueAtCheckIn.amountMinor > 0 ? (
-            <Row label={t("summary.atCheckIn")} value={money(booking.dueAtCheckIn.amountMinor)} />
+            <Row
+              label={t("summary.atCheckIn")}
+              value={money(booking.dueAtCheckIn.amountMinor, booking.dueAtCheckIn.currency)}
+            />
           ) : null}
-          <Row label={t("summary.due")} value={money(payable)} emphasis />
+          <Row label={t("summary.due")} value={money(payable, booking.total.currency)} emphasis />
         </dl>
 
         {/*
@@ -251,7 +262,11 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
             />
           </TabsPanel>
           <TabsPanel value="invoice">
-            <BalanceInvoice bookingId={bookingId} amountMinor={payable} />
+            <BalanceInvoice
+              bookingId={bookingId}
+              amountMinor={payable}
+              currency={booking.total.currency}
+            />
           </TabsPanel>
         </Tabs>
       </article>
@@ -340,7 +355,7 @@ function BalancePayment({
         <div className="flex flex-col gap-4">
           <ExpressCheckout />
           <PaymentElement options={PAYMENT_ELEMENT_OPTIONS} />
-          <PayButton label={t("pay", { amount: money(amountMinor) })} />
+          <PayButton label={t("pay", { amount: money(amountMinor, currency) })} />
         </div>
       </PaymentTargetProvider>
     </Elements>
@@ -352,7 +367,15 @@ function BalancePayment({
  * with its own form because there is no wizard here to hold one — the server raises the
  * document against `payableNow`, so this asks for exactly the figure beside the button.
  */
-function BalanceInvoice({ bookingId, amountMinor }: { bookingId: string; amountMinor: number }) {
+function BalanceInvoice({
+  bookingId,
+  amountMinor,
+  currency,
+}: {
+  bookingId: string;
+  amountMinor: number;
+  currency: string;
+}) {
   const t = useTranslations("Booking.payment");
   const money = useMoney();
   const router = useRouter();
@@ -410,7 +433,7 @@ function BalanceInvoice({ bookingId, amountMinor }: { bookingId: string; amountM
           className="h-13 w-full"
           loading={form.formState.isSubmitting}
         >
-          {t("invoice.cta", { amount: money(amountMinor) })}
+          {t("invoice.cta", { amount: money(amountMinor, currency) })}
         </Button>
       </form>
     </Form>

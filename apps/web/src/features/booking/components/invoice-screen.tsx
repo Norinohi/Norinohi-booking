@@ -239,7 +239,9 @@ function Lines({ invoice }: { invoice: InvoiceDocument }) {
           <tr key={line.code} className="border-b border-border/60">
             <td className="py-2 text-foreground">{line.label}</td>
             <td className="py-2 text-natural-600">{t(`payWhen.${line.payWhen}`)}</td>
-            <td className="py-2 text-right text-foreground">{money(line.amount.amountMinor)}</td>
+            <td className="py-2 text-right text-foreground">
+              {money(line.amount.amountMinor, line.amount.currency)}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -253,16 +255,29 @@ function Totals({ invoice }: { invoice: InvoiceDocument }) {
 
   return (
     <div className="flex flex-col gap-2 self-end text-sm md:w-80">
-      <TotalRow label={t("totals.charterTotal")} value={money(invoice.total.amountMinor)} />
+      <TotalRow
+        label={t("totals.charterTotal")}
+        value={money(invoice.total.amountMinor, invoice.total.currency)}
+      />
       {invoice.paidTotal.amountMinor > 0 && (
-        <TotalRow label={t("totals.paid")} value={money(invoice.paidTotal.amountMinor)} />
+        <TotalRow
+          label={t("totals.paid")}
+          value={money(invoice.paidTotal.amountMinor, invoice.paidTotal.currency)}
+        />
       )}
-      <TotalRow label={t("totals.dueNow")} value={money(invoice.amountDue.amountMinor)} emphasis />
-      <TotalRow label={t("totals.balance")} value={money(invoice.balanceDue.amountMinor)} />
+      <TotalRow
+        label={t("totals.dueNow")}
+        value={money(invoice.amountDue.amountMinor, invoice.amountDue.currency)}
+        emphasis
+      />
+      <TotalRow
+        label={t("totals.balance")}
+        value={money(invoice.balanceDue.amountMinor, invoice.balanceDue.currency)}
+      />
       {invoice.securityDeposit && (
         <p className="pt-1 text-xs text-natural-500">
           {t("totals.securityDeposit", {
-            amount: money(invoice.securityDeposit.amountMinor),
+            amount: money(invoice.securityDeposit.amountMinor, invoice.securityDeposit.currency),
           })}
         </p>
       )}
@@ -303,7 +318,10 @@ function PaymentInstructions({ invoice }: { invoice: InvoiceDocument }) {
     { label: t("payment.iban"), value: invoice.payment.iban },
     { label: t("payment.bic"), value: invoice.payment.bic },
     { label: t("payment.reference"), value: invoice.payment.reference },
-    { label: t("payment.amount"), value: money(invoice.amountDue.amountMinor) },
+    {
+      label: t("payment.amount"),
+      value: money(invoice.amountDue.amountMinor, invoice.amountDue.currency),
+    },
   ];
 
   return (

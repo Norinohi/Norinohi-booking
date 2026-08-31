@@ -45,7 +45,7 @@ function DestinationSlides() {
               imageAlt={country.label}
               title={country.label}
               subtitle={t("summary", {
-                price: money(country.priceFromMinor ?? 0),
+                price: money(country.priceFromMinor ?? 0, country.currency ?? undefined),
                 count: country.count ?? 0,
               })}
               className="w-full transition-transform duration-200 group-hover:-translate-y-1"

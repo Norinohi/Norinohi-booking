@@ -3,7 +3,7 @@ import type { useTranslations } from "next-intl";
 
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import type { AppPathname } from "@/i18n/navigation";
-import { boatCardIdentity, boatCardPrice } from "@/lib/boat-card-fields";
+import { boatCardIdentity, boatCardPrice, type MoneyFormatter } from "@/lib/boat-card-fields";
 import type { BadgeTranslator } from "@/lib/badge-label";
 import type { CrewTranslator } from "@/lib/crew-label";
 
@@ -30,11 +30,13 @@ export function toBoatCard(
   t: CardTranslator,
   tCrew: CrewTranslator,
   tBadge: BadgeTranslator,
-  formatMoney: (amountMinor: number) => string,
+  formatMoney: MoneyFormatter,
   listing: ResultListing,
   period?: CharterPeriod,
 ): BoatCardProps & { id: string } {
   const unavailable = !listing.availability.hasAvailableDates;
+  /* The currency the provider published in, which the per-person figure is a share of. */
+  const currency = listing.priceFrom?.currency ?? listing.priceDetails.securityDeposit?.currency;
   /* An undated search still sends a period, both ends null; that is no period at all. */
   const searched = period?.checkIn && period.checkOut ? period : null;
 
@@ -64,12 +66,15 @@ export function toBoatCard(
     priceIsLabel: !listing.priceFrom,
     perPerson:
       listing.priceDetails.perPersonMinor != null
-        ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor) })
+        ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor, currency) })
         : "",
     note: listing.priceDetails.securityDeposit
       ? {
           label: t("securityDeposit", {
-            amount: formatMoney(listing.priceDetails.securityDeposit.amountMinor),
+            amount: formatMoney(
+              listing.priceDetails.securityDeposit.amountMinor,
+              listing.priceDetails.securityDeposit.currency,
+            ),
           }),
           tooltip: t("securityDepositInfo"),
         }

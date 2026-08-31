@@ -61,8 +61,8 @@ function ExtraRow({
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
         {offered
-          ? money(offered.amount.amountMinor)
-          : extraPrice(item.price.amountMinor, item.priceMeasure)}
+          ? money(offered.amount.amountMinor, offered.amount.currency)
+          : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
       </span>
     </>
   );
