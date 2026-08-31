@@ -2086,7 +2086,8 @@
         "name+model+year": "Name + model + year",
         "base+model+year": "Base + model + year",
         "model+year": "Model + year only",
-        "model+yearBuilt": "Model + year built"
+        "model+yearBuilt": "Model + year built",
+        "name+base": "Name + berth"
       },
       "signalFields": {
         "name": "Name",

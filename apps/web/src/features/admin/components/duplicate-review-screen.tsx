@@ -40,6 +40,8 @@ const MATCH_TYPES = [
   "name+model+year",
   "base+model+year",
   "model+year",
+  /* The second gate: the boat's own name and a berth, whatever the two vendors call the model. */
+  "name+base",
   "model+yearBuilt",
 ] as const;
 

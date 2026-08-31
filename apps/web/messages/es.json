@@ -2086,7 +2086,8 @@
         "name+model+year": "Nombre + modelo + año",
         "base+model+year": "Base + modelo + año",
         "model+year": "Solo modelo + año",
-        "model+yearBuilt": "Modelo + año de construcción"
+        "model+yearBuilt": "Modelo + año de construcción",
+        "name+base": "Nombre + amarre"
       },
       "signalFields": {
         "name": "Nombre",

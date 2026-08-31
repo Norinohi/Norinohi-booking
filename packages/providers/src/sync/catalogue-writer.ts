@@ -1550,7 +1550,14 @@ type DuplicatePairRow = {
   /** Null when the pair has not been proposed yet, which is what makes it new. */
   candidateId: string | null;
   decision: string | null;
-  modelName: string | null;
+  viaModelYear: boolean;
+  viaNameBase: boolean;
+  modelIdA: string | null;
+  modelIdB: string | null;
+  modelNameA: string | null;
+  modelNameB: string | null;
+  yearA: number | null;
+  yearB: number | null;
   titleA: string;
   titleB: string;
   lengthA: string | null;
@@ -1577,9 +1584,12 @@ type DuplicatePairRow = {
 
 function pairFacts(row: DuplicatePairRow): DuplicatePairFacts {
   return {
-    modelName: row.modelName,
+    gates: { modelYear: row.viaModelYear, nameBase: row.viaNameBase },
     a: {
       title: row.titleA,
+      modelId: row.modelIdA,
+      modelName: row.modelNameA,
+      yearBuilt: row.yearA,
       lengthM: row.lengthA === null ? null : Number(row.lengthA),
       cabins: row.cabinsA,
       berths: row.berthsA,
@@ -1593,6 +1603,9 @@ function pairFacts(row: DuplicatePairRow): DuplicatePairFacts {
     },
     b: {
       title: row.titleB,
+      modelId: row.modelIdB,
+      modelName: row.modelNameB,
+      yearBuilt: row.yearB,
       lengthM: row.lengthB === null ? null : Number(row.lengthB),
       cabins: row.cabinsB,
       berths: row.berthsB,
@@ -1617,59 +1630,131 @@ async function selectDuplicatePairs(
   providerId: string,
   listingIds: string[],
 ): Promise<DuplicatePairRow[]> {
+  const scope = sql.join(
+    listingIds.map((id) => sql`${id}`),
+    sql`, `,
+  );
+
   const rows = await db.execute<DuplicatePairRow>(sql`
+    /*
+     * Two gates, unioned. Both propose a pair of offers from different providers sitting on
+     * different listings; neither merges anything, and a human decides either way.
+     *
+     * Gate one is the original: the same resolved model and the same build year. It needs both
+     * vendors to have spelled the model identically, and they frequently do not — "Bavaria
+     * C46" and "Bavaria C46 - 5 cab." are two taxonomy rows — so a genuine duplicate could
+     * never reach a reviewer at all.
+     *
+     * Gate two goes around the taxonomy entirely: the boat's own name, folded the way
+     * yachtNameKey folds it, plus a berth within a few kilometres. The name is written to
+     * listing_offer at projection time so this is an indexed equality rather than string work
+     * across twenty thousand offers, and the bounding box is only a prefilter — the scorer
+     * applies the real haversine afterwards.
+     */
+    with proposed as (
+      select oa.id as offer_a, ob.id as offer_b, true as via_model_year, false as via_name_base
+      from listing_offer oa
+      join listing_offer_specification spa on spa.listing_offer_id = oa.id
+      join listing_offer ob
+        on ob.model_id = oa.model_id
+       and ob.listing_id <> oa.listing_id
+       and ob.provider_id <> oa.provider_id
+       and ob.status = 'active'
+      join listing_offer_specification spb
+        on spb.listing_offer_id = ob.id and spb.year_built = spa.year_built
+      where oa.listing_id in (${scope})
+        and oa.status = 'active'
+        and oa.model_id is not null
+        and spa.year_built is not null
+
+      union all
+
+      select oa.id, ob.id, false, true
+      from listing_offer oa
+      join listing_offer ob
+        on ob.name_key = oa.name_key
+       and ob.listing_id <> oa.listing_id
+       and ob.provider_id <> oa.provider_id
+       and ob.status = 'active'
+      left join base ba on ba.id = oa.home_base_id
+      left join base bb on bb.id = ob.home_base_id
+      where oa.listing_id in (${scope})
+        and oa.status = 'active'
+        and oa.name_key is not null
+        /* Below this a folded title is initials or a stray year, not a boat's name. */
+        and length(oa.name_key) >= 4
+        and (
+          ob.home_base_id = oa.home_base_id
+          or (abs(bb.lat - ba.lat) <= 0.05 and abs(bb.lng - ba.lng) <= 0.05)
+        )
+    ),
+    gated as (
+      select
+        offer_a,
+        offer_b,
+        bool_or(via_model_year) as via_model_year,
+        bool_or(via_name_base) as via_name_base
+      from proposed
+      group by offer_a, offer_b
+    )
     select
       a.id as "sourceAId",
       b.id as "sourceBId",
       d.id as "candidateId",
       d.decision::text as "decision",
-      m.name as "modelName",
-      la.title as "titleA",
-      lb.title as "titleB",
-      sa.length_m as "lengthA",
-      sb.length_m as "lengthB",
-      sa.cabins as "cabinsA",
-      sb.cabins as "cabinsB",
-      sa.berths as "berthsA",
-      sb.berths as "berthsB",
-      sa.heads as "headsA",
-      sb.heads as "headsB",
-      la.home_base_id as "baseA",
-      lb.home_base_id as "baseB",
+      g.via_model_year as "viaModelYear",
+      g.via_name_base as "viaNameBase",
+      oa.model_id as "modelIdA",
+      ob.model_id as "modelIdB",
+      ma.name as "modelNameA",
+      mb.name as "modelNameB",
+      spa.year_built as "yearA",
+      spb.year_built as "yearB",
+      oa.title as "titleA",
+      ob.title as "titleB",
+      spa.length_m as "lengthA",
+      spb.length_m as "lengthB",
+      spa.cabins as "cabinsA",
+      spb.cabins as "cabinsB",
+      spa.berths as "berthsA",
+      spb.berths as "berthsB",
+      spa.heads as "headsA",
+      spb.heads as "headsB",
+      oa.home_base_id as "baseA",
+      ob.home_base_id as "baseB",
       bsa.location_id as "locationA",
       bsb.location_id as "locationB",
       bsa.lat as "latA",
       bsb.lat as "latB",
       bsa.lng as "lngA",
       bsb.lng as "lngB",
-      la.builder_id as "builderA",
-      lb.builder_id as "builderB",
-      oa.name as "operatorA",
-      ob.name as "operatorB"
-    from listing_source a
+      oa.builder_id as "builderA",
+      ob.builder_id as "builderB",
+      opa.name as "operatorA",
+      opb.name as "operatorB"
+    from gated g
+    join listing_offer oa on oa.id = g.offer_a
+    join listing_offer ob on ob.id = g.offer_b
+    /*
+     * Every fact is read from the offer, never from the listing composed above it. On a
+     * listing that has already been merged those two are the same values on both sides, which
+     * would score every remaining look-alike as a perfect match.
+     */
+    join listing_source a on a.id = oa.listing_source_id
+    join listing_source b on b.id = ob.listing_source_id
     join provider_record pra on pra.id = a.provider_record_id
-    join listing la on la.id = a.listing_id
-    join listing_specification sa on sa.listing_id = la.id
-    join listing lb on lb.model_id = la.model_id and lb.id <> la.id
-    join listing_specification sb on sb.listing_id = lb.id and sb.year_built = sa.year_built
-    join listing_source b on b.listing_id = lb.id
-    join provider_record prb on prb.id = b.provider_record_id
-    left join yacht_model m on m.id = la.model_id
-    left join base bsa on bsa.id = la.home_base_id
-    left join base bsb on bsb.id = lb.home_base_id
-    left join operator oa on oa.id = la.operator_id
-    left join operator ob on ob.id = lb.operator_id
+    left join listing_offer_specification spa on spa.listing_offer_id = oa.id
+    left join listing_offer_specification spb on spb.listing_offer_id = ob.id
+    left join yacht_model ma on ma.id = oa.model_id
+    left join yacht_model mb on mb.id = ob.model_id
+    left join base bsa on bsa.id = oa.home_base_id
+    left join base bsb on bsb.id = ob.home_base_id
+    left join operator opa on opa.id = oa.operator_id
+    left join operator opb on opb.id = ob.operator_id
     left join listing_duplicate_candidate d
       on least(d.source_a_id, d.source_b_id) = least(a.id, b.id)
      and greatest(d.source_a_id, d.source_b_id) = greatest(a.id, b.id)
     where pra.provider_id = ${providerId}
-      and prb.provider_id <> ${providerId}
-      and la.model_id is not null
-      and sa.year_built is not null
-      and la.id in (${sql.join(
-        listingIds.map((id) => sql`${id}`),
-        sql`, `,
-      )})
   `);
 
   return rows.rows;

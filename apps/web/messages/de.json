@@ -2086,7 +2086,8 @@
         "name+model+year": "Name + Modell + Baujahr",
         "base+model+year": "Heimathafen + Modell + Baujahr",
         "model+year": "Nur Modell + Baujahr",
-        "model+yearBuilt": "Modell + Baujahr"
+        "model+yearBuilt": "Modell + Baujahr",
+        "name+base": "Name + Liegeplatz"
       },
       "signalFields": {
         "name": "Name",

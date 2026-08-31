@@ -11,8 +11,16 @@
  * is a queue order, not a probability, and nothing here merges anything by itself.
  */
 
-/** The gate itself: same model, same build year, two different providers. */
-const BASE_WEIGHT = 0.3;
+/**
+ * What passing any gate at all is worth: two different providers, one plausible pairing.
+ *
+ * It used to be 0.3 and to stand for "the model and the year agreed", because that was the
+ * only way in. With a second gate that does not test either, awarding it regardless would have
+ * ranked the two gates identically and given a name-and-berth pair credit for an agreement
+ * nobody had checked. So it drops to 0.18 and the model and the year become ordinary judged
+ * criteria: a pair that passes both gates then outscores one that passes either.
+ */
+const BASE_WEIGHT = 0.18;
 
 const WEIGHTS = {
   name: 0.3,
@@ -23,6 +31,8 @@ const WEIGHTS = {
   cabins: 0.06,
   berths: 0.06,
   heads: 0.04,
+  model: 0.06,
+  year: 0.06,
   builder: 0.02,
   operator: 0.02,
 } as const;
@@ -47,6 +57,14 @@ const MIN_NAME_LENGTH = 3;
 
 export type DuplicateSideFacts = {
   title: string;
+  /**
+   * This provider's own reading, not a shared value. The two vendors spell a model
+   * differently often enough that the taxonomy holds both — "Bavaria C46" and "Bavaria C46 -
+   * 5 cab." are two rows — which is exactly why the second gate does not go through it.
+   */
+  modelId: string | null;
+  modelName: string | null;
+  yearBuilt: number | null;
   lengthM: number | null;
   cabins: number | null;
   berths: number | null;
@@ -61,10 +79,23 @@ export type DuplicateSideFacts = {
 };
 
 export type DuplicatePairFacts = {
-  /** Shared by both sides: the pair is gated on one model id. */
-  modelName: string | null;
+  /** Which gate or gates proposed the pair, which is what the headline is named after. */
+  gates: DuplicateGates;
   a: DuplicateSideFacts;
   b: DuplicateSideFacts;
+};
+
+/**
+ * The two ways a pair can reach the queue.
+ *
+ * `modelYear` is the original: same resolved model id, same build year. `nameBase` is the
+ * boat's own name and a berth within a few kilometres, and it exists because the first gate
+ * needs both vendors to have spelled the model identically — which Booking Manager and NauSYS
+ * frequently do not, so a real duplicate never reached a reviewer at all.
+ */
+export type DuplicateGates = {
+  modelYear: boolean;
+  nameBase: boolean;
 };
 
 /**
@@ -81,7 +112,7 @@ export type DuplicateSignals = {
   name: string | null;
 };
 
-export type DuplicateMatchKind = "name+model+year" | "base+model+year" | "model+year";
+export type DuplicateMatchKind = "name+model+year" | "base+model+year" | "model+year" | "name+base";
 
 export type DuplicateScore = {
   /** 0-1, rounded to the four decimals the column stores. */
@@ -103,8 +134,9 @@ export function yachtNameKey(title: string, modelName: string | null): string | 
 }
 
 export function scoreDuplicatePair(facts: DuplicatePairFacts): DuplicateScore {
-  const nameA = yachtNameKey(facts.a.title, facts.modelName);
-  const nameB = yachtNameKey(facts.b.title, facts.modelName);
+  /* Each side's own model name, because the two vendors rarely write it the same way. */
+  const nameA = yachtNameKey(facts.a.title, facts.a.modelName);
+  const nameB = yachtNameKey(facts.b.title, facts.b.modelName);
 
   const agreed: DuplicateCriterion[] = [];
   const differed: DuplicateCriterion[] = [];
@@ -123,6 +155,8 @@ export function scoreDuplicatePair(facts: DuplicatePairFacts): DuplicateScore {
   /* Only worth saying when the berths themselves disagree; otherwise it is the same fact twice. */
   if (sameBase !== true) judge("area", sameArea(facts, distanceKm));
 
+  judge("model", compare(facts.a.modelId, facts.b.modelId));
+  judge("year", compare(facts.a.yearBuilt, facts.b.yearBuilt));
   judge("length", within(facts.a.lengthM, facts.b.lengthM, LENGTH_TOLERANCE_M));
   judge("cabins", compare(facts.a.cabins, facts.b.cabins));
   judge("berths", compare(facts.a.berths, facts.b.berths));
@@ -139,7 +173,7 @@ export function scoreDuplicatePair(facts: DuplicatePairFacts): DuplicateScore {
   return {
     confidence,
     signals: {
-      matchedOn: matchKind(nameMatch === true, sameBase === true),
+      matchedOn: matchKind(facts.gates, nameMatch === true, sameBase === true),
       score: confidence,
       agreed,
       differed,
@@ -161,6 +195,9 @@ export function scoreDuplicatePair(facts: DuplicatePairFacts): DuplicateScore {
  * worth setting when the rest of the record is thin, and that is the one signal never
  * worth discarding. Silence is not disagreement either: a title that is nothing but
  * the model leaves the name unreadable, and those pairs stay.
+ *
+ * A `name+base` pair is always kept: it reached the queue by agreeing on the boat's own name
+ * and its berth, which is stronger evidence than the model gate ever was on its own.
  */
 export function worthReviewing(signals: DuplicateSignals): boolean {
   return !(signals.matchedOn === "model+year" && signals.differed.includes("name"));
@@ -169,8 +206,17 @@ export function worthReviewing(signals: DuplicateSignals): boolean {
 /**
  * The headline the review queue filters on: what the pair was actually matched by,
  * as against the gate it merely passed.
+ *
+ * A pair the model gate never admitted is named after the gate that did, because "model+year"
+ * would be a claim about an agreement nobody tested — the two sides may well carry different
+ * model rows, which is the whole reason the second gate exists.
  */
-function matchKind(nameMatch: boolean, sameBase: boolean): DuplicateMatchKind {
+function matchKind(
+  gates: DuplicateGates,
+  nameMatch: boolean,
+  sameBase: boolean,
+): DuplicateMatchKind {
+  if (!gates.modelYear) return "name+base";
   if (nameMatch) return "name+model+year";
   if (sameBase) return "base+model+year";
   return "model+year";

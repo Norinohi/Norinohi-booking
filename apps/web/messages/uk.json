@@ -2086,7 +2086,8 @@
         "name+model+year": "Назва + модель + рік",
         "base+model+year": "База + модель + рік",
         "model+year": "Лише модель + рік",
-        "model+yearBuilt": "Модель + рік побудови"
+        "model+yearBuilt": "Модель + рік побудови",
+        "name+base": "Назва + марина"
       },
       "signalFields": {
         "name": "Назва",
