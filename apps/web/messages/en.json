@@ -967,8 +967,30 @@
     "CookieConsent": {
       "title": "Cookies",
       "description": "We use analytics cookies to see how the site is used, so we can make it better. Nothing is measured until you agree.",
+      "manage": "Manage preferences",
       "accept": "Accept",
-      "decline": "Decline"
+      "decline": "Decline",
+      "footerLink": "Cookies",
+      "dialog": {
+        "title": "Your privacy",
+        "description": "Choose which cookies this site may use. Your choice is stored on this device, and you can change it at any time from the footer. More in our <privacy>Privacy Policy</privacy> and <terms>Terms of Service</terms>.",
+        "close": "Close",
+        "alwaysActive": "Always active",
+        "necessary": {
+          "title": "Necessary",
+          "description": "Keep you signed in, protect payments against fraud, and remember this cookie choice. The site does not work without them."
+        },
+        "functional": {
+          "title": "Functional",
+          "description": "Remember the boats you saved and count a repeat visit to a listing only once. Stored in your browser and never shared."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "Google Analytics, so we can see which pages people use and where they get stuck. No advertising and no profiling."
+        },
+        "save": "Save my choice",
+        "acceptAll": "Accept all"
+      }
     }
   },
   "PlanMyTrip": {
