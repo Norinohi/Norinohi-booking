@@ -15,7 +15,7 @@ import {
 import { persistedQuoteSchema, repriceInputSchema } from "../contracts/quote";
 import type { Database } from "../context";
 import { publicProcedure } from "../index";
-import { providerForListing, providerForQuote } from "../services/provider-routing";
+import { providerForQuote } from "../services/provider-routing";
 import { createQuote, repriceQuote } from "../services/quote";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 
@@ -101,9 +101,14 @@ export const availabilityRouter = {
     .input(quoteRequestWithDiscountSchema.extend({ locale: localeInputSchema }))
     .output(persistedQuoteSchema)
     .handler(async ({ context, input }) => {
+      /*
+       * The configured adapter is only the fallback here. `createQuote` asks every offer this
+       * listing has and picks the winner, so choosing one from the listing up front — before
+       * any dates were known — is exactly what this change removed.
+       */
       const quote = await createQuote(
         context.db,
-        await providerForListing(context.db, context.provider, input.listingId),
+        context.provider,
         input,
         context.session?.user.id ?? null,
       );

@@ -318,6 +318,8 @@ export async function createHold(
     specialRequests: guest.specialRequests ?? null,
     userId,
     listingId: priced.listingId,
+    /* Carried from the quote, so cancel and refund reach the vendor that took the money. */
+    listingOfferId: priced.listingOfferId,
     provider: priced.provider,
     totalMinor: priced.totalMinor,
     currency: priced.currency,

@@ -1,7 +1,6 @@
 import { booking } from "@yacht-charter/db/schema/booking";
-import { listing } from "@yacht-charter/db/schema/listing";
-import { listingSource } from "@yacht-charter/db/schema/listing-source";
-import { provider, providerRecord } from "@yacht-charter/db/schema/provider";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
+import { provider } from "@yacht-charter/db/schema/provider";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { ORPCError } from "@orpc/server";
@@ -11,40 +10,33 @@ import type { Database } from "../context";
 import { getEnabledInventoryProviders } from "../context";
 
 /**
- * Which vendor a listing is actually sold through.
+ * Which vendor a sale is actually going through.
  *
- * This used to be `PROVIDER_MODE`, which was true only while one provider had
- * published inventory. With two, quoting a Booking Manager yacht through the
- * NauSYS adapter fails at the resolver: it looks for a NauSYS source the listing
- * does not have. The listing itself knows the answer, so it is read rather than
- * configured.
+ * Read from the quote or the booking, never re-derived from the listing. A hull both providers
+ * sell is quoted through whichever offer won on the day, and asking the listing afterwards
+ * could only ever name whichever provider a preference list favoured — so the cancel, the
+ * refund and the sweep could all reach a vendor that never held the reservation.
  *
- * `primary_source_id` wins when set, because that is the merge decision a human
- * made. Otherwise the sole active source answers, and a listing carrying more
- * than one falls back to the architecture's tie-break rather than to whichever
- * row the database happened to return first.
+ * `booking.provider` and `quote.provider` stay as the denormalised truth for rows that predate
+ * the offer model, and the webhook and expiry paths have always read them. Both now agree with
+ * the offer by construction, because the same selection writes all three.
  */
 
 /** Architecture section 3: Booking Manager wins a tie between linked sources. */
 const TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"];
 
+/**
+ * The vendor a listing would transact through when nothing has been quoted yet.
+ *
+ * Only for callers that have no quote to read — the availability calendar, and the fallback
+ * inside `selectBestOffer` for a listing with no offers at all. A real sale never uses it.
+ */
 async function providerCodeForListing(db: Database, listingId: string): Promise<string | null> {
-  const [primary] = await db
-    .select({ code: provider.code })
-    .from(listing)
-    .innerJoin(listingSource, eq(listingSource.id, listing.primarySourceId))
-    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
-    .innerJoin(provider, eq(provider.id, providerRecord.providerId))
-    .where(eq(listing.id, listingId))
-    .limit(1);
-  if (primary) return primary.code;
-
   const rows = await db
     .select({ code: provider.code })
-    .from(listingSource)
-    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
-    .innerJoin(provider, eq(provider.id, providerRecord.providerId))
-    .where(and(eq(listingSource.listingId, listingId), eq(providerRecord.active, true)));
+    .from(listingOffer)
+    .innerJoin(provider, eq(provider.id, listingOffer.providerId))
+    .where(and(eq(listingOffer.listingId, listingId), eq(listingOffer.status, "active")));
 
   const codes = rows.map((row) => row.code);
   return TRANSACTING_PREFERENCE.find((code) => codes.includes(code)) ?? codes[0] ?? null;
@@ -84,15 +76,6 @@ export async function providerByKey(
   });
 }
 
-/** The provider that prices and books this listing. */
-export async function providerForListing(
-  db: Database,
-  fallback: InventoryProvider,
-  listingId: string,
-): Promise<InventoryProvider> {
-  return providerByKey(fallback, await providerCodeForListing(db, listingId));
-}
-
 /** The provider that priced this quote, so a re-price asks the same vendor. */
 export async function providerForQuote(
   db: Database,
@@ -100,12 +83,14 @@ export async function providerForQuote(
   quoteId: string,
 ): Promise<InventoryProvider> {
   const [row] = await db
-    .select({ listingId: quote.listingId })
+    .select({ provider: quote.provider, listingId: quote.listingId })
     .from(quote)
     .where(eq(quote.id, quoteId))
     .limit(1);
 
-  if (!row?.listingId) return fallback;
+  if (!row) return fallback;
+  /* The vendor that answered, not the one the listing would pick today. */
+  if (row.provider) return providerByKey(fallback, row.provider);
   return providerByKey(fallback, await providerCodeForListing(db, row.listingId));
 }
 
@@ -116,11 +101,17 @@ export async function providerForBooking(
   bookingId: string,
 ): Promise<InventoryProvider> {
   const [row] = await db
-    .select({ listingId: booking.listingId })
+    .select({ provider: booking.provider, listingId: booking.listingId })
     .from(booking)
     .where(eq(booking.id, bookingId))
     .limit(1);
 
-  if (!row?.listingId) return fallback;
+  if (!row) return fallback;
+  /*
+   * The vendor holding the reservation, which is a fact about this booking and not about the
+   * catalogue. The expiry sweep, the Stripe webhook and the invoice path have always read this
+   * column; reading it here too is what makes the two answers provably the same.
+   */
+  if (row.provider) return providerByKey(fallback, row.provider);
   return providerByKey(fallback, await providerCodeForListing(db, row.listingId));
 }
