@@ -18,9 +18,17 @@ import {
   duplicateDetailSchema,
   duplicateQueueInputSchema,
   duplicateQueueSchema,
+  duplicateDeferInputSchema,
+  duplicateMetricsInputSchema,
+  duplicateMetricsSchema,
   duplicateRejectInputSchema,
+  duplicateSplitInputSchema,
+  duplicateSplitSchema,
   duplicateResolutionSchema,
   listingAdminListInputSchema,
+  listingFieldSourcesInputSchema,
+  listingFieldSourcesSchema,
+  setListingFieldSourceInputSchema,
   listingAdminListSchema,
   listingPriceClearInputSchema,
   listingPriceFiltersSchema,
@@ -89,9 +97,12 @@ import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
   confirmDuplicateCandidate,
+  deferDuplicateCandidate,
+  duplicateMatchMetrics,
   getDuplicateCandidateDetail,
   listDuplicateCandidates,
   rejectDuplicateCandidate,
+  splitListingOffer,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
 import {
@@ -120,6 +131,8 @@ import {
 } from "../services/discount-admin";
 import {
   listAdminListings,
+  listListingFieldSources,
+  setListingFieldSource,
   publishListingDrafts,
   setListingStatus,
 } from "../services/listing-admin";
@@ -371,7 +384,59 @@ export const adminRouter = {
       .input(duplicateRejectInputSchema)
       .output(duplicateResolutionSchema)
       .handler(({ context, input }) =>
-        rejectDuplicateCandidate(context.db, context.session.user.id, input.candidateId),
+        rejectDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    defer: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/defer",
+        operationId: "deferDuplicateCandidate",
+        summary: "Set a duplicate pair aside without judging it",
+        description:
+          "Closes the candidate as undecidable and leaves both listings exactly where they are. Neither a merge nor a rejection on purpose: the precision figure that would justify auto-approval is confirmed over confirmed-plus-rejected, so filing a pair nobody could call as a rejection would sink the number the decision rests on. Takes an optional note. Rejects an already-reviewed candidate with CONFLICT. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The deferred candidate.",
+        spec: withJsonBodyExample({
+          candidateId: "ldup_example",
+          note: "Same base, but the hull numbers differ",
+        }),
+      })
+      .input(duplicateDeferInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        deferDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    metrics: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/metrics",
+        operationId: "duplicateMatchMetrics",
+        summary: "How often each matcher rule is right",
+        description:
+          "Precision per rule and confidence band, which is the number auto-approval turns on and the one the queue's own counts cannot answer: those say how much work is left, not how often the proposal was correct. Precision is confirmed over confirmed-plus-rejected, with merges a split later undid counted against the rule rather than for it. Deferred pairs are outside the denominator on purpose — they are the cases nobody could call, and counting them as failures would understate a rule that is doing fine on the ones it does settle. A band with nothing decided in it reports null rather than a rate invented from an empty sample.",
+        tags: ["Admin"],
+        successDescription: "One row per rule and band, with the sample they rest on.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(duplicateMetricsInputSchema)
+      .output(duplicateMetricsSchema)
+      .handler(({ context }) => duplicateMatchMetrics(context.db)),
+    split: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/split",
+        operationId: "splitListingOffer",
+        summary: "Take one provider's offer back out of a merged listing",
+        description:
+          "Undoes a merge, one offer at a time. The offer returns to the listing it was merged out of when that listing is still standing and still empty — bringing back its slug, its URL and its reviews — and gets a new listing otherwise. Its calendar, rates, extras and booking terms move with it, and so do any bookings, because the vendor holding a reservation is holding this boat and a booking left pointing at the other listing would describe a charter of something else. The source is stamped rejected so the sync does not re-propose the pair; the candidate keeps its confirmed verdict, because the merge did happen. Refuses with CONFLICT when the listing has only one offer. Rebuilds both search documents and writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "Where the offer went, and what followed it.",
+        spec: withJsonBodyExample({ listingOfferId: "loff_example" }),
+      })
+      .input(duplicateSplitInputSchema)
+      .output(duplicateSplitSchema)
+      .handler(({ context, input }) =>
+        splitListingOffer(context.db, context.session.user.id, input),
       ),
   },
   audit: {
@@ -885,6 +950,42 @@ export const adminRouter = {
       .output(listingSetStatusSchema)
       .handler(({ context, input }) =>
         setListingStatus(context.db, context.session.user.id, input),
+      ),
+    fieldSources: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/fieldSources",
+        operationId: "listListingFieldSources",
+        summary: "Which vendor each part of a merged listing comes from",
+        description:
+          "Every provider offer on this listing, with its own reading of the boat, and which one currently supplies each field group. The resolver picks on its own — a locked override first, then the stated rule for media, then whichever record says more, then the provider preference — and writes its choice back, so this shows the decision rather than re-deriving it. A `locked` row is a person's decision and the nightly resolver leaves it alone; everything else is rewritten on every run. Only interesting on a listing several vendors sell, since a single-offer listing has one candidate per group.",
+        tags: ["Admin"],
+        successDescription: "The offers and the current field decisions.",
+        spec: withJsonBodyExample({ listingId: "ylst_yacht-lagoon-42-aurora" }),
+      })
+      .input(listingFieldSourcesInputSchema)
+      .output(listingFieldSourcesSchema)
+      .handler(({ context, input }) => listListingFieldSources(context.db, input)),
+    setFieldSource: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/listing/setFieldSource",
+        operationId: "setListingFieldSource",
+        summary: "Pin one field group to one provider, or release it",
+        description:
+          "Locks a field group to the named offer, which is the one thing the nightly resolver will not overwrite: this is how staff say the photographs come from Booking Manager whatever the counts say. Passing a null offer releases the group back to the resolver, so it is recomputed on every run again. The listing is composed again and its search document rebuilt straight away, because an override nobody can see the effect of is indistinguishable from one that did not work. Rejects an offer belonging to another listing. Writes an audit log entry.",
+        tags: ["Admin"],
+        successDescription: "The field decisions after the change.",
+        spec: withJsonBodyExample({
+          listingId: "ylst_yacht-lagoon-42-aurora",
+          field: "media",
+          listingOfferId: "loff_example",
+        }),
+      })
+      .input(setListingFieldSourceInputSchema)
+      .output(listingFieldSourcesSchema)
+      .handler(({ context, input }) =>
+        setListingFieldSource(context.db, context.session.user.id, input),
       ),
     publishDrafts: adminProcedure
       .route({

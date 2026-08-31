@@ -1,40 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { decideListingMatch, facetLabels, listingMatchKey } from "./catalogue-writer";
-
-const incoming = {
-  externalCompanyId: "102701",
-  externalBaseId: "900101",
-  model: "mdl_bavaria_46",
-  yearBuilt: 2021,
-  name: "Marlin Bavaria Cruiser 46",
-};
-
-describe("listingMatchKey", () => {
-  it("is insensitive to case and surrounding space, and nothing else", () => {
-    expect(listingMatchKey(incoming)).toBe(
-      listingMatchKey({ ...incoming, name: "  MARLIN Bavaria Cruiser 46 " }),
-    );
-    expect(listingMatchKey(incoming)).not.toBe(
-      listingMatchKey({ ...incoming, externalBaseId: "900102" }),
-    );
-    expect(listingMatchKey(incoming)).not.toBe(listingMatchKey({ ...incoming, yearBuilt: 2020 }));
-    expect(listingMatchKey(incoming)).not.toBe(listingMatchKey({ ...incoming, model: null }));
-  });
-});
+import { decideListingMatch, facetLabels } from "./catalogue-writer";
 
 describe("decideListingMatch", () => {
-  const candidates = new Map([[listingMatchKey(incoming), "ylst_existing"]]);
-
-  it("leaves a brand new yacht unmatched, for a human to review", () => {
-    expect(
-      decideListingMatch({
-        providerKey: "nausys",
-        existing: null,
-        incomingKey: listingMatchKey({ ...incoming, name: "Ariel Lagoon 42" }),
-        candidates,
-      }),
-    ).toEqual({
+  it("gives a record we have not seen before its own listing", () => {
+    // No fuzzy same-provider matching: the vendor's id space is the identity, and guessing
+    // past it by name and model is what fused 486 Booking Manager records onto 172 listings.
+    expect(decideListingMatch({ providerKey: "booking_manager", existing: null })).toEqual({
       listingId: null,
       matchStatus: "unmatched",
       matchConfidence: null,
@@ -51,25 +23,16 @@ describe("decideListingMatch", () => {
           listingId: "ylst_known",
           matchStatus: "unmatched",
         },
-        incomingKey: "irrelevant",
-        candidates,
-      }),
-    ).toEqual({
-      listingId: "ylst_known",
-      matchStatus: "auto",
-      matchConfidence: 1,
-      matchedBy: "sync:nausys",
-    });
+      }).listingId,
+    ).toBe("ylst_known");
   });
 
-  it("preserves a human verdict rather than re-stamping it", () => {
-    for (const matchStatus of ["confirmed", "rejected"] as const) {
+  it("reaches no verdict on a link it is only seeing again", () => {
+    for (const matchStatus of ["unmatched", "auto", "confirmed", "rejected"] as const) {
       expect(
         decideListingMatch({
           providerKey: "nausys",
           existing: { listingSourceId: "lsrc_1", listingId: "ylst_known", matchStatus },
-          incomingKey: "irrelevant",
-          candidates,
         }),
       ).toEqual({
         listingId: "ylst_known",
@@ -80,30 +43,11 @@ describe("decideListingMatch", () => {
     }
   });
 
-  it("auto-matches the exact same-provider tuple", () => {
+  it("gives a source that is attached to nothing its own listing", () => {
     expect(
       decideListingMatch({
         providerKey: "nausys",
-        existing: null,
-        incomingKey: listingMatchKey(incoming),
-        candidates,
-      }),
-    ).toEqual({
-      listingId: "ylst_existing",
-      matchStatus: "auto",
-      matchConfidence: 0.9,
-      matchedBy: "sync:nausys",
-    });
-  });
-
-  it("does not match on a near miss", () => {
-    // One field of the tuple differs, so this is a candidate for review, not a match.
-    expect(
-      decideListingMatch({
-        providerKey: "nausys",
-        existing: null,
-        incomingKey: listingMatchKey({ ...incoming, yearBuilt: 2022 }),
-        candidates,
+        existing: { listingSourceId: "lsrc_1", listingId: null, matchStatus: "unmatched" },
       }).listingId,
     ).toBeNull();
   });

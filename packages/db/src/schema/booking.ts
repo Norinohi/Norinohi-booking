@@ -14,6 +14,7 @@ import {
 import { id, timestamps } from "./_shared";
 import { user } from "./auth";
 import { listing } from "./listing";
+import { listingOffer } from "./listing-offer";
 import { provider } from "./provider";
 import { quote } from "./quote";
 
@@ -193,6 +194,10 @@ export const booking = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "restrict" }),
+    /** The offer the quote won on, carried forward so cancel and refund reach the same vendor. */
+    listingOfferId: text("listing_offer_id").references(() => listingOffer.id, {
+      onDelete: "restrict",
+    }),
     status: bookingStatus("status").default("DRAFT").notNull(),
     /** Human-facing reference shown on the confirmation screen and in emails. */
     reference: text("reference").notNull().unique(),

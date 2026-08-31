@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import {
@@ -44,7 +45,7 @@ function PopularYachtSlides() {
             className="w-full"
             image={listing.gallery[0] ?? listing.mainImage}
             imageAlt={listing.title}
-            location={`${listing.base.location}, ${listing.base.country}`}
+            location={placeLine(listing.base.location, listing.base.country)}
             title={
               <Link
                 href={`/yachts/${listing.slug}`}
@@ -55,8 +56,8 @@ function PopularYachtSlides() {
             }
             rating={listing.rating > 0 ? listing.rating : undefined}
             tags={[{ label: listing.category, icon: <Anchor /> }]}
-            price={boatCardPrice(tCard, listing, (amountMinor) =>
-              money(Math.round(amountMinor / listing.priceDetails.periodDays)),
+            price={boatCardPrice(tCard, listing, (amountMinor, currency) =>
+              money(Math.round(amountMinor / listing.priceDetails.periodDays), currency),
             )}
             priceSuffix={t("perDay")}
             priceLabel={t("from")}

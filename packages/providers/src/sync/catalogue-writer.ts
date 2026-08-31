@@ -6,7 +6,6 @@ import {
   listingCheckinRule,
   listingMedia,
   listingOneWayRule,
-  listingSpecification,
 } from "@yacht-charter/db/schema/listing";
 import {
   listingDuplicateCandidate,
@@ -14,6 +13,7 @@ import {
   providerExtraCatalogue,
   providerExtraTranslation,
 } from "@yacht-charter/db/schema/listing-source";
+import { listingOffer, listingOfferSpecification } from "@yacht-charter/db/schema/listing-offer";
 import { listingText } from "@yacht-charter/db/schema/listing-text";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { providerRawPayload, providerRecord } from "@yacht-charter/db/schema/provider";
@@ -32,7 +32,8 @@ import type { Database } from "../registry";
 import { canonicalCategoryName } from "../shared/category-groups";
 import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
-import { scoreDuplicatePair, worthReviewing } from "./duplicate-score";
+import { resolveCanonicalListings } from "./canonical-listing-writer";
+import { scoreDuplicatePair, worthReviewing, yachtNameKey } from "./duplicate-score";
 import type { DuplicatePairFacts, DuplicateSignals } from "./duplicate-score";
 import type {
   CanonicalCatalogue,
@@ -103,59 +104,40 @@ export interface ListingMatchDecision {
 }
 
 /**
- * The deterministic tuple a same-provider auto-match is allowed to use. Anything
- * fuzzier, and anything crossing providers, goes to `listing_duplicate_candidate`
- * for a human instead (docs/backend-architecture.md §3).
+ * Which listing a provider's yacht record belongs to.
+ *
+ * A vendor's own id space is the identity, and nothing else is allowed to be. This used to
+ * also auto-match a new record onto an existing listing when `company|base|model|year|name`
+ * agreed, on the theory that a vendor re-issuing an id should not fork the boat. Booking
+ * Manager publishes no per-hull name — its `name` is the product line, "Moorings 4200/3/3
+ * Exclusive" — so that tuple is identical across a whole fleet of sister ships at one base,
+ * and the rule fused them: 172 listings ended up holding 486 records, and because prices and
+ * calendars are keyed by listing, 314 boats were overwritten into invisibility.
+ *
+ * So there is no fuzzy same-provider matching left. A record we have not seen before gets its
+ * own listing, and anything that really is one boat twice is a duplicate for a human to
+ * confirm, which is where every cross-provider pair already goes.
  */
-export function listingMatchKey(input: {
-  externalCompanyId: string;
-  externalBaseId: string;
-  model: string | null;
-  yearBuilt: number | null;
-  name: string;
-}): string {
-  return [
-    input.externalCompanyId,
-    input.externalBaseId,
-    (input.model ?? "").trim().toLowerCase(),
-    input.yearBuilt ?? "",
-    input.name.trim().toLowerCase(),
-  ].join("|");
-}
-
 export function decideListingMatch(input: {
   providerKey: string;
   existing: ExistingSourceLink | null;
-  incomingKey: string;
-  /** Same-provider tuple index only. */
-  candidates: Map<string, string>;
 }): ListingMatchDecision {
+  /*
+   * An already-linked source keeps whatever status it has, and this run records no
+   * verdict of its own. Seeing the same yacht a second time is not a match decision:
+   * stamping it `auto` at confidence 1 made every source in the catalogue read as a
+   * high-confidence automatic match after two nights, so the column could no longer
+   * distinguish "linked by a tuple match" from "seen again", and any precision figure
+   * measured from it was meaningless. The verdict that put the link there is the
+   * record, whether a human or the matcher made it.
+   */
   const existingListingId = input.existing?.listingId;
-  if (existingListingId) {
-    // A human verdict outranks the sync; re-stamping it would erase the review.
-    if (input.existing?.matchStatus === "confirmed" || input.existing?.matchStatus === "rejected") {
-      return {
-        listingId: existingListingId,
-        matchStatus: input.existing.matchStatus,
-        matchConfidence: null,
-        matchedBy: null,
-      };
-    }
+  if (existingListingId && input.existing) {
     return {
       listingId: existingListingId,
-      matchStatus: "auto",
-      matchConfidence: 1,
-      matchedBy: `sync:${input.providerKey}`,
-    };
-  }
-
-  const candidate = input.candidates.get(input.incomingKey);
-  if (candidate) {
-    return {
-      listingId: candidate,
-      matchStatus: "auto",
-      matchConfidence: 0.9,
-      matchedBy: `sync:${input.providerKey}`,
+      matchStatus: input.existing.matchStatus,
+      matchConfidence: null,
+      matchedBy: null,
     };
   }
 
@@ -318,12 +300,17 @@ export async function writeCanonicalCatalogue(
   }
 
   const modelIds = new Map<string, string>();
+  /* Kept beside the ids because `yachtNameKey` strips the model out of the title by name. */
+  const modelNames = new Map<string, string>();
   for (const item of catalogue.models) {
     const builderId = item.externalBuilderId
       ? (builderIds.get(item.externalBuilderId) ?? null)
       : null;
     const id = await ensureModel(db, builderId, item.name);
-    if (id) modelIds.set(item.externalId, id);
+    if (id) {
+      modelIds.set(item.externalId, id);
+      modelNames.set(item.externalId, item.name);
+    }
   }
 
   const categoryIds = new Map<string, string>();
@@ -370,7 +357,6 @@ export async function writeCanonicalCatalogue(
 
   const yachtRecordIds = await loadYachtRecordIds(db, providerId);
   const existingLinks = await loadExistingLinks(db, providerId);
-  const matchCandidates = await loadMatchCandidates(db, providerId);
 
   const summary: CatalogueWriteSummary = {
     listingsCreated: 0,
@@ -403,6 +389,7 @@ export async function writeCanonicalCatalogue(
    */
   const context: ListingWriteContext = {
     db,
+    providerId,
     providerKey,
     amenityIds,
     autoPublish: options.autoPublish === true,
@@ -438,21 +425,10 @@ export async function writeCanonicalCatalogue(
       }
 
       const modelId = item.externalModelId ? (modelIds.get(item.externalModelId) ?? null) : null;
-      // The model leg is our resolved model id on both sides of the comparison: the
-      // stored listing keeps no provider model id, and a name match is not deterministic.
-      const incomingKey = listingMatchKey({
-        externalCompanyId: item.externalCompanyId,
-        externalBaseId: item.externalBaseId,
-        model: modelId,
-        yearBuilt: item.spec.yearBuilt,
-        name: item.title,
-      });
 
       const decision = decideListingMatch({
         providerKey,
         existing: existingLinks.get(item.externalId) ?? null,
-        incomingKey,
-        candidates: matchCandidates,
       });
 
       const columns = {
@@ -480,15 +456,11 @@ export async function writeCanonicalCatalogue(
       };
 
       /*
-       * The id is minted here rather than read back from the insert, so that a
-       * second yacht in this same batch carrying the same match tuple resolves to
-       * this listing instead of creating its own. Resolving a whole batch before
-       * writing any of it is what makes that necessary: the sequential loop this
-       * replaced had already inserted the first boat by the time it judged the
-       * second, and `newId` exists for exactly this (see schema/_shared.ts).
+       * Minted here rather than read back from the insert, because the whole batch is
+       * resolved before any of it is written and the plans have to name the listing they
+       * will land on. `newId` exists for exactly this (see schema/_shared.ts).
        */
       const listingId = decision.listingId ?? newId("ylst");
-      if (decision.listingId === null) matchCandidates.set(incomingKey, listingId);
 
       plans.push({
         item,
@@ -498,7 +470,12 @@ export async function writeCanonicalCatalogue(
         providerRecordId,
         decision,
         columns,
+        nameKey: yachtNameKey(
+          item.title,
+          item.externalModelId ? (modelNames.get(item.externalModelId) ?? null) : null,
+        ),
         listingSourceId: null,
+        listingOfferId: null,
       });
     }
 
@@ -538,6 +515,14 @@ export async function writeCanonicalCatalogue(
       }
     }
   }
+
+  /*
+   * The listings themselves are written here and nowhere else. Each provider writes only its
+   * own offer, and this composes `listing` and `listing_specification` from all of them by the
+   * precedence in docs/backend-architecture.md §3.4 — which is what stopped two syncs
+   * overwriting each other's title and cabin count every night.
+   */
+  await resolveCanonicalListings(db, summary.touchedListingIds);
 
   summary.duplicateCandidates = await recordDuplicateCandidates(
     db,
@@ -898,45 +883,12 @@ async function loadExistingLinks(db: Database, providerId: string) {
   );
 }
 
-/** Tuple index over this provider's own sources only — matching never crosses providers. */
-async function loadMatchCandidates(db: Database, providerId: string) {
-  const rows = await db
-    .select({
-      listingId: listingSource.listingId,
-      externalCompanyId: listingSource.externalCompanyId,
-      externalBaseId: listingSource.externalBaseId,
-      title: listing.title,
-      yearBuilt: listingSpecification.yearBuilt,
-      modelId: listing.modelId,
-    })
-    .from(listingSource)
-    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
-    .innerJoin(listing, eq(listing.id, listingSource.listingId))
-    .leftJoin(listingSpecification, eq(listingSpecification.listingId, listing.id))
-    .where(eq(providerRecord.providerId, providerId));
-
-  const candidates = new Map<string, string>();
-  for (const row of rows) {
-    if (!row.listingId || !row.externalCompanyId || !row.externalBaseId) continue;
-    candidates.set(
-      listingMatchKey({
-        externalCompanyId: row.externalCompanyId,
-        externalBaseId: row.externalBaseId,
-        model: row.modelId,
-        yearBuilt: row.yearBuilt,
-        name: row.title,
-      }),
-      row.listingId,
-    );
-  }
-  return candidates;
-}
-
 /**
  * Shared by every listing in a batch: the parts that do not vary per boat.
  */
 interface ListingWriteContext {
   db: Database;
+  providerId: string;
   providerKey: ProviderKey;
   amenityIds: Map<string, string>;
   autoPublish: boolean;
@@ -946,10 +898,10 @@ interface ListingWriteContext {
 /**
  * One listing resolved against the catalogue's taxonomy, ready to be written.
  *
- * Mutable in two places on purpose. `rowWritten` records that the listing row now
+ * Mutable in three places on purpose. `rowWritten` records that the listing row now
  * exists, so a replay after a failed batch updates it instead of inserting it a
- * second time; `listingSourceId` is what the source upsert decided, read back by
- * the caller to update its own index of links.
+ * second time; `listingSourceId` and `listingOfferId` are what the source and offer
+ * upserts decided, read back by the caller and by the child writes.
  */
 interface ListingPlan {
   item: CanonicalListing;
@@ -958,8 +910,12 @@ interface ListingPlan {
   rowWritten: boolean;
   providerRecordId: string;
   decision: ListingMatchDecision;
+  /** This provider's own reading of the boat. Written to the offer, never to the listing. */
   columns: Omit<typeof listing.$inferInsert, "id" | "slug" | "status">;
+  /** The boat's name as the duplicate matcher folds it, for the name+base gate. */
+  nameKey: string | null;
   listingSourceId: string | null;
+  listingOfferId: string | null;
 }
 
 /**
@@ -985,24 +941,19 @@ async function writeListingPlans(
   const updates = plans.filter((plan) => !plan.isCreate || plan.rowWritten);
 
   await insertNewListings(ctx, creates, unwritten);
-  await updateExistingListings(ctx, updates, unwritten);
+  await dropVanishedListings(ctx, updates, unwritten);
 
   const written = plans.filter((plan) => !unwritten.has(plan));
   if (written.length === 0) return unwritten;
 
   /*
-   * Two external yachts can resolve to one listing - the same match tuple twice in
-   * a vendor's dump, or a second yacht matched onto the first - and the row then has
-   * two candidate versions of its children. Last one wins, which is what the
-   * sequential loop did by overwriting as it went; batched, writing both would leave
-   * the listing holding the union of two dumps. Their source links are both kept:
-   * two provider records legitimately point at one listing.
+   * Sources first, then the offers keyed on them, then the children keyed on the offers.
+   * No collapsing by listing any more: children belong to an offer, so two records sharing
+   * a listing each write their own set instead of one silently winning.
    */
-  const byListing = new Map<string, ListingPlan>();
-  for (const plan of written) byListing.set(plan.listingId, plan);
-
-  await writeListingChildren(ctx, [...byListing.values()]);
   await writeListingSources(ctx, written);
+  await writeListingOffers(ctx, written);
+  await writeListingChildren(ctx, written);
 
   return unwritten;
 }
@@ -1078,20 +1029,14 @@ function slugAttempt(candidate: string, attempt: number, index: number): string 
 }
 
 /**
- * The listing rows that already exist, restated from their plans.
+ * Drops plans whose listing has disappeared since the run read it.
  *
- * An `ON CONFLICT (id) DO UPDATE` rather than an `UPDATE ... FROM (VALUES ...)`,
- * which is why it first reads back each row's slug and status: those two are NOT
- * NULL and this run has no opinion on either, so they are carried through the
- * insert untouched. That read is one statement per batch, and it buys a write with
- * no positional contract between a column list and a row of parameters - the kind
- * where two text columns swapped round is silent.
- *
- * A listing whose id has disappeared since the run started is left alone rather
- * than re-created from a stale plan. The plain `UPDATE` this replaced was a no-op
- * against a missing row too.
+ * All that is left of the old `updateExistingListings`. This no longer writes `listing` at
+ * all — `resolveCanonicalListings` composes it from the offers once the batch has landed —
+ * but the existence check has to stay, because `listing_offer.listing_id` is a foreign key
+ * and a plan pointing at a deleted listing would take its whole batch down.
  */
-async function updateExistingListings(
+async function dropVanishedListings(
   ctx: ListingWriteContext,
   updates: readonly ListingPlan[],
   unwritten: Set<ListingPlan>,
@@ -1099,7 +1044,7 @@ async function updateExistingListings(
   if (updates.length === 0) return;
 
   const stored = await ctx.db
-    .select({ id: listing.id, slug: listing.slug, status: listing.status })
+    .select({ id: listing.id })
     .from(listing)
     .where(
       inArray(
@@ -1108,56 +1053,9 @@ async function updateExistingListings(
       ),
     );
 
-  const identities = new Map(stored.map((row) => [row.id, row]));
-
-  /*
-   * Keyed by id, because two external yachts can already be linked to one listing -
-   * the second run over a vendor that ships the same match tuple twice - and
-   * Postgres refuses an `ON CONFLICT DO UPDATE` that would touch one row twice in a
-   * single statement. Last one wins, which is what the sequential loop did by
-   * issuing the two updates in order. Both yachts still get their own source link.
-   */
-  const values = new Map<string, typeof listing.$inferInsert>();
+  const present = new Set(stored.map((row) => row.id));
   for (const plan of updates) {
-    const identity = identities.get(plan.listingId);
-    if (!identity) {
-      unwritten.add(plan);
-      continue;
-    }
-    values.set(plan.listingId, {
-      ...plan.columns,
-      id: plan.listingId,
-      slug: identity.slug,
-      status: identity.status,
-    });
-  }
-  if (values.size === 0) return;
-
-  for (const chunk of chunked([...values.values()], ROW_CHUNK)) {
-    await ctx.db
-      .insert(listing)
-      .values(chunk)
-      .onConflictDoUpdate({
-        target: listing.id,
-        set: {
-          title: sql`excluded.title`,
-          operatorId: sql`excluded.operator_id`,
-          homeBaseId: sql`excluded.home_base_id`,
-          builderId: sql`excluded.builder_id`,
-          modelId: sql`excluded.model_id`,
-          categoryId: sql`excluded.category_id`,
-          defaultCurrency: sql`excluded.default_currency`,
-          crewType: sql`excluded.crew_type`,
-          securityDepositMinor: sql`excluded.security_deposit_minor`,
-          securityDepositCurrency: sql`excluded.security_deposit_currency`,
-          paymentPolicy: sql`excluded.payment_policy`,
-          providerRating: sql`excluded.provider_rating`,
-          providerReviewCount: sql`excluded.provider_review_count`,
-          freshnessAt: sql`excluded.freshness_at`,
-          // Drizzle's `$onUpdate` fires for `.update()`, not for a conflict clause.
-          updatedAt: sql`now()`,
-        },
-      });
+    if (!present.has(plan.listingId)) unwritten.add(plan);
   }
 }
 
@@ -1239,79 +1137,182 @@ async function writeListingSources(
     sql`, `,
   );
 
+  /*
+   * Claimed, not re-pointed. This used to run unconditionally, so on a listing both
+   * vendors feed, every catalogue run moved the pointer to whichever provider had just
+   * finished — and `provider-routing.ts` reads it as the merge decision a human made.
+   * It is only written where nothing holds it, or where what holds it has gone: a
+   * source that was deleted, detached from this listing, or whose provider record went
+   * inactive. That leaves a live pointer alone and still repairs a dead one.
+   */
   await ctx.db.execute(sql`
     update ${listing}
        set primary_source_id = v.source_id, updated_at = now()
       from (values ${rows}) as v(listing_id, source_id)
      where ${listing.id} = v.listing_id
+       and (
+         ${listing.primarySourceId} is null
+         or not exists (
+           select 1
+           from listing_source held
+           join provider_record held_record on held_record.id = held.provider_record_id
+           where held.id = ${listing.primarySourceId}
+             and held.listing_id = ${listing.id}
+             and held_record.active
+         )
+       )
   `);
+}
+/**
+ * One `listing_offer` per source, carrying this provider's own reading of the boat.
+ *
+ * Everything the sync knows about a yacht lands here rather than on `listing`, and
+ * `resolveCanonicalListings` composes the listing from every provider's offer afterwards.
+ * That is what ended the nightly overwrite: two vendors can both write in full and neither
+ * erases the other, because they are writing different rows.
+ *
+ * Arbitrated on `listing_source_id`, which is unique, so this covers a new offer and an
+ * existing one in one statement. `listing_id` is in the `set` because a merge moves an offer
+ * between listings and the next sync must not drag it back.
+ */
+async function writeListingOffers(
+  ctx: ListingWriteContext,
+  plans: readonly ListingPlan[],
+): Promise<void> {
+  const withSource = plans.filter(
+    (plan): plan is ListingPlan & { listingSourceId: string } => plan.listingSourceId !== null,
+  );
+  if (withSource.length === 0) return;
+
+  const values = withSource.map((plan) => ({
+    id: newId("loff"),
+    listingId: plan.listingId,
+    listingSourceId: plan.listingSourceId,
+    providerId: ctx.providerId,
+    status: "active" as const,
+    ...plan.columns,
+    nameKey: plan.nameKey,
+    catalogueSyncedAt: ctx.now,
+  }));
+
+  const offerIds = new Map<string, string>();
+  for (const chunk of chunked(values, ROW_CHUNK)) {
+    const written = await ctx.db
+      .insert(listingOffer)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: listingOffer.listingSourceId,
+        set: {
+          listingId: sql`excluded.listing_id`,
+          status: sql`excluded.status`,
+          title: sql`excluded.title`,
+          operatorId: sql`excluded.operator_id`,
+          homeBaseId: sql`excluded.home_base_id`,
+          builderId: sql`excluded.builder_id`,
+          modelId: sql`excluded.model_id`,
+          categoryId: sql`excluded.category_id`,
+          petsAllowed: sql`excluded.pets_allowed`,
+          defaultCurrency: sql`excluded.default_currency`,
+          crewType: sql`excluded.crew_type`,
+          securityDepositMinor: sql`excluded.security_deposit_minor`,
+          securityDepositCurrency: sql`excluded.security_deposit_currency`,
+          depositInsuranceIncluded: sql`excluded.deposit_insurance_included`,
+          providerRating: sql`excluded.provider_rating`,
+          providerReviewCount: sql`excluded.provider_review_count`,
+          nameKey: sql`excluded.name_key`,
+          catalogueSyncedAt: sql`excluded.catalogue_synced_at`,
+          updatedAt: sql`now()`,
+        },
+      })
+      .returning({ id: listingOffer.id, listingSourceId: listingOffer.listingSourceId });
+
+    for (const row of written) offerIds.set(row.listingSourceId, row.id);
+  }
+
+  for (const plan of withSource) {
+    plan.listingOfferId = offerIds.get(plan.listingSourceId) ?? null;
+  }
+
+  const specs = withSource.flatMap((plan) =>
+    plan.listingOfferId === null
+      ? []
+      : [
+          {
+            id: newId("lospec"),
+            listingOfferId: plan.listingOfferId,
+            lengthM: decimal(plan.item.spec.lengthM),
+            beamM: decimal(plan.item.spec.beamM),
+            draftM: decimal(plan.item.spec.draftM),
+            yearBuilt: plan.item.spec.yearBuilt ?? null,
+            cabins: plan.item.spec.cabins ?? null,
+            berths: plan.item.spec.berths ?? null,
+            heads: plan.item.spec.heads ?? null,
+            showers: plan.item.spec.showers ?? null,
+            engines: plan.item.spec.engines ?? null,
+            fuelCapacity: plan.item.spec.fuelCapacity ?? null,
+            waterCapacity: plan.item.spec.waterCapacity ?? null,
+            sailType: plan.item.spec.sailType ?? null,
+          },
+        ],
+  );
+
+  for (const chunk of chunked(specs, ROW_CHUNK)) {
+    await ctx.db
+      .insert(listingOfferSpecification)
+      .values(chunk)
+      .onConflictDoUpdate({
+        target: listingOfferSpecification.listingOfferId,
+        set: {
+          lengthM: sql`excluded.length_m`,
+          beamM: sql`excluded.beam_m`,
+          draftM: sql`excluded.draft_m`,
+          yearBuilt: sql`excluded.year_built`,
+          cabins: sql`excluded.cabins`,
+          berths: sql`excluded.berths`,
+          heads: sql`excluded.heads`,
+          showers: sql`excluded.showers`,
+          engines: sql`excluded.engines`,
+          fuelCapacity: sql`excluded.fuel_capacity`,
+          waterCapacity: sql`excluded.water_capacity`,
+          sailType: sql`excluded.sail_type`,
+          updatedAt: sql`now()`,
+        },
+      });
+  }
 }
 
 /**
  * Provider-owned child rows are replaced wholesale rather than diffed: the dump is
- * the complete truth for this listing, and a diff would leave rows the provider has
+ * the complete truth for this offer, and a diff would leave rows the provider has
  * dropped behind forever.
  *
- * One delete and one insert per table for the whole batch. The delete can name the
- * batch's listings in a single `IN (...)` because `LISTING_BATCH_SIZE` is held
- * below `ID_CHUNK`; the inserts still chunk, because five hundred listings is tens
- * of thousands of media rows.
+ * Every delete is scoped to the offers being rewritten, never to their listings. That is the
+ * whole change: these tables used to be cleared per listing, so on a yacht both vendors sell
+ * each nightly run wiped the other's descriptions, equipment and check-in rules and put its
+ * own in their place. Check-in rules are the sharpest case, because the calendar reads them.
+ *
+ * One delete and one insert per table for the whole batch. The delete can name the batch's
+ * offers in a single `IN (...)` because `LISTING_BATCH_SIZE` is held below `ID_CHUNK`; the
+ * inserts still chunk, because five hundred listings is tens of thousands of media rows.
  */
 async function writeListingChildren(
   ctx: ListingWriteContext,
   plans: readonly ListingPlan[],
 ): Promise<void> {
   const { db, providerKey } = ctx;
-  const listingIds = plans.map((plan) => plan.listingId);
-
-  await insertRows(
-    plans.map(({ listingId, item }) => ({
-      listingId,
-      lengthM: decimal(item.spec.lengthM),
-      beamM: decimal(item.spec.beamM),
-      draftM: decimal(item.spec.draftM),
-      yearBuilt: item.spec.yearBuilt,
-      cabins: item.spec.cabins,
-      berths: item.spec.berths,
-      heads: item.spec.heads,
-      showers: item.spec.showers ?? null,
-      engines: item.spec.engines ?? null,
-      fuelCapacity: item.spec.fuelCapacity ?? null,
-      waterCapacity: item.spec.waterCapacity ?? null,
-      sailType: item.spec.sailType ?? null,
-    })),
-    async (chunk) => {
-      await db
-        .insert(listingSpecification)
-        .values(chunk)
-        .onConflictDoUpdate({
-          target: listingSpecification.listingId,
-          set: {
-            lengthM: sql`excluded.length_m`,
-            beamM: sql`excluded.beam_m`,
-            draftM: sql`excluded.draft_m`,
-            yearBuilt: sql`excluded.year_built`,
-            cabins: sql`excluded.cabins`,
-            berths: sql`excluded.berths`,
-            heads: sql`excluded.heads`,
-            showers: sql`excluded.showers`,
-            engines: sql`excluded.engines`,
-            fuelCapacity: sql`excluded.fuel_capacity`,
-            waterCapacity: sql`excluded.water_capacity`,
-            sailType: sql`excluded.sail_type`,
-          },
-        });
-    },
+  const written = plans.filter(
+    (plan): plan is ListingPlan & { listingOfferId: string } => plan.listingOfferId !== null,
   );
+  if (written.length === 0) return;
 
-  // Scoped by source so a second provider's media on a merged listing survives.
-  await db
-    .delete(listingMedia)
-    .where(and(inArray(listingMedia.listingId, listingIds), eq(listingMedia.source, providerKey)));
+  const offerIds = written.map((plan) => plan.listingOfferId);
+
+  await db.delete(listingMedia).where(inArray(listingMedia.listingOfferId, offerIds));
   await insertRows(
-    plans.flatMap(({ listingId, item }) =>
+    written.flatMap(({ listingId, listingOfferId, item }) =>
       item.media.map((media) => ({
         listingId,
+        listingOfferId,
         source: providerKey,
         // Verbatim vendor URL, no Cloudinary id: we have no confirmed rights to
         // copy or re-host provider media yet (Q-MEDIA).
@@ -1325,11 +1326,12 @@ async function writeListingChildren(
     },
   );
 
-  await db.delete(listingText).where(inArray(listingText.listingId, listingIds));
+  await db.delete(listingText).where(inArray(listingText.listingOfferId, offerIds));
   await insertRows(
-    plans.flatMap(({ listingId, item }) =>
+    written.flatMap(({ listingId, listingOfferId, item }) =>
       item.texts.map((text) => ({
         listingId,
+        listingOfferId,
         kind: text.kind,
         locale: text.locale,
         value: text.value,
@@ -1340,36 +1342,30 @@ async function writeListingChildren(
     },
   );
 
-  await db.delete(listingAmenity).where(inArray(listingAmenity.listingId, listingIds));
+  await db.delete(listingAmenity).where(inArray(listingAmenity.listingOfferId, offerIds));
   await insertRows(
-    plans.flatMap(({ listingId, item }) =>
+    written.flatMap(({ listingId, listingOfferId, item }) =>
       [
         ...new Set(
           item.amenities
             .map((externalId) => ctx.amenityIds.get(externalId))
             .filter((amenityId): amenityId is string => Boolean(amenityId)),
         ),
-      ].map((amenityId) => ({ listingId, amenityId })),
+      ].map((amenityId) => ({ listingId, listingOfferId, amenityId })),
     ),
     async (chunk) => {
       await db.insert(listingAmenity).values(chunk);
     },
   );
 
-  // Scoped by source for the same reason media is: a merged listing must keep the
-  // other provider's extras when this one resyncs.
   await db
     .delete(providerExtraCatalogue)
-    .where(
-      and(
-        inArray(providerExtraCatalogue.listingId, listingIds),
-        eq(providerExtraCatalogue.source, providerKey),
-      ),
-    );
+    .where(inArray(providerExtraCatalogue.listingOfferId, offerIds));
   await insertRows(
-    plans.flatMap(({ listingId, item }) =>
+    written.flatMap(({ listingId, listingOfferId, item }) =>
       priceableExtras(listingId, item).map((extra) => ({
         listingId,
+        listingOfferId,
         source: providerKey,
         kind: extra.kind,
         externalId: extra.externalId,
@@ -1396,11 +1392,12 @@ async function writeListingChildren(
     },
   );
 
-  await db.delete(listingCheckinRule).where(inArray(listingCheckinRule.listingId, listingIds));
+  await db.delete(listingCheckinRule).where(inArray(listingCheckinRule.listingOfferId, offerIds));
   await insertRows(
-    plans.flatMap(({ listingId, item }) =>
+    written.flatMap(({ listingId, listingOfferId, item }) =>
       item.checkinRules.map((rule) => ({
         listingId,
+        listingOfferId,
         checkinWeekday: rule.checkinWeekday ?? null,
         checkoutWeekday: rule.checkoutWeekday ?? null,
         minNights: rule.minNights ?? null,
@@ -1412,11 +1409,12 @@ async function writeListingChildren(
     },
   );
 
-  await db.delete(listingOneWayRule).where(inArray(listingOneWayRule.listingId, listingIds));
+  await db.delete(listingOneWayRule).where(inArray(listingOneWayRule.listingOfferId, offerIds));
   await insertRows(
-    plans.flatMap(({ listingId, item }) =>
+    written.flatMap(({ listingId, listingOfferId, item }) =>
       item.oneWayRules.map((rule) => ({
         listingId,
+        listingOfferId,
         startDate: rule.startDate,
         endDate: rule.endDate,
         isOneWay: rule.isOneWay,
@@ -1552,7 +1550,14 @@ type DuplicatePairRow = {
   /** Null when the pair has not been proposed yet, which is what makes it new. */
   candidateId: string | null;
   decision: string | null;
-  modelName: string | null;
+  viaModelYear: boolean;
+  viaNameBase: boolean;
+  modelIdA: string | null;
+  modelIdB: string | null;
+  modelNameA: string | null;
+  modelNameB: string | null;
+  yearA: number | null;
+  yearB: number | null;
   titleA: string;
   titleB: string;
   lengthA: string | null;
@@ -1579,9 +1584,12 @@ type DuplicatePairRow = {
 
 function pairFacts(row: DuplicatePairRow): DuplicatePairFacts {
   return {
-    modelName: row.modelName,
+    gates: { modelYear: row.viaModelYear, nameBase: row.viaNameBase },
     a: {
       title: row.titleA,
+      modelId: row.modelIdA,
+      modelName: row.modelNameA,
+      yearBuilt: row.yearA,
       lengthM: row.lengthA === null ? null : Number(row.lengthA),
       cabins: row.cabinsA,
       berths: row.berthsA,
@@ -1595,6 +1603,9 @@ function pairFacts(row: DuplicatePairRow): DuplicatePairFacts {
     },
     b: {
       title: row.titleB,
+      modelId: row.modelIdB,
+      modelName: row.modelNameB,
+      yearBuilt: row.yearB,
       lengthM: row.lengthB === null ? null : Number(row.lengthB),
       cabins: row.cabinsB,
       berths: row.berthsB,
@@ -1619,59 +1630,131 @@ async function selectDuplicatePairs(
   providerId: string,
   listingIds: string[],
 ): Promise<DuplicatePairRow[]> {
+  const scope = sql.join(
+    listingIds.map((id) => sql`${id}`),
+    sql`, `,
+  );
+
   const rows = await db.execute<DuplicatePairRow>(sql`
+    /*
+     * Two gates, unioned. Both propose a pair of offers from different providers sitting on
+     * different listings; neither merges anything, and a human decides either way.
+     *
+     * Gate one is the original: the same resolved model and the same build year. It needs both
+     * vendors to have spelled the model identically, and they frequently do not — "Bavaria
+     * C46" and "Bavaria C46 - 5 cab." are two taxonomy rows — so a genuine duplicate could
+     * never reach a reviewer at all.
+     *
+     * Gate two goes around the taxonomy entirely: the boat's own name, folded the way
+     * yachtNameKey folds it, plus a berth within a few kilometres. The name is written to
+     * listing_offer at projection time so this is an indexed equality rather than string work
+     * across twenty thousand offers, and the bounding box is only a prefilter — the scorer
+     * applies the real haversine afterwards.
+     */
+    with proposed as (
+      select oa.id as offer_a, ob.id as offer_b, true as via_model_year, false as via_name_base
+      from listing_offer oa
+      join listing_offer_specification spa on spa.listing_offer_id = oa.id
+      join listing_offer ob
+        on ob.model_id = oa.model_id
+       and ob.listing_id <> oa.listing_id
+       and ob.provider_id <> oa.provider_id
+       and ob.status = 'active'
+      join listing_offer_specification spb
+        on spb.listing_offer_id = ob.id and spb.year_built = spa.year_built
+      where oa.listing_id in (${scope})
+        and oa.status = 'active'
+        and oa.model_id is not null
+        and spa.year_built is not null
+
+      union all
+
+      select oa.id, ob.id, false, true
+      from listing_offer oa
+      join listing_offer ob
+        on ob.name_key = oa.name_key
+       and ob.listing_id <> oa.listing_id
+       and ob.provider_id <> oa.provider_id
+       and ob.status = 'active'
+      left join base ba on ba.id = oa.home_base_id
+      left join base bb on bb.id = ob.home_base_id
+      where oa.listing_id in (${scope})
+        and oa.status = 'active'
+        and oa.name_key is not null
+        /* Below this a folded title is initials or a stray year, not a boat's name. */
+        and length(oa.name_key) >= 4
+        and (
+          ob.home_base_id = oa.home_base_id
+          or (abs(bb.lat - ba.lat) <= 0.05 and abs(bb.lng - ba.lng) <= 0.05)
+        )
+    ),
+    gated as (
+      select
+        offer_a,
+        offer_b,
+        bool_or(via_model_year) as via_model_year,
+        bool_or(via_name_base) as via_name_base
+      from proposed
+      group by offer_a, offer_b
+    )
     select
       a.id as "sourceAId",
       b.id as "sourceBId",
       d.id as "candidateId",
       d.decision::text as "decision",
-      m.name as "modelName",
-      la.title as "titleA",
-      lb.title as "titleB",
-      sa.length_m as "lengthA",
-      sb.length_m as "lengthB",
-      sa.cabins as "cabinsA",
-      sb.cabins as "cabinsB",
-      sa.berths as "berthsA",
-      sb.berths as "berthsB",
-      sa.heads as "headsA",
-      sb.heads as "headsB",
-      la.home_base_id as "baseA",
-      lb.home_base_id as "baseB",
+      g.via_model_year as "viaModelYear",
+      g.via_name_base as "viaNameBase",
+      oa.model_id as "modelIdA",
+      ob.model_id as "modelIdB",
+      ma.name as "modelNameA",
+      mb.name as "modelNameB",
+      spa.year_built as "yearA",
+      spb.year_built as "yearB",
+      oa.title as "titleA",
+      ob.title as "titleB",
+      spa.length_m as "lengthA",
+      spb.length_m as "lengthB",
+      spa.cabins as "cabinsA",
+      spb.cabins as "cabinsB",
+      spa.berths as "berthsA",
+      spb.berths as "berthsB",
+      spa.heads as "headsA",
+      spb.heads as "headsB",
+      oa.home_base_id as "baseA",
+      ob.home_base_id as "baseB",
       bsa.location_id as "locationA",
       bsb.location_id as "locationB",
       bsa.lat as "latA",
       bsb.lat as "latB",
       bsa.lng as "lngA",
       bsb.lng as "lngB",
-      la.builder_id as "builderA",
-      lb.builder_id as "builderB",
-      oa.name as "operatorA",
-      ob.name as "operatorB"
-    from listing_source a
+      oa.builder_id as "builderA",
+      ob.builder_id as "builderB",
+      opa.name as "operatorA",
+      opb.name as "operatorB"
+    from gated g
+    join listing_offer oa on oa.id = g.offer_a
+    join listing_offer ob on ob.id = g.offer_b
+    /*
+     * Every fact is read from the offer, never from the listing composed above it. On a
+     * listing that has already been merged those two are the same values on both sides, which
+     * would score every remaining look-alike as a perfect match.
+     */
+    join listing_source a on a.id = oa.listing_source_id
+    join listing_source b on b.id = ob.listing_source_id
     join provider_record pra on pra.id = a.provider_record_id
-    join listing la on la.id = a.listing_id
-    join listing_specification sa on sa.listing_id = la.id
-    join listing lb on lb.model_id = la.model_id and lb.id <> la.id
-    join listing_specification sb on sb.listing_id = lb.id and sb.year_built = sa.year_built
-    join listing_source b on b.listing_id = lb.id
-    join provider_record prb on prb.id = b.provider_record_id
-    left join yacht_model m on m.id = la.model_id
-    left join base bsa on bsa.id = la.home_base_id
-    left join base bsb on bsb.id = lb.home_base_id
-    left join operator oa on oa.id = la.operator_id
-    left join operator ob on ob.id = lb.operator_id
+    left join listing_offer_specification spa on spa.listing_offer_id = oa.id
+    left join listing_offer_specification spb on spb.listing_offer_id = ob.id
+    left join yacht_model ma on ma.id = oa.model_id
+    left join yacht_model mb on mb.id = ob.model_id
+    left join base bsa on bsa.id = oa.home_base_id
+    left join base bsb on bsb.id = ob.home_base_id
+    left join operator opa on opa.id = oa.operator_id
+    left join operator opb on opb.id = ob.operator_id
     left join listing_duplicate_candidate d
       on least(d.source_a_id, d.source_b_id) = least(a.id, b.id)
      and greatest(d.source_a_id, d.source_b_id) = greatest(a.id, b.id)
     where pra.provider_id = ${providerId}
-      and prb.provider_id <> ${providerId}
-      and la.model_id is not null
-      and sa.year_built is not null
-      and la.id in (${sql.join(
-        listingIds.map((id) => sql`${id}`),
-        sql`, `,
-      )})
   `);
 
   return rows.rows;

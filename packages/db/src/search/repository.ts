@@ -2,6 +2,8 @@ import { sql, type SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
+import { REFUSAL_TRUST_DAYS } from "../schema/availability";
+import { FX_BASE_CURRENCY } from "../fx/rates";
 import { crewOptionsFor } from "./crew";
 import {
   decodeSearchCursor,
@@ -9,7 +11,8 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
+import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs, normalizedKeySql } from "./localize";
+import { placeLine, placeLineExcept } from "./place-line";
 import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
@@ -183,10 +186,6 @@ async function providerDescription(
  * collapsing a plural is a judgement the dictionary should make explicitly rather than the
  * join make silently.
  */
-function extraNameKeySql(column: SQL): SQL {
-  return sql`regexp_replace(replace(lower(${column}), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
-}
-
 export async function getListingDetailByIdOrSlug(
   db: NodePgDatabase<typeof schema>,
   idOrSlug: string,
@@ -234,7 +233,16 @@ export async function getListingDetailByIdOrSlug(
         priceMinor: number | null;
         priceCurrency: string | null;
       }>(sql`
-      select
+      /*
+       * One row per piece of equipment, however each vendor spells it.
+       *
+       * The two providers keep separate amenity taxonomies — their codes are scoped per
+       * provider, so Autopilot exists once as each vendor's own row — and a listing both of
+       * them sell carries both. Folded on the name the same way the facet dictionary folds it,
+       * because that is the only thing the two rows have in common. An included row wins over
+       * a priced one: the list answers "what does this yacht have".
+       */
+      select distinct on (${normalizedKeySql(sql`a.name`)})
         a.code,
         a.name as label,
         a.crew,
@@ -244,7 +252,7 @@ export async function getListingDetailByIdOrSlug(
       from listing_amenity la
       join amenity a on a.id = la.amenity_id
       where la.listing_id = ${listing.listingId}
-      order by la.obligatory desc, la.price_minor nulls first, a.name asc
+      order by ${normalizedKeySql(sql`a.name`)}, la.price_minor nulls first, a.name asc
     `),
       db.execute<{
         source: string;
@@ -286,9 +294,22 @@ export async function getListingDetailByIdOrSlug(
         and translation.external_id = extra.external_id
         and translation.locale = ${locale}
       left join extra_label_translation curated
-        on curated.name_key = ${extraNameKeySql(sql`extra.name`)}
+        on curated.name_key = ${normalizedKeySql(sql`extra.name`)}
         and curated.locale = ${locale}
-      where extra.listing_id = ${listing.listingId}
+      /*
+       * Scoped to the offer the card is priced from, never to the listing.
+       *
+       * The page shows one price and one set of terms, and they have to be the same vendor's:
+       * across a merged listing the two vendors' cleaning fees folded into a single range
+       * neither of them charges. Falls back to the listing while a document has no best offer
+       * recorded yet, which is a listing with nothing sellable on it anyway.
+       */
+      where (
+        case
+          when ${listing.bestOfferId ?? null}::text is null then extra.listing_id = ${listing.listingId}
+          else extra.listing_offer_id = ${listing.bestOfferId ?? null}::text
+        end
+      )
         /*
          * Only fees whose season overlaps what we actually sell.
          *
@@ -434,7 +455,7 @@ export async function getListingDetailByIdOrSlug(
     },
     importantInformation: {
       charterCompany: listing.operator,
-      yachtPickupAddress: `${listing.baseName}, ${listing.location}, ${listing.country}`,
+      yachtPickupAddress: placeLine(listing.baseName, listing.location, listing.country),
       /*
        * Times only. These carried `available_from`/`available_to`, which are the first and last
        * dates the boat is free anywhere in the horizon — not this charter's pickup and drop-off.
@@ -454,12 +475,17 @@ export async function getListingDetailByIdOrSlug(
       paymentMethodsAcceptedByCharterCompany: ["card", "bank_transfer", "cash"],
       marinaInformation: {
         marina: listing.baseName,
-        location: listing.location,
+        /*
+         * The surroundings the marina's own name has not already given. A NauSYS base is named
+         * after its location, so the raw pair read "X is located in X, Bahamas"; the region is
+         * the next-widest thing to say once the location adds nothing.
+         */
+        location: placeLineExcept(listing.baseName, listing.location) || listing.region,
         country: listing.country,
       },
       marinaContact: {
         name: listing.baseName,
-        address: `${listing.baseName}, ${listing.location}, ${listing.country}`,
+        address: placeLine(listing.baseName, listing.location, listing.country),
         email: listing.baseEmail,
         phone: listing.basePhone,
         website: listing.baseWebsite,
@@ -532,8 +558,8 @@ export async function listSearchFacets(
         max(doc.berths) as "maxBerths",
         min(doc.heads) as "minBathrooms",
         max(doc.heads) as "maxBathrooms",
-        min(doc.price_from_minor) as "minMinor",
-        max(doc.price_from_minor) as "maxMinor",
+        min(doc.price_from_minor_eur) as "minMinor",
+        max(doc.price_from_minor_eur) as "maxMinor",
         /* Zero is how a vendor writes a build year it does not know, and it reached the range as
            a real one: the age slider then offered "up to 2026 years old". Filtered rather than
            coalesced, because a fleet where nobody stated a year has no range to show. */
@@ -544,18 +570,21 @@ export async function listSearchFacets(
         bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
         bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
         bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
-        bool_or(doc.pets_allowed) as "hasPetsAllowed",
-        coalesce(min(doc.currency), ${input.currency ?? "EUR"}) as currency
+        bool_or(doc.pets_allowed) as "hasPetsAllowed"
       from listing_search_doc doc
       where ${whereClause(input)}
     `),
   ]);
   const row = rangeRows.rows[0];
-  const currency = row?.currency ?? input.currency ?? "EUR";
+  /*
+   * The bounds are read off price_from_minor_eur, so the slider is in that currency whatever
+   * the fleet publishes in. Taking the label from min(doc.currency) instead put a euro sign on
+   * a range whose ends came from two currencies, and sent a euro bound to a dollar comparison.
+   */
   const priceRange = {
     minMinor: row?.minMinor ?? 0,
     maxMinor: row?.maxMinor ?? 0,
-    currency,
+    currency: FX_BASE_CURRENCY,
   };
   const yearRange = numberRange(row?.minYear, row?.maxYear);
 
@@ -610,6 +639,10 @@ export async function listMapMarkers(
       doc.lat,
       doc.lng,
       doc.price_from_minor as "priceFromMinor",
+      doc.best_offer_id as "bestOfferId",
+      doc.offer_count as "offerCount",
+  doc.best_offer_id as "bestOfferId",
+  doc.offer_count as "offerCount",
       doc.currency
     from listing_search_doc doc
     where ${whereClause(input)}
@@ -699,7 +732,6 @@ export async function listAvailabilityCalendar(
     where slot.listing_id = ${input.listingId}
       and slot.start_date >= ${input.from}
       and slot.end_date <= ${input.to}
-      and (slot.currency is null or slot.currency = ${input.currency ?? "EUR"})
       /*
        * Only the offers. A row the provider already marks taken is reported as it stands,
        * but one it still offers and we have since sold is not something to list back.
@@ -734,44 +766,71 @@ export async function listAvailabilityConstraints(
   input: AvailabilityCalendarInput,
 ): Promise<AvailabilityConstraints> {
   /*
+   * One constraint set per offer, never one per listing.
+   *
+   * A yacht two vendors sell has two calendars, two rate lists and two sets of check-in
+   * rules, and flattening them describes a charter neither would honour: one vendor's free
+   * week closed on the other vendor's turnaround day. `offer-availability.ts` combines the
+   * answers instead, so the sets stay whole and the customer still sees one card.
+   */
+  /*
    * Overlap, not containment, unlike the calendar above. A booking that starts before
    * the window and ends inside it still blocks candidate ranges at this end, and a
    * containment filter would drop it and let the caller offer a period that is taken.
    */
   const overlapsWindow = sql`slot.start_date < ${input.to} and slot.end_date > ${input.from}`;
 
-  const [rules, occupied, priced, refused, oneWay] = await Promise.all([
+  const [offers, rules, occupied, priced, refused, oneWay, holds] = await Promise.all([
+    db.execute<{ offerId: string; provider: string }>(sql`
+      select o.id as "offerId", p.code as provider
+      from listing_offer o
+      join provider p on p.id = o.provider_id
+      where o.listing_id = ${input.listingId} and o.status = 'active'
+      order by o.id
+    `),
     db.execute<{
+      offerId: string;
       checkinWeekday: number | null;
       checkoutWeekday: number | null;
       minNights: number | null;
       maxNights: number | null;
     }>(sql`
       select
+        rule.listing_offer_id as "offerId",
         rule.checkin_weekday as "checkinWeekday",
         rule.checkout_weekday as "checkoutWeekday",
         rule.min_nights as "minNights",
         rule.max_nights as "maxNights"
       from listing_checkin_rule rule
-      where rule.listing_id = ${input.listingId}
+      join listing_offer o
+        on o.id = rule.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
       order by rule.min_nights asc nulls first, rule.checkin_weekday asc nulls first
     `),
     db.execute<{
+      offerId: string;
       startDate: string;
       endDate: string;
       status: "option" | "occupied" | "blocked";
     }>(sql`
-      /* Both arms cast to text: a union cannot find a common type for the enum and the case. */
-      select slot.start_date as "startDate", slot.end_date as "endDate", slot.status::text as status
+      /* Cast to text for the same reason the union below does: an enum has no common type with a case. */
+      select
+        slot.listing_offer_id as "offerId",
+        slot.start_date as "startDate",
+        slot.end_date as "endDate",
+        slot.status::text as status
       from availability_slot slot
-      where slot.listing_id = ${input.listingId}
-        and slot.status <> 'available'
+      join listing_offer o
+        on o.id = slot.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where slot.status <> 'available'
         and ${overlapsWindow}
-      union all
-      ${slotHoldsAsOccupancy(input.listingId, input.from, input.to)}
       order by "startDate" asc
     `),
     db.execute<{
+      offerId: string;
       startDate: string;
       endDate: string;
       priceMinor: number;
@@ -785,6 +844,7 @@ export async function listAvailabilityConstraints(
        * instead of only the periods someone enumerated inside it.
        */
       select
+        price.listing_offer_id as "offerId",
         price.start_date as "startDate",
         price.end_date as "endDate",
         price.price_minor as "priceMinor",
@@ -792,21 +852,30 @@ export async function listAvailabilityConstraints(
         exists (
           select 1
           from availability_slot slot
-          where slot.listing_id = price.listing_id
+          where slot.listing_offer_id = price.listing_offer_id
             and slot.status = 'available'
             and slot.availability_confirmed
             and slot.start_date >= price.start_date
             and slot.end_date <= price.end_date
         ) as "confirmed"
       from listing_price_period price
-      where price.listing_id = ${input.listingId}
-        and price.kind = 'weekly'
-        and price.currency = ${input.currency ?? "EUR"}
+      join listing_offer o
+        on o.id = price.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      /*
+       * Every currency the offer publishes in, not just the caller's. This list opens a season;
+       * it does not price one, and a Bahamas fleet quoting in USD has a season all the same.
+       * Filtering it by the caller's currency returned nothing for those offers, which read as
+       * season-closed on every day and greyed out a calendar the search card was still
+       * advertising dates from -- 190 listings with a live charter and a dead date picker.
+       */
+      where price.kind = 'weekly'
         and price.start_date < ${input.to}
         and price.end_date > ${input.from}
       order by price.start_date asc
     `),
-    db.execute<{ startDate: string; endDate: string }>(sql`
+    db.execute<{ offerId: string; startDate: string; endDate: string }>(sql`
       /*
        * Exact periods the provider was asked to price and declined, which occupancy and the
        * rate list cannot express between them: a week can be unsold, in an open season, and
@@ -814,35 +883,79 @@ export async function listAvailabilityConstraints(
        * these on both ends, because a refused fortnight says nothing about the free week
        * starting the same day.
        */
-      select r.start_date as "startDate", r.end_date as "endDate"
+      select r.listing_offer_id as "offerId", r.start_date as "startDate", r.end_date as "endDate"
       from listing_refused_period r
-      where r.listing_id = ${input.listingId}
-        and r.start_date < ${input.to}
+      join listing_offer o
+        on o.id = r.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where r.start_date < ${input.to}
         and r.end_date > ${input.from}
+        /* Only refusals something has re-confirmed lately; see REFUSAL_TRUST_DAYS. */
+        and r.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
       order by r.start_date asc
     `),
     db.execute<{
+      offerId: string;
       startDate: string | null;
       endDate: string | null;
       isOneWay: boolean;
     }>(sql`
-      select rule.start_date as "startDate", rule.end_date as "endDate", rule.is_one_way as "isOneWay"
+      select
+        rule.listing_offer_id as "offerId",
+        rule.start_date as "startDate",
+        rule.end_date as "endDate",
+        rule.is_one_way as "isOneWay"
       from listing_one_way_rule rule
-      where rule.listing_id = ${input.listingId}
-        and (rule.start_date is null or rule.start_date < ${input.to})
+      join listing_offer o
+        on o.id = rule.listing_offer_id
+       and o.listing_id = ${input.listingId}
+       and o.status = 'active'
+      where (rule.start_date is null or rule.start_date < ${input.to})
         and (rule.end_date is null or rule.end_date > ${input.from})
       order by rule.start_date asc nulls first
     `),
+    /*
+     * Our own live checkouts, which belong to the hull rather than to a seller: a hold taken
+     * through one vendor blocks the boat whoever else lists it. Appended to every offer.
+     */
+    db.execute<{
+      startDate: string;
+      endDate: string;
+      status: "option" | "occupied" | "blocked";
+    }>(sql`
+      select "startDate", "endDate", status from (
+        ${slotHoldsAsOccupancy(input.listingId, input.from, input.to)}
+      ) held
+    `),
   ]);
+
+  const byOffer = <T extends { offerId: string }>(rows: readonly T[]) => {
+    const grouped = new Map<string, Omit<T, "offerId">[]>();
+    for (const { offerId, ...rest } of rows) {
+      grouped.set(offerId, [...(grouped.get(offerId) ?? []), rest]);
+    }
+    return grouped;
+  };
+
+  const rulesByOffer = byOffer(rules.rows);
+  const occupiedByOffer = byOffer(occupied.rows);
+  const pricedByOffer = byOffer(priced.rows);
+  const refusedByOffer = byOffer(refused.rows);
+  const oneWayByOffer = byOffer(oneWay.rows);
 
   return {
     listingId: input.listingId,
     window: { from: input.from, to: input.to },
-    rules: rules.rows,
-    occupied: occupied.rows,
-    priced: priced.rows,
-    refused: refused.rows,
-    oneWay: oneWay.rows,
+    offers: offers.rows.map((offer) => ({
+      offerId: offer.offerId,
+      provider: offer.provider,
+      rules: rulesByOffer.get(offer.offerId) ?? [],
+      occupied: [...(occupiedByOffer.get(offer.offerId) ?? []), ...holds.rows],
+      priced: pricedByOffer.get(offer.offerId) ?? [],
+      refused: refusedByOffer.get(offer.offerId) ?? [],
+      oneWay: oneWayByOffer.get(offer.offerId) ?? [],
+    })),
   };
 }
 
@@ -914,7 +1027,7 @@ export async function listSimilarListings(
         or doc.country = ${listing.country}
         or doc.region = ${listing.region}
       )
-    order by doc.rating desc, doc.price_from_minor asc nulls last, doc.listing_id asc
+    order by doc.rating desc, doc.price_from_minor_eur asc nulls last, doc.listing_id asc
     limit ${limit}
   `);
 
@@ -991,6 +1104,9 @@ const searchColumns = sql`
   doc.gallery,
   doc.amenities,
   doc.price_from_minor as "priceFromMinor",
+  doc.price_from_minor_eur as "priceFromMinorEur",
+  doc.best_offer_id as "bestOfferId",
+  doc.offer_count as "offerCount",
   doc.currency,
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
@@ -1102,11 +1218,17 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("maxBoatAge") && input.maxBoatAge !== undefined) {
     parts.push(sql`doc.year_built >= ${currentYear() - input.maxBoatAge}`);
   }
+  /*
+   * Both bounds arrive in FX_BASE_CURRENCY, matching the range facet that produced the slider,
+   * so they are compared against the converted column. A listing with no usable rate has a null
+   * there and drops out of a bounded search rather than being measured against a bound in a
+   * currency it does not share.
+   */
   if (!skip.has("minPriceMinor") && input.minPriceMinor) {
-    parts.push(sql`doc.price_from_minor >= ${input.minPriceMinor}`);
+    parts.push(sql`doc.price_from_minor_eur >= ${input.minPriceMinor}`);
   }
   if (!skip.has("maxPriceMinor") && input.maxPriceMinor) {
-    parts.push(sql`doc.price_from_minor <= ${input.maxPriceMinor}`);
+    parts.push(sql`doc.price_from_minor_eur <= ${input.maxPriceMinor}`);
   }
   if (!skip.has("withoutAvailabilityConfirmation") && input.withoutAvailabilityConfirmation) {
     parts.push(sql`doc.has_unconfirmed_availability = true`);
@@ -1155,17 +1277,30 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
    *
    * A listing with no published rule is kept, matching `availability-rules.ts`: the rules are
    * what the provider stated, and inventing one here would hide dates it would happily sell.
+   *
+   * Asked of each offer rather than of the listing, and satisfied when any one of them says
+   * yes. Across the listing, one vendor's rules vouched for the other's inventory: a boat one
+   * provider sells by the week and the other by the night read as available for three nights
+   * through both.
    */
   if (!skip.has("duration") && input.duration) {
-    parts.push(sql`(
-      not exists (select 1 from listing_checkin_rule rule where rule.listing_id = doc.listing_id)
-      or exists (
-        select 1
-        from listing_checkin_rule rule
-        where rule.listing_id = doc.listing_id
-          and (rule.min_nights is null or rule.min_nights <= ${input.duration})
-          and (rule.max_nights is null or rule.max_nights >= ${input.duration})
-      )
+    parts.push(sql`exists (
+      select 1
+      from listing_offer o
+      where o.listing_id = doc.listing_id
+        and o.status = 'active'
+        and (
+          not exists (
+            select 1 from listing_checkin_rule rule where rule.listing_offer_id = o.id
+          )
+          or exists (
+            select 1
+            from listing_checkin_rule rule
+            where rule.listing_offer_id = o.id
+              and (rule.min_nights is null or rule.min_nights <= ${input.duration})
+              and (rule.max_nights is null or rule.max_nights >= ${input.duration})
+          )
+        )
     )`);
   }
   return sql.join(parts, sql` and `);
@@ -1207,9 +1342,9 @@ function orderClause(sort: SearchSort = "recommended"): SQL {
 function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): SearchCursor {
   switch (sort) {
     case "price-asc":
-      return { value: item.priceFromMinor ?? NULL_PRICE_ASC, listingId: item.listingId };
+      return { value: item.priceFromMinorEur ?? NULL_PRICE_ASC, listingId: item.listingId };
     case "price-desc":
-      return { value: item.priceFromMinor ?? NULL_PRICE_DESC, listingId: item.listingId };
+      return { value: item.priceFromMinorEur ?? NULL_PRICE_DESC, listingId: item.listingId };
     case "newest":
       return { value: item.yearBuilt ?? NULL_YEAR_DESC, listingId: item.listingId };
     case "rating":
@@ -1248,6 +1383,28 @@ function paginationFor(input: {
   };
 }
 
+/*
+ * The cheapest listing in a facet group, given as its own published price and currency.
+ *
+ * Two aggregates sharing one order, rather than min(price) beside min(currency). Those were
+ * independent: the number came from whichever listing held the smallest integer and the symbol
+ * from whichever currency sorted first, so British Virgin Islands rendered "From EUR 1,969" off
+ * a boat priced USD 1,969.
+ *
+ * The order is the converted column, so cheapest means cheapest rather than smallest-integer.
+ * What is displayed is still the published pair, so the card shows what the operator advertises.
+ * A group holding nothing comparable falls through to its own cheapest published amount, which
+ * is the right answer there: nothing to compare means the group is in one currency.
+ */
+const facetPriceOrder = sql`order by
+  doc.price_from_minor_eur asc nulls last,
+  doc.price_from_minor asc nulls last,
+  doc.listing_id asc`;
+
+const facetPriceColumns = sql`
+      (array_agg(doc.price_from_minor ${facetPriceOrder}))[1] as "priceFromMinor",
+      (array_agg(doc.currency ${facetPriceOrder}))[1] as currency`;
+
 async function listFacetOptions(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
@@ -1258,9 +1415,7 @@ async function listFacetOptions(
   const rows = await db.execute<FacetOptionRow>(sql`
     select
       ${expression} as label,
-      count(*)::integer as count,
-      min(doc.price_from_minor) as "priceFromMinor",
-      min(doc.currency) as currency
+      count(*)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     where ${whereClause(input, ignored)}
       and ${expression} is not null
@@ -1278,9 +1433,7 @@ async function listEquipmentFacetOptions(
   const rows = await db.execute<FacetOptionRow>(sql`
     select
       amenity.value as label,
-      count(distinct doc.listing_id)::integer as count,
-      min(doc.price_from_minor) as "priceFromMinor",
-      min(doc.currency) as currency
+      count(distinct doc.listing_id)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
     where ${whereClause(input, ["equipment"])}
@@ -1367,11 +1520,20 @@ function labelsFromOptions(options: ListingFacetOption[]): string[] {
 export async function listSelectableExtraCodes(
   db: NodePgDatabase<typeof schema>,
   listingId: string,
+  listingOfferId?: string | null,
 ): Promise<Set<string>> {
+  /*
+   * Narrowed to one offer where the caller knows which vendor it is quoting. An extra code
+   * belongs to the provider that published it, so across a merged listing the union would
+   * accept a code from the vendor that is not selling this charter, persist it onto the quote,
+   * and have the adapter drop it: billed nothing, told nobody. Without an offer this stays the
+   * listing-wide set, which is exactly right while a listing has one.
+   */
   const rows = await db.execute<{ source: string; kind: string; externalId: string }>(sql`
     select source, kind, external_id as "externalId"
     from provider_extra_catalogue
-    where listing_id = ${listingId} and obligatory = false
+    where obligatory = false
+      and ${listingOfferId ? sql`listing_offer_id = ${listingOfferId}` : sql`listing_id = ${listingId}`}
   `);
 
   return new Set(
@@ -1511,7 +1673,7 @@ function overviewFor(
     | undefined,
 ): { code: string; label: string; value: string | null }[] {
   return [
-    { code: "location", label: "Location", value: `${listing.location}, ${listing.country}` },
+    { code: "location", label: "Location", value: placeLine(listing.location, listing.country) },
     {
       code: "year",
       label: "Year",
@@ -1709,6 +1871,11 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
   };
 }
 
-const priceAscSortValue = sql`coalesce(doc.price_from_minor, ${NULL_PRICE_ASC})`;
-const priceDescSortValue = sql`coalesce(doc.price_from_minor, ${NULL_PRICE_DESC})`;
+/*
+ * Ordered on the converted column, and paired with the cursor values in `cursorFor`: the two
+ * have to read the same expression or a keyset page skips or repeats rows. A listing with no
+ * usable rate sorts with the unpriced ones, which is what "we cannot compare this" looks like.
+ */
+const priceAscSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_ASC})`;
+const priceDescSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

@@ -519,6 +519,41 @@
       "when": 1787672424004,
       "tag": "0073_serious_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1788085195145,
+      "tag": "0074_jazzy_steve_rogers",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1788123082723,
+      "tag": "0075_brainy_lenny_balinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1788158605495,
+      "tag": "0076_sweet_electro",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1788158873332,
+      "tag": "0077_needy_betty_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1788166394292,
+      "tag": "0078_warm_shen",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine, placeLineExcept } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
   Popover,
@@ -86,7 +87,11 @@ export function MarinaDetails({ marina, className }: { marina: Marina; className
       <div className="flex flex-col gap-1.5 md:gap-2">
         <p className="truncate text-base font-bold leading-[1.4] text-foreground">{marina.name}</p>
         <p className="text-base leading-[1.4] text-natural-500">
-          {[marina.address, marina.city, marina.country].filter(Boolean).join(", ")}
+          {/* The surroundings only: the name sits right above, and a NauSYS base is named after
+              its own location, so the raw parts repeated that name in full. Falling back to the
+              country keeps a line here when the name has already said everything else. */}
+          {placeLineExcept(marina.name, marina.address, marina.city, marina.country) ||
+            marina.country}
         </p>
       </div>
 
@@ -121,7 +126,7 @@ export function MarinaDetails({ marina, className }: { marina: Marina; className
 }
 
 function formatLocation(marina: Marina): string {
-  return [marina.name, marina.city, marina.country].join(", ");
+  return placeLine(marina.name, marina.city, marina.country);
 }
 
 export type MarinaPopoverProps = {

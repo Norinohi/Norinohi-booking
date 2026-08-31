@@ -21,7 +21,10 @@
     "listings:purge": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/purge-provider-data.ts",
     "probe:crewlist": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-crewlist-link.ts",
     "facets:backfill": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/backfill-facet-translations.ts",
-    "probe:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-booking-manager.ts"
+    "probe:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-booking-manager.ts",
+    "offers:backfill": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/backfill-listing-offers.ts",
+    "offers:verify": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/verify-offers.ts",
+    "catalogue:reproject": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/reproject-catalogue.ts"
   },
   "dependencies": {
     "@yacht-charter/db": "workspace:*",

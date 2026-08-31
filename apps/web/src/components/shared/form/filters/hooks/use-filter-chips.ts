@@ -3,6 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 
 import { dayToDisplay } from "@/lib/date";
+import { useMoney } from "@/hooks/use-money";
 
 import { type ChipId, CHIP_DEFS, type FilterChip, isFilterKeyActive } from "../lib/chips";
 import { labelOf, type Option } from "../lib/options";
@@ -16,7 +17,8 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
   const t = useTranslations("Filters.chips");
   const format = useFormatter();
   const { options } = useFilterOptions();
-  const { defaults } = useFilterRanges();
+  const { defaults, priceCurrency } = useFilterRanges();
+  const money = useMoney();
 
   /** Two names then a counter, so a chip stays readable when many boxes are ticked. */
   function names(from: Option[], values: string[]): string {
@@ -29,7 +31,8 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
   }
 
   const range = ([from, to]: Range) => `${format.number(from)}–${format.number(to)}`;
-  const money = ([from, to]: Range) => `${format.number(from, "eur")}–${format.number(to, "eur")}`;
+  const priceRange = ([from, to]: Range) =>
+    `${money(from * 100, priceCurrency)}–${money(to * 100, priceCurrency)}`;
 
   function label(id: ChipId): string {
     switch (id) {
@@ -80,7 +83,7 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
       case "bathrooms":
         return t("bathrooms", { value: range(state.bathrooms) });
       case "price":
-        return t("price", { value: money(state.price) });
+        return t("price", { value: priceRange(state.price) });
       case "year":
         return t("year", {
           from: state.yearFrom === "any" ? t("any") : state.yearFrom,

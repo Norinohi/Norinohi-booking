@@ -222,15 +222,20 @@ export async function recommendTrip(
 /**
  * Per person per week, from the yachts that matched. Falls back to the band the
  * visitor picked when nothing matched, so the figure is never invented.
+ *
+ * Read off the converted price rather than the published one, because this takes a min and a
+ * max across the whole match and then labels the pair CURRENCY. On a Caribbean brief that
+ * matched both EUR and USD hulls, the two ends came from different currencies and the range
+ * described no fleet that exists. A yacht with no comparable price sits the estimate out.
  */
 function estimatePrice(
-  items: { priceFromMinor: number | null }[],
+  items: { priceFromMinorEur: number | null }[],
   guests: number,
   weeks: number,
   budget: { min: number; max: number | null } | undefined,
 ): Recommendation["estimatedPrice"] {
   const perPerson = items
-    .map((item) => item.priceFromMinor)
+    .map((item) => item.priceFromMinorEur)
     .filter((price): price is number => price !== null && price > 0)
     .map((price) => Math.round(price / guests / weeks));
 

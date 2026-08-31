@@ -17,6 +17,8 @@ import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagin
 import { ImageOff, Search } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
+
+import ListingSourcesDialog from "./listing-sources-dialog";
 import { toast } from "sonner";
 
 import { Image } from "@/components/shared/data-display/image";
@@ -26,6 +28,7 @@ import { useListings, useSetListingStatus } from "../hooks/use-listings";
 import {
   type ListingAdminRow,
   type ListingStatus,
+  type MovableStatus,
   type ProviderKey,
   toProviderKey,
 } from "../types";
@@ -44,12 +47,18 @@ import {
 const ALL = "all";
 
 const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
-const STATUSES: readonly ListingStatus[] = ["draft", "published", "hidden"];
+/*
+ * The three a person can move a listing between. `merged` is absent on purpose: a merge
+ * writes it to record that this listing's offers moved to another one, and nothing here
+ * should offer it as a destination.
+ */
+const STATUSES: readonly MovableStatus[] = ["draft", "published", "hidden"];
 
 const STATUS_VARIANTS = {
   draft: "warning",
   published: "success",
   hidden: "neutral",
+  merged: "neutral",
 } as const satisfies Record<ListingStatus, string>;
 
 const COLUMN_COUNT = 8;
@@ -64,6 +73,8 @@ export default function ListingsTable() {
   const [status, setStatus] = useState(ALL);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  /** The listing whose provider sources are open, or null. Null closes the dialog. */
+  const [sourcesFor, setSourcesFor] = useState<ListingAdminRow | null>(null);
 
   const setStatusMutation = useSetListingStatus();
 
@@ -98,7 +109,7 @@ export default function ListingsTable() {
   const placeLabel = (listing: ListingAdminRow) =>
     [listing.baseName, listing.locationName].filter(Boolean).join(" · ") || t("notSet");
 
-  const move = (listing: ListingAdminRow, next: ListingStatus) => {
+  const move = (listing: ListingAdminRow, next: MovableStatus) => {
     setStatusMutation.mutate(
       { id: listing.id, status: next },
       {
@@ -257,35 +268,59 @@ export default function ListingsTable() {
                         {/* Only the moves that change something: the row's own status is never
                             offered back to itself. */}
                         <div className="flex items-center gap-2">
-                          {listing.status === "published" ? null : (
-                            <Button
-                              variant="brand"
-                              size="sm"
-                              disabled={setStatusMutation.isPending}
-                              onClick={() => move(listing, "published")}
-                            >
-                              {t("actions.publish")}
-                            </Button>
-                          )}
-                          {listing.status === "hidden" ? null : (
+                          {/*
+                            Only where there is something to choose between. On a listing one
+                            vendor sells, every field group has exactly one candidate and the
+                            dialog would be a page of foregone conclusions.
+                          */}
+                          {listing.offerCount > 1 ? (
                             <Button
                               variant="subtle"
                               size="sm"
-                              disabled={setStatusMutation.isPending}
-                              onClick={() => move(listing, "hidden")}
+                              onClick={() => setSourcesFor(listing)}
                             >
-                              {t("actions.unpublish")}
+                              {t("actions.sources")}
                             </Button>
-                          )}
-                          {listing.status === "draft" ? null : (
-                            <Button
-                              variant="subtle"
-                              size="sm"
-                              disabled={setStatusMutation.isPending}
-                              onClick={() => move(listing, "draft")}
-                            >
-                              {t("actions.draft")}
-                            </Button>
+                          ) : null}
+                          {/*
+                            A merged listing has no offers left — they moved to the survivor —
+                            so none of these are moves it can make. Publishing one would put an
+                            empty card back into search; splitting an offer back out is the way
+                            to undo it, and that lives in the duplicate queue.
+                          */}
+                          {listing.status === "merged" ? null : (
+                            <>
+                              {listing.status === "published" ? null : (
+                                <Button
+                                  variant="brand"
+                                  size="sm"
+                                  disabled={setStatusMutation.isPending}
+                                  onClick={() => move(listing, "published")}
+                                >
+                                  {t("actions.publish")}
+                                </Button>
+                              )}
+                              {listing.status === "hidden" ? null : (
+                                <Button
+                                  variant="subtle"
+                                  size="sm"
+                                  disabled={setStatusMutation.isPending}
+                                  onClick={() => move(listing, "hidden")}
+                                >
+                                  {t("actions.unpublish")}
+                                </Button>
+                              )}
+                              {listing.status === "draft" ? null : (
+                                <Button
+                                  variant="subtle"
+                                  size="sm"
+                                  disabled={setStatusMutation.isPending}
+                                  onClick={() => move(listing, "draft")}
+                                >
+                                  {t("actions.draft")}
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -315,6 +350,17 @@ export default function ListingsTable() {
             summary={false}
           />
         </div>
+      ) : null}
+
+      {sourcesFor ? (
+        <ListingSourcesDialog
+          listingId={sourcesFor.id}
+          listingTitle={sourcesFor.title}
+          open
+          onOpenChange={(next) => {
+            if (!next) setSourcesFor(null);
+          }}
+        />
       ) : null}
     </div>
   );

@@ -1,4 +1,5 @@
 import { listingPricePeriod } from "@yacht-charter/db/schema/availability";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { MAX_MONEY_MINOR } from "@yacht-charter/db/schema/_shared";
 import { listingSource } from "@yacht-charter/db/schema/listing-source";
 import { providerRecord } from "@yacht-charter/db/schema/provider";
@@ -71,15 +72,23 @@ export function supportsSeasonalPrices<T extends object>(
   return "loadSeasonalPrices" in provider;
 }
 
+/** Which offer a listing's rates belong to, and the source link behind it. */
+export interface OfferRef {
+  listingSourceId: string;
+  listingOfferId: string;
+}
+
 export interface PricePeriodWrite {
   listingId: string;
   listingSourceId: string | null;
+  listingOfferId: string;
   prices: readonly SeasonalPrice[];
 }
 
 export interface PricePeriodRow {
   listingId: string;
   listingSourceId: string | null;
+  listingOfferId: string;
   startDate: string;
   endDate: string;
   /**
@@ -97,10 +106,11 @@ export interface PricePeriodRow {
  * single statement, so the batch is deduplicated on the conflict target before it
  * is sent.
  *
- * The key is that conflict target, listing included. Batching across the whole fleet
- * is what makes the listing leg load-bearing: keyed on the period alone, two boats
- * priced for the same week would collapse into one row and the second would silently
- * lose its price.
+ * The key is that conflict target, offer included. Batching across the whole fleet is what
+ * makes the offer leg load-bearing: keyed on the period alone, two boats priced for the same
+ * week would collapse into one row and the second would silently lose its price. It is the
+ * offer rather than the listing because a hull both vendors sell has two rates for one week,
+ * and neither is the other's to overwrite.
  */
 export interface PricePeriodRows {
   rows: PricePeriodRow[];
@@ -118,9 +128,10 @@ export function dedupePricePeriodRows(writes: readonly PricePeriodWrite[]): Pric
         rejected += 1;
         continue;
       }
-      unique.set(`${write.listingId}|${price.startDate}|${price.endDate}`, {
+      unique.set(`${write.listingOfferId}|${price.startDate}|${price.endDate}`, {
         listingId: write.listingId,
         listingSourceId: write.listingSourceId,
+        listingOfferId: write.listingOfferId,
         startDate: price.startDate,
         endDate: price.endDate,
         kind: "weekly",
@@ -134,8 +145,8 @@ export function dedupePricePeriodRows(writes: readonly PricePeriodWrite[]): Pric
 }
 
 export interface PricePeriodStore {
-  /** The provider's active source link per listing, so a row can be attributed. */
-  loadSourceIds(listingIds: readonly string[]): Promise<Map<string, string | null>>;
+  /** The provider's active offer per listing, which is what a rate belongs to. */
+  loadSourceIds(listingIds: readonly string[]): Promise<Map<string, OfferRef>>;
   /** Returns the number of distinct periods written. */
   writePricePeriods(writes: readonly PricePeriodWrite[]): Promise<number>;
 }
@@ -163,9 +174,16 @@ export async function writeSeasonalPrices(options: WriteSeasonalPricesOptions): 
     // than being emptied: absent is not the same statement as "no longer priced",
     // and only the vendor can make the second one.
     if (!listingPrices?.length) continue;
+    const ref = sourceIds.get(listingId);
+    /*
+     * A rate with no offer to hang on cannot be stored at all: the column is NOT NULL, and it
+     * would be a price nobody could be asked to honour. Skipped rather than written null.
+     */
+    if (!ref) continue;
     writes.push({
       listingId,
-      listingSourceId: sourceIds.get(listingId) ?? null,
+      listingSourceId: ref.listingSourceId,
+      listingOfferId: ref.listingOfferId,
       prices: listingPrices,
     });
   }
@@ -181,7 +199,7 @@ export function createDrizzlePricePeriodStore(options: {
 
   return {
     async loadSourceIds(listingIds) {
-      const found = new Map<string, string | null>();
+      const found = new Map<string, OfferRef>();
       if (listingIds.length === 0) return found;
 
       // Chunked for the `IN (...)` ceiling, overlapped because the chunks are
@@ -189,9 +207,14 @@ export function createDrizzlePricePeriodStore(options: {
       // is no reason for the twelfth to wait on the first.
       await runPooled(chunked(listingIds), PRICE_WRITE_CONCURRENCY, async (chunk) => {
         const rows = await db
-          .select({ listingId: listingSource.listingId, listingSourceId: listingSource.id })
+          .select({
+            listingId: listingSource.listingId,
+            listingSourceId: listingSource.id,
+            listingOfferId: listingOffer.id,
+          })
           .from(listingSource)
           .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+          .innerJoin(listingOffer, eq(listingOffer.listingSourceId, listingSource.id))
           .where(
             and(
               eq(providerRecord.providerId, providerId),
@@ -202,7 +225,12 @@ export function createDrizzlePricePeriodStore(options: {
           );
 
         for (const row of rows) {
-          if (row.listingId) found.set(row.listingId, row.listingSourceId);
+          if (row.listingId) {
+            found.set(row.listingId, {
+              listingSourceId: row.listingSourceId,
+              listingOfferId: row.listingOfferId,
+            });
+          }
         }
       });
 
@@ -231,7 +259,7 @@ export function createDrizzlePricePeriodStore(options: {
           .values(chunk)
           .onConflictDoUpdate({
             target: [
-              listingPricePeriod.listingId,
+              listingPricePeriod.listingOfferId,
               listingPricePeriod.kind,
               listingPricePeriod.startDate,
               listingPricePeriod.endDate,

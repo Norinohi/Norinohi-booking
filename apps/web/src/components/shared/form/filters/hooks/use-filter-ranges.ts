@@ -19,12 +19,29 @@ const metresToFeet = (bound: { min: number; max: number }): Range => [
   Math.round(bound.max * FEET_PER_METRE),
 ];
 
-export function useFilterRanges(): { ranges: FilterRanges; defaults: FiltersState } {
+/**
+ * `priceCurrency` rides along with the ranges because the price slider's ends come from the
+ * facet query, and anything that prints them has to use the currency that query answered in.
+ * Hardcoding one is how a euro sign ended up on a range whose ends were dollars.
+ *
+ * Undefined until the facets land, which `useMoney` reads as its own default.
+ */
+export function useFilterRanges(): {
+  ranges: FilterRanges;
+  defaults: FiltersState;
+  priceCurrency: string | undefined;
+} {
   const facets = useFacets().data;
 
   return useMemo(() => {
     const r = facets?.ranges;
-    if (!r) return { ranges: EMPTY_RANGES, defaults: buildDefaultFilters(EMPTY_RANGES) };
+    if (!r) {
+      return {
+        ranges: EMPTY_RANGES,
+        defaults: buildDefaultFilters(EMPTY_RANGES),
+        priceCurrency: undefined,
+      };
+    }
 
     const ranges: FilterRanges = {
       length: metresToFeet(r.length),
@@ -36,6 +53,6 @@ export function useFilterRanges(): { ranges: FilterRanges; defaults: FiltersStat
       boatAge: asRange(r.boatAge),
       year: asRange(r.year),
     };
-    return { ranges, defaults: buildDefaultFilters(ranges) };
+    return { ranges, defaults: buildDefaultFilters(ranges), priceCurrency: r.price.currency };
   }, [facets]);
 }

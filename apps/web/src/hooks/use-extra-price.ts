@@ -55,11 +55,16 @@ export function useExtraPrice() {
    * different prices — one cleaning fee per base pair, say. Only one is ever charged, and
    * which one needs dates and a route, so an undated catalogue quotes the span.
    */
-  return (amountMinor: number, measure?: string | null, toMinor?: number | null) => {
+  return (
+    amountMinor: number,
+    measure?: string | null,
+    toMinor?: number | null,
+    currency?: string,
+  ) => {
     const price =
       toMinor == null || toMinor === amountMinor
-        ? money(amountMinor)
-        : `${money(amountMinor)}–${money(toMinor)}`;
+        ? money(amountMinor, currency)
+        : `${money(amountMinor, currency)}–${money(toMinor, currency)}`;
     // No measure at all is the vendors' way of pricing the whole booking.
     if (measure === null || measure === undefined || measure.trim() === "") {
       return t("booking", { price });

@@ -75,7 +75,7 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
                 </p>
                 {balance ? (
                   <p className="text-[32px] leading-9 font-bold text-brand">
-                    {money(balance.balance.amountMinor)}
+                    {money(balance.balance.amountMinor, balance.balance.currency)}
                   </p>
                 ) : (
                   <Skeleton className="h-9 w-40" />
@@ -84,7 +84,10 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
                 {balance && balance.expiringSoon.amountMinor > 0 ? (
                   <p className="text-sm leading-4.5 font-medium text-warning-600">
                     {t("balance.expiringSoon", {
-                      amount: money(balance.expiringSoon.amountMinor),
+                      amount: money(
+                        balance.expiringSoon.amountMinor,
+                        balance.expiringSoon.currency,
+                      ),
                     })}
                   </p>
                 ) : null}
@@ -139,8 +142,8 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
                             )}
                           >
                             {row.amount.amountMinor < 0
-                              ? `-${money(Math.abs(row.amount.amountMinor))}`
-                              : `+${money(row.amount.amountMinor)}`}
+                              ? `-${money(Math.abs(row.amount.amountMinor), row.amount.currency)}`
+                              : `+${money(row.amount.amountMinor, row.amount.currency)}`}
                           </TableCell>
                         </TableRow>
                       ))}

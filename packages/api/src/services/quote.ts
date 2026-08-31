@@ -15,6 +15,15 @@ import type {
   QuoteRequest,
 } from "@yacht-charter/providers";
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+
+import {
+  NoSellableOfferError,
+  type OfferAttempt,
+  type OfferSelection,
+  recordLiveRefusals,
+  recordOfferAttempts,
+  selectBestOffer,
+} from "./offer-selection";
 import { eq } from "drizzle-orm";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -79,15 +88,121 @@ export async function createQuote(
   input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
   userId: string | null,
 ): Promise<PersistedQuote> {
-  await assertSelectableExtras(db, input.listingId, input.extras ?? []);
-  const priced = await priceOrConflict(provider, input);
-  return persistPricedQuote(db, priced, {
+  /*
+   * Every vendor that could sell these dates is asked, and the cheapest all-in wins. The
+   * adapter used to be chosen from the listing before any dates were known, which on a hull
+   * both providers sell meant the second one was never consulted at all.
+   */
+  const selection = await selectOrConflict(db, provider, input);
+  await assertSelectableExtras(
+    db,
+    input.listingId,
+    input.extras ?? [],
+    selection.selected.listingOfferId,
+  );
+
+  const quote = await persistPricedQuote(db, selection.selected.priced, {
     userId,
     extras: input.extras ?? [],
     crewType: input.crewType ?? null,
     discountCode: input.discountCode ?? null,
     applyCredit: input.applyCredit ?? false,
+    listingOfferId: selection.selected.listingOfferId,
   });
+
+  /*
+   * After the quote, so the winning row can name it, and outside its transaction: losing the
+   * audit of who was asked must never lose the sale it is about.
+   */
+  try {
+    await recordOfferAttempts(db, {
+      /* Our row id, not the vendor's own quote id, which `id` carries. */
+      quoteId: quote.quoteId,
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      attempts: selection.attempts,
+      winningOfferId: selection.selected.listingOfferId,
+    });
+  } catch (error) {
+    console.warn(
+      "[quote] could not record offer attempts",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  return quote;
+}
+
+/**
+ * The same CONFLICT a single vendor's refusal produces, so the caller sees one shape whether
+ * one provider said no or all of them did.
+ *
+ * A total refusal is also the one moment the vendor's own offers engine tells us something
+ * our synced copy of its calendar does not know, so it is written down on the way past rather
+ * than left in the caller's session. Both writes are best-effort and outside the throw: this
+ * request has already failed, and losing the record of why must not change what the customer
+ * is told.
+ */
+async function selectOrConflict(
+  db: Database,
+  provider: InventoryProvider,
+  input: QuoteRequest,
+): Promise<OfferSelection> {
+  try {
+    return await selectBestOffer(db, provider, input);
+  } catch (error) {
+    if (error instanceof NoSellableOfferError) {
+      await learnFromRefusal(db, input, error.attempts);
+    }
+    if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+      throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
+    }
+    throw error;
+  }
+}
+
+/**
+ * The audit `recordOfferAttempts` always promised on a total failure, plus the refusal itself.
+ *
+ * Kept together because they are the same event read two ways: the attempt row is the record
+ * that we asked, and the refused period is the answer, which the next visitor's card should
+ * not contradict.
+ */
+async function learnFromRefusal(
+  db: Database,
+  input: QuoteRequest,
+  attempts: readonly OfferAttempt[],
+): Promise<void> {
+  try {
+    await recordOfferAttempts(db, {
+      quoteId: null,
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      attempts,
+      winningOfferId: null,
+    });
+  } catch (error) {
+    console.warn(
+      "[quote] could not record offer attempts",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    await recordLiveRefusals(db, {
+      listingId: input.listingId,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
+      attempts,
+    });
+  } catch (error) {
+    console.warn(
+      "[quote] could not record live refusal",
+      error instanceof Error ? error.message : error,
+    );
+  }
 }
 
 /**
@@ -120,7 +235,7 @@ export async function repriceQuote(
   // this listing's catalogue was resynced names an extra it no longer sells would
   // strand the customer on a quote they cannot edit.
   if (changes.extras !== undefined) {
-    await assertSelectableExtras(db, existing.listingId, changes.extras);
+    await assertSelectableExtras(db, existing.listingId, changes.extras, existing.listingOfferId);
   }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
   /*
@@ -150,6 +265,12 @@ export async function repriceQuote(
 
   const replacement = await db.transaction(async (tx) => {
     const result = await persistPricedQuote(tx, priced, {
+      /*
+       * A reprice stays on the quote's own offer. Extra codes are that vendor's, so switching
+       * seller mid-edit would silently invalidate what the customer had ticked; new dates go
+       * back through `createQuote`, which re-runs the selection.
+       */
+      listingOfferId: existing.listingOfferId,
       userId: userId ?? existing.userId,
       extras: requestedExtras,
       crewType: requestedCrewType ?? null,
@@ -213,10 +334,12 @@ async function assertSelectableExtras(
   db: Database,
   listingId: string,
   extras: readonly string[],
+  /** Narrows the whitelist to the vendor being quoted, where one has been chosen. */
+  listingOfferId?: string | null,
 ): Promise<void> {
   if (extras.length === 0) return;
 
-  const selectable = await listSelectableExtraCodes(db, listingId);
+  const selectable = await listSelectableExtraCodes(db, listingId, listingOfferId);
   const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
   if (unsold.length === 0) return;
 
@@ -450,6 +573,8 @@ async function persistPricedQuote(
     crewType: CrewType | null;
     discountCode: string | null;
     applyCredit: boolean;
+    /** The offer this price came from, so every later step reaches the same vendor. */
+    listingOfferId: string | null;
   },
 ): Promise<PersistedQuote> {
   const currency = priced.currency;
@@ -523,6 +648,7 @@ async function persistPricedQuote(
   const crewType = priced.crewType ?? options.crewType;
 
   const quoteId = await insertQuote(db, {
+    listingOfferId: options.listingOfferId,
     priced,
     lines,
     total,
@@ -615,12 +741,14 @@ async function insertQuote(
     discountCode: string | null;
     creditAppliedMinor: number;
     applied: AppliedAdjustment[];
+    listingOfferId: string | null;
   },
 ): Promise<string> {
   const [row] = await db
     .insert(quote)
     .values({
       listingId: input.priced.listingId,
+      listingOfferId: input.listingOfferId,
       userId: input.userId,
       provider: input.priced.provider,
       providerSourceId: input.priced.providerSourceId,

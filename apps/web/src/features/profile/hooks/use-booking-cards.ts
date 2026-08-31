@@ -47,10 +47,14 @@ export function useBookingCards() {
       start: charterStamp(booking.checkIn),
       end: charterStamp(booking.checkOut),
       priceLabel: t("priceFor", { days: days(booking.checkIn, booking.checkOut) }),
-      price: formatMoney(booking.total.amountMinor),
-      perPerson: t("perPerson", { price: formatMoney(booking.perPerson.amountMinor) }),
+      price: formatMoney(booking.total.amountMinor, booking.total.currency),
+      perPerson: t("perPerson", {
+        price: formatMoney(booking.perPerson.amountMinor, booking.perPerson.currency),
+      }),
       note: {
-        label: t("prepayment", { amount: formatMoney(booking.prepayment.amountMinor) }),
+        label: t("prepayment", {
+          amount: formatMoney(booking.prepayment.amountMinor, booking.prepayment.currency),
+        }),
         tooltip: t("prepaymentInfo"),
       },
     };

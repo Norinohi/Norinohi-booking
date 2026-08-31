@@ -120,7 +120,12 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                          button has always said. */
                       payBalanceLabel={t(
                         booking.status === "CONFIRMED" ? "payBalance" : "completePayment",
-                        { amount: formatMoney(booking.payableNow.amountMinor) },
+                        {
+                          amount: formatMoney(
+                            booking.payableNow.amountMinor,
+                            booking.payableNow.currency,
+                          ),
+                        },
                       )}
                       priority={index === 0}
                     />

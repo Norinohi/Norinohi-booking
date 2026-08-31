@@ -17,7 +17,8 @@
     "drain:outbox": "node dist/drain-outbox.mjs",
     "seed:facets": "node dist/seed-facets.mjs",
     "publish:listings": "node dist/publish-listings.mjs",
-    "rebuild:search-docs": "node dist/rebuild-search-docs.mjs"
+    "rebuild:search-docs": "node dist/rebuild-search-docs.mjs",
+    "refresh:fx": "node dist/refresh-fx.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",

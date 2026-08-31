@@ -80,9 +80,15 @@ export default function BalancePaid({
 
           <motion.div variants={RISE} className="flex flex-col px-5 pb-5">
             <dl className="flex flex-col">
-              <Row label={t("summary.total")} value={money(booking.total.amountMinor)} />
-              <Row label={t("summary.paid")} value={money(booking.paidTotal.amountMinor)} />
-              <Row label={t("summary.due")} value={money(0)} emphasis />
+              <Row
+                label={t("summary.total")}
+                value={money(booking.total.amountMinor, booking.total.currency)}
+              />
+              <Row
+                label={t("summary.paid")}
+                value={money(booking.paidTotal.amountMinor, booking.paidTotal.currency)}
+              />
+              <Row label={t("summary.due")} value={money(0, booking.total.currency)} emphasis />
             </dl>
           </motion.div>
 

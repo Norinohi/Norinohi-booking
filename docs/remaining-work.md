@@ -9,14 +9,14 @@ one list somebody can act on.
 
 ## 1. Where the build actually stands
 
-| Milestone                      | Doc says | Code says                                                                                                                                                                                 |
-| ------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M2 schema, contracts, mock     | done     | done                                                                                                                                                                                      |
-| M3 search and availability     | mostly   | done, bar two deliberate deferrals (`facet_dictionary`, the production-scale perf pass)                                                                                                   |
-| M4 pricing                     | **todo** | **done**. `services/pricing.ts` runs provider price, then `price_adjustment_rule`, then discount, then payment policy, and the Manage Prices screen exists                                |
-| M5 booking and Stripe          | **todo** | **done**. 14-state machine, Stripe PaymentIntents, signed webhook, refunds, expiry sweeper, encrypted traveller PII                                                                       |
-| M6 observability               | todo     | **partly**. Sentry is wired as an evlog drain on both servers and configured in production; GA4 covers the browser behind a consent banner. No domain fields on the wide events           |
-| M7 availability as constraints | partly   | as documented; the open items in §2.4 are real                                                                                                                                            |
+| Milestone                      | Doc says | Code says                                                                                                                                                                       |
+| ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M2 schema, contracts, mock     | done     | done                                                                                                                                                                            |
+| M3 search and availability     | mostly   | done, bar two deliberate deferrals (`facet_dictionary`, the production-scale perf pass)                                                                                         |
+| M4 pricing                     | **todo** | **done**. `services/pricing.ts` runs provider price, then `price_adjustment_rule`, then discount, then payment policy, and the Manage Prices screen exists                      |
+| M5 booking and Stripe          | **todo** | **done**. 14-state machine, Stripe PaymentIntents, signed webhook, refunds, expiry sweeper, encrypted traveller PII                                                             |
+| M6 observability               | todo     | **partly**. Sentry is wired as an evlog drain on both servers and configured in production; GA4 covers the browser behind a consent banner. No domain fields on the wide events |
+| M7 availability as constraints | partly   | as documented; the open items in §2.4 are real                                                                                                                                  |
 
 Also shipped and not in that table: two live connectors (NauSYS and Booking Manager) with
 raw-payload retention and sync runs, five Railway cron services, a staff panel (bookings, payments,
@@ -135,14 +135,14 @@ before it needs code.
 
 ### 3.1 Keys and access
 
-| What         | State        | What is needed                                                                   |
-| ------------ | ------------ | -------------------------------------------------------------------------------- |
-| Mapbox       | dev token    | Production token with billing and a URL restriction on the production domain     |
-| Cloudinary   | dev (`demo`) | Production cloud name plus a plan; 109 listings is roughly 2-3k transformations  |
-| Google OAuth | unset        | Client id and secret, redirect URI `${BETTER_AUTH_URL}/api/auth/callback/google` |
-| Stripe       | test sandbox | Live keys plus a webhook endpoint on the production URL                          |
+| What         | State        | What is needed                                                                     |
+| ------------ | ------------ | ---------------------------------------------------------------------------------- |
+| Mapbox       | dev token    | Production token with billing and a URL restriction on the production domain       |
+| Cloudinary   | dev (`demo`) | Production cloud name plus a plan; 109 listings is roughly 2-3k transformations    |
+| Google OAuth | unset        | Client id and secret, redirect URI `${BETTER_AUTH_URL}/api/auth/callback/google`   |
+| Stripe       | test sandbox | Live keys plus a webhook endpoint on the production URL                            |
 | Sentry       | configured   | EU region, projects `yachtskanner-server` and `yachtskanner-web`; log-based alerts |
-| GA4          | configured   | `NEXT_PUBLIC_GA_ID` on production only; consent banner gates it                   |
+| GA4          | configured   | `NEXT_PUBLIC_GA_ID` on production only; consent banner gates it                    |
 
 Already in hand: Resend, Calendly, the production domain and DNS.
 
@@ -175,8 +175,10 @@ SEO landing pages, and the legal pages Stripe needs for verification.
 4. Credits not filtered by currency (§2.1 item 1).
 5. ~~**Referral programme**~~ **answered 2026-08-21, see §3.6**: brackets by yacht price, equal
    on both sides, credit valid 12 months, admin-editable.
-6. **Duplicates**: currently the cheaper option for the customer, with Booking Manager winning ties.
-   Confirm or change.
+6. ~~**Duplicates**~~ **answered 2026-08-31**: the cheaper option for the customer including
+   obligatory extras, with Booking Manager winning ties, and availability ahead of price. Built:
+   one listing, many `listing_offer` rows, best offer chosen per request. See
+   `docs/adr/0005-a-listing-is-one-yacht-many-provider-offers.md`.
 7. **Auto-publish or moderation** for imported listings.
 8. **FAQ and reviews tabs in the admin panel**, and in which release.
 

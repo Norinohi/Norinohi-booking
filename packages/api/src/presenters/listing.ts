@@ -10,19 +10,42 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Whole days between two `yyyy-MM-dd` days, both read as UTC midnight. */
+function nightsBetween(checkIn: string, checkOut: string): number {
+  const ms = Date.parse(`${checkOut}T00:00:00.000Z`) - Date.parse(`${checkIn}T00:00:00.000Z`);
+  return Math.round(ms / 86_400_000);
+}
+
 export function presentListingSummary(doc: ListingSearchDoc) {
   const currency = doc.currency ?? "EUR";
   /*
-   * The period the "from" price actually covers, which is a week: `price_from_minor` is the
-   * cheapest WEEKLY rate the provider published.
-   *
-   * It used to be the duration the visitor searched for, so a three-day search captioned a
-   * week's rate "Price for 3 days" — an understatement of roughly 2.3x on the trip it was
-   * describing. A weekly rate cannot be prorated into a shorter one either: NauSYS prices
-   * dailies from a separate list precisely because they are not a seventh of the week. The
-   * caption therefore names the rate's own period, and the quote prices the real trip.
+   * Dropped once it has gone by: the columns are computed against the clock and are only as
+   * fresh as the last projection run, and a card offering a day that has already passed
+   * sends the visitor to a calendar that refuses it.
    */
-  const periodDays = WEEKLY_RATE_DAYS;
+  const bookablePeriod =
+    doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
+      ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
+      : null;
+
+  /*
+   * The period the price actually covers, which is the charter printed beside it.
+   *
+   * It must never be the duration the visitor searched for: a three-day search captioning a
+   * week's rate "Price for 3 days" understated the trip it described by roughly 2.3x, and a
+   * weekly rate cannot be prorated into a shorter one anyway — NauSYS prices dailies from a
+   * separate list precisely because they are not a seventh of the week.
+   *
+   * A week is the fallback rather than the rule. `price_from_minor` is the rate for the
+   * bookable week plus its obligatory extras (see the `money` lateral in read-model.ts), so
+   * where there is a bookable period the price is that charter's, and captioning it "7 days"
+   * beside "Nov 24 → Nov 28" described a charter three days longer than the one on sale. Only
+   * where nothing is bookable does the figure fall back to the season minimum, and with no
+   * dates printed beside it the rate's own week is the honest period to name.
+   */
+  const periodDays = bookablePeriod
+    ? nightsBetween(bookablePeriod.checkIn, bookablePeriod.checkOut)
+    : WEEKLY_RATE_DAYS;
   // A non-positive price is a provider saying "no price", not "free", so it is
   // treated the same as a missing one rather than quoted as 0.
   const amountMinor =
@@ -76,15 +99,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       // No projected window means the listing has no bookable slot at all, which
       // is a different state from having dates but no price.
       hasAvailableDates: doc.availableFrom !== null,
-      /*
-       * Dropped once it has gone by: the columns are computed against the clock and are only as
-       * fresh as the last projection run, and a card offering a day that has already passed
-       * sends the visitor to a calendar that refuses it.
-       */
-      bookablePeriod:
-        doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
-          ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
-          : null,
+      bookablePeriod,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,

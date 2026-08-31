@@ -64,8 +64,21 @@ export interface NausysProviderOptions {
  * How many upcoming charter weeks the accurate availability pass walks by default.
  * Each one is a paged `freeYachtsSearch` on the serialized sync lane, so this trades
  * confirmed prices against how long the run occupies it.
+ *
+ * Six months rather than two, because eight weeks is shorter than the season people book in.
+ * These searches are the only place the vendor states a price in the currency we asked for --
+ * the catalogue price lists carry whichever currency the charter company set, and take no
+ * currency parameter -- so a charter beyond the horizon has no confirmed price and its card
+ * falls back to the published list. A Bahamas boat whose first sellable charter is twelve
+ * weeks out was priced in USD beside a detail page quoting EUR for exactly that reason.
+ *
+ * Affordable because the walk resumes rather than restarts: the cursor carries `windowIndex`
+ * and the pass stops on its own budget, so a wider horizon is spread over more runs instead of
+ * making any one of them longer. The cursor only resets to the first window once a pass gets
+ * all the way through, which is what keeps the near weeks refreshed on a cycle rather than
+ * left behind.
  */
-const DEFAULT_HOT_WINDOW_COUNT = 8;
+const DEFAULT_HOT_WINDOW_COUNT = 26;
 
 const SATURDAY = 6;
 const DAY_MS = 86_400_000;
@@ -158,7 +171,9 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
           guests: draft.guests,
           extras: draft.extras,
           crewType: draft.crewType,
-          currency: this.currency,
+          /* The money the customer was quoted in, not ours: a re-price in another currency
+             observes a different price and fails the comparison it exists to make. */
+          currency: draft.currency ?? this.currency,
         });
         return quote.priceSourceHash;
       },

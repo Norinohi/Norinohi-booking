@@ -15,6 +15,7 @@ import { id, timestamps } from "./_shared";
 import { user } from "./auth";
 import { priceAdjustmentType } from "./admin";
 import { listing } from "./listing";
+import { listingOffer } from "./listing-offer";
 
 export const quoteStatus = pgEnum("quote_status", ["active", "expired", "consumed"]);
 
@@ -60,6 +61,17 @@ export const quote = pgTable(
       .notNull()
       .references(() => listing.id, { onDelete: "restrict" }),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    /**
+     * Which of the listing's offers this price came from.
+     *
+     * The listing alone cannot answer it: a hull both vendors sell is quoted through
+     * whichever offer won on the day, and re-deriving that from the listing later would
+     * name whichever provider a preference list happens to favour rather than the one the
+     * customer was shown. Every later step reads the vendor from here.
+     */
+    listingOfferId: text("listing_offer_id").references(() => listingOffer.id, {
+      onDelete: "restrict",
+    }),
     provider: text("provider").notNull(),
     providerSourceId: text("provider_source_id").notNull(),
     providerQuoteId: text("provider_quote_id"),
@@ -154,3 +166,62 @@ export const quoteRelations = relations(quote, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+/**
+ * What happened when one offer was asked to price a charter.
+ *
+ * `ineligible` never reached the vendor: the offer's own calendar and rules already
+ * refused the range, and `reason` carries the `RangeVerdict` that settled it. The rest
+ * did, and `error`/`timeout` are how a vendor having a bad night is told apart from a
+ * yacht that is genuinely sold.
+ */
+export const quoteOfferOutcome = pgEnum("quote_offer_outcome", [
+  "won",
+  "lost",
+  /** The vendor was asked and said the period is gone, which is a fact about the boat. */
+  "unavailable",
+  "error",
+  "timeout",
+  "ineligible",
+]);
+
+/**
+ * One row per offer asked, per quote attempt: the audit of why this vendor sold it.
+ *
+ * Without this, "we showed the cheaper price" is a claim nobody can check after the
+ * fact, and there is no way to tell a marketplace genuinely quoting two vendors from
+ * one quietly falling back to a single one every night.
+ *
+ * `quote_id` is null when every offer failed and no quote was persisted, which is
+ * exactly the case worth being able to count. `listing_id` and the dates are carried so
+ * a row stays readable without one.
+ */
+export const quoteOfferAttempt = pgTable(
+  "quote_offer_attempt",
+  {
+    id: id("qatt"),
+    quoteId: text("quote_id").references(() => quote.id, { onDelete: "cascade" }),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id").references(() => listingOffer.id, {
+      onDelete: "set null",
+    }),
+    /* Kept as text beside the nullable offer id, so a retired offer still names its vendor. */
+    provider: text("provider").notNull(),
+    checkIn: date("check_in").notNull(),
+    checkOut: date("check_out").notNull(),
+    outcome: quoteOfferOutcome("outcome").notNull(),
+    /** All-in comparable total, on the offers that answered with a price. */
+    totalMinor: integer("total_minor"),
+    currency: text("currency"),
+    latencyMs: integer("latency_ms"),
+    /** The `RangeVerdict` for `ineligible`, the provider error class otherwise. */
+    reason: text("reason"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("quote_offer_attempt_quote_idx").on(t.quoteId),
+    index("quote_offer_attempt_listing_idx").on(t.listingId, t.createdAt),
+  ],
+);

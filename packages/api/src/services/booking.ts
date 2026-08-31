@@ -1,3 +1,4 @@
+import { placeLine } from "../lib/place-line";
 import { ORPCError } from "@orpc/server";
 import {
   booking,
@@ -318,6 +319,8 @@ export async function createHold(
     specialRequests: guest.specialRequests ?? null,
     userId,
     listingId: priced.listingId,
+    /* Carried from the quote, so cancel and refund reach the vendor that took the money. */
+    listingOfferId: priced.listingOfferId,
     provider: priced.provider,
     totalMinor: priced.totalMinor,
     currency: priced.currency,
@@ -486,7 +489,9 @@ async function holdOption(
       guests: priced.guests,
       extras: priced.extras,
       // The provider re-prices before holding and refuses if this no longer
-      // matches what the customer agreed to.
+      // matches what the customer agreed to -- in the currency it was quoted in,
+      // which is what makes the two observations comparable.
+      currency: priced.currency,
       priceSourceHash: priced.priceSourceHash,
       // The base pair the price was for, which is not always the listing's own.
       route: priced.route,
@@ -1031,7 +1036,7 @@ function presentSummary(
       name: snapshot.baseName,
       locationName: snapshot.locationName,
       countryName: snapshot.countryName,
-      address: `${snapshot.baseName}, ${snapshot.locationName}, ${snapshot.countryName}`,
+      address: placeLine(snapshot.baseName, snapshot.locationName, snapshot.countryName),
       coordinates: { lat: snapshot.baseLat ?? 0, lng: snapshot.baseLng ?? 0 },
       timeZone: BASE_TIME_ZONE,
       phone: snapshot.basePhone ?? null,

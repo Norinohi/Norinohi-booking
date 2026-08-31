@@ -1,3 +1,4 @@
+import { placeLine } from "../lib/place-line";
 import type { CommercialSnapshot, payment } from "@yacht-charter/db/schema/booking";
 import type { quote } from "@yacht-charter/db/schema/quote";
 import { env } from "@yacht-charter/env/server";
@@ -100,7 +101,7 @@ export async function notifyBookingReceived(booking: BookingReceivedEmail): Prom
     yachtName: snapshot.listingTitle,
     checkIn: day(priced.checkIn),
     checkOut: day(priced.checkOut),
-    marina: `${snapshot.baseName}, ${snapshot.countryName}`,
+    marina: placeLine(snapshot.baseName, snapshot.countryName),
     guests: priced.guests,
     crew: priced.crewType ?? undefined,
     imageUrl: snapshot.mainImage ?? undefined,
@@ -155,7 +156,7 @@ export async function notifyBookingConfirmed(booking: BookingConfirmedEmail): Pr
       yachtName: snapshot.listingTitle,
       checkIn: day(priced.checkIn),
       checkOut: day(priced.checkOut),
-      marina: `${snapshot.baseName}, ${snapshot.countryName}`,
+      marina: placeLine(snapshot.baseName, snapshot.countryName),
       guests: priced.guests,
       imageUrl: snapshot.mainImage ?? undefined,
       total: money(priced.totalMinor, priced.currency),

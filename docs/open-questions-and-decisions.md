@@ -244,3 +244,73 @@ Confirmed in the running app: the card for _Liburna Sunseeker Predator 50_ says 
 - [`services/pricing.ts:240`](../packages/api/src/services/pricing.ts) `resolvePaymentPolicy`
 
 The constant was named during the refactor so the disagreement is visible in the code, but its value was not changed. Fixing it means the card calling the real policy, which changes a number shown on every search result.
+
+### F7 — Catalogue aggregates compare and sort minor units across currencies · **DECIDED: normalise for comparison, keep publishing the provider's price** · Aug 2026
+
+`listing_search_doc.price_from_minor` is stored in whatever the provider publishes in, named by `listing_search_doc.currency`. Every catalogue-wide aggregation over that column treats the integers as if they were one unit.
+
+Measured on the local sync (August 2026):
+
+|                             | EUR     | USD    |
+| --------------------------- | ------- | ------ |
+| `listing_price_period` rows | 912,095 | 10,030 |
+| `listing_search_doc` rows   | 17,782  | 269    |
+| ...of those, priced         | 16,580  | 186    |
+
+Six countries hold priced listings in both currencies: Bahamas, British Virgin Islands, Caribbean, Maldives, Thailand, USA. Everything else is single-currency, and United States Virgin Islands is pure USD.
+
+**Where it bites**
+
+1. **Destination "from" price.** `listFacetOptions` groups by country and takes `min(price_from_minor)` with `min(currency)` as the label, so the number and its label come from two independent aggregates. In four of the six mixed countries the EUR minimum happens to be the lower integer, so the pair is accidentally consistent. In two it is not, and Popular Destinations renders a USD amount with a euro sign: **British Virgin Islands "From €1,969"** is _Peanut Oceanis 30.1_ at $1,969, and **USA "From €5,509"** is _Miss Daisy Dufour 37_ at $5,509. (Bahamas renders €1,925 off a genuine EUR listing, so that card is right today. It is right by luck, not by construction.)
+2. **The price filter and its slider bounds.** The range facet takes `min`/`max` over the same mixed column and labels it with `coalesce(min(doc.currency), 'EUR')`; the web side formats it with the `"eur"` named format unconditionally. The `WHERE` clause then compares `price_from_minor` against the submitted bound directly, so a USD listing is filtered against a euro number.
+3. **Price sorting.** `charterSearch.results` orders on `coalesce(doc.price_from_minor, ...)` across currencies, as does the popular-yachts ordering at `repository.ts:1017`.
+
+- [`search/repository.ts:1377`](../packages/db/src/search/repository.ts), [`:1397`](../packages/db/src/search/repository.ts) — the facet `min(price)` / `min(currency)` pair
+- [`search/repository.ts:553`](../packages/db/src/search/repository.ts) — the price-range facet
+- [`search/repository.ts:1208`](../packages/db/src/search/repository.ts), [`:1211`](../packages/db/src/search/repository.ts) — the price bounds in `whereClause`
+- [`search/repository.ts:1836`](../packages/db/src/search/repository.ts) — the price sort expressions
+- [`filters/components/sections/specs-section.tsx:68`](../apps/web/src/components/shared/form/filters/components/sections/specs-section.tsx), [`home/components/budget-finder.tsx:64`](../apps/web/src/features/home/components/budget-finder.tsx), [`filters/hooks/use-filter-chips.ts:32`](../apps/web/src/components/shared/form/filters/hooks/use-filter-chips.ts) — the hardcoded `"eur"` format
+
+Note what is **not** affected: the live quote path already answers in one currency (NauSYS returned EUR for a USD-listed Bahamas boat), and per-listing display was fixed in August 2026 when `useMoney()` started taking a currency. This is the catalogue projection alone.
+
+**The options**
+
+**A. Convert at sync into a single catalogue currency.** `rebuildListingSearchDocs` writes `price_from_minor` already converted, and `currency` becomes a constant. Every aggregate, filter and sort is then correct with no query changes, and the frontend's hardcoded `"eur"` format becomes true rather than a bug.
+
+The cost is that the catalogue stops showing the published price. A USD fleet's card would read €1,693 while the operator's own site says $1,969, and the number moves whenever the rate does. It also needs a real FX source and a staleness policy: what rate, refreshed how often, what happens when the fetch fails mid-sync, and whether a card may show a price converted at a rate from three days ago. The ECB daily reference feed is free, keyless and EUR-based, which fits, but it is published once per working day and has no weekend value.
+
+**B. Store a normalised `price_from_minor_eur` beside the published figure.** The published `price_from_minor` and `currency` stay exactly as they are and remain what the card renders. The new column exists only to be compared: the facet minimum, the range bounds, the `WHERE` clause and the two sort expressions all move onto it, and the destination card's number is then chosen by the normalised value but displayed from the published pair.
+
+This keeps the operator's own number on screen and makes ordering honest. It costs a second index (the existing `listing_search_doc_price_idx` and the two sort indexes at [`schema/search.ts:120`](../packages/db/src/schema/search.ts) would need normalised twins), and it still needs the same FX source and staleness answer as A, just with less exposure: a stale rate misorders results rather than misquoting a price. It also leaves one visible oddity, that a slider labelled in euro can return a card priced in dollars, which is arguably honest and arguably confusing.
+
+**C. Scope the catalogue to one currency per market.** Pick the presentation currency from the market the user is browsing and filter the projection to it, so no aggregate ever spans two. No FX source, no staleness, no converted prices.
+
+The cost is coverage: British Virgin Islands is 228 EUR and 174 USD listings, so a currency-scoped BVI search hides roughly 43% of the fleet whichever side is chosen, and United States Virgin Islands disappears entirely from a EUR market. That is a product decision about inventory visibility, not a technical one.
+
+**D. Stopgap: exclude non-base listings from aggregates only.** Add `and doc.currency = 'EUR'` to the facet minimum, the range facet and the price `WHERE` clause, leaving the listings themselves searchable and sortable by everything else. The wrong destination prices go away the same day, at the cost of the 186 priced USD listings being unreachable through the price filter and carrying no contribution to any "from" price. Cheap, reversible, and it buys time for A or B without pretending to be either.
+
+**Decided: B, with D as its fallback.** Shipped August 2026.
+
+`listing_search_doc.price_from_minor_eur` holds the published price converted into one currency
+and is never rendered. The price sort, the price filter, the range facet behind the slider, every
+facet group's "from" price, the planner's estimate, and the pick of which offer a merged listing
+is priced from all read that column; `price_from_minor` and `currency` stay untouched and remain
+what a card shows. A facet group's "from" price is now chosen by the converted value and displayed
+as the published pair, so the number and its symbol come from one listing rather than from two
+independent aggregates.
+
+Rates come from the ECB daily reference feed into `fx_rate` — free, keyless, EUR-based. The
+catalogue sync refreshes them ahead of its projection rebuild and treats a failure as non-fatal;
+`pnpm --filter server refresh:fx` is the by-hand path. Staleness is `MAX_RATE_AGE_DAYS = 7` in
+`packages/db/src/fx/rates.ts`: past it a listing in that currency has a null normalised price,
+which is option D scoped to exactly the listings that need it — it keeps its published price on
+its card and falls out of ordering and filtering rather than ranking against units it does not
+share. The sync's job event carries `fxAsOf` so a feed that has quietly frozen is alertable.
+
+What this deliberately does not do: convert anything a customer is charged. §4's "one currency
+per quote" still holds, and F2's question about credit balances is still open — but it now has a
+rate source to answer with, and it should use this one rather than a second.
+
+Live consequence worth knowing: a euro-labelled price slider can return a card priced in dollars,
+because the filter compares converted amounts and the card shows the published one. That is the
+trade this option was chosen for.

@@ -16,7 +16,9 @@ export default async function CatalogCards({ listings }: { listings: ResultListi
   const tCrew = await getTranslations("Common.crewTypes");
   const tBadge = await getTranslations("Common.boatCard.badges");
   const format = await getFormatter();
-  const formatMoney = (amountMinor: number) => format.number(amountMinor / 100, "eur");
+  /* The server-side twin of `useMoney`: same shape, same default, no hook. */
+  const formatMoney = (amountMinor: number, currency = "EUR") =>
+    format.number(amountMinor / 100, { style: "currency", currency, maximumFractionDigits: 0 });
 
   return (
     <>

@@ -50,7 +50,7 @@ export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount
         ? format.number(discount.valuePct / 100, { style: "percent", maximumFractionDigits: 2 })
         : "—"
       : discount.value !== null
-        ? formatMoney(discount.value.amountMinor)
+        ? formatMoney(discount.value.amountMinor, discount.value.currency)
         : "—";
 
   const messageRow = (message: string) => (

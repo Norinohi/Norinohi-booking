@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   boolean,
   jsonb,
@@ -18,10 +19,17 @@ import { base } from "./geography";
 // Cycle with listing-text.ts is safe: both sides only dereference the other inside
 // lazy relation/reference callbacks.
 import { listingText } from "./listing-text";
+import { listingOffer } from "./listing-offer";
 import { operator } from "./operator";
 import { amenity, builder, yachtCategory, yachtModel } from "./taxonomy";
 
-export const listingStatus = pgEnum("listing_status", ["draft", "published", "hidden"]);
+/**
+ * `merged` is not a withdrawal. It marks a listing whose offers all moved onto another
+ * listing in a duplicate merge: it holds no inventory any more and must never be shown,
+ * but it is kept rather than deleted because bookings and quotes still point at it, and
+ * `merged_into_listing_id` is what lets its old URL redirect to the survivor.
+ */
+export const listingStatus = pgEnum("listing_status", ["draft", "published", "hidden", "merged"]);
 
 export const mediaRole = pgEnum("media_role", ["main", "layout", "gallery"]);
 
@@ -78,6 +86,10 @@ export const listing = pgTable(
     providerReviewCount: integer("provider_review_count"),
     // Winning listing_source for spec resolution; plain text to avoid an FK cycle.
     primarySourceId: text("primary_source_id"),
+    /** Where a merged listing's offers went, so its old URL can redirect. */
+    mergedIntoListingId: text("merged_into_listing_id").references((): AnyPgColumn => listing.id, {
+      onDelete: "set null",
+    }),
     freshnessAt: timestamp("freshness_at"),
     ...timestamps,
   },
@@ -121,6 +133,9 @@ export const listingMedia = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     source: text("source"),
     externalUrl: text("external_url").notNull(),
     role: mediaRole("role").default("gallery").notNull(),
@@ -131,7 +146,10 @@ export const listingMedia = pgTable(
     importedAt: timestamp("imported_at"),
     ...timestamps,
   },
-  (t) => [index("listing_media_listing_idx").on(t.listingId)],
+  (t) => [
+    index("listing_media_listing_idx").on(t.listingId),
+    index("listing_media_offer_idx").on(t.listingOfferId),
+  ],
 );
 
 export const listingAmenity = pgTable(
@@ -141,6 +159,9 @@ export const listingAmenity = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     amenityId: text("amenity_id")
       .notNull()
       .references(() => amenity.id, { onDelete: "restrict" }),
@@ -149,7 +170,7 @@ export const listingAmenity = pgTable(
     ...timestamps,
   },
   (t) => [
-    unique("listing_amenity_uq").on(t.listingId, t.amenityId),
+    unique("listing_amenity_uq").on(t.listingOfferId, t.amenityId),
     index("listing_amenity_listing_idx").on(t.listingId),
   ],
 );
@@ -161,13 +182,19 @@ export const listingCheckinRule = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     checkinWeekday: integer("checkin_weekday"),
     checkoutWeekday: integer("checkout_weekday"),
     minNights: integer("min_nights"),
     maxNights: integer("max_nights"),
     ...timestamps,
   },
-  (t) => [index("listing_checkin_rule_listing_idx").on(t.listingId)],
+  (t) => [
+    index("listing_checkin_rule_listing_idx").on(t.listingId),
+    index("listing_checkin_rule_offer_idx").on(t.listingOfferId),
+  ],
 );
 
 export const listingOneWayRule = pgTable(
@@ -177,12 +204,18 @@ export const listingOneWayRule = pgTable(
     listingId: text("listing_id")
       .notNull()
       .references(() => listing.id, { onDelete: "cascade" }),
+    listingOfferId: text("listing_offer_id")
+      .notNull()
+      .references(() => listingOffer.id, { onDelete: "cascade" }),
     startDate: date("start_date"),
     endDate: date("end_date"),
     isOneWay: boolean("is_one_way").default(true).notNull(),
     ...timestamps,
   },
-  (t) => [index("listing_one_way_rule_listing_idx").on(t.listingId)],
+  (t) => [
+    index("listing_one_way_rule_listing_idx").on(t.listingId),
+    index("listing_one_way_rule_offer_idx").on(t.listingOfferId),
+  ],
 );
 
 export const listingRelations = relations(listing, ({ one, many }) => ({

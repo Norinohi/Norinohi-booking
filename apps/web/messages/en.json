@@ -967,8 +967,30 @@
     "CookieConsent": {
       "title": "Cookies",
       "description": "We use analytics cookies to see how the site is used, so we can make it better. Nothing is measured until you agree.",
+      "manage": "Manage preferences",
       "accept": "Accept",
-      "decline": "Decline"
+      "decline": "Decline",
+      "footerLink": "Cookies",
+      "dialog": {
+        "title": "Your privacy",
+        "description": "Choose which cookies this site may use. Your choice is stored on this device, and you can change it at any time from the footer.",
+        "close": "Close",
+        "alwaysActive": "Always active",
+        "necessary": {
+          "title": "Necessary",
+          "description": "Keep you signed in, protect payments against fraud, and remember this cookie choice. The site does not work without them."
+        },
+        "functional": {
+          "title": "Functional",
+          "description": "Remember the boats you saved and count a repeat visit to a listing only once. Stored in your browser and never shared."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "Google Analytics, so we can see which pages people use and where they get stuck. No advertising and no profiling."
+        },
+        "save": "Save my choice",
+        "acceptAll": "Accept all"
+      }
     }
   },
   "PlanMyTrip": {
@@ -1973,12 +1995,14 @@
         "label": "Decision",
         "pending": "Pending",
         "confirmed": "Confirmed",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "deferred": "Deferred"
       },
       "empty": {
         "pending": "Nothing to review. Every duplicate candidate has been resolved.",
         "confirmed": "No merges have been confirmed yet.",
-        "rejected": "No pairs have been rejected yet."
+        "rejected": "No pairs have been rejected yet.",
+        "deferred": "No pairs have been deferred yet."
       },
       "error": "Couldn't load the duplicate queue",
       "confidence": "{value}% match",
@@ -2084,7 +2108,8 @@
         "name+model+year": "Name + model + year",
         "base+model+year": "Base + model + year",
         "model+year": "Model + year only",
-        "model+yearBuilt": "Model + year built"
+        "model+yearBuilt": "Model + year built",
+        "name+base": "Name + berth"
       },
       "signalFields": {
         "name": "Name",
@@ -2095,15 +2120,22 @@
         "berths": "Berths",
         "heads": "Heads",
         "builder": "Builder",
-        "operator": "Operator"
+        "operator": "Operator",
+        "model": "Model",
+        "year": "Year built"
       },
       "toast": {
         "confirmed": "Merged. {count} provider sources now point at the kept listing.",
         "confirmedWithClosed": "Merged. {count} provider sources now point at the kept listing, and {closed} further pairs closed with it.",
         "rejected": "Recorded as two different yachts.",
         "conflict": "Someone else already reviewed this pair. Reloading the queue.",
-        "error": "Something went wrong. Please try again."
-      }
+        "error": "Something went wrong. Please try again.",
+        "deferred": "Set aside for later. It is not counted for or against the matcher."
+      },
+      "defer": "Set aside",
+      "notePlaceholder": "Why? (optional)",
+      "noteLabel": "Reviewer note",
+      "noteWas": "Note: {note}"
     },
     "Sync": {
       "title": "Sync History",
@@ -2358,12 +2390,14 @@
       "status": {
         "draft": "Draft",
         "published": "Published",
-        "hidden": "Hidden"
+        "hidden": "Hidden",
+        "merged": "Merged"
       },
       "actions": {
         "publish": "Publish",
         "unpublish": "Unpublish",
-        "draft": "Back to draft"
+        "draft": "Back to draft",
+        "sources": "Sources"
       },
       "moved": "{title} is now {status}.",
       "noProvider": "No provider",
@@ -2385,7 +2419,37 @@
         "published": "{count, plural, =0 {No drafts left to publish for {provider}.} one {# draft published for {provider}.} other {# drafts published for {provider}.}}",
         "failed": "Couldn't publish the drafts"
       },
-      "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar."
+      "unpriced": "{count, plural, one {# listing has dates but no published rate} other {# listings have dates but no published rate}} — they show as “On request” with an empty calendar.",
+      "sources": {
+        "subtitle": "Which provider each part of this listing is taken from. A pinned group is left alone by the nightly sync.",
+        "error": "Couldn't load this listing's providers",
+        "field": "Part of the listing",
+        "takenFrom": "Taken from",
+        "locked": "Pinned",
+        "automatic": "Automatic",
+        "release": "Release",
+        "pinned": "Pinned to that provider. The sync will leave it alone.",
+        "released": "Back to automatic. The sync decides it again.",
+        "model": "Model",
+        "year": "Year",
+        "base": "Base",
+        "operator": "Operator",
+        "photos": "Photos",
+        "descriptions": "Descriptions",
+        "fields": {
+          "media": "Photos",
+          "title": "Name",
+          "spec": "Specification",
+          "description": "Description",
+          "taxonomy": "Builder, model, type",
+          "operator": "Operator",
+          "home_base": "Home base",
+          "pets": "Pets allowed"
+        },
+        "takeOut": "Take out of this listing",
+        "splitRestored": "Taken out and returned to the listing it came from.",
+        "splitNew": "Taken out onto a listing of its own."
+      }
     },
     "Routes": {
       "title": "Suggested routes",

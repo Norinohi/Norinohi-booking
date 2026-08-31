@@ -30,6 +30,21 @@ refreshed. A vendor price endpoint failing there is reported and downgrades the 
 to `partial`; it does not fail the import, and the previous day's prices stand.
 See `packages/providers/src/sync/price-writer.ts`.
 
+**Reference exchange rates** are refreshed at the top of the same catalogue run, before any
+provider walk, because the projection each provider rebuilds at the end of its run converts
+prices with them. They are never charged against: `listing_search_doc.price_from_minor_eur` is
+written from them so the price sort, the price filter and the "from" aggregates can compare
+listings that vendors publish in different currencies, while the card keeps showing the published
+price. The source is the ECB daily reference feed, which is free, keyless and EUR-based.
+
+The fetch is deliberately non-fatal — a public feed being down must not cost the night's import.
+With no rate fresher than `MAX_RATE_AGE_DAYS` (7, in `packages/db/src/fx/rates.ts`), listings in
+that currency drop out of those comparisons instead of being compared wrongly. The run's job event
+carries `fxAsOf`, which is the field to alert on: a feed that answers every night with the same
+date is the failure a success flag cannot show. `pnpm --filter server refresh:fx` is the by-hand
+path, for seeding a fresh database or catching up after a stretch with no sync; it stores rates
+only, so pair it with `rebuild:search-docs` when the fleet needs repricing.
+
 The outbox drain is the only job here that is not the primary path for its own work.
 Guest checkout writes its set-password invitation and its booking confirmation to
 `outbox_message` and starts a drain in-process as soon as it has an answer to return,

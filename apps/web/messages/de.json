@@ -967,8 +967,30 @@
     "CookieConsent": {
       "title": "Cookies",
       "description": "Wir verwenden Analyse-Cookies, um zu sehen, wie die Seite genutzt wird, und sie zu verbessern. Bis Sie zustimmen, wird nichts erfasst.",
+      "manage": "Einstellungen",
       "accept": "Akzeptieren",
-      "decline": "Ablehnen"
+      "decline": "Ablehnen",
+      "footerLink": "Cookies",
+      "dialog": {
+        "title": "Ihre Privatsphäre",
+        "description": "Wählen Sie, welche Cookies diese Seite verwenden darf. Ihre Wahl wird auf diesem Gerät gespeichert und lässt sich jederzeit über den Link im Footer ändern.",
+        "close": "Schließen",
+        "alwaysActive": "Immer aktiv",
+        "necessary": {
+          "title": "Notwendig",
+          "description": "Halten Sie angemeldet, schützen Zahlungen vor Betrug und merken sich diese Cookie-Entscheidung. Ohne sie funktioniert die Seite nicht."
+        },
+        "functional": {
+          "title": "Funktional",
+          "description": "Merken sich gespeicherte Boote und zählen einen erneuten Aufruf eines Angebots nur einmal. Bleiben in Ihrem Browser."
+        },
+        "analytics": {
+          "title": "Analyse",
+          "description": "Google Analytics, damit wir sehen, welche Seiten genutzt werden und wo es hakt. Keine Werbung, kein Profiling."
+        },
+        "save": "Auswahl speichern",
+        "acceptAll": "Alle akzeptieren"
+      }
     }
   },
   "PlanMyTrip": {
@@ -1973,12 +1995,14 @@
         "label": "Entscheidung",
         "pending": "Ausstehend",
         "confirmed": "Bestätigt",
-        "rejected": "Abgelehnt"
+        "rejected": "Abgelehnt",
+        "deferred": "Zurückgestellt"
       },
       "empty": {
         "pending": "Nichts zu prüfen. Alle Duplikat-Kandidaten wurden bearbeitet.",
         "confirmed": "Es wurden noch keine Zusammenführungen bestätigt.",
-        "rejected": "Es wurden noch keine Paare abgelehnt."
+        "rejected": "Es wurden noch keine Paare abgelehnt.",
+        "deferred": "Es wurden noch keine Paare zurückgestellt."
       },
       "error": "Die Duplikat-Warteschlange konnte nicht geladen werden",
       "confidence": "{value} % Übereinstimmung",
@@ -2084,7 +2108,8 @@
         "name+model+year": "Name + Modell + Baujahr",
         "base+model+year": "Heimathafen + Modell + Baujahr",
         "model+year": "Nur Modell + Baujahr",
-        "model+yearBuilt": "Modell + Baujahr"
+        "model+yearBuilt": "Modell + Baujahr",
+        "name+base": "Name + Liegeplatz"
       },
       "signalFields": {
         "name": "Name",
@@ -2095,15 +2120,22 @@
         "berths": "Kojen",
         "heads": "Nasszellen",
         "builder": "Werft",
-        "operator": "Betreiber"
+        "operator": "Betreiber",
+        "model": "Modell",
+        "year": "Baujahr"
       },
       "toast": {
         "confirmed": "Zusammengeführt. {count} Anbieterquellen verweisen jetzt auf das behaltene Inserat.",
         "confirmedWithClosed": "Zusammengeführt. {count} Anbieterquellen zeigen jetzt auf das behaltene Inserat, und {closed} weitere Paare wurden mit geschlossen.",
         "rejected": "Als zwei verschiedene Yachten erfasst.",
         "conflict": "Jemand anderes hat dieses Paar bereits geprüft. Die Warteschlange wird neu geladen.",
-        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
-      }
+        "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+        "deferred": "Zurückgestellt. Zählt weder für noch gegen den Matcher."
+      },
+      "defer": "Zurückstellen",
+      "notePlaceholder": "Warum? (optional)",
+      "noteLabel": "Notiz des Prüfers",
+      "noteWas": "Notiz: {note}"
     },
     "Sync": {
       "title": "Synchronisierungsverlauf",
@@ -2358,12 +2390,14 @@
       "status": {
         "draft": "Entwurf",
         "published": "Veröffentlicht",
-        "hidden": "Ausgeblendet"
+        "hidden": "Ausgeblendet",
+        "merged": "Zusammengeführt"
       },
       "actions": {
         "publish": "Veröffentlichen",
         "unpublish": "Ausblenden",
-        "draft": "Zurück zum Entwurf"
+        "draft": "Zurück zum Entwurf",
+        "sources": "Quellen"
       },
       "moved": "{title} ist jetzt {status}.",
       "noProvider": "Kein Anbieter",
@@ -2385,7 +2419,37 @@
         "published": "{count, plural, =0 {Keine Entwürfe mehr für {provider} zu veröffentlichen.} one {# Entwurf für {provider} veröffentlicht.} other {# Entwürfe für {provider} veröffentlicht.}}",
         "failed": "Die Entwürfe konnten nicht veröffentlicht werden"
       },
-      "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt."
+      "unpriced": "{count, plural, one {# Inserat hat Termine, aber keinen veröffentlichten Preis} other {# Inserate haben Termine, aber keinen veröffentlichten Preis}} — sie werden als „Auf Anfrage“ mit leerem Kalender angezeigt.",
+      "sources": {
+        "subtitle": "Von welchem Anbieter jeder Teil dieses Inserats stammt. Eine fixierte Gruppe lässt die nächtliche Synchronisation unangetastet.",
+        "error": "Anbieter dieses Inserats konnten nicht geladen werden",
+        "field": "Teil des Inserats",
+        "takenFrom": "Übernommen von",
+        "locked": "Fixiert",
+        "automatic": "Automatisch",
+        "release": "Freigeben",
+        "pinned": "Auf diesen Anbieter fixiert. Die Synchronisation ändert das nicht.",
+        "released": "Wieder automatisch. Die Synchronisation entscheidet erneut.",
+        "model": "Modell",
+        "year": "Baujahr",
+        "base": "Basis",
+        "operator": "Betreiber",
+        "photos": "Fotos",
+        "descriptions": "Beschreibungen",
+        "fields": {
+          "media": "Fotos",
+          "title": "Name",
+          "spec": "Technische Daten",
+          "description": "Beschreibung",
+          "taxonomy": "Werft, Modell, Typ",
+          "operator": "Betreiber",
+          "home_base": "Heimatbasis",
+          "pets": "Haustiere erlaubt"
+        },
+        "takeOut": "Aus diesem Inserat herauslösen",
+        "splitRestored": "Herausgelöst und in sein ursprüngliches Inserat zurückgeführt.",
+        "splitNew": "In ein eigenes Inserat herausgelöst."
+      }
     },
     "Routes": {
       "title": "Routenvorschläge",

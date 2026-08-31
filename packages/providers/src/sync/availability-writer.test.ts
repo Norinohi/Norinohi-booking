@@ -58,11 +58,12 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     failedCount: number;
   }[] = [];
 
-  const keyOf = (listingId: string, startDate: string, endDate: string) =>
-    `${listingId}|${startDate}|${endDate}`;
+  /* Keyed by offer, as every one of these tables now is. */
+  const keyOf = (listingOfferId: string, startDate: string, endDate: string) =>
+    `${listingOfferId}|${startDate}|${endDate}`;
 
   for (const slot of seed.slots ?? []) {
-    slots.set(keyOf(slot.listingId, slot.startDate, slot.endDate), { ...slot });
+    slots.set(keyOf(slot.listingOfferId, slot.startDate, slot.endDate), { ...slot });
   }
 
   const store: AvailabilitySyncStore = {
@@ -86,7 +87,7 @@ function fakeStore(seed: FakeStoreSeed = {}) {
       }
       for (const write of writes) {
         for (const period of write.periods) {
-          freePeriods.set(keyOf(write.ref.listingId, period.startDate, period.endDate), {
+          freePeriods.set(keyOf(write.ref.listingOfferId ?? "", period.startDate, period.endDate), {
             listingId: write.ref.listingId,
             ...period,
           });
@@ -96,7 +97,7 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     async writeSlots(written) {
       for (const slot of written) {
         const { seenAt, ...rest } = slot;
-        slots.set(keyOf(slot.listingId, slot.startDate, slot.endDate), {
+        slots.set(keyOf(slot.listingOfferId, slot.startDate, slot.endDate), {
           ...rest,
           updatedAt: seenAt,
         });
@@ -105,13 +106,13 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     async replaceRefusedPeriods({ period, offeredListingIds }) {
       const eligible = seed.refusable?.[`${period.startDate}|${period.endDate}`] ?? [];
       for (const ref of eligible) {
-        refused.delete(keyOf(ref.listingId, period.startDate, period.endDate));
+        refused.delete(keyOf(ref.listingOfferId ?? "", period.startDate, period.endDate));
       }
 
       const offered = new Set(offeredListingIds);
       const written = eligible.filter((ref) => !offered.has(ref.listingId));
       for (const ref of written) {
-        refused.set(keyOf(ref.listingId, period.startDate, period.endDate), {
+        refused.set(keyOf(ref.listingOfferId ?? "", period.startDate, period.endDate), {
           listingId: ref.listingId,
           startDate: period.startDate,
           endDate: period.endDate,
@@ -120,13 +121,15 @@ function fakeStore(seed: FakeStoreSeed = {}) {
       return written.length;
     },
     async confirmSlot(input) {
-      const key = keyOf(input.listingId, input.startDate, input.endDate);
+      if (input.listingOfferId === null) return false;
+      const key = keyOf(input.listingOfferId, input.startDate, input.endDate);
       const existing = slots.get(key);
       if (existing && existing.status !== "available") return false;
 
       slots.set(key, {
         listingId: input.listingId,
         listingSourceId: input.listingSourceId,
+        listingOfferId: input.listingOfferId,
         startDate: input.startDate,
         endDate: input.endDate,
         status: "available",
@@ -218,7 +221,11 @@ function source(overrides: Partial<AvailabilitySource> & { scopes?: Availability
   return built;
 }
 
-const MARLIN: ListingRef = { listingId: "ylst_marlin", listingSourceId: "lsrc_marlin" };
+const MARLIN: ListingRef = {
+  listingId: "ylst_marlin",
+  listingSourceId: "lsrc_marlin",
+  listingOfferId: "loff_marlin",
+};
 
 function occupied(overrides: Partial<OccupiedInterval> = {}): OccupiedInterval {
   return {
@@ -340,6 +347,7 @@ describe("runAvailabilitySync", () => {
     expect(store.listOf("ylst_marlin", "option")[0]).toMatchObject({
       startDate: "2026-07-18",
       listingSourceId: "lsrc_marlin",
+      listingOfferId: "loff_marlin",
       availabilityConfirmed: true,
       sourceHash: "hash-occupied",
     });
@@ -593,6 +601,7 @@ describe("runAvailabilitySync", () => {
     const stale = (listingId: string, startDate: string, endDate: string): StoredSlot => ({
       listingId,
       listingSourceId: `lsrc_${listingId}`,
+      listingOfferId: `loff_${listingId}`,
       startDate,
       endDate,
       status: "occupied",
@@ -639,6 +648,7 @@ describe("runAvailabilitySync", () => {
         {
           listingId: "ylst_marlin",
           listingSourceId: "lsrc_marlin",
+          listingOfferId: "loff_marlin",
           startDate: "2026-09-05",
           endDate: "2026-09-12",
           status: "occupied",
@@ -673,6 +683,7 @@ describe("runAvailabilitySync", () => {
     const staleIn = (year: number): StoredSlot => ({
       listingId: "ylst_marlin",
       listingSourceId: "lsrc_marlin",
+      listingOfferId: "loff_marlin",
       startDate: `${year}-11-04`,
       endDate: `${year}-11-11`,
       status: "occupied",
@@ -713,13 +724,18 @@ describe("runAvailabilitySync", () => {
   });
 
   it("does not sweep another company's slots", async () => {
-    const rival: ListingRef = { listingId: "ylst_rival", listingSourceId: "lsrc_rival" };
+    const rival = {
+      listingId: "ylst_rival",
+      listingSourceId: "lsrc_rival",
+      listingOfferId: "loff_rival",
+    } satisfies ListingRef;
     const store = fakeStore({
       listings: { "102701": [MARLIN] },
       slots: [
         {
           listingId: rival.listingId,
           listingSourceId: rival.listingSourceId,
+          listingOfferId: rival.listingOfferId,
           startDate: "2026-09-05",
           endDate: "2026-09-12",
           status: "available",
@@ -856,8 +872,16 @@ describe("runAvailabilitySync", () => {
    * run slow once the HTTP fan-out was gone.
    */
   it("writes the whole scope's free periods in one batched call", async () => {
-    const OTTER: ListingRef = { listingId: "ylst_otter", listingSourceId: "lsrc_otter" };
-    const TERN: ListingRef = { listingId: "ylst_tern", listingSourceId: "lsrc_tern" };
+    const OTTER: ListingRef = {
+      listingId: "ylst_otter",
+      listingSourceId: "lsrc_otter",
+      listingOfferId: "loff_otter",
+    };
+    const TERN: ListingRef = {
+      listingId: "ylst_tern",
+      listingSourceId: "lsrc_tern",
+      listingOfferId: "loff_tern",
+    };
     const store = fakeStore({ listings: { "102701": [MARLIN, OTTER, TERN] } });
 
     await runAvailabilitySync({
@@ -874,7 +898,11 @@ describe("runAvailabilitySync", () => {
   });
 
   it("leaves a listing absent from the batch untouched", async () => {
-    const RIVAL: ListingRef = { listingId: "ylst_rival", listingSourceId: "lsrc_rival" };
+    const RIVAL: ListingRef = {
+      listingId: "ylst_rival",
+      listingSourceId: "lsrc_rival",
+      listingOfferId: "loff_rival",
+    };
     const store = fakeStore({ listings: { "102701": [MARLIN] } });
 
     await runAvailabilitySync({
@@ -937,6 +965,7 @@ describe("runAvailabilitySync", () => {
           {
             listingId: "ylst_marlin",
             listingSourceId: "lsrc_marlin",
+            listingOfferId: "loff_marlin",
             startDate: "2026-06-27",
             endDate: "2026-07-04",
             status: "occupied",
@@ -976,7 +1005,11 @@ describe("runAvailabilitySync", () => {
     });
 
     it("keeps sweeping and synthesizing for everyone else in the scope", async () => {
-      const OTTER: ListingRef = { listingId: "ylst_otter", listingSourceId: "lsrc_otter" };
+      const OTTER: ListingRef = {
+        listingId: "ylst_otter",
+        listingSourceId: "lsrc_otter",
+        listingOfferId: "loff_otter",
+      };
       const store = fakeStore({
         yachts: { "4711001": MARLIN, "4711002": OTTER },
         listings: { "102701": [MARLIN, OTTER] },
@@ -1047,19 +1080,19 @@ describe("runAvailabilitySync", () => {
  * aborted in production while every test here passed. These test the collapse itself.
  */
 describe("dedupeSlotsByPeriod", () => {
-  const slot = (listingId: string, startDate: string, endDate: string, status: string) => ({
-    listingId,
+  const slot = (listingOfferId: string, startDate: string, endDate: string, status: string) => ({
+    listingOfferId,
     startDate,
     endDate,
     status,
   });
 
-  it("collapses two intervals that share one listing and period", () => {
+  it("collapses two intervals that share one offer and period", () => {
     // An option and a reservation over the same week: ordinary vendor data, and
     // `ON CONFLICT DO UPDATE` rejects the whole statement over it.
     const deduped = dedupeSlotsByPeriod([
-      slot("ylst_a", "2026-08-22", "2026-08-29", "option"),
-      slot("ylst_a", "2026-08-22", "2026-08-29", "booked"),
+      slot("loff_a", "2026-08-22", "2026-08-29", "option"),
+      slot("loff_a", "2026-08-22", "2026-08-29", "booked"),
     ]);
 
     expect(deduped).toHaveLength(1);
@@ -1069,10 +1102,10 @@ describe("dedupeSlotsByPeriod", () => {
 
   it("keeps periods that differ in any part of the key", () => {
     const deduped = dedupeSlotsByPeriod([
-      slot("ylst_a", "2026-08-22", "2026-08-29", "booked"),
-      slot("ylst_b", "2026-08-22", "2026-08-29", "booked"),
-      slot("ylst_a", "2026-08-29", "2026-09-05", "booked"),
-      slot("ylst_a", "2026-08-22", "2026-08-23", "booked"),
+      slot("loff_a", "2026-08-22", "2026-08-29", "booked"),
+      slot("loff_b", "2026-08-22", "2026-08-29", "booked"),
+      slot("loff_a", "2026-08-29", "2026-09-05", "booked"),
+      slot("loff_a", "2026-08-22", "2026-08-23", "booked"),
     ]);
 
     expect(deduped).toHaveLength(4);
@@ -1082,8 +1115,8 @@ describe("dedupeSlotsByPeriod", () => {
     // A same-day SERVICE row is widened to the one day it describes, so two of them
     // on one boat on one day arrive as an identical pair.
     const deduped = dedupeSlotsByPeriod([
-      slot("ylst_a", "2026-08-22", "2026-08-23", "service"),
-      slot("ylst_a", "2026-08-22", "2026-08-23", "service"),
+      slot("loff_a", "2026-08-22", "2026-08-23", "service"),
+      slot("loff_a", "2026-08-22", "2026-08-23", "service"),
     ]);
 
     expect(deduped).toHaveLength(1);
@@ -1091,12 +1124,12 @@ describe("dedupeSlotsByPeriod", () => {
 
   it("preserves order of first appearance", () => {
     const deduped = dedupeSlotsByPeriod([
-      slot("ylst_a", "2026-08-22", "2026-08-29", "booked"),
-      slot("ylst_b", "2026-08-22", "2026-08-29", "booked"),
-      slot("ylst_a", "2026-08-22", "2026-08-29", "option"),
+      slot("loff_a", "2026-08-22", "2026-08-29", "booked"),
+      slot("loff_b", "2026-08-22", "2026-08-29", "booked"),
+      slot("loff_a", "2026-08-22", "2026-08-29", "option"),
     ]);
 
-    expect(deduped.map((s) => s.listingId)).toEqual(["ylst_a", "ylst_b"]);
+    expect(deduped.map((s) => s.listingOfferId)).toEqual(["loff_a", "loff_b"]);
   });
 
   it("passes an empty batch through", () => {

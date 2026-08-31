@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import {
@@ -201,7 +202,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
         </div>
         <StaffActions booking={booking} providerLabel={providerLabel(booking.provider)} />
         <p className="text-base text-natural-500">
-          {booking.listingTitle} · {booking.base.name}, {booking.base.countryName}
+          {booking.listingTitle} · {placeLine(booking.base.name, booking.base.countryName)}
         </p>
 
         <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">

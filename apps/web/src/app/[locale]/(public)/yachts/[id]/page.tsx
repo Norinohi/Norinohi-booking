@@ -50,7 +50,13 @@ async function describe(seo: Seo): Promise<string[]> {
       : null,
     crewLabel && seo.base ? t("metaPlace", { crew: crewLabel, place: seo.base }) : null,
     seo.priceFromMinor
-      ? t("metaPrice", { price: format.number(seo.priceFromMinor / 100, "eur") })
+      ? t("metaPrice", {
+          price: format.number(seo.priceFromMinor / 100, {
+            style: "currency",
+            currency: seo.currency ?? "EUR",
+            maximumFractionDigits: 0,
+          }),
+        })
       : null,
     t("metaCta"),
   ].filter((sentence): sentence is string => Boolean(sentence));

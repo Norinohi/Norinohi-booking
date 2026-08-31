@@ -1,5 +1,7 @@
 import { useTranslations } from "next-intl";
 
+import { CookiePreferencesLink } from "@/components/layout/cookie-consent";
+
 import { serializeSearch } from "@/features/yachts";
 import { Link } from "@/i18n/navigation";
 
@@ -137,6 +139,7 @@ export default function Footer({ year }: { year: number }) {
             <a href="#" className="cursor-pointer transition-colors hover:text-white">
               {t("terms")}
             </a>
+            <CookiePreferencesLink className="cursor-pointer uppercase transition-colors hover:text-white" />
           </div>
           <span className="max-w-full">{t("copyright", { year })}</span>
         </div>

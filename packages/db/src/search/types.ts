@@ -46,6 +46,13 @@ export type ListingSearchInput = {
   underTemporaryBooking?: boolean;
   depositInsurance?: boolean;
   petsAllowed?: boolean;
+  /**
+   * Read by nothing since the price facets and filter moved onto `price_from_minor_eur`, which
+   * is always FX_BASE_CURRENCY. Kept because the contract still accepts it and it is where a
+   * "let the visitor pick a display currency" feature would plug in — but until something does,
+   * passing it changes nothing. Do not reintroduce it as a comparison currency: mixing a caller
+   * hint into what the aggregates compare is the bug F7 fixed.
+   */
   currency?: string;
   /*
    * Selects facet copy and card labels from facet_media_translation; an untranslated
@@ -109,6 +116,16 @@ export type ListingSearchDoc = {
   amenities: string[];
   priceFromMinor: number | null;
   currency: string | null;
+  /**
+   * `priceFromMinor` in one catalogue-wide currency, for comparison only. Never rendered, and
+   * null where no fresh rate covers the published currency. See the `price_from_minor_eur`
+   * column comment in schema/search.ts.
+   */
+  priceFromMinorEur: number | null;
+  /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
+  bestOfferId: string | null;
+  /** How many vendors sell this hull. */
+  offerCount: number;
   availableFrom: string | null;
   availableTo: string | null;
   /** Both ends of the first sellable charter; see `bookableFrom` on the `listing_search_doc` schema. */
@@ -342,6 +359,10 @@ export type ListingMapMarker = {
   lng: number;
   priceFromMinor: number | null;
   currency: string | null;
+  /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
+  bestOfferId: string | null;
+  /** How many vendors sell this hull. */
+  offerCount: number;
 };
 
 export type ListingSuggestion = {
@@ -358,7 +379,6 @@ export type AvailabilityCalendarInput = {
   listingId: string;
   from: string;
   to: string;
-  currency?: string;
 };
 
 export type AvailabilityCalendarSlot = {
@@ -394,9 +414,11 @@ export type AvailabilityCalendar = {
  * blocks every 7 days. Given the rules and the occupancy, a caller can decide a range
  * we never enumerated. See docs on `synthesizeAvailableSlots`.
  */
-export type AvailabilityConstraints = {
-  listingId: string;
-  window: { from: string; to: string };
+/** One provider's own answer about a listing: its calendar, its rules, its rates, its refusals. */
+export type OfferConstraints = {
+  offerId: string;
+  /** The vendor code, so a caller can say who would sell it. */
+  provider: string;
   /** Allowed charter shapes. Empty when the provider published none. */
   rules: {
     /** 0 Sunday to 6 Saturday, matching `listing_checkin_rule`. Null means any day. */
@@ -405,14 +427,18 @@ export type AvailabilityConstraints = {
     minNights: number | null;
     maxNights: number | null;
   }[];
-  /** Periods the provider says are taken. Half-open: `endDate` is the turnaround day. */
+  /**
+   * Periods this provider says are taken, plus our own live checkouts. Half-open: `endDate` is
+   * the turnaround day. The holds are on every offer, because a hold blocks the hull whoever
+   * else lists it.
+   */
   occupied: {
     startDate: string;
     endDate: string;
     status: "option" | "occupied" | "blocked";
   }[];
   /**
-   * Exact periods the provider was asked to price and refused, which nothing else here can
+   * Exact periods this provider was asked to price and refused, which nothing else here can
    * express: a week can be unsold, inside an open season, and still not for sale. Matched on
    * both ends by the rules, so a refused fortnight never buries the free week inside it.
    */
@@ -435,4 +461,18 @@ export type AvailabilityConstraints = {
     endDate: string | null;
     isOneWay: boolean;
   }[];
+};
+
+/**
+ * What a listing will sell over a window, one set per offer.
+ *
+ * Never flattened into a single set: a yacht two vendors sell has two calendars and two sets
+ * of rules, and merging them would describe a charter neither vendor would honour. The
+ * combinators in `packages/api/src/lib/offer-availability.ts` answer across them, so a day is
+ * offered when any offer can deliver it.
+ */
+export type AvailabilityConstraints = {
+  listingId: string;
+  window: { from: string; to: string };
+  offers: OfferConstraints[];
 };

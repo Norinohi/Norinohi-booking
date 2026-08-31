@@ -46,6 +46,20 @@ export type RefundResult = Awaited<ReturnType<AdminClient["booking"]["refund"]>>
 export type ListingAdminList = Awaited<ReturnType<AdminClient["listing"]["list"]>>;
 export type ListingAdminRow = ListingAdminList["items"][number];
 export type ListingStatus = ListingAdminRow["status"];
+/**
+ * The statuses a person can move a listing to, taken from the procedure that moves it.
+ *
+ * Narrower than `ListingStatus`, which also carries `merged`: that one is written by a
+ * duplicate merge to say the listing's offers now live elsewhere, and it is displayable
+ * but never choosable.
+ */
+export type MovableStatus = Parameters<AdminClient["listing"]["setStatus"]>[0]["status"];
+
+/* Which vendor supplies each part of a merged listing, inferred from the contract. */
+export type ListingFieldSources = Awaited<ReturnType<AdminClient["listing"]["fieldSources"]>>;
+export type ListingOfferSummary = ListingFieldSources["offers"][number];
+export type ListingFieldDecision = ListingFieldSources["decisions"][number];
+export type ListingFieldGroup = ListingFieldDecision["field"];
 
 export type SyncRunList = Awaited<ReturnType<AdminClient["provider"]["syncRuns"]>>;
 export type SyncRunRow = SyncRunList["items"][number];

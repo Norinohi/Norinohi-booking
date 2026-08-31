@@ -3,6 +3,7 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { useFormatter, useTranslations } from "next-intl";
+import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ import {
 import {
   isResolvedElsewhere,
   useConfirmDuplicate,
+  useDeferDuplicate,
   useRejectDuplicate,
 } from "../hooks/use-duplicates";
 import { type DuplicateCandidate, toProviderKey } from "../types";
@@ -30,6 +32,11 @@ const MATCH_TYPES = [
   "model+yearBuilt",
 ] as const;
 
+/*
+ * Every criterion `scoreDuplicatePair` can judge. A field missing here falls back to its raw
+ * key, which is how `model` and `year` shipped as untranslated chips when the name-and-berth
+ * gate turned them from a free assumption into things actually compared.
+ */
 const SIGNAL_FIELDS = [
   "name",
   "base",
@@ -38,6 +45,8 @@ const SIGNAL_FIELDS = [
   "cabins",
   "berths",
   "heads",
+  "model",
+  "year",
   "builder",
   "operator",
 ] as const;
@@ -61,12 +70,18 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
   const format = useFormatter();
   const confirmDuplicate = useConfirmDuplicate();
   const rejectDuplicate = useRejectDuplicate();
+  const deferDuplicate = useDeferDuplicate();
   /* Which side's button was pressed, so only that one shows the pending label. */
   const [keeping, setKeeping] = useState<string | null>(null);
+  /*
+   * Carried into whichever verdict is reached. Written once and read back off the candidate
+   * afterwards, so the reason a hard pair went the way it did outlives the reviewer's memory.
+   */
+  const [note, setNote] = useState("");
   const [detailOpen, setDetailOpen] = useState(false);
 
   const pending = candidate.decision === "pending";
-  const busy = confirmDuplicate.isPending || rejectDuplicate.isPending;
+  const busy = confirmDuplicate.isPending || rejectDuplicate.isPending || deferDuplicate.isPending;
 
   const value = (key: ComparisonKey, raw: string | number | null): string => {
     if (raw === null) return EMPTY_VALUE;
@@ -109,16 +124,16 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
   const keep = (keepListingId: string) => {
     setKeeping(keepListingId);
     confirmDuplicate.mutate(
-      { candidateId: candidate.id, keepListingId },
+      { candidateId: candidate.id, keepListingId, note: note.trim() || undefined },
       {
         onSuccess: (result) =>
           toast.success(
             result.closedCandidateCount > 0
               ? t("toast.confirmedWithClosed", {
-                  count: result.movedSourceCount,
+                  count: result.movedOfferCount,
                   closed: result.closedCandidateCount,
                 })
-              : t("toast.confirmed", { count: result.movedSourceCount }),
+              : t("toast.confirmed", { count: result.movedOfferCount }),
           ),
         onError,
         onSettled: () => setKeeping(null),
@@ -128,8 +143,20 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
 
   const reject = () => {
     rejectDuplicate.mutate(
-      { candidateId: candidate.id },
+      { candidateId: candidate.id, note: note.trim() || undefined },
       { onSuccess: () => toast.success(t("toast.rejected")), onError },
+    );
+  };
+
+  /*
+   * Neither verdict. A pair nobody can call leaves the queue without being counted as a
+   * rejection, because the precision figure that would justify auto-approval is confirmed over
+   * confirmed-plus-rejected and filing every hard case as a failure would sink it.
+   */
+  const defer = () => {
+    deferDuplicate.mutate(
+      { candidateId: candidate.id, note: note.trim() || undefined },
+      { onSuccess: () => toast.success(t("toast.deferred")), onError },
     );
   };
 
@@ -179,12 +206,30 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
             {t("showDetail")}
           </Button>
           {pending ? (
-            <Button variant="neutral" onClick={reject} disabled={busy}>
-              {t("reject")}
-            </Button>
+            <>
+              <Button variant="neutral" onClick={defer} disabled={busy}>
+                {t("defer")}
+              </Button>
+              <Button variant="neutral" onClick={reject} disabled={busy}>
+                {t("reject")}
+              </Button>
+            </>
           ) : null}
         </div>
       </header>
+
+      {pending ? (
+        <TextField
+          value={note}
+          placeholder={t("notePlaceholder")}
+          aria-label={t("noteLabel")}
+          onChange={(event) => setNote(event.target.value)}
+        />
+      ) : candidate.reviewerNote ? (
+        <p className="text-sm leading-[1.3] text-natural-500">
+          {t("noteWas", { note: candidate.reviewerNote })}
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
         {([candidate.sideA, candidate.sideB] as const).map((side, index) => {

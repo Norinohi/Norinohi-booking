@@ -116,9 +116,9 @@ export const syncRunListSchema = paginatedSchema(syncRunRowSchema);
 
 export const matchStatusSchema = z.enum(["unmatched", "auto", "confirmed", "rejected"]);
 
-export const duplicateDecisionSchema = z.enum(["pending", "confirmed", "rejected"]);
+export const duplicateDecisionSchema = z.enum(["pending", "confirmed", "rejected", "deferred"]);
 
-export const listingStatusSchema = z.enum(["draft", "published", "hidden"]);
+export const listingStatusSchema = z.enum(["draft", "published", "hidden", "merged"]);
 
 export const mediaRoleSchema = z.enum(["main", "layout", "gallery"]);
 
@@ -183,6 +183,8 @@ export const duplicateCandidateSchema = z.object({
   signals: duplicateSignalsSchema,
   createdAt: z.string(),
   reviewedAt: z.string().nullable(),
+  /** Why the reviewer decided as they did, where they said. */
+  reviewerNote: z.string().nullable(),
   sideA: duplicateSideSchema,
   sideB: duplicateSideSchema,
 });
@@ -219,6 +221,7 @@ export const duplicateQueueSummarySchema = z.object({
     pending: z.number().int(),
     confirmed: z.number().int(),
     rejected: z.number().int(),
+    deferred: z.number().int(),
   }),
   /** Distinct listings the filtered pairs touch: one yacht can sit in several pairs. */
   listingCount: z.number().int(),
@@ -232,27 +235,102 @@ export const duplicateQueueSchema = paginatedSchema(duplicateCandidateSchema).ex
   summary: duplicateQueueSummarySchema,
 });
 
-/** The reviewer picks the survivor; the pair's other listing is the one hidden. */
+/** The reviewer picks the survivor; the other listing's offers move onto it. */
 export const duplicateConfirmInputSchema = z.object({
   candidateId: idSchema,
   keepListingId: idSchema,
+  note: z.string().trim().max(500).optional(),
 });
 
-export const duplicateRejectInputSchema = z.object({ candidateId: idSchema });
+/** What a reviewer can leave behind, so a later reader knows why the pair went the way it did. */
+export const reviewerNoteSchema = z.string().trim().max(500).optional();
+
+/**
+ * "I looked and I cannot tell", which is neither of the other two.
+ *
+ * It exists so a hard pair can leave the queue without being counted as a rejection: the
+ * precision figure that will one day justify auto-approval is confirmed over confirmed-plus-
+ * rejected, and filing every undecidable case as a rejection would sink it.
+ */
+export const duplicateDeferInputSchema = z.object({
+  candidateId: idSchema,
+  note: reviewerNoteSchema,
+});
+
+/** Undoes a merge, one offer at a time: the offer leaves and gets a listing of its own. */
+export const duplicateSplitInputSchema = z.object({
+  listingOfferId: idSchema,
+  note: reviewerNoteSchema,
+});
+
+export const duplicateSplitSchema = z.object({
+  listingOfferId: z.string(),
+  /** Where the offer went. The origin listing when it was a merge being undone, else new. */
+  listingId: z.string(),
+  /** True when the offer was returned to the listing it had been merged out of. */
+  restoredOrigin: z.boolean(),
+  /** Bookings that followed the offer, because the vendor holding them holds this boat. */
+  movedBookingCount: z.number().int(),
+});
+
+export const duplicateRejectInputSchema = z.object({
+  candidateId: idSchema,
+  note: reviewerNoteSchema,
+});
 
 export const duplicateResolutionSchema = z.object({
   candidateId: z.string(),
   decision: duplicateDecisionSchema,
   keptListingId: z.string().nullable(),
-  hiddenListingId: z.string().nullable(),
-  /** How many `listing_source` rows were repointed at the survivor. */
-  movedSourceCount: z.number().int(),
+  /**
+   * The listing whose offers moved. Marked `merged` rather than hidden: nobody withdrew it,
+   * and it keeps a pointer to the survivor so its old URL can redirect.
+   */
+  mergedListingId: z.string().nullable(),
+  /** How many offers moved onto the survivor. Each one is a vendor that can still sell it. */
+  movedOfferCount: z.number().int(),
   /**
    * Other pending pairs the merge left with one listing on both sides, closed with it.
    * Zero on a rejection, and usually zero on a merge — it is only the boats that sit in
    * several look-alike pairs at once that produce any.
    */
   closedCandidateCount: z.number().int(),
+});
+
+/**
+ * How the matcher is actually doing, per rule and confidence band.
+ *
+ * The question auto-approval turns on, and it cannot be answered from the queue's own counts:
+ * those say how much work is left, not how often the matcher was right. Precision is confirmed
+ * over confirmed-plus-rejected, with deferred pairs deliberately outside the denominator —
+ * they are cases nobody could call, and counting them as failures would understate a rule that
+ * is doing fine on the cases it does settle.
+ */
+export const duplicateMetricRowSchema = z.object({
+  /** `signals.matchedOn`, or "unscored" for pairs an older sync proposed without one. */
+  matchedOn: z.string(),
+  band: duplicateConfidenceBandSchema,
+  proposed: z.number().int(),
+  confirmed: z.number().int(),
+  rejected: z.number().int(),
+  deferred: z.number().int(),
+  pending: z.number().int(),
+  /** Undone afterwards by a split, which is a confirmation that turned out to be wrong. */
+  undone: z.number().int(),
+  /**
+   * Null until a bucket has a decided pair in it. A rate computed from nothing reads as a
+   * verdict, and the whole point of this table is to stop guessing at one.
+   */
+  precision: z.number().nullable(),
+});
+
+/** No filters: the whole point is the shape of every bucket at once. */
+export const duplicateMetricsInputSchema = z.object({}).default({});
+
+export const duplicateMetricsSchema = z.object({
+  rows: z.array(duplicateMetricRowSchema),
+  /** Reviewed pairs across every bucket, which is the sample the rates rest on. */
+  decided: z.number().int(),
 });
 
 /* ------------------------------------------ duplicate review, full detail */
@@ -616,7 +694,72 @@ export const listingAdminRowSchema = z.object({
   /** Cheapest available slot. Null until availability has been synced and priced. */
   priceFromMinor: z.number().int().nullable(),
   currency: z.string().nullable(),
+  /** How many vendors sell this hull. Above one, the field sources are worth reviewing. */
+  offerCount: z.number().int(),
   createdAt: z.string(),
+});
+
+/* ------------------------------------------- per-field source overrides */
+
+/** The field groups a listing is composed in, mirroring the `listing_field` enum. */
+export const listingFieldSchema = z.enum([
+  "title",
+  "spec",
+  "taxonomy",
+  "operator",
+  "home_base",
+  "pets",
+  "media",
+  "description",
+]);
+
+/**
+ * One vendor's candidacy for a listing's fields, with enough of its own reading of the boat
+ * for a reviewer to choose between them without opening two tabs.
+ */
+export const listingOfferSummarySchema = z.object({
+  id: z.string(),
+  provider: z.string(),
+  status: z.enum(["active", "suppressed", "retired"]),
+  title: z.string().nullable(),
+  modelName: z.string().nullable(),
+  operatorName: z.string().nullable(),
+  baseName: z.string().nullable(),
+  yearBuilt: z.number().int().nullable(),
+  lengthM: z.number().nullable(),
+  cabins: z.number().int().nullable(),
+  berths: z.number().int().nullable(),
+  /** What the resolver counts as completeness for the media and description groups. */
+  photoCount: z.number().int(),
+  descriptionCount: z.number().int(),
+});
+
+export const listingFieldDecisionSchema = z.object({
+  field: listingFieldSchema,
+  /** Null where nothing has been resolved for this group yet. */
+  listingOfferId: z.string().nullable(),
+  /**
+   * An admin's decision, which the nightly resolver never overwrites. Unlocked rows are the
+   * resolver showing its own work and are rewritten on every run.
+   */
+  locked: z.boolean(),
+  decidedBy: z.string().nullable(),
+  decidedAt: z.string().nullable(),
+});
+
+export const listingFieldSourcesSchema = z.object({
+  listingId: z.string(),
+  offers: z.array(listingOfferSummarySchema),
+  decisions: z.array(listingFieldDecisionSchema),
+});
+
+export const listingFieldSourcesInputSchema = z.object({ listingId: idSchema });
+
+/** Null `listingOfferId` releases the group back to the resolver. */
+export const setListingFieldSourceInputSchema = z.object({
+  listingId: idSchema,
+  field: listingFieldSchema,
+  listingOfferId: idSchema.nullable(),
 });
 
 export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema).extend({
@@ -638,7 +781,12 @@ export const listingAdminListSchema = paginatedSchema(listingAdminRowSchema).ext
 
 export const listingSetStatusInputSchema = z.object({
   id: idSchema,
-  status: listingStatusSchema,
+  /*
+   * The three a person may choose. `merged` is not one of them: it is written by a
+   * duplicate merge to record that this listing's offers moved elsewhere, and setting
+   * it by hand would retire a listing while leaving its inventory where it was.
+   */
+  status: z.enum(["draft", "published", "hidden"]),
 });
 
 export const listingSetStatusSchema = z.object({

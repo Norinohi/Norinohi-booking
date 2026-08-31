@@ -54,3 +54,14 @@ export function useRejectDuplicate() {
     }),
   );
 }
+
+/** "I looked and I cannot tell" — a third verdict, kept out of the precision denominator. */
+export function useDeferDuplicate() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.match.defer.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
+    }),
+  );
+}

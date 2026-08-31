@@ -68,6 +68,36 @@ export const listingSearchDoc = pgTable(
     amenities: jsonb("amenities").$type<string[]>().default([]).notNull(),
     priceFromMinor: integer("price_from_minor"),
     currency: text("currency"),
+    /**
+     * `price_from_minor` converted into the one currency the catalogue compares in, and never
+     * shown to anyone.
+     *
+     * The pair above is the provider's published price and is what a card renders. This is the
+     * only column the price filter, the price sort and every "from" aggregate may touch: those
+     * read across the whole catalogue, where a dollar integer and a euro integer were being
+     * compared as if they were the same number.
+     *
+     * Null when the amount is null, and also when no rate fresh enough to trust covers its
+     * currency (packages/db/src/fx/rates.ts). Null means "not comparable", so such a listing
+     * keeps its own price on its card and falls out of ordering and filtering rather than
+     * ranking against a number it does not share units with.
+     *
+     * Written by the projection, so it is as fresh as that listing's last rebuild rather than
+     * as fresh as the rate. Good enough for ordering; `pnpm --filter server rebuild:search-docs`
+     * reprices the fleet when it matters.
+     */
+    priceFromMinorEur: integer("price_from_minor_eur"),
+    /**
+     * The offer the card's price, dates and terms describe, and the one a quote should be
+     * asked of first.
+     *
+     * Plain text rather than a foreign key: this table is a projection rebuilt wholesale, and
+     * a reference into it would make dropping an offer a cascade through the read model. The
+     * verify script checks that it names a live offer of this listing.
+     */
+    bestOfferId: text("best_offer_id"),
+    /** How many vendors sell this hull, so a merged card can be told from a single-source one. */
+    offerCount: integer("offer_count").default(0).notNull(),
     availableFrom: date("available_from"),
     availableTo: date("available_to"),
     /**
@@ -107,15 +137,17 @@ export const listingSearchDoc = pgTable(
       t.hasTemporaryBooking,
     ),
     index("listing_search_doc_price_idx").on(t.priceFromMinor),
+    index("listing_search_doc_price_eur_idx").on(t.priceFromMinorEur),
     index("listing_search_doc_rating_idx").on(t.rating),
     index("listing_search_doc_available_idx").on(t.availableFrom, t.availableTo),
     index("listing_search_doc_rating_cursor_idx").on(t.rating.desc(), t.listingId.desc()),
+    /* Keyed on the comparable column, because that is what the price sort orders by. */
     index("listing_search_doc_price_cursor_idx").on(
-      sql`coalesce(${t.priceFromMinor}, 2147483647)`,
+      sql`coalesce(${t.priceFromMinorEur}, 2147483647)`,
       t.listingId,
     ),
     index("listing_search_doc_price_desc_cursor_idx").on(
-      sql`coalesce(${t.priceFromMinor}, -1) desc`,
+      sql`coalesce(${t.priceFromMinorEur}, -1) desc`,
       t.listingId.desc(),
     ),
     index("listing_search_doc_year_cursor_idx").on(

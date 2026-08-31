@@ -272,6 +272,14 @@ export const bookingDraftSchema = z.object({
   extras: z.array(z.string()).default([]),
   /** Carried from the quote: re-pricing without it would price a different trip. */
   crewType: crewTypeSchema.optional(),
+  /*
+   * Also carried from the quote, and for the same reason. A vendor that converts on request
+   * answers the same charter in whatever money it was asked for, so re-pricing in a different
+   * one observes a different price and the hash below can never match. Optional because a
+   * provider that publishes in one currency has nothing to carry; the adapter falls back to
+   * its own configured currency.
+   */
+  currency: z.string().length(3).optional(),
   /**
    * The hash of the price the customer agreed to. Adapters re-price before holding
    * and refuse on a mismatch. For providers whose quote call creates no

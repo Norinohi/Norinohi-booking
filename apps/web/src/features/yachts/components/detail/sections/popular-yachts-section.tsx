@@ -1,5 +1,6 @@
 "use client";
 
+import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import {
@@ -75,7 +76,7 @@ export default function PopularYachtsSection() {
                 className="w-full"
                 image={yacht.mainImage}
                 imageAlt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
-                location={`${yacht.base.location}, ${yacht.base.country}`}
+                location={placeLine(yacht.base.location, yacht.base.country)}
                 title={
                   <Link
                     href={`/yachts/${yacht.slug}`}

@@ -1,7 +1,9 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
+
+import { useMoney } from "@/hooks/use-money";
 
 import { RangeField, Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
@@ -18,9 +20,9 @@ const FEET_TO_METRES = 0.3048;
 
 export default function SpecsSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
-  const format = useFormatter();
   const { options } = useFilterOptions();
-  const { ranges } = useFilterRanges();
+  const { ranges, priceCurrency } = useFilterRanges();
+  const money = useMoney();
   const [lengthUnit, setLengthUnit] = useState("ft");
 
   const showLength = (feet: number) =>
@@ -65,7 +67,7 @@ export default function SpecsSection({ value, set }: SectionProps) {
         limits={ranges.price}
         value={value.price}
         onChange={(next) => set("price", next)}
-        format={(n) => format.number(n, "eur")}
+        format={(n) => money(n * 100, priceCurrency)}
       />
       {/*
        * The slider is a view over `yearFrom` / `yearTo` (lib/boat-age.ts): dragging it rewrites the

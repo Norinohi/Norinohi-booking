@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   dedupePricePeriodRows,
+  type OfferRef,
   supportsSeasonalPrices,
   writeSeasonalPrices,
   type PricePeriodStore,
@@ -23,9 +24,12 @@ function fakeStore(sourceIds: Record<string, string | null> = {}) {
 
   const store: PricePeriodStore = {
     loadSourceIds(listingIds) {
-      const found = new Map<string, string | null>();
+      const found = new Map<string, OfferRef>();
       for (const listingId of listingIds) {
-        if (listingId in sourceIds) found.set(listingId, sourceIds[listingId] ?? null);
+        const listingSourceId = sourceIds[listingId];
+        if (listingSourceId) {
+          found.set(listingId, { listingSourceId, listingOfferId: `loff_${listingSourceId}` });
+        }
       }
       return Promise.resolve(found);
     },
@@ -42,6 +46,7 @@ describe("dedupePricePeriodRows", () => {
   const write = (listingId: string, prices: SeasonalPrice[]): PricePeriodWrite => ({
     listingId,
     listingSourceId: `src_${listingId}`,
+    listingOfferId: `loff_${listingId}`,
     prices,
   });
 
@@ -66,9 +71,10 @@ describe("dedupePricePeriodRows", () => {
     expect(rows).toHaveLength(2);
   });
 
-  it("carries each listing's own source id and the weekly kind", () => {
+  it("carries each listing's own offer and the weekly kind", () => {
     expect(dedupePricePeriodRows([write("a", [price()])]).rows[0]).toMatchObject({
       listingSourceId: "src_a",
+      listingOfferId: "loff_a",
       kind: "weekly",
     });
   });
@@ -94,7 +100,14 @@ describe("writeSeasonalPrices", () => {
 
     expect(written).toBe(2);
     expect(batches).toEqual([
-      [{ listingId: "ylst_marlin", listingSourceId: "lsrc_marlin", prices }],
+      [
+        {
+          listingId: "ylst_marlin",
+          listingSourceId: "lsrc_marlin",
+          listingOfferId: "loff_lsrc_marlin",
+          prices,
+        },
+      ],
     ]);
   });
 
@@ -137,16 +150,19 @@ describe("writeSeasonalPrices", () => {
     expect(batches[0]?.map((batchWrite) => batchWrite.listingId)).toEqual(["a"]);
   });
 
-  it("attributes a row to no source when the listing has no active provider link", async () => {
+  it("leaves a listing with no active offer unpriced rather than unattributed", async () => {
+    // `listing_price_period.listing_offer_id` is NOT NULL, and a rate belonging to nobody is
+    // a price no vendor could be asked to honour.
     const { store, batches } = fakeStore();
 
-    await writeSeasonalPrices({
+    const written = await writeSeasonalPrices({
       store,
       listingIds: ["orphan"],
       loadSeasonalPrices: () => Promise.resolve(new Map([["orphan", [price()]]])),
     });
 
-    expect(batches[0]?.[0]?.listingSourceId).toBeNull();
+    expect(written).toBe(0);
+    expect(batches[0]).toEqual([]);
   });
 
   it("asks the provider once for a listing named twice", async () => {
@@ -213,6 +229,7 @@ describe("dedupePricePeriodRows: rates too large for the column", () => {
   const write = (listingId: string, prices: ReturnType<typeof rate>[]) => ({
     listingId,
     listingSourceId: `src_${listingId}`,
+    listingOfferId: `loff_${listingId}`,
     prices,
   });
 

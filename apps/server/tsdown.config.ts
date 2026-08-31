@@ -13,6 +13,7 @@ export default defineConfig({
     "./src/publish-listings.ts",
     "./src/repair-bm-ids.ts",
     "./src/rebuild-search-docs.ts",
+    "./src/refresh-fx.ts",
   ],
   format: "esm",
   outDir: "./dist",

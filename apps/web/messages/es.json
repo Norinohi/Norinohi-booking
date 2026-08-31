@@ -967,8 +967,30 @@
     "CookieConsent": {
       "title": "Cookies",
       "description": "Usamos cookies analíticas para ver cómo se utiliza el sitio y mejorarlo. No se recopila nada hasta que aceptes.",
+      "manage": "Configurar",
       "accept": "Aceptar",
-      "decline": "Rechazar"
+      "decline": "Rechazar",
+      "footerLink": "Cookies",
+      "dialog": {
+        "title": "Tu privacidad",
+        "description": "Elige qué cookies puede usar este sitio. Tu elección se guarda en este dispositivo y puedes cambiarla cuando quieras desde el pie de página.",
+        "close": "Cerrar",
+        "alwaysActive": "Siempre activas",
+        "necessary": {
+          "title": "Necesarias",
+          "description": "Mantienen tu sesión iniciada, protegen los pagos frente al fraude y recuerdan esta elección. Sin ellas el sitio no funciona."
+        },
+        "functional": {
+          "title": "Funcionales",
+          "description": "Recuerdan los barcos que has guardado y cuentan una sola vez una visita repetida a un anuncio. Se quedan en tu navegador."
+        },
+        "analytics": {
+          "title": "Analíticas",
+          "description": "Google Analytics, para ver qué páginas se usan y dónde se atascan las personas. Sin publicidad ni perfilado."
+        },
+        "save": "Guardar mi elección",
+        "acceptAll": "Aceptar todas"
+      }
     }
   },
   "PlanMyTrip": {
@@ -1973,12 +1995,14 @@
         "label": "Decisión",
         "pending": "Pendientes",
         "confirmed": "Confirmados",
-        "rejected": "Rechazados"
+        "rejected": "Rechazados",
+        "deferred": "Aplazados"
       },
       "empty": {
         "pending": "Nada que revisar. Todos los duplicados están resueltos.",
         "confirmed": "Todavía no se ha confirmado ninguna fusión.",
-        "rejected": "Todavía no se ha rechazado ningún par."
+        "rejected": "Todavía no se ha rechazado ningún par.",
+        "deferred": "Aún no se ha aplazado ningún par."
       },
       "error": "No se pudo cargar la cola de duplicados",
       "confidence": "{value}% de coincidencia",
@@ -2084,7 +2108,8 @@
         "name+model+year": "Nombre + modelo + año",
         "base+model+year": "Base + modelo + año",
         "model+year": "Solo modelo + año",
-        "model+yearBuilt": "Modelo + año de construcción"
+        "model+yearBuilt": "Modelo + año de construcción",
+        "name+base": "Nombre + amarre"
       },
       "signalFields": {
         "name": "Nombre",
@@ -2095,15 +2120,22 @@
         "berths": "Literas",
         "heads": "Baños",
         "builder": "Astillero",
-        "operator": "Operador"
+        "operator": "Operador",
+        "model": "Modelo",
+        "year": "Año de construcción"
       },
       "toast": {
         "confirmed": "Fusionado. {count} fuentes ahora apuntan al anuncio conservado.",
         "confirmedWithClosed": "Fusionado. {count} fuentes de proveedor apuntan ahora al anuncio conservado y se cerraron {closed} parejas más con él.",
         "rejected": "Registrado como dos yates diferentes.",
         "conflict": "Otra persona ya revisó este par. Recargando la cola.",
-        "error": "Algo salió mal. Inténtalo de nuevo."
-      }
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "deferred": "Aplazado. No cuenta ni a favor ni en contra del emparejador."
+      },
+      "defer": "Aplazar",
+      "notePlaceholder": "¿Por qué? (opcional)",
+      "noteLabel": "Nota del revisor",
+      "noteWas": "Nota: {note}"
     },
     "Sync": {
       "title": "Historial de sincronización",
@@ -2358,12 +2390,14 @@
       "status": {
         "draft": "Borrador",
         "published": "Publicado",
-        "hidden": "Oculto"
+        "hidden": "Oculto",
+        "merged": "Fusionado"
       },
       "actions": {
         "publish": "Publicar",
         "unpublish": "Ocultar",
-        "draft": "Volver a borrador"
+        "draft": "Volver a borrador",
+        "sources": "Fuentes"
       },
       "moved": "{title} ahora está en estado {status}.",
       "noProvider": "Sin proveedor",
@@ -2385,7 +2419,37 @@
         "published": "{count, plural, =0 {No quedan borradores por publicar de {provider}.} one {# borrador publicado de {provider}.} other {# borradores publicados de {provider}.}}",
         "failed": "No se pudieron publicar los borradores"
       },
-      "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío."
+      "unpriced": "{count, plural, one {# anuncio tiene fechas pero ninguna tarifa publicada} other {# anuncios tienen fechas pero ninguna tarifa publicada}} — se muestran como “A petición” con un calendario vacío.",
+      "sources": {
+        "subtitle": "De qué proveedor se toma cada parte de este anuncio. La sincronización nocturna no toca un grupo fijado.",
+        "error": "No se pudieron cargar los proveedores de este anuncio",
+        "field": "Parte del anuncio",
+        "takenFrom": "Tomado de",
+        "locked": "Fijado",
+        "automatic": "Automático",
+        "release": "Liberar",
+        "pinned": "Fijado a ese proveedor. La sincronización no lo cambiará.",
+        "released": "De nuevo automático. La sincronización vuelve a decidir.",
+        "model": "Modelo",
+        "year": "Año",
+        "base": "Base",
+        "operator": "Operador",
+        "photos": "Fotos",
+        "descriptions": "Descripciones",
+        "fields": {
+          "media": "Fotos",
+          "title": "Nombre",
+          "spec": "Especificaciones",
+          "description": "Descripción",
+          "taxonomy": "Astillero, modelo, tipo",
+          "operator": "Operador",
+          "home_base": "Base de origen",
+          "pets": "Mascotas permitidas"
+        },
+        "takeOut": "Sacar de este anuncio",
+        "splitRestored": "Sacado y devuelto al anuncio del que vino.",
+        "splitNew": "Sacado a un anuncio propio."
+      }
     },
     "Routes": {
       "title": "Rutas sugeridas",

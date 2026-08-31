@@ -13,6 +13,16 @@ export type QuoteSelection = {
   guests: number;
   crewType?: QuoteInput["crewType"];
   extras?: string[];
+  /*
+   * The listing's own currency, so the sidebar quotes the money the card advertised.
+   *
+   * Omitting it took the contract's EUR default, which is a currency for most of the catalogue
+   * and a translation for the rest: a Bahamas fleet publishes its rate list in USD and cannot be
+   * asked for anything else, so the card showed $7,619 and the panel under it answered €6,536 --
+   * one charter, one price, two currencies, and no way for a visitor to see they matched.
+   * Reprice carries the quote's own currency forward, so this only has to be set once.
+   */
+  currency?: string;
 };
 
 /*

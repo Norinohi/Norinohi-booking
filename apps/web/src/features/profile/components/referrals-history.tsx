@@ -66,7 +66,7 @@ export default function ReferralsHistory() {
                 </TableCell>
                 {/* Amount stays blank while pending — nothing has been credited yet. */}
                 <TableCell className={`w-1/4 min-w-[110px] font-bold ${cellClass}`}>
-                  {row.amount ? formatMoney(row.amount.amountMinor) : null}
+                  {row.amount ? formatMoney(row.amount.amountMinor, row.amount.currency) : null}
                 </TableCell>
               </TableRow>
             ))}

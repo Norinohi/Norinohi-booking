@@ -41,7 +41,12 @@ export default function MandatoryExtrasSection() {
             {/* The operator's own measure, where it gave one: a per-person extra quoted
                 as "per booking" understates what the charter will be billed. */}
             <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
-              {extraPrice(item.price.amountMinor, item.priceMeasure, item.priceToMinor)}
+              {extraPrice(
+                item.price.amountMinor,
+                item.priceMeasure,
+                item.priceToMinor,
+                item.price.currency,
+              )}
             </p>
           </div>
         ))}

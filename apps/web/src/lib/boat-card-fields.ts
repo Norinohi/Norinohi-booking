@@ -121,9 +121,18 @@ export type BoatCardListing = {
 };
 
 type PricedListing = {
-  priceFrom: { amountMinor: number } | null;
+  priceFrom: { amountMinor: number; currency: string } | null;
   availability: { hasAvailableDates: boolean };
 };
+
+/**
+ * Every amount on a card, formatted in the currency it was published in.
+ *
+ * The currency is an argument rather than a constant because the catalogue is not priced in
+ * one: a Bahamas fleet publishes in USD, and a `price_from_minor` of 761900 is $7,619 — the
+ * same digits under a euro sign are a different, wrong number.
+ */
+export type MoneyFormatter = (amountMinor: number, currency?: string) => string;
 
 /**
  * What a card shows where the amount goes. A listing with no bookable slot reads as
@@ -133,9 +142,11 @@ type PricedListing = {
 export function boatCardPrice(
   t: BoatCardTranslator,
   listing: PricedListing,
-  formatMoney: (amountMinor: number) => string,
+  formatMoney: MoneyFormatter,
 ) {
-  if (listing.priceFrom) return formatMoney(listing.priceFrom.amountMinor);
+  if (listing.priceFrom) {
+    return formatMoney(listing.priceFrom.amountMinor, listing.priceFrom.currency);
+  }
   return listing.availability.hasAvailableDates ? t("priceOnRequest") : t("priceUnavailable");
 }
 
