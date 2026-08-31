@@ -1,4 +1,9 @@
 import { ORPCError } from "@orpc/server";
+import {
+  availabilitySlot,
+  listingFreePeriod,
+  listingPricePeriod,
+} from "@yacht-charter/db/schema/availability";
 import { base, location } from "@yacht-charter/db/schema/geography";
 import {
   listing,
@@ -209,7 +214,7 @@ async function loadQueueSummary(
       .where(decisionWhere),
   ]);
 
-  const decisionCounts = { pending: 0, confirmed: 0, rejected: 0 };
+  const decisionCounts = { pending: 0, confirmed: 0, rejected: 0, deferred: 0 };
   for (const row of decisions) decisionCounts[row.decision] = row.total;
 
   return {
@@ -553,6 +558,41 @@ async function loadDescriptions(db: Database, listingIds: string[]): Promise<Map
  * the catalogue writer refuses to overwrite on the next sync. Any other pending pair
  * the repoint collapsed onto a single listing closes with it.
  */
+/**
+ * Which of these listings already hold a provider's prices or calendar.
+ *
+ * `availability_slot`, `listing_price_period` and `listing_free_period` are keyed on
+ * `(listing_id, dates)` with no room for a second provider, and the free-period write
+ * deletes by listing alone. Putting two stocked sources under one listing therefore
+ * does not keep both: the next sync of either vendor overwrites the other's weeks and
+ * deletes its free periods outright, and the reviewer sees a merge that appeared to
+ * work. Until the offer model lands, that merge is refused rather than half-performed.
+ */
+async function listingsHoldingInventory(
+  tx: DatabaseExecutor,
+  listingIds: readonly string[],
+): Promise<Set<string>> {
+  if (listingIds.length === 0) return new Set();
+
+  const ids = [...listingIds];
+  const [slots, prices, free] = await Promise.all([
+    tx
+      .selectDistinct({ listingId: availabilitySlot.listingId })
+      .from(availabilitySlot)
+      .where(inArray(availabilitySlot.listingId, ids)),
+    tx
+      .selectDistinct({ listingId: listingPricePeriod.listingId })
+      .from(listingPricePeriod)
+      .where(inArray(listingPricePeriod.listingId, ids)),
+    tx
+      .selectDistinct({ listingId: listingFreePeriod.listingId })
+      .from(listingFreePeriod)
+      .where(inArray(listingFreePeriod.listingId, ids)),
+  ]);
+
+  return new Set([...slots, ...prices, ...free].map((row) => row.listingId));
+}
+
 export async function confirmDuplicateCandidate(
   db: Database,
   actorUserId: string,
@@ -574,6 +614,15 @@ export async function confirmDuplicateCandidate(
     if (!listingIds.has(input.keepListingId)) {
       throw new ORPCError("BAD_REQUEST", {
         message: "keepListingId must be one of the two candidate listings",
+      });
+    }
+
+    const stocked = await listingsHoldingInventory(tx, [...listingIds]);
+    if (stocked.size > 1) {
+      throw new ORPCError("CONFLICT", {
+        message:
+          "Both listings already carry a provider's prices or calendar, and the two cannot be held under one listing yet",
+        data: { code: "MERGE_WOULD_LOSE_INVENTORY", listingIds: [...stocked] },
       });
     }
 
