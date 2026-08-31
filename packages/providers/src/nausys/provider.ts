@@ -37,7 +37,8 @@ import {
   createNausysSeasonalPriceLoader,
   type NausysHotWindow,
 } from "./occupancy";
-import { providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
+import { listingSource, providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
+import { provider as providerTable, providerRecord } from "@yacht-charter/db/schema/provider";
 import { listAdvertisedCharterPeriods } from "@yacht-charter/db/search/read-model";
 import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
@@ -186,6 +187,12 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
         ),
         years: this.years,
         /*
+         * The hulls the confirming pass prices, read when the pass starts for the reason the
+         * companies are: a run resumes hours after the source was built. Scoped to the same
+         * companies, because a page's silence is read as a refusal across exactly that scope.
+         */
+        loadYachtIds: () => loadNausysYachtIds(this.db, this.config.companyScope),
+        /*
          * Read here rather than in the constructor for the reason the company list is: it is
          * a database read, and it has to be the current one. The advertised periods move as
          * charters are sold and the read model re-mints them, so a list captured when the
@@ -320,6 +327,39 @@ async function loadNausysExtraLabels(
     );
 
   return new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]));
+}
+
+/**
+ * Every NauSYS hull we list and could sell, by the vendor's own id.
+ *
+ * Active records only, and only those in the configured company scope: the confirming pass
+ * asks about exactly this list, and the writer reads a hull's absence from the answer as the
+ * vendor refusing it. A hull outside the scope is never asked about, so it must never be in
+ * the list that judges the silence.
+ */
+async function loadNausysYachtIds(
+  db: Database,
+  scope: NausysConfig["companyScope"],
+): Promise<string[]> {
+  const rows = await db
+    .select({
+      externalYachtId: listingSource.externalYachtId,
+      externalCompanyId: listingSource.externalCompanyId,
+    })
+    .from(listingSource)
+    .innerJoin(providerRecord, eq(providerRecord.id, listingSource.providerRecordId))
+    .innerJoin(providerTable, eq(providerTable.id, providerRecord.providerId))
+    .where(
+      and(
+        eq(providerTable.code, "nausys"),
+        eq(providerRecord.active, true),
+        isNotNull(listingSource.listingId),
+      ),
+    );
+
+  return rows
+    .filter((row) => row.externalCompanyId === null || scope.inScope(row.externalCompanyId))
+    .map((row) => row.externalYachtId);
 }
 
 async function loadNausysCrewRoles(db: Database, listingId: string): Promise<CrewRoleService[]> {

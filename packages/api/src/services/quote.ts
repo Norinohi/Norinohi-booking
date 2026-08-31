@@ -26,6 +26,8 @@ import {
 } from "./offer-selection";
 import { eq } from "drizzle-orm";
 
+import { classifyRefusal } from "../lib/refusal-report";
+
 import type { Database, DatabaseExecutor } from "../context";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
 import { spendableCreditMinor, welcomeDiscountMinor } from "./loyalty";
@@ -153,13 +155,33 @@ async function selectOrConflict(
     return await selectBestOffer(db, provider, input);
   } catch (error) {
     if (error instanceof NoSellableOfferError) {
+      reportRefusal(input, error.attempts);
       await learnFromRefusal(db, input, error.attempts);
     }
     if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+      if (!(error instanceof NoSellableOfferError)) reportRefusal(input, []);
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;
   }
+}
+
+/**
+ * Says out loud which of the two very different things a CONFLICT is, since the wire shape
+ * cannot: it is the customer's, and one line per unsellable request is a rate the busiest
+ * listing sets rather than a loop. `classifyRefusal` carries the reasoning and the case that
+ * proved it necessary.
+ */
+function reportRefusal(input: QuoteRequest, attempts: readonly OfferAttempt[]): void {
+  const { blame, said } = classifyRefusal(attempts);
+  const where = `${input.listingId} ${input.checkIn}..${input.checkOut}`;
+
+  if (blame === "ours") {
+    console.error(`[quote] ${where} refused by us, not the vendor: ${said}`);
+    return;
+  }
+
+  console.warn(`[quote] ${where} unsellable: ${said}`);
 }
 
 /**
