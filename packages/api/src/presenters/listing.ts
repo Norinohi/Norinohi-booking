@@ -142,6 +142,15 @@ export function presentListingSummary(doc: ListingSearchDoc) {
               amountMinor: doc.securityDepositMinor,
               currency: doc.securityDepositCurrency ?? currency,
             },
+      /* Only ever shown against an ordinary deposit, so an insured figure without one is
+         withheld rather than left to stand on its own as "the deposit". */
+      securityDepositWhenInsured:
+        doc.securityDepositWhenInsuredMinor === null || doc.securityDepositMinor === null
+          ? null
+          : {
+              amountMinor: doc.securityDepositWhenInsuredMinor,
+              currency: doc.securityDepositCurrency ?? currency,
+            },
     },
   };
 }

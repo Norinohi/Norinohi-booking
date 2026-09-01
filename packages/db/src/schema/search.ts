@@ -67,6 +67,8 @@ export const listingSearchDoc = pgTable(
     maxGuests: integer("max_guests"),
     securityDepositMinor: integer("security_deposit_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
+    /* The reduced deposit a guest who buys the damage waiver leaves instead. See `listing`. */
+    securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),
     rating: numeric("rating", { precision: 3, scale: 2 }).notNull(),

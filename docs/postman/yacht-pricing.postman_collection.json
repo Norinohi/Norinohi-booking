@@ -19,19 +19,19 @@
     },
     {
       "key": "nausysYachtId",
-      "value": "102"
+      "value": "73214612"
     },
     {
       "key": "nausysCompanyId",
-      "value": "102701"
+      "value": "73210705"
     },
     {
       "key": "nausysPeriodFrom",
-      "value": "04.07.2026"
+      "value": "03.10.2026"
     },
     {
       "key": "nausysPeriodTo",
-      "value": "11.07.2026"
+      "value": "10.10.2026"
     },
     {
       "key": "bmBaseUrl",
@@ -87,14 +87,22 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/yachtReservation/v6/freeYachts",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "yachtReservation", "v6", "freeYachts"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "yachtReservation",
+                "v6",
+                "freeYachts"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{nausysUsername}}\",\n  \"password\": \"{{nausysPassword}}\",\n  \"periodFrom\": \"{{nausysPeriodFrom}}\",\n  \"periodTo\": \"{{nausysPeriodTo}}\",\n  \"yachts\": [{{nausysYachtId}}],\n  \"currency\": \"{{currency}}\",\n  \"ignoreOptions\": false\n}"
+              "raw": "{\n  \"username\": \"{{nausysUsername}}\",\n  \"password\": \"{{nausysPassword}}\",\n  \"periodFrom\": \"{{nausysPeriodFrom}}\",\n  \"periodTo\": \"{{nausysPeriodTo}}\",\n  \"yachts\": [{{nausysYachtId}}],\n  \"currency\": \"{{currency}}\",\n  \"extendedDataSet\": \"PAYMENT_PLAN,ADDITIONAL_EXTRAS\",\n  \"ignoreOptions\": false\n}"
             },
-            "description": "What our NauSYS quote is built from. Look at `freeYachts[0]`: `price.clientPrice` (after discounts), `price.priceListPrice` (before), `price.discounts[]`, `price.depositAmount`, and `obligatoryExtras` / `additionalExtras`.\n\n`yachts` must be numbers, not strings. `ignoreOptions: true` prices a week that is currently held by someone else - useful to see the price, misleading about availability.\n\nIf the yacht is absent from `freeYachts` the week is not free; if present with a `status` other than FREE, it is held."
+            "description": "What our NauSYS quote is built from.\n\n**`extendedDataSet` IS NOT OPTIONAL for a full comparison.** Without it the response carries `price` and nothing else: no `obligatoryExtras`, no `additionalExtras`, no `paymentPlan`. That is why a bare freeYachts call shows a charter price with no mandatory extras under it and no instalments, while the site shows all three. `PAYMENT_PLAN,ADDITIONAL_EXTRAS` is exactly what our own quote sends.\n\nRead `freeYachts[0].price`: `clientPrice` (after discounts), `priceListPrice` (before), `discounts[]`, `depositAmount`, and `depositWhenInsuredAmount`. With the extended set you also get `obligatoryExtras[]` (the mandatory items priced for THIS period) and `paymentPlan`.\n\n`depositWhenInsuredAmount` is only a reduced deposit when it is BOTH non-zero AND lower than `depositAmount`. The vendor sends a bare `0.00` on most hulls and, on a few, a figure no lower than the ordinary deposit - read literally the first promises the guest nothing is blocked at the base and the second charges them more for buying insurance. Both mean 'no reduction'.\n\n`yachts` must be numbers, not strings. `ignoreOptions: true` prices a week somebody else is holding: useful to see a price, misleading about availability. A yacht absent from `freeYachts` is not free; present with a `status` other than FREE is held.\n\nEvery response is HTTP 200, including failures - check `status` == \"OK\" and `errorCode` (100 auth, 402 bad yacht id)."
           }
         },
         {
@@ -109,8 +117,16 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/yachtReservation/v6/freeYachtsSearch",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "yachtReservation", "v6", "freeYachtsSearch"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "yachtReservation",
+                "v6",
+                "freeYachtsSearch"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -132,8 +148,17 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/yacht/{{nausysYachtId}}",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "catalogue", "v6", "yacht", "{{nausysYachtId}}"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "catalogue",
+                "v6",
+                "yacht",
+                "{{nausysYachtId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -143,7 +168,7 @@
           }
         },
         {
-          "name": "4. yachts (company) - find a yacht id",
+          "name": "4. yachts (company) - THE extras source",
           "request": {
             "method": "POST",
             "header": [
@@ -154,14 +179,23 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/yachts/{{nausysCompanyId}}",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "catalogue", "v6", "yachts", "{{nausysCompanyId}}"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "catalogue",
+                "v6",
+                "yachts",
+                "{{nausysCompanyId}}"
+              ]
             },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{nausysUsername}}\",\n  \"password\": \"{{nausysPassword}}\"\n}"
             },
-            "description": "Whole fleet of one charter company. Large response - use it once to grab an id, not on every comparison."
+            "description": "The whole fleet of one charter company, and **the request that answers 'where does that mandatory 320 come from'**. This is the only yacht-catalogue call our own sync makes, so it is the proven one.\n\nFind your yacht by `id` in the response, then read `seasonSpecificData[]`:\n\n- `services[]` - the priced services. Each carries `serviceId`, `price`, `priceMeasureId`, an `obligatory` flag, and often `validForBases`. A mandatory charter package or cleaning fee is here.\n- `additionalYachtEquipment[]` - paid equipment, same shape, no `obligatory` flag, so all of it is optional.\n- `standardYachtEquipment` on the yacht carries neither price nor flag: included equipment, not an extra.\n\n**`validForBases` decides whether a fee is really yours.** A service can be filed under the yacht's own base and still be valid only at other bases - that is another base's charter, and the guest here is never asked for it. Compare it against the yacht's `baseId` before counting the fee. Example: Black Swan (73214612, base 73210824) carries 'Overnight on board' 150.00 whose `validForBases` names only 73210826, so it is correctly absent from that yacht's page, while 'Charter package' 320.00 names no bases and applies.\n\n`seasonSpecificData` repeats per season AND per base, so the same extra appears several times at different prices. Match the season and base to the charter you are pricing.\n\nLarge response - one call to harvest, not one per comparison. Match `serviceId` against request 6 (`services`) and request 7 (`equipment`) for names."
           }
         },
         {
@@ -176,8 +210,16 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/priceLists",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "catalogue", "v6", "priceLists"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "catalogue",
+                "v6",
+                "priceLists"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -198,8 +240,16 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/services",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "catalogue", "v6", "services"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "catalogue",
+                "v6",
+                "services"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -220,8 +270,16 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/equipment",
-              "host": ["{{nausysBaseUrl}}"],
-              "path": ["CBMS-external", "rest", "catalogue", "v6", "equipment"]
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "catalogue",
+                "v6",
+                "equipment"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -242,7 +300,9 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/yachtReservation/v6/occupancy/{{nausysCompanyId}}/{{year}}",
-              "host": ["{{nausysBaseUrl}}"],
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
               "path": [
                 "CBMS-external",
                 "rest",
@@ -258,6 +318,37 @@
               "raw": "{\n  \"username\": \"{{nausysUsername}}\",\n  \"password\": \"{{nausysPassword}}\"\n}"
             },
             "description": "One call per (company, year) returning every taken period in the fleet: `yachtId`, `periodFrom`/`periodTo` (dd.MM.yyyy), `reservationType` and `optionValidTill`.\n\nCredentials go at the TOP LEVEL here, even though the route sits next to freeYachts, which nests them. That is the vendor's inconsistency, not a typo.\n\n`reservationType` is RESERVATION, OPTION or SERVICE. SERVICE is undocumented but real - maintenance and out-of-fleet blocks, with negative ids and open-ended periods (01.01.2020 to 31.12.2099 in production). It still blocks the boat.\n\nFor a single yacht and a single week, freeYachts is the better answer: absent from its response means not free. Use this to see WHY a week is blocked, or to check a whole season at once."
+          }
+        },
+        {
+          "name": "9. yacht (single) - same data, one hull (UNVERIFIED)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/yacht/{{nausysYachtId}}",
+              "host": [
+                "{{nausysBaseUrl}}"
+              ],
+              "path": [
+                "CBMS-external",
+                "rest",
+                "catalogue",
+                "v6",
+                "yacht",
+                "{{nausysYachtId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{nausysUsername}}\",\n  \"password\": \"{{nausysPassword}}\"\n}"
+            },
+            "description": "The same `seasonSpecificData` as request 4 but for one yacht, which is far smaller.\n\nMarked unverified on purpose: this path is in the vendor's endpoint list and our adapter declares it, but nothing in our codebase has ever called it - every catalogue read we make goes through `/yachts/{companyId}`. If it answers, prefer it. If it 404s or comes back without `seasonSpecificData`, use request 4 and filter by `id` yourself; that one is proven."
           }
         }
       ]
@@ -283,8 +374,12 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/offers?dateFrom={{bmDateFrom}}&dateTo={{bmDateTo}}&yachtId={{bmYachtId}}&currency={{currency}}&passengersOnBoard={{guests}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["offers"],
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "offers"
+              ],
               "query": [
                 {
                   "key": "dateFrom",
@@ -323,8 +418,12 @@
                 "header": [],
                 "url": {
                   "raw": "{{bmBaseUrl}}/offers?dateFrom={{bmDateFrom}}&dateTo={{bmDateTo}}&yachtId={{bmYachtId}}&currency={{currency}}&passengersOnBoard={{guests}}",
-                  "host": ["{{bmBaseUrl}}"],
-                  "path": ["offers"],
+                  "host": [
+                    "{{bmBaseUrl}}"
+                  ],
+                  "path": [
+                    "offers"
+                  ],
                   "query": [
                     {
                       "key": "dateFrom",
@@ -375,8 +474,12 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/prices?yachtId={{bmYachtId}}&currency={{currency}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["prices"],
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "prices"
+              ],
               "query": [
                 {
                   "key": "yachtId",
@@ -403,8 +506,13 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/yacht/{{bmYachtId}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["yacht", "{{bmYachtId}}"]
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "yacht",
+                "{{bmYachtId}}"
+              ]
             },
             "description": "Also lists `products[]`, whose `name` is what goes into `/offers?productName=` when you need a crewed or otherwise non-default product."
           }
@@ -416,8 +524,12 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/yachts?companyId={{bmCompanyId}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["yachts"],
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "yachts"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -434,8 +546,12 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/specialOffers?companyId={{bmCompanyId}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["specialOffers"],
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "specialOffers"
+              ],
               "query": [
                 {
                   "key": "companyId",
@@ -453,8 +569,13 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/yacht/{{bmYachtId}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["yacht", "{{bmYachtId}}"]
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "yacht",
+                "{{bmYachtId}}"
+              ]
             },
             "description": "Same endpoint as request 3, read for a different field: `products[].extras[]` is the yacht's whole extras catalogue, per product.\n\n/offers only returns the obligatory ones that apply to the week you asked for, so this is where the optional extras (and the ones the guest could add) live. Each entry carries `obligatory`, `price`, `currency`, `unit`, `payableInBase`, and `kind` - remember `kind: 0` means the value is in `percentage` and `price` is 0.\n\nEntries are versioned by season, so the same extra appears once per year with different prices. Match the season to your dates before comparing against an /offers line."
           }
@@ -466,8 +587,13 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/availability/{{year}}?companyId={{bmCompanyId}}&yachtId={{bmYachtId}}",
-              "host": ["{{bmBaseUrl}}"],
-              "path": ["availability", "{{year}}"],
+              "host": [
+                "{{bmBaseUrl}}"
+              ],
+              "path": [
+                "availability",
+                "{{year}}"
+              ],
               "query": [
                 {
                   "key": "companyId",

@@ -68,6 +68,7 @@ export default function BookingSidebar({
         slotError={slotError}
         loadError={loadError}
         onRetryLoad={retryLoad}
+        depositWhenInsured={listing?.priceDetails.securityDepositWhenInsured}
         checkInTime={listing?.base.checkInTime}
         checkOutTime={listing?.base.checkOutTime}
         crewType={crewType}

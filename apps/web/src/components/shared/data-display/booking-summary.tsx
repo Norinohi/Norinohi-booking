@@ -79,6 +79,13 @@ export type BookingSummaryProps = {
   /** Asks for that quote again. Omitted where nothing was loaded by id in the first place. */
   onRetryLoad?: () => void;
   /** The marina's wall-clock check-in/out, shown beneath each charter date. */
+  /**
+   * The listing's reduced deposit, for the note under the deposit figure. Comes from the
+   * catalogue rather than the quote: it advertises what the damage waiver would do BEFORE the
+   * guest selects it, at which point the quote's own `securityDeposit` becomes the lower figure
+   * and this note has nothing left to say.
+   */
+  depositWhenInsured?: { amountMinor: number; currency: string } | null;
   checkInTime?: string | null;
   checkOutTime?: string | null;
   crewType: CrewType | undefined;
@@ -423,6 +430,7 @@ export default function BookingSummary({
   slotError = false,
   loadError = false,
   onRetryLoad,
+  depositWhenInsured,
   checkInTime,
   checkOutTime,
   crewType,
@@ -522,6 +530,19 @@ export default function BookingSummary({
    */
   const deposit =
     quote?.securityDeposit && quote.securityDeposit.amountMinor > 0 ? quote.securityDeposit : null;
+  /*
+   * The waiver's reduced deposit, shown only while it would still change something: once the
+   * guest selects the waiver the quote comes back with the lower deposit already applied, and
+   * the two figures agree. Comparing against the quote rather than tracking the selection keeps
+   * this true whichever way the deposit got there.
+   */
+  const insuredDeposit =
+    depositWhenInsured &&
+    deposit &&
+    depositWhenInsured.currency === deposit.currency &&
+    depositWhenInsured.amountMinor < deposit.amountMinor
+      ? depositWhenInsured
+      : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
@@ -717,20 +738,32 @@ export default function BookingSummary({
                         {money(deposit.amountMinor, deposit.currency)}
                       </p>
                     )}
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <button
-                            type="button"
-                            className="flex cursor-pointer items-center gap-1 justify-self-end text-xs leading-4 font-semibold text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-                          />
-                        }
-                      >
-                        <Info className="size-4 shrink-0" />
-                        {t("sidebar.howItWorks")}
-                      </TooltipTrigger>
-                      <TooltipContent>{tCard("securityDepositInfo")}</TooltipContent>
-                    </Tooltip>
+                    <div className="flex flex-col items-end gap-1 justify-self-end">
+                      {/* Only while the waiver is still an offer. Once the guest selects it the
+                          quote's own deposit IS the reduced figure, and repeating it here would
+                          read as a second, further reduction. */}
+                      {insuredDeposit ? (
+                        <p className="text-right text-xs leading-4 font-medium text-natural-500">
+                          {t("sidebar.depositWhenInsured", {
+                            amount: money(insuredDeposit.amountMinor, insuredDeposit.currency),
+                          })}
+                        </p>
+                      ) : null}
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <button
+                              type="button"
+                              className="flex cursor-pointer items-center gap-1 text-xs leading-4 font-semibold text-brand underline decoration-dotted outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                            />
+                          }
+                        >
+                          <Info className="size-4 shrink-0" />
+                          {t("sidebar.howItWorks")}
+                        </TooltipTrigger>
+                        <TooltipContent>{tCard("securityDepositInfo")}</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </>
                 ) : null}
               </div>

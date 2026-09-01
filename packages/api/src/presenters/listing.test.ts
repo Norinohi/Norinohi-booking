@@ -38,6 +38,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   sailType: null,
   securityDepositMinor: 310_000,
   securityDepositCurrency: "EUR",
+  securityDepositWhenInsuredMinor: null,
   depositInsuranceIncluded: true,
   petsAllowed: false,
   rating: "5.00",

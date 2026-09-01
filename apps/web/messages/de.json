@@ -1368,7 +1368,8 @@
       "onRequestHint": "Wir haben Termine dafür, aber kein veröffentlichter Tarif deckt sie ab. Sagen Sie uns, wann Sie segeln möchten, und wir melden uns mit einem Preis.",
       "dropOff": "Rückgabemarina",
       "pickUp": "Übernahme: {marina}",
-      "boatPriceHintDiscounted": "Mietpreis nach Rabatt"
+      "boatPriceHintDiscounted": "Mietpreis nach Rabatt",
+      "depositWhenInsured": "oder {amount} mit Kautionsschutz"
     },
     "panels": {
       "details": "Yachtdetails",

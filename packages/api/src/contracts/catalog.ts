@@ -162,6 +162,12 @@ export const listingSummarySchema = z.object({
     perPersonMinor: z.number().int().nullable(),
     /** Refundable damage deposit collected at the base. Null when there is none. */
     securityDeposit: moneySchema.nullable(),
+    /**
+     * What the guest leaves instead if they buy the yacht's damage waiver. Null unless the
+     * operator states a genuinely lower figure, so a value here always beats `securityDeposit`.
+     * The waiver itself is an optional extra and is not applied until the guest selects it.
+     */
+    securityDepositWhenInsured: moneySchema.nullable(),
   }),
 });
 
