@@ -17,7 +17,7 @@ import { valueForLabel } from "./repository";
  * into it — no commit required either way.
  */
 
-export const DEFAULT_CATALOG_PAGE_THRESHOLD = 8;
+export const DEFAULT_CATALOG_PAGE_THRESHOLD = 20;
 
 export type CatalogPageRoot = "yacht-charter" | "shipyard";
 
