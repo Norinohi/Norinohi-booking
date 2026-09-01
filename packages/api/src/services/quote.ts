@@ -1,6 +1,8 @@
 import { ORPCError } from "@orpc/server";
 import { listSelectableExtraCodes } from "@yacht-charter/db/search";
+import { rebuildListingSearchDocs } from "@yacht-charter/db/search/read-model";
 import { listing } from "@yacht-charter/db/schema/listing";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import {
   priceAdjustmentSnapshot,
   quote,
@@ -24,7 +26,7 @@ import {
   recordOfferAttempts,
   selectBestOffer,
 } from "./offer-selection";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 
 import { classifyRefusal } from "../lib/refusal-report";
 
@@ -157,13 +159,90 @@ async function selectOrConflict(
   } catch (error) {
     if (error instanceof NoSellableOfferError) {
       reportRefusal(input, error.attempts);
-      await learnFromRefusal(db, input, error.attempts);
+      await learnFromRefusal(db, provider, input, error.attempts);
     }
     if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
       if (!(error instanceof NoSellableOfferError)) reportRefusal(input, []);
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;
+  }
+}
+
+/**
+ * The party this asks about instead.
+ *
+ * Two rather than one: a product with a minimum party would refuse a single guest for its own
+ * reasons, and a probe that cannot be sold proves nothing about the week.
+ */
+const SMALLEST_PARTY = 2;
+
+/**
+ * Whether the week the vendor just refused is one it would still sell to a smaller party.
+ *
+ * Silence about the probe is not evidence either way -- a vendor that is down answers nothing
+ * for two guests just as it did for nine -- so a failed probe leaves the refusal unlearned.
+ * That is the safer side: a week wrongly kept on the card is corrected by the next sweep, and
+ * one wrongly taken off it is invisible until somebody notices the boat stopped selling.
+ */
+async function sellableToASmallerParty(
+  db: Database,
+  provider: InventoryProvider,
+  input: QuoteRequest,
+): Promise<boolean> {
+  if (input.guests <= SMALLEST_PARTY) return false;
+
+  try {
+    await selectBestOffer(db, provider, { ...input, guests: SMALLEST_PARTY });
+    console.warn(
+      `[quote] ${input.listingId} ${input.checkIn}..${input.checkOut} refused for ${input.guests} ` +
+        `guests but sells to ${SMALLEST_PARTY}; the party is the reason, so nothing is learned`,
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Writes down the party the vendor would not take, so the search stops sending it more.
+ *
+ * An upper bound rather than the cap itself: all the refusal proves is that this offer does not
+ * sell to that many. The smallest such party wins, since a later refusal at eight says more
+ * than an earlier one at twelve. The card and the guests filter read one below it.
+ *
+ * Best-effort like everything else on this path: the customer has already been answered.
+ */
+async function rememberCapacityRefusal(
+  db: Database,
+  input: QuoteRequest,
+  attempts: readonly OfferAttempt[],
+): Promise<void> {
+  const refused = attempts.filter((attempt) => attempt.outcome === "unavailable");
+  if (refused.length === 0) return;
+
+  try {
+    for (const attempt of refused) {
+      await db
+        .update(listingOffer)
+        .set({ guestsRefusedFrom: input.guests })
+        .where(
+          and(
+            eq(listingOffer.id, attempt.offerId),
+            or(
+              isNull(listingOffer.guestsRefusedFrom),
+              gt(listingOffer.guestsRefusedFrom, input.guests),
+            ),
+          ),
+        );
+    }
+
+    await rebuildListingSearchDocs(db, { listingIds: [input.listingId] });
+  } catch (error) {
+    console.warn(
+      "[quote] could not record the refused party size",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 
@@ -194,6 +273,7 @@ function reportRefusal(input: QuoteRequest, attempts: readonly OfferAttempt[]): 
  */
 async function learnFromRefusal(
   db: Database,
+  provider: InventoryProvider,
   input: QuoteRequest,
   attempts: readonly OfferAttempt[],
 ): Promise<void> {
@@ -213,13 +293,43 @@ async function learnFromRefusal(
     );
   }
 
+  /*
+   * A party too large for the boat is not a week nobody can have.
+   *
+   * The two questions differ by one parameter: the availability sweep asks the vendor what it
+   * will sell that week and names no party, the quote names the customer's. Booking Manager
+   * answers the second with nothing when the product caps below the party -- one hull listed
+   * with 9 berths sells to 8, and a search for nine got the same silence as a week that had
+   * gone. Written down, that silence took the week off the card for everyone, including the
+   * couple the operator would have sold it to.
+   *
+   * So a refusal that a smaller party survives is not learned. The probe costs one vendor call
+   * on a request that has already failed, and only where the party is big enough to be the
+   * reason.
+   */
+  if (await sellableToASmallerParty(db, provider, input)) {
+    await rememberCapacityRefusal(db, input, attempts);
+    return;
+  }
+
   try {
-    await recordLiveRefusals(db, {
+    const learned = await recordLiveRefusals(db, {
       listingId: input.listingId,
       checkIn: input.checkIn,
       checkOut: input.checkOut,
       attempts,
     });
+
+    /*
+     * And take the week off the card at once.
+     *
+     * Recording the refusal alone only helped whoever came after the next full rebuild --
+     * hourly at best, nightly at worst -- so every visitor until then clicked the same dead
+     * week and was told no. Rebuilding this one listing is milliseconds against the 15 seconds
+     * the whole catalogue takes, and it is the difference between one customer meeting a
+     * refusal and all of them.
+     */
+    if (learned > 0) await rebuildListingSearchDocs(db, { listingIds: [input.listingId] });
   } catch (error) {
     console.warn(
       "[quote] could not record live refusal",

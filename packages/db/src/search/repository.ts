@@ -1236,7 +1236,14 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("maxCabins") && input.maxCabins !== undefined) {
     parts.push(sql`doc.cabins <= ${input.maxCabins}`);
   }
-  if (!skip.has("guests") && input.guests) parts.push(sql`doc.berths >= ${input.guests}`);
+  /*
+   * Matched on what the boat can be sold to, not on what it sleeps. A vendor may cap a product
+   * below the berth count and publish the cap nowhere, so `max_guests` carries the berths less
+   * whatever it has already refused; where nothing has been refused the two are the same.
+   */
+  if (!skip.has("guests") && input.guests) {
+    parts.push(sql`coalesce(doc.max_guests, doc.berths) >= ${input.guests}`);
+  }
   if (!skip.has("minBerths") && input.minBerths !== undefined) {
     parts.push(sql`doc.berths >= ${input.minBerths}`);
   }
