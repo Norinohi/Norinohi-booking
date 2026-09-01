@@ -38,8 +38,7 @@ COPY packages/observability/package.json packages/observability/
 COPY packages/providers/package.json packages/providers/
 COPY packages/transactional/package.json packages/transactional/
 COPY packages/ui/package.json packages/ui/
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=deps /app ./
