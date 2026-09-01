@@ -55,6 +55,8 @@ const pricedItemSchema = includedItemSchema.extend({
    * translate, and stating the wrong unit is what this exists to stop.
    */
   priceMeasure: z.string().nullable(),
+  /** A share of the charter rather than an amount: 0.35 is 35%. Null on the ordinary ones. */
+  percentage: z.number().nullable(),
   /** Where the fee is collected; null where the provider said nothing, so the page says nothing. */
   payableInBase: z.boolean().nullable(),
   /** Charged only on a charter that ends at a different base than it started. */
@@ -179,10 +181,23 @@ export const listingsByIdsInputSchema = z.object({
 });
 
 export const listingDetailSchema = listingSummarySchema.extend({
+  /**
+   * The boat's own name, without the model - "Star Kiss" where `title` is "Star Kiss Sun
+   * Odyssey 350". Null on a listing synced before the column existed and never re-synced.
+   *
+   * The two are carried apart so the page can show them apart. `title` stays the joined form
+   * because slugs, `<title>` and structured data all want one string.
+   */
+  name: z.string().nullable(),
   /* Null when the provider ships no prose in the requested locale; the client writes its own. */
   description: z.string().nullable(),
   /* Null where the catalogue does not know; the web writes "not specified" in its own locale. */
   overview: z.array(includedItemSchema.extend({ value: z.string().nullable() })),
+  /**
+   * A walkthrough the operator filmed and a 360 tour of the same boat, where it published one.
+   * Links rather than gallery entries: a visitor follows them off the page.
+   */
+  media: z.object({ videoUrl: z.string().nullable(), tourUrl: z.string().nullable() }),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
   optionalExtras: z.array(optionalItemSchema),

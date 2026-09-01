@@ -329,7 +329,9 @@
       "requestCancel": "Solicitar cancelación",
       "crewList": {
         "title": "Lista de tripulación",
-        "notice": "La empresa de chárter debe entregar a las autoridades una lista de todas las personas a bordo antes de zarpar. Complétala aquí y nosotros la enviamos; lo que falte te lo pedirán en la base al llegar.",
+        "notice": "La empresa de chárter debe entregar a las autoridades la lista de todos los que van a bordo antes de zarpar. Complétala aquí y se la enviamos: lo que falte, la base lo pedirá en el mostrador cuando llegues.",
+        "alsoAsked": "También pide {fields}, que la base recogerá en el mostrador cuando llegues.",
+        "maxPassengers": "Su lista admite como máximo {count} personas.",
         "loading": "Cargando tu lista de tripulación…",
         "empty": "Aún no has añadido a nadie. Tu reserva es para {guests} huéspedes: añade a cada persona que vaya a bordo, incluido el patrón.",
         "member": "Tripulante {number}",
@@ -338,8 +340,6 @@
         "save": "Guardar lista",
         "saved": "Lista de tripulación guardada",
         "saveFailed": "No hemos podido guardar tu lista de tripulación",
-        "fullName": "Nombre completo",
-        "fullNamePlaceholder": "Tal y como figura en el pasaporte",
         "role": "Rol",
         "rolePlaceholder": "Patrón, invitado…",
         "dateOfBirth": "Fecha de nacimiento",
@@ -348,9 +348,53 @@
         "nationality": "Nacionalidad",
         "nationalityPlaceholder": "Selecciona un país",
         "errors": {
-          "fullName": "Introduce el nombre completo de esta persona",
-          "dateOfBirth": "Introduce una fecha válida"
-        }
+          "dateOfBirth": "Escribe una fecha válida",
+          "firstName": "Escribe el nombre de esta persona",
+          "lastName": "Escribe los apellidos de esta persona",
+          "skipperEmail": "Escribe un correo electrónico válido",
+          "oneSkipper": "Solo una persona puede ser el patrón"
+        },
+        "requires": {
+          "shoeSize": "las tallas de calzado",
+          "disabledPerson": "si alguien a bordo tiene una discapacidad"
+        },
+        "legend": "Los campos marcados con * son los que exige esta empresa de chárter.",
+        "sent": "Enviada a la empresa de chárter el {when}.",
+        "notSent": "Aún no está en la empresa de chárter: {reason} Tus datos están guardados; la base recogerá la lista cuando llegues.",
+        "notSentUnknown": "no pudimos contactar con ellos.",
+        "savedNotSent": "Guardada, pero la empresa de chárter todavía no la tiene",
+        "firstName": "Nombre",
+        "firstNamePlaceholder": "Como figura en el pasaporte",
+        "lastName": "Apellidos",
+        "lastNamePlaceholder": "Como figura en el pasaporte",
+        "gender": "Sexo",
+        "genderPlaceholder": "Selecciona",
+        "birthPlace": "Lugar de nacimiento",
+        "birthCountry": "País de nacimiento",
+        "livingPlace": "Localidad de residencia",
+        "livingCountry": "País de residencia",
+        "placePlaceholder": "Ciudad o localidad",
+        "documentType": "Tipo de documento",
+        "documentTypePlaceholder": "Selecciona",
+        "isSkipper": "Esta persona es el patrón",
+        "skipperLicence": "Titulación de patrón",
+        "skipperLicencePlaceholder": "Número de titulación",
+        "vhfLicence": "Certificado VHF",
+        "skipperEmail": "Correo del patrón",
+        "skipperMobile": "Teléfono del patrón",
+        "note": "Lo que la base deba saber",
+        "notePlaceholder": "Hora de llegada, número de vuelo, alguien que necesite asistencia…",
+        "documents": {
+          "passport": "Pasaporte",
+          "idCard": "DNI",
+          "other": "Otro"
+        },
+        "genders": {
+          "male": "Hombre",
+          "female": "Mujer"
+        },
+        "placeSearch": "Buscar localidades",
+        "placeEmpty": "Ninguna localidad con ese nombre"
       }
     },
     "support": {
@@ -391,6 +435,7 @@
       "payAtCheckIn": "Pago al llegar",
       "payNow": "Incluido en el pago inicial",
       "includedInPrice": "Incluido en el precio",
+      "percentageOfCharter": "{percent}% del precio del chárter",
       "oneWayOnly": "Solo en trayectos de ida",
       "measure": {
         "booking": "{price} por reserva",
@@ -952,7 +997,8 @@
       "groups": {
         "fleet": "Yates",
         "content": "Contenido del sitio"
-      }
+      },
+      "settings": "Ajustes de pago"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1321,7 +1367,8 @@
       "onRequest": "Este yate se cotiza a petición",
       "onRequestHint": "Tenemos fechas para este barco, pero ninguna tarifa publicada las cubre. Dinos cuándo te gustaría navegar y te daremos un precio.",
       "dropOff": "Puerto de entrega",
-      "pickUp": "Recogida: {marina}"
+      "pickUp": "Recogida: {marina}",
+      "boatPriceHintDiscounted": "Precio de alquiler con descuento"
     },
     "panels": {
       "details": "Detalles del yate",
@@ -1345,6 +1392,7 @@
       "mandatoryExtras": "Extras obligatorios",
       "optionalExtras": "Extras opcionales",
       "description": "Descripción",
+      "media": "Vídeo y visita",
       "importantInfo": "Información importante",
       "suggestedRoute": "Ruta recomendada",
       "review": "Opiniones",
@@ -1380,6 +1428,10 @@
       "description": "Déjanos tus datos y un experto en chárter te enviará un presupuesto a medida para estas fechas.",
       "submit": "Enviar solicitud",
       "success": "¡Gracias! Nos pondremos en contacto pronto."
+    },
+    "media": {
+      "video": "Ver el vídeo",
+      "tour": "Visita 360°"
     }
   },
   "Yachts": {
@@ -2916,6 +2968,39 @@
           "answerTooLong": "La respuesta no puede pasar de 8000 caracteres"
         }
       }
+    },
+    "Settings": {
+      "title": "Ajustes de pago",
+      "subtitle": "Cuanto de un charter se cobra por adelantado, para cada presupuesto del marketplace.",
+      "source": {
+        "legend": "Que plan de pago usamos",
+        "vendor": {
+          "title": "El calendario del proveedor",
+          "hint": "Cada presupuesto sigue los plazos que el proveedor devolvio para ese barco y esas fechas, incluida su fecha de vencimiento. Los proveedores difieren, asi que el porcentaje cambia de una reserva a otra."
+        },
+        "marketplace": {
+          "title": "Nuestra propia politica",
+          "hint": "Cada presupuesto usa el porcentaje de abajo y el calendario del proveedor se ignora por completo, incluida su fecha de vencimiento."
+        }
+      },
+      "ourPolicy": {
+        "deposit": "Cobrar un deposito",
+        "full": "Cobrar el importe completo",
+        "percentLabel": "Porcentaje del deposito",
+        "percentError": "Introduce un porcentaje entre 1 y 100."
+      },
+      "leadTime": {
+        "legend": "Pago completo cerca de la salida",
+        "toggle": "Exigir pago completo en charters que empiezan pronto",
+        "hint": "Un minimo sobre el plan elegido arriba, nunca un tercer plan. Desactivado, el 30% de un proveedor se mantiene aunque el charter salga manana.",
+        "daysLabel": "Dias antes del check-in",
+        "daysError": "Introduce un numero entero de dias entre 0 y 365."
+      },
+      "save": "Guardar cambios",
+      "saving": "Guardando...",
+      "saved": "Ajustes de pago guardados.",
+      "saveFailed": "No se pudieron guardar los ajustes de pago.",
+      "appliesNext": "Se aplica a presupuestos nuevos. Un presupuesto ya emitido conserva la politica con la que se calculo."
     }
   }
 }

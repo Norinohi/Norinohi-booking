@@ -249,3 +249,9 @@ export const faqListQueryOptions = (input: {
     input: { ...input, pageSize: input.pageSize ?? FAQ_PAGE_SIZE },
     staleTime: 15_000,
   });
+
+/**
+ * The marketplace-wide settings. One row for the whole site, so no filters and no page: the
+ * key is the procedure's own.
+ */
+export const marketplaceSettingsQueryOptions = () => orpc.admin.settings.get.queryOptions({});

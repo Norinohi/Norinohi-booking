@@ -23,6 +23,9 @@ import {
   invoiceDocumentSchema,
   invoiceRequestInputSchema,
   invoiceRequestSchema,
+  crewPlaceSearchInputSchema,
+  crewPlacesSchema,
+  crewRequirementsSchema,
   travellerListInputSchema,
   travellerListSchema,
   travellerSaveInputSchema,
@@ -42,7 +45,12 @@ import { askQuestion, getReceipt, requestInvoice } from "../services/checkout";
 import { announceEnquiry } from "../services/enquiry";
 import { mintGuestAccessToken, resolveBookingActor } from "../services/guest-access";
 import { getInvoiceDocument } from "../services/invoice-document";
-import { listTravellers, saveTravellers } from "../services/traveller";
+import {
+  listTravellers,
+  readCrewRequirements,
+  saveTravellers,
+  searchCrewPlaces,
+} from "../services/traveller";
 import { confirmCheckout, payBalance } from "../services/payment";
 import { providerForBooking, providerForQuote } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
@@ -165,6 +173,50 @@ export const bookingRouter = {
       .handler(({ context, input }) =>
         listTravellers(context.db, context.session.user.id, input.bookingId),
       ),
+    requirements: protectedProcedure
+      .route({
+        method: "POST",
+        path: "/booking/travellers/requirements",
+        operationId: "getBookingCrewRequirements",
+        summary: "List the crew-list fields this operator requires",
+        description:
+          "Returns the crew-list fields the charter company requires for one of the authenticated user's bookings, in the provider's own field names, plus the party size it allows and whether it expects a named skipper. Operators differ and the provider states the difference per reservation, so a form that asks the same questions everywhere leaves the customer to discover the rest on the operator's own page. Empty where the provider does not answer, where the booking never reached a vendor, or where the vendor is unreachable: the answer improves the form and nothing depends on it.",
+        tags: ["Booking"],
+        successDescription: "The operator's crew-list requirements for this booking.",
+        spec: withJsonBodyExample({ bookingId: "bkg_example" }),
+      })
+      .input(travellerListInputSchema)
+      .output(crewRequirementsSchema)
+      .handler(async ({ context, input }) =>
+        readCrewRequirements(
+          context.db,
+          await providerForBooking(context.db, context.provider, input.bookingId),
+          context.session.user.id,
+          input.bookingId,
+        ),
+      ),
+    places: protectedProcedure
+      .route({
+        method: "POST",
+        path: "/booking/travellers/places",
+        operationId: "searchCrewListPlaces",
+        summary: "Search the places this operator's crew list accepts",
+        description:
+          "Returns up to 20 places matching the query, for the countries whose crew lists insist on a known one -- Croatia does, and NauSYS publishes the 6,851 names it will take. A place typed freehand is accepted by the vendor's API and questioned at the desk, so this exists to let the customer pick the operator's own spelling. Empty where the booking's provider publishes no such list or cannot be reached, which leaves the field free text.",
+        tags: ["Booking"],
+        successDescription: "Matching places, most likely first.",
+        spec: withJsonBodyExample({ bookingId: "bkg_example", query: "Spl" }),
+      })
+      .input(crewPlaceSearchInputSchema)
+      .output(crewPlacesSchema)
+      .handler(async ({ context, input }) =>
+        searchCrewPlaces(
+          context.db,
+          await providerForBooking(context.db, context.provider, input.bookingId),
+          context.session.user.id,
+          input,
+        ),
+      ),
     save: protectedProcedure
       .route({
         method: "POST",
@@ -172,25 +224,41 @@ export const bookingRouter = {
         operationId: "saveBookingTravellers",
         summary: "Replace the crew list on a booking",
         description:
-          "Stores the whole crew list for one of the authenticated user's bookings, replacing whatever was there. Submitting the same form twice leaves one list rather than two, and an empty array clears it. Date of birth and document number are encrypted before they are written. Refused once a booking is cancelled, refunded, rejected or expired, when the details would serve no purpose.",
+          "Stores the whole crew list for one of the authenticated user's bookings, replacing whatever was there, and files it with the charter company. Submitting the same form twice leaves one list rather than two, and an empty array clears it without filing anything. The identifying fields are encrypted before they are written. The operator's answer comes back as `submission`: accepted, refused with the reason, or `accepted: null` where the vendor could not be reached -- what the customer typed is stored either way. Refused once a booking is cancelled, refunded, rejected or expired, when the details would serve no purpose.",
         tags: ["Booking"],
         successDescription: "The stored crew list.",
         spec: withJsonBodyExample({
           bookingId: "bkg_example",
           travellers: [
             {
-              fullName: "John Doe",
+              firstName: "John",
+              lastName: "Doe",
               role: "skipper",
+              isSkipper: true,
               dateOfBirth: "1986-04-12",
+              documentType: "PASSPORT",
               documentNumber: "X1234567",
               nationality: "GB",
+              gender: "MALE",
+              birthPlace: "Bristol",
+              birthCountry: "GB",
+              livingPlace: "Bristol",
+              livingCountry: "GB",
+              skipperLicence: "RYA-102938",
             },
           ],
         }),
       })
       .input(travellerSaveInputSchema)
       .output(travellerListSchema)
-      .handler(({ context, input }) => saveTravellers(context.db, context.session.user.id, input)),
+      .handler(async ({ context, input }) =>
+        saveTravellers(
+          context.db,
+          await providerForBooking(context.db, context.provider, input.bookingId),
+          context.session.user.id,
+          input,
+        ),
+      ),
   },
   receipt: publicProcedure
     .route({

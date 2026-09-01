@@ -18,6 +18,7 @@ const ADMIN_ITEM_NAMES = [
   "duplicates",
   "sync",
   "audit",
+  "settings",
 ] as const;
 
 export type AccountNavItem = (typeof ACCOUNT_ITEMS)[number] | (typeof ADMIN_ITEM_NAMES)[number];
@@ -58,6 +59,7 @@ export const ADMIN_NAV: readonly NavEntry[] = [
   group("content", ["routes", "faq"]),
   row("discount"),
   row("audit"),
+  row("settings"),
 ];
 
 /* Flattened for the header dropdown, which has no room to nest and lists every row at once. */
@@ -84,4 +86,5 @@ export const ACCOUNT_NAV_HREFS = new Map<AccountNavItem, AppPathname>([
   ["duplicates", "/duplicates"],
   ["sync", "/sync"],
   ["audit", "/audit"],
+  ["settings", "/settings"],
 ]);

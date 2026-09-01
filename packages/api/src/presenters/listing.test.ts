@@ -7,6 +7,7 @@ import { presentListingSummary } from "./listing";
 const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   listingId: "ylst_1",
   slug: "liburna-sunseeker",
+  name: "Liburna",
   title: "Liburna Sunseeker",
   category: "Motor yacht",
   crewType: "full_crew",

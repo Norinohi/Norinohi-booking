@@ -22,7 +22,12 @@ import type { Database } from "../registry";
  * `sync_run_in_flight_uq` is a lock with no lease, and these three give it one.
  */
 
-export type SyncKind = (typeof syncKind.enumValues)[number];
+/**
+ * The kinds a run can have. `reservations` is excluded on purpose: it shares the enum because
+ * it shares the cursor table, but the reconciliation pass keeps a window marker and never opens
+ * a run, so nothing here -- the lock, the reaper, the admin screens -- can ever meet one.
+ */
+export type SyncKind = Exclude<(typeof syncKind.enumValues)[number], "reservations">;
 
 /**
  * Raised when a run of the same provider and kind is already pending or running.

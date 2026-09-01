@@ -37,7 +37,17 @@ export const providerResourceType = pgEnum("provider_resource_type", [
   "engine_builder",
 ]);
 
-export const syncKind = pgEnum("sync_kind", ["catalogue", "availability", "pricing"]);
+/**
+ * `reservations` is not an import: it is the reconciliation pass, which reads the vendor's
+ * change feed and compares it to bookings we already hold. It shares this enum because it
+ * shares the cursor table -- the window it last covered is the same kind of resume marker.
+ */
+export const syncKind = pgEnum("sync_kind", [
+  "catalogue",
+  "availability",
+  "pricing",
+  "reservations",
+]);
 
 export const syncStatus = pgEnum("sync_status", [
   "pending",

@@ -87,6 +87,17 @@ export const providerExtraCatalogue = pgTable(
     priceMeasure: text("price_measure"),
     calculationType: text("calculation_type"),
     /**
+     * A fee the operator states as a share of the charter rather than as money: 0.35 is 35%.
+     *
+     * Stored as the rate because the amount depends on the week being priced, which the
+     * catalogue does not know. Without it the projection read the vendor's "0.3500" as a price
+     * of 0.35 and then, seeing a zero, filed the fee as free: yacht 75193633 carries a
+     * mandatory 35% service charge that the card showed as included, worth 7,910.00 on its
+     * own list price. `percentageBasis` is the vendor's own word for what it applies to.
+     */
+    percentage: numeric("percentage", { precision: 6, scale: 4 }),
+    percentageBasis: text("percentage_basis"),
+    /**
      * Whether the charter base collects this extra on arrival, rather than it being part of
      * what the booking prepays. Nullable because the two vendors state it differently and
      * neither always states it: Booking Manager sends `payableInBase` on the offer's extras,
@@ -113,7 +124,28 @@ export const providerExtraCatalogue = pgTable(
      * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.
      */
     oneWayOnly: boolean("one_way_only").default(false).notNull(),
+    /**
+     * The provider's own base ids this price applies at, empty meaning everywhere. NauSYS
+     * carries one on 130,535 of its 184,539 priced extras rows, and reading them all as
+     * unconditional put fees on cards that no charter from that base is charged.
+     */
+    validForBaseIds: text("valid_for_base_ids").array(),
+    /**
+     * A floor under a computed total, in minor units. Only meaningful beside `percentage`: a
+     * 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
+     *
+     * Written but not yet read. The card sums percentage fees into one rate and multiplies the
+     * base by it once, and a per-fee floor cannot survive that sum -- honouring it means
+     * totalling the fees one at a time. No row in the sampled fleets carries one, so this is
+     * the value being kept rather than lost until something needs it.
+     */
+    minimumPriceMinor: integer("minimum_price_minor"),
     onRequestOnly: boolean("on_request_only").default(false).notNull(),
+    /**
+     * Buying this lowers the security deposit rather than adding anything to the charter, so
+     * the quote answers with the operator's reduced figure instead of the ordinary one.
+     */
+    depositInsurance: boolean("deposit_insurance").default(false).notNull(),
     externalSeasonId: text("external_season_id"),
     externalBaseId: text("external_base_id"),
     ...timestamps,

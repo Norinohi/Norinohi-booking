@@ -53,6 +53,8 @@ export const nausysEndpoints = {
     occupancy2: (companyId: NausysId, seasonId: NausysId) =>
       `${YACHT_RESERVATION}/occupancy2/${companyId}/${seasonId}`,
     reservations: `${YACHT_RESERVATION}/reservations`,
+    listExtras: `${YACHT_RESERVATION}/listExtras`,
+    waitingOptions: `${YACHT_RESERVATION}/waitingOptions`,
     options: `${YACHT_RESERVATION}/options`,
     stornos: `${YACHT_RESERVATION}/stornos`,
   },
@@ -324,6 +326,35 @@ export const restYachtServicePriceSchema = looseJsonObject({
   currency: z.string().optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
+  /**
+   * When and to whom this variant applies. The vendor files one row per condition rather than
+   * one row per extra: a fee can exist three times over with different durations, date windows
+   * and bases, and reading any one of them as "the price" charges a charter it was never for.
+   *
+   * `minDuration`/`maxDuration` are the charter length in days the row is available for,
+   * `validPeriodFrom`/`To` the dates it applies to, `validForBases` the `baseFrom` values it
+   * applies at (empty means all), and `minimumPrice` a floor for a total computed below it.
+   */
+  minDuration: z.number().int().optional(),
+  maxDuration: z.number().int().optional(),
+  validPeriodFrom: nausysDate.optional(),
+  validPeriodTo: nausysDate.optional(),
+  minimumPrice: decimal.optional(),
+  /**
+   * Undocumented, and on the wire: an operator can withhold a priced extra from named
+   * agencies. Every one of the 62 rows carrying a list (of 140,543, Sep 2026) sets
+   * `excludedAgencies: true`, so the list reads as a deny list; none of them names us.
+   */
+  agencies: z.array(z.number().int()).optional(),
+  excludedAgencies: z.boolean().optional(),
+  /**
+   * The amount is a rate, not money: "0.3500" is 35%, carried to four decimals since the
+   * vendor widened the field in May 2022. Read as money it becomes 35 cents, which is how a
+   * 35% mandatory service charge reached the catalogue as free.
+   */
+  amountIsPercentage: z.boolean().optional(),
+  /** What the rate applies to: PRICELIST_PRICE, CLIENT_PRICE, DAILY_PRICE, or without VAT. */
+  percentageCalculationType: z.string().optional(),
   vatInPrice: z.string().optional(),
   description: restInternationalTextSchema.optional(),
   validForBases: z.array(z.number().int()).optional(),
@@ -347,6 +378,17 @@ export const restYachtAdditionalEquipmentPriceSchema = looseJsonObject({
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
   quantity: z.number().optional(),
+  /** The same conditions the service prices carry; see `restYachtServicePriceSchema`. */
+  minDuration: z.number().int().optional(),
+  maxDuration: z.number().int().optional(),
+  validPeriodFrom: nausysDate.optional(),
+  validPeriodTo: nausysDate.optional(),
+  minimumPrice: decimal.optional(),
+  validForBases: z.array(z.number().int()).optional(),
+  agencies: z.array(z.number().int()).optional(),
+  excludedAgencies: z.boolean().optional(),
+  amountIsPercentage: z.boolean().optional(),
+  percentageCalculationType: z.string().optional(),
   vatInPrice: z.string().optional(),
   condition: restInternationalTextSchema.optional(),
 });
@@ -447,6 +489,21 @@ export const restYachtSchema = looseJsonObject({
   disabled: z.boolean().optional(),
   internalUse: z.boolean().optional(),
   onSale: z.boolean().optional(),
+  /**
+   * The day this hull leaves the operator's fleet. A boat with one in the past is still in the
+   * dump and no longer sellable, so the listing carries the date and the publish step drops it
+   * once it has passed -- a projection has no clock of its own.
+   */
+  outOfFleetDate: nausysDate.optional(),
+  /**
+   * A video id and a tour link, not URLs: `youtubeVideos` and `vimeoVideos` carry the bare
+   * platform id ("wxYl_sqVbtk"), `linkFor360tour` whatever the operator pasted. The tutorial
+   * pair is crew-briefing footage for a customer who has already booked, so it is read and not
+   * published beside the sales gallery.
+   */
+  youtubeVideos: z.string().optional(),
+  vimeoVideos: z.string().optional(),
+  linkFor360tour: z.string().optional(),
   isPremium: z.boolean().optional(),
   needsOptionApproval: z.boolean().optional(),
   canMakeBookingFixed: z.boolean().optional(),
@@ -636,6 +693,9 @@ export const restExtraSchema = looseJsonObject({
   quantity: decimal.optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
+  /** See `restYachtServicePriceSchema`: a rate to four decimals, never money. */
+  amountIsPercentage: z.boolean().optional(),
+  percentageCalculationType: z.string().optional(),
   condition: restInternationalTextSchema.optional(),
   obligatory: z.boolean().optional(),
 });
@@ -661,6 +721,33 @@ export const restFreeYachtSchema = looseJsonObject({
   totalPriceWithExtras: decimal.optional(),
 });
 
+/**
+ * One extra already on a reservation, as `listExtras` describes it.
+ *
+ * `id` is the reservation line, which is the id `updateExtras` addresses; `serviceId` is the
+ * catalogue entry it was created from. `editable` is the operator's lock, and `obligatory`
+ * marks a line the customer never chose and cannot drop.
+ */
+const restReservationServiceSchema = looseJsonObject({
+  id: z.number().int(),
+  serviceId: z.number().int(),
+  quantity: decimal.optional(),
+  editable: z.boolean().optional(),
+  obligatory: z.boolean().optional(),
+  /**
+   * Added while the reservation is still an info or an option, against a season quantity the
+   * operator has not released: charged only once it stops pending, so a total that counts it
+   * is ahead of itself.
+   */
+  onPending: z.boolean().optional(),
+});
+
+export const restListedExtrasSchema = looseJsonObject({
+  ...statusFields,
+  addedServices: z.array(restReservationServiceSchema).optional(),
+  addedEquipment: z.array(looseJsonObject({ id: z.number().int() })).optional(),
+});
+
 export const restFreeYachtsRequestSchema = z.object({
   credentials: restCredentialsSchema,
   periodFrom: nausysDate,
@@ -669,6 +756,14 @@ export const restFreeYachtsRequestSchema = z.object({
   currency: z.string().optional(),
   extendedDataSet: z.string().optional(),
   ignoreOptions: z.boolean().optional(),
+  /**
+   * The party the charter is for, which some obligatory extras are priced per head of.
+   *
+   * Documented since 7 October 2025 and never sent, so the vendor priced those lines for a
+   * full boat: the tourist tax on yacht 72646441 came back as 70 units (ten berths across
+   * seven nights, 93.10) for a couple who owe 14 (18.62).
+   */
+  numberOfPersons: z.number().int().positive().optional(),
 });
 export type RestFreeYachtsRequest = z.infer<typeof restFreeYachtsRequestSchema>;
 

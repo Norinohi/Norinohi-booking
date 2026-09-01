@@ -422,16 +422,64 @@ export async function rebuildListingSearchDocs(
        * when the provider files no ladder at all.
        */
       left join lateral (
-        select sum(applicable.price_minor)::int as unavoidable_minor
+        select
+          /*
+           * Multiplied by what the operator prices the fee in, the same way the crew lateral
+           * below already does and for the same reason: the vendor bills per day, per night or
+           * per week and we were summing one of each. A catamaran advertised 4,960 EUR against
+           * a quote of 6,955 -- a comfort package at 60 EUR "per day" counted once instead of
+           * eight times, and a skipper at 225 the same.
+           *
+           * Per-person measures are left flat on purpose. The card is one figure for a listing
+           * and knows no party size; multiplying by the berth count would price a couple's week
+           * as if the boat were full, which is the wrong kind of wrong on a price somebody
+           * decides to click on. Those fees stay understated until the quote states them, and
+           * the quote is what anyone is asked to pay.
+           */
+          sum(
+            applicable.price_minor
+            * case
+                when applicable.measure like 'per day%' or applicable.measure like 'per_day%'
+                  then span.nights + 1
+                when applicable.measure like 'per night%' or applicable.measure like 'per_night%'
+                  then span.nights
+                when applicable.measure like 'per week%' or applicable.measure like 'per_week%'
+                  then ceil(span.nights::numeric / 7)
+                else 1
+              end
+          )::int as unavoidable_minor,
+          /*
+           * Fees the operator states as a share of the charter rather than as money, summed as
+           * rates and applied to the base in the money lateral below, which is the only place
+           * that base exists. A 35% service charge is 7,910.00 on one hull here and nothing at
+           * all on the catalogue row, so leaving it out is not the safe direction.
+           */
+          sum(applicable.percentage) as unavoidable_pct
         from (
-          select distinct on (extra.name) extra.price_minor
+          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
+        ) span
+        cross join lateral (
+          select distinct on (extra.name)
+            extra.price_minor,
+            extra.percentage,
+            coalesce(extra.price_measure, '') as measure
           from provider_extra_catalogue extra
-          cross join lateral (
-            select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
-          ) span
           where extra.listing_offer_id = o.id
             and extra.obligatory
             and not extra.one_way_only
+            /*
+             * Only fees charged where this charter starts.
+             *
+             * The operator files a fee per base as well as per season, and most of them do:
+             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
+             * row whose list does not include the base it was filed under is charged at some
+             * other base, and adding it here put fees on a card no charter from here pays.
+             */
+            and (
+              extra.valid_for_base_ids is null
+              or extra.external_base_id is null
+              or extra.external_base_id = any(extra.valid_for_base_ids)
+            )
             and (extra.season_end is null or extra.season_end >= current_date)
             and (
               extra.season_start is null
@@ -480,12 +528,35 @@ export async function rebuildListingSearchDocs(
           select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
         ) span
         cross join lateral (
-          select distinct on (extra.name)
+          /*
+           * One person per role, not one per row the operator named.
+           *
+           * Distinct on the name counted every differently-named row a role matched, and
+           * operators file plenty: beside "Skipper" sit "Skipper training practice", "Checkout
+           * Skipper", "Captain By Day", "Fun Pack skipper surcharge" and "Additional fee for
+           * Skipper in forepeak" -- 727 listings carry more than one. A charter is sold with
+           * one skipper aboard, so the card charges for one, and the cheapest row that covers
+           * the week is the closest thing to the plain rate among them.
+           */
+          select distinct on (extra.crew_role)
             extra.price_minor,
             coalesce(extra.price_measure, '') as measure
           from provider_extra_catalogue extra
           where extra.listing_offer_id = o.id
             and extra.crew_role is not null
+            /*
+             * Only fees charged where this charter starts.
+             *
+             * The operator files a fee per base as well as per season, and most of them do:
+             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
+             * row whose list does not include the base it was filed under is charged at some
+             * other base, and adding it here put fees on a card no charter from here pays.
+             */
+            and (
+              extra.valid_for_base_ids is null
+              or extra.external_base_id is null
+              or extra.external_base_id = any(extra.valid_for_base_ids)
+            )
             /*
              * Only the crew nothing has counted yet. An operator that files its skipper as an
              * obligatory extra has it in both fee totals already -- the catalogue sum beside
@@ -508,7 +579,7 @@ export async function rebuildListingSearchDocs(
               or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
             )
           order by
-            extra.name,
+            extra.crew_role,
             (
               (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
               and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
@@ -585,6 +656,17 @@ export async function rebuildListingSearchDocs(
                  /* Added to either source: a confirmed offer prices the charter and its
                     obligatory extras, never the crew the page will select for the visitor. */
                  + coalesce(crew.crew_minor, 0)
+                 /*
+                  * The percentage fees, against the charter this card is advertising. A
+                  * confirmed offer already counts them in its own subtotal, so they are added
+                  * only where the fees above were reconstructed from the catalogue.
+                  */
+                 + case
+                     when confirmed.currency is not distinct from chosen.price_currency
+                      and confirmed.obligatory_extras_minor is not null
+                     then 0
+                     else round(chosen.base_minor * coalesce(fees.unavoidable_pct, 0))::int
+                   end
           end as all_in_minor
       ) money
       /* Resolved once per offer; the conversion reads it twice. */
@@ -592,6 +674,13 @@ export async function rebuildListingSearchDocs(
         select ${usableRateSql(sql`money.price_currency`)} as rate
       ) fx on true
       where o.status = 'active'
+        /*
+         * A hull the operator has retired. NauSYS keeps it in the catalogue dump with the date
+         * it left the fleet, so nothing about the sync notices; the boat simply cannot be
+         * chartered any more. Dropped here rather than deleted, because a charter already
+         * booked on it still has to be readable.
+         */
+        and (o.out_of_fleet_date is null or o.out_of_fleet_date > current_date)
         and ${listingScope(sql`o.listing_id`, listingIds)}
     ),
     /*
@@ -635,6 +724,7 @@ export async function rebuildListingSearchDocs(
     insert into listing_search_doc (
       listing_id,
       slug,
+      name,
       title,
       category,
       crew_type,
@@ -690,6 +780,7 @@ export async function rebuildListingSearchDocs(
     select
       l.id,
       l.slug,
+      l.name,
       l.title,
       -- The marketplace category, not the vendor's: facets group on this column, and
       -- ungrouped vendor near-synonyms would each become their own facet. An
@@ -885,6 +976,7 @@ export async function rebuildListingSearchDocs(
       and ${listingScope(sql`l.id`, listingIds)}
     on conflict (listing_id) do update set
       slug = excluded.slug,
+      name = excluded.name,
       title = excluded.title,
       category = excluded.category,
       crew_type = excluded.crew_type,

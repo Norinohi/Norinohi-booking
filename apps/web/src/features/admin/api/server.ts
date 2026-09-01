@@ -14,6 +14,7 @@ import {
   listingAdminListQueryOptions,
   routeListQueryOptions,
   syncRunsQueryOptions,
+  marketplaceSettingsQueryOptions,
 } from "./queries";
 
 /** Server prefetch for /duplicates — the first page of the pending queue. */
@@ -75,4 +76,8 @@ export function prefetchRoutes(queryClient: QueryClient) {
 /** Server prefetch for /faq — the site-wide list, every category, which is how the screen opens. */
 export function prefetchFaq(queryClient: QueryClient) {
   return queryClient.prefetchQuery(faqListQueryOptions({ scope: "site", page: 1 }));
+}
+
+export function prefetchMarketplaceSettings(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(marketplaceSettingsQueryOptions());
 }

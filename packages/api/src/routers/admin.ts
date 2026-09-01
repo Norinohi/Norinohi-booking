@@ -78,11 +78,21 @@ import {
   enquirySetStatusInputSchema,
 } from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
+import {
+  marketplaceSettingsSchema,
+  marketplaceSettingsUpdateInputSchema,
+} from "../contracts/admin";
+import {
+  getMarketplaceSettings,
+  updateMarketplaceSettings,
+} from "../services/marketplace-settings";
 import { activeConnectorSchema } from "../contracts/provider";
 import {
   outboxDrainResultSchema,
   reminderResultSchema,
   sweepResultSchema,
+  waitingOptionsInputSchema,
+  waitingOptionsSchema,
 } from "../contracts/maintenance";
 import {
   leadAnswerInputSchema,
@@ -151,7 +161,7 @@ import {
   listListingPrices,
   updateListingPrice,
 } from "../services/listing-price";
-import { providerForBooking } from "../services/provider-routing";
+import { providerForBooking, providerForListing } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -211,6 +221,51 @@ async function resolveSyncProvider(
 }
 
 export const adminRouter = {
+  settings: {
+    get: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/settings/get",
+        operationId: "getMarketplaceSettings",
+        summary: "Read the marketplace-wide settings",
+        description:
+          "The payment flow in force for every quote: whether we follow the provider's own instalment plan or our own percentage, and whether a charter starting soon is forced to full prepayment. A database that has never been configured answers with the defaults rather than an error.",
+        tags: ["Admin"],
+        successDescription: "The current settings.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(marketplaceSettingsSchema)
+      .handler(({ context }) => getMarketplaceSettings(context.db)),
+    update: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/settings/update",
+        operationId: "updateMarketplaceSettings",
+        summary: "Change the marketplace-wide settings",
+        description:
+          "Saves the payment flow. Takes effect on the next quote, not on quotes already issued: a quote the customer is holding keeps the policy it was priced under.",
+        tags: ["Admin"],
+        successDescription: "The saved settings.",
+        spec: withJsonBodyExample({
+          payment: {
+            source: "marketplace",
+            mode: "deposit",
+            depositPct: 0.5,
+            enforceLeadTime: true,
+            leadTimeDays: 60,
+          },
+        }),
+      })
+      .input(marketplaceSettingsUpdateInputSchema)
+      .output(marketplaceSettingsSchema)
+      .handler(({ context, input }) =>
+        updateMarketplaceSettings(context.db, {
+          payment: input.payment,
+          actorUserId: context.session.user.id,
+        }),
+      ),
+  },
   /* The suggested-route library and the geography picker it targets, in their own module: this
      file is already the largest router and the two are one screen's worth of contract. */
   route: routeAdminRouter,
@@ -660,6 +715,35 @@ export const adminRouter = {
           sweepExpiries(context.db, context.provider),
         ),
       ),
+    waitingOptions: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/waitingOptions",
+        operationId: "getWaitingOptions",
+        summary: "How many people the operator has queued for a sold-out week",
+        description:
+          "Asks the vendor how many waiting options it already holds for one listing and period, and where each sits in the line. Read-only, and support-facing: nothing on the site offers to join a queue, because filing one is a booking made on a customer's behalf and that decision has not been taken. `supported: false` means this vendor publishes no queue, which is not the same as an empty one.",
+        tags: ["Admin"],
+        successDescription: "The operator's queue for that boat and week.",
+        spec: withJsonBodyExample({
+          listingId: "ylst_example",
+          from: "2026-07-04",
+          to: "2026-07-11",
+        }),
+      })
+      .input(waitingOptionsInputSchema)
+      .output(waitingOptionsSchema)
+      .handler(async ({ context, input }) => {
+        const adapter = await providerForListing(context.db, context.provider, input.listingId);
+        if (!adapter.getWaitingOptions) return { count: 0, queue: [], supported: false };
+
+        const answer = await adapter.getWaitingOptions({
+          listingId: input.listingId,
+          from: input.from,
+          to: input.to,
+        });
+        return { ...answer, supported: true };
+      }),
     sendPaymentReminders: adminProcedure
       .route({
         method: "POST",

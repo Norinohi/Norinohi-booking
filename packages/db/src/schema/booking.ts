@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   uniqueIndex,
   integer,
@@ -218,6 +219,18 @@ export const booking = pgTable(
      * never data we hold: nothing about a passenger is stored in this column.
      */
     crewListLink: text("crew_list_link"),
+    /**
+     * What the operator said about the crew list we sent it, and when.
+     *
+     * Kept on the booking rather than with the passengers because it describes the list as a
+     * whole: NauSYS accepts or refuses the manifest in one answer, and a refusal names the
+     * charter days the list does not cover rather than the person who is missing. Null means
+     * nothing has been filed yet, which is the state most bookings sit in.
+     */
+    crewListSubmittedAt: timestamp("crew_list_submitted_at"),
+    crewListAccepted: boolean("crew_list_accepted"),
+    /** The vendor's own words on a refusal; never anything about a passenger. */
+    crewListMessage: text("crew_list_message"),
     providerStatus: text("provider_status"),
     holdExpiresAt: timestamp("hold_expires_at"),
     confirmedAt: timestamp("confirmed_at"),
@@ -347,11 +360,35 @@ export const bookingTraveller = pgTable(
     bookingId: text("booking_id")
       .notNull()
       .references(() => booking.id, { onDelete: "cascade" }),
-    fullName: text("full_name").notNull(),
+    /*
+     * Given and family name, separately, because that is how the operator files them and the
+     * split cannot be recovered afterwards: the vendor's own crew list carries "DR. MED. DRED"
+     * as a surname. The single `full_name` this replaced was fine to display and useless to
+     * submit.
+     */
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
     role: text("role"),
+    isSkipper: boolean("is_skipper").default(false).notNull(),
     dateOfBirth: text("date_of_birth"),
+    documentType: text("document_type"),
     documentNumber: text("document_number"),
+    /** ISO 3166-1 alpha-2 throughout, as everywhere else; the adapter converts. */
     nationality: text("nationality"),
+    gender: text("gender"),
+    birthPlace: text("birth_place"),
+    birthCountry: text("birth_country"),
+    livingPlace: text("living_place"),
+    livingCountry: text("living_country"),
+    /*
+     * The skipper's own credentials. Only one person on a list carries them, and an operator
+     * that requires a licence is refusing the boat without it, so they are collected here
+     * rather than left to the desk.
+     */
+    skipperLicence: text("skipper_licence"),
+    vhfLicence: text("vhf_licence"),
+    skipperEmail: text("skipper_email"),
+    skipperMobile: text("skipper_mobile"),
     ...timestamps,
   },
   (t) => [index("booking_traveller_booking_idx").on(t.bookingId)],

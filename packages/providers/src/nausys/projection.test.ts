@@ -821,6 +821,147 @@ describe("projectNausysCatalogue", () => {
       expect(cleaning[0]?.priceMinor).toBe(15_000);
     });
 
+    /*
+     * The conditions the vendor files per price row rather than per extra. Ignoring them put a
+     * fee on every card the operator only charges some of: 130,535 of its 184,539 priced rows
+     * name the bases they apply at, 2,047 name a charter length.
+     */
+    it("carries the charter lengths a price is for, as nights", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          baseId: HOME_BASE,
+          services: [
+            { serviceId: 52, price: "125.00", currency: "EUR", minDuration: 7, maxDuration: 13 },
+          ],
+        },
+      ];
+
+      /* The vendor counts the days the boat is held; a seven-night charter is eight of them. */
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", validNightsFrom: 6, validNightsTo: 12 }),
+      );
+    });
+
+    it("carries the dates a price applies to, so an expired one stops being shown", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          baseId: HOME_BASE,
+          services: [
+            {
+              serviceId: 52,
+              price: "125.00",
+              currency: "EUR",
+              validPeriodFrom: "01.01.2026",
+              validPeriodTo: "31.12.2026",
+            },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({
+          externalId: "52",
+          seasonStart: "2026-01-01",
+          seasonEnd: "2026-12-31",
+        }),
+      );
+    });
+
+    it("carries the bases a price is charged at", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          baseId: HOME_BASE,
+          services: [
+            { serviceId: 52, price: "125.00", currency: "EUR", validForBases: [HOME_BASE] },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", validForBaseIds: [String(HOME_BASE)] }),
+      );
+    });
+
+    /* Only one row per extra may be stored, so which one it is decides what the card charges. */
+    it("keeps the row that applies at this base over a later one that does not", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          seasonId: 1,
+          baseId: HOME_BASE,
+          services: [
+            { serviceId: 52, price: "125.00", currency: "EUR", validForBases: [HOME_BASE] },
+          ],
+        },
+        {
+          ...season,
+          seasonId: 2,
+          baseId: HOME_BASE,
+          services: [{ serviceId: 52, price: "500.00", currency: "EUR", validForBases: [999_999] }],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", priceMinor: 12_500 }),
+      );
+    });
+
+    it("keeps the row whose window runs latest, which is never the expired one", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          seasonId: 2,
+          baseId: HOME_BASE,
+          services: [
+            {
+              serviceId: 52,
+              price: "100.00",
+              currency: "EUR",
+              validPeriodFrom: "01.01.2024",
+              validPeriodTo: "31.12.2024",
+            },
+          ],
+        },
+        {
+          ...season,
+          seasonId: 1,
+          baseId: HOME_BASE,
+          services: [
+            {
+              serviceId: 52,
+              price: "150.00",
+              currency: "EUR",
+              validPeriodFrom: "01.01.2027",
+              validPeriodTo: "31.12.2027",
+            },
+          ],
+        },
+      ];
+
+      const cleaning = (listingOf(yacht)?.extras ?? []).filter((e) => e.externalId === "52");
+
+      expect(cleaning).toHaveLength(1);
+      expect(cleaning[0]?.priceMinor).toBe(15_000);
+    });
+
     it("publishes no extras when the vendor sends no season data", () => {
       const yacht = maria();
       yacht.seasonSpecificData = [];
@@ -882,5 +1023,214 @@ describe("projectNausysCatalogue", () => {
     expect(listingOf(yacht)?.oneWayRules).toEqual([
       { startDate: "2026-04-04", endDate: "2026-10-31", isOneWay: true },
     ]);
+  });
+});
+
+describe("the fields the vendor added in May 2025", () => {
+  /*
+   * A hull the operator has retired stays in the catalogue dump with the date it left. Nothing
+   * about the sync notices, so the date rides on the listing and the publish step is what stops
+   * selling it -- a projection has no clock, and a charter already booked has to stay readable.
+   */
+  it("carries the day the boat leaves the fleet", () => {
+    const yacht = maria();
+    yacht.outOfFleetDate = "19.09.2027";
+
+    expect(listingOf(yacht)?.outOfFleetDate).toBe("2027-09-19");
+  });
+
+  it("turns a bare video id into a link, which is what the field actually holds", () => {
+    const yacht = maria();
+    yacht.youtubeVideos = "wxYl_sqVbtk";
+
+    expect(listingOf(yacht)?.videoUrl).toBe("https://www.youtube.com/watch?v=wxYl_sqVbtk");
+  });
+
+  it("takes a full URL as the operator wrote it", () => {
+    const yacht = maria();
+    yacht.vimeoVideos = "https://vimeo.com/123456789";
+
+    expect(listingOf(yacht)?.videoUrl).toBe("https://vimeo.com/123456789");
+  });
+
+  /* YouTube first: an operator that filled both meant the one most visitors can play. */
+  it("prefers YouTube when the operator filled in both", () => {
+    const yacht = maria();
+    yacht.youtubeVideos = "wxYl_sqVbtk";
+    yacht.vimeoVideos = "123456789";
+
+    expect(listingOf(yacht)?.videoUrl).toBe("https://www.youtube.com/watch?v=wxYl_sqVbtk");
+  });
+
+  /* `linkFor360tour` holds a YouTube id on some fleets, which is not a tour. */
+  it("keeps a 360 tour only when it is really a link", () => {
+    const yacht = maria();
+    yacht.linkFor360tour = "wxYl_sqVbtk";
+
+    expect(listingOf(yacht)?.tourUrl).toBeUndefined();
+
+    yacht.linkFor360tour = "https://tour.example.com/boat/1";
+    expect(listingOf(yacht)?.tourUrl).toBe("https://tour.example.com/boat/1");
+  });
+
+  it("says nothing where the operator published nothing", () => {
+    const listing = listingOf(maria());
+
+    expect(listing?.outOfFleetDate).toBeUndefined();
+    expect(listing?.videoUrl).toBeUndefined();
+    expect(listing?.tourUrl).toBeUndefined();
+  });
+});
+
+/*
+ * Undocumented and on the wire: an operator can withhold a priced extra from named agencies.
+ * 62 of 140,543 rows carry a list and every one of them is a deny list; none names us today,
+ * which is exactly why the reading is narrow rather than clever.
+ */
+describe("extras an operator withholds from named agencies", () => {
+  const HOME_BASE = 102_751;
+  const withAgencies = (yacht: Payload, agencies: number[], excluded: boolean) => {
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.baseId = HOME_BASE;
+    yacht.seasonSpecificData = [
+      {
+        ...season,
+        baseId: HOME_BASE,
+        services: [
+          {
+            serviceId: 52,
+            price: "125.00",
+            currency: "EUR",
+            obligatory: true,
+            agencies,
+            excludedAgencies: excluded,
+          },
+        ],
+      },
+    ];
+    return yacht;
+  };
+
+  const cleaningIn = (catalogue: ReturnType<typeof projectNausysCatalogue>) =>
+    (catalogue.listings[0]?.extras ?? []).filter((extra) => extra.externalId === "52");
+
+  it("drops a row that names us on its deny list", () => {
+    const yacht = withAgencies(maria(), [1_013_887, 49_209_547], true);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]), { agencyId: "49209547" });
+
+    expect(cleaningIn(catalogue)).toEqual([]);
+  });
+
+  it("keeps a row whose deny list names somebody else", () => {
+    const yacht = withAgencies(maria(), [1_013_887, 1_259_561], true);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]), { agencyId: "49209547" });
+
+    expect(cleaningIn(catalogue)).toHaveLength(1);
+  });
+
+  /* A deployment that cannot say which agency it is must not guess that the row means it. */
+  it("keeps the row when nobody configured our agency id", () => {
+    const yacht = withAgencies(maria(), [49_209_547], true);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]));
+
+    expect(cleaningIn(catalogue)).toHaveLength(1);
+  });
+
+  /* An allow list is left alone: dropping an extra the operator does sell us is worse. */
+  it("keeps a row whose list is not marked as an exclusion", () => {
+    const yacht = withAgencies(maria(), [1_013_887], false);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]), { agencyId: "49209547" });
+
+    expect(cleaningIn(catalogue)).toHaveLength(1);
+  });
+});
+
+/*
+ * The vendor's rule is that the reduced deposit is "visible when different from regular
+ * deposit", and the wire does not keep to it: 5,619 of our 7,343 hulls send a bare 0 and 404
+ * send a figure that is not lower. Publishing either would tell a customer who bought deposit
+ * insurance something the operator never said.
+ */
+describe("the deposit a charter with deposit insurance is held to", () => {
+  it("publishes a real reduction", () => {
+    const yacht = maria();
+    yacht.deposit = 2500;
+    yacht.depositWhenInsured = 550;
+
+    expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBe(55_000);
+  });
+
+  it("reads a zero as nothing published, not as a deposit of nothing", () => {
+    const yacht = maria();
+    yacht.deposit = 2500;
+    yacht.depositWhenInsured = 0;
+
+    expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBeUndefined();
+  });
+
+  it("drops a figure that is not lower than the ordinary deposit", () => {
+    const yacht = maria();
+    yacht.deposit = 2500;
+    yacht.depositWhenInsured = 2500;
+
+    expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBeUndefined();
+  });
+});
+
+/*
+ * A crew word in the name does not make the line that person's fee for the week. These are the
+ * name families the fleet actually carries, counted across our own catalogue.
+ */
+describe("what counts as crew", () => {
+  const serviceNamed = (name: string) => {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.seasonSpecificData = [
+      { ...season, services: [{ serviceId: 52, price: "1900.00", currency: "EUR" }] },
+    ];
+    /* The catalogue is what names a service, so the name under test goes there. */
+    const records = fixtureRecords([yacht]);
+    const services = records.get("service") ?? [];
+    records.set("service", [
+      ...services.filter((record) => record.externalId !== "52"),
+      { externalId: "52", payload: { id: 52, name: { textEN: name } } },
+    ]);
+    return projectNausysCatalogue(records).listings[0]?.extras.find((e) => e.externalId === "52");
+  };
+
+  it("reads a plain skipper as the skipper", () => {
+    expect(serviceNamed("Skipper")?.crewRole).toBe("skipper");
+  });
+
+  it("reads a captain as the same role, since operators use both words", () => {
+    expect(serviceNamed("Captain")?.crewRole).toBe("skipper");
+  });
+
+  /* One hull advertised 15,050 EUR against a quote of 12,550: a course counted as the skipper. */
+  it("does not read a sailing course as the skipper", () => {
+    expect(serviceNamed("Skipper training practice")?.crewRole).toBeUndefined();
+    expect(serviceNamed("Certification Skipper (ASA)")?.crewRole).toBeUndefined();
+  });
+
+  it("does not read the handover as the skipper", () => {
+    expect(serviceNamed("Checkout Skipper")?.crewRole).toBeUndefined();
+    expect(serviceNamed("Day Checkout Captain")?.crewRole).toBeUndefined();
+  });
+
+  it("does not read a surcharge or a cabin fee as crew", () => {
+    expect(serviceNamed("Fun Pack skipper surcharge")?.crewRole).toBeUndefined();
+    expect(
+      serviceNamed("Additional fee for Skipper in forepeak & shared bathroom")?.crewRole,
+    ).toBeUndefined();
+  });
+
+  it("does not read hourly hire as the week's skipper", () => {
+    expect(serviceNamed("Captain By Day")?.crewRole).toBeUndefined();
+    expect(serviceNamed("Short-term skipper (max 3 days)")?.crewRole).toBeUndefined();
+  });
+
+  it("still reads a cook and a hostess", () => {
+    expect(serviceNamed("Cook")?.crewRole).toBe("cook");
+    expect(serviceNamed("Hostess")?.crewRole).toBe("hostess");
   });
 });

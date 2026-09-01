@@ -69,6 +69,8 @@ export type ListingSearchInput = {
 export type ListingSearchDoc = {
   listingId: string;
   slug: string;
+  /* The boat's own name, without the model; null before the column was backfilled. */
+  name: string | null;
   title: string;
   category: string | null;
   crewType: string | null;
@@ -170,6 +172,11 @@ export type ListingDetail = ListingSearchDoc & {
    * code the web has no message for yet.
    */
   overview: { code: string; label: string; value: string | null }[];
+  /**
+   * A walkthrough the operator filmed and a 360 tour of the same boat, where they published
+   * one. Not in the gallery: these are links a visitor follows off the page, not images.
+   */
+  media: { videoUrl: string | null; tourUrl: string | null };
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingOptionalItem[];
@@ -248,6 +255,13 @@ export type ListingPricedItem = {
    * both into the prepayment. Silence is now silence rather than a guess.
    */
   payableInBase: boolean | null;
+  /**
+   * A fee stated as a share of the charter rather than as money: 0.35 is 35%. Null on the
+   * ordinary ones, which carry their amount in `price`. The catalogue row for one of these
+   * has no money on it at all, so a page reading only `price` called a 35% service charge
+   * free.
+   */
+  percentage: number | null;
   /**
    * Charged only when the charter ends at a base other than the one it started from.
    *

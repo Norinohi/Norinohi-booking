@@ -311,6 +311,49 @@ export const bookingDraftSchema = z.object({
 });
 export type BookingDraft = z.infer<typeof bookingDraftSchema>;
 
+/**
+ * A reservation as the vendor holds it right now, read from its own change feed.
+ *
+ * The booking chain writes our copy of a reservation once, at the moment we act on it, and
+ * nothing has ever read it back: an operator who cancels a charter, moves its dates or reprices
+ * it does so in their own system, and our booking goes on saying what it said in April. This is
+ * what a reconciliation pass compares against.
+ *
+ * `status` is the canonical one, so a reader does not have to know the vendor's words.
+ */
+/**
+ * How many people are already queued for a boat the operator has sold out of, and where in the
+ * line they are.
+ *
+ * Read-only on our side, on purpose. NauSYS will also *join* the queue -- `createInfo` takes a
+ * `fallbackToWaitingOption` that files a waiting option instead of failing when the week is
+ * gone -- and that is a product decision nobody has taken: what the customer is promised, what
+ * we do when the boat frees up, and whether money moves. This answers the question support is
+ * actually asked ("is there a list, and how long?") without making that decision.
+ */
+export interface WaitingOptions {
+  /** How many waiting options the operator holds for this boat and period. */
+  count: number;
+  /** Ours among them, where the vendor names them: reservation id and place in line. */
+  queue: { reservationId: string; position: number }[];
+}
+
+export const providerReservationStateSchema = z.object({
+  providerReservationId: z.string(),
+  status: z.enum(["option_held", "confirmed", "cancelled"]),
+  /** Rotates on every write, so the vendor's copy is newer than ours by definition. */
+  securityToken: z.string().optional(),
+  /** The vendor's own word for the status, kept for the operator reading the report. */
+  providerStatus: z.string(),
+  checkIn: z.string().optional(),
+  checkOut: z.string().optional(),
+  priceMinor: z.number().int().optional(),
+  currency: z.string().optional(),
+  /** When the operator last touched it, which is why this row came back. */
+  lastModifiedAt: z.string().optional(),
+});
+export type ProviderReservationState = z.infer<typeof providerReservationStateSchema>;
+
 export const providerReservationSchema = z.object({
   id: z.string(),
   provider: providerKeySchema,
@@ -532,6 +575,87 @@ const canonicalAmenitySchema = z.object({
  * actually owes for concrete dates comes from the offer path, which prices the
  * same items per period and quantity.
  */
+/**
+ * The crew-list fields a fleet operator requires for one reservation, in the vendor's own
+ * field names. Empty where the operator asks for nothing beyond the obvious, null where the
+ * provider does not answer the question at all -- which is not the same thing.
+ */
+export interface CrewRequirements {
+  requiredFields: string[];
+  maxPassengers: number | null;
+  skipperRequired: boolean | null;
+}
+
+/**
+ * One person aboard, in our own vocabulary: ISO dates and alpha-2 countries, the way every
+ * other canonical structure here states them. Each adapter converts to whatever its vendor
+ * wants -- NauSYS takes `dd.MM.yyyy` and alpha-3, and neither belongs in the application.
+ *
+ * Given and family name are separate because the operator files them separately, and the
+ * split cannot be recovered from a full name: the vendor's own example carries "DR. MED.
+ * DRED" as a surname. Everything but the name is optional, since the point of submitting an
+ * incomplete list is that the base has less to collect at the desk, not none.
+ */
+export const crewListMemberSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  skipper: z.boolean(),
+  /** ISO `yyyy-mm-dd`. */
+  dateOfBirth: z.string().optional(),
+  birthPlace: z.string().optional(),
+  birthCountry: z.string().length(2).optional(),
+  nationality: z.string().length(2).optional(),
+  documentType: z.enum(["PASSPORT", "IDCARD", "OTHER"]).optional(),
+  documentNumber: z.string().optional(),
+  gender: z.enum(["MALE", "FEMALE"]).optional(),
+  livingPlace: z.string().optional(),
+  livingCountry: z.string().length(2).optional(),
+  skipperLicence: z.string().optional(),
+  vhfLicence: z.string().optional(),
+  skipperEmail: z.string().optional(),
+  skipperMobile: z.string().optional(),
+  /**
+   * When this person is aboard, ISO `yyyy-mm-dd`. Not asked of the customer: an operator that
+   * requires them means the charter dates, which the booking already knows, and a passenger
+   * who joins late is rare enough to belong in the note.
+   */
+  embarkDate: z.string().optional(),
+  disembarkDate: z.string().optional(),
+});
+export type CrewListMember = z.infer<typeof crewListMemberSchema>;
+
+export const crewListSubmissionSchema = z.object({
+  ref: providerReservationRefSchema,
+  members: z.array(crewListMemberSchema).max(50),
+  note: z.string().optional(),
+});
+export type CrewListSubmission = z.infer<typeof crewListSubmissionSchema>;
+
+/**
+ * What the operator said about the list we sent.
+ *
+ * `accepted: false` is a real answer, not an error: NauSYS refuses a list whose passengers do
+ * not cover the charter dates and names the period it means. Anything we could not send at all
+ * throws instead, so a caller that gets a receipt knows the operator saw the list.
+ */
+/**
+ * A place the operator's crew list will accept. `name` is what gets filed; `label` names the
+ * municipality around it, which is how a customer picks between two places sharing a name.
+ */
+export interface CrewPlace {
+  name: string;
+  label: string;
+}
+
+export interface CrewListReceipt {
+  accepted: boolean;
+  /** The vendor's own status name, where it gave one. */
+  providerCode?: string;
+  message?: string;
+  /** ISO dates the vendor says the list fails to cover. */
+  invalidPeriod?: { from: string; to: string };
+}
+
 export const canonicalExtraSchema = z.object({
   kind: z.enum(["service", "equipment"]),
   externalId: z.string(),
@@ -543,6 +667,14 @@ export const canonicalExtraSchema = z.object({
   /** Vendor's billing unit (per booking, per day, per person); display only. */
   priceMeasure: z.string().optional(),
   calculationType: z.string().optional(),
+  /**
+   * A fee stated as a share of the charter: 0.35 is 35%. `priceMinor` is zero on these, since
+   * the amount is only knowable once a week is being priced, and reading the vendor's rate as
+   * money turned a 35% service charge into 35 cents.
+   */
+  percentage: z.number().positive().optional(),
+  /** What the rate applies to, in the vendor's own words: PRICELIST_PRICE, CLIENT_PRICE, ... */
+  percentageBasis: z.string().optional(),
   /**
    * Whether the operator collects this at the base rather than in the prepayment. Left unset
    * where the provider says nothing, which is not the same as false: claiming a fee is due on
@@ -568,8 +700,27 @@ export const canonicalExtraSchema = z.object({
    * an unconditional mandatory extra overstates every return charter by its amount.
    */
   oneWayOnly: z.boolean().optional(),
+  /**
+   * The bases this price applies at, by the provider's own base ids. Empty or absent means
+   * every base, which is the common case; a non-empty list is a fee only charged where the
+   * charter starts at one of these -- 130,535 of NauSYS's 184,539 priced extras rows carry
+   * one, and applying them everywhere put fees on cards no charter from that base pays.
+   */
+  validForBaseIds: z.array(z.string()).optional(),
+  /**
+   * A floor the provider sets under a computed total, in minor units. Only meaningful beside a
+   * percentage: a 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
+   */
+  minimumPriceMinor: z.number().int().optional(),
   /** Cannot be added without the operator agreeing first, so it is not instantly bookable. */
   onRequestOnly: z.boolean(),
+  /**
+   * Buying this lowers the security deposit rather than adding a service to the charter.
+   * NauSYS flags the service itself (`depositInsurance`) and publishes the reduced figure
+   * beside the ordinary one, so a customer who takes it is asked for less at the base -- and
+   * was still shown the full deposit until this was read.
+   */
+  depositInsurance: z.boolean().optional(),
   /**
    * Set when this extra is really a crew role. Vendors sell crew as ordinary
    * services with no flag saying so, so this is read off the name and left unset
@@ -588,6 +739,14 @@ const canonicalListingSchema = z.object({
   externalBuilderId: z.string().optional(),
   externalModelId: z.string().optional(),
   externalCategoryId: z.string().optional(),
+  /**
+   * The boat's own name, as the vendor wrote it, with no model appended.
+   *
+   * Carried beside `title` rather than recovered from it: stripping a model back off a merged
+   * string is guesswork the moment a vendor writes the model differently in the two fields,
+   * and the display needs the halves apart while slugs and `<title>` need them joined.
+   */
+  name: z.string().optional(),
   title: z.string(),
   slug: z.string(),
   spec: z.object({
@@ -651,7 +810,21 @@ const canonicalListingSchema = z.object({
     }),
   ),
   defaultCurrency: z.string().length(3),
+  /**
+   * The day the operator retires this hull, where it has named one. Kept rather than acted on
+   * here: the projection is pure, and "in the past" needs a clock, so the publish step is what
+   * stops selling it.
+   */
+  outOfFleetDate: z.string().optional(),
+  /** A walkthrough the operator filmed, and a 360 tour of the same boat. Both are links. */
+  videoUrl: z.url().optional(),
+  tourUrl: z.url().optional(),
   securityDepositMinor: z.number().int().optional(),
+  /**
+   * What the deposit falls to when the charter carries deposit insurance. Absent unless the
+   * operator publishes a different figure, which is how NauSYS states it.
+   */
+  securityDepositWhenInsuredMinor: z.number().int().optional(),
   /** Unset means the deposit is denominated in `defaultCurrency`. */
   securityDepositCurrency: z.string().length(3).optional(),
   /** Provider-side review aggregate. Left unset when the provider has no verdict. */

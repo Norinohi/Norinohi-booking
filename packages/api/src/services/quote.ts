@@ -42,6 +42,7 @@ import {
   type AppliedAdjustment,
   type QuotePaymentScheduleEntry,
 } from "./pricing";
+import { getMarketplaceSettings } from "./marketplace-settings";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
   /** The trip split across the party; null when the guest count is unusable. */
@@ -576,11 +577,16 @@ async function resolveDeposit(
     .where(eq(listing.id, listingId))
     .limit(1);
 
+  /* One read per quote rather than a cached module global: an operator who changes the flow
+     expects the next quote to price on it, not the next deploy. */
+  const settings = await getMarketplaceSettings(db);
+
   const paymentPolicy = resolvePaymentPolicy(
     listingRow?.paymentPolicy ?? null,
     providerPolicy,
     currency,
     charter,
+    settings.payment,
   );
 
   const payable = payableNowMinor(lines);

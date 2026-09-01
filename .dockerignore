@@ -1,0 +1,23 @@
+# Everything the build re-creates or must never reach the image. Without this the COPY of the
+# repo drags the host's node_modules and .next in, which defeats the point of the multi-stage
+# build and can smuggle a darwin-arm64 binary into a linux image.
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+.git
+.github
+.vscode
+.agents
+.claude
+docs
+**/*.md
+**/.env
+**/.env.*
+!**/.env.example
+**/test-results
+**/playwright-report

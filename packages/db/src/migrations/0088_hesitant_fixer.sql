@@ -1,0 +1,1 @@
+ALTER TYPE "public"."sync_kind" ADD VALUE 'reservations';

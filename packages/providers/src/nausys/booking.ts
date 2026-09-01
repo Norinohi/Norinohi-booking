@@ -33,6 +33,7 @@ import { extraLineMinor } from "./extras";
 import {
   crewListLinkOf,
   nausysEndpoints,
+  restListedExtrasSchema,
   restYachtReservationResponseSchema,
   type RestClient,
   type RestYachtReservation,
@@ -67,10 +68,12 @@ export interface NausysBookingServiceDeps {
   recordEvent?: ReservationEventRecorder;
   persistSecurityToken?: SecurityTokenSink;
   /**
-   * Reads the reservation's current extras so a desired set can be diffed against
-   * them. Supplied by the caller because there is no single-reservation read
-   * endpoint: the only source is the response of the last mutation, which the
-   * booking flow already persists.
+   * Reads the reservation's current extras so a desired set can be diffed against them.
+   *
+   * Overridable, and defaulted to `listExtras` -- the vendor's own single-reservation read,
+   * added in October 2025. Before it existed the only source was the response of the last
+   * mutation, and nothing supplied one: the diff therefore saw an empty reservation, found
+   * nothing to remove, and left a deselected extra on the booking still being billed.
    */
   loadReservationExtras?: (ref: ProviderReservationRef) => Promise<ReservationExtra[]>;
 }
@@ -309,7 +312,8 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
   async function addOrUpdateExtras(input: ProviderExtrasMutation): Promise<ProviderQuote> {
     const parsed = providerExtrasMutationSchema.parse(input);
     const desired = new Set(await externalServiceIds(parsed.extras));
-    const current = (await deps.loadReservationExtras?.(parsed.ref)) ?? [];
+    const load = deps.loadReservationExtras ?? ((ref) => readReservationExtras(client, ref));
+    const current = await load(parsed.ref);
 
     const currentByService = new Map(current.map((item) => [item.serviceId, item]));
     const removals = current.filter((item) => !desired.has(item.serviceId));
@@ -452,7 +456,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         // yacht's full berth count, which on a ten-berth yacht is a tenth of the
         // real figure. `extraLineMinor` is what the quote reads, and the two must
         // agree or the reservation contradicts the invoice built from the quote.
-        amount: { amountMinor: extraLineMinor(extra, currency), currency },
+        /* The reservation's own charter price is what a percentage line is a share of. */
+        amount: {
+          amountMinor: extraLineMinor(extra, currency, { clientMinor: baseMinor }),
+          currency,
+        },
         payWhen:
           extra.calculationType === "SEPARATE_PAYMENT"
             ? ("at_check_in" as const)
@@ -558,6 +566,40 @@ function refOf(handle: ReservationHandle): ProviderReservationRef {
  * they fail for different reasons: a missing id means the option step never ran,
  * a missing uuid means a caller dropped the token it was handed.
  */
+/**
+ * What is on the reservation right now, from the vendor rather than from memory.
+ *
+ * `listExtras` is a read: it neither rotates the reservation's uuid nor changes anything, so
+ * it needs none of the token bookkeeping the mutations go through. It runs on the reservation's
+ * own lane all the same, because a read racing the write it is about to inform would answer
+ * from before that write.
+ *
+ * Only services. Removal is keyed by the reservation line id, and `updateExtras` addresses
+ * services; the vendor numbers added equipment separately and nothing here removes one yet.
+ */
+async function readReservationExtras(
+  client: NausysClient,
+  ref: ProviderReservationRef,
+): Promise<ReservationExtra[]> {
+  const endpoint = nausysEndpoints.availability.listExtras;
+  const handle = requireHandle(ref, endpoint);
+
+  const response = await client.bookingCall(
+    endpoint,
+    restListedExtrasSchema,
+    { id: handle.id, uuid: handle.uuid },
+    reservationLane(String(handle.id)),
+  );
+
+  return (response.addedServices ?? []).map((line) => ({
+    yachtReservationServiceId: line.id,
+    serviceId: line.serviceId,
+    quantity: Number(line.quantity ?? "1"),
+    /* Absent means the operator has not locked it; only an explicit false is a lock. */
+    editable: line.editable !== false,
+  }));
+}
+
 function requireHandle(ref: ProviderReservationRef, endpoint: string): ReservationHandle {
   const id = Number(ref.providerReservationId);
   if (!ref.providerReservationId || !Number.isInteger(id)) {

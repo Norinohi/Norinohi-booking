@@ -185,7 +185,7 @@ export async function listSyncRuns(db: Database, input: SyncRunListInput): Promi
       syncRunId: row.run.id,
       provider: row.providerCode,
       providerName: row.providerName,
-      kind: row.run.kind,
+      kind: importKindOf(row.run.kind),
       status: row.run.status,
       createdCount: row.run.createdCount,
       updatedCount: row.run.updatedCount,
@@ -198,6 +198,15 @@ export async function listSyncRuns(db: Database, input: SyncRunListInput): Promi
     })),
     pagination,
   };
+}
+
+/**
+ * `sync_kind` also carries `reservations`, which belongs to the reconciliation pass: that one
+ * keeps a cursor and never opens a run, so no row here can hold it. Narrowed rather than
+ * widening the admin contract with a kind its screens can never be shown.
+ */
+function importKindOf(kind: SyncKind | "reservations"): SyncKind {
+  return kind === "reservations" ? "availability" : kind;
 }
 
 export async function getCatalogueSyncStatus(
@@ -240,7 +249,7 @@ export async function getCatalogueSyncStatus(
   return {
     syncRunId: run.id,
     provider: provider.key,
-    kind: run.kind,
+    kind: importKindOf(run.kind),
     status: run.status,
     createdCount: run.createdCount,
     updatedCount: run.updatedCount,

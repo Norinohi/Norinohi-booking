@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -80,7 +81,18 @@ export const listingOffer = pgTable(
       depositPct?: number;
       balanceDueAt?: string;
     }>(),
+    /**
+     * The day the operator retires this hull. A boat past it is still in the vendor's catalogue
+     * and no longer sellable, so the search document skips it rather than the sync deleting the
+     * listing -- a charter already booked on it still has to be readable.
+     */
+    outOfFleetDate: date("out_of_fleet_date"),
+    /** A walkthrough the operator filmed, and a 360 tour of the same boat. */
+    videoUrl: text("video_url"),
+    tourUrl: text("tour_url"),
     securityDepositMinor: integer("security_deposit_minor"),
+    /** The deposit this offer takes when the charter carries deposit insurance. */
+    securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     crewType: text("crew_type"),
@@ -88,6 +100,14 @@ export const listingOffer = pgTable(
     providerReviewCount: integer("provider_review_count"),
 
     /* This provider's reading of the boat, resolved into `listing` by precedence. */
+    /**
+     * The boat's own name as this vendor wrote it, with no model appended. `title` is the two
+     * joined; this is the half a screen shows in large type.
+     *
+     * Distinct from `nameKey` below, which is the same name folded for duplicate matching and
+     * is not display text: "Star Kiss" against "starkiss".
+     */
+    name: text("name"),
     title: text("title"),
     operatorId: text("operator_id").references(() => operator.id, { onDelete: "restrict" }),
     homeBaseId: text("home_base_id").references(() => base.id, { onDelete: "restrict" }),

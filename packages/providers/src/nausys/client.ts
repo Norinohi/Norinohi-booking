@@ -155,7 +155,9 @@ export class NausysClient {
     this.http = createProviderHttpClient({
       baseUrl: options.config.baseUrl,
       queueKey: options.config.queueKey,
-      timeoutMs: options.config.timeoutMs,
+      // The sync lane alone gets the long ceiling: a fleet dump is slow by nature,
+      // while every other lane is answering a guest and must fail fast.
+      timeoutMs: this.lane === "sync" ? options.config.syncTimeoutMs : options.config.timeoutMs,
       queue: options.queue ?? queueForInterval(options.config.minIntervalMs),
       classifyResponse: classifyNausysResponse,
       onRawResponse: options.onRawResponse,
@@ -208,6 +210,41 @@ export class NausysClient {
       },
       lane,
     );
+  }
+
+  /**
+   * A plain GET, for the one NauSYS surface that authorises by URL rather than by credentials:
+   * the crew list, whose `securityCode` path segment is the reservation's own rotating token.
+   * On the live lane, since a customer is looking at the page that asked for it.
+   */
+  async getJson<TOut>(path: string, schema: z.ZodType<TOut>): Promise<TOut> {
+    const response = await this.http.get(path, undefined, {
+      queueKey: this.queueKeyFor("live"),
+    });
+    const parsed = schema.safeParse(response.body);
+    if (!parsed.success) {
+      throw new ContractError(`NauSYS ${path} did not match the expected schema`, {
+        endpoint: path,
+      });
+    }
+    return parsed.data;
+  }
+
+  /**
+   * The same, posting. Used only by the crew list, whose write authorises by the URL token
+   * and therefore carries no credentials in the body.
+   */
+  async postJson<TOut>(path: string, body: JsonObject, schema: z.ZodType<TOut>): Promise<TOut> {
+    const response = await this.http.post(path, body, {
+      queueKey: this.queueKeyFor("live"),
+    });
+    const parsed = schema.safeParse(response.body);
+    if (!parsed.success) {
+      throw new ContractError(`NauSYS ${path} did not match the expected schema`, {
+        endpoint: path,
+      });
+    }
+    return parsed.data;
   }
 
   /**

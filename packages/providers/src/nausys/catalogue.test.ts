@@ -15,6 +15,7 @@ const config: NausysConfig = {
   username: "agency-user",
   password: "hunter2",
   timeoutMs: 1000,
+  syncTimeoutMs: 1000,
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
@@ -239,8 +240,53 @@ describe("syncNausysCatalogue", () => {
     );
   });
 
-  it("does not read the imported companies when nothing is scoped out", async () => {
+  it("retires the fleet of a company the vendor no longer lists, unscoped", async () => {
     const { client, reporter } = build();
+
+    // No scope configured, which is how every deployment that imports everything
+    // the credential sees is set up. 555 is filed against our fleet but absent
+    // from the dump, so the vendor has withdrawn it.
+    const events = await collect(
+      syncNausysCatalogue(client, {
+        reporter,
+        listImportedCompanyIds: async () => ["102701", "555"],
+      }),
+    );
+
+    expect(completions(events)).toContainEqual({
+      type: "scope-complete",
+      resourceType: "yacht",
+      scopeKey: "555",
+    });
+    // Still listed, so its fleet is announced by the sweep proper, with a cursor.
+    expect(completions(events)).toContainEqual(
+      expect.objectContaining({
+        resourceType: "yacht",
+        scopeKey: "102701",
+        cursor: expect.anything(),
+      }),
+    );
+  });
+
+  it("retires nothing when the company dump failed", async () => {
+    const { client, transport, reporter } = build();
+    transport.failWith("charterCompanies", "error-999");
+
+    const events = await collect(
+      syncNausysCatalogue(client, {
+        reporter,
+        listImportedCompanyIds: async () => ["102701", "555"],
+      }),
+    );
+
+    // A dump we never read says nothing about who is still listed. Retiring on it
+    // would deactivate the entire fleet on one bad response.
+    expect(completions(events).filter((event) => event.resourceType === "yacht")).toEqual([]);
+  });
+
+  it("does not read the imported companies when there is nothing to compare against", async () => {
+    const { client, transport, reporter } = build();
+    transport.failWith("charterCompanies", "error-999");
     let reads = 0;
 
     await collect(

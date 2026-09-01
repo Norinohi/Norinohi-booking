@@ -18,6 +18,7 @@ const config: NausysConfig = {
   username: "agency-user",
   password: "hunter2",
   timeoutMs: 1000,
+  syncTimeoutMs: 1000,
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
@@ -141,6 +142,28 @@ describe("NauSYS live quote", () => {
     expect(priced.expiresAt).toBe(new Date(FIXED_NOW + 15 * 60 * 1000).toISOString());
   });
 
+  /*
+   * Some obligatory extras are priced per head: the tourist tax on yacht 72646441 comes back
+   * as 70 units without this field (ten berths across seven nights) and 14 with it set to two.
+   * Omitting it billed every couple for a full boat.
+   */
+  it("tells the vendor how many people the charter is for", async () => {
+    const { service, transport } = build();
+
+    await service.getNausysQuote({ ...request, guests: 2 });
+
+    expect(transport.calls[0]?.body).toMatchObject({ numberOfPersons: 2 });
+  });
+
+  it("prices two parties separately rather than serving one from the other's answer", async () => {
+    const { service, transport } = build({ cacheTtlMs: 60_000 });
+
+    await service.getNausysQuote({ ...request, guests: 2 });
+    await service.getNausysQuote({ ...request, guests: 8 });
+
+    expect(transport.calls.map((call) => call.body?.numberOfPersons)).toEqual([2, 8]);
+  });
+
   it("sends the nested-credential freeYachts request the vendor documents", async () => {
     const { service, transport } = build();
     await service.getNausysQuote(request);
@@ -153,6 +176,7 @@ describe("NauSYS live quote", () => {
       yachts: [4711001],
       currency: "EUR",
       extendedDataSet: "PAYMENT_PLAN,ADDITIONAL_EXTRAS",
+      numberOfPersons: 4,
     });
   });
 
@@ -527,6 +551,93 @@ describe("NauSYS live quote", () => {
 
     expect(priced.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
     expect(priced.deposit).toEqual({ amountMinor: 341_000, currency: "EUR" });
+  });
+
+  /*
+   * Deposit insurance is bought to lower the deposit, and the vendor states the reduced figure
+   * beside the ordinary one. Ignoring it charged the customer for the insurance and still held
+   * the full deposit against their card at the base.
+   */
+  describe("deposit insurance", () => {
+    const INSURANCE = "service:9001";
+
+    function insuredBody() {
+      const body = fixtureResponse();
+      const yacht = firstYacht(body);
+      yacht.price.depositAmount = "2000.00";
+      yacht.price.depositWhenInsuredAmount = "500.00";
+      return body;
+    }
+
+    it("holds the reduced deposit when the charter carries the insurance", async () => {
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", insuredBody());
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 50_000, currency: "EUR" });
+    });
+
+    it("holds the ordinary deposit when nobody bought it", async () => {
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", insuredBody());
+
+      const priced = await service.getNausysQuote({ ...request, extras: ["service:52"] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
+
+    /*
+     * The vendor sends this as a bare 0 on most hulls -- 5,619 of the 7,343 in our own fleet --
+     * and read literally it promises the customer that nothing is blocked at the base.
+     */
+    it("ignores a reduced deposit of zero, which is the vendor's way of saying nothing", async () => {
+      const body = insuredBody();
+      firstYacht(body).price.depositWhenInsuredAmount = "0.00";
+
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", body);
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
+
+    /* 404 hulls publish one that is not lower; holding the customer to it punishes the sale. */
+    it("ignores a reduced deposit that is not actually lower", async () => {
+      const body = insuredBody();
+      firstYacht(body).price.depositWhenInsuredAmount = "2500.00";
+
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", body);
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
+
+    /* An operator that publishes no reduced figure holds the same deposit either way. */
+    it("holds the ordinary deposit when the operator names no reduced one", async () => {
+      const body = insuredBody();
+      delete firstYacht(body).price.depositWhenInsuredAmount;
+
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", body);
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
   });
 
   it("keeps the security deposit out of the total", async () => {

@@ -166,6 +166,23 @@ export function wallClockToInstant(
 }
 
 /**
+ * The other direction: an instant as the vendor's own wall clock, `dd.MM.yyyy HH:mm`.
+ *
+ * Needed by the filters that take a datetime rather than return one -- NauSYS states
+ * `modifyTimeFrom`/`modifyTimeTo` in the same CET/CEST the rest of its timestamps use, so a
+ * UTC-shaped window would be an hour or two off and would silently miss changes at its edge.
+ */
+export function formatInZone(at: Date, timeZone: string): string {
+  const values: Record<string, string> = {};
+  for (const part of zoneFormatter(timeZone).formatToParts(at)) {
+    if (part.type !== "literal") values[part.type] = part.value;
+  }
+
+  const { year = "", month = "", day = "", hour = "", minute = "" } = values;
+  return `${day}.${month}.${year} ${hour}:${minute}`;
+}
+
+/**
  * NauSYS datetimes carry no timezone, so the wall-clock reading is interpreted
  * in `timeZone`.
  *

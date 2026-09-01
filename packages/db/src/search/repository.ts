@@ -209,6 +209,8 @@ export async function getListingDetailByIdOrSlug(
         waterCapacity: number | null;
         checkInTime: string | null;
         checkOutTime: string | null;
+        videoUrl: string | null;
+        tourUrl: string | null;
       }>(sql`
       select
         spec.beam_m as "beamM",
@@ -218,10 +220,15 @@ export async function getListingDetailByIdOrSlug(
         spec.fuel_capacity as "fuelCapacity",
         spec.water_capacity as "waterCapacity",
         bs.check_in_time as "checkInTime",
-        bs.check_out_time as "checkOutTime"
+        bs.check_out_time as "checkOutTime",
+        /* Read from the offer the card is priced from, like the extras: two vendors selling
+           one hull can film it separately, and the page shows one of them. */
+        coalesce(o.video_url, l.video_url) as "videoUrl",
+        coalesce(o.tour_url, l.tour_url) as "tourUrl"
       from listing l
       left join listing_specification spec on spec.listing_id = l.id
       left join base bs on bs.id = l.home_base_id
+      left join listing_offer o on o.id = ${listing.bestOfferId ?? null}::text
       where l.id = ${listing.listingId}
       limit 1
     `),
@@ -266,6 +273,7 @@ export async function getListingDetailByIdOrSlug(
         priceCurrency: string | null;
         priceMeasure: string | null;
         calculationType: string | null;
+        percentage: string | null;
         payableInBase: boolean | null;
         oneWayOnly: boolean;
       }>(sql`
@@ -285,6 +293,7 @@ export async function getListingDetailByIdOrSlug(
         extra.price_currency as "priceCurrency",
         extra.price_measure as "priceMeasure",
         extra.calculation_type as "calculationType",
+        extra.percentage,
         extra.payable_in_base as "payableInBase",
         extra.one_way_only as "oneWayOnly"
       from provider_extra_catalogue extra
@@ -325,6 +334,17 @@ export async function getListingDetailByIdOrSlug(
         and (
           extra.season_start is null
           or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+        )
+        /*
+         * And only fees charged at the base this listing sails from. A provider states the
+         * bases a price applies at alongside its season, and a row filed under one base but
+         * valid only at others is somebody else's charter: listing it here told the customer
+         * about a fee they will never be asked for.
+         */
+        and (
+          extra.valid_for_base_ids is null
+          or extra.external_base_id is null
+          or extra.external_base_id = any(extra.valid_for_base_ids)
         )
       /* Ordered on the vendor's name, not the translated one, so the sections keep the same
          order in every locale. */
@@ -398,6 +418,7 @@ export async function getListingDetailByIdOrSlug(
     priceCurrency: item.priceCurrency,
     priceMeasure: item.priceMeasure,
     calculationType: item.calculationType,
+    percentage: item.percentage,
     payableInBase: item.payableInBase,
     oneWayOnly: item.oneWayOnly,
     selectable: isSelectableExtra(item.source, item.kind),
@@ -443,6 +464,7 @@ export async function getListingDetailByIdOrSlug(
      */
     description: prose ?? null,
     overview: overviewFor(listing, info),
+    media: { videoUrl: info?.videoUrl ?? null, tourUrl: info?.tourUrl ?? null },
     includedAmenities,
     mandatoryExtras,
     optionalExtras,
@@ -1097,6 +1119,7 @@ const engagementColumns = sql`
 const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
+  doc.name,
   doc.title,
   doc.category,
   doc.crew_type as "crewType",
@@ -1653,6 +1676,7 @@ function pricedItem(
     priceCurrency: string | null;
     priceMeasure?: string | null;
     calculationType?: string | null;
+    percentage?: string | null;
     payableInBase?: boolean | null;
     oneWayOnly?: boolean | null;
   },
@@ -1667,6 +1691,10 @@ function pricedItem(
     },
     priceToMinor: null,
     priceMeasure: item.priceMeasure ?? null,
+    /* A fee the operator states as a share of the charter: 0.35 is 35%. It has no money on the
+       catalogue row at all, so a card that showed only `price` called it free. */
+    percentage:
+      item.percentage === null || item.percentage === undefined ? null : Number(item.percentage),
     payableInBase: item.payableInBase ?? null,
     oneWayOnly: item.oneWayOnly ?? false,
     pricingType: pricingTypeOf(item.calculationType),

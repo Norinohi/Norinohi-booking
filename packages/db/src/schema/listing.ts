@@ -40,6 +40,12 @@ export const listing = pgTable(
   {
     id: id("ylst"),
     slug: text("slug").notNull().unique(),
+    /**
+     * The boat's own name, from whichever offer won the `title` field group, with no model
+     * appended. Nullable because a vendor need not give one, and because the rows that predate
+     * the column were backfilled from `title` only where the model could be stripped safely.
+     */
+    name: text("name"),
     title: text("title").notNull(),
     operatorId: text("operator_id")
       .notNull()
@@ -63,7 +69,21 @@ export const listing = pgTable(
      * currency is stored because NauSYS lets a deposit name one of its own,
      * distinct from the season currency in `default_currency`.
      */
+    /**
+     * The day the operator retires this hull. A boat past it is still in the vendor's catalogue
+     * and no longer sellable, so the search document skips it rather than the sync deleting the
+     * listing -- a charter already booked on it still has to be readable.
+     */
+    outOfFleetDate: date("out_of_fleet_date"),
+    /** A walkthrough the operator filmed, and a 360 tour of the same boat. */
+    videoUrl: text("video_url"),
+    tourUrl: text("tour_url"),
     securityDepositMinor: integer("security_deposit_minor"),
+    /**
+     * What the deposit falls to when the charter carries deposit insurance, where the operator
+     * publishes a second figure for it. Null means it does not change, or nobody said.
+     */
+    securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),

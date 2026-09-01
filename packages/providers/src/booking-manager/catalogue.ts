@@ -222,6 +222,14 @@ export async function* syncBookingManagerCatalogue(
   const scope = options.companyScope ?? unscopedCompanies;
   const inScope = (companyId: string) => scope.inScope(companyId);
   let companyIds: string[] = [];
+  /*
+   * Whether `companyIds` is this run's own clean reading of the vendor's company
+   * list, which is what authorises retiring a fleet the dump no longer mentions.
+   */
+  let companyListTrusted = false;
+  /* Only the ids this run read from the dump, kept apart from `companyIds` so an
+     id handed in through options cannot pass itself off as the vendor's answer. */
+  const dumpCompanyIds: string[] = [];
 
   for (const [index, step] of CATALOGUE_STEPS.entries()) {
     if (index < startStep) continue;
@@ -251,6 +259,7 @@ export async function* syncBookingManagerCatalogue(
       if (index === COMPANY_STEP) {
         if (!inScope(externalId)) continue;
         companyIds.push(externalId);
+        dumpCompanyIds.push(externalId);
       }
       yield {
         type: "entity",
@@ -271,6 +280,11 @@ export async function* syncBookingManagerCatalogue(
       continue;
     }
 
+    // Reached only when the dump was fetched and every item understood, which is
+    // the same bar the retire pass needs before it may read an absent company as
+    // withdrawn rather than as a response we failed to parse.
+    if (index === COMPANY_STEP) companyListTrusted = true;
+
     // No scopeKey: one call covered every scope of this resource type, so a clean
     // response authorises sweeping all of them.
     yield {
@@ -283,7 +297,12 @@ export async function* syncBookingManagerCatalogue(
   if (companyIds.length === 0) {
     // Resuming past the companies dump leaves us without the ids the yacht sweep is
     // addressed by. One extra call is cheaper than restarting the whole run.
-    companyIds = (await listCompanyIds(client, options)).filter(inScope);
+    const listed = await listCompanyIds(client, options);
+    if (listed !== null) {
+      companyIds = listed.filter(inScope);
+      dumpCompanyIds.push(...companyIds);
+      companyListTrusted = true;
+    }
   }
 
   const startCompany = resumeCompanyIndex(resume, companyIds);
@@ -376,6 +395,7 @@ export async function* syncBookingManagerCatalogue(
   yield* retireOutOfScopeCompanies({
     scope,
     listImportedCompanyIds: options.listImportedCompanyIds,
+    vendorCompanyIds: companyListTrusted ? dumpCompanyIds : null,
   });
 }
 
@@ -386,20 +406,30 @@ export function bookingManagerCatalogueSource(
   return (reporter) => syncBookingManagerCatalogue(client, { ...options, reporter });
 }
 
+/**
+ * Null rather than an empty array whenever the answer is not the vendor's full
+ * company list: the caller uses it to decide whether an absent company may be
+ * read as withdrawn, and "the call failed" must never look like "no companies".
+ */
 async function listCompanyIds(
   client: BookingManagerClient,
   options: BookingManagerCatalogueOptions,
-): Promise<string[]> {
+): Promise<string[] | null> {
   try {
     const companies = await client.get(bookingManagerEndpoints.companies, restCompanyListSchema);
-    return companies.map((company) => idOf(company.id)).filter((id): id is string => id !== null);
+    const ids = companies
+      .map((company) => idOf(company.id))
+      .filter((id): id is string => id !== null);
+    // Same bar as the main loop's `malformed` check: a dump we only partly
+    // understood is not a list of every company the credential can see.
+    return ids.length === companies.length ? ids : null;
   } catch (error) {
     if (isFatal(error)) throw error;
     await options.reporter?.reportError(error, {
       resourceType: "company",
       context: { endpoint: bookingManagerEndpoints.companies },
     });
-    return [];
+    return null;
   }
 }
 

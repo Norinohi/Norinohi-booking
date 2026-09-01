@@ -18,9 +18,17 @@ import type {
   ProviderRecordSet,
   ProviderReservation,
   ProviderReservationRef,
+  ProviderReservationState,
+  CrewListReceipt,
+  CrewListSubmission,
+  CrewPlace,
+  CrewRequirements,
   QuoteRequest,
   RawEntity,
+  WaitingOptions,
 } from "../types";
+import { listingPeriodSchema } from "../types";
+import { toPositiveIntId } from "../shared/projection-helpers";
 import type { CatalogueSyncSource } from "../sync/runner";
 import type { AvailabilitySource, AvailabilitySyncProvider } from "../sync/availability-writer";
 import type { SeasonalPrice } from "../sync/price-writer";
@@ -44,7 +52,13 @@ import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
 
+import {
+  fetchNausysCrewRequirements,
+  searchNausysCrewPlaces,
+  submitNausysCrewList,
+} from "./crew-list";
 import { projectNausysCatalogue } from "./projection";
+import { listChangedNausysReservations, readNausysWaitingOptions } from "./reservations";
 import { formatExtraCode } from "../shared/extra-code";
 import { createNausysQuoteService, type CrewRoleService } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
@@ -117,6 +131,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       config: this.config,
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
+      loadDepositInsuranceCodes: (listingId) => loadNausysDepositInsuranceCodes(this.db, listingId),
     });
 
     this.bookings = createNausysBookingService({
@@ -165,8 +180,76 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     });
   }
 
+  /**
+   * What this operator wants on the crew list, read from the reservation's own hosted list.
+   *
+   * Best-effort by design: the answer improves the form and nothing depends on it, so a vendor
+   * that is slow, or a reservation whose token has rotated since we stored it, costs the hint
+   * rather than the page.
+   */
+  async getCrewRequirements(ref: ProviderReservationRef): Promise<CrewRequirements | null> {
+    if (!ref.securityToken) return null;
+
+    try {
+      return await fetchNausysCrewRequirements(
+        this.client,
+        ref.providerReservationId,
+        ref.securityToken,
+      );
+    } catch (error) {
+      console.warn(
+        `[nausys] crew requirements for ${ref.providerReservationId} unavailable`,
+        error instanceof Error ? error.message : error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Files the crew list with the operator, on the reservation's own token.
+   *
+   * Unlike the requirements read, a failure here is the caller's to see: the customer pressed
+   * Save expecting the list to reach the charter company, and a silent loss would leave them
+   * believing the base has their passports. A list the operator refuses comes back as a
+   * receipt rather than an exception -- that one is an answer.
+   */
+  submitCrewList(submission: CrewListSubmission): Promise<CrewListReceipt> {
+    const { ref } = submission;
+    if (!ref.securityToken) {
+      throw new ContractError("NauSYS crew list needs the reservation's security token", {
+        providerCode: "nausys",
+      });
+    }
+
+    return submitNausysCrewList(
+      this.client,
+      ref.providerReservationId,
+      ref.securityToken,
+      submission.members,
+      submission.note,
+    );
+  }
+
+  /**
+   * The reservations this operator changed in a window, for the reconciliation pass.
+   *
+   * On the sync client rather than the live one: this is background work with a whole window
+   * of reservations behind it, and it must not compete with a customer waiting on a price.
+   */
+  listChangedReservations(window: {
+    since: Date;
+    until: Date;
+  }): Promise<ProviderReservationState[]> {
+    return listChangedNausysReservations(this.syncClient, window, this.config.optionTimeZone);
+  }
+
+  /** Public on the vendor's side, so this needs no credential and no reservation. */
+  searchCrewPlaces(query: string, limit: number): Promise<CrewPlace[]> {
+    return searchNausysCrewPlaces(this.client, query, limit);
+  }
+
   projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-    return projectNausysCatalogue(records);
+    return projectNausysCatalogue(records, { agencyId: this.config.agencyId });
   }
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
@@ -258,6 +341,24 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     });
   }
 
+  /**
+   * How many people the operator already has queued for this week.
+   *
+   * Read-only: joining the queue is a `createInfo` away (`fallbackToWaitingOption`) and is a
+   * product decision nobody has taken, so this answers the question support is asked and
+   * changes nothing on the vendor's side.
+   */
+  async getWaitingOptions(input: ListingPeriod): Promise<WaitingOptions> {
+    const period = listingPeriodSchema.parse(input);
+    const ref = await this.resolver.toExternalListing(period.listingId);
+    const yachtId = toPositiveIntId(ref.externalYachtId, {
+      provider: "NauSYS",
+      what: "the yacht id",
+    });
+
+    return readNausysWaitingOptions(this.syncClient, yachtId, { from: period.from, to: period.to });
+  }
+
   getQuote(input: QuoteRequest): Promise<ProviderQuote> {
     return this.quotes.getNausysQuote(input);
   }
@@ -327,6 +428,34 @@ async function loadNausysExtraLabels(
     );
 
   return new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]));
+}
+
+/**
+ * The listing's deposit-insurance extras, by canonical code.
+ *
+ * Read from the same table as the labels beside it, and for the same reason: the quote knows
+ * the codes the customer ticked and nothing else about them, and buying one of these lowers
+ * the deposit instead of adding to the price.
+ */
+async function loadNausysDepositInsuranceCodes(
+  db: Database,
+  listingId: string,
+): Promise<ReadonlySet<string>> {
+  const rows = await db
+    .select({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "nausys"),
+        eq(providerExtraCatalogue.depositInsurance, true),
+      ),
+    );
+
+  return new Set(rows.map((row) => formatExtraCode(row.kind, row.externalId)));
 }
 
 /**

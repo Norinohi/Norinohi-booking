@@ -21,21 +21,6 @@ import type { NausysHotWindow } from "./occupancy";
  */
 export const DEFAULT_HOT_WINDOW_COUNT = 26;
 
-/**
- * Rows per `freeYachtsSearch` page.
- *
- * The adapter's own default is 50, and nothing ever overrode it, which made one week of the
- * Adriatic 94 sequential calls. The vendor spends the same time whatever it is asked for:
- * measured on the 17 October 2026 week, 50 rows took 28.0s, 500 took 26.2s, 1000 took 29.1s
- * and the whole 4,657-row answer took 28.2s. So the page size buys calls at no cost in
- * latency, and 94 calls a week against a lane the vendor forbids sharing is why NauSYS
- * confirmed 5% of its cards where Booking Manager confirmed 98%.
- *
- * 500 rather than the whole answer: the latency is flat but the payload is not (211 KiB here,
- * 1.9 MiB for the lot), and a page is parsed and written before the next is asked for.
- */
-export const SEARCH_PAGE_SIZE = 500;
-
 const SATURDAY = 6;
 const DAY_MS = 86_400_000;
 

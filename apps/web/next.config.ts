@@ -1,4 +1,6 @@
 import "@yacht-charter/env/web";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
@@ -7,6 +9,17 @@ import { isPublicSite } from "./src/lib/site";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  /*
+   * Ships a traced subset of node_modules next to the server instead of the whole workspace.
+   * Railway's image was 3.1 GB, nearly all of it the root `node_modules` that railpack copies
+   * wholesale; export and push cost more wall-clock than the prerender did. Standalone only pays
+   * off alongside a build that copies `.next/standalone` rather than `/app` — see the Dockerfile.
+   *
+   * Tracing must be rooted at the monorepo, not `apps/web`: pnpm's symlinked workspace deps
+   * resolve above this directory, and a narrower root silently drops them from the output.
+   */
+  output: "standalone",
+  outputFileTracingRoot: path.join(fileURLToPath(new URL(".", import.meta.url)), "../.."),
   cacheComponents: true,
   typedRoutes: true,
   reactCompiler: true,

@@ -16,7 +16,7 @@ import {
   type QuoteRequest,
 } from "../types";
 import type { NausysClient } from "./client";
-import { extraLineMinor, isIncludedInCharterPrice } from "./extras";
+import { extraLineMinor, isIncludedInCharterPrice, type PercentageBasis } from "./extras";
 import type { NausysConfig } from "./config";
 import {
   nausysEndpoints,
@@ -56,6 +56,43 @@ export interface CrewRoleService {
  * model. Bareboat and an unanswered control both mean nobody: a customer who has
  * not chosen must never be quoted for a skipper.
  */
+/**
+ * The offer's reduced deposit, where it really is one.
+ *
+ * The vendor sends this field as a bare 0 on most hulls and, on some, as a figure that is not
+ * lower than the ordinary deposit. Read literally, the first promises a customer who bought
+ * the insurance that nothing is blocked at the base and the second holds them to more than if
+ * they had not bought it. Neither is what the operator meant, so both fall back to the
+ * ordinary deposit. `reducedDepositOf` in the projection reads the catalogue's copy the same
+ * way.
+ */
+function reducedDepositOf(price: RestFreeYacht["price"]): string | undefined {
+  const insured = price.depositWhenInsuredAmount;
+  if (insured === undefined) return undefined;
+
+  const currency = price.currency;
+  const insuredMinor = decimalStringToMinor(insured, currency);
+  if (insuredMinor <= 0) return undefined;
+
+  const deposit = price.depositAmount;
+  if (deposit === undefined) return insured;
+  return insuredMinor >= decimalStringToMinor(deposit, currency) ? undefined : insured;
+}
+
+/**
+ * Whether this charter carries deposit insurance, which changes the deposit rather than the
+ * price. Nothing is loaded when no extra is selected: the common case is an empty list.
+ */
+async function selectsDepositInsurance(
+  options: { loadDepositInsuranceCodes?: (listingId: string) => Promise<ReadonlySet<string>> },
+  request: { listingId: string; extras: readonly string[] },
+): Promise<boolean> {
+  if (request.extras.length === 0 || !options.loadDepositInsuranceCodes) return false;
+
+  const codes = await options.loadDepositInsuranceCodes(request.listingId);
+  return request.extras.some((code) => codes.has(code));
+}
+
 function crewServiceIdsFor(
   roles: readonly CrewRoleService[],
   crewType: CrewType | undefined,
@@ -90,6 +127,14 @@ export interface NausysQuoteServiceOptions {
    * covers an offer that omits it.
    */
   loadSecurityDeposit?: (listingId: string) => Promise<Money | undefined>;
+  /**
+   * The listing's deposit-insurance extras, by canonical code.
+   *
+   * An operator that sells one holds a smaller deposit when the charter carries it, and states
+   * both figures on the offer. Without this the customer bought the insurance and was still
+   * shown -- and asked at the base for -- the full deposit.
+   */
+  loadDepositInsuranceCodes?: (listingId: string) => Promise<ReadonlySet<string>>;
   /** Resolves a vendor service or discount id to a customer-facing line label. */
   labelFor?: (kind: NausysLabelKind, externalId: string) => string | undefined;
   /**
@@ -125,10 +170,12 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
     periodFrom: string,
     periodTo: string,
     currency: string,
+    guests: number,
   ): Promise<RestFreeYacht> {
-    // Keyed by credential: agency pricing is per account, so two credentials must
-    // never see each other's numbers.
-    const cacheKey = `${config.queueKey}|${yachtId}|${periodFrom}|${periodTo}|${currency}`;
+    /* Keyed by credential: agency pricing is per account, so two credentials must never see
+       each other's numbers. By party size too, since the vendor prices per-head extras from
+       it and two guest counts are two different answers. */
+    const cacheKey = `${config.queueKey}|${yachtId}|${periodFrom}|${periodTo}|${currency}|${guests}`;
     const cached = cache.get(cacheKey);
     if (cached && now() - cached.readAt < cacheTtlMs) {
       return cached.yacht;
@@ -140,6 +187,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       yachts: [yachtId],
       currency,
       extendedDataSet: EXTENDED_DATA_SET,
+      numberOfPersons: guests,
     });
 
     const response = await client.bookingCall(
@@ -184,11 +232,20 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         formatNausysDate(parsed.checkIn),
         formatNausysDate(parsed.checkOut),
         parsed.currency,
+        parsed.guests,
       );
 
-      // The offer's own deposit wins over the catalogue default; see the option's
-      // docstring. Read before the fallback so a present value costs no extra work.
-      const offered = yacht.price.depositAmount;
+      /*
+       * The offer's own deposit wins over the catalogue default; see the option's docstring.
+       * Read before the fallback so a present value costs no extra work.
+       *
+       * A charter carrying deposit insurance is held to the reduced figure the vendor sends
+       * beside it -- the whole point of buying the insurance, and the number the base will
+       * actually block on the card.
+       */
+      const insured = await selectsDepositInsurance(options, parsed);
+      const offered =
+        (insured ? reducedDepositOf(yacht.price) : undefined) ?? yacht.price.depositAmount;
       const securityDeposit =
         offered === undefined
           ? await options.loadSecurityDeposit?.(parsed.listingId)
@@ -259,9 +316,12 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   const listPriceMinor = decimalStringToMinor(yacht.price.priceListPrice, currency);
   const clientPriceMinor = decimalStringToMinor(yacht.price.clientPrice, currency);
 
+  /* What a percentage extra is a percentage of; see `PercentageBasis`. */
+  const basis = { listMinor: listPriceMinor, clientMinor: clientPriceMinor };
+
   const charterLines = buildCharterLines(yacht, currency, listPriceMinor, clientPriceMinor, input);
   const obligatoryLines = (yacht.obligatoryExtras ?? []).map((extra) =>
-    toExtraLine(extra, currency, input, "mandatory"),
+    toExtraLine(extra, currency, input, "mandatory", basis),
   );
   /*
    * Crew is bought by choosing a crew type, not by ticking an extra, so it is
@@ -276,8 +336,10 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     yacht,
     new Set((input.extras ?? []).filter((code) => !crewCodes.has(code))),
   );
-  const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew"));
-  const selectedLines = selected.map((extra) => toExtraLine(extra, currency, input, "optional"));
+  const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew", basis));
+  const selectedLines = selected.map((extra) =>
+    toExtraLine(extra, currency, input, "optional", basis),
+  );
   const extraLines = [...obligatoryLines, ...crewLines, ...selectedLines];
   const lines = [...charterLines, ...extraLines];
 
@@ -308,7 +370,7 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     return [
       {
         code: formatExtraCode(identity.kind, identity.externalId),
-        amount: { amountMinor: extraLineMinor(extra, currency), currency },
+        amount: { amountMinor: extraLineMinor(extra, currency, basis), currency },
         payWhen: payWhenFor(extra),
       },
     ];
@@ -494,6 +556,7 @@ function toExtraLine(
   currency: string,
   input: FreeYachtMapping,
   group: NonNullable<QuoteLine["group"]>,
+  basis?: PercentageBasis,
 ): QuoteLine {
   const identity = offerExtraIdentity(extra);
   /* Only a line that will be billed has a currency to disagree about: one the charter price
@@ -505,7 +568,7 @@ function toExtraLine(
     );
   }
 
-  const lineMinor = extraLineMinor(extra, currency);
+  const lineMinor = extraLineMinor(extra, currency, basis);
 
   return {
     // The canonical extra identity, the same string the listing page rendered and

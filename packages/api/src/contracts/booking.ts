@@ -290,28 +290,108 @@ export const bookingDetailSchema = bookingSummarySchema.extend({
  */
 export const travellerSchema = z.object({
   id: z.string(),
-  fullName: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   role: z.string().nullable(),
+  isSkipper: z.boolean(),
   dateOfBirth: z.string().nullable(),
+  documentType: z.string().nullable(),
   documentNumber: z.string().nullable(),
   nationality: z.string().nullable(),
+  gender: z.string().nullable(),
+  birthPlace: z.string().nullable(),
+  birthCountry: z.string().nullable(),
+  livingPlace: z.string().nullable(),
+  livingCountry: z.string().nullable(),
+  skipperLicence: z.string().nullable(),
+  vhfLicence: z.string().nullable(),
+  skipperEmail: z.string().nullable(),
+  skipperMobile: z.string().nullable(),
 });
 
+/** The three the operator's form offers; anything else is `OTHER` there too. */
+export const documentTypeSchema = z.enum(["PASSPORT", "IDCARD", "OTHER"]);
+export const genderSchema = z.enum(["MALE", "FEMALE"]);
+
+/**
+ * Everything but the name is optional, deliberately.
+ *
+ * The list goes to the charter company as it stands, and a half-filled one still saves the
+ * customer time at the desk: the operator's own page accepts partial lists too, and the base
+ * collects whatever is missing on arrival. Requiring the whole manifest here would only mean
+ * the customer sends nothing.
+ */
 export const travellerInputSchema = z.object({
-  fullName: z.string().trim().min(1).max(200),
+  firstName: z.string().trim().min(1).max(100),
+  lastName: z.string().trim().min(1).max(100),
   /** Free text: "skipper", "guest", whatever the charter base asks for. */
   role: z.string().trim().max(64).optional(),
+  isSkipper: z.boolean().optional(),
   dateOfBirth: z.iso.date().optional(),
+  documentType: documentTypeSchema.optional(),
   documentNumber: z.string().trim().max(64).optional(),
-  /** ISO 3166-1 alpha-2, as the crew list forms want it. */
+  /** ISO 3166-1 alpha-2 everywhere; the provider adapter converts to what its vendor wants. */
   nationality: z.string().trim().length(2).toUpperCase().optional(),
+  gender: genderSchema.optional(),
+  birthPlace: z.string().trim().max(120).optional(),
+  birthCountry: z.string().trim().length(2).toUpperCase().optional(),
+  livingPlace: z.string().trim().max(120).optional(),
+  livingCountry: z.string().trim().length(2).toUpperCase().optional(),
+  skipperLicence: z.string().trim().max(64).optional(),
+  vhfLicence: z.string().trim().max(64).optional(),
+  skipperEmail: z.email().max(200).optional(),
+  skipperMobile: z.string().trim().max(32).optional(),
 });
 
 export const travellerListInputSchema = z.object({ bookingId: idSchema });
 
+/**
+ * What this charter company wants on the crew list, in its own words.
+ *
+ * Operators differ, and the provider states the difference per reservation. Without it the
+ * form asked every customer for the same four things and left them to discover the rest on the
+ * operator's own page. `fields` carries the vendor's field names, which is what the form can
+ * match against; `null` requirements mean the provider does not answer the question, which is
+ * not the same as an operator asking for nothing.
+ */
+export const crewRequirementsSchema = z.object({
+  bookingId: z.string(),
+  fields: z.array(z.string()),
+  maxPassengers: z.number().int().nullable(),
+  skipperRequired: z.boolean().nullable(),
+});
+
+/**
+ * What happened the last time the list was filed with the operator.
+ *
+ * Three states, all of which the customer is entitled to see: accepted, refused with the
+ * charter days the operator says the list does not cover, and "we could not reach them" --
+ * `accepted: null`, the one where the list is safe with us and nobody else has it yet.
+ */
+export const crewListSubmissionSchema = z.object({
+  submittedAt: z.date(),
+  accepted: z.boolean().nullable(),
+  message: z.string().nullable(),
+});
+
+/**
+ * Where the operator will accept someone being born or living, for a country that insists on a
+ * known place. Croatia does, and NauSYS publishes the 6,851 names it will take; typing one that
+ * is merely close is accepted by the API and questioned at the desk.
+ */
+export const crewPlaceSearchInputSchema = z.object({
+  bookingId: idSchema,
+  query: z.string().trim().max(120),
+});
+
+export const crewPlacesSchema = z.object({
+  places: z.array(z.object({ name: z.string(), label: z.string() })),
+});
+
 export const travellerListSchema = z.object({
   bookingId: z.string(),
   travellers: z.array(travellerSchema),
+  submission: crewListSubmissionSchema.nullable(),
 });
 
 /**
@@ -319,10 +399,18 @@ export const travellerListSchema = z.object({
  * track row ids across a form that adds and removes people, and a resubmitted
  * form would duplicate the list; replacing is idempotent.
  */
-export const travellerSaveInputSchema = z.object({
-  bookingId: idSchema,
-  travellers: z.array(travellerInputSchema).max(50),
-});
+export const travellerSaveInputSchema = z
+  .object({
+    bookingId: idSchema,
+    travellers: z.array(travellerInputSchema).max(50),
+    /** Anything the base should know: an arrival time, a wheelchair, a late flight. */
+    note: z.string().trim().max(500).optional(),
+  })
+  /* One boat, one person answering for it. The operator's list has a single skipper slot. */
+  .refine(
+    (input) => input.travellers.filter((traveller) => traveller.isSkipper).length <= 1,
+    "Only one person on the crew list can be the skipper",
+  );
 
 export const bookingCancelInputSchema = z.object({
   id: z.string().min(1),

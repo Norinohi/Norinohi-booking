@@ -822,3 +822,46 @@ export const listingPublishDraftsInputSchema = z
 export const listingPublishDraftsSchema = z.object({
   publishedCount: z.number().int(),
 });
+
+/* -------------------------------------------------------- marketplace settings */
+
+export const paymentPolicySourceSchema = z
+  .enum(["vendor", "marketplace"])
+  .describe(
+    "Which payment flow is in force marketplace-wide. 'vendor' prices on the provider's own instalment plan; 'marketplace' prices on the percentage set here and ignores the provider's plan entirely. The two never blend.",
+  );
+
+export const marketplacePaymentSettingsSchema = z.object({
+  source: paymentPolicySourceSchema,
+  mode: z
+    .enum(["deposit", "full"])
+    .describe("Our own policy, used only when source is 'marketplace'."),
+  depositPct: z
+    .number()
+    .min(0.01)
+    .max(1)
+    .describe(
+      "A fraction, not a percentage: 0.5 is half. Ignored when mode is 'full'. Used only when source is 'marketplace'.",
+    ),
+  enforceLeadTime: z
+    .boolean()
+    .describe(
+      "Whether a charter starting within leadTimeDays must be paid in full whatever the chosen flow said. A floor on both flows, never a third one. Switching it off lets a provider's 30% stand on a charter leaving tomorrow.",
+    ),
+  leadTimeDays: z
+    .number()
+    .int()
+    .min(0)
+    .max(365)
+    .describe("How many days ahead of check-in deposits stop being offered."),
+});
+
+export const marketplaceSettingsSchema = z.object({
+  payment: marketplacePaymentSettingsSchema,
+  updatedAt: z.string().nullable(),
+  updatedByUserId: z.string().nullable(),
+});
+
+export const marketplaceSettingsUpdateInputSchema = z.object({
+  payment: marketplacePaymentSettingsSchema,
+});

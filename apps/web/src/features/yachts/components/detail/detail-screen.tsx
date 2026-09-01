@@ -8,6 +8,7 @@ import Gallery from "./gallery";
 import RecordView from "./record-view";
 import AmenitiesSection from "./sections/amenities-section";
 import DescriptionSection from "./sections/description-section";
+import MediaLinksSection from "./sections/media-links-section";
 import DetailTabs from "./sections/detail-tabs";
 import FaqSection from "./sections/faq-section";
 import ImportantInfoSection from "./sections/important-info-section";
@@ -69,6 +70,7 @@ export default function YachtDetailScreen({
               <MandatoryExtrasSection />
               <OptionalExtrasSection />
               <DescriptionSection description={description} />
+              <MediaLinksSection />
               <ImportantInfoSection />
               <SuggestedRouteSection />
               <ReviewSection />

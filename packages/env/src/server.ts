@@ -121,6 +121,14 @@ export const env = createEnv({
     NAUSYS_USERNAME: z.string().min(1).optional(),
     NAUSYS_PASSWORD: z.string().min(1).optional(),
     NAUSYS_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    // The catalogue lane's own ceiling, deliberately far above the live one. A
+    // company fleet dump is one response covering hundreds of yachts and takes
+    // minutes to generate for the largest operators, while `NAUSYS_TIMEOUT_MS`
+    // governs quote and booking calls a guest is sitting in front of. Sharing one
+    // value means choosing between dropping fleets and hanging checkout, which is
+    // how three NauSYS fleets went missing for weeks: every attempt at 30s timed
+    // out, the run reported `partial`, and nothing said a fleet was absent.
+    NAUSYS_SYNC_TIMEOUT_MS: z.coerce.number().int().positive().default(180_000),
     // Idle gap between two calls on the same credential. NauSYS forbids parallel
     // calls outright; the spacing is our own politeness margin on top of that.
     NAUSYS_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),
@@ -142,6 +150,16 @@ export const env = createEnv({
      * cannot express without enumerating every real company forever.
      */
     NAUSYS_EXCLUDED_COMPANY_IDS: z.string().optional(),
+    /*
+     * Our own agency id in the vendor's numbering, read off any of our reservations
+     * (`RestYachtReservation.agencyId`; ours answered 49209547 in Sep 2026).
+     *
+     * Only one thing needs it: an operator can withhold a priced extra from named agencies,
+     * and without knowing which agency we are, a deny list cannot be applied. 62 of 140,543
+     * extras rows carry one and none of them names us, so leaving this unset changes nothing
+     * today -- it is the switch that keeps that true if one ever does.
+     */
+    NAUSYS_AGENCY_ID: z.string().min(1).optional(),
     BOOKING_MANAGER_BASE_URL: z.url().default("https://www.booking-manager.com/api/v2"),
     // Named as the vendor names it: the Booking Manager portal issues this from
     // My Account > API Integration and calls it an API key. It is SENT as a bearer
@@ -168,6 +186,18 @@ export const env = createEnv({
      */
     BOOKING_MANAGER_EXCLUDED_COMPANY_IDS: z.string().optional(),
     BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    /*
+     * How long one vendor is waited on for a price before the sale goes to whoever else
+     * answered. A ceiling on the customer's wait, not a vendor limit -- those are the
+     * `*_TIMEOUT_MS` above and are far longer.
+     *
+     * 12s against a Booking Manager `/offers` that answers in 1.4s median and 2.4s at its
+     * slowest over a sampled dozen (Sep 2026). The headroom is not for the vendor: it is for
+     * the nightly catalogue sync, which writes 309,222 price rows through the same Postgres
+     * these quotes read, and pushed six of them past the previous 6s ceiling. A quote we
+     * abandon is a sale lost on a boat that was free.
+     */
+    QUOTE_OFFER_TIMEOUT_MS: z.coerce.number().int().positive().default(12_000),
     // Booking Manager has not published a rate limit; pending vendor answer, this
     // is our own politeness margin.
     BOOKING_MANAGER_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),

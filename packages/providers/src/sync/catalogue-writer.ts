@@ -432,6 +432,7 @@ export async function writeCanonicalCatalogue(
       });
 
       const columns = {
+        name: item.name ?? null,
         title: item.title,
         operatorId,
         homeBaseId,
@@ -442,7 +443,14 @@ export async function writeCanonicalCatalogue(
           : null,
         defaultCurrency: item.defaultCurrency,
         crewType: item.crewType ?? null,
+        /* The day this hull leaves the fleet, and the operator's own footage of it. */
+        outOfFleetDate: item.outOfFleetDate ?? null,
+        videoUrl: item.videoUrl ?? null,
+        tourUrl: item.tourUrl ?? null,
         securityDepositMinor: item.securityDepositMinor ?? null,
+        /* Only published where it differs from the ordinary deposit, which is the vendor's
+           rule; a charter carrying deposit insurance is held to this one instead. */
+        securityDepositWhenInsuredMinor: item.securityDepositWhenInsuredMinor ?? null,
         // The currency is only meaningful alongside an amount, and a deposit that
         // named no currency of its own is priced like the rest of the yacht.
         securityDepositCurrency:
@@ -1205,6 +1213,7 @@ async function writeListingOffers(
         set: {
           listingId: sql`excluded.listing_id`,
           status: sql`excluded.status`,
+          name: sql`excluded.name`,
           title: sql`excluded.title`,
           operatorId: sql`excluded.operator_id`,
           homeBaseId: sql`excluded.home_base_id`,
@@ -1214,7 +1223,11 @@ async function writeListingOffers(
           petsAllowed: sql`excluded.pets_allowed`,
           defaultCurrency: sql`excluded.default_currency`,
           crewType: sql`excluded.crew_type`,
+          outOfFleetDate: sql`excluded.out_of_fleet_date`,
+          videoUrl: sql`excluded.video_url`,
+          tourUrl: sql`excluded.tour_url`,
           securityDepositMinor: sql`excluded.security_deposit_minor`,
+          securityDepositWhenInsuredMinor: sql`excluded.security_deposit_when_insured_minor`,
           securityDepositCurrency: sql`excluded.security_deposit_currency`,
           depositInsuranceIncluded: sql`excluded.deposit_insurance_included`,
           providerRating: sql`excluded.provider_rating`,
@@ -1376,13 +1389,18 @@ async function writeListingChildren(
         priceCurrency: extra.priceCurrency,
         priceMeasure: extra.priceMeasure ?? null,
         calculationType: extra.calculationType ?? null,
+        percentage: extra.percentage === undefined ? null : extra.percentage.toFixed(4),
+        percentageBasis: extra.percentageBasis ?? null,
         payableInBase: extra.payableInBase ?? null,
         seasonStart: extra.seasonStart ?? null,
         seasonEnd: extra.seasonEnd ?? null,
         validNightsFrom: extra.validNightsFrom ?? null,
         validNightsTo: extra.validNightsTo ?? null,
         oneWayOnly: extra.oneWayOnly ?? false,
+        validForBaseIds: extra.validForBaseIds ?? null,
+        minimumPriceMinor: extra.minimumPriceMinor ?? null,
         onRequestOnly: extra.onRequestOnly,
+        depositInsurance: extra.depositInsurance ?? false,
         externalSeasonId: extra.externalSeasonId ?? null,
         externalBaseId: extra.externalBaseId ?? null,
       })),

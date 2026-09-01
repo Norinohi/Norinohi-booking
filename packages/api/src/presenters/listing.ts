@@ -59,6 +59,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
   return {
     id: doc.listingId,
     slug: doc.slug,
+    name: doc.name ?? null,
     title: doc.title,
     category: doc.category ?? "Yacht",
     crewType: doc.crewType,
@@ -150,6 +151,7 @@ export function presentListingDetail(detail: ListingDetail) {
     ...presentListingSummary(detail),
     description: detail.description,
     overview: detail.overview,
+    media: detail.media,
     includedAmenities: detail.includedAmenities,
     mandatoryExtras: detail.mandatoryExtras,
     optionalExtras: detail.optionalExtras,

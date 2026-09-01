@@ -491,6 +491,20 @@ export default function BookingSummary({
 
   const base = quote?.lines.find((line) => line.kind === "base");
   const discounts = quote?.lines.filter((line) => line.kind === "discount") ?? [];
+  /*
+   * The headline is what the charter actually costs, so every discount on the quote comes off
+   * it and the undiscounted figure is struck through beside it. The base line is the price
+   * BEFORE any reduction - a provider that discounts sends `startPrice` as the base and the
+   * cut as its own line - so showing the base alone put the highest number in the largest type
+   * and left the customer to find the correction three sections further down.
+   *
+   * `discounts` is still itemised below: this says what you pay, that says where it came from.
+   */
+  const baseMinor = (base ?? quote?.lines[0])?.amount.amountMinor ?? 0;
+  const discountMinor = discounts.reduce((total, line) => total + line.amount.amountMinor, 0);
+  const netBaseMinor = baseMinor + discountMinor;
+  /* Only when it genuinely reduces: a zero or positive adjustment has nothing to strike. */
+  const showStruckBase = discountMinor < 0 && netBaseMinor > 0;
   /* Applied wins: once credit is on the quote, `creditAvailable` is what it is still worth,
      not a second offer to make. */
   const creditOffer = quote?.creditApplied ?? quote?.creditAvailable ?? null;
@@ -676,12 +690,19 @@ export default function BookingSummary({
                 {repricing ? (
                   <Skeleton className="h-8 w-24" />
                 ) : (
-                  <p className="text-2xl leading-8 font-semibold text-foreground">
-                    {money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency)}
+                  <p className="flex flex-wrap items-baseline gap-x-1.5 text-2xl leading-8 font-semibold text-foreground">
+                    {money(showStruckBase ? netBaseMinor : baseMinor, quote.total.currency)}
+                    {showStruckBase ? (
+                      <span className="text-base leading-6 font-medium text-natural-500 line-through">
+                        {money(baseMinor, quote.total.currency)}
+                      </span>
+                    ) : null}
                   </p>
                 )}
                 <p className="text-xs leading-4 font-medium text-natural-500">
-                  {t("sidebar.boatPriceHint")}
+                  {/* The footnote names the figure above it, which the strikethrough changed:
+                      "full rental price" is the struck number now, not the one in large type. */}
+                  {t(showStruckBase ? "sidebar.boatPriceHintDiscounted" : "sidebar.boatPriceHint")}
                 </p>
 
                 {deposit ? (

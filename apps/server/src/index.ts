@@ -8,6 +8,7 @@ import {
 } from "@yacht-charter/api/context";
 import { sweepExpiries } from "@yacht-charter/api/services/expiry";
 import { sendBalanceReminders } from "@yacht-charter/api/services/payment-reminders";
+import { reconcileReservations } from "@yacht-charter/api/services/reservation-reconcile";
 import { drainOutbox } from "@yacht-charter/api/services/outbox";
 import {
   startAvailabilitySync,
@@ -105,6 +106,22 @@ app.post("/api/cron/sweep-expiries", async (c) => {
   }
 
   return c.json(await sweepExpiries(db, inventoryProvider));
+});
+
+// Every few hours. Asks each vendor what it changed and compares the answers to the bookings
+// we hold; the manual escape hatch for the case where an operator says they cancelled something
+// and the customer is on the phone.
+app.post("/api/cron/reconcile-reservations", async (c) => {
+  if (!env.CRON_SECRET) {
+    return c.json({ error: "CRON_SECRET is not configured" }, 503);
+  }
+
+  const presented = c.req.header("authorization")?.replace(/^Bearer\s+/i, "");
+  if (!presented || !timingSafeEqualString(presented, env.CRON_SECRET)) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  return c.json(await reconcileReservations(db, inventoryProvider));
 });
 
 // Daily. The window is ten days wide and every installment is claimed before it is mailed, so

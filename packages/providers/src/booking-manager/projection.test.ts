@@ -120,6 +120,41 @@ describe("product extras", () => {
     ]);
   });
 
+  /*
+   * A fee stated as a share of the charter: the vendor fills `percentage` and leaves `price` at
+   * zero. The quote path has always read it; the catalogue did not, so 335 obligatory fees on
+   * 278 listings reached the card as free -- a crewed yacht advertised 56,500 EUR against a
+   * quote of 76,501, the difference being an APA at 40%.
+   */
+  it("carries a percentage fee as a rate, not as the zero the vendor leaves in price", () => {
+    const listing = listingOf([
+      {
+        isDefaultProduct: true,
+        extras: [{ id: 3, name: "APA 40%", obligatory: true, kind: 0, price: 0, percentage: 40 }],
+      },
+    ]);
+
+    expect(listing?.extras[0]).toMatchObject({
+      externalId: "3",
+      obligatory: true,
+      percentage: 0.4,
+      priceMinor: 0,
+    });
+  });
+
+  /* A fee of nothing is money, not a share; both readings of zero leave it a price. */
+  it("reads a zero percentage as a price rather than a rate", () => {
+    const listing = listingOf([
+      {
+        isDefaultProduct: true,
+        extras: [{ id: 4, name: "Welcome pack", price: 25, percentage: 0, currency: "EUR" }],
+      },
+    ]);
+
+    expect(listing?.extras[0]?.percentage).toBeUndefined();
+    expect(listing?.extras[0]?.priceMinor).toBe(2_500);
+  });
+
   it("prices a repeated extra from the default product", () => {
     const extra = (price: number) => [{ id: 1, name: "Bedding", price, currency: "EUR" }];
     const listing = listingOf([
