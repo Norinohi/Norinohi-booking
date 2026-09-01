@@ -440,6 +440,19 @@ export async function rebuildListingSearchDocs(
           where extra.listing_offer_id = o.id
             and extra.obligatory
             and not extra.one_way_only
+            /*
+             * Only fees charged where this charter starts.
+             *
+             * The operator files a fee per base as well as per season, and most of them do:
+             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
+             * row whose list does not include the base it was filed under is charged at some
+             * other base, and adding it here put fees on a card no charter from here pays.
+             */
+            and (
+              extra.valid_for_base_ids is null
+              or extra.external_base_id is null
+              or extra.external_base_id = any(extra.valid_for_base_ids)
+            )
             and (extra.season_end is null or extra.season_end >= current_date)
             and (
               extra.season_start is null
@@ -494,6 +507,19 @@ export async function rebuildListingSearchDocs(
           from provider_extra_catalogue extra
           where extra.listing_offer_id = o.id
             and extra.crew_role is not null
+            /*
+             * Only fees charged where this charter starts.
+             *
+             * The operator files a fee per base as well as per season, and most of them do:
+             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
+             * row whose list does not include the base it was filed under is charged at some
+             * other base, and adding it here put fees on a card no charter from here pays.
+             */
+            and (
+              extra.valid_for_base_ids is null
+              or extra.external_base_id is null
+              or extra.external_base_id = any(extra.valid_for_base_ids)
+            )
             /*
              * Only the crew nothing has counted yet. An operator that files its skipper as an
              * obligatory extra has it in both fee totals already -- the catalogue sum beside
@@ -654,6 +680,7 @@ export async function rebuildListingSearchDocs(
     insert into listing_search_doc (
       listing_id,
       slug,
+      name,
       title,
       category,
       crew_type,
@@ -709,6 +736,7 @@ export async function rebuildListingSearchDocs(
     select
       l.id,
       l.slug,
+      l.name,
       l.title,
       -- The marketplace category, not the vendor's: facets group on this column, and
       -- ungrouped vendor near-synonyms would each become their own facet. An
@@ -904,6 +932,7 @@ export async function rebuildListingSearchDocs(
       and ${listingScope(sql`l.id`, listingIds)}
     on conflict (listing_id) do update set
       slug = excluded.slug,
+      name = excluded.name,
       title = excluded.title,
       category = excluded.category,
       crew_type = excluded.crew_type,

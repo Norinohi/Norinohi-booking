@@ -329,7 +329,9 @@
       "requestCancel": "Stornierung anfragen",
       "crewList": {
         "title": "Crewliste",
-        "notice": "Das Charterunternehmen muss den Behörden vor dem Ablegen eine Liste aller Personen an Bord übermitteln. Füllen Sie sie hier aus, und wir leiten sie weiter – fehlende Angaben erfragt die Basis bei Ihrer Ankunft am Schalter.",
+        "notice": "Die Charterfirma muss den Behörden vor dem Ablegen eine Liste aller an Bord melden. Füllen Sie sie hier aus, wir leiten sie weiter – was fehlt, fragt die Basis bei der Ankunft am Schalter ab.",
+        "alsoAsked": "Sie fragt außerdem nach {fields}; das nimmt die Basis bei der Ankunft am Schalter auf.",
+        "maxPassengers": "Ihre Liste fasst höchstens {count} Personen.",
         "loading": "Ihre Crewliste wird geladen…",
         "empty": "Noch niemand hinzugefügt. Ihre Buchung gilt für {guests} Gäste – fügen Sie jede Person an Bord hinzu, einschließlich des Skippers.",
         "member": "Crewmitglied {number}",
@@ -338,8 +340,6 @@
         "save": "Crewliste speichern",
         "saved": "Crewliste gespeichert",
         "saveFailed": "Ihre Crewliste konnte nicht gespeichert werden",
-        "fullName": "Vollständiger Name",
-        "fullNamePlaceholder": "Wie im Reisepass angegeben",
         "role": "Rolle",
         "rolePlaceholder": "Skipper, Gast…",
         "dateOfBirth": "Geburtsdatum",
@@ -348,9 +348,53 @@
         "nationality": "Staatsangehörigkeit",
         "nationalityPlaceholder": "Land auswählen",
         "errors": {
-          "fullName": "Geben Sie den vollständigen Namen dieser Person ein",
-          "dateOfBirth": "Geben Sie ein gültiges Datum ein"
-        }
+          "dateOfBirth": "Bitte ein gültiges Datum angeben",
+          "firstName": "Bitte den Vornamen angeben",
+          "lastName": "Bitte den Nachnamen angeben",
+          "skipperEmail": "Bitte eine gültige E-Mail-Adresse angeben",
+          "oneSkipper": "Nur eine Person kann der Skipper sein"
+        },
+        "requires": {
+          "shoeSize": "Schuhgrößen",
+          "disabledPerson": "ob jemand an Bord eine Behinderung hat"
+        },
+        "legend": "Mit * markierte Felder verlangt diese Charterfirma.",
+        "sent": "Am {when} an die Charterfirma gesendet.",
+        "notSent": "Noch nicht bei der Charterfirma: {reason} Ihre Angaben sind gespeichert – die Basis nimmt die Liste bei der Ankunft auf.",
+        "notSentUnknown": "wir konnten sie nicht erreichen.",
+        "savedNotSent": "Gespeichert, aber die Charterfirma hat sie noch nicht",
+        "firstName": "Vorname",
+        "firstNamePlaceholder": "Wie im Reisepass",
+        "lastName": "Nachname",
+        "lastNamePlaceholder": "Wie im Reisepass",
+        "gender": "Geschlecht",
+        "genderPlaceholder": "Auswählen",
+        "birthPlace": "Geburtsort",
+        "birthCountry": "Geburtsland",
+        "livingPlace": "Wohnort",
+        "livingCountry": "Wohnsitzland",
+        "placePlaceholder": "Stadt oder Ort",
+        "documentType": "Dokumentenart",
+        "documentTypePlaceholder": "Auswählen",
+        "isSkipper": "Diese Person ist der Skipper",
+        "skipperLicence": "Skipperschein",
+        "skipperLicencePlaceholder": "Nummer des Scheins",
+        "vhfLicence": "Funkschein (VHF)",
+        "skipperEmail": "E-Mail des Skippers",
+        "skipperMobile": "Telefon des Skippers",
+        "note": "Was die Basis wissen sollte",
+        "notePlaceholder": "Ankunftszeit, Flugnummer, jemand mit Assistenzbedarf…",
+        "documents": {
+          "passport": "Reisepass",
+          "idCard": "Personalausweis",
+          "other": "Sonstiges"
+        },
+        "genders": {
+          "male": "Männlich",
+          "female": "Weiblich"
+        },
+        "placeSearch": "Orte suchen",
+        "placeEmpty": "Kein Ort dieses Namens"
       }
     },
     "support": {
@@ -953,7 +997,8 @@
       "groups": {
         "fleet": "Yachten",
         "content": "Website-Inhalte"
-      }
+      },
+      "settings": "Zahlungseinstellungen"
     },
     "UserMenu": {
       "account": "Konto",
@@ -1322,7 +1367,8 @@
       "onRequest": "Preis für diese Yacht auf Anfrage",
       "onRequestHint": "Wir haben Termine dafür, aber kein veröffentlichter Tarif deckt sie ab. Sagen Sie uns, wann Sie segeln möchten, und wir melden uns mit einem Preis.",
       "dropOff": "Rückgabemarina",
-      "pickUp": "Übernahme: {marina}"
+      "pickUp": "Übernahme: {marina}",
+      "boatPriceHintDiscounted": "Mietpreis nach Rabatt"
     },
     "panels": {
       "details": "Yachtdetails",
@@ -2917,6 +2963,39 @@
           "answerTooLong": "Die Antwort darf höchstens 8000 Zeichen haben"
         }
       }
+    },
+    "Settings": {
+      "title": "Zahlungseinstellungen",
+      "subtitle": "Wie viel einer Charter im Voraus eingezogen wird, fur jedes Angebot im Marktplatz.",
+      "source": {
+        "legend": "Welcher Zahlungsplan gilt",
+        "vendor": {
+          "title": "Der Plan des Anbieters",
+          "hint": "Jedes Angebot folgt den Raten, die der Anbieter fur diese Yacht und diese Daten geliefert hat, samt seinem eigenen Falligkeitsdatum. Anbieter unterscheiden sich, also unterscheidet sich der Prozentsatz je Buchung."
+        },
+        "marketplace": {
+          "title": "Unsere eigene Richtlinie",
+          "hint": "Jedes Angebot nutzt den Prozentsatz unten; der Plan des Anbieters wird vollstandig ignoriert, auch sein Falligkeitsdatum."
+        }
+      },
+      "ourPolicy": {
+        "deposit": "Anzahlung nehmen",
+        "full": "Vollstandig abrechnen",
+        "percentLabel": "Anzahlung in Prozent",
+        "percentError": "Bitte einen Wert zwischen 1 und 100 eingeben."
+      },
+      "leadTime": {
+        "legend": "Vollzahlung kurz vor Abfahrt",
+        "toggle": "Vollzahlung bei bald startenden Chartern verlangen",
+        "hint": "Eine Untergrenze fur den oben gewahlten Plan, nie ein dritter Plan. Ausgeschaltet gelten die 30% eines Anbieters auch fur eine Charter, die morgen startet.",
+        "daysLabel": "Tage vor Check-in",
+        "daysError": "Bitte eine ganze Zahl zwischen 0 und 365 eingeben."
+      },
+      "save": "Anderungen speichern",
+      "saving": "Wird gespeichert...",
+      "saved": "Zahlungseinstellungen gespeichert.",
+      "saveFailed": "Zahlungseinstellungen konnten nicht gespeichert werden.",
+      "appliesNext": "Gilt fur neue Angebote. Ein bereits gehaltenes Angebot behalt die Richtlinie, zu der es berechnet wurde."
     }
   }
 }

@@ -25,6 +25,7 @@ const config: NausysConfig = {
   username: "agency-user",
   password: "hunter2",
   timeoutMs: 1000,
+  syncTimeoutMs: 1000,
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
@@ -331,6 +332,8 @@ describe("the uuid funnel", () => {
   it("rotates on an extras mutation, the one path whose DTO cannot carry the token", async () => {
     const { service, transport, rotations } = build();
     const rotated = "aa11bb22-xtra-4e55-9fcc-000000000005";
+    /* The reservation's own extras, read from the vendor before anything is diffed. */
+    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith("addExtras", fixture("createOption", { uuid: rotated }));
 
     await service.addOrUpdateExtras({
@@ -346,6 +349,55 @@ describe("the uuid funnel", () => {
       services: [{ serviceId: 8001, quantity: 1 }],
     });
     expect(rotations).toEqual([{ providerReservationId: RESERVATION_ID, securityToken: rotated }]);
+  });
+
+  /*
+   * What is on the reservation, from the vendor rather than from memory.
+   *
+   * `listExtras` arrived in October 2025 and nothing here read it, so the diff ran against an
+   * empty reservation: it found nothing to remove and left a deselected extra on the booking,
+   * still being billed. This is that path with no caller-supplied loader at all.
+   */
+  it("reads the reservation's own extras, and drops the one the customer deselected", async () => {
+    const { service, transport } = build();
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [
+        { id: 991, serviceId: 8001, quantity: "1.00", editable: true },
+        { id: 992, serviceId: 8002, quantity: "1.00", editable: true },
+      ],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: ["nausys:8001"],
+    });
+
+    expect(transport.lastBody("listExtras")).toMatchObject({ id: 55901234, uuid: OPTION_UUID });
+    /* Keyed by the reservation line, which is the id `updateExtras` addresses. */
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      services: [{ yachtReservationServiceId: 992, quantity: 0 }],
+    });
+  });
+
+  /* A line with no `editable` is one the operator has not locked; only an explicit false is. */
+  it("treats a line the vendor says nothing about as one it may still remove", async () => {
+    const { service, transport } = build();
+    transport.respondWith("listExtras", {
+      status: "OK",
+      addedServices: [{ id: 993, serviceId: 8003, quantity: "1.00" }],
+    });
+    transport.respondWith("updateExtras", fixture("createOption"));
+
+    await service.addOrUpdateExtras({
+      ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },
+      extras: [],
+    });
+
+    expect(transport.lastBody("updateExtras")).toMatchObject({
+      services: [{ yachtReservationServiceId: 993, quantity: 0 }],
+    });
   });
 
   it("adds only what the reservation does not already carry", async () => {
@@ -658,6 +710,7 @@ describe("reservation events", () => {
 describe("agencyPrice never leaves the adapter", () => {
   it("is absent from every returned DTO and every logged event", async () => {
     const { service, events, transport } = build();
+    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith("addExtras", fixture("createOption"));
 
     const held = await service.createOption(draft);
@@ -682,6 +735,7 @@ describe("agencyPrice never leaves the adapter", () => {
 describe("extras mutation pricing", () => {
   it("re-reads the price from the mutation response", async () => {
     const { service, transport } = build();
+    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith("addExtras", fixture("createOption"));
 
     const quote = await service.addOrUpdateExtras({
@@ -716,6 +770,7 @@ describe("extras mutation pricing", () => {
    */
   it("bills a per-person extra at its line total, not its unit price", async () => {
     const { service, transport } = build();
+    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith(
       "addExtras",
       fixture("createOption", {
@@ -749,6 +804,7 @@ describe("extras mutation pricing", () => {
   /** Production always sends `totalPrice`; a vendor that omits it still owes the product. */
   it("falls back to unit times quantity when the vendor omits the line total", async () => {
     const { service, transport } = build();
+    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith(
       "addExtras",
       fixture("createOption", {
@@ -775,6 +831,7 @@ describe("extras mutation pricing", () => {
 
   it("produces a hash that ignores the rotating uuid", async () => {
     const { service, transport } = build();
+    transport.respondWith("listExtras", { status: "OK", addedServices: [] });
     transport.respondWith("addExtras", fixture("createOption"));
     const first = await service.addOrUpdateExtras({
       ref: { providerReservationId: RESERVATION_ID, securityToken: OPTION_UUID },

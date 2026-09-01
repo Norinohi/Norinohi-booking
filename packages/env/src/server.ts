@@ -121,6 +121,14 @@ export const env = createEnv({
     NAUSYS_USERNAME: z.string().min(1).optional(),
     NAUSYS_PASSWORD: z.string().min(1).optional(),
     NAUSYS_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    // The catalogue lane's own ceiling, deliberately far above the live one. A
+    // company fleet dump is one response covering hundreds of yachts and takes
+    // minutes to generate for the largest operators, while `NAUSYS_TIMEOUT_MS`
+    // governs quote and booking calls a guest is sitting in front of. Sharing one
+    // value means choosing between dropping fleets and hanging checkout, which is
+    // how three NauSYS fleets went missing for weeks: every attempt at 30s timed
+    // out, the run reported `partial`, and nothing said a fleet was absent.
+    NAUSYS_SYNC_TIMEOUT_MS: z.coerce.number().int().positive().default(180_000),
     // Idle gap between two calls on the same credential. NauSYS forbids parallel
     // calls outright; the spacing is our own politeness margin on top of that.
     NAUSYS_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),

@@ -6,6 +6,7 @@ export {
   prefetchFaq,
   prefetchInbox,
   prefetchListings,
+  prefetchMarketplaceSettings,
   prefetchPayments,
   prefetchRoutes,
   prefetchSyncRuns,
@@ -19,5 +20,6 @@ export { default as InboxScreen } from "./components/inbox-screen";
 export { default as ListingsScreen } from "./components/listings-screen";
 export { default as PaymentsScreen } from "./components/payments-screen";
 export { default as RoutesScreen } from "./components/routes-screen";
+export { default as SettingsScreen } from "./components/settings-screen";
 export { default as StaffBookingScreen } from "./components/staff-booking-screen";
 export { default as SyncHistoryScreen } from "./components/sync-history-screen";

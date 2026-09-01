@@ -821,6 +821,147 @@ describe("projectNausysCatalogue", () => {
       expect(cleaning[0]?.priceMinor).toBe(15_000);
     });
 
+    /*
+     * The conditions the vendor files per price row rather than per extra. Ignoring them put a
+     * fee on every card the operator only charges some of: 130,535 of its 184,539 priced rows
+     * name the bases they apply at, 2,047 name a charter length.
+     */
+    it("carries the charter lengths a price is for, as nights", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          baseId: HOME_BASE,
+          services: [
+            { serviceId: 52, price: "125.00", currency: "EUR", minDuration: 7, maxDuration: 13 },
+          ],
+        },
+      ];
+
+      /* The vendor counts the days the boat is held; a seven-night charter is eight of them. */
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", validNightsFrom: 6, validNightsTo: 12 }),
+      );
+    });
+
+    it("carries the dates a price applies to, so an expired one stops being shown", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          baseId: HOME_BASE,
+          services: [
+            {
+              serviceId: 52,
+              price: "125.00",
+              currency: "EUR",
+              validPeriodFrom: "01.01.2026",
+              validPeriodTo: "31.12.2026",
+            },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({
+          externalId: "52",
+          seasonStart: "2026-01-01",
+          seasonEnd: "2026-12-31",
+        }),
+      );
+    });
+
+    it("carries the bases a price is charged at", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          baseId: HOME_BASE,
+          services: [
+            { serviceId: 52, price: "125.00", currency: "EUR", validForBases: [HOME_BASE] },
+          ],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", validForBaseIds: [String(HOME_BASE)] }),
+      );
+    });
+
+    /* Only one row per extra may be stored, so which one it is decides what the card charges. */
+    it("keeps the row that applies at this base over a later one that does not", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          seasonId: 1,
+          baseId: HOME_BASE,
+          services: [
+            { serviceId: 52, price: "125.00", currency: "EUR", validForBases: [HOME_BASE] },
+          ],
+        },
+        {
+          ...season,
+          seasonId: 2,
+          baseId: HOME_BASE,
+          services: [{ serviceId: 52, price: "500.00", currency: "EUR", validForBases: [999_999] }],
+        },
+      ];
+
+      expect(listingOf(yacht)?.extras).toContainEqual(
+        expect.objectContaining({ externalId: "52", priceMinor: 12_500 }),
+      );
+    });
+
+    it("keeps the row whose window runs latest, which is never the expired one", () => {
+      const yacht = maria();
+      const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+      yacht.baseId = HOME_BASE;
+      yacht.seasonSpecificData = [
+        {
+          ...season,
+          seasonId: 2,
+          baseId: HOME_BASE,
+          services: [
+            {
+              serviceId: 52,
+              price: "100.00",
+              currency: "EUR",
+              validPeriodFrom: "01.01.2024",
+              validPeriodTo: "31.12.2024",
+            },
+          ],
+        },
+        {
+          ...season,
+          seasonId: 1,
+          baseId: HOME_BASE,
+          services: [
+            {
+              serviceId: 52,
+              price: "150.00",
+              currency: "EUR",
+              validPeriodFrom: "01.01.2027",
+              validPeriodTo: "31.12.2027",
+            },
+          ],
+        },
+      ];
+
+      const cleaning = (listingOf(yacht)?.extras ?? []).filter((e) => e.externalId === "52");
+
+      expect(cleaning).toHaveLength(1);
+      expect(cleaning[0]?.priceMinor).toBe(15_000);
+    });
+
     it("publishes no extras when the vendor sends no season data", () => {
       const yacht = maria();
       yacht.seasonSpecificData = [];

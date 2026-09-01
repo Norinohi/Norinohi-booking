@@ -568,6 +568,55 @@
       "when": 1788243637390,
       "tag": "0080_fixed_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1788245245339,
+      "tag": "0081_uneven_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1788245644019,
+      "tag": "0082_large_catseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1788245655153,
+      "tag": "0083_faithful_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1788248141866,
+      "tag": "0084_exotic_yellow_claw",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1788248238521,
+      "tag": "0085_serious_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1788248464430,
+      "tag": "0086_clear_speedball",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1788248753755,
+      "tag": "0087_polite_micromax",
+      "breakpoints": true
     }
   ]
 }

@@ -313,8 +313,60 @@
                 }
               ]
             },
-            "description": "What our Booking Manager quote is built from. Read `price` (discounted), `startPrice` (before discount), `discounts[]`, `obligatoryExtras[]` + `obligatoryExtrasPrice`, `securityDeposit` and `paymentPlan[]`.\n\nWatch the extras: an extra with `kind: 0` carries its value in `percentage` and leaves `price` at 0. Summing `price` alone under-bills.\n\nThe response can hold several offers for the same week (different products, or one-way variants with a different `endBaseId`) - pick the one whose product and end base you actually mean before comparing totals. Leave `productName` off to get the vendor's default product."
-          }
+            "description": "What our Booking Manager quote is built from. Read `price` (discounted), `startPrice` (before discount), `discounts[]`, `obligatoryExtras[]` + `obligatoryExtrasPrice`, `securityDeposit` and `paymentPlan[]`.\n\nHOW THE NUMBERS FIT TOGETHER (verified against the Star Kiss example response on this request):\n- `startPrice - price` = the discount, and `discounts[].price` sums to it exactly. `discountPercentage` is taken on `startPrice`.\n- `obligatoryExtrasPrice` is ADDITIVE to `price`, never already inside it. All-in = `price + obligatoryExtrasPrice`.\n- `paymentPlan[]` sums to `price` ALONE - it does not cover the obligatory extras. So the instalments the vendor schedules are not the whole of what the guest owes, and an extra that is not `payableInBase` has no due date on this feed.\n- `commissionValue` is NOT `commissionPercentage` of `price`. On the example, 15% of 1674.00 would be 251.10 and the vendor sends 222.21, which is 15% of 1481.42 - `price` net of 13% Croatian VAT. Do not derive our margin by multiplying the gross.\n\nEXTRAS: `kind` is OMITTED on most extras, which means a plain currency amount in `price`. Only `kind: 0` (PERCENTAGE) carries its value in `percentage` and leaves `price` at 0 - summing `price` there under-bills. `payableInBase: true` (tourist tax in the example) counts toward the total but is settled at the base, not by us.\n\nIDS ROUND IF YOU PARSE THEM. `31003090875600198` becomes `31003090875600200` through any JS `JSON.parse`, Postman's `pm.response.json()` included. The raw response body pane is safe; a test script or a chained variable is not. Copy ids as text.\n\nThe response can hold several offers for the same week (different products, or one-way variants with a different `endBaseId`) - pick the one whose product and end base you actually mean before comparing totals. Leave `productName` off to get the vendor's default product.\n\n`dateFrom`/`dateTo` come back space-separated with the base's real check-in/check-out clock substituted (`2026-10-10 18:00:00`), not the midnight you sent. `status` is constant 0 and carries no information."
+          },
+          "response": [
+            {
+              "name": "Star Kiss, 10-17 Oct 2026 (annotated example)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{bmBaseUrl}}/offers?dateFrom={{bmDateFrom}}&dateTo={{bmDateTo}}&yachtId={{bmYachtId}}&currency={{currency}}&passengersOnBoard={{guests}}",
+                  "host": ["{{bmBaseUrl}}"],
+                  "path": ["offers"],
+                  "query": [
+                    {
+                      "key": "dateFrom",
+                      "value": "{{bmDateFrom}}"
+                    },
+                    {
+                      "key": "dateTo",
+                      "value": "{{bmDateTo}}"
+                    },
+                    {
+                      "key": "yachtId",
+                      "value": "{{bmYachtId}}"
+                    },
+                    {
+                      "key": "currency",
+                      "value": "{{currency}}"
+                    },
+                    {
+                      "key": "passengersOnBoard",
+                      "value": "{{guests}}"
+                    },
+                    {
+                      "key": "productName",
+                      "value": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "What our Booking Manager quote is built from. Read `price` (discounted), `startPrice` (before discount), `discounts[]`, `obligatoryExtras[]` + `obligatoryExtrasPrice`, `securityDeposit` and `paymentPlan[]`.\n\nHOW THE NUMBERS FIT TOGETHER (verified against the Star Kiss example response on this request):\n- `startPrice - price` = the discount, and `discounts[].price` sums to it exactly. `discountPercentage` is taken on `startPrice`.\n- `obligatoryExtrasPrice` is ADDITIVE to `price`, never already inside it. All-in = `price + obligatoryExtrasPrice`.\n- `paymentPlan[]` sums to `price` ALONE - it does not cover the obligatory extras. So the instalments the vendor schedules are not the whole of what the guest owes, and an extra that is not `payableInBase` has no due date on this feed.\n- `commissionValue` is NOT `commissionPercentage` of `price`. On the example, 15% of 1674.00 would be 251.10 and the vendor sends 222.21, which is 15% of 1481.42 - `price` net of 13% Croatian VAT. Do not derive our margin by multiplying the gross.\n\nEXTRAS: `kind` is OMITTED on most extras, which means a plain currency amount in `price`. Only `kind: 0` (PERCENTAGE) carries its value in `percentage` and leaves `price` at 0 - summing `price` there under-bills. `payableInBase: true` (tourist tax in the example) counts toward the total but is settled at the base, not by us.\n\nIDS ROUND IF YOU PARSE THEM. `31003090875600198` becomes `31003090875600200` through any JS `JSON.parse`, Postman's `pm.response.json()` included. The raw response body pane is safe; a test script or a chained variable is not. Copy ids as text.\n\nThe response can hold several offers for the same week (different products, or one-way variants with a different `endBaseId`) - pick the one whose product and end base you actually mean before comparing totals. Leave `productName` off to get the vendor's default product.\n\n`dateFrom`/`dateTo` come back space-separated with the base's real check-in/check-out clock substituted (`2026-10-10 18:00:00`), not the midnight you sent. `status` is constant 0 and carries no information."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"yachtId\": 31003090875600198,\n    \"yacht\": \"Star Kiss\",\n    \"startBaseId\": 1,\n    \"endBaseId\": 1,\n    \"startBase\": \"Dubrovnik / ACI Marina Dubrovnik\",\n    \"endBase\": \"Dubrovnik / ACI Marina Dubrovnik\",\n    \"dateFrom\": \"2026-10-10 18:00:00\",\n    \"dateTo\": \"2026-10-17 09:00:00\",\n    \"status\": 0,\n    \"product\": \"Bareboat\",\n    \"price\": 1674.0,\n    \"currency\": \"EUR\",\n    \"startPrice\": 1800.0,\n    \"obligatoryExtrasPrice\": 308.8,\n    \"obligatoryExtras\": [\n      {\n        \"id\": 30563790875600198,\n        \"name\": \"Charter pack S/Y (final cleaning, boat permits, berth for the first and last day in home marina, dinghy, bedding, towels, gas for cooking, WiFi unlimited)\",\n        \"price\": 250.0,\n        \"currency\": \"EUR\",\n        \"payableInBase\": false,\n        \"description\": \"\\n\\n\"\n      },\n      {\n        \"id\": 25313960580900198,\n        \"name\": \"Tourist tax\",\n        \"price\": 58.800003,\n        \"currency\": \"EUR\",\n        \"payableInBase\": true,\n        \"description\": \"\"\n      }\n    ],\n    \"paymentPlan\": [\n      {\n        \"date\": \"2026-09-08 08:27:27\",\n        \"amount\": 502.2\n      },\n      {\n        \"date\": \"2026-09-10 00:00:00\",\n        \"amount\": 1171.8\n      }\n    ],\n    \"discounts\": [\n      {\n        \"id\": 36265261794400198,\n        \"name\": \"SPECIAL\",\n        \"percentage\": 7.0,\n        \"price\": 126.0,\n        \"currency\": \"EUR\"\n      }\n    ],\n    \"securityDeposit\": 1800.0,\n    \"commissionPercentage\": 15.0,\n    \"commissionValue\": 222.21,\n    \"discountPercentage\": 7.0\n  }\n]"
+            }
+          ]
         },
         {
           "name": "2. prices - the yacht's season price list",

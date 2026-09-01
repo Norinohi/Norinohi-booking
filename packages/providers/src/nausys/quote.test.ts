@@ -18,6 +18,7 @@ const config: NausysConfig = {
   username: "agency-user",
   password: "hunter2",
   timeoutMs: 1000,
+  syncTimeoutMs: 1000,
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",
@@ -550,6 +551,60 @@ describe("NauSYS live quote", () => {
 
     expect(priced.paymentPolicy).toEqual({ mode: "full", depositPct: 1 });
     expect(priced.deposit).toEqual({ amountMinor: 341_000, currency: "EUR" });
+  });
+
+  /*
+   * Deposit insurance is bought to lower the deposit, and the vendor states the reduced figure
+   * beside the ordinary one. Ignoring it charged the customer for the insurance and still held
+   * the full deposit against their card at the base.
+   */
+  describe("deposit insurance", () => {
+    const INSURANCE = "service:9001";
+
+    function insuredBody() {
+      const body = fixtureResponse();
+      const yacht = firstYacht(body);
+      yacht.price.depositAmount = "2000.00";
+      yacht.price.depositWhenInsuredAmount = "500.00";
+      return body;
+    }
+
+    it("holds the reduced deposit when the charter carries the insurance", async () => {
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", insuredBody());
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 50_000, currency: "EUR" });
+    });
+
+    it("holds the ordinary deposit when nobody bought it", async () => {
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", insuredBody());
+
+      const priced = await service.getNausysQuote({ ...request, extras: ["service:52"] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
+
+    /* An operator that publishes no reduced figure holds the same deposit either way. */
+    it("holds the ordinary deposit when the operator names no reduced one", async () => {
+      const body = insuredBody();
+      delete firstYacht(body).price.depositWhenInsuredAmount;
+
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", body);
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
   });
 
   it("keeps the security deposit out of the total", async () => {

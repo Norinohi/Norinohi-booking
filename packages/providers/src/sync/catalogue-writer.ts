@@ -432,6 +432,7 @@ export async function writeCanonicalCatalogue(
       });
 
       const columns = {
+        name: item.name ?? null,
         title: item.title,
         operatorId,
         homeBaseId,
@@ -1205,6 +1206,7 @@ async function writeListingOffers(
         set: {
           listingId: sql`excluded.listing_id`,
           status: sql`excluded.status`,
+          name: sql`excluded.name`,
           title: sql`excluded.title`,
           operatorId: sql`excluded.operator_id`,
           homeBaseId: sql`excluded.home_base_id`,
@@ -1384,7 +1386,10 @@ async function writeListingChildren(
         validNightsFrom: extra.validNightsFrom ?? null,
         validNightsTo: extra.validNightsTo ?? null,
         oneWayOnly: extra.oneWayOnly ?? false,
+        validForBaseIds: extra.validForBaseIds ?? null,
+        minimumPriceMinor: extra.minimumPriceMinor ?? null,
         onRequestOnly: extra.onRequestOnly,
+        depositInsurance: extra.depositInsurance ?? false,
         externalSeasonId: extra.externalSeasonId ?? null,
         externalBaseId: extra.externalBaseId ?? null,
       })),

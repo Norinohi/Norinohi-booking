@@ -33,6 +33,8 @@ type OfferRow = {
   offerId: string;
   listingId: string;
   providerCode: string;
+  /* Rides with `title`: both halves come from the same vendor record, so one winner sets both. */
+  name: string | null;
   title: string | null;
   operatorId: string | null;
   homeBaseId: string | null;
@@ -43,6 +45,7 @@ type OfferRow = {
   defaultCurrency: string | null;
   crewType: string | null;
   securityDepositMinor: number | null;
+  securityDepositWhenInsuredMinor: number | null;
   securityDepositCurrency: string | null;
   depositInsuranceIncluded: boolean;
   providerRating: string | null;
@@ -145,6 +148,7 @@ export async function resolveCanonicalListings(
       updates.push({
         id: listingId,
         slug: "",
+        name: title.name,
         title: title.title ?? "",
         operatorId: operator.operatorId,
         homeBaseId: base.homeBaseId,
@@ -156,6 +160,7 @@ export async function resolveCanonicalListings(
         defaultCurrency: title.defaultCurrency,
         crewType: title.crewType,
         securityDepositMinor: title.securityDepositMinor,
+        securityDepositWhenInsuredMinor: title.securityDepositWhenInsuredMinor,
         securityDepositCurrency: title.securityDepositCurrency,
         depositInsuranceIncluded: title.depositInsuranceIncluded,
         providerRating: title.providerRating,
@@ -188,6 +193,7 @@ async function loadOffers(db: Database, listingIds: readonly string[]): Promise<
       offerId: listingOffer.id,
       listingId: listingOffer.listingId,
       providerCode: provider.code,
+      name: listingOffer.name,
       title: listingOffer.title,
       operatorId: listingOffer.operatorId,
       homeBaseId: listingOffer.homeBaseId,
@@ -198,6 +204,7 @@ async function loadOffers(db: Database, listingIds: readonly string[]): Promise<
       defaultCurrency: listingOffer.defaultCurrency,
       crewType: listingOffer.crewType,
       securityDepositMinor: listingOffer.securityDepositMinor,
+      securityDepositWhenInsuredMinor: listingOffer.securityDepositWhenInsuredMinor,
       securityDepositCurrency: listingOffer.securityDepositCurrency,
       depositInsuranceIncluded: listingOffer.depositInsuranceIncluded,
       providerRating: listingOffer.providerRating,
@@ -339,6 +346,7 @@ async function writeListings(
           defaultCurrency: sql`excluded.default_currency`,
           crewType: sql`excluded.crew_type`,
           securityDepositMinor: sql`excluded.security_deposit_minor`,
+          securityDepositWhenInsuredMinor: sql`excluded.security_deposit_when_insured_minor`,
           securityDepositCurrency: sql`excluded.security_deposit_currency`,
           depositInsuranceIncluded: sql`excluded.deposit_insurance_included`,
           providerRating: sql`excluded.provider_rating`,

@@ -4,6 +4,7 @@ import type { JsonField } from "../shared/json";
 import { CHARTER_TURNAROUND_WEEKDAY, parseBookingManagerDate } from "./dates";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
+import { mergeYachtTitle } from "../shared/yacht-title";
 import {
   currencyOf,
   idOf,
@@ -408,7 +409,7 @@ function projectYacht(
 
   const externalId = String(yacht.id);
   const model = modelKeyOf(yacht);
-  const title = titleOf(yacht, model?.name);
+  const title = mergeYachtTitle(text(yacht.name), model?.name) ?? `Yacht ${yacht.id}`;
   const currency = currencyOf(yacht.currency);
   const shipyardId = idOf(yacht.shipyardId);
   const kind = text(yacht.kind)?.toLowerCase();
@@ -423,6 +424,7 @@ function projectYacht(
     // An unknown kind is left unset rather than minted as a new category: the
     // category list is `/yachtTypes`, and anything else is a typo or a drift.
     externalCategoryId: kind === undefined ? undefined : context.categoryIdByKind.get(kind),
+    name: text(yacht.name),
     title,
     slug: `${slugify(title)}-${externalId}`,
     spec: {
@@ -459,14 +461,6 @@ function projectYacht(
     // Payment terms arrive per period on `/offers`, never in the catalogue.
     paymentPolicy: undefined,
   };
-}
-
-/** `name` usually already carries the model, so appending it blindly gives "Bavaria 46 Bavaria 46". */
-function titleOf(yacht: RestYacht, modelName: string | undefined): string {
-  const name = text(yacht.name);
-  if (name === undefined) return modelName ?? `Yacht ${yacht.id}`;
-  if (modelName === undefined || name.toLowerCase().includes(modelName.toLowerCase())) return name;
-  return `${name} ${modelName}`;
 }
 
 /**

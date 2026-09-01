@@ -30,6 +30,7 @@ const config: NausysConfig = {
   username: "agency-user",
   password: "hunter2",
   timeoutMs: 1000,
+  syncTimeoutMs: 1000,
   minIntervalMs: 0,
   optionSafetyMarginMinutes: 15,
   optionTimeZone: "Europe/Zagreb",

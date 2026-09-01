@@ -67,6 +67,14 @@ function percentageLineMinor(extra: RestExtra, basis: PercentageBasis | undefine
   const rate = Number(extra.amount);
   if (!Number.isFinite(rate) || rate <= 0 || basis === undefined) return 0;
 
+  /*
+   * AGENCY_PRICE is a share of what we pay the operator, which is our margin and is
+   * deliberately never carried into a customer-facing figure. Valuing it against the list
+   * price instead would overstate the fee by the commission, so it goes uncharged like any
+   * other basis we cannot value.
+   */
+  if (extra.percentageCalculationType === "AGENCY_PRICE") return 0;
+
   const against =
     extra.percentageCalculationType === "CLIENT_PRICE"
       ? (basis.clientMinor ?? basis.listMinor)

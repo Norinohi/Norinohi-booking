@@ -99,6 +99,28 @@ export type Traveller = TravellerList["travellers"][number];
 export const bookingTravellersQueryOptions = (bookingId: string) =>
   orpc.booking.travellers.list.queryOptions({ input: { bookingId } });
 
+/**
+ * What this operator asks of the people aboard, which differs per charter company. Advisory:
+ * the answer only decides what the panel warns the customer about, and an operator we cannot
+ * reach answers with an empty list.
+ */
+export const bookingCrewRequirementsQueryOptions = (bookingId: string) =>
+  orpc.booking.travellers.requirements.queryOptions({ input: { bookingId } });
+
+export type CrewPlaces = Awaited<ReturnType<AppRouterClient["booking"]["travellers"]["places"]>>;
+export type CrewPlace = CrewPlaces["places"][number];
+
+/**
+ * The places the operator's crew list accepts, searched server-side: the vendor's Croatian
+ * list is 6,851 names, so the browser asks for the twenty that match rather than holding all
+ * of them. Kept for the session, since the answer for one query never changes.
+ */
+export const crewPlacesQueryOptions = (bookingId: string, query: string) =>
+  orpc.booking.travellers.places.queryOptions({
+    input: { bookingId, query },
+    staleTime: Infinity,
+  });
+
 export type SaveTravellersInput = Parameters<AppRouterClient["booking"]["travellers"]["save"]>[0];
 
 export const saveTravellersMutationOptions = () => orpc.booking.travellers.save.mutationOptions();

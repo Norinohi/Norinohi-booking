@@ -53,6 +53,7 @@ export const nausysEndpoints = {
     occupancy2: (companyId: NausysId, seasonId: NausysId) =>
       `${YACHT_RESERVATION}/occupancy2/${companyId}/${seasonId}`,
     reservations: `${YACHT_RESERVATION}/reservations`,
+    listExtras: `${YACHT_RESERVATION}/listExtras`,
     options: `${YACHT_RESERVATION}/options`,
     stornos: `${YACHT_RESERVATION}/stornos`,
   },
@@ -325,6 +326,20 @@ export const restYachtServicePriceSchema = looseJsonObject({
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
   /**
+   * When and to whom this variant applies. The vendor files one row per condition rather than
+   * one row per extra: a fee can exist three times over with different durations, date windows
+   * and bases, and reading any one of them as "the price" charges a charter it was never for.
+   *
+   * `minDuration`/`maxDuration` are the charter length in days the row is available for,
+   * `validPeriodFrom`/`To` the dates it applies to, `validForBases` the `baseFrom` values it
+   * applies at (empty means all), and `minimumPrice` a floor for a total computed below it.
+   */
+  minDuration: z.number().int().optional(),
+  maxDuration: z.number().int().optional(),
+  validPeriodFrom: nausysDate.optional(),
+  validPeriodTo: nausysDate.optional(),
+  minimumPrice: decimal.optional(),
+  /**
    * The amount is a rate, not money: "0.3500" is 35%, carried to four decimals since the
    * vendor widened the field in May 2022. Read as money it becomes 35 cents, which is how a
    * 35% mandatory service charge reached the catalogue as free.
@@ -355,6 +370,15 @@ export const restYachtAdditionalEquipmentPriceSchema = looseJsonObject({
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
   quantity: z.number().optional(),
+  /** The same conditions the service prices carry; see `restYachtServicePriceSchema`. */
+  minDuration: z.number().int().optional(),
+  maxDuration: z.number().int().optional(),
+  validPeriodFrom: nausysDate.optional(),
+  validPeriodTo: nausysDate.optional(),
+  minimumPrice: decimal.optional(),
+  validForBases: z.array(z.number().int()).optional(),
+  amountIsPercentage: z.boolean().optional(),
+  percentageCalculationType: z.string().optional(),
   vatInPrice: z.string().optional(),
   condition: restInternationalTextSchema.optional(),
 });
@@ -670,6 +694,33 @@ export const restFreeYachtSchema = looseJsonObject({
   status: restFreeYachtStatusSchema,
   optionValidTill: nausysDateTime.optional(),
   totalPriceWithExtras: decimal.optional(),
+});
+
+/**
+ * One extra already on a reservation, as `listExtras` describes it.
+ *
+ * `id` is the reservation line, which is the id `updateExtras` addresses; `serviceId` is the
+ * catalogue entry it was created from. `editable` is the operator's lock, and `obligatory`
+ * marks a line the customer never chose and cannot drop.
+ */
+const restReservationServiceSchema = looseJsonObject({
+  id: z.number().int(),
+  serviceId: z.number().int(),
+  quantity: decimal.optional(),
+  editable: z.boolean().optional(),
+  obligatory: z.boolean().optional(),
+  /**
+   * Added while the reservation is still an info or an option, against a season quantity the
+   * operator has not released: charged only once it stops pending, so a total that counts it
+   * is ahead of itself.
+   */
+  onPending: z.boolean().optional(),
+});
+
+export const restListedExtrasSchema = looseJsonObject({
+  ...statusFields,
+  addedServices: z.array(restReservationServiceSchema).optional(),
+  addedEquipment: z.array(looseJsonObject({ id: z.number().int() })).optional(),
 });
 
 export const restFreeYachtsRequestSchema = z.object({

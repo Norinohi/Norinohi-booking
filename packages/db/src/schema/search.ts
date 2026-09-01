@@ -21,6 +21,8 @@ export const listingSearchDoc = pgTable(
       .primaryKey()
       .references(() => listing.id, { onDelete: "cascade" }),
     slug: text("slug").notNull(),
+    /* The boat's own name, without the model. See `listing.name`. */
+    name: text("name"),
     title: text("title").notNull(),
     category: text("category"),
     crewType: text("crew_type"),

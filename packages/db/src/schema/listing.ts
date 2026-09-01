@@ -40,6 +40,12 @@ export const listing = pgTable(
   {
     id: id("ylst"),
     slug: text("slug").notNull().unique(),
+    /**
+     * The boat's own name, from whichever offer won the `title` field group, with no model
+     * appended. Nullable because a vendor need not give one, and because the rows that predate
+     * the column were backfilled from `title` only where the model could be stripped safely.
+     */
+    name: text("name"),
     title: text("title").notNull(),
     operatorId: text("operator_id")
       .notNull()
@@ -64,6 +70,11 @@ export const listing = pgTable(
      * distinct from the season currency in `default_currency`.
      */
     securityDepositMinor: integer("security_deposit_minor"),
+    /**
+     * What the deposit falls to when the charter carries deposit insurance, where the operator
+     * publishes a second figure for it. Null means it does not change, or nobody said.
+     */
+    securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),

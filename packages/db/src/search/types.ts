@@ -69,6 +69,8 @@ export type ListingSearchInput = {
 export type ListingSearchDoc = {
   listingId: string;
   slug: string;
+  /* The boat's own name, without the model; null before the column was backfilled. */
+  name: string | null;
   title: string;
   category: string | null;
   crewType: string | null;

@@ -8,6 +8,11 @@ export interface NausysConfig {
   username: string;
   password: string;
   timeoutMs: number;
+  /**
+   * Per-attempt timeout for the sync lane only. Catalogue fleet dumps are orders
+   * of magnitude slower than the live calls `timeoutMs` is sized for.
+   */
+  syncTimeoutMs: number;
   minIntervalMs: number;
   /** `holdExpiresAt = optionTill − this`, so our sweeper releases first. */
   optionSafetyMarginMinutes: number;
@@ -38,6 +43,7 @@ export interface NausysEnvSource {
   NAUSYS_USERNAME?: string | undefined;
   NAUSYS_PASSWORD?: string | undefined;
   NAUSYS_TIMEOUT_MS: number;
+  NAUSYS_SYNC_TIMEOUT_MS: number;
   NAUSYS_MIN_INTERVAL_MS: number;
   NAUSYS_OPTION_SAFETY_MARGIN_MINUTES: number;
   NAUSYS_OPTION_TIMEZONE: string;
@@ -70,6 +76,7 @@ export function resolveNausysConfig(source: NausysEnvSource = env): NausysConfig
     username,
     password,
     timeoutMs: source.NAUSYS_TIMEOUT_MS,
+    syncTimeoutMs: source.NAUSYS_SYNC_TIMEOUT_MS,
     minIntervalMs: source.NAUSYS_MIN_INTERVAL_MS,
     optionSafetyMarginMinutes: source.NAUSYS_OPTION_SAFETY_MARGIN_MINUTES,
     optionTimeZone: source.NAUSYS_OPTION_TIMEZONE,

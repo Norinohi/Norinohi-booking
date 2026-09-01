@@ -239,41 +239,90 @@ export const MARKETPLACE_DEFAULT = { mode: "deposit" as const, depositPct: 0.5 }
  * at all. Inside this window the customer pays in full.
  *
  * The client read their own "two months" rule as 60 days, so this counts days
- * rather than calendar months.
+ * rather than calendar months. Admin can move it, and switch it off entirely;
+ * this is the value a database that has never been configured uses.
  */
 export const DEPOSIT_LEAD_TIME_DAYS = 60;
 
 /**
- * §6.3: explicit listing override → the provider's own plan → the marketplace
- * default. Never a hardcoded 50/100 — this is what makes a listing able to demand
- * full prepayment while its neighbour takes half.
+ * The marketplace-wide half of §6.3, as an operator configures it in admin.
+ *
+ * `source` picks ONE of two flows and they never blend: `vendor` prices on the provider's own
+ * instalment plan, `marketplace` on the percentage set here and reads nothing the provider
+ * sent - not even its `balanceDueAt`, because a due date belongs to the schedule that produced
+ * it. Mixing them was the whole thing this setting exists to prevent.
+ */
+export interface MarketplacePaymentSettings {
+  source: "vendor" | "marketplace";
+  mode: "deposit" | "full";
+  depositPct: number;
+  enforceLeadTime: boolean;
+  leadTimeDays: number;
+}
+
+/**
+ * What an unconfigured database prices on, and deliberately the behaviour that predates the
+ * settings table: the provider's plan, our 50% where it offered none, and the 60-day floor.
+ */
+export const DEFAULT_PAYMENT_SETTINGS: MarketplacePaymentSettings = {
+  source: "vendor",
+  mode: MARKETPLACE_DEFAULT.mode,
+  depositPct: MARKETPLACE_DEFAULT.depositPct,
+  enforceLeadTime: true,
+  leadTimeDays: DEPOSIT_LEAD_TIME_DAYS,
+};
+
+/**
+ * §6.3: explicit listing override -> the flow admin selected -> the marketplace default.
+ * Never a hardcoded 50/100 - this is what makes a listing able to demand full prepayment
+ * while its neighbour takes half.
+ *
+ * The listing override still wins over both flows. It is per yacht and someone typed it for
+ * that yacht, which is more specific than either marketplace-wide answer.
  *
  * Lead time is applied on top, and only ever tightens. A charter starting inside
- * `DEPOSIT_LEAD_TIME_DAYS` is payable in full whatever the sources said, while
- * one starting later keeps whichever plan they chose, including a provider that
- * demands full prepayment months out. Written as a tightening rather than another
- * link in the chain because both directions are rules about the same money and
- * the stricter one has to survive: an operator's terms are not ours to relax, and
- * our own floor is not theirs to.
+ * `leadTimeDays` is payable in full whatever the sources said, while one starting later keeps
+ * whichever plan they chose, including a provider that demands full prepayment months out.
+ * Written as a tightening rather than another link in the chain because both directions are
+ * rules about the same money and the stricter one has to survive: an operator's terms are not
+ * ours to relax, and our own floor is not theirs to. Switching `enforceLeadTime` off removes
+ * the floor entirely, which is a decision to let a provider's 30% stand on a charter leaving
+ * tomorrow.
  */
 export function resolvePaymentPolicy(
   listingOverride: ListingPaymentPolicy,
   providerPolicy: { mode: "deposit" | "full"; depositPct: number; balanceDueAt?: string },
   currency: string,
   charter: { checkIn: string; asOf: Date },
+  settings: MarketplacePaymentSettings = DEFAULT_PAYMENT_SETTINGS,
 ): QuotePaymentPolicy {
-  const chosen = listingOverride ?? providerPolicy ?? MARKETPLACE_DEFAULT;
-  const depositsClose = daysBefore(charter.checkIn, DEPOSIT_LEAD_TIME_DAYS);
+  /*
+   * The selected flow, as one object. In `marketplace` the provider's plan is not consulted at
+   * all - including its `balanceDueAt` below, which is why this carries none.
+   */
+  const marketplacePolicy: NonNullable<ListingPaymentPolicy> = {
+    mode: settings.mode,
+    depositPct: settings.depositPct,
+  };
+  const flowPolicy =
+    settings.source === "marketplace" ? marketplacePolicy : (providerPolicy ?? MARKETPLACE_DEFAULT);
+  const chosen = listingOverride ?? flowPolicy;
+
+  const depositsClose = daysBefore(charter.checkIn, settings.leadTimeDays);
   const today = charter.asOf.toISOString().slice(0, 10);
 
   /*
    * Exactly 60 days out is already too late: the client's rule is "more than
    * two months". An unparseable check-in leaves `depositsClose` null and the
    * deposit on offer, which is the pre-lead-time behaviour rather than a refusal
-   * to quote — a quote with no usable period cannot reach this far anyway.
+   * to quote - a quote with no usable period cannot reach this far anyway.
    */
-  const insideWindow = depositsClose !== null && today >= depositsClose;
+  const insideWindow = settings.enforceLeadTime && depositsClose !== null && today >= depositsClose;
   const mode = insideWindow ? "full" : (chosen.mode ?? MARKETPLACE_DEFAULT.mode);
+
+  /* Only the selected flow may date the balance; see `MarketplacePaymentSettings`. */
+  const flowBalanceDueAt =
+    settings.source === "marketplace" ? undefined : providerPolicy?.balanceDueAt;
 
   return {
     mode,
@@ -289,7 +338,7 @@ export function resolvePaymentPolicy(
      */
     balanceDueAt:
       chosen.balanceDueAt ??
-      providerPolicy?.balanceDueAt ??
+      flowBalanceDueAt ??
       (mode === "deposit" ? (depositsClose ?? undefined) : undefined),
     currency,
   };

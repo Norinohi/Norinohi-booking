@@ -328,6 +328,17 @@ export async function getListingDetailByIdOrSlug(
           extra.season_start is null
           or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
         )
+        /*
+         * And only fees charged at the base this listing sails from. A provider states the
+         * bases a price applies at alongside its season, and a row filed under one base but
+         * valid only at others is somebody else's charter: listing it here told the customer
+         * about a fee they will never be asked for.
+         */
+        and (
+          extra.valid_for_base_ids is null
+          or extra.external_base_id is null
+          or extra.external_base_id = any(extra.valid_for_base_ids)
+        )
       /* Ordered on the vendor's name, not the translated one, so the sections keep the same
          order in every locale. */
       order by extra.obligatory desc, extra.price_minor, extra.name asc
@@ -1100,6 +1111,7 @@ const engagementColumns = sql`
 const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
+  doc.name,
   doc.title,
   doc.category,
   doc.crew_type as "crewType",

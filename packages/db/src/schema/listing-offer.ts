@@ -81,6 +81,8 @@ export const listingOffer = pgTable(
       balanceDueAt?: string;
     }>(),
     securityDepositMinor: integer("security_deposit_minor"),
+    /** The deposit this offer takes when the charter carries deposit insurance. */
+    securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     crewType: text("crew_type"),
@@ -88,6 +90,14 @@ export const listingOffer = pgTable(
     providerReviewCount: integer("provider_review_count"),
 
     /* This provider's reading of the boat, resolved into `listing` by precedence. */
+    /**
+     * The boat's own name as this vendor wrote it, with no model appended. `title` is the two
+     * joined; this is the half a screen shows in large type.
+     *
+     * Distinct from `nameKey` below, which is the same name folded for duplicate matching and
+     * is not display text: "Star Kiss" against "starkiss".
+     */
+    name: text("name"),
     title: text("title"),
     operatorId: text("operator_id").references(() => operator.id, { onDelete: "restrict" }),
     homeBaseId: text("home_base_id").references(() => base.id, { onDelete: "restrict" }),

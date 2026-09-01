@@ -18,6 +18,10 @@ import type {
   ProviderRecordSet,
   ProviderReservation,
   ProviderReservationRef,
+  CrewListReceipt,
+  CrewListSubmission,
+  CrewPlace,
+  CrewRequirements,
   QuoteRequest,
   RawEntity,
 } from "../types";
@@ -44,6 +48,11 @@ import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
 
+import {
+  fetchNausysCrewRequirements,
+  searchNausysCrewPlaces,
+  submitNausysCrewList,
+} from "./crew-list";
 import { projectNausysCatalogue } from "./projection";
 import { formatExtraCode } from "../shared/extra-code";
 import { createNausysQuoteService, type CrewRoleService } from "./quote";
@@ -117,6 +126,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       config: this.config,
       loadCrewRoles: (listingId) => loadNausysCrewRoles(this.db, listingId),
       loadExtraLabels: (listingId) => loadNausysExtraLabels(this.db, listingId),
+      loadDepositInsuranceCodes: (listingId) => loadNausysDepositInsuranceCodes(this.db, listingId),
     });
 
     this.bookings = createNausysBookingService({
@@ -163,6 +173,61 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       companyScope: this.config.companyScope,
       listImportedCompanyIds: () => this.resolver.listYachtCompanyScopeKeys(),
     });
+  }
+
+  /**
+   * What this operator wants on the crew list, read from the reservation's own hosted list.
+   *
+   * Best-effort by design: the answer improves the form and nothing depends on it, so a vendor
+   * that is slow, or a reservation whose token has rotated since we stored it, costs the hint
+   * rather than the page.
+   */
+  async getCrewRequirements(ref: ProviderReservationRef): Promise<CrewRequirements | null> {
+    if (!ref.securityToken) return null;
+
+    try {
+      return await fetchNausysCrewRequirements(
+        this.client,
+        ref.providerReservationId,
+        ref.securityToken,
+      );
+    } catch (error) {
+      console.warn(
+        `[nausys] crew requirements for ${ref.providerReservationId} unavailable`,
+        error instanceof Error ? error.message : error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Files the crew list with the operator, on the reservation's own token.
+   *
+   * Unlike the requirements read, a failure here is the caller's to see: the customer pressed
+   * Save expecting the list to reach the charter company, and a silent loss would leave them
+   * believing the base has their passports. A list the operator refuses comes back as a
+   * receipt rather than an exception -- that one is an answer.
+   */
+  submitCrewList(submission: CrewListSubmission): Promise<CrewListReceipt> {
+    const { ref } = submission;
+    if (!ref.securityToken) {
+      throw new ContractError("NauSYS crew list needs the reservation's security token", {
+        providerCode: "nausys",
+      });
+    }
+
+    return submitNausysCrewList(
+      this.client,
+      ref.providerReservationId,
+      ref.securityToken,
+      submission.members,
+      submission.note,
+    );
+  }
+
+  /** Public on the vendor's side, so this needs no credential and no reservation. */
+  searchCrewPlaces(query: string, limit: number): Promise<CrewPlace[]> {
+    return searchNausysCrewPlaces(this.client, query, limit);
   }
 
   projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
@@ -327,6 +392,34 @@ async function loadNausysExtraLabels(
     );
 
   return new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]));
+}
+
+/**
+ * The listing's deposit-insurance extras, by canonical code.
+ *
+ * Read from the same table as the labels beside it, and for the same reason: the quote knows
+ * the codes the customer ticked and nothing else about them, and buying one of these lowers
+ * the deposit instead of adding to the price.
+ */
+async function loadNausysDepositInsuranceCodes(
+  db: Database,
+  listingId: string,
+): Promise<ReadonlySet<string>> {
+  const rows = await db
+    .select({
+      kind: providerExtraCatalogue.kind,
+      externalId: providerExtraCatalogue.externalId,
+    })
+    .from(providerExtraCatalogue)
+    .where(
+      and(
+        eq(providerExtraCatalogue.listingId, listingId),
+        eq(providerExtraCatalogue.source, "nausys"),
+        eq(providerExtraCatalogue.depositInsurance, true),
+      ),
+    );
+
+  return new Set(rows.map((row) => formatExtraCode(row.kind, row.externalId)));
 }
 
 /**

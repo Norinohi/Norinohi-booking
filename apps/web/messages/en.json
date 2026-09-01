@@ -329,7 +329,9 @@
       "requestCancel": "Request cancellation",
       "crewList": {
         "title": "Crew list",
-        "notice": "The charter company has to give the authorities a list of everyone aboard before you sail. Fill it in here and we'll pass it on — anything missing, the base will ask for at the desk when you arrive.",
+        "notice": "The charter company has to give the authorities a list of everyone aboard before you sail. Fill it in here and we'll send it to them — anything missing, the base will ask for at the desk when you arrive.",
+        "alsoAsked": "It also asks for {fields}, which the base will collect at the desk when you arrive.",
+        "maxPassengers": "Its list holds at most {count} people.",
         "loading": "Loading your crew list…",
         "empty": "No one added yet. Your booking is for {guests} guests — add each person who will be aboard, including the skipper.",
         "member": "Crew member {number}",
@@ -338,8 +340,6 @@
         "save": "Save crew list",
         "saved": "Crew list saved",
         "saveFailed": "We couldn't save your crew list",
-        "fullName": "Full name",
-        "fullNamePlaceholder": "As printed in their passport",
         "role": "Role",
         "rolePlaceholder": "Skipper, guest…",
         "dateOfBirth": "Date of birth",
@@ -348,9 +348,53 @@
         "nationality": "Nationality",
         "nationalityPlaceholder": "Select a country",
         "errors": {
-          "fullName": "Enter this person's full name",
-          "dateOfBirth": "Enter a valid date"
-        }
+          "dateOfBirth": "Enter a valid date",
+          "firstName": "Enter this person's first name",
+          "lastName": "Enter this person's last name",
+          "skipperEmail": "Enter a valid email address",
+          "oneSkipper": "Only one person can be the skipper"
+        },
+        "requires": {
+          "shoeSize": "shoe sizes",
+          "disabledPerson": "whether anyone aboard has a disability"
+        },
+        "legend": "Fields marked * are the ones this charter company insists on.",
+        "sent": "Sent to the charter company on {when}.",
+        "notSent": "Not with the charter company yet: {reason} Your details are saved — the base will collect the list when you arrive.",
+        "notSentUnknown": "we couldn't reach them.",
+        "savedNotSent": "Saved, but the charter company hasn't got it yet",
+        "firstName": "First name",
+        "firstNamePlaceholder": "As printed in their passport",
+        "lastName": "Last name",
+        "lastNamePlaceholder": "As printed in their passport",
+        "gender": "Gender",
+        "genderPlaceholder": "Select",
+        "birthPlace": "Place of birth",
+        "birthCountry": "Country of birth",
+        "livingPlace": "Town of residence",
+        "livingCountry": "Country of residence",
+        "placePlaceholder": "Town or city",
+        "documentType": "Document type",
+        "documentTypePlaceholder": "Select",
+        "isSkipper": "This person is the skipper",
+        "skipperLicence": "Skipper's licence",
+        "skipperLicencePlaceholder": "Licence number",
+        "vhfLicence": "VHF licence",
+        "skipperEmail": "Skipper's email",
+        "skipperMobile": "Skipper's phone",
+        "note": "Anything the base should know",
+        "notePlaceholder": "Arrival time, flight number, anyone needing assistance…",
+        "documents": {
+          "passport": "Passport",
+          "idCard": "ID card",
+          "other": "Other"
+        },
+        "genders": {
+          "male": "Male",
+          "female": "Female"
+        },
+        "placeSearch": "Search places",
+        "placeEmpty": "No place by that name"
       }
     },
     "support": {
@@ -953,7 +997,8 @@
       "groups": {
         "fleet": "Yachts",
         "content": "Website Content"
-      }
+      },
+      "settings": "Payment Settings"
     },
     "UserMenu": {
       "account": "Account",
@@ -1322,7 +1367,8 @@
       "onRequest": "This yacht is priced on request",
       "onRequestHint": "We have dates for it, but no published rate covers them. Tell us when you would like to sail and we will come back with a price.",
       "dropOff": "Drop-off marina",
-      "pickUp": "Pick-up: {marina}"
+      "pickUp": "Pick-up: {marina}",
+      "boatPriceHintDiscounted": "Rental price after discount"
     },
     "panels": {
       "details": "Yacht Details",
@@ -2917,6 +2963,39 @@
           "answerTooLong": "Keep the answer under 8000 characters"
         }
       }
+    },
+    "Settings": {
+      "title": "Payment settings",
+      "subtitle": "How much of a charter is collected up front, for every quote on the marketplace.",
+      "source": {
+        "legend": "Which payment plan we use",
+        "vendor": {
+          "title": "The provider's own schedule",
+          "hint": "Each quote follows the instalments the provider returned for that yacht and those dates, including its own balance due date. Providers differ, so the percentage differs from booking to booking."
+        },
+        "marketplace": {
+          "title": "Our own policy",
+          "hint": "Every quote uses the percentage below and the provider's schedule is ignored entirely, its due date included."
+        }
+      },
+      "ourPolicy": {
+        "deposit": "Take a deposit",
+        "full": "Take payment in full",
+        "percentLabel": "Deposit percentage",
+        "percentError": "Enter a percentage between 1 and 100."
+      },
+      "leadTime": {
+        "legend": "Full payment close to departure",
+        "toggle": "Require full payment for charters starting soon",
+        "hint": "A floor on whichever plan is selected above, never a third plan of its own. Switched off, a provider's 30% stands even on a charter leaving tomorrow.",
+        "daysLabel": "Days before check-in",
+        "daysError": "Enter a whole number of days between 0 and 365."
+      },
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saved": "Payment settings saved.",
+      "saveFailed": "Could not save the payment settings.",
+      "appliesNext": "Applies to new quotes. A quote a customer is already holding keeps the policy it was priced under."
     }
   }
 }

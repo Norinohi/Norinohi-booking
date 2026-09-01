@@ -206,14 +206,63 @@ correct. The recorded response `{amount: "10.00", quantity: "10.00", totalPrice:
 "100.00"}` bills the customer 100.00. The connector uses `totalPrice` where the
 vendor sends it and `amount x quantity` where it does not.
 
+#### Extras availability conditions
+
+A priced extra is filed **per condition**, not per extra: `RestYachtServicePrice` and
+`RestYachtAdditionalEquipmentPrice` each carry `validForBases`, `minDuration`/`maxDuration`,
+`validPeriodFrom`/`validPeriodTo`, `validMinPax`/`validMaxPax` and `minimumPrice`. Measured
+against the live catalogue (8 companies, ~89 MB, Sep 2026): **130,535 of 184,539 extras rows
+name the bases they apply at**, 2,047 name a charter length, 855 name a date window; none in
+that sample carried a pax range or a minimum price.
+
+Reading a row as unconditional charged cards for fees no charter from that base pays. The
+projection now carries the conditions through (`validForBaseIds`, `validNightsFrom`/`To` from
+the day range **minus one**, since the vendor counts the calendar days the boat is held, and
+`seasonStart`/`seasonEnd` from the valid period), and both readers — the card's fee totals in
+`search/read-model.ts` and the detail page's extras in `search/repository.ts` — drop a row
+whose bases exclude the base it was filed under.
+
+Only one row per extra can be stored, because `provider_extra_catalogue` is keyed on the
+vendor's own id and NauSYS reuses one `serviceId` across every variant. Which one survives is
+therefore a decision: a row that applies at the yacht's own base beats one that does not, then
+the row whose window runs latest (which is how an expired variant loses without the projection
+needing a clock), then the newest season, as before.
+
+`validMinPax`/`validMaxPax` are deliberately not stored. Nothing that displays a catalogue
+extra knows the party size — the card is per listing, and the checkout is priced by the vendor
+— so the column could not be honestly consulted. `minimumPrice` is stored but unread: the card
+sums percentage fees into a single rate and multiplies once, and a per-fee floor cannot survive
+that sum.
+
+#### Deposit insurance
+
+`RestService.depositInsurance` marks the service that lowers the deposit, and the yacht carries
+`depositWhenInsured` beside `deposit` (724 yachts in the sample); the offer carries
+`depositWhenInsuredAmount` beside `depositAmount`. All of it was parsed and none of it read, so
+a customer who bought the insurance was still shown the full deposit — and would have had the
+full amount blocked at the base. The projection now flags the extra
+(`provider_extra_catalogue.deposit_insurance`) and stores the reduced figure, and the quote
+holds the reduced deposit when the charter carries one of those extras.
+
+#### Reading a reservation's extras: `listExtras`
+
+`yachtReservation/v6/listExtras` (added Oct 2025) takes `{id, uuid}` and returns
+`addedServices`, `addedEquipment` and `availableExtras` with `editable`, `obligatory`,
+`onPending` and `quantityExtras`. It is the single-reservation read whose absence the extras
+diff was written around, and nothing supplied the fallback loader — so the diff ran against an
+empty reservation, found nothing to remove, and **left a deselected extra on the booking still
+being billed**. `addOrUpdateExtras` now reads it by default, on the reservation's own lane so
+the read cannot answer from before the write it informs. Services only: removal is keyed by the
+reservation line id and `updateExtras` addresses services.
+
 ### 2.4 Crew, invoices and contacts - PDF pages 134-153
 
-| Area                      | Use                                                    | Data handling                                                                                |
-| ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| Crew list                 | Retrieve/set passenger/crew manifest                   | do not implement `crewlist/v6/set2`; forward the vendor's `crewlistlink` (see below)         |
-| Invoices/linked documents | Provider invoice and document retrieval                | store metadata and provider reference; use object storage for permitted copies               |
-| Contacts2                 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts |
-| Deprecated Contacts       | Legacy contact endpoints                               | do not implement; use Contacts2                                                              |
+| Area                      | Use                                                    | Data handling                                                                                      |
+| ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Crew list                 | Retrieve/set passenger/crew manifest                   | `crewlist/v6/get` for the operator's requirements, `crewlist/v6/set2` to file the list (see below) |
+| Invoices/linked documents | Provider invoice and document retrieval                | store metadata and provider reference; use object storage for permitted copies                     |
+| Contacts2                 | Create, list, read, merge and update provider contacts | map a local customer to `provider_contact`; do not sync provider contacts into user accounts       |
+| Deprecated Contacts       | Legacy contact endpoints                               | do not implement; use Contacts2                                                                    |
 
 Passenger/contact fields can include name, address, birth date, nationality,
 email, telephone, document/passport-related data and crew-specific attributes.
@@ -221,7 +270,7 @@ Treat this as sensitive personal data: encrypt at rest where stored, minimize
 retention, redact application logs, and never return it in generic profile or
 booking-list procedures.
 
-#### Crew list: forward the vendor's link
+#### Crew list: collected here, filed with the operator
 
 **Answered (NauSYS, Aug 2026); the link is now carried end to end.** The vendor's
 answer settles who wants the manifest and why: the crew list is required by the
@@ -267,12 +316,54 @@ in on our own booking page — a panel on `/bookings/[id]` over the
 `crewListLink` stays stored and exposed but nothing renders it; it is the fallback if
 the submission turns out to be unavailable to our credential.
 
-**The submission is blocked on the vendor.** `crewlist/v6/set2` is not implemented
-here because its path is not discoverable: every plausible spelling under
-`/CBMS-external/rest/crewlist/v6/` answers HTTP 404 on production, on the same
-credential that gets a 200 from `catalogue/v6/countries`. Until we have the request
-schema — PDF pages ~134-153, or their Swagger — what a customer types is stored and
-reaches nobody, and the base still asks at the desk.
+**Built (Sep 2026); the earlier 404s were the wrong shape, not a missing endpoint.**
+`crewlist/v6` takes the reservation id and its security token as **path segments** —
+`/CBMS-external/rest/crewlist/v6/get/{reservationId}/{securityCode}` — so the calls that
+probed `/CBMS-external/rest/crewlist/v6/…` without them had no reservation to answer about,
+and 404 was the correct reply. The token is the authorisation: these two calls carry no
+credentials at all, and the value is the `uuid` that also rides in `crewlistlink`.
+
+- **`get` — what this operator requires.** `fetchNausysCrewRequirements` in
+  `nausys/crew-list.ts` returns `requiredFields`, `maxPassengers` and `insertSkipper`. The
+  spec is explicit that the vendor validates none of it: "There is no validation on the API
+  side so it is possible to send only some of these fields." Verified live with
+  `scripts/probe-crew-list.ts` (`pnpm --filter @yacht-charter/providers probe:crew-list`), a
+  read-only pass: three companies answered, each requiring 14-15 fields, and they do not
+  agree on the names — two asked for `documentType`/`documentNumber`, the third for
+  `identificationDocumentType`/`identificationDocumentNumber`, meaning the same passport. The
+  panel treats them as aliases and marks the field either way.
+- **`set2` — filing the list.** `submitNausysCrewList` posts `RestCrewlist2`. `set2` rather
+  than `set` because only `set2` answers a rejection with `invalidPeriodFrom`/`invalidPeriodTo`
+  — the charter days the manifest fails to cover — which is the difference between telling a
+  customer what to fix and telling them it did not work. `CREW_LIST_VALIDATION_FAILED` (303)
+  and `CREW_LIST_LOCKED` (301) come back as receipts rather than exceptions; anything else
+  throws, because the list reached nobody.
+
+**What the adapter converts.** The vendor wants `dd.MM.yyyy` dates and **alpha-3** country
+codes; every country field in this codebase is alpha-2. The map comes from the vendor's own
+`catalogue/v6/countries` (`code` is alpha-3, `code2` alpha-2), fetched once per client and
+kept, so a customer pressing Save does not wait on a catalogue dump. A code we cannot map is
+omitted rather than guessed. Birth and residence places for Croatia are supposed to match the
+vendor's `crewlist/places` list; we send what the customer typed, and the operator corrects it.
+
+**The enum endpoints are public.** `crewlist/countries` (alpha-3 + name), `crewlist/documents`
+(`PASSPORT`, `IDCARD`, `OTHER` — exactly what the form offers) and `crewlist/places` answer over
+plain GET with no credentials. The last one matters: the specification says a Croatian place of
+birth or residence "must be one from the list of known places in Croatia", and the API validates
+nothing, so a freehand "Split" is accepted on the wire and questioned at the desk. The list is
+6,851 names and 360 KB — fetched once per process, searched server-side through
+`booking.travellers.places`, and offered as a combobox on the panel whenever the chosen country
+is Croatia. Prefix matches rank first and the municipality rides in the label, because dozens of
+these names repeat.
+
+**Storage.** `booking_traveller` carries the split name and the fields the operators asked for
+(migrations 0082/0083); the identifying ones — date of birth, document number, birth and
+residence place, and the skipper's licence, email and phone — are encrypted with the same PII
+codec as before. The outcome of the last submission lives on the booking itself
+(`crew_list_submitted_at`, `crew_list_accepted`, `crew_list_message`), because NauSYS accepts
+or refuses the manifest as a whole. The save commits before the submission runs and is never
+undone by it: a customer who typed their passport details has done their part whatever the
+vendor answers.
 
 ## 3. Data structure families - PDF pages 154-357
 
@@ -455,15 +546,15 @@ Terminal/side states: `QUOTE_EXPIRED`, `OPTION_EXPIRED`, `PAYMENT_FAILED`,
 Each answer is implemented where it touches code; the citation lives next to the
 code it justifies.
 
-| Question                                     | Answer                                                                                                                                                                                                   | Where it landed                                     |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Is `amount` a unit price or the line total?  | Unit price; `totalPrice` = `amount` x `quantity`. The contrary example in their documentation is a mistake they will fix.                                                                                | §2.3, `nausys/quote.ts`                             |
-| How is an extra removed?                     | `updateExtras` with `quantity: 0`; honour `editable`; no edits after confirmation. `addExtras` takes the season id, `updateExtras` the reservation line id.                                              | §2.3, `nausys/booking.ts`                           |
-| Is `clientPrice` the final customer amount?  | Yes, VAT included, nothing to add on our side.                                                                                                                                                           | §5.7                                                |
-| Which field caps an agency discount?         | `maxDiscountFromCommission`, drawn from our commission. Units pending their documentation update.                                                                                                        | §5.8                                                |
-| Must every call on one credential be serial? | No — live booking-flow calls are exempt; the restriction covers the background sweeps.                                                                                                                   | §1 constraint 1, `nausys/client.ts`                 |
-| Is `countryId` in `createInfo` a NauSYS id?  | Yes, the `catalogue/v6/countries` id, matched via `code2` — not an ISO code.                                                                                                                             | `nausys/booking.ts`, `shared/catalogue-resolver.ts` |
-| Must we build crew lists ourselves?          | No. The charter company needs the list because the authorities require it of them; the base collects it on arrival if it is incomplete. Sending our customers the vendor's `crewlistlink` is acceptable. | §2.4                                                |
+| Question                                     | Answer                                                                                                                                                                                      | Where it landed                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Is `amount` a unit price or the line total?  | Unit price; `totalPrice` = `amount` x `quantity`. The contrary example in their documentation is a mistake they will fix.                                                                   | §2.3, `nausys/quote.ts`                             |
+| How is an extra removed?                     | `updateExtras` with `quantity: 0`; honour `editable`; no edits after confirmation. `addExtras` takes the season id, `updateExtras` the reservation line id.                                 | §2.3, `nausys/booking.ts`                           |
+| Is `clientPrice` the final customer amount?  | Yes, VAT included, nothing to add on our side.                                                                                                                                              | §5.7                                                |
+| Which field caps an agency discount?         | `maxDiscountFromCommission`, drawn from our commission. Units pending their documentation update.                                                                                           | §5.8                                                |
+| Must every call on one credential be serial? | No — live booking-flow calls are exempt; the restriction covers the background sweeps.                                                                                                      | §1 constraint 1, `nausys/client.ts`                 |
+| Is `countryId` in `createInfo` a NauSYS id?  | Yes, the `catalogue/v6/countries` id, matched via `code2` — not an ISO code.                                                                                                                | `nausys/booking.ts`, `shared/catalogue-resolver.ts` |
+| Must we build crew lists ourselves?          | No, but we do. The base collects it on arrival if it is incomplete, and forwarding `crewlistlink` is acceptable; we collect it on our own page and file it with `crewlist/v6/set2` instead. | §2.4                                                |
 
 ### Still open
 

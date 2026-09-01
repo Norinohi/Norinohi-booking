@@ -27,8 +27,11 @@ type RestFreeYacht = z.infer<typeof restFreeYachtSchema>;
  *   from it has to reassemble the unavoidable fees out of the catalogue's own ladder across
  *   season, length, party size, base and route. `freeYachts` itemises them for the exact
  *   charter: 300 hulls asked at once came back with 179 free, 178 of them carrying their fee
- *   lines. `totalPriceWithExtras` is not a substitute — on yacht 74197399 it equalled
- *   `clientPrice` while the itemised call showed 2,030.00 of obligatory extras.
+ *   lines. `totalPriceWithExtras` is not a substitute, and the specification says why: it is
+ *   "total price to be paid in advance by the Agency to the Fleet operator including discounts
+ *   and all extras marked as advance payment" -- our cost, and only the prepaid half of the
+ *   fees. On yacht 74197399 it equalled `clientPrice` while the itemised call showed 2,030.00
+ *   of obligatory extras, all of them settled at the base.
  * - It is slow per call rather than per row: 28.0s for 50 rows, 29.1s for 1000, 28.2s for the
  *   whole 4,657-row answer. The batched call took 3.4s for 300 hulls.
  *

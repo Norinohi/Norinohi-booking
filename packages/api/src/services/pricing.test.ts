@@ -241,6 +241,84 @@ describe("resolvePaymentPolicy", () => {
       expect(policy.balanceDueAt).toBeUndefined();
     });
   });
+
+  /*
+   * The admin setting, which chooses ONE flow. The assertions that matter are the negative
+   * ones: each flow must be unable to read the other's numbers, because a marketplace
+   * percentage paired with a vendor due date is a schedule neither side ever agreed to.
+   */
+  describe("payment flow setting", () => {
+    const vendorPlan = { mode: "deposit" as const, depositPct: 0.3, balanceDueAt: "2026-09-10" };
+    const marketplaceSettings = {
+      source: "marketplace" as const,
+      mode: "deposit" as const,
+      depositPct: 0.5,
+      enforceLeadTime: true,
+      leadTimeDays: 60,
+    };
+
+    it("defaults to the provider's plan, which is what predates the setting", () => {
+      expect(resolvePaymentPolicy(null, vendorPlan, "EUR", farOut)).toMatchObject({
+        depositPct: 0.3,
+        balanceDueAt: "2026-09-10",
+      });
+    });
+
+    it("takes our percentage over the provider's when the marketplace flow is selected", () => {
+      const policy = resolvePaymentPolicy(null, vendorPlan, "EUR", farOut, marketplaceSettings);
+      expect(policy.depositPct).toBe(0.5);
+    });
+
+    it("ignores the provider's balance date in the marketplace flow, dating it from lead time", () => {
+      const policy = resolvePaymentPolicy(null, vendorPlan, "EUR", farOut, marketplaceSettings);
+      expect(policy.balanceDueAt).toBe("2026-08-11");
+    });
+
+    it("honours a full-prepayment marketplace policy months out", () => {
+      const policy = resolvePaymentPolicy(null, vendorPlan, "EUR", farOut, {
+        ...marketplaceSettings,
+        mode: "full",
+      });
+      expect(policy).toMatchObject({ mode: "full", depositPct: 1, balanceDueAt: undefined });
+    });
+
+    it("lets a listing override win over either flow", () => {
+      const policy = resolvePaymentPolicy(
+        { mode: "deposit", depositPct: 0.25 },
+        vendorPlan,
+        "EUR",
+        farOut,
+        marketplaceSettings,
+      );
+      expect(policy.depositPct).toBe(0.25);
+    });
+
+    it("still forces full payment inside the lead time, in either flow", () => {
+      expect(
+        resolvePaymentPolicy(null, vendorPlan, "EUR", insideWindow, marketplaceSettings).mode,
+      ).toBe("full");
+      expect(resolvePaymentPolicy(null, vendorPlan, "EUR", insideWindow).mode).toBe("full");
+    });
+
+    it("leaves a provider deposit standing on a near charter once lead time is switched off", () => {
+      const policy = resolvePaymentPolicy(null, vendorPlan, "EUR", insideWindow, {
+        ...marketplaceSettings,
+        source: "vendor",
+        enforceLeadTime: false,
+      });
+      expect(policy).toMatchObject({ mode: "deposit", depositPct: 0.3 });
+    });
+
+    it("moves the window with a configured lead time", () => {
+      /* 14 days before check-in is 2026-09-26, so a quote on 2026-09-01 is outside it. */
+      const policy = resolvePaymentPolicy(null, vendorPlan, "EUR", insideWindow, {
+        ...marketplaceSettings,
+        source: "vendor",
+        leadTimeDays: 14,
+      });
+      expect(policy.mode).toBe("deposit");
+    });
+  });
 });
 
 describe("payableNowMinor / totalMinor", () => {

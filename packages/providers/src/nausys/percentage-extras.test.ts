@@ -76,4 +76,22 @@ describe("yacht 75193633, a mandatory 35% service charge", () => {
   it("charges nothing rather than guessing when it cannot value the basis", () => {
     expect(extraLineMinor(withoutTotal(), "EUR")).toBe(0);
   });
+
+  /*
+   * The third basis the vendor names. It is a share of what we pay the operator, so valuing it
+   * against the list price would bill the customer our commission as well as the fee.
+   */
+  it("leaves a share of the agency price uncharged", () => {
+    const extra = { ...withoutTotal(), percentageCalculationType: "AGENCY_PRICE" };
+
+    expect(extraLineMinor(extra, "EUR", { listMinor: 2_260_000, clientMinor: 2_260_000 })).toBe(0);
+  });
+
+  it("takes the discounted charter when the vendor names CLIENT_PRICE", () => {
+    const extra = { ...withoutTotal(), percentageCalculationType: "CLIENT_PRICE" };
+
+    expect(extraLineMinor(extra, "EUR", { listMinor: 2_260_000, clientMinor: 2_000_000 })).toBe(
+      700_000,
+    );
+  });
 });

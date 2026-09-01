@@ -56,6 +56,20 @@ export interface CrewRoleService {
  * model. Bareboat and an unanswered control both mean nobody: a customer who has
  * not chosen must never be quoted for a skipper.
  */
+/**
+ * Whether this charter carries deposit insurance, which changes the deposit rather than the
+ * price. Nothing is loaded when no extra is selected: the common case is an empty list.
+ */
+async function selectsDepositInsurance(
+  options: { loadDepositInsuranceCodes?: (listingId: string) => Promise<ReadonlySet<string>> },
+  request: { listingId: string; extras: readonly string[] },
+): Promise<boolean> {
+  if (request.extras.length === 0 || !options.loadDepositInsuranceCodes) return false;
+
+  const codes = await options.loadDepositInsuranceCodes(request.listingId);
+  return request.extras.some((code) => codes.has(code));
+}
+
 function crewServiceIdsFor(
   roles: readonly CrewRoleService[],
   crewType: CrewType | undefined,
@@ -90,6 +104,14 @@ export interface NausysQuoteServiceOptions {
    * covers an offer that omits it.
    */
   loadSecurityDeposit?: (listingId: string) => Promise<Money | undefined>;
+  /**
+   * The listing's deposit-insurance extras, by canonical code.
+   *
+   * An operator that sells one holds a smaller deposit when the charter carries it, and states
+   * both figures on the offer. Without this the customer bought the insurance and was still
+   * shown -- and asked at the base for -- the full deposit.
+   */
+  loadDepositInsuranceCodes?: (listingId: string) => Promise<ReadonlySet<string>>;
   /** Resolves a vendor service or discount id to a customer-facing line label. */
   labelFor?: (kind: NausysLabelKind, externalId: string) => string | undefined;
   /**
@@ -190,9 +212,17 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         parsed.guests,
       );
 
-      // The offer's own deposit wins over the catalogue default; see the option's
-      // docstring. Read before the fallback so a present value costs no extra work.
-      const offered = yacht.price.depositAmount;
+      /*
+       * The offer's own deposit wins over the catalogue default; see the option's docstring.
+       * Read before the fallback so a present value costs no extra work.
+       *
+       * A charter carrying deposit insurance is held to the reduced figure the vendor sends
+       * beside it -- the whole point of buying the insurance, and the number the base will
+       * actually block on the card.
+       */
+      const insured = await selectsDepositInsurance(options, parsed);
+      const offered =
+        (insured ? yacht.price.depositWhenInsuredAmount : undefined) ?? yacht.price.depositAmount;
       const securityDeposit =
         offered === undefined
           ? await options.loadSecurityDeposit?.(parsed.listingId)

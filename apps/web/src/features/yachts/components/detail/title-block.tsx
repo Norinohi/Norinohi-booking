@@ -26,6 +26,16 @@ export default function TitleBlock() {
 
   if (!data) return null;
 
+  /*
+   * The model, but only when it says something the name does not - the same rule the sync uses
+   * to decide whether to append it to `title`, applied to the halves instead of the string.
+   * Without it, a boat the vendor named after its model reads "Sole | Sole".
+   */
+  const modelSubtitle =
+    data.name && data.model && !data.name.toLowerCase().includes(data.model.toLowerCase())
+      ? data.model
+      : undefined;
+
   const shareListing = () => {
     const url = window.location.href;
     if (navigator.share) {
@@ -55,7 +65,29 @@ export default function TitleBlock() {
       />
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-4 md:col-span-2 md:col-start-1 md:row-start-3">
-        <h1 className="text-[42px] font-bold leading-[1.15] text-foreground">{data.title}</h1>
+        {/*
+          Name and model as two elements rather than one merged string. `title` stays the joined
+          form for the tab, the breadcrumb and structured data; here the boat's own name carries
+          the weight and the model sits beside it, separated but plainly secondary.
+
+          `name` is null on a listing synced before the column existed, and the model is absent
+          whenever it would only repeat the name (a vendor that files a one-off yacht under its
+          own name as the model) - both fall back to the merged title, which is what this
+          rendered before.
+        */}
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[42px] leading-[1.15] font-bold text-foreground">
+          {data.name ?? data.title}
+          {modelSubtitle ? (
+            <span aria-hidden className="text-natural-200 max-md:hidden">
+              |
+            </span>
+          ) : null}
+          {modelSubtitle ? (
+            <span className="text-[28px] leading-[1.2] font-medium text-natural-500">
+              {modelSubtitle}
+            </span>
+          ) : null}
+        </h1>
         {/* Unrated is not zero — the read model coalesces an absent score, this puts it back. */}
         {data.rating > 0 ? (
           <Chip className="bg-transparent p-1.5 text-gold">

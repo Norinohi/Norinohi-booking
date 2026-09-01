@@ -181,6 +181,14 @@ export const listingsByIdsInputSchema = z.object({
 });
 
 export const listingDetailSchema = listingSummarySchema.extend({
+  /**
+   * The boat's own name, without the model - "Star Kiss" where `title` is "Star Kiss Sun
+   * Odyssey 350". Null on a listing synced before the column existed and never re-synced.
+   *
+   * The two are carried apart so the page can show them apart. `title` stays the joined form
+   * because slugs, `<title>` and structured data all want one string.
+   */
+  name: z.string().nullable(),
   /* Null when the provider ships no prose in the requested locale; the client writes its own. */
   description: z.string().nullable(),
   /* Null where the catalogue does not know; the web writes "not specified" in its own locale. */

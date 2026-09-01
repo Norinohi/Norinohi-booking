@@ -6,6 +6,7 @@ import { CONTENT_LOCALES } from "@yacht-charter/db/search/localize";
 
 import { toLocaleMap } from "../shared/international-text";
 import { decimalStringToMinor } from "../shared/money";
+import { mergeYachtTitle } from "../shared/yacht-title";
 import type { JsonField, JsonObject } from "../shared/json";
 import {
   currencyOf,
@@ -115,6 +116,9 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
      by label because that is what the extras on a yacht reference. */
   const equipmentTranslationsById = localeMapsById(equipment);
   const serviceTranslationsById = localeMapsById(services);
+  const depositInsuranceServiceIds = new Set(
+    services.flatMap((item) => (item.depositInsurance === true ? [String(item.id)] : [])),
+  );
   const priceMeasureById = new Map(
     priceMeasures.flatMap((item) => {
       const label = name(item.name);
@@ -162,6 +166,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
         sailTypeById,
         equipmentNameById,
         serviceNameById,
+        depositInsuranceServiceIds,
         equipmentTranslationsById,
         serviceTranslationsById,
         priceMeasureById,
@@ -249,6 +254,8 @@ type RestYachtModel = z.infer<typeof restYachtModelSchema>;
 type ExtraNaming = {
   equipmentNameById: Map<string, string>;
   serviceNameById: Map<string, string>;
+  /** Services that lower the deposit instead of adding something to the charter. */
+  depositInsuranceServiceIds: Set<string>;
   equipmentTranslationsById: Map<string, Record<string, string>>;
   serviceTranslationsById: Map<string, Record<string, string>>;
   priceMeasureById: Map<string, string>;
@@ -275,7 +282,12 @@ function projectYacht(
   const modelId = yacht.yachtModelId === undefined ? undefined : String(yacht.yachtModelId);
   const model = modelId === undefined ? undefined : context.modelById.get(modelId);
   const modelName = model?.name ?? "";
-  const title = `${yacht.name} ${modelName}`.trim();
+  /*
+   * Shared with Booking Manager. This used to concatenate blindly, which named 142 boats in the
+   * live catalogue things like "Sole Sole" - NauSYS records the model as the boat's own name for
+   * one-off yachts - and baked the repeat into the slug.
+   */
+  const title = mergeYachtTitle(yacht.name, modelName) ?? `Yacht ${externalId}`;
   const currency = currencyOf(seasonCurrencyOf(yacht) ?? yacht.depositCurrency);
   const depositCurrency = currencyOf(yacht.depositCurrency ?? currency);
 
@@ -292,6 +304,7 @@ function projectYacht(
     // category field at all, so an unresolved model also costs the category.
     externalCategoryId:
       model?.yachtCategoryId === undefined ? undefined : String(model.yachtCategoryId),
+    name: yacht.name?.trim() || undefined,
     title,
     // Name plus vendor id: stable across re-syncs, and unique even for a fleet of
     // ten identically named boats.
@@ -327,6 +340,8 @@ function projectYacht(
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
     securityDepositMinor: minorOf(yacht.deposit, depositCurrency),
+    /* Published only when it differs from the ordinary deposit, which is the vendor's rule. */
+    securityDepositWhenInsuredMinor: minorOf(yacht.depositWhenInsured, depositCurrency),
     securityDepositCurrency: depositCurrency,
     ...euminiaOf(yacht),
     // Payment terms are per period and come from `freeYachts`, never from the
@@ -635,12 +650,22 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
   );
   const relevant = atHomeBase.length > 0 ? atHomeBase : seasons;
 
-  const chosen = new Map<string, { seasonId: number; extra: CanonicalExtra }>();
+  type Candidate = { rank: ReturnType<typeof extraRank>; seasonId: number; extra: CanonicalExtra };
+  const beats = (left: Candidate, right: Candidate): boolean => {
+    if (left.rank.atHomeBase !== right.rank.atHomeBase) {
+      return left.rank.atHomeBase > right.rank.atHomeBase;
+    }
+    if (left.rank.endsAt !== right.rank.endsAt) return left.rank.endsAt > right.rank.endsAt;
+    return left.seasonId > right.seasonId;
+  };
+
+  const chosen = new Map<string, Candidate>();
   const consider = (seasonId: number, extra: CanonicalExtra | null) => {
     if (extra === null) return;
     const key = `${extra.kind}:${extra.externalId}`;
+    const candidate: Candidate = { rank: extraRank(extra, homeBaseId), seasonId, extra };
     const held = chosen.get(key);
-    if (held === undefined || seasonId > held.seasonId) chosen.set(key, { seasonId, extra });
+    if (held === undefined || beats(candidate, held)) chosen.set(key, candidate);
   };
 
   for (const season of relevant) {
@@ -663,6 +688,81 @@ function extrasOf(yacht: RestYacht, currency: string, context: ExtraNaming): Can
 
 type ExtraScope = { externalSeasonId: string | undefined; externalBaseId: string | undefined };
 
+/** Everything the vendor says about when this row applies, in our own words. */
+type ExtraConditions = Pick<
+  CanonicalExtra,
+  | "seasonStart"
+  | "seasonEnd"
+  | "validNightsFrom"
+  | "validNightsTo"
+  | "validForBaseIds"
+  | "minimumPriceMinor"
+>;
+
+/**
+ * The row's own conditions, which the vendor states per price rather than per extra.
+ *
+ * `minDuration`/`maxDuration` are days, and our nights are one fewer: the vendor counts the
+ * calendar days the boat is held, the way its own crew-list dates do. A seven-night charter
+ * runs eight days, so a row for a "7 to 13 day" extra covers six to twelve nights.
+ *
+ * `validMinPax`/`validMaxPax` are read and dropped on purpose. Nothing that displays a
+ * catalogue extra knows the party size -- the card is per listing and the checkout prices
+ * through the vendor -- so storing them would be a column nobody could honestly consult.
+ */
+function conditionsOf(item: ExtraPriceRow, currency: string): ExtraConditions {
+  const conditions: ExtraConditions = {};
+
+  const from = nausysDayOrUndefined(item.validPeriodFrom);
+  const to = nausysDayOrUndefined(item.validPeriodTo);
+  if (from !== undefined) conditions.seasonStart = from;
+  if (to !== undefined) conditions.seasonEnd = to;
+
+  const minNights = nightsOf(item.minDuration);
+  const maxNights = nightsOf(item.maxDuration);
+  if (minNights !== undefined) conditions.validNightsFrom = minNights;
+  if (maxNights !== undefined) conditions.validNightsTo = maxNights;
+
+  const bases = item.validForBases ?? [];
+  if (bases.length > 0) conditions.validForBaseIds = bases.map((base) => String(base));
+
+  const floor = minorOf(item.minimumPrice, currency);
+  if (floor !== undefined && floor > 0) conditions.minimumPriceMinor = floor;
+
+  return conditions;
+}
+
+/** The subset of both price rows this reads; the two schemas carry these fields alike. */
+type ExtraPriceRow = {
+  minDuration?: number;
+  maxDuration?: number;
+  validPeriodFrom?: JsonField;
+  validPeriodTo?: JsonField;
+  validForBases?: number[];
+  minimumPrice?: string;
+};
+
+function nightsOf(days: number | undefined): number | undefined {
+  if (days === undefined || !Number.isInteger(days) || days <= 0) return undefined;
+  return days - 1;
+}
+
+/**
+ * Which of an extra's rows we keep, given that only one may be stored per extra: the id space
+ * is the vendor's and `provider_extra_catalogue` is keyed on it.
+ *
+ * A row that applies at the yacht's own base beats one that does not, because that is where
+ * the charters we price start. Then the row whose window runs latest, which is how an expired
+ * variant loses to a current one without this pure function needing to know today's date, and
+ * the season id breaks what is left. The conditions ride along on whichever row wins, so a
+ * reader can still drop it for a charter it does not cover.
+ */
+function extraRank(extra: CanonicalExtra, homeBaseId: string | undefined) {
+  const bases = extra.validForBaseIds ?? [];
+  const atHomeBase = bases.length === 0 || (homeBaseId !== undefined && bases.includes(homeBaseId));
+  return { atHomeBase: atHomeBase ? 1 : 0, endsAt: extra.seasonEnd ?? "9999-12-31" };
+}
+
 function serviceExtraOf(
   item: NonNullable<NonNullable<RestYacht["seasonSpecificData"]>[number]["services"]>[number],
   fallbackCurrency: string,
@@ -681,7 +781,9 @@ function serviceExtraOf(
   const rate = percentageOf(item);
   /* A percentage carries its rate instead of a price: `price` is 0.00 on those rows and
      `amount` is the rate, so reading either as money is wrong. See `percentageOf`. */
-  const priceMinor = rate === undefined ? minorOf(item.price ?? item.amount, priceCurrency) : 0;
+  /* `amount` is the field in use: the vendor deprecated `price` here in its favour (and
+     `listPrice` on the equipment prices beside it), so the older one is only a fallback. */
+  const priceMinor = rate === undefined ? minorOf(item.amount ?? item.price, priceCurrency) : 0;
   if (priceMinor === undefined) return null;
 
   const extra: CanonicalExtra = {
@@ -697,6 +799,8 @@ function serviceExtraOf(
     calculationType: text(item.calculationType),
     payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: item.onRequestOnly === true,
+    ...(context.depositInsuranceServiceIds.has(externalId) ? { depositInsurance: true } : null),
+    ...conditionsOf(item, priceCurrency),
     ...scope,
   };
 
@@ -721,7 +825,9 @@ function equipmentExtraOf(
   if (item.availableOnAgencyPortal === false) return null;
 
   const priceCurrency = currencyOf(item.currency, fallbackCurrency);
-  const priceMinor = minorOf(item.price ?? item.amount, priceCurrency);
+  /* `amount` is the field in use: the vendor deprecated `price` here in its favour (and
+     `listPrice` on the equipment prices beside it), so the older one is only a fallback. */
+  const priceMinor = minorOf(item.amount ?? item.price, priceCurrency);
   if (priceMinor === undefined) return null;
 
   return {
@@ -737,6 +843,7 @@ function equipmentExtraOf(
     calculationType: text(item.calculationType),
     payableInBase: payableInBaseOf(item.calculationType),
     onRequestOnly: false,
+    ...conditionsOf(item, priceCurrency),
     ...scope,
   };
 }

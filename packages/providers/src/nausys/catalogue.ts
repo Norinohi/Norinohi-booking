@@ -205,6 +205,16 @@ export async function* syncNausysCatalogue(
   const scope = options.companyScope ?? unscopedCompanies;
   const inScope = (companyId: string) => scope.inScope(companyId);
   let companyIds = (options.companyIds ?? []).filter(inScope);
+  /*
+   * Whether `companyIds` is this run's own clean reading of the vendor's company
+   * list, which is what authorises retiring a fleet the dump no longer mentions.
+   * Ids handed in through options are the caller's, not the vendor's answer to
+   * this run, so they start untrusted until the dump below is read cleanly.
+   */
+  let companyListTrusted = false;
+  /* Only the ids this run read from the dump, kept apart from `companyIds` so an
+     id handed in through options cannot pass itself off as the vendor's answer. */
+  const dumpCompanyIds: string[] = [];
 
   for (const [index, step] of CATALOGUE_STEPS.entries()) {
     if (index < startStep) continue;
@@ -235,6 +245,7 @@ export async function* syncNausysCatalogue(
       if (index === COMPANY_STEP) {
         if (!inScope(externalId)) continue;
         companyIds.push(externalId);
+        dumpCompanyIds.push(externalId);
       }
       yield {
         type: "entity",
@@ -259,6 +270,11 @@ export async function* syncNausysCatalogue(
       continue;
     }
 
+    // Reached only when the dump was fetched and every item understood, which is
+    // the same bar the retire pass needs before it may read an absent company as
+    // withdrawn rather than as a response we failed to parse.
+    if (index === COMPANY_STEP) companyListTrusted = true;
+
     // No scopeKey: one call covered every scope of this resource type, so a clean
     // response authorises sweeping all of them.
     yield {
@@ -271,7 +287,12 @@ export async function* syncNausysCatalogue(
   if (companyIds.length === 0) {
     // Resuming past the companies dump leaves us without the ids the yacht sweep is
     // addressed by. One extra call is cheaper than restarting a multi-hour run.
-    companyIds = (await listCompanyIds(client, options)).filter(inScope);
+    const listed = await listCompanyIds(client, options);
+    if (listed !== null) {
+      companyIds = listed.filter(inScope);
+      dumpCompanyIds.push(...companyIds);
+      companyListTrusted = true;
+    }
   }
 
   const startCompany = resume?.step === YACHT_STEP ? (resume.companyIndex ?? 0) : 0;
@@ -339,6 +360,7 @@ export async function* syncNausysCatalogue(
   yield* retireOutOfScopeCompanies({
     scope,
     listImportedCompanyIds: options.listImportedCompanyIds,
+    vendorCompanyIds: companyListTrusted ? dumpCompanyIds : null,
   });
 }
 
@@ -349,25 +371,32 @@ export function nausysCatalogueSource(
   return (reporter) => syncNausysCatalogue(client, { ...options, reporter });
 }
 
+/**
+ * Null rather than an empty array whenever the answer is not the vendor's full
+ * company list: the caller uses it to decide whether an absent company may be
+ * read as withdrawn, and "the call failed" must never look like "no companies".
+ */
 async function listCompanyIds(
   client: NausysClient,
   options: NausysCatalogueOptions,
-): Promise<string[]> {
+): Promise<string[] | null> {
   const step = CATALOGUE_STEPS[COMPANY_STEP];
-  if (!step) return [];
+  if (!step) return null;
 
   try {
     const dump = await client.catalogueCall(step.endpoint, dumpSchema);
-    return collectionOf(dump, step.collectionKeys, step.endpoint)
-      .map((item) => idOf(item.id))
-      .filter((id): id is string => id !== null);
+    const items = collectionOf(dump, step.collectionKeys, step.endpoint);
+    const ids = items.map((item) => idOf(item.id)).filter((id): id is string => id !== null);
+    // Same bar as the main loop's `malformed` check: a dump we only partly
+    // understood is not a list of every company the credential can see.
+    return ids.length === items.length ? ids : null;
   } catch (error) {
     if (isFatal(error)) throw error;
     await options.reporter?.reportError(error, {
       resourceType: "company",
       context: { endpoint: step.endpoint },
     });
-    return [];
+    return null;
   }
 }
 

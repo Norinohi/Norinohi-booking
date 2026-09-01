@@ -124,7 +124,28 @@ export const providerExtraCatalogue = pgTable(
      * states it as `validForBases`, a from/to base pairing that only a one-way fee carries.
      */
     oneWayOnly: boolean("one_way_only").default(false).notNull(),
+    /**
+     * The provider's own base ids this price applies at, empty meaning everywhere. NauSYS
+     * carries one on 130,535 of its 184,539 priced extras rows, and reading them all as
+     * unconditional put fees on cards that no charter from that base is charged.
+     */
+    validForBaseIds: text("valid_for_base_ids").array(),
+    /**
+     * A floor under a computed total, in minor units. Only meaningful beside `percentage`: a
+     * 3% fee with a 50 EUR minimum is 50 EUR on a small charter, not 30.
+     *
+     * Written but not yet read. The card sums percentage fees into one rate and multiplies the
+     * base by it once, and a per-fee floor cannot survive that sum -- honouring it means
+     * totalling the fees one at a time. No row in the sampled fleets carries one, so this is
+     * the value being kept rather than lost until something needs it.
+     */
+    minimumPriceMinor: integer("minimum_price_minor"),
     onRequestOnly: boolean("on_request_only").default(false).notNull(),
+    /**
+     * Buying this lowers the security deposit rather than adding anything to the charter, so
+     * the quote answers with the operator's reduced figure instead of the ordinary one.
+     */
+    depositInsurance: boolean("deposit_insurance").default(false).notNull(),
     externalSeasonId: text("external_season_id"),
     externalBaseId: text("external_base_id"),
     ...timestamps,

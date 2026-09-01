@@ -78,6 +78,14 @@ import {
   enquirySetStatusInputSchema,
 } from "../contracts/enquiry";
 import { emptyInputSchema } from "../contracts/primitives";
+import {
+  marketplaceSettingsSchema,
+  marketplaceSettingsUpdateInputSchema,
+} from "../contracts/admin";
+import {
+  getMarketplaceSettings,
+  updateMarketplaceSettings,
+} from "../services/marketplace-settings";
 import { activeConnectorSchema } from "../contracts/provider";
 import {
   outboxDrainResultSchema,
@@ -211,6 +219,51 @@ async function resolveSyncProvider(
 }
 
 export const adminRouter = {
+  settings: {
+    get: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/settings/get",
+        operationId: "getMarketplaceSettings",
+        summary: "Read the marketplace-wide settings",
+        description:
+          "The payment flow in force for every quote: whether we follow the provider's own instalment plan or our own percentage, and whether a charter starting soon is forced to full prepayment. A database that has never been configured answers with the defaults rather than an error.",
+        tags: ["Admin"],
+        successDescription: "The current settings.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(marketplaceSettingsSchema)
+      .handler(({ context }) => getMarketplaceSettings(context.db)),
+    update: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/settings/update",
+        operationId: "updateMarketplaceSettings",
+        summary: "Change the marketplace-wide settings",
+        description:
+          "Saves the payment flow. Takes effect on the next quote, not on quotes already issued: a quote the customer is holding keeps the policy it was priced under.",
+        tags: ["Admin"],
+        successDescription: "The saved settings.",
+        spec: withJsonBodyExample({
+          payment: {
+            source: "marketplace",
+            mode: "deposit",
+            depositPct: 0.5,
+            enforceLeadTime: true,
+            leadTimeDays: 60,
+          },
+        }),
+      })
+      .input(marketplaceSettingsUpdateInputSchema)
+      .output(marketplaceSettingsSchema)
+      .handler(({ context, input }) =>
+        updateMarketplaceSettings(context.db, {
+          payment: input.payment,
+          actorUserId: context.session.user.id,
+        }),
+      ),
+  },
   /* The suggested-route library and the geography picker it targets, in their own module: this
      file is already the largest router and the two are one screen's worth of contract. */
   route: routeAdminRouter,
