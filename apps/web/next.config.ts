@@ -37,10 +37,16 @@ const nextConfig: NextConfig = {
    *
    * Both are workarounds for the per-page API cost. The scoped `getFacets(scope)` read in
    * `prefetchSearch` is the one to profile before raising either number further.
+   *
+   * Raised 2 -> 3 once the shared `db` pool (packages/db/src/index.ts) went from node-postgres's
+   * default 10 connections to 20: `listSearchFacets` alone fans out to 11-18 queries per call via
+   * `Promise.all`, so the original contention was plausibly the pool queuing, not the API server
+   * itself. Bump this further only after confirming a prod build stays green at 3 — the failure
+   * mode here is the build dying past the 60s page limit, not just running slower.
    */
   staticPageGenerationTimeout: 180,
   experimental: {
-    staticGenerationMaxConcurrency: 2,
+    staticGenerationMaxConcurrency: 3,
     /*
      * Exposes the testing API that `@next/playwright`'s `instant()` drives. Without it `instant()`
      * silently no-ops and the navigation tests pass while proving nothing — a green suite that is
