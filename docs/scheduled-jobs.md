@@ -244,6 +244,24 @@ Manager hold is refused rather than released: the run exits non-zero and the ven
 keeps holding the boat, which is at least loud, but it is still a boat nobody can
 sell until someone reads the log.
 
+`cron-reconcile` needs exactly what the sweep needs, and for the same reason: it walks
+bookings across vendors and resolves each one's adapter from its own `provider` column,
+so **both credential sets** or a booking held by the other vendor is silently skipped.
+It publishes nothing and writes no catalog, so it wants neither `PROVIDER_AUTO_PUBLISH`
+nor `REVALIDATE_SECRET`.
+
+```
+PROVIDER_MODE=nausys
+NAUSYS_BASE_URL                      ${{api.NAUSYS_BASE_URL}}
+NAUSYS_USERNAME                      ${{api.NAUSYS_USERNAME}}
+NAUSYS_PASSWORD                      ${{api.NAUSYS_PASSWORD}}
+BOOKING_MANAGER_BASE_URL             ${{api.BOOKING_MANAGER_BASE_URL}}
+BOOKING_MANAGER_API_KEY              ${{api.BOOKING_MANAGER_API_KEY}}
+```
+
+The company scope pair is not needed: this pass asks about reservations we already hold,
+not about a fleet to import.
+
 `cron-reminders` and `cron-outbox` touch no provider at all, so `PROVIDER_MODE` can
 stay at its `mock` default there. What they do need is the mailer, and need it more
 than anything else on this page needs its optional variables:

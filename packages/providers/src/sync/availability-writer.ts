@@ -1242,6 +1242,47 @@ export function createDrizzleAvailabilitySyncStore(
               and s.start_date < ${endDate}
               and s.end_date > ${startDate}
           )
+          /*
+           * And a charter the operator's own rules could sell.
+           *
+           * A vendor asked about a shape it never sells says no for that reason alone, and
+           * writing that down retires a week nobody was refused. One hull publishes Saturday
+           * to Saturday, seven nights minimum, and carried 35 refusals across six weeks of
+           * autumn -- three nights Tuesday to Friday, two nights Saturday to Monday -- until
+           * its card had walked from October into the following June. Across production,
+           * 289,451 stored refusals are for charters shorter than the operator's own minimum.
+           *
+           * The same test rangeStatus applies before a live refusal is learned, which is why
+           * the quote path never wrote these and the sweep did. A listing that publishes no
+           * rules is left alone: silence there is not permission to judge.
+           */
+          and (
+            not exists (select 1 from listing_checkin_rule c where c.listing_offer_id = o.id)
+            or exists (
+              select 1 from listing_checkin_rule c
+              where c.listing_offer_id = o.id
+                and (c.season_start is null or c.season_start <= ${startDate}::date)
+                and (c.season_end is null or c.season_end >= ${startDate}::date)
+                and (
+                  c.checkin_weekday is null
+                  or extract(dow from ${startDate}::date)::int = c.checkin_weekday
+                )
+                /*
+                 * Check-out weekday is deliberately not tested. NauSYS writes a week as
+                 * 03..09 October -- the last night, not the check-out morning -- and the two
+                 * vendors' conventions differ by that day, so the test would reject genuine
+                 * charters on one of them. Check-in day and length carry the judgement.
+                 */
+                and (
+                  c.min_nights is null
+                  or (${endDate}::date - ${startDate}::date) >= c.min_nights
+                )
+                and (
+                  c.max_nights is null
+                  or (${endDate}::date - ${startDate}::date) <= c.max_nights
+                )
+            )
+          )
       `);
 
       const offered = new Set(offeredListingIds);
