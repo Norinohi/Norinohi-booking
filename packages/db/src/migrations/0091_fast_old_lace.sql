@@ -1,0 +1,1 @@
+ALTER TABLE "listing_search_doc" ADD COLUMN "security_deposit_when_insured_minor" integer;

@@ -106,6 +106,7 @@ export type ListingSearchDoc = {
   /** Refundable damage deposit taken at the base. Null when the provider takes none. */
   securityDepositMinor: number | null;
   securityDepositCurrency: string | null;
+  securityDepositWhenInsuredMinor: number | null;
   depositInsuranceIncluded: boolean;
   petsAllowed: boolean;
   rating: string;

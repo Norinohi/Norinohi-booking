@@ -70,6 +70,7 @@ export async function rebuildListingSearchDocs(
         o.default_currency,
         o.security_deposit_minor,
         o.security_deposit_currency,
+        o.security_deposit_when_insured_minor,
         o.deposit_insurance_included,
         o.crew_type,
         rate.currency,
@@ -758,6 +759,7 @@ export async function rebuildListingSearchDocs(
       sail_type,
       security_deposit_minor,
       security_deposit_currency,
+      security_deposit_when_insured_minor,
       deposit_insurance_included,
       pets_allowed,
       rating,
@@ -849,6 +851,27 @@ export async function rebuildListingSearchDocs(
       case
         when coalesce(best.security_deposit_minor, l.security_deposit_minor) > 0
           then coalesce(best.security_deposit_currency, l.security_deposit_currency)
+      end,
+      /*
+       * The reduced deposit, under the same currency guard as the deposit itself: it is quoted
+       * in that same currency, so a card that had to drop one must drop both rather than show a
+       * "with insurance" figure beside no ordinary figure to compare it against.
+       *
+       * The nullif and the less-than test are the projection's rule restated in SQL - NauSYS
+       * sends a bare 0 on most hulls and, on a few, a figure no lower than the ordinary deposit.
+       * Neither is a reduction, and advertising one would promise the guest something the base
+       * will not honour.
+       */
+      case
+        when coalesce(best.security_deposit_currency, l.security_deposit_currency) is null
+          or coalesce(best.security_deposit_currency, l.security_deposit_currency)
+             = coalesce(best.price_currency, best.currency, best.default_currency, l.default_currency)
+        then nullif(
+          case
+            when coalesce(best.security_deposit_when_insured_minor, l.security_deposit_when_insured_minor)
+                 < coalesce(best.security_deposit_minor, l.security_deposit_minor)
+            then coalesce(best.security_deposit_when_insured_minor, l.security_deposit_when_insured_minor)
+          end, 0)
       end,
       coalesce(best.deposit_insurance_included, l.deposit_insurance_included),
       l.pets_allowed,
@@ -1020,6 +1043,7 @@ export async function rebuildListingSearchDocs(
       sail_type = excluded.sail_type,
       security_deposit_minor = excluded.security_deposit_minor,
       security_deposit_currency = excluded.security_deposit_currency,
+      security_deposit_when_insured_minor = excluded.security_deposit_when_insured_minor,
       deposit_insurance_included = excluded.deposit_insurance_included,
       pets_allowed = excluded.pets_allowed,
       rating = excluded.rating,

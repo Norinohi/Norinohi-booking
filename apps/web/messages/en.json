@@ -1368,7 +1368,8 @@
       "onRequestHint": "We have dates for it, but no published rate covers them. Tell us when you would like to sail and we will come back with a price.",
       "dropOff": "Drop-off marina",
       "pickUp": "Pick-up: {marina}",
-      "boatPriceHintDiscounted": "Rental price after discount"
+      "boatPriceHintDiscounted": "Rental price after discount",
+      "depositWhenInsured": "or {amount} with the damage waiver"
     },
     "panels": {
       "details": "Yacht Details",

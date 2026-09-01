@@ -1150,6 +1150,7 @@ const searchColumns = sql`
   doc.sail_type as "sailType",
   doc.security_deposit_minor as "securityDepositMinor",
   doc.security_deposit_currency as "securityDepositCurrency",
+  doc.security_deposit_when_insured_minor as "securityDepositWhenInsuredMinor",
   doc.deposit_insurance_included as "depositInsuranceIncluded",
   doc.pets_allowed as "petsAllowed",
   doc.rating,
