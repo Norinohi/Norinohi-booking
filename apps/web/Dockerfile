@@ -15,6 +15,12 @@ ARG NODE_VERSION=22.19.0
 FROM node:${NODE_VERSION}-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable
+# Turbopack (which `next build` uses) is a Rust binary dynamically linked against libatomic,
+# which Debian's slim image does not ship. Railpack installs the same package for this project
+# (its build log shows "install apt packages: libatomic1") — without it `next build` fails to
+# even start.
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Manifests only, so a source-only change reuses the install layer. `--filter=web...` still needs
@@ -32,8 +38,7 @@ COPY packages/observability/package.json packages/observability/
 COPY packages/providers/package.json packages/providers/
 COPY packages/transactional/package.json packages/transactional/
 COPY packages/ui/package.json packages/ui/
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=deps /app ./

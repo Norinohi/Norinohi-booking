@@ -90,6 +90,19 @@ export const listingOffer = pgTable(
     /** A walkthrough the operator filmed, and a 360 tour of the same boat. */
     videoUrl: text("video_url"),
     tourUrl: text("tour_url"),
+    /**
+     * The smallest party this offer has been refused for, learned from live quotes.
+     *
+     * Booking Manager's offers engine caps a product below the boat's berth count and publishes
+     * the cap nowhere: `maxPeopleOnBoard` exists in its schema and is null on all 12,813
+     * products we hold, and neither the offer nor its product carries a capacity. One hull
+     * advertised with 9 berths sells to 8, and the only way to find out is to ask for nine and
+     * be told nothing.
+     *
+     * So it is recorded when that happens: the search filter matches on berths, and a party
+     * this offer has already refused should stop being sent to it.
+     */
+    guestsRefusedFrom: integer("guests_refused_from"),
     securityDepositMinor: integer("security_deposit_minor"),
     /** The deposit this offer takes when the charter carries deposit insurance. */
     securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),

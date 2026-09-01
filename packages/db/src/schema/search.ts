@@ -59,6 +59,12 @@ export const listingSearchDoc = pgTable(
     showers: integer("showers"),
     yearBuilt: integer("year_built"),
     sailType: text("sail_type"),
+    /**
+     * The largest party this listing can actually be sold to: its berths, less whatever a
+     * vendor has refused. Filtered on instead of `berths`, so a family of nine stops being
+     * shown a boat whose operator will not take nine.
+     */
+    maxGuests: integer("max_guests"),
     securityDepositMinor: integer("security_deposit_minor"),
     securityDepositCurrency: text("security_deposit_currency"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),

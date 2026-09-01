@@ -1,8 +1,8 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "pnpm turbo run build --filter=web...",
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "apps/web/Dockerfile",
     "watchPatterns": [
       "apps/web/**",
       "packages/api/**",
@@ -19,7 +19,6 @@
     ]
   },
   "deploy": {
-    "startCommand": "pnpm --filter web start",
     "healthcheckPath": "/en",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",

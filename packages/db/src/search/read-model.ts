@@ -100,6 +100,8 @@ export async function rebuildListingSearchDocs(
          * Caribbean, understating the price by whatever the pair was worth that day.
          */
         money.price_currency,
+        /* Carried through so the listing below can cap its guests by what this offer refuses. */
+        o.guests_refused_from,
         /*
          * The same figure in one currency, for every comparison the catalogue makes across
          * listings -- the price sort, the price filter, the "from" aggregates, and the pick of
@@ -749,6 +751,7 @@ export async function rebuildListingSearchDocs(
       length_m,
       cabins,
       berths,
+      max_guests,
       heads,
       showers,
       year_built,
@@ -813,6 +816,15 @@ export async function rebuildListingSearchDocs(
       spec.length_m,
       spec.cabins,
       spec.berths,
+      /*
+       * What the boat can actually be sold to.
+       *
+       * Berths are what it sleeps; a vendor's offers engine may sell fewer and say so nowhere
+       * -- Booking Manager's maxPeopleOnBoard is null on all 12,813 products we hold. What we
+       * have instead is what it has already refused, learned at quote time, and one below that
+       * is the most we know it will take.
+       */
+      least(spec.berths, best.guests_refused_from - 1) as max_guests,
       spec.heads,
       spec.showers,
       spec.year_built,
@@ -1001,6 +1013,7 @@ export async function rebuildListingSearchDocs(
       length_m = excluded.length_m,
       cabins = excluded.cabins,
       berths = excluded.berths,
+      max_guests = excluded.max_guests,
       heads = excluded.heads,
       showers = excluded.showers,
       year_built = excluded.year_built,
