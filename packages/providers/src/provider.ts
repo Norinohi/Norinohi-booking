@@ -15,6 +15,7 @@ import type {
   ProviderRecordSet,
   ProviderReservation,
   ProviderReservationRef,
+  ProviderReservationState,
   CrewRequirements,
   QuoteRequest,
   RawEntity,
@@ -59,5 +60,17 @@ export interface InventoryProvider {
    * NauSYS publishes Croatia's; a provider that publishes none leaves the field free text.
    */
   searchCrewPlaces?(query: string, limit: number): Promise<CrewPlace[]>;
+  /**
+   * The reservations this operator changed inside a window, so our copies can be checked
+   * against theirs.
+   *
+   * Optional: NauSYS filters its reservation list by modify time, Booking Manager does not
+   * publish such a feed, and a provider that cannot answer simply leaves its bookings
+   * unreconciled rather than blocking the pass.
+   */
+  listChangedReservations?(window: {
+    since: Date;
+    until: Date;
+  }): Promise<ProviderReservationState[]>;
   capabilities(): ProviderCapabilities;
 }

@@ -206,6 +206,19 @@ correct. The recorded response `{amount: "10.00", quantity: "10.00", totalPrice:
 "100.00"}` bills the customer 100.00. The connector uses `totalPrice` where the
 vendor sends it and `amount x quantity` where it does not.
 
+#### The one change feed: reservations by modify time
+
+`RestYachtReservationsRequest` takes `modifyTimeFrom`/`modifyTimeTo` (`dd.MM.yyyy HH:mm`, in
+the vendor's own CET/CEST), and `RestYachtReservation` carries `lastModifiedAt`. That is the
+whole of what NauSYS offers as a change feed — no webhook, no events — and nothing here read
+it, so an operator cancelling or moving a charter left our booking saying what it said the day
+it was made. `listChangedNausysReservations` now backs a scheduled reconciliation pass; the
+window, what it writes and what it deliberately refuses to write are in `docs/scheduled-jobs.md`.
+
+Also on that request and unused: `endDateFrom`/`endDateTo` (check-out window),
+`includeWaitingOptions`, `canceledType` (obligatory for the storno export), `displayCurrency`
+and the two cabin-charter filters.
+
 #### Extras availability conditions
 
 A priced extra is filed **per condition**, not per extra: `RestYachtServicePrice` and

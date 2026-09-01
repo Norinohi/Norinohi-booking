@@ -1,17 +1,19 @@
 # Scheduled jobs
 
-Five jobs keep a live provider catalogue current, stop expired holds from
-selling a slot twice, tell a customer their balance is coming due, and deliver the
-mail checkout wrote down instead of sending. None of them run on the `server`
-service itself: that service answers requests, and a catalogue walk takes hours.
+Six jobs keep a live provider catalogue current, stop expired holds from
+selling a slot twice, notice when an operator has changed a charter behind our back,
+tell a customer their balance is coming due, and deliver the mail checkout wrote down
+instead of sending. None of them run on the `server` service itself: that service
+answers requests, and a catalogue walk takes hours.
 
-| Job               | Cadence          | Runs                                     | Config                                       |
-| ----------------- | ---------------- | ---------------------------------------- | -------------------------------------------- |
-| Catalogue sync    | daily, 01:00 UTC | `pnpm --filter server sync:catalogue`    | `apps/server/railway.cron-catalogue.json`    |
-| Availability sync | hourly           | `pnpm --filter server sync:availability` | `apps/server/railway.cron-availability.json` |
-| Expiry sweep      | every 10 min     | `pnpm --filter server sweep:expiries`    | `apps/server/railway.cron-sweep.json`        |
-| Payment reminders | daily, 09:00 UTC | `pnpm --filter server remind:payments`   | `apps/server/railway.cron-reminders.json`    |
-| Outbox drain      | every 5 min      | `pnpm --filter server drain:outbox`      | `apps/server/railway.cron-outbox.json`       |
+| Job                   | Cadence          | Runs                                          | Config                                       |
+| --------------------- | ---------------- | --------------------------------------------- | -------------------------------------------- |
+| Catalogue sync        | daily, 01:00 UTC | `pnpm --filter server sync:catalogue`         | `apps/server/railway.cron-catalogue.json`    |
+| Availability sync     | hourly           | `pnpm --filter server sync:availability`      | `apps/server/railway.cron-availability.json` |
+| Expiry sweep          | every 10 min     | `pnpm --filter server sweep:expiries`         | `apps/server/railway.cron-sweep.json`        |
+| Reservation reconcile | every 6 hours    | `pnpm --filter server reconcile:reservations` | `apps/server/railway.cron-reconcile.json`    |
+| Payment reminders     | daily, 09:00 UTC | `pnpm --filter server remind:payments`        | `apps/server/railway.cron-reminders.json`    |
+| Outbox drain          | every 5 min      | `pnpm --filter server drain:outbox`           | `apps/server/railway.cron-outbox.json`       |
 
 `0 1 * * *` is 02:00 CET in winter and 03:00 CEST in summer, both of which clear
 the NauSYS request for one full dump a day after 01:00 GMT+1. Railway's cron
@@ -52,6 +54,37 @@ so in a healthy system the mail is already gone and this tick finds nothing. It 
 at Railway's minimum gap because what it catches is a container replaced mid-drain
 and a mailer that was down — the cases where the customer is waiting on this run and
 nothing else. See `packages/api/src/services/outbox.ts`.
+
+## Reservation reconciliation
+
+Nothing ever re-read a reservation. The booking chain writes our copy at the moment we act on
+it — option, confirm, cancel — and then the record stands still while the operator goes on
+working in their own system. A charter they call off, a boat they swap, a week they move: the
+first we would hear of it is the customer arriving at the base.
+
+NauSYS publishes no webhook and no event stream, but its reservation list filters by modify
+time (`modifyTimeFrom`/`modifyTimeTo`), which is enough to ask "what changed since the last
+run". Verified against the live account (Sep 2026): 14 of the agency's 61 reservations answered
+for a two-month window, each carrying `lastModifiedAt`. Booking Manager publishes no such feed;
+`listChangedReservations` is optional on the provider interface and a vendor without one leaves
+its bookings unreconciled rather than blocking the pass.
+
+**It writes two things and only two**: the vendor's status word onto `booking.provider_status`,
+and the rotated security token, without which every later call on that reservation — a
+cancellation, a crew list — is refused. It does **not** move a booking's own status. A charter
+the operator cancelled is money in a customer's hands and a refund somebody has to decide on,
+and this pass cannot know whether that already happened. So it reports and exits non-zero, and
+`flagStaleConfirmations` in the expiry sweep takes the same line for the same reason.
+
+Two things about the window. It is stated in the **vendor's** wall clock, so the pass converts
+(`formatInZone`); sending UTC would ask for the wrong two hours of a summer day. And each run
+starts six hours before the last one ended, because re-reading a change costs one comparison
+that finds nothing, while missing one costs a customer their holiday. A run whose feed was
+unreachable does not advance the cursor at all.
+
+The cursor lives in `sync_cursor` under a `reservations` kind. That kind never opens a
+`sync_run` — there is nothing to lock, and no import to resume — which is why `SyncKind` in
+`sync/run.ts` excludes it.
 
 The reminder window is ten days wide and each installment is claimed before it is
 mailed, so the daily tick is a floor rather than a deadline: a missed day catches

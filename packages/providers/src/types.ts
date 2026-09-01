@@ -311,6 +311,32 @@ export const bookingDraftSchema = z.object({
 });
 export type BookingDraft = z.infer<typeof bookingDraftSchema>;
 
+/**
+ * A reservation as the vendor holds it right now, read from its own change feed.
+ *
+ * The booking chain writes our copy of a reservation once, at the moment we act on it, and
+ * nothing has ever read it back: an operator who cancels a charter, moves its dates or reprices
+ * it does so in their own system, and our booking goes on saying what it said in April. This is
+ * what a reconciliation pass compares against.
+ *
+ * `status` is the canonical one, so a reader does not have to know the vendor's words.
+ */
+export const providerReservationStateSchema = z.object({
+  providerReservationId: z.string(),
+  status: z.enum(["option_held", "confirmed", "cancelled"]),
+  /** Rotates on every write, so the vendor's copy is newer than ours by definition. */
+  securityToken: z.string().optional(),
+  /** The vendor's own word for the status, kept for the operator reading the report. */
+  providerStatus: z.string(),
+  checkIn: z.string().optional(),
+  checkOut: z.string().optional(),
+  priceMinor: z.number().int().optional(),
+  currency: z.string().optional(),
+  /** When the operator last touched it, which is why this row came back. */
+  lastModifiedAt: z.string().optional(),
+});
+export type ProviderReservationState = z.infer<typeof providerReservationStateSchema>;
+
 export const providerReservationSchema = z.object({
   id: z.string(),
   provider: providerKeySchema,

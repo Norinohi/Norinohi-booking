@@ -18,6 +18,7 @@ import type {
   ProviderRecordSet,
   ProviderReservation,
   ProviderReservationRef,
+  ProviderReservationState,
   CrewListReceipt,
   CrewListSubmission,
   CrewPlace,
@@ -54,6 +55,7 @@ import {
   submitNausysCrewList,
 } from "./crew-list";
 import { projectNausysCatalogue } from "./projection";
+import { listChangedNausysReservations } from "./reservations";
 import { formatExtraCode } from "../shared/extra-code";
 import { createNausysQuoteService, type CrewRoleService } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
@@ -223,6 +225,19 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
       submission.members,
       submission.note,
     );
+  }
+
+  /**
+   * The reservations this operator changed in a window, for the reconciliation pass.
+   *
+   * On the sync client rather than the live one: this is background work with a whole window
+   * of reservations behind it, and it must not compete with a customer waiting on a price.
+   */
+  listChangedReservations(window: {
+    since: Date;
+    until: Date;
+  }): Promise<ProviderReservationState[]> {
+    return listChangedNausysReservations(this.syncClient, window, this.config.optionTimeZone);
   }
 
   /** Public on the vendor's side, so this needs no credential and no reservation. */
