@@ -76,6 +76,18 @@ export async function providerByKey(
   });
 }
 
+/**
+ * The vendor a listing would transact through, for a question about the listing rather than
+ * about a sale: today, whether the operator keeps a queue on a sold-out week. Never for money.
+ */
+export async function providerForListing(
+  db: Database,
+  fallback: InventoryProvider,
+  listingId: string,
+): Promise<InventoryProvider> {
+  return providerByKey(fallback, await providerCodeForListing(db, listingId));
+}
+
 /** The provider that priced this quote, so a re-price asks the same vendor. */
 export async function providerForQuote(
   db: Database,

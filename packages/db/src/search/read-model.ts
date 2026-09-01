@@ -637,6 +637,13 @@ export async function rebuildListingSearchDocs(
         select ${usableRateSql(sql`money.price_currency`)} as rate
       ) fx on true
       where o.status = 'active'
+        /*
+         * A hull the operator has retired. NauSYS keeps it in the catalogue dump with the date
+         * it left the fleet, so nothing about the sync notices; the boat simply cannot be
+         * chartered any more. Dropped here rather than deleted, because a charter already
+         * booked on it still has to be readable.
+         */
+        and (o.out_of_fleet_date is null or o.out_of_fleet_date > current_date)
         and ${listingScope(sql`o.listing_id`, listingIds)}
     ),
     /*

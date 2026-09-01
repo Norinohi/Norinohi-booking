@@ -30,6 +30,12 @@ export interface NausysConfig {
   /** Which charter companies to import. Unconfigured means every company the credential can see. */
   companyScope: CompanyScope;
   /**
+   * Our own agency id in the vendor's numbering, where the deployment knows it. Unset means an
+   * extras row that excludes named agencies is offered anyway, which is the old behaviour and
+   * the right one while we cannot tell whether the row means us.
+   */
+  agencyId?: string;
+  /**
    * Base of every serialization key: the lanes in `client.ts` are suffixes of it.
    * Keyed by credential, never by instance, so two clients in one process share
    * the lane the vendor's sequential-only rule still applies to.
@@ -49,6 +55,7 @@ export interface NausysEnvSource {
   NAUSYS_OPTION_TIMEZONE: string;
   NAUSYS_COMPANY_IDS?: string | undefined;
   NAUSYS_EXCLUDED_COMPANY_IDS?: string | undefined;
+  NAUSYS_AGENCY_ID?: string | undefined;
 }
 
 export function nausysQueueKey(username: string): string {
@@ -80,6 +87,7 @@ export function resolveNausysConfig(source: NausysEnvSource = env): NausysConfig
     minIntervalMs: source.NAUSYS_MIN_INTERVAL_MS,
     optionSafetyMarginMinutes: source.NAUSYS_OPTION_SAFETY_MARGIN_MINUTES,
     optionTimeZone: source.NAUSYS_OPTION_TIMEZONE,
+    ...(source.NAUSYS_AGENCY_ID ? { agencyId: source.NAUSYS_AGENCY_ID } : null),
     companyScope: companyScopeFromEnv(
       source.NAUSYS_COMPANY_IDS,
       source.NAUSYS_EXCLUDED_COMPANY_IDS,

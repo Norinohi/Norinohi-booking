@@ -150,6 +150,16 @@ export const env = createEnv({
      * cannot express without enumerating every real company forever.
      */
     NAUSYS_EXCLUDED_COMPANY_IDS: z.string().optional(),
+    /*
+     * Our own agency id in the vendor's numbering, read off any of our reservations
+     * (`RestYachtReservation.agencyId`; ours answered 49209547 in Sep 2026).
+     *
+     * Only one thing needs it: an operator can withhold a priced extra from named agencies,
+     * and without knowing which agency we are, a deny list cannot be applied. 62 of 140,543
+     * extras rows carry one and none of them names us, so leaving this unset changes nothing
+     * today -- it is the switch that keeps that true if one ever does.
+     */
+    NAUSYS_AGENCY_ID: z.string().min(1).optional(),
     BOOKING_MANAGER_BASE_URL: z.url().default("https://www.booking-manager.com/api/v2"),
     // Named as the vendor names it: the Booking Manager portal issues this from
     // My Account > API Integration and calls it an API key. It is SENT as a bearer

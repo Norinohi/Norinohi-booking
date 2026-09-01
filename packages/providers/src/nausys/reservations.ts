@@ -1,8 +1,13 @@
 import { z } from "zod";
 
-import { formatInZone, parseNausysDate, parseNausysDateTime } from "../shared/dates";
+import {
+  formatInZone,
+  formatNausysDate,
+  parseNausysDate,
+  parseNausysDateTime,
+} from "../shared/dates";
 import { decimalStringToMinor } from "../shared/money";
-import type { ProviderReservationState } from "../types";
+import type { ProviderReservationState, WaitingOptions } from "../types";
 import type { NausysClient } from "./client";
 import { nausysEndpoints, restYachtReservationSchema } from "./endpoints";
 
@@ -120,4 +125,54 @@ function minorOrUndefined(value: string, currency: string): number | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The queue behind a week the operator has already sold.
+ *
+ * The response is unlike anything else in this API: the count arrives as a string under
+ * `waitingOptions`, and each queued reservation as a *key* of its own —
+ * `{"waitingOptions":"6","id: 890270154":"queuePosition: 2"}`. So it is read key by key rather
+ * than parsed into a shape, and a vendor that tidies this up later simply stops matching and
+ * leaves the count, which is the number support is actually asked for.
+ */
+const restWaitingOptionsSchema = z.looseObject({
+  status: z.string(),
+  waitingOptions: z.union([z.string(), z.number()]).optional(),
+});
+
+const QUEUE_KEY = /^id:\s*(\d+)$/;
+const QUEUE_POSITION = /queuePosition:\s*(\d+)/;
+
+export async function readNausysWaitingOptions(
+  client: NausysClient,
+  yachtId: number,
+  period: { from: string; to: string },
+): Promise<WaitingOptions> {
+  const response = await client.bookingCall(
+    nausysEndpoints.availability.waitingOptions,
+    restWaitingOptionsSchema,
+    {
+      yacht: yachtId,
+      periodFrom: formatNausysDate(period.from),
+      periodTo: formatNausysDate(period.to),
+    },
+    "sync",
+  );
+
+  /* Parsed key by key, because the queue rides in the keys: see the schema's note. */
+  const queue: WaitingOptions["queue"] = [];
+  for (const [key, value] of Object.entries(response)) {
+    const named = QUEUE_KEY.exec(key);
+    const said = z.string().safeParse(value);
+    if (!named?.[1] || !said.success) continue;
+
+    const position = QUEUE_POSITION.exec(said.data);
+    if (position?.[1]) queue.push({ reservationId: named[1], position: Number(position[1]) });
+  }
+
+  return {
+    count: Number(response.waitingOptions ?? queue.length) || queue.length,
+    queue: queue.sort((left, right) => left.position - right.position),
+  };
 }

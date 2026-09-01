@@ -79,7 +79,19 @@ const WEEKDAY_FLAGS = [
   { weekday: 6, checkIn: "checkInSaturday", checkOut: "checkOutSaturday" },
 ] as const;
 
-export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
+export interface NausysProjectionOptions {
+  /**
+   * Our own agency id, where the deployment knows it. Only the extras deny list uses it: an
+   * operator can withhold a priced extra from named agencies, and a deployment that cannot say
+   * which agency it is offers the row rather than guessing.
+   */
+  agencyId?: string;
+}
+
+export function projectNausysCatalogue(
+  records: ProviderRecordSet,
+  options: NausysProjectionOptions = {},
+): CanonicalCatalogue {
   const countries = parseAll(records, "country", restCountrySchema);
   const regions = parseAll(records, "region", restRegionSchema);
   const locations = parseAll(records, "location", restLocationSchema);
@@ -167,6 +179,7 @@ export function projectNausysCatalogue(records: ProviderRecordSet): CanonicalCat
         equipmentNameById,
         serviceNameById,
         depositInsuranceServiceIds,
+        agencyId: options.agencyId,
         equipmentTranslationsById,
         serviceTranslationsById,
         priceMeasureById,
@@ -256,6 +269,8 @@ type ExtraNaming = {
   serviceNameById: Map<string, string>;
   /** Services that lower the deposit instead of adding something to the charter. */
   depositInsuranceServiceIds: Set<string>;
+  /** Ours, for the rows an operator withholds from named agencies. */
+  agencyId: string | undefined;
   equipmentTranslationsById: Map<string, Record<string, string>>;
   serviceTranslationsById: Map<string, Record<string, string>>;
   priceMeasureById: Map<string, string>;
@@ -339,9 +354,9 @@ function projectYacht(
     checkinRules: checkinRulesOf(yacht),
     oneWayRules: oneWayRulesOf(yacht),
     defaultCurrency: currency,
+    ...fleetAndFilmOf(yacht),
     securityDepositMinor: minorOf(yacht.deposit, depositCurrency),
-    /* Published only when it differs from the ordinary deposit, which is the vendor's rule. */
-    securityDepositWhenInsuredMinor: minorOf(yacht.depositWhenInsured, depositCurrency),
+    securityDepositWhenInsuredMinor: reducedDepositOf(yacht, depositCurrency),
     securityDepositCurrency: depositCurrency,
     ...euminiaOf(yacht),
     // Payment terms are per period and come from `freeYachts`, never from the
@@ -776,6 +791,7 @@ function serviceExtraOf(
   // of these labels, and it does not cover every id a yacht references.
   if (label === undefined) return null;
   if (item.availableOnAgencyPortal === false) return null;
+  if (withheldFromUs(item, context.agencyId)) return null;
 
   const priceCurrency = currencyOf(item.currency, fallbackCurrency);
   const rate = percentageOf(item);
@@ -823,6 +839,7 @@ function equipmentExtraOf(
   const label = context.equipmentNameById.get(externalId);
   if (label === undefined) return null;
   if (item.availableOnAgencyPortal === false) return null;
+  if (withheldFromUs(item, context.agencyId)) return null;
 
   const priceCurrency = currencyOf(item.currency, fallbackCurrency);
   /* `amount` is the field in use: the vendor deprecated `price` here in its favour (and
@@ -846,6 +863,79 @@ function equipmentExtraOf(
     ...conditionsOf(item, priceCurrency),
     ...scope,
   };
+}
+
+/**
+ * An extra this operator will not sell through us.
+ *
+ * Undocumented and on the wire: `agencies` names agencies and `excludedAgencies` says which
+ * way to read the list. Every row carrying one sets it to true, so the list is a deny list --
+ * and the reading is deliberately narrow: an allow list (`excludedAgencies: false` with names
+ * in it) is left alone rather than guessed at, because dropping an extra the operator does
+ * sell us is the worse mistake. A deployment that does not know its own agency id offers the
+ * row too; see `NAUSYS_AGENCY_ID`.
+ */
+function withheldFromUs(
+  item: { agencies?: number[]; excludedAgencies?: boolean },
+  agencyId: string | undefined,
+): boolean {
+  if (agencyId === undefined || item.excludedAgencies !== true) return false;
+  return (item.agencies ?? []).some((agency) => String(agency) === agencyId);
+}
+
+/**
+ * The deposit a charter carrying deposit insurance is held to, where the operator publishes a
+ * real reduction.
+ *
+ * The vendor's rule is that this is "visible when different from regular deposit", and the
+ * wire does not keep to it: of 7,343 hulls in our own fleet, 5,619 send a bare 0 and 404 send
+ * a figure that is not lower than the ordinary deposit. Neither is a reduction -- 0 read
+ * literally promises a customer who bought the insurance that nothing will be blocked at the
+ * base, and the others would hold them to more than if they had not bought it.
+ */
+function reducedDepositOf(yacht: RestYacht, currency: string): number | undefined {
+  const insured = minorOf(yacht.depositWhenInsured, currency);
+  if (insured === undefined || insured <= 0) return undefined;
+
+  const deposit = minorOf(yacht.deposit, currency);
+  return deposit !== undefined && insured >= deposit ? undefined : insured;
+}
+
+/**
+ * The retirement date and the two links the vendor added in May 2025.
+ *
+ * The video fields carry a bare platform id rather than a URL, so this is where they become
+ * one; a value that already looks like a link is passed through, because operators paste both.
+ * The 360 tour is whatever the operator typed and is only kept when it is really a link --
+ * `linkFor360tour` holds a YouTube id on some fleets, which is not a tour.
+ */
+function fleetAndFilmOf(yacht: RestYacht) {
+  const outOfFleetDate = nausysDayOrUndefined(yacht.outOfFleetDate);
+  const videoUrl =
+    videoLinkOf(yacht.youtubeVideos, "https://www.youtube.com/watch?v=") ??
+    videoLinkOf(yacht.vimeoVideos, "https://vimeo.com/");
+  const tourUrl = httpLinkOf(yacht.linkFor360tour);
+
+  return {
+    ...(outOfFleetDate === undefined ? null : { outOfFleetDate }),
+    ...(videoUrl === undefined ? null : { videoUrl }),
+    ...(tourUrl === undefined ? null : { tourUrl }),
+  };
+}
+
+/** An id becomes a watch link; anything already absolute is taken as the operator meant it. */
+function videoLinkOf(value: string | undefined, prefix: string): string | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  /* Ids only: a value with a slash or a space in it is something else we cannot name. */
+  return /^[\w-]{5,64}$/.test(raw) ? `${prefix}${raw}` : undefined;
+}
+
+function httpLinkOf(value: string | undefined): string | undefined {
+  const raw = value?.trim();
+  if (!raw || !/^https?:\/\//i.test(raw)) return undefined;
+  return raw;
 }
 
 /**

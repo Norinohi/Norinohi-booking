@@ -1025,3 +1025,154 @@ describe("projectNausysCatalogue", () => {
     ]);
   });
 });
+
+describe("the fields the vendor added in May 2025", () => {
+  /*
+   * A hull the operator has retired stays in the catalogue dump with the date it left. Nothing
+   * about the sync notices, so the date rides on the listing and the publish step is what stops
+   * selling it -- a projection has no clock, and a charter already booked has to stay readable.
+   */
+  it("carries the day the boat leaves the fleet", () => {
+    const yacht = maria();
+    yacht.outOfFleetDate = "19.09.2027";
+
+    expect(listingOf(yacht)?.outOfFleetDate).toBe("2027-09-19");
+  });
+
+  it("turns a bare video id into a link, which is what the field actually holds", () => {
+    const yacht = maria();
+    yacht.youtubeVideos = "wxYl_sqVbtk";
+
+    expect(listingOf(yacht)?.videoUrl).toBe("https://www.youtube.com/watch?v=wxYl_sqVbtk");
+  });
+
+  it("takes a full URL as the operator wrote it", () => {
+    const yacht = maria();
+    yacht.vimeoVideos = "https://vimeo.com/123456789";
+
+    expect(listingOf(yacht)?.videoUrl).toBe("https://vimeo.com/123456789");
+  });
+
+  /* YouTube first: an operator that filled both meant the one most visitors can play. */
+  it("prefers YouTube when the operator filled in both", () => {
+    const yacht = maria();
+    yacht.youtubeVideos = "wxYl_sqVbtk";
+    yacht.vimeoVideos = "123456789";
+
+    expect(listingOf(yacht)?.videoUrl).toBe("https://www.youtube.com/watch?v=wxYl_sqVbtk");
+  });
+
+  /* `linkFor360tour` holds a YouTube id on some fleets, which is not a tour. */
+  it("keeps a 360 tour only when it is really a link", () => {
+    const yacht = maria();
+    yacht.linkFor360tour = "wxYl_sqVbtk";
+
+    expect(listingOf(yacht)?.tourUrl).toBeUndefined();
+
+    yacht.linkFor360tour = "https://tour.example.com/boat/1";
+    expect(listingOf(yacht)?.tourUrl).toBe("https://tour.example.com/boat/1");
+  });
+
+  it("says nothing where the operator published nothing", () => {
+    const listing = listingOf(maria());
+
+    expect(listing?.outOfFleetDate).toBeUndefined();
+    expect(listing?.videoUrl).toBeUndefined();
+    expect(listing?.tourUrl).toBeUndefined();
+  });
+});
+
+/*
+ * Undocumented and on the wire: an operator can withhold a priced extra from named agencies.
+ * 62 of 140,543 rows carry a list and every one of them is a deny list; none names us today,
+ * which is exactly why the reading is narrow rather than clever.
+ */
+describe("extras an operator withholds from named agencies", () => {
+  const HOME_BASE = 102_751;
+  const withAgencies = (yacht: Payload, agencies: number[], excluded: boolean) => {
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.baseId = HOME_BASE;
+    yacht.seasonSpecificData = [
+      {
+        ...season,
+        baseId: HOME_BASE,
+        services: [
+          {
+            serviceId: 52,
+            price: "125.00",
+            currency: "EUR",
+            obligatory: true,
+            agencies,
+            excludedAgencies: excluded,
+          },
+        ],
+      },
+    ];
+    return yacht;
+  };
+
+  const cleaningIn = (catalogue: ReturnType<typeof projectNausysCatalogue>) =>
+    (catalogue.listings[0]?.extras ?? []).filter((extra) => extra.externalId === "52");
+
+  it("drops a row that names us on its deny list", () => {
+    const yacht = withAgencies(maria(), [1_013_887, 49_209_547], true);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]), { agencyId: "49209547" });
+
+    expect(cleaningIn(catalogue)).toEqual([]);
+  });
+
+  it("keeps a row whose deny list names somebody else", () => {
+    const yacht = withAgencies(maria(), [1_013_887, 1_259_561], true);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]), { agencyId: "49209547" });
+
+    expect(cleaningIn(catalogue)).toHaveLength(1);
+  });
+
+  /* A deployment that cannot say which agency it is must not guess that the row means it. */
+  it("keeps the row when nobody configured our agency id", () => {
+    const yacht = withAgencies(maria(), [49_209_547], true);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]));
+
+    expect(cleaningIn(catalogue)).toHaveLength(1);
+  });
+
+  /* An allow list is left alone: dropping an extra the operator does sell us is worse. */
+  it("keeps a row whose list is not marked as an exclusion", () => {
+    const yacht = withAgencies(maria(), [1_013_887], false);
+    const catalogue = projectNausysCatalogue(fixtureRecords([yacht]), { agencyId: "49209547" });
+
+    expect(cleaningIn(catalogue)).toHaveLength(1);
+  });
+});
+
+/*
+ * The vendor's rule is that the reduced deposit is "visible when different from regular
+ * deposit", and the wire does not keep to it: 5,619 of our 7,343 hulls send a bare 0 and 404
+ * send a figure that is not lower. Publishing either would tell a customer who bought deposit
+ * insurance something the operator never said.
+ */
+describe("the deposit a charter with deposit insurance is held to", () => {
+  it("publishes a real reduction", () => {
+    const yacht = maria();
+    yacht.deposit = 2500;
+    yacht.depositWhenInsured = 550;
+
+    expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBe(55_000);
+  });
+
+  it("reads a zero as nothing published, not as a deposit of nothing", () => {
+    const yacht = maria();
+    yacht.deposit = 2500;
+    yacht.depositWhenInsured = 0;
+
+    expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBeUndefined();
+  });
+
+  it("drops a figure that is not lower than the ordinary deposit", () => {
+    const yacht = maria();
+    yacht.deposit = 2500;
+    yacht.depositWhenInsured = 2500;
+
+    expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBeUndefined();
+  });
+});

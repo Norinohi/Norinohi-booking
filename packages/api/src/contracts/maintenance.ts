@@ -64,3 +64,24 @@ export const outboxDrainResultSchema = z.object({
    */
   failed: z.number().int(),
 });
+
+/**
+ * What the operator has queued behind a week it has already sold.
+ *
+ * Support's question, not the customer's: nothing on the site offers to join a queue, because
+ * doing so files something with the vendor on a customer's behalf and that decision has not
+ * been taken. Empty where the booking's provider keeps no such queue.
+ */
+export const waitingOptionsInputSchema = z.object({
+  listingId: z.string(),
+  from: z.iso.date(),
+  to: z.iso.date(),
+});
+
+export const waitingOptionsSchema = z.object({
+  /** How many waiting options the operator holds for this boat and period. */
+  count: z.number().int(),
+  queue: z.array(z.object({ reservationId: z.string(), position: z.number().int() })),
+  /** False when this vendor publishes no queue at all, which is not the same as an empty one. */
+  supported: z.boolean(),
+});

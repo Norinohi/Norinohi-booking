@@ -151,6 +151,7 @@ export function presentListingDetail(detail: ListingDetail) {
     ...presentListingSummary(detail),
     description: detail.description,
     overview: detail.overview,
+    media: detail.media,
     includedAmenities: detail.includedAmenities,
     mandatoryExtras: detail.mandatoryExtras,
     optionalExtras: detail.optionalExtras,

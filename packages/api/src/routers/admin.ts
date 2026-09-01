@@ -91,6 +91,8 @@ import {
   outboxDrainResultSchema,
   reminderResultSchema,
   sweepResultSchema,
+  waitingOptionsInputSchema,
+  waitingOptionsSchema,
 } from "../contracts/maintenance";
 import {
   leadAnswerInputSchema,
@@ -159,7 +161,7 @@ import {
   listListingPrices,
   updateListingPrice,
 } from "../services/listing-price";
-import { providerForBooking } from "../services/provider-routing";
+import { providerForBooking, providerForListing } from "../services/provider-routing";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -713,6 +715,35 @@ export const adminRouter = {
           sweepExpiries(context.db, context.provider),
         ),
       ),
+    waitingOptions: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/waitingOptions",
+        operationId: "getWaitingOptions",
+        summary: "How many people the operator has queued for a sold-out week",
+        description:
+          "Asks the vendor how many waiting options it already holds for one listing and period, and where each sits in the line. Read-only, and support-facing: nothing on the site offers to join a queue, because filing one is a booking made on a customer's behalf and that decision has not been taken. `supported: false` means this vendor publishes no queue, which is not the same as an empty one.",
+        tags: ["Admin"],
+        successDescription: "The operator's queue for that boat and week.",
+        spec: withJsonBodyExample({
+          listingId: "ylst_example",
+          from: "2026-07-04",
+          to: "2026-07-11",
+        }),
+      })
+      .input(waitingOptionsInputSchema)
+      .output(waitingOptionsSchema)
+      .handler(async ({ context, input }) => {
+        const adapter = await providerForListing(context.db, context.provider, input.listingId);
+        if (!adapter.getWaitingOptions) return { count: 0, queue: [], supported: false };
+
+        const answer = await adapter.getWaitingOptions({
+          listingId: input.listingId,
+          from: input.from,
+          to: input.to,
+        });
+        return { ...answer, supported: true };
+      }),
     sendPaymentReminders: adminProcedure
       .route({
         method: "POST",

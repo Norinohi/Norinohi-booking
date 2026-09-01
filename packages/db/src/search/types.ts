@@ -172,6 +172,11 @@ export type ListingDetail = ListingSearchDoc & {
    * code the web has no message for yet.
    */
   overview: { code: string; label: string; value: string | null }[];
+  /**
+   * A walkthrough the operator filmed and a 360 tour of the same boat, where they published
+   * one. Not in the gallery: these are links a visitor follows off the page, not images.
+   */
+  media: { videoUrl: string | null; tourUrl: string | null };
   includedAmenities: { code: string; label: string }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingOptionalItem[];

@@ -57,6 +57,29 @@ export interface CrewRoleService {
  * not chosen must never be quoted for a skipper.
  */
 /**
+ * The offer's reduced deposit, where it really is one.
+ *
+ * The vendor sends this field as a bare 0 on most hulls and, on some, as a figure that is not
+ * lower than the ordinary deposit. Read literally, the first promises a customer who bought
+ * the insurance that nothing is blocked at the base and the second holds them to more than if
+ * they had not bought it. Neither is what the operator meant, so both fall back to the
+ * ordinary deposit. `reducedDepositOf` in the projection reads the catalogue's copy the same
+ * way.
+ */
+function reducedDepositOf(price: RestFreeYacht["price"]): string | undefined {
+  const insured = price.depositWhenInsuredAmount;
+  if (insured === undefined) return undefined;
+
+  const currency = price.currency;
+  const insuredMinor = decimalStringToMinor(insured, currency);
+  if (insuredMinor <= 0) return undefined;
+
+  const deposit = price.depositAmount;
+  if (deposit === undefined) return insured;
+  return insuredMinor >= decimalStringToMinor(deposit, currency) ? undefined : insured;
+}
+
+/**
  * Whether this charter carries deposit insurance, which changes the deposit rather than the
  * price. Nothing is loaded when no extra is selected: the common case is an empty list.
  */
@@ -222,7 +245,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
        */
       const insured = await selectsDepositInsurance(options, parsed);
       const offered =
-        (insured ? yacht.price.depositWhenInsuredAmount : undefined) ?? yacht.price.depositAmount;
+        (insured ? reducedDepositOf(yacht.price) : undefined) ?? yacht.price.depositAmount;
       const securityDeposit =
         offered === undefined
           ? await options.loadSecurityDeposit?.(parsed.listingId)

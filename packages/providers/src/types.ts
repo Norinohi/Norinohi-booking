@@ -321,6 +321,23 @@ export type BookingDraft = z.infer<typeof bookingDraftSchema>;
  *
  * `status` is the canonical one, so a reader does not have to know the vendor's words.
  */
+/**
+ * How many people are already queued for a boat the operator has sold out of, and where in the
+ * line they are.
+ *
+ * Read-only on our side, on purpose. NauSYS will also *join* the queue -- `createInfo` takes a
+ * `fallbackToWaitingOption` that files a waiting option instead of failing when the week is
+ * gone -- and that is a product decision nobody has taken: what the customer is promised, what
+ * we do when the boat frees up, and whether money moves. This answers the question support is
+ * actually asked ("is there a list, and how long?") without making that decision.
+ */
+export interface WaitingOptions {
+  /** How many waiting options the operator holds for this boat and period. */
+  count: number;
+  /** Ours among them, where the vendor names them: reservation id and place in line. */
+  queue: { reservationId: string; position: number }[];
+}
+
 export const providerReservationStateSchema = z.object({
   providerReservationId: z.string(),
   status: z.enum(["option_held", "confirmed", "cancelled"]),
@@ -793,6 +810,15 @@ const canonicalListingSchema = z.object({
     }),
   ),
   defaultCurrency: z.string().length(3),
+  /**
+   * The day the operator retires this hull, where it has named one. Kept rather than acted on
+   * here: the projection is pure, and "in the past" needs a clock, so the publish step is what
+   * stops selling it.
+   */
+  outOfFleetDate: z.string().optional(),
+  /** A walkthrough the operator filmed, and a 360 tour of the same boat. Both are links. */
+  videoUrl: z.url().optional(),
+  tourUrl: z.url().optional(),
   securityDepositMinor: z.number().int().optional(),
   /**
    * What the deposit falls to when the charter carries deposit insurance. Absent unless the

@@ -4,7 +4,7 @@ import { unscopedCompanies } from "../shared/company-scope";
 import { SequentialQueue } from "../shared/queue";
 import { NausysClient } from "./client";
 import type { NausysConfig } from "./config";
-import { listChangedNausysReservations } from "./reservations";
+import { listChangedNausysReservations, readNausysWaitingOptions } from "./reservations";
 import { FakeNausysTransport } from "./testing/fake-transport";
 
 const config: NausysConfig = {
@@ -128,5 +128,68 @@ describe("the operator's own change feed", () => {
     await expect(listChangedNausysReservations(client, window, "Europe/Zagreb")).resolves.toEqual(
       [],
     );
+  });
+});
+
+/*
+ * The oddest response in this API: the count is a string and each queued reservation is a
+ * *key*. Read key by key, so a vendor that tidies it up later stops matching and still leaves
+ * the count, which is the number support is actually asked for.
+ */
+describe("the queue behind a sold-out week", () => {
+  const period = { from: "2026-07-04", to: "2026-07-11" };
+
+  it("reads the count and each place in line", async () => {
+    const { client, transport } = build();
+    transport.respondWith("waitingOptions", {
+      status: "OK",
+      waitingOptions: "6",
+      "id: 890270202": "queuePosition: 4",
+      "id: 890270154": "queuePosition: 2",
+    });
+
+    const answer = await readNausysWaitingOptions(client, 479_293, period);
+
+    expect(answer.count).toBe(6);
+    expect(answer.queue).toEqual([
+      { reservationId: "890270154", position: 2 },
+      { reservationId: "890270202", position: 4 },
+    ]);
+  });
+
+  it("asks about the boat and the week, in the vendor's date format", async () => {
+    const { client, transport } = build();
+    transport.respondWith("waitingOptions", { status: "OK", waitingOptions: "0" });
+
+    await readNausysWaitingOptions(client, 479_293, period);
+
+    expect(transport.lastBody("waitingOptions")).toMatchObject({
+      yacht: 479_293,
+      periodFrom: "04.07.2026",
+      periodTo: "11.07.2026",
+    });
+  });
+
+  it("reads an empty queue as nobody waiting", async () => {
+    const { client, transport } = build();
+    transport.respondWith("waitingOptions", { status: "OK", waitingOptions: "0" });
+
+    await expect(readNausysWaitingOptions(client, 479_293, period)).resolves.toEqual({
+      count: 0,
+      queue: [],
+    });
+  });
+
+  /* A count we cannot read falls back to the places we could: never a wrong number. */
+  it("counts what it can name when the vendor sends no total", async () => {
+    const { client, transport } = build();
+    transport.respondWith("waitingOptions", {
+      status: "OK",
+      "id: 890270154": "queuePosition: 1",
+    });
+
+    const answer = await readNausysWaitingOptions(client, 479_293, period);
+
+    expect(answer.count).toBe(1);
   });
 });

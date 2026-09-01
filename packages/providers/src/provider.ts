@@ -19,6 +19,7 @@ import type {
   CrewRequirements,
   QuoteRequest,
   RawEntity,
+  WaitingOptions,
 } from "./types";
 
 export interface InventoryProvider {
@@ -72,5 +73,10 @@ export interface InventoryProvider {
     since: Date;
     until: Date;
   }): Promise<ProviderReservationState[]>;
+  /**
+   * How many people the operator already has queued for a week it has sold out of. Optional:
+   * NauSYS keeps such a queue, Booking Manager does not publish one.
+   */
+  getWaitingOptions?(input: ListingPeriod): Promise<WaitingOptions>;
   capabilities(): ProviderCapabilities;
 }

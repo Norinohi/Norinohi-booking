@@ -193,6 +193,11 @@ export const listingDetailSchema = listingSummarySchema.extend({
   description: z.string().nullable(),
   /* Null where the catalogue does not know; the web writes "not specified" in its own locale. */
   overview: z.array(includedItemSchema.extend({ value: z.string().nullable() })),
+  /**
+   * A walkthrough the operator filmed and a 360 tour of the same boat, where it published one.
+   * Links rather than gallery entries: a visitor follows them off the page.
+   */
+  media: z.object({ videoUrl: z.string().nullable(), tourUrl: z.string().nullable() }),
   includedAmenities: z.array(includedItemSchema),
   mandatoryExtras: z.array(pricedItemSchema),
   optionalExtras: z.array(optionalItemSchema),

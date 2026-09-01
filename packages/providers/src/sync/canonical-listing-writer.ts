@@ -44,6 +44,9 @@ type OfferRow = {
   petsAllowed: boolean;
   defaultCurrency: string | null;
   crewType: string | null;
+  outOfFleetDate: string | null;
+  videoUrl: string | null;
+  tourUrl: string | null;
   securityDepositMinor: number | null;
   securityDepositWhenInsuredMinor: number | null;
   securityDepositCurrency: string | null;
@@ -159,6 +162,9 @@ export async function resolveCanonicalListings(
         /* Commercial terms belong to an offer; the listing keeps the winner's as a display default. */
         defaultCurrency: title.defaultCurrency,
         crewType: title.crewType,
+        outOfFleetDate: title.outOfFleetDate,
+        videoUrl: title.videoUrl,
+        tourUrl: title.tourUrl,
         securityDepositMinor: title.securityDepositMinor,
         securityDepositWhenInsuredMinor: title.securityDepositWhenInsuredMinor,
         securityDepositCurrency: title.securityDepositCurrency,
@@ -203,6 +209,9 @@ async function loadOffers(db: Database, listingIds: readonly string[]): Promise<
       petsAllowed: listingOffer.petsAllowed,
       defaultCurrency: listingOffer.defaultCurrency,
       crewType: listingOffer.crewType,
+      outOfFleetDate: listingOffer.outOfFleetDate,
+      videoUrl: listingOffer.videoUrl,
+      tourUrl: listingOffer.tourUrl,
       securityDepositMinor: listingOffer.securityDepositMinor,
       securityDepositWhenInsuredMinor: listingOffer.securityDepositWhenInsuredMinor,
       securityDepositCurrency: listingOffer.securityDepositCurrency,
@@ -345,6 +354,9 @@ async function writeListings(
           petsAllowed: sql`excluded.pets_allowed`,
           defaultCurrency: sql`excluded.default_currency`,
           crewType: sql`excluded.crew_type`,
+          outOfFleetDate: sql`excluded.out_of_fleet_date`,
+          videoUrl: sql`excluded.video_url`,
+          tourUrl: sql`excluded.tour_url`,
           securityDepositMinor: sql`excluded.security_deposit_minor`,
           securityDepositWhenInsuredMinor: sql`excluded.security_deposit_when_insured_minor`,
           securityDepositCurrency: sql`excluded.security_deposit_currency`,

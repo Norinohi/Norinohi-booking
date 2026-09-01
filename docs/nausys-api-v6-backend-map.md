@@ -206,6 +206,49 @@ correct. The recorded response `{amount: "10.00", quantity: "10.00", totalPrice:
 "100.00"}` bills the customer 100.00. The connector uses `totalPrice` where the
 vendor sends it and `amount x quantity` where it does not.
 
+#### Waiting options, and what we deliberately do not do with them
+
+`yachtReservation/v6/waitingOptions` answers how many people the operator already has queued
+for one boat and week, and where each sits in the line. The response is unlike anything else
+in this API — the count is a string and each queued reservation is a _key_
+(`{"waitingOptions":"6","id: 890270154":"queuePosition: 2"}`) — so it is read key by key.
+Verified live (Sep 2026): a hull in our own fleet answers `{count: 0}`, and the vendor's
+documentation example yacht, which is not ours, answers `OPERATION_NOT_ALLOWED`.
+
+Exposed to staff through `admin.maintenance.waitingOptions` and nowhere else. NauSYS will also
+_join_ the queue — `createInfo` takes `fallbackToWaitingOption`, and `waitingOptions/storno`
+cancels one — and that half is **deliberately not built**: filing a waiting option is a booking
+made on a customer's behalf, and what they are promised, what happens when the boat frees up
+and whether money moves are product decisions nobody has taken. The read answers the question
+support is actually asked without taking them.
+
+#### Extras an operator withholds from named agencies
+
+Undocumented and on the wire: `agencies` and `excludedAgencies` on both extras price rows. Of
+140,543 rows sampled (Sep 2026), 62 carry a list and **every one of them sets
+`excludedAgencies: true`**, so the list reads as a deny list; none of the 62 names us. Our own
+agency id is on our reservations (`agencyId`, 49209547 for this credential) and can be set as
+`NAUSYS_AGENCY_ID`; with it set, a row that names us is dropped. An allow list — a list with
+`excludedAgencies: false` — is left alone rather than guessed at, because dropping an extra the
+operator does sell us is the worse mistake.
+
+#### Fleet withdrawal and the operator's own footage
+
+`outOfFleetDate` is the day a hull leaves the fleet, and the dump keeps carrying it afterwards:
+nothing about the sync notices, and the boat simply cannot be chartered any more. It rides on
+the listing and the offer, and the search document skips an offer whose date has passed —
+dropped at publish rather than deleted, because a charter already booked on it still has to be
+readable, and because a projection has no clock of its own.
+
+`youtubeVideos`, `vimeoVideos` and `linkFor360tour` carry a bare platform id rather than a URL
+("wxYl_sqVbtk"), so the projection builds the link; a value that is already absolute is passed
+through, since operators paste both. `linkFor360tour` holds a YouTube id on some fleets, which
+is not a tour, so it is kept only when it really is a link. Sparse — 5 videos and 43 tours
+across the 8 sampled companies — and rendered as two links on the detail page rather than an
+embedded player, which would put a third-party frame beside a checkout. The tutorial pair
+(`yachtTutorial*`) is crew-briefing footage for someone who has already booked and is read but
+not published.
+
 #### The one change feed: reservations by modify time
 
 `RestYachtReservationsRequest` takes `modifyTimeFrom`/`modifyTimeTo` (`dd.MM.yyyy HH:mm`, in

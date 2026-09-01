@@ -591,6 +591,39 @@ describe("NauSYS live quote", () => {
       expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
     });
 
+    /*
+     * The vendor sends this as a bare 0 on most hulls -- 5,619 of the 7,343 in our own fleet --
+     * and read literally it promises the customer that nothing is blocked at the base.
+     */
+    it("ignores a reduced deposit of zero, which is the vendor's way of saying nothing", async () => {
+      const body = insuredBody();
+      firstYacht(body).price.depositWhenInsuredAmount = "0.00";
+
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", body);
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
+
+    /* 404 hulls publish one that is not lower; holding the customer to it punishes the sale. */
+    it("ignores a reduced deposit that is not actually lower", async () => {
+      const body = insuredBody();
+      firstYacht(body).price.depositWhenInsuredAmount = "2500.00";
+
+      const { service, transport } = build({
+        loadDepositInsuranceCodes: () => Promise.resolve(new Set([INSURANCE])),
+      });
+      transport.respondWith("freeYachts", body);
+
+      const priced = await service.getNausysQuote({ ...request, extras: [INSURANCE] });
+
+      expect(priced.securityDeposit).toEqual({ amountMinor: 200_000, currency: "EUR" });
+    });
+
     /* An operator that publishes no reduced figure holds the same deposit either way. */
     it("holds the ordinary deposit when the operator names no reduced one", async () => {
       const body = insuredBody();

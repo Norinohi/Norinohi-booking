@@ -25,7 +25,10 @@ import type {
   CrewRequirements,
   QuoteRequest,
   RawEntity,
+  WaitingOptions,
 } from "../types";
+import { listingPeriodSchema } from "../types";
+import { toPositiveIntId } from "../shared/projection-helpers";
 import type { CatalogueSyncSource } from "../sync/runner";
 import type { AvailabilitySource, AvailabilitySyncProvider } from "../sync/availability-writer";
 import type { SeasonalPrice } from "../sync/price-writer";
@@ -55,7 +58,7 @@ import {
   submitNausysCrewList,
 } from "./crew-list";
 import { projectNausysCatalogue } from "./projection";
-import { listChangedNausysReservations } from "./reservations";
+import { listChangedNausysReservations, readNausysWaitingOptions } from "./reservations";
 import { formatExtraCode } from "../shared/extra-code";
 import { createNausysQuoteService, type CrewRoleService } from "./quote";
 import { createNausysBookingService, createSecurityTokenSink } from "./booking";
@@ -246,7 +249,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   }
 
   projectCatalogue(records: ProviderRecordSet): CanonicalCatalogue {
-    return projectNausysCatalogue(records);
+    return projectNausysCatalogue(records, { agencyId: this.config.agencyId });
   }
 
   createAvailabilitySource(options: { resume?: JsonField }): AvailabilitySource {
@@ -336,6 +339,24 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     throw new ContractError("NauSYS availability is served from availability_slot", {
       providerCode: "nausys",
     });
+  }
+
+  /**
+   * How many people the operator already has queued for this week.
+   *
+   * Read-only: joining the queue is a `createInfo` away (`fallbackToWaitingOption`) and is a
+   * product decision nobody has taken, so this answers the question support is asked and
+   * changes nothing on the vendor's side.
+   */
+  async getWaitingOptions(input: ListingPeriod): Promise<WaitingOptions> {
+    const period = listingPeriodSchema.parse(input);
+    const ref = await this.resolver.toExternalListing(period.listingId);
+    const yachtId = toPositiveIntId(ref.externalYachtId, {
+      provider: "NauSYS",
+      what: "the yacht id",
+    });
+
+    return readNausysWaitingOptions(this.syncClient, yachtId, { from: period.from, to: period.to });
   }
 
   getQuote(input: QuoteRequest): Promise<ProviderQuote> {

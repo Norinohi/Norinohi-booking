@@ -209,6 +209,8 @@ export async function getListingDetailByIdOrSlug(
         waterCapacity: number | null;
         checkInTime: string | null;
         checkOutTime: string | null;
+        videoUrl: string | null;
+        tourUrl: string | null;
       }>(sql`
       select
         spec.beam_m as "beamM",
@@ -218,10 +220,15 @@ export async function getListingDetailByIdOrSlug(
         spec.fuel_capacity as "fuelCapacity",
         spec.water_capacity as "waterCapacity",
         bs.check_in_time as "checkInTime",
-        bs.check_out_time as "checkOutTime"
+        bs.check_out_time as "checkOutTime",
+        /* Read from the offer the card is priced from, like the extras: two vendors selling
+           one hull can film it separately, and the page shows one of them. */
+        coalesce(o.video_url, l.video_url) as "videoUrl",
+        coalesce(o.tour_url, l.tour_url) as "tourUrl"
       from listing l
       left join listing_specification spec on spec.listing_id = l.id
       left join base bs on bs.id = l.home_base_id
+      left join listing_offer o on o.id = ${listing.bestOfferId ?? null}::text
       where l.id = ${listing.listingId}
       limit 1
     `),
@@ -457,6 +464,7 @@ export async function getListingDetailByIdOrSlug(
      */
     description: prose ?? null,
     overview: overviewFor(listing, info),
+    media: { videoUrl: info?.videoUrl ?? null, tourUrl: info?.tourUrl ?? null },
     includedAmenities,
     mandatoryExtras,
     optionalExtras,
