@@ -18,6 +18,8 @@ import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-char
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
 import { and, eq } from "drizzle-orm";
 
+import { env } from "@yacht-charter/env/server";
+
 import type { Database, DatabaseExecutor } from "../context";
 import { rangeStatus } from "../lib/availability-rules";
 import { type OfferQuoteResult, pickWinner } from "./offer-choice";
@@ -30,8 +32,14 @@ import { providerByKey } from "./provider-routing";
  * signal, so the request runs on and its answer is simply no longer wanted. Threading
  * cancellation through every connector would be the better shape and is not what this change
  * is for.
+ *
+ * It was six seconds, which reads generous beside a vendor answering in 1.4s median and 2.4s
+ * at its slowest -- and was not, because the ceiling has to cover our own load as well as
+ * theirs. Six quotes were abandoned during a catalogue sync writing 309,222 price rows through
+ * the same Postgres the quote path reads, on boats that were free and priced. Configurable
+ * because the right number is a property of the deployment, not of the code.
  */
-const OFFER_TIMEOUT_MS = 6_000;
+const OFFER_TIMEOUT_MS = env.QUOTE_OFFER_TIMEOUT_MS;
 
 export type SelectedOffer = {
   /** Null only where a listing has no offers at all, which is a seeded or demo row. */

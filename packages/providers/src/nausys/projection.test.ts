@@ -1176,3 +1176,61 @@ describe("the deposit a charter with deposit insurance is held to", () => {
     expect(listingOf(yacht)?.securityDepositWhenInsuredMinor).toBeUndefined();
   });
 });
+
+/*
+ * A crew word in the name does not make the line that person's fee for the week. These are the
+ * name families the fleet actually carries, counted across our own catalogue.
+ */
+describe("what counts as crew", () => {
+  const serviceNamed = (name: string) => {
+    const yacht = maria();
+    const [season] = z.array(looseJsonObject({})).parse(yacht.seasonSpecificData);
+    yacht.seasonSpecificData = [
+      { ...season, services: [{ serviceId: 52, price: "1900.00", currency: "EUR" }] },
+    ];
+    /* The catalogue is what names a service, so the name under test goes there. */
+    const records = fixtureRecords([yacht]);
+    const services = records.get("service") ?? [];
+    records.set("service", [
+      ...services.filter((record) => record.externalId !== "52"),
+      { externalId: "52", payload: { id: 52, name: { textEN: name } } },
+    ]);
+    return projectNausysCatalogue(records).listings[0]?.extras.find((e) => e.externalId === "52");
+  };
+
+  it("reads a plain skipper as the skipper", () => {
+    expect(serviceNamed("Skipper")?.crewRole).toBe("skipper");
+  });
+
+  it("reads a captain as the same role, since operators use both words", () => {
+    expect(serviceNamed("Captain")?.crewRole).toBe("skipper");
+  });
+
+  /* One hull advertised 15,050 EUR against a quote of 12,550: a course counted as the skipper. */
+  it("does not read a sailing course as the skipper", () => {
+    expect(serviceNamed("Skipper training practice")?.crewRole).toBeUndefined();
+    expect(serviceNamed("Certification Skipper (ASA)")?.crewRole).toBeUndefined();
+  });
+
+  it("does not read the handover as the skipper", () => {
+    expect(serviceNamed("Checkout Skipper")?.crewRole).toBeUndefined();
+    expect(serviceNamed("Day Checkout Captain")?.crewRole).toBeUndefined();
+  });
+
+  it("does not read a surcharge or a cabin fee as crew", () => {
+    expect(serviceNamed("Fun Pack skipper surcharge")?.crewRole).toBeUndefined();
+    expect(
+      serviceNamed("Additional fee for Skipper in forepeak & shared bathroom")?.crewRole,
+    ).toBeUndefined();
+  });
+
+  it("does not read hourly hire as the week's skipper", () => {
+    expect(serviceNamed("Captain By Day")?.crewRole).toBeUndefined();
+    expect(serviceNamed("Short-term skipper (max 3 days)")?.crewRole).toBeUndefined();
+  });
+
+  it("still reads a cook and a hostess", () => {
+    expect(serviceNamed("Cook")?.crewRole).toBe("cook");
+    expect(serviceNamed("Hostess")?.crewRole).toBe("hostess");
+  });
+});

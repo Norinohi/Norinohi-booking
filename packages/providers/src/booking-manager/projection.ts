@@ -652,6 +652,17 @@ function countryCodeOf(country: RestCountry): string {
  * product's price is the published one, so its entries are taken first and later
  * repeats of the same id are ignored.
  */
+/**
+ * The vendor's whole-number percentage as the rate the rest of the codebase carries: 40 -> 0.4.
+ *
+ * Zero and absent are the same answer here -- a fee of nothing is money, not a share -- so both
+ * leave the row to be read as a price.
+ */
+function percentageRateOf(percentage: number | null | undefined): number | undefined {
+  if (percentage == null || !Number.isFinite(percentage) || percentage <= 0) return undefined;
+  return percentage / 100;
+}
+
 function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] {
   const products = [...(yacht.products ?? [])].sort(
     (left, right) =>
@@ -669,7 +680,15 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
       if (chosen.has(externalId)) continue;
 
       const priceCurrency = currencyOf(item.currency, fallbackCurrency);
-      const priceMinor = minorOf(item.price, priceCurrency);
+      /*
+       * A fee the operator states as a share of the charter rather than as money. The vendor
+       * populates `percentage` and leaves `price` at zero -- the quote path has always read it
+       * (`percentageOfCharter`), and the catalogue never did, so 335 obligatory fees across 278
+       * listings reached the card as free. An APA at 40% is the common one, and a crewed yacht
+       * advertised 56,500 EUR against a quote of 76,501.
+       */
+      const rate = percentageRateOf(item.percentage);
+      const priceMinor = rate === undefined ? minorOf(item.price, priceCurrency) : 0;
       if (priceMinor === undefined) continue;
 
       chosen.set(externalId, {
@@ -679,6 +698,7 @@ function extrasOf(yacht: RestYacht, fallbackCurrency: string): CanonicalExtra[] 
         externalId,
         name: label,
         obligatory: item.obligatory === true,
+        ...(rate === undefined ? null : { percentage: rate }),
         priceMinor,
         priceCurrency,
         priceMeasure: text(item.unit),

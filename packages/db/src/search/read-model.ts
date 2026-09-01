@@ -423,7 +423,31 @@ export async function rebuildListingSearchDocs(
        */
       left join lateral (
         select
-          sum(applicable.price_minor)::int as unavoidable_minor,
+          /*
+           * Multiplied by what the operator prices the fee in, the same way the crew lateral
+           * below already does and for the same reason: the vendor bills per day, per night or
+           * per week and we were summing one of each. A catamaran advertised 4,960 EUR against
+           * a quote of 6,955 -- a comfort package at 60 EUR "per day" counted once instead of
+           * eight times, and a skipper at 225 the same.
+           *
+           * Per-person measures are left flat on purpose. The card is one figure for a listing
+           * and knows no party size; multiplying by the berth count would price a couple's week
+           * as if the boat were full, which is the wrong kind of wrong on a price somebody
+           * decides to click on. Those fees stay understated until the quote states them, and
+           * the quote is what anyone is asked to pay.
+           */
+          sum(
+            applicable.price_minor
+            * case
+                when applicable.measure like 'per day%' or applicable.measure like 'per_day%'
+                  then span.nights + 1
+                when applicable.measure like 'per night%' or applicable.measure like 'per_night%'
+                  then span.nights
+                when applicable.measure like 'per week%' or applicable.measure like 'per_week%'
+                  then ceil(span.nights::numeric / 7)
+                else 1
+              end
+          )::int as unavoidable_minor,
           /*
            * Fees the operator states as a share of the charter rather than as money, summed as
            * rates and applied to the base in the money lateral below, which is the only place
@@ -432,11 +456,14 @@ export async function rebuildListingSearchDocs(
            */
           sum(applicable.percentage) as unavoidable_pct
         from (
-          select distinct on (extra.name) extra.price_minor, extra.percentage
+          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
+        ) span
+        cross join lateral (
+          select distinct on (extra.name)
+            extra.price_minor,
+            extra.percentage,
+            coalesce(extra.price_measure, '') as measure
           from provider_extra_catalogue extra
-          cross join lateral (
-            select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
-          ) span
           where extra.listing_offer_id = o.id
             and extra.obligatory
             and not extra.one_way_only
@@ -501,7 +528,17 @@ export async function rebuildListingSearchDocs(
           select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
         ) span
         cross join lateral (
-          select distinct on (extra.name)
+          /*
+           * One person per role, not one per row the operator named.
+           *
+           * Distinct on the name counted every differently-named row a role matched, and
+           * operators file plenty: beside "Skipper" sit "Skipper training practice", "Checkout
+           * Skipper", "Captain By Day", "Fun Pack skipper surcharge" and "Additional fee for
+           * Skipper in forepeak" -- 727 listings carry more than one. A charter is sold with
+           * one skipper aboard, so the card charges for one, and the cheapest row that covers
+           * the week is the closest thing to the plain rate among them.
+           */
+          select distinct on (extra.crew_role)
             extra.price_minor,
             coalesce(extra.price_measure, '') as measure
           from provider_extra_catalogue extra
@@ -542,7 +579,7 @@ export async function rebuildListingSearchDocs(
               or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
             )
           order by
-            extra.name,
+            extra.crew_role,
             (
               (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
               and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)

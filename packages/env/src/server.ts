@@ -186,6 +186,18 @@ export const env = createEnv({
      */
     BOOKING_MANAGER_EXCLUDED_COMPANY_IDS: z.string().optional(),
     BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    /*
+     * How long one vendor is waited on for a price before the sale goes to whoever else
+     * answered. A ceiling on the customer's wait, not a vendor limit -- those are the
+     * `*_TIMEOUT_MS` above and are far longer.
+     *
+     * 12s against a Booking Manager `/offers` that answers in 1.4s median and 2.4s at its
+     * slowest over a sampled dozen (Sep 2026). The headroom is not for the vendor: it is for
+     * the nightly catalogue sync, which writes 309,222 price rows through the same Postgres
+     * these quotes read, and pushed six of them past the previous 6s ceiling. A quote we
+     * abandon is a sale lost on a boat that was free.
+     */
+    QUOTE_OFFER_TIMEOUT_MS: z.coerce.number().int().positive().default(12_000),
     // Booking Manager has not published a rate limit; pending vendor answer, this
     // is our own politeness margin.
     BOOKING_MANAGER_MIN_INTERVAL_MS: z.coerce.number().int().nonnegative().default(250),
