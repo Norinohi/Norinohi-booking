@@ -678,11 +678,15 @@ function serviceExtraOf(
   if (item.availableOnAgencyPortal === false) return null;
 
   const priceCurrency = currencyOf(item.currency, fallbackCurrency);
-  const priceMinor = minorOf(item.price ?? item.amount, priceCurrency);
+  const rate = percentageOf(item);
+  /* A percentage carries its rate instead of a price: `price` is 0.00 on those rows and
+     `amount` is the rate, so reading either as money is wrong. See `percentageOf`. */
+  const priceMinor = rate === undefined ? minorOf(item.price ?? item.amount, priceCurrency) : 0;
   if (priceMinor === undefined) return null;
 
   const extra: CanonicalExtra = {
     kind: "service",
+    ...percentageFields(rate, item.percentageCalculationType),
     externalId,
     name: label,
     translations: context.serviceTranslationsById.get(externalId),
@@ -754,6 +758,31 @@ function payableInBaseOf(calculationType: JsonField): boolean | undefined {
     default:
       return undefined;
   }
+}
+
+/**
+ * The rate on a fee the operator states as a share of the charter, or nothing.
+ *
+ * `amountIsPercentage` has been documented since the field was widened to four decimals in
+ * May 2022, and we read neither it nor the rate beside it: the catalogue sends
+ * `price: "0.00"` with `amount: "0.3500"`, so a mandatory 35% service charge was stored as a
+ * price of zero and shown to customers as included in the charter.
+ */
+function percentageFields(rate: number | undefined, basis: JsonField) {
+  if (rate === undefined) return {};
+
+  const named = text(basis);
+  return named === undefined ? { percentage: rate } : { percentage: rate, percentageBasis: named };
+}
+
+function percentageOf(item: {
+  amountIsPercentage?: unknown;
+  amount?: JsonField;
+}): number | undefined {
+  if (item.amountIsPercentage !== true) return undefined;
+
+  const rate = Number(text(item.amount));
+  return Number.isFinite(rate) && rate > 0 ? rate : undefined;
 }
 
 /**

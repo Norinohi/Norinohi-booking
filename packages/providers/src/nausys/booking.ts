@@ -452,7 +452,11 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
         // yacht's full berth count, which on a ten-berth yacht is a tenth of the
         // real figure. `extraLineMinor` is what the quote reads, and the two must
         // agree or the reservation contradicts the invoice built from the quote.
-        amount: { amountMinor: extraLineMinor(extra, currency), currency },
+        /* The reservation's own charter price is what a percentage line is a share of. */
+        amount: {
+          amountMinor: extraLineMinor(extra, currency, { clientMinor: baseMinor }),
+          currency,
+        },
         payWhen:
           extra.calculationType === "SEPARATE_PAYMENT"
             ? ("at_check_in" as const)

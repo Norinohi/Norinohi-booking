@@ -324,6 +324,14 @@ export const restYachtServicePriceSchema = looseJsonObject({
   currency: z.string().optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
+  /**
+   * The amount is a rate, not money: "0.3500" is 35%, carried to four decimals since the
+   * vendor widened the field in May 2022. Read as money it becomes 35 cents, which is how a
+   * 35% mandatory service charge reached the catalogue as free.
+   */
+  amountIsPercentage: z.boolean().optional(),
+  /** What the rate applies to: PRICELIST_PRICE, CLIENT_PRICE, DAILY_PRICE, or without VAT. */
+  percentageCalculationType: z.string().optional(),
   vatInPrice: z.string().optional(),
   description: restInternationalTextSchema.optional(),
   validForBases: z.array(z.number().int()).optional(),
@@ -636,6 +644,9 @@ export const restExtraSchema = looseJsonObject({
   quantity: decimal.optional(),
   priceMeasureId: z.number().int().optional(),
   calculationType: z.string().optional(),
+  /** See `restYachtServicePriceSchema`: a rate to four decimals, never money. */
+  amountIsPercentage: z.boolean().optional(),
+  percentageCalculationType: z.string().optional(),
   condition: restInternationalTextSchema.optional(),
   obligatory: z.boolean().optional(),
 });

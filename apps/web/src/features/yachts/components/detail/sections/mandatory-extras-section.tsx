@@ -30,7 +30,9 @@ export default function MandatoryExtrasSection() {
            * and both used to print "EUR 0 per booking" under a "Pay at check-in" caption, which
            * names a payment nobody will ever make.
            */
-          const included = item.pricingType === "included" || item.price.amountMinor === 0;
+          const included =
+            item.percentage === null &&
+            (item.pricingType === "included" || item.price.amountMinor === 0);
 
           return (
             <div
@@ -55,14 +57,16 @@ export default function MandatoryExtrasSection() {
               {/* The operator's own measure, where it gave one: a per-person extra quoted
                   as "per booking" understates what the charter will be billed. */}
               <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
-                {included
-                  ? tExtras("includedInPrice")
-                  : extraPrice(
-                      item.price.amountMinor,
-                      item.priceMeasure,
-                      item.priceToMinor,
-                      item.price.currency,
-                    )}
+                {item.percentage !== null
+                  ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
+                  : included
+                    ? tExtras("includedInPrice")
+                    : extraPrice(
+                        item.price.amountMinor,
+                        item.priceMeasure,
+                        item.priceToMinor,
+                        item.price.currency,
+                      )}
               </p>
             </div>
           );

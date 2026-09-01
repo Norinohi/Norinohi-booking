@@ -391,6 +391,7 @@
       "payAtCheckIn": "Zahlung beim Check-in",
       "payNow": "In der Anzahlung enthalten",
       "includedInPrice": "Im Preis enthalten",
+      "percentageOfCharter": "{percent}% des Charterpreises",
       "measure": {
         "booking": "{price} pro Buchung",
         "day": "{price} pro Tag",

@@ -173,5 +173,20 @@ function obligatoryExtrasTotal(yacht: RestFreeYacht, currency: string): number |
   if (extras === undefined) return undefined;
   if (extras.some((extra) => extra.currency !== currency)) return undefined;
 
-  return extras.reduce((total, extra) => total + extraLineMinor(extra, currency), 0);
+  /* The same two bases the quote hands a percentage line; see `PercentageBasis`. */
+  const basis = {
+    listMinor: minorOrUndefined(yacht.price.priceListPrice, currency),
+    clientMinor: minorOrUndefined(yacht.price.clientPrice, currency),
+  };
+
+  return extras.reduce((total, extra) => total + extraLineMinor(extra, currency, basis), 0);
+}
+
+function minorOrUndefined(value: string | undefined, currency: string): number | undefined {
+  if (value === undefined) return undefined;
+  try {
+    return decimalStringToMinor(value, currency);
+  } catch {
+    return undefined;
+  }
 }

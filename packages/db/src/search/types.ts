@@ -249,6 +249,13 @@ export type ListingPricedItem = {
    */
   payableInBase: boolean | null;
   /**
+   * A fee stated as a share of the charter rather than as money: 0.35 is 35%. Null on the
+   * ordinary ones, which carry their amount in `price`. The catalogue row for one of these
+   * has no money on it at all, so a page reading only `price` called a 35% service charge
+   * free.
+   */
+  percentage: number | null;
+  /**
    * Charged only when the charter ends at a base other than the one it started from.
    *
    * Presenting one of these as an unconditional mandatory extra overstates every return

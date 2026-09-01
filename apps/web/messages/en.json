@@ -391,6 +391,7 @@
       "payAtCheckIn": "Pay at check-in",
       "payNow": "Included in prepayment",
       "includedInPrice": "Included in the price",
+      "percentageOfCharter": "{percent}% of the charter price",
       "oneWayOnly": "One-way charters only",
       "measure": {
         "booking": "{price} per booking",

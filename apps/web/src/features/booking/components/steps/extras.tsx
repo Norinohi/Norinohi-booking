@@ -49,7 +49,8 @@ function ExtraRow({
    * carries neither caption nor figure: the offer prices it at zero, and the catalogue's own
    * list value would read as a charge the customer is not being asked for.
    */
-  const included = item.pricingType === "included" || item.price.amountMinor === 0;
+  const included =
+    item.percentage === null && (item.pricingType === "included" || item.price.amountMinor === 0);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered
@@ -66,11 +67,13 @@ function ExtraRow({
         )}
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
-        {included
-          ? tExtras("includedInPrice")
-          : offered
-            ? money(offered.amount.amountMinor, offered.amount.currency)
-            : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
+        {item.percentage !== null
+          ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
+          : included
+            ? tExtras("includedInPrice")
+            : offered
+              ? money(offered.amount.amountMinor, offered.amount.currency)
+              : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
       </span>
     </>
   );

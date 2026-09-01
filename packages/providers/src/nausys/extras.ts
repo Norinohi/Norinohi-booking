@@ -26,13 +26,53 @@ type RestExtra = z.infer<typeof restExtraSchema>;
  * `services`/`additionalEquipment` are the same shape, so pricing them two
  * different ways can only ever mean one of the two is wrong.
  */
-export function extraLineMinor(extra: RestExtra, currency: string): number {
+export function extraLineMinor(
+  extra: RestExtra,
+  currency: string,
+  basis?: PercentageBasis,
+): number {
   if (isIncludedInCharterPrice(extra)) return 0;
 
+  /* The vendor's own total wins whatever the shape, and on an offer it is always sent. */
+  if (extra.totalPrice !== undefined) return decimalStringToMinor(extra.totalPrice, currency);
+
+  if (extra.amountIsPercentage === true) return percentageLineMinor(extra, basis);
+
   const amountMinor = decimalStringToMinor(extra.amount, currency);
-  return extra.totalPrice === undefined
-    ? Math.round(amountMinor * quantityOf(extra))
-    : decimalStringToMinor(extra.totalPrice, currency);
+  return Math.round(amountMinor * quantityOf(extra));
+}
+
+/**
+ * What a rate applies to, in minor units, as far as the caller knows it.
+ *
+ * NauSYS names four bases and we can supply two of them from an offer. A rate against one we
+ * cannot value is left uncharged rather than guessed: the alternative is inventing a line the
+ * customer then does not owe, and the quote's own reconciliation would hide it.
+ */
+export interface PercentageBasis {
+  /** `PRICELIST_PRICE`, and the nearest thing we have to the without-VAT variant. */
+  listMinor?: number | undefined;
+  /** `CLIENT_PRICE`, the charter after the vendor's discounts. */
+  clientMinor?: number | undefined;
+}
+
+/**
+ * A percentage line, computed the way the vendor computes it.
+ *
+ * `amount` here is a rate to four decimals ("0.3500" is 35%), widened from two in May 2022 and
+ * documented as such. Read as money it is 35 cents, which is what our catalogue stored for a
+ * mandatory 35% service charge worth 7,910.00 on yacht 75193633.
+ */
+function percentageLineMinor(extra: RestExtra, basis: PercentageBasis | undefined): number {
+  const rate = Number(extra.amount);
+  if (!Number.isFinite(rate) || rate <= 0 || basis === undefined) return 0;
+
+  const against =
+    extra.percentageCalculationType === "CLIENT_PRICE"
+      ? (basis.clientMinor ?? basis.listMinor)
+      : (basis.listMinor ?? basis.clientMinor);
+
+  return against === undefined ? 0 : Math.round(against * rate * quantityOf(extra));
 }
 
 /**

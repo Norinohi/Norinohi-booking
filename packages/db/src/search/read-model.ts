@@ -422,9 +422,17 @@ export async function rebuildListingSearchDocs(
        * when the provider files no ladder at all.
        */
       left join lateral (
-        select sum(applicable.price_minor)::int as unavoidable_minor
+        select
+          sum(applicable.price_minor)::int as unavoidable_minor,
+          /*
+           * Fees the operator states as a share of the charter rather than as money, summed as
+           * rates and applied to the base in the money lateral below, which is the only place
+           * that base exists. A 35% service charge is 7,910.00 on one hull here and nothing at
+           * all on the catalogue row, so leaving it out is not the safe direction.
+           */
+          sum(applicable.percentage) as unavoidable_pct
         from (
-          select distinct on (extra.name) extra.price_minor
+          select distinct on (extra.name) extra.price_minor, extra.percentage
           from provider_extra_catalogue extra
           cross join lateral (
             select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
@@ -585,6 +593,17 @@ export async function rebuildListingSearchDocs(
                  /* Added to either source: a confirmed offer prices the charter and its
                     obligatory extras, never the crew the page will select for the visitor. */
                  + coalesce(crew.crew_minor, 0)
+                 /*
+                  * The percentage fees, against the charter this card is advertising. A
+                  * confirmed offer already counts them in its own subtotal, so they are added
+                  * only where the fees above were reconstructed from the catalogue.
+                  */
+                 + case
+                     when confirmed.currency is not distinct from chosen.price_currency
+                      and confirmed.obligatory_extras_minor is not null
+                     then 0
+                     else round(chosen.base_minor * coalesce(fees.unavoidable_pct, 0))::int
+                   end
           end as all_in_minor
       ) money
       /* Resolved once per offer; the conversion reads it twice. */

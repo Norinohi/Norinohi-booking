@@ -1376,6 +1376,8 @@ async function writeListingChildren(
         priceCurrency: extra.priceCurrency,
         priceMeasure: extra.priceMeasure ?? null,
         calculationType: extra.calculationType ?? null,
+        percentage: extra.percentage === undefined ? null : extra.percentage.toFixed(4),
+        percentageBasis: extra.percentageBasis ?? null,
         payableInBase: extra.payableInBase ?? null,
         seasonStart: extra.seasonStart ?? null,
         seasonEnd: extra.seasonEnd ?? null,

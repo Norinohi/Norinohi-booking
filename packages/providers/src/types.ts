@@ -544,6 +544,14 @@ export const canonicalExtraSchema = z.object({
   priceMeasure: z.string().optional(),
   calculationType: z.string().optional(),
   /**
+   * A fee stated as a share of the charter: 0.35 is 35%. `priceMinor` is zero on these, since
+   * the amount is only knowable once a week is being priced, and reading the vendor's rate as
+   * money turned a 35% service charge into 35 cents.
+   */
+  percentage: z.number().positive().optional(),
+  /** What the rate applies to, in the vendor's own words: PRICELIST_PRICE, CLIENT_PRICE, ... */
+  percentageBasis: z.string().optional(),
+  /**
    * Whether the operator collects this at the base rather than in the prepayment. Left unset
    * where the provider says nothing, which is not the same as false: claiming a fee is due on
    * arrival when it was already charged is the error this replaced.

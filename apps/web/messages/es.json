@@ -391,6 +391,7 @@
       "payAtCheckIn": "Pago al llegar",
       "payNow": "Incluido en el pago inicial",
       "includedInPrice": "Incluido en el precio",
+      "percentageOfCharter": "{percent}% del precio del chárter",
       "oneWayOnly": "Solo en trayectos de ida",
       "measure": {
         "booking": "{price} por reserva",

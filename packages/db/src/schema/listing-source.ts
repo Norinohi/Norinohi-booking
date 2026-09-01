@@ -87,6 +87,17 @@ export const providerExtraCatalogue = pgTable(
     priceMeasure: text("price_measure"),
     calculationType: text("calculation_type"),
     /**
+     * A fee the operator states as a share of the charter rather than as money: 0.35 is 35%.
+     *
+     * Stored as the rate because the amount depends on the week being priced, which the
+     * catalogue does not know. Without it the projection read the vendor's "0.3500" as a price
+     * of 0.35 and then, seeing a zero, filed the fee as free: yacht 75193633 carries a
+     * mandatory 35% service charge that the card showed as included, worth 7,910.00 on its
+     * own list price. `percentageBasis` is the vendor's own word for what it applies to.
+     */
+    percentage: numeric("percentage", { precision: 6, scale: 4 }),
+    percentageBasis: text("percentage_basis"),
+    /**
      * Whether the charter base collects this extra on arrival, rather than it being part of
      * what the booking prepays. Nullable because the two vendors state it differently and
      * neither always states it: Booking Manager sends `payableInBase` on the offer's extras,

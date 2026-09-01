@@ -391,6 +391,7 @@
       "payAtCheckIn": "Оплата при заїзді",
       "payNow": "Входить у передоплату",
       "includedInPrice": "Включено у ціну",
+      "percentageOfCharter": "{percent}% від вартості чартеру",
       "oneWayOnly": "Лише для рейсів в один бік",
       "measure": {
         "booking": "{price} за бронювання",

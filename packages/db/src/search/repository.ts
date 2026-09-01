@@ -266,6 +266,7 @@ export async function getListingDetailByIdOrSlug(
         priceCurrency: string | null;
         priceMeasure: string | null;
         calculationType: string | null;
+        percentage: string | null;
         payableInBase: boolean | null;
         oneWayOnly: boolean;
       }>(sql`
@@ -285,6 +286,7 @@ export async function getListingDetailByIdOrSlug(
         extra.price_currency as "priceCurrency",
         extra.price_measure as "priceMeasure",
         extra.calculation_type as "calculationType",
+        extra.percentage,
         extra.payable_in_base as "payableInBase",
         extra.one_way_only as "oneWayOnly"
       from provider_extra_catalogue extra
@@ -398,6 +400,7 @@ export async function getListingDetailByIdOrSlug(
     priceCurrency: item.priceCurrency,
     priceMeasure: item.priceMeasure,
     calculationType: item.calculationType,
+    percentage: item.percentage,
     payableInBase: item.payableInBase,
     oneWayOnly: item.oneWayOnly,
     selectable: isSelectableExtra(item.source, item.kind),
@@ -1653,6 +1656,7 @@ function pricedItem(
     priceCurrency: string | null;
     priceMeasure?: string | null;
     calculationType?: string | null;
+    percentage?: string | null;
     payableInBase?: boolean | null;
     oneWayOnly?: boolean | null;
   },
@@ -1667,6 +1671,10 @@ function pricedItem(
     },
     priceToMinor: null,
     priceMeasure: item.priceMeasure ?? null,
+    /* A fee the operator states as a share of the charter: 0.35 is 35%. It has no money on the
+       catalogue row at all, so a card that showed only `price` called it free. */
+    percentage:
+      item.percentage === null || item.percentage === undefined ? null : Number(item.percentage),
     payableInBase: item.payableInBase ?? null,
     oneWayOnly: item.oneWayOnly ?? false,
     pricingType: pricingTypeOf(item.calculationType),

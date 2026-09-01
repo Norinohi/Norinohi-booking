@@ -16,7 +16,7 @@ import {
   type QuoteRequest,
 } from "../types";
 import type { NausysClient } from "./client";
-import { extraLineMinor, isIncludedInCharterPrice } from "./extras";
+import { extraLineMinor, isIncludedInCharterPrice, type PercentageBasis } from "./extras";
 import type { NausysConfig } from "./config";
 import {
   nausysEndpoints,
@@ -263,9 +263,12 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
   const listPriceMinor = decimalStringToMinor(yacht.price.priceListPrice, currency);
   const clientPriceMinor = decimalStringToMinor(yacht.price.clientPrice, currency);
 
+  /* What a percentage extra is a percentage of; see `PercentageBasis`. */
+  const basis = { listMinor: listPriceMinor, clientMinor: clientPriceMinor };
+
   const charterLines = buildCharterLines(yacht, currency, listPriceMinor, clientPriceMinor, input);
   const obligatoryLines = (yacht.obligatoryExtras ?? []).map((extra) =>
-    toExtraLine(extra, currency, input, "mandatory"),
+    toExtraLine(extra, currency, input, "mandatory", basis),
   );
   /*
    * Crew is bought by choosing a crew type, not by ticking an extra, so it is
@@ -280,8 +283,10 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     yacht,
     new Set((input.extras ?? []).filter((code) => !crewCodes.has(code))),
   );
-  const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew"));
-  const selectedLines = selected.map((extra) => toExtraLine(extra, currency, input, "optional"));
+  const crewLines = crew.map((extra) => toExtraLine(extra, currency, input, "crew", basis));
+  const selectedLines = selected.map((extra) =>
+    toExtraLine(extra, currency, input, "optional", basis),
+  );
   const extraLines = [...obligatoryLines, ...crewLines, ...selectedLines];
   const lines = [...charterLines, ...extraLines];
 
@@ -312,7 +317,7 @@ export function mapFreeYachtToProviderQuote(input: FreeYachtMapping): ProviderQu
     return [
       {
         code: formatExtraCode(identity.kind, identity.externalId),
-        amount: { amountMinor: extraLineMinor(extra, currency), currency },
+        amount: { amountMinor: extraLineMinor(extra, currency, basis), currency },
         payWhen: payWhenFor(extra),
       },
     ];
@@ -498,6 +503,7 @@ function toExtraLine(
   currency: string,
   input: FreeYachtMapping,
   group: NonNullable<QuoteLine["group"]>,
+  basis?: PercentageBasis,
 ): QuoteLine {
   const identity = offerExtraIdentity(extra);
   /* Only a line that will be billed has a currency to disagree about: one the charter price
@@ -509,7 +515,7 @@ function toExtraLine(
     );
   }
 
-  const lineMinor = extraLineMinor(extra, currency);
+  const lineMinor = extraLineMinor(extra, currency, basis);
 
   return {
     // The canonical extra identity, the same string the listing page rendered and

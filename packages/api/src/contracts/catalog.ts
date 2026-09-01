@@ -55,6 +55,8 @@ const pricedItemSchema = includedItemSchema.extend({
    * translate, and stating the wrong unit is what this exists to stop.
    */
   priceMeasure: z.string().nullable(),
+  /** A share of the charter rather than an amount: 0.35 is 35%. Null on the ordinary ones. */
+  percentage: z.number().nullable(),
   /** Where the fee is collected; null where the provider said nothing, so the page says nothing. */
   payableInBase: z.boolean().nullable(),
   /** Charged only on a charter that ends at a different base than it started. */
