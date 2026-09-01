@@ -669,6 +669,14 @@ export const restFreeYachtsRequestSchema = z.object({
   currency: z.string().optional(),
   extendedDataSet: z.string().optional(),
   ignoreOptions: z.boolean().optional(),
+  /**
+   * The party the charter is for, which some obligatory extras are priced per head of.
+   *
+   * Documented since 7 October 2025 and never sent, so the vendor priced those lines for a
+   * full boat: the tourist tax on yacht 72646441 came back as 70 units (ten berths across
+   * seven nights, 93.10) for a couple who owe 14 (18.62).
+   */
+  numberOfPersons: z.number().int().positive().optional(),
 });
 export type RestFreeYachtsRequest = z.infer<typeof restFreeYachtsRequestSchema>;
 

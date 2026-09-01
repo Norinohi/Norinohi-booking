@@ -141,6 +141,28 @@ describe("NauSYS live quote", () => {
     expect(priced.expiresAt).toBe(new Date(FIXED_NOW + 15 * 60 * 1000).toISOString());
   });
 
+  /*
+   * Some obligatory extras are priced per head: the tourist tax on yacht 72646441 comes back
+   * as 70 units without this field (ten berths across seven nights) and 14 with it set to two.
+   * Omitting it billed every couple for a full boat.
+   */
+  it("tells the vendor how many people the charter is for", async () => {
+    const { service, transport } = build();
+
+    await service.getNausysQuote({ ...request, guests: 2 });
+
+    expect(transport.calls[0]?.body).toMatchObject({ numberOfPersons: 2 });
+  });
+
+  it("prices two parties separately rather than serving one from the other's answer", async () => {
+    const { service, transport } = build({ cacheTtlMs: 60_000 });
+
+    await service.getNausysQuote({ ...request, guests: 2 });
+    await service.getNausysQuote({ ...request, guests: 8 });
+
+    expect(transport.calls.map((call) => call.body?.numberOfPersons)).toEqual([2, 8]);
+  });
+
   it("sends the nested-credential freeYachts request the vendor documents", async () => {
     const { service, transport } = build();
     await service.getNausysQuote(request);
@@ -153,6 +175,7 @@ describe("NauSYS live quote", () => {
       yachts: [4711001],
       currency: "EUR",
       extendedDataSet: "PAYMENT_PLAN,ADDITIONAL_EXTRAS",
+      numberOfPersons: 4,
     });
   });
 

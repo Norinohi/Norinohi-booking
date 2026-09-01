@@ -125,10 +125,12 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
     periodFrom: string,
     periodTo: string,
     currency: string,
+    guests: number,
   ): Promise<RestFreeYacht> {
-    // Keyed by credential: agency pricing is per account, so two credentials must
-    // never see each other's numbers.
-    const cacheKey = `${config.queueKey}|${yachtId}|${periodFrom}|${periodTo}|${currency}`;
+    /* Keyed by credential: agency pricing is per account, so two credentials must never see
+       each other's numbers. By party size too, since the vendor prices per-head extras from
+       it and two guest counts are two different answers. */
+    const cacheKey = `${config.queueKey}|${yachtId}|${periodFrom}|${periodTo}|${currency}|${guests}`;
     const cached = cache.get(cacheKey);
     if (cached && now() - cached.readAt < cacheTtlMs) {
       return cached.yacht;
@@ -140,6 +142,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
       yachts: [yachtId],
       currency,
       extendedDataSet: EXTENDED_DATA_SET,
+      numberOfPersons: guests,
     });
 
     const response = await client.bookingCall(
@@ -184,6 +187,7 @@ export function createNausysQuoteService(options: NausysQuoteServiceOptions): Na
         formatNausysDate(parsed.checkIn),
         formatNausysDate(parsed.checkOut),
         parsed.currency,
+        parsed.guests,
       );
 
       // The offer's own deposit wins over the catalogue default; see the option's
