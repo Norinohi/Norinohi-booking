@@ -2515,7 +2515,7 @@
         "takeOut": "Aus diesem Inserat herauslösen",
         "splitRestored": "Herausgelöst und in sein ursprüngliches Inserat zurückgeführt.",
         "splitNew": "In ein eigenes Inserat herausgelöst.",
-        "confirmSplitBody": "Das Angebot von {provider} geht zurück auf sein eigenes Listing, und dieses Listing führt dann nicht mehr beide Anbieter. Das Paar lässt sich im Tab „Confirmed“ der Dublettenprüfung erneut zusammenführen.",
+        "confirmSplitBody": "Das Angebot von {provider} geht zurück auf sein eigenes Listing, und dieses Listing führt dann nicht mehr beide Anbieter. Das Paar lässt sich im Tab „Zusammengeführte Duplikate“ der Dublettenprüfung erneut zusammenführen.",
         "confirmSplitAction": "Herausnehmen",
         "confirmSplitBusy": "Wird herausgenommen…",
         "confirmSplitCancel": "Abbrechen"

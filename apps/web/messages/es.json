@@ -2515,7 +2515,7 @@
         "takeOut": "Sacar de este anuncio",
         "splitRestored": "Sacado y devuelto al anuncio del que vino.",
         "splitNew": "Sacado a un anuncio propio.",
-        "confirmSplitBody": "La oferta de {provider} vuelve a su propio anuncio, y este anuncio deja de incluir ambos proveedores. Puedes volver a fusionar el par desde la pestaña Confirmed de Duplicate Review.",
+        "confirmSplitBody": "La oferta de {provider} vuelve a su propio anuncio, y este anuncio deja de incluir ambos proveedores. Puedes volver a fusionar el par desde la pestaña Duplicados fusionados de Duplicate Review.",
         "confirmSplitAction": "Quitar",
         "confirmSplitBusy": "Quitando…",
         "confirmSplitCancel": "Cancelar"

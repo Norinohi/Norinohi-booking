@@ -2515,7 +2515,7 @@
         "takeOut": "Take out of this listing",
         "splitRestored": "Taken out and returned to the listing it came from.",
         "splitNew": "Taken out onto a listing of its own.",
-        "confirmSplitBody": "The {provider} offer goes back to its own listing, and this listing stops carrying both providers. You can merge the pair again from the Confirmed tab of Duplicate Review.",
+        "confirmSplitBody": "The {provider} offer goes back to its own listing, and this listing stops carrying both providers. You can merge the pair again from the Merged duplicates tab of Duplicate Review.",
         "confirmSplitAction": "Take it out",
         "confirmSplitBusy": "Taking out…",
         "confirmSplitCancel": "Cancel"
