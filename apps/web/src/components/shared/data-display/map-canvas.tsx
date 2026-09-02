@@ -7,7 +7,7 @@ import { Component, createContext, type ReactNode, useContext, useRef, useState 
 import type { ComponentProps } from "react";
 import Map, { GeolocateControl, type MapEvent, NavigationControl } from "react-map-gl/mapbox";
 
-import { MAP_STYLE_STREETS_URL, MAP_STYLE_URL } from "@/lib/mapbox";
+import { MAP_MAX_ZOOM, MAP_MIN_ZOOM, MAP_STYLE_STREETS_URL, MAP_STYLE_URL } from "@/lib/mapbox";
 
 export const MAP_STYLES = { satellite: MAP_STYLE_URL, streets: MAP_STYLE_STREETS_URL } as const;
 
@@ -27,16 +27,6 @@ const DIM_OPACITY = 0.15;
 
 const DEFAULT_VIEW_STATE = { longitude: 16.44, latitude: 43.51, zoom: 6.4 };
 const MAX_RECOVERIES = 10;
-
-/*
- * The range a visitor can drive the camera through.
- *
- * The floor is where one world still fills a wide container, so there is no zoom at which a second
- * copy of the Adriatic — and a second set of its markers — can be panned into frame. The ceiling is
- * about a pontoon: past it the satellite tiles run out and the reward for zooming is blurred water.
- */
-const MIN_ZOOM = 3;
-const MAX_ZOOM = 18;
 
 function styleBasemap(map: MapInstance, opacity: number) {
   if (opacity <= 0 || map.getLayer(DIM_LAYER_ID)) return;
@@ -96,8 +86,8 @@ function MapSurface({
   onStyleChange,
   controls = true,
   locateControl = false,
-  minZoom = MIN_ZOOM,
-  maxZoom = MAX_ZOOM,
+  minZoom = MAP_MIN_ZOOM,
+  maxZoom = MAP_MAX_ZOOM,
 }: MapCanvasProps) {
   const [ready, setReady] = useState(false);
   const styleKey = useContext(MapStyleContext);
