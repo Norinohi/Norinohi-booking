@@ -1163,7 +1163,8 @@ export async function rejectDuplicateCandidate(
  *
  * The precision that will one day justify auto-approval is confirmed over confirmed-plus-
  * rejected, so filing every hard pair as a rejection would sink the figure the decision rests
- * on. A deferred pair leaves the queue and stays readable.
+ * on. A deferred pair leaves the queue and stays decidable: the note says what stopped the
+ * reviewer, and whoever answers that question later resolves it from the Deferred tab.
  */
 export async function deferDuplicateCandidate(
   db: Database,
@@ -1171,6 +1172,90 @@ export async function deferDuplicateCandidate(
   input: { candidateId: string; note?: string },
 ): Promise<Resolution> {
   return closeCandidate(db, actorUserId, input, "deferred");
+}
+
+/**
+ * Puts a reviewed pair back in the queue, undecided.
+ *
+ * Every verdict on this screen was reversible in spirit and none of them were in practice: a
+ * rejection was final, a set-aside pair was final, and a merge could be split without the pair
+ * ever coming back to be judged again. Nothing re-proposes a candidate — the row is unique per
+ * pair, so the sync cannot offer it a second time — which made "reviewed" mean "gone".
+ *
+ * The reviewer, the note and the timestamp go with the verdict: what is left is the proposal
+ * as the matcher made it, which is what the queue is for. The audit row keeps the history.
+ *
+ * A standing merge is the one thing this will not undo. The offers have moved and bookings
+ * point at the survivor; taking the pair apart is `splitListingOffer`'s job, and only once it
+ * has run does the confirmation become reopenable.
+ */
+export async function reopenDuplicateCandidate(
+  db: Database,
+  actorUserId: string,
+  input: { candidateId: string },
+): Promise<Resolution> {
+  return db.transaction(async (tx) => {
+    const candidate = await lockReopenableCandidate(tx, input.candidateId);
+
+    await tx
+      .update(listingDuplicateCandidate)
+      .set({ decision: "pending", reviewer: null, reviewerNote: null, reviewedAt: null })
+      .where(eq(listingDuplicateCandidate.id, candidate.id));
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      action: "update",
+      entityType: "listing_duplicate_candidate",
+      entityId: candidate.id,
+      before: { decision: candidate.decision, reviewerNote: candidate.reviewerNote },
+      after: { decision: "pending", sourceIds: [candidate.sourceAId, candidate.sourceBId] },
+    });
+
+    return {
+      candidateId: candidate.id,
+      decision: "pending",
+      keptListingId: null,
+      mergedListingId: null,
+      movedOfferCount: 0,
+      closedCandidateCount: 0,
+    };
+  });
+}
+
+/**
+ * The candidates that can go back to undecided: anything already reviewed, except a
+ * confirmation whose merge is still standing.
+ *
+ * Read under the same `for update` lock as the write it guards, so a reopen racing a split
+ * cannot see a merge that is halfway apart.
+ */
+async function lockReopenableCandidate(tx: DatabaseExecutor, candidateId: string) {
+  const [candidate] = await tx
+    .select()
+    .from(listingDuplicateCandidate)
+    .where(eq(listingDuplicateCandidate.id, candidateId))
+    .limit(1)
+    .for("update");
+
+  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (candidate.decision === "pending") {
+    throw new ORPCError("CONFLICT", { message: "This candidate is already in the queue" });
+  }
+  if (candidate.decision !== "confirmed") return candidate;
+
+  const sources = await tx
+    .select({ id: listingSource.id, listingId: listingSource.listingId })
+    .from(listingSource)
+    .where(inArray(listingSource.id, [candidate.sourceAId, candidate.sourceBId]));
+
+  const [first, second] = sources;
+  if (sources.length === 2 && first !== undefined && second !== undefined) {
+    if (first.listingId !== second.listingId) return candidate;
+  }
+
+  throw new ORPCError("CONFLICT", {
+    message: "Take the merged offer back out of the listing before reopening this pair",
+  });
 }
 
 async function closeCandidate(
@@ -1215,8 +1300,8 @@ async function closeCandidate(
 }
 
 /**
- * The candidates a verdict may still be written to: anything undecided, plus a confirmation
- * whose merge a split has since taken apart.
+ * The candidates a verdict may still be written to: anything undecided, a pair set aside for
+ * later, plus a confirmation whose merge a split has since taken apart.
  *
  * `for update` plus the decision check inside the transaction: without the lock a
  * double-clicked Confirm runs the merge twice, and the second run hides the
@@ -1231,7 +1316,12 @@ async function lockDecidableCandidate(tx: DatabaseExecutor, candidateId: string)
     .for("update");
 
   if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
-  if (candidate.decision === "pending") return candidate;
+  /*
+   * `deferred` is not a verdict — it is a reviewer saying "not now", and the only way back to
+   * the pair is this row, since nothing re-proposes a candidate that already exists. Closing it
+   * to a later decision made Set aside the most final button on the card.
+   */
+  if (candidate.decision === "pending" || candidate.decision === "deferred") return candidate;
 
   /*
    * A confirmation a split has already taken apart is open again. Without this an

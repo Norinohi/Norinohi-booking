@@ -2054,15 +2054,16 @@
       "filter": {
         "label": "Decisión",
         "pending": "Pendientes",
-        "confirmed": "Confirmados",
-        "rejected": "Rechazados",
-        "deferred": "Aplazados"
+        "confirmed": "Duplicados fusionados",
+        "rejected": "No son duplicados",
+        "deferred": "Sin decidir"
       },
       "empty": {
         "pending": "Nada que revisar. Todos los duplicados están resueltos.",
-        "confirmed": "Todavía no se ha confirmado ninguna fusión.",
-        "rejected": "Todavía no se ha rechazado ningún par.",
-        "deferred": "Aún no se ha aplazado ningún par."
+        "confirmed": "Todavía no se ha fusionado ningún par.",
+        "rejected": "Todavía no se ha registrado ningún par como dos yates diferentes.",
+        "deferred": "Todavía no se ha apartado nada.",
+        "filtered": "Ningún par coincide con estos filtros. Amplía el filtro de confianza o de regla para ver el resto."
       },
       "error": "No se pudo cargar la cola de duplicados",
       "confidence": "{value}% de coincidencia",
@@ -2076,6 +2077,7 @@
       "keep": "Conservar este anuncio",
       "keeping": "Fusionando…",
       "reject": "No es un duplicado",
+      "reopen": "Devolver a la cola",
       "differs": "difiere",
       "differsLegend": "Los valores resaltados difieren entre los dos lados.",
       "noImage": "Sin imagen",
@@ -2193,7 +2195,8 @@
         "rejected": "Registrado como dos yates diferentes.",
         "conflict": "Otra persona ya revisó este par. Recargando la cola.",
         "error": "Algo salió mal. Inténtalo de nuevo.",
-        "deferred": "Aplazado. No cuenta ni a favor ni en contra del emparejador."
+        "deferred": "Aplazado. No cuenta ni a favor ni en contra del emparejador.",
+        "reopened": "De vuelta en la cola, pendiente de decidir otra vez."
       },
       "defer": "Aplazar",
       "notePlaceholder": "¿Por qué? (opcional)",

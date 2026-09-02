@@ -1,7 +1,7 @@
 "use client";
 
 import { ORPCError } from "@orpc/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { orpc } from "@/utils/orpc";
 
@@ -19,7 +19,12 @@ export function useDuplicateQueue(input: {
   matchedOn?: string;
   page: number;
 }) {
-  return useQuery(duplicateQueueQueryOptions(input));
+  /*
+   * The filters read their options out of this query's `summary`, so a filter change that
+   * emptied `data` would unmount the band a reviewer had just picked; Base UI's Select then
+   * reverts to a value its popup can still see and the selection appears not to take.
+   */
+  return useQuery({ ...duplicateQueueQueryOptions(input), placeholderData: keepPreviousData });
 }
 
 /** Callers mount this only once a pair is opened, which is what keeps the queue cheap. */
@@ -50,6 +55,22 @@ export function useRejectDuplicate() {
 
   return useMutation(
     orpc.admin.match.reject.mutationOptions({
+      onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
+    }),
+  );
+}
+
+/**
+ * Takes a verdict back: the pair returns to the queue as pending, without its note.
+ *
+ * Guarded on the server rather than here — a confirmation whose merge still stands comes back
+ * CONFLICT, because the offers have to be split out before the pair is a question again.
+ */
+export function useReopenDuplicate() {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    orpc.admin.match.reopen.mutationOptions({
       onSettled: () => queryClient.invalidateQueries({ queryKey: orpc.admin.match.key() }),
     }),
   );

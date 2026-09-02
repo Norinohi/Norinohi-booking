@@ -13,6 +13,7 @@ import Sidebar from "@/components/layout/sidebar";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 
+import { DUPLICATES_DEFAULT_CONFIDENCE } from "../api/queries";
 import { useDuplicateQueue } from "../hooks/use-duplicates";
 import type {
   DuplicateConfidenceBand,
@@ -53,7 +54,9 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
   const t = useTranslations("Admin.Duplicates");
   const router = useRouter();
   const [decision, setDecision] = useState<DuplicateDecision>("pending");
-  const [confidence, setConfidence] = useState<DuplicateConfidenceFilter>("all");
+  const [confidence, setConfidence] = useState<DuplicateConfidenceFilter>(
+    DUPLICATES_DEFAULT_CONFIDENCE,
+  );
   const [matchedOn, setMatchedOn] = useState(ANY);
   const [page, setPage] = useState(1);
 
@@ -88,16 +91,29 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
     });
   };
 
+  /*
+   * The bands, counted over the tab. An empty one is normally left out rather than offered as a
+   * filter that finds nothing, with one exception: the band currently selected has to stay on
+   * the list even at zero, because Base UI's Select reverts to a value whose item it can no
+   * longer see — and the queue now opens on `high`, which a tab may well have none of.
+   */
+  const bandCounts = new Map((summary?.confidenceBands ?? []).map((row) => [row.band, row.count]));
+  const confidenceOptions = BANDS.flatMap((band) => {
+    const count = bandCounts.get(band);
+    if (count === undefined && band !== confidence) return [];
+    return [{ value: band, label: withCount(t(`confidenceBand.${band}`), count ?? 0) }];
+  });
+
   const matchTypeTrigger = (selected: string) =>
     t("filters.matchTypeValue", {
       value: selected === ANY ? t("filters.any") : matchTypeLabel(selected),
     });
 
-  /* Both filters are facets of the decision they were counted over, so a tab switch clears
-     them rather than leaving a selection the new tab has no rows for. */
+  /* Both filters are facets of the decision they were counted over, so a tab switch puts them
+     back to how the queue opens rather than leaving a selection the new tab has no rows for. */
   const changeDecision = (next: string) => {
     setDecision(DECISIONS.find((option) => option === next) ?? "pending");
-    setConfidence("all");
+    setConfidence(DUPLICATES_DEFAULT_CONFIDENCE);
     setMatchedOn(ANY);
     setPage(1);
   };
@@ -152,10 +168,7 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
                       }}
                       options={[
                         { value: "all", label: t("filters.anyConfidence") },
-                        ...(summary?.confidenceBands ?? []).map((row) => ({
-                          value: row.band,
-                          label: withCount(t(`confidenceBand.${row.band}`), row.count),
-                        })),
+                        ...confidenceOptions,
                       ]}
                     />
                   </div>
@@ -200,7 +213,15 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
                 : isError
                   ? message(t("error"))
                   : data.items.length === 0
-                    ? message(t(`empty.${decision}`))
+                    ? /* Which nothing this is. The tab's own count answers it: zero means there
+                         is genuinely nothing under this decision, and anything else means the
+                         filters hid it — the common case now the queue opens on one band, and a
+                         tab claiming everything is resolved would simply be untrue. */
+                      message(
+                        summary?.decisionCounts[decision] === 0
+                          ? t(`empty.${decision}`)
+                          : t("empty.filtered"),
+                      )
                     : data.items.map((candidate) => (
                         <DuplicateCandidateCard key={candidate.id} candidate={candidate} />
                       ))}

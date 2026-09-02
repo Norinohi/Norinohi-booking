@@ -19,6 +19,7 @@ import {
   useConfirmDuplicate,
   useDeferDuplicate,
   useRejectDuplicate,
+  useReopenDuplicate,
 } from "../hooks/use-duplicates";
 import { type DuplicateCandidate, toProviderKey } from "../types";
 import DuplicateDetailDialog from "./duplicate-detail-dialog";
@@ -72,13 +73,18 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
   const confirmDuplicate = useConfirmDuplicate();
   const rejectDuplicate = useRejectDuplicate();
   const deferDuplicate = useDeferDuplicate();
+  const reopenDuplicate = useReopenDuplicate();
   /* Which side's button was pressed, so only that one shows the pending label. */
   const [keeping, setKeeping] = useState<string | null>(null);
   /*
    * Carried into whichever verdict is reached. Written once and read back off the candidate
    * afterwards, so the reason a hard pair went the way it did outlives the reviewer's memory.
+   *
+   * Seeded from the note already on the pair, which is what a set-aside one carries: the verdict
+   * that finally resolves it overwrites the row, so an empty box would erase the reason it was
+   * put off in the first place.
    */
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(candidate.reviewerNote ?? "");
   const [detailOpen, setDetailOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
 
@@ -94,13 +100,27 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
       : null;
 
   /*
-   * Undecided, or a confirmation a split has taken apart — the server accepts a verdict on
-   * both, and an undone pair is exactly the one a reviewer needs to act on: either it was
-   * split by mistake and should go back together, or it was never a duplicate and should be
-   * recorded as such. Leaving it read-only stranded it in the audit tab.
+   * Undecided, set aside, or a confirmation a split has taken apart — the server accepts a
+   * verdict on all three. A set-aside pair is the one somebody deliberately kept for later, and
+   * an undone pair is exactly the one a reviewer needs to act on: either it was split by
+   * mistake and should go back together, or it was never a duplicate and should be recorded as
+   * such. Leaving either read-only stranded it in the audit tab.
    */
-  const decidable = candidate.decision === "pending" || candidate.undone;
-  const busy = confirmDuplicate.isPending || rejectDuplicate.isPending || deferDuplicate.isPending;
+  const decidable =
+    candidate.decision === "pending" || candidate.decision === "deferred" || candidate.undone;
+  const busy =
+    confirmDuplicate.isPending ||
+    rejectDuplicate.isPending ||
+    deferDuplicate.isPending ||
+    reopenDuplicate.isPending;
+
+  /*
+   * Every verdict is reversible, because none of them can be reached twice: nothing re-proposes
+   * a pair the reviewer has closed. The exception is a merge still standing — the offers have
+   * moved, so it is taken apart from the sources panel first and reopened after.
+   */
+  const reopenable =
+    candidate.decision !== "pending" && (candidate.decision !== "confirmed" || candidate.undone);
 
   const value = (key: ComparisonKey, raw: string | number | null): string => {
     if (raw === null) return EMPTY_VALUE;
@@ -172,6 +192,13 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
    * rejection, because the precision figure that would justify auto-approval is confirmed over
    * confirmed-plus-rejected and filing every hard case as a failure would sink it.
    */
+  const reopen = () => {
+    reopenDuplicate.mutate(
+      { candidateId: candidate.id },
+      { onSuccess: () => toast.success(t("toast.reopened")), onError },
+    );
+  };
+
   const defer = () => {
     deferDuplicate.mutate(
       { candidateId: candidate.id, note: note.trim() || undefined },
@@ -233,6 +260,11 @@ export default function DuplicateCandidateCard({ candidate }: { candidate: Dupli
           {mergedListing ? (
             <Button variant="neutral" onClick={() => setSourcesOpen(true)}>
               {t("showSources")}
+            </Button>
+          ) : null}
+          {reopenable ? (
+            <Button variant="neutral" onClick={reopen} disabled={busy}>
+              {t("reopen")}
             </Button>
           ) : null}
           {decidable ? (

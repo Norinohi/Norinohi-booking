@@ -284,6 +284,14 @@ export const duplicateRejectInputSchema = z.object({
   note: reviewerNoteSchema,
 });
 
+/**
+ * Puts a reviewed pair back in the queue. No note: the verdict is being taken back, and the
+ * reason it was reached goes with it — the audit row is what keeps the history.
+ */
+export const duplicateReopenInputSchema = z.object({
+  candidateId: idSchema,
+});
+
 export const duplicateResolutionSchema = z.object({
   candidateId: z.string(),
   decision: duplicateDecisionSchema,
