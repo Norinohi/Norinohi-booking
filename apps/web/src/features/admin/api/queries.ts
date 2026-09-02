@@ -40,6 +40,14 @@ export const FAQ_PAGE_SIZE = 20;
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
 
+/*
+ * The band the queue opens on. Pairs scored 90% and up are the ones a reviewer can settle at a
+ * glance, and they are a third of the proposals, so starting there is the difference between a
+ * queue that gets worked and one that gets scrolled. Read by the screen's initial state as well
+ * as the fallback below, so the server prefetch and the first client render share a cache key.
+ */
+export const DUPLICATES_DEFAULT_CONFIDENCE: DuplicateConfidenceFilter = "high";
+
 /* Every filter stays explicit so each combination keeps its own cache key, and so the
    server prefetch and the client's first render agree on it down to the last field. */
 export const duplicateQueueQueryOptions = (input: {
@@ -52,7 +60,7 @@ export const duplicateQueueQueryOptions = (input: {
   orpc.admin.match.queue.queryOptions({
     input: {
       decision: input.decision,
-      confidence: input.confidence ?? "all",
+      confidence: input.confidence ?? DUPLICATES_DEFAULT_CONFIDENCE,
       matchedOn: input.matchedOn,
       page: input.page,
       pageSize: input.pageSize ?? DUPLICATES_PAGE_SIZE,

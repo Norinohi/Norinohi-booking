@@ -2054,15 +2054,16 @@
       "filter": {
         "label": "Entscheidung",
         "pending": "Ausstehend",
-        "confirmed": "Bestätigt",
-        "rejected": "Abgelehnt",
-        "deferred": "Zurückgestellt"
+        "confirmed": "Zusammengeführte Duplikate",
+        "rejected": "Keine Duplikate",
+        "deferred": "Nicht entschieden"
       },
       "empty": {
         "pending": "Nichts zu prüfen. Alle Duplikat-Kandidaten wurden bearbeitet.",
-        "confirmed": "Es wurden noch keine Zusammenführungen bestätigt.",
-        "rejected": "Es wurden noch keine Paare abgelehnt.",
-        "deferred": "Es wurden noch keine Paare zurückgestellt."
+        "confirmed": "Es wurden noch keine Paare zusammengeführt.",
+        "rejected": "Es wurde noch kein Paar als zwei verschiedene Yachten erfasst.",
+        "deferred": "Es wurde noch nichts zurückgestellt.",
+        "filtered": "Keine Paare entsprechen diesen Filtern. Erweitern Sie den Konfidenz- oder Regelfilter, um den Rest zu sehen."
       },
       "error": "Die Duplikat-Warteschlange konnte nicht geladen werden",
       "confidence": "{value} % Übereinstimmung",
@@ -2076,6 +2077,7 @@
       "keep": "Dieses Inserat behalten",
       "keeping": "Wird zusammengeführt…",
       "reject": "Kein Duplikat",
+      "reopen": "Zurück in die Warteschlange",
       "differs": "abweichend",
       "differsLegend": "Hervorgehobene Werte unterscheiden sich zwischen den beiden Seiten.",
       "noImage": "Kein Bild",
@@ -2193,7 +2195,8 @@
         "rejected": "Als zwei verschiedene Yachten erfasst.",
         "conflict": "Jemand anderes hat dieses Paar bereits geprüft. Die Warteschlange wird neu geladen.",
         "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
-        "deferred": "Zurückgestellt. Zählt weder für noch gegen den Matcher."
+        "deferred": "Zurückgestellt. Zählt weder für noch gegen den Matcher.",
+        "reopened": "Wieder in der Warteschlange und erneut zu entscheiden."
       },
       "defer": "Zurückstellen",
       "notePlaceholder": "Warum? (optional)",

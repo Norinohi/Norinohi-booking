@@ -22,6 +22,7 @@ import {
   duplicateMetricsInputSchema,
   duplicateMetricsSchema,
   duplicateRejectInputSchema,
+  duplicateReopenInputSchema,
   duplicateSplitInputSchema,
   duplicateSplitSchema,
   duplicateResolutionSchema,
@@ -112,6 +113,7 @@ import {
   getDuplicateCandidateDetail,
   listDuplicateCandidates,
   rejectDuplicateCandidate,
+  reopenDuplicateCandidate,
   splitListingOffer,
 } from "../services/match";
 import { cancelBooking } from "../services/booking";
@@ -460,6 +462,23 @@ export const adminRouter = {
       .output(duplicateResolutionSchema)
       .handler(({ context, input }) =>
         deferDuplicateCandidate(context.db, context.session.user.id, input),
+      ),
+    reopen: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/match/reopen",
+        operationId: "reopenDuplicateCandidate",
+        summary: "Put a reviewed duplicate pair back in the queue",
+        description:
+          "Undoes a verdict: the candidate returns to pending and loses its reviewer, note and timestamp, so the pair is judged again from the proposal the matcher made. This is the only way back — nothing re-proposes a candidate, because the row is unique per pair, so without it a rejection or a set-aside was permanent. Refuses with CONFLICT on a pair that is already pending, and on a confirmation whose merge is still standing: split the offer back out first, then reopen. Writes an audit log entry carrying the verdict it took back.",
+        tags: ["Admin"],
+        successDescription: "The candidate, back to pending.",
+        spec: withJsonBodyExample({ candidateId: "ldup_example" }),
+      })
+      .input(duplicateReopenInputSchema)
+      .output(duplicateResolutionSchema)
+      .handler(({ context, input }) =>
+        reopenDuplicateCandidate(context.db, context.session.user.id, input),
       ),
     metrics: adminProcedure
       .route({

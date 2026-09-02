@@ -2054,15 +2054,16 @@
       "filter": {
         "label": "Decision",
         "pending": "Pending",
-        "confirmed": "Confirmed",
-        "rejected": "Rejected",
-        "deferred": "Deferred"
+        "confirmed": "Merged duplicates",
+        "rejected": "Not duplicates",
+        "deferred": "Not decided"
       },
       "empty": {
         "pending": "Nothing to review. Every duplicate candidate has been resolved.",
-        "confirmed": "No merges have been confirmed yet.",
-        "rejected": "No pairs have been rejected yet.",
-        "deferred": "No pairs have been deferred yet."
+        "confirmed": "No pairs have been merged yet.",
+        "rejected": "No pairs have been marked as different yachts yet.",
+        "deferred": "Nothing has been set aside yet.",
+        "filtered": "No pairs match these filters. Widen the confidence or rule filter to see the rest."
       },
       "error": "Couldn't load the duplicate queue",
       "confidence": "{value}% match",
@@ -2076,6 +2077,7 @@
       "keep": "Keep this listing",
       "keeping": "Merging…",
       "reject": "Not a duplicate",
+      "reopen": "Return to queue",
       "differs": "differs",
       "differsLegend": "Highlighted values differ between the two sides.",
       "noImage": "No image",
@@ -2193,7 +2195,8 @@
         "rejected": "Recorded as two different yachts.",
         "conflict": "Someone else already reviewed this pair. Reloading the queue.",
         "error": "Something went wrong. Please try again.",
-        "deferred": "Set aside for later. It is not counted for or against the matcher."
+        "deferred": "Set aside for later. It is not counted for or against the matcher.",
+        "reopened": "Back in the queue, waiting to be decided again."
       },
       "defer": "Set aside",
       "notePlaceholder": "Why? (optional)",
