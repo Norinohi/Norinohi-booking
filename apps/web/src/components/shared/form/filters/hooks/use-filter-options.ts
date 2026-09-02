@@ -75,6 +75,7 @@ export function useFilterOptions(scope?: FacetScope) {
   const localized: FilterOptions = {
     ...options,
     durations: options.durations.map((option) => {
+      if (option.value === "any") return { ...option, label: t("anyDuration") };
       const days = Number(option.value);
       return Number.isFinite(days) ? { ...option, label: t("duration", { days }) } : option;
     }),

@@ -13,7 +13,14 @@ const RESET_MAPBOX_CHROME =
 /** How far above the card the marker's pin sits, so the two never overlap. */
 export const PIN_CLEARANCE = 46;
 
-const RECENTRE_MS = 500;
+/**
+ * How long the map takes to move a marker's card into view.
+ *
+ * Past mapbox's own 500ms default: a camera that arrives before the eye has followed it reads as a
+ * cut rather than a move, and the visitor has to find the boat again on a screen that changed under
+ * them. Exported because the search map's card is nudged by its own rule and has to keep the pace.
+ */
+export const RECENTRE_MS = 700;
 
 export type MapPopupProps = {
   coordinates: Coordinates;

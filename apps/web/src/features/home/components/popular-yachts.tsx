@@ -18,7 +18,7 @@ import { Link } from "@/i18n/navigation";
 
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
-import { boatCardPrice } from "@/lib/boat-card-fields";
+import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 import { popularYachtsQueryOptions } from "../api/queries";
@@ -59,6 +59,9 @@ function PopularYachtSlides() {
             price={boatCardPrice(tCard, listing, (amountMinor, currency) =>
               money(Math.round(amountMinor / listing.priceDetails.periodDays), currency),
             )}
+            /* The same day of the same charter, before the discount; `parts` divides it the
+               way the price above is divided. */
+            listPrice={boatCardListPrice(listing, money, listing.priceDetails.periodDays)}
             priceSuffix={t("perDay")}
             priceLabel={t("from")}
             actionLabel={t("viewDetails")}

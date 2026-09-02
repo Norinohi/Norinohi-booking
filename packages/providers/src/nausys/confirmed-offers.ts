@@ -4,6 +4,7 @@ import type { SweepPeriod } from "../shared/sweep-periods";
 import type { ConfirmedOffer, ConfirmedOfferPage } from "../sync/availability-writer";
 import type { NausysClient } from "./client";
 import { decimalStringToMinor } from "../shared/money";
+import { reconciledListPriceMinor } from "./discounts";
 import { extraLineMinor } from "./extras";
 import { stableSourceHash } from "../shared/raw-retention";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
@@ -54,8 +55,11 @@ const freeYachtsRequestSchema = restFreeYachtsRequestSchema.omit({ credentials: 
 
 export interface NausysConfirmedOfferOptions {
   client: NausysClient;
-  /** The charters to price, in the order the sweep should walk them. */
-  periods: readonly SweepPeriod[];
+  /**
+   * The charters to price, split the way the walk treats them: every advertised period each
+   * run, then the grid from wherever the cursor stopped. See `sweepPlan`.
+   */
+  periods: { advertised: readonly SweepPeriod[]; grid: readonly SweepPeriod[] };
   /**
    * Every NauSYS hull we list inside the swept companies. Read when the pass starts rather
    * than passed in whole: a run resumes hours after the source was built.
@@ -76,19 +80,51 @@ export async function* streamNausysConfirmedOffers(
   from: NausysConfirmedCursor,
 ): AsyncIterable<ConfirmedOfferPage> {
   const { client } = options;
-  const pending = options.periods.slice(from.windowIndex);
+  /*
+   * The advertised periods in full, then the grid from where the cursor stopped.
+   *
+   * `windowIndex` counts into the grid alone. Counting it into the whole walk meant the first
+   * budget-truncated run left it inside the grid, and every run after that resumed there --
+   * skipping all sixty advertised periods until the index wrapped, nine or ten runs later. The
+   * cards those periods belong to kept whatever price the previous sweep had left on them.
+   */
+  const pending = [...options.periods.advertised, ...options.periods.grid.slice(from.windowIndex)];
   if (pending.length === 0) return;
 
-  const yachtIds = [...new Set(await options.loadYachtIds())]
-    .map((id) => Number(id))
-    .filter((id) => Number.isSafeInteger(id) && id > 0);
-  if (yachtIds.length === 0) return;
+  const fleetIds = [...new Set(await options.loadYachtIds())];
+  const fleet = toYachtNumbers(fleetIds);
+  if (fleet.length === 0) return;
 
   const chunkSize = options.chunkSize ?? YACHT_CHUNK_SIZE;
   const scopeKeys = options.companyIds.length > 0 ? [...options.companyIds] : null;
+  const listed = new Set(fleetIds);
 
+  /* Only the grid moves it; an advertised period is re-walked next run by design. */
   let windowIndex = from.windowIndex;
   for (const period of pending) {
+    /*
+     * Only the hulls advertising this charter, where the caller named them.
+     *
+     * Asking the whole fleet about every window is the same answer bought 65 times over: the
+     * 60 advertised periods cover 6,952 hull-weeks between them, against 449,040 for the fleet
+     * crossed with the windows. At ~3.4s per 250-hull batch that is the difference between
+     * finishing three periods inside the pass's five-minute budget and finishing all sixty,
+     * and a window the budget cuts in half leaves its unasked hulls with neither a price nor a
+     * refusal -- which is exactly the state 4,248 unpriced cards were in.
+     *
+     * Intersected with the fleet list rather than trusted: the ids come from the read model and
+     * the fleet from `listing_source`, and a hull that has left the account between the two
+     * reads is not one to ask about.
+     */
+    const askedIds = period.yachtIds ? period.yachtIds.filter((id) => listed.has(id)) : fleetIds;
+    const yachtIds = period.yachtIds ? toYachtNumbers(askedIds) : fleet;
+    if (yachtIds.length === 0) {
+      if (period.source === "grid") windowIndex += 1;
+      /* No `swept`: a window nobody was asked about says nothing about anybody. */
+      yield { offers: [], cursor: { windowIndex, page: 1 } };
+      continue;
+    }
+
     /*
      * One page per period, not per batch. `swept` is what licenses the writer to read a hull's
      * absence as a refusal, and a batch is only part of the answer: emitting it per chunk
@@ -116,13 +152,24 @@ export async function* streamNausysConfirmedOffers(
       }
     }
 
-    windowIndex += 1;
+    if (period.source === "grid") windowIndex += 1;
     yield {
       offers,
       cursor: { windowIndex, page: 1 },
-      swept: { startDate: period.startDate, endDate: period.endDate, scopeKeys },
+      swept: {
+        startDate: period.startDate,
+        endDate: period.endDate,
+        scopeKeys,
+        /* Null where the whole fleet was asked, so the writer keeps judging by the scope alone. */
+        externalYachtIds: period.yachtIds ? askedIds : null,
+      },
     };
   }
+}
+
+/** The vendor keys hulls by integer; anything else in our own id column is not one of its. */
+function toYachtNumbers(ids: readonly string[]): number[] {
+  return ids.map((id) => Number(id)).filter((id) => Number.isSafeInteger(id) && id > 0);
 }
 
 /**
@@ -132,13 +179,18 @@ export async function* streamNausysConfirmedOffers(
  *
  * `clientPrice` is also the discounted one, which is the whole reason this pass exists for
  * the card: the catalogue rate list carries the operator's list price, and on NauSYS a
- * quarter to a third of the fleet sells its weeks below it.
+ * quarter to a third of the fleet sells its weeks below it. `listPriceMinor` carries that
+ * list price back for the strike-through, and only where the vendor's own discounts account
+ * for the whole difference.
  */
 export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOffer | null {
   if (yacht.status !== "FREE") return null;
 
   const currency = yacht.price.currency;
   const obligatoryExtrasMinor = obligatoryExtrasTotal(yacht, currency);
+  /* The figure the card strikes through, on the same terms the quote strikes it; see
+     `reconciledListPriceMinor`. */
+  const listPriceMinor = reconciledListPriceMinor(yacht.price, currency);
   return {
     externalYachtId: String(yacht.yachtId),
     startDate: parseNausysDate(yacht.periodFrom),
@@ -146,11 +198,15 @@ export function mapFreeYachtToConfirmedOffer(yacht: RestFreeYacht): ConfirmedOff
     priceMinor: decimalStringToMinor(yacht.price.clientPrice, currency),
     currency,
     ...(obligatoryExtrasMinor === undefined ? null : { obligatoryExtrasMinor }),
+    ...(listPriceMinor === undefined ? null : { listPriceMinor }),
     sourceHash: stableSourceHash({
       yachtId: yacht.yachtId,
       periodFrom: yacht.periodFrom,
       periodTo: yacht.periodTo,
       clientPrice: yacht.price.clientPrice,
+      /* In the hash because a discount that lapses moves nothing else on the row, and an
+         unchanged hash is how the writer decides it has nothing to update. */
+      priceListPrice: yacht.price.priceListPrice,
       currency,
       status: yacht.status,
     }),

@@ -87,16 +87,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/yachtReservation/v6/freeYachts",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "yachtReservation",
-                "v6",
-                "freeYachts"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "yachtReservation", "v6", "freeYachts"]
             },
             "body": {
               "mode": "raw",
@@ -117,16 +109,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/yachtReservation/v6/freeYachtsSearch",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "yachtReservation",
-                "v6",
-                "freeYachtsSearch"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "yachtReservation", "v6", "freeYachtsSearch"]
             },
             "body": {
               "mode": "raw",
@@ -148,17 +132,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/yacht/{{nausysYachtId}}",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "catalogue",
-                "v6",
-                "yacht",
-                "{{nausysYachtId}}"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "catalogue", "v6", "yacht", "{{nausysYachtId}}"]
             },
             "body": {
               "mode": "raw",
@@ -179,17 +154,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/yachts/{{nausysCompanyId}}",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "catalogue",
-                "v6",
-                "yachts",
-                "{{nausysCompanyId}}"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "catalogue", "v6", "yachts", "{{nausysCompanyId}}"]
             },
             "body": {
               "mode": "raw",
@@ -210,16 +176,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/priceLists",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "catalogue",
-                "v6",
-                "priceLists"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "catalogue", "v6", "priceLists"]
             },
             "body": {
               "mode": "raw",
@@ -240,16 +198,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/services",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "catalogue",
-                "v6",
-                "services"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "catalogue", "v6", "services"]
             },
             "body": {
               "mode": "raw",
@@ -270,16 +220,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/equipment",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "catalogue",
-                "v6",
-                "equipment"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "catalogue", "v6", "equipment"]
             },
             "body": {
               "mode": "raw",
@@ -300,9 +242,7 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/yachtReservation/v6/occupancy/{{nausysCompanyId}}/{{year}}",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
+              "host": ["{{nausysBaseUrl}}"],
               "path": [
                 "CBMS-external",
                 "rest",
@@ -332,17 +272,8 @@
             ],
             "url": {
               "raw": "{{nausysBaseUrl}}/CBMS-external/rest/catalogue/v6/yacht/{{nausysYachtId}}",
-              "host": [
-                "{{nausysBaseUrl}}"
-              ],
-              "path": [
-                "CBMS-external",
-                "rest",
-                "catalogue",
-                "v6",
-                "yacht",
-                "{{nausysYachtId}}"
-              ]
+              "host": ["{{nausysBaseUrl}}"],
+              "path": ["CBMS-external", "rest", "catalogue", "v6", "yacht", "{{nausysYachtId}}"]
             },
             "body": {
               "mode": "raw",
@@ -374,12 +305,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/offers?dateFrom={{bmDateFrom}}&dateTo={{bmDateTo}}&yachtId={{bmYachtId}}&currency={{currency}}&passengersOnBoard={{guests}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "offers"
-              ],
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["offers"],
               "query": [
                 {
                   "key": "dateFrom",
@@ -418,12 +345,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{bmBaseUrl}}/offers?dateFrom={{bmDateFrom}}&dateTo={{bmDateTo}}&yachtId={{bmYachtId}}&currency={{currency}}&passengersOnBoard={{guests}}",
-                  "host": [
-                    "{{bmBaseUrl}}"
-                  ],
-                  "path": [
-                    "offers"
-                  ],
+                  "host": ["{{bmBaseUrl}}"],
+                  "path": ["offers"],
                   "query": [
                     {
                       "key": "dateFrom",
@@ -474,12 +397,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/prices?yachtId={{bmYachtId}}&currency={{currency}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "prices"
-              ],
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["prices"],
               "query": [
                 {
                   "key": "yachtId",
@@ -506,13 +425,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/yacht/{{bmYachtId}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "yacht",
-                "{{bmYachtId}}"
-              ]
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["yacht", "{{bmYachtId}}"]
             },
             "description": "Also lists `products[]`, whose `name` is what goes into `/offers?productName=` when you need a crewed or otherwise non-default product."
           }
@@ -524,12 +438,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/yachts?companyId={{bmCompanyId}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "yachts"
-              ],
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["yachts"],
               "query": [
                 {
                   "key": "companyId",
@@ -546,12 +456,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/specialOffers?companyId={{bmCompanyId}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "specialOffers"
-              ],
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["specialOffers"],
               "query": [
                 {
                   "key": "companyId",
@@ -569,13 +475,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/yacht/{{bmYachtId}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "yacht",
-                "{{bmYachtId}}"
-              ]
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["yacht", "{{bmYachtId}}"]
             },
             "description": "Same endpoint as request 3, read for a different field: `products[].extras[]` is the yacht's whole extras catalogue, per product.\n\n/offers only returns the obligatory ones that apply to the week you asked for, so this is where the optional extras (and the ones the guest could add) live. Each entry carries `obligatory`, `price`, `currency`, `unit`, `payableInBase`, and `kind` - remember `kind: 0` means the value is in `percentage` and `price` is 0.\n\nEntries are versioned by season, so the same extra appears once per year with different prices. Match the season to your dates before comparing against an /offers line."
           }
@@ -587,13 +488,8 @@
             "header": [],
             "url": {
               "raw": "{{bmBaseUrl}}/availability/{{year}}?companyId={{bmCompanyId}}&yachtId={{bmYachtId}}",
-              "host": [
-                "{{bmBaseUrl}}"
-              ],
-              "path": [
-                "availability",
-                "{{year}}"
-              ],
+              "host": ["{{bmBaseUrl}}"],
+              "path": ["availability", "{{year}}"],
               "query": [
                 {
                   "key": "companyId",

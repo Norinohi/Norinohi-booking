@@ -53,6 +53,12 @@ export type MapBoatCardProps = {
   crew: string;
   priceLabel: string;
   price: string;
+  /**
+   * The same charter before the operator's discount, struck through beside the price. Absent
+   * unless the vendor is selling below its own list, and never set on a card whose price slot
+   * holds words: the presenter withholds it wherever it withholds the price itself.
+   */
+  listPrice?: string;
   perPerson: string;
   note: CardNoteData | null;
   detailHref?: AppPathname;
@@ -72,6 +78,7 @@ export default function MapBoatCard({
   crew,
   priceLabel,
   price,
+  listPrice,
   perPerson,
   note,
   detailHref,
@@ -152,7 +159,16 @@ export default function MapBoatCard({
               <span className="text-sm font-medium leading-[1.3] text-natural-500">
                 {priceLabel}
               </span>
-              <span className={cn("text-black", style.price)}>{price}</span>
+              {/* Baseline-aligned on one line, so the struck figure reads as the price this one
+                  replaced rather than as a second price. */}
+              <span className="flex flex-wrap items-baseline gap-x-1.5">
+                <span className={cn("text-black", style.price)}>{price}</span>
+                {listPrice ? (
+                  <span className="text-base font-medium leading-6 text-natural-500 line-through">
+                    {listPrice}
+                  </span>
+                ) : null}
+              </span>
             </div>
             <p
               className={cn("text-sm font-medium leading-[1.3] text-natural-500", style.perPerson)}

@@ -6,6 +6,7 @@ import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagin
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
+import type { Ref } from "react";
 import { useState } from "react";
 
 import Loader from "@/components/shared/feedback/loader";
@@ -21,9 +22,11 @@ export type MapListPanelProps = {
   filters: FiltersState;
   defaults: FiltersState;
   className?: string;
+  /** The panel's own box, so the map can keep its camera clear of it. */
+  ref?: Ref<HTMLElement>;
 };
 
-export default function MapListPanel({ filters, defaults, className }: MapListPanelProps) {
+export default function MapListPanel({ filters, defaults, className, ref }: MapListPanelProps) {
   const t = useTranslations("Common");
   const { toMapCard } = useListingCards();
   const [sort, setSort] = useState<SortValue>("recommended");
@@ -48,6 +51,7 @@ export default function MapListPanel({ filters, defaults, className }: MapListPa
 
   return (
     <section
+      ref={ref}
       className={cn(
         "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card md:w-80 md:shrink-0",
         className,

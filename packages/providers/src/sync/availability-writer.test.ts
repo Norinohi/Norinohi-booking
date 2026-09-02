@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { CONFIRMED_PRICE_TRUST_DAYS } from "@yacht-charter/db/schema/availability";
+
 import { AuthError, ContractError, TransientError } from "../shared/errors";
 import {
   ACCOUNT_WIDE_SCOPE,
@@ -146,6 +148,12 @@ function fakeStore(seed: FakeStoreSeed = {}) {
     },
     async sweepScope(input) {
       const listingIds = new Set(input.listings.map((ref) => ref.listingId));
+      /* Mirrors the Drizzle store's predicate, which is the real one: a confirmed available
+         slot is the confirming pass's row and an occupancy dump never mentions it. */
+      const trustedSince = new Date(
+        input.seenBefore.getTime() - CONFIRMED_PRICE_TRUST_DAYS * 86_400_000,
+      );
+      const today = input.seenBefore.toISOString().slice(0, 10);
       let deleted = 0;
       for (const [key, slot] of slots) {
         if (!listingIds.has(slot.listingId)) continue;
@@ -153,6 +161,13 @@ function fakeStore(seed: FakeStoreSeed = {}) {
           continue;
         }
         if (slot.updatedAt >= input.seenBefore) continue;
+        if (
+          slot.status === "available" &&
+          slot.startDate >= today &&
+          slot.updatedAt >= trustedSince
+        ) {
+          continue;
+        }
         slots.delete(key);
         deleted += 1;
       }
@@ -723,6 +738,81 @@ describe("runAvailabilitySync", () => {
     expect(remaining).not.toContain("2026-11-04");
   });
 
+  /*
+   * The dump states what is sold, never what is free, so a confirmed available slot cannot be
+   * restamped by it and its absence means nothing. Swept as though it were stale, every run
+   * deleted the prices the confirming pass had just bought, and each run could only rebuild
+   * what fitted in that pass's clock budget.
+   */
+  it("keeps a vendor-confirmed price the occupancy dump cannot restate", async () => {
+    const confirmed: StoredSlot = {
+      listingId: "ylst_marlin",
+      listingSourceId: "lsrc_marlin",
+      listingOfferId: "loff_marlin",
+      startDate: "2026-11-07",
+      endDate: "2026-11-14",
+      status: "available",
+      availabilityConfirmed: true,
+      priceMinor: 108_000,
+      currency: "EUR",
+      minNights: 7,
+      checkinWeekday: 6,
+      checkoutWeekday: 6,
+      sourceHash: "confirmed",
+      /* Yesterday: not restamped by this run, and well inside the trust window. */
+      updatedAt: new Date("2026-05-31T02:00:00.000Z"),
+    };
+
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+      slots: [confirmed],
+    });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({ fetchOccupancy: () => Promise.resolve([]) }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.listOf("ylst_marlin", "available").map((slot) => slot.priceMinor)).toEqual([
+      108_000,
+    ]);
+  });
+
+  it("still ages out a confirmation nothing has re-observed", async () => {
+    const store = fakeStore({
+      yachts: { "4711001": MARLIN },
+      listings: { "102701": [MARLIN] },
+      slots: [
+        {
+          listingId: "ylst_marlin",
+          listingSourceId: "lsrc_marlin",
+          listingOfferId: "loff_marlin",
+          startDate: "2026-11-07",
+          endDate: "2026-11-14",
+          status: "available",
+          availabilityConfirmed: true,
+          priceMinor: 108_000,
+          currency: "EUR",
+          minNights: 7,
+          checkinWeekday: 6,
+          checkoutWeekday: 6,
+          sourceHash: "confirmed",
+          updatedAt: new Date(RUN_AT.getTime() - (CONFIRMED_PRICE_TRUST_DAYS + 1) * 86_400_000),
+        },
+      ],
+    });
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({ fetchOccupancy: () => Promise.resolve([]) }),
+      now: () => RUN_AT,
+    });
+
+    expect(store.listOf("ylst_marlin", "available")).toEqual([]);
+  });
+
   it("does not sweep another company's slots", async () => {
     const rival = {
       listingId: "ylst_rival",
@@ -1071,6 +1161,30 @@ describe("runAvailabilitySync", () => {
     });
 
     expect(store.rebuilt).toEqual([["ylst_marlin"]]);
+  });
+
+  /*
+   * The confirming pass asks about the weeks the cards advertise, and this walk has just
+   * rewritten what those are. Rebuilt only at the end, the sweep chose its windows off
+   * yesterday's documents; with a per-hull ask that means asking the wrong hulls entirely.
+   */
+  it("rebuilds the search read model before the confirming pass, not only after it", async () => {
+    const store = fakeStore({ yachts: { "4711001": MARLIN }, listings: { "102701": [MARLIN] } });
+    const rebuiltBeforeSweep: number[] = [];
+
+    await runAvailabilitySync({
+      store: store.store,
+      source: source({
+        fetchOccupancy: () => Promise.resolve([occupied()]),
+        searchConfirmed: async function* () {
+          rebuiltBeforeSweep.push(store.rebuilt.length);
+          yield { offers: [], cursor: null };
+        },
+      }),
+      now: () => RUN_AT,
+    });
+
+    expect(rebuiltBeforeSweep).toEqual([1]);
   });
 });
 

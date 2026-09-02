@@ -7,7 +7,7 @@ import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { FormEvent } from "react";
+import type { FormEvent, Ref } from "react";
 
 import { countActiveFilters, type FiltersState } from "../lib/state";
 import { useDraft } from "../hooks/use-draft";
@@ -28,6 +28,8 @@ export type FiltersPanelProps = {
   scrollable?: boolean;
   /** Adds a close control to the header; omit where the panel is always on screen. */
   onClose?: () => void;
+  /** The panel's own box, for a caller that has to lay something else out around it. */
+  ref?: Ref<HTMLFormElement>;
 };
 
 export default function FiltersPanel({
@@ -36,6 +38,7 @@ export default function FiltersPanel({
   className,
   scrollable = false,
   onClose,
+  ref,
 }: FiltersPanelProps) {
   const t = useTranslations("Filters");
   const { defaults } = useFilterRanges();
@@ -80,6 +83,7 @@ export default function FiltersPanel({
 
   return (
     <form
+      ref={ref}
       onSubmit={handleSubmit}
       className={cn(
         "flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card",

@@ -12,6 +12,7 @@ import MapCanvas, {
   type MapViewState,
 } from "@/components/shared/data-display/map-canvas";
 import MapMarker from "@/components/shared/data-display/map-marker";
+import { boundsOf } from "../../lib/map-camera";
 import {
   arrivalOf,
   ROUTE_DRAW_MS,
@@ -35,15 +36,6 @@ const ZOOM_OUT_LIMIT = 1;
 /* Constructed this much wider than it settles at, so opening reads as easing in rather than a cut. */
 const OPENING_PADDING = 190;
 const SETTLE_MS = 1100;
-
-function boundsOf(stops: Stop[]): [[number, number], [number, number]] {
-  const lngs = stops.map((stop) => stop.lng);
-  const lats = stops.map((stop) => stop.lat);
-  return [
-    [Math.min(...lngs), Math.min(...lats)],
-    [Math.max(...lngs), Math.max(...lats)],
-  ];
-}
 
 /**
  * The camera the map opens with.

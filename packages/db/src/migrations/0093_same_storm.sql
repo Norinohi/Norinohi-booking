@@ -1,0 +1,1 @@
+ALTER TABLE "listing_search_doc" ADD COLUMN "price_is_from" boolean DEFAULT false NOT NULL;

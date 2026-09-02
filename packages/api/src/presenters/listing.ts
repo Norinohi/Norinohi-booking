@@ -43,10 +43,11 @@ export function presentListingSummary(doc: ListingSearchDoc) {
    * where nothing is bookable does the figure fall back to the season minimum, and with no
    * dates printed beside it the rate's own week is the honest period to name.
    *
-   * The other direction is settled upstream rather than here: a bookable period that is not a
-   * week has no price at all unless the vendor priced that exact charter, because the only
-   * other figure available is a weekly rate and no arithmetic turns it into a three-night one.
-   * So this count captions a figure of the same length or captions nothing.
+   * The other direction is settled upstream rather than here: an advertised period has no
+   * price at all unless the vendor priced that exact charter, because the only other figure
+   * available is the published list rate, which both vendors discount off and which no
+   * arithmetic turns into a charter of another length. So this count captions a figure of the
+   * same length or captions nothing.
    */
   const periodDays = bookablePeriod
     ? nightsBetween(bookablePeriod.checkIn, bookablePeriod.checkOut)
@@ -122,6 +123,21 @@ export function presentListingSummary(doc: ListingSearchDoc) {
     gallery: doc.gallery,
     amenities: doc.amenities,
     priceFrom: amountMinor === null ? null : { amountMinor, currency },
+    /*
+     * Whether that figure prices the charter beside it or merely starts from the season, which
+     * is what the card's caption turns on: an indicative floor captioned "Price for 7 days"
+     * claims to price a week nobody has quoted.
+     */
+    priceIsFrom: doc.priceIsFrom,
+    /*
+     * The same charter before the operator's discount, for the card to strike through. Only
+     * ever beside a price and only ever above it: a listing whose price was withheld has
+     * nothing to strike, and the projection never writes a figure that does not exceed it.
+     */
+    listPriceFrom:
+      amountMinor === null || doc.listPriceFromMinor === null
+        ? null
+        : { amountMinor: doc.listPriceFromMinor, currency },
     priceDetails: {
       periodDays,
       perPersonMinor:

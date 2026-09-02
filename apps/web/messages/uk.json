@@ -471,6 +471,7 @@
       "imageAlt": "{name} біля причалу {marina}",
       "openGallery": "Відкрити галерею фото",
       "priceFor": "Ціна за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+      "priceFromLabel": "Від",
       "priceOnRequest": "За запитом",
       "priceUnavailable": "Недоступно",
       "perPerson": "{price} з особи",
@@ -536,7 +537,11 @@
     "map": {
       "open": "Відкрити мапу: {place}",
       "satellite": "Супутник",
-      "streets": "Карта"
+      "streets": "Карта",
+      "zoomIn": "Збільшити",
+      "zoomOut": "Зменшити",
+      "locate": "Показати моє місцезнаходження",
+      "locateUnavailable": "Місцезнаходження недоступне"
     },
     "leadForm": {
       "fields": {
@@ -725,6 +730,7 @@
     },
     "options": {
       "duration": "{days, plural, one {# день} few {# дні} many {# днів} other {# днів}}",
+      "anyDuration": "Будь-яка тривалість",
       "anyYear": "Будь-який рік",
       "dateFlexibility": {
         "on-day": "Того самого дня",
@@ -1294,7 +1300,7 @@
     },
     "popular": {
       "from": "Від",
-      "perPerson": "/ з особи",
+      "perPeriod": "/ {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
       "seeAll": "Усі яхти",
       "previous": "Попередні яхти",
       "next": "Наступні яхти"

@@ -25,6 +25,8 @@ type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
   rating?: number;
   tags?: { label: string; icon?: React.ReactNode }[];
   price: React.ReactNode;
+  /** The same charter before the operator's discount, struck through beside `price`. */
+  listPrice?: React.ReactNode;
   priceSuffix?: React.ReactNode;
   priceLabel?: React.ReactNode;
   actionLabel?: React.ReactNode;
@@ -42,6 +44,7 @@ function BoatSmallCard({
   rating,
   tags = [],
   price,
+  listPrice,
   priceSuffix = "/ per person",
   priceLabel = "From",
   actionLabel = "View Details",
@@ -84,7 +87,13 @@ function BoatSmallCard({
         <div className="flex flex-col">
           <span className="text-sm text-natural-500">{priceLabel}</span>
           <span className="text-base text-natural-500">
-            <span className="text-lg font-bold text-foreground">{price}</span> {priceSuffix}
+            <span className="text-lg font-bold text-foreground">{price}</span>{" "}
+            {listPrice ? (
+              <>
+                <span className="line-through">{listPrice}</span>{" "}
+              </>
+            ) : null}
+            {priceSuffix}
           </span>
         </div>
         <Button variant="neutral" size="sm" nativeButton={!actionRender} render={actionRender}>

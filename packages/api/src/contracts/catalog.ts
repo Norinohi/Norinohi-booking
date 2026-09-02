@@ -157,6 +157,17 @@ export const listingSummarySchema = z.object({
   amenities: z.array(z.string()),
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
+  /**
+   * True where `priceFrom` is the cheapest week of the operator's season rather than the price
+   * of the charter beside it, so the card reads "From €X" instead of pricing those dates.
+   */
+  priceIsFrom: z.boolean(),
+  /**
+   * The same charter before the operator's own discount, to be rendered struck through beside
+   * `priceFrom`. Null unless there is a discount the vendor's own figures account for, which is
+   * the ordinary case.
+   */
+  listPriceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
     perPersonMinor: z.number().int().nullable(),
@@ -309,6 +320,14 @@ export const catalogPageSchema = z.object({
   count: z.number().int().nonnegative(),
 });
 
+/*
+ * The longest charter a search may ask for. A year is far past anything anyone charters, so this
+ * is a guard rather than a product rule: `availabilityWindowFor` builds the check-out by adding
+ * the duration to the start date, and an unbounded one walks the Date past its range, where
+ * `toISOString` throws and the request answers 500 instead of a validation error.
+ */
+const MAX_CHARTER_NIGHTS = 365;
+
 export const listingSearchInputBaseSchema = z.object({
   destination: z.string().optional(),
   query: z.string().optional(),
@@ -330,7 +349,7 @@ export const listingSearchInputBaseSchema = z.object({
   mainsailType: stringArrayParamSchema,
   equipment: stringArrayParamSchema,
   startDate: dateStringSchema.optional(),
-  duration: z.coerce.number().int().positive().optional(),
+  duration: z.coerce.number().int().positive().max(MAX_CHARTER_NIGHTS).optional(),
   dateFlexibility: z.enum(["on-day", "1-3-days", "1-week", "2-weeks", "1-month"]).optional(),
   minLength: z.coerce.number().nonnegative().optional(),
   maxLength: z.coerce.number().nonnegative().optional(),

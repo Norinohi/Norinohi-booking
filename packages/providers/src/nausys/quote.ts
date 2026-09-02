@@ -16,6 +16,7 @@ import {
   type QuoteRequest,
 } from "../types";
 import type { NausysClient } from "./client";
+import { walkDiscounts } from "./discounts";
 import { extraLineMinor, isIncludedInCharterPrice, type PercentageBasis } from "./extras";
 import type { NausysConfig } from "./config";
 import {
@@ -27,7 +28,6 @@ import {
 
 type RestFreeYacht = z.infer<typeof restFreeYachtSchema>;
 type RestExtra = NonNullable<RestFreeYacht["obligatoryExtras"]>[number];
-type RestDiscount = NonNullable<RestFreeYacht["price"]["discounts"]>[number];
 type QuoteLine = ProviderQuote["lines"][number];
 type PaymentPolicy = ProviderQuote["paymentPolicy"];
 
@@ -437,25 +437,21 @@ function buildCharterLines(
   clientPriceMinor: number,
   input: FreeYachtMapping,
 ): QuoteLine[] {
-  const discounts = yacht.price.discounts ?? [];
-  const discountLines: QuoteLine[] = [];
+  const { steps, netMinor } = walkDiscounts(yacht.price.discounts ?? [], listPriceMinor, currency);
+  if (steps.length === 0 || netMinor !== clientPriceMinor) {
+    return [baseLine(clientPriceMinor, currency)];
+  }
 
-  let running = listPriceMinor;
-  for (const discount of discounts) {
-    const amountMinor = discountAmountMinor(discount, running, currency);
-    running -= amountMinor;
-    discountLines.push({
+  const discountLines = steps.map(
+    ({ discount, amountMinor }): QuoteLine => ({
       code: `nausys-discount-${discount.discountItemId}`,
       label: labelOf(input, "discount", String(discount.discountItemId), DEFAULT_LABELS.discount),
       amount: { amountMinor: -amountMinor, currency },
       payWhen: "now",
       kind: "discount",
-    });
-  }
+    }),
+  );
 
-  if (discountLines.length === 0 || running !== clientPriceMinor) {
-    return [baseLine(clientPriceMinor, currency)];
-  }
   return [baseLine(listPriceMinor, currency), ...discountLines];
 }
 
@@ -467,31 +463,6 @@ function baseLine(amountMinor: number, currency: string): QuoteLine {
     payWhen: "now",
     kind: "base",
   };
-}
-
-function discountAmountMinor(
-  discount: RestDiscount,
-  runningMinor: number,
-  currency: string,
-): number {
-  // Percentages apply to what is left after the previous discount, which is the
-  // only order that reproduces the vendor's own `clientPrice` on multi-discount
-  // offers.
-  if (discount.type === "PERCENTAGE") {
-    const percentage = Number(discount.amount);
-    if (!Number.isFinite(percentage)) {
-      throw new ContractError(
-        `NauSYS discount ${discount.discountItemId} has a non-numeric percentage`,
-      );
-    }
-    return Math.round((runningMinor * percentage) / 100);
-  }
-  if (discount.type === "AMOUNT") {
-    return decimalStringToMinor(String(discount.amount), currency);
-  }
-  throw new ContractError(
-    `Unknown NauSYS discount type ${JSON.stringify(discount.type)} on item ${discount.discountItemId}`,
-  );
 }
 
 /** Stands in for an entry in neither documented shape; no selection can equal it. */

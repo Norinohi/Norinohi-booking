@@ -12,7 +12,7 @@ import { bookingManagerEndpoints, restOfferListSchema, type RestOffer } from "./
 import { numberToMinor } from "./money";
 import { rankOffers } from "./offer-ranking";
 import { charterSaturdays } from "./prices";
-import { sweepPeriods, type SweepPeriod } from "../shared/sweep-periods";
+import { sweepPlan, type SweepPeriod } from "../shared/sweep-periods";
 import { z } from "zod";
 
 /**
@@ -103,12 +103,14 @@ export function foldOffersToConfirmed(
 
     let priceMinor: number;
     let obligatoryExtrasMinor: number | undefined;
+    let listPriceMinor: number | undefined;
     try {
       priceMinor = numberToMinor(row.price, currency, `yacht ${externalYachtId} offer`);
       obligatoryExtrasMinor =
         row.obligatoryExtrasPrice == null
           ? undefined
           : numberToMinor(row.obligatoryExtrasPrice, currency, `yacht ${externalYachtId} extras`);
+      listPriceMinor = reconciledStartPriceMinor(row, priceMinor, currency);
     } catch {
       continue;
     }
@@ -127,17 +129,46 @@ export function foldOffersToConfirmed(
         checkIn,
         priceMinor,
         obligatoryExtrasMinor: obligatoryExtrasMinor ?? null,
+        /* In the hash for the reason the price is: a discount that lapses changes nothing
+           else on the row, and the writer skips a row whose hash has not moved. */
+        listPriceMinor: listPriceMinor ?? null,
         currency,
       }),
     };
     // Zero is a real answer here - plenty of charters carry no obligatory fee at all - so it
     // is kept, and only the vendor saying nothing leaves the field unset.
     if (obligatoryExtrasMinor !== undefined) offer.obligatoryExtrasMinor = obligatoryExtrasMinor;
+    if (listPriceMinor !== undefined) offer.listPriceMinor = listPriceMinor;
 
     chosen.set(externalYachtId, offer);
   }
 
   return [...chosen.values()];
+}
+
+/**
+ * The list price to strike through, or nothing.
+ *
+ * `price` is already net of `discountPercentage` and `startPrice` is the same charter without
+ * it, but only where the three reconcile exactly is the reduction one we can account for. That
+ * is the test `buildCharterLines` applies before the quote shows a discount line, so the card
+ * strikes a figure only where the detail page beneath it strikes the same one.
+ */
+function reconciledStartPriceMinor(
+  row: RestOffer,
+  priceMinor: number,
+  currency: string,
+): number | undefined {
+  if (row.startPrice == null || !row.discountPercentage) return undefined;
+
+  const startPriceMinor = numberToMinor(row.startPrice, currency, `yacht ${row.yachtId} start`);
+  const discountMinor = startPriceMinor - priceMinor;
+  if (discountMinor <= 0) return undefined;
+  if (Math.round((startPriceMinor * row.discountPercentage) / 100) !== discountMinor) {
+    return undefined;
+  }
+
+  return startPriceMinor;
 }
 
 export async function* streamBookingManagerConfirmedOffers(
@@ -162,11 +193,19 @@ export async function* streamBookingManagerConfirmedOffers(
     startDate: checkIn,
     endDate: addDays(checkIn, 7),
   }));
-  const periods = sweepPeriods(advertised, grid, {
+  const plan = sweepPlan(advertised, grid, {
     today: options.today ?? new Date().toISOString().slice(0, 10),
   });
 
-  const pending = periods.slice(from.weekIndex);
+  /*
+   * Every advertised period, then the grid from where the cursor stopped.
+   *
+   * `weekIndex` counts into the grid alone. Counting it into the merged walk meant the first
+   * budget-truncated run left it inside the grid, and every later run resumed there, skipping
+   * the advertised periods entirely until the index wrapped. Those are the weeks the cards are
+   * showing, so they are the ones a stale price is visible on.
+   */
+  const pending = [...plan.advertised, ...plan.grid.slice(from.weekIndex)];
   if (pending.length === 0) return;
 
   /*
@@ -194,7 +233,8 @@ export async function* streamBookingManagerConfirmedOffers(
     const checkIn = period.startDate;
     const checkOut = period.endDate;
     const rows = await result;
-    weekIndex += 1;
+    /* Only the grid moves it; an advertised period is re-walked next run by design. */
+    if (period.source === "grid") weekIndex += 1;
 
     yield {
       offers: foldOffersToConfirmed(rows, checkIn, checkOut, options.currency),

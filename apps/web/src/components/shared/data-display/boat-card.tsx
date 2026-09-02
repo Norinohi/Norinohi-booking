@@ -78,6 +78,20 @@ export type BoatCardProps = {
   end?: BoatCardCharterDate;
   priceLabel: string;
   price: string;
+  /**
+   * The same charter before the operator's discount, struck through beside the price. Absent
+   * unless the vendor is genuinely selling below its own list, which is the ordinary case.
+   */
+  listPrice?: string;
+  /**
+   * Whether the label reads into the amount ("From €1,690") rather than captioning it
+   * ("Price for 7 days").
+   *
+   * The narrow layout prints the amount first and the caption after it, which is right for a
+   * caption and backwards for a preposition: the card read "€1,690 From". A leading label
+   * keeps its place in both layouts.
+   */
+  priceLabelLeads?: boolean;
   /** The price slot holds words ("On request", "Unavailable") rather than an amount, so it drops to text size. */
   priceIsLabel?: boolean;
   /** The listing has no bookable dates — the photo desaturates and the copy dims. */
@@ -297,6 +311,8 @@ function Action({
   end,
   priceLabel,
   price,
+  listPrice,
+  priceLabelLeads,
   priceIsLabel,
   perPerson,
   note,
@@ -309,6 +325,8 @@ function Action({
   | "end"
   | "priceLabel"
   | "price"
+  | "listPrice"
+  | "priceLabelLeads"
   | "priceIsLabel"
   | "perPerson"
   | "note"
@@ -337,18 +355,38 @@ function Action({
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
         <div className="flex flex-wrap items-center justify-center gap-2 md:flex-col md:items-start md:gap-1">
-          <span className="order-2 text-sm font-medium leading-[1.3] text-natural-500 md:order-1">
-            {priceLabel}
-          </span>
-          {/* `leading` sits after the font size on purpose: tailwind-merge lets a later font size drop an
-              earlier line-height, which is how the price used to render at the default 1.5. */}
           <span
             className={cn(
-              "order-1 font-bold text-black md:order-2",
-              priceIsLabel ? "text-xl" : "text-2xl leading-[1.15] md:text-[28px]",
+              "text-sm font-medium leading-[1.3] text-natural-500 md:order-1",
+              priceLabelLeads ? "order-1" : "order-2",
             )}
           >
-            {price}
+            {priceLabel}
+          </span>
+          {/* One baseline-aligned line, so the struck figure reads as the price this one
+              replaced rather than as a second price. It is dropped on a card whose price slot
+              holds words: there is nothing for a discount to be a discount from. */}
+          <span
+            className={cn(
+              "flex flex-wrap items-baseline gap-x-1.5 md:order-2",
+              priceLabelLeads ? "order-2" : "order-1",
+            )}
+          >
+            {/* `leading` sits after the font size on purpose: tailwind-merge lets a later font size drop an
+                earlier line-height, which is how the price used to render at the default 1.5. */}
+            <span
+              className={cn(
+                "font-bold text-black",
+                priceIsLabel ? "text-xl" : "text-2xl leading-[1.15] md:text-[28px]",
+              )}
+            >
+              {price}
+            </span>
+            {listPrice && !priceIsLabel ? (
+              <span className="text-base font-medium leading-6 text-natural-500 line-through">
+                {listPrice}
+              </span>
+            ) : null}
           </span>
         </div>
         <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
@@ -411,6 +449,8 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           end={boat.end}
           priceLabel={boat.priceLabel}
           price={boat.price}
+          listPrice={boat.listPrice}
+          priceLabelLeads={boat.priceLabelLeads}
           priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
           note={boat.note}

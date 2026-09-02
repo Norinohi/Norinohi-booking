@@ -21,7 +21,7 @@ import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
-import { boatCardPrice } from "@/lib/boat-card-fields";
+import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { crewLabel } from "@/lib/crew-label";
 import DetailSection from "./detail-section";
 
@@ -93,7 +93,11 @@ export default function PopularYachtsSection() {
                     : []),
                 ]}
                 price={boatCardPrice(tCard, yacht, formatMoney)}
-                priceSuffix={t("popular.perPerson")}
+                listPrice={boatCardListPrice(yacht, formatMoney)}
+                /* The charter this figure prices, not a share of it: the card prints the whole
+                   advertised period, which was labelled "per person" against a number no
+                   guest's share ever equalled. */
+                priceSuffix={t("popular.perPeriod", { days: yacht.priceDetails.periodDays })}
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}
                 actionRender={<Link href={`/yachts/${yacht.slug}`} />}

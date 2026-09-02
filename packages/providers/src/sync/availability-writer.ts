@@ -1,5 +1,6 @@
 import {
   availabilitySlot,
+  CONFIRMED_PRICE_TRUST_DAYS,
   listingFreePeriod,
   listingRefusedPeriod,
 } from "@yacht-charter/db/schema/availability";
@@ -81,6 +82,16 @@ export const confirmedOfferSchema = z.object({
    * the catalogue has been wrong by a night's difference and by a party-size band already.
    */
   obligatoryExtrasMinor: z.number().int().nonnegative().optional(),
+  /**
+   * The same charter before the vendor's own discount, where the two reconcile exactly.
+   *
+   * Only for the strike-through on the card, and only ever above `priceMinor`, which stays the
+   * price. Set on the same terms the quote sets its discount lines: both vendors publish the
+   * list price and the reductions taken off it, and where those do not add up to the price they
+   * bill, neither surface invents a discount. So a card strikes a figure only where the detail
+   * page beneath it strikes the same one.
+   */
+  listPriceMinor: z.number().int().positive().optional(),
   currency: z.string().length(3),
   sourceHash: z.string().min(1),
 });
@@ -153,6 +164,16 @@ export interface SweptPeriod {
    * A listing outside them was never asked about and must not be judged by this silence.
    */
   scopeKeys: readonly string[] | null;
+  /**
+   * The provider-side yacht ids actually asked about, or null where the ask covered every hull
+   * in the scope above.
+   *
+   * A sweep that asks about only the hulls advertising this charter narrows what its silence
+   * can mean along with it. Without this the first targeted window would have refused the rest
+   * of the fleet for a period nobody put to the vendor on their behalf, which is the same
+   * mistake `scopeKeys` exists to prevent one level up.
+   */
+  externalYachtIds?: readonly string[] | null;
 }
 
 export interface ConfirmedOfferPage {
@@ -230,6 +251,8 @@ export interface ConfirmSlotInput extends ListingRef {
   priceMinor: number;
   /** The provider's own obligatory-extras total, or null where it stated none. */
   obligatoryExtrasMinor: number | null;
+  /** The same charter before the vendor's discount, or null where there is none to strike. */
+  listPriceMinor: number | null;
   currency: string;
   sourceHash: string;
   seenAt: Date;
@@ -716,6 +739,25 @@ export async function runAvailabilitySync(
     }
 
     if (source.searchConfirmed) {
+      /*
+       * Before the sweep chooses its weeks, not only after it has written its prices.
+       *
+       * The confirming pass asks about the charters the cards advertise, and the occupancy
+       * walk above has just rewritten what those are: a week that opened this morning is not
+       * in a document rebuilt last night. Sweeping against the stale list asked about weeks
+       * the fleet had moved off, which the fleet-wide ask used to hide and a per-hull ask
+       * cannot -- see `loadHotWindows` in the NauSYS source. A failure here is not worth the
+       * run: the sweep falls back to the periods it can read, which is where it started.
+       */
+      if (touched.size > 0) {
+        emitProgress("rebuild-search");
+        try {
+          await store.rebuildSearch([...touched]);
+        } catch (error) {
+          await report(error, { phase: "rebuild-search" });
+        }
+      }
+
       emitProgress("confirmation");
       /*
        * Measured from here rather than from the run, because it is this pass's budget: the
@@ -742,6 +784,7 @@ export async function runAvailabilitySync(
               endDate: offer.endDate,
               priceMinor: offer.priceMinor,
               obligatoryExtrasMinor: offer.obligatoryExtrasMinor ?? null,
+              listPriceMinor: offer.listPriceMinor ?? null,
               currency: offer.currency,
               sourceHash: offer.sourceHash,
               seenAt: startedAt,
@@ -887,6 +930,16 @@ export function dedupeSlotsByPeriod<
  * batched one loses its whole chunk to a single such rate; the confirmation one
  * throws out of the offer loop and ends the pass. See `MAX_MONEY_MINOR`.
  */
+/** The run's own day, so a slot whose charter has already sailed is swept like any stale row. */
+function isoDay(at: Date): string {
+  return at.toISOString().slice(0, 10);
+}
+
+/** The oldest confirmation an occupancy sweep leaves standing; see CONFIRMED_PRICE_TRUST_DAYS. */
+function trustedSince(at: Date): Date {
+  return new Date(at.getTime() - CONFIRMED_PRICE_TRUST_DAYS * 86_400_000);
+}
+
 export function storableMinor(value: number | null): boolean {
   return value === null || (Number.isSafeInteger(value) && Math.abs(value) <= MAX_MONEY_MINOR);
 }
@@ -1151,6 +1204,9 @@ export function createDrizzleAvailabilitySyncStore(
         availabilityConfirmed: true,
         priceMinor: input.priceMinor,
         obligatoryExtrasMinor: input.obligatoryExtrasMinor,
+        /* Dropped rather than refused where it will not fit the column: the strike-through is
+           decoration, and losing it costs nothing the price itself does not already say. */
+        listPriceMinor: storableMinor(input.listPriceMinor) ? input.listPriceMinor : null,
         currency: input.currency,
         sourceHash: input.sourceHash,
         updatedAt: input.seenAt,
@@ -1179,6 +1235,10 @@ export function createDrizzleAvailabilitySyncStore(
       const { startDate, endDate, scopeKeys } = period;
       if (scopeKeys !== null && scopeKeys.length === 0) return 0;
 
+      /* An empty list is a sweep that asked about no hull at all, whose silence says nothing. */
+      const askedYachtIds = period.externalYachtIds ?? null;
+      if (askedYachtIds !== null && askedYachtIds.length === 0) return 0;
+
       /*
        * Who could have been offered this period: our listings for this provider, inside the
        * scope the sweep actually covered, carrying a rate across this period and with
@@ -1199,6 +1259,8 @@ export function createDrizzleAvailabilitySyncStore(
           and o.status = 'active'
           and ls.listing_id is not null
           ${scopeKeys === null ? sql`` : sql`and ls.external_company_id in ${scopeKeys}`}
+          /* Only hulls this sweep put to the vendor; see SweptPeriod.externalYachtIds. */
+          ${askedYachtIds === null ? sql`` : sql`and ls.external_yacht_id in ${askedYachtIds}`}
           /*
            * Both tests are this offer's own. Read across the listing, one vendor's rate made
            * the other vendor eligible and one vendor's occupancy suppressed the other's
@@ -1349,6 +1411,21 @@ export function createDrizzleAvailabilitySyncStore(
               gte(availabilitySlot.startDate, `${input.year}-01-01`),
               lte(availabilitySlot.startDate, `${input.year}-12-31`),
               lt(availabilitySlot.updatedAt, input.seenBefore),
+              /*
+               * A confirmed price is not this dump's to retire.
+               *
+               * Everything else here is an occupied stretch, and an occupied stretch missing
+               * from a clean dump really is gone. An available slot is the confirming pass's
+               * row, and the dump never mentions a free week at all, so its silence says
+               * nothing about one -- read as a deletion it wiped every price that pass had
+               * bought, every run. See CONFIRMED_PRICE_TRUST_DAYS for what still ages out and
+               * why a week that sells does not need this to be retired.
+               */
+              or(
+                sql`${availabilitySlot.status} <> 'available'`,
+                lt(availabilitySlot.startDate, isoDay(input.seenBefore)),
+                lt(availabilitySlot.updatedAt, trustedSince(input.seenBefore)),
+              ),
             ),
           )
           .returning({ id: availabilitySlot.id });
