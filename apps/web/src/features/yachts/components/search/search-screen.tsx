@@ -6,7 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, Suspense, useMemo } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { type AppPathname, Link, useRouter } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import BoatCard from "@/components/shared/data-display/boat-card";
@@ -112,6 +113,46 @@ function useApplyFilters(locked?: LockedFilters) {
   }
 
   return { filters, defaults, applyFilters };
+}
+
+/*
+ * Ordering, which the map has no use for: it sorts by relevance and its list panel pages itself.
+ * Anything else in the query is a filter and travels.
+ */
+const NOT_CARRIED = ["sort", "page"];
+
+function MapCardLink({ href }: { href: AppPathname }) {
+  const t = useTranslations("Yachts");
+
+  return (
+    <Link
+      href={href}
+      className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
+    >
+      <Search />
+      {t("searchByMap")}
+    </Link>
+  );
+}
+
+/**
+ * The way into the map, carrying whatever has been narrowed down so far.
+ *
+ * A catalogue page's own facets are folded in by hand because they live in the path rather than
+ * the query — without that, asking for Croatia and then for the map opened the whole Adriatic.
+ * Query params win where the two disagree: an edit the visitor made is more current than the path.
+ */
+function FilteredMapCardLink({ locked }: { locked?: LockedFilters }) {
+  const params = new URLSearchParams(useSearchParams());
+  for (const key of NOT_CARRIED) params.delete(key);
+
+  const [, lockedQuery = ""] = serializeSearch(YACHTS_MAP_HREF, locked ?? {}).split("?");
+  for (const [key, value] of new URLSearchParams(lockedQuery)) {
+    if (!params.has(key)) params.set(key, value);
+  }
+
+  const query = params.toString();
+  return <MapCardLink href={query ? `${YACHTS_MAP_HREF}?${query}` : YACHTS_MAP_HREF} />;
 }
 
 function SearchBarSection({ locked }: { locked?: LockedFilters }) {
@@ -241,13 +282,14 @@ export default function SearchScreen({
                 sizes="(min-width: 1024px) 334px, 100vw"
                 className="object-cover"
               />
-              <Link
-                href={YACHTS_MAP_HREF}
-                className={buttonVariants({ variant: "neutral", className: "relative capitalize" })}
-              >
-                <Search />
-                {t("searchByMap")}
-              </Link>
+              {/*
+               * Only the link reads the URL, and only the link is suspended — the card around it,
+               * which is the marker the instant-nav guard watches, still prerenders. Until the read
+               * lands the href is the bare one, which is where a visitor with no filters was going.
+               */}
+              <Suspense fallback={<MapCardLink href={YACHTS_MAP_HREF} />}>
+                <FilteredMapCardLink locked={locked} />
+              </Suspense>
             </div>
 
             <Suspense fallback={null}>

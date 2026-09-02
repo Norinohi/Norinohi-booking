@@ -17,7 +17,18 @@ import { valueForLabel } from "./repository";
  * into it — no commit required either way.
  */
 
-export const DEFAULT_CATALOG_PAGE_THRESHOLD = 20;
+/*
+ * Raising this is not free, and the cost lands at build time rather than here.
+ *
+ * A root whose every combination falls under the threshold produces no pages at all, and
+ * `generateStaticParams` returning nothing is something Cache Components refuses to build. The
+ * `shipyard` root is the fragile one: it groups by builder, and the seed fixture's biggest builders
+ * carry eight boats each — so anything above eight empties that root and fails `next build` with
+ * `empty-generate-static-params`, in CI as much as locally.
+ *
+ * Move it once real inventory clears the new number, or give the route something to build first.
+ */
+export const DEFAULT_CATALOG_PAGE_THRESHOLD = 8;
 
 export type CatalogPageRoot = "yacht-charter" | "shipyard";
 
