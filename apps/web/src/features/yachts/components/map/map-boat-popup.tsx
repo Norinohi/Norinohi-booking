@@ -8,9 +8,9 @@ import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
-import MapPopup, { PIN_CLEARANCE } from "@/components/shared/data-display/map-popup";
+import MapPopup, { PIN_CLEARANCE, RECENTRE_MS } from "@/components/shared/data-display/map-popup";
+import { paddingOf } from "../../lib/map-camera";
 
-const RECENTRE_MS = 500;
 // On a phone, leave just this gap under the popup so the pager clears the map attribution/edge.
 const BOTTOM_SAFE = 32;
 // Below this container width we treat the map as a phone and pin the popup to the bottom.
@@ -41,13 +41,22 @@ export default function MapBoatPopup({ coordinates, boats, map, focusZoom }: Map
 
     const container = map.getContainer();
     const viewportH = container.clientHeight;
+
+    /*
+     * `offset` is measured from where mapbox puts a centred point, and the panels have already
+     * moved that off the middle of the container. Reading it back is what keeps the card where it
+     * was designed to sit instead of the padding shifting it by half the panel.
+     */
+    const claimed = paddingOf(map);
+    const centreY = claimed.top + (viewportH - claimed.top - claimed.bottom) / 2;
+
     const pinY =
       container.clientWidth < MOBILE_MAX
         ? viewportH - BOTTOM_SAFE - PIN_CLEARANCE - height
-        : viewportH / 2 - PIN_CLEARANCE - height / 2;
+        : centreY - PIN_CLEARANCE - height / 2;
 
     const center: [number, number] = [coordinates.lng, coordinates.lat];
-    const offset: [number, number] = [0, pinY - viewportH / 2];
+    const offset: [number, number] = [0, pinY - centreY];
 
     if (focusZoom != null) {
       map.flyTo({ center, offset, zoom: focusZoom });

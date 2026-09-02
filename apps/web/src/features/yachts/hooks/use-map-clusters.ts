@@ -34,13 +34,32 @@ type Viewport = {
 };
 
 function readViewport(map: MapInstance): Viewport | null {
-  const bounds = map.getBounds();
-  if (!bounds) return null;
+  const canvas = map.getContainer();
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  if (width === 0 || height === 0) return null;
 
-  const west = bounds.getWest();
-  const south = bounds.getSouth();
-  const east = bounds.getEast();
-  const north = bounds.getNorth();
+  /*
+   * The corners of the canvas, rather than `getBounds()`.
+   *
+   * `getBounds` answers for the padded box the camera composes within, and the search map pads that
+   * box by the width of the panels lying over it — so asking it what is on screen would leave the
+   * edges of the screen unclustered, markers and all. All four corners, and not just two, because
+   * a rotated map's bounding box is not its top-left and bottom-right.
+   */
+  const corners = [
+    [0, 0],
+    [width, 0],
+    [width, height],
+    [0, height],
+  ].map(([x, y]) => map.unproject([x, y]));
+  const lngs = corners.map((corner) => corner.lng);
+  const lats = corners.map((corner) => corner.lat);
+
+  const west = Math.min(...lngs);
+  const south = Math.min(...lats);
+  const east = Math.max(...lngs);
+  const north = Math.max(...lats);
   const padX = (east - west) * OVERSCAN;
   const padY = (north - south) * OVERSCAN;
 

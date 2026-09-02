@@ -3,6 +3,7 @@ import {
   createSerializer,
   parseAsArrayOf,
   parseAsBoolean,
+  parseAsFloat,
   parseAsString,
 } from "nuqs/server";
 
@@ -75,6 +76,28 @@ export const serializeSearch = createSerializer(filterParsers);
  * params they come from, because the card that writes them and the sidebar that reads them sit in
  * different features and must agree on the encoding.
  */
+/*
+ * Where the search map is looking, so a map view survives a reload and can be sent to somebody.
+ *
+ * Deliberately not part of `filterParsers`: those describe the result set and are serialized into
+ * `/yachts` hrefs, while these describe one screen's camera and mean nothing to the list.
+ */
+export const mapCameraParsers = {
+  zoom: parseAsFloat,
+  centre: createParser({
+    parse: (query: string) => {
+      const [lng, lat] = query.split(",").map(Number);
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+      if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+      return { lat, lng };
+    },
+    /* Five decimals is about a metre, which is finer than a marker is wide and keeps the URL short. */
+    serialize: (value: { lat: number; lng: number }) =>
+      `${value.lng.toFixed(5)},${value.lat.toFixed(5)}`,
+    eq: (a, b) => a.lat === b.lat && a.lng === b.lng,
+  }),
+};
+
 export const detailPeriodParsers = {
   checkIn: parseAsString,
   checkOut: parseAsString,
