@@ -51,6 +51,27 @@ export function overlapsSlotHold(listingId: SQL, from: SQL | string, to: SQL | s
 }
 
 /**
+ * Whether one of our live bookings blankets the whole of `from`..`to` for `listingId`.
+ *
+ * The counterpart to `overlapsSlotHold`, for a flexible search. Asked of a range the visitor
+ * would accept rather than of the one charter they named, overlap is the wrong test: a hold on
+ * the Saturday does not answer "some three nights that week", and dropping the boat for it
+ * hides inventory the visitor said they would take. Only a hold covering every candidate day
+ * leaves nothing to offer.
+ */
+export function coveredBySlotHold(listingId: SQL, from: SQL | string, to: SQL | string): SQL {
+  return sql`exists (
+    select 1
+    from booking hold
+    join quote hold_period on hold_period.id = hold.quote_id
+    where hold.listing_id = ${listingId}
+      and hold.status in (${holdingStatuses})
+      and hold_period.check_in <= ${from}
+      and hold_period.check_out >= ${to}
+  )`;
+}
+
+/**
  * The same holds as rows, shaped like the occupancy `listAvailabilityConstraints` reads out of
  * `availability_slot`, so the two can be read as one list.
  *

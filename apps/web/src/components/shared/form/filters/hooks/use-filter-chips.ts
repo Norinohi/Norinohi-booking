@@ -102,7 +102,10 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
     }
   }
 
-  return CHIP_DEFS.filter((def) =>
-    def.keys.some((key) => isFilterKeyActive(state, key, defaults)),
+  return CHIP_DEFS.filter(
+    (def) =>
+      /* Flexibility widens a start date, so with no date picked it narrowed nothing to show. */
+      (def.id !== "dateFlexibility" || state.startDate !== null) &&
+      def.keys.some((key) => isFilterKeyActive(state, key, defaults)),
   ).map((def) => ({ id: def.id, label: label(def.id), keys: [...def.keys] }));
 }

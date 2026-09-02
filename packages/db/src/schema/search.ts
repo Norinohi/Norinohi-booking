@@ -77,6 +77,27 @@ export const listingSearchDoc = pgTable(
     gallery: jsonb("gallery").$type<string[]>().default([]).notNull(),
     amenities: jsonb("amenities").$type<string[]>().default([]).notNull(),
     priceFromMinor: integer("price_from_minor"),
+    /**
+     * Whether `price_from_minor` prices the advertised charter or merely starts from the
+     * season, which is what decides how the card captions it.
+     *
+     * False only where the vendor priced this exact charter. True is the cheapest week the
+     * operator publishes for the season ahead, which says nothing about the dates beside it and
+     * must read "From" rather than "Price for N days" -- the caption is the whole difference
+     * between an indicative floor and a quote the card is promising.
+     */
+    priceIsFrom: boolean("price_is_from").default(false).notNull(),
+    /**
+     * What the advertised charter would cost without the operator's discount, all-in on the
+     * same terms as `price_from_minor`, so the card can strike one figure through beside the
+     * other.
+     *
+     * Always above `price_from_minor` when set, and null whenever it is not the vendor's own
+     * arithmetic: no confirmed price, no published list price, or a difference its discounts
+     * do not account for. Deliberately not converted or indexed -- it is decoration on a card,
+     * never something the catalogue sorts, filters or compares on.
+     */
+    listPriceFromMinor: integer("list_price_from_minor"),
     currency: text("currency"),
     /**
      * `price_from_minor` converted into the one currency the catalogue compares in, and never

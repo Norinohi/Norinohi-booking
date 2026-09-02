@@ -38,6 +38,16 @@ export const availabilitySlot = pgTable(
      * route, and reassembling it there guessed wrong twice before this column existed.
      */
     obligatoryExtrasMinor: integer("obligatory_extras_minor"),
+    /**
+     * What the same charter costs without the vendor's own discount, for the card's
+     * strike-through.
+     *
+     * Set only where the provider's discounts account for the whole difference from
+     * `price_minor`, which is the test the quote applies before it shows a discount line, so a
+     * struck card and the detail page beneath it never disagree about being on offer. Null is
+     * the ordinary case: most weeks are sold at the published rate.
+     */
+    listPriceMinor: integer("list_price_minor"),
     currency: text("currency"),
     minNights: integer("min_nights"),
     checkinWeekday: integer("checkin_weekday"),
@@ -164,6 +174,25 @@ export const listingFreePeriod = pgTable(
  * so this errs short rather than long.
  */
 export const REFUSAL_TRUST_DAYS = 14;
+
+/**
+ * How long a vendor-confirmed price survives an occupancy sweep that does not restate it.
+ *
+ * The occupancy dump is a statement about what is SOLD. It never mentions a free week, so a
+ * confirmed available slot can never be restamped by it, and the sweep -- which deletes
+ * anything inside a cleanly fetched year it did not restamp -- was reading that silence as
+ * "gone from the provider" and deleting every price the confirming pass had bought. Each run
+ * then rebuilt only what fitted in that pass's clock budget, so the catalogue lost prices
+ * faster than it won them: one NauSYS run took unpriced cards from 2,900 to 4,711.
+ *
+ * Fourteen days, matching the refusal window above, and safe in both directions. A week that
+ * sells is covered without waiting for this: the dump writes an occupied slot over it, and the
+ * read model refuses to advertise a confirmed slot any non-available row overlaps. What ages
+ * out here is only a price nothing has re-observed in a fortnight, on a week nobody has since
+ * bought -- and the confirming pass re-asks every advertised week on every run, so the prices
+ * a card actually shows are refreshed hourly rather than kept alive by this.
+ */
+export const CONFIRMED_PRICE_TRUST_DAYS = 14;
 
 export const listingRefusedPeriod = pgTable(
   "listing_refused_period",

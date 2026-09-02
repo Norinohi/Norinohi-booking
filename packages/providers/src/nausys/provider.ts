@@ -47,7 +47,10 @@ import {
 } from "./occupancy";
 import { listingSource, providerExtraCatalogue } from "@yacht-charter/db/schema/listing-source";
 import { provider as providerTable, providerRecord } from "@yacht-charter/db/schema/provider";
-import { listAdvertisedCharterPeriods } from "@yacht-charter/db/search/read-model";
+import {
+  listAdvertisedCharterPeriods,
+  listUnadvertisedYachtIds,
+} from "@yacht-charter/db/search/read-model";
 import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
@@ -276,21 +279,27 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
          */
         loadYachtIds: () => loadNausysYachtIds(this.db, this.config.companyScope),
         /*
-         * Read here rather than in the constructor for the reason the company list is: it is
-         * a database read, and it has to be the current one. The advertised periods move as
-         * charters are sold and the read model re-mints them, so a list captured when the
-         * process started would drift away from the cards it exists to price.
+         * A loader rather than a value, and resolved when the confirming pass starts rather
+         * than here: the occupancy pass runs first and re-mints the very periods this reads.
+         * See `loadHotWindows`.
          */
-        hotWindows:
-          this.hotWindowOverride ??
-          sweepWindows(
-            await listAdvertisedCharterPeriods(this.db, {
-              providerCode: this.key,
-              limit: ADVERTISED_PERIOD_LIMIT,
+        ...(this.hotWindowOverride
+          ? { hotWindows: this.hotWindowOverride }
+          : {
+              loadHotWindows: async () => {
+                const [advertised, gridYachtIds] = await Promise.all([
+                  listAdvertisedCharterPeriods(this.db, {
+                    providerCode: this.key,
+                    limit: ADVERTISED_PERIOD_LIMIT,
+                  }),
+                  /* Read beside the periods, from the same rebuilt documents: a hull counts as
+                     unadvertised precisely when it contributed no period above. */
+                  listUnadvertisedYachtIds(this.db, { providerCode: this.key }),
+                ]);
+
+                return sweepWindows(advertised, this.fallbackWindows, this.today, gridYachtIds);
+              },
             }),
-            this.fallbackWindows,
-            this.today,
-          ),
         currency: this.currency,
       });
 

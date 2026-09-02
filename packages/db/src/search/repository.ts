@@ -13,7 +13,7 @@ import {
 } from "./cursor";
 import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs, normalizedKeySql } from "./localize";
 import { placeLine, placeLineExcept } from "./place-line";
-import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
+import { coveredBySlotHold, overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,
   AvailabilityCalendarInput,
@@ -60,6 +60,8 @@ function currentYear(): number {
 }
 
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
+  /* Leads the list so the field opens on "no length stated" and `clearTo` resets to it. */
+  { value: "any", label: "Any duration" },
   { value: "7", label: "7 days" },
   { value: "3", label: "3 days" },
   { value: "10", label: "10 days" },
@@ -1081,7 +1083,7 @@ export async function listSimilarListings(
         or doc.country = ${listing.country}
         or doc.region = ${listing.region}
       )
-    order by doc.rating desc, doc.price_from_minor_eur asc nulls last, doc.listing_id asc
+    order by ${recommendedSortValue} desc, doc.price_from_minor_eur asc nulls last, doc.listing_id asc
     limit ${limit}
   `);
 
@@ -1160,6 +1162,8 @@ const searchColumns = sql`
   doc.gallery,
   doc.amenities,
   doc.price_from_minor as "priceFromMinor",
+  doc.price_is_from as "priceIsFrom",
+  doc.list_price_from_minor as "listPriceFromMinor",
   doc.price_from_minor_eur as "priceFromMinorEur",
   doc.best_offer_id as "bestOfferId",
   doc.offer_count as "offerCount",
@@ -1304,7 +1308,21 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   }
   if (!skip.has("petsAllowed") && input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
   const availabilityWindow = availabilityWindowFor(input);
-  if (availabilityWindow) {
+  const windowNights = availabilityWindow ? nightsBetween(availabilityWindow) : undefined;
+  /*
+   * The length the visitor actually asked about, which is not the same as the width of the
+   * window searched. A pair of explicit dates states one. The duration facet states one. A start
+   * date alone states none -- `availabilityWindowFor` still spans a week from it, because a date
+   * has to mean something, but a boat is not dropped for a length nobody named. That is the
+   * funnel again, the same reasoning as the check-in weekday below.
+   */
+  const statedNights = input.checkIn && input.checkOut ? windowNights : input.duration;
+  const nights = skip.has("duration") ? undefined : statedNights;
+  if (availabilityWindow && windowNights !== undefined) {
+    const flex = skip.has("dateFlexibility")
+      ? 0
+      : FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"];
+    const range = candidateRange(availabilityWindow, windowNights, flex);
     /*
      * Containment against one free stretch, not against one enumerated period. The old filter
      * asked a single availability_slot row to span the whole request, and no synthesized slot ran
@@ -1315,44 +1333,106 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      * the rules decide the exact charter on the detail page. A listing should not vanish from
      * results because the visitor's dates start on a Tuesday, when the honest answer is "free
      * that week, and it starts on Saturdays".
+     *
+     * The free stretch and the length rule are asked of the same offer. Split across the listing
+     * they vouched for each other: the vendor selling by the night had the week taken, the vendor
+     * with the week free sells it Saturday to Saturday, and the pair read as three nights free.
+     *
+     * The three date tests are `max(free.start, earliestStart) <= min(free.end - nights,
+     * latestStart)` -- is there a day in the range the visitor would accept where a charter of
+     * their length still fits inside this stretch -- rewritten as plain comparisons so the
+     * (offer, start_date, end_date) index can serve them. `greatest`/`least` over the columns
+     * reads closer to the intent but is opaque to the planner.
      */
     parts.push(sql`exists (
       select 1
-      from listing_free_period free
-      where free.listing_id = doc.listing_id
-        and free.start_date <= ${availabilityWindow.checkIn}
-        and free.end_date >= ${availabilityWindow.checkOut}
+      from listing_offer o
+      join listing_free_period free
+        on free.listing_offer_id = o.id
+       and free.start_date <= ${range.latestStart}
+       and free.end_date >= ${range.earliestEnd}
+       and free.end_date - free.start_date >= ${windowNights}
+      where o.listing_id = doc.listing_id
+        and o.status = 'active'
+        and ${nights ? checkinRuleClause(nights, range) : sql`true`}
     )`);
     /*
      * A free period is the provider's last word, which is up to a sync cycle old. Our own
      * live checkouts are current, so they come off here rather than waiting to be told.
+     *
+     * Asked as overlap against one named charter and as coverage against a flexible range, for
+     * the reason `coveredBySlotHold` carries: on exact dates any hold on them is the end of it,
+     * while a visitor open to a fortnight is only out of luck when the holds leave no day.
      */
     parts.push(
-      sql`not ${overlapsSlotHold(sql`doc.listing_id`, availabilityWindow.checkIn, availabilityWindow.checkOut)}`,
+      flex === 0
+        ? sql`not ${overlapsSlotHold(sql`doc.listing_id`, availabilityWindow.checkIn, availabilityWindow.checkOut)}`
+        : sql`not ${coveredBySlotHold(sql`doc.listing_id`, range.earliestStart, range.latestEnd)}`,
     );
-  }
-  /*
-   * Length is different from the weekday above, and is filtered even with no dates attached.
-   * The weekday is a constraint the visitor never mentioned, so applying it would drop a boat
-   * for a reason they did not ask about. A duration is a constraint they chose: a boat whose
-   * shortest charter is a week cannot serve a three-day trip, and listing it under "3 days"
-   * promises something the quote will refuse.
-   *
-   * A listing with no published rule is kept, matching `availability-rules.ts`: the rules are
-   * what the provider stated, and inventing one here would hide dates it would happily sell.
-   *
-   * Asked of each offer rather than of the listing, and satisfied when any one of them says
-   * yes. Across the listing, one vendor's rules vouched for the other's inventory: a boat one
-   * provider sells by the week and the other by the night read as available for three nights
-   * through both.
-   */
-  if (!skip.has("duration") && input.duration) {
+  } else if (nights) {
+    /*
+     * Length is different from the weekday above, and is filtered even with no dates attached.
+     * The weekday is a constraint the visitor never mentioned, so applying it would drop a boat
+     * for a reason they did not ask about. A duration is a constraint they chose: a boat whose
+     * shortest charter is a week cannot serve a three-day trip, and listing it under "3 days"
+     * promises something the quote will refuse.
+     *
+     * With no date to place it in, the rule still has to describe a charter somebody could
+     * book: its season has to reach a stretch the boat is actually free. A relaxed week last
+     * May is not an answer to "three days" when the boat is Saturday to Saturday from here on.
+     */
     parts.push(sql`exists (
       select 1
       from listing_offer o
       where o.listing_id = doc.listing_id
         and o.status = 'active'
-        and (
+        and ${checkinRuleClause(nights, undefined)}
+    )`);
+  }
+  return sql.join(parts, sql` and `);
+}
+
+/*
+ * Whether offer `o` publishes a rule that would sell a charter of `nights`, on one of the days
+ * `range` covers when dates are known.
+ *
+ * A listing with no published rule is kept, matching `availability-rules.ts`: the rules are
+ * what the provider stated, and inventing one here would hide dates it would happily sell.
+ *
+ * The season bounds are the point of the dates. Rules are written per season, and a hull that
+ * is Saturday to Saturday, seven nights all year commonly carries a single relaxed week --
+ * one night, any weekday -- for a shoulder-season gap. Read without their seasons those rules
+ * say the boat sells three nights in August, and the quote then refuses the charter the card
+ * promised. `availability-writer.ts` applies the same bounds before it records a refusal.
+ *
+ * A rule that names both turnaround days states a length, whether or not it fills in
+ * `min_nights`: a charter starting Saturday and ending Saturday is seven nights, or fourteen,
+ * never three or ten. That is `nights = checkout_weekday - checkin_weekday (mod 7)`, and it is
+ * the test `rangeStatus` already applies when the quote is asked -- so leaving it out here is
+ * search promising a charter the quote then refuses. It is the whole reason a Saturday-to-
+ * Saturday hull answered "3 days", and why "10 days" returned all 18,534 listings on the
+ * strength of `min_nights = 7 <= 10`; with the length read, 791 and 1,391 of them can do it.
+ *
+ * Only the rule's own columns are read, never a stored date, which is what keeps this clear of
+ * the caveat in `availability-writer.ts`: NauSYS writes a period's end as the last night and
+ * Booking Manager as the check-out morning, so the two disagree about a date by a day but not
+ * about the weekday a rule names.
+ *
+ * With no check-in date the season is pinned to the span the boat is still free for instead.
+ * Six of the top ten results for a bare "3 days" were passing on a relaxed week of
+ * 2026-05-02..08 that had closed three months before, on hulls with nothing free until
+ * October. Measured against the span rather than against each free stretch: overlapping the
+ * stretches one by one costs a correlated scan per rule and tripled the unfiltered browse to
+ * a second, to admit seven listings whose relaxed season lands in a booked gap.
+ */
+function checkinRuleClause(nights: number, range: CandidateRange | undefined): SQL {
+  const season = range
+    ? sql`and (rule.season_start is null or rule.season_start <= ${range.latestStart}::date)
+              and (rule.season_end is null or rule.season_end >= ${range.earliestStart}::date)`
+    : sql`and (rule.season_end is null or rule.season_end >= greatest(doc.available_from, current_date))
+              and (rule.season_start is null or rule.season_start <= doc.available_to)`;
+
+  return sql`(
           not exists (
             select 1 from listing_checkin_rule rule where rule.listing_offer_id = o.id
           )
@@ -1360,13 +1440,16 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
             select 1
             from listing_checkin_rule rule
             where rule.listing_offer_id = o.id
-              and (rule.min_nights is null or rule.min_nights <= ${input.duration})
-              and (rule.max_nights is null or rule.max_nights >= ${input.duration})
+              ${season}
+              and (
+                rule.checkin_weekday is null
+                or rule.checkout_weekday is null
+                or mod(${nights} - rule.checkout_weekday + rule.checkin_weekday + 70, 7) = 0
+              )
+              and (rule.min_nights is null or rule.min_nights <= ${nights})
+              and (rule.max_nights is null or rule.max_nights >= ${nights})
           )
-        )
-    )`);
-  }
-  return sql.join(parts, sql` and `);
+        )`;
 }
 
 function cursorClause(
@@ -1381,8 +1464,9 @@ function cursorClause(
     case "price-desc":
       return sql`(${priceDescSortValue}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
     case "rating":
-    case "recommended":
       return sql`(doc.rating, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
+    case "recommended":
+      return sql`(${recommendedSortValue}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
     case "newest":
       return sql`(${yearDescSortValue}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
   }
@@ -1395,8 +1479,9 @@ function orderClause(sort: SearchSort = "recommended"): SQL {
     case "price-desc":
       return sql`${priceDescSortValue} desc, doc.listing_id desc`;
     case "rating":
-    case "recommended":
       return sql`doc.rating desc, doc.listing_id desc`;
+    case "recommended":
+      return sql`${recommendedSortValue} desc, doc.listing_id desc`;
     case "newest":
       return sql`${yearDescSortValue} desc, doc.listing_id desc`;
   }
@@ -1411,8 +1496,13 @@ function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): Se
     case "newest":
       return { value: item.yearBuilt ?? NULL_YEAR_DESC, listingId: item.listingId };
     case "rating":
-    case "recommended":
       return { value: item.rating, listingId: item.listingId };
+    case "recommended":
+      /* The same expression as `recommendedSortValue`, in the units the cursor compares. */
+      return {
+        value: (item.priceIsFrom ? 0 : 10) + Number(item.rating),
+        listingId: item.listingId,
+      };
   }
 }
 
@@ -1891,6 +1981,14 @@ function normalizedFilterValue(value: string): string {
     .replace(/[^a-z0-9]+/g, "");
 }
 
+/*
+ * How much of the calendar a start date with no length claims. A week is what the vendors sell
+ * and what the duration facet opens on, so it is the span a visitor naming only a date is asking
+ * after. It sizes the window alone: the length rules are left out of it, because nobody stated a
+ * length to hold a boat to.
+ */
+const DEFAULT_WINDOW_NIGHTS = 7;
+
 function availabilityWindowFor(
   input: ListingSearchInput,
 ): { checkIn: string; checkOut: string } | undefined {
@@ -1898,18 +1996,78 @@ function availabilityWindowFor(
     return { checkIn: input.checkIn, checkOut: input.checkOut };
   }
 
-  if (!input.startDate || !input.duration) return undefined;
+  if (!input.startDate) return undefined;
 
   const start = new Date(`${input.startDate}T00:00:00.000Z`);
   if (Number.isNaN(start.getTime())) return undefined;
 
   const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + input.duration);
+  end.setUTCDate(end.getUTCDate() + (input.duration ?? DEFAULT_WINDOW_NIGHTS));
+  /*
+   * A duration large enough to walk the date past the range `Date` can hold leaves an invalid
+   * one, and `toISOString` throws on it. The contract bounds `duration` so the API cannot reach
+   * this, but the repository is called directly too and a search should not be crashable.
+   */
+  if (Number.isNaN(end.getTime())) return undefined;
 
   return {
     checkIn: start.toISOString().slice(0, 10),
     checkOut: end.toISOString().slice(0, 10),
   };
+}
+
+/*
+ * How far the visitor said their start date can move, in days either side of it.
+ *
+ * Symmetric, which is what the copy promises: "In 1 week" beside a date is the week around it,
+ * not the week after it. A month is 30 days rather than a calendar step -- the filter is a net,
+ * and nobody choosing it means "to the 31st and no further".
+ */
+const FLEXIBILITY_DAYS = {
+  "on-day": 0,
+  "1-3-days": 3,
+  "1-week": 7,
+  "2-weeks": 14,
+  "1-month": 30,
+} satisfies Record<NonNullable<ListingSearchInput["dateFlexibility"]>, number>;
+
+/**
+ * The charters a flexible search would accept: every check-in from `earliestStart` to
+ * `latestStart`, each running for the requested number of nights. `earliestEnd` and `latestEnd`
+ * are the first and last check-out those imply, so the free-stretch test and the hold test can
+ * each be written as plain date comparisons.
+ */
+type CandidateRange = {
+  earliestStart: string;
+  latestStart: string;
+  earliestEnd: string;
+  latestEnd: string;
+};
+
+function candidateRange(
+  window: { checkIn: string; checkOut: string },
+  nights: number,
+  flex: number,
+): CandidateRange {
+  return {
+    earliestStart: shiftDays(window.checkIn, -flex),
+    latestStart: shiftDays(window.checkIn, flex),
+    earliestEnd: shiftDays(window.checkIn, -flex + nights),
+    latestEnd: shiftDays(window.checkOut, flex),
+  };
+}
+
+function shiftDays(date: string, days: number): string {
+  const shifted = new Date(`${date}T00:00:00.000Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+}
+
+/** Nights in a window, which is what a check-in rule's min/max are counted in. */
+function nightsBetween(window: { checkIn: string; checkOut: string }): number {
+  const checkIn = Date.parse(`${window.checkIn}T00:00:00.000Z`);
+  const checkOut = Date.parse(`${window.checkOut}T00:00:00.000Z`);
+  return Math.round((checkOut - checkIn) / 86_400_000);
 }
 
 /** An aggregate bound as it leaves pg: numeric columns arrive as strings, and an
@@ -1956,6 +2114,19 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
  * have to read the same expression or a keyset page skips or repeats rows. A listing with no
  * usable rate sorts with the unpriced ones, which is what "we cannot compare this" looks like.
  */
+/**
+ * Recommended: a charter the vendor has priced outranks one we can only start a price from.
+ *
+ * Rating alone put the indicative cards first, because the weeks the confirming sweep had not
+ * reached were the well-rated ones -- 49 of the first 60 results. A visitor comparing prices is
+ * better served by a figure the quote will match, so a confirmed price is worth more than any
+ * rating gap, and the sort settles that before it looks at the stars.
+ *
+ * Folded into one number rather than added as a second key so the keyset cursor stays a single
+ * comparable value; the +10 clears the 0..5 rating range with room to spare.
+ */
+const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
+
 const priceAscSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_ASC})`;
 const priceDescSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

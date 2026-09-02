@@ -181,9 +181,25 @@ export interface NausysHotWindow {
   /** ISO check-in and check-out of the week being priced. */
   periodFrom: string;
   periodTo: string;
+  /**
+   * The hulls advertising this exact week, where they are known. `freeYachts` is asked per
+   * hull, so a window that names them is asked about those alone; see `SweepPeriod.yachtIds`.
+   */
+  yachtIds?: readonly string[];
   countries?: number[];
   regions?: number[];
   locations?: number[];
+}
+
+/**
+ * The windows one pass walks, split the way the walk treats them.
+ *
+ * `advertised` is re-walked in full every run; the resume cursor counts into `grid` alone.
+ * See `sweepPlan` for why the two cannot share one index.
+ */
+export interface NausysHotWindowPlan {
+  advertised: NausysHotWindow[];
+  grid: NausysHotWindow[];
 }
 
 export const nausysHotWindowCursorSchema = z.object({
@@ -205,8 +221,24 @@ export interface NausysAvailabilitySourceOptions {
   companyIds: string[];
   /** One occupancy call per (company, year); the writer sweeps a year at a time. */
   years: number[];
-  /** Destination and week combinations the accurate pass walks, in priority order. */
+  /**
+   * A fixed list of windows to walk, for a caller that names them itself. Treated as the grid
+   * half of the plan, so the resume cursor counts into it exactly as it did before the split.
+   */
   hotWindows?: NausysHotWindow[];
+  /**
+   * The same list, resolved when the confirming pass actually starts rather than when the
+   * source is built.
+   *
+   * Which weeks the cards advertise is a read of the search documents, and the occupancy pass
+   * that runs first is what moves them: a charter cancelled overnight opens a week no document
+   * knew about until this run rebuilt them. Resolved up front, the pass asked about the
+   * previous run's weeks. That was survivable while every window asked about the whole fleet,
+   * because the wrong week still reached the right hulls; once each window asks only about the
+   * hulls advertising it, a stale list asks precisely the wrong ones -- 604 listings advertising
+   * 10 October, none of them priced, while the sweep spent the window on hulls that had moved on.
+   */
+  loadHotWindows?: () => Promise<NausysHotWindowPlan>;
   /**
    * Every NauSYS hull we list inside `companyIds`. Absent, the confirming pass is skipped:
    * it prices our own fleet by id, so with no ids there is nothing to ask about.
@@ -220,7 +252,9 @@ export function createNausysAvailabilitySource(
   options: NausysAvailabilitySourceOptions,
 ): AvailabilitySource {
   const { client } = options;
-  const hotWindows = options.hotWindows ?? [];
+  const staticWindows = options.hotWindows ?? [];
+  const loadHotWindows =
+    options.loadHotWindows ?? (() => Promise.resolve({ advertised: [], grid: staticWindows }));
 
   const source: AvailabilitySource = {
     listScopes(): Promise<AvailabilityScope[]> {
@@ -242,7 +276,9 @@ export function createNausysAvailabilitySource(
     },
   };
 
-  if (hotWindows.length === 0 || !options.loadYachtIds) return source;
+  if ((staticWindows.length === 0 && !options.loadHotWindows) || !options.loadYachtIds) {
+    return source;
+  }
   const loadYachtIds = options.loadYachtIds;
 
   return {
@@ -253,18 +289,25 @@ export function createNausysAvailabilitySource(
      * behind that: the search endpoint costs ~28s per call whatever it is asked for and never
      * returns the obligatory extras a card has to add to the rate.
      */
-    searchConfirmed(resume): AsyncIterable<ConfirmedOfferPage> {
+    async *searchConfirmed(resume): AsyncIterable<ConfirmedOfferPage> {
       /* Parsed here, where the writer hands back whatever the jsonb cursor column held: an
          unreadable one is a sweep that starts over, which costs calls rather than correctness. */
       const from = nausysConfirmedCursorSchema.safeParse(resume).data ?? { windowIndex: 0 };
+      const plan = await loadHotWindows();
+      const toPeriod = (window: NausysHotWindow, source: "advertised" | "grid") => ({
+        startDate: window.periodFrom,
+        endDate: window.periodTo,
+        source,
+        ...(window.yachtIds ? { yachtIds: window.yachtIds } : null),
+      });
 
-      return streamNausysConfirmedOffers(
+      yield* streamNausysConfirmedOffers(
         {
           client,
-          periods: hotWindows.map((window) => ({
-            startDate: window.periodFrom,
-            endDate: window.periodTo,
-          })),
+          periods: {
+            advertised: plan.advertised.map((window) => toPeriod(window, "advertised")),
+            grid: plan.grid.map((window) => toPeriod(window, "grid")),
+          },
           loadYachtIds,
           companyIds: options.companyIds,
           ...(options.currency ? { currency: options.currency } : null),

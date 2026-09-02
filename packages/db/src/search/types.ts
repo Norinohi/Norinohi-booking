@@ -118,6 +118,17 @@ export type ListingSearchDoc = {
   gallery: string[];
   amenities: string[];
   priceFromMinor: number | null;
+  /**
+   * Whether `priceFromMinor` prices the advertised charter or starts from the season. See the
+   * `price_is_from` column comment in schema/search.ts; the card's caption turns on it.
+   */
+  priceIsFrom: boolean;
+  /**
+   * `priceFromMinor` before the operator's own discount, for the card to strike through.
+   * Null unless the vendor priced this charter and its discounts account for the whole
+   * difference. See the `list_price_from_minor` column comment in schema/search.ts.
+   */
+  listPriceFromMinor: number | null;
   currency: string | null;
   /**
    * `priceFromMinor` in one catalogue-wide currency, for comparison only. Never rendered, and

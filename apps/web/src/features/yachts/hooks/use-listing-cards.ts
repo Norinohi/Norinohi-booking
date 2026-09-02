@@ -40,6 +40,7 @@ export function useListingCards() {
       crew: card.crew,
       priceLabel: card.priceLabel,
       price: card.price,
+      listPrice: card.listPrice,
       perPerson: card.perPerson,
       note: card.note,
     };

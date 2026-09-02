@@ -1,5 +1,5 @@
-import { sweepPeriods, type SweepPeriod } from "../shared/sweep-periods";
-import type { NausysHotWindow } from "./occupancy";
+import { sweepPlan, type SweepPeriod } from "../shared/sweep-periods";
+import type { NausysHotWindow, NausysHotWindowPlan } from "./occupancy";
 
 /**
  * How many upcoming charter weeks the accurate availability pass walks by default.
@@ -58,18 +58,38 @@ export function upcomingCharterWeeks(from: Date, count: number): NausysHotWindow
  * was this: eleven cards above their own quote by 5% to 53%, all NauSYS, while all twelve
  * Booking Manager cards were exact, because Booking Manager publishes no discounts.
  *
- * The selection and its order live in `sweepPeriods`, which both adapters share.
+ * The selection and its order live in `sweepPlan`, which both adapters share, and so does the
+ * split it returns: the advertised half is walked in full every run and the grid is what the
+ * resume cursor counts into.
  */
 export function sweepWindows(
   advertised: readonly SweepPeriod[],
   fallback: readonly NausysHotWindow[],
   today: string,
-): NausysHotWindow[] {
-  const periods = sweepPeriods(
+  /*
+   * The hulls the grid is for: those advertising no charter at all. Absent, every grid window
+   * asks about the whole fleet, which is what it did before and what cost the pass its budget.
+   * An empty list is not the same as absent -- it means every hull already advertises
+   * something, so the grid has nobody to ask about and its silence judges nobody.
+   */
+  gridYachtIds?: readonly string[],
+): NausysHotWindowPlan {
+  const plan = sweepPlan(
     advertised,
     fallback.map((window) => ({ startDate: window.periodFrom, endDate: window.periodTo })),
     { today },
   );
 
-  return periods.map((period) => ({ periodFrom: period.startDate, periodTo: period.endDate }));
+  const toWindow = (period: SweepPeriod): NausysHotWindow => ({
+    periodFrom: period.startDate,
+    periodTo: period.endDate,
+    ...(period.yachtIds ? { yachtIds: period.yachtIds } : null),
+  });
+
+  const toGridWindow = (period: SweepPeriod): NausysHotWindow => ({
+    ...toWindow(period),
+    ...(gridYachtIds ? { yachtIds: gridYachtIds } : null),
+  });
+
+  return { advertised: plan.advertised.map(toWindow), grid: plan.grid.map(toGridWindow) };
 }

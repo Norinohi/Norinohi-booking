@@ -471,6 +471,7 @@
       "imageAlt": "{name} moored at {marina}",
       "openGallery": "Open photo gallery",
       "priceFor": "Price for {days, plural, one {# day} other {# days}}",
+      "priceFromLabel": "From",
       "priceOnRequest": "On request",
       "priceUnavailable": "Unavailable",
       "perPerson": "{price} for person",
@@ -729,6 +730,7 @@
     },
     "options": {
       "duration": "{days, plural, one {# day} other {# days}}",
+      "anyDuration": "Any duration",
       "anyYear": "Any year",
       "dateFlexibility": {
         "on-day": "On day",
@@ -1298,7 +1300,7 @@
     },
     "popular": {
       "from": "From",
-      "perPerson": "/ per person",
+      "perPeriod": "/ {days, plural, one {# day} other {# days}}",
       "seeAll": "See All Yachts",
       "previous": "Previous yachts",
       "next": "Next yachts"

@@ -471,6 +471,7 @@
       "imageAlt": "{name} amarrado en {marina}",
       "openGallery": "Abrir la galería de fotos",
       "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "priceFromLabel": "Desde",
       "priceOnRequest": "Bajo petición",
       "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
@@ -729,6 +730,7 @@
     },
     "options": {
       "duration": "{days, plural, one {# día} other {# días}}",
+      "anyDuration": "Cualquier duración",
       "anyYear": "Cualquier año",
       "dateFlexibility": {
         "on-day": "El mismo día",
@@ -1298,7 +1300,7 @@
     },
     "popular": {
       "from": "Desde",
-      "perPerson": "/ por persona",
+      "perPeriod": "/ {days, plural, one {# día} other {# días}}",
       "seeAll": "Ver todos los yates",
       "previous": "Yates anteriores",
       "next": "Yates siguientes"

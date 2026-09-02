@@ -3,7 +3,12 @@ import type { useTranslations } from "next-intl";
 
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import type { AppPathname } from "@/i18n/navigation";
-import { boatCardIdentity, boatCardPrice, type MoneyFormatter } from "@/lib/boat-card-fields";
+import {
+  boatCardIdentity,
+  boatCardListPrice,
+  boatCardPrice,
+  type MoneyFormatter,
+} from "@/lib/boat-card-fields";
 import type { BadgeTranslator } from "@/lib/badge-label";
 import type { CrewTranslator } from "@/lib/crew-label";
 
@@ -61,8 +66,18 @@ export function toBoatCard(
      * calendar could always honour.
      */
     ...charterDates(listing, searched ?? listing.availability.bookablePeriod),
-    priceLabel: t("priceFor", { days: listing.priceDetails.periodDays }),
+    /*
+     * "From" where the figure is the season's cheapest week rather than the price of the
+     * charter named above it. Captioning an indicative floor "Price for 7 days" prices a week
+     * nobody has quoted, which is the mislabel this pair exists to avoid.
+     */
+    priceLabel: listing.priceIsFrom
+      ? t("priceFromLabel")
+      : t("priceFor", { days: listing.priceDetails.periodDays }),
+    /* "From" reads into the amount; "Price for 7 days" captions it. */
+    priceLabelLeads: listing.priceIsFrom,
     price: boatCardPrice(t, listing, formatMoney),
+    listPrice: boatCardListPrice(listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
     perPerson:
       listing.priceDetails.perPersonMinor != null

@@ -47,34 +47,68 @@ export function toSearchInput(
   if (filters.equipment.length) input.equipment = filters.equipment;
 
   if (filters.startDate) input.startDate = filters.startDate;
-  input.duration = Number(filters.duration);
-  input.dateFlexibility = DATE_FLEXIBILITY.find((option) => option === filters.dateFlexibility);
+  /*
+   * Only a length the visitor named. It used to default to seven and go out on every search,
+   * so a plain browse was filtered by a week nobody asked for and no chip admitted to. A start
+   * date with no length still narrows: the server spans a week from it for the free-period test
+   * and leaves the check-in rules out of it.
+   */
+  if (filters.duration !== "any") input.duration = Number(filters.duration);
+  /*
+   * Flexibility is a width around the start date, so with no date there is nothing to widen and
+   * sending it would only split the query cache. `useFilterChips` hides the chip on the same
+   * condition, so the panel never claims a filter the results were not narrowed by.
+   */
+  if (filters.startDate) {
+    input.dateFlexibility = DATE_FLEXIBILITY.find((option) => option === filters.dateFlexibility);
+  }
 
   const isActive = (key: keyof FiltersState) => !isSameValue(filters[key], defaults[key]);
 
+  /*
+   * A thumb resting on the end of its slider is not a constraint, and sending it as one costs
+   * the listing that sits exactly on the end: the sliders round to whole feet and whole euros,
+   * and rounding the top bound down puts it under the boat that defined it. The longest hull in
+   * the catalogue is 157.00 m, which renders as 515 ft and converts back to 156.97 m; the
+   * dearest is 396,679.40, which renders as 396,679 and converts back to 396,679.00. Both
+   * vanished from their own range as soon as the other thumb was moved.
+   */
+  const lowerOf = <
+    TKey extends "length" | "cabins" | "berths" | "bathrooms" | "price" | "guestRating",
+  >(
+    key: TKey,
+  ) => (filters[key][0] > defaults[key][0] ? filters[key][0] : undefined);
+  const upperOf = <
+    TKey extends "length" | "cabins" | "berths" | "bathrooms" | "price" | "guestRating",
+  >(
+    key: TKey,
+  ) => (filters[key][1] < defaults[key][1] ? filters[key][1] : undefined);
+  const scaled = (value: number | undefined, factor: number) =>
+    value === undefined ? undefined : value * factor;
+
   if (isActive("length")) {
-    input.minLength = filters.length[0] * FEET_TO_METRES;
-    input.maxLength = filters.length[1] * FEET_TO_METRES;
+    input.minLength = scaled(lowerOf("length"), FEET_TO_METRES);
+    input.maxLength = scaled(upperOf("length"), FEET_TO_METRES);
   }
   if (isActive("cabins")) {
-    input.minCabins = filters.cabins[0];
-    input.maxCabins = filters.cabins[1];
+    input.minCabins = lowerOf("cabins");
+    input.maxCabins = upperOf("cabins");
   }
   if (isActive("berths")) {
-    input.minBerths = filters.berths[0];
-    input.maxBerths = filters.berths[1];
+    input.minBerths = lowerOf("berths");
+    input.maxBerths = upperOf("berths");
   }
   if (isActive("bathrooms")) {
-    input.minBathrooms = filters.bathrooms[0];
-    input.maxBathrooms = filters.bathrooms[1];
+    input.minBathrooms = lowerOf("bathrooms");
+    input.maxBathrooms = upperOf("bathrooms");
   }
   if (isActive("price")) {
-    input.minPriceMinor = filters.price[0] * 100;
-    input.maxPriceMinor = filters.price[1] * 100;
+    input.minPriceMinor = scaled(lowerOf("price"), 100);
+    input.maxPriceMinor = scaled(upperOf("price"), 100);
   }
   if (isActive("guestRating")) {
-    input.minGuestRating = filters.guestRating[0];
-    input.maxGuestRating = filters.guestRating[1];
+    input.minGuestRating = lowerOf("guestRating");
+    input.maxGuestRating = upperOf("guestRating");
   }
 
   /* The Boat Age slider edits these too, so `minBoatAge` / `maxBoatAge` are never sent alongside. */

@@ -122,6 +122,8 @@ export type BoatCardListing = {
 
 type PricedListing = {
   priceFrom: { amountMinor: number; currency: string } | null;
+  /* Absent on a My Bookings card: a booked charter has one price, the one that was paid. */
+  listPriceFrom?: { amountMinor: number; currency: string } | null;
   availability: { hasAvailableDates: boolean };
 };
 
@@ -148,6 +150,29 @@ export function boatCardPrice(
     return formatMoney(listing.priceFrom.amountMinor, listing.priceFrom.currency);
   }
   return listing.availability.hasAvailableDates ? t("priceOnRequest") : t("priceUnavailable");
+}
+
+/**
+ * The figure struck through beside the price, where the operator is selling below its own list.
+ *
+ * Undefined rather than empty for a card with nothing to strike, so the element is not rendered
+ * at all. Both amounts are the same charter, so they print in one currency.
+ *
+ * `parts` splits both figures the way a card that prints a share of the charter splits its
+ * price — the carousels quote a day of it. Splitting here rather than in the caller's formatter
+ * is what lets the two be compared after rounding: a discount worth less than a day's rounding
+ * leaves the pair equal, and a struck figure identical to the price beside it reads as a
+ * mistake rather than as an offer.
+ */
+export function boatCardListPrice(listing: PricedListing, formatMoney: MoneyFormatter, parts = 1) {
+  const { priceFrom, listPriceFrom } = listing;
+  if (!priceFrom || !listPriceFrom) return undefined;
+
+  const priceMinor = Math.round(priceFrom.amountMinor / parts);
+  const listPriceMinor = Math.round(listPriceFrom.amountMinor / parts);
+  if (listPriceMinor <= priceMinor) return undefined;
+
+  return formatMoney(listPriceMinor, listPriceFrom.currency);
 }
 
 /**

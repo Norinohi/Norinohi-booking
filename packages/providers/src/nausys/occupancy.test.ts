@@ -293,6 +293,44 @@ describe("mapFreeYachtToConfirmedOffer", () => {
     expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("obligatoryExtrasMinor");
   });
 
+  /*
+   * The card strikes this figure through beside the price. It comes back only where the
+   * vendor's own discounts account for the whole reduction, which is the same test the quote
+   * applies before it shows a discount line -- so the two surfaces never disagree about
+   * whether a charter is on offer.
+   */
+  it("carries the list price where the discounts account for the whole reduction", () => {
+    const yacht = firstFreeYacht();
+    yacht.price.priceListPrice = "4000.00";
+    yacht.price.clientPrice = "3340.00";
+    yacht.price.discounts = [
+      { discountItemId: 1, type: "PERCENTAGE", amount: "10" },
+      { discountItemId: 2, type: "AMOUNT", amount: "260.00" },
+    ];
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).toMatchObject({
+      priceMinor: 334_000,
+      listPriceMinor: 400_000,
+    });
+  });
+
+  it("strikes nothing through when the discounts do not add up to the price billed", () => {
+    const yacht = firstFreeYacht();
+    yacht.price.priceListPrice = "4000.00";
+    yacht.price.clientPrice = "3340.00";
+    yacht.price.discounts = [{ discountItemId: 1, type: "PERCENTAGE", amount: "10" }];
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("listPriceMinor");
+  });
+
+  it("strikes nothing through on a charter sold at its list price", () => {
+    const yacht = firstFreeYacht();
+    yacht.price.priceListPrice = yacht.price.clientPrice;
+    yacht.price.discounts = [{ discountItemId: 1, type: "AMOUNT", amount: "0.00" }];
+
+    expect(mapFreeYachtToConfirmedOffer(yacht)).not.toHaveProperty("listPriceMinor");
+  });
+
   it("drops an UNDER_OPTION yacht", () => {
     const yacht = firstFreeYacht();
     yacht.status = "UNDER_OPTION";
@@ -378,6 +416,80 @@ describe("createNausysAvailabilitySource", () => {
       { windowIndex: 1, page: 1 },
       { windowIndex: 2, page: 1 },
     ]);
+  });
+
+  /*
+   * The whole point of the targeting: a week 110 hulls advertise costs 110 asks, not 7,484.
+   * The pass is budgeted on the clock, and asking the fleet about every window spent that
+   * budget three periods in, leaving the rest of the advertised set unpriced.
+   */
+  it("asks only the hulls advertising a window that names them", async () => {
+    const { client, transport } = build();
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
+
+    const source = createNausysAvailabilitySource({
+      client,
+      companyIds: ["102701"],
+      years: [],
+      hotWindows: [
+        { periodFrom: "2026-07-04", periodTo: "2026-07-11", yachtIds: ["4711002"] },
+        { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
+      ],
+      loadYachtIds: () => Promise.resolve(["4711001", "4711002"]),
+    });
+
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
+
+    expect(transport.calls.map((call) => call.body)).toMatchObject([
+      { periodFrom: "04.07.2026", yachts: [4_711_002] },
+      { periodFrom: "11.07.2026", yachts: [4_711_001, 4_711_002] },
+    ]);
+  });
+
+  /*
+   * A narrowed ask has to narrow what its silence means with it, or the first targeted window
+   * refuses the rest of the fleet for a charter nobody put to the vendor on their behalf.
+   */
+  it("licenses refusals only for the hulls it asked about", async () => {
+    const { client, transport } = build();
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
+
+    const source = createNausysAvailabilitySource({
+      client,
+      companyIds: ["102701"],
+      years: [],
+      hotWindows: [
+        { periodFrom: "2026-07-04", periodTo: "2026-07-11", yachtIds: ["4711002"] },
+        { periodFrom: "2026-07-11", periodTo: "2026-07-18" },
+      ],
+      loadYachtIds: () => Promise.resolve(["4711001", "4711002"]),
+    });
+
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
+
+    expect(pages.map((page) => page.swept?.externalYachtIds)).toEqual([["4711002"], null]);
+  });
+
+  /* A hull that left the account between the two reads is not one to ask about. */
+  it("skips a window whose hulls we no longer list, without refusing anyone", async () => {
+    const { client, transport } = build();
+    transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
+
+    const source = createNausysAvailabilitySource({
+      client,
+      companyIds: ["102701"],
+      years: [],
+      hotWindows: [{ periodFrom: "2026-07-04", periodTo: "2026-07-11", yachtIds: ["9999999"] }],
+      loadYachtIds: () => Promise.resolve(["4711001"]),
+    });
+
+    const pages = [];
+    for await (const page of source.searchConfirmed?.(null) ?? []) pages.push(page);
+
+    expect(transport.calls).toHaveLength(0);
+    expect(pages).toEqual([{ offers: [], cursor: { windowIndex: 1, page: 1 } }]);
   });
 
   it("restarts at the persisted window", async () => {

@@ -12,6 +12,7 @@ export type FiltersState = {
 
   /** Plain calendar day, "2026-07-07". */
   startDate: string | null;
+  /** Nights as a string, or "any" when the visitor has not named a length. */
   duration: string;
   dateFlexibility: string;
 
@@ -79,7 +80,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   marina: [],
 
   startDate: null,
-  duration: "7",
+  duration: "any",
   dateFlexibility: "on-day",
 
   boatType: [],
@@ -160,7 +161,11 @@ export function countActiveFilters(
   // SAFETY: the keys come from DEFAULT_FILTERS, which is a complete FiltersState, so each one
   // is a key of it; Object.keys only ever reports them as bare strings.
   const keys = Object.keys(DEFAULT_FILTERS) as (keyof FiltersState)[];
-  const isActive = (key: keyof FiltersState) => !isSameValue(state[key], defaults[key]);
+  const isActive = (key: keyof FiltersState) =>
+    /* Flexibility widens a start date; with no date it narrows nothing, so it counts for nothing. */
+    key === "dateFlexibility" && state.startDate === null
+      ? false
+      : !isSameValue(state[key], defaults[key]);
   const isYearKey = (key: keyof FiltersState) => YEAR_KEYS.some((yearKey) => yearKey === key);
   const singles = keys.filter((key) => !isYearKey(key) && isActive(key)).length;
   return singles + (YEAR_KEYS.some(isActive) ? 1 : 0);

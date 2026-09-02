@@ -51,6 +51,8 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   bestOfferId: "loff_1",
   offerCount: 1,
   priceFromMinor: 1_240_000,
+  priceIsFrom: false,
+  listPriceFromMinor: null,
   currency: "EUR",
   priceFromMinorEur: 1_240_000,
   availableFrom: "2026-06-13",
@@ -94,6 +96,22 @@ describe("presentListingSummary", () => {
 
     expect(summary.priceFrom).toBeNull();
     expect(summary.priceDetails.securityDeposit?.amountMinor).toBe(310_000);
+  });
+
+  it("carries the undiscounted price for the card to strike through", () => {
+    const summary = presentListingSummary(doc({ listPriceFromMinor: 1_500_000 }));
+
+    expect(summary.listPriceFrom).toEqual({ amountMinor: 1_500_000, currency: "EUR" });
+  });
+
+  /* A struck figure with nothing beside it reads as the price, and a doubled one at that. */
+  it("withholds the struck price from a listing with no price of its own", () => {
+    const summary = presentListingSummary(
+      doc({ priceFromMinor: null, listPriceFromMinor: 1_500_000 }),
+    );
+
+    expect(summary.priceFrom).toBeNull();
+    expect(summary.listPriceFrom).toBeNull();
   });
 
   /*

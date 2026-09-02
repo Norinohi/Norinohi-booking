@@ -471,6 +471,7 @@
       "imageAlt": "{name} vor Anker in {marina}",
       "openGallery": "Fotogalerie öffnen",
       "priceFor": "Preis für {days, plural, one {# Tag} other {# Tage}}",
+      "priceFromLabel": "Ab",
       "priceOnRequest": "Auf Anfrage",
       "priceUnavailable": "Nicht verfügbar",
       "perPerson": "{price} pro Person",
@@ -729,6 +730,7 @@
     },
     "options": {
       "duration": "{days, plural, one {# Tag} other {# Tage}}",
+      "anyDuration": "Beliebige Dauer",
       "anyYear": "Beliebiges Baujahr",
       "dateFlexibility": {
         "on-day": "Am selben Tag",
@@ -1298,7 +1300,7 @@
     },
     "popular": {
       "from": "Ab",
-      "perPerson": "/ pro Person",
+      "perPeriod": "/ {days, plural, one {# Tag} other {# Tage}}",
       "seeAll": "Alle Yachten ansehen",
       "previous": "Vorherige Yachten",
       "next": "Nächste Yachten"

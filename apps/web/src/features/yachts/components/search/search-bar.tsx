@@ -24,10 +24,10 @@ import LocationSearch from "./location-search";
 
 function toRange(value: FiltersState): DateRange {
   if (!value.startDate) return { from: undefined, to: undefined };
-  return {
-    from: dayToNative(value.startDate),
-    to: dayToNative(addDays(value.startDate, Number(value.duration))),
-  };
+  const from = dayToNative(value.startDate);
+  /* A length nobody named has no end to draw; the field shows the one day instead of a band. */
+  if (value.duration === "any") return { from, to: undefined };
+  return { from, to: dayToNative(addDays(value.startDate, Number(value.duration))) };
 }
 
 /**

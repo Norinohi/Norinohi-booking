@@ -8,7 +8,7 @@ vi.hoisted(() => {
 import type { BookingManagerClient } from "./client";
 import { type BookingManagerConfig, resolveBookingManagerConfig } from "./config";
 import type { RestOffer } from "./endpoints";
-import { streamBookingManagerConfirmedOffers } from "./confirmed-offers";
+import { foldOffersToConfirmed, streamBookingManagerConfirmedOffers } from "./confirmed-offers";
 
 const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
@@ -132,5 +132,52 @@ describe("the periods the confirming sweep asks about", () => {
     });
 
     expect(pages[0]?.swept).toMatchObject({ startDate: "2026-10-03", endDate: "2026-10-10" });
+  });
+});
+
+describe("foldOffersToConfirmed", () => {
+  function offer(overrides: Partial<RestOffer> = {}): RestOffer {
+    // SAFETY: the fold reads these fields only; the endpoint schema is wider than this pass.
+    return {
+      yachtId: 501,
+      price: 3_340,
+      currency: "EUR",
+      ...overrides,
+    } as RestOffer;
+  }
+
+  /*
+   * The card strikes this figure through beside the price. `buildCharterLines` shows the
+   * quote's discount line on exactly this test, so a struck card and the detail page beneath
+   * it never disagree about whether the charter is on offer.
+   */
+  it("carries the start price where the stated percentage accounts for the reduction", () => {
+    const [confirmed] = foldOffersToConfirmed(
+      [offer({ startPrice: 4_000, discountPercentage: 16.5 })],
+      "2026-10-03",
+      "2026-10-10",
+    );
+
+    expect(confirmed).toMatchObject({ priceMinor: 334_000, listPriceMinor: 400_000 });
+  });
+
+  it("strikes nothing through when the percentage does not explain the difference", () => {
+    const [confirmed] = foldOffersToConfirmed(
+      [offer({ startPrice: 4_000, discountPercentage: 10 })],
+      "2026-10-03",
+      "2026-10-10",
+    );
+
+    expect(confirmed).not.toHaveProperty("listPriceMinor");
+  });
+
+  it("strikes nothing through on an offer the vendor states no discount for", () => {
+    const [confirmed] = foldOffersToConfirmed(
+      [offer({ startPrice: 4_000 })],
+      "2026-10-03",
+      "2026-10-10",
+    );
+
+    expect(confirmed).not.toHaveProperty("listPriceMinor");
   });
 });
