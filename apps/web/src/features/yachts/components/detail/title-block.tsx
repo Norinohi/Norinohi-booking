@@ -13,7 +13,7 @@ import { Link } from "@/i18n/navigation";
 import { useListingDetail } from "../../hooks/use-listing-detail";
 import { badgeLabel } from "@/lib/badge-label";
 import { crewLabel } from "@/lib/crew-label";
-import { MAP_MAX_ZOOM } from "@/lib/mapbox";
+import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
 import { serializeMapCamera } from "../../lib/search-params";
 import { toMarina } from "../../lib/to-marina";
 
@@ -30,7 +30,7 @@ const ACTION = "w-full md:w-auto";
  */
 function seeOnMapHref(listingId: string, base: { lat: number; lng: number }) {
   return serializeMapCamera(`/yachts/map?selected=${listingId}`, {
-    zoom: MAP_MAX_ZOOM,
+    zoom: MAP_MARINA_ZOOM,
     centre: { lat: base.lat, lng: base.lng },
   });
 }

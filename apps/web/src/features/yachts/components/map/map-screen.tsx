@@ -25,6 +25,7 @@ import { useListingCards } from "../../hooks/use-listing-cards";
 import { useMapClusters } from "../../hooks/use-map-clusters";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
+import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
 import { boundsOf, paddingOf } from "../../lib/map-camera";
 import { mapCameraParsers } from "../../lib/search-params";
 import MapBoatPopup from "./map-boat-popup";
@@ -88,20 +89,21 @@ const CAMERA_WRITE_MS = 500;
  */
 const PANEL_SHIFT_MS = 250;
 
+type Descent = { focusZoom: number; focusDurationMs: number };
+
 /**
- * The descent to a place the visitor has named: as close as the map goes, timed by how far it has to
- * come.
+ * The descent to a place the visitor has named: down to the marina, timed by how far it has to come.
  *
- * Nothing when the camera is already there, which is the ordinary case for "See on map" now that the
- * link carries its own camera — there is no flight to make, only the card to slide in.
+ * Nothing when the camera is already there or closer — pressing a marina from further in must not
+ * pull the view back out — which is also the ordinary case for "See on map" now that the link
+ * carries its own camera: there is no flight to make, only the card to slide in.
  */
-function descentTo(map: MapInstance): { focusZoom: number; focusDurationMs: number } | null {
-  const berth = map.getMaxZoom();
-  const levels = berth - map.getZoom();
+function descentTo(map: MapInstance): Descent | null {
+  const levels = MAP_MARINA_ZOOM - map.getZoom();
   if (levels <= 0) return null;
 
   return {
-    focusZoom: berth,
+    focusZoom: MAP_MARINA_ZOOM,
     focusDurationMs: Math.min(
       Math.max(levels * DESCENT_MS_PER_ZOOM, DESCENT_MIN_MS),
       DESCENT_MAX_MS,
@@ -161,6 +163,8 @@ export default function MapScreen() {
   const [listOpen, setListOpen] = useState(false);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(focusListingId);
   const [openCluster, setOpenCluster] = useState<OpenCluster | null>(null);
+  /* The descent owed to a boat the visitor pressed, held the same way a cluster holds its own. */
+  const [selectedDescent, setSelectedDescent] = useState<Descent | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
   const [focusDone, setFocusDone] = useState(false);
 
@@ -289,14 +293,22 @@ export default function MapScreen() {
     };
   }, [map, setCamera]);
 
+  /*
+   * A boat pressed on the map earns the same descent a marina does.
+   *
+   * Its card names a marina and shows a price, and until this the visitor was left reading that
+   * over the coastline they pressed from, with no idea which of the bays below it sits in.
+   */
   function selectListing(listingId: string) {
     setOpenCluster(null);
     setSelectedListingId(listingId);
+    setSelectedDescent(map ? descentTo(map) : null);
   }
 
   function dismissOverlays() {
     setSelectedListingId(null);
     setOpenCluster(null);
+    setSelectedDescent(null);
   }
 
   /*
@@ -374,6 +386,7 @@ export default function MapScreen() {
     if (!map) return;
     setSelectedListingId(focusListingId);
     setOpenCluster(null);
+    setSelectedDescent(null);
     setFocusDone(false);
   }, [map, focusListingId]);
 
@@ -395,6 +408,9 @@ export default function MapScreen() {
     map && !focusDone && focusListingId && selected?.listingId === focusListingId
       ? descentTo(map)
       : null;
+
+  /* One card, two ways of arriving at it: followed here by a link, or pressed on the map. */
+  const selectedFocus = detailDescent ?? selectedDescent;
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -460,9 +476,12 @@ export default function MapScreen() {
               coordinates={{ lat: selected.lat, lng: selected.lng }}
               boats={[toMapCard(selected.listing)]}
               map={map}
-              focusZoom={detailDescent?.focusZoom}
-              focusDurationMs={detailDescent?.focusDurationMs}
-              onFocusApplied={() => setFocusDone(true)}
+              focusZoom={selectedFocus?.focusZoom}
+              focusDurationMs={selectedFocus?.focusDurationMs}
+              onFocusApplied={() => {
+                setFocusDone(true);
+                setSelectedDescent(null);
+              }}
             />
           ) : openCluster ? (
             <MapBoatPopup
