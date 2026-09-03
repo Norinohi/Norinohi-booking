@@ -476,17 +476,22 @@ export const facetsSchema = z.object({
   }),
 });
 
-export const mapResultSchema = z.object({
-  markers: z.array(
+/**
+ * The map's own answer: one entry per marina, with how many of the search's boats lie there.
+ *
+ * No card rides along. A pin needs a place, a count and a price to show; the card belongs to the
+ * one marina somebody opens, and is fetched then.
+ */
+export const mapMarinaResultSchema = z.object({
+  marinas: z.array(
     z.object({
-      listingId: z.string(),
-      slug: z.string(),
-      title: z.string(),
+      baseId: z.string(),
+      name: z.string(),
       lat: z.number(),
       lng: z.number(),
+      count: z.number().int(),
       priceFromMinor: z.number().int().nullable(),
       currency: z.string().length(3).nullable(),
-      listing: listingSummarySchema,
     }),
   ),
 });

@@ -42,6 +42,16 @@ const SINGLE_POINT_ZOOM = 12;
 export const MAP_MIN_ZOOM = 3;
 export const MAP_MAX_ZOOM = 18;
 
+/**
+ * Where the camera comes to rest when it is sent to one marina — a boat pressed on the map, a
+ * cluster that turns out to be a single berth, or a "See on map" link.
+ *
+ * Short of the ceiling on purpose. Boats sharing a marina lie on one coordinate and no zoom will
+ * separate them, so the last two levels buy nothing and cost the coastline that says *where* the
+ * marina is. The ceiling stays where it is: somebody who wants to count pontoons still can.
+ */
+export const MAP_MARINA_ZOOM = 16;
+
 /** Web Mercator, normalised to the unit square: x and y both run 0 to 1 across the world. */
 const projectX = (lng: number) => (lng + 180) / 360;
 

@@ -20,11 +20,18 @@ import {
   useFilterChips,
 } from "@/components/shared/form/filters";
 
-import { type MapMarkerData, mapMarkersQueryOptions } from "../../api/queries";
+import {
+  listingSummariesQueryOptions,
+  MARINA_PAGE_SIZE,
+  type MapMarinaData,
+  mapMarinasQueryOptions,
+  marinaListingsQueryOptions,
+} from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
 import { useMapClusters } from "../../hooks/use-map-clusters";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
+import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
 import { boundsOf, paddingOf } from "../../lib/map-camera";
 import { mapCameraParsers } from "../../lib/search-params";
 import MapBoatPopup from "./map-boat-popup";
@@ -88,20 +95,21 @@ const CAMERA_WRITE_MS = 500;
  */
 const PANEL_SHIFT_MS = 250;
 
+type Descent = { focusZoom: number; focusDurationMs: number };
+
 /**
- * The descent to a place the visitor has named: as close as the map goes, timed by how far it has to
- * come.
+ * The descent to a place the visitor has named: down to the marina, timed by how far it has to come.
  *
- * Nothing when the camera is already there, which is the ordinary case for "See on map" now that the
- * link carries its own camera — there is no flight to make, only the card to slide in.
+ * Nothing when the camera is already there or closer — pressing a marina from further in must not
+ * pull the view back out — which is also the ordinary case for "See on map" now that the link
+ * carries its own camera: there is no flight to make, only the card to slide in.
  */
-function descentTo(map: MapInstance): { focusZoom: number; focusDurationMs: number } | null {
-  const berth = map.getMaxZoom();
-  const levels = berth - map.getZoom();
+function descentTo(map: MapInstance): Descent | null {
+  const levels = MAP_MARINA_ZOOM - map.getZoom();
   if (levels <= 0) return null;
 
   return {
-    focusZoom: berth,
+    focusZoom: MAP_MARINA_ZOOM,
     focusDurationMs: Math.min(
       Math.max(levels * DESCENT_MS_PER_ZOOM, DESCENT_MIN_MS),
       DESCENT_MAX_MS,
@@ -109,10 +117,13 @@ function descentTo(map: MapInstance): { focusZoom: number; focusDurationMs: numb
   };
 }
 
-type OpenCluster = {
-  lng: number;
-  lat: number;
-  leaves: MapMarkerData[];
+/**
+ * The marina whose card is open, and the descent that opened it.
+ *
+ * Its boats are not here: a marina can hold hundreds and they arrive a page at a time, keyed by the
+ * card the visitor is looking at.
+ */
+type OpenMarina = MapMarinaData & {
   /** Set where the camera still has to come down to the marina; the popup's own opening does it. */
   focusZoom?: number;
   /** Paired with it: how long that descent runs, scaled to how far it has to come. */
@@ -160,7 +171,11 @@ export default function MapScreen() {
   });
   const [listOpen, setListOpen] = useState(false);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(focusListingId);
-  const [openCluster, setOpenCluster] = useState<OpenCluster | null>(null);
+  const [openMarina, setOpenMarina] = useState<OpenMarina | null>(null);
+  /** Which of the open marina's boats is on screen, counted across all of them, not per page. */
+  const [marinaIndex, setMarinaIndex] = useState(0);
+  /* The descent owed to a boat the visitor pressed, held the same way a cluster holds its own. */
+  const [selectedDescent, setSelectedDescent] = useState<Descent | null>(null);
   const [map, setMap] = useState<MapInstance | null>(null);
   const [focusDone, setFocusDone] = useState(false);
 
@@ -191,17 +206,31 @@ export default function MapScreen() {
   const chips = useFilterChips(filters);
 
   const input = useSearchInput(filters, defaults, { sort: "recommended", page: 1 });
-  const { data } = useQuery(mapMarkersQueryOptions(input));
-  const markers = data?.markers ?? [];
+  const { data } = useQuery(mapMarinasQueryOptions(input));
+  const marinas = data?.marinas ?? [];
 
-  const { clusters, supercluster } = useMapClusters(markers, map);
+  const { clusters, supercluster } = useMapClusters(marinas, map);
 
-  const selected = selectedListingId
-    ? markers.find((marker) => marker.listingId === selectedListingId)
-    : undefined;
+  /* The page holding the card on screen. Only that page is fetched, so opening a marina of three
+     hundred costs the same as opening one of three. */
+  const marinaPage = Math.floor(marinaIndex / MARINA_PAGE_SIZE) + 1;
+  const { data: marinaBoats } = useQuery({
+    ...marinaListingsQueryOptions(input, openMarina?.baseId ?? "", marinaPage),
+    enabled: Boolean(openMarina),
+  });
+
+  /*
+   * A deep link names a boat, and the map only knows places — so the boat is fetched by name rather
+   * than looked for among the marinas. That is also what keeps the link working when the search it
+   * lands in excludes that boat, which used to leave the visitor on an empty map.
+   */
+  const { data: linked } = useQuery(
+    listingSummariesQueryOptions(selectedListingId ? [selectedListingId] : []),
+  );
+  const selected = linked?.[0];
 
   // A popup covers the top-left controls on small screens, so we fade them out while one is open.
-  const popupOpen = Boolean(selected || openCluster);
+  const popupOpen = Boolean(selected || openMarina);
 
   /*
    * The box the camera composes within: the container, less the panels lying over it and less a
@@ -289,14 +318,31 @@ export default function MapScreen() {
     };
   }, [map, setCamera]);
 
-  function selectListing(listingId: string) {
-    setOpenCluster(null);
-    setSelectedListingId(listingId);
+  /*
+   * A marina pressed on the map earns a descent, whether it holds one boat or three hundred.
+   *
+   * Its card names the place and shows a price, and without this the visitor read that over the
+   * coastline they pressed from, with no idea which of the bays below it sits in.
+   */
+  function pressMarina(marina: MapMarinaData) {
+    setSelectedListingId(null);
+    setSelectedDescent(null);
+    setMarinaIndex(0);
+
+    const opened: OpenMarina = { ...marina };
+    const descent = map ? descentTo(map) : null;
+    if (descent) {
+      opened.focusZoom = descent.focusZoom;
+      opened.focusDurationMs = descent.focusDurationMs;
+    }
+
+    setOpenMarina(opened);
   }
 
   function dismissOverlays() {
     setSelectedListingId(null);
-    setOpenCluster(null);
+    setOpenMarina(null);
+    setSelectedDescent(null);
   }
 
   /*
@@ -312,13 +358,13 @@ export default function MapScreen() {
    * about *where*. It rides the popup's own opening rather than being flown separately, or the two
    * fight for the camera and the card ends up somewhere the visitor is not looking.
    */
-  function pressCluster(clusterId: number, lng: number, lat: number) {
+  function pressCluster(clusterId: number) {
     setSelectedListingId(null);
     const leaves = supercluster.getLeaves(clusterId, Infinity).map((leaf) => leaf.properties);
     const expansionZoom = supercluster.getClusterExpansionZoom(clusterId);
 
     if (map && expansionZoom <= CLUSTER_EXPAND_MAX_ZOOM) {
-      setOpenCluster(null);
+      setOpenMarina(null);
 
       /* Asked for rather than flown, so the zoom can be eased off before the camera commits. No
          padding of its own: without one mapbox falls back to the map's, which already describes the
@@ -347,15 +393,10 @@ export default function MapScreen() {
       return;
     }
 
-    const opened: OpenCluster = { lng, lat, leaves };
-
-    const descent = map ? descentTo(map) : null;
-    if (descent) {
-      opened.focusZoom = descent.focusZoom;
-      opened.focusDurationMs = descent.focusDurationMs;
-    }
-
-    setOpenCluster(opened);
+    /* A cluster the map cannot break apart is several marinas sharing one point, which the data
+       says should not happen. Open the first of them rather than leaving the press unanswered. */
+    const first = leaves[0];
+    if (first) pressMarina(first);
   }
 
   /*
@@ -373,7 +414,8 @@ export default function MapScreen() {
   useEffect(() => {
     if (!map) return;
     setSelectedListingId(focusListingId);
-    setOpenCluster(null);
+    setOpenMarina(null);
+    setSelectedDescent(null);
     setFocusDone(false);
   }, [map, focusListingId]);
 
@@ -392,9 +434,10 @@ export default function MapScreen() {
    * flag cleared on render was routinely cleared first, and the deep link then merely panned.
    */
   const detailDescent =
-    map && !focusDone && focusListingId && selected?.listingId === focusListingId
-      ? descentTo(map)
-      : null;
+    map && !focusDone && focusListingId && selected?.id === focusListingId ? descentTo(map) : null;
+
+  /* One card, two ways of arriving at it: followed here by a link, or pressed on the map. */
+  const selectedFocus = detailDescent ?? selectedDescent;
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -426,52 +469,76 @@ export default function MapScreen() {
         >
           {clusters.map((feature, index) => {
             const [lng, lat] = feature.geometry.coordinates;
+            /*
+             * The marina case is taken first, and by the absence of `cluster` rather than by its
+             * presence: a cluster's properties are an intersection now that they carry a tally, and
+             * an intersection is not a discriminant TypeScript will narrow a compound test through.
+             */
+            const props = feature.properties;
 
-            if ("cluster" in feature.properties && feature.properties.cluster) {
-              const { cluster_id: clusterId, point_count: count } = feature.properties;
-              return (
+            if (!("cluster" in props)) {
+              /* A marina holding several boats keeps the count pill it wore when those boats were
+                 separate points; one holding a single boat stays a bare pin, as it always was. */
+              return props.count > 1 ? (
                 <MapClusterMarker
-                  key={`cluster-${clusterId}`}
+                  key={props.baseId}
                   coordinates={{ lat, lng }}
-                  count={count}
-                  label={t("clusterCount", { count })}
+                  count={props.count}
+                  label={t("clusterCount", { count: props.count })}
                   order={index}
-                  onSelect={() => pressCluster(clusterId, lng, lat)}
+                  onSelect={() => pressMarina(props)}
+                />
+              ) : (
+                <MapMarker
+                  key={props.baseId}
+                  coordinates={{ lat, lng }}
+                  label={props.name}
+                  selected={openMarina?.baseId === props.baseId}
+                  order={index}
+                  onSelect={() => pressMarina(props)}
                 />
               );
             }
 
-            const marker = feature.properties;
+            const { cluster_id: clusterId, count } = props;
             return (
-              <MapMarker
-                key={marker.listingId}
+              <MapClusterMarker
+                key={`cluster-${clusterId}`}
                 coordinates={{ lat, lng }}
-                label={marker.title}
-                selected={marker.listingId === selectedListingId}
+                count={count}
+                label={t("clusterCount", { count })}
                 order={index}
-                onSelect={() => selectListing(marker.listingId)}
+                onSelect={() => pressCluster(clusterId)}
               />
             );
           })}
 
           {selected ? (
             <MapBoatPopup
-              key={selected.listingId}
-              coordinates={{ lat: selected.lat, lng: selected.lng }}
-              boats={[toMapCard(selected.listing)]}
+              key={selected.id}
+              coordinates={{ lat: selected.base.lat, lng: selected.base.lng }}
+              boats={[toMapCard(selected)]}
               map={map}
-              focusZoom={detailDescent?.focusZoom}
-              focusDurationMs={detailDescent?.focusDurationMs}
-              onFocusApplied={() => setFocusDone(true)}
+              focusZoom={selectedFocus?.focusZoom}
+              focusDurationMs={selectedFocus?.focusDurationMs}
+              onFocusApplied={() => {
+                setFocusDone(true);
+                setSelectedDescent(null);
+              }}
             />
-          ) : openCluster ? (
+          ) : openMarina && marinaBoats ? (
+            /* Held back until the first page is in hand: an empty card with a pager reading "1 / 300"
+               is worse than the blink of waiting for it. */
             <MapBoatPopup
-              key={openCluster.leaves[0]?.listingId}
-              coordinates={{ lat: openCluster.lat, lng: openCluster.lng }}
-              boats={openCluster.leaves.map((leaf) => toMapCard(leaf.listing))}
+              key={openMarina.baseId}
+              coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
+              boats={marinaBoats.items.map((item) => toMapCard(item.listing, item))}
+              total={openMarina.count}
+              pageStart={(marinaPage - 1) * MARINA_PAGE_SIZE}
+              onActiveIndex={setMarinaIndex}
               map={map}
-              focusZoom={openCluster.focusZoom}
-              focusDurationMs={openCluster.focusDurationMs}
+              focusZoom={openMarina.focusZoom}
+              focusDurationMs={openMarina.focusDurationMs}
             />
           ) : null}
         </MapCanvas>

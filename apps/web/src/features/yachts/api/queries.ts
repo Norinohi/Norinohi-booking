@@ -25,14 +25,40 @@ export const suggestionsQueryOptions = (query: string) =>
     placeholderData: keepPreviousData,
   });
 
-export type MarkersInput = Parameters<AppRouterClient["charterSearch"]["mapMarkers"]>[0];
+export type MarinasInput = Parameters<AppRouterClient["charterSearch"]["mapMarinas"]>[0];
 
-export type MapMarkerData = Awaited<
-  ReturnType<AppRouterClient["charterSearch"]["mapMarkers"]>
->["markers"][number];
+export type MapMarinaData = Awaited<
+  ReturnType<AppRouterClient["charterSearch"]["mapMarinas"]>
+>["marinas"][number];
 
-export const mapMarkersQueryOptions = (input: MarkersInput) =>
-  orpc.charterSearch.mapMarkers.queryOptions({ input });
+/**
+ * Every marina the current filters have a boat at, with how many.
+ *
+ * One row per place rather than per hull, so the whole catalogue fits in one answer and the count
+ * on a pill is the real number. The boats themselves arrive only for the marina somebody opens —
+ * see `marinaListingsQueryOptions`.
+ */
+export const mapMarinasQueryOptions = (input: MarinasInput) =>
+  orpc.charterSearch.mapMarinas.queryOptions({ input });
+
+/** How many cards a page of a marina's boats carries; the popup pages through them. */
+export const MARINA_PAGE_SIZE = 20;
+
+/**
+ * One page of the boats lying at a marina, under the search's own filters.
+ *
+ * `marina` matches a base by name *or* id, so the id from the marina marker addresses it exactly.
+ * Previous data is kept while the next page loads, so paging the card never blanks it.
+ */
+export const marinaListingsQueryOptions = (input: ResultsInput, baseId: string, page: number) =>
+  orpc.charterSearch.results.queryOptions({
+    input: { ...input, marina: [baseId], page, pageSize: MARINA_PAGE_SIZE },
+    placeholderData: keepPreviousData,
+  });
+
+/** Card-ready summaries for an explicit set of ids, which is how a deep link finds its one boat. */
+export const listingSummariesQueryOptions = (listingIds: string[]) =>
+  orpc.listings.byIds.queryOptions({ input: { listingIds }, enabled: listingIds.length > 0 });
 
 /** Matches the `hours` tier the server caches this on, so hydration does not immediately refetch. */
 const ONE_HOUR = 60 * 60 * 1000;

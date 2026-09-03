@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Supercluster, { type PointFeature } from "supercluster";
 
-import type { MapMarkerData } from "../api/queries";
+import type { MapMarinaData } from "../api/queries";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 
 const CLUSTER_RADIUS = 60;
@@ -22,6 +22,9 @@ const CLUSTER_MAX_ZOOM = 22;
  * them. Only a view that leaves the margin, or a new zoom level, is worth rebuilding for.
  */
 const OVERSCAN = 0.2;
+
+/** What a cluster carries beyond mapbox's own bookkeeping: the boats under it, summed. */
+type ClusterCount = { count: number };
 
 type Bounds = [number, number, number, number];
 
@@ -78,8 +81,8 @@ function hasEscaped(current: Viewport | null, next: Viewport): boolean {
 }
 
 /*
- * Groups the search markers with supercluster so a marina full of boats reads as one count pill
- * instead of a stack of overlapping pins. The index is rebuilt only when the marker set changes;
+ * Groups the search's marinas with supercluster so a stretch of coast reads as one count pill
+ * instead of a scatter of overlapping pins. The index is rebuilt only when the marina set changes;
  * `getClusters` returns cluster features and lone-point features for the current bounds, `map-screen`
  * renders each accordingly and keeps the `supercluster` instance to expand a cluster (zoom) or list
  * its boats (tight marina).
@@ -90,20 +93,31 @@ function hasEscaped(current: Viewport | null, next: Viewport): boolean {
  * frame is what keeps that affordable — one read per painted frame at most — and `hasEscaped` is what
  * keeps it cheap, since most of those reads describe a view the current set already covers.
  */
-export function useMapClusters(markers: MapMarkerData[], map: MapInstance | null) {
+export function useMapClusters(marinas: MapMarinaData[], map: MapInstance | null) {
   const supercluster = useMemo(() => {
-    const index = new Supercluster<MapMarkerData>({
+    const index = new Supercluster<MapMarinaData, ClusterCount>({
       radius: CLUSTER_RADIUS,
       maxZoom: CLUSTER_MAX_ZOOM,
+      /*
+       * A pill counts boats, not pins.
+       *
+       * Each point is now a marina carrying its own tally, so supercluster's `point_count` answers
+       * how many marinas were merged — three, where the visitor can see a hundred boats are moored.
+       * `map` seeds each cluster with the marina's own number and `reduce` adds them up.
+       */
+      map: (marina) => ({ count: marina.count }),
+      reduce: (accumulated, props) => {
+        accumulated.count += props.count;
+      },
     });
-    const points: PointFeature<MapMarkerData>[] = markers.map((marker) => ({
+    const points: PointFeature<MapMarinaData>[] = marinas.map((marina) => ({
       type: "Feature",
-      properties: marker,
-      geometry: { type: "Point", coordinates: [marker.lng, marker.lat] },
+      properties: marina,
+      geometry: { type: "Point", coordinates: [marina.lng, marina.lat] },
     }));
     index.load(points);
     return index;
-  }, [markers]);
+  }, [marinas]);
 
   const [viewport, setViewport] = useState<Viewport | null>(null);
 

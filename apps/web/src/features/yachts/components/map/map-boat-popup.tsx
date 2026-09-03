@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
@@ -20,8 +20,20 @@ type PopupBoat = Omit<MapBoatCardProps, "layout" | "className"> & { id: string }
 
 export type MapBoatPopupProps = {
   coordinates: Coordinates;
-  /** One card for a lone marker; several when a marina's boats share the spot — paged, not stacked. */
+  /** The cards currently loaded. One boat, or one page of the marina's. */
   boats: PopupBoat[];
+  /**
+   * How many boats there are in all, when that is more than the page in hand.
+   *
+   * The pager counts to this. A marina can hold hundreds, and mounting hundreds of cards with their
+   * images to show one of them is not something the map can afford, so they arrive a page at a time
+   * and the number under the arrows stays the true one.
+   */
+  total?: number;
+  /** Where `boats[0]` sits in that whole. */
+  pageStart?: number;
+  /** Which card the visitor is on, so the caller can fetch the page holding it. */
+  onActiveIndex?: (index: number) => void;
   map: MapInstance | null;
   /** When set, the open animation also zooms to this level, rather than only sliding the card in. */
   focusZoom?: number;
@@ -46,6 +58,9 @@ export type MapBoatPopupProps = {
 export default function MapBoatPopup({
   coordinates,
   boats,
+  total,
+  pageStart = 0,
+  onActiveIndex,
   map,
   focusZoom,
   focusDurationMs,
@@ -54,8 +69,21 @@ export default function MapBoatPopup({
   const t = useTranslations("YachtsMap");
   const [index, setIndex] = useState(0);
 
-  const active = Math.min(index, boats.length - 1);
-  const many = boats.length > 1;
+  /* Read through a ref so a caller passing a fresh closure each render does not re-fire the report. */
+  const onActiveIndexRef = useRef(onActiveIndex);
+  onActiveIndexRef.current = onActiveIndex;
+
+  const count = total ?? boats.length;
+  const active = Math.min(index, Math.max(count - 1, 0));
+  const many = count > 1;
+
+  /* Clamped rather than trusted: while the next page is in flight the previous one is still on
+     screen, and the card being asked for is not in it yet. */
+  const shown = Math.min(Math.max(active - pageStart, 0), Math.max(boats.length - 1, 0));
+
+  useEffect(() => {
+    onActiveIndexRef.current?.(active);
+  }, [active]);
 
   /* Not the shell's default nudge: a paged card is tall, so on a phone it is pinned near the
      bottom, and a deep link flies to a boat that is usually off screen entirely. */
@@ -103,7 +131,7 @@ export default function MapBoatPopup({
       <div className="relative w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-[4px_4px_15px_rgba(0,0,0,0.08)] md:w-150.25">
         <div
           className="flex transition-transform duration-300 ease-out"
-          style={{ transform: `translateX(-${active * 100}%)` }}
+          style={{ transform: `translateX(-${shown * 100}%)` }}
         >
           {boats.map((item) => (
             <div key={item.id} className="w-full shrink-0">
@@ -130,12 +158,12 @@ export default function MapBoatPopup({
             <ChevronLeft className="size-5" />
           </button>
           <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-foreground">
-            {active + 1} / {boats.length}
+            {active + 1} / {count}
           </span>
           <button
             type="button"
             aria-label={t("nextBoat")}
-            disabled={active === boats.length - 1}
+            disabled={active === count - 1}
             onClick={() => setIndex(active + 1)}
             className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
           >
