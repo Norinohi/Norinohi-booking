@@ -13,9 +13,27 @@ import { Link } from "@/i18n/navigation";
 import { useListingDetail } from "../../hooks/use-listing-detail";
 import { badgeLabel } from "@/lib/badge-label";
 import { crewLabel } from "@/lib/crew-label";
+import { MAP_MAX_ZOOM } from "@/lib/mapbox";
+import { serializeMapCamera } from "../../lib/search-params";
 import { toMarina } from "../../lib/to-marina";
 
 const ACTION = "w-full md:w-auto";
+
+/**
+ * Where "See on map" points: the boat, and the camera already on it.
+ *
+ * Carrying the camera is what makes the map *open* at the marina rather than open on the Adriatic
+ * and then fly there. The flight was several seconds of an arc the visitor never asked for — they
+ * had already said where they wanted to be — and it loaded the wrong tiles on the way.
+ *
+ * Encoded through the map's own serializer, so the two never disagree about the format.
+ */
+function seeOnMapHref(listingId: string, base: { lat: number; lng: number }) {
+  return serializeMapCamera(`/yachts/map?selected=${listingId}`, {
+    zoom: MAP_MAX_ZOOM,
+    centre: { lat: base.lat, lng: base.lng },
+  });
+}
 
 export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
@@ -121,7 +139,7 @@ export default function TitleBlock() {
         <Button
           variant="neutral"
           nativeButton={false}
-          render={<Link href={`/yachts/map?selected=${data.id}`} />}
+          render={<Link href={seeOnMapHref(data.id, data.base)} />}
           className={ACTION}
         >
           <Map />

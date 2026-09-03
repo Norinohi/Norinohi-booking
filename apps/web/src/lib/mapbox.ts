@@ -29,7 +29,18 @@ const FRAME_PADDING = 56;
 /** A lone stop has no span to fit, so the frame falls back to a street-level view of it. */
 const SINGLE_POINT_ZOOM = 12;
 
-const MAX_ZOOM = 18;
+/**
+ * The range every live map runs in, and the ceiling a still is framed to.
+ *
+ * Here rather than in `MapCanvas` because pages that only *link* to a map need the ceiling too, and
+ * importing it from the canvas would pull mapbox-gl into their bundle.
+ *
+ * The floor is where one world still fills a wide container, so no zoom lets a second copy of the
+ * Adriatic — and a second set of its markers — be panned into frame. The ceiling is about a berth:
+ * past it the satellite tiles run out and the reward for going closer is blurred water.
+ */
+export const MAP_MIN_ZOOM = 3;
+export const MAP_MAX_ZOOM = 18;
 
 /** Web Mercator, normalised to the unit square: x and y both run 0 to 1 across the world. */
 const projectX = (lng: number) => (lng + 180) / 360;
@@ -84,9 +95,9 @@ export function staticMapFrame(
   const zoom =
     spanX > 0 || spanY > 0
       ? Math.min(
-          spanX > 0 ? Math.log2(usableWidth / (TILE_SIZE * spanX)) : MAX_ZOOM,
-          spanY > 0 ? Math.log2(usableHeight / (TILE_SIZE * spanY)) : MAX_ZOOM,
-          MAX_ZOOM,
+          spanX > 0 ? Math.log2(usableWidth / (TILE_SIZE * spanX)) : MAP_MAX_ZOOM,
+          spanY > 0 ? Math.log2(usableHeight / (TILE_SIZE * spanY)) : MAP_MAX_ZOOM,
+          MAP_MAX_ZOOM,
         )
       : SINGLE_POINT_ZOOM;
 

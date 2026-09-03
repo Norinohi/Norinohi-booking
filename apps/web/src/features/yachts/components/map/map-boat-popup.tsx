@@ -23,11 +23,34 @@ export type MapBoatPopupProps = {
   /** One card for a lone marker; several when a marina's boats share the spot — paged, not stacked. */
   boats: PopupBoat[];
   map: MapInstance | null;
-  /** When set, the open animation also zooms to this level — used by the "See on map" deep link. */
+  /** When set, the open animation also zooms to this level, rather than only sliding the card in. */
   focusZoom?: number;
+  /**
+   * How long that flight takes.
+   *
+   * Left off, mapbox derives it from how far the camera has to travel — right for a deep link
+   * arriving from another page, and far too leisurely for a marina the visitor has just pressed and
+   * can already see. Give it a number wherever the target is on screen.
+   */
+  focusDurationMs?: number;
+  /**
+   * Called once the focus flight has actually been ordered.
+   *
+   * A caller holding a one-shot has to spend it here rather than on a render: this card only opens
+   * after the map has settled, and a flag cleared any earlier is cleared before there is anything
+   * to fly.
+   */
+  onFocusApplied?: () => void;
 };
 
-export default function MapBoatPopup({ coordinates, boats, map, focusZoom }: MapBoatPopupProps) {
+export default function MapBoatPopup({
+  coordinates,
+  boats,
+  map,
+  focusZoom,
+  focusDurationMs,
+  onFocusApplied,
+}: MapBoatPopupProps) {
   const t = useTranslations("YachtsMap");
   const [index, setIndex] = useState(0);
 
@@ -59,7 +82,11 @@ export default function MapBoatPopup({ coordinates, boats, map, focusZoom }: Map
     const offset: [number, number] = [0, pinY - centreY];
 
     if (focusZoom != null) {
-      map.flyTo({ center, offset, zoom: focusZoom });
+      const flight: Parameters<MapInstance["flyTo"]>[0] = { center, offset, zoom: focusZoom };
+      /* Set only when the caller named a pace; mapbox works one out from the distance otherwise. */
+      if (focusDurationMs != null) flight.duration = focusDurationMs;
+      map.flyTo(flight);
+      onFocusApplied?.();
       return;
     }
 

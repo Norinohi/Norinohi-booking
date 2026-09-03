@@ -36,8 +36,22 @@ import MapMarker from "@/components/shared/data-display/map-marker";
 // Above this expansion zoom a cluster is a single marina whose boats never separate; list them instead.
 const CLUSTER_EXPAND_MAX_ZOOM = 16;
 
-// Zoom the map settles on when arriving from a listing's "See on map" deep link.
-const DETAIL_FOCUS_ZOOM = 11;
+/*
+ * How long a descent takes, per zoom level it has to cross.
+ *
+ * A fixed number cannot serve it. The 800ms that reads as deliberate over the two or three levels a
+ * splitting cluster moves is a snap over the six or seven between a coastline view and a berth, and
+ * the duration that suits the six drags over the two. Matching the rate instead — near enough the
+ * rate the splitting flight runs at — keeps every camera move on this screen feeling like the same
+ * hand, whatever zoom it started from.
+ */
+const DESCENT_MS_PER_ZOOM = 210;
+
+/* Bounds on it: a press from almost on top of a marina should still move rather than cut, and a
+   descent from the far end of the range should not become a tour. Mapbox's own pacing, which is
+   what this replaced, ran past four seconds on the longest of them. */
+const DESCENT_MIN_MS = 400;
+const DESCENT_MAX_MS = 1600;
 
 // Breathing room the camera keeps around whatever it frames, so a marker on the outermost boat is
 // inside the picture rather than balanced on its edge.
@@ -65,7 +79,45 @@ const CLUSTER_FLIGHT_MS = 800;
 // the address bar while somebody is working the map.
 const CAMERA_WRITE_MS = 500;
 
-type OpenCluster = { lng: number; lat: number; leaves: MapMarkerData[] };
+/*
+ * How long the map takes to give up the width a panel has just claimed, or to take it back.
+ *
+ * `setPadding` moves the camera the instant it is called, so opening the list made the map flinch
+ * sideways by half the panel. Close to the 200ms the chrome around it fades in, so the two read as
+ * one movement rather than a panel arriving and the map reacting to it.
+ */
+const PANEL_SHIFT_MS = 250;
+
+/**
+ * The descent to a place the visitor has named: as close as the map goes, timed by how far it has to
+ * come.
+ *
+ * Nothing when the camera is already there, which is the ordinary case for "See on map" now that the
+ * link carries its own camera — there is no flight to make, only the card to slide in.
+ */
+function descentTo(map: MapInstance): { focusZoom: number; focusDurationMs: number } | null {
+  const berth = map.getMaxZoom();
+  const levels = berth - map.getZoom();
+  if (levels <= 0) return null;
+
+  return {
+    focusZoom: berth,
+    focusDurationMs: Math.min(
+      Math.max(levels * DESCENT_MS_PER_ZOOM, DESCENT_MIN_MS),
+      DESCENT_MAX_MS,
+    ),
+  };
+}
+
+type OpenCluster = {
+  lng: number;
+  lat: number;
+  leaves: MapMarkerData[];
+  /** Set where the camera still has to come down to the marina; the popup's own opening does it. */
+  focusZoom?: number;
+  /** Paired with it: how long that descent runs, scaled to how far it has to come. */
+  focusDurationMs?: number;
+};
 
 const MapCanvas = dynamic(() => import("@/components/shared/data-display/map-canvas"), {
   ssr: false,
@@ -115,14 +167,23 @@ export default function MapScreen() {
   const shellRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLFormElement>(null);
   const listRef = useRef<HTMLElement>(null);
+  /* False until the map has been given its first padding, which is the one that must not animate:
+     the visitor has not opened anything yet, they are just arriving. */
+  const panelsSettled = useRef(false);
 
-  /* Read at construction and never again: the camera is written back as the visitor moves it, and
-     feeding that return trip into the opening view would fight them for the wheel. */
+  /*
+   * Where a newly built map opens, read live from the URL rather than frozen at first render.
+   *
+   * `initialViewState` is consumed once, when mapbox is constructed, and ignored for the rest of
+   * that map's life — so handing it the current value costs nothing while the visitor is driving.
+   * Freezing it did cost something: Next keeps this route mounted after a visit (Activity), and the
+   * map is torn down and rebuilt on the way back, so a frozen value reopened the view somebody left
+   * days ago. Following "See on map" landed on that stale water and then flew to the boat from it.
+   */
   const openingView =
     camera.zoom != null && camera.centre
       ? { longitude: camera.centre.lng, latitude: camera.centre.lat, zoom: camera.zoom }
       : undefined;
-  const openingViewRef = useRef(openingView);
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
@@ -159,7 +220,7 @@ export default function MapScreen() {
        would put a `zoom` and a `centre` in the URL of a visitor who never touched the map. */
     let applied = paddingOf(map);
 
-    const apply = () => {
+    const apply = (animate: boolean) => {
       const box = shell.getBoundingClientRect();
       if (box.width === 0) return;
 
@@ -193,11 +254,18 @@ export default function MapScreen() {
       }
 
       applied = next;
-      map.setPadding(next);
+
+      /* Eased where a panel opened or closed, because that is a movement the visitor caused and
+         should be able to follow. Jumped on the first pass and on a resize, where the map is
+         already being rebuilt around them and an animation would only lag behind the drag. */
+      if (animate) map.easeTo({ padding: next, duration: PANEL_SHIFT_MS });
+      else map.setPadding(next);
     };
 
-    apply();
-    const observer = new ResizeObserver(apply);
+    apply(panelsSettled.current);
+    panelsSettled.current = true;
+
+    const observer = new ResizeObserver(() => apply(false));
     observer.observe(shell);
     return () => observer.disconnect();
   }, [map, listOpen]);
@@ -232,13 +300,17 @@ export default function MapScreen() {
   }
 
   /*
-   * Clicking a cluster frames the boats it actually holds — unless they sit on one marina (expansion
-   * zoom past the cap) and can never separate, in which case they are listed in a popup instead of
-   * the map flying into empty water.
+   * Clicking a cluster frames the boats it actually holds.
    *
    * The boats decide the zoom, rather than a fixed step above the current one: a step overshoots a
    * tight cluster and undershoots a spread one, and neither lands with the group filling the screen.
    * Called from the marker's onClick (after touchend), so mapbox no longer cancels the flight.
+   *
+   * Past the expansion cap the boats share one marina and no zoom separates them, so the popup
+   * lists them instead. The camera still goes all the way down to that marina: the popup alone
+   * answered *what* is here and left the visitor at the zoom they pressed from, none the wiser
+   * about *where*. It rides the popup's own opening rather than being flown separately, or the two
+   * fight for the camera and the card ends up somewhere the visitor is not looking.
    */
   function pressCluster(clusterId: number, lng: number, lat: number) {
     setSelectedListingId(null);
@@ -275,31 +347,54 @@ export default function MapScreen() {
       return;
     }
 
-    setOpenCluster({ lng, lat, leaves });
+    const opened: OpenCluster = { lng, lat, leaves };
+
+    const descent = map ? descentTo(map) : null;
+    if (descent) {
+      opened.focusZoom = descent.focusZoom;
+      opened.focusDurationMs = descent.focusDurationMs;
+    }
+
+    setOpenCluster(opened);
   }
 
-  // Sync the selection with the deep-link param. On a soft nav back to an already-mounted map (Next 16
-  // keeps the route alive via Activity), the `useState` initializer above does not re-run for the new
-  // URL — so open the target's popup here and re-arm the one-time focus zoom.
+  /*
+   * What is open on the map follows the URL, re-read every time a map is built.
+   *
+   * Next keeps this route mounted once it has been visited (Activity), so the `useState` initialisers
+   * above do not run again on the way back — and an effect watching only the parameter does not fire
+   * either, because a parameter that is absent both times has not changed. A card opened on one visit
+   * therefore came back on the next, hanging over a URL that named no boat at all.
+   *
+   * The map instance is the honest signal for "this is a new visit": it is torn down on the way out
+   * and rebuilt on the way in, exactly once each. Its children only render once that new map is idle,
+   * which is after this has run, so the stale card never gets a frame to appear in.
+   */
   useEffect(() => {
-    if (!focusListingId) return;
+    if (!map) return;
     setSelectedListingId(focusListingId);
     setOpenCluster(null);
     setFocusDone(false);
-  }, [focusListingId]);
+  }, [map, focusListingId]);
 
-  // Deep link from a listing's "See on map": the target boat's popup opens (selectedListingId is
-  // seeded from the URL) and, the first time it does, its open animation also zooms in — one motion,
-  // instead of a flyTo that the popup's own recenter would immediately override. Consumed once so a
-  // later tap on the same boat doesn't yank the zoom back out.
-  const detailFocusZoom =
-    !focusDone && focusListingId && selected?.listingId === focusListingId
-      ? DETAIL_FOCUS_ZOOM
-      : undefined;
-
-  useEffect(() => {
-    if (detailFocusZoom != null) setFocusDone(true);
-  }, [detailFocusZoom]);
+  /*
+   * Deep link from a listing's "See on map": the target boat's popup opens (selectedListingId is
+   * seeded from the URL) and, the first time it does, its open animation also zooms in — one motion,
+   * instead of a flyTo that the popup's own recenter would immediately override. Consumed once so a
+   * later tap on the same boat doesn't yank the zoom back out.
+   *
+   * The button that sends visitors here now writes the camera into the link, so ordinarily the map
+   * has already opened on the boat and `descentTo` finds nothing left to do. This is what covers the
+   * rest: a `?selected=` URL that was bookmarked or passed on before the camera rode along.
+   *
+   * Spent by the card once it has actually ordered the flight, not by an effect watching this value.
+   * The card opens only after the map has settled, and the markers can arrive before that — so a
+   * flag cleared on render was routinely cleared first, and the deep link then merely panned.
+   */
+  const detailDescent =
+    map && !focusDone && focusListingId && selected?.listingId === focusListingId
+      ? descentTo(map)
+      : null;
 
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
@@ -325,7 +420,7 @@ export default function MapScreen() {
       >
         <MapCanvas
           locateControl
-          initialViewState={openingViewRef.current}
+          initialViewState={openingView}
           onReady={setMap}
           onBackgroundPress={dismissOverlays}
         >
@@ -365,7 +460,9 @@ export default function MapScreen() {
               coordinates={{ lat: selected.lat, lng: selected.lng }}
               boats={[toMapCard(selected.listing)]}
               map={map}
-              focusZoom={detailFocusZoom}
+              focusZoom={detailDescent?.focusZoom}
+              focusDurationMs={detailDescent?.focusDurationMs}
+              onFocusApplied={() => setFocusDone(true)}
             />
           ) : openCluster ? (
             <MapBoatPopup
@@ -373,6 +470,8 @@ export default function MapScreen() {
               coordinates={{ lat: openCluster.lat, lng: openCluster.lng }}
               boats={openCluster.leaves.map((leaf) => toMapCard(leaf.listing))}
               map={map}
+              focusZoom={openCluster.focusZoom}
+              focusDurationMs={openCluster.focusDurationMs}
             />
           ) : null}
         </MapCanvas>

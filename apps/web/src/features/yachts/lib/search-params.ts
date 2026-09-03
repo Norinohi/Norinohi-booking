@@ -153,6 +153,8 @@ export const mapCameraParsers = {
   }),
 };
 
+export const serializeMapCamera = createSerializer(mapCameraParsers);
+
 export const detailPeriodParsers = {
   checkIn: parseAsString,
   checkOut: parseAsString,
