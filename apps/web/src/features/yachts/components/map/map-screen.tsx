@@ -40,9 +40,6 @@ import MapClusterMarker from "./map-cluster-marker";
 import MapListPanel from "./map-list-panel";
 import MapMarker from "@/components/shared/data-display/map-marker";
 
-// Above this expansion zoom a cluster is a single marina whose boats never separate; list them instead.
-const CLUSTER_EXPAND_MAX_ZOOM = 16;
-
 /*
  * How long a descent takes, per zoom level it has to cross.
  *
@@ -123,7 +120,13 @@ function descentTo(map: MapInstance): Descent | null {
  * Its boats are not here: a marina can hold hundreds and they arrive a page at a time, keyed by the
  * card the visitor is looking at.
  */
-type OpenMarina = MapMarinaData & {
+type OpenMarina = {
+  /** Every base under the pin. One usually; several where marinas sit a stone's throw apart. */
+  baseIds: string[];
+  lat: number;
+  lng: number;
+  /** Boats across all of them, which is the number the pin itself was showing. */
+  count: number;
   /** Set where the camera still has to come down to the marina; the popup's own opening does it. */
   focusZoom?: number;
   /** Paired with it: how long that descent runs, scaled to how far it has to come. */
@@ -215,7 +218,7 @@ export default function MapScreen() {
      hundred costs the same as opening one of three. */
   const marinaPage = Math.floor(marinaIndex / MARINA_PAGE_SIZE) + 1;
   const { data: marinaBoats } = useQuery({
-    ...marinaListingsQueryOptions(input, openMarina?.baseId ?? "", marinaPage),
+    ...marinaListingsQueryOptions(input, openMarina?.baseIds ?? [], marinaPage),
     enabled: Boolean(openMarina),
   });
 
@@ -319,17 +322,27 @@ export default function MapScreen() {
   }, [map, setCamera]);
 
   /*
-   * A marina pressed on the map earns a descent, whether it holds one boat or three hundred.
+   * Opens whatever the visitor pressed, and brings the camera down to it.
    *
-   * Its card names the place and shows a price, and without this the visitor read that over the
-   * coastline they pressed from, with no idea which of the bays below it sits in.
+   * Takes a list because a pin is not always one marina: two of them can share a spot too tightly
+   * for any zoom to separate, and then the pin counts both. The card has to count both as well, or
+   * the pager promises a number the marina cannot reach.
+   *
+   * The descent matters as much as the card. Without it the visitor read a marina's name and price
+   * over the coastline they pressed from, with no idea which of the bays below it sits in.
    */
-  function pressMarina(marina: MapMarinaData) {
+  function openPlace(bases: MapMarinaData[], lng: number, lat: number) {
     setSelectedListingId(null);
     setSelectedDescent(null);
     setMarinaIndex(0);
 
-    const opened: OpenMarina = { ...marina };
+    const opened: OpenMarina = {
+      baseIds: bases.map((base) => base.baseId),
+      lat,
+      lng,
+      count: bases.reduce((total, base) => total + base.count, 0),
+    };
+
     const descent = map ? descentTo(map) : null;
     if (descent) {
       opened.focusZoom = descent.focusZoom;
@@ -352,31 +365,34 @@ export default function MapScreen() {
    * tight cluster and undershoots a spread one, and neither lands with the group filling the screen.
    * Called from the marker's onClick (after touchend), so mapbox no longer cancels the flight.
    *
-   * Past the expansion cap the boats share one marina and no zoom separates them, so the popup
-   * lists them instead. The camera still goes all the way down to that marina: the popup alone
-   * answered *what* is here and left the visitor at the zoom they pressed from, none the wiser
-   * about *where*. It rides the popup's own opening rather than being flown separately, or the two
-   * fight for the camera and the card ends up somewhere the visitor is not looking.
+   * A cluster is split whenever any zoom the map allows would split it, and the ceiling asked for
+   * is the map's own. A lower one used to stand here, from when the points were boats sharing a
+   * marina's coordinate; against marinas it made the map give up early, answering a pin that read
+   * "170" with a card for one of the two places behind it. The visitor could see both by zooming in
+   * by hand, which is the map admitting it should have done that itself.
+   *
+   * The card is for what nothing separates: several bases on all but the same spot. It rides the
+   * popup's own opening rather than being flown separately, or the two fight for the camera and the
+   * card ends up somewhere the visitor is not looking.
    */
-  function pressCluster(clusterId: number) {
+  function pressCluster(clusterId: number, lng: number, lat: number) {
     setSelectedListingId(null);
     const leaves = supercluster.getLeaves(clusterId, Infinity).map((leaf) => leaf.properties);
     const expansionZoom = supercluster.getClusterExpansionZoom(clusterId);
 
-    if (map && expansionZoom <= CLUSTER_EXPAND_MAX_ZOOM) {
+    const ceiling = map?.getMaxZoom() ?? MAP_MARINA_ZOOM;
+
+    if (map && expansionZoom <= ceiling) {
       setOpenMarina(null);
 
       /* Asked for rather than flown, so the zoom can be eased off before the camera commits. No
          padding of its own: without one mapbox falls back to the map's, which already describes the
          panels and the margin. */
       const bounds = boundsOf(leaves);
-      const camera = map.cameraForBounds(bounds, { maxZoom: CLUSTER_EXPAND_MAX_ZOOM });
+      const camera = map.cameraForBounds(bounds, { maxZoom: ceiling });
 
       if (camera?.zoom == null) {
-        map.fitBounds(bounds, {
-          maxZoom: CLUSTER_EXPAND_MAX_ZOOM,
-          duration: CLUSTER_FLIGHT_MS,
-        });
+        map.fitBounds(bounds, { maxZoom: ceiling, duration: CLUSTER_FLIGHT_MS });
         return;
       }
 
@@ -384,19 +400,15 @@ export default function MapScreen() {
         ...camera,
         /* Never eased below the zoom that actually breaks the cluster apart, or backing off would
            land on the same pill the visitor just pressed. */
-        zoom: Math.min(
-          Math.max(camera.zoom - CLUSTER_FIT_EASE, expansionZoom),
-          CLUSTER_EXPAND_MAX_ZOOM,
-        ),
+        zoom: Math.min(Math.max(camera.zoom - CLUSTER_FIT_EASE, expansionZoom), ceiling),
         duration: CLUSTER_FLIGHT_MS,
       });
       return;
     }
 
-    /* A cluster the map cannot break apart is several marinas sharing one point, which the data
-       says should not happen. Open the first of them rather than leaving the press unanswered. */
-    const first = leaves[0];
-    if (first) pressMarina(first);
+    /* A cluster no zoom can break apart is several marinas on all but the same spot. Open them
+       together: the pin counted them together, and the card has to agree with the pin. */
+    openPlace(leaves, lng, lat);
   }
 
   /*
@@ -486,16 +498,16 @@ export default function MapScreen() {
                   count={props.count}
                   label={t("clusterCount", { count: props.count })}
                   order={index}
-                  onSelect={() => pressMarina(props)}
+                  onSelect={() => openPlace([props], lng, lat)}
                 />
               ) : (
                 <MapMarker
                   key={props.baseId}
                   coordinates={{ lat, lng }}
                   label={props.name}
-                  selected={openMarina?.baseId === props.baseId}
+                  selected={openMarina?.baseIds.includes(props.baseId) === true}
                   order={index}
-                  onSelect={() => pressMarina(props)}
+                  onSelect={() => openPlace([props], lng, lat)}
                 />
               );
             }
@@ -508,7 +520,7 @@ export default function MapScreen() {
                 count={count}
                 label={t("clusterCount", { count })}
                 order={index}
-                onSelect={() => pressCluster(clusterId)}
+                onSelect={() => pressCluster(clusterId, lng, lat)}
               />
             );
           })}
@@ -530,7 +542,7 @@ export default function MapScreen() {
             /* Held back until the first page is in hand: an empty card with a pager reading "1 / 300"
                is worse than the blink of waiting for it. */
             <MapBoatPopup
-              key={openMarina.baseId}
+              key={openMarina.baseIds.join()}
               coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
               boats={marinaBoats.items.map((item) => toMapCard(item.listing, item))}
               total={openMarina.count}

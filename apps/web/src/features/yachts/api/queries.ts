@@ -45,14 +45,18 @@ export const mapMarinasQueryOptions = (input: MarinasInput) =>
 export const MARINA_PAGE_SIZE = 20;
 
 /**
- * One page of the boats lying at a marina, under the search's own filters.
+ * One page of the boats lying under a pin, under the search's own filters.
  *
- * `marina` matches a base by name *or* id, so the id from the marina marker addresses it exactly.
+ * Takes every base the pin covers rather than one: two marinas can sit a stone's throw apart, close
+ * enough that no zoom separates them, and the count on the pin is their sum. Asking for one of them
+ * made the pager count to a smaller number than the pin had promised.
+ *
+ * `marina` matches a base by name *or* id, so the ids from the markers address them exactly.
  * Previous data is kept while the next page loads, so paging the card never blanks it.
  */
-export const marinaListingsQueryOptions = (input: ResultsInput, baseId: string, page: number) =>
+export const marinaListingsQueryOptions = (input: ResultsInput, baseIds: string[], page: number) =>
   orpc.charterSearch.results.queryOptions({
-    input: { ...input, marina: [baseId], page, pageSize: MARINA_PAGE_SIZE },
+    input: { ...input, marina: baseIds, page, pageSize: MARINA_PAGE_SIZE },
     placeholderData: keepPreviousData,
   });
 
