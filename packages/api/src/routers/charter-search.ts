@@ -1,5 +1,6 @@
 import {
   listCatalogPages,
+  listMapMarinas,
   listSearchFacets,
   listSearchSuggestions,
   searchListings,
@@ -10,7 +11,7 @@ import {
   facetsSchema,
   catalogPageSchema,
   listingSearchInputSchema,
-  mapResultSchema,
+  mapMarinaResultSchema,
   partialListingSearchInputSchema,
   searchResultSchema,
   suggestionSchema,
@@ -21,8 +22,6 @@ import { effectivePeriod } from "../lib/dates";
 import { presentListingSummary } from "../presenters/listing";
 
 /** A map viewport shows every match at once, so it is not paged like the results list. */
-const MAP_MARKER_LIMIT = 500;
-
 export const charterSearchRouter = {
   results: publicProcedure
     .route({
@@ -93,51 +92,27 @@ export const charterSearchRouter = {
     .input(partialListingSearchInputSchema)
     .output(facetsSchema)
     .handler(({ context, input }) => listSearchFacets(context.db, input)),
-  mapMarkers: publicProcedure
+  mapMarinas: publicProcedure
     .route({
       method: "GET",
-      path: "/charter-search/map-markers",
-      operationId: "listCharterSearchMapMarkers",
-      summary: "List search map markers",
+      path: "/charter-search/map-marinas",
+      operationId: "listCharterSearchMapMarinas",
+      summary: "List search map marinas",
       description:
-        "Returns geo-positioned listing markers from the search read model for the current filter set. Markers include listing identity, coordinates, price hint, and a card-ready listing summary for map popups and side panels. The summary's labels follow locale, on the same rules as the results endpoint.",
+        "Returns the marinas the current filter set has boats at, one entry each, with the number of matching boats and the cheapest price among them. This is what the search map draws: boats share their base's coordinate, so a marker per boat is a stack of pins on one point and an answer that grows with the catalogue. Cards for a marina's boats come from the results endpoint when one is opened.",
       tags: ["Charter Search"],
-      successDescription: "Map markers for listings matching the supplied filters.",
+      successDescription: "Marinas holding boats that match the supplied search filters.",
       spec: withParameterExamples({
         destination: "Croatia",
         currency: "EUR",
         locale: "uk",
-        limit: 50,
       }),
     })
     .input(partialListingSearchInputSchema)
-    .output(mapResultSchema)
-    .handler(async ({ context, input }) => {
-      const markerLimit = input.limit ?? MAP_MARKER_LIMIT;
-      const results = await searchListings(context.db, {
-        ...input,
-        // Both knobs, because the two pagination paths read different ones: the cursor
-        // path takes `limit`, the page path takes `pageSize` and only falls back to
-        // `limit` when it is absent, which it never is once the contract defaults it.
-        limit: markerLimit,
-        pageSize: markerLimit,
-        page: undefined,
-      });
-      return {
-        markers: results.items
-          .filter((item) => item.lat !== null && item.lng !== null)
-          .map((item) => ({
-            listingId: item.listingId,
-            slug: item.slug,
-            title: item.title,
-            lat: item.lat ?? 0,
-            lng: item.lng ?? 0,
-            priceFromMinor: item.priceFromMinor,
-            currency: item.currency,
-            listing: presentListingSummary(item),
-          })),
-      };
-    }),
+    .output(mapMarinaResultSchema)
+    .handler(async ({ context, input }) => ({
+      marinas: await listMapMarinas(context.db, input),
+    })),
   suggestions: publicProcedure
     .route({
       method: "GET",

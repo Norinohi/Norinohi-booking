@@ -23,7 +23,6 @@ import type {
   ListingDetail,
   ListingFacets,
   ListingFacetOption,
-  ListingMapMarker,
   ListingPricedItem,
   ListingReview,
   ListingSearchDoc,
@@ -31,6 +30,7 @@ import type {
   ListingSearchPagination,
   ListingSearchResult,
   ListingSuggestion,
+  MapMarinaMarker,
   SearchSort,
   SuggestedRoute,
 } from "./types";
@@ -651,29 +651,39 @@ export async function listSearchFacets(
   };
 }
 
-export async function listMapMarkers(
+/**
+ * The search's boats, grouped into the marinas they sit at.
+ *
+ * Same `whereClause` the list runs on, so the map and the results can never disagree about what
+ * matches. Ungrouped this answer is unbounded — a catalogue of tens of thousands of hulls — and the
+ * limit that used to bound it is what left most of the map empty. Grouped it is one row per base,
+ * of which there are hundreds, so nothing has to be left out.
+ *
+ * `base_id` alone carries the group; the name and coordinates are aggregated rather than grouped on
+ * so that a base whose rows disagree by a decimal stays one pin instead of splitting into two.
+ */
+export async function listMapMarinas(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
-): Promise<ListingMapMarker[]> {
-  const rows = await db.execute<ListingMapMarker>(sql`
+): Promise<MapMarinaMarker[]> {
+  const rows = await db.execute<MapMarinaMarker>(sql`
     select
-      doc.listing_id as "listingId",
-      doc.slug,
-      doc.title,
-      doc.lat,
-      doc.lng,
-      doc.price_from_minor as "priceFromMinor",
-      doc.best_offer_id as "bestOfferId",
-      doc.offer_count as "offerCount",
-  doc.best_offer_id as "bestOfferId",
-  doc.offer_count as "offerCount",
-      doc.currency
+      doc.base_id as "baseId",
+      min(doc.base_name) as name,
+      min(doc.lat)::double precision as lat,
+      min(doc.lng)::double precision as lng,
+      count(*)::integer as count,
+      /* The cheapest boat's own price, picked in a single currency so the comparison holds, then
+         reported in the currency it was actually priced in. */
+      (array_agg(doc.price_from_minor order by doc.price_from_minor_eur asc nulls last))[1]::integer
+        as "priceFromMinor",
+      (array_agg(doc.currency order by doc.price_from_minor_eur asc nulls last))[1] as currency
     from listing_search_doc doc
     where ${whereClause(input)}
+      and doc.base_id is not null
       and doc.lat is not null
       and doc.lng is not null
-    order by doc.country asc, doc.region asc, doc.location asc, doc.title asc
-    limit ${normalizedLimit(input.limit ?? 50)}
+    group by doc.base_id
   `);
 
   return rows.rows;

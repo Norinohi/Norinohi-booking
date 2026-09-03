@@ -383,18 +383,24 @@ export type ListingFacets = {
   };
 };
 
-export type ListingMapMarker = {
-  listingId: string;
-  slug: string;
-  title: string;
+/**
+ * One marina on the search map, and how many of the search's boats lie there.
+ *
+ * The map draws a place, not a hull: boats share their base's coordinate, so a marker per boat is
+ * a stack of pins on one point and a payload that grows with the catalogue. Grouping at the source
+ * keeps the whole world inside one small answer, and gives the count pill a number that is true
+ * rather than one derived from however many boats a limit let through.
+ */
+export type MapMarinaMarker = {
+  baseId: string;
+  name: string;
   lat: number;
   lng: number;
+  /** Boats at this base that match the search. */
+  count: number;
+  /** The cheapest of them, in its own currency. */
   priceFromMinor: number | null;
   currency: string | null;
-  /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
-  bestOfferId: string | null;
-  /** How many vendors sell this hull. */
-  offerCount: number;
 };
 
 export type ListingSuggestion = {
