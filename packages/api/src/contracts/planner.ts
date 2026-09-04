@@ -23,6 +23,9 @@ export const plannerAnswersSchema = z
 
 export type PlannerAnswers = z.infer<typeof plannerAnswersSchema>;
 
+/** Both ends of a price band, always the same currency and the same length of charter. */
+const priceRangeSchema = z.object({ min: moneySchema, max: moneySchema });
+
 export const plannerRecommendationSchema = z.object({
   destination: z.object({
     /** Matches a `country` value on the search read model, e.g. "Greece". */
@@ -37,18 +40,31 @@ export const plannerRecommendationSchema = z.object({
   difficulty: z.enum(["easy", "moderate", "advanced"]),
   durationDays: z.number().int(),
   /**
-   * Estimated price per person per week. Derived from the yachts that actually
-   * matched, so it reflects real inventory; falls back to the band the visitor
-   * picked when nothing matched.
+   * What a week aboard the matching yachts costs, in both units the results screen prints.
+   *
+   * Derived from the yachts that actually matched, so it reflects real inventory; falls back
+   * to the band the visitor picked when nothing matched. Only yachts whose price covers a
+   * week are read, so both ends of both ranges describe the same length of charter.
    */
   estimatedPrice: z.object({
-    min: moneySchema,
-    max: moneySchema,
+    /** Per person, one week. The unit the budget step asked its question in. */
+    perPerson: priceRangeSchema,
+    /** The same charters undivided: what the whole yacht costs for that week. */
+    perBoat: priceRangeSchema,
+    /** The group size the per-person figures were divided by, so the screen can name it. */
+    guests: z.number().int(),
+    /** How many yachts the range was read from. Zero when it came from the budget answer. */
+    sampleSize: z.number().int(),
     /** True when the range came from the visitor's budget answer, not inventory. */
     fromBudgetAnswer: z.boolean(),
   }),
   /** The single recommended yacht, or null when nothing matched. */
   listing: listingSummarySchema.nullable(),
+  /**
+   * The recommended yacht's own price divided by the group, in that listing's currency so it
+   * sits beside the price on its card rather than beside the estimate's.
+   */
+  recommendedPerPerson: moneySchema.nullable(),
   matchCount: z.number().int(),
   /**
    * The equivalent search, so "see all matches" can deep-link into /yachts with the

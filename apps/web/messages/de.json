@@ -1186,13 +1186,11 @@
     "result": {
       "title": "Ihre perfekte Yachtreise",
       "subtitle": "Basierend auf Ihren Angaben empfehlen wir Folgendes.",
-      "perPersonWeek": "pro Person/Woche",
       "labels": {
         "yachtType": "Yachttyp",
         "skipper": "Skipper",
         "style": "Stil",
-        "duration": "Dauer",
-        "estPrice": "Ca. Preis"
+        "duration": "Dauer"
       },
       "yachtType": {
         "sailing": "Segelyacht",
@@ -1212,13 +1210,12 @@
       "viewDetails": "Details ansehen",
       "seeAllMatches": "Alle Treffer ansehen",
       "durationDays": "{days, plural, one {# Tag} other {# Tage}}",
-      "boat": {
-        "location": "Aphines, Griechenland",
-        "title": "Lagoon 42",
-        "tagBareboat": "Bareboat",
-        "tagFullCrew": "Mit Crew",
-        "from": "Ab",
-        "perPerson": "/ pro Person"
+      "price": {
+        "perPerson": "≈ {price} pro Person",
+        "similar": "Ähnliche Yachten",
+        "perPersonWeek": "≈ {range} pro Person und Woche",
+        "estimate": "Preisschätzung",
+        "perPersonDays": "≈ {price} pro Person für {days, plural, one {# Tag} other {# Tage}}"
       },
       "noMatch": {
         "title": "Noch kein exakter Treffer",

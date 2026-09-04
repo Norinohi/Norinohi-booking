@@ -3,7 +3,7 @@ import type { z } from "zod";
 
 import type { Database } from "../context";
 import type { PlannerAnswers, plannerRecommendationSchema } from "../contracts/planner";
-import { presentListingSummary } from "../presenters/listing";
+import { presentListingSummary, pricedPeriodDays, WEEKLY_RATE_DAYS } from "../presenters/listing";
 type Recommendation = z.infer<typeof plannerRecommendationSchema>;
 
 const CURRENCY = "EUR";
@@ -74,7 +74,6 @@ type TripBrief = {
   category: string | null;
   style: Recommendation["style"];
   durationDays: number;
-  weeks: number;
   guestsForMath: number;
   crew: string[];
   skipperRequired: boolean;
@@ -103,7 +102,6 @@ function resolveBrief(answers: PlannerAnswers): TripBrief {
   const skipperRequired = answers.experience !== "licensed";
 
   const budget = answers.budget ? BUDGETS[answers.budget] : undefined;
-  const weeks = Math.max(durationDays / 7, 1);
   const guestsForMath = group?.guests ?? NEUTRAL_GUESTS;
 
   return {
@@ -113,7 +111,6 @@ function resolveBrief(answers: PlannerAnswers): TripBrief {
     category: VIBE_CATEGORY[style] ?? null,
     style,
     durationDays,
-    weeks,
     guestsForMath,
     crew: skipperRequired ? ["skipper", "full-crew"] : ["bareboat"],
     skipperRequired,
@@ -123,12 +120,15 @@ function resolveBrief(answers: PlannerAnswers): TripBrief {
         : answers.experience === "some"
           ? "moderate"
           : "easy",
-    // The budget is per person per week but listings are priced per boat per
-    // period, so scale it up before filtering.
+    /*
+     * The budget is per person per week and a listing's price covers one week, so the group
+     * is the whole conversion. Multiplying by the trip's weeks as well let a three-week brief
+     * on the lowest band match yachts at three times the money the visitor named.
+     */
     maxPriceMinor:
       budget?.max === undefined || budget?.max === null
         ? null
-        : Math.round(budget.max * guestsForMath * weeks),
+        : Math.round(budget.max * guestsForMath),
   };
 }
 
@@ -190,11 +190,31 @@ export async function recommendTrip(
 ): Promise<Recommendation> {
   const brief = resolveBrief(answers);
   const { destination, category, durationDays, crew, style, skipperRequired } = brief;
-  const { difficulty, budget, weeks, guestsForMath, maxPriceMinor, group } = brief;
+  const { difficulty, budget, guestsForMath, maxPriceMinor, group } = brief;
 
   const matched = await findMatches(db, brief);
   const items = matched?.items ?? [];
-  const top = items[0] ?? null;
+  /*
+   * Only the yachts priced by the week take part, both in the range and in the pick.
+   *
+   * `price_from_minor` prices each listing's own first sellable charter, which is a week for
+   * most of the fleet and three days for a few. Reading those few as though they were weeks
+   * made the cheapest figure on the screen the price of a long weekend, and handed the
+   * recommendation to the yacht selling it: on a Spanish catamaran brief it ranked sixth
+   * cheapest of twenty-four that way, and twenty-first once its own week was priced.
+   */
+  const byTheWeek = items.filter((item) => pricedPeriodDays(item) === WEEKLY_RATE_DAYS);
+  /*
+   * The range and the recommendation are read off one list, so the yacht on the card is always
+   * one of the yachts the range describes. A listing whose price has no comparable figure sits
+   * both of them out rather than only the range: recommending it printed a card price the band
+   * beside it did not reach, which is the mismatch this screen exists to avoid.
+   */
+  const comparable = byTheWeek.filter(
+    (item) => item.priceFromMinorEur !== null && item.priceFromMinorEur > 0,
+  );
+  // A brief nothing comparable matched still gets a boat rather than an empty screen.
+  const top = comparable[0] ?? byTheWeek[0] ?? items[0] ?? null;
 
   return {
     destination,
@@ -204,8 +224,9 @@ export async function recommendTrip(
     style,
     difficulty,
     durationDays,
-    estimatedPrice: estimatePrice(items, guestsForMath, weeks, budget),
+    estimatedPrice: estimatePrice(comparable, guestsForMath, budget),
     listing: top ? presentListingSummary(top) : null,
+    recommendedPerPerson: top ? perPersonOf(top, guestsForMath) : null,
     matchCount: matched?.pagination?.totalItems ?? items.length,
     searchParams: {
       country: [destination.country],
@@ -220,8 +241,28 @@ export async function recommendTrip(
 }
 
 /**
- * Per person per week, from the yachts that matched. Falls back to the band the
+ * What the recommended yacht costs each member of the group, in the yacht's own currency.
+ *
+ * Read off the published price rather than the converted one, because this figure prints
+ * under that same price on the card: a euro figure beside a dollar price is two currencies
+ * claiming to be one charter.
+ */
+function perPersonOf(
+  doc: { priceFromMinor: number | null; currency: string | null },
+  guests: number,
+) {
+  return doc.priceFromMinor !== null && doc.priceFromMinor > 0
+    ? { amountMinor: Math.round(doc.priceFromMinor / guests), currency: doc.currency ?? CURRENCY }
+    : null;
+}
+
+/**
+ * A week aboard the yachts that matched, per person and per yacht. Falls back to the band the
  * visitor picked when nothing matched, so the figure is never invented.
+ *
+ * Every price here covers exactly one week, which is what the caller filtered for, so the
+ * range needs no scaling: dividing a weekly rate by the trip's weeks was reporting a
+ * three-week brief as a third of the money the same fleet costs a one-week brief.
  *
  * Read off the converted price rather than the published one, because this takes a min and a
  * max across the whole match and then labels the pair CURRENCY. On a Caribbean brief that
@@ -231,26 +272,33 @@ export async function recommendTrip(
 function estimatePrice(
   items: { priceFromMinorEur: number | null }[],
   guests: number,
-  weeks: number,
   budget: { min: number; max: number | null } | undefined,
 ): Recommendation["estimatedPrice"] {
-  const perPerson = items
+  const money = (amountMinor: number) => ({ amountMinor, currency: CURRENCY });
+  const perBoat = items
     .map((item) => item.priceFromMinorEur)
-    .filter((price): price is number => price !== null && price > 0)
-    .map((price) => Math.round(price / guests / weeks));
+    .filter((price): price is number => price !== null && price > 0);
 
-  if (perPerson.length === 0) {
+  if (perBoat.length === 0) {
     const fallback = budget ?? BUDGETS["300-600"];
+    const min = fallback?.min ?? 30_000;
+    const max = fallback?.max ?? min;
     return {
-      min: { amountMinor: fallback?.min ?? 30_000, currency: CURRENCY },
-      max: { amountMinor: fallback?.max ?? fallback?.min ?? 60_000, currency: CURRENCY },
+      perPerson: { min: money(min), max: money(max) },
+      perBoat: { min: money(min * guests), max: money(max * guests) },
+      guests,
+      sampleSize: 0,
       fromBudgetAnswer: true,
     };
   }
 
+  const min = Math.min(...perBoat);
+  const max = Math.max(...perBoat);
   return {
-    min: { amountMinor: Math.min(...perPerson), currency: CURRENCY },
-    max: { amountMinor: Math.max(...perPerson), currency: CURRENCY },
+    perPerson: { min: money(Math.round(min / guests)), max: money(Math.round(max / guests)) },
+    perBoat: { min: money(min), max: money(max) },
+    guests,
+    sampleSize: perBoat.length,
     fromBudgetAnswer: false,
   };
 }
