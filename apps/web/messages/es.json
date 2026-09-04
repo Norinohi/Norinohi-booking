@@ -683,6 +683,7 @@
       "anyCrew": "Cualquier tripulación",
       "allTypes": "Todos los tipos",
       "anyEquipment": "Cualquier equipamiento",
+      "searchEquipment": "Buscar equipamiento...",
       "anyDate": "Cualquier fecha"
     },
     "aria": {
