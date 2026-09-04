@@ -59,6 +59,21 @@ function currentYear(): number {
   return new Date().getUTCFullYear();
 }
 
+/*
+ * Where the length slider ends, as a share of the fleet rather than its longest hull.
+ *
+ * The slider is a control, not a census. Read off `max(length_m)` its track ran to 157 m, a
+ * single hull, and 99% of the catalogue sat inside the first fifth of it -- so the choice
+ * between a 44-, a 46- and a 50-footer, which is the choice people actually make here, was
+ * three pixels wide. Nothing above the cap becomes unreachable: a thumb resting on the end of
+ * its slider sends no upper bound at all (apps/web/src/features/yachts/lib/to-search-input.ts),
+ * so the top of the track reads "and longer".
+ *
+ * `percentile_disc` rather than `percentile_cont` so the end of the track is the length of a
+ * boat somebody is letting, not an interpolation between two of them.
+ */
+const LENGTH_CAP_PERCENTILE = 0.95;
+
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   /* Leads the list so the field opens on "no length stated" and `clearTo` resets to it. */
   { value: "any", label: "Any duration" },
@@ -575,7 +590,11 @@ export async function listSearchFacets(
     }>(sql`
       select
         min(doc.length_m) as "minLength",
-        max(doc.length_m) as "maxLength",
+        /* Capped rather than maxed -- see LENGTH_CAP_PERCENTILE. Zero is how a vendor writes a
+           length it does not know, so it is left out of the ordering the same way an unknown
+           build year is left out of the year range below. */
+        percentile_disc(${LENGTH_CAP_PERCENTILE}::double precision) within group (order by doc.length_m)
+          filter (where doc.length_m > 0) as "maxLength",
         min(doc.cabins) as "minCabins",
         max(doc.cabins) as "maxCabins",
         min(doc.berths) as "minBerths",
