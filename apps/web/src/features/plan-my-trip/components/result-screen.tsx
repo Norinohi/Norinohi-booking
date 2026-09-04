@@ -59,11 +59,12 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const skipper = t(recommendation.skipperRequired ? "skipper.yes" : "skipper.no");
   const duration = t("durationDays", { days: recommendation.durationDays });
 
-  const { min, max } = recommendation.estimatedPrice;
-  const price =
-    min.amountMinor === max.amountMinor
-      ? formatMoney(min.amountMinor, min.currency)
-      : `${formatMoney(min.amountMinor, min.currency)}–${formatMoney(max.amountMinor, max.currency)}`;
+  const { perPerson, fromBudgetAnswer } = recommendation.estimatedPrice;
+  /** One money when both ends agree, so a fleet of one is not quoted as a range against itself. */
+  const formatRange = (range: typeof perPerson) =>
+    range.min.amountMinor === range.max.amountMinor
+      ? formatMoney(range.min.amountMinor, range.min.currency)
+      : `${formatMoney(range.min.amountMinor, range.min.currency)} – ${formatMoney(range.max.amountMinor, range.max.currency)}`;
 
   const stats = [
     { label: t("labels.yachtType"), value: recommendation.yachtType },
@@ -72,13 +73,51 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
     { label: t("labels.duration"), value: duration },
   ];
 
-  const boatCard = recommendation.listing
-    ? toBoatCardProps(
-        tBadge,
-        recommendation.listing,
-        boatCardPrice(tCard, recommendation.listing, formatMoney),
-      )
+  const listing = recommendation.listing;
+  const boatCard = listing
+    ? toBoatCardProps(tBadge, listing, boatCardPrice(tCard, listing, formatMoney))
     : null;
+  /*
+   * The charter this price covers, off the listing itself rather than off the trip length.
+   * Most of the fleet sells the week the estimate is quoted in, but a few sell three days,
+   * and captioning one of those "price for 7 days" prices a charter nobody is selling.
+   */
+  const boatPriceLabel = listing
+    ? listing.priceIsFrom
+      ? tCard("priceFromLabel")
+      : tCard("priceFor", { days: listing.priceDetails.periodDays })
+    : "";
+  const boatPerPerson = recommendation.recommendedPerPerson
+    ? t("price.perPerson", {
+        price: formatMoney(
+          recommendation.recommendedPerPerson.amountMinor,
+          recommendation.recommendedPerPerson.currency,
+        ),
+      })
+    : "";
+  /*
+   * Always a price per person, so it reads against the card's own second line rather than
+   * against its total: the fleet's band where there is one, and the recommended charter's own
+   * share where there is not. Never the budget answer, which is the visitor's own input and put
+   * a figure on the screen that nothing on sale matches.
+   */
+  const priceLine = !fromBudgetAnswer
+    ? {
+        label: t("price.similar"),
+        value: t("price.perPersonWeek", { range: formatRange(perPerson) }),
+      }
+    : listing && recommendation.recommendedPerPerson
+      ? {
+          label: t("price.estimate"),
+          value: t("price.perPersonDays", {
+            price: formatMoney(
+              recommendation.recommendedPerPerson.amountMinor,
+              recommendation.recommendedPerPerson.currency,
+            ),
+            days: listing.priceDetails.periodDays,
+          }),
+        }
+      : null;
   const destinationImage =
     DESTINATION_IMAGES.get(recommendation.destination.country) ?? DEFAULT_DESTINATION_IMAGE;
   // /yachts has no `guests`/`category`/`maxPriceMinor` filters, so only `country` deep-links.
@@ -137,8 +176,8 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
               rating={boatCard.rating}
               tags={boatCard.tags}
               price={boatCard.price}
-              priceLabel={t("boat.from")}
-              priceSuffix={t("boat.perPerson")}
+              priceLabel={boatPriceLabel}
+              priceSuffix={<span className="block">{boatPerPerson}</span>}
               actionLabel={t("viewDetails")}
               actionRender={<Link href={boatCard.detailHref} />}
               saveRender={<WishlistButton listingId={boatCard.id} />}
@@ -179,15 +218,23 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
               ))}
             </div>
 
-            <div className="flex flex-col gap-1.5 rounded-xl bg-card px-4 py-3">
-              <StatLabel>{t("labels.estPrice")}</StatLabel>
-              <div className="flex flex-wrap items-end gap-1.5">
-                <span className="text-2xl leading-[1.1] font-semibold text-foreground">
-                  {price}
+            {/*
+              What a week costs on the yachts around this one, quoted in the same unit as the
+              card's own second line so the two can be read against each other: the card's
+              figure is one of the figures inside this band, because the range and the
+              recommendation come off one filtered list. Where no comparable price exists the
+              band would be the visitor's own budget answer, which prices nothing and read as a
+              contradiction beside a card six times its size, so the yacht's own charter stands
+              in its place instead.
+            */}
+            {priceLine ? (
+              <div className="flex flex-col gap-0.5 rounded-xl bg-card px-4 py-3">
+                <StatLabel>{priceLine.label}</StatLabel>
+                <span className="text-lg leading-tight font-semibold break-words text-natural-600">
+                  {priceLine.value}
                 </span>
-                <span className="text-base text-natural-600">{t("perPersonWeek")}</span>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col-reverse flex-wrap gap-3 md:flex-row">

@@ -683,6 +683,7 @@
       "anyCrew": "Cualquier tripulación",
       "allTypes": "Todos los tipos",
       "anyEquipment": "Cualquier equipamiento",
+      "searchEquipment": "Buscar equipamiento...",
       "anyDate": "Cualquier fecha"
     },
     "aria": {
@@ -1185,13 +1186,11 @@
     "result": {
       "title": "Tu viaje en yate perfecto",
       "subtitle": "Según tus preferencias, esto es lo que recomendamos.",
-      "perPersonWeek": "por persona/semana",
       "labels": {
         "yachtType": "Tipo de yate",
         "skipper": "Patrón",
         "style": "Estilo",
-        "duration": "Duración",
-        "estPrice": "Precio est."
+        "duration": "Duración"
       },
       "yachtType": {
         "sailing": "Velero",
@@ -1211,13 +1210,12 @@
       "viewDetails": "Ver detalles",
       "seeAllMatches": "Ver todas las coincidencias",
       "durationDays": "{days, plural, one {# día} other {# días}}",
-      "boat": {
-        "location": "Aphines, Grecia",
-        "title": "Lagoon 42",
-        "tagBareboat": "Sin tripulación",
-        "tagFullCrew": "Con tripulación",
-        "from": "Desde",
-        "perPerson": "/ por persona"
+      "price": {
+        "perPerson": "≈ {price} por persona",
+        "similar": "Yates similares",
+        "perPersonWeek": "≈ {range} por persona y semana",
+        "estimate": "Precio estimado",
+        "perPersonDays": "≈ {price} por persona por {days, plural, one {# día} other {# días}}"
       },
       "noMatch": {
         "title": "Aún no hay una coincidencia exacta",

@@ -683,6 +683,7 @@
       "anyCrew": "Будь-який екіпаж",
       "allTypes": "Усі типи",
       "anyEquipment": "Будь-яке обладнання",
+      "searchEquipment": "Пошук обладнання...",
       "anyDate": "Будь-яка дата"
     },
     "aria": {
@@ -1185,13 +1186,11 @@
     "result": {
       "title": "Ваша ідеальна яхтова подорож",
       "subtitle": "На основі ваших уподобань ось що ми рекомендуємо.",
-      "perPersonWeek": "на людину/тиждень",
       "labels": {
         "yachtType": "Тип яхти",
         "skipper": "Шкіпер",
         "style": "Стиль",
-        "duration": "Тривалість",
-        "estPrice": "Орієнтовна ціна"
+        "duration": "Тривалість"
       },
       "yachtType": {
         "sailing": "Вітрильна яхта",
@@ -1211,13 +1210,12 @@
       "viewDetails": "Детальніше",
       "seeAllMatches": "Переглянути всі збіги",
       "durationDays": "{days, plural, one {# день} few {# дні} many {# днів} other {# днів}}",
-      "boat": {
-        "location": "Афінес, Греція",
-        "title": "Lagoon 42",
-        "tagBareboat": "Без екіпажу",
-        "tagFullCrew": "З екіпажем",
-        "from": "Від",
-        "perPerson": "/ на особу"
+      "price": {
+        "perPerson": "≈ {price} з особи",
+        "similar": "Схожі яхти",
+        "perPersonWeek": "≈ {range} з особи за тиждень",
+        "estimate": "Орієнтовна ціна",
+        "perPersonDays": "≈ {price} з особи за {days, plural, one {# день} few {# дні} many {# днів} other {# днів}}"
       },
       "noMatch": {
         "title": "Поки що немає точного збігу",

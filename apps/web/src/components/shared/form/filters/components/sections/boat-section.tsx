@@ -46,6 +46,7 @@ export default function BoatSection({ value, set }: SectionProps) {
         value={value.equipment}
         onChange={(next) => set("equipment", next)}
         placeholder={t("placeholders.anyEquipment")}
+        searchPlaceholder={t("placeholders.searchEquipment")}
       />
     </Section>
   );

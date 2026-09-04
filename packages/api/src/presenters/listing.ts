@@ -3,7 +3,7 @@ import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 const EMPTY_IMAGE = "";
 
 /** `listing_price_period.kind = 'weekly'` is what the read model reads, so the rate is a week. */
-const WEEKLY_RATE_DAYS = 7;
+export const WEEKLY_RATE_DAYS = 7;
 
 /** UTC, matching the `date` columns the projection wrote against `current_date`. */
 function todayIso(): string {
@@ -16,42 +16,55 @@ function nightsBetween(checkIn: string, checkOut: string): number {
   return Math.round(ms / 86_400_000);
 }
 
-export function presentListingSummary(doc: ListingSearchDoc) {
-  const currency = doc.currency ?? "EUR";
-  /*
-   * Dropped once it has gone by: the columns are computed against the clock and are only as
-   * fresh as the last projection run, and a card offering a day that has already passed
-   * sends the visitor to a calendar that refuses it.
-   */
-  const bookablePeriod =
-    doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
-      ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
-      : null;
+/**
+ * The charter the card's price, dates and terms describe, or null when the listing has none.
+ *
+ * Dropped once it has gone by: the columns are computed against the clock and are only as
+ * fresh as the last projection run, and a card offering a day that has already passed
+ * sends the visitor to a calendar that refuses it.
+ */
+export function bookablePeriodOf(doc: ListingSearchDoc) {
+  return doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
+    ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
+    : null;
+}
 
-  /*
-   * The period the price actually covers, which is the charter printed beside it.
-   *
-   * It must never be the duration the visitor searched for: a three-day search captioning a
-   * week's rate "Price for 3 days" understated the trip it described by roughly 2.3x, and a
-   * weekly rate cannot be prorated into a shorter one anyway — NauSYS prices dailies from a
-   * separate list precisely because they are not a seventh of the week.
-   *
-   * A week is the fallback rather than the rule. `price_from_minor` is the rate for the
-   * bookable week plus its obligatory extras (see the `money` lateral in read-model.ts), so
-   * where there is a bookable period the price is that charter's, and captioning it "7 days"
-   * beside "Nov 24 → Nov 28" described a charter three days longer than the one on sale. Only
-   * where nothing is bookable does the figure fall back to the season minimum, and with no
-   * dates printed beside it the rate's own week is the honest period to name.
-   *
-   * The other direction is settled upstream rather than here: an advertised period has no
-   * price at all unless the vendor priced that exact charter, because the only other figure
-   * available is the published list rate, which both vendors discount off and which no
-   * arithmetic turns into a charter of another length. So this count captions a figure of the
-   * same length or captions nothing.
-   */
-  const periodDays = bookablePeriod
+/*
+ * The period the price actually covers, which is the charter printed beside it.
+ *
+ * It must never be the duration the visitor searched for: a three-day search captioning a
+ * week's rate "Price for 3 days" understated the trip it described by roughly 2.3x, and a
+ * weekly rate cannot be prorated into a shorter one anyway — NauSYS prices dailies from a
+ * separate list precisely because they are not a seventh of the week.
+ *
+ * A week is the fallback rather than the rule. `price_from_minor` is the rate for the
+ * bookable week plus its obligatory extras (see the `money` lateral in read-model.ts), so
+ * where there is a bookable period the price is that charter's, and captioning it "7 days"
+ * beside "Nov 24 → Nov 28" described a charter three days longer than the one on sale. Only
+ * where nothing is bookable does the figure fall back to the season minimum, and with no
+ * dates printed beside it the rate's own week is the honest period to name.
+ *
+ * The other direction is settled upstream rather than here: an advertised period has no
+ * price at all unless the vendor priced that exact charter, because the only other figure
+ * available is the published list rate, which both vendors discount off and which no
+ * arithmetic turns into a charter of another length. So this count captions a figure of the
+ * same length or captions nothing.
+ *
+ * It is also what makes two listings' prices comparable, which is why the planner reads it:
+ * a min and a max taken across a page that mixed a week and a long weekend described no
+ * fleet that exists.
+ */
+export function pricedPeriodDays(doc: ListingSearchDoc): number {
+  const bookablePeriod = bookablePeriodOf(doc);
+  return bookablePeriod
     ? nightsBetween(bookablePeriod.checkIn, bookablePeriod.checkOut)
     : WEEKLY_RATE_DAYS;
+}
+
+export function presentListingSummary(doc: ListingSearchDoc) {
+  const currency = doc.currency ?? "EUR";
+  const bookablePeriod = bookablePeriodOf(doc);
+  const periodDays = pricedPeriodDays(doc);
   // A non-positive price is a provider saying "no price", not "free", so it is
   // treated the same as a missing one rather than quoted as 0.
   const amountMinor =
