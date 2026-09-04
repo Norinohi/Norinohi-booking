@@ -74,6 +74,18 @@ function currentYear(): number {
  */
 const LENGTH_CAP_PERCENTILE = 0.95;
 
+/*
+ * Where the age slider's older end sits, and how far back the year selects list.
+ *
+ * The mirror of LENGTH_CAP_PERCENTILE: 0.05 leaves the oldest 5% of the fleet outside the
+ * control, the same share 0.95 leaves off the long end. Read off `min(year_built)` the range
+ * started at 1926, one hull, and the age slider offered a hundred years for a fleet whose
+ * boats are almost all under twenty-five. The end of the slider writes "any" rather than a
+ * bound (apps/web/src/components/shared/form/filters/lib/boat-age.ts), so the older end reads
+ * "and older" and nothing built before the cap stops being findable.
+ */
+const OLDEST_YEAR_PERCENTILE = 0.05;
+
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   /* Leads the list so the field opens on "no length stated" and `clearTo` resets to it. */
   { value: "any", label: "Any duration" },
@@ -605,8 +617,11 @@ export async function listSearchFacets(
         max(doc.price_from_minor_eur) as "maxMinor",
         /* Zero is how a vendor writes a build year it does not know, and it reached the range as
            a real one: the age slider then offered "up to 2026 years old". Filtered rather than
-           coalesced, because a fleet where nobody stated a year has no range to show. */
-        min(doc.year_built) filter (where doc.year_built > 0) as "minYear",
+           coalesced, because a fleet where nobody stated a year has no range to show.
+           Capped rather than minned on the old end -- see OLDEST_YEAR_PERCENTILE. */
+        percentile_disc(${OLDEST_YEAR_PERCENTILE}::double precision) within group (
+          order by doc.year_built
+        ) filter (where doc.year_built > 0) as "minYear",
         max(doc.year_built) filter (where doc.year_built > 0) as "maxYear",
         min(doc.rating) as "minRating",
         max(doc.rating) as "maxRating",
@@ -630,6 +645,12 @@ export async function listSearchFacets(
     currency: FX_BASE_CURRENCY,
   };
   const yearRange = numberRange(row?.minYear, row?.maxYear);
+  /*
+   * The selects list the same window the slider spans. Left whole they offered a hundred
+   * entries to pick a build year from, and the two controls over one constraint disagreed
+   * about where it started.
+   */
+  const yearsInRange = years.filter((option) => Number(option.value) >= yearRange.min);
 
   return {
     destinations: labelsFromOptions(countries),
@@ -648,7 +669,7 @@ export async function listSearchFacets(
       mainsailTypes,
       equipment,
       lengthUnits: DEFAULT_LENGTH_UNITS,
-      years: [{ value: "any", label: "Any year" }, ...years],
+      years: [{ value: "any", label: "Any year" }, ...yearsInRange],
     },
     ranges: {
       length: numberRange(row?.minLength, row?.maxLength),
@@ -1302,17 +1323,26 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("maxGuestRating") && input.maxGuestRating !== undefined) {
     parts.push(sql`doc.rating <= ${input.maxGuestRating}`);
   }
+  /*
+   * Zero is "not stated", the same reading the facets take of it, so a listing carrying one is
+   * not measured against a year at all. Only the upper bounds needed saying: nothing built in
+   * year zero passes `>= 1990`, but `<= 1930` let all ninety of the yearless listings through,
+   * and "built before 1930" answered with boats whose year nobody knows. Written on every one
+   * of the four so a bound that reaches zero from the other side -- a hand-edited `yearFrom=0`,
+   * an age wider than the calendar -- cannot reopen it.
+   */
+  const withStatedYear = (bound: ReturnType<typeof sql>) => sql`(doc.year_built > 0 and ${bound})`;
   if (!skip.has("yearFrom") && input.yearFrom !== undefined) {
-    parts.push(sql`doc.year_built >= ${input.yearFrom}`);
+    parts.push(withStatedYear(sql`doc.year_built >= ${input.yearFrom}`));
   }
   if (!skip.has("yearTo") && input.yearTo !== undefined) {
-    parts.push(sql`doc.year_built <= ${input.yearTo}`);
+    parts.push(withStatedYear(sql`doc.year_built <= ${input.yearTo}`));
   }
   if (!skip.has("minBoatAge") && input.minBoatAge !== undefined) {
-    parts.push(sql`doc.year_built <= ${currentYear() - input.minBoatAge}`);
+    parts.push(withStatedYear(sql`doc.year_built <= ${currentYear() - input.minBoatAge}`));
   }
   if (!skip.has("maxBoatAge") && input.maxBoatAge !== undefined) {
-    parts.push(sql`doc.year_built >= ${currentYear() - input.maxBoatAge}`);
+    parts.push(withStatedYear(sql`doc.year_built >= ${currentYear() - input.maxBoatAge}`));
   }
   /*
    * Both bounds arrive in FX_BASE_CURRENCY, matching the range facet that produced the slider,
