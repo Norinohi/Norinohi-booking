@@ -86,6 +86,20 @@ const LENGTH_CAP_PERCENTILE = 0.95;
  */
 const OLDEST_YEAR_PERCENTILE = 0.05;
 
+/*
+ * Where the price slider ends, on the same reading as LENGTH_CAP_PERCENTILE.
+ *
+ * The dearest charter in the catalogue is half a million euros. Anchored on it the slider
+ * opened on a band 95% of the fleet sits in the first twentieth of, and the first thing a
+ * visitor read about our prices was a number almost nobody here is shopping for. The end of
+ * the track sends no upper bound, so the expensive tail stays reachable; it just stops
+ * setting the scale everyone else is measured against.
+ *
+ * The home page's budget buckets divide this same range, and its last bucket ends on the cap,
+ * which `upperOf` reads as no bound at all -- so that bucket reads "and up" for free.
+ */
+const PRICE_CAP_PERCENTILE = 0.95;
+
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   /* Leads the list so the field opens on "no length stated" and `clearTo` resets to it. */
   { value: "any", label: "Any duration" },
@@ -614,7 +628,11 @@ export async function listSearchFacets(
         min(doc.heads) as "minBathrooms",
         max(doc.heads) as "maxBathrooms",
         min(doc.price_from_minor_eur) as "minMinor",
-        max(doc.price_from_minor_eur) as "maxMinor",
+        /* Capped rather than maxed -- see PRICE_CAP_PERCENTILE. A non-positive figure is a
+           vendor saying "no price", never "free", so it is left out of the ordering. */
+        percentile_disc(${PRICE_CAP_PERCENTILE}::double precision) within group (
+          order by doc.price_from_minor_eur
+        ) filter (where doc.price_from_minor_eur > 0) as "maxMinor",
         /* Zero is how a vendor writes a build year it does not know, and it reached the range as
            a real one: the age slider then offered "up to 2026 years old". Filtered rather than
            coalesced, because a fleet where nobody stated a year has no range to show.
