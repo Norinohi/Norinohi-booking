@@ -1,0 +1,1 @@
+ALTER TABLE "listing_search_doc" ADD COLUMN "best_value" boolean DEFAULT false NOT NULL;

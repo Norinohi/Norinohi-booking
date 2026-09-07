@@ -1264,6 +1264,7 @@ const searchColumns = sql`
   doc.security_deposit_when_insured_minor as "securityDepositWhenInsuredMinor",
   doc.deposit_insurance_included as "depositInsuranceIncluded",
   doc.pets_allowed as "petsAllowed",
+  doc.best_value as "bestValue",
   doc.rating,
   doc.review_count as "reviewCount",
   ${engagementColumns},

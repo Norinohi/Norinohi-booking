@@ -666,6 +666,13 @@
       "when": 1788506320440,
       "tag": "0094_silly_agent_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1788766675527,
+      "tag": "0095_hard_spot",
+      "breakpoints": true
     }
   ]
 }

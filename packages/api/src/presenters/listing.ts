@@ -81,6 +81,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       petsAllowed: doc.petsAllowed,
       depositInsuranceIncluded: doc.depositInsuranceIncluded,
       rating: Number(doc.rating),
+      bestValue: doc.bestValue,
     }),
     builder: doc.builder ?? "Unknown builder",
     model: doc.model ?? "Unknown model",
@@ -206,11 +207,20 @@ export type BadgeInput = {
   petsAllowed: boolean;
   depositInsuranceIncluded: boolean;
   rating: number;
+  /**
+   * Earned in the read model: the cheapest quarter of this hull's own model.
+   *
+   * Absent on the booking snapshot, which froze before the flag existed and has no cohort to
+   * compare against anyway -- a card recapping a charter somebody already bought is not a place
+   * to advertise how the price compared to its peers.
+   */
+  bestValue?: boolean;
 };
 
 /** Shared with the My Bookings card, which badges from a booking's frozen snapshot rather than a live doc. */
 export function badgesFor(input: BadgeInput) {
-  const badges = [{ code: "best-value", label: "Best value" }];
+  const badges: { code: string; label: string }[] = [];
+  if (input.bestValue) badges.push({ code: "best-value", label: "Best value" });
   if (input.petsAllowed) badges.push({ code: "pets-allowed", label: "Pets allowed" });
   if (input.depositInsuranceIncluded) {
     badges.push({ code: "deposit-insurance", label: "Deposit insurance included" });

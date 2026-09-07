@@ -109,6 +109,8 @@ export type ListingSearchDoc = {
   securityDepositWhenInsuredMinor: number | null;
   depositInsuranceIncluded: boolean;
   petsAllowed: boolean;
+  /** In the cheapest quarter of its own model; what the "Best value" badge is earned by. */
+  bestValue: boolean;
   rating: string;
   reviewCount: number;
   /** Counted live off our own tables, not stored on the doc — see `engagementColumns`. */
