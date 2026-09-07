@@ -53,7 +53,6 @@ export function toBoatCard(
   const status = availabilityStatus({
     hasAvailableDates: listing.availability.hasAvailableDates,
     hasBookablePeriod: listing.availability.bookablePeriod !== null,
-    priceIsFrom: listing.priceIsFrom,
   });
   const statusBadge = {
     label: availabilityLabel(tBadge, status),

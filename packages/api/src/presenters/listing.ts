@@ -1,3 +1,4 @@
+import { MIN_LEAD_DAYS } from "@yacht-charter/db/search";
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
 const EMPTY_IMAGE = "";
@@ -9,19 +10,6 @@ export const WEEKLY_RATE_DAYS = 7;
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
-
-/**
- * The earliest check-in a card may advertise, in whole days from today.
- *
- * One, because a charter checking in this afternoon is not on sale: the booking has to reach
- * the operator and come back confirmed, and the base has to hand the boat over. A card that
- * offered today sent the visitor into a checkout for a departure a few hours away.
- *
- * A day is a floor, not the real answer — each operator has its own notice period and neither
- * vendor publishes one, so this is the shortest lead time that is never wrong rather than the
- * right one per base.
- */
-const MIN_LEAD_DAYS = 1;
 
 /** `yyyy-MM-dd`, `days` whole days after today, read and returned in UTC. */
 function daysFromTodayIso(days: number): string {
@@ -39,10 +27,14 @@ function nightsBetween(checkIn: string, checkOut: string): number {
 /**
  * The charter the card's price, dates and terms describe, or null when the listing has none.
  *
- * Dropped once it has gone by, and once it is too close to sell: the columns are computed
- * against the clock and are only as fresh as the last projection run, so a card offering a day
- * that has already passed sends the visitor to a calendar that refuses it, and one offering
- * today sends them to a checkout for a boat that sails this afternoon.
+ * Dropped once it is too close to sell. The projection applies the same MIN_LEAD_DAYS floor when
+ * it chooses among candidates, so it no longer stores a period this can reject on a run of its
+ * own; what survives is the day that passes between runs, and this is the guard against it. A
+ * card offering a day that has already passed sends the visitor to a calendar that refuses it,
+ * and one offering today sends them to a checkout for a boat that sails this afternoon.
+ *
+ * Null here still costs the listing its dates and its price caption, which is why the floor
+ * belongs upstream too: there is no second candidate at this end of the pipeline to fall back to.
  */
 export function bookablePeriodOf(doc: ListingSearchDoc) {
   const earliest = daysFromTodayIso(MIN_LEAD_DAYS);
@@ -77,7 +69,17 @@ export function bookablePeriodOf(doc: ListingSearchDoc) {
  * fleet that exists.
  */
 export function pricedPeriodDays(doc: ListingSearchDoc): number {
-  const bookablePeriod = bookablePeriodOf(doc);
+  /*
+   * A "from" figure is the season's weekly floor whether or not a charter is advertised beside
+   * it, so its own week is the period to name. The bookable period's length may only caption a
+   * figure that prices that period, which is what `price_is_from = false` asserts.
+   *
+   * Reading the dates alone was wrong for every listing whose advertised charter came from the
+   * inferred branch of the projection, where a period is proven legal but nothing prices it --
+   * Lagoon 52 my-one-lagoon-52-f-5-cab-28481585 sells single nights under its 2026 rule, and its
+   * EUR 7,700 weekly floor was captioned "Price for 1 day".
+   */
+  const bookablePeriod = doc.priceIsFrom ? null : bookablePeriodOf(doc);
   return bookablePeriod
     ? nightsBetween(bookablePeriod.checkIn, bookablePeriod.checkOut)
     : WEEKLY_RATE_DAYS;

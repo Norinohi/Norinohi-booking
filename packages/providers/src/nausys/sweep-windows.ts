@@ -73,11 +73,16 @@ export function sweepWindows(
    * something, so the grid has nobody to ask about and its silence judges nobody.
    */
   gridYachtIds?: readonly string[],
+  /*
+   * This run's slice of the advertised tail; see `sweepRotation`. Last and optional so the
+   * callers that plan a single walk -- tests, one-off scripts -- keep taking the front of it.
+   */
+  rotation?: number,
 ): NausysHotWindowPlan {
   const plan = sweepPlan(
     advertised,
     fallback.map((window) => ({ startDate: window.periodFrom, endDate: window.periodTo })),
-    { today },
+    { today, ...(rotation === undefined ? null : { rotation }) },
   );
 
   const toWindow = (period: SweepPeriod): NausysHotWindow => ({

@@ -33,6 +33,31 @@ const PINNED_MEDIA_FIRST = sql`case when lm.listing_offer_id = ${PINNED_OFFER("m
 
 const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 1 else 2 end`;
 
+/**
+ * The earliest check-in a projected charter may start on, in whole days from today.
+ *
+ * The projection and the presenter have to apply the same floor. `bookablePeriodOf` re-tests
+ * the period this projection stored, because a doc is only as fresh as its last run and a day
+ * passes underneath it; when the two floors disagreed, the projection kept selecting charters
+ * the presenter would then reject. It had no second candidate to offer, so the listing lost its
+ * bookable period entirely and advertised itself on request while holding priced weeks later in
+ * the season -- Lagoon 52 my-one-lagoon-52-f-5-cab-28481585 held one confirmed night starting
+ * today and three confirmed December weeks behind it, and showed none of them.
+ *
+ * Applying it here is what makes the fallback work: the candidate list is ordered by check-in,
+ * so excluding the ones that are too close advances to the next sellable charter, priced by the
+ * laterals below against that period rather than against a charter nobody can buy.
+ *
+ * One day, because a charter checking in this afternoon is not on sale: the booking has to reach
+ * the operator and come back confirmed, and the base has to hand the boat over. A day is a floor,
+ * not the real answer -- each operator has its own notice period and neither vendor publishes
+ * one, so this is the shortest lead time that is never wrong rather than the right one per base.
+ */
+export const MIN_LEAD_DAYS = 1;
+
+/** The earliest day a charter may check in on, as SQL, so every candidate branch shares it. */
+const EARLIEST_CHECKIN = sql`(current_date + cast(${MIN_LEAD_DAYS} as int))`;
+
 export type RebuildListingSearchDocsOptions = {
   listingIds?: readonly string[];
 };
@@ -250,7 +275,7 @@ export async function rebuildListingSearchDocs(
           and slot.availability_confirmed
           and slot.status = 'available'
           and slot.price_minor is not null
-          and slot.start_date >= current_date
+          and slot.start_date >= ${EARLIEST_CHECKIN}
           /* A refusal is the later word, and occupancy from a newer dump outranks both. */
           and not exists (
             select 1
@@ -313,7 +338,7 @@ export async function rebuildListingSearchDocs(
          and price.end_date > free.start_date
         left join listing_checkin_rule rule on rule.listing_offer_id = o.id
         cross join lateral (
-          select greatest(free.start_date, price.start_date, current_date) as opens
+          select greatest(free.start_date, price.start_date, ${EARLIEST_CHECKIN}) as opens
         ) w
         cross join lateral (
           select case

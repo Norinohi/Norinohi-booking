@@ -64,6 +64,8 @@ export interface BookingManagerConfirmedOfferOptions {
   loadAdvertisedPeriods?: () => Promise<readonly SweepPeriod[]>;
   /** Today, for dropping the weeks that are already over. Injectable so the walk is testable. */
   today?: string;
+  /** This run's slice of the advertised tail; see `sweepRotation`. */
+  rotation?: number;
 }
 
 /**
@@ -195,6 +197,7 @@ export async function* streamBookingManagerConfirmedOffers(
   }));
   const plan = sweepPlan(advertised, grid, {
     today: options.today ?? new Date().toISOString().slice(0, 10),
+    ...(options.rotation === undefined ? null : { rotation: options.rotation }),
   });
 
   /*

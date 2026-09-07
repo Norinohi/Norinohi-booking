@@ -11,6 +11,7 @@
  */
 
 import {
+  addDays,
   type CharterConstraints,
   type DatePeriod,
   type RangeVerdict,
@@ -94,6 +95,37 @@ export function combinedRangeStatus(
 /** Whether a charter could start on this day with anybody. */
 export function combinedCanCheckIn(day: string, offers: readonly OfferConstraints[]): boolean {
   return offers.some((offer) => canCheckIn(day, offer));
+}
+
+/**
+ * How far ahead `firstCombinedCheckInDay` will look. Eighteen months, because a season that
+ * opens next spring is a normal thing for a calendar to have to reach and the vendors publish
+ * rates about a year out.
+ *
+ * Deliberately not `SEARCH_DAYS`, the 35-day window `firstBookablePeriod` walks: that one
+ * answers "what should the card advertise", where a charter beyond next month is not the
+ * listing's headline. A calendar is asked a different question — which month to open on — and
+ * over a boat whose season starts in six weeks the 35-day answer is "nowhere", which is how
+ * the grid came to open on a month with every cell greyed out.
+ */
+const CHECK_IN_HORIZON_DAYS = 550;
+
+/**
+ * The first day from `from` that any offer would let a charter begin on, or null within the
+ * horizon.
+ *
+ * The same predicate the grid greys its cells with, so the month this names always holds a
+ * clickable day.
+ */
+export function firstCombinedCheckInDay(
+  from: string,
+  offers: readonly OfferConstraints[],
+): string | null {
+  for (let offset = 0; offset <= CHECK_IN_HORIZON_DAYS; offset++) {
+    const day = addDays(from, offset);
+    if (combinedCanCheckIn(day, offers)) return day;
+  }
+  return null;
 }
 
 /**

@@ -139,6 +139,14 @@ export async function prefetchListingDetail(id: string, locale: string) {
       priceFromMinor: listing.priceFrom?.amountMinor ?? null,
       /* Carried beside the amount: the catalogue is not priced in one currency. */
       currency: listing.priceFrom?.currency ?? null,
+      /*
+       * What the amount buys, so the sentence built from it can say so. The generated copy read
+       * "From EUR 1,370 per week" off a figure that prices whatever charter the listing was
+       * quoted for - four days on one hull, three on another - and sat on the same page as a
+       * summary totalling EUR 1,263 for the week actually selected.
+       */
+      pricePeriodDays: listing.priceDetails.periodDays,
+      priceIsFrom: listing.priceIsFrom,
     },
   };
 }

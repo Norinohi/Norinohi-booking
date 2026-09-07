@@ -35,11 +35,15 @@ export default function EarnCta() {
               <p className="max-w-120.25 text-lg leading-[1.4] text-white md:text-xl">
                 {t("description")}
               </p>
+              {/* The contact form, not the catalogue. An operator who clicks "List Your Yacht"
+                  is offering a boat, and sending them to a page of other people's boats was the
+                  third button on this page to land on /yachts. There is no operator sign-up yet,
+                  so this is the enquiry form the team already answers. */}
               <Button
                 variant="neutral"
                 size="md"
                 nativeButton={false}
-                render={<Link href="/yachts" />}
+                render={<Link href="/support" />}
                 className="w-full md:w-fit"
               >
                 {t("cta")}

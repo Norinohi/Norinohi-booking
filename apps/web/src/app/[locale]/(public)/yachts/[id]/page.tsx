@@ -54,8 +54,17 @@ async function describe(seo: Seo): Promise<string[]> {
       ? t("metaSpecs", { category: seo.category, guests: seo.berths, cabins: seo.cabins })
       : null,
     crewLabel && seo.base ? t("metaPlace", { crew: crewLabel, place: seo.base }) : null,
+    /*
+     * Named for the charter it prices, or not named at all.
+     *
+     * "per week" was a claim about a figure that had no week in it: `priceFromMinor` prices
+     * whichever charter the listing was quoted for, and a floor makes no claim about any
+     * particular one. Both readings were printed as a weekly rate on the page and in the
+     * snippet, next to a booking summary that totalled something else.
+     */
     seo.priceFromMinor
-      ? t("metaPrice", {
+      ? t(seo.priceIsFrom ? "metaPriceFrom" : "metaPriceForDays", {
+          days: seo.pricePeriodDays,
           price: format.number(seo.priceFromMinor / 100, {
             style: "currency",
             currency: seo.currency ?? "EUR",

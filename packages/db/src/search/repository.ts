@@ -546,6 +546,16 @@ export async function getListingDetailByIdOrSlug(
       .filter((item) => item.crewRole !== null)
       .map((item) => pricedItem({ ...item, code: item.crewRole ?? item.code }, listing.currency)),
   ];
+  /* Crew the operator bills whatever the customer picks, which is what decides whether
+     bareboat is a choice this listing can honestly offer. */
+  const obligatoryCrewRoles = extras
+    .filter((item) => item.obligatory && item.crewRole !== null)
+    .map((item) => item.crewRole ?? "");
+  const crewOptions = crewOptionsFor(
+    listing.crewType,
+    crewRoles.map((role) => role.code),
+    obligatoryCrewRoles,
+  );
 
   return {
     ...listing,
@@ -560,13 +570,7 @@ export async function getListingDetailByIdOrSlug(
     includedAmenities,
     mandatoryExtras,
     optionalExtras,
-    crew: {
-      options: crewOptionsFor(
-        listing.crewType,
-        crewRoles.map((role) => role.code),
-      ),
-      roles: crewRoles,
-    },
+    crew: { options: crewOptions, roles: crewRoles },
     importantInformation: {
       charterCompany: listing.operator,
       yachtPickupAddress: placeLine(listing.baseName, listing.location, listing.country),
@@ -579,7 +583,10 @@ export async function getListingDetailByIdOrSlug(
       yachtPickup: { time: info?.checkInTime ?? null },
       yachtDropOff: { time: info?.checkOutTime ?? null },
       cancellationPaymentPolicies: "varies_by_selection",
-      sailingLicenseRequired: listing.crewType === "bareboat" ? "required" : "not_required",
+      /* Off the crew this listing can actually be taken with, not off the operator's label:
+         a hull whose skipper is an obligatory charge never sails without one, so telling its
+         customer to bring a licence asks for a document the charter does not need. */
+      sailingLicenseRequired: crewOptions.includes("bareboat") ? "required" : "not_required",
       /*
        * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
        * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"

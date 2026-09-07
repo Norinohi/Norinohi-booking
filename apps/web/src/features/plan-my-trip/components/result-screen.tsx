@@ -82,9 +82,16 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
    * The charter this price covers, off the listing itself rather than off the trip length.
    * Most of the fleet sells the week the estimate is quoted in, but a few sell three days,
    * and captioning one of those "price for 7 days" prices a charter nobody is selling.
+   *
+   * Where the two disagree the figure is captioned as the floor it is, rather than as a
+   * definite price for a charter of some third length: the panel beside it says "DURATION
+   * 7 days" and the card was answering with "Price for 1 day EUR 950", two claims about one
+   * trip that could not both be true. Nothing here can reprice the difference - the rate list
+   * does not survive being prorated into another length (see `read-model.ts`) - so the honest
+   * move is to stop naming a period the number does not price.
    */
   const boatPriceLabel = listing
-    ? listing.priceIsFrom
+    ? listing.priceIsFrom || listing.priceDetails.periodDays !== recommendation.durationDays
       ? tCard("priceIndicative")
       : tCard("priceFor", { days: listing.priceDetails.periodDays })
     : "";

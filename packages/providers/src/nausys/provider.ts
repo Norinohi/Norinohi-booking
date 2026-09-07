@@ -51,7 +51,7 @@ import {
   listAdvertisedCharterPeriods,
   listUnadvertisedYachtIds,
 } from "@yacht-charter/db/search/read-model";
-import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
+import { ADVERTISED_PERIOD_LIMIT, sweepRotation } from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
 
@@ -106,6 +106,8 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
   private readonly fallbackWindows: NausysHotWindow[];
   /** Read once, so a long-lived process sweeps the same day it started from. */
   private readonly today: string;
+  /** Which slice of the advertised tail this process sweeps; see `sweepRotation`. */
+  private readonly rotation: number;
   private readonly currency: string;
   private readonly quotes: ReturnType<typeof createNausysQuoteService>;
   private readonly bookings: ReturnType<typeof createNausysBookingService>;
@@ -126,6 +128,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     this.hotWindowOverride = options.hotWindows;
     this.fallbackWindows = upcomingCharterWeeks(now, DEFAULT_HOT_WINDOW_COUNT);
     this.today = now.toISOString().slice(0, 10);
+    this.rotation = sweepRotation(now);
     this.currency = options.currency ?? "EUR";
 
     this.quotes = createNausysQuoteService({
@@ -297,7 +300,13 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
                   listUnadvertisedYachtIds(this.db, { providerCode: this.key }),
                 ]);
 
-                return sweepWindows(advertised, this.fallbackWindows, this.today, gridYachtIds);
+                return sweepWindows(
+                  advertised,
+                  this.fallbackWindows,
+                  this.today,
+                  gridYachtIds,
+                  this.rotation,
+                );
               },
             }),
         currency: this.currency,

@@ -47,7 +47,9 @@ const GROUPS = [
 /** Payment-schedule `kind` → the amount-caption message on `sidebar.*`. */
 const SCHEDULE_AMOUNT_KEY = {
   deposit: "firstPayment",
-  full: "firstPayment",
+  /* Its own caption, not the deposit's: a policy that takes the whole charter up front produces
+     exactly one payment, and calling it the first promises a second that never arrives. */
+  full: "fullPayment",
   balance: "secondPayment",
   checkin_extras: "extrasPayment",
   security_deposit: "depositNote",
@@ -371,13 +373,20 @@ function PriceGroup({
                 <div className="flex items-start gap-2 px-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="text-base leading-5.5 text-foreground">{line.label}</p>
-                    {/* A line the charter already covers is collected nowhere, so naming a
-                        moment to pay it is naming a payment nobody will make. */}
-                    {line.payWhen === "at_check_in" && line.amount.amountMinor !== 0 ? (
+                    {/*
+                      A line the charter already covers is collected nowhere, so naming a moment
+                      to pay it is naming a payment nobody will make. The others all say when:
+                      captioning only the ones settled at the base left the fees folded into the
+                      prepayment - an APA among them - as the only rows with nothing under them,
+                      which read as if they were not being charged for yet.
+                    */}
+                    {line.amount.amountMinor === 0 ? null : (
                       <p className="text-xs font-semibold text-natural-500">
-                        {tExtras("payAtCheckIn")}
+                        {line.payWhen === "at_check_in"
+                          ? tExtras("payAtCheckIn")
+                          : tExtras("dueWithPrepayment")}
                       </p>
-                    ) : null}
+                    )}
                   </div>
                   <p className="shrink-0 text-base leading-5.5 font-bold text-foreground">
                     {line.amount.amountMinor === 0

@@ -14,6 +14,15 @@ import { useBooking } from "../booking-provider";
 
 const CONSENTS = ["terms", "cancellation"] as const;
 
+/** Payment-schedule `kind` to the message that names it. Mirrors the yacht page's own map. */
+const SCHEDULE_LABEL = {
+  deposit: "firstPayment",
+  full: "fullPayment",
+  balance: "secondPayment",
+  checkin_extras: "extrasPayment",
+  security_deposit: "depositNote",
+} as const;
+
 type SummaryRow = { label: string; value: ReactNode; note?: string; strong?: boolean };
 
 function Row({ row, last }: { row: SummaryRow; last: boolean }) {
@@ -64,12 +73,42 @@ export default function ReviewAndBookStep() {
     .filter((line) => line.group === "optional")
     .map((line) => line.label)
     .join(", ");
-  const balance = quote?.paymentSchedule.find((entry) => entry.kind === "balance");
+
+  /*
+   * Every line that moves the total, in the order the sidebar shows them.
+   *
+   * The screen used to name the boat price, the refundable deposit and the balance, and then a
+   * Total that none of them added up to: on a charter with 1,307 euro of obligatory fees the
+   * three figures on the page came to 5,000 or 5,500 against a Total of 5,307, and the missing
+   * amount was never written down anywhere the customer could see it. The deposit was part of
+   * why - it is refundable and belongs beside the total, not inside it - but the fees were
+   * simply absent. This is the last screen before money is committed, so it lists them.
+   */
+  const priced = (quote?.lines ?? []).filter(
+    (line) => line.kind !== "base" && line.amount.amountMinor !== 0,
+  );
+
+  /*
+   * The schedule, captioned the way the yacht page captions it. Two screens describing one
+   * schedule in two vocabularies is how the same 2,000 euro came to be the "1st payment" on the
+   * yacht page and the "2nd payment" here.
+   */
+  const schedule = quote?.paymentSchedule ?? [];
+  const scheduleLabel = (entry: (typeof schedule)[number]) => {
+    const amountKey = SCHEDULE_LABEL[entry.kind];
+    if (!entry.dueAt) return t(`schedule.${amountKey}`, { when: t("schedule.payNow") });
+    return t(`schedule.${amountKey}`, {
+      when:
+        entry.kind === "checkin_extras" || entry.kind === "security_deposit"
+          ? t("schedule.payAtCheckIn", { date: day(entry.dueAt) })
+          : t("schedule.payAt", { date: day(entry.dueAt) }),
+    });
+  };
 
   const rows: SummaryRow[] = quote
     ? [
         { label: t("yacht"), value: listing?.title ?? "" },
-        { label: t("dates"), value: `${day(quote.checkIn)} → ${day(quote.checkOut)}` },
+        { label: t("dates"), value: `${day(quote.checkIn)} \u2192 ${day(quote.checkOut)}` },
         { label: t("crew"), value: quote.crewType ? tCrew(quote.crewType) : "" },
         { label: t("people"), value: String(quote.guests) },
         { label: t("extras"), value: optionalNames || t("noExtras") },
@@ -77,22 +116,10 @@ export default function ReviewAndBookStep() {
           label: t("boatPrice"),
           value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency),
         },
-        ...(quote.securityDeposit
-          ? [
-              {
-                label: t("deposit"),
-                value: money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency),
-              },
-            ]
-          : []),
-        ...(balance
-          ? [
-              {
-                label: t("secondPayment", { date: balance.dueAt ? day(balance.dueAt) : "" }),
-                value: money(balance.amount.amountMinor, balance.amount.currency),
-              },
-            ]
-          : []),
+        ...priced.map((line) => ({
+          label: line.label,
+          value: money(line.amount.amountMinor, line.amount.currency),
+        })),
         {
           label: t("totalPrice"),
           value: money(quote.total.amountMinor, quote.total.currency),
@@ -103,6 +130,19 @@ export default function ReviewAndBookStep() {
             : undefined,
           strong: true,
         },
+        ...(quote.securityDeposit
+          ? [
+              {
+                label: t("deposit"),
+                value: money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency),
+                note: t("depositRefundable"),
+              },
+            ]
+          : []),
+        ...schedule.map((entry) => ({
+          label: scheduleLabel(entry),
+          value: money(entry.amount.amountMinor, entry.amount.currency),
+        })),
         {
           label: t("dueNow"),
           value: money(quote.deposit.amountMinor, quote.deposit.currency),
@@ -118,7 +158,7 @@ export default function ReviewAndBookStep() {
 
         <dl className="flex flex-col">
           {rows.map((row, index) => (
-            <Row key={row.label} row={row} last={index === rows.length - 1} />
+            <Row key={`${index}-${row.label}`} row={row} last={index === rows.length - 1} />
           ))}
         </dl>
       </section>

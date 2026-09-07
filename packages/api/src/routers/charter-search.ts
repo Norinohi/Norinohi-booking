@@ -96,13 +96,27 @@ function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: str
  * Measured before this: of 30 dated cards, 7 printed a definite price for a week they were not
  * quoted for, the worst off by EUR 8,332.
  */
-function pricedForShownPeriod(item: ListingSearchDoc, shown: { checkIn: string | null }) {
+function pricedForShownPeriod(
+  item: ListingSearchDoc,
+  shown: { checkIn: string | null; checkOut: string | null },
+) {
   const listing = presentListingSummary(item);
   if (listing.priceIsFrom || shown.checkIn === null) return listing;
 
-  /* No dates on the card means the undated fallback, which is the priced period itself. */
+  /*
+   * Both ends, because a charter is a length as well as a start.
+   *
+   * Comparing the check-in alone let the commonest version of this through untouched: a hull
+   * whose shortest charter is three nights, free from the searched Saturday, was admitted for a
+   * seven-night search, shown the seven-night dates it can sell, and captioned with the price of
+   * the three nights it was quoted for. Star Elisabeth Oceanis 34 read "Charter price, 3 days
+   * EUR 819" under "Oct 3 -> Oct 10", against EUR 1,321 for the week on the sister listing. The
+   * start matched, so the guard passed, and the figure was 38% of the charter named above it.
+   */
   const priced = bookablePeriodOf(item);
-  if (priced && priced.checkIn === shown.checkIn) return listing;
+  if (priced && priced.checkIn === shown.checkIn && priced.checkOut === shown.checkOut) {
+    return listing;
+  }
 
   return { ...listing, priceIsFrom: true };
 }
@@ -143,6 +157,8 @@ export const charterSearchRouter = {
       return {
         items: results.items.map((item) => ({
           listing: pricedForShownPeriod(item, periodFor(item, period, input.startDate)),
+          /* One `periodFor` per item would do; it is called twice because the spread below is
+             the card's own dates and the call above only reads them. Pure and cheap. */
           /*
            * The searched charter, or nothing. These used to fall back to the listing's
            * `available_from`/`available_to`, which is the outer envelope of every free slot

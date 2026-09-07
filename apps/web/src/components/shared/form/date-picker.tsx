@@ -39,6 +39,12 @@ type CommonProps = {
    * cells unexplained at exactly the moment somebody was clicking one.
    */
   hint?: string;
+  /*
+   * The month the grid opens on when nothing is picked yet. A calendar whose first sellable day
+   * is four months out opened on today and showed a grid with every cell greyed, which reads as
+   * a boat with no availability at all rather than as one whose season starts later.
+   */
+  defaultMonth?: Date;
   /** Controls the calendar popup; pair with `onOpenChange`. Omit both to leave it uncontrolled. */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
@@ -70,6 +76,7 @@ export default function DatePicker({
   disabled,
   allowPast = false,
   hint,
+  defaultMonth,
   open,
   onOpenChange,
   dateFormat = "day",
@@ -147,6 +154,7 @@ export default function DatePicker({
               className="w-full"
               mode="range"
               locale={locale}
+              defaultMonth={defaultMonth}
               disabled={isDayDisabled}
               selected={props.value}
               onSelect={props.onValueChange}
@@ -155,6 +163,7 @@ export default function DatePicker({
             <Calendar
               className="w-full"
               locale={locale}
+              defaultMonth={defaultMonth}
               disabled={isDayDisabled}
               selected={props.value}
               onSelect={props.onValueChange}

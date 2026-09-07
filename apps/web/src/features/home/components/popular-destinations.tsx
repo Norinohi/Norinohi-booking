@@ -86,12 +86,15 @@ export default function PopularDestinations() {
           </CarouselViewport>
 
           <div className="flex justify-center px-4 md:px-13.5 xl:px-17.5">
+            {/* The map, which is the one surface that browses by place. Sending this to /yachts
+                answered "show me the destinations" with a list of boats, and made the third
+                button on the page that goes there. */}
             <Button
               variant="neutral"
               size="md"
               className="w-full md:w-auto"
               nativeButton={false}
-              render={<Link href="/yachts" />}
+              render={<Link href="/yachts/map" />}
             >
               {t("seeAll")}
               <ArrowUpRight />
