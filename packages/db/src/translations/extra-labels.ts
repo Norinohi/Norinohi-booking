@@ -210,7 +210,13 @@ export const extraLabels = {
     es: "Seguro de cancelación",
     uk: "Страхування скасування",
   },
+  "Charter package": {
+    de: "Charterpaket",
+    es: "Paquete de chárter",
+    uk: "Чартерний пакет",
+  },
   Chef: { de: "Koch", es: "Chef", uk: "Кухар" },
+  Cleaning: { de: "Reinigung", es: "Limpieza", uk: "Прибирання" },
   "Cleaning fee": { de: "Reinigungsgebühr", es: "Tasa de limpieza", uk: "Плата за прибирання" },
   "Converter 12/220V": {
     de: "Spannungswandler 12/220 V",
@@ -237,6 +243,16 @@ export const extraLabels = {
   "Deck Matress": { de: "Decksmatratze", es: "Colchoneta de cubierta", uk: "Матрац на палубу" },
   Dinghy: { de: "Beiboot", es: "Auxiliar", uk: "Тендер" },
   "Dog on board": { de: "Hund an Bord", es: "Perro a bordo", uk: "Собака на борту" },
+  "Early afternoon boarding/check-in": {
+    de: "Check-in am frühen Nachmittag",
+    es: "Embarque a primera hora de la tarde",
+    uk: "Заїзд рано пополудні",
+  },
+  "Early boarding/check-in": {
+    de: "Früher Check-in",
+    es: "Embarque anticipado",
+    uk: "Ранній заїзд",
+  },
   "Early embarkation": {
     de: "Früher Check-in",
     es: "Embarque anticipado",
@@ -248,6 +264,11 @@ export const extraLabels = {
     es: "Ropa de cama adicional",
     uk: "Додаткова постільна білизна",
   },
+  "Extra cleaning": {
+    de: "Zusätzliche Reinigung",
+    es: "Limpieza adicional",
+    uk: "Додаткове прибирання",
+  },
   "Extra linen (set)": {
     de: "Zusätzliche Wäsche (Satz)",
     es: "Juego de ropa de cama adicional",
@@ -255,6 +276,11 @@ export const extraLabels = {
   },
   "Extra towel": { de: "Zusätzliches Handtuch", es: "Toalla adicional", uk: "Додатковий рушник" },
   "Final cleaning": { de: "Endreinigung", es: "Limpieza final", uk: "Фінальне прибирання" },
+  "Final cleaning and transitlog": {
+    de: "Endreinigung und Transitlog",
+    es: "Limpieza final y transit log",
+    uk: "Фінальне прибирання та транзитний журнал",
+  },
   "Fishing rod": { de: "Angelrute", es: "Caña de pescar", uk: "Вудка" },
   Gennaker: { de: "Gennaker", es: "Génnaker", uk: "Ґенакер" },
   Hammock: { de: "Hängematte", es: "Hamaca", uk: "Гамак" },
@@ -264,6 +290,8 @@ export const extraLabels = {
     es: "Azafata (con aprovisionamiento)",
     uk: "Хостес (з харчуванням)",
   },
+  "Ice box": { de: "Kühlbox", es: "Nevera portátil", uk: "Термобокс" },
+  "Ice maker": { de: "Eiswürfelbereiter", es: "Máquina de hielo", uk: "Льодогенератор" },
   "Internet pack unlimited": {
     de: "Internetpaket unbegrenzt",
     es: "Paquete de internet ilimitado",
@@ -275,6 +303,11 @@ export const extraLabels = {
     de: "Einweisung in die Navigation",
     es: "Instrucción de navegación",
     uk: "Навчання навігації",
+  },
+  "NESPRESSO coffee machine": {
+    de: "Nespresso-Kaffeemaschine",
+    es: "Cafetera Nespresso",
+    uk: "Кавомашина Nespresso",
   },
   "One Way Fee": { de: "Einweggebühr", es: "Tasa de trayecto único", uk: "Плата за перегін" },
   Outboard: { de: "Außenborder", es: "Motor fueraborda", uk: "Підвісний мотор" },
@@ -300,6 +333,7 @@ export const extraLabels = {
     uk: "Послуга закупівлі продуктів",
   },
   "Railing net": { de: "Relingnetz", es: "Red de seguridad", uk: "Захисна сітка на леєрах" },
+  "Regatta charge": { de: "Regattagebühr", es: "Tasa de regata", uk: "Регатний збір" },
   SUP: { de: "SUP", es: "Paddle surf", uk: "Сапборд" },
   "SUP (Stand Up Paddle)": {
     de: "SUP (Stand-up-Paddle)",
@@ -346,5 +380,10 @@ export const extraLabels = {
   "Transit log": { de: "Transitlog", es: "Transit log", uk: "Транзитний журнал" },
   "Welcome pack": { de: "Willkommenspaket", es: "Pack de bienvenida", uk: "Вітальний набір" },
   "Wi-Fi": { de: "WLAN", es: "Wi-Fi", uk: "Wi-Fi" },
+  "WI-FI Internet connection on boat": {
+    de: "WLAN an Bord",
+    es: "Conexión Wi-Fi a bordo",
+    uk: "Wi-Fi на борту",
+  },
   "Wifi Unlimited": { de: "WLAN unbegrenzt", es: "Wi-Fi ilimitado", uk: "Безлімітний Wi-Fi" },
 } as const;
