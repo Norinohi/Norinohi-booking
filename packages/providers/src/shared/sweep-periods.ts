@@ -59,23 +59,30 @@ export const ADVERTISED_HEAD_LIMIT = 60;
  *
  * The tail is a backlog, not a freshness surface: its periods carry one to five cards each, and
  * what they need is to be asked about at all rather than asked about hourly. So a run takes a
- * bounded slice and the next takes the following one, walking the whole tail in
- * `ceil(tail / this)` runs -- sixteen hours for the 234 NauSYS periods, three for the 44
- * Booking Manager ones, on the hourly schedule in docs/scheduled-jobs.md.
+ * bounded slice and the next takes the following one, walking the whole 234-period NauSYS tail
+ * in two runs and the 44-period Booking Manager one in a single run, on the hourly schedule in
+ * docs/scheduled-jobs.md.
  *
  * The size is set by what the grid can spare, because the grid queues behind this and the pass
- * is capped by wall-clock rather than by completeness. At the 3.4s per call measured in
- * `streamNausysConfirmedOffers` and the 5 minute DEFAULT_HOT_WINDOW_BUDGET_MS, a 60-period head
- * leaves about 28 calls for the grid; this leaves about 13, which stretches the grid's cycle
- * from roughly two runs to roughly four rather than stopping it. Twenty-five leaves three, and
- * forty leaves it nothing at all -- and the grid is the half that rescues the 493 hulls
- * advertising no charter, so starving it trades one silent failure for another.
+ * is capped by wall-clock rather than by completeness. Measured against NauSYS `freeYachts` on
+ * the sync lane, over two advertised weeks, three calls each:
  *
- * That arithmetic is deliberately pessimistic: 3.4s is the cost of a *250-hull* batch, and a
- * tail period carries one to five hulls, so its real call is cheaper by some margin nobody has
- * measured. Measure one and this can go up.
+ *     1 hull ~340-390ms | 5 hulls ~330-410ms | 100 hulls ~1.0-1.1s | 250 hulls ~1.5-1.7s
+ *
+ * A call is mostly fixed cost, so a tail period -- one to five hulls -- is roughly a quarter of
+ * a full 250-hull batch rather than the same price. Against the 5 minute
+ * DEFAULT_HOT_WINDOW_BUDGET_MS and the slower of the two runs: a 60-period head costs about
+ * 102s, this slice about 54s, and the grid's 52 chunks about 88s, which is 244s of 300s and
+ * leaves roughly a fifth of the budget as margin.
+ *
+ * It was 15, sized off the 3.4s-per-call figure recorded in `streamNausysConfirmedOffers`. That
+ * number is a 250-hull batch and was about twice what a 250-hull batch now measures, so a tail
+ * period was being rationed at eight times its real cost and the tail took sixteen runs to walk
+ * instead of two. Re-measure before moving this again; the arithmetic above is the whole basis
+ * for it, and it was measured from a developer machine rather than from the Railway region the
+ * cron actually runs in.
  */
-export const ADVERTISED_TAIL_PER_RUN = 15;
+export const ADVERTISED_TAIL_PER_RUN = 120;
 
 /** The sweep's cadence, which is what one step of the tail rotation means. */
 const ROTATION_MS = 60 * 60 * 1000;

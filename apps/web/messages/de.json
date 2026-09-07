@@ -489,6 +489,7 @@
       "perPerson": "{price} pro Person",
       "perPersonApprox": "~ {price} pro Person",
       "perBerth": "{price} pro Person bei {berths} Kojen",
+      "perNight": "{price} pro Nacht",
       "datesAlternative": "An Ihren Daten nicht verfügbar. Dieses Boot vermietet:",
       "prepayment": "Anzahlung bei Buchung: {amount}",
       "prepaymentInfo": "Dies ist der Teil des Charterpreises, der im Voraus gezahlt wird, um die Buchung zu sichern. Er wird auf den Gesamtpreis angerechnet; der Restbetrag ist vor dem Check-in fällig.",

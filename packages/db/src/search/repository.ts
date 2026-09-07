@@ -5,6 +5,7 @@ import type * as schema from "../schema";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { FX_BASE_CURRENCY } from "../fx/rates";
 import { crewOptionsFor } from "./crew";
+import { MIN_LEAD_DAYS } from "./read-model";
 import {
   decodeSearchCursor,
   encodeSearchCursor,
@@ -1810,12 +1811,40 @@ function orderClause(sort: SearchSort = "recommended"): SQL {
   }
 }
 
+/**
+ * `nightlyPriceValue` in the units the keyset cursor compares.
+ *
+ * It has to agree with the SQL to the unit: the cursor is the last row's sort value, and a page
+ * boundary computed from a different number either skips rows or serves them twice. Postgres
+ * `round(numeric)` and `Math.round` both go half away from zero, and every figure here is
+ * positive, so the two land on the same integer.
+ */
+export function nightlyPriceOf(
+  item: Pick<ListingSearchDoc, "priceFromMinorEur" | "priceIsFrom" | "bookableFrom" | "bookableTo">,
+): number | null {
+  if (item.priceFromMinorEur === null) return null;
+
+  const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const sellable = !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
+
+  const nights =
+    sellable && item.bookableFrom && item.bookableTo
+      ? Math.round(
+          (Date.parse(`${item.bookableTo}T00:00:00.000Z`) -
+            Date.parse(`${item.bookableFrom}T00:00:00.000Z`)) /
+            86_400_000,
+        )
+      : ASSUMED_PRICED_NIGHTS;
+
+  return Math.round(item.priceFromMinorEur / Math.max(nights, 1));
+}
+
 function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): SearchCursor {
   switch (sort) {
     case "price-asc":
-      return { value: item.priceFromMinorEur ?? NULL_PRICE_ASC, listingId: item.listingId };
+      return { value: nightlyPriceOf(item) ?? NULL_PRICE_ASC, listingId: item.listingId };
     case "price-desc":
-      return { value: item.priceFromMinorEur ?? NULL_PRICE_DESC, listingId: item.listingId };
+      return { value: nightlyPriceOf(item) ?? NULL_PRICE_DESC, listingId: item.listingId };
     case "newest":
       return { value: item.yearBuilt ?? NULL_YEAR_DESC, listingId: item.listingId };
     case "rating":
@@ -2519,6 +2548,57 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
  */
 const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
-const priceAscSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_ASC})`;
-const priceDescSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_DESC})`;
+/**
+ * The charter length assumed where the row names no sellable one.
+ *
+ * A week, matching `WEEKLY_RATE_DAYS` in the API's listing presenter, which falls back the same
+ * way on the same row. Restated here rather than imported: `packages/db` sits below
+ * `packages/api` and cannot reach up into it.
+ */
+const ASSUMED_PRICED_NIGHTS = 7;
+
+/**
+ * The nights `price_from_minor_eur` covers, and never zero.
+ *
+ * `pricedPeriodDays` in the API's listing presenter, as SQL. It has to be the same count: the
+ * card divides by that one to print a nightly rate, and the sort divides by this one to order
+ * the cards, so any disagreement puts the list in an order its own figures contradict.
+ *
+ * Two conditions, both from there. A "from" figure is the season's weekly floor whatever dates
+ * sit beside it, so its period is a week -- Casanova's EUR 41,000 floor advertises a single
+ * night and would otherwise have sorted as EUR 41,000 a night against its true EUR 5,857. And
+ * a period that has lapsed or fallen inside the lead time is dropped upstream, which leaves the
+ * same weekly fallback.
+ */
+const pricedNights = sql`greatest(
+  coalesce(
+    case
+      when not doc.price_is_from
+        and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
+      then doc.bookable_to - doc.bookable_from
+    end,
+    ${ASSUMED_PRICED_NIGHTS}
+  ),
+  1
+)`;
+
+/**
+ * Price sorted per night, not per charter.
+ *
+ * The stored figure prices whatever charter the listing was quoted for, and those are not the
+ * same length: a three-night charter at 819 EUR sorted above a week at 865, so the first page of
+ * "Price: low to high" opened with the most expensive boats on it -- 273 EUR a night above 124.
+ * Dividing by the nights the figure covers is the only basis on which the rows compare, because
+ * nothing here can restate one charter's price as another's (see the money lateral in
+ * `read-model.ts`: prorating a weekly band into three nights read 3,450 against a vendor quote
+ * of 1,621, so the arithmetic that would let us sort on a common length does not exist).
+ *
+ * `round` to a whole minor unit rather than carrying the fraction, so the keyset cursor can hold
+ * the sort value as the integer it compares -- `cursorFor` computes the identical number in JS.
+ * Both round half away from zero, and every value here is positive.
+ */
+const nightlyPriceValue = sql`round(doc.price_from_minor_eur::numeric / ${pricedNights})`;
+
+const priceAscSortValue = sql`coalesce(${nightlyPriceValue}, ${NULL_PRICE_ASC})`;
+const priceDescSortValue = sql`coalesce(${nightlyPriceValue}, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

@@ -489,6 +489,7 @@
       "perPerson": "{price} per person",
       "perPersonApprox": "~ {price} per person",
       "perBerth": "{price} per person in {berths} berths",
+      "perNight": "{price} per night",
       "datesAlternative": "Not available on your dates. This boat sells:",
       "prepayment": "Booking prepayment: {amount}",
       "prepaymentInfo": "This is the part of the charter price paid up front to secure the booking. It counts towards the total, and the rest is due before check-in.",

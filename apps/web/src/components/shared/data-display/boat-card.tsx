@@ -102,7 +102,16 @@ export type BoatCardProps = {
   priceIsLabel?: boolean;
   /** The listing has no bookable dates — the photo desaturates and the copy dims. */
   unavailable?: boolean;
-  perPerson: string;
+  /** The quote's own figure over the real party size. Absent on a catalogue card, which has no
+      party size and whose berth-based division read as a price of its own. */
+  perPerson?: string;
+  /**
+   * The same amount over the nights it covers, so a list ordered by nightly rate reads in order.
+   * "Price: low to high" sorts on this, and against totals for charters of different lengths the
+   * sequence looked shuffled: a cheaper week sat above a dearer three nights with nothing on
+   * either card to say why.
+   */
+  perNight?: string;
   /** Money footnote under the price, with the tooltip that explains that figure. */
   note: CardNoteData | null;
   detailHref?: AppPathname;
@@ -322,6 +331,7 @@ function Action({
   priceLabelLeads,
   priceIsLabel,
   perPerson,
+  perNight,
   note,
   detailHref,
   footer,
@@ -337,6 +347,7 @@ function Action({
   | "priceLabelLeads"
   | "priceIsLabel"
   | "perPerson"
+  | "perNight"
   | "note"
   | "detailHref"
   | "footer"
@@ -405,7 +416,11 @@ function Action({
             ) : null}
           </span>
         </div>
-        <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
+        {/* One derived figure, not two: a catalogue card shows the nightly rate the list is
+            ordered by, a booking card the per-person share of a party that actually exists. */}
+        <p className="text-sm font-medium leading-[1.3] text-natural-500">
+          {perNight ?? perPerson}
+        </p>
         {note ? <CardNote backdrop note={note} className="flex md:hidden" /> : null}
       </div>
 
@@ -470,6 +485,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           priceLabelLeads={boat.priceLabelLeads}
           priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
+          perNight={boat.perNight}
           note={boat.note}
           detailHref={boat.detailHref}
           footer={boat.footer}

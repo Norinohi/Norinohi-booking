@@ -100,17 +100,34 @@ export function toBoatCard(
     listPrice: boatCardListPrice(listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
     /*
-     * Divided by berths, because a card has no party size to divide by. The detail page does
-     * have one and divides by that, so the same yacht read €158 here and €633 there with
-     * nothing on either screen saying which. Naming the base is what reconciles them.
+     * The nightly rate, which is what "Price: low to high" orders on. The amounts above it price
+     * charters of different lengths - three nights on one hull, a week on the next - so ordering
+     * them against each other only makes sense per night, and the sequence only reads as a
+     * sequence if the figure it was sorted by is on the card. `periodDays` is the same night
+     * count the sort divides by.
+     *
+     * It replaces the per-person line rather than joining it. A catalogue card has no party size,
+     * so that figure divided by berths - what each guest pays only if the boat sails full, which
+     * is not how most parties book. Beside a EUR 670 total, "EUR 168 per person in 4 berths" read
+     * as a fourth price rather than as the same one rearranged, and naming the base did not
+     * rescue it. The detail page keeps its own per-person line, where a party size is actually
+     * chosen and the division answers something.
+     *
+     * Not on a single night, where dividing by one prints the amount immediately above it again
+     * under a different word - "EUR 2,282 / EUR 2,282 per night". The reason for the line
+     * survives that: on a one-night charter the figure the sort used *is* the headline amount,
+     * so it is already on the card and the sequence still reads as one. These were rare until
+     * the lead-time floor let a one-night charter reach a card at all.
      */
-    perPerson:
-      listing.priceDetails.perPersonMinor != null
-        ? t("perBerth", {
-            price: formatMoney(listing.priceDetails.perPersonMinor, currency),
-            berths: listing.specs.berths,
+    perNight:
+      listing.priceFrom && listing.priceDetails.periodDays > 1
+        ? t("perNight", {
+            price: formatMoney(
+              Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
+              currency,
+            ),
           })
-        : "",
+        : undefined,
     note: listing.priceDetails.securityDeposit
       ? {
           label: t("securityDeposit", {
