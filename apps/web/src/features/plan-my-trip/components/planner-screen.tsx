@@ -107,7 +107,15 @@ function PlannerWizard() {
             </AnimatePresence>
 
             <div className="mt-auto flex flex-col-reverse gap-3 md:flex-row md:justify-end">
-              <Button variant="neutral" onClick={() => router.back()} className="w-full md:w-auto">
+              {/* Steps are history entries, so Back walks them — but on the first there is no
+                  step behind, and the control quietly left the planner for whatever page the
+                  visitor arrived from. */}
+              <Button
+                variant="neutral"
+                disabled={current === 1}
+                onClick={() => router.back()}
+                className="w-full md:w-auto"
+              >
                 {t("back")}
               </Button>
               <Button

@@ -766,13 +766,15 @@
       "heading": "Find Yachts By Your Budget",
       "viewResults": "View Results",
       "labels": {
-        "budget": "Budget",
+        "budget": "Budget per charter",
         "people": "People",
         "skipper": "Skipper",
         "destinations": "Destinations (Optional)"
       },
       "options": {
         "any": "Any",
+        "budgetUpTo": "Up to {to}",
+        "budgetFrom": "{from}+",
         "skipperYes": "Yes",
         "skipperNo": "No",
         "destinationsAll": "All Destinations"
@@ -1113,6 +1115,7 @@
       },
       "experience": {
         "question": "Do you have sailing experience?",
+        "subtitle": "A skipper can be added at any level — this only decides who steers.",
         "options": {
           "none": {
             "label": "No experience",
@@ -1130,7 +1133,7 @@
       },
       "tripVibe": {
         "question": "What kind of trip are you looking for?",
-        "subtitle": "Group size affects yacht type, space, and total price per person",
+        "subtitle": "What you want out of the week shapes the boat, the route and the pace.",
         "options": {
           "adventure": {
             "label": "Adventure",
@@ -1174,7 +1177,7 @@
       },
       "budget": {
         "question": "What budget feels comfortable?",
-        "subtitle": "Your trip style defines the type of yacht, route, and onboard experience.",
+        "subtitle": "Per person for a week aboard, so you can compare it with a holiday you know.",
         "perPersonWeek": "per person/week",
         "options": {
           "low": {

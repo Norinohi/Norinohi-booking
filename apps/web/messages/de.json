@@ -766,13 +766,15 @@
       "heading": "Yachten nach Budget finden",
       "viewResults": "Ergebnisse anzeigen",
       "labels": {
-        "budget": "Budget",
+        "budget": "Budget pro Charter",
         "people": "Personen",
         "skipper": "Skipper",
         "destinations": "Reiseziele (optional)"
       },
       "options": {
         "any": "Beliebig",
+        "budgetUpTo": "Bis {to}",
+        "budgetFrom": "Ab {from}",
         "skipperYes": "Ja",
         "skipperNo": "Nein",
         "destinationsAll": "Alle Reiseziele"
@@ -1113,6 +1115,7 @@
       },
       "experience": {
         "question": "Haben Sie Segelerfahrung?",
+        "subtitle": "Ein Skipper ist auf jedem Niveau möglich — das hier entscheidet nur, wer steuert.",
         "options": {
           "none": {
             "label": "Keine Erfahrung",
@@ -1130,7 +1133,7 @@
       },
       "tripVibe": {
         "question": "Welche Art von Reise suchen Sie?",
-        "subtitle": "Die Gruppengröße beeinflusst Yachttyp, Platz und den Gesamtpreis pro Person",
+        "subtitle": "Was Sie sich von der Woche erwarten, bestimmt Boot, Route und Tempo.",
         "options": {
           "adventure": {
             "label": "Abenteuer",
@@ -1174,7 +1177,7 @@
       },
       "budget": {
         "question": "Welches Budget fühlt sich angenehm an?",
-        "subtitle": "Ihr Reisestil bestimmt den Yachttyp, die Route und das Erlebnis an Bord.",
+        "subtitle": "Pro Person für eine Woche an Bord, damit es mit einem bekannten Urlaub vergleichbar ist.",
         "perPersonWeek": "pro Person/Woche",
         "options": {
           "low": {

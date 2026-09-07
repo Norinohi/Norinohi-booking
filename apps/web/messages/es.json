@@ -766,13 +766,15 @@
       "heading": "Encuentra yates según tu presupuesto",
       "viewResults": "Ver resultados",
       "labels": {
-        "budget": "Presupuesto",
+        "budget": "Presupuesto por chárter",
         "people": "Personas",
         "skipper": "Patrón",
         "destinations": "Destinos (opcional)"
       },
       "options": {
         "any": "Cualquiera",
+        "budgetUpTo": "Hasta {to}",
+        "budgetFrom": "Desde {from}",
         "skipperYes": "Sí",
         "skipperNo": "No",
         "destinationsAll": "Todos los destinos"
@@ -1113,6 +1115,7 @@
       },
       "experience": {
         "question": "¿Tienes experiencia navegando?",
+        "subtitle": "Se puede añadir patrón con cualquier nivel — esto solo decide quién lleva el timón.",
         "options": {
           "none": {
             "label": "Sin experiencia",
@@ -1130,7 +1133,7 @@
       },
       "tripVibe": {
         "question": "¿Qué tipo de viaje buscas?",
-        "subtitle": "El tamaño del grupo influye en el tipo de yate, el espacio y el precio por persona",
+        "subtitle": "Lo que buscas de la semana define el barco, la ruta y el ritmo.",
         "options": {
           "adventure": {
             "label": "Aventura",
@@ -1174,7 +1177,7 @@
       },
       "budget": {
         "question": "¿Qué presupuesto te resulta cómodo?",
-        "subtitle": "Tu estilo de viaje define el tipo de yate, la ruta y la experiencia a bordo.",
+        "subtitle": "Por persona y semana a bordo, para poder compararlo con unas vacaciones que ya conoces.",
         "perPersonWeek": "por persona/semana",
         "options": {
           "low": {

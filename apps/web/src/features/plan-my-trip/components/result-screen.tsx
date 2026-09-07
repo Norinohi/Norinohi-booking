@@ -10,6 +10,7 @@ import { Link } from "@/i18n/navigation";
 
 import EmptyState from "@/components/shared/feedback/empty-state";
 import { WishlistButton } from "@/features/wishlist";
+import { buildSearchHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
 import { boatCardPrice } from "@/lib/boat-card-fields";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
@@ -120,8 +121,22 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
       : null;
   const destinationImage =
     DESTINATION_IMAGES.get(recommendation.destination.country) ?? DEFAULT_DESTINATION_IMAGE;
-  // /yachts has no `guests`/`category`/`maxPriceMinor` filters, so only `country` deep-links.
-  const countryHref = `/yachts?country=${encodeURIComponent(recommendation.destination.country)}`;
+  /*
+   * The brief as a search, which is what `searchParams` is on the contract for.
+   *
+   * Country, crew, duration and the budget carry across exactly — the budget is already the
+   * whole boat's ceiling, multiplied by the group on the server. `guests` and `category` do not:
+   * `/yachts` filters berths as a range with no upper bound to give it, and takes boat type as a
+   * slug where the planner answers with a label. So the link lands on a slightly wider set than
+   * `matchCount`, which is the safe direction for a "see all" to be wrong in.
+   */
+  const { country, crew, duration: durationDays, maxPriceMinor } = recommendation.searchParams;
+  const matchesHref = buildSearchHref({
+    country,
+    crew,
+    duration: String(durationDays),
+    ...(maxPriceMinor === null ? null : { price: [0, Math.round(maxPriceMinor / 100)] as const }),
+  });
 
   return (
     <motion.div variants={GROUP} initial="hidden" animate="show" className="flex flex-col gap-6">
@@ -190,7 +205,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
                 variant="neutral"
                 size="sm"
                 nativeButton={false}
-                render={<Link href={countryHref} />}
+                render={<Link href={matchesHref} />}
               >
                 {t("noMatch.seeAllMatches")}
               </Button>
@@ -247,15 +262,26 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
               {t("getConsultation")}
             </Button>
             {boatCard ? (
-              <Button
-                variant="brand"
-                className="w-full md:w-auto"
-                nativeButton={false}
-                render={<Link href={boatCard.detailHref} />}
-              >
-                {t("viewDetails")}
-                <ArrowRight />
-              </Button>
+              <>
+                {/* One yacht is the recommendation; the rest of the brief's matches are a click away. */}
+                <Button
+                  variant="neutral"
+                  className="w-full md:w-auto"
+                  nativeButton={false}
+                  render={<Link href={matchesHref} />}
+                >
+                  {t("seeAllMatches")}
+                </Button>
+                <Button
+                  variant="brand"
+                  className="w-full md:w-auto"
+                  nativeButton={false}
+                  render={<Link href={boatCard.detailHref} />}
+                >
+                  {t("viewDetails")}
+                  <ArrowRight />
+                </Button>
+              </>
             ) : null}
           </div>
         </div>

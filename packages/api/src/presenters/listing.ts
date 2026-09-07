@@ -10,6 +10,26 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * The earliest check-in a card may advertise, in whole days from today.
+ *
+ * One, because a charter checking in this afternoon is not on sale: the booking has to reach
+ * the operator and come back confirmed, and the base has to hand the boat over. A card that
+ * offered today sent the visitor into a checkout for a departure a few hours away.
+ *
+ * A day is a floor, not the real answer — each operator has its own notice period and neither
+ * vendor publishes one, so this is the shortest lead time that is never wrong rather than the
+ * right one per base.
+ */
+const MIN_LEAD_DAYS = 1;
+
+/** `yyyy-MM-dd`, `days` whole days after today, read and returned in UTC. */
+function daysFromTodayIso(days: number): string {
+  return new Date(Date.parse(`${todayIso()}T00:00:00.000Z`) + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}
+
 /** Whole days between two `yyyy-MM-dd` days, both read as UTC midnight. */
 function nightsBetween(checkIn: string, checkOut: string): number {
   const ms = Date.parse(`${checkOut}T00:00:00.000Z`) - Date.parse(`${checkIn}T00:00:00.000Z`);
@@ -19,12 +39,14 @@ function nightsBetween(checkIn: string, checkOut: string): number {
 /**
  * The charter the card's price, dates and terms describe, or null when the listing has none.
  *
- * Dropped once it has gone by: the columns are computed against the clock and are only as
- * fresh as the last projection run, and a card offering a day that has already passed
- * sends the visitor to a calendar that refuses it.
+ * Dropped once it has gone by, and once it is too close to sell: the columns are computed
+ * against the clock and are only as fresh as the last projection run, so a card offering a day
+ * that has already passed sends the visitor to a calendar that refuses it, and one offering
+ * today sends them to a checkout for a boat that sails this afternoon.
  */
 export function bookablePeriodOf(doc: ListingSearchDoc) {
-  return doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
+  const earliest = daysFromTodayIso(MIN_LEAD_DAYS);
+  return doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= earliest
     ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
     : null;
 }

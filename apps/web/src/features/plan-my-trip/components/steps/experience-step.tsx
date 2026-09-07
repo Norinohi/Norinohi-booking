@@ -31,7 +31,7 @@ export function ExperienceStep({ value, onChange }: ExperienceStepProps) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-8">
-      <StepLegend title={t("question")} />
+      <StepLegend title={t("question")} subtitle={t("subtitle")} />
       <QuizCardGrid choices={choices} value={value} onChange={onChange} />
     </div>
   );
