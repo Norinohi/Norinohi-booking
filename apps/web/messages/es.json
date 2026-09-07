@@ -696,7 +696,8 @@
       "withoutAvailabilityConfirmation": "Mostrar yates sin confirmación de disponibilidad",
       "underTemporaryBooking": "Mostrar yates con reserva temporal",
       "depositInsurance": "Seguro de fianza incluido",
-      "petsAllowed": "Se admiten mascotas"
+      "petsAllowed": "Se admiten mascotas",
+      "bestValue": "Solo la mejor relación calidad-precio"
     },
     "units": {
       "years": "{count, plural, one {# año} other {# años}}"
@@ -729,6 +730,7 @@
       "underTemporaryBooking": "Con reserva temporal",
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
+      "bestValue": "Mejor relación calidad-precio",
       "guestRating": "Valoración: {value}"
     },
     "options": {

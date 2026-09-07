@@ -46,6 +46,8 @@ export type ListingSearchInput = {
   underTemporaryBooking?: boolean;
   depositInsurance?: boolean;
   petsAllowed?: boolean;
+  /** Only the hulls in the cheapest quarter of their own model. See `listing_search_doc.best_value`. */
+  bestValue?: boolean;
   /**
    * Read by nothing since the price facets and filter moved onto `price_from_minor_eur`, which
    * is always FX_BASE_CURRENCY. Kept because the contract still accepts it and it is where a
@@ -377,6 +379,7 @@ export type ListingFacets = {
     underTemporaryBooking: boolean;
     depositInsurance: boolean;
     petsAllowed: boolean;
+    bestValue: boolean;
   };
   priceRange: {
     minMinor: number;

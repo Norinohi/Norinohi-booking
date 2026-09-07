@@ -369,6 +369,8 @@ export const listingSearchInputBaseSchema = z.object({
   underTemporaryBooking: booleanParamSchema,
   depositInsurance: booleanParamSchema,
   petsAllowed: booleanParamSchema,
+  /** Only hulls in the cheapest quarter of their own model, which is what the badge marks. */
+  bestValue: booleanParamSchema,
   currency: currencySchema.default("EUR"),
   /* Mirrors apps/web/src/i18n/config.ts. Unknown values fall back to the default copy. */
   locale: z.string().min(2).max(10).default("en"),
@@ -468,6 +470,7 @@ export const facetsSchema = z.object({
     underTemporaryBooking: z.boolean(),
     depositInsurance: z.boolean(),
     petsAllowed: z.boolean(),
+    bestValue: z.boolean(),
   }),
   priceRange: z.object({
     minMinor: z.number().int(),

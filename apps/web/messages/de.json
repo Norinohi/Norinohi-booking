@@ -696,7 +696,8 @@
       "withoutAvailabilityConfirmation": "Yachten ohne Verfügbarkeitsbestätigung anzeigen",
       "underTemporaryBooking": "Yachten mit vorläufiger Buchung anzeigen",
       "depositInsurance": "Kautionsversicherung inklusive",
-      "petsAllowed": "Haustiere erlaubt"
+      "petsAllowed": "Haustiere erlaubt",
+      "bestValue": "Nur bestes Preis-Leistungs-Verhältnis"
     },
     "units": {
       "years": "{count, plural, one {# Jahr} other {# Jahre}}"
@@ -729,6 +730,7 @@
       "underTemporaryBooking": "Vorläufig gebucht",
       "depositInsurance": "Kautionsversicherung",
       "petsAllowed": "Haustiere erlaubt",
+      "bestValue": "Bestes Preis-Leistungs-Verhältnis",
       "guestRating": "Bewertung: {value}"
     },
     "options": {

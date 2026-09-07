@@ -696,7 +696,8 @@
       "withoutAvailabilityConfirmation": "Show yachts without availability confirmation",
       "underTemporaryBooking": "Show yachts under temporary booking",
       "depositInsurance": "Security deposit insurance included",
-      "petsAllowed": "Pets allowed"
+      "petsAllowed": "Pets allowed",
+      "bestValue": "Best value only"
     },
     "units": {
       "years": "{count, plural, one {# year} other {# years}}"
@@ -729,6 +730,7 @@
       "underTemporaryBooking": "Under temporary booking",
       "depositInsurance": "Deposit insurance",
       "petsAllowed": "Pets allowed",
+      "bestValue": "Best value",
       "guestRating": "Rating: {value}"
     },
     "options": {

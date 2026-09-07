@@ -113,6 +113,7 @@ export const filterParsers = {
   underTemporaryBooking: parseAsBoolean.withDefault(false),
   depositInsurance: parseAsBoolean.withDefault(false),
   petsAllowed: parseAsBoolean.withDefault(false),
+  bestValue: parseAsBoolean.withDefault(false),
 
   guestRating: rangeParser({ max: 5 }),
 };

@@ -119,6 +119,7 @@ export function toSearchInput(
   if (filters.underTemporaryBooking) input.underTemporaryBooking = true;
   if (filters.depositInsurance) input.depositInsurance = true;
   if (filters.petsAllowed) input.petsAllowed = true;
+  if (filters.bestValue) input.bestValue = true;
 
   return input;
 }

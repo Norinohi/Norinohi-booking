@@ -41,6 +41,7 @@ export type FiltersState = {
   underTemporaryBooking: boolean;
   depositInsurance: boolean;
   petsAllowed: boolean;
+  bestValue: boolean;
 
   guestRating: Range;
 };
@@ -102,6 +103,7 @@ export const DEFAULT_FILTERS: FiltersState = {
   underTemporaryBooking: false,
   depositInsurance: false,
   petsAllowed: false,
+  bestValue: false,
 
   guestRating: EMPTY_RANGE,
 };

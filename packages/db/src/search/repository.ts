@@ -653,6 +653,7 @@ export async function listSearchFacets(
       hasTemporaryBooking: boolean | null;
       hasDepositInsurance: boolean | null;
       hasPetsAllowed: boolean | null;
+      hasBestValue: boolean | null;
       currency: string | null;
     }>(sql`
       select
@@ -687,7 +688,8 @@ export async function listSearchFacets(
         bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
         bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
         bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
-        bool_or(doc.pets_allowed) as "hasPetsAllowed"
+        bool_or(doc.pets_allowed) as "hasPetsAllowed",
+        bool_or(doc.best_value) as "hasBestValue"
       from listing_search_doc doc
       where ${whereClause(input)}
     `),
@@ -745,6 +747,7 @@ export async function listSearchFacets(
       underTemporaryBooking: row?.hasTemporaryBooking ?? false,
       depositInsurance: row?.hasDepositInsurance ?? false,
       petsAllowed: row?.hasPetsAllowed ?? false,
+      bestValue: row?.hasBestValue ?? false,
     },
     priceRange,
   };
@@ -1426,6 +1429,7 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
     parts.push(sql`doc.deposit_insurance_included = true`);
   }
   if (!skip.has("petsAllowed") && input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
+  if (!skip.has("bestValue") && input.bestValue) parts.push(sql`doc.best_value = true`);
   const availabilityWindow = availabilityWindowFor(input);
   const windowNights = availabilityWindow ? nightsBetween(availabilityWindow) : undefined;
   /*

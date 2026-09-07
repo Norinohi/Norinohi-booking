@@ -696,7 +696,8 @@
       "withoutAvailabilityConfirmation": "Показувати яхти без підтвердження доступності",
       "underTemporaryBooking": "Показувати яхти з тимчасовим бронюванням",
       "depositInsurance": "Страхування застави включено",
-      "petsAllowed": "Можна з тваринами"
+      "petsAllowed": "Можна з тваринами",
+      "bestValue": "Тільки вигідні пропозиції"
     },
     "units": {
       "years": "{count, plural, one {# рік} few {# роки} many {# років} other {# року}}"
@@ -729,6 +730,7 @@
       "underTemporaryBooking": "З тимчасовим бронюванням",
       "depositInsurance": "Страхування застави",
       "petsAllowed": "Можна з тваринами",
+      "bestValue": "Вигідна пропозиція",
       "guestRating": "Оцінка: {value}"
     },
     "options": {
