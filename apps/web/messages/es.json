@@ -432,6 +432,7 @@
       }
     },
     "booked": "Reservado",
+    "consentRequired": "Marca las dos casillas de arriba para confirmar la reserva.",
     "saveAndContinue": "Guardar y continuar",
     "extrasSkipped": "Echa un vistazo a los extras opcionales y confirma después."
   },

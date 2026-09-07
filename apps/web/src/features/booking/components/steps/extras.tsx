@@ -81,10 +81,23 @@ function ExtraRow({
 
 export default function ExtrasStep() {
   const t = useTranslations("Booking.extras");
+  const tExtras = useTranslations("Common.extras");
+  const money = useMoney();
   const { control } = useFormContext<BookingValues>();
   const { listing, quote, selectExtras } = useBooking();
 
-  const included = listing?.includedAmenities ?? [];
+  /*
+   * What the operator will bill on top of the charter, off the quote rather than off the
+   * catalogue: this is the offer we are about to hold, so it is the list that will be charged.
+   *
+   * The section used to render `listing.includedAmenities` instead, so a step headed "Mandatory"
+   * listed a radio, a teak deck and a TV, every one of them "Included" and none of them money.
+   * Meanwhile the obligatory charges the same quote carries - EUR 1,307 of cleaning, skipper,
+   * tourist tax and towels on one Lagoon 410 - appeared nowhere in checkout, which is how the
+   * Review total came to exceed everything the customer had been shown. Equipment belongs in
+   * Amenities on the yacht page, which already lists it.
+   */
+  const mandatory = (quote?.lines ?? []).filter((line) => line.group === "mandatory");
   const optional = listing?.optionalExtras ?? [];
   /* Null until a quote exists, and for a provider whose offer does not report it —
      neither is grounds for greying anything out. */
@@ -98,32 +111,54 @@ export default function ExtrasStep() {
 
   return (
     <>
-      <section className="flex flex-col p-5">
-        <SectionTitle>{t("mandatory")}</SectionTitle>
+      {/* Absent entirely on a charter that carries none: a heading over nothing reads as a
+          section that failed to load. */}
+      {mandatory.length > 0 ? (
+        <>
+          <section className="flex flex-col p-5">
+            <SectionTitle>{t("mandatory")}</SectionTitle>
 
-        {/* Two-up from md, where the column gap also widens. The dashed rule closes the last
-            row only when paired — stacked, the design keeps it under every item. */}
-        <ul className="grid md:grid-cols-2 md:gap-x-6 xl:gap-x-10">
-          {included.map((item) => (
-            <li
-              key={item.code}
-              className="flex items-center gap-2 border-b border-dashed border-border py-3 md:last:border-b-0 md:nth-last-2:border-b-0"
-            >
-              <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">
-                {item.label}
-              </span>
-              <span className="flex shrink-0 items-center gap-2 py-1">
-                <CircleCheckBig className="size-5 text-brand" />
-                <span className="text-base leading-[1.4] font-bold text-foreground">
-                  {t("included")}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+            <ul className="flex flex-col">
+              {mandatory.map((line) => (
+                <li
+                  key={line.code}
+                  className="flex items-start gap-2 border-b border-dashed border-border py-3 last:border-b-0"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="text-base leading-[1.4] text-foreground">{line.label}</span>
+                    {/* When it is collected, in the words the yacht page uses for the same
+                        lines. A charge with no moment attached is the one a customer does not
+                        expect to see on the card. */}
+                    {line.amount.amountMinor === 0 ? null : (
+                      <span className="text-xs leading-[1.3] font-semibold text-natural-300">
+                        {line.payWhen === "at_check_in"
+                          ? tExtras("payAtCheckIn")
+                          : tExtras("dueWithPrepayment")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2 py-1">
+                    {line.amount.amountMinor === 0 ? (
+                      <>
+                        <CircleCheckBig className="size-5 text-brand" />
+                        <span className="text-base leading-[1.4] font-bold text-foreground">
+                          {t("included")}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-base leading-[1.4] font-bold text-foreground">
+                        {money(line.amount.amountMinor, line.amount.currency)}
+                      </span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-      <span aria-hidden className="block h-px w-full bg-border" />
+          <span aria-hidden className="block h-px w-full bg-border" />
+        </>
+      ) : null}
 
       <section className="flex flex-col p-5">
         <SectionTitle>{t("optional")}</SectionTitle>

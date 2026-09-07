@@ -432,6 +432,7 @@
       }
     },
     "booked": "Booked",
+    "consentRequired": "Tick both boxes above to confirm this booking.",
     "saveAndContinue": "Save & Continue",
     "extrasSkipped": "Take a look at the optional extras first — then confirm."
   },

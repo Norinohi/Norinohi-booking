@@ -13,7 +13,7 @@ import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
-import { type Path, useFormContext } from "react-hook-form";
+import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createHoldMutationOptions } from "../api/queries";
@@ -73,7 +73,18 @@ const stepParser = parseAsStringLiteral(STEPS.map(({ id }) => id))
 
 export default function BookingSteps() {
   const t = useTranslations("Booking");
-  const { trigger, getValues, setValue } = useFormContext<BookingValues>();
+  const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
+  /*
+   * Both consents, watched rather than read, because Confirm is disabled until they are given
+   * and a disabled button has to re-enable the moment the second box is ticked.
+   *
+   * The schema already refused to submit without them, but refusing on click is not the same as
+   * not offering: the button was live, and the only feedback was two lines of red after pressing
+   * it. Agreeing to the operator's terms is the thing the booking rests on legally, so the
+   * action stays unavailable until it has actually happened.
+   */
+  const consents = useWatch({ control, name: "reviewAndBook" });
+  const consented = Boolean(consents?.terms && consents.cancellation);
   const { listing, quote, extras, bookingId, setBookingId, setExtras } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [openStep, setOpenStep] = useQueryState("step", stepParser);
@@ -328,13 +339,14 @@ export default function BookingSteps() {
               {!ownsFooter && (
                 <>
                   <span aria-hidden className="block h-px w-full bg-border" />
-                  <div className="p-5">
+                  <div className="flex flex-col gap-2 p-5">
                     <Button
                       variant="brand"
                       className="h-13 w-full"
                       loading={step === "reviewAndBook" && createHold.isPending}
-                      /* The booking exists; this step is now a record of it, not an action. */
-                      disabled={step === "reviewAndBook" && Boolean(bookingId)}
+                      /* Either the booking already exists, so this step is a record of it rather
+                         than an action, or the consents it rests on have not been given. */
+                      disabled={step === "reviewAndBook" && (Boolean(bookingId) || !consented)}
                       onClick={() =>
                         void (step === "reviewAndBook"
                           ? confirmBooking()
@@ -343,6 +355,12 @@ export default function BookingSteps() {
                     >
                       {step === "reviewAndBook" && bookingId ? t("booked") : t(ctaFor(step, cta))}
                     </Button>
+                    {/* A disabled control with no reason beside it reads as a broken page. */}
+                    {step === "reviewAndBook" && !bookingId && !consented ? (
+                      <p className="text-center text-sm leading-[1.3] text-natural-500">
+                        {t("consentRequired")}
+                      </p>
+                    ) : null}
                   </div>
                 </>
               )}

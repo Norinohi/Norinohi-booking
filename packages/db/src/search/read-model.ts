@@ -110,6 +110,23 @@ export async function rebuildListingSearchDocs(
         o.security_deposit_when_insured_minor,
         o.deposit_insurance_included,
         o.crew_type,
+        /*
+         * Whether the operator bills a skipper whatever the customer picks.
+         *
+         * Kept beside crew_type rather than folded into it, because the two are read by
+         * different things. The crew lateral above prices o.crew_type and deliberately skips
+         * obligatory crew, which is already in the fee total; rewriting the column there would
+         * have it reach for a second, optional skipper on top of the one being charged. Only
+         * the projected column below is corrected, which is what the card, the crew filter and
+         * the free-text blob read.
+         */
+        exists (
+          select 1
+          from provider_extra_catalogue extra
+          where extra.listing_offer_id = o.id
+            and extra.obligatory
+            and extra.crew_role = 'skipper'
+        ) as has_obligatory_skipper,
         rate.currency,
         avail.available_from,
         avail.available_to,
@@ -835,7 +852,17 @@ export async function rebuildListingSearchDocs(
       -- ungrouped vendor near-synonyms would each become their own facet. An
       -- unclassified category falls back to its own name rather than dropping out.
       coalesce(cat.canonical_name, cat.name),
-      coalesce(best.crew_type, l.crew_type),
+      -- Believing the charge over the label. A hull filed bareboat whose skipper is an
+      -- obligatory extra will be billed one either way, and the sidebar refuses to offer
+      -- Bareboat for exactly that reason -- so leaving the column as the vendor sent it put a
+      -- "Bareboat" chip on the card and returned the boat under the Bareboat filter, then sold
+      -- a skippered charter. Never downgrades a full crew.
+      case
+        when best.has_obligatory_skipper
+          and coalesce(best.crew_type, l.crew_type, 'bareboat') = 'bareboat'
+        then 'skipper'
+        else coalesce(best.crew_type, l.crew_type)
+      end,
       -- The brand, not the legal entity: providers send "Bavaria Yachtbau" and "Lagoon-Bénéteau",
       -- and grouped by those the same brand splits into several shipyard pages and filters.
       coalesce(bld.canonical_name, bld.name),
@@ -961,7 +988,12 @@ export async function rebuildListingSearchDocs(
         -- and one searching the group ("motor yacht") must both hit this listing.
         cat.name,
         cat.canonical_name,
-        coalesce(best.crew_type, l.crew_type),
+        case
+        when best.has_obligatory_skipper
+          and coalesce(best.crew_type, l.crew_type, 'bareboat') = 'bareboat'
+        then 'skipper'
+        else coalesce(best.crew_type, l.crew_type)
+      end,
         bld.name,
         bld.canonical_name,
         mdl.name,

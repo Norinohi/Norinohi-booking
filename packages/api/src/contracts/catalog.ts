@@ -170,7 +170,6 @@ export const listingSummarySchema = z.object({
   listPriceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
-    perPersonMinor: z.number().int().nullable(),
     /** Refundable damage deposit collected at the base. Null when there is none. */
     securityDeposit: moneySchema.nullable(),
     /**

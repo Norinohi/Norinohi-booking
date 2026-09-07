@@ -188,8 +188,6 @@ export function presentListingSummary(doc: ListingSearchDoc) {
         : { amountMinor: doc.listPriceFromMinor, currency },
     priceDetails: {
       periodDays,
-      perPersonMinor:
-        amountMinor !== null && doc.berths ? Math.round(amountMinor / doc.berths) : null,
       /*
        * The provider's refundable damage deposit, taken by the base at check-in and
        * returned after check-out. Indicative like `priceFrom`: a NauSYS offer states

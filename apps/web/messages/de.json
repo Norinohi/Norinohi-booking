@@ -432,6 +432,7 @@
       }
     },
     "booked": "Gebucht",
+    "consentRequired": "Bitte bestätigen Sie beide Kästchen oben, um die Buchung abzuschließen.",
     "saveAndContinue": "Speichern & weiter",
     "extrasSkipped": "Werfen Sie zuerst einen Blick auf die optionalen Extras – und bestätigen Sie dann."
   },
