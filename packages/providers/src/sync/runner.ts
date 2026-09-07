@@ -16,6 +16,9 @@ import type { Database } from "../registry";
 import { NotFoundError, ProviderError, toSyncErrorType } from "../shared/errors";
 import type { JsonField, JsonValue } from "../shared/json";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
+
+import { resolveCanonicalListings } from "./canonical-listing-writer";
+import { deriveOfferFlagsFromExtras } from "./offer-flags";
 import { retainRawPayloads, stableSourceHash } from "../shared/raw-retention";
 import {
   createDrizzlePricePeriodStore,
@@ -1018,6 +1021,13 @@ export async function runCatalogueSyncJob(
    * same set.
    */
   try {
+    /*
+     * Before the documents, because they copy both flags out of the offer rows this sets. The
+     * listing is composed again for the same reason: `pets_allowed` reaches the card through the
+     * canonical row, and the writer composed it before the extras this reads had been written.
+     */
+    await deriveOfferFlagsFromExtras(db, written.rebuildListingIds);
+    await resolveCanonicalListings(db, written.rebuildListingIds);
     await rebuildSearchReadModelsAfterSync(db, { listingIds: written.rebuildListingIds });
   } catch (error) {
     return await failRun(error, "project");
