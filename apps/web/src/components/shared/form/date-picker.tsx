@@ -11,7 +11,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useFormatter, useLocale } from "next-intl";
 
-import { dayFromNative, dayToDisplay } from "@/lib/date";
+import { dayFromNative, dayToDisplay, isBeforeToday } from "@/lib/date";
 
 const TRIGGER =
   "group flex h-12 w-full min-w-0 items-center gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none hover:border-natural-200 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:border-foreground";
@@ -26,6 +26,19 @@ type CommonProps = {
   hugContent?: boolean;
   /** Greys out days the caller will not accept; re-read on every render, so it may depend on `value`. */
   disabled?: (date: Date) => boolean;
+  /*
+   * Opens the past up for selection. Off by default because every picker but one is choosing a
+   * charter, and a charter cannot start yesterday: left open, the home page search happily
+   * accepted last week and answered "0 yachts found" as though none existed. The exception is
+   * the bookings filter, which is searching a history and needs the days behind it.
+   */
+  allowPast?: boolean;
+  /*
+   * A rule printed above the month grid, for a calendar that refuses most of its own days.
+   * The line under the trigger is hidden by the popup that covers it, which left the greyed
+   * cells unexplained at exactly the moment somebody was clicking one.
+   */
+  hint?: string;
   /** Controls the calendar popup; pair with `onOpenChange`. Omit both to leave it uncontrolled. */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
@@ -55,6 +68,8 @@ export default function DatePicker({
   clearLabel,
   hugContent,
   disabled,
+  allowPast = false,
+  hint,
   open,
   onOpenChange,
   dateFormat = "day",
@@ -65,6 +80,10 @@ export default function DatePicker({
 }: DatePickerProps) {
   const format = useFormatter();
   const locale = useLocale();
+
+  /* The caller's own rule still applies on top of the floor, so both can refuse a day. */
+  const isDayDisabled = (date: Date) =>
+    (!allowPast && isBeforeToday(date)) || (disabled?.(date) ?? false);
 
   const day = (date: Date, style: DayFormat = dateFormat) =>
     format.dateTime(dayToDisplay(dayFromNative(date)), style);
@@ -118,12 +137,17 @@ export default function DatePicker({
             contentClassName,
           )}
         >
+          {hint ? (
+            <p className="mb-2 rounded-lg bg-natural-50 px-3 py-2 text-sm leading-[1.3] text-natural-600">
+              {hint}
+            </p>
+          ) : null}
           {props.mode === "range" ? (
             <Calendar
               className="w-full"
               mode="range"
               locale={locale}
-              disabled={disabled}
+              disabled={isDayDisabled}
               selected={props.value}
               onSelect={props.onValueChange}
             />
@@ -131,7 +155,7 @@ export default function DatePicker({
             <Calendar
               className="w-full"
               locale={locale}
-              disabled={disabled}
+              disabled={isDayDisabled}
               selected={props.value}
               onSelect={props.onValueChange}
             />

@@ -150,6 +150,7 @@ export function RangeField({
   unit,
   icon,
   showScale = true,
+  boundedMax = false,
 }: {
   label: string;
   limits: Range;
@@ -163,9 +164,23 @@ export function RangeField({
   };
   icon?: ReactNode;
   showScale?: boolean;
+  /*
+   * Suppresses the "+" on the top of the track, for a scale whose end is a real ceiling
+   * rather than a percentile cut. A guest rating stops at five, so "5+" promises a sixth star.
+   */
+  boundedMax?: boolean;
 }) {
   const t = useTranslations("Filters");
   const formatValue = (n: number) => (format ? format(n) : String(n));
+
+  /*
+   * The sliders end on the 95th percentile of the fleet, and a thumb resting on that end sends
+   * no upper bound at all, so everything above it is still in the results. Printed bare, "61 ft"
+   * then reads as a promise the results break: a 49 m hull comes back under a 61 ft filter. The
+   * suffix is what makes the end of the track mean what the query already means.
+   */
+  const formatUpper = (n: number) =>
+    !boundedMax && n === limits[1] ? t("andAbove", { value: formatValue(n) }) : formatValue(n);
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -179,7 +194,7 @@ export function RangeField({
         </span>
         <span className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {formatValue(value[1])}
+          {formatUpper(value[1])}
         </span>
         {unit ? (
           <UnitSelect

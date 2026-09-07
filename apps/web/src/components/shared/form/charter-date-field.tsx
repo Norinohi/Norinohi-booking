@@ -120,6 +120,7 @@ export default function CharterDateField({
         value={range}
         onValueChange={handleChange}
         disabled={disabled ? alwaysDisabled : isDayDisabled}
+        hint={periodLabel ?? undefined}
         open={open}
         onOpenChange={setOpen}
         dateFormat="dayShort"

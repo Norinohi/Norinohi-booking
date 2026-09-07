@@ -476,6 +476,7 @@
       "priceUnavailable": "Недоступно",
       "perPerson": "{price} з особи",
       "perPersonApprox": "~ {price} з особи",
+      "perBerth": "{price} з особи при {berths} спальних місцях",
       "prepayment": "Передоплата бронювання: {amount}",
       "prepaymentInfo": "Це частина вартості чартеру, яку сплачують наперед, щоб закріпити бронювання. Вона зараховується в загальну суму, решту потрібно сплатити до заселення.",
       "securityDeposit": "Поворотна застава: {amount}",
@@ -639,6 +640,7 @@
     "contactExpert": "Звʼязатися з експертом",
     "clearField": "Очистити «{label}»",
     "clearSelection": "Очистити вибір",
+    "andAbove": "{value}+",
     "unitAria": "Одиниця виміру для «{label}»",
     "sections": {
       "where": "Куди?",
@@ -870,7 +872,7 @@
       "heading": "Популярні напрямки",
       "previous": "Попередні напрямки",
       "next": "Наступні напрямки",
-      "seeAll": "Усі напрямки",
+      "seeAll": "Переглянути всі яхти",
       "summary": "Від {price} · {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}"
     },
     "PopularYachts": {
@@ -1287,6 +1289,9 @@
       "pickUp": "Отримання яхти",
       "dropOff": "Повернення яхти",
       "policies": "Умови скасування та оплати",
+      "securityDeposit": "Поворотна застава",
+      "securityDepositNote": "Базa утримує її при заїзді й повертає після здачі яхти без пошкоджень.",
+      "securityDepositInsured": "Зменшується до {amount}, якщо оформити страхування застави на базі.",
       "license": "Потрібні права",
       "pets": "Тварини",
       "paymentMethods": "Способи оплати чартерної компанії",
@@ -1350,6 +1355,7 @@
       "extrasPayment": "{amount} (додаткові опції)",
       "depositNote": "+ {amount} (поворотна застава)",
       "totalPrice": "Загальна ціна",
+      "discountsHeading": "Уже враховано у вартості вище",
       "dueNow": "До оплати зараз",
       "payNowCta": "Оплатити {amount}",
       "requestQuote": "Запросити пропозицію",

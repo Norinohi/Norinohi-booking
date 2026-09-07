@@ -476,6 +476,7 @@
       "priceUnavailable": "Nicht verfügbar",
       "perPerson": "{price} pro Person",
       "perPersonApprox": "~ {price} pro Person",
+      "perBerth": "{price} pro Person bei {berths} Kojen",
       "prepayment": "Anzahlung bei Buchung: {amount}",
       "prepaymentInfo": "Dies ist der Teil des Charterpreises, der im Voraus gezahlt wird, um die Buchung zu sichern. Er wird auf den Gesamtpreis angerechnet; der Restbetrag ist vor dem Check-in fällig.",
       "securityDeposit": "Rückzahlbare Kaution: {amount}",
@@ -639,6 +640,7 @@
     "contactExpert": "Charter-Experten kontaktieren",
     "clearField": "{label} löschen",
     "clearSelection": "Auswahl löschen",
+    "andAbove": "{value}+",
     "unitAria": "Einheit für {label}",
     "sections": {
       "where": "Wohin?",
@@ -870,7 +872,7 @@
       "heading": "Beliebte Reiseziele",
       "previous": "Vorherige Reiseziele",
       "next": "Nächste Reiseziele",
-      "seeAll": "Alle Reiseziele ansehen",
+      "seeAll": "Alle Yachten ansehen",
       "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}"
     },
     "PopularYachts": {
@@ -1287,6 +1289,9 @@
       "pickUp": "Yachtübernahme",
       "dropOff": "Yachtrückgabe",
       "policies": "Storno- / Zahlungsbedingungen",
+      "securityDeposit": "Erstattbare Kaution",
+      "securityDepositNote": "Wird bei der Übernahme von der Charterbasis einbehalten und nach schadenfreier Rückgabe erstattet.",
+      "securityDepositInsured": "Reduziert sich auf {amount} mit der Kautionsversicherung der Basis.",
       "license": "Segelschein erforderlich",
       "pets": "Haustiere",
       "paymentMethods": "Vom Charterunternehmen akzeptierte Zahlungsmethoden",
@@ -1350,6 +1355,7 @@
       "extrasPayment": "{amount} (Extras)",
       "depositNote": "+ {amount} (erstattbare Kaution)",
       "totalPrice": "Gesamtpreis",
+      "discountsHeading": "Bereits im Charterpreis oben enthalten",
       "dueNow": "Jetzt fällig",
       "payNowCta": "Jetzt {amount} zahlen",
       "requestQuote": "Angebot anfordern",

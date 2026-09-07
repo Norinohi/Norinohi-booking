@@ -307,11 +307,20 @@ function useQuoteLineLabel() {
 }
 
 function DiscountRows({ lines }: { lines: QuoteLine[] }) {
+  const t = useTranslations("YachtDetail");
   const money = useMoney();
   const labelOf = useQuoteLineLabel();
 
   return (
     <div className="flex w-full flex-col gap-3 p-4">
+      {/*
+       * Sitting bare above Total, these rows read as a second subtraction from a figure that
+       * already contains them - the boat price above is struck through by the very same amount.
+       * The heading says they explain that reduction rather than repeat it.
+       */}
+      <p className="text-sm leading-4.5 font-medium text-natural-500">
+        {t("sidebar.discountsHeading")}
+      </p>
       {lines.map((line) => (
         <div key={line.code} className="flex items-start gap-2">
           <p className="min-w-0 flex-1 text-base leading-5.5 text-foreground">{labelOf(line)}</p>

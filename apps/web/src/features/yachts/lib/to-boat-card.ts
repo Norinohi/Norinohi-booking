@@ -91,9 +91,17 @@ export function toBoatCard(
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
+    /*
+     * Divided by berths, because a card has no party size to divide by. The detail page does
+     * have one and divides by that, so the same yacht read €158 here and €633 there with
+     * nothing on either screen saying which. Naming the base is what reconciles them.
+     */
     perPerson:
       listing.priceDetails.perPersonMinor != null
-        ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor, currency) })
+        ? t("perBerth", {
+            price: formatMoney(listing.priceDetails.perPersonMinor, currency),
+            berths: listing.specs.berths,
+          })
         : "",
     note: listing.priceDetails.securityDeposit
       ? {

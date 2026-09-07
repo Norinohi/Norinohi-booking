@@ -192,7 +192,14 @@ export default function Hero() {
         alt=""
         fill
         priority
-        sizes="100vw"
+        /*
+         * The source is 16:9 and the mobile slot is taller than it is wide, so `object-cover`
+         * crops to the middle strip and scales it to the full height. At a literal `100vw` that
+         * meant a 750px-wide file stretched over 1,944 physical pixels and the first screen of
+         * the site opened blurred. Over-declaring the width on narrow viewports buys back the
+         * pixels the crop throws away; a portrait source would fix it properly.
+         */
+        sizes="(max-width: 768px) 250vw, 100vw"
         className="-z-10 transform-gpu object-cover"
       />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />

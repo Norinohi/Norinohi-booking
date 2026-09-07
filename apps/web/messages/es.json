@@ -476,6 +476,7 @@
       "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
       "perPersonApprox": "~ {price} por persona",
+      "perBerth": "{price} por persona con {berths} plazas",
       "prepayment": "Anticipo de reserva: {amount}",
       "prepaymentInfo": "Es la parte del precio del chárter que se paga por adelantado para asegurar la reserva. Se descuenta del total y el resto se abona antes de la llegada.",
       "securityDeposit": "Fianza reembolsable: {amount}",
@@ -639,6 +640,7 @@
     "contactExpert": "Contactar con un experto",
     "clearField": "Borrar {label}",
     "clearSelection": "Borrar selección",
+    "andAbove": "{value}+",
     "unitAria": "Unidad de {label}",
     "sections": {
       "where": "¿Adónde?",
@@ -870,7 +872,7 @@
       "heading": "Destinos populares",
       "previous": "Destinos anteriores",
       "next": "Destinos siguientes",
-      "seeAll": "Ver todos los destinos",
+      "seeAll": "Ver todos los yates",
       "summary": "Desde {price} · {count, plural, one {# yate} other {# yates}}"
     },
     "PopularYachts": {
@@ -1287,6 +1289,9 @@
       "pickUp": "Recogida del yate",
       "dropOff": "Entrega del yate",
       "policies": "Condiciones de cancelación y pago",
+      "securityDeposit": "Fianza reembolsable",
+      "securityDepositNote": "La base la retiene en la entrada y la devuelve tras una entrega sin daños.",
+      "securityDepositInsured": "Se reduce a {amount} si contratas el seguro de fianza de la base.",
       "license": "Licencia de navegación requerida",
       "pets": "Mascotas",
       "paymentMethods": "Métodos de pago aceptados por la empresa",
@@ -1350,6 +1355,7 @@
       "extrasPayment": "{amount} (extras)",
       "depositNote": "+ {amount} (fianza reembolsable)",
       "totalPrice": "Precio total",
+      "discountsHeading": "Ya incluido en el precio de arriba",
       "dueNow": "A pagar ahora",
       "payNowCta": "Pagar {amount}",
       "requestQuote": "Solicitar presupuesto",

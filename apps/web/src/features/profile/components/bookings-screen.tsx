@@ -86,6 +86,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                 onValueChange={onRangeChange}
                 placeholder={t("anyDates")}
                 clearLabel={t("clearDates")}
+                allowPast
                 hugContent
                 className="w-full sm:w-auto sm:min-w-50"
               />

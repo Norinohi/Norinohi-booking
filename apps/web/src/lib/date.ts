@@ -34,3 +34,8 @@ export function daysBetween(from: Date, to: Date): number {
 export function addDays(day: string, days: number): string {
   return format(addDaysFn(parseISO(day), days), DAY_KEY);
 }
+
+/** Whether a native Date falls on a calendar day already behind the reader's own today. */
+export function isBeforeToday(date: Date): boolean {
+  return differenceInCalendarDays(date, new Date()) < 0;
+}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 import { MarinaDetails } from "@/components/shared/overlay/marina-popover";
 import MapPreview from "@/components/shared/overlay/map-preview";
+import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import { toMarina } from "../../../lib/to-marina";
@@ -17,6 +18,7 @@ type RowKey =
   | "pickUp"
   | "dropOff"
   | "policies"
+  | "securityDeposit"
   | "license"
   | "pets"
   | "paymentMethods"
@@ -48,6 +50,7 @@ export default function ImportantInfoSection() {
   const t = useTranslations("YachtDetail");
   const tInfo = useTranslations("YachtDetail.importantInfo");
   const tMethod = useTranslations("YachtDetail.importantInfo.paymentMethod");
+  const money = useMoney();
   const { data } = useListingDetail();
 
   if (!data) return null;
@@ -55,12 +58,33 @@ export default function ImportantInfoSection() {
   const info = data.importantInformation;
   /* The pin here marks the same marina the popover does, so tapping it says the same thing. */
   const marina = toMarina(data.base);
+  /*
+   * The deposit is the largest sum the guest hands over that is not the charter, and this block
+   * is where they come looking for exactly that kind of obligation. It was printed only in the
+   * booking sidebar, so anyone reading the terms rather than the price missed it entirely.
+   */
+  const deposit = data.priceDetails.securityDeposit;
+  const depositWhenInsured = data.priceDetails.securityDepositWhenInsured;
+
   const rows: Row[] = [
     { key: "charterCompany", value: info.charterCompany },
     { key: "pickUpAddress", value: info.yachtPickupAddress, mapPoint: info.map },
     { key: "pickUp", value: info.yachtPickup.time ?? "" },
     { key: "dropOff", value: info.yachtDropOff.time ?? "" },
     { key: "policies", value: tInfo(POLICY_KEY[info.cancellationPaymentPolicies]) },
+    ...(deposit
+      ? [
+          {
+            key: "securityDeposit" as const,
+            value: money(deposit.amountMinor, deposit.currency),
+            note: depositWhenInsured
+              ? tInfo("securityDepositInsured", {
+                  amount: money(depositWhenInsured.amountMinor, depositWhenInsured.currency),
+                })
+              : tInfo("securityDepositNote"),
+          },
+        ]
+      : []),
     { key: "license", value: tInfo(POLICY_KEY[info.sailingLicenseRequired]) },
     { key: "pets", value: tInfo(POLICY_KEY[info.pets]) },
     {
@@ -101,10 +125,10 @@ export default function ImportantInfoSection() {
                 <p className={cn("text-base leading-5.5 text-foreground", row.note && "font-bold")}>
                   {row.value}
                 </p>
+                {/* Sentence case: the slot was styled for a short uppercase caption and had no
+                    consumer until the deposit note, which is a sentence and shouted as one. */}
                 {row.note ? (
-                  <p className="text-sm leading-4.5 tracking-wider uppercase text-natural-500">
-                    {row.note}
-                  </p>
+                  <p className="text-sm leading-4.5 text-natural-500">{row.note}</p>
                 ) : null}
               </div>
               {row.mapPoint ? (
