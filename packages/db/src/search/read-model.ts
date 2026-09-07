@@ -58,8 +58,27 @@ export async function rebuildListingSearchDocs(
       select
         o.listing_id,
         o.id as offer_id,
-        /* Architecture section 3: Booking Manager takes a tie. */
-        case p.code when 'booking_manager' then 0 when 'nausys' then 1 else 2 end as provider_rank,
+        /*
+         * Which vendor takes a tie, read from the admin setting so the card and the sale agree.
+         *
+         * Resolved here rather than passed in, because every caller of this rebuild would
+         * otherwise have to carry a value none of them has an opinion about. The consequence is
+         * that a change of preference reaches the catalogue only when these documents are next
+         * rebuilt -- the sale and the availability calendar follow it immediately.
+         *
+         * array_position is 1-based and answers NULL for a code the list does not name, which
+         * is the ranking we want: a provider nobody has configured sorts after every one who is.
+         */
+        coalesce(
+          array_position(
+            coalesce(
+              (select ms.transacting_preference from marketplace_setting ms where ms.id = 'singleton'),
+              array['booking_manager', 'nausys', 'mock']
+            ),
+            p.code
+          ),
+          1000
+        ) as provider_rank,
         o.default_currency,
         o.security_deposit_minor,
         o.security_deposit_currency,

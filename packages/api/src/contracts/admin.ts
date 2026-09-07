@@ -864,12 +864,31 @@ export const marketplacePaymentSettingsSchema = z.object({
     .describe("How many days ahead of check-in deposits stop being offered."),
 });
 
+/**
+ * Provider codes, most preferred first.
+ *
+ * Every known code must appear exactly once: an admin is ordering the vendors, not choosing a
+ * subset, and a list that quietly omitted one would leave that vendor's rank to the fallback
+ * rather than to anybody's decision.
+ */
+export const transactingPreferenceSchema = z
+  .array(providerKeyOutputSchema)
+  .min(1)
+  .refine((codes) => new Set(codes).size === codes.length, {
+    message: "Each provider may appear only once",
+  })
+  .describe(
+    "Which vendor wins when availability, price and fees are equal, most preferred first. Commercial only: it does not change whose photographs or specifications a merged listing shows.",
+  );
+
 export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
+  transactingPreference: transactingPreferenceSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
 });
 
 export const marketplaceSettingsUpdateInputSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
+  transactingPreference: transactingPreferenceSchema,
 });

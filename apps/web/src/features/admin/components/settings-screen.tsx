@@ -23,6 +23,7 @@ import {
 
 type PaymentSource = "vendor" | "marketplace";
 type PaymentMode = "deposit" | "full";
+type ProviderCode = "booking_manager" | "nausys" | "mock";
 
 interface FormState {
   source: PaymentSource;
@@ -31,9 +32,35 @@ interface FormState {
   depositPercent: string;
   enforceLeadTime: boolean;
   leadTimeDays: string;
+  /* Provider codes, most preferred first. Saved whole; the radios only move the winner. */
+  preference: ProviderCode[];
 }
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
+
+/*
+ * The vendors worth offering as a first choice. `mock` is a real provider code and stays in the
+ * saved order, but it is a development fixture rather than something anybody sells through, so
+ * it is not something to put in front of an operator.
+ */
+const CHOOSABLE_PROVIDERS = ["booking_manager", "nausys"] as const;
+
+/* Brand names, so they stay as written in every locale. */
+const PROVIDER_NAME = {
+  booking_manager: "Booking Manager",
+  nausys: "NauSYS",
+  mock: "Mock",
+} satisfies Record<ProviderCode, string>;
+
+/**
+ * The same order with `code` promoted to the front.
+ *
+ * The rest keep their relative places, so choosing a winner is the only thing the radios change:
+ * an operator picking NauSYS is not also silently reordering everyone below it.
+ */
+function preferFirst(order: readonly ProviderCode[], code: ProviderCode): ProviderCode[] {
+  return [code, ...order.filter((entry) => entry !== code)];
+}
 
 /**
  * Settings for /settings: the payment flow every quote is priced on.
@@ -62,6 +89,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       depositPercent: String(Math.round(data.payment.depositPct * 100)),
       enforceLeadTime: data.payment.enforceLeadTime,
       leadTimeDays: String(data.payment.leadTimeDays),
+      preference: data.transactingPreference,
     });
   }, [data?.updatedAt, data]);
 
@@ -90,6 +118,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
           enforceLeadTime: form.enforceLeadTime,
           leadTimeDays: days,
         },
+        transactingPreference: form.preference,
       },
       {
         onSuccess: () => toast.success(t("saved")),
@@ -102,6 +131,12 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
     setForm((current) => (current ? { ...current, ...patch } : current));
 
   const marketplaceSelected = form?.source === "marketplace";
+  /* The first vendor an operator can actually choose. A saved order that leads with `mock` is a
+     development database, not a decision, so the radios fall back to the first real vendor. */
+  const preferred =
+    form?.preference.find((code): code is (typeof CHOOSABLE_PROVIDERS)[number] =>
+      CHOOSABLE_PROVIDERS.some((entry) => entry === code),
+    ) ?? CHOOSABLE_PROVIDERS[0];
 
   return (
     <div className="flex flex-col">
@@ -272,6 +307,39 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                       </p>
                     )}
                   </div>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("preference.legend")}
+                  </legend>
+
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("preference.hint")}
+                  </p>
+
+                  <RadioGroup
+                    value={preferred}
+                    onValueChange={(value) => {
+                      const code = CHOOSABLE_PROVIDERS.find((entry) => entry === value);
+                      if (code && form) set({ preference: preferFirst(form.preference, code) });
+                    }}
+                    className="gap-3"
+                  >
+                    {CHOOSABLE_PROVIDERS.map((code) => (
+                      <label
+                        key={code}
+                        className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground"
+                      >
+                        <Radio value={code} />
+                        {PROVIDER_NAME[code]}
+                      </label>
+                    ))}
+                  </RadioGroup>
+
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("preference.rebuildNote")}
+                  </p>
                 </fieldset>
 
                 <div className="flex items-center gap-3">

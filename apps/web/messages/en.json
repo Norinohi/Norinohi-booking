@@ -2980,8 +2980,8 @@
       }
     },
     "Settings": {
-      "title": "Payment settings",
-      "subtitle": "How much of a charter is collected up front, for every quote on the marketplace.",
+      "title": "Marketplace settings",
+      "subtitle": "How much of a charter is collected up front, and which provider we sell through when the offers are equal.",
       "source": {
         "legend": "Which payment plan we use",
         "vendor": {
@@ -3006,10 +3006,15 @@
         "daysLabel": "Days before check-in",
         "daysError": "Enter a whole number of days between 0 and 365."
       },
+      "preference": {
+        "legend": "Preferred provider",
+        "hint": "Which vendor wins when availability, price and mandatory fees are equal. It never overrides a cheaper offer: it only settles a tie.",
+        "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
+      },
       "save": "Save changes",
       "saving": "Saving...",
-      "saved": "Payment settings saved.",
-      "saveFailed": "Could not save the payment settings.",
+      "saved": "Settings saved.",
+      "saveFailed": "Could not save the settings.",
       "appliesNext": "Applies to new quotes. A quote a customer is already holding keeps the policy it was priced under."
     }
   }
