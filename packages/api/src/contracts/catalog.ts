@@ -23,7 +23,7 @@ const facetOptionSchema = z.object({
   /* Cloudinary public_id — prefer it over imageUrl and build the delivery URL client-side. */
   cloudinaryId: z.string().nullish(),
   description: z.string().nullish(),
-  /* Cheapest listing in the group — what a "from X" card label renders. */
+  /* Lowest positive comparable price in EUR, used by destination summaries. */
   priceFromMinor: z.number().int().nullish(),
   currency: z.string().length(3).nullish(),
 });

@@ -85,7 +85,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
    */
   const boatPriceLabel = listing
     ? listing.priceIsFrom
-      ? tCard("priceFromLabel")
+      ? tCard("priceIndicative")
       : tCard("priceFor", { days: listing.priceDetails.periodDays })
     : "";
   const boatPerPerson = recommendation.recommendedPerPerson

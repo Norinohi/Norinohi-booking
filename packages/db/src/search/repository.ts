@@ -1852,27 +1852,14 @@ function paginationFor(input: {
   };
 }
 
-/*
- * The cheapest listing in a facet group, given as its own published price and currency.
- *
- * Two aggregates sharing one order, rather than min(price) beside min(currency). Those were
- * independent: the number came from whichever listing held the smallest integer and the symbol
- * from whichever currency sorted first, so British Virgin Islands rendered "From EUR 1,969" off
- * a boat priced USD 1,969.
- *
- * The order is the converted column, so cheapest means cheapest rather than smallest-integer.
- * What is displayed is still the published pair, so the card shows what the operator advertises.
- * A group holding nothing comparable falls through to its own cheapest published amount, which
- * is the right answer there: nothing to compare means the group is in one currency.
- */
-const facetPriceOrder = sql`order by
-  doc.price_from_minor_eur asc nulls last,
-  doc.price_from_minor asc nulls last,
-  doc.listing_id asc`;
-
+/* Destination prices share the catalogue's EUR comparison currency. Missing FX or a
+ * non-positive amount is not a price: keep the destination but omit its price label. */
+const facetComparablePrice = sql`case when doc.currency = ${FX_BASE_CURRENCY}
+  then doc.price_from_minor else doc.price_from_minor_eur end`;
 const facetPriceColumns = sql`
-      (array_agg(doc.price_from_minor ${facetPriceOrder}))[1] as "priceFromMinor",
-      (array_agg(doc.currency ${facetPriceOrder}))[1] as currency`;
+      min(${facetComparablePrice}) filter (where ${facetComparablePrice} > 0)
+        as "priceFromMinor",
+      ${FX_BASE_CURRENCY}::text as currency`;
 
 async function listFacetOptions(
   db: NodePgDatabase<typeof schema>,

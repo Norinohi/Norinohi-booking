@@ -137,7 +137,7 @@ export type ListingSearchDoc = {
   listPriceFromMinor: number | null;
   currency: string | null;
   /**
-   * `priceFromMinor` in one catalogue-wide currency, for comparison only. Never rendered, and
+   * `priceFromMinor` in the catalogue-wide comparison currency, also used by destination summaries;
    * null where no fresh rate covers the published currency. See the `price_from_minor_eur`
    * column comment in schema/search.ts.
    */
@@ -342,7 +342,7 @@ export type ListingFacetOption = {
   imageUrl?: string | null;
   cloudinaryId?: string | null;
   description?: string | null;
-  /* Cheapest listing inside the group, so a card can show "from X" without a second query. */
+  /* Lowest positive comparable price in EUR; null when the group has no comparable price. */
   priceFromMinor?: number | null;
   currency?: string | null;
 };

@@ -44,10 +44,14 @@ function DestinationSlides() {
               image={country.imageUrl ?? undefined}
               imageAlt={country.label}
               title={country.label}
-              subtitle={t("summary", {
-                price: money(country.priceFromMinor ?? 0, country.currency ?? undefined),
-                count: country.count ?? 0,
-              })}
+              subtitle={
+                country.priceFromMinor != null && country.priceFromMinor > 0
+                  ? t("summary", {
+                      price: money(country.priceFromMinor, country.currency ?? undefined),
+                      count: country.count ?? 0,
+                    })
+                  : t("yachtCount", { count: country.count ?? 0 })
+              }
               className="w-full transition-transform duration-200 group-hover:-translate-y-1"
             />
           </Link>

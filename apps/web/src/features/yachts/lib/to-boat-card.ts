@@ -97,8 +97,6 @@ export function toBoatCard(
      */
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     priceLabel: priceCaption(t, listing),
-    /* "From" reads into the amount; "Price for 7 days" captions it. */
-    priceLabelLeads: listing.priceIsFrom,
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
@@ -137,7 +135,7 @@ export function toBoatCard(
  */
 function priceCaption(t: CardTranslator, listing: ResultListing): string {
   if (!listing.priceFrom) return "";
-  if (listing.priceIsFrom) return t("priceFromLabel");
+  if (listing.priceIsFrom) return t("priceIndicative");
   return t("priceFor", { days: listing.priceDetails.periodDays });
 }
 

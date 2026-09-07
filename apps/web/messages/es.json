@@ -470,7 +470,8 @@
       "viewDetails": "Ver detalles",
       "imageAlt": "{name} amarrado en {marina}",
       "openGallery": "Abrir la galería de fotos",
-      "priceFor": "Precio por {days, plural, one {# día} other {# días}}",
+      "priceFor": "Precio del chárter · {days, plural, one {# día} other {# días}}",
+      "priceIndicative": "Precio del chárter · mínimo de temporada",
       "priceFromLabel": "Desde",
       "priceOnRequest": "Bajo petición",
       "priceUnavailable": "No disponible",
@@ -876,7 +877,8 @@
       "previous": "Destinos anteriores",
       "next": "Destinos siguientes",
       "seeAll": "Ver todos los yates",
-      "summary": "Desde {price} · {count, plural, one {# yate} other {# yates}}"
+      "summary": "Desde {price} · {count, plural, one {# yate} other {# yates}}",
+      "yachtCount": "{count, plural, one {# yate} other {# yates}}"
     },
     "PopularYachts": {
       "heading": "Yates populares",

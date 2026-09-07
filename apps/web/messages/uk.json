@@ -470,7 +470,8 @@
       "viewDetails": "Детальніше",
       "imageAlt": "{name} біля причалу {marina}",
       "openGallery": "Відкрити галерею фото",
-      "priceFor": "Ціна за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+      "priceFor": "Ціна чартеру · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+      "priceIndicative": "Ціна чартеру · мінімум за сезон",
       "priceFromLabel": "Від",
       "priceOnRequest": "За запитом",
       "priceUnavailable": "Недоступно",
@@ -876,7 +877,8 @@
       "previous": "Попередні напрямки",
       "next": "Наступні напрямки",
       "seeAll": "Переглянути всі яхти",
-      "summary": "Від {price} · {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}"
+      "summary": "Від {price} · {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}",
+      "yachtCount": "{count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}"
     },
     "PopularYachts": {
       "heading": "Популярні яхти",

@@ -470,7 +470,8 @@
       "viewDetails": "Details ansehen",
       "imageAlt": "{name} vor Anker in {marina}",
       "openGallery": "Fotogalerie öffnen",
-      "priceFor": "Preis für {days, plural, one {# Tag} other {# Tage}}",
+      "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
+      "priceIndicative": "Charterpreis · Saisonminimum",
       "priceFromLabel": "Ab",
       "priceOnRequest": "Auf Anfrage",
       "priceUnavailable": "Nicht verfügbar",
@@ -876,7 +877,8 @@
       "previous": "Vorherige Reiseziele",
       "next": "Nächste Reiseziele",
       "seeAll": "Alle Yachten ansehen",
-      "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}"
+      "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}",
+      "yachtCount": "{count, plural, one {# Yacht} other {# Yachten}}"
     },
     "PopularYachts": {
       "heading": "Beliebte Yachten",
