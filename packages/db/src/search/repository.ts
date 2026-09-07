@@ -2325,8 +2325,17 @@ function normalizedIn(column: SQL, values: string[]): SQL {
   )})`;
 }
 
+/**
+ * A label reduced to the letters and digits both sides of a filter can agree on.
+ *
+ * `&` becomes "and" first, matching `normalizedFilterValue` and `valueForLabel`. Without that
+ * step the two normalisations disagreed on every name carrying one: the facet offered "Wi-Fi &
+ * Internet" as `wi-fi-and-internet`, the filter reduced that to `wifiandinternet`, and the
+ * column reduced itself to `wifiinternet`. Forty options across the catalogue answered with
+ * nothing, 1,417 listings' worth of them behind that one equipment filter alone.
+ */
 function normalizedSql(value: SQL): SQL {
-  return sql`regexp_replace(lower(coalesce(${value}, '')), '[^a-z0-9]+', '', 'g')`;
+  return sql`regexp_replace(replace(lower(coalesce(${value}, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
 }
 
 /**
@@ -2345,7 +2354,7 @@ function modalLabel(value: SQL): SQL {
   return sql`mode() within group (order by ${value})`;
 }
 
-function normalizedFilterValue(value: string): string {
+export function normalizedFilterValue(value: string): string {
   return value
     .trim()
     .toLowerCase()

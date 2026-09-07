@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { feeVariantKey, foldFeeVariants } from "./repository";
+import { feeVariantKey, foldFeeVariants, normalizedFilterValue, valueForLabel } from "./repository";
 
 /**
  * Labels copied from production listings, not invented: an operator publishes one fee once per
@@ -42,7 +42,9 @@ describe("feeVariantKey", () => {
 
   it("meets the same fee published per charter length", () => {
     expect(feeVariantKey("Comfort Pack")).toBe(feeVariantKey("Comfort Pack 2 weeks"));
-    expect(feeVariantKey("Transit Log 2026 1 week")).toBe(feeVariantKey("Transit Log 2026 3 weeks"));
+    expect(feeVariantKey("Transit Log 2026 1 week")).toBe(
+      feeVariantKey("Transit Log 2026 3 weeks"),
+    );
   });
 
   /*
@@ -110,5 +112,38 @@ describe("foldFeeVariants", () => {
     ]);
 
     expect(rows).toHaveLength(3);
+  });
+});
+
+/**
+ * Three normalisations have to agree or a filter answers nothing: `valueForLabel` mints the slug
+ * the facet hands the UI, `normalizedFilterValue` reduces that slug for comparison, and
+ * `normalizedSql` reduces the column the same way in Postgres. Only the first two are testable
+ * here; `sqlNormalised` below is what psql returned for the same labels, so a change to the SQL
+ * expression that drifts from the pair fails this suite rather than the catalogue.
+ */
+describe("facet value normalisation", () => {
+  const sqlNormalised: [string, string][] = [
+    ["Wi-Fi & Internet", "wifiandinternet"],
+    ["Ava & Aleksander Yachting", "avaandaleksanderyachting"],
+    ["D&D Kufner 50", "danddkufner50"],
+    ["A&H byGRACE", "aandhbygrace"],
+    ["M & S obrt za turizam", "mandsobrtzaturizam"],
+    ["Master Yachting ", "masteryachting"],
+    ["ACE Yachting", "aceyachting"],
+  ];
+
+  it.each(sqlNormalised)(
+    "routes %s through the slug to the column's own value",
+    (label, column) => {
+      expect(normalizedFilterValue(valueForLabel(label))).toBe(column);
+    },
+  );
+
+  /* The ampersand is the case that was broken: "Wi-Fi & Internet" reached the column as
+     "wifiinternet" while the filter asked for "wifiandinternet", and 750 listings answered none. */
+  it("spells an ampersand out on both sides", () => {
+    expect(valueForLabel("Wi-Fi & Internet")).toBe("wi-fi-and-internet");
+    expect(normalizedFilterValue("Wi-Fi & Internet")).toBe("wifiandinternet");
   });
 });
