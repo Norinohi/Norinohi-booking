@@ -1723,12 +1723,12 @@ async function listFacetOptions(
 ): Promise<ListingFacetOption[]> {
   const rows = await db.execute<FacetOptionRow>(sql`
     select
-      ${expression} as label,
+      ${modalLabel(expression)} as label,
       count(*)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     where ${whereClause(input, ignored)}
       and ${expression} is not null
-    group by label
+    group by ${normalizedSql(expression)}
     order by label asc
   `);
 
@@ -1741,14 +1741,14 @@ async function listEquipmentFacetOptions(
 ): Promise<ListingFacetOption[]> {
   const rows = await db.execute<FacetOptionRow>(sql`
     select
-      amenity.value as label,
+      ${modalLabel(sql`amenity.value`)} as label,
       count(distinct doc.listing_id)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
     where ${whereClause(input, ["equipment"])}
       and amenity.value is not null
-    group by amenity.value
-    order by amenity.value asc
+    group by ${normalizedSql(sql`amenity.value`)}
+    order by label asc
   `);
 
   return decorateFacetOptions(db, rows.rows, "equipment", input.locale);
@@ -2127,6 +2127,22 @@ function normalizedIn(column: SQL, values: string[]): SQL {
 
 function normalizedSql(value: SQL): SQL {
   return sql`regexp_replace(lower(coalesce(${value}, '')), '[^a-z0-9]+', '', 'g')`;
+}
+
+/**
+ * The spelling most of a facet group's listings use, for a group keyed on `normalizedSql`.
+ *
+ * Facets are grouped the way `normalizedIn` filters, or the two disagree about what one value
+ * is: "ACE Yachting" and "Ace Yachting" were two options carrying 13 listings each, and picking
+ * either answered with all 26. The same split put "Motor yacht" (400) beside "Motoryacht" (155)
+ * in the boat types, and a marina under both "Pula / Marina Polesana" and "Pula, Marina
+ * Polesana". One row per value now, counted the way the filter counts.
+ *
+ * `mode()` rather than `min()` because the label is what a person reads: the spelling the
+ * operator uses on most of its hulls beats whichever sorts first.
+ */
+function modalLabel(value: SQL): SQL {
+  return sql`mode() within group (order by ${value})`;
 }
 
 function normalizedFilterValue(value: string): string {
