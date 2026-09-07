@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import {
   getListingByIdOrSlug,
   getListingDetailByIdOrSlug,
+  getMergedListingTarget,
   listListingReviews,
   listListingsByIds,
   listSimilarListings,
@@ -50,6 +51,27 @@ export const listingsRouter = {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
       return presentListingDetail(listing);
+    }),
+  redirectTarget: publicProcedure
+    .route({
+      method: "GET",
+      path: "/listings/{id}/redirect-target",
+      operationId: "getListingRedirectTarget",
+      summary: "Where a merged listing's old URL now leads",
+      description:
+        "Resolves the URL of the listing a merged duplicate was folded into, so the old address can send visitors on rather than 404. Returns null for an id or slug that is simply unknown, and for a merge whose keeper is not published.",
+      tags: ["Listings"],
+      successDescription:
+        "The surviving listing's id and slug, or null when there is nowhere to send the visitor.",
+      spec: withParameterExamples({
+        id: "ylst_yacht-lagoon-42-aurora",
+      }),
+    })
+    .input(z.object({ id: z.string() }))
+    .output(z.object({ listingId: z.string(), slug: z.string() }).nullable())
+    .handler(async ({ context, input }) => {
+      const target = await getMergedListingTarget(context.db, input.id);
+      return target ?? null;
     }),
   byIds: publicProcedure
     .route({

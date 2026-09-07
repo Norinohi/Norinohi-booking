@@ -200,6 +200,47 @@ export async function getListingByIdOrSlug(
 }
 
 /**
+ * Where a merged listing's old URL now leads.
+ *
+ * A confirmed duplicate keeps its `listing` row with `status = 'merged'` and a pointer at the
+ * keeper, but its search document is dropped, so the detail page can only 404 on it. That loses
+ * whatever ranking the old URL had earned and shows an error to somebody who followed a link to a
+ * boat that still exists.
+ *
+ * Followed rather than read once: a keeper can itself be merged later, and stopping at the first
+ * hop would redirect to a second dead page. The walk is depth-capped because the pointer is a
+ * self-reference and a cycle would otherwise loop forever.
+ *
+ * Returns nothing unless the chain ends on a published listing, so a merge into something hidden
+ * or draft still 404s instead of redirecting to a page that cannot be shown.
+ */
+const MERGE_CHAIN_DEPTH = 8;
+
+export async function getMergedListingTarget(
+  db: NodePgDatabase<typeof schema>,
+  idOrSlug: string,
+): Promise<{ listingId: string; slug: string } | undefined> {
+  const rows = await db.execute<{ listingId: string; slug: string }>(sql`
+    with recursive chain as (
+      select l.id, l.slug, l.status, l.merged_into_listing_id, 0 as depth
+      from listing l
+      where (l.id = ${idOrSlug} or l.slug = ${idOrSlug}) and l.status = 'merged'
+      union all
+      select next.id, next.slug, next.status, next.merged_into_listing_id, chain.depth + 1
+      from chain
+      join listing next on next.id = chain.merged_into_listing_id
+      where chain.status = 'merged' and chain.depth < ${MERGE_CHAIN_DEPTH}
+    )
+    select chain.id as "listingId", chain.slug
+    from chain
+    where chain.status = 'published'
+    limit 1
+  `);
+
+  return rows.rows[0];
+}
+
+/**
  * The provider's own description in `locale`, or undefined when it ships none.
  *
  * `listing_search_doc` bakes provider prose into `searchable_text` only, so the detail read is

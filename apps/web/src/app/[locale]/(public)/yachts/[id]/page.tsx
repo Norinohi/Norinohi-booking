@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getLocale, getTranslations } from "next-intl/server";
 
 import { Hydrated } from "@/components/layout/hydrated";
 import { BookingProvider, BookingSidebar } from "@/features/booking";
 import { YachtDetailScreen } from "@/features/yachts";
-import { isListingNotFound, prefetchListingDetail } from "@/features/yachts/api/server";
+import {
+  isListingNotFound,
+  prefetchListingDetail,
+  resolveMergedListingTarget,
+} from "@/features/yachts/api/server";
+import { permanentRedirect } from "@/i18n/navigation";
 import { crewKey, joinWithinBudget } from "@/features/yachts/lib/listing-copy";
 import { breadcrumbNode, JsonLd, listingNode } from "@/lib/json-ld";
 import { buildMetadata, socialImage } from "@/lib/seo";
@@ -157,6 +162,15 @@ export default async function YachtDetailPage({
      * serialized out of a cached function and lose their class.
      */
     if (error instanceof Error && isListingNotFound(error)) {
+      /*
+       * The id may belong to a duplicate that has since been merged away. Its `listing` row still
+       * points at the boat it was folded into, so the old URL sends visitors on permanently rather
+       * than 404ing and dropping whatever ranking it had earned.
+       */
+      const target = await resolveMergedListingTarget(id);
+      if (target) {
+        permanentRedirect({ href: `/yachts/${target.slug}`, locale: await getLocale() });
+      }
       notFound();
     }
     throw error;
