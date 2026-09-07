@@ -1685,6 +1685,8 @@
   "Wishlist": {
     "title": "Tus favoritos",
     "back": "Volver",
+    "saved": "Guardado en tus favoritos.",
+    "removed": "Eliminado de tus favoritos.",
     "emptyTitle": "Aún no hay yates guardados",
     "emptyDescription": "Empieza a explorar y guarda tus favoritos para más adelante",
     "someUnavailable": "Algunos de tus yates guardados ya no están disponibles.",

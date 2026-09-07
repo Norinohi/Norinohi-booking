@@ -24,7 +24,27 @@ export const STATIC_PATHS = ["/", "/yachts", "/plan-my-trip"] as const;
 
 /** Page size is capped at 50 by `listingSearchInputSchema`; the bound stops a bad cursor looping. */
 const PAGE_SIZE = 50;
-const MAX_PAGES = 40;
+const MAX_PAGES = 1000;
+
+/**
+ * How many pages the walk asks for at once, once the first answer has named the total.
+ *
+ * A 18,655-listing catalog is 374 requests the contract's page cap cannot shrink. Sequentially
+ * that is over a minute inside one cached render, and the crawler that arrives on a cold cache
+ * pays all of it. Six at a time against our own API keeps it to seconds without behaving like a
+ * load test.
+ */
+const WALK_CONCURRENCY = 6;
+
+/**
+ * Listings per sitemap file.
+ *
+ * Google allows 50,000 URLs or 50 MB per file, whichever comes first. Every listing carries four
+ * locale entries with the full alternate set, which measures ~3 KB, so the byte ceiling binds
+ * first: the whole catalog in one file is ~55 MB and would be rejected outright. At 2,500 a file
+ * is ~7 MB, and Search Console reports coverage per file in slices small enough to act on.
+ */
+export const LISTINGS_PER_SITEMAP = 2500;
 
 /** Process start, which is deploy time here — the only moment the static routes can change. */
 export const BUILT_AT = new Date();
@@ -77,26 +97,50 @@ export async function listingPaths(): Promise<string[]> {
   cacheLife("hours");
   cacheTag(CATALOG_TAG);
 
-  const slugs: string[] = [];
-
-  for (let page = 1; page <= MAX_PAGES; page++) {
+  const readPage = async (page: number) => {
     const result = await publicClient.charterSearch.results({ pageSize: PAGE_SIZE, page });
+    return result;
+  };
 
-    for (const item of result.items) {
-      slugs.push(`/yachts/${item.listing.slug}`);
-    }
+  const first = await readPage(1);
+  const slugsOf = (result: Awaited<ReturnType<typeof readPage>>) =>
+    result.items.map((item) => `/yachts/${item.listing.slug}`);
 
-    // Absent only in cursor mode, which this walk never enters; treat it as "no more pages"
-    // rather than looping to MAX_PAGES against a contract that changed underneath.
-    if (page >= (result.pagination?.totalPages ?? page)) {
-      return slugs;
-    }
+  // Absent only in cursor mode, which this walk never enters; treat it as "no more pages"
+  // rather than looping to MAX_PAGES against a contract that changed underneath.
+  const totalPages = first.pagination?.totalPages ?? 1;
+  const lastPage = Math.min(totalPages, MAX_PAGES);
+
+  if (totalPages > MAX_PAGES) {
+    console.warn(
+      `[sitemap] catalog has ${totalPages} pages, walking ${MAX_PAGES}; raise MAX_PAGES`,
+    );
   }
 
-  console.warn(
-    `[sitemap] stopped at ${MAX_PAGES} pages (${slugs.length} listings); raise MAX_PAGES`,
-  );
+  const slugs = slugsOf(first);
+
+  /* The first answer named the total, so the rest no longer have to be discovered one by one. */
+  for (let page = 2; page <= lastPage; page += WALK_CONCURRENCY) {
+    const batch = Array.from(
+      { length: Math.min(WALK_CONCURRENCY, lastPage - page + 1) },
+      (_, offset) => readPage(page + offset),
+    );
+    for (const result of await Promise.all(batch)) slugs.push(...slugsOf(result));
+  }
+
   return slugs;
+}
+
+/**
+ * One id per listings file, which both `generateSitemaps` and the index read.
+ *
+ * Always at least one, so an enumeration failure still publishes an empty file the index can
+ * point at rather than an index naming a route that 404s.
+ */
+export async function listingSitemapIds(): Promise<number[]> {
+  const paths = await safely(listingPaths, "listings");
+  const count = Math.max(1, Math.ceil(paths.length / LISTINGS_PER_SITEMAP));
+  return Array.from({ length: count }, (_, id) => id);
 }
 
 /**

@@ -204,6 +204,13 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
       /* Add-only pulse: the header animates when something enters the wishlist, not when it leaves. */
       if (!saved) setAddSignal((tick) => tick + 1);
 
+      /*
+       * Said here rather than in a mutation callback, because a guest save writes to
+       * localStorage and has no callback to hang it on. Both paths flip the button optimistically,
+       * and the one that can still fail rolls back with `toggleFailed` over the top.
+       */
+      toast.success(saved ? t("removed") : t("saved"));
+
       if (mode === "guest") {
         if (saved) localWishlist.remove(listingId);
         else localWishlist.add(listingId);
@@ -213,7 +220,7 @@ export default function WishlistProvider({ children }: { children: React.ReactNo
       if (saved) removeMutation.mutate({ listingId });
       else addMutation.mutate({ listingId });
     },
-    [addMutation, mode, removeMutation, savedIds],
+    [addMutation, mode, removeMutation, savedIds, t],
   );
 
   const value = useMemo<WishlistContextValue>(

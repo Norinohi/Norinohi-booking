@@ -1685,6 +1685,8 @@
   "Wishlist": {
     "title": "Ihre Merkliste",
     "back": "Zurück",
+    "saved": "Zur Merkliste hinzugefügt.",
+    "removed": "Von der Merkliste entfernt.",
     "emptyTitle": "Noch keine gemerkten Yachten",
     "emptyDescription": "Entdecken Sie Yachten und merken Sie sich Ihre Favoriten für später",
     "someUnavailable": "Einige Ihrer gemerkten Yachten sind nicht mehr verfügbar.",

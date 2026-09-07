@@ -1,4 +1,4 @@
-import { absolute, SITEMAP_NAMES } from "@/lib/sitemap";
+import { absolute, listingSitemapIds, SITEMAP_NAMES } from "@/lib/sitemap";
 
 /*
  * The sitemap index, written by hand because Next cannot emit one.
@@ -11,13 +11,19 @@ import { absolute, SITEMAP_NAMES } from "@/lib/sitemap";
  * An index rather than four `Sitemap:` lines in robots.txt: it is submitted to Search Console
  * once, and a fifth child later needs no change there.
  */
-export function GET(): Response {
+export async function GET(): Promise<Response> {
+  /* Listings is the one child that outgrew a single file, so it contributes a `loc` per chunk. */
+  const listingIds = await listingSitemapIds();
+  const locations = SITEMAP_NAMES.flatMap((name) =>
+    name === "listings"
+      ? listingIds.map((id) => absolute(`/sitemaps/listings/sitemap/${id}.xml`))
+      : [absolute(`/sitemaps/${name}/sitemap.xml`)],
+  );
+
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...SITEMAP_NAMES.map(
-      (name) => `<sitemap><loc>${absolute(`/sitemaps/${name}/sitemap.xml`)}</loc></sitemap>`,
-    ),
+    ...locations.map((loc) => `<sitemap><loc>${loc}</loc></sitemap>`),
     "</sitemapindex>",
   ].join("\n");
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
 
@@ -36,17 +38,29 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
   );
 }
 
-function BreadcrumbLink({ className, ...props }: React.ComponentProps<"a">) {
-  return (
-    <a
-      data-slot="breadcrumb-link"
-      className={cn(
-        "cursor-pointer text-natural-300 transition-colors hover:text-foreground",
-        className,
-      )}
-      {...props}
-    />
-  );
+/**
+ * `render` takes the router's own link, the way `Button` does.
+ *
+ * A bare `<a href="/yachts">` in a localised app is a link out of the reader's locale: the
+ * middleware answers it with a redirect to the default one, so a Ukrainian visitor lands in
+ * English. The app passes its `Link`, which prefixes the locale and keeps the navigation client
+ * side; the plain anchor stays the default for a crumb pointing somewhere else entirely.
+ */
+function BreadcrumbLink({ className, render, ...props }: useRender.ComponentProps<"a">) {
+  return useRender({
+    defaultTagName: "a",
+    props: mergeProps<"a">(
+      {
+        className: cn(
+          "cursor-pointer text-natural-300 transition-colors hover:text-foreground",
+          className,
+        ),
+      },
+      props,
+    ),
+    render,
+    state: { slot: "breadcrumb-link" },
+  });
 }
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {

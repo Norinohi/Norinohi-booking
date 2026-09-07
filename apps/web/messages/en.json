@@ -1685,6 +1685,8 @@
   "Wishlist": {
     "title": "Your Wishlist",
     "back": "Back",
+    "saved": "Saved to your wishlist.",
+    "removed": "Removed from your wishlist.",
     "emptyTitle": "No saved yachts yet",
     "emptyDescription": "Start exploring and save your favorites for later",
     "someUnavailable": "Some of your saved yachts are no longer available.",
