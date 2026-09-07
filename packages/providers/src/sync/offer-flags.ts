@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 
 import type { Database } from "../registry";
 import { resolveCanonicalListings } from "./canonical-listing-writer";
@@ -61,8 +61,20 @@ export async function refreshOfferFlags(db: Database, listingIds?: readonly stri
 }
 
 export async function deriveOfferFlagsFromExtras(db: Database, listingIds?: readonly string[]) {
-  const scope = listingIds ? sql`o.listing_id = any(${[...new Set(listingIds)]})` : sql`true`;
+  /*
+   * One bound `text[]`, not a list of ids. Drizzle expands an array in a template into a
+   * parameter each, which `any(...)` reads as a row expression and rejects outright -- so this
+   * branch failed for any scope at all, and at fleet scale failed as "ROW expressions can have
+   * at most 1664 entries", taking the projection phase of every full sync down with it.
+   */
+  const scope = listingIds
+    ? sql`o.listing_id = any(${sql.param([...new Set(listingIds)])}::text[])`
+    : sql`true`;
 
+  await updateOfferFlags(db, scope);
+}
+
+async function updateOfferFlags(db: Database, scope: SQL) {
   await db.execute(sql`
     update listing_offer o
     set
