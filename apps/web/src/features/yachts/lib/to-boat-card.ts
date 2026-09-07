@@ -85,14 +85,7 @@ export function toBoatCard(
      * calendar could always honour.
      */
     ...charterDates(listing, searched ?? listing.availability.bookablePeriod),
-    /*
-     * "From" where the figure is the season's cheapest week rather than the price of the
-     * charter named above it. Captioning an indicative floor "Price for 7 days" prices a week
-     * nobody has quoted, which is the mislabel this pair exists to avoid.
-     */
-    priceLabel: listing.priceIsFrom
-      ? t("priceFromLabel")
-      : t("priceFor", { days: listing.priceDetails.periodDays }),
+    priceLabel: priceCaption(t, listing),
     /* "From" reads into the amount; "Price for 7 days" captions it. */
     priceLabelLeads: listing.priceIsFrom,
     price: boatCardPrice(t, listing, formatMoney),
@@ -114,6 +107,19 @@ export function toBoatCard(
         }
       : null,
   };
+}
+
+/**
+ * The caption above the amount, and nothing at all when there is no amount.
+ *
+ * Both captions introduce a figure: "From" reads into it, "Price for 7 days" names what it
+ * buys. With no published rate the slot holds a word instead — "On request" — and captioning
+ * that produced "From / On request", which reads as a broken sentence rather than as a price.
+ */
+function priceCaption(t: CardTranslator, listing: ResultListing): string {
+  if (!listing.priceFrom) return "";
+  if (listing.priceIsFrom) return t("priceFromLabel");
+  return t("priceFor", { days: listing.priceDetails.periodDays });
 }
 
 function charterDates(listing: ResultListing, period: CharterPeriod | null) {

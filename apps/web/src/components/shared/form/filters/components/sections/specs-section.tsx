@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { useMoney } from "@/hooks/use-money";
@@ -20,13 +20,22 @@ const FEET_TO_METRES = 0.3048;
 
 export default function SpecsSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
+  const format = useFormatter();
   const { options } = useFilterOptions();
   const { ranges, priceCurrency } = useFilterRanges();
   const money = useMoney();
-  const [lengthUnit, setLengthUnit] = useState("ft");
+  /* Metres, because the cards, the specs table and the map all report length in them. */
+  const [lengthUnit, setLengthUnit] = useState("m");
 
+  /*
+   * One decimal, because the slider steps in whole feet: rounded to whole metres, three
+   * consecutive positions print the same number and dragging reads as a stuck control.
+   * `format.number` rather than `toFixed` so the separator follows the locale.
+   */
   const showLength = (feet: number) =>
-    lengthUnit === "m" ? String(Math.round(feet * FEET_TO_METRES)) : String(feet);
+    lengthUnit === "m"
+      ? format.number(feet * FEET_TO_METRES, { maximumFractionDigits: 1 })
+      : String(feet);
 
   /* Two keys, one constraint: the slider and both selects all write through here. */
   function setYears(next: YearBounds) {

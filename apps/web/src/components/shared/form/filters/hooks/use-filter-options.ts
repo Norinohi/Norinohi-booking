@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { crewLabel } from "@/lib/crew-label";
+import { slugToLabel } from "@/lib/slug-to-label";
 
 import type { Option } from "../lib/options";
 import type { FacetScope } from "../lib/state";
@@ -86,6 +87,15 @@ export function useFilterOptions(scope?: FacetScope) {
     crews: options.crews.map((option) => ({
       ...option,
       label: crewLabel(tCrew, option.label),
+    })),
+    /*
+     * The only facet the providers spell in lower case: "furling/roll", "full batten". The card
+     * already sentence-cases the same values through `slugToLabel`, so the filter that finds a
+     * boat and the card that describes it now agree.
+     */
+    mainsailTypes: options.mainsailTypes.map((option) => ({
+      ...option,
+      label: slugToLabel(option.label),
     })),
     years: options.years.map((option) =>
       option.value === "any" ? { ...option, label: t("anyYear") } : option,

@@ -117,7 +117,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "flex w-full cursor-pointer items-center justify-between gap-2 border-b border-natural-50 py-2 text-sm font-semibold text-foreground capitalize outline-none select-none last:border-b-0",
+        "flex w-full cursor-pointer items-center justify-between gap-2 border-b border-natural-50 py-2 text-sm font-semibold text-foreground outline-none select-none last:border-b-0",
         "data-[highlighted]:text-brand data-[selected]:text-brand",
         "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
         className,
