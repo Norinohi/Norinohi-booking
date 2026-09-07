@@ -491,6 +491,8 @@
       },
       "battenMainsail": "Batten mainsail",
       "badges": {
+        "available": "Available",
+        "onRequest": "On request",
         "unavailable": "Unavailable",
         "bestForFamilies": "Best for families",
         "bestValue": "Best value",

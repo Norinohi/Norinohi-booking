@@ -20,8 +20,8 @@ export type BoatCardBadge = {
   label: string;
   icon?: ReactNode;
   solid?: boolean;
-  /** Neutral grey instead of brand blue — used by the unavailable tag. */
-  muted?: boolean;
+  /** Anything other than brand blue: the availability status chips and the unavailable tag. */
+  tone?: "neutral" | "success" | "warning";
 };
 export type BoatCardSpec = {
   label: string;
@@ -143,7 +143,7 @@ function Gallery({
           {badges?.map((badge) => (
             <Chip
               key={badge.label}
-              variant={badge.muted ? "neutral" : badge.solid ? undefined : "brand"}
+              variant={badge.tone ?? (badge.solid ? undefined : "brand")}
               className={cn(
                 "shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
                 badge.solid && "bg-brand text-brand-foreground",

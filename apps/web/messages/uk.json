@@ -491,7 +491,9 @@
       },
       "battenMainsail": "Грот на латах",
       "badges": {
-        "unavailable": "Недоступно",
+        "available": "Доступна",
+        "onRequest": "За запитом",
+        "unavailable": "Недоступна",
         "bestForFamilies": "Ідеально для родин",
         "bestValue": "Найкраща ціна",
         "new": "Нове",

@@ -4,6 +4,11 @@ import type { useTranslations } from "next-intl";
 import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import type { AppPathname } from "@/i18n/navigation";
 import {
+  AVAILABILITY_TONE,
+  availabilityLabel,
+  availabilityStatus,
+} from "@/lib/availability-status";
+import {
   boatCardIdentity,
   boatCardListPrice,
   boatCardPrice,
@@ -40,17 +45,31 @@ export function toBoatCard(
   period?: CharterPeriod,
 ): BoatCardProps & { id: string } {
   const unavailable = !listing.availability.hasAvailableDates;
+  const status = availabilityStatus({
+    hasAvailableDates: listing.availability.hasAvailableDates,
+    hasBookablePeriod: listing.availability.bookablePeriod !== null,
+    priceIsFrom: listing.priceIsFrom,
+  });
+  const statusBadge = {
+    label: availabilityLabel(tBadge, status),
+    tone: AVAILABILITY_TONE[status],
+  };
   /* The currency the provider published in, which the per-person figure is a share of. */
   const currency = listing.priceFrom?.currency ?? listing.priceDetails.securityDeposit?.currency;
   /* An undated search still sends a period, both ends null; that is no period at all. */
   const searched = period?.checkIn && period.checkOut ? period : null;
 
+  const identity = boatCardIdentity(t, tCrew, tBadge, listing);
+
   return {
-    ...boatCardIdentity(t, tCrew, tBadge, listing),
-    /* An unbookable yacht has nothing to sell, so the tag replaces the promotional badges. */
-    ...(unavailable
-      ? { unavailable, badges: [{ label: t("badges.unavailable"), muted: true }] }
-      : null),
+    ...identity,
+    /*
+     * The availability status leads the badge row: whether the boat can be booked at all outranks
+     * anything we are promoting about it. An unbookable yacht has nothing left to promote, so
+     * there the status is the only chip.
+     */
+    badges: unavailable ? [statusBadge] : [statusBadge, ...identity.badges],
+    ...(unavailable ? { unavailable } : null),
     imageAlt: t("imageAlt", { name: listing.title, marina: listing.base.name }),
     /* SAFETY: `/yachts/[id]` is a real route; typedRoutes only recognises it when the segment
        is a literal, and nuqs serializes the query string back to a plain string. */

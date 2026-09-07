@@ -491,6 +491,8 @@
       },
       "battenMainsail": "Mayor con sables",
       "badges": {
+        "available": "Disponible",
+        "onRequest": "Bajo petición",
         "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
         "bestValue": "Mejor relación calidad-precio",

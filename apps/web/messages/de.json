@@ -491,6 +491,8 @@
       },
       "battenMainsail": "Lattengroßsegel",
       "badges": {
+        "available": "Verfügbar",
+        "onRequest": "Auf Anfrage",
         "unavailable": "Nicht verfügbar",
         "bestForFamilies": "Ideal für Familien",
         "bestValue": "Bestes Preis-Leistungs-Verhältnis",
