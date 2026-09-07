@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
+import { resolveCanonicalListings } from "./canonical-listing-writer";
 
 /**
  * Two facts neither vendor publishes as a field, recovered from the fees they publish instead.
@@ -38,6 +39,26 @@ export const PETS_HEDGE_PATTERN = String.raw`if allowed`;
 
 /** How the two vendors name the cover, including the tiered variants Booking Manager sells. */
 export const DEPOSIT_INSURANCE_PATTERN = String.raw`deposit.*insur|insur.*deposit|waiver|damage.*insur`;
+
+/**
+ * The flags, and the canonical listings composed from them.
+ *
+ * `pets_allowed` reaches the card through `listing`, not through the offer, so deriving the
+ * offer flag alone leaves the badge off until something else happens to recompose the listing.
+ * Callers that have just written extras pass the listings they touched; the deploy-time rebuild
+ * passes nothing and gets the published fleet.
+ */
+export async function refreshOfferFlags(db: Database, listingIds?: readonly string[]) {
+  await deriveOfferFlagsFromExtras(db, listingIds);
+
+  const scope =
+    listingIds ??
+    (
+      await db.execute<{ id: string }>(sql`select id from listing where status = 'published'`)
+    ).rows.map((row) => row.id);
+
+  await resolveCanonicalListings(db, scope);
+}
 
 export async function deriveOfferFlagsFromExtras(db: Database, listingIds?: readonly string[]) {
   const scope = listingIds ? sql`o.listing_id = any(${[...new Set(listingIds)]})` : sql`true`;

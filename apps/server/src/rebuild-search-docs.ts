@@ -13,15 +13,24 @@
  *
  * So: run this after any deploy that edits packages/db/src/search/read-model.ts. It is a
  * single upsert over the published fleet and is safe to repeat.
+ *
+ * It also derives the two offer flags first. `pets_allowed` and `deposit_insurance_included`
+ * are read out of the fee catalogue rather than sent by either vendor, and the only other
+ * place that runs is the catalogue sync -- so without this line a deploy would leave both
+ * badges and both filters empty until the next nightly run, which for Booking Manager is
+ * twenty-five minutes of vendor calls to recover data already sitting in our own tables.
  */
 import { db } from "@yacht-charter/db";
 import {
   readListingSearchDocStats,
   rebuildListingSearchDocs,
 } from "@yacht-charter/db/search/read-model";
+import { refreshOfferFlags } from "@yacht-charter/providers/sync/offer-flags";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 
 const startedAt = Date.now();
+
+await refreshOfferFlags(db);
 await rebuildListingSearchDocs(db);
 
 const stats = await readListingSearchDocStats(db);
