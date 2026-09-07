@@ -336,6 +336,12 @@ export function BookingProvider({
   });
 
   function selectPeriod(period: CharterPeriod) {
+    /*
+     * The notice names the period carried in from search, so it is answered the moment the
+     * visitor picks their own: left standing beside a freshly chosen October week it reads as
+     * a complaint about the dates now on screen rather than the ones they arrived with.
+     */
+    setRefusedSearchPeriod(null);
     pricePeriod(period, { report: true });
   }
 

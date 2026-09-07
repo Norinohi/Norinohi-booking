@@ -84,6 +84,29 @@ function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: str
   };
 }
 
+/*
+ * The card, with its price captioned for the charter the card actually names.
+ *
+ * `priceFrom` is the vendor's confirmed figure for one exact week -- the listing's own bookable
+ * period -- and nothing here can reprice another one: the published rate list is the pre-discount
+ * number both vendors sell below (EUR 5,111 against a quote of EUR 3,581.60 on one week), and no
+ * arithmetic turns a week into a charter of another length. So when the card names a different
+ * charter, the figure stops being that week's price and becomes what it honestly is, a floor.
+ *
+ * Measured before this: of 30 dated cards, 7 printed a definite price for a week they were not
+ * quoted for, the worst off by EUR 8,332.
+ */
+function pricedForShownPeriod(item: ListingSearchDoc, shown: { checkIn: string | null }) {
+  const listing = presentListingSummary(item);
+  if (listing.priceIsFrom || shown.checkIn === null) return listing;
+
+  /* No dates on the card means the undated fallback, which is the priced period itself. */
+  const priced = bookablePeriodOf(item);
+  if (priced && priced.checkIn === shown.checkIn) return listing;
+
+  return { ...listing, priceIsFrom: true };
+}
+
 /** A map viewport shows every match at once, so it is not paged like the results list. */
 export const charterSearchRouter = {
   results: publicProcedure
@@ -119,7 +142,7 @@ export const charterSearchRouter = {
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
-          listing: presentListingSummary(item),
+          listing: pricedForShownPeriod(item, periodFor(item, period, input.startDate)),
           /*
            * The searched charter, or nothing. These used to fall back to the listing's
            * `available_from`/`available_to`, which is the outer envelope of every free slot

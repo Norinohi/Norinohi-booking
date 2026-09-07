@@ -860,63 +860,6 @@ export default function BookingSummary({
                 </div>
               </>
             ) : null}
-
-            <Separator />
-
-            <div className="flex w-full flex-col items-center gap-1 p-4">
-              <p className="text-sm leading-4.5 font-medium text-natural-500">
-                {t("sidebar.totalPrice")}
-              </p>
-              {repricing ? (
-                <Skeleton className="h-9 w-32" />
-              ) : (
-                <p className="text-h4 leading-9 font-bold text-foreground">
-                  {money(quote.total.amountMinor, quote.total.currency)}
-                </p>
-              )}
-              {quote.perPerson ? (
-                <p className="text-sm leading-4.5 font-medium text-natural-500">
-                  {tCard("perPersonApprox", {
-                    price: money(quote.perPerson.amountMinor, quote.perPerson.currency),
-                  })}
-                </p>
-              ) : null}
-            </div>
-
-            <Separator />
-
-            <div className="flex w-full flex-col gap-3 p-4">
-              <div className="flex flex-col items-center gap-1">
-                <p className="text-sm leading-4.5 font-medium text-natural-500">
-                  {t("sidebar.dueNow")}
-                </p>
-                {repricing ? (
-                  <Skeleton className="h-14 w-40" />
-                ) : (
-                  <p className="text-h3 leading-14 text-foreground">
-                    {money(quote.deposit.amountMinor, quote.deposit.currency)}
-                  </p>
-                )}
-              </div>
-              {actions ? (
-                <>
-                  <Button
-                    variant="brand"
-                    loading={repricing}
-                    disabled={!payNowReady}
-                    nativeButton={payNowReady ? false : undefined}
-                    render={payNowReady ? <Link href={payNowHref} /> : undefined}
-                  >
-                    {t("sidebar.payNowCta", {
-                      amount: money(quote.deposit.amountMinor, quote.deposit.currency),
-                    })}
-                  </Button>
-                  <Button variant="neutral" onClick={onRequestQuote}>
-                    {t("sidebar.requestQuote")}
-                  </Button>
-                </>
-              ) : null}
-            </div>
           </>
         ) : (
           <div className="flex min-h-56 flex-col items-center justify-center gap-4 p-6 text-center">
@@ -967,6 +910,69 @@ export default function BookingSummary({
           </div>
         )}
       </ScrollArea>
+
+      {/* Outside the ScrollArea on purpose: on a tall quote the payable figures and the CTA
+          used to sit below the fold, so the page opened without saying what there was to pay.
+          Only pins from `xl`, where SplitPanels caps the aside at viewport height; below that
+          the card is its own tab panel with no cap, so this simply ends it as it always did. */}
+      {quote ? (
+        <div className="flex shrink-0 flex-col border-t border-border bg-card">
+          <div className="flex w-full flex-col items-center gap-1 p-4 xl:py-3">
+            <p className="text-sm leading-4.5 font-medium text-natural-500">
+              {t("sidebar.totalPrice")}
+            </p>
+            {repricing ? (
+              <Skeleton className="h-9 w-32" />
+            ) : (
+              <p className="text-h4 leading-9 font-bold text-foreground">
+                {money(quote.total.amountMinor, quote.total.currency)}
+              </p>
+            )}
+            {quote.perPerson ? (
+              <p className="text-sm leading-4.5 font-medium text-natural-500">
+                {tCard("perPersonApprox", {
+                  price: money(quote.perPerson.amountMinor, quote.perPerson.currency),
+                })}
+              </p>
+            ) : null}
+          </div>
+
+          <Separator />
+
+          <div className="flex w-full flex-col gap-3 p-4 xl:gap-2 xl:py-3">
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-sm leading-4.5 font-medium text-natural-500">
+                {t("sidebar.dueNow")}
+              </p>
+              {repricing ? (
+                <Skeleton className="h-14 w-40" />
+              ) : (
+                <p className="text-h3 leading-14 text-foreground">
+                  {money(quote.deposit.amountMinor, quote.deposit.currency)}
+                </p>
+              )}
+            </div>
+            {actions ? (
+              <>
+                <Button
+                  variant="brand"
+                  loading={repricing}
+                  disabled={!payNowReady}
+                  nativeButton={payNowReady ? false : undefined}
+                  render={payNowReady ? <Link href={payNowHref} /> : undefined}
+                >
+                  {t("sidebar.payNowCta", {
+                    amount: money(quote.deposit.amountMinor, quote.deposit.currency),
+                  })}
+                </Button>
+                <Button variant="neutral" onClick={onRequestQuote}>
+                  {t("sidebar.requestQuote")}
+                </Button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

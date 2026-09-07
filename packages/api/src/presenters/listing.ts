@@ -164,7 +164,17 @@ export function presentListingSummary(doc: ListingSearchDoc) {
      * is what the card's caption turns on: an indicative floor captioned "Price for 7 days"
      * claims to price a week nobody has quoted.
      */
-    priceIsFrom: doc.priceIsFrom,
+    /*
+     * "From" also once the charter the figure was attached to has gone.
+     *
+     * `price_is_from` is decided when the projection runs, against the bookable period it found
+     * then; `bookablePeriodOf` re-tests that period at read time and now also drops one too
+     * close to sell. Between the two, a doc can carry a confirmed price for a charter this
+     * request will not show -- Zadar Damor 800 held a 1-night rate for today, which the lead
+     * time retired and `pricedPeriodDays` then captioned "Price for 7 days". A figure whose
+     * charter is gone is a floor, not the price of a named week, so it is captioned as one.
+     */
+    priceIsFrom: doc.priceIsFrom || bookablePeriod === null,
     /*
      * The same charter before the operator's discount, for the card to strike through. Only
      * ever beside a price and only ever above it: a listing whose price was withheld has

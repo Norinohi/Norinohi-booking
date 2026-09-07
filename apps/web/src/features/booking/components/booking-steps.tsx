@@ -11,6 +11,7 @@ import { ORPCError } from "@orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
 import { type Path, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
@@ -56,12 +57,37 @@ const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
  * `multiple={false}` also means the open step cannot be toggled shut — one is always
  * expanded, except after the last Continue.
  */
+/*
+ * The open step, in the URL rather than in component state.
+ *
+ * Held in `useState` the wizard had one address for four screens: Back left checkout entirely
+ * instead of stepping back, a refresh dropped the visitor on Guest Details with their answers
+ * still in the form, and a step could not be linked to or reopened from history.
+ *
+ * `clearOnDefault` keeps the first step out of the query string, so arriving at checkout still
+ * reads `?quoteId=...` and only a step somebody actually moved to is written down.
+ */
+const stepParser = parseAsStringLiteral(STEPS.map(({ id }) => id))
+  .withDefault(STEPS[0].id)
+  .withOptions({ clearOnDefault: true, history: "push" });
+
 export default function BookingSteps() {
   const t = useTranslations("Booking");
   const { trigger, getValues, setValue } = useFormContext<BookingValues>();
   const { listing, quote, extras, bookingId, setBookingId, setExtras } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
-  const [open, setOpen] = useState<Step | null>(STEPS[0].id);
+  const [openStep, setOpenStep] = useQueryState("step", stepParser);
+  /*
+   * Null is a real state the URL cannot hold: after the last Continue every step is shut. It is
+   * the end of the flow rather than a place to link to, so it lives beside the URL instead.
+   */
+  const [allClosed, setAllClosed] = useState(false);
+  const open: Step | null = allClosed ? null : openStep;
+
+  function setOpen(next: Step | null) {
+    setAllClosed(next === null);
+    if (next !== null) void setOpenStep(next);
+  }
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
   /* Extras has been shown once in answer to a Confirm that skipped it — see `confirmBooking`. */
   const [extrasPrompted, setExtrasPrompted] = useState(false);
