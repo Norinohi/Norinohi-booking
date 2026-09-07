@@ -2033,17 +2033,59 @@ function isSelectableExtra(source: string, kind: string): boolean {
  * each variant is a separate dictionary entry, and one of them missing a locale would split a
  * fee back into the several rows this exists to merge.
  */
-function foldFeeVariants(
+/**
+ * The discriminators a vendor puts on one fee to publish it once per charter year and once per
+ * charter length. Stripped from the fold key so the variants meet; everything else is kept.
+ *
+ * Deliberately not parentheticals, and not a bare trailing number. A tourist tax filed as
+ * "(Adults)", "(kids 12- 18 years old)" and "(kids up to 12 years)" is three real charges on one
+ * booking, and "Gas (First 31.7) 2" through "8" is a ladder nobody here can read. Folding those
+ * would hide money rather than stop double-counting it.
+ */
+const FEE_VARIANT_TOKENS: RegExp[] = [
+  /\b20\d{2}\b/g,
+  /\b\d{2}\s*\/\s*\d{2}\b/g,
+  /\b\d+\s*(?:weeks?|days?|nights?)\b/gi,
+  /\b(?:one|two|three)\s+(?:weeks?|days?|nights?)\b/gi,
+];
+
+function withoutVariantTokens(label: string): string {
+  return FEE_VARIANT_TOKENS.reduce((text, token) => text.replace(token, " "), label)
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
+ * What two obligatory lines have to share to be one fee.
+ *
+ * Punctuation and case go too, which is what lets "Transit log" meet "Transitlog" — the same
+ * 250 euro charge filed twice by one operator.
+ */
+export function feeVariantKey(label: string): string {
+  return withoutVariantTokens(label)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+export function foldFeeVariants(
   items: (Parameters<typeof pricedItem>[0] & { sourceLabel: string })[],
   fallbackCurrency: string | null,
 ): ListingPricedItem[] {
   const byLabel = new Map<string, ListingPricedItem>();
+  /* Kept per group so a fold across differing names can drop the discriminator from the label
+     it shows, while a group whose names already matched keeps the vendor's wording untouched. */
+  const sourceLabels = new Map<string, Set<string>>();
 
   for (const item of items) {
+    const key = feeVariantKey(item.sourceLabel);
     const next = pricedItem(item, fallbackCurrency);
-    const seen = byLabel.get(item.sourceLabel);
+    const names = sourceLabels.get(key) ?? new Set<string>();
+    names.add(item.sourceLabel);
+    sourceLabels.set(key, names);
+
+    const seen = byLabel.get(key);
     if (!seen) {
-      byLabel.set(item.sourceLabel, next);
+      byLabel.set(key, next);
       continue;
     }
 
@@ -2051,7 +2093,7 @@ function foldFeeVariants(
     const high = Math.max(seen.priceToMinor ?? seen.price.amountMinor, next.price.amountMinor);
     const cheaper = seen.price.amountMinor <= next.price.amountMinor ? seen : next;
     const dearer = cheaper === seen ? next : seen;
-    byLabel.set(item.sourceLabel, {
+    byLabel.set(key, {
       ...cheaper,
       price: { ...seen.price, amountMinor: low },
       priceToMinor: high > low ? high : null,
@@ -2066,7 +2108,18 @@ function foldFeeVariants(
     });
   }
 
-  return [...byLabel.values()];
+  /*
+   * A merged group is named without the discriminator it merged over: keeping "Transit Log 2026
+   * 1 week" on a 360-440 row names one of the three variants and prices all of them. Only where
+   * the vendor's own names actually differed — a group it filed under one name keeps that name,
+   * and a fee that never had a variant keeps its year.
+   */
+  return [...byLabel.entries()].map(([key, item]) => {
+    const names = sourceLabels.get(key);
+    if (!names || names.size < 2) return item;
+    const cleaned = withoutVariantTokens(item.label);
+    return cleaned.length > 0 ? { ...item, label: cleaned } : item;
+  });
 }
 
 function pricedItem(
