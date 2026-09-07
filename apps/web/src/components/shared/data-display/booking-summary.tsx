@@ -845,7 +845,7 @@ export default function BookingSummary({
               {repricing ? (
                 <Skeleton className="h-9 w-32" />
               ) : (
-                <p className="text-[32px] leading-9 font-bold text-foreground">
+                <p className="text-h4 leading-9 font-bold text-foreground">
                   {money(quote.total.amountMinor, quote.total.currency)}
                 </p>
               )}
@@ -868,7 +868,7 @@ export default function BookingSummary({
                 {repricing ? (
                   <Skeleton className="h-14 w-40" />
                 ) : (
-                  <p className="text-[42px] leading-14 font-bold text-foreground">
+                  <p className="text-h3 leading-14 text-foreground">
                     {money(quote.deposit.amountMinor, quote.deposit.currency)}
                   </p>
                 )}

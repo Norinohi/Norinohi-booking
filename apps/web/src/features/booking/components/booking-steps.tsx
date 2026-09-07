@@ -284,6 +284,8 @@ export default function BookingSteps() {
                     <Check className="size-5" />
                   </span>
                 ) : (
+                  // 22px has no typography token: it falls between h6 (20) and h5 (24).
+                  // oxlint-disable-next-line design-tokens/no-arbitrary-size
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[22px] leading-[1.3] font-semibold text-foreground">
                     {index + 1}
                   </span>

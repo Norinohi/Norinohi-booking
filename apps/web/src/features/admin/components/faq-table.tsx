@@ -299,7 +299,7 @@ export default function FaqTable() {
         })}
       </div>
 
-      <Table className="min-w-[1000px] [&_td]:py-3 [&_th]:h-[50px] [&_th]:py-0">
+      <Table className="min-w-250 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead className="w-24">{t("table.order")}</TableHead>

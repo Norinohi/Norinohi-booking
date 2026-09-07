@@ -462,7 +462,7 @@ export default function DiscountDialog({
                             onChange={(event) => setSearch(event.target.value)}
                           />
                           {/* 48px rows on a 56px pitch (8px Figma gaps), 384px visible window. */}
-                          <div className="flex max-h-[384px] flex-col gap-2 overflow-y-auto [scrollbar-width:thin]">
+                          <div className="flex max-h-96 flex-col gap-2 overflow-y-auto [scrollbar-width:thin]">
                             {visibleYachts.map((option) => (
                               <label
                                 key={option.id}

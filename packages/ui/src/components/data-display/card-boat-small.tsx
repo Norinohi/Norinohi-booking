@@ -54,7 +54,7 @@ function BoatSmallCard({
   ...props
 }: BoatSmallCardProps) {
   return (
-    <Card className={cn("h-full w-[334px] max-w-full", className)} {...props}>
+    <Card className={cn("h-full w-83.5 max-w-full", className)} {...props}>
       <CardMedia className="aspect-[334/200]">
         <ImageWithFallback src={image} alt={imageAlt} />
         {saveRender && <div className="absolute top-4 right-4">{saveRender}</div>}

@@ -267,7 +267,7 @@ export default function SearchScreen({
       </div>
 
       <div className=" w-full md:px-13.5 px-4 py-6">
-        <div className="max-w-349  mx-auto grid w-full gap-5 lg:grid-cols-[334px_minmax(0,1fr)]">
+        <div className="max-w-349  mx-auto grid w-full gap-5 lg:grid-cols-[calc(var(--spacing)*83.5)_minmax(0,1fr)]">
           <aside className="flex flex-col gap-5">
             {/* Static: no URL or query dependency, so it prerenders and is the shell's anchor. */}
             <div

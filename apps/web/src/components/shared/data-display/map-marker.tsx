@@ -58,6 +58,8 @@ export default function MapMarker({
       >
         <MapPin className="size-6 fill-brand text-white" />
         {caption ? (
+          // 10px is below the smallest token (12); a map pin badge is meant to stay this small.
+          // oxlint-disable-next-line design-tokens/no-arbitrary-size
           <span className="absolute top-full left-1/2 mt-1 -translate-x-1/2 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap text-brand-foreground shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:text-xs">
             {caption}
           </span>

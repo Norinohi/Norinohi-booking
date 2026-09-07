@@ -67,7 +67,7 @@ function MultiSelect({
         <Combobox.Trigger
           data-slot="multi-select-trigger"
           className={cn(
-            "group flex h-12 w-full min-w-[200px] cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+            "group flex h-12 w-full min-w-50 cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
             "hover:border-natural-200 data-[popup-open]:border-foreground",
             "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
             /* `FormControl` sets aria-invalid; it has to beat hover/open/focus too. */
@@ -134,7 +134,7 @@ function MultiSelect({
                 >
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] border-[1.2px] border-input transition-colors group-data-[selected]:border-brand group-data-[selected]:bg-brand group-data-[selected]:text-brand-foreground">
                     <Combobox.ItemIndicator className="grid place-content-center text-current">
-                      <CheckIcon strokeWidth={2.5} className="size-[18px]" />
+                      <CheckIcon strokeWidth={2.5} className="size-4.5" />
                     </Combobox.ItemIndicator>
                   </span>
                   <span className="truncate">{labels.get(item) ?? item}</span>

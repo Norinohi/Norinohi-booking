@@ -34,6 +34,9 @@ export function CalendlyWidget({ url }: { url: string }) {
   }, []);
 
   return (
+    // Calendly renders inside an iframe whose content does not ride our dial,
+    // so shrinking the frame would clip the calendar.
+    // oxlint-disable-next-line design-tokens/no-arbitrary-size
     <div className="relative h-[700px] w-full">
       {!loaded && <Skeleton className="absolute inset-0 rounded-2xl" />}
       <div className="calendly-inline-widget h-full w-full" data-url={url} />

@@ -107,7 +107,7 @@ export default function BookingCard({
        */}
       <article
         className={cn(
-          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)_15rem] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,380px)_minmax(0,1fr)_15rem]",
+          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,calc(var(--spacing)*65))_minmax(0,1fr)_15rem] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,calc(var(--spacing)*95))_minmax(0,1fr)_15rem]",
           className,
         )}
       >
@@ -139,7 +139,7 @@ export default function BookingCard({
             <MarinaPopover marina={booking.marina} />
 
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="min-w-0 truncate text-[32px] font-medium leading-[1.1] text-foreground">
+              <h3 className="text-h4 min-w-0 truncate text-foreground">
                 {booking.detailHref ? (
                   <Link
                     href={booking.detailHref}
@@ -176,7 +176,7 @@ export default function BookingCard({
             {booking.end ? <Stamp value={booking.end} /> : null}
           </div>
 
-          <p className="text-[42px] font-bold leading-[1.15] text-black">{booking.price}</p>
+          <p className="text-h3 text-black">{booking.price}</p>
         </div>
 
         {/* Action */}

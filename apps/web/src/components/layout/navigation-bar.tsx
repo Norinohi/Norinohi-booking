@@ -16,6 +16,11 @@ import { useWishlist } from "@/features/wishlist";
 import LanguageSwitcher from "./language-switcher";
 import UserMenu from "./user-menu";
 
+/** The wordmark is a logo, not a heading: it holds its size at every density. */
+const WORDMARK_CLASS =
+  // oxlint-disable-next-line design-tokens/no-arbitrary-size
+  "cursor-pointer text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]";
+
 const NAV_LINKS = [
   { key: "destinations", hash: "destinations", chip: false },
   { key: "boatTypes", hash: "boat-types", chip: false },
@@ -54,7 +59,7 @@ export default function NavigationBar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-natural-50 bg-background">
-      <div className="mx-auto flex h-18 max-w-[1536px] items-center justify-between gap-4 px-4 md:px-13.5 2xl:h-20 2xl:px-17.5">
+      <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 md:px-13.5 2xl:h-20 2xl:px-17.5">
         {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
         <div className="flex items-center gap-4 2xl:gap-16">
           <IconButton
@@ -66,10 +71,7 @@ export default function NavigationBar() {
             {open ? <X className="size-6" /> : <Menu className="size-6" />}
           </IconButton>
 
-          <Link
-            href="/"
-            className="cursor-pointer text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]"
-          >
+          <Link href="/" className={WORDMARK_CLASS}>
             YachtSkanner
           </Link>
 

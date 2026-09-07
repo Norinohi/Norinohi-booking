@@ -62,8 +62,8 @@ function DialogContent({
           // Positioning: `mobileSheet` docks to the bottom as a sheet on mobile and reverts to
           // the centered dialog from `md` up; the default stays centered at every width.
           mobileSheet
-            ? "inset-x-0 bottom-0 w-full rounded-t-2xl pb-8 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4 md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:w-[calc(100%-2rem)] md:max-w-[432px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:pb-6 md:data-open:zoom-in-95 md:data-closed:zoom-out-95"
-            : "top-1/2 left-1/2 w-[calc(100%-2rem)] max-w-[432px] -translate-x-1/2 -translate-y-1/2 rounded-lg data-open:zoom-in-95 data-closed:zoom-out-95",
+            ? "inset-x-0 bottom-0 w-full rounded-t-2xl pb-8 data-open:slide-in-from-bottom-4 data-closed:slide-out-to-bottom-4 md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:w-[calc(100%-2rem)] md:max-w-108 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:pb-6 md:data-open:zoom-in-95 md:data-closed:zoom-out-95"
+            : "top-1/2 left-1/2 w-[calc(100%-2rem)] max-w-108 -translate-x-1/2 -translate-y-1/2 rounded-lg data-open:zoom-in-95 data-closed:zoom-out-95",
           className,
         )}
         {...props}

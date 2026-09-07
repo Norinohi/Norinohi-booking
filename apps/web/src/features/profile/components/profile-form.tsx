@@ -253,7 +253,7 @@ export default function ProfileForm({
               }
             />
             <DialogContent showClose mobileSheet>
-              <img src={deactivateIllustration.src} alt="" className="size-[70px]" />
+              <img src={deactivateIllustration.src} alt="" className="size-17.5" />
               <DialogHeader>
                 <DialogTitle>{t("deactivateTitle")}</DialogTitle>
                 <DialogDescription>{t("deactivateDescription")}</DialogDescription>

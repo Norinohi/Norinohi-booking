@@ -203,7 +203,7 @@ export function RangeField({
         showTicks
       />
       {showScale && (
-        <div aria-hidden className="relative h-[18px] w-full">
+        <div aria-hidden className="relative h-4.5 w-full">
           <span className="absolute left-2 -translate-x-1/2 text-sm leading-[1.3] tracking-[0.04em] text-foreground uppercase">
             {formatValue(limits[0])}
           </span>

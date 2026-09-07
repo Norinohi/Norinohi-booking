@@ -126,9 +126,9 @@ export default function SignUpForm() {
   }
 
   return (
-    <section className="px-4 pt-6 pb-16 xl:pt-[69px]">
-      <div className="mx-auto flex w-full max-w-[358px] flex-col gap-6 md:max-w-[660px] md:gap-8 xl:max-w-[451px]">
-        <h1 className="text-center text-[20px] leading-[1.1] font-semibold text-foreground md:text-[24px] xl:text-[32px] xl:font-bold">
+    <section className="px-4 pt-6 pb-16 xl:pt-17.25">
+      <div className="mx-auto flex w-full max-w-89.5 flex-col gap-6 md:max-w-165 md:gap-8 xl:max-w-112.75">
+        <h1 className="text-h5 text-center text-foreground xl:text-h4 xl:font-bold">
           {t("welcome")}
         </h1>
 

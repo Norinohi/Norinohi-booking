@@ -113,9 +113,9 @@ export default function ResetPasswordForm({
   };
 
   return (
-    <section className="px-4 pt-[122px] pb-16 md:pt-[109px] xl:pt-[113px]">
-      <div className="mx-auto flex w-full max-w-[358px] flex-col gap-8 md:max-w-[660px] xl:max-w-[451px]">
-        <h1 className="text-center text-[20px] leading-[1.3] font-bold text-foreground xl:text-[32px] xl:leading-[1.1]">
+    <section className="px-4 pt-30.5 pb-16 md:pt-27.25 xl:pt-28.25">
+      <div className="mx-auto flex w-full max-w-89.5 flex-col gap-8 md:max-w-165 xl:max-w-112.75">
+        <h1 className="text-h6 text-center text-foreground xl:text-h4 xl:font-bold">
           {copy.welcome}
         </h1>
 

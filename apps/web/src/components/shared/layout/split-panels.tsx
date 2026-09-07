@@ -40,7 +40,7 @@ export default function SplitPanels({
         </TabsList>
       </Tabs>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_334px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_calc(var(--spacing)*83.5)]">
         <div className={cn("flex min-w-0 flex-col gap-6", panel !== "main" && "max-xl:hidden")}>
           {main}
         </div>

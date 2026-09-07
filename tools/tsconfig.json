@@ -1,0 +1,14 @@
+{
+  "extends": "../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // Oxlint loads jsPlugin sources itself and resolves the specifier verbatim, so the
+    // relative imports have to carry their `.ts` extension.
+    "allowImportingTsExtensions": true
+  },
+  "include": ["oxlint/**/*.ts"],
+  // `anti-slop` is vendored and hash-locked by `skills-lock.json`. It was written against a
+  // different compiler config and does not pass this one, and we are not allowed to edit it,
+  // so it stays outside this project rather than parked behind a permanent expected failure.
+  "exclude": ["oxlint/anti-slop/**"]
+}

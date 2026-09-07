@@ -26,8 +26,8 @@ function TestimonialCard({
 }: TestimonialCardProps) {
   const labels = useUiLabels();
   return (
-    <Card variant="filled" className={cn("w-[452px] max-w-full", className)} {...props}>
-      <CardContent className="min-h-[300px] gap-4 p-6">
+    <Card variant="filled" className={cn("w-113 max-w-full", className)} {...props}>
+      <CardContent className="min-h-75 gap-4 p-6">
         <div role="img" className="flex gap-1" aria-label={labels.rating(rating, 5)}>
           {Array.from({ length: 5 }, (_, i) => (
             <Star

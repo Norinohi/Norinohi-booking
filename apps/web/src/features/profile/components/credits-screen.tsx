@@ -34,7 +34,7 @@ import { creditKindVariant } from "../lib/credits";
  */
 
 /** Matches the referral history table: 20px sides, 50px rows, 16px text at 1.4. */
-const cellClass = "h-[50px] py-0 leading-[1.4] whitespace-nowrap";
+const cellClass = "h-12.5 py-0 leading-[1.4] whitespace-nowrap";
 
 export default function CreditsScreen({ user }: { user: { name: string; email: string } }) {
   const t = useTranslations("Credits");
@@ -55,7 +55,7 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
       <div className="px-4 py-6 md:px-13.5">
-        <div className="mx-auto grid max-w-349 gap-5 lg:grid-cols-[334px_minmax(0,1fr)] lg:items-start">
+        <div className="mx-auto grid max-w-349 gap-5 lg:grid-cols-[calc(var(--spacing)*83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}
             defaultActive="credits"
@@ -74,7 +74,7 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
                   {t("balance.label")}
                 </p>
                 {balance ? (
-                  <p className="text-[32px] leading-9 font-bold text-brand">
+                  <p className="text-h4 leading-9 font-bold text-brand">
                     {money(balance.balance.amountMinor, balance.balance.currency)}
                   </p>
                 ) : (
@@ -103,7 +103,7 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
               {isPending ? (
                 <div className="flex flex-col gap-2">
                   {[0, 1, 2].map((row) => (
-                    <Skeleton key={row} className="h-[50px] w-full rounded-sm" />
+                    <Skeleton key={row} className="h-12.5 w-full rounded-sm" />
                   ))}
                 </div>
               ) : ledger && ledger.items.length > 0 ? (
@@ -112,18 +112,16 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
                     <TableBody>
                       {ledger.items.map((row) => (
                         <TableRow key={row.id} className="last:[&>td]:border-b-0">
-                          <TableCell className={`w-1/4 min-w-[160px] ${cellClass}`}>
+                          <TableCell className={`w-1/4 min-w-40 ${cellClass}`}>
                             <Chip variant={creditKindVariant(row.kind)}>
                               {t(`ledger.kind.${row.kind}`)}
                             </Chip>
                           </TableCell>
-                          <TableCell className={`w-1/4 min-w-[110px] ${cellClass}`}>
+                          <TableCell className={`w-1/4 min-w-27.5 ${cellClass}`}>
                             {format.dateTime(dayToDisplay(row.createdAt.slice(0, 10)), "dayShort")}
                           </TableCell>
                           {/* Blank where there is no deadline: spending never expires. */}
-                          <TableCell
-                            className={`w-1/4 min-w-[110px] text-natural-600 ${cellClass}`}
-                          >
+                          <TableCell className={`w-1/4 min-w-27.5 text-natural-600 ${cellClass}`}>
                             {row.expiresAt
                               ? t("ledger.expires", {
                                   date: format.dateTime(
@@ -136,7 +134,7 @@ export default function CreditsScreen({ user }: { user: { name: string; email: s
                           {/* The sign is the whole story of a ledger row, so it is never dropped. */}
                           <TableCell
                             className={cn(
-                              "w-1/4 min-w-[110px] font-bold",
+                              "w-1/4 min-w-27.5 font-bold",
                               cellClass,
                               row.amount.amountMinor < 0 ? "text-natural-600" : "text-positive-600",
                             )}

@@ -170,7 +170,7 @@ function StatsBar() {
               decimals={"decimals" in stat ? stat.decimals : 0}
               suffix={"suffix" in stat ? stat.suffix : undefined}
               delay={0.4}
-              className="text-[28px] leading-[1.1] font-medium md:text-[32px]"
+              className="text-h4"
             />
             <span className="text-base leading-[1.4] text-white/90 md:text-xl md:leading-[1.1]">
               {t(`${stat.key}.label`)}
@@ -209,10 +209,7 @@ export default function Hero() {
             className="flex w-full max-w-164.75 flex-col gap-3 text-center text-white xl:w-auto xl:max-w-112.5 xl:text-left"
           >
             <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
-            <h1
-              data-testid="home-shell-marker"
-              className="text-[50px] leading-[1.1] font-bold md:text-[64px]"
-            >
+            <h1 data-testid="home-shell-marker" className="text-h1">
               {t("heading")}
             </h1>
           </motion.div>

@@ -28,7 +28,7 @@ const fieldVariants = cva(
         success: "border-positive-600 focus-within:border-positive-600",
       },
       multiline: {
-        true: "min-h-[173px] items-start",
+        true: "min-h-43.25 items-start",
         false: "items-center",
       },
     },

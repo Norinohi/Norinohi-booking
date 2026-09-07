@@ -32,7 +32,7 @@ function ComboboxTrigger({
   const trigger = (
     <Base.Trigger
       className={cn(
-        "group flex h-12 w-full min-w-[200px] cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+        "group flex h-12 w-full min-w-50 cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
         "hover:border-natural-200 data-[popup-open]:border-foreground",
         "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
         /* `FormControl` sets aria-invalid; it has to beat hover/open/focus too. */

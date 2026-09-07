@@ -38,7 +38,7 @@ const ITEM =
 /* The submenu wears the same card as the menu it grew out of, so a nested list reads as the
    same surface one step across rather than a differently-styled popover. */
 const PANEL =
-  "flex w-[211px] flex-col gap-2 rounded-lg border border-natural-100 bg-card px-4 py-3 shadow-[4px_4px_10px_rgba(0,0,0,0.1)] ring-0";
+  "flex w-52.75 flex-col gap-2 rounded-lg border border-natural-100 bg-card px-4 py-3 shadow-[4px_4px_10px_rgba(0,0,0,0.1)] ring-0";
 
 /* Admin rows whose page doesn't exist yet have no href and are simply left out here — the
    dropdown has no inert-row treatment, and a menu entry that goes nowhere is worse than absent. */

@@ -94,7 +94,7 @@ export default function Sidebar({
            long table would have to scroll all the way back up to change screen.
            `overflow-hidden` still governs the x axis, which is what keeps the header art
            inside the rounded corners. */
-        "w-full max-w-[334px] overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:[scrollbar-width:thin] 2xl:top-26 2xl:max-h-[calc(100dvh-8rem)]",
+        "w-full max-w-83.5 overflow-hidden rounded-lg border border-border bg-card lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto lg:[scrollbar-width:thin] 2xl:top-26 2xl:max-h-[calc(100dvh-8rem)]",
         className,
       )}
     >

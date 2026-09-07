@@ -457,7 +457,7 @@ export default function MapScreen() {
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="px-4 py-3 md:px-13.5 2xl:px-[70px]">
+      <div className="px-4 py-3 md:px-13.5 2xl:px-17.5">
         <Link href="/yachts" className={buttonVariants({ variant: "subtle", size: "sm" })}>
           <ArrowLeft />
           {t("backToSearch")}
@@ -555,7 +555,7 @@ export default function MapScreen() {
           ) : null}
         </MapCanvas>
 
-        <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-[70px] 2xl:pb-[70px]">
+        <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
           <div
             className={cn(
               "flex flex-col gap-4 transition-opacity duration-200 md:flex-row md:items-start md:gap-5 2xl:contents",

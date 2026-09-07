@@ -113,7 +113,7 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (row: ListingPri
         {/* Tablet flexes the three controls to near-thirds (Figma 200/194/194); the
             desktop-exact 222px selects only pin from xl, where the card is full width. */}
         <div className="flex min-w-0 gap-4 md:flex-[2] xl:flex-none">
-          <div className="min-w-0 flex-1 xl:w-[222px] xl:flex-none">
+          <div className="min-w-0 flex-1 xl:w-55.5 xl:flex-none">
             <Select
               className="h-12 min-w-0"
               ariaLabel={t("prices.allTypes")}
@@ -126,7 +126,7 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (row: ListingPri
               }}
             />
           </div>
-          <div className="min-w-0 flex-1 xl:w-[222px] xl:flex-none">
+          <div className="min-w-0 flex-1 xl:w-55.5 xl:flex-none">
             <Select
               className="h-12 min-w-0"
               ariaLabel={t("prices.allLocations")}
@@ -143,7 +143,7 @@ export default function ManagePricesTable({ onEdit }: { onEdit: (row: ListingPri
       </div>
 
       {/* Header pinned to 50px, body rows to this node's 52px pitch (unlike DiscountsTable's 50). */}
-      <Table className="min-w-[960px] table-fixed [&_td]:h-[52px] [&_td]:py-0 [&_th]:h-[50px] [&_th]:py-0">
+      <Table className="min-w-240 table-fixed [&_td]:h-13 [&_td]:py-0 [&_th]:h-12.5 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("prices.table.yacht")}</TableHead>

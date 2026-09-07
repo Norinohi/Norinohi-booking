@@ -41,7 +41,7 @@ export default function ReferralsHowItWorks() {
       <div className="flex flex-col gap-4">
         <h3 className="text-body-m-bold text-natural-700">{t("how.title")}</h3>
 
-        <div className="relative flex flex-col gap-[42px]">
+        <div className="relative flex flex-col gap-10.5">
           {/* Vertical rail behind the markers — Figma vertical slider track (972:54949) */}
           <span
             aria-hidden
@@ -52,7 +52,7 @@ export default function ReferralsHowItWorks() {
               {/* Step marker — 16px slider-thumb: white disc, 2px brand ring, centered on the title line */}
               <span
                 aria-hidden
-                className="relative mt-1 size-4 shrink-0 rounded-full border-2 border-brand bg-white md:mt-[5px]"
+                className="relative mt-1 size-4 shrink-0 rounded-full border-2 border-brand bg-white md:mt-1.25"
               />
               <div className="flex min-w-0 flex-col gap-1.5">
                 <h4 className="text-h6 text-foreground">{t(`how.steps.${step}.title`)}</h4>

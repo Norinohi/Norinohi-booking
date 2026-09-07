@@ -50,7 +50,7 @@ export default function DiscountManagerScreen({ user }: { user: { name: string; 
         {/* minmax(0,1fr) also below lg — otherwise the tables' min-width propagates through
             the single implicit column and stretches the page (and the fixed dialogs) on
             tablet/mobile. */}
-        <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[334px_minmax(0,1fr)] lg:items-start">
+        <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[calc(var(--spacing)*83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}
             variant="admin"

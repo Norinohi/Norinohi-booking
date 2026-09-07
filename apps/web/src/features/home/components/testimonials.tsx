@@ -74,7 +74,7 @@ export default function Testimonials() {
           initial="hidden"
           whileInView="show"
           viewport={VIEWPORT}
-          className="text-center text-[40px] leading-[1.1] font-medium md:text-[50px]"
+          className="text-h2 text-center"
         >
           {t("heading")}
         </motion.h2>

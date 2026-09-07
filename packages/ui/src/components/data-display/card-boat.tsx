@@ -29,8 +29,8 @@ function BoatCard({
   ...props
 }: BoatCardProps) {
   return (
-    <Card variant="ghost" className={cn("w-[334px] max-w-full gap-5", className)} {...props}>
-      <CardMedia className="h-[224px] rounded-xl">
+    <Card variant="ghost" className={cn("w-83.5 max-w-full gap-5", className)} {...props}>
+      <CardMedia className="h-56 rounded-xl">
         <ImageWithFallback src={image} alt={imageAlt} />
       </CardMedia>
       <CardContent className="gap-3 p-0">

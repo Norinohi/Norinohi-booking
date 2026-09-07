@@ -426,7 +426,7 @@ export default function BookingConfirmationScreen() {
               />
             </motion.div>
             <div className="flex flex-col items-center gap-4 pt-3 text-center">
-              <h1 className="text-[28px] leading-[1.1] font-medium text-foreground md:text-[32px]">
+              <h1 className="text-h4 text-foreground">
                 {awaitingTransfer ? t("invoiceSent") : t("reserved")}
               </h1>
               {/*

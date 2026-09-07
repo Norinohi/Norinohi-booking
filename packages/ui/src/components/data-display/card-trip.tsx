@@ -41,8 +41,8 @@ function TripCard({
   ...props
 }: TripCardProps) {
   return (
-    <Card variant="ghost" className={cn("w-[452px] max-w-full gap-4", className)} {...props}>
-      <CardMedia className="h-[240px] rounded-xl">
+    <Card variant="ghost" className={cn("w-113 max-w-full gap-4", className)} {...props}>
+      <CardMedia className="h-60 rounded-xl">
         <ImageWithFallback src={image} alt={imageAlt} />
       </CardMedia>
       <CardContent className="gap-3 p-0">

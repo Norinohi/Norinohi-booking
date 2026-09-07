@@ -109,7 +109,7 @@ function PopoverArrow({ className, ...props }: PopoverPrimitive.Arrow.Props) {
     <PopoverPrimitive.Arrow
       data-slot="popover-arrow"
       className={cn(
-        "relative block h-[11px] w-[23px] overflow-clip",
+        "relative block h-2.75 w-5.75 overflow-clip",
         "data-[side=bottom]:top-[-10px] data-[side=top]:bottom-[-10px] data-[side=top]:rotate-180",
         "data-[side=left]:right-[-16px] data-[side=left]:rotate-90",
         "data-[side=right]:left-[-16px] data-[side=right]:-rotate-90",

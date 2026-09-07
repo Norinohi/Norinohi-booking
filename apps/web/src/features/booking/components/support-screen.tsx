@@ -71,7 +71,7 @@ export default function SupportScreen() {
           <span className="flex size-12 items-center justify-center rounded-xl bg-brand-50 text-brand">
             {cancelling ? <CalendarX className="size-6" /> : <LifeBuoy className="size-6" />}
           </span>
-          <h1 className="text-[28px] leading-[1.1] font-medium text-foreground md:text-[32px]">
+          <h1 className="text-h4 text-foreground">
             {cancelling ? t("cancellation.title") : t("title")}
           </h1>
           <p className="text-base leading-[1.4] text-natural-600">

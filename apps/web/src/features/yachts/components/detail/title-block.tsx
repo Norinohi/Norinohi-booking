@@ -103,7 +103,7 @@ export default function TitleBlock() {
           own name as the model) - both fall back to the merged title, which is what this
           rendered before.
         */}
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[42px] leading-[1.15] font-bold text-foreground">
+        <h1 className="text-h3 flex flex-wrap items-baseline gap-x-3 text-foreground">
           {data.name ?? data.title}
           {modelSubtitle ? (
             <span aria-hidden className="text-natural-200 max-md:hidden">
@@ -111,9 +111,7 @@ export default function TitleBlock() {
             </span>
           ) : null}
           {modelSubtitle ? (
-            <span className="text-[28px] leading-[1.2] font-medium text-natural-500">
-              {modelSubtitle}
-            </span>
+            <span className="text-h4 leading-[1.2] text-natural-500">{modelSubtitle}</span>
           ) : null}
         </h1>
         {/* Unrated is not zero — the read model coalesces an absent score, this puts it back. */}

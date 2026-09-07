@@ -269,7 +269,7 @@ function Calendar(props: CalendarProps) {
               key={i}
               role="columnheader"
               aria-label={label}
-              className="flex h-[21px] w-9 grow items-center justify-center text-sm font-medium leading-[1.3] text-natural-300"
+              className="flex h-5.25 w-9 grow items-center justify-center text-sm font-medium leading-[1.3] text-natural-300"
             >
               {label}
             </div>

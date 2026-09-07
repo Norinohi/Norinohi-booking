@@ -31,9 +31,7 @@ export default function EarnCta() {
 
           <div className="relative z-10 flex min-h-77.25 items-center p-6 md:min-h-72.75 xl:min-h-97.75 xl:p-16">
             <div className="flex flex-col items-center gap-4 text-center md:items-start md:gap-6 md:text-left">
-              <h2 className="text-[28px] leading-[1.1] font-medium text-white md:text-[32px] xl:text-[50px] xl:whitespace-nowrap">
-                {t("heading")}
-              </h2>
+              <h2 className="text-h4 text-white xl:text-h2 xl:whitespace-nowrap">{t("heading")}</h2>
               <p className="max-w-120.25 text-lg leading-[1.4] text-white md:text-xl">
                 {t("description")}
               </p>

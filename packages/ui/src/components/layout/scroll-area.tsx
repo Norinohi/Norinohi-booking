@@ -8,7 +8,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
  * A 4px scrollbar with a natural-50 (#f8f8f8) track and a natural-900 (#0a0a0a) thumb,
  * both pill-rounded. Wraps arbitrary content in a scrollable viewport.
  * The viewport fills the root via flex rather than a percentage height, so the
- * root can be sized either explicitly (`h-[200px]`) or by a parent flex row.
+ * root can be sized either explicitly (`h-50`) or by a parent flex row.
  */
 function ScrollBar({
   className,

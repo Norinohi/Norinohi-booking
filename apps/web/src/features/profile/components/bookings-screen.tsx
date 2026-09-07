@@ -66,7 +66,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
       <div className="px-4 py-6 md:px-13.5">
-        <div className="mx-auto grid max-w-349 gap-5 lg:grid-cols-[334px_minmax(0,1fr)] lg:items-start">
+        <div className="mx-auto grid max-w-349 gap-5 lg:grid-cols-[calc(var(--spacing)*83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}
             defaultActive="bookings"
@@ -87,7 +87,7 @@ export default function BookingsScreen({ user }: { user: { name: string; email: 
                 placeholder={t("anyDates")}
                 clearLabel={t("clearDates")}
                 hugContent
-                className="w-full sm:w-auto sm:min-w-[200px]"
+                className="w-full sm:w-auto sm:min-w-50"
               />
             </div>
 

@@ -130,7 +130,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_248px] xl:gap-5"
+      className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_calc(var(--spacing)*62)] xl:gap-5"
     >
       <div>
         <LocationSearch

@@ -26,7 +26,7 @@ import { daysSince, referralStatusVariant } from "../lib/referrals";
  */
 
 /** Every design cell: 20px side padding, 50px row, 16px text at 1.4 line-height. */
-const cellClass = "h-[50px] py-0 leading-[1.4] whitespace-nowrap";
+const cellClass = "h-12.5 py-0 leading-[1.4] whitespace-nowrap";
 
 export default function ReferralsHistory() {
   const t = useTranslations("Referrals");
@@ -42,7 +42,7 @@ export default function ReferralsHistory() {
       {isPending ? (
         <div className="flex flex-col gap-2">
           {[0, 1, 2].map((row) => (
-            <Skeleton key={row} className="h-[50px] w-full rounded-sm" />
+            <Skeleton key={row} className="h-12.5 w-full rounded-sm" />
           ))}
         </div>
       ) : data && data.items.length > 0 ? (
@@ -50,22 +50,22 @@ export default function ReferralsHistory() {
           <TableBody>
             {data.items.map((row) => (
               <TableRow key={row.id} className="last:[&>td]:border-b-0">
-                <TableCell className={`w-1/4 min-w-[110px] font-medium ${cellClass}`}>
+                <TableCell className={`w-1/4 min-w-27.5 font-medium ${cellClass}`}>
                   {row.referredUserName}
                 </TableCell>
                 {/* "0 days ago" reads wrong for a referral accepted today. */}
-                <TableCell className={`w-1/4 min-w-[110px] ${cellClass}`}>
+                <TableCell className={`w-1/4 min-w-27.5 ${cellClass}`}>
                   {daysSince(row.createdAt) === 0
                     ? t("history.today")
                     : t("history.daysAgo", { count: daysSince(row.createdAt) })}
                 </TableCell>
-                <TableCell className={`w-1/4 min-w-[160px] ${cellClass}`}>
+                <TableCell className={`w-1/4 min-w-40 ${cellClass}`}>
                   <Chip variant={referralStatusVariant(row.status)}>
                     {t(`history.${row.status}`)}
                   </Chip>
                 </TableCell>
                 {/* Amount stays blank while pending — nothing has been credited yet. */}
-                <TableCell className={`w-1/4 min-w-[110px] font-bold ${cellClass}`}>
+                <TableCell className={`w-1/4 min-w-27.5 font-bold ${cellClass}`}>
                   {row.amount ? formatMoney(row.amount.amountMinor, row.amount.currency) : null}
                 </TableCell>
               </TableRow>

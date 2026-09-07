@@ -7,6 +7,50 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Layout density — two dials that decide how much room the layout takes.
+ * `--density` multiplies Tailwind's `--spacing`, so every padding, margin, gap, control
+ * height and width from the numeric scale rides it, including the page container
+ * (`max-w-384`) and the sticky header. `--density-type` multiplies every type size, both
+ * the `text-h*` tokens and Tailwind's `--text-*` ramp.
+ *
+ * They move together on purpose. An earlier split, where space shrank and type did not,
+ * ate the horizontal slack out of one-line labels: any label with under 12.5% of room to
+ * spare wrapped to two lines. Scaling both keeps every ratio the design was drawn with.
+ * The `max(..., 0.75rem)` floor below is what protects the small end, so nothing lands
+ * under 12px however far the dial is turned down.
+ *
+ * 1 = the Figma macro at 1:1. Both are read at run time, so they can be overridden per
+ * subtree, and neither shifts a breakpoint (media queries resolve rem against the initial
+ * root font size).
+ */
+:root {
+  --density: 1;
+  --density-type: 1;
+}
+
+/* xl and up is where the desktop macro's heavy rhythm lives (px-17.5 / pt-25 / max-w-384).
+   Mobile and tablet were drawn tight already, so they stay at 1. */
+@media (width >= 80rem) {
+  :root {
+    --density: 0.875;
+    --density-type: 0.875;
+  }
+}
+
+@theme {
+  --spacing: calc(0.25rem * var(--density));
+
+  /* Only the sizes the app actually uses. Line heights stay untouched: Tailwind declares
+     them as unitless ratios, so they follow the font size on their own. */
+  --text-xs: max(calc(0.75rem * var(--density-type)), 0.75rem);
+  --text-sm: max(calc(0.875rem * var(--density-type)), 0.75rem);
+  --text-base: max(calc(1rem * var(--density-type)), 0.75rem);
+  --text-lg: max(calc(1.125rem * var(--density-type)), 0.75rem);
+  --text-xl: max(calc(1.25rem * var(--density-type)), 0.75rem);
+  --text-2xl: max(calc(1.5rem * var(--density-type)), 0.75rem);
+}
+
+/*
  * Design tokens — source of truth: Figma "Web Yacht Skanner" (Colors + Typography pages).
  * Primitives are the raw ramps; the shadcn semantic vars below map onto them.
  * NOTE: brand blue (#2f80ed) is a FIRST-CLASS token, separate from --primary (black).
@@ -133,7 +177,9 @@
 
   --radius: 0.5rem; /* base control radius = 8px (Figma "border radius/sm") */
 
-  --header-h: 73px; /* sticky navigation bar, border included */
+  --header-h: calc(
+    4.5625rem * var(--density)
+  ); /* sticky navigation bar, 73px at density 1, border included */
 
   /* charts */
   --chart-1: var(--brand-500);
@@ -200,7 +246,7 @@
 
 @media (width >= 96rem) {
   :root {
-    --header-h: 81px;
+    --header-h: calc(5.0625rem * var(--density)); /* 81px at density 1 */
   }
 }
 
@@ -344,125 +390,141 @@
 
 /*
  * Typography scale — Figma "Typography" page (Manrope).
- * Mobile-first: base values = 390 breakpoint; ≥768px = the "1536 & 768" desktop scale.
+ * Mobile-first: base values = 390 breakpoint; >=768px = the "1536 & 768" desktop scale.
  * Only headings and body-xl differ across breakpoints; everything else is shared.
+ * These are utilities, not plain classes, so they carry breakpoint variants
+ * (`text-h4 xl:text-h2`) — needing a per-breakpoint ramp is what used to send call sites
+ * back to `text-[32px]`. Every size here rides `--density-type`, floored at 12px, so the
+ * tokens and Tailwind's `--text-*` ramp shrink together and no ratio drifts.
  */
-@layer components {
-  .text-h1 {
-    font-weight: 700;
-    font-size: 3.125rem;
-    line-height: 1.1;
-  }
-  .text-h2 {
-    font-weight: 500;
-    font-size: 2.5rem;
-    line-height: 1.1;
-  }
-  .text-h3 {
-    font-weight: 700;
-    font-size: 2.625rem;
-    line-height: 1.15;
-  }
-  .text-h4 {
-    font-weight: 500;
-    font-size: 1.75rem;
-    line-height: 1.1;
-  }
-  .text-h5 {
-    font-weight: 600;
-    font-size: 1.25rem;
-    line-height: 1.1;
-  }
-  .text-h6 {
-    font-weight: 700;
-    font-size: 1.125rem;
-    line-height: 1.3;
-  }
-
-  .text-body-xl {
-    font-weight: 400;
-    font-size: 1.125rem;
-    line-height: 1.4;
-  }
-  .text-body-m {
-    font-weight: 400;
-    font-size: 1rem;
-    line-height: 1.4;
-  }
-  .text-body-m-bold {
-    font-weight: 700;
-    font-size: 1rem;
-    line-height: 1.4;
-  }
-  .text-body-m-link {
-    font-weight: 700;
-    font-size: 1rem;
-    line-height: 1.4;
-    text-decoration: underline;
-  }
-  .text-body-s {
-    font-weight: 500;
-    font-size: 0.875rem;
-    line-height: 1.3;
-  }
-  .text-body-caption {
-    font-weight: 400;
-    font-size: 0.875rem;
-    line-height: 1.3;
-    letter-spacing: 0.25em;
-  }
-  .text-body-caption-s {
-    font-weight: 600;
-    font-size: 0.75rem;
-    line-height: 1.3;
-  }
-
-  .text-input-button {
-    font-weight: 600;
-    font-size: 1rem;
-    line-height: 1.25;
-  }
-  .text-input-title {
-    font-weight: 600;
-    font-size: 0.875rem;
-    line-height: 1.2;
-    letter-spacing: 0.14em;
-  }
-  .text-input-tag {
-    font-weight: 600;
-    font-size: 0.875rem;
-    line-height: 1.15;
-  }
-  .text-input-helper {
-    font-weight: 400;
-    font-size: 0.75rem;
-    line-height: 1.2;
-    letter-spacing: 0.16em;
-  }
+@utility text-h1 {
+  font-weight: 700;
+  font-size: max(calc(3.125rem * var(--density-type)), 0.75rem);
+  line-height: 1.1;
 
   @media (min-width: 768px) {
-    .text-h1 {
-      font-size: 4rem;
-    }
-    .text-h2 {
-      font-size: 3.125rem;
-    }
-    .text-h3 {
-      font-size: 2.625rem;
-    }
-    .text-h4 {
-      font-size: 2rem;
-    }
-    .text-h5 {
-      font-size: 1.5rem;
-    }
-    .text-h6 {
-      font-size: 1.25rem;
-    }
-    .text-body-xl {
-      font-size: 1.25rem;
-    }
+    font-size: max(calc(4rem * var(--density-type)), 0.75rem);
   }
+}
+
+@utility text-h2 {
+  font-weight: 500;
+  font-size: max(calc(2.5rem * var(--density-type)), 0.75rem);
+  line-height: 1.1;
+
+  @media (min-width: 768px) {
+    font-size: max(calc(3.125rem * var(--density-type)), 0.75rem);
+  }
+}
+
+@utility text-h3 {
+  font-weight: 700;
+  font-size: max(calc(2.625rem * var(--density-type)), 0.75rem);
+  line-height: 1.15;
+}
+
+@utility text-h4 {
+  font-weight: 500;
+  font-size: max(calc(1.75rem * var(--density-type)), 0.75rem);
+  line-height: 1.1;
+
+  @media (min-width: 768px) {
+    font-size: max(calc(2rem * var(--density-type)), 0.75rem);
+  }
+}
+
+@utility text-h5 {
+  font-weight: 600;
+  font-size: max(calc(1.25rem * var(--density-type)), 0.75rem);
+  line-height: 1.1;
+
+  @media (min-width: 768px) {
+    font-size: max(calc(1.5rem * var(--density-type)), 0.75rem);
+  }
+}
+
+@utility text-h6 {
+  font-weight: 700;
+  font-size: max(calc(1.125rem * var(--density-type)), 0.75rem);
+  line-height: 1.3;
+
+  @media (min-width: 768px) {
+    font-size: max(calc(1.25rem * var(--density-type)), 0.75rem);
+  }
+}
+
+@utility text-body-xl {
+  font-weight: 400;
+  font-size: max(calc(1.125rem * var(--density-type)), 0.75rem);
+  line-height: 1.4;
+
+  @media (min-width: 768px) {
+    font-size: max(calc(1.25rem * var(--density-type)), 0.75rem);
+  }
+}
+
+@utility text-body-m {
+  font-weight: 400;
+  font-size: max(calc(1rem * var(--density-type)), 0.75rem);
+  line-height: 1.4;
+}
+
+@utility text-body-m-bold {
+  font-weight: 700;
+  font-size: max(calc(1rem * var(--density-type)), 0.75rem);
+  line-height: 1.4;
+}
+
+@utility text-body-m-link {
+  font-weight: 700;
+  font-size: max(calc(1rem * var(--density-type)), 0.75rem);
+  line-height: 1.4;
+  text-decoration: underline;
+}
+
+@utility text-body-s {
+  font-weight: 500;
+  font-size: max(calc(0.875rem * var(--density-type)), 0.75rem);
+  line-height: 1.3;
+}
+
+@utility text-body-caption {
+  font-weight: 400;
+  font-size: max(calc(0.875rem * var(--density-type)), 0.75rem);
+  line-height: 1.3;
+  letter-spacing: 0.25em;
+}
+
+@utility text-body-caption-s {
+  font-weight: 600;
+  font-size: max(calc(0.75rem * var(--density-type)), 0.75rem);
+  line-height: 1.3;
+}
+
+@utility text-input-button {
+  font-weight: 600;
+  font-size: max(calc(1rem * var(--density-type)), 0.75rem);
+  line-height: 1.25;
+}
+
+@utility text-input-title {
+  font-weight: 600;
+  font-size: max(calc(0.875rem * var(--density-type)), 0.75rem);
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+}
+
+@utility text-input-tag {
+  font-weight: 600;
+  font-size: max(calc(0.875rem * var(--density-type)), 0.75rem);
+  line-height: 1.15;
+}
+
+@utility text-input-helper {
+  font-weight: 400;
+  font-size: max(calc(0.75rem * var(--density-type)), 0.75rem);
+  line-height: 1.2;
+  letter-spacing: 0.16em;
 }
 
 /*
