@@ -29,7 +29,7 @@ export default function SyncHistoryScreen({ user }: { user: { name: string; emai
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
       <div className="px-4 py-6 md:px-13.5">
-        <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[calc(var(--spacing)*83.5)_minmax(0,1fr)] lg:items-start">
+        <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}
             variant="admin"

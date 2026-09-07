@@ -58,7 +58,7 @@ const PEOPLE_MAX = 20;
 
 const NBSP = "\u00A0";
 
-export type BookingSummaryProps = {
+export interface BookingSummaryProps {
   /** The live quote to render, or `null` before a valid selection has been priced. */
   quote: Quote | null;
   /** A quote/reprice request is in flight — the breakdown is dimmed under a loader. */
@@ -128,7 +128,7 @@ export type BookingSummaryProps = {
    * same conditions as `onApplyPromo`; the block itself hides when the quote offers no credit.
    */
   onApplyCredit?: (spend: boolean) => void;
-};
+}
 
 function Separator() {
   return <span aria-hidden className="h-px w-full shrink-0 bg-border" />;
@@ -555,7 +555,7 @@ export default function BookingSummary({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      <ScrollArea className="min-h-0 flex-1 max-xl:[&_[data-slot=scroll-area-viewport]]:overscroll-auto">
+      <ScrollArea className="min-h-0 flex-1 max-xl:**:data-[slot=scroll-area-viewport]:overscroll-auto">
         {/* Real counts, so either can be zero — a line with nothing to report is
             dropped, and the block goes with it when both are. */}
         {stats && (stats.booked > 0 || stats.viewed > 0) ? (

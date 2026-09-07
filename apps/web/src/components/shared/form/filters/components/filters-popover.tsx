@@ -16,12 +16,12 @@ import { useFilterRanges } from "../hooks/use-filter-ranges";
 import { countActiveFilters, type FiltersState } from "../lib/state";
 import FiltersPanel from "./filters-panel";
 
-export type FiltersPopoverProps = {
+export interface FiltersPopoverProps {
   value: FiltersState;
   onApply: (next: FiltersState) => void;
   variant?: React.ComponentProps<typeof Button>["variant"];
   className?: string;
-};
+}
 
 export default function FiltersPopover({
   value,

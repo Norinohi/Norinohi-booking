@@ -160,7 +160,7 @@ export default function SignUpForm() {
                         autoComplete="email"
                         placeholder={t("email.placeholder")}
                         startIcon={<Mail className="size-5!" />}
-                        className="leading-[1.25]"
+                        className="leading-tight"
                         {...field}
                         onChange={(e) => {
                           field.onChange(e);
@@ -190,7 +190,7 @@ export default function SignUpForm() {
                         autoComplete="tel"
                         placeholder={t("phone.placeholder")}
                         startIcon={<Phone className="size-5!" />}
-                        className="leading-[1.25]"
+                        className="leading-tight"
                         {...field}
                       />
                     </FormControl>
@@ -211,7 +211,7 @@ export default function SignUpForm() {
                       <TextField
                         autoComplete="name"
                         placeholder={t("name.placeholder")}
-                        className="leading-[1.25]"
+                        className="leading-tight"
                         {...field}
                       />
                     </FormControl>
@@ -234,7 +234,7 @@ export default function SignUpForm() {
                         autoComplete="new-password"
                         {...passwordToggle}
                         placeholder={t("password.placeholder")}
-                        className="leading-[1.25]"
+                        className="leading-tight"
                         {...field}
                       />
                     </FormControl>

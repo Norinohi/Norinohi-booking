@@ -23,15 +23,17 @@ import type { EnquiryRow } from "../types";
  * question quoted back — so the question is shown here in full rather than truncated like the
  * table row, and the dialog closes only once the server has taken it.
  */
+interface AnswerEnquiryDialogProps {
+  enquiry: EnquiryRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function AnswerEnquiryDialog({
   enquiry,
   open,
   onOpenChange,
-}: {
-  enquiry: EnquiryRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: AnswerEnquiryDialogProps) {
   const t = useTranslations("Admin.Inbox.answer");
   const answerId = useId();
   const [answer, setAnswer] = useState("");

@@ -8,7 +8,7 @@ import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 const STAGGER_MS = 50;
 
-export type MapMarkerProps = {
+export interface MapMarkerProps {
   coordinates: Coordinates;
   label: string;
   selected?: boolean;
@@ -26,7 +26,7 @@ export type MapMarkerProps = {
    * one this is*. The search map passes nothing and keeps a bare marker.
    */
   caption?: string;
-};
+}
 
 export default function MapMarker({
   coordinates,

@@ -46,7 +46,7 @@ export default function Gallery() {
     <Carousel className="flex flex-col gap-3 md:gap-4" options={{ loop: true }}>
       {/* Wider than 16:9 from a tablet up, where that shape pushed the thumbs below the fold;
           a phone keeps it, since 21:9 there is a 160px strip. */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl md:aspect-[21/9]">
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl md:aspect-21/9">
         <CarouselViewport>
           {photos.map((photo, index) => (
             <CarouselSlide key={photo.src}>

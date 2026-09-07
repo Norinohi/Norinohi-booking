@@ -19,15 +19,13 @@ import { TripVibeStep } from "./steps/trip-vibe-step";
  */
 type SetAnswers = (values: Partial<PlannerAnswers>) => void;
 
-export function PlannerSteps({
-  current,
-  answers,
-  setAnswers,
-}: {
+interface PlannerStepsProps {
   current: number;
   answers: PlannerAnswers;
   setAnswers: SetAnswers;
-}) {
+}
+
+export function PlannerSteps({ current, answers, setAnswers }: PlannerStepsProps) {
   switch (current) {
     case 1:
       return (

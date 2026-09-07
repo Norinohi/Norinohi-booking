@@ -18,15 +18,13 @@ export type QuizChoice<T extends string> = {
   fullWidth?: boolean;
 };
 
-export function QuizCardGrid<T extends string>({
-  choices,
-  value,
-  onChange,
-}: {
+interface QuizCardGridProps<T extends string> {
   choices: QuizChoice<T>[];
   value: T | null;
   onChange: (value: T) => void;
-}) {
+}
+
+export function QuizCardGrid<T extends string>({ choices, value, onChange }: QuizCardGridProps<T>) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {choices.map((choice) => (

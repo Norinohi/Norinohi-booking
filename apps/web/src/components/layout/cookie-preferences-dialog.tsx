@@ -22,13 +22,13 @@ import { useEffect, useId, useState } from "react";
  */
 const ALWAYS_ON = ["necessary", "functional"] as const;
 
-export type CookiePreferencesDialogProps = {
+export interface CookiePreferencesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Seeds the toggle each time the dialog opens, so reopening shows the stored answer. */
   initialAnalytics: boolean;
   onSave: (analytics: boolean) => void;
-};
+}
 
 export function CookiePreferencesDialog({
   open,

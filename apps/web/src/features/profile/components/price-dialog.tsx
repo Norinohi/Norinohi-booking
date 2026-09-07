@@ -42,15 +42,13 @@ import {
 
 type Values = { newPrice: string };
 
-export default function PriceDialog({
-  open,
-  onOpenChange,
-  listingId,
-}: {
+interface PriceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   listingId: string;
-}) {
+}
+
+export default function PriceDialog({ open, onOpenChange, listingId }: PriceDialogProps) {
   const t = useTranslations("Discounts");
   const formatMoney = useMoney();
 
@@ -131,7 +129,7 @@ export default function PriceDialog({
       <DialogContent
         showClose
         mobileSheet
-        className="max-h-[calc(100dvh-3rem)] gap-0 overflow-hidden p-0 pb-0 md:max-w-[min(472px,calc(100vw-108px))] md:rounded-2xl md:pb-0 [&_[data-slot=dialog-close]]:md:hidden"
+        className="max-h-[calc(100dvh-3rem)] gap-0 overflow-hidden p-0 pb-0 md:max-w-[min(472px,calc(100vw-108px))] md:rounded-2xl md:pb-0 **:data-[slot=dialog-close]:md:hidden"
       >
         {/* Own header row: left-aligned title with the yacht name underneath and a
             separator below, unlike the centered DialogHeader. On mobile the built-in X
@@ -161,7 +159,7 @@ export default function PriceDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className="flex min-h-0 w-full flex-1 flex-col"
             >
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 [scrollbar-width:thin] md:p-5">
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin md:p-5">
                 <div className="flex flex-col gap-4">
                   {/* Current provider price — display only, so it stays out of the form.
                       The design dims the whole field to 50% and greys the value like a

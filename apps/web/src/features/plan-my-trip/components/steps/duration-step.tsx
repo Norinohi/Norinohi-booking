@@ -11,13 +11,12 @@ import { StepLegend } from "../step-legend";
  * Single-select grid of four durations, title-only cards (no description, no flag), 2-up on md+
  * and stacked below. `id` is the value stored in the URL.
  */
-export function DurationStep({
-  value,
-  onChange,
-}: {
+interface DurationStepProps {
   value: Duration | null;
   onChange: (value: Duration) => void;
-}) {
+}
+
+export function DurationStep({ value, onChange }: DurationStepProps) {
   const t = useTranslations("PlanMyTrip.steps.duration");
 
   const choices: QuizChoice<Duration>[] = [

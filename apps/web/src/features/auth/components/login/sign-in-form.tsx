@@ -134,7 +134,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                         autoComplete="email"
                         placeholder={t("email.placeholder")}
                         startIcon={<Mail className="size-5!" />}
-                        className="leading-[1.25]"
+                        className="leading-tight"
                         {...field}
                       />
                     </FormControl>
@@ -155,7 +155,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
                         autoComplete="current-password"
                         {...passwordToggle}
                         placeholder={t("password.placeholder")}
-                        className="leading-[1.25]"
+                        className="leading-tight"
                         {...field}
                       />
                     </FormControl>

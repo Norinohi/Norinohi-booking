@@ -393,7 +393,7 @@ export default function BookingConfirmationScreen() {
       <article className="relative isolate w-full max-w-201.5 overflow-hidden rounded-2xl border border-border bg-card">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]"
+          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-806/504"
         >
           <Image
             src="/assets/illustrations/booking-confetti.svg"

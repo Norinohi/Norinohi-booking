@@ -11,13 +11,12 @@ import { StepLegend } from "../step-legend";
  * grid of three experience levels, no opt-out and no subtitle (the design hides the helper line).
  * Three cards fill the 2-up grid as 2 + 1. `id` is the value stored in the URL.
  */
-export function ExperienceStep({
-  value,
-  onChange,
-}: {
+interface ExperienceStepProps {
   value: Experience | null;
   onChange: (value: Experience) => void;
-}) {
+}
+
+export function ExperienceStep({ value, onChange }: ExperienceStepProps) {
   const t = useTranslations("PlanMyTrip.steps.experience");
 
   const choices: QuizChoice<Experience>[] = [

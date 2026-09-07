@@ -33,15 +33,13 @@ const KIND_ICON = {
  * belongs in is decided by its `kind`, and that is the caller's business, not this control's.
  * `value` is the caller's rendering of what is currently selected.
  */
-export default function LocationSearch({
-  value,
-  onSelect,
-  placeholder,
-}: {
+interface LocationSearchProps {
   value: string;
   onSelect: (next: Suggestion | null) => void;
   placeholder: string;
-}) {
+}
+
+export default function LocationSearch({ value, onSelect, placeholder }: LocationSearchProps) {
   const t = useTranslations("Yachts.searchBar");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");

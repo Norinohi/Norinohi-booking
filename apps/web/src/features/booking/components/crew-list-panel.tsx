@@ -604,7 +604,7 @@ export default function CrewListPanel({ booking }: { booking: BookingDetail }) {
                       <FormControl>
                         <Checkbox checked={input.value} onCheckedChange={input.onChange} />
                       </FormControl>
-                      <FormLabel className="!mt-0">{t("isSkipper")}</FormLabel>
+                      <FormLabel className="mt-0!">{t("isSkipper")}</FormLabel>
                       <FormMessage />
                     </FormItem>
                   )}

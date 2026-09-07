@@ -21,7 +21,7 @@ import WhereSection from "./sections/where-section";
 
 const SECTIONS = ["where", "when", "boat", "specs", "additional", "ratings"];
 
-export type FiltersPanelProps = {
+export interface FiltersPanelProps {
   value: FiltersState;
   onApply: (next: FiltersState) => void;
   className?: string;
@@ -30,7 +30,7 @@ export type FiltersPanelProps = {
   onClose?: () => void;
   /** The panel's own box, for a caller that has to lay something else out around it. */
   ref?: Ref<HTMLFormElement>;
-};
+}
 
 export default function FiltersPanel({
   value,

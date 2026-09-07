@@ -113,7 +113,7 @@ function PopoverArrow({ className, ...props }: PopoverPrimitive.Arrow.Props) {
         "data-[side=bottom]:top-[-10px] data-[side=top]:bottom-[-10px] data-[side=top]:rotate-180",
         "data-[side=left]:right-[-16px] data-[side=left]:rotate-90",
         "data-[side=right]:left-[-16px] data-[side=right]:-rotate-90",
-        "before:absolute before:bottom-0 before:left-1/2 before:size-4 before:border before:border-input before:bg-popover before:content-[''] before:[transform:translate(-50%,50%)_rotate(45deg)]",
+        "before:absolute before:bottom-0 before:left-1/2 before:size-4 before:border before:border-input before:bg-popover before:content-[''] before:transform-[translate(-50%,50%)_rotate(45deg)]",
         className,
       )}
       {...props}

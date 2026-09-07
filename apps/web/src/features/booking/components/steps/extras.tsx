@@ -107,7 +107,7 @@ export default function ExtrasStep() {
           {included.map((item) => (
             <li
               key={item.code}
-              className="flex items-center gap-2 border-b border-dashed border-border py-3 md:last:border-b-0 md:[&:nth-last-child(2)]:border-b-0"
+              className="flex items-center gap-2 border-b border-dashed border-border py-3 md:last:border-b-0 md:nth-last-2:border-b-0"
             >
               <span className="min-w-0 flex-1 text-base leading-[1.4] text-foreground">
                 {item.label}

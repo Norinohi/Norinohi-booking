@@ -201,7 +201,7 @@ function Details({
           <div className="flex min-w-0 flex-1 items-start gap-2">
             {/* The name opens the same page as "View Details"; a card without one (the booking
                 recap) keeps plain text. */}
-            <h3 className="text-h4 min-w-0 line-clamp-2 pb-1 break-words text-foreground">
+            <h3 className="text-h4 min-w-0 line-clamp-2 pb-1 wrap-break-word text-foreground">
               {detailHref ? (
                 <Link
                   href={detailHref}
@@ -419,7 +419,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         "flex w-full flex-col overflow-hidden rounded-2xl border bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:items-stretch xl:gap-6",
         boat.summary
           ? "border-border xl:grid-cols-[minmax(0,452fr)_minmax(0,566fr)]"
-          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(calc(var(--spacing)*52),232fr)]",
+          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(--spacing(52),232fr)]",
         className,
       )}
     >

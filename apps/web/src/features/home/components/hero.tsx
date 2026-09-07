@@ -202,7 +202,7 @@ export default function Hero() {
         sizes="(max-width: 768px) 250vw, 100vw"
         className="-z-10 transform-gpu object-cover"
       />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />
+      <div className="absolute inset-0 -z-10 bg-linear-to-r from-black/45 via-black/15 to-transparent" />
 
       <motion.div
         variants={GROUP}

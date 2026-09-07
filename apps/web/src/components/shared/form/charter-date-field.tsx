@@ -29,15 +29,7 @@ export type CharterPeriod = { checkIn: string; checkOut: string };
  * is no period to price, and the predicate has to narrow to the check-outs that are legal
  * for the check-in already chosen. Only a complete, legal range reaches `onSelect`.
  */
-export default function CharterDateField({
-  offers,
-  value,
-  onSelect,
-  disabled = false,
-  placeholder,
-  className,
-  triggerClassName,
-}: {
+interface CharterDateFieldProps {
   offers: readonly OfferConstraints[];
   /** The committed period, normally the quote's. Resets whatever was half-picked. */
   value: CharterPeriod | undefined;
@@ -46,7 +38,17 @@ export default function CharterDateField({
   placeholder: string;
   className?: string;
   triggerClassName?: string;
-}) {
+}
+
+export default function CharterDateField({
+  offers,
+  value,
+  onSelect,
+  disabled = false,
+  placeholder,
+  className,
+  triggerClassName,
+}: CharterDateFieldProps) {
   const [pending, setPending] = useState<DateRange | undefined>(undefined);
   const [open, setOpen] = useState(false);
   /* Read once per mount: a clock read during render would differ between server and client. */

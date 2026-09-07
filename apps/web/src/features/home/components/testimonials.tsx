@@ -80,7 +80,7 @@ export default function Testimonials() {
         </motion.h2>
       </div>
 
-      <div className="mt-8 flex flex-col gap-4 md:gap-5 lg:mt-10 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
+      <div className="mt-8 flex flex-col gap-4 md:gap-5 lg:mt-10 mask-[linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
         <MarqueeRow items={ROW_ONE} />
         <MarqueeRow items={ROW_TWO} reverse />
       </div>

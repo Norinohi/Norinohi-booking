@@ -100,7 +100,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-footer"
-      className={cn("flex w-full flex-col gap-2 [&>*]:w-full", className)}
+      className={cn("flex w-full flex-col gap-2 *:w-full", className)}
       {...props}
     />
   );

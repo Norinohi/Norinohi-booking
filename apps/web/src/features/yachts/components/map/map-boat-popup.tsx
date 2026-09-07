@@ -18,7 +18,7 @@ const MOBILE_MAX = 768;
 
 type PopupBoat = Omit<MapBoatCardProps, "layout" | "className"> & { id: string };
 
-export type MapBoatPopupProps = {
+export interface MapBoatPopupProps {
   coordinates: Coordinates;
   /** The cards currently loaded. One boat, or one page of the marina's. */
   boats: PopupBoat[];
@@ -53,7 +53,7 @@ export type MapBoatPopupProps = {
    * to fly.
    */
   onFocusApplied?: () => void;
-};
+}
 
 export default function MapBoatPopup({
   coordinates,

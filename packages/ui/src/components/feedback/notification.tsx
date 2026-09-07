@@ -12,12 +12,12 @@ const notificationVariants = cva(
   {
     variants: {
       variant: {
-        info: "border-brand bg-brand-50 [&_[data-slot=notification-icon]]:text-brand",
+        info: "border-brand bg-brand-50 **:data-[slot=notification-icon]:text-brand",
         success:
-          "border-positive-600 bg-positive-50 [&_[data-slot=notification-icon]]:text-positive-600",
+          "border-positive-600 bg-positive-50 **:data-[slot=notification-icon]:text-positive-600",
         warning:
-          "border-warning-600 bg-warning-50 [&_[data-slot=notification-icon]]:text-warning-600",
-        error: "border-error-600 bg-error-50 [&_[data-slot=notification-icon]]:text-error-600",
+          "border-warning-600 bg-warning-50 **:data-[slot=notification-icon]:text-warning-600",
+        error: "border-error-600 bg-error-50 **:data-[slot=notification-icon]:text-error-600",
       },
     },
     defaultVariants: { variant: "info" },

@@ -158,7 +158,7 @@ export default function ResetPasswordForm({
                           autoComplete="new-password"
                           {...passwordToggle}
                           placeholder={copy.newPasswordPlaceholder}
-                          className="leading-[1.25]"
+                          className="leading-tight"
                           {...field}
                         />
                       </FormControl>
@@ -179,7 +179,7 @@ export default function ResetPasswordForm({
                           autoComplete="new-password"
                           {...passwordToggle}
                           placeholder={copy.confirmPlaceholder}
-                          className="leading-[1.25]"
+                          className="leading-tight"
                           {...field}
                         />
                       </FormControl>

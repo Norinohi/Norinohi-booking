@@ -561,7 +561,7 @@ export default function MapScreen() {
               "flex flex-col gap-4 transition-opacity duration-200 md:flex-row md:items-start md:gap-5 2xl:contents",
               // Popup covers these on phones (< 768px): fade out and disable there, keep them from md up.
               popupOpen &&
-                "pointer-events-none opacity-0 [&_*]:pointer-events-none md:pointer-events-auto md:opacity-100 md:[&_*]:pointer-events-auto",
+                "pointer-events-none opacity-0 **:pointer-events-none md:pointer-events-auto md:opacity-100 md:**:pointer-events-auto",
             )}
           >
             <FiltersPanel
@@ -605,7 +605,7 @@ export default function MapScreen() {
             </div>
 
             {chips.length > 0 && (
-              <div className="flex flex-wrap items-start justify-end gap-2 md:min-w-0 md:flex-1 2xl:order-last 2xl:justify-start [&>*]:pointer-events-auto">
+              <div className="flex flex-wrap items-start justify-end gap-2 md:min-w-0 md:flex-1 2xl:order-last 2xl:justify-start *:pointer-events-auto">
                 {chips.map((chip) => (
                   <Chip
                     key={chip.id}

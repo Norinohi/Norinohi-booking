@@ -12,13 +12,12 @@ import { StepLegend } from "../step-legend";
  * "Not sure" sits in the last cell (no full-width span) — it just carries no description.
  * `id` is the value stored in the URL.
  */
-export function GroupSizeStep({
-  value,
-  onChange,
-}: {
+interface GroupSizeStepProps {
   value: GroupSize | null;
   onChange: (value: GroupSize) => void;
-}) {
+}
+
+export function GroupSizeStep({ value, onChange }: GroupSizeStepProps) {
   const t = useTranslations("PlanMyTrip.steps.groupSize");
 
   const choices: QuizChoice<GroupSize>[] = [

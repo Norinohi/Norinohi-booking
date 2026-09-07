@@ -88,10 +88,10 @@ function withDestination(current: FiltersState, next: Suggestion | null): Filter
   }
 }
 
-export type SearchBarProps = {
+export interface SearchBarProps {
   value: FiltersState;
   onSearch: (next: FiltersState) => void;
-};
+}
 
 export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const t = useTranslations("Yachts.searchBar");
@@ -133,7 +133,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_calc(var(--spacing)*62)] xl:gap-5"
+      className="mx-auto grid w-full max-w-349 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))_--spacing(62)] xl:gap-5"
     >
       <div>
         <LocationSearch

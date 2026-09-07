@@ -43,12 +43,12 @@ function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }
   );
 }
 
-export type MarinaCardProps = {
+export interface MarinaCardProps {
   marina: Marina;
   className?: string;
   /** Told when the map dialog opens, so a hover-opened host can hold itself open. */
   onMapOpenChange?: (open: boolean) => void;
-};
+}
 
 export function MarinaCard({ marina, className, onMapOpenChange }: MarinaCardProps) {
   return (

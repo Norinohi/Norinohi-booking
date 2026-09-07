@@ -31,15 +31,17 @@ import type { InvoiceRow } from "../types";
  * arrive and the settlement stands, so this reports it as a warning and leaves the booking in
  * the refund queue instead of implying nothing was recorded.
  */
+interface SettleInvoiceDialogProps {
+  invoice: InvoiceRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function SettleInvoiceDialog({
   invoice,
   open,
   onOpenChange,
-}: {
-  invoice: InvoiceRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: SettleInvoiceDialogProps) {
   const t = useTranslations("Admin.Payments.settle");
   const amount = useAmount();
   const amountId = useId();

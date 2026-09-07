@@ -34,7 +34,11 @@ const SKELETON_ROWS = 5;
 /** Per-column skeleton widths mirroring typical cell content. */
 const SKELETON_WIDTHS = ["w-3/4", "w-24", "w-20", "w-28", "w-16", "w-12"];
 
-export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount) => void }) {
+interface DiscountsTableProps {
+  onEdit: (discount: Discount) => void;
+}
+
+export default function DiscountsTable({ onEdit }: DiscountsTableProps) {
   const t = useTranslations("Discounts");
   const formatMoney = useMoney();
   const format = useFormatter();

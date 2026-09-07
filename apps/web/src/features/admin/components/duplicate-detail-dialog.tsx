@@ -30,15 +30,17 @@ import DuplicatePhotos from "./duplicate-photos";
  * tail of specs is fetched, and only while the dialog is open.
  */
 
+interface DuplicateDetailDialogProps {
+  candidate: DuplicateCandidate;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function DuplicateDetailDialog({
   candidate,
   open,
   onOpenChange,
-}: {
-  candidate: DuplicateCandidate;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: DuplicateDetailDialogProps) {
   const t = useTranslations("Admin.Duplicates");
 
   return (
@@ -257,7 +259,7 @@ function DetailPanel({
             ) : (
               /* Provider prose runs long and unevenly between the two sides; a fixed box keeps
                  the columns comparable and scrolls the rest. */
-              <p className="max-h-60 overflow-y-auto text-sm leading-[1.5] font-medium whitespace-pre-line text-foreground">
+              <p className="max-h-60 overflow-y-auto text-sm leading-normal font-medium whitespace-pre-line text-foreground">
                 {detail.description}
               </p>
             )}

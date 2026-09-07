@@ -21,15 +21,13 @@ import type { RouteRow } from "../types";
  * the dialog cannot show is the surrounding page, which is why an inactive route is still worth
  * opening on the site once it is published.
  */
-export default function RoutePreviewDialog({
-  route,
-  open,
-  onOpenChange,
-}: {
+interface RoutePreviewDialogProps {
   route: RouteRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export default function RoutePreviewDialog({ route, open, onOpenChange }: RoutePreviewDialogProps) {
   const t = useTranslations("Admin.Routes.previewDialog");
 
   return (

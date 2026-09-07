@@ -25,19 +25,16 @@ type Point = { lat: number; lng: number };
 
 const PLACED_ZOOM = 9;
 
-export default function RouteStopMap({
-  point,
-  otherStops,
-  centre,
-  onMove,
-}: {
+interface RouteStopMapProps {
   /** The stop being placed. Null before the author has put it anywhere. */
   point: Point | null;
   otherStops: { name: string; lat: number; lng: number }[];
   /** Where the map opens when there is no pin yet — the target base, or the first stop. */
   centre: Point;
   onMove: (point: Point) => void;
-}) {
+}
+
+export default function RouteStopMap({ point, otherStops, centre, onMove }: RouteStopMapProps) {
   /*
    * Mapbox's own `click` handler is attached once, at construction, so it would close over the
    * first `onMove` it saw and write every later tap into a stale form. The ref is what keeps the

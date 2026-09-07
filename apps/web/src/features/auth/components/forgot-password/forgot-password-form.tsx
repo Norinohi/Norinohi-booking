@@ -118,7 +118,7 @@ export default function ForgotPasswordForm({
                           autoComplete="email"
                           placeholder={t("email.placeholder")}
                           startIcon={<Mail className="size-5!" />}
-                          className="leading-[1.25]"
+                          className="leading-tight"
                           {...field}
                         />
                       </FormControl>

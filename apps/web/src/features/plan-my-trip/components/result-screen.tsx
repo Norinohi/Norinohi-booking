@@ -230,7 +230,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
             {priceLine ? (
               <div className="flex flex-col gap-0.5 rounded-xl bg-card px-4 py-3">
                 <StatLabel>{priceLine.label}</StatLabel>
-                <span className="text-lg leading-tight font-semibold break-words text-natural-600">
+                <span className="text-lg leading-tight font-semibold wrap-break-word text-natural-600">
                   {priceLine.value}
                 </span>
               </div>
@@ -334,7 +334,7 @@ function StatCell({ label, value }: { label: React.ReactNode; value: React.React
   return (
     <div className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-card px-4 py-3">
       <StatLabel>{label}</StatLabel>
-      <span className="text-base leading-tight font-semibold break-words text-foreground">
+      <span className="text-base leading-tight font-semibold wrap-break-word text-foreground">
         {value}
       </span>
     </div>

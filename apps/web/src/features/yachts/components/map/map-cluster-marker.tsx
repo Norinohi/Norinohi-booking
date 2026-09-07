@@ -8,13 +8,13 @@ import type { Coordinates } from "@/components/shared/overlay/marina-popover";
 
 const STAGGER_MS = 50;
 
-export type MapClusterMarkerProps = {
+export interface MapClusterMarkerProps {
   coordinates: Coordinates;
   count: number;
   label: string;
   order?: number;
   onSelect: () => void;
-};
+}
 
 export default function MapClusterMarker({
   coordinates,

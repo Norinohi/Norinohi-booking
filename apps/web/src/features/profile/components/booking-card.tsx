@@ -107,7 +107,7 @@ export default function BookingCard({
        */}
       <article
         className={cn(
-          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,calc(var(--spacing)*65))_minmax(0,1fr)_15rem] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,calc(var(--spacing)*95))_minmax(0,1fr)_15rem]",
+          "hidden w-full overflow-hidden rounded-2xl border border-natural-100 bg-card xl:grid xl:grid-cols-[minmax(0,--spacing(65))_minmax(0,1fr)_15rem] xl:items-stretch xl:gap-6 2xl:grid-cols-[minmax(0,--spacing(95))_minmax(0,1fr)_15rem]",
           className,
         )}
       >
