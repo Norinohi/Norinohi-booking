@@ -8,6 +8,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import { getEnabledInventoryProviders } from "../context";
+import { getMarketplaceSettings } from "./marketplace-settings";
 
 /**
  * Which vendor a sale is actually going through.
@@ -21,9 +22,6 @@ import { getEnabledInventoryProviders } from "../context";
  * the offer model, and the webhook and expiry paths have always read them. Both now agree with
  * the offer by construction, because the same selection writes all three.
  */
-
-/** Architecture section 3: Booking Manager wins a tie between linked sources. */
-const TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"];
 
 /**
  * The vendor a listing would transact through when nothing has been quoted yet.
@@ -39,7 +37,11 @@ async function providerCodeForListing(db: Database, listingId: string): Promise<
     .where(and(eq(listingOffer.listingId, listingId), eq(listingOffer.status, "active")));
 
   const codes = rows.map((row) => row.code);
-  return TRANSACTING_PREFERENCE.find((code) => codes.includes(code)) ?? codes[0] ?? null;
+  /* The same order a sale would follow, read from the admin setting rather than restated here:
+     a calendar that fell back to one vendor while the sale went to another would show
+     availability the quote does not honour. */
+  const { transactingPreference } = await getMarketplaceSettings(db);
+  return transactingPreference.find((code) => codes.includes(code)) ?? codes[0] ?? null;
 }
 
 /**

@@ -33,6 +33,12 @@ export default function AdditionalSection({ value, set }: SectionProps) {
         checked={value.petsAllowed}
         onChange={(next) => set("petsAllowed", next)}
       />
+      <ToggleRow
+        control="checkbox"
+        label={t("toggles.bestValue")}
+        checked={value.bestValue}
+        onChange={(next) => set("bestValue", next)}
+      />
     </Section>
   );
 }

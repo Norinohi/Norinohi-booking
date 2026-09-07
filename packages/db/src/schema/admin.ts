@@ -135,6 +135,22 @@ export const marketplaceSetting = pgTable(
     enforceDepositLeadTime: boolean("enforce_deposit_lead_time").default(true).notNull(),
     /** How many days ahead of check-in deposits stop being offered. */
     depositLeadTimeDays: integer("deposit_lead_time_days").default(60).notNull(),
+    /**
+     * Which vendor wins when nothing else separates two offers, most preferred first.
+     *
+     * Commercial only: it decides who we sell through, who the availability calendar falls back
+     * to, and whose price a card carries. It deliberately does **not** move
+     * `PROVIDER_PREFERENCE` in canonical-listing.ts, which settles whose title, specs and
+     * photographs a merged listing shows — Booking Manager leads there because its photography
+     * is better, and one switch over both would silently redress the whole catalogue.
+     *
+     * A code absent from this list is not refused, it simply sorts after every code that is
+     * present, so a provider added to the fleet still sells before it is ever configured here.
+     */
+    transactingPreference: text("transacting_preference")
+      .array()
+      .default(["booking_manager", "nausys", "mock"])
+      .notNull(),
     updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
   },

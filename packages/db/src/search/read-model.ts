@@ -58,8 +58,27 @@ export async function rebuildListingSearchDocs(
       select
         o.listing_id,
         o.id as offer_id,
-        /* Architecture section 3: Booking Manager takes a tie. */
-        case p.code when 'booking_manager' then 0 when 'nausys' then 1 else 2 end as provider_rank,
+        /*
+         * Which vendor takes a tie, read from the admin setting so the card and the sale agree.
+         *
+         * Resolved here rather than passed in, because every caller of this rebuild would
+         * otherwise have to carry a value none of them has an opinion about. The consequence is
+         * that a change of preference reaches the catalogue only when these documents are next
+         * rebuilt -- the sale and the availability calendar follow it immediately.
+         *
+         * array_position is 1-based and answers NULL for a code the list does not name, which
+         * is the ranking we want: a provider nobody has configured sorts after every one who is.
+         */
+        coalesce(
+          array_position(
+            coalesce(
+              (select ms.transacting_preference from marketplace_setting ms where ms.id = 'singleton'),
+              array['booking_manager', 'nausys', 'mock']
+            ),
+            p.code
+          ),
+          1000
+        ) as provider_rank,
         o.default_currency,
         o.security_deposit_minor,
         o.security_deposit_currency,
@@ -1079,6 +1098,66 @@ export async function rebuildListingSearchDocs(
       from listing l
       where l.id = doc.listing_id and l.status = 'published'
     )
+  `);
+
+  await markBestValue(db, listingIds);
+}
+
+/**
+ * The cheapest quarter of each model, which is what the "Best value" badge now means.
+ *
+ * A separate statement rather than a column in the insert above: the comparison is against a
+ * cohort, and the insert resolves one listing at a time. Reading the cohort back from the
+ * documents just written is also what makes a partial rebuild sane -- the peers keep whatever
+ * price the last run gave them, which is the catalogue as it currently stands.
+ *
+ * Only models carrying at least a handful of priced hulls are ranked. Below that a quartile is
+ * an accident of how few boats a vendor happens to publish: with two listings the cheaper one
+ * would be "best value" for being one of a pair, which is the empty claim this replaces.
+ *
+ * Compared in EUR, because half the catalogue is published in something else and a quartile over
+ * mixed integers ranks a dollar against a euro. A listing no rate covers is left out rather than
+ * ranked, and so is every model too small to have a distribution.
+ *
+ * A partial rebuild only re-marks the listings it touched. Their peers drift until the next full
+ * pass, which is what the nightly sync does -- a badge is not worth a full-table pass on every
+ * merge of a single boat.
+ */
+const BEST_VALUE_MIN_PEERS = 5;
+const BEST_VALUE_QUANTILE = 0.25;
+
+async function markBestValue(
+  db: NodePgDatabase<typeof schema>,
+  listingIds: readonly string[] | undefined,
+) {
+  await db.execute(sql`
+    with peers as (
+      select
+        model,
+        percentile_cont(${BEST_VALUE_QUANTILE}) within group (order by price_from_minor_eur) as cutoff
+      from listing_search_doc
+      where model is not null and price_from_minor_eur is not null
+      group by model
+      having count(*) >= ${BEST_VALUE_MIN_PEERS}
+    ),
+    /* Left joined, so a listing whose model fell below the peer floor or whose price went away
+       resolves to false and gives the badge back rather than keeping a stale one. */
+    desired as (
+      select
+        doc.listing_id,
+        coalesce(
+          doc.price_from_minor_eur is not null and doc.price_from_minor_eur <= peers.cutoff,
+          false
+        ) as flag
+      from listing_search_doc doc
+      left join peers on peers.model = doc.model
+      where ${listingScope(sql`doc.listing_id`, listingIds)}
+    )
+    update listing_search_doc doc
+    set best_value = desired.flag
+    from desired
+    where desired.listing_id = doc.listing_id
+      and doc.best_value is distinct from desired.flag
   `);
 }
 

@@ -97,6 +97,8 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
         return t("depositInsurance");
       case "petsAllowed":
         return t("petsAllowed");
+      case "bestValue":
+        return t("bestValue");
       case "guestRating":
         return t("guestRating", { value: range(state.guestRating) });
     }

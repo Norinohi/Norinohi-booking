@@ -71,6 +71,19 @@ export const listingSearchDoc = pgTable(
     securityDepositWhenInsuredMinor: integer("security_deposit_when_insured_minor"),
     depositInsuranceIncluded: boolean("deposit_insurance_included").default(false).notNull(),
     petsAllowed: boolean("pets_allowed").default(false).notNull(),
+    /**
+     * Whether this hull is in the cheapest quarter of its own model.
+     *
+     * The "Best value" badge used to be pushed onto every listing unconditionally, which made it
+     * a decoration rather than a claim: 18,655 of 18,655 cards carried it. Earned here instead,
+     * against the only peers the comparison is fair against — the same model, priced in one
+     * currency — so the badge means the same thing on a Lagoon 42 as on a Sun Odyssey 449.
+     *
+     * Written by the pass at the end of `rebuildListingSearchDocs` rather than in the main
+     * insert, because a percentile is a fact about a cohort and the insert sees one row at a
+     * time.
+     */
+    bestValue: boolean("best_value").default(false).notNull(),
     rating: numeric("rating", { precision: 3, scale: 2 }).notNull(),
     reviewCount: integer("review_count").default(0).notNull(),
     mainImage: text("main_image"),

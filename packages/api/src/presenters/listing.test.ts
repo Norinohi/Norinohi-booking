@@ -2,7 +2,7 @@ import type { ListingSearchDoc } from "@yacht-charter/db/search";
 
 import { describe, expect, it } from "vitest";
 
-import { presentListingSummary } from "./listing";
+import { badgesFor, presentListingSummary } from "./listing";
 
 const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   listingId: "ylst_1",
@@ -41,6 +41,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   securityDepositWhenInsuredMinor: null,
   depositInsuranceIncluded: true,
   petsAllowed: false,
+  bestValue: false,
   rating: "5.00",
   reviewCount: 4,
   bookedThisMonth: 0,
@@ -146,5 +147,44 @@ describe("presentListingSummary", () => {
 
     expect(summary.availability.bookablePeriod).toBeNull();
     expect(summary.priceDetails.periodDays).toBe(7);
+  });
+});
+
+describe("badgesFor", () => {
+  /*
+   * "Best value" used to be pushed onto every listing unconditionally, so all 18,655 cards in the
+   * local catalogue carried it and it distinguished nothing. It is now earned in the read model.
+   */
+  it("withholds best value from a listing that has not earned it", () => {
+    const codes = badgesFor({
+      petsAllowed: false,
+      depositInsuranceIncluded: false,
+      rating: 4,
+      bestValue: false,
+    }).map((badge) => badge.code);
+
+    expect(codes).not.toContain("best-value");
+  });
+
+  it("awards best value only where the read model marked it", () => {
+    const codes = badgesFor({
+      petsAllowed: false,
+      depositInsuranceIncluded: false,
+      rating: 4,
+      bestValue: true,
+    }).map((badge) => badge.code);
+
+    expect(codes).toEqual(["best-value"]);
+  });
+
+  /* The booking snapshot froze before the flag existed and passes no value at all. */
+  it("treats an absent flag as unearned rather than as true", () => {
+    const codes = badgesFor({
+      petsAllowed: false,
+      depositInsuranceIncluded: false,
+      rating: 5,
+    }).map((badge) => badge.code);
+
+    expect(codes).toEqual(["top-rated"]);
   });
 });

@@ -491,6 +491,8 @@
       },
       "battenMainsail": "Mayor con sables",
       "badges": {
+        "available": "Disponible",
+        "onRequest": "Bajo petición",
         "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
         "bestValue": "Mejor relación calidad-precio",
@@ -694,7 +696,8 @@
       "withoutAvailabilityConfirmation": "Mostrar yates sin confirmación de disponibilidad",
       "underTemporaryBooking": "Mostrar yates con reserva temporal",
       "depositInsurance": "Seguro de fianza incluido",
-      "petsAllowed": "Se admiten mascotas"
+      "petsAllowed": "Se admiten mascotas",
+      "bestValue": "Solo la mejor relación calidad-precio"
     },
     "units": {
       "years": "{count, plural, one {# año} other {# años}}"
@@ -727,6 +730,7 @@
       "underTemporaryBooking": "Con reserva temporal",
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
+      "bestValue": "Mejor relación calidad-precio",
       "guestRating": "Valoración: {value}"
     },
     "options": {
@@ -2978,8 +2982,8 @@
       }
     },
     "Settings": {
-      "title": "Ajustes de pago",
-      "subtitle": "Cuanto de un charter se cobra por adelantado, para cada presupuesto del marketplace.",
+      "title": "Ajustes del marketplace",
+      "subtitle": "Cuánto del chárter se cobra por adelantado y a través de qué proveedor vendemos cuando las ofertas son iguales.",
       "source": {
         "legend": "Que plan de pago usamos",
         "vendor": {
@@ -3004,10 +3008,15 @@
         "daysLabel": "Dias antes del check-in",
         "daysError": "Introduce un numero entero de dias entre 0 y 365."
       },
+      "preference": {
+        "legend": "Proveedor preferido",
+        "hint": "Quién gana cuando la disponibilidad, el precio y los suplementos obligatorios coinciden. Nunca sustituye a una oferta más barata: solo resuelve un empate.",
+        "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
+      },
       "save": "Guardar cambios",
       "saving": "Guardando...",
-      "saved": "Ajustes de pago guardados.",
-      "saveFailed": "No se pudieron guardar los ajustes de pago.",
+      "saved": "Ajustes guardados.",
+      "saveFailed": "No se han podido guardar los ajustes.",
       "appliesNext": "Se aplica a presupuestos nuevos. Un presupuesto ya emitido conserva la politica con la que se calculo."
     }
   }

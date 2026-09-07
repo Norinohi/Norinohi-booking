@@ -200,6 +200,47 @@ export async function getListingByIdOrSlug(
 }
 
 /**
+ * Where a merged listing's old URL now leads.
+ *
+ * A confirmed duplicate keeps its `listing` row with `status = 'merged'` and a pointer at the
+ * keeper, but its search document is dropped, so the detail page can only 404 on it. That loses
+ * whatever ranking the old URL had earned and shows an error to somebody who followed a link to a
+ * boat that still exists.
+ *
+ * Followed rather than read once: a keeper can itself be merged later, and stopping at the first
+ * hop would redirect to a second dead page. The walk is depth-capped because the pointer is a
+ * self-reference and a cycle would otherwise loop forever.
+ *
+ * Returns nothing unless the chain ends on a published listing, so a merge into something hidden
+ * or draft still 404s instead of redirecting to a page that cannot be shown.
+ */
+const MERGE_CHAIN_DEPTH = 8;
+
+export async function getMergedListingTarget(
+  db: NodePgDatabase<typeof schema>,
+  idOrSlug: string,
+): Promise<{ listingId: string; slug: string } | undefined> {
+  const rows = await db.execute<{ listingId: string; slug: string }>(sql`
+    with recursive chain as (
+      select l.id, l.slug, l.status, l.merged_into_listing_id, 0 as depth
+      from listing l
+      where (l.id = ${idOrSlug} or l.slug = ${idOrSlug}) and l.status = 'merged'
+      union all
+      select next.id, next.slug, next.status, next.merged_into_listing_id, chain.depth + 1
+      from chain
+      join listing next on next.id = chain.merged_into_listing_id
+      where chain.status = 'merged' and chain.depth < ${MERGE_CHAIN_DEPTH}
+    )
+    select chain.id as "listingId", chain.slug
+    from chain
+    where chain.status = 'published'
+    limit 1
+  `);
+
+  return rows.rows[0];
+}
+
+/**
  * The provider's own description in `locale`, or undefined when it ships none.
  *
  * `listing_search_doc` bakes provider prose into `searchable_text` only, so the detail read is
@@ -612,6 +653,7 @@ export async function listSearchFacets(
       hasTemporaryBooking: boolean | null;
       hasDepositInsurance: boolean | null;
       hasPetsAllowed: boolean | null;
+      hasBestValue: boolean | null;
       currency: string | null;
     }>(sql`
       select
@@ -646,7 +688,8 @@ export async function listSearchFacets(
         bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
         bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
         bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
-        bool_or(doc.pets_allowed) as "hasPetsAllowed"
+        bool_or(doc.pets_allowed) as "hasPetsAllowed",
+        bool_or(doc.best_value) as "hasBestValue"
       from listing_search_doc doc
       where ${whereClause(input)}
     `),
@@ -704,6 +747,7 @@ export async function listSearchFacets(
       underTemporaryBooking: row?.hasTemporaryBooking ?? false,
       depositInsurance: row?.hasDepositInsurance ?? false,
       petsAllowed: row?.hasPetsAllowed ?? false,
+      bestValue: row?.hasBestValue ?? false,
     },
     priceRange,
   };
@@ -1223,6 +1267,7 @@ const searchColumns = sql`
   doc.security_deposit_when_insured_minor as "securityDepositWhenInsuredMinor",
   doc.deposit_insurance_included as "depositInsuranceIncluded",
   doc.pets_allowed as "petsAllowed",
+  doc.best_value as "bestValue",
   doc.rating,
   doc.review_count as "reviewCount",
   ${engagementColumns},
@@ -1384,6 +1429,7 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
     parts.push(sql`doc.deposit_insurance_included = true`);
   }
   if (!skip.has("petsAllowed") && input.petsAllowed) parts.push(sql`doc.pets_allowed = true`);
+  if (!skip.has("bestValue") && input.bestValue) parts.push(sql`doc.best_value = true`);
   const availabilityWindow = availabilityWindowFor(input);
   const windowNights = availabilityWindow ? nightsBetween(availabilityWindow) : undefined;
   /*

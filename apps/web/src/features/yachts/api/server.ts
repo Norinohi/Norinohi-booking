@@ -85,6 +85,18 @@ export function isListingNotFound(error: Error): boolean {
   return error.message === LISTING_NOT_FOUND;
 }
 
+/**
+ * Where a merged duplicate's old URL should send the visitor, or null when nowhere.
+ *
+ * Deliberately uncached, unlike every other read in this file. It only runs on the path where the
+ * listing read has already missed, which is rare enough not to be worth a cache entry — and the
+ * answer it would cache is an absence, which is exactly what `prefetchListingDetail` goes out of
+ * its way not to hold on to: a listing merged an hour ago would otherwise keep 404ing.
+ */
+export async function resolveMergedListingTarget(id: string) {
+  return publicClient.listings.redirectTarget({ id });
+}
+
 export async function prefetchListingDetail(id: string, locale: string) {
   "use cache";
   cacheLife("hours");

@@ -491,6 +491,8 @@
       },
       "battenMainsail": "Lattengroßsegel",
       "badges": {
+        "available": "Verfügbar",
+        "onRequest": "Auf Anfrage",
         "unavailable": "Nicht verfügbar",
         "bestForFamilies": "Ideal für Familien",
         "bestValue": "Bestes Preis-Leistungs-Verhältnis",
@@ -694,7 +696,8 @@
       "withoutAvailabilityConfirmation": "Yachten ohne Verfügbarkeitsbestätigung anzeigen",
       "underTemporaryBooking": "Yachten mit vorläufiger Buchung anzeigen",
       "depositInsurance": "Kautionsversicherung inklusive",
-      "petsAllowed": "Haustiere erlaubt"
+      "petsAllowed": "Haustiere erlaubt",
+      "bestValue": "Nur bestes Preis-Leistungs-Verhältnis"
     },
     "units": {
       "years": "{count, plural, one {# Jahr} other {# Jahre}}"
@@ -727,6 +730,7 @@
       "underTemporaryBooking": "Vorläufig gebucht",
       "depositInsurance": "Kautionsversicherung",
       "petsAllowed": "Haustiere erlaubt",
+      "bestValue": "Bestes Preis-Leistungs-Verhältnis",
       "guestRating": "Bewertung: {value}"
     },
     "options": {
@@ -2978,8 +2982,8 @@
       }
     },
     "Settings": {
-      "title": "Zahlungseinstellungen",
-      "subtitle": "Wie viel einer Charter im Voraus eingezogen wird, fur jedes Angebot im Marktplatz.",
+      "title": "Marktplatz-Einstellungen",
+      "subtitle": "Wie viel eines Charters im Voraus eingezogen wird und über welchen Anbieter wir verkaufen, wenn die Angebote gleich sind.",
       "source": {
         "legend": "Welcher Zahlungsplan gilt",
         "vendor": {
@@ -3004,10 +3008,15 @@
         "daysLabel": "Tage vor Check-in",
         "daysError": "Bitte eine ganze Zahl zwischen 0 und 365 eingeben."
       },
+      "preference": {
+        "legend": "Bevorzugter Anbieter",
+        "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
+        "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+      },
       "save": "Anderungen speichern",
       "saving": "Wird gespeichert...",
-      "saved": "Zahlungseinstellungen gespeichert.",
-      "saveFailed": "Zahlungseinstellungen konnten nicht gespeichert werden.",
+      "saved": "Einstellungen gespeichert.",
+      "saveFailed": "Einstellungen konnten nicht gespeichert werden.",
       "appliesNext": "Gilt fur neue Angebote. Ein bereits gehaltenes Angebot behalt die Richtlinie, zu der es berechnet wurde."
     }
   }

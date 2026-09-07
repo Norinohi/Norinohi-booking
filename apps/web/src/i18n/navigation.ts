@@ -8,7 +8,8 @@ import { routing } from "./routing";
  * locale automatically, so `href` values stay locale-relative ("/yachts") and never hardcode a
  * prefix. `notFound` has no locale dimension and still comes from `next/navigation`.
  */
-export const { Link, redirect, usePathname, useRouter, getPathname } = createNavigation(routing);
+export const { Link, redirect, permanentRedirect, usePathname, useRouter, getPathname } =
+  createNavigation(routing);
 
 /*
  * A locale-relative path, as accepted by the wrapped `Link` and router — "/yachts/lagoon-42",

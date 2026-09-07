@@ -11,6 +11,11 @@ import { WishlistButton } from "@/features/wishlist";
 import { Link } from "@/i18n/navigation";
 
 import { useListingDetail } from "../../hooks/use-listing-detail";
+import {
+  AVAILABILITY_TONE,
+  availabilityLabel,
+  availabilityStatus,
+} from "@/lib/availability-status";
 import { badgeLabel } from "@/lib/badge-label";
 import { crewLabel } from "@/lib/crew-label";
 import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
@@ -37,12 +42,17 @@ function seeOnMapHref(listingId: string, base: { lat: number; lng: number }) {
 
 export default function TitleBlock() {
   const tDetail = useTranslations("YachtDetail");
-  const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
   const tBadge = useTranslations("Common.boatCard.badges");
   const { data } = useListingDetail();
 
   if (!data) return null;
+
+  const status = availabilityStatus({
+    hasAvailableDates: data.availability.hasAvailableDates,
+    hasBookablePeriod: data.availability.bookablePeriod !== null,
+    priceIsFrom: data.priceIsFrom,
+  });
 
   /*
    * The model, but only when it says something the name does not - the same rule the sync uses
@@ -69,12 +79,12 @@ export default function TitleBlock() {
   return (
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-5 md:gap-y-4">
       <div className="flex flex-wrap items-start gap-1.5 md:col-start-1 md:row-start-1">
-        {/* Same rule as the search card: an unbookable yacht has nothing to promote. */}
-        {data.availability.hasAvailableDates ? (
-          data.badges.map((badge) => <Chip key={badge.code}>{badgeLabel(tBadge, badge)}</Chip>)
-        ) : (
-          <Chip variant="neutral">{tCard("badges.unavailable")}</Chip>
-        )}
+        {/* Same rule as the search card: the availability status leads, and an unbookable yacht
+            has nothing left to promote beside it. */}
+        <Chip variant={AVAILABILITY_TONE[status]}>{availabilityLabel(tBadge, status)}</Chip>
+        {data.availability.hasAvailableDates
+          ? data.badges.map((badge) => <Chip key={badge.code}>{badgeLabel(tBadge, badge)}</Chip>)
+          : null}
       </div>
 
       <MarinaPopover

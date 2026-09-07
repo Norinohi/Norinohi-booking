@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace_setting" ADD COLUMN "transacting_preference" text[] DEFAULT '{"booking_manager","nausys","mock"}' NOT NULL;

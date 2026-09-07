@@ -246,7 +246,7 @@ export const adminRouter = {
         operationId: "updateMarketplaceSettings",
         summary: "Change the marketplace-wide settings",
         description:
-          "Saves the payment flow. Takes effect on the next quote, not on quotes already issued: a quote the customer is holding keeps the policy it was priced under.",
+          "Saves the payment flow and the provider preference. Both take effect on the next quote, not on quotes already issued: a quote the customer is holding keeps the policy it was priced under. The preference also orders the catalogue cards, and that part only moves when the search documents are next rebuilt.",
         tags: ["Admin"],
         successDescription: "The saved settings.",
         spec: withJsonBodyExample({
@@ -257,6 +257,7 @@ export const adminRouter = {
             enforceLeadTime: true,
             leadTimeDays: 60,
           },
+          transactingPreference: ["booking_manager", "nausys", "mock"],
         }),
       })
       .input(marketplaceSettingsUpdateInputSchema)
@@ -264,6 +265,7 @@ export const adminRouter = {
       .handler(({ context, input }) =>
         updateMarketplaceSettings(context.db, {
           payment: input.payment,
+          transactingPreference: input.transactingPreference,
           actorUserId: context.session.user.id,
         }),
       ),

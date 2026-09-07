@@ -22,6 +22,7 @@ import { env } from "@yacht-charter/env/server";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { rangeStatus } from "../lib/availability-rules";
+import { getMarketplaceSettings } from "./marketplace-settings";
 import { type OfferQuoteResult, pickWinner } from "./offer-choice";
 import { providerByKey } from "./provider-routing";
 
@@ -109,9 +110,13 @@ export async function selectBestOffer(
     ...ineligibleAttempts(offers, eligible),
   ];
 
+  /* Read per quote rather than cached in a module: an admin who reorders the vendors expects the
+     next sale to follow, and a singleton lookup is not what makes a quote slow. */
+  const { transactingPreference } = await getMarketplaceSettings(db);
+
   const { winner, currencyMismatch } = pickWinner(
     results.map((result): OfferQuoteResult => result.attempt),
-    { preferredCurrency: offers[0]?.currency ?? null },
+    { preferredCurrency: offers[0]?.currency ?? null, preference: transactingPreference },
   );
 
   if (!winner) {

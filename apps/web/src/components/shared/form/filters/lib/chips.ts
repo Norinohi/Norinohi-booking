@@ -36,6 +36,7 @@ export const CHIP_DEFS = [
   { id: "underTemporaryBooking", keys: ["underTemporaryBooking"] },
   { id: "depositInsurance", keys: ["depositInsurance"] },
   { id: "petsAllowed", keys: ["petsAllowed"] },
+  { id: "bestValue", keys: ["bestValue"] },
 
   { id: "guestRating", keys: ["guestRating"] },
 ] as const satisfies readonly { id: string; keys: readonly (keyof FiltersState)[] }[];
