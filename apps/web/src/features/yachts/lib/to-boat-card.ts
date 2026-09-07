@@ -24,7 +24,12 @@ type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["result
 export type ResultListing = ResultsOutput["items"][number]["listing"];
 
 /** The searched charter, carried beside the listing on every result item; null on an undated search. */
-export type CharterPeriod = { checkIn: string | null; checkOut: string | null };
+export type CharterPeriod = {
+  checkIn: string | null;
+  checkOut: string | null;
+  /* Set by the search results when the dates are the boat's own charter, not the searched one. */
+  periodIsAlternative?: boolean;
+};
 
 type CardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
 
@@ -85,6 +90,12 @@ export function toBoatCard(
      * calendar could always honour.
      */
     ...charterDates(listing, searched ?? listing.availability.bookablePeriod),
+    /*
+     * The API swaps in the boat's own sellable charter when the searched window is one this
+     * listing's turnaround rules refuse, so the dates above are then not the ones asked for.
+     * Unlabelled, the card looks like it ignored the search.
+     */
+    datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     priceLabel: priceCaption(t, listing),
     /* "From" reads into the amount; "Price for 7 days" captions it. */
     priceLabelLeads: listing.priceIsFrom,

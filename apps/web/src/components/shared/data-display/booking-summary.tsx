@@ -70,6 +70,12 @@ export interface BookingSummaryProps {
   onPeriodSelect: (period: CharterPeriod) => void;
   /** The provider refused the last pick — shown under the date control. */
   slotError?: boolean;
+  /*
+   * The period the visitor arrived with, when this listing will not sell it. Named rather than
+   * merely refused: they picked these dates in search or followed a shared link, and a bare
+   * "choose another period" leaves them guessing which dates were even considered.
+   */
+  refusedPeriod?: { checkIn: string; checkOut: string } | null;
   /**
    * The quote this screen was opened with could not be read at all, so there is nothing to
    * price and nothing the date controls can fix. Separate from `slotError`, which is the
@@ -437,6 +443,7 @@ export default function BookingSummary({
   selectedPeriod,
   onPeriodSelect,
   slotError = false,
+  refusedPeriod = null,
   loadError = false,
   onRetryLoad,
   depositWhenInsured,
@@ -458,6 +465,7 @@ export default function BookingSummary({
   onApplyCredit,
 }: BookingSummaryProps) {
   const t = useTranslations("YachtDetail");
+  const format = useFormatter();
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
 
@@ -591,6 +599,14 @@ export default function BookingSummary({
           />
           {slotError ? (
             <p className="text-sm font-medium text-error-600">{t("sidebar.slotRefused")}</p>
+          ) : null}
+          {!slotError && refusedPeriod ? (
+            <p className="text-sm font-medium text-error-600">
+              {t("sidebar.searchedPeriodRefused", {
+                from: format.dateTime(dayToDisplay(refusedPeriod.checkIn), "dayShort"),
+                to: format.dateTime(dayToDisplay(refusedPeriod.checkOut), "dayShort"),
+              })}
+            </p>
           ) : null}
 
           <div className="flex flex-col gap-1.5">

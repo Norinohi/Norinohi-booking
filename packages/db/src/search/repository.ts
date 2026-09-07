@@ -35,7 +35,15 @@ import type {
   SuggestedRoute,
 } from "./types";
 
-type SearchRow = ListingSearchDoc;
+/* The column is selected only by the two searches that have a period to compare against. */
+type SearchRow = Omit<
+  ListingSearchDoc,
+  "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut"
+> & {
+  sellsRequestedPeriod?: boolean;
+  nearestCheckIn?: string | null;
+  nearestCheckOut?: string | null;
+};
 type FacetFilterKey = keyof ListingSearchInput;
 type FacetOptionRow = {
   label: string;
@@ -130,7 +138,7 @@ export async function searchListings(
 
   const limit = normalizedLimit(input.limit);
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}
+    select ${searchColumns}${sellsRequestedPeriodColumn(input)}
     from listing_search_doc doc
     where ${whereClause(input)}
       and ${cursorClause(input.sort, decodeSearchCursor(input.cursor))}
@@ -163,7 +171,7 @@ async function searchListingsByPage(
 
   const [rows, countRows] = await Promise.all([
     db.execute<SearchRow>(sql`
-      select ${searchColumns}
+      select ${searchColumns}${sellsRequestedPeriodColumn(input)}
       from listing_search_doc doc
       where ${filters}
       order by ${orderClause(input.sort)}
@@ -1230,6 +1238,140 @@ const engagementColumns = sql`
   ) as "viewedToday"
 `;
 
+/*
+ * Whether this listing would actually sell a charter starting on the day the visitor named.
+ *
+ * `whereClause` deliberately does not filter on the check-in weekday -- the reasoning is on
+ * `checkinRuleClause`, and filtering it turns a Wednesday search of 3,396 boats into 412. The
+ * cost of keeping them is that the card then captions a Saturday-to-Saturday hull with the
+ * visitor's Wednesday dates and links to them, and the detail page refuses the period with no
+ * explanation. So search still answers "free that week", and this column is what lets the card
+ * say the other half out loud: "and it starts on Saturdays".
+ *
+ * True for every row of an undated search, and for a listing whose offers publish no rule at
+ * all, matching how `checkinRuleClause` treats an absent rule: what the provider did not state
+ * is not a refusal.
+ */
+function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
+  const window = availabilityWindowFor(input);
+  if (!window) {
+    return sql`, true as "sellsRequestedPeriod", null::date as "nearestCheckIn", null::date as "nearestCheckOut"`;
+  }
+
+  const nights = nightsBetween(window);
+  return sql`, (
+    not exists (
+      select 1
+      from listing_offer o
+      join listing_checkin_rule rule on rule.listing_offer_id = o.id
+      where o.listing_id = doc.listing_id and o.status = 'active'
+    )
+    or exists (
+      select 1
+      from listing_offer o
+      join listing_checkin_rule rule on rule.listing_offer_id = o.id
+      where o.listing_id = doc.listing_id
+        and o.status = 'active'
+        and (rule.season_start is null or rule.season_start <= ${window.checkIn}::date)
+        and (rule.season_end is null or rule.season_end >= ${window.checkIn}::date)
+        and (rule.checkin_weekday is null
+             or rule.checkin_weekday = extract(dow from ${window.checkIn}::date))
+        and (rule.checkout_weekday is null
+             or rule.checkout_weekday = extract(dow from ${window.checkOut}::date))
+        and (rule.min_nights is null or rule.min_nights <= ${nights})
+        and (rule.max_nights is null or rule.max_nights >= ${nights})
+    )
+  ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
+}
+
+/*
+ * The charter this boat would sell closest to the dates asked for.
+ *
+ * `bookable_from` is the listing's first sellable charter anywhere in the horizon, which is the
+ * wrong answer to "not these dates, then when?" -- a September search offered a boat's November
+ * week as its alternative, two months from the trip somebody was planning.
+ *
+ * A candidate start is a free stretch's own beginning walked forward to the next weekday the
+ * rule turns over on, which is arithmetic rather than a scan over days: `d + ((wanted - dow(d) +
+ * 7) % 7)`. It has to fit inside that same stretch -- the stretch it was derived from, not any
+ * stretch the listing owns -- and start inside a published rate, so what comes back is free and
+ * on sale on the one offer that would sell it.
+ */
+function sellableStarts(nights: number, range: CandidateRange): SQL {
+  return sql`
+    select (
+      greatest(free.start_date, ${range.earliestStart}::date)
+      + ((rule.checkin_weekday - extract(dow from greatest(free.start_date, ${range.earliestStart}::date))::integer + 7) % 7)
+    )::date as start_date, free.end_date, o.id as offer_id
+    from listing_offer o
+    join listing_free_period free on free.listing_offer_id = o.id
+    join listing_checkin_rule rule on rule.listing_offer_id = o.id
+    where o.listing_id = doc.listing_id
+      and o.status = 'active'
+      and rule.checkin_weekday is not null
+      and free.end_date >= ${range.earliestStart}::date
+      and free.start_date <= ${range.latestStart}::date
+      and (rule.min_nights is null or rule.min_nights <= ${nights})
+      and (rule.max_nights is null or rule.max_nights >= ${nights})
+  `;
+}
+
+/*
+ * The charter has to sit inside the stretch it came from, and inside a rate somebody published.
+ *
+ * Correlated on the candidate's own offer rather than on the listing, for both reasons: it is
+ * the offer that would sell this charter, so its rate is the one that settles it, and keying on
+ * `listing_offer_id` lets the lookup ride `listing_price_period_uq` instead of scanning a
+ * million-row table by listing.
+ */
+function sellableFilter(nights: number): SQL {
+  return sql`
+      c.start_date + ${nights}::integer <= c.end_date
+      and exists (
+        select 1
+        from listing_price_period r3
+        where r3.listing_offer_id = c.offer_id
+          and r3.start_date <= c.start_date
+          and r3.end_date >= c.start_date
+      )`;
+}
+
+/*
+ * Whether anything sellable falls inside the horizon. `exists` rather than the `min` below,
+ * because this runs for every document the other filters admit and can stop at the first hit;
+ * the `min` only has to run for the rows a page actually returns.
+ */
+function hasSellableStart(nights: number, range: CandidateRange): SQL {
+  return sql`exists (
+    select 1
+    from (${sellableStarts(nights, range)}) c
+    where c.start_date <= ${range.latestStart}::date
+      and ${sellableFilter(nights)}
+  )`;
+}
+
+function nearestSellableColumns(
+  window: { checkIn: string; checkOut: string },
+  nights: number,
+  range: CandidateRange,
+): SQL {
+  /*
+   * Nearest to the day asked for, which the tolerance allows to fall either side of it -- the
+   * same reading `candidateRange` gives the free-period test. Ordered by distance rather than
+   * taken as a `min`, because the earliest start inside a fortnight's tolerance is not the one
+   * closest to the trip somebody described.
+   */
+  const nearest = sql`(
+    select c.start_date
+    from (${sellableStarts(nights, range)}) c
+    where c.start_date <= ${range.latestStart}::date
+      and ${sellableFilter(nights)}
+    order by abs(c.start_date - ${window.checkIn}::date), c.start_date
+    limit 1
+  )`;
+  return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
+}
+
 const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
@@ -1500,6 +1642,24 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      * (offer, start_date, end_date) index can serve them. `greatest`/`least` over the columns
      * reads closer to the intent but is opaque to the planner.
      */
+    /*
+     * A charter this listing would actually sell, near the dates asked for.
+     *
+     * Free and sellable are different questions, and the free-period test alone answers only
+     * the first: a hull whose season opens in November is free all September, because nobody
+     * books a boat that is not on sale. 935 of 3,386 results for one mid-September week were
+     * in that state, shown with their November rate against September dates.
+     *
+     * Bounded by the tolerance the visitor stated, not by a horizon invented here. "On day"
+     * means that day: a boat that turns around on Saturdays is not an answer to a Wednesday,
+     * and shifting it three days anyway is the Date Flexibility control making its own
+     * decision. The same bound already governs the free-period test through `candidateRange`,
+     * so a listing cannot pass one and fail the other.
+     *
+     * Unbounded, this is what offered a September search a November week.
+     */
+    parts.push(hasSellableStart(windowNights, range));
+
     parts.push(sql`exists (
       select 1
       from listing_offer o
@@ -2278,6 +2438,10 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
     ...row,
     gallery: row.gallery ?? [],
     amenities: row.amenities ?? [],
+    /* Absent on the lookups that carry no searched period, where there is nothing to contradict. */
+    sellsRequestedPeriod: row.sellsRequestedPeriod ?? true,
+    nearestCheckIn: row.nearestCheckIn ?? null,
+    nearestCheckOut: row.nearestCheckOut ?? null,
   };
 }
 

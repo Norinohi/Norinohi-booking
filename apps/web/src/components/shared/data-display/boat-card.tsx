@@ -76,6 +76,12 @@ export type BoatCardProps = {
    */
   start?: BoatCardCharterDate;
   end?: BoatCardCharterDate;
+  /*
+   * Said above the dates when they are not the ones searched for. Search keeps a boat that is
+   * free across the window but turns around on another weekday, so the card shows the charter
+   * this boat would actually sell; without a word here that reads as the wrong dates.
+   */
+  datesNote?: string;
   priceLabel: string;
   price: string;
   /**
@@ -308,6 +314,7 @@ function CharterDate({ value, className }: { value: BoatCardCharterDate; classNa
 function Action({
   stats,
   start,
+  datesNote,
   end,
   priceLabel,
   price,
@@ -322,6 +329,7 @@ function Action({
   BoatCardProps,
   | "stats"
   | "start"
+  | "datesNote"
   | "end"
   | "priceLabel"
   | "price"
@@ -344,6 +352,12 @@ function Action({
           </p>
         ))}
       </div>
+
+      {start && end && datesNote ? (
+        <p className="w-full text-center text-sm leading-[1.3] text-natural-500 md:text-left">
+          {datesNote}
+        </p>
+      ) : null}
 
       {start && end ? (
         <div className="flex w-full items-center justify-center gap-3 md:justify-start ">
@@ -448,6 +462,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         <Action
           stats={boat.stats}
           start={boat.start}
+          datesNote={boat.datesNote}
           end={boat.end}
           priceLabel={boat.priceLabel}
           price={boat.price}

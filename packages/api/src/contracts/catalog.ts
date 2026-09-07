@@ -433,6 +433,13 @@ export const searchResultSchema = z.object({
       listing: listingSummarySchema,
       checkIn: z.string().nullable(),
       checkOut: z.string().nullable(),
+      /*
+       * Set when the dates above are not the ones searched for. Search keeps a listing that is
+       * free across the window but turns around on another weekday, so rather than repeat a
+       * period the quote will refuse, the card carries the charter this boat would actually
+       * sell and says so.
+       */
+      periodIsAlternative: z.boolean(),
     }),
   ),
   nextCursor: z.string().optional(),

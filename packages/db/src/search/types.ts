@@ -153,6 +153,20 @@ export type ListingSearchDoc = {
   bookableTo: string | null;
   hasUnconfirmedAvailability: boolean;
   hasTemporaryBooking: boolean;
+  /*
+   * Whether this listing's own rules would sell a charter starting on the day the search named.
+   * Always true when the search carried no dates. False means the boat is free across the window
+   * but turns around on another weekday, which is what the card has to say instead of repeating
+   * dates the quote will refuse.
+   */
+  sellsRequestedPeriod: boolean;
+  /*
+   * The charter nearest the searched dates that this listing would actually sell, when the
+   * searched one is not it. Null on an undated search, and on a listing with no sellable
+   * charter left in the horizon.
+   */
+  nearestCheckIn: string | null;
+  nearestCheckOut: string | null;
 };
 
 export type ListingSearchResult = {

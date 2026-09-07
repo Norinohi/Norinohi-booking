@@ -62,6 +62,9 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   bookableTo: null,
   hasUnconfirmedAvailability: false,
   hasTemporaryBooking: false,
+  sellsRequestedPeriod: true,
+  nearestCheckIn: null,
+  nearestCheckOut: null,
   ...over,
 });
 
