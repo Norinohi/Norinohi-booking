@@ -708,6 +708,7 @@
       "more": "{names} +{count}",
       "none": "—",
       "any": "cualquiera",
+      "name": "Búsqueda: {value}",
       "country": "País: {value}",
       "sailingArea": "Zona: {value}",
       "city": "Ciudad: {value}",
@@ -1459,7 +1460,8 @@
       "anyBoat": "Cualquier barco",
       "search": "Buscar",
       "noLocations": "No hay destinos coincidentes",
-      "clearLocation": "Borrar destino"
+      "clearLocation": "Borrar destino",
+      "freeText": "Nombre, modelo o empresa"
     },
     "paginationSummary": "Mostrando {from}-{to} de {total}"
   },
@@ -3016,6 +3018,11 @@
         "legend": "Proveedor preferido",
         "hint": "Quién gana cuando la disponibilidad, el precio y los suplementos obligatorios coinciden. Nunca sustituye a una oferta más barata: solo resuelve un empate.",
         "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
+      },
+      "nameSearch": {
+        "legend": "Búsqueda por texto libre",
+        "toggle": "Mostrar el campo de texto libre en la barra de búsqueda",
+        "hint": "Una ayuda para pruebas, ajena al diseño. Activado, la barra de búsqueda de yates añade un campo que busca por nombre, modelo, astillero, empresa chárter o base, palabra por palabra y en cualquier orden."
       },
       "save": "Guardar cambios",
       "saving": "Guardando...",

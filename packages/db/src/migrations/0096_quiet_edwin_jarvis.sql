@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace_setting" ADD COLUMN "name_search_enabled" boolean DEFAULT false NOT NULL;

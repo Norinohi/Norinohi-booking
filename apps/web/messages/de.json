@@ -708,6 +708,7 @@
       "more": "{names} +{count}",
       "none": "—",
       "any": "beliebig",
+      "name": "Suche: {value}",
       "country": "Land: {value}",
       "sailingArea": "Segelrevier: {value}",
       "city": "Stadt: {value}",
@@ -1459,7 +1460,8 @@
       "anyBoat": "Beliebiges Boot",
       "search": "Suchen",
       "noLocations": "Keine passenden Reiseziele",
-      "clearLocation": "Ort löschen"
+      "clearLocation": "Ort löschen",
+      "freeText": "Name, Modell oder Firma"
     },
     "paginationSummary": "{from}–{to} von {total}"
   },
@@ -3016,6 +3018,11 @@
         "legend": "Bevorzugter Anbieter",
         "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+      },
+      "nameSearch": {
+        "legend": "Freitextsuche",
+        "toggle": "Freitextfeld in der Suchleiste anzeigen",
+        "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht — Wort für Wort und in beliebiger Reihenfolge."
       },
       "save": "Anderungen speichern",
       "saving": "Wird gespeichert...",

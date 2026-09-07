@@ -708,6 +708,7 @@
       "more": "{names} +{count}",
       "none": "—",
       "any": "any",
+      "name": "Search: {value}",
       "country": "Country: {value}",
       "sailingArea": "Sailing Area: {value}",
       "city": "City: {value}",
@@ -1459,7 +1460,8 @@
       "anyBoat": "Any boat",
       "search": "Search",
       "noLocations": "No matching destinations",
-      "clearLocation": "Clear location"
+      "clearLocation": "Clear location",
+      "freeText": "Name, model or company"
     },
     "paginationSummary": "Showing {from}-{to} of {total}"
   },
@@ -3016,6 +3018,11 @@
         "legend": "Preferred provider",
         "hint": "Which vendor wins when availability, price and mandatory fees are equal. It never overrides a cheaper offer: it only settles a tie.",
         "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
+      },
+      "nameSearch": {
+        "legend": "Free-text search",
+        "toggle": "Show the free-text field in the search bar",
+        "hint": "A testing aid rather than part of the design. Switched on, the yacht search bar gains a field that matches a boat's name, model, builder, charter company or base, word by word and in any order."
       },
       "save": "Save changes",
       "saving": "Saving...",

@@ -3,6 +3,12 @@ export type Range = [number, number];
 export type FiltersState = {
   /** Free-text destination search, matched server-side against country/region/location/base. */
   query: string;
+  /**
+   * Free text over a boat's name, model, builder, charter company and base. No control in the
+   * design: the search bar offers the field only while the marketplace's `nameSearchEnabled`
+   * setting is on, which is a testing aid rather than a feature.
+   */
+  name: string;
   country: string[];
   sailingArea: string[];
   /** Town, from a catalogue page's path. No control of its own; it arrives locked. */
@@ -74,6 +80,7 @@ export const EMPTY_RANGES: FilterRanges = {
 
 export const DEFAULT_FILTERS: FiltersState = {
   query: "",
+  name: "",
   country: [],
   sailingArea: [],
   city: [],

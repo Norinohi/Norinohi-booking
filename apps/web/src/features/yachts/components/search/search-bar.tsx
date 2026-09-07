@@ -3,7 +3,8 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { type DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
-import { Sailboat, Search } from "lucide-react";
+import { TextField } from "@yacht-charter/ui/components/form/text-field";
+import { Sailboat, Search, Ship } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
 
@@ -20,6 +21,7 @@ import { addDays, dayFromNative, dayToNative, daysBetween } from "@/lib/date";
 import { slugToLabel } from "@/lib/slug-to-label";
 
 import type { Suggestion } from "../../api/queries";
+import { useNameSearchEnabled } from "../../hooks/use-search-ui-settings";
 import LocationSearch from "./location-search";
 
 function toRange(value: FiltersState): DateRange {
@@ -96,6 +98,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const [draft, setDraft] = useDraft(value);
   const { options } = useFilterOptions();
   const [pending, setPending] = useState<DateRange | null>(null);
+  const nameSearchEnabled = useNameSearchEnabled();
 
   const range = pending ?? toRange(draft);
 
@@ -173,6 +176,23 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
         <Search />
         {t("search")}
       </Button>
+
+      {/* Not in the design: a way to pull a known boat up by whatever is printed on its card
+          while testing, switched on from the marketplace settings and absent for everybody else.
+          Its own row, so the bar above it keeps the layout it was drawn with either way, and
+          wearing the same field styling so a tester is not looking at a foreign control. */}
+      {nameSearchEnabled ? (
+        <TextField
+          type="search"
+          value={draft.name}
+          onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+          placeholder={t("freeText")}
+          aria-label={t("freeText")}
+          startIcon={<Ship />}
+          containerClassName="md:col-span-2 xl:col-span-4"
+          fieldClassName="h-12"
+        />
+      ) : null}
     </form>
   );
 }

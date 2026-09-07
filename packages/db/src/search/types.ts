@@ -8,6 +8,8 @@ export type SearchSort = "recommended" | "price-asc" | "price-desc" | "rating" |
 export type ListingSearchInput = {
   destination?: string;
   query?: string;
+  /** Free text, matched word by word against the boat's name and everything on its card. */
+  name?: string;
   checkIn?: string;
   checkOut?: string;
   guests?: number;

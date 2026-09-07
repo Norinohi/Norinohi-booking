@@ -881,9 +881,23 @@ export const transactingPreferenceSchema = z
     "Which vendor wins when availability, price and fees are equal, most preferred first. Commercial only: it does not change whose photographs or specifications a merged listing shows.",
   );
 
+/**
+ * Whether the search bar offers the free-text field.
+ *
+ * Testing only: the design has no such field, so it is off unless somebody turns it on to look a
+ * particular boat up. The search endpoint takes `name` either way — this hides the input, it does
+ * not close the filter.
+ */
+export const nameSearchEnabledSchema = z
+  .boolean()
+  .describe(
+    "Whether the yacht search bar shows the free-text field. A testing aid, off by default.",
+  );
+
 export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
+  nameSearchEnabled: nameSearchEnabledSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
 });
@@ -891,4 +905,10 @@ export const marketplaceSettingsSchema = z.object({
 export const marketplaceSettingsUpdateInputSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
+  nameSearchEnabled: nameSearchEnabledSchema,
+});
+
+/** The slice of the settings a public page is allowed to read. */
+export const publicSearchSettingsSchema = z.object({
+  nameSearchEnabled: nameSearchEnabledSchema,
 });

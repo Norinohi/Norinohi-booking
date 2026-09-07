@@ -16,7 +16,10 @@ import {
   searchResultSchema,
   suggestionSchema,
 } from "../contracts/catalog";
+import { publicSearchSettingsSchema } from "../contracts/admin";
+import { emptyInputSchema } from "../contracts/primitives";
 import { publicProcedure } from "../index";
+import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { withParameterExamples } from "./openapi-examples";
 import { effectivePeriod } from "../lib/dates";
 import { presentListingSummary } from "../presenters/listing";
@@ -145,4 +148,21 @@ export const charterSearchRouter = {
     .input(z.object({ locale: z.string().min(2).max(10).default("en") }))
     .output(z.array(catalogPageSchema))
     .handler(({ context, input }) => listCatalogPages(context.db, { locale: input.locale })),
+  uiSettings: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/ui-settings",
+      operationId: "getCharterSearchUiSettings",
+      summary: "Read the search bar's configurable controls",
+      description:
+        "Which optional controls the yacht search bar shows. Only the free-text field is configurable today, and it is a testing aid that is off unless an admin turns it on — the search endpoint accepts `name` either way.",
+      tags: ["Charter Search"],
+      successDescription: "The search controls currently enabled.",
+    })
+    .input(emptyInputSchema)
+    .output(publicSearchSettingsSchema)
+    .handler(async ({ context }) => {
+      const settings = await getMarketplaceSettings(context.db);
+      return { nameSearchEnabled: settings.nameSearchEnabled };
+    }),
 };

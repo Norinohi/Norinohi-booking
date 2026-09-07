@@ -36,6 +36,8 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
 
   function label(id: ChipId): string {
     switch (id) {
+      case "name":
+        return t("name", { value: state.name });
       case "country":
         return t("country", { value: names(options.countries, state.country) });
       case "sailingArea":

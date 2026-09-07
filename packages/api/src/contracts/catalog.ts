@@ -331,6 +331,13 @@ const MAX_CHARTER_NIGHTS = 365;
 export const listingSearchInputBaseSchema = z.object({
   destination: z.string().optional(),
   query: z.string().optional(),
+  name: z
+    .string()
+    .max(120)
+    .optional()
+    .describe(
+      "Free text matched word by word, in any order, against the boat's own name, its title, model, builder, charter company, base and description. Partial words match. Offered in the UI only while the marketplace's nameSearchEnabled setting is on; the endpoint always honours it.",
+    ),
   checkIn: dateStringSchema.optional(),
   checkOut: dateStringSchema.optional(),
   guests: z.coerce.number().int().positive().optional(),

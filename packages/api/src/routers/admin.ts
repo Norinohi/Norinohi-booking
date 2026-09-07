@@ -258,6 +258,7 @@ export const adminRouter = {
             leadTimeDays: 60,
           },
           transactingPreference: ["booking_manager", "nausys", "mock"],
+          nameSearchEnabled: false,
         }),
       })
       .input(marketplaceSettingsUpdateInputSchema)
@@ -266,6 +267,7 @@ export const adminRouter = {
         updateMarketplaceSettings(context.db, {
           payment: input.payment,
           transactingPreference: input.transactingPreference,
+          nameSearchEnabled: input.nameSearchEnabled,
           actorUserId: context.session.user.id,
         }),
       ),

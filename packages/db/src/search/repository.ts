@@ -1289,6 +1289,35 @@ const searchColumns = sql`
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;
 
+/**
+ * How many words of a free-text search are honoured.
+ *
+ * Every word costs its own `ilike` over the same text, and a search phrased in more than this many
+ * has already named the boat. The cap is what stops a pasted paragraph from turning one request
+ * into a scan the database pays for word by word.
+ */
+const MAX_FREE_TEXT_WORDS = 8;
+
+/**
+ * A free-text match over everything a card shows: the boat's own name, and the searchable text
+ * behind it, which carries the title, model, builder, charter company, base and the rest.
+ *
+ * Word by word, all of them required, in any order. Typing what is printed on the card
+ * ("Alegria Dufour 382 GL") has to find it, and so does half of it, and so does a model with a
+ * charter company after it — none of which a single substring over the whole phrase can do,
+ * because the columns spell those things in an order nobody typing is obliged to guess.
+ */
+function freeTextClause(text: string | undefined): SQL | null {
+  const words = text?.trim().split(/\s+/).slice(0, MAX_FREE_TEXT_WORDS) ?? [];
+  if (words.length === 0 || words[0] === "") return null;
+
+  const haystack = sql`concat_ws(' ', doc.name, doc.searchable_text)`;
+  return sql.join(
+    words.map((word) => sql`${haystack} ilike ${`%${word}%`}`),
+    sql` and `,
+  );
+}
+
 function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey[] = []): SQL {
   const skip = new Set<FacetFilterKey>(ignored);
   const parts: SQL[] = [sql`true`];
@@ -1303,6 +1332,10 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   }
   if (!skip.has("query") && input.query) {
     parts.push(sql`doc.searchable_text ilike ${`%${input.query}%`}`);
+  }
+  if (!skip.has("name")) {
+    const match = freeTextClause(input.name);
+    if (match) parts.push(match);
   }
   if (!skip.has("category") && input.category) parts.push(sql`doc.category = ${input.category}`);
   if (!skip.has("country") && input.country?.length) {
