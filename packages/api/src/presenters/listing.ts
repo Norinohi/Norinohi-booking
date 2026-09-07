@@ -1,3 +1,4 @@
+import { MIN_LEAD_DAYS } from "@yacht-charter/db/search";
 import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
 
 const EMPTY_IMAGE = "";
@@ -10,6 +11,13 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** `yyyy-MM-dd`, `days` whole days after today, read and returned in UTC. */
+function daysFromTodayIso(days: number): string {
+  return new Date(Date.parse(`${todayIso()}T00:00:00.000Z`) + days * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}
+
 /** Whole days between two `yyyy-MM-dd` days, both read as UTC midnight. */
 function nightsBetween(checkIn: string, checkOut: string): number {
   const ms = Date.parse(`${checkOut}T00:00:00.000Z`) - Date.parse(`${checkIn}T00:00:00.000Z`);
@@ -19,12 +27,18 @@ function nightsBetween(checkIn: string, checkOut: string): number {
 /**
  * The charter the card's price, dates and terms describe, or null when the listing has none.
  *
- * Dropped once it has gone by: the columns are computed against the clock and are only as
- * fresh as the last projection run, and a card offering a day that has already passed
- * sends the visitor to a calendar that refuses it.
+ * Dropped once it is too close to sell. The projection applies the same MIN_LEAD_DAYS floor when
+ * it chooses among candidates, so it no longer stores a period this can reject on a run of its
+ * own; what survives is the day that passes between runs, and this is the guard against it. A
+ * card offering a day that has already passed sends the visitor to a calendar that refuses it,
+ * and one offering today sends them to a checkout for a boat that sails this afternoon.
+ *
+ * Null here still costs the listing its dates and its price caption, which is why the floor
+ * belongs upstream too: there is no second candidate at this end of the pipeline to fall back to.
  */
 export function bookablePeriodOf(doc: ListingSearchDoc) {
-  return doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= todayIso()
+  const earliest = daysFromTodayIso(MIN_LEAD_DAYS);
+  return doc.bookableFrom !== null && doc.bookableTo !== null && doc.bookableFrom >= earliest
     ? { checkIn: doc.bookableFrom, checkOut: doc.bookableTo }
     : null;
 }
@@ -55,7 +69,17 @@ export function bookablePeriodOf(doc: ListingSearchDoc) {
  * fleet that exists.
  */
 export function pricedPeriodDays(doc: ListingSearchDoc): number {
-  const bookablePeriod = bookablePeriodOf(doc);
+  /*
+   * A "from" figure is the season's weekly floor whether or not a charter is advertised beside
+   * it, so its own week is the period to name. The bookable period's length may only caption a
+   * figure that prices that period, which is what `price_is_from = false` asserts.
+   *
+   * Reading the dates alone was wrong for every listing whose advertised charter came from the
+   * inferred branch of the projection, where a period is proven legal but nothing prices it --
+   * Lagoon 52 my-one-lagoon-52-f-5-cab-28481585 sells single nights under its 2026 rule, and its
+   * EUR 7,700 weekly floor was captioned "Price for 1 day".
+   */
+  const bookablePeriod = doc.priceIsFrom ? null : bookablePeriodOf(doc);
   return bookablePeriod
     ? nightsBetween(bookablePeriod.checkIn, bookablePeriod.checkOut)
     : WEEKLY_RATE_DAYS;
@@ -142,7 +166,17 @@ export function presentListingSummary(doc: ListingSearchDoc) {
      * is what the card's caption turns on: an indicative floor captioned "Price for 7 days"
      * claims to price a week nobody has quoted.
      */
-    priceIsFrom: doc.priceIsFrom,
+    /*
+     * "From" also once the charter the figure was attached to has gone.
+     *
+     * `price_is_from` is decided when the projection runs, against the bookable period it found
+     * then; `bookablePeriodOf` re-tests that period at read time and now also drops one too
+     * close to sell. Between the two, a doc can carry a confirmed price for a charter this
+     * request will not show -- Zadar Damor 800 held a 1-night rate for today, which the lead
+     * time retired and `pricedPeriodDays` then captioned "Price for 7 days". A figure whose
+     * charter is gone is a floor, not the price of a named week, so it is captioned as one.
+     */
+    priceIsFrom: doc.priceIsFrom || bookablePeriod === null,
     /*
      * The same charter before the operator's discount, for the card to strike through. Only
      * ever beside a price and only ever above it: a listing whose price was withheld has
@@ -154,8 +188,6 @@ export function presentListingSummary(doc: ListingSearchDoc) {
         : { amountMinor: doc.listPriceFromMinor, currency },
     priceDetails: {
       periodDays,
-      perPersonMinor:
-        amountMinor !== null && doc.berths ? Math.round(amountMinor / doc.berths) : null,
       /*
        * The provider's refundable damage deposit, taken by the base at check-in and
        * returned after check-out. Indicative like `priceFrom`: a NauSYS offer states

@@ -34,6 +34,7 @@ export function toSearchInput(
   };
 
   if (filters.query) input.query = filters.query;
+  if (filters.name) input.name = filters.name;
   if (filters.country.length) input.country = filters.country;
   if (filters.sailingArea.length) input.sailingArea = filters.sailingArea;
   if (filters.city.length) input.city = filters.city;

@@ -24,7 +24,12 @@ type ResultsOutput = Awaited<ReturnType<AppRouterClient["charterSearch"]["result
 export type ResultListing = ResultsOutput["items"][number]["listing"];
 
 /** The searched charter, carried beside the listing on every result item; null on an undated search. */
-export type CharterPeriod = { checkIn: string | null; checkOut: string | null };
+export type CharterPeriod = {
+  checkIn: string | null;
+  checkOut: string | null;
+  /* Set by the search results when the dates are the boat's own charter, not the searched one. */
+  periodIsAlternative?: boolean;
+};
 
 type CardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
 
@@ -48,7 +53,6 @@ export function toBoatCard(
   const status = availabilityStatus({
     hasAvailableDates: listing.availability.hasAvailableDates,
     hasBookablePeriod: listing.availability.bookablePeriod !== null,
-    priceIsFrom: listing.priceIsFrom,
   });
   const statusBadge = {
     label: availabilityLabel(tBadge, status),
@@ -86,22 +90,44 @@ export function toBoatCard(
      */
     ...charterDates(listing, searched ?? listing.availability.bookablePeriod),
     /*
-     * "From" where the figure is the season's cheapest week rather than the price of the
-     * charter named above it. Captioning an indicative floor "Price for 7 days" prices a week
-     * nobody has quoted, which is the mislabel this pair exists to avoid.
+     * The API swaps in the boat's own sellable charter when the searched window is one this
+     * listing's turnaround rules refuse, so the dates above are then not the ones asked for.
+     * Unlabelled, the card looks like it ignored the search.
      */
-    priceLabel: listing.priceIsFrom
-      ? t("priceFromLabel")
-      : t("priceFor", { days: listing.priceDetails.periodDays }),
-    /* "From" reads into the amount; "Price for 7 days" captions it. */
-    priceLabelLeads: listing.priceIsFrom,
+    datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
+    priceLabel: priceCaption(t, listing),
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
-    perPerson:
-      listing.priceDetails.perPersonMinor != null
-        ? t("perPerson", { price: formatMoney(listing.priceDetails.perPersonMinor, currency) })
-        : "",
+    /*
+     * The nightly rate, which is what "Price: low to high" orders on. The amounts above it price
+     * charters of different lengths - three nights on one hull, a week on the next - so ordering
+     * them against each other only makes sense per night, and the sequence only reads as a
+     * sequence if the figure it was sorted by is on the card. `periodDays` is the same night
+     * count the sort divides by.
+     *
+     * It replaces the per-person line rather than joining it. A catalogue card has no party size,
+     * so that figure divided by berths - what each guest pays only if the boat sails full, which
+     * is not how most parties book. Beside a EUR 670 total, "EUR 168 per person in 4 berths" read
+     * as a fourth price rather than as the same one rearranged, and naming the base did not
+     * rescue it. The detail page keeps its own per-person line, where a party size is actually
+     * chosen and the division answers something.
+     *
+     * Not on a single night, where dividing by one prints the amount immediately above it again
+     * under a different word - "EUR 2,282 / EUR 2,282 per night". The reason for the line
+     * survives that: on a one-night charter the figure the sort used *is* the headline amount,
+     * so it is already on the card and the sequence still reads as one. These were rare until
+     * the lead-time floor let a one-night charter reach a card at all.
+     */
+    perNight:
+      listing.priceFrom && listing.priceDetails.periodDays > 1
+        ? t("perNight", {
+            price: formatMoney(
+              Math.round(listing.priceFrom.amountMinor / listing.priceDetails.periodDays),
+              currency,
+            ),
+          })
+        : undefined,
     note: listing.priceDetails.securityDeposit
       ? {
           label: t("securityDeposit", {
@@ -114,6 +140,19 @@ export function toBoatCard(
         }
       : null,
   };
+}
+
+/**
+ * The caption above the amount, and nothing at all when there is no amount.
+ *
+ * Both captions introduce a figure: "From" reads into it, "Price for 7 days" names what it
+ * buys. With no published rate the slot holds a word instead — "On request" — and captioning
+ * that produced "From / On request", which reads as a broken sentence rather than as a price.
+ */
+function priceCaption(t: CardTranslator, listing: ResultListing): string {
+  if (!listing.priceFrom) return "";
+  if (listing.priceIsFrom) return t("priceIndicative");
+  return t("priceFor", { days: listing.priceDetails.periodDays });
 }
 
 function charterDates(listing: ResultListing, period: CharterPeriod | null) {

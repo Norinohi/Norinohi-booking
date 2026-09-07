@@ -19,14 +19,14 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
         "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "aria-invalid:border-error-500 aria-invalid:ring-2 aria-invalid:ring-error-500/20",
-        "data-[checked]:border-brand data-[checked]:bg-brand data-[checked]:text-brand-foreground",
+        "data-checked:border-brand data-checked:bg-brand data-checked:text-brand-foreground",
         className,
       )}
       {...props}
     >
       <CheckboxPrimitive.Indicator
         data-slot="checkbox-indicator"
-        className="grid place-content-center text-current [&>svg]:size-[18px]"
+        className="grid place-content-center text-current [&>svg]:size-4.5"
       >
         <CheckIcon strokeWidth={2.5} />
       </CheckboxPrimitive.Indicator>

@@ -68,7 +68,9 @@ export default function AppBreadcrumbs({
                     {isLast || !crumb.url ? (
                       <BreadcrumbPage>{label(crumb)}</BreadcrumbPage>
                     ) : (
-                      <BreadcrumbLink href={crumb.url}>{label(crumb)}</BreadcrumbLink>
+                      <BreadcrumbLink render={<Link href={crumb.url} />}>
+                        {label(crumb)}
+                      </BreadcrumbLink>
                     )}
                   </BreadcrumbItem>
                   {isLast ? null : <BreadcrumbSeparator />}

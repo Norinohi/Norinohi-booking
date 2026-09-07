@@ -16,15 +16,13 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
  * Shared rather than owned by the listing page: the search cards open the same viewer, and a
  * component two features reach for belongs here (see apps/web/AGENTS.md).
  */
-export default function GalleryLightbox({
-  openAt,
-  onClose,
-  slides,
-}: {
+interface GalleryLightboxProps {
   openAt: number | null;
   onClose: () => void;
   slides: { src: string; alt?: string }[];
-}) {
+}
+
+export default function GalleryLightbox({ openAt, onClose, slides }: GalleryLightboxProps) {
   const t = useTranslations("Common.gallery");
 
   return (

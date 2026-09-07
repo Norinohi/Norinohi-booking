@@ -310,7 +310,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
           {booking.payments.length === 0 ? (
             <p className="text-sm text-natural-500">{t("payments.empty")}</p>
           ) : (
-            <Table className="min-w-[720px]">
+            <Table className="min-w-180">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("payments.kind")}</TableHead>
@@ -367,7 +367,7 @@ function Detail({ booking }: { booking: BookingAdminDetail }) {
           {booking.paymentSchedule.length === 0 ? (
             <p className="text-sm text-natural-500">{t("schedule.empty")}</p>
           ) : (
-            <Table className="min-w-[560px]">
+            <Table className="min-w-140">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("schedule.kind")}</TableHead>

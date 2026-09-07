@@ -30,6 +30,7 @@ export default function BookingSidebar({
     guests,
     isPending,
     slotError,
+    refusedSearchPeriod,
     loadError,
     retryLoad,
     selectPeriod,
@@ -66,6 +67,7 @@ export default function BookingSidebar({
         selectedPeriod={quote ? { checkIn: quote.checkIn, checkOut: quote.checkOut } : undefined}
         onPeriodSelect={selectPeriod}
         slotError={slotError}
+        refusedPeriod={refusedSearchPeriod}
         loadError={loadError}
         onRetryLoad={retryLoad}
         depositWhenInsured={listing?.priceDetails.securityDepositWhenInsured}

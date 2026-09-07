@@ -18,13 +18,12 @@ import { useBooking } from "./booking-provider";
  * a pricing call: it records a `quote_request` lead and staff follow up. `context` carries what the
  * visitor was looking at — the priced dates, guests and crew — so the enquiry is actionable on its own.
  */
-export default function QuoteRequestDialog({
-  open,
-  onOpenChange,
-}: {
+interface QuoteRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export default function QuoteRequestDialog({ open, onOpenChange }: QuoteRequestDialogProps) {
   const t = useTranslations("YachtDetail.quoteDialog");
   const { listing, quote, guests, crewType } = useBooking();
 

@@ -27,7 +27,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn(
-        "min-w-0 truncate text-base data-[placeholder]:text-placeholder-foreground",
+        "min-w-0 truncate text-base data-placeholder:text-placeholder-foreground",
         className,
       )}
       {...props}
@@ -62,20 +62,20 @@ function SelectTrigger({
       <SelectPrimitive.Trigger
         data-slot="select-trigger"
         className={cn(
-          "group flex w-full min-w-[200px] cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
-          "hover:border-natural-200 data-[popup-open]:border-foreground",
+          "group flex w-full min-w-50 cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+          "hover:border-natural-200 data-popup-open:border-foreground",
           "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
           /* `FormControl` sets aria-invalid; it has to beat hover/open/focus too. */
-          "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-[popup-open]:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
+          "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-popup-open:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          showClear && "[&>[data-slot=select-value]]:pr-6",
+          showClear && "*:data-[slot=select-value]:pr-6",
           className,
         )}
         {...props}
       >
         {children}
         <SelectPrimitive.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
-          <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
+          <ChevronDownIcon className="size-5 transition-transform group-data-popup-open:rotate-180" />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
 
@@ -100,7 +100,7 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            "max-h-[var(--available-height)] min-w-[var(--anchor-width)] overflow-y-auto rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)] outline-none",
+            "max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)] outline-none",
             className,
           )}
           {...props}
@@ -117,9 +117,9 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "flex w-full cursor-pointer items-center justify-between gap-2 border-b border-natural-50 py-2 text-sm font-semibold text-foreground capitalize outline-none select-none last:border-b-0",
-        "data-[highlighted]:text-brand data-[selected]:text-brand",
-        "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
+        "flex w-full cursor-pointer items-center justify-between gap-2 border-b border-natural-50 py-2 text-sm font-semibold text-foreground outline-none select-none last:border-b-0",
+        "data-highlighted:text-brand data-selected:text-brand",
+        "data-disabled:cursor-not-allowed data-disabled:opacity-50",
         className,
       )}
       {...props}

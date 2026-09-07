@@ -22,7 +22,7 @@ export const PIN_CLEARANCE = 46;
  */
 export const RECENTRE_MS = 700;
 
-export type MapPopupProps = {
+export interface MapPopupProps {
   coordinates: Coordinates;
   /** Needed to move the map so the card is not half off it. */
   map: MapInstance | null;
@@ -36,7 +36,7 @@ export type MapPopupProps = {
    * phone it is pinned to the bottom instead of centred, and a deep link flies rather than eases.
    */
   onOpen?: (height: number) => void;
-};
+}
 
 /**
  * The card a marker opens, and the parts of that every map needs alike.

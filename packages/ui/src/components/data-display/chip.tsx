@@ -15,8 +15,8 @@ const chipVariants = cva(
       variant: {
         brand: "bg-brand-50 text-brand",
         neutral: "bg-natural-50 text-foreground",
-        // p-[5px] + 1px border keeps the 28px box the filled variants get from p-1.5
-        outline: "border border-natural-50 p-[5px] text-foreground",
+        // p-1.25 + 1px border keeps the 28px box the filled variants get from p-1.5
+        outline: "border border-natural-50 p-1.25 text-foreground",
         success: "bg-positive-50 text-positive-600",
         warning: "bg-warning-50 text-warning-600",
         error: "bg-error-50 text-error-600",

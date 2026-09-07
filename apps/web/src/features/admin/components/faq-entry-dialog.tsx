@@ -155,15 +155,13 @@ const STATE_DOT = {
   missing: "bg-natural-200",
 } as const;
 
-export default function FaqEntryDialog({
-  group,
-  open,
-  onOpenChange,
-}: {
+interface FaqEntryDialogProps {
   group: FaqGroupRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export default function FaqEntryDialog({ group, open, onOpenChange }: FaqEntryDialogProps) {
   const t = useTranslations("Admin.Faq");
   const isEdit = group !== null;
   const [locale, setLocale] = useState<FaqLocale>("en");
@@ -284,7 +282,7 @@ export default function FaqEntryDialog({
           >
             {/* The four language panes make this the tallest dialog in the admin, so the fields
                 scroll and the footer stays where the editor left it. */}
-            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto [scrollbar-width:thin]">
+            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto scrollbar-thin">
               <div className="grid items-start gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -356,7 +354,7 @@ export default function FaqEntryDialog({
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                       />
-                      <div className="flex max-h-44 flex-col overflow-y-auto rounded-lg border border-natural-100 [scrollbar-width:thin]">
+                      <div className="flex max-h-44 flex-col overflow-y-auto rounded-lg border border-natural-100 scrollbar-thin">
                         {yachts.length === 0 ? (
                           <p className="px-3 py-3 text-sm leading-[1.4] text-natural-500">
                             {t("dialog.listing.noResults")}

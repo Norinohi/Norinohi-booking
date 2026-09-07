@@ -50,6 +50,16 @@ type Values = z.infer<ReturnType<typeof useLeadSchema>>;
  * blob (what the visitor was looking at) and the copy, so those ride in as props while the fields,
  * validation, session prefill and the `lead.create` call live here once.
  */
+interface LeadEnquiryFormProps {
+  kind: LeadKind;
+  listingId?: string;
+  context?: LeadContext;
+  submitLabel: string;
+  successMessage: string;
+  submitClassName?: string;
+  onSuccess?: () => void;
+}
+
 export function LeadEnquiryForm({
   kind,
   listingId,
@@ -58,15 +68,7 @@ export function LeadEnquiryForm({
   successMessage,
   submitClassName = "w-full md:w-auto",
   onSuccess,
-}: {
-  kind: LeadKind;
-  listingId?: string;
-  context?: LeadContext;
-  submitLabel: string;
-  successMessage: string;
-  submitClassName?: string;
-  onSuccess?: () => void;
-}) {
+}: LeadEnquiryFormProps) {
   const t = useTranslations("Common.leadForm");
   const { data: session } = authClient.useSession();
   const createLead = useMutation(orpc.lead.create.mutationOptions());

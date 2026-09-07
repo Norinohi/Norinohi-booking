@@ -47,7 +47,9 @@ const GROUPS = [
 /** Payment-schedule `kind` → the amount-caption message on `sidebar.*`. */
 const SCHEDULE_AMOUNT_KEY = {
   deposit: "firstPayment",
-  full: "firstPayment",
+  /* Its own caption, not the deposit's: a policy that takes the whole charter up front produces
+     exactly one payment, and calling it the first promises a second that never arrives. */
+  full: "fullPayment",
   balance: "secondPayment",
   checkin_extras: "extrasPayment",
   security_deposit: "depositNote",
@@ -58,7 +60,7 @@ const PEOPLE_MAX = 20;
 
 const NBSP = "\u00A0";
 
-export type BookingSummaryProps = {
+export interface BookingSummaryProps {
   /** The live quote to render, or `null` before a valid selection has been priced. */
   quote: Quote | null;
   /** A quote/reprice request is in flight — the breakdown is dimmed under a loader. */
@@ -70,6 +72,12 @@ export type BookingSummaryProps = {
   onPeriodSelect: (period: CharterPeriod) => void;
   /** The provider refused the last pick — shown under the date control. */
   slotError?: boolean;
+  /*
+   * The period the visitor arrived with, when this listing will not sell it. Named rather than
+   * merely refused: they picked these dates in search or followed a shared link, and a bare
+   * "choose another period" leaves them guessing which dates were even considered.
+   */
+  refusedPeriod?: { checkIn: string; checkOut: string } | null;
   /**
    * The quote this screen was opened with could not be read at all, so there is nothing to
    * price and nothing the date controls can fix. Separate from `slotError`, which is the
@@ -128,7 +136,7 @@ export type BookingSummaryProps = {
    * same conditions as `onApplyPromo`; the block itself hides when the quote offers no credit.
    */
   onApplyCredit?: (spend: boolean) => void;
-};
+}
 
 function Separator() {
   return <span aria-hidden className="h-px w-full shrink-0 bg-border" />;
@@ -307,11 +315,20 @@ function useQuoteLineLabel() {
 }
 
 function DiscountRows({ lines }: { lines: QuoteLine[] }) {
+  const t = useTranslations("YachtDetail");
   const money = useMoney();
   const labelOf = useQuoteLineLabel();
 
   return (
     <div className="flex w-full flex-col gap-3 p-4">
+      {/*
+       * Sitting bare above Total, these rows read as a second subtraction from a figure that
+       * already contains them - the boat price above is struck through by the very same amount.
+       * The heading says they explain that reduction rather than repeat it.
+       */}
+      <p className="text-sm leading-4.5 font-medium text-natural-500">
+        {t("sidebar.discountsHeading")}
+      </p>
       {lines.map((line) => (
         <div key={line.code} className="flex items-start gap-2">
           <p className="min-w-0 flex-1 text-base leading-5.5 text-foreground">{labelOf(line)}</p>
@@ -356,13 +373,20 @@ function PriceGroup({
                 <div className="flex items-start gap-2 px-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="text-base leading-5.5 text-foreground">{line.label}</p>
-                    {/* A line the charter already covers is collected nowhere, so naming a
-                        moment to pay it is naming a payment nobody will make. */}
-                    {line.payWhen === "at_check_in" && line.amount.amountMinor !== 0 ? (
+                    {/*
+                      A line the charter already covers is collected nowhere, so naming a moment
+                      to pay it is naming a payment nobody will make. The others all say when:
+                      captioning only the ones settled at the base left the fees folded into the
+                      prepayment - an APA among them - as the only rows with nothing under them,
+                      which read as if they were not being charged for yet.
+                    */}
+                    {line.amount.amountMinor === 0 ? null : (
                       <p className="text-xs font-semibold text-natural-500">
-                        {tExtras("payAtCheckIn")}
+                        {line.payWhen === "at_check_in"
+                          ? tExtras("payAtCheckIn")
+                          : tExtras("dueWithPrepayment")}
                       </p>
-                    ) : null}
+                    )}
                   </div>
                   <p className="shrink-0 text-base leading-5.5 font-bold text-foreground">
                     {line.amount.amountMinor === 0
@@ -428,6 +452,7 @@ export default function BookingSummary({
   selectedPeriod,
   onPeriodSelect,
   slotError = false,
+  refusedPeriod = null,
   loadError = false,
   onRetryLoad,
   depositWhenInsured,
@@ -449,6 +474,7 @@ export default function BookingSummary({
   onApplyCredit,
 }: BookingSummaryProps) {
   const t = useTranslations("YachtDetail");
+  const format = useFormatter();
   const tCard = useTranslations("Common.boatCard");
   const tCrew = useTranslations("Common.crewTypes");
 
@@ -546,7 +572,7 @@ export default function BookingSummary({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      <ScrollArea className="min-h-0 flex-1 max-xl:[&_[data-slot=scroll-area-viewport]]:overscroll-auto">
+      <ScrollArea className="min-h-0 flex-1 max-xl:**:data-[slot=scroll-area-viewport]:overscroll-auto">
         {/* Real counts, so either can be zero — a line with nothing to report is
             dropped, and the block goes with it when both are. */}
         {stats && (stats.booked > 0 || stats.viewed > 0) ? (
@@ -582,6 +608,14 @@ export default function BookingSummary({
           />
           {slotError ? (
             <p className="text-sm font-medium text-error-600">{t("sidebar.slotRefused")}</p>
+          ) : null}
+          {!slotError && refusedPeriod ? (
+            <p className="text-sm font-medium text-error-600">
+              {t("sidebar.searchedPeriodRefused", {
+                from: format.dateTime(dayToDisplay(refusedPeriod.checkIn), "dayShort"),
+                to: format.dateTime(dayToDisplay(refusedPeriod.checkOut), "dayShort"),
+              })}
+            </p>
           ) : null}
 
           <div className="flex flex-col gap-1.5">
@@ -835,63 +869,6 @@ export default function BookingSummary({
                 </div>
               </>
             ) : null}
-
-            <Separator />
-
-            <div className="flex w-full flex-col items-center gap-1 p-4">
-              <p className="text-sm leading-4.5 font-medium text-natural-500">
-                {t("sidebar.totalPrice")}
-              </p>
-              {repricing ? (
-                <Skeleton className="h-9 w-32" />
-              ) : (
-                <p className="text-[32px] leading-9 font-bold text-foreground">
-                  {money(quote.total.amountMinor, quote.total.currency)}
-                </p>
-              )}
-              {quote.perPerson ? (
-                <p className="text-sm leading-4.5 font-medium text-natural-500">
-                  {tCard("perPersonApprox", {
-                    price: money(quote.perPerson.amountMinor, quote.perPerson.currency),
-                  })}
-                </p>
-              ) : null}
-            </div>
-
-            <Separator />
-
-            <div className="flex w-full flex-col gap-3 p-4">
-              <div className="flex flex-col items-center gap-1">
-                <p className="text-sm leading-4.5 font-medium text-natural-500">
-                  {t("sidebar.dueNow")}
-                </p>
-                {repricing ? (
-                  <Skeleton className="h-14 w-40" />
-                ) : (
-                  <p className="text-[42px] leading-14 font-bold text-foreground">
-                    {money(quote.deposit.amountMinor, quote.deposit.currency)}
-                  </p>
-                )}
-              </div>
-              {actions ? (
-                <>
-                  <Button
-                    variant="brand"
-                    loading={repricing}
-                    disabled={!payNowReady}
-                    nativeButton={payNowReady ? false : undefined}
-                    render={payNowReady ? <Link href={payNowHref} /> : undefined}
-                  >
-                    {t("sidebar.payNowCta", {
-                      amount: money(quote.deposit.amountMinor, quote.deposit.currency),
-                    })}
-                  </Button>
-                  <Button variant="neutral" onClick={onRequestQuote}>
-                    {t("sidebar.requestQuote")}
-                  </Button>
-                </>
-              ) : null}
-            </div>
           </>
         ) : (
           <div className="flex min-h-56 flex-col items-center justify-center gap-4 p-6 text-center">
@@ -942,6 +919,69 @@ export default function BookingSummary({
           </div>
         )}
       </ScrollArea>
+
+      {/* Outside the ScrollArea on purpose: on a tall quote the payable figures and the CTA
+          used to sit below the fold, so the page opened without saying what there was to pay.
+          Only pins from `xl`, where SplitPanels caps the aside at viewport height; below that
+          the card is its own tab panel with no cap, so this simply ends it as it always did. */}
+      {quote ? (
+        <div className="flex shrink-0 flex-col border-t border-border bg-card">
+          <div className="flex w-full flex-col items-center gap-1 p-4 xl:py-3">
+            <p className="text-sm leading-4.5 font-medium text-natural-500">
+              {t("sidebar.totalPrice")}
+            </p>
+            {repricing ? (
+              <Skeleton className="h-9 w-32" />
+            ) : (
+              <p className="text-h4 leading-9 font-bold text-foreground">
+                {money(quote.total.amountMinor, quote.total.currency)}
+              </p>
+            )}
+            {quote.perPerson ? (
+              <p className="text-sm leading-4.5 font-medium text-natural-500">
+                {tCard("perPersonApprox", {
+                  price: money(quote.perPerson.amountMinor, quote.perPerson.currency),
+                })}
+              </p>
+            ) : null}
+          </div>
+
+          <Separator />
+
+          <div className="flex w-full flex-col gap-3 p-4 xl:gap-2 xl:py-3">
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-sm leading-4.5 font-medium text-natural-500">
+                {t("sidebar.dueNow")}
+              </p>
+              {repricing ? (
+                <Skeleton className="h-14 w-40" />
+              ) : (
+                <p className="text-h3 leading-14 text-foreground">
+                  {money(quote.deposit.amountMinor, quote.deposit.currency)}
+                </p>
+              )}
+            </div>
+            {actions ? (
+              <>
+                <Button
+                  variant="brand"
+                  loading={repricing}
+                  disabled={!payNowReady}
+                  nativeButton={payNowReady ? false : undefined}
+                  render={payNowReady ? <Link href={payNowHref} /> : undefined}
+                >
+                  {t("sidebar.payNowCta", {
+                    amount: money(quote.deposit.amountMinor, quote.deposit.currency),
+                  })}
+                </Button>
+                <Button variant="neutral" onClick={onRequestQuote}>
+                  {t("sidebar.requestQuote")}
+                </Button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

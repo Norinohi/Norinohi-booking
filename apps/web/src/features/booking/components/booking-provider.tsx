@@ -72,6 +72,13 @@ type BookingContextValue = {
   isPending: boolean;
   /** The last selection was refused by the provider; the sidebar asks for another date. */
   slotError: boolean;
+  /*
+   * The period carried in from search or a shared link, when this listing will not sell it.
+   * Distinct from `slotError`, which is a period the visitor picked here being refused: this
+   * one was already chosen before they arrived, and dropping it in silence is what left the
+   * panel reading "Select dates" as though they had never named any.
+   */
+  refusedSearchPeriod: CharterPeriod | null;
   /**
    * The quote named in the URL could not be read. Distinct from `slotError`, which is the
    * provider declining a period: this is the wizard unable to show anything at all.
@@ -190,6 +197,7 @@ export function BookingProvider({
     readonly (DatePeriod & { offerId: string })[]
   >([]);
   const [slotError, setSlotError] = useState(false);
+  const [refusedSearchPeriod, setRefusedSearchPeriod] = useState<CharterPeriod | null>(null);
 
   /*
    * A period the vendor refused stays refused — it said no and it is the authority — but only
@@ -299,12 +307,41 @@ export function BookingProvider({
     if (seededRef.current || quoteId || !published || !listingId) return;
     const period = searchedPeriod ?? suggestedPeriod;
     if (!period) return;
-    if (combinedRangeStatus(period.checkIn, period.checkOut, offers).verdict !== "bookable") return;
+
+    if (combinedRangeStatus(period.checkIn, period.checkOut, offers).verdict !== "bookable") {
+      /*
+       * A period the page guessed is still dropped in silence, for the reason `pricePeriod`
+       * gives. One the visitor carried in is not: they asked for these dates, and the panel
+       * falling back to "Select dates" with nothing said reads as a broken picker. It is also
+       * the only signal for a window our synced calendar still calls free while the vendor no
+       * longer does, which no amount of filtering in search can predict.
+       */
+      if (!searchedPeriod) return;
+      setRefusedSearchPeriod(searchedPeriod);
+
+      /* Open on something sellable rather than on nothing, so the answer comes with an offer. */
+      if (
+        suggestedPeriod &&
+        combinedRangeStatus(suggestedPeriod.checkIn, suggestedPeriod.checkOut, offers).verdict ===
+          "bookable"
+      ) {
+        seededRef.current = true;
+        pricePeriod(suggestedPeriod, { report: false });
+      }
+      return;
+    }
+
     seededRef.current = true;
     pricePeriod(period, { report: false });
   });
 
   function selectPeriod(period: CharterPeriod) {
+    /*
+     * The notice names the period carried in from search, so it is answered the moment the
+     * visitor picks their own: left standing beside a freshly chosen October week it reads as
+     * a complaint about the dates now on screen rather than the ones they arrived with.
+     */
+    setRefusedSearchPeriod(null);
     pricePeriod(period, { report: true });
   }
 
@@ -453,6 +490,7 @@ export function BookingProvider({
     guests,
     isPending,
     slotError,
+    refusedSearchPeriod,
     loadError,
     retryLoad,
     selectPeriod,

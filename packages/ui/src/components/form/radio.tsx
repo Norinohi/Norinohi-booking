@@ -28,14 +28,14 @@ function Radio({ className, ...props }: RadioPrimitive.Root.Props) {
         "relative flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.2px] border-input bg-transparent transition-colors outline-none",
         "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "data-[checked]:border-brand",
+        "data-checked:border-brand",
         className,
       )}
       {...props}
     >
       <RadioPrimitive.Indicator
         data-slot="radio-indicator"
-        className="size-3 rounded-full bg-brand data-[unchecked]:hidden"
+        className="size-3 rounded-full bg-brand data-unchecked:hidden"
       />
     </RadioPrimitive.Root>
   );

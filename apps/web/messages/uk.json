@@ -11,7 +11,17 @@
       "noExtras": "Нічого не обрано",
       "boatPrice": "Ціна яхти (повна вартість оренди)",
       "deposit": "Поворотна гарантійна застава",
-      "secondPayment": "2-й платіж (оплата: {date})",
+      "depositRefundable": "Повертається, утримує чартерна база",
+      "schedule": {
+        "payNow": "оплатити зараз",
+        "payAt": "оплата {date}",
+        "payAtCheckIn": "оплата при заїзді, {date}",
+        "firstPayment": "1-й платіж ({when})",
+        "fullPayment": "Повна оплата ({when})",
+        "secondPayment": "2-й платіж ({when})",
+        "extrasPayment": "Додатки ({when})",
+        "depositNote": "Поворотна застава ({when})"
+      },
       "totalPrice": "Разом",
       "dueNow": "До сплати зараз",
       "terms": "Я погоджуюсь з <b>Умовами та договором оренди</b>.",
@@ -422,6 +432,7 @@
       }
     },
     "booked": "Заброньовано",
+    "consentRequired": "Відмітьте обидві галочки вище, щоб підтвердити бронювання.",
     "saveAndContinue": "Зберегти та продовжити",
     "extrasSkipped": "Спершу перегляньте додаткові опції, потім підтвердьте."
   },
@@ -433,6 +444,7 @@
     },
     "extras": {
       "payAtCheckIn": "Оплата при заїзді",
+      "dueWithPrepayment": "Сплачується разом із передоплатою",
       "payNow": "Входить у передоплату",
       "includedInPrice": "Включено у ціну",
       "percentageOfCharter": "{percent}% від вартості чартеру",
@@ -470,12 +482,16 @@
       "viewDetails": "Детальніше",
       "imageAlt": "{name} біля причалу {marina}",
       "openGallery": "Відкрити галерею фото",
-      "priceFor": "Ціна за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+      "priceFor": "Ціна чартеру · {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}",
+      "priceIndicative": "Ціна чартеру · мінімум за сезон",
       "priceFromLabel": "Від",
       "priceOnRequest": "За запитом",
       "priceUnavailable": "Недоступно",
       "perPerson": "{price} з особи",
       "perPersonApprox": "~ {price} з особи",
+      "perBerth": "{price} з особи при {berths} спальних місцях",
+      "perNight": "{price} за ніч",
+      "datesAlternative": "На ваші дати недоступна. Ця яхта продає:",
       "prepayment": "Передоплата бронювання: {amount}",
       "prepaymentInfo": "Це частина вартості чартеру, яку сплачують наперед, щоб закріпити бронювання. Вона зараховується в загальну суму, решту потрібно сплатити до заселення.",
       "securityDeposit": "Поворотна застава: {amount}",
@@ -573,12 +589,12 @@
     "charterPeriod": {
       "or": ", або ",
       "daysAndNights": "{days}, {nights}",
-      "weekdayRange": "з {from} до {to}",
+      "weekdayRange": "Початок: {from}, завершення: {to}",
       "wholeWeeksAnyDay": "Будь-який день початку, повними тижнями",
-      "wholeWeeksFromDays": "Початок {days}, повними тижнями",
-      "weekdaysToDay": "Початок {days}, завершення у {to}",
-      "weekdayStart": "Початок у {day}",
-      "weekdayEnd": "Завершення у {day}",
+      "wholeWeeksFromDays": "Початок: {days}, повними тижнями",
+      "weekdaysToDay": "Початок: {days}, завершення: {to}",
+      "weekdayStart": "Початок: {day}",
+      "weekdayEnd": "Завершення: {day}",
       "nightsExact": "{count, plural, one {# ніч} few {# ночі} many {# ночей} other {# ночей}}",
       "nightsFrom": "від {count, plural, one {# ночі} few {# ночей} many {# ночей} other {# ночей}}",
       "nightsUpTo": "до {count, plural, one {# ночі} few {# ночей} many {# ночей} other {# ночей}}",
@@ -639,6 +655,7 @@
     "contactExpert": "Звʼязатися з експертом",
     "clearField": "Очистити «{label}»",
     "clearSelection": "Очистити вибір",
+    "andAbove": "{value}+",
     "unitAria": "Одиниця виміру для «{label}»",
     "sections": {
       "where": "Куди?",
@@ -676,7 +693,9 @@
       "allCountries": "Усі країни",
       "searchCountries": "Пошук країн...",
       "allRegions": "Усі регіони",
+      "searchRegions": "Пошук регіонів...",
       "allCompanies": "Усі компанії",
+      "searchCompanies": "Пошук компаній...",
       "allMarinas": "Усі марини",
       "searchMarinas": "Пошук марин...",
       "allBoats": "Усі човни",
@@ -706,6 +725,7 @@
       "more": "{names} +{count}",
       "none": "—",
       "any": "будь-який",
+      "name": "Пошук: {value}",
       "country": "Країна: {value}",
       "sailingArea": "Регіон: {value}",
       "city": "Місто: {value}",
@@ -761,13 +781,15 @@
       "heading": "Знайдіть яхту за своїм бюджетом",
       "viewResults": "Переглянути результати",
       "labels": {
-        "budget": "Бюджет",
+        "budget": "Бюджет на чартер",
         "people": "Осіб",
         "skipper": "Шкіпер",
         "destinations": "Напрямки (необовʼязково)"
       },
       "options": {
         "any": "Будь-який",
+        "budgetUpTo": "До {to}",
+        "budgetFrom": "Від {from}",
         "skipperYes": "Так",
         "skipperNo": "Ні",
         "destinationsAll": "Усі напрямки"
@@ -867,8 +889,9 @@
       "heading": "Популярні напрямки",
       "previous": "Попередні напрямки",
       "next": "Наступні напрямки",
-      "seeAll": "Усі напрямки",
-      "summary": "Від {price} · {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}"
+      "seeAll": "Переглянути всі напрямки",
+      "summary": "Від {price} · {count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}",
+      "yachtCount": "{count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхти}}"
     },
     "PopularYachts": {
       "heading": "Популярні яхти",
@@ -1108,6 +1131,7 @@
       },
       "experience": {
         "question": "Чи маєте досвід керування яхтою?",
+        "subtitle": "Шкіпера можна взяти за будь-якого досвіду — це лише про те, хто керує.",
         "options": {
           "none": {
             "label": "Немає досвіду",
@@ -1125,7 +1149,7 @@
       },
       "tripVibe": {
         "question": "Яку подорож ви шукаєте?",
-        "subtitle": "Розмір групи впливає на тип яхти, простір і ціну на людину",
+        "subtitle": "Те, чого ви хочете від тижня, визначає човен, маршрут і темп.",
         "options": {
           "adventure": {
             "label": "Пригоди",
@@ -1169,7 +1193,7 @@
       },
       "budget": {
         "question": "Який бюджет вам комфортний?",
-        "subtitle": "Ваш стиль подорожі визначає тип яхти, маршрут і враження на борту.",
+        "subtitle": "На одну людину за тиждень на борту, щоб було з чим порівняти.",
         "perPersonWeek": "на людину/тиждень",
         "options": {
           "low": {
@@ -1284,7 +1308,10 @@
       "pickUp": "Отримання яхти",
       "dropOff": "Повернення яхти",
       "policies": "Умови скасування та оплати",
-      "license": "Потрібні права",
+      "securityDeposit": "Поворотна застава",
+      "securityDepositNote": "Базa утримує її при заїзді й повертає після здачі яхти без пошкоджень.",
+      "securityDepositInsured": "Зменшується до {amount}, якщо оформити страхування застави на базі.",
+      "license": "Ліцензія судноводія",
       "pets": "Тварини",
       "paymentMethods": "Способи оплати чартерної компанії",
       "marinaInfo": "Інформація про марину",
@@ -1327,9 +1354,10 @@
       "unavailable": "У цієї яхти немає доступних дат",
       "unavailableHint": "Запитайте нас про інші дати або схожу яхту.",
       "slotRefused": "Ці дати недоступні для бронювання. Оберіть інший період.",
+      "searchedPeriodRefused": "{from} - {to} для цієї яхти недоступні. Оберіть інший період або скористайтеся показаними датами.",
       "loadFailed": "Не вдалося завантажити вартість цього бронювання.",
       "loadRetry": "Спробувати ще раз",
-      "prepayment": "Передоплата за човен {percent}%",
+      "prepayment": "Передоплата {percent}%",
       "boatPrice": "Ціна човна",
       "boatPriceHint": "Повна вартість оренди",
       "deposit": "Поворотна застава",
@@ -1339,14 +1367,16 @@
         "selectedExtras": "Вибрані опції",
         "crew": "Екіпаж"
       },
-      "payNow": "Передоплата за човен (оплатити зараз)",
+      "payNow": "Передоплата (оплатити зараз)",
       "payAt": "Оплата: {date}",
       "payAtCheckIn": "Оплата при заселенні: {date}",
       "firstPayment": "{amount} (1-й платіж)",
+      "fullPayment": "{amount} (повна оплата)",
       "secondPayment": "{amount} (2-й платіж)",
       "extrasPayment": "{amount} (додаткові опції)",
       "depositNote": "+ {amount} (поворотна застава)",
       "totalPrice": "Загальна ціна",
+      "discountsHeading": "Уже враховано у вартості вище",
       "dueNow": "До оплати зараз",
       "payNowCta": "Оплатити {amount}",
       "requestQuote": "Запросити пропозицію",
@@ -1457,7 +1487,8 @@
       "anyBoat": "Будь-який човен",
       "search": "Пошук",
       "noLocations": "Немає збігів за напрямком",
-      "clearLocation": "Очистити напрямок"
+      "clearLocation": "Очистити напрямок",
+      "freeText": "Назва, модель або компанія"
     },
     "paginationSummary": "Показано {from}–{to} з {total}"
   },
@@ -1487,7 +1518,8 @@
       "titlePlain": "{boat} в оренду",
       "metaSpecs": "{category}, {cabins, plural, one {# каюта} few {# каюти} other {# кают}}, до {guests} гостей.",
       "metaPlace": "{crew}. База: {place}.",
-      "metaPrice": "Від {price} за тиждень.",
+      "metaPriceFrom": "Від {price}.",
+      "metaPriceForDays": "{price} за {days, plural, one {# день} few {# дні} many {# днів} other {# дня}}.",
       "metaCta": "Перевір доступність на свої дати."
     },
     "Booking": {
@@ -1683,6 +1715,8 @@
   "Wishlist": {
     "title": "Ваше обране",
     "back": "Назад",
+    "saved": "Збережено в обране.",
+    "removed": "Видалено з обраного.",
     "emptyTitle": "Збережених яхт поки немає",
     "emptyDescription": "Почніть переглядати та зберігайте улюблені яхти на потім",
     "someUnavailable": "Деякі зі збережених яхт більше недоступні.",
@@ -3012,6 +3046,11 @@
         "legend": "Пріоритетний постачальник",
         "hint": "Хто виграє, коли доступність, ціна та обов'язкові доплати однакові. Дешевшу пропозицію це ніколи не перебиває: воно вирішує лише нічию.",
         "rebuildNote": "На нові квоти та календар доступності діє одразу. Картки каталогу перебудовуються у фоні одразу після збереження, це займає менше хвилини."
+      },
+      "nameSearch": {
+        "legend": "Пошук вільним текстом",
+        "toggle": "Показувати поле вільного пошуку в рядку пошуку",
+        "hint": "Допоміжний інструмент для тестування, якого немає в дизайні. Коли увімкнено, у рядку пошуку яхт з'являється поле, що шукає за назвою, моделлю, верф'ю, чартерною компанією або базою — за кожним словом і в будь-якому порядку."
       },
       "save": "Зберегти зміни",
       "saving": "Збереження...",

@@ -26,7 +26,7 @@ export default function HowItWorks() {
           variants={RISE}
           className="flex flex-col items-center gap-4 text-center md:items-start md:gap-6 md:text-left xl:max-w-136 xl:justify-center"
         >
-          <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px]">{t("heading")}</h2>
+          <h2 className="text-h2">{t("heading")}</h2>
           <p className="max-w-136 text-lg leading-[1.4] text-natural-600 md:max-w-none md:text-xl">
             {t("intro")}
             <br />

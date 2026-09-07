@@ -70,13 +70,12 @@ function toValues(profile: Profile): Values {
   };
 }
 
-export default function ProfileForm({
-  profile,
-  onSaved,
-}: {
+interface ProfileFormProps {
   profile: Profile;
   onSaved?: () => void;
-}) {
+}
+
+export default function ProfileForm({ profile, onSaved }: ProfileFormProps) {
   const t = useTranslations("Profile");
   const router = useRouter();
 
@@ -154,7 +153,7 @@ export default function ProfileForm({
                 <FormItem>
                   <FormLabel>{t("firstName")}</FormLabel>
                   <FormControl>
-                    <TextField autoComplete="given-name" className="leading-[1.25]" {...field} />
+                    <TextField autoComplete="given-name" className="leading-tight" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -167,7 +166,7 @@ export default function ProfileForm({
                 <FormItem>
                   <FormLabel>{t("lastName")}</FormLabel>
                   <FormControl>
-                    <TextField autoComplete="family-name" className="leading-[1.25]" {...field} />
+                    <TextField autoComplete="family-name" className="leading-tight" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -187,7 +186,7 @@ export default function ProfileForm({
                       type="email"
                       inputMode="email"
                       autoComplete="email"
-                      className="leading-[1.25]"
+                      className="leading-tight"
                       {...field}
                     />
                   </FormControl>
@@ -206,7 +205,7 @@ export default function ProfileForm({
                       type="tel"
                       inputMode="tel"
                       autoComplete="tel"
-                      className="leading-[1.25]"
+                      className="leading-tight"
                       {...field}
                     />
                   </FormControl>
@@ -224,7 +223,7 @@ export default function ProfileForm({
               defaultValue="password12"
               readOnly
               autoComplete="off"
-              className="leading-[1.25]"
+              className="leading-tight"
             />
             <div className="flex">
               <ChangePasswordDialog />
@@ -253,7 +252,7 @@ export default function ProfileForm({
               }
             />
             <DialogContent showClose mobileSheet>
-              <img src={deactivateIllustration.src} alt="" className="size-[70px]" />
+              <img src={deactivateIllustration.src} alt="" className="size-17.5" />
               <DialogHeader>
                 <DialogTitle>{t("deactivateTitle")}</DialogTitle>
                 <DialogDescription>{t("deactivateDescription")}</DialogDescription>

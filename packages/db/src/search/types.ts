@@ -8,6 +8,8 @@ export type SearchSort = "recommended" | "price-asc" | "price-desc" | "rating" |
 export type ListingSearchInput = {
   destination?: string;
   query?: string;
+  /** Free text, matched word by word against the boat's name and everything on its card. */
+  name?: string;
   checkIn?: string;
   checkOut?: string;
   guests?: number;
@@ -135,7 +137,7 @@ export type ListingSearchDoc = {
   listPriceFromMinor: number | null;
   currency: string | null;
   /**
-   * `priceFromMinor` in one catalogue-wide currency, for comparison only. Never rendered, and
+   * `priceFromMinor` in the catalogue-wide comparison currency, also used by destination summaries;
    * null where no fresh rate covers the published currency. See the `price_from_minor_eur`
    * column comment in schema/search.ts.
    */
@@ -151,6 +153,20 @@ export type ListingSearchDoc = {
   bookableTo: string | null;
   hasUnconfirmedAvailability: boolean;
   hasTemporaryBooking: boolean;
+  /*
+   * Whether this listing's own rules would sell a charter starting on the day the search named.
+   * Always true when the search carried no dates. False means the boat is free across the window
+   * but turns around on another weekday, which is what the card has to say instead of repeating
+   * dates the quote will refuse.
+   */
+  sellsRequestedPeriod: boolean;
+  /*
+   * The charter nearest the searched dates that this listing would actually sell, when the
+   * searched one is not it. Null on an undated search, and on a listing with no sellable
+   * charter left in the horizon.
+   */
+  nearestCheckIn: string | null;
+  nearestCheckOut: string | null;
 };
 
 export type ListingSearchResult = {
@@ -326,7 +342,7 @@ export type ListingFacetOption = {
   imageUrl?: string | null;
   cloudinaryId?: string | null;
   description?: string | null;
-  /* Cheapest listing inside the group, so a card can show "from X" without a second query. */
+  /* Lowest positive comparable price in EUR; null when the group has no comparable price. */
   priceFromMinor?: number | null;
   currency?: string | null;
 };

@@ -82,6 +82,8 @@ const multi = () => parseAsArrayOf(parseAsString).withDefault([]);
 export const filterParsers = {
   /** Free-text destination search (the location typeahead). */
   query: parseAsString.withDefault(""),
+  /* Free text over a boat's name and card. Written only by the search bar's optional field. */
+  name: parseAsString.withDefault(""),
   country: multi(),
   sailingArea: multi(),
   city: multi(),

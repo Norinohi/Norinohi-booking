@@ -32,11 +32,11 @@ function ComboboxTrigger({
   const trigger = (
     <Base.Trigger
       className={cn(
-        "group flex h-12 w-full min-w-[200px] cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
-        "hover:border-natural-200 data-[popup-open]:border-foreground",
+        "group flex h-12 w-full min-w-50 cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+        "hover:border-natural-200 data-popup-open:border-foreground",
         "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
         /* `FormControl` sets aria-invalid; it has to beat hover/open/focus too. */
-        "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-[popup-open]:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
+        "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-popup-open:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
         className,
       )}
       {...props}
@@ -46,7 +46,7 @@ function ComboboxTrigger({
         <span className="truncate">{children}</span>
       </span>
       <Base.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
-        <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
+        <ChevronDownIcon className="size-5 transition-transform group-data-popup-open:rotate-180" />
       </Base.Icon>
     </Base.Trigger>
   );
@@ -122,7 +122,7 @@ function ComboboxItem({ className, ...props }: ComponentProps<typeof Base.Item>)
   return (
     <Base.Item
       className={cn(
-        "flex cursor-pointer items-center gap-3 border-t border-natural-50 px-4 py-3 text-base text-foreground outline-none first:border-t-0 data-highlighted:bg-natural-50 data-[selected]:font-semibold",
+        "flex cursor-pointer items-center gap-3 border-t border-natural-50 px-4 py-3 text-base text-foreground outline-none first:border-t-0 data-highlighted:bg-natural-50 data-selected:font-semibold",
         className,
       )}
       {...props}

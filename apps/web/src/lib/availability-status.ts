@@ -31,17 +31,25 @@ export type AvailabilityFacts = {
   hasAvailableDates: boolean;
   /** A charter we can name: the searched period, or the first one this boat would sell. */
   hasBookablePeriod: boolean;
-  /**
-   * Whether the price beside the status is a vendor's answer for that exact charter rather than
-   * the season's floor. The flag the card already prints as "From", read here as what it means:
-   * nobody has confirmed this charter yet.
-   */
-  priceIsFrom: boolean;
 };
 
+/*
+ * Only facts about the calendar decide this, which is what the three states above already claim
+ * to be about.
+ *
+ * `priceIsFrom` used to force `onRequest` as well, and that is a fact about the price rather than
+ * about the boat: 802 listings hold a legal sellable charter and a season floor to advertise it
+ * with, and were labelled as though nothing could be sold. It also said the same thing twice --
+ * the caption directly above the figure already reads "Charter price - seasonal minimum" -- and
+ * once the projection started advertising those charters the chip contradicted the dates printed
+ * beside it, and the live quote the detail sidebar fetches for them.
+ *
+ * So the price caveat stays with the price, and this answers the question it is asked: can this
+ * boat be chartered.
+ */
 export function availabilityStatus(facts: AvailabilityFacts): AvailabilityStatus {
   if (!facts.hasAvailableDates) return "unavailable";
-  if (!facts.hasBookablePeriod || facts.priceIsFrom) return "onRequest";
+  if (!facts.hasBookablePeriod) return "onRequest";
   return "available";
 }
 

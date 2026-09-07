@@ -35,7 +35,7 @@ export default function BalancePaid({
       <article className="relative isolate w-full max-w-201.5 overflow-hidden rounded-2xl border border-border bg-card">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-[806/504]"
+          className="pointer-events-none absolute inset-x-0 top-0 z-0 aspect-806/504"
         >
           <Image
             src="/assets/illustrations/booking-confetti.svg"
@@ -66,9 +66,7 @@ export default function BalancePaid({
               />
             </motion.div>
             <div className="flex flex-col items-center gap-4 pt-3 text-center">
-              <h1 className="text-[28px] leading-[1.1] font-medium text-foreground md:text-[32px]">
-                {t("paid.title")}
-              </h1>
+              <h1 className="text-h4 text-foreground">{t("paid.title")}</h1>
               <p className="text-base leading-[1.4] text-foreground opacity-80">
                 {booking.listing.title} · {day(booking.checkIn)} → {day(booking.checkOut)}
               </p>

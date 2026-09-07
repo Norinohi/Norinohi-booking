@@ -270,6 +270,8 @@ export interface BookingManagerAvailabilitySourceOptions {
   loadAdvertisedPeriods?: () => Promise<readonly SweepPeriod[]>;
   /** Today, so the pass can drop the weeks that are already over. */
   today?: string;
+  /** This run's slice of the advertised tail; see `sweepRotation`. */
+  rotation?: number;
 }
 
 /**
@@ -325,6 +327,7 @@ export function createBookingManagerAvailabilitySource(
             ? { loadAdvertisedPeriods: options.loadAdvertisedPeriods }
             : null),
           ...(options.today ? { today: options.today } : null),
+          ...(options.rotation === undefined ? null : { rotation: options.rotation }),
         },
         from,
       );

@@ -34,6 +34,7 @@ interface FormState {
   leadTimeDays: string;
   /* Provider codes, most preferred first. Saved whole; the radios only move the winner. */
   preference: ProviderCode[];
+  nameSearchEnabled: boolean;
 }
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
@@ -90,6 +91,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       enforceLeadTime: data.payment.enforceLeadTime,
       leadTimeDays: String(data.payment.leadTimeDays),
       preference: data.transactingPreference,
+      nameSearchEnabled: data.nameSearchEnabled,
     });
   }, [data?.updatedAt, data]);
 
@@ -119,6 +121,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
           leadTimeDays: days,
         },
         transactingPreference: form.preference,
+        nameSearchEnabled: form.nameSearchEnabled,
       },
       {
         onSuccess: () => toast.success(t("saved")),
@@ -143,7 +146,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
       <div className="px-4 py-6 md:px-13.5">
-        <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[334px_minmax(0,1fr)] lg:items-start">
+        <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}
             variant="admin"
@@ -340,6 +343,27 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                   <p className="text-xs leading-4 font-medium text-natural-500">
                     {t("preference.rebuildNote")}
                   </p>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("nameSearch.legend")}
+                  </legend>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("nameSearch.toggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("nameSearch.hint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.nameSearchEnabled}
+                      onCheckedChange={(checked) => set({ nameSearchEnabled: checked })}
+                    />
+                  </label>
                 </fieldset>
 
                 <div className="flex items-center gap-3">

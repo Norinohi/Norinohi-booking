@@ -11,13 +11,12 @@ import { StepLegend } from "../step-legend";
  * grid of four destinations plus a full-width "Not sure" opt-out with no flag or description.
  * `id` is the value stored in the URL.
  */
-export function DestinationStep({
-  value,
-  onChange,
-}: {
+interface DestinationStepProps {
   value: Destination | null;
   onChange: (value: Destination) => void;
-}) {
+}
+
+export function DestinationStep({ value, onChange }: DestinationStepProps) {
   const t = useTranslations("PlanMyTrip.steps.destination");
 
   const choices: QuizChoice<Destination>[] = [

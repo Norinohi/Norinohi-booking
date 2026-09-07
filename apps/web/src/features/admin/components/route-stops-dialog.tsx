@@ -63,15 +63,13 @@ function toWorking(stop: RouteStopRow): Working {
   };
 }
 
-export default function RouteStopsDialog({
-  route,
-  open,
-  onOpenChange,
-}: {
+interface RouteStopsDialogProps {
   route: RouteRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export default function RouteStopsDialog({ route, open, onOpenChange }: RouteStopsDialogProps) {
   const t = useTranslations("Admin.Routes.stops");
   const [working, setWorking] = useState<Working>(BLANK);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -163,7 +161,7 @@ export default function RouteStopsDialog({
             </DialogHeader>
           </div>
 
-          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] overflow-y-auto lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden">
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] overflow-y-auto lg:grid-cols-[--spacing(95)_minmax(0,1fr)] lg:overflow-hidden">
             <div className="flex min-h-0 flex-col gap-3 border-natural-50 p-5 lg:overflow-y-auto lg:border-r">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-bold text-foreground">

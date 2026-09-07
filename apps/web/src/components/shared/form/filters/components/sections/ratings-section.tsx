@@ -18,6 +18,7 @@ export default function RatingsSection({ value, set }: SectionProps) {
         value={value.guestRating}
         onChange={(next) => set("guestRating", next)}
         icon={<Star className="size-3 shrink-0 text-gold" />}
+        boundedMax
       />
     </Section>
   );

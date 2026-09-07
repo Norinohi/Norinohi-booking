@@ -151,6 +151,13 @@ export const marketplaceSetting = pgTable(
       .array()
       .default(["booking_manager", "nausys", "mock"])
       .notNull(),
+    /**
+     * Whether the search bar offers the free-text field.
+     *
+     * A testing affordance rather than a product feature: the design has no such field, so it
+     * stays off until somebody turns it on to look a particular boat up.
+     */
+    nameSearchEnabled: boolean("name_search_enabled").default(false).notNull(),
     updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
   },

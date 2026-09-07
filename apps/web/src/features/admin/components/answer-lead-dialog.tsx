@@ -23,15 +23,13 @@ import type { LeadRow } from "../types";
  * instead of a booking question. The two are not one component: a lead has no booking, its
  * message is optional, and the yacht line is the only context there is.
  */
-export default function AnswerLeadDialog({
-  lead,
-  open,
-  onOpenChange,
-}: {
+interface AnswerLeadDialogProps {
   lead: LeadRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export default function AnswerLeadDialog({ lead, open, onOpenChange }: AnswerLeadDialogProps) {
   const t = useTranslations("Admin.Inbox.leadAnswer");
   const answerId = useId();
   const [answer, setAnswer] = useState("");

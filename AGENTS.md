@@ -124,6 +124,24 @@ Two things constrain code changes here:
 - Import shared UI from its subpath: `@yacht-charter/ui/components/button`. There is no barrel export.
 - Never hand-edit `apps/web/next-env.d.ts` (Next generates it; it says so) or `pnpm-lock.yaml` (pnpm owns it).
 - Add shared shadcn primitives from the repo root with `npx shadcn@latest add <name> -c packages/ui`; run the CLI from `apps/web` only for app-specific blocks.
+- **Write Tailwind classes in their canonical v4 spelling.** Nothing enforces this: `pnpm check` and CI have no Tailwind rules, and the `tailwindcss(suggestCanonicalClasses)` warning comes from the Tailwind IntelliSense extension, which `.vscode/extensions.json` does not even recommend — so it appears only for whoever installed it, and never in review. That makes it the author's job. The spellings that keep coming back, because years of v3 examples say otherwise:
+
+  | Write                                  | Not                                        |
+  | -------------------------------------- | ------------------------------------------ |
+  | `bg-linear-to-r`                       | `bg-gradient-to-r`                         |
+  | `wrap-break-word`                      | `break-words`                              |
+  | `shrink-0` / `grow`                    | `flex-shrink-0` / `flex-grow`              |
+  | `mt-0!`                                | `!mt-0`                                    |
+  | `data-active:`, `group-data-selected:` | `data-[active]:`, `group-data-[selected]:` |
+  | `w-(--tab-width)`                      | `w-[var(--tab-width)]`                     |
+  | `aspect-4/3`, `flex-2`                 | `aspect-[4/3]`, `flex-[2]`                 |
+  | `--spacing(83.5)`                      | `calc(var(--spacing)*83.5)`                |
+  | `*:`, `**:`, `**:data-[slot=x]:`       | `[&>*]:`, `[&_*]:`, `[&_[data-slot=x]]:`   |
+
+  The first three are not merely unfashionable — Tailwind has dropped them from its class list and keeps them working for backwards compatibility only. The rest are equivalent, and `calc(var(--spacing)*n)` is the one to watch near the density dial, since `--spacing(n)` is what `design-tokens/no-arbitrary-size` expects to see.
+
+  Tailwind owns the canonical form, so never hand-maintain a rename list: `designSystem.canonicalizeCandidates()` (reached through `__unstable__loadDesignSystem`) is the authority, and it is what both the extension and `eslint-plugin-tailwindcss` call. To re-sweep the repo, run that plugin's `enforces-canonical-classname --fix` as a one-off. It is deliberately not a dependency — adding it would mean running ESLint alongside oxlint for one rule.
+
 - Run `pnpm check` before committing. It rewrites files with `oxfmt --write`, so review the diff afterwards. Oxlint enforces the `correctness` category as errors via `.oxlintrc.json`.
 - The `anti-slop` jsPlugin (vendored at `tools/oxlint/anti-slop/`) runs all 15 of its rules at `error`. Treat it as vendored: do not edit the rules, and do not silence a finding with an `oxlint-disable` comment, an `as any`, a `type X = unknown` alias, or by renaming a parameter to `cause` (the rule exempts that name; abusing it is not a fix). Either express the check as a boundary parse, or leave the finding and say why.
 - **`.oxlintrc.json` carries a temporary `overrides` block** switching a few anti-slop rules off for named files. These are the residue of the initial adoption sweep: thrown-value classification (`catch` bindings are `unknown` by design), structural walkers over arbitrary values (`redactSecrets`, `canonicalize`, `sanitizeReservationPayload`), and the sync cursor plumbing that reads jsonb columns the Drizzle driver types as `unknown`. The exemptions are per file and per rule on purpose, so every rule still fires at `error` on new code everywhere else. Adding a file to that block is a decision to stop checking it: shrink the list rather than grow it.

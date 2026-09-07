@@ -67,11 +67,11 @@ function MultiSelect({
         <Combobox.Trigger
           data-slot="multi-select-trigger"
           className={cn(
-            "group flex h-12 w-full min-w-[200px] cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
-            "hover:border-natural-200 data-[popup-open]:border-foreground",
+            "group flex h-12 w-full min-w-50 cursor-pointer items-center justify-between gap-2 rounded-lg border border-input bg-transparent p-3 text-left text-base text-foreground transition-colors outline-none",
+            "hover:border-natural-200 data-popup-open:border-foreground",
             "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
             /* `FormControl` sets aria-invalid; it has to beat hover/open/focus too. */
-            "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-[popup-open]:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
+            "aria-invalid:border-error-600 aria-invalid:hover:border-error-600 aria-invalid:data-popup-open:border-error-600 aria-invalid:focus-visible:border-error-600 aria-invalid:focus-visible:ring-error-600/40",
             "disabled:cursor-not-allowed disabled:opacity-50",
             className,
           )}
@@ -87,7 +87,7 @@ function MultiSelect({
             </span>
           </span>
           <Combobox.Icon className="flex size-6 shrink-0 items-center justify-center text-foreground">
-            <ChevronDownIcon className="size-5 transition-transform group-data-[popup-open]:rotate-180" />
+            <ChevronDownIcon className="size-5 transition-transform group-data-popup-open:rotate-180" />
           </Combobox.Icon>
         </Combobox.Trigger>
 
@@ -132,9 +132,9 @@ function MultiSelect({
                   value={item}
                   className="group flex cursor-pointer items-center gap-3 border-t border-natural-50 px-4 py-3 text-base text-foreground outline-none first:border-t-0 data-highlighted:bg-natural-50"
                 >
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] border-[1.2px] border-input transition-colors group-data-[selected]:border-brand group-data-[selected]:bg-brand group-data-[selected]:text-brand-foreground">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] border-[1.2px] border-input transition-colors group-data-selected:border-brand group-data-selected:bg-brand group-data-selected:text-brand-foreground">
                     <Combobox.ItemIndicator className="grid place-content-center text-current">
-                      <CheckIcon strokeWidth={2.5} className="size-[18px]" />
+                      <CheckIcon strokeWidth={2.5} className="size-4.5" />
                     </Combobox.ItemIndicator>
                   </span>
                   <span className="truncate">{labels.get(item) ?? item}</span>

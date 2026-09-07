@@ -37,15 +37,17 @@ import type { BookingAdminRow } from "../types";
  * Running this twice is safe — every refund is recorded before Stripe is called and keyed on
  * that record, so a second run finishes the job rather than paying anyone twice.
  */
+interface RefundBookingDialogProps {
+  booking: BookingAdminRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function RefundBookingDialog({
   booking,
   open,
   onOpenChange,
-}: {
-  booking: BookingAdminRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: RefundBookingDialogProps) {
   const t = useTranslations("Admin.Payments.refund");
   const amount = useAmount();
   const reasonId = useId();

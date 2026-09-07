@@ -37,7 +37,7 @@ import { BM_COLD_START_NOTICE_MS } from "./warmup";
 import { resolveBookingManagerConfig } from "./config";
 import { BookingManagerClient } from "./client";
 import { listAdvertisedCharterPeriods } from "@yacht-charter/db/search/read-model";
-import { ADVERTISED_PERIOD_LIMIT } from "../shared/sweep-periods";
+import { ADVERTISED_PERIOD_LIMIT, sweepRotation } from "../shared/sweep-periods";
 import { createBookingManagerAvailabilitySource } from "./occupancy";
 import { createBookingManagerSeasonalPriceLoader } from "./prices";
 import { projectBookingManagerCatalogue } from "./projection";
@@ -76,6 +76,8 @@ export class BookingManagerInventoryProvider
   private readonly years: number[];
   /** Read once, so a long-lived process sweeps the same day it started from. */
   private readonly today: string;
+  /** Which slice of the advertised tail this process sweeps; see `sweepRotation`. */
+  private readonly rotation: number;
   private readonly currency: string;
   private readonly quotes: ReturnType<typeof createBookingManagerQuoteService>;
   private readonly bookings: ReturnType<typeof createBookingManagerBookingService>;
@@ -91,6 +93,7 @@ export class BookingManagerInventoryProvider
     const thisYear = now.getUTCFullYear();
     this.years = options.years ?? [thisYear, thisYear + 1];
     this.today = now.toISOString().slice(0, 10);
+    this.rotation = sweepRotation(now);
     this.currency = options.currency ?? "EUR";
 
     this.quotes = createBookingManagerQuoteService({
@@ -191,6 +194,7 @@ export class BookingManagerInventoryProvider
           limit: ADVERTISED_PERIOD_LIMIT,
         }),
       today: this.today,
+      rotation: this.rotation,
     });
   }
 

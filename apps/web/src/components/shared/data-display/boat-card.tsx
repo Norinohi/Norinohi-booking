@@ -76,6 +76,12 @@ export type BoatCardProps = {
    */
   start?: BoatCardCharterDate;
   end?: BoatCardCharterDate;
+  /*
+   * Said above the dates when they are not the ones searched for. Search keeps a boat that is
+   * free across the window but turns around on another weekday, so the card shows the charter
+   * this boat would actually sell; without a word here that reads as the wrong dates.
+   */
+  datesNote?: string;
   priceLabel: string;
   price: string;
   /**
@@ -96,7 +102,16 @@ export type BoatCardProps = {
   priceIsLabel?: boolean;
   /** The listing has no bookable dates — the photo desaturates and the copy dims. */
   unavailable?: boolean;
-  perPerson: string;
+  /** The quote's own figure over the real party size. Absent on a catalogue card, which has no
+      party size and whose berth-based division read as a price of its own. */
+  perPerson?: string;
+  /**
+   * The same amount over the nights it covers, so a list ordered by nightly rate reads in order.
+   * "Price: low to high" sorts on this, and against totals for charters of different lengths the
+   * sequence looked shuffled: a cheaper week sat above a dearer three nights with nothing on
+   * either card to say why.
+   */
+  perNight?: string;
   /** Money footnote under the price, with the tooltip that explains that figure. */
   note: CardNoteData | null;
   detailHref?: AppPathname;
@@ -201,7 +216,7 @@ function Details({
           <div className="flex min-w-0 flex-1 items-start gap-2">
             {/* The name opens the same page as "View Details"; a card without one (the booking
                 recap) keeps plain text. */}
-            <h3 className="min-w-0 line-clamp-2 pb-1 text-[28px] font-medium leading-[1.1] break-words text-foreground md:text-[32px]">
+            <h3 className="text-h4 min-w-0 line-clamp-2 pb-1 wrap-break-word text-foreground">
               {detailHref ? (
                 <Link
                   href={detailHref}
@@ -308,6 +323,7 @@ function CharterDate({ value, className }: { value: BoatCardCharterDate; classNa
 function Action({
   stats,
   start,
+  datesNote,
   end,
   priceLabel,
   price,
@@ -315,6 +331,7 @@ function Action({
   priceLabelLeads,
   priceIsLabel,
   perPerson,
+  perNight,
   note,
   detailHref,
   footer,
@@ -322,6 +339,7 @@ function Action({
   BoatCardProps,
   | "stats"
   | "start"
+  | "datesNote"
   | "end"
   | "priceLabel"
   | "price"
@@ -329,6 +347,7 @@ function Action({
   | "priceLabelLeads"
   | "priceIsLabel"
   | "perPerson"
+  | "perNight"
   | "note"
   | "detailHref"
   | "footer"
@@ -344,6 +363,12 @@ function Action({
           </p>
         ))}
       </div>
+
+      {start && end && datesNote ? (
+        <p className="w-full text-center text-sm leading-[1.3] text-natural-500 md:text-left">
+          {datesNote}
+        </p>
+      ) : null}
 
       {start && end ? (
         <div className="flex w-full items-center justify-center gap-3 md:justify-start ">
@@ -377,6 +402,8 @@ function Action({
             <span
               className={cn(
                 "font-bold text-black",
+                // The 24 -> 28 ramp has no token: text-h4 goes to 32 at md.
+                // oxlint-disable-next-line design-tokens/no-arbitrary-size
                 priceIsLabel ? "text-xl" : "text-2xl leading-[1.15] md:text-[28px]",
               )}
             >
@@ -389,7 +416,11 @@ function Action({
             ) : null}
           </span>
         </div>
-        <p className="text-sm font-medium leading-[1.3] text-natural-500">{perPerson}</p>
+        {/* One derived figure, not two: a catalogue card shows the nightly rate the list is
+            ordered by, a booking card the per-person share of a party that actually exists. */}
+        <p className="text-sm font-medium leading-[1.3] text-natural-500">
+          {perNight ?? perPerson}
+        </p>
         {note ? <CardNote backdrop note={note} className="flex md:hidden" /> : null}
       </div>
 
@@ -417,7 +448,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         "flex w-full flex-col overflow-hidden rounded-2xl border bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)] xl:grid xl:items-stretch xl:gap-6",
         boat.summary
           ? "border-border xl:grid-cols-[minmax(0,452fr)_minmax(0,566fr)]"
-          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(208px,232fr)]",
+          : "border-natural-50 xl:grid-cols-[minmax(0,452fr)_minmax(0,334fr)_minmax(--spacing(52),232fr)]",
         className,
       )}
     >
@@ -446,6 +477,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         <Action
           stats={boat.stats}
           start={boat.start}
+          datesNote={boat.datesNote}
           end={boat.end}
           priceLabel={boat.priceLabel}
           price={boat.price}
@@ -453,6 +485,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           priceLabelLeads={boat.priceLabelLeads}
           priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}
+          perNight={boat.perNight}
           note={boat.note}
           detailHref={boat.detailHref}
           footer={boat.footer}

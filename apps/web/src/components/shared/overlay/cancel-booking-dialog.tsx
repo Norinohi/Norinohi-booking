@@ -21,15 +21,17 @@ import { useCancelBooking } from "@/hooks/use-cancel-booking";
  * On success the list query is invalidated (see useCancelBooking), which flips the booking to a
  * "Cancelled" chip and drops its Cancel button.
  */
+interface CancelBookingDialogProps {
+  bookingId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function CancelBookingDialog({
   bookingId,
   open,
   onOpenChange,
-}: {
-  bookingId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: CancelBookingDialogProps) {
   const t = useTranslations("Bookings.cancel");
   const reasonId = useId();
   const [reason, setReason] = useState("");

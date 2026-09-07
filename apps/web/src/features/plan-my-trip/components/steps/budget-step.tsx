@@ -11,13 +11,12 @@ import { StepLegend } from "../step-legend";
  * grid of four price tiers; every card shares the same "per person/week" description. 2-up on md+
  * and stacked below. `id` is the value stored in the URL.
  */
-export function BudgetStep({
-  value,
-  onChange,
-}: {
+interface BudgetStepProps {
   value: Budget | null;
   onChange: (value: Budget) => void;
-}) {
+}
+
+export function BudgetStep({ value, onChange }: BudgetStepProps) {
   const t = useTranslations("PlanMyTrip.steps.budget");
   const perWeek = t("perPersonWeek");
 

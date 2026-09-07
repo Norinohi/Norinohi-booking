@@ -11,8 +11,9 @@ import { ORPCError } from "@orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
-import { type Path, useFormContext } from "react-hook-form";
+import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createHoldMutationOptions } from "../api/queries";
@@ -56,12 +57,48 @@ const REVIEW_INDEX = STEPS.findIndex(({ id }) => id === "reviewAndBook");
  * `multiple={false}` also means the open step cannot be toggled shut — one is always
  * expanded, except after the last Continue.
  */
+/*
+ * The open step, in the URL rather than in component state.
+ *
+ * Held in `useState` the wizard had one address for four screens: Back left checkout entirely
+ * instead of stepping back, a refresh dropped the visitor on Guest Details with their answers
+ * still in the form, and a step could not be linked to or reopened from history.
+ *
+ * `clearOnDefault` keeps the first step out of the query string, so arriving at checkout still
+ * reads `?quoteId=...` and only a step somebody actually moved to is written down.
+ */
+const stepParser = parseAsStringLiteral(STEPS.map(({ id }) => id))
+  .withDefault(STEPS[0].id)
+  .withOptions({ clearOnDefault: true, history: "push" });
+
 export default function BookingSteps() {
   const t = useTranslations("Booking");
-  const { trigger, getValues, setValue } = useFormContext<BookingValues>();
+  const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
+  /*
+   * Both consents, watched rather than read, because Confirm is disabled until they are given
+   * and a disabled button has to re-enable the moment the second box is ticked.
+   *
+   * The schema already refused to submit without them, but refusing on click is not the same as
+   * not offering: the button was live, and the only feedback was two lines of red after pressing
+   * it. Agreeing to the operator's terms is the thing the booking rests on legally, so the
+   * action stays unavailable until it has actually happened.
+   */
+  const consents = useWatch({ control, name: "reviewAndBook" });
+  const consented = Boolean(consents?.terms && consents.cancellation);
   const { listing, quote, extras, bookingId, setBookingId, setExtras } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
-  const [open, setOpen] = useState<Step | null>(STEPS[0].id);
+  const [openStep, setOpenStep] = useQueryState("step", stepParser);
+  /*
+   * Null is a real state the URL cannot hold: after the last Continue every step is shut. It is
+   * the end of the flow rather than a place to link to, so it lives beside the URL instead.
+   */
+  const [allClosed, setAllClosed] = useState(false);
+  const open: Step | null = allClosed ? null : openStep;
+
+  function setOpen(next: Step | null) {
+    setAllClosed(next === null);
+    if (next !== null) void setOpenStep(next);
+  }
   const [completed, setCompleted] = useState<Set<Step>>(new Set());
   /* Extras has been shown once in answer to a Confirm that skipped it — see `confirmBooking`. */
   const [extrasPrompted, setExtrasPrompted] = useState(false);
@@ -284,6 +321,8 @@ export default function BookingSteps() {
                     <Check className="size-5" />
                   </span>
                 ) : (
+                  // 22px has no typography token: it falls between h6 (20) and h5 (24).
+                  // oxlint-disable-next-line design-tokens/no-arbitrary-size
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[22px] leading-[1.3] font-semibold text-foreground">
                     {index + 1}
                   </span>
@@ -300,13 +339,14 @@ export default function BookingSteps() {
               {!ownsFooter && (
                 <>
                   <span aria-hidden className="block h-px w-full bg-border" />
-                  <div className="p-5">
+                  <div className="flex flex-col gap-2 p-5">
                     <Button
                       variant="brand"
                       className="h-13 w-full"
                       loading={step === "reviewAndBook" && createHold.isPending}
-                      /* The booking exists; this step is now a record of it, not an action. */
-                      disabled={step === "reviewAndBook" && Boolean(bookingId)}
+                      /* Either the booking already exists, so this step is a record of it rather
+                         than an action, or the consents it rests on have not been given. */
+                      disabled={step === "reviewAndBook" && (Boolean(bookingId) || !consented)}
                       onClick={() =>
                         void (step === "reviewAndBook"
                           ? confirmBooking()
@@ -315,6 +355,12 @@ export default function BookingSteps() {
                     >
                       {step === "reviewAndBook" && bookingId ? t("booked") : t(ctaFor(step, cta))}
                     </Button>
+                    {/* A disabled control with no reason beside it reads as a broken page. */}
+                    {step === "reviewAndBook" && !bookingId && !consented ? (
+                      <p className="text-center text-sm leading-[1.3] text-natural-500">
+                        {t("consentRequired")}
+                      </p>
+                    ) : null}
                   </div>
                 </>
               )}

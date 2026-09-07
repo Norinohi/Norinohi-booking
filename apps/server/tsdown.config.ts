@@ -14,6 +14,7 @@ export default defineConfig({
     "./src/publish-listings.ts",
     "./src/repair-bm-ids.ts",
     "./src/rebuild-search-docs.ts",
+    "./src/confirm-one-period.ts",
     "./src/refresh-fx.ts",
   ],
   format: "esm",

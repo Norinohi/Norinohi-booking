@@ -17,15 +17,13 @@ function summarizeRecommendation(recommendation: PlannerRecommendation) {
   };
 }
 
-export function ConsultationForm({
-  answers,
-  recommendation,
-  onSuccess,
-}: {
+interface ConsultationFormProps {
   answers: PlannerAnswers;
   recommendation: PlannerRecommendation;
   onSuccess: () => void;
-}) {
+}
+
+export function ConsultationForm({ answers, recommendation, onSuccess }: ConsultationFormProps) {
   const t = useTranslations("PlanMyTrip.result.consultationDialog");
 
   return (

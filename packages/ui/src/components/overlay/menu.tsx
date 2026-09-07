@@ -51,7 +51,7 @@ function Menu({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="menu"
       className={cn(
-        "flex min-w-[200px] flex-col gap-2 rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)]",
+        "flex min-w-50 flex-col gap-2 rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)]",
         className,
       )}
       {...props}

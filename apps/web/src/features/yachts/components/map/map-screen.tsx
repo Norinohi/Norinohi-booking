@@ -457,7 +457,7 @@ export default function MapScreen() {
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="px-4 py-3 md:px-13.5 2xl:px-[70px]">
+      <div className="px-4 py-3 md:px-13.5 2xl:px-17.5">
         <Link href="/yachts" className={buttonVariants({ variant: "subtle", size: "sm" })}>
           <ArrowLeft />
           {t("backToSearch")}
@@ -555,13 +555,13 @@ export default function MapScreen() {
           ) : null}
         </MapCanvas>
 
-        <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-[70px] 2xl:pb-[70px]">
+        <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
           <div
             className={cn(
               "flex flex-col gap-4 transition-opacity duration-200 md:flex-row md:items-start md:gap-5 2xl:contents",
               // Popup covers these on phones (< 768px): fade out and disable there, keep them from md up.
               popupOpen &&
-                "pointer-events-none opacity-0 [&_*]:pointer-events-none md:pointer-events-auto md:opacity-100 md:[&_*]:pointer-events-auto",
+                "pointer-events-none opacity-0 **:pointer-events-none md:pointer-events-auto md:opacity-100 md:**:pointer-events-auto",
             )}
           >
             <FiltersPanel
@@ -605,7 +605,7 @@ export default function MapScreen() {
             </div>
 
             {chips.length > 0 && (
-              <div className="flex flex-wrap items-start justify-end gap-2 md:min-w-0 md:flex-1 2xl:order-last 2xl:justify-start [&>*]:pointer-events-auto">
+              <div className="flex flex-wrap items-start justify-end gap-2 md:min-w-0 md:flex-1 2xl:order-last 2xl:justify-start *:pointer-events-auto">
                 {chips.map((chip) => (
                   <Chip
                     key={chip.id}

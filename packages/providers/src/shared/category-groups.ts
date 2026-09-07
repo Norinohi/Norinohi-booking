@@ -40,6 +40,34 @@ const CATEGORY_GROUPS = new Map([
   ["nausys:102", "Gulet"],
   ["nausys:841932", "Trimaran"],
   ["nausys:100460", "Jet Ski"],
+
+  /*
+   * Booking Manager names the same hulls differently, and until these rows existed every one
+   * of them arrived unclassified and became a facet of its own beside the NauSYS equivalent:
+   * "Motoryacht" (414 boats) next to "Motor yacht" (264), "Houseboat" (301) next to
+   * "House boat" (15), with identical copy and the same stock photo on both cards.
+   *
+   * Its codes are slugs rather than ids, because the REST catalogue states a category only by
+   * name. Vendor renames therefore land here as a new unclassified code rather than a silently
+   * re-pointed one, which is the safer of the two failures.
+   */
+  ["booking_manager:catamaran", "Catamaran"],
+  ["booking_manager:power-catamaran", "Catamaran"],
+
+  ["booking_manager:sail-boat", "Sailing yacht"],
+  ["booking_manager:wooden-boat", "Sailing yacht"],
+
+  ["booking_manager:motoryacht", "Motor yacht"],
+  ["booking_manager:motor-boat", "Motor yacht"],
+  ["booking_manager:motor-cruiser", "Motor yacht"],
+  ["booking_manager:cruiser", "Motor yacht"], // Three boats, all titled "… Motoryacht"
+
+  ["booking_manager:motorsailer", "Motorsailer"],
+  ["booking_manager:rubber-boat", "Motorsailer"], // Follows nausys:115791; both are arguably wrong
+
+  ["booking_manager:houseboat", "House boat"],
+  ["booking_manager:gulet", "Gulet"],
+  ["booking_manager:trimaran", "Trimaran"],
 ]);
 
 /** The marketplace-facing category for a vendor category code, or null when unclassified. */

@@ -47,7 +47,7 @@ function TabsList({ className, children, ...props }: TabsPrimitive.List.Props) {
       {variant === "lined" && (
         <TabsPrimitive.Indicator
           data-slot="tabs-indicator"
-          className="absolute bottom-0 left-0 h-0.5 w-[var(--active-tab-width)] translate-x-[var(--active-tab-left)] rounded-t-sm bg-brand transition-all duration-200"
+          className="absolute bottom-0 left-0 h-0.5 w-(--active-tab-width) translate-x-(--active-tab-left) rounded-t-sm bg-brand transition-all duration-200"
         />
       )}
     </TabsPrimitive.List>
@@ -62,9 +62,9 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
       className={cn(
         "cursor-pointer whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50",
         variant === "lined" &&
-          "px-0 pt-4 pb-3 text-sm font-medium text-natural-500 data-[active]:font-bold data-[active]:text-foreground",
+          "px-0 pt-4 pb-3 text-sm font-medium text-natural-500 data-active:font-bold data-active:text-foreground",
         variant === "segmented" &&
-          "rounded-md border border-transparent px-4 py-4 text-center text-base text-foreground data-[active]:border-brand data-[active]:bg-brand-50 data-[active]:text-brand",
+          "rounded-md border border-transparent px-4 py-4 text-center text-base text-foreground data-active:border-brand data-active:bg-brand-50 data-active:text-brand",
         className,
       )}
       {...props}

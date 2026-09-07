@@ -11,7 +11,17 @@
       "noExtras": "Keine ausgewählt",
       "boatPrice": "Bootspreis (voller Mietpreis)",
       "deposit": "Rückzahlbare Kaution",
-      "secondPayment": "2. Zahlung (fällig am: {date})",
+      "depositRefundable": "Rückzahlbar, von der Charterbasis einbehalten",
+      "schedule": {
+        "payNow": "jetzt zahlen",
+        "payAt": "fällig am {date}",
+        "payAtCheckIn": "beim Check-in am {date}",
+        "firstPayment": "1. Zahlung ({when})",
+        "fullPayment": "Gesamtzahlung ({when})",
+        "secondPayment": "2. Zahlung ({when})",
+        "extrasPayment": "Extras ({when})",
+        "depositNote": "Rückzahlbare Kaution ({when})"
+      },
       "totalPrice": "Gesamtpreis",
       "dueNow": "Jetzt fällig",
       "terms": "Ich akzeptiere die <b>AGB und den Chartervertrag</b>.",
@@ -422,6 +432,7 @@
       }
     },
     "booked": "Gebucht",
+    "consentRequired": "Bitte bestätigen Sie beide Kästchen oben, um die Buchung abzuschließen.",
     "saveAndContinue": "Speichern & weiter",
     "extrasSkipped": "Werfen Sie zuerst einen Blick auf die optionalen Extras – und bestätigen Sie dann."
   },
@@ -433,6 +444,7 @@
     },
     "extras": {
       "payAtCheckIn": "Zahlung beim Check-in",
+      "dueWithPrepayment": "Mit der Anzahlung fällig",
       "payNow": "In der Anzahlung enthalten",
       "includedInPrice": "Im Preis enthalten",
       "percentageOfCharter": "{percent}% des Charterpreises",
@@ -470,12 +482,16 @@
       "viewDetails": "Details ansehen",
       "imageAlt": "{name} vor Anker in {marina}",
       "openGallery": "Fotogalerie öffnen",
-      "priceFor": "Preis für {days, plural, one {# Tag} other {# Tage}}",
+      "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
+      "priceIndicative": "Charterpreis · Saisonminimum",
       "priceFromLabel": "Ab",
       "priceOnRequest": "Auf Anfrage",
       "priceUnavailable": "Nicht verfügbar",
       "perPerson": "{price} pro Person",
       "perPersonApprox": "~ {price} pro Person",
+      "perBerth": "{price} pro Person bei {berths} Kojen",
+      "perNight": "{price} pro Nacht",
+      "datesAlternative": "An Ihren Daten nicht verfügbar. Dieses Boot vermietet:",
       "prepayment": "Anzahlung bei Buchung: {amount}",
       "prepaymentInfo": "Dies ist der Teil des Charterpreises, der im Voraus gezahlt wird, um die Buchung zu sichern. Er wird auf den Gesamtpreis angerechnet; der Restbetrag ist vor dem Check-in fällig.",
       "securityDeposit": "Rückzahlbare Kaution: {amount}",
@@ -639,6 +655,7 @@
     "contactExpert": "Charter-Experten kontaktieren",
     "clearField": "{label} löschen",
     "clearSelection": "Auswahl löschen",
+    "andAbove": "{value}+",
     "unitAria": "Einheit für {label}",
     "sections": {
       "where": "Wohin?",
@@ -676,7 +693,9 @@
       "allCountries": "Alle Länder",
       "searchCountries": "Länder suchen...",
       "allRegions": "Alle Regionen",
+      "searchRegions": "Regionen suchen...",
       "allCompanies": "Alle Unternehmen",
+      "searchCompanies": "Firmen suchen...",
       "allMarinas": "Alle Marinas",
       "searchMarinas": "Marinas suchen...",
       "allBoats": "Alle Boote",
@@ -706,6 +725,7 @@
       "more": "{names} +{count}",
       "none": "—",
       "any": "beliebig",
+      "name": "Suche: {value}",
       "country": "Land: {value}",
       "sailingArea": "Segelrevier: {value}",
       "city": "Stadt: {value}",
@@ -761,13 +781,15 @@
       "heading": "Yachten nach Budget finden",
       "viewResults": "Ergebnisse anzeigen",
       "labels": {
-        "budget": "Budget",
+        "budget": "Budget pro Charter",
         "people": "Personen",
         "skipper": "Skipper",
         "destinations": "Reiseziele (optional)"
       },
       "options": {
         "any": "Beliebig",
+        "budgetUpTo": "Bis {to}",
+        "budgetFrom": "Ab {from}",
         "skipperYes": "Ja",
         "skipperNo": "Nein",
         "destinationsAll": "Alle Reiseziele"
@@ -868,7 +890,8 @@
       "previous": "Vorherige Reiseziele",
       "next": "Nächste Reiseziele",
       "seeAll": "Alle Reiseziele ansehen",
-      "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}"
+      "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}",
+      "yachtCount": "{count, plural, one {# Yacht} other {# Yachten}}"
     },
     "PopularYachts": {
       "heading": "Beliebte Yachten",
@@ -1108,6 +1131,7 @@
       },
       "experience": {
         "question": "Haben Sie Segelerfahrung?",
+        "subtitle": "Ein Skipper ist auf jedem Niveau möglich — das hier entscheidet nur, wer steuert.",
         "options": {
           "none": {
             "label": "Keine Erfahrung",
@@ -1125,7 +1149,7 @@
       },
       "tripVibe": {
         "question": "Welche Art von Reise suchen Sie?",
-        "subtitle": "Die Gruppengröße beeinflusst Yachttyp, Platz und den Gesamtpreis pro Person",
+        "subtitle": "Was Sie sich von der Woche erwarten, bestimmt Boot, Route und Tempo.",
         "options": {
           "adventure": {
             "label": "Abenteuer",
@@ -1169,7 +1193,7 @@
       },
       "budget": {
         "question": "Welches Budget fühlt sich angenehm an?",
-        "subtitle": "Ihr Reisestil bestimmt den Yachttyp, die Route und das Erlebnis an Bord.",
+        "subtitle": "Pro Person für eine Woche an Bord, damit es mit einem bekannten Urlaub vergleichbar ist.",
         "perPersonWeek": "pro Person/Woche",
         "options": {
           "low": {
@@ -1284,7 +1308,10 @@
       "pickUp": "Yachtübernahme",
       "dropOff": "Yachtrückgabe",
       "policies": "Storno- / Zahlungsbedingungen",
-      "license": "Segelschein erforderlich",
+      "securityDeposit": "Erstattbare Kaution",
+      "securityDepositNote": "Wird bei der Übernahme von der Charterbasis einbehalten und nach schadenfreier Rückgabe erstattet.",
+      "securityDepositInsured": "Reduziert sich auf {amount} mit der Kautionsversicherung der Basis.",
+      "license": "Segelschein",
       "pets": "Haustiere",
       "paymentMethods": "Vom Charterunternehmen akzeptierte Zahlungsmethoden",
       "marinaInfo": "Informationen zur Marina",
@@ -1327,9 +1354,10 @@
       "unavailable": "Diese Yacht hat keine verfügbaren Termine",
       "unavailableHint": "Fragen Sie uns nach anderen Terminen oder einer ähnlichen Yacht.",
       "slotRefused": "Diese Daten sind nicht buchbar. Bitte wählen Sie einen anderen Zeitraum.",
+      "searchedPeriodRefused": "{from} bis {to} ist für diese Yacht nicht verfügbar. Wählen Sie einen anderen Zeitraum oder die angezeigten Daten.",
       "loadFailed": "Der Preis für diese Buchung konnte nicht geladen werden.",
       "loadRetry": "Erneut versuchen",
-      "prepayment": "{percent}% Anzahlung für das Boot",
+      "prepayment": "{percent}% Anzahlung",
       "boatPrice": "Bootspreis",
       "boatPriceHint": "Voller Mietpreis",
       "deposit": "Erstattbare Kaution",
@@ -1339,14 +1367,16 @@
         "selectedExtras": "Ausgewählte Extras",
         "crew": "Crew"
       },
-      "payNow": "Anzahlung für das Boot (jetzt zahlen)",
+      "payNow": "Anzahlung (jetzt zahlen)",
       "payAt": "Zahlbar am: {date}",
       "payAtCheckIn": "Zahlbar beim Check-in: {date}",
       "firstPayment": "{amount} (1. Zahlung)",
+      "fullPayment": "{amount} (Gesamtzahlung)",
       "secondPayment": "{amount} (2. Zahlung)",
       "extrasPayment": "{amount} (Extras)",
       "depositNote": "+ {amount} (erstattbare Kaution)",
       "totalPrice": "Gesamtpreis",
+      "discountsHeading": "Bereits im Charterpreis oben enthalten",
       "dueNow": "Jetzt fällig",
       "payNowCta": "Jetzt {amount} zahlen",
       "requestQuote": "Angebot anfordern",
@@ -1457,7 +1487,8 @@
       "anyBoat": "Beliebiges Boot",
       "search": "Suchen",
       "noLocations": "Keine passenden Reiseziele",
-      "clearLocation": "Ort löschen"
+      "clearLocation": "Ort löschen",
+      "freeText": "Name, Modell oder Firma"
     },
     "paginationSummary": "{from}–{to} von {total}"
   },
@@ -1487,7 +1518,8 @@
       "titlePlain": "{boat} chartern",
       "metaSpecs": "{category} mit {cabins, plural, one {# Kabine} other {# Kabinen}} für bis zu {guests} Gäste.",
       "metaPlace": "Charter {crew} ab {place}.",
-      "metaPrice": "Ab {price} pro Woche.",
+      "metaPriceFrom": "Ab {price}.",
+      "metaPriceForDays": "{price} für {days, plural, one {# Tag} other {# Tage}}.",
       "metaCta": "Verfügbarkeit für Ihre Termine prüfen."
     },
     "Booking": {
@@ -1683,6 +1715,8 @@
   "Wishlist": {
     "title": "Ihre Merkliste",
     "back": "Zurück",
+    "saved": "Zur Merkliste hinzugefügt.",
+    "removed": "Von der Merkliste entfernt.",
     "emptyTitle": "Noch keine gemerkten Yachten",
     "emptyDescription": "Entdecken Sie Yachten und merken Sie sich Ihre Favoriten für später",
     "someUnavailable": "Einige Ihrer gemerkten Yachten sind nicht mehr verfügbar.",
@@ -3012,6 +3046,11 @@
         "legend": "Bevorzugter Anbieter",
         "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+      },
+      "nameSearch": {
+        "legend": "Freitextsuche",
+        "toggle": "Freitextfeld in der Suchleiste anzeigen",
+        "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht — Wort für Wort und in beliebiger Reihenfolge."
       },
       "save": "Anderungen speichern",
       "saving": "Wird gespeichert...",

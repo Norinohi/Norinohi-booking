@@ -64,7 +64,7 @@ export default function ProfileScreen() {
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
       <div className="px-4 py-6 md:px-13.5">
-        <div className="mx-auto grid max-w-349 gap-5 lg:grid-cols-[334px_minmax(0,1fr)] lg:items-start">
+        <div className="mx-auto grid max-w-349 gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={profile.name ?? profile.email}
             defaultActive="profile"

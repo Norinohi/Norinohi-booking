@@ -34,7 +34,7 @@ function CardMedia({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-media"
       className={cn(
-        "relative aspect-[4/3] overflow-hidden [&_img]:size-full [&_img]:object-cover",
+        "relative aspect-4/3 overflow-hidden [&_img]:size-full [&_img]:object-cover",
         className,
       )}
       {...props}

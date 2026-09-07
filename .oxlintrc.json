@@ -5,6 +5,10 @@
     {
       "name": "anti-slop",
       "specifier": "./tools/oxlint/anti-slop/index.ts"
+    },
+    {
+      "name": "design-tokens",
+      "specifier": "./tools/oxlint/design-tokens/index.ts"
     }
   ],
   "categories": {
@@ -25,12 +29,19 @@
     "anti-slop/no-unknown-type-aliases": "error",
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
-    "anti-slop/require-safety-comment-for-type-assertion": "error"
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "design-tokens/no-arbitrary-size": "error"
   },
   "env": {
     "builtin": true
   },
   "overrides": [
+    {
+      "files": ["**/*.stories.tsx"],
+      "rules": {
+        "design-tokens/no-arbitrary-size": "off"
+      }
+    },
     {
       "files": ["packages/providers/src/shared/errors.ts"],
       "rules": {

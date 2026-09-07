@@ -80,6 +80,8 @@ export default function Footer({ year }: { year: number }) {
           {/* Brand */}
           <div className="flex w-full flex-col items-center gap-4 xl:w-auto xl:items-start xl:gap-6">
             <div className="flex w-full flex-col gap-4">
+              {/* The wordmark is a logo, not a heading: it holds its size at every density. */}
+              {/* oxlint-disable-next-line design-tokens/no-arbitrary-size */}
               <span className="text-[28px] font-bold leading-[1.2] whitespace-nowrap">
                 YachtSkanner
               </span>
@@ -108,7 +110,7 @@ export default function Footer({ year }: { year: number }) {
             {COLUMNS.map((col) => (
               <div
                 key={col.title}
-                className="flex flex-col gap-2 md:flex-1 md:gap-4 xl:w-[216px] xl:flex-none"
+                className="flex flex-col gap-2 md:flex-1 md:gap-4 xl:w-54 xl:flex-none"
               >
                 <span className="text-lg leading-[1.4] md:text-xl">
                   {t(`columns.${col.title}`)}

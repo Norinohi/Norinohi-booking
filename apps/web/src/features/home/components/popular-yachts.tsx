@@ -88,7 +88,7 @@ export default function PopularYachts() {
             viewport={VIEWPORT}
             className="mb-8 flex flex-col items-center gap-4 md:flex-row md:justify-between xl:mb-10"
           >
-            <h2 className="text-[40px] leading-[1.1] font-medium md:text-[50px]">{t("heading")}</h2>
+            <h2 className="text-h2">{t("heading")}</h2>
             <CarouselNav previousLabel={t("previous")} nextLabel={t("next")} />
           </motion.div>
 

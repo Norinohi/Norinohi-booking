@@ -54,7 +54,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "h-[46px] border-b border-natural-50 px-5 py-3.5 align-middle text-base text-foreground",
+        "h-11.5 border-b border-natural-50 px-5 py-3.5 align-middle text-base text-foreground",
         className,
       )}
       {...props}

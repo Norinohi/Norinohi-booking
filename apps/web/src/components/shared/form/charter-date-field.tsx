@@ -5,11 +5,12 @@ import {
   combinedCanCheckIn,
   combinedCanCheckOut,
   combinedLegalCheckOuts,
+  firstCombinedCheckInDay,
   type OfferConstraints,
 } from "@yacht-charter/api/lib/offer-availability";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import DatePicker from "@/components/shared/form/date-picker";
 import { useCharterPeriodLabel } from "@/hooks/use-charter-period";
@@ -29,15 +30,7 @@ export type CharterPeriod = { checkIn: string; checkOut: string };
  * is no period to price, and the predicate has to narrow to the check-outs that are legal
  * for the check-in already chosen. Only a complete, legal range reaches `onSelect`.
  */
-export default function CharterDateField({
-  offers,
-  value,
-  onSelect,
-  disabled = false,
-  placeholder,
-  className,
-  triggerClassName,
-}: {
+interface CharterDateFieldProps {
   offers: readonly OfferConstraints[];
   /** The committed period, normally the quote's. Resets whatever was half-picked. */
   value: CharterPeriod | undefined;
@@ -46,7 +39,17 @@ export default function CharterDateField({
   placeholder: string;
   className?: string;
   triggerClassName?: string;
-}) {
+}
+
+export default function CharterDateField({
+  offers,
+  value,
+  onSelect,
+  disabled = false,
+  placeholder,
+  className,
+  triggerClassName,
+}: CharterDateFieldProps) {
   const [pending, setPending] = useState<DateRange | undefined>(undefined);
   const [open, setOpen] = useState(false);
   /* Read once per mount: a clock read during render would differ between server and client. */
@@ -72,6 +75,16 @@ export default function CharterDateField({
   const range = pending?.from && !pending.to ? pending : committed;
 
   const checkIn = pending?.from && !pending.to ? dayFromNative(pending.from) : null;
+
+  /*
+   * The month the grid opens on before anything is picked: the first charter anybody would
+   * sell, not today. A boat whose season opens in January was showing December's grid with
+   * every cell greyed out, which reads as "fully booked" rather than "starts later" - and the
+   * visitor had to guess how many times to press the arrow. Only when nothing is selected;
+   * a committed period is its own answer to which month to show.
+   */
+  const firstCheckIn = useMemo(() => firstCombinedCheckInDay(today, offers), [today, offers]);
+  const openMonth = range ? undefined : firstCheckIn;
 
   function isDayDisabled(date: Date): boolean {
     const day = dayFromNative(date);
@@ -120,6 +133,8 @@ export default function CharterDateField({
         value={range}
         onValueChange={handleChange}
         disabled={disabled ? alwaysDisabled : isDayDisabled}
+        defaultMonth={openMonth ? dayToNative(openMonth) : undefined}
+        hint={periodLabel ?? undefined}
         open={open}
         onOpenChange={setOpen}
         dateFormat="dayShort"

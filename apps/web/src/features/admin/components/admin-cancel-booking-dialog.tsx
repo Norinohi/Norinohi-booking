@@ -34,17 +34,19 @@ import type { BookingAdminDetail } from "../types";
  * money on a week we are still being billed for. The toast is the immediate signal; the banner
  * on the screen behind it is the one that survives a reload.
  */
+interface AdminCancelBookingDialogProps {
+  booking: BookingAdminDetail;
+  providerLabel: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function AdminCancelBookingDialog({
   booking,
   providerLabel,
   open,
   onOpenChange,
-}: {
-  booking: BookingAdminDetail;
-  providerLabel: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: AdminCancelBookingDialogProps) {
   const t = useTranslations("Admin.StaffBooking.cancel");
   const reasonId = useId();
   const [reason, setReason] = useState("");

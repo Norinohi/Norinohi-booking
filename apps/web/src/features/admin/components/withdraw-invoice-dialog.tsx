@@ -23,15 +23,17 @@ import type { InvoiceRow } from "../types";
  * the reason is required: it is the only record of why a held yacht was given back, and it is
  * what a colleague reads when the customer calls a week later.
  */
+interface WithdrawInvoiceDialogProps {
+  invoice: InvoiceRow | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function WithdrawInvoiceDialog({
   invoice,
   open,
   onOpenChange,
-}: {
-  invoice: InvoiceRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: WithdrawInvoiceDialogProps) {
   const t = useTranslations("Admin.Payments.withdraw");
   const reasonId = useId();
   const [reason, setReason] = useState("");

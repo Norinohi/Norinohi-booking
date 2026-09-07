@@ -56,7 +56,7 @@ export default function DuplicatePhotos({
 
   if (photos.length === 0) {
     return (
-      <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-md bg-natural-50 text-natural-500">
+      <div className="flex aspect-4/3 w-full flex-col items-center justify-center gap-2 rounded-md bg-natural-50 text-natural-500">
         <ImageOff className="size-6" />
         <span className="text-sm font-medium">{t("noImage")}</span>
       </div>
@@ -65,7 +65,7 @@ export default function DuplicatePhotos({
 
   return (
     <Carousel className="flex flex-col gap-3">
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-natural-50">
+      <div className="relative aspect-4/3 w-full overflow-hidden rounded-md bg-natural-50">
         <CarouselViewport>
           {photos.map((photo, index) => (
             <CarouselSlide key={`${photo.url}-${index}`}>
@@ -95,7 +95,7 @@ export default function DuplicatePhotos({
       {thumbs ? (
         <CarouselThumbs listClassName="gap-2" itemClassName="basis-1/5 rounded-md">
           {photos.map((photo, index) => (
-            <div key={`${photo.url}-thumb-${index}`} className="relative aspect-[4/3] w-full">
+            <div key={`${photo.url}-thumb-${index}`} className="relative aspect-4/3 w-full">
               <Image src={photo.url} alt="" fill sizes="80px" className="object-cover" />
             </div>
           ))}

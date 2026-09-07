@@ -17,14 +17,14 @@ export function toSortValue(value: string | null): SortValue {
   return SORT_OPTIONS.find((option) => option === value) ?? "recommended";
 }
 
-export type ResultsHeaderProps = {
+export interface ResultsHeaderProps {
   chips: FilterChip[];
   onRemoveChip: (chip: FilterChip) => void;
   total: number;
   sort: SortValue;
   onSortChange: (sort: SortValue) => void;
   className?: string;
-};
+}
 
 export default function ResultsHeader({
   chips,

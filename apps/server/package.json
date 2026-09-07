@@ -19,6 +19,7 @@
     "seed:facets": "node dist/seed-facets.mjs",
     "publish:listings": "node dist/publish-listings.mjs",
     "rebuild:search-docs": "node dist/rebuild-search-docs.mjs",
+    "confirm:period": "node dist/confirm-one-period.mjs",
     "refresh:fx": "node dist/refresh-fx.mjs"
   },
   "dependencies": {

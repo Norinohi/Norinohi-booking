@@ -21,13 +21,12 @@ import { geocodePlaces, type GeocodeResult } from "@/lib/mapbox-geocode";
 const DEBOUNCE_MS = 300;
 const MIN_QUERY = 2;
 
-export default function PlaceSearch({
-  proximity,
-  onPick,
-}: {
+interface PlaceSearchProps {
   proximity: { lat: number; lng: number } | null;
   onPick: (place: GeocodeResult) => void;
-}) {
+}
+
+export default function PlaceSearch({ proximity, onPick }: PlaceSearchProps) {
   const t = useTranslations("Admin.Routes.stops.search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);

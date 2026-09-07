@@ -11,13 +11,12 @@ import { StepLegend } from "../step-legend";
  * Single-select grid of five trip vibes, each with an emoji badge. Five cards fill the 2-up grid
  * as 2 + 2 + 1 (the last sits in the trailing cell, no full-width span). `id` is stored in the URL.
  */
-export function TripVibeStep({
-  value,
-  onChange,
-}: {
+interface TripVibeStepProps {
   value: TripVibe | null;
   onChange: (value: TripVibe) => void;
-}) {
+}
+
+export function TripVibeStep({ value, onChange }: TripVibeStepProps) {
   const t = useTranslations("PlanMyTrip.steps.tripVibe");
 
   const choices: QuizChoice<TripVibe>[] = [

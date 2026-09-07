@@ -175,15 +175,13 @@ function toggle<T>(list: T[], item: T, present: boolean): T[] {
   return present ? [...list, item] : list.filter((entry) => entry !== item);
 }
 
-export default function DiscountDialog({
-  open,
-  onOpenChange,
-  discountId,
-}: {
+interface DiscountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   discountId?: string | null;
-}) {
+}
+
+export default function DiscountDialog({ open, onOpenChange, discountId }: DiscountDialogProps) {
   const t = useTranslations("Discounts");
   const isEdit = discountId != null;
   const [search, setSearch] = useState("");
@@ -271,7 +269,7 @@ export default function DiscountDialog({
         showClose
         mobileSheet
         backdropClassName="max-md:bg-transparent"
-        className="top-18 gap-0 overflow-y-auto rounded-none p-0 pb-0 shadow-none [scrollbar-width:thin] md:top-1/2 md:max-h-[calc(100dvh-53px)] md:max-w-[min(688px,calc(100vw-108px))] md:overflow-hidden md:rounded-2xl md:pb-0 md:shadow-[4px_4px_20px_rgba(0,0,0,0.1)] [&_[data-slot=dialog-close]]:top-2 [&_[data-slot=dialog-close]]:md:hidden"
+        className="top-18 gap-0 overflow-y-auto rounded-none p-0 pb-0 shadow-none scrollbar-thin md:top-1/2 md:max-h-[calc(100dvh-53px)] md:max-w-[min(688px,calc(100vw-108px))] md:overflow-hidden md:rounded-2xl md:pb-0 md:shadow-[4px_4px_20px_rgba(0,0,0,0.1)] **:data-[slot=dialog-close]:top-2 **:data-[slot=dialog-close]:md:hidden"
       >
         {/* Own header row: the mobile sheet centers the title under its X row and draws no
             band separators (973:99240); from md the title is left-aligned over a hairline. */}
@@ -297,7 +295,7 @@ export default function DiscountDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className="flex w-full flex-col md:min-h-0 md:flex-1"
             >
-              <div className="p-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:p-5 md:[scrollbar-width:thin]">
+              <div className="p-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:p-5 md:scrollbar-thin">
                 <div className="flex flex-col gap-4">
                   <div className="grid items-start gap-4 md:grid-cols-2">
                     <FormField
@@ -462,7 +460,7 @@ export default function DiscountDialog({
                             onChange={(event) => setSearch(event.target.value)}
                           />
                           {/* 48px rows on a 56px pitch (8px Figma gaps), 384px visible window. */}
-                          <div className="flex max-h-[384px] flex-col gap-2 overflow-y-auto [scrollbar-width:thin]">
+                          <div className="flex max-h-96 flex-col gap-2 overflow-y-auto scrollbar-thin">
                             {visibleYachts.map((option) => (
                               <label
                                 key={option.id}

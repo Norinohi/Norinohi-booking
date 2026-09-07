@@ -22,14 +22,7 @@ import DuplicatePhotos from "./duplicate-photos";
  * cannot be kept; the pair is still rejectable.
  */
 
-export default function DuplicateSide({
-  which,
-  side,
-  rows,
-  onKeep,
-  keepPending,
-  keepDisabled,
-}: {
+interface DuplicateSideProps {
   which: "a" | "b";
   side: Side;
   rows: ComparisonRow[];
@@ -37,7 +30,16 @@ export default function DuplicateSide({
   onKeep?: () => void;
   keepPending?: boolean;
   keepDisabled?: boolean;
-}) {
+}
+
+export default function DuplicateSide({
+  which,
+  side,
+  rows,
+  onKeep,
+  keepPending,
+  keepDisabled,
+}: DuplicateSideProps) {
   const t = useTranslations("Admin.Duplicates");
   const tProviders = useTranslations("Admin.providers");
   const listing = side.listing;

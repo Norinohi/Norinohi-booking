@@ -173,7 +173,7 @@ export default function ChangePasswordDialog() {
               />
             </div>
 
-            <div className="flex w-full flex-col gap-2 [&>*]:w-full">
+            <div className="flex w-full flex-col gap-2 *:w-full">
               <Button
                 type="submit"
                 variant="brand"

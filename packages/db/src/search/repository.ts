@@ -5,6 +5,7 @@ import type * as schema from "../schema";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { FX_BASE_CURRENCY } from "../fx/rates";
 import { crewOptionsFor } from "./crew";
+import { MIN_LEAD_DAYS } from "./read-model";
 import {
   decodeSearchCursor,
   encodeSearchCursor,
@@ -35,7 +36,15 @@ import type {
   SuggestedRoute,
 } from "./types";
 
-type SearchRow = ListingSearchDoc;
+/* The column is selected only by the two searches that have a period to compare against. */
+type SearchRow = Omit<
+  ListingSearchDoc,
+  "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut"
+> & {
+  sellsRequestedPeriod?: boolean;
+  nearestCheckIn?: string | null;
+  nearestCheckOut?: string | null;
+};
 type FacetFilterKey = keyof ListingSearchInput;
 type FacetOptionRow = {
   label: string;
@@ -130,7 +139,7 @@ export async function searchListings(
 
   const limit = normalizedLimit(input.limit);
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}
+    select ${searchColumns}${sellsRequestedPeriodColumn(input)}
     from listing_search_doc doc
     where ${whereClause(input)}
       and ${cursorClause(input.sort, decodeSearchCursor(input.cursor))}
@@ -163,7 +172,7 @@ async function searchListingsByPage(
 
   const [rows, countRows] = await Promise.all([
     db.execute<SearchRow>(sql`
-      select ${searchColumns}
+      select ${searchColumns}${sellsRequestedPeriodColumn(input)}
       from listing_search_doc doc
       where ${filters}
       order by ${orderClause(input.sort)}
@@ -538,6 +547,16 @@ export async function getListingDetailByIdOrSlug(
       .filter((item) => item.crewRole !== null)
       .map((item) => pricedItem({ ...item, code: item.crewRole ?? item.code }, listing.currency)),
   ];
+  /* Crew the operator bills whatever the customer picks, which is what decides whether
+     bareboat is a choice this listing can honestly offer. */
+  const obligatoryCrewRoles = extras
+    .filter((item) => item.obligatory && item.crewRole !== null)
+    .map((item) => item.crewRole ?? "");
+  const crewOptions = crewOptionsFor(
+    listing.crewType,
+    crewRoles.map((role) => role.code),
+    obligatoryCrewRoles,
+  );
 
   return {
     ...listing,
@@ -552,13 +571,7 @@ export async function getListingDetailByIdOrSlug(
     includedAmenities,
     mandatoryExtras,
     optionalExtras,
-    crew: {
-      options: crewOptionsFor(
-        listing.crewType,
-        crewRoles.map((role) => role.code),
-      ),
-      roles: crewRoles,
-    },
+    crew: { options: crewOptions, roles: crewRoles },
     importantInformation: {
       charterCompany: listing.operator,
       yachtPickupAddress: placeLine(listing.baseName, listing.location, listing.country),
@@ -571,7 +584,10 @@ export async function getListingDetailByIdOrSlug(
       yachtPickup: { time: info?.checkInTime ?? null },
       yachtDropOff: { time: info?.checkOutTime ?? null },
       cancellationPaymentPolicies: "varies_by_selection",
-      sailingLicenseRequired: listing.crewType === "bareboat" ? "required" : "not_required",
+      /* Off the crew this listing can actually be taken with, not off the operator's label:
+         a hull whose skipper is an obligatory charge never sails without one, so telling its
+         customer to bring a licence asks for a document the charter does not need. */
+      sailingLicenseRequired: crewOptions.includes("bareboat") ? "required" : "not_required",
       /*
        * Absence of the flag is not a prohibition. NauSYS publishes no pets field at all, so
        * `pets_allowed` is false for the whole fleet, and the old copy turned "we were not told"
@@ -1230,6 +1246,140 @@ const engagementColumns = sql`
   ) as "viewedToday"
 `;
 
+/*
+ * Whether this listing would actually sell a charter starting on the day the visitor named.
+ *
+ * `whereClause` deliberately does not filter on the check-in weekday -- the reasoning is on
+ * `checkinRuleClause`, and filtering it turns a Wednesday search of 3,396 boats into 412. The
+ * cost of keeping them is that the card then captions a Saturday-to-Saturday hull with the
+ * visitor's Wednesday dates and links to them, and the detail page refuses the period with no
+ * explanation. So search still answers "free that week", and this column is what lets the card
+ * say the other half out loud: "and it starts on Saturdays".
+ *
+ * True for every row of an undated search, and for a listing whose offers publish no rule at
+ * all, matching how `checkinRuleClause` treats an absent rule: what the provider did not state
+ * is not a refusal.
+ */
+function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
+  const window = availabilityWindowFor(input);
+  if (!window) {
+    return sql`, true as "sellsRequestedPeriod", null::date as "nearestCheckIn", null::date as "nearestCheckOut"`;
+  }
+
+  const nights = nightsBetween(window);
+  return sql`, (
+    not exists (
+      select 1
+      from listing_offer o
+      join listing_checkin_rule rule on rule.listing_offer_id = o.id
+      where o.listing_id = doc.listing_id and o.status = 'active'
+    )
+    or exists (
+      select 1
+      from listing_offer o
+      join listing_checkin_rule rule on rule.listing_offer_id = o.id
+      where o.listing_id = doc.listing_id
+        and o.status = 'active'
+        and (rule.season_start is null or rule.season_start <= ${window.checkIn}::date)
+        and (rule.season_end is null or rule.season_end >= ${window.checkIn}::date)
+        and (rule.checkin_weekday is null
+             or rule.checkin_weekday = extract(dow from ${window.checkIn}::date))
+        and (rule.checkout_weekday is null
+             or rule.checkout_weekday = extract(dow from ${window.checkOut}::date))
+        and (rule.min_nights is null or rule.min_nights <= ${nights})
+        and (rule.max_nights is null or rule.max_nights >= ${nights})
+    )
+  ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
+}
+
+/*
+ * The charter this boat would sell closest to the dates asked for.
+ *
+ * `bookable_from` is the listing's first sellable charter anywhere in the horizon, which is the
+ * wrong answer to "not these dates, then when?" -- a September search offered a boat's November
+ * week as its alternative, two months from the trip somebody was planning.
+ *
+ * A candidate start is a free stretch's own beginning walked forward to the next weekday the
+ * rule turns over on, which is arithmetic rather than a scan over days: `d + ((wanted - dow(d) +
+ * 7) % 7)`. It has to fit inside that same stretch -- the stretch it was derived from, not any
+ * stretch the listing owns -- and start inside a published rate, so what comes back is free and
+ * on sale on the one offer that would sell it.
+ */
+function sellableStarts(nights: number, range: CandidateRange): SQL {
+  return sql`
+    select (
+      greatest(free.start_date, ${range.earliestStart}::date)
+      + ((rule.checkin_weekday - extract(dow from greatest(free.start_date, ${range.earliestStart}::date))::integer + 7) % 7)
+    )::date as start_date, free.end_date, o.id as offer_id
+    from listing_offer o
+    join listing_free_period free on free.listing_offer_id = o.id
+    join listing_checkin_rule rule on rule.listing_offer_id = o.id
+    where o.listing_id = doc.listing_id
+      and o.status = 'active'
+      and rule.checkin_weekday is not null
+      and free.end_date >= ${range.earliestStart}::date
+      and free.start_date <= ${range.latestStart}::date
+      and (rule.min_nights is null or rule.min_nights <= ${nights})
+      and (rule.max_nights is null or rule.max_nights >= ${nights})
+  `;
+}
+
+/*
+ * The charter has to sit inside the stretch it came from, and inside a rate somebody published.
+ *
+ * Correlated on the candidate's own offer rather than on the listing, for both reasons: it is
+ * the offer that would sell this charter, so its rate is the one that settles it, and keying on
+ * `listing_offer_id` lets the lookup ride `listing_price_period_uq` instead of scanning a
+ * million-row table by listing.
+ */
+function sellableFilter(nights: number): SQL {
+  return sql`
+      c.start_date + ${nights}::integer <= c.end_date
+      and exists (
+        select 1
+        from listing_price_period r3
+        where r3.listing_offer_id = c.offer_id
+          and r3.start_date <= c.start_date
+          and r3.end_date >= c.start_date
+      )`;
+}
+
+/*
+ * Whether anything sellable falls inside the horizon. `exists` rather than the `min` below,
+ * because this runs for every document the other filters admit and can stop at the first hit;
+ * the `min` only has to run for the rows a page actually returns.
+ */
+function hasSellableStart(nights: number, range: CandidateRange): SQL {
+  return sql`exists (
+    select 1
+    from (${sellableStarts(nights, range)}) c
+    where c.start_date <= ${range.latestStart}::date
+      and ${sellableFilter(nights)}
+  )`;
+}
+
+function nearestSellableColumns(
+  window: { checkIn: string; checkOut: string },
+  nights: number,
+  range: CandidateRange,
+): SQL {
+  /*
+   * Nearest to the day asked for, which the tolerance allows to fall either side of it -- the
+   * same reading `candidateRange` gives the free-period test. Ordered by distance rather than
+   * taken as a `min`, because the earliest start inside a fortnight's tolerance is not the one
+   * closest to the trip somebody described.
+   */
+  const nearest = sql`(
+    select c.start_date
+    from (${sellableStarts(nights, range)}) c
+    where c.start_date <= ${range.latestStart}::date
+      and ${sellableFilter(nights)}
+    order by abs(c.start_date - ${window.checkIn}::date), c.start_date
+    limit 1
+  )`;
+  return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
+}
+
 const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
@@ -1289,6 +1439,35 @@ const searchColumns = sql`
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;
 
+/**
+ * How many words of a free-text search are honoured.
+ *
+ * Every word costs its own `ilike` over the same text, and a search phrased in more than this many
+ * has already named the boat. The cap is what stops a pasted paragraph from turning one request
+ * into a scan the database pays for word by word.
+ */
+const MAX_FREE_TEXT_WORDS = 8;
+
+/**
+ * A free-text match over everything a card shows: the boat's own name, and the searchable text
+ * behind it, which carries the title, model, builder, charter company, base and the rest.
+ *
+ * Word by word, all of them required, in any order. Typing what is printed on the card
+ * ("Alegria Dufour 382 GL") has to find it, and so does half of it, and so does a model with a
+ * charter company after it — none of which a single substring over the whole phrase can do,
+ * because the columns spell those things in an order nobody typing is obliged to guess.
+ */
+function freeTextClause(text: string | undefined): SQL | null {
+  const words = text?.trim().split(/\s+/).slice(0, MAX_FREE_TEXT_WORDS) ?? [];
+  if (words.length === 0 || words[0] === "") return null;
+
+  const haystack = sql`concat_ws(' ', doc.name, doc.searchable_text)`;
+  return sql.join(
+    words.map((word) => sql`${haystack} ilike ${`%${word}%`}`),
+    sql` and `,
+  );
+}
+
 function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey[] = []): SQL {
   const skip = new Set<FacetFilterKey>(ignored);
   const parts: SQL[] = [sql`true`];
@@ -1303,6 +1482,10 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   }
   if (!skip.has("query") && input.query) {
     parts.push(sql`doc.searchable_text ilike ${`%${input.query}%`}`);
+  }
+  if (!skip.has("name")) {
+    const match = freeTextClause(input.name);
+    if (match) parts.push(match);
   }
   if (!skip.has("category") && input.category) parts.push(sql`doc.category = ${input.category}`);
   if (!skip.has("country") && input.country?.length) {
@@ -1467,6 +1650,24 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      * (offer, start_date, end_date) index can serve them. `greatest`/`least` over the columns
      * reads closer to the intent but is opaque to the planner.
      */
+    /*
+     * A charter this listing would actually sell, near the dates asked for.
+     *
+     * Free and sellable are different questions, and the free-period test alone answers only
+     * the first: a hull whose season opens in November is free all September, because nobody
+     * books a boat that is not on sale. 935 of 3,386 results for one mid-September week were
+     * in that state, shown with their November rate against September dates.
+     *
+     * Bounded by the tolerance the visitor stated, not by a horizon invented here. "On day"
+     * means that day: a boat that turns around on Saturdays is not an answer to a Wednesday,
+     * and shifting it three days anyway is the Date Flexibility control making its own
+     * decision. The same bound already governs the free-period test through `candidateRange`,
+     * so a listing cannot pass one and fail the other.
+     *
+     * Unbounded, this is what offered a September search a November week.
+     */
+    parts.push(hasSellableStart(windowNights, range));
+
     parts.push(sql`exists (
       select 1
       from listing_offer o
@@ -1610,12 +1811,40 @@ function orderClause(sort: SearchSort = "recommended"): SQL {
   }
 }
 
+/**
+ * `nightlyPriceValue` in the units the keyset cursor compares.
+ *
+ * It has to agree with the SQL to the unit: the cursor is the last row's sort value, and a page
+ * boundary computed from a different number either skips rows or serves them twice. Postgres
+ * `round(numeric)` and `Math.round` both go half away from zero, and every figure here is
+ * positive, so the two land on the same integer.
+ */
+export function nightlyPriceOf(
+  item: Pick<ListingSearchDoc, "priceFromMinorEur" | "priceIsFrom" | "bookableFrom" | "bookableTo">,
+): number | null {
+  if (item.priceFromMinorEur === null) return null;
+
+  const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const sellable = !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
+
+  const nights =
+    sellable && item.bookableFrom && item.bookableTo
+      ? Math.round(
+          (Date.parse(`${item.bookableTo}T00:00:00.000Z`) -
+            Date.parse(`${item.bookableFrom}T00:00:00.000Z`)) /
+            86_400_000,
+        )
+      : ASSUMED_PRICED_NIGHTS;
+
+  return Math.round(item.priceFromMinorEur / Math.max(nights, 1));
+}
+
 function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): SearchCursor {
   switch (sort) {
     case "price-asc":
-      return { value: item.priceFromMinorEur ?? NULL_PRICE_ASC, listingId: item.listingId };
+      return { value: nightlyPriceOf(item) ?? NULL_PRICE_ASC, listingId: item.listingId };
     case "price-desc":
-      return { value: item.priceFromMinorEur ?? NULL_PRICE_DESC, listingId: item.listingId };
+      return { value: nightlyPriceOf(item) ?? NULL_PRICE_DESC, listingId: item.listingId };
     case "newest":
       return { value: item.yearBuilt ?? NULL_YEAR_DESC, listingId: item.listingId };
     case "rating":
@@ -1659,27 +1888,14 @@ function paginationFor(input: {
   };
 }
 
-/*
- * The cheapest listing in a facet group, given as its own published price and currency.
- *
- * Two aggregates sharing one order, rather than min(price) beside min(currency). Those were
- * independent: the number came from whichever listing held the smallest integer and the symbol
- * from whichever currency sorted first, so British Virgin Islands rendered "From EUR 1,969" off
- * a boat priced USD 1,969.
- *
- * The order is the converted column, so cheapest means cheapest rather than smallest-integer.
- * What is displayed is still the published pair, so the card shows what the operator advertises.
- * A group holding nothing comparable falls through to its own cheapest published amount, which
- * is the right answer there: nothing to compare means the group is in one currency.
- */
-const facetPriceOrder = sql`order by
-  doc.price_from_minor_eur asc nulls last,
-  doc.price_from_minor asc nulls last,
-  doc.listing_id asc`;
-
+/* Destination prices share the catalogue's EUR comparison currency. Missing FX or a
+ * non-positive amount is not a price: keep the destination but omit its price label. */
+const facetComparablePrice = sql`case when doc.currency = ${FX_BASE_CURRENCY}
+  then doc.price_from_minor else doc.price_from_minor_eur end`;
 const facetPriceColumns = sql`
-      (array_agg(doc.price_from_minor ${facetPriceOrder}))[1] as "priceFromMinor",
-      (array_agg(doc.currency ${facetPriceOrder}))[1] as currency`;
+      min(${facetComparablePrice}) filter (where ${facetComparablePrice} > 0)
+        as "priceFromMinor",
+      ${FX_BASE_CURRENCY}::text as currency`;
 
 async function listFacetOptions(
   db: NodePgDatabase<typeof schema>,
@@ -1690,12 +1906,12 @@ async function listFacetOptions(
 ): Promise<ListingFacetOption[]> {
   const rows = await db.execute<FacetOptionRow>(sql`
     select
-      ${expression} as label,
+      ${modalLabel(expression)} as label,
       count(*)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     where ${whereClause(input, ignored)}
       and ${expression} is not null
-    group by label
+    group by ${normalizedSql(expression)}
     order by label asc
   `);
 
@@ -1708,14 +1924,14 @@ async function listEquipmentFacetOptions(
 ): Promise<ListingFacetOption[]> {
   const rows = await db.execute<FacetOptionRow>(sql`
     select
-      amenity.value as label,
+      ${modalLabel(sql`amenity.value`)} as label,
       count(distinct doc.listing_id)::integer as count,${facetPriceColumns}
     from listing_search_doc doc
     cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
     where ${whereClause(input, ["equipment"])}
       and amenity.value is not null
-    group by amenity.value
-    order by amenity.value asc
+    group by ${normalizedSql(sql`amenity.value`)}
+    order by label asc
   `);
 
   return decorateFacetOptions(db, rows.rows, "equipment", input.locale);
@@ -1853,17 +2069,59 @@ function isSelectableExtra(source: string, kind: string): boolean {
  * each variant is a separate dictionary entry, and one of them missing a locale would split a
  * fee back into the several rows this exists to merge.
  */
-function foldFeeVariants(
+/**
+ * The discriminators a vendor puts on one fee to publish it once per charter year and once per
+ * charter length. Stripped from the fold key so the variants meet; everything else is kept.
+ *
+ * Deliberately not parentheticals, and not a bare trailing number. A tourist tax filed as
+ * "(Adults)", "(kids 12- 18 years old)" and "(kids up to 12 years)" is three real charges on one
+ * booking, and "Gas (First 31.7) 2" through "8" is a ladder nobody here can read. Folding those
+ * would hide money rather than stop double-counting it.
+ */
+const FEE_VARIANT_TOKENS: RegExp[] = [
+  /\b20\d{2}\b/g,
+  /\b\d{2}\s*\/\s*\d{2}\b/g,
+  /\b\d+\s*(?:weeks?|days?|nights?)\b/gi,
+  /\b(?:one|two|three)\s+(?:weeks?|days?|nights?)\b/gi,
+];
+
+function withoutVariantTokens(label: string): string {
+  return FEE_VARIANT_TOKENS.reduce((text, token) => text.replace(token, " "), label)
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
+ * What two obligatory lines have to share to be one fee.
+ *
+ * Punctuation and case go too, which is what lets "Transit log" meet "Transitlog" — the same
+ * 250 euro charge filed twice by one operator.
+ */
+export function feeVariantKey(label: string): string {
+  return withoutVariantTokens(label)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+export function foldFeeVariants(
   items: (Parameters<typeof pricedItem>[0] & { sourceLabel: string })[],
   fallbackCurrency: string | null,
 ): ListingPricedItem[] {
   const byLabel = new Map<string, ListingPricedItem>();
+  /* Kept per group so a fold across differing names can drop the discriminator from the label
+     it shows, while a group whose names already matched keeps the vendor's wording untouched. */
+  const sourceLabels = new Map<string, Set<string>>();
 
   for (const item of items) {
+    const key = feeVariantKey(item.sourceLabel);
     const next = pricedItem(item, fallbackCurrency);
-    const seen = byLabel.get(item.sourceLabel);
+    const names = sourceLabels.get(key) ?? new Set<string>();
+    names.add(item.sourceLabel);
+    sourceLabels.set(key, names);
+
+    const seen = byLabel.get(key);
     if (!seen) {
-      byLabel.set(item.sourceLabel, next);
+      byLabel.set(key, next);
       continue;
     }
 
@@ -1871,7 +2129,7 @@ function foldFeeVariants(
     const high = Math.max(seen.priceToMinor ?? seen.price.amountMinor, next.price.amountMinor);
     const cheaper = seen.price.amountMinor <= next.price.amountMinor ? seen : next;
     const dearer = cheaper === seen ? next : seen;
-    byLabel.set(item.sourceLabel, {
+    byLabel.set(key, {
       ...cheaper,
       price: { ...seen.price, amountMinor: low },
       priceToMinor: high > low ? high : null,
@@ -1886,7 +2144,18 @@ function foldFeeVariants(
     });
   }
 
-  return [...byLabel.values()];
+  /*
+   * A merged group is named without the discriminator it merged over: keeping "Transit Log 2026
+   * 1 week" on a 360-440 row names one of the three variants and prices all of them. Only where
+   * the vendor's own names actually differed — a group it filed under one name keeps that name,
+   * and a fee that never had a variant keeps its year.
+   */
+  return [...byLabel.entries()].map(([key, item]) => {
+    const names = sourceLabels.get(key);
+    if (!names || names.size < 2) return item;
+    const cleaned = withoutVariantTokens(item.label);
+    return cleaned.length > 0 ? { ...item, label: cleaned } : item;
+  });
 }
 
 function pricedItem(
@@ -2092,11 +2361,36 @@ function normalizedIn(column: SQL, values: string[]): SQL {
   )})`;
 }
 
+/**
+ * A label reduced to the letters and digits both sides of a filter can agree on.
+ *
+ * `&` becomes "and" first, matching `normalizedFilterValue` and `valueForLabel`. Without that
+ * step the two normalisations disagreed on every name carrying one: the facet offered "Wi-Fi &
+ * Internet" as `wi-fi-and-internet`, the filter reduced that to `wifiandinternet`, and the
+ * column reduced itself to `wifiinternet`. Forty options across the catalogue answered with
+ * nothing, 1,417 listings' worth of them behind that one equipment filter alone.
+ */
 function normalizedSql(value: SQL): SQL {
-  return sql`regexp_replace(lower(coalesce(${value}, '')), '[^a-z0-9]+', '', 'g')`;
+  return sql`regexp_replace(replace(lower(coalesce(${value}, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
 }
 
-function normalizedFilterValue(value: string): string {
+/**
+ * The spelling most of a facet group's listings use, for a group keyed on `normalizedSql`.
+ *
+ * Facets are grouped the way `normalizedIn` filters, or the two disagree about what one value
+ * is: "ACE Yachting" and "Ace Yachting" were two options carrying 13 listings each, and picking
+ * either answered with all 26. The same split put "Motor yacht" (400) beside "Motoryacht" (155)
+ * in the boat types, and a marina under both "Pula / Marina Polesana" and "Pula, Marina
+ * Polesana". One row per value now, counted the way the filter counts.
+ *
+ * `mode()` rather than `min()` because the label is what a person reads: the spelling the
+ * operator uses on most of its hulls beats whichever sorts first.
+ */
+function modalLabel(value: SQL): SQL {
+  return sql`mode() within group (order by ${value})`;
+}
+
+export function normalizedFilterValue(value: string): string {
   return value
     .trim()
     .toLowerCase()
@@ -2229,6 +2523,10 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
     ...row,
     gallery: row.gallery ?? [],
     amenities: row.amenities ?? [],
+    /* Absent on the lookups that carry no searched period, where there is nothing to contradict. */
+    sellsRequestedPeriod: row.sellsRequestedPeriod ?? true,
+    nearestCheckIn: row.nearestCheckIn ?? null,
+    nearestCheckOut: row.nearestCheckOut ?? null,
   };
 }
 
@@ -2250,6 +2548,57 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
  */
 const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
-const priceAscSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_ASC})`;
-const priceDescSortValue = sql`coalesce(doc.price_from_minor_eur, ${NULL_PRICE_DESC})`;
+/**
+ * The charter length assumed where the row names no sellable one.
+ *
+ * A week, matching `WEEKLY_RATE_DAYS` in the API's listing presenter, which falls back the same
+ * way on the same row. Restated here rather than imported: `packages/db` sits below
+ * `packages/api` and cannot reach up into it.
+ */
+const ASSUMED_PRICED_NIGHTS = 7;
+
+/**
+ * The nights `price_from_minor_eur` covers, and never zero.
+ *
+ * `pricedPeriodDays` in the API's listing presenter, as SQL. It has to be the same count: the
+ * card divides by that one to print a nightly rate, and the sort divides by this one to order
+ * the cards, so any disagreement puts the list in an order its own figures contradict.
+ *
+ * Two conditions, both from there. A "from" figure is the season's weekly floor whatever dates
+ * sit beside it, so its period is a week -- Casanova's EUR 41,000 floor advertises a single
+ * night and would otherwise have sorted as EUR 41,000 a night against its true EUR 5,857. And
+ * a period that has lapsed or fallen inside the lead time is dropped upstream, which leaves the
+ * same weekly fallback.
+ */
+const pricedNights = sql`greatest(
+  coalesce(
+    case
+      when not doc.price_is_from
+        and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
+      then doc.bookable_to - doc.bookable_from
+    end,
+    ${ASSUMED_PRICED_NIGHTS}
+  ),
+  1
+)`;
+
+/**
+ * Price sorted per night, not per charter.
+ *
+ * The stored figure prices whatever charter the listing was quoted for, and those are not the
+ * same length: a three-night charter at 819 EUR sorted above a week at 865, so the first page of
+ * "Price: low to high" opened with the most expensive boats on it -- 273 EUR a night above 124.
+ * Dividing by the nights the figure covers is the only basis on which the rows compare, because
+ * nothing here can restate one charter's price as another's (see the money lateral in
+ * `read-model.ts`: prorating a weekly band into three nights read 3,450 against a vendor quote
+ * of 1,621, so the arithmetic that would let us sort on a common length does not exist).
+ *
+ * `round` to a whole minor unit rather than carrying the fraction, so the keyset cursor can hold
+ * the sort value as the integer it compares -- `cursorFor` computes the identical number in JS.
+ * Both round half away from zero, and every value here is positive.
+ */
+const nightlyPriceValue = sql`round(doc.price_from_minor_eur::numeric / ${pricedNights})`;
+
+const priceAscSortValue = sql`coalesce(${nightlyPriceValue}, ${NULL_PRICE_ASC})`;
+const priceDescSortValue = sql`coalesce(${nightlyPriceValue}, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

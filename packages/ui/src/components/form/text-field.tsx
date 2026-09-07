@@ -19,7 +19,7 @@ import * as React from "react";
  * `type="password"` additionally gets a reveal toggle in the end slot, left of any `endIcon`.
  */
 const fieldVariants = cva(
-  "flex w-full gap-2 rounded-lg border bg-transparent p-3 text-foreground transition-colors [&_[data-slot=text-field-icon]]:text-natural-500 [&_[data-slot=text-field-icon]_svg]:size-6",
+  "flex w-full gap-2 rounded-lg border bg-transparent p-3 text-foreground transition-colors **:data-[slot=text-field-icon]:text-natural-500 [&_[data-slot=text-field-icon]_svg]:size-6",
   {
     variants: {
       status: {
@@ -28,7 +28,7 @@ const fieldVariants = cva(
         success: "border-positive-600 focus-within:border-positive-600",
       },
       multiline: {
-        true: "min-h-[173px] items-start",
+        true: "min-h-43.25 items-start",
         false: "items-center",
       },
     },

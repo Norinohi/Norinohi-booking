@@ -27,18 +27,20 @@ export type RouteTarget = { baseId: string | null; regionId: string | null };
 
 type Level = "base" | "region";
 
-export default function RouteTargetPicker({
-  value,
-  currentLabel,
-  onChange,
-  error,
-}: {
+interface RouteTargetPickerProps {
   value: RouteTarget;
   /** What the route already targets, so an edit shows its base even when the list has not got it. */
   currentLabel?: string;
   onChange: (next: RouteTarget) => void;
   error?: string;
-}) {
+}
+
+export default function RouteTargetPicker({
+  value,
+  currentLabel,
+  onChange,
+  error,
+}: RouteTargetPickerProps) {
   const t = useTranslations("Admin.Routes.target");
   const [countryId, setCountryId] = useState<string | null>(null);
   const [search, setSearch] = useState("");

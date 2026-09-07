@@ -29,4 +29,23 @@ describe("crewOptionsFor", () => {
   it("treats an operator that never said as bareboat", () => {
     expect(crewOptionsFor(null, ["skipper"])).toEqual(["bareboat", "skipper"]);
   });
+
+  /*
+   * Tiramisu Excess 14 (Booking Manager, 39115656) is filed bareboat and carries an obligatory
+   * skipper at 1,505 EUR. The sidebar offered Bareboat and then billed the skipper anyway.
+   */
+  it("stops offering bareboat when the skipper is billed either way", () => {
+    expect(crewOptionsFor("bareboat", ["skipper"], ["skipper"])).toEqual(["skipper"]);
+    expect(crewOptionsFor(null, ["skipper"], ["skipper"])).toEqual(["skipper"]);
+    expect(crewOptionsFor("bareboat", ["skipper", "cook"], ["skipper"])).toEqual([
+      "skipper",
+      "full-crew",
+    ]);
+  });
+
+  it("leaves an optional skipper as a choice", () => {
+    expect(crewOptionsFor("bareboat", ["skipper"], [])).toEqual(["bareboat", "skipper"]);
+    /* An obligatory cook says nothing about whether the hull needs a skipper. */
+    expect(crewOptionsFor("bareboat", ["skipper"], ["cook"])).toEqual(["bareboat", "skipper"]);
+  });
 });

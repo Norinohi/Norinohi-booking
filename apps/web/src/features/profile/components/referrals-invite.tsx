@@ -89,19 +89,17 @@ export default function ReferralsInvite() {
       <img
         src={illustration.src}
         alt=""
-        className="pointer-events-none absolute top-[14px] right-[-14px] w-[149px] max-w-none select-none md:top-[-23px] md:right-[-7px] md:w-[233px] lg:top-0 lg:right-0"
+        className="pointer-events-none absolute top-3.5 right-[-14px] w-37.25 max-w-none select-none md:top-[-23px] md:right-[-7px] md:w-58.25 lg:top-0 lg:right-0"
       />
 
       {/* Heading 972:54830 — 586px on desktop, 330px + 32px top offset on tablet, 185px on mobile */}
-      <div className="relative flex w-full max-w-[185px] flex-col gap-3 text-foreground md:mt-8 md:max-w-[330px] lg:mt-0 lg:max-w-[586px]">
-        <h3 className="text-2xl leading-[1.1] font-semibold md:text-[32px] md:font-medium">
-          {t("invite.heading")}
-        </h3>
+      <div className="relative flex w-full max-w-46.25 flex-col gap-3 text-foreground md:mt-8 md:max-w-82.5 lg:mt-0 lg:max-w-146.5">
+        <h3 className="text-h5 md:text-h4">{t("invite.heading")}</h3>
         <p className="text-body-xl">{t("invite.description")}</p>
       </div>
 
       {/* Link + generate 972:54833 — 48px field flexes beside a 200px brand button, stacked on mobile */}
-      <div className="relative flex w-full flex-col gap-3 md:flex-row md:items-start lg:max-w-[586px]">
+      <div className="relative flex w-full flex-col gap-3 md:flex-row md:items-start lg:max-w-146.5">
         <TextField
           readOnly
           value={displayLink}
@@ -121,7 +119,7 @@ export default function ReferralsInvite() {
         <Button
           variant="brand"
           size="md"
-          className="w-full shrink-0 md:w-[200px]"
+          className="w-full shrink-0 md:w-50"
           onClick={generateCode}
           disabled={!summary || rotate.isPending}
         >
@@ -143,7 +141,7 @@ export default function ReferralsInvite() {
       </div>
 
       {/* Stats 972:54816 — 2x2 grid on mobile, 24px-gap row on tablet, pinned bottom-right at the 1536 layout */}
-      <div className="relative grid w-full auto-cols-fr grid-flow-col grid-rows-2 gap-1 md:flex md:flex-wrap md:items-start md:gap-6 2xl:absolute 2xl:right-[59px] 2xl:bottom-7 2xl:w-auto">
+      <div className="relative grid w-full auto-cols-fr grid-flow-col grid-rows-2 gap-1 md:flex md:flex-wrap md:items-start md:gap-6 2xl:absolute 2xl:right-14.75 2xl:bottom-7 2xl:w-auto">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -152,7 +150,7 @@ export default function ReferralsInvite() {
             {stat.value === null ? (
               <Skeleton className="h-9 w-16 rounded-sm" />
             ) : (
-              <span className="text-[32px] leading-[1.1] font-bold text-brand">{stat.value}</span>
+              <span className="text-h4 font-bold text-brand">{stat.value}</span>
             )}
             <span className="text-body-caption-s text-foreground underline decoration-dotted [text-decoration-skip-ink:none]">
               {t(`invite.stats.${stat.label}`)}

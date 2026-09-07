@@ -23,7 +23,7 @@ const facetOptionSchema = z.object({
   /* Cloudinary public_id — prefer it over imageUrl and build the delivery URL client-side. */
   cloudinaryId: z.string().nullish(),
   description: z.string().nullish(),
-  /* Cheapest listing in the group — what a "from X" card label renders. */
+  /* Lowest positive comparable price in EUR, used by destination summaries. */
   priceFromMinor: z.number().int().nullish(),
   currency: z.string().length(3).nullish(),
 });
@@ -170,7 +170,6 @@ export const listingSummarySchema = z.object({
   listPriceFrom: moneySchema.nullable(),
   priceDetails: z.object({
     periodDays: z.number().int(),
-    perPersonMinor: z.number().int().nullable(),
     /** Refundable damage deposit collected at the base. Null when there is none. */
     securityDeposit: moneySchema.nullable(),
     /**
@@ -331,6 +330,13 @@ const MAX_CHARTER_NIGHTS = 365;
 export const listingSearchInputBaseSchema = z.object({
   destination: z.string().optional(),
   query: z.string().optional(),
+  name: z
+    .string()
+    .max(120)
+    .optional()
+    .describe(
+      "Free text matched word by word, in any order, against the boat's own name, its title, model, builder, charter company, base and description. Partial words match. Offered in the UI only while the marketplace's nameSearchEnabled setting is on; the endpoint always honours it.",
+    ),
   checkIn: dateStringSchema.optional(),
   checkOut: dateStringSchema.optional(),
   guests: z.coerce.number().int().positive().optional(),
@@ -426,6 +432,13 @@ export const searchResultSchema = z.object({
       listing: listingSummarySchema,
       checkIn: z.string().nullable(),
       checkOut: z.string().nullable(),
+      /*
+       * Set when the dates above are not the ones searched for. Search keeps a listing that is
+       * free across the window but turns around on another weekday, so rather than repeat a
+       * period the quote will refuse, the card carries the charter this boat would actually
+       * sell and says so.
+       */
+      periodIsAlternative: z.boolean(),
     }),
   ),
   nextCursor: z.string().optional(),

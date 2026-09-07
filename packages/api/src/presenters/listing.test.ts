@@ -62,6 +62,9 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   bookableTo: null,
   hasUnconfirmedAvailability: false,
   hasTemporaryBooking: false,
+  sellsRequestedPeriod: true,
+  nearestCheckIn: null,
+  nearestCheckOut: null,
   ...over,
 });
 
@@ -132,6 +135,24 @@ describe("presentListingSummary", () => {
     expect(summary.priceDetails.periodDays).toBe(4);
   });
 
+  /*
+   * The caption follows the figure, not the dates. A listing whose advertised charter came from
+   * the projection's inferred branch has a legal period and no price for it, so the figure is
+   * still the season's weekly floor -- captioning it with the period's own length described a
+   * week's money as a single night's.
+   */
+  it("names the rate's own week when the price is only a floor", () => {
+    const summary = presentListingSummary(
+      doc({ bookableFrom: "2126-09-21", bookableTo: "2126-09-22", priceIsFrom: true }),
+    );
+
+    expect(summary.availability.bookablePeriod).toEqual({
+      checkIn: "2126-09-21",
+      checkOut: "2126-09-22",
+    });
+    expect(summary.priceDetails.periodDays).toBe(7);
+  });
+
   it("names the rate's own week where no charter is bookable", () => {
     const summary = presentListingSummary(doc({ bookableFrom: null, bookableTo: null }));
 
@@ -147,6 +168,27 @@ describe("presentListingSummary", () => {
 
     expect(summary.availability.bookablePeriod).toBeNull();
     expect(summary.priceDetails.periodDays).toBe(7);
+  });
+
+  /*
+   * Today is inside every operator's notice period: the booking has to reach them and come
+   * back confirmed before the base can hand the boat over. Advertising it put a departure a
+   * few hours away behind a "Book" button.
+   */
+  it("drops a charter that checks in today", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const summary = presentListingSummary(doc({ bookableFrom: today, bookableTo: "2126-11-28" }));
+
+    expect(summary.availability.bookablePeriod).toBeNull();
+  });
+
+  it("keeps a charter that checks in tomorrow", () => {
+    const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    const summary = presentListingSummary(
+      doc({ bookableFrom: tomorrow, bookableTo: "2126-11-28" }),
+    );
+
+    expect(summary.availability.bookablePeriod?.checkIn).toBe(tomorrow);
   });
 });
 

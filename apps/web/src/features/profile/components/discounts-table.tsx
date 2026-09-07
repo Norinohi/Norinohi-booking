@@ -34,7 +34,11 @@ const SKELETON_ROWS = 5;
 /** Per-column skeleton widths mirroring typical cell content. */
 const SKELETON_WIDTHS = ["w-3/4", "w-24", "w-20", "w-28", "w-16", "w-12"];
 
-export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount) => void }) {
+interface DiscountsTableProps {
+  onEdit: (discount: Discount) => void;
+}
+
+export default function DiscountsTable({ onEdit }: DiscountsTableProps) {
   const t = useTranslations("Discounts");
   const formatMoney = useMoney();
   const format = useFormatter();
@@ -65,7 +69,7 @@ export default function DiscountsTable({ onEdit }: { onEdit: (discount: Discount
     <div className="flex flex-col gap-4">
       {/* Header + body rows pinned to the design's exact 50px (the primitives' py-3.5 plus
           the 28px chip / 24px line-height would otherwise stretch them to 53/57). */}
-      <Table className="min-w-[960px] table-fixed [&_td]:h-[50px] [&_td]:py-0 [&_th]:h-[50px] [&_th]:py-0">
+      <Table className="min-w-240 table-fixed [&_td]:h-12.5 [&_td]:py-0 [&_th]:h-12.5 [&_th]:py-0">
         <TableHeader>
           <TableRow>
             <TableHead>{t("table.name")}</TableHead>

@@ -170,7 +170,7 @@ function StatsBar() {
               decimals={"decimals" in stat ? stat.decimals : 0}
               suffix={"suffix" in stat ? stat.suffix : undefined}
               delay={0.4}
-              className="text-[28px] leading-[1.1] font-medium md:text-[32px]"
+              className="text-h4"
             />
             <span className="text-base leading-[1.4] text-white/90 md:text-xl md:leading-[1.1]">
               {t(`${stat.key}.label`)}
@@ -192,10 +192,17 @@ export default function Hero() {
         alt=""
         fill
         priority
-        sizes="100vw"
+        /*
+         * The source is 16:9 and the mobile slot is taller than it is wide, so `object-cover`
+         * crops to the middle strip and scales it to the full height. At a literal `100vw` that
+         * meant a 750px-wide file stretched over 1,944 physical pixels and the first screen of
+         * the site opened blurred. Over-declaring the width on narrow viewports buys back the
+         * pixels the crop throws away; a portrait source would fix it properly.
+         */
+        sizes="(max-width: 768px) 250vw, 100vw"
         className="-z-10 transform-gpu object-cover"
       />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />
+      <div className="absolute inset-0 -z-10 bg-linear-to-r from-black/45 via-black/15 to-transparent" />
 
       <motion.div
         variants={GROUP}
@@ -209,10 +216,7 @@ export default function Hero() {
             className="flex w-full max-w-164.75 flex-col gap-3 text-center text-white xl:w-auto xl:max-w-112.5 xl:text-left"
           >
             <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
-            <h1
-              data-testid="home-shell-marker"
-              className="text-[50px] leading-[1.1] font-bold md:text-[64px]"
-            >
+            <h1 data-testid="home-shell-marker" className="text-h1">
               {t("heading")}
             </h1>
           </motion.div>

@@ -44,10 +44,14 @@ function DestinationSlides() {
               image={country.imageUrl ?? undefined}
               imageAlt={country.label}
               title={country.label}
-              subtitle={t("summary", {
-                price: money(country.priceFromMinor ?? 0, country.currency ?? undefined),
-                count: country.count ?? 0,
-              })}
+              subtitle={
+                country.priceFromMinor != null && country.priceFromMinor > 0
+                  ? t("summary", {
+                      price: money(country.priceFromMinor, country.currency ?? undefined),
+                      count: country.count ?? 0,
+                    })
+                  : t("yachtCount", { count: country.count ?? 0 })
+              }
               className="w-full transition-transform duration-200 group-hover:-translate-y-1"
             />
           </Link>
@@ -82,12 +86,15 @@ export default function PopularDestinations() {
           </CarouselViewport>
 
           <div className="flex justify-center px-4 md:px-13.5 xl:px-17.5">
+            {/* The map, which is the one surface that browses by place. Sending this to /yachts
+                answered "show me the destinations" with a list of boats, and made the third
+                button on the page that goes there. */}
             <Button
               variant="neutral"
               size="md"
               className="w-full md:w-auto"
               nativeButton={false}
-              render={<Link href="/yachts" />}
+              render={<Link href="/yachts/map" />}
             >
               {t("seeAll")}
               <ArrowUpRight />

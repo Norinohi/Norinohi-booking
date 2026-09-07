@@ -72,6 +72,7 @@ export default function WhereSection({ value, set }: SectionProps) {
         value={value.sailingArea}
         onChange={(next) => set("sailingArea", next)}
         placeholder={t("placeholders.allRegions")}
+        searchPlaceholder={t("placeholders.searchRegions")}
       />
       <MultiSelectField
         label={t("labels.charterCompany")}
@@ -79,6 +80,7 @@ export default function WhereSection({ value, set }: SectionProps) {
         value={value.charterCompany}
         onChange={(next) => set("charterCompany", next)}
         placeholder={t("placeholders.allCompanies")}
+        searchPlaceholder={t("placeholders.searchCompanies")}
       />
       <MultiSelectField
         label={t("labels.marina")}

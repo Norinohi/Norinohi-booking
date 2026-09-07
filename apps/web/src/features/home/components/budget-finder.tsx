@@ -19,13 +19,30 @@ import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
 const ANY = "any";
 const ALL = "all";
+/** A target, not a count: the step rounds up from here, so the list comes back this long or shorter. */
 const BUDGET_BUCKETS = 5;
+
+/**
+ * The nearest round step at or above `raw` — 1, 2 or 5 times a power of ten.
+ *
+ * Dividing the catalog's span by a bucket count lands on figures like 3,964, and a menu of
+ * "€180 – €4,144" reads as a machine's arithmetic rather than a price the reader chose.
+ */
+function niceStep(raw: number): number {
+  if (!Number.isFinite(raw) || raw <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const scaled = raw / magnitude;
+  const factor = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+  return factor * magnitude;
+}
 
 /* Skipper Yes → crewed variants, No → bareboat — crew facet codes are bareboat | skipper | full-crew. */
 const CREWED = ["skipper", "full-crew"];
 const BAREBOAT = ["bareboat"];
 
 type Facets = ReturnType<typeof useFilterOptions>["data"];
+
+type BudgetBucket = { value: string; label: string; price: [number, number] };
 
 /*
  * The form, with its facet-derived inputs injected. Rendering this with no data and `isPending`
@@ -53,20 +70,40 @@ function BudgetFinderForm({
   const budgetBuckets = useMemo(() => {
     const range = data?.priceRange;
     if (!range) return [];
+
     const min = Math.floor(range.minMinor / 100);
     const max = Math.ceil(range.maxMinor / 100);
-    const step = (max - min) / BUDGET_BUCKETS;
-    return Array.from({ length: BUDGET_BUCKETS }, (_, index) => {
-      const lo = Math.round(min + index * step);
-      const hi = index === BUDGET_BUCKETS - 1 ? max : Math.round(min + (index + 1) * step);
-      const price: [number, number] = [lo, hi];
-      return {
-        value: `${lo}-${hi}`,
-        label: `${money(lo * 100, range.currency)} – ${money(hi * 100, range.currency)}`,
-        price,
-      };
+    if (max <= min) return [];
+
+    /* Edges on a round step, so the list reads €5,000 rather than the catalog's €4,144. */
+    const step = niceStep((max - min) / BUDGET_BUCKETS);
+    const edges: number[] = [];
+    /* Strictly above `min`, or a catalog whose floor already sits on the step opens with an
+       empty "Up to €500" bucket that matches the single cheapest boat and nothing else. */
+    for (let edge = Math.floor(min / step) * step + step; edge < max; edge += step) {
+      edges.push(edge);
+    }
+
+    const lows = [min, ...edges];
+    const highs = [...edges, max];
+    return lows.map((lo, index): BudgetBucket => {
+      const isLast = index === lows.length - 1;
+      const hi = highs[index] ?? max;
+      /*
+       * The ends are named, not bounded: the first bucket starts at whatever the cheapest boat
+       * costs, which nobody needs to read, and the last runs to the catalog's ceiling the way
+       * the price slider does — printing that ceiling as a closing figure promised there was
+       * nothing above it.
+       */
+      const label = isLast
+        ? t("options.budgetFrom", { from: money(lo * 100, range.currency) })
+        : index === 0
+          ? t("options.budgetUpTo", { to: money(hi * 100, range.currency) })
+          : `${money(lo * 100, range.currency)} – ${money(hi * 100, range.currency)}`;
+
+      return { value: `${lo}-${hi}`, label, price: [lo, hi] };
     });
-  }, [data?.priceRange, money]);
+  }, [data?.priceRange, money, t]);
 
   const berthsRange = data?.ranges.berths;
 
@@ -74,12 +111,15 @@ function BudgetFinderForm({
     { value: ANY, label: t("options.any") },
     ...budgetBuckets.map(({ value, label }) => ({ value, label })),
   ];
+  /* From one, never from the catalog's floor: `berths.min` is 0 on listings the provider left
+     unfilled, and a charter for nobody is not a choice the reader can make. */
+  const peopleFrom = Math.max(1, berthsRange?.min ?? 1);
   const peopleOptions = [
     { value: ANY, label: t("options.any") },
     ...Array.from(
-      { length: berthsRange ? berthsRange.max - berthsRange.min + 1 : 0 },
+      { length: berthsRange ? Math.max(0, berthsRange.max - peopleFrom + 1) : 0 },
       (_, index) => {
-        const count = String((berthsRange?.min ?? 0) + index);
+        const count = String(peopleFrom + index);
         return { value: count, label: count };
       },
     ),

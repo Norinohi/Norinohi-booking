@@ -25,6 +25,15 @@ export const suggestionsQueryOptions = (query: string) =>
     placeholderData: keepPreviousData,
   });
 
+/**
+ * Which optional search-bar controls are switched on.
+ *
+ * Only the free-text field today, and it is a testing aid rather than part of the design. Cached
+ * for the session: it changes when an admin flips a switch, not while somebody is searching.
+ */
+export const searchUiSettingsQueryOptions = () =>
+  orpc.charterSearch.uiSettings.queryOptions({ input: {}, staleTime: 5 * 60 * 1000 });
+
 export type MarinasInput = Parameters<AppRouterClient["charterSearch"]["mapMarinas"]>[0];
 
 export type MapMarinaData = Awaited<

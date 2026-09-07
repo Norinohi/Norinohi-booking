@@ -203,7 +203,7 @@ export default function BalanceScreen({ bookingId }: { bookingId: string }) {
     <Centered>
       <article className="flex w-full max-w-201.5 flex-col gap-6 rounded-2xl border border-border bg-card p-5 md:p-8">
         <header className="flex flex-col gap-2">
-          <h1 className="text-[28px] leading-[1.1] font-medium text-foreground">
+          <h1 className="text-h4 text-foreground">
             {booking.status === "CONFIRMED" ? t("title") : t("titleUnpaid")}
           </h1>
           <p className="text-base leading-[1.4] text-natural-600">

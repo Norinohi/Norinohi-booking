@@ -23,10 +23,13 @@ const LAYOUT = {
     card: "w-full flex-col",
     image: "h-45 w-full rounded-t-2xl",
     body: "px-4 pb-4",
+    // 22px has no typography token: it falls between h6 (20) and h5 (24).
+    // oxlint-disable-next-line design-tokens/no-arbitrary-size
     name: "text-[22px] font-semibold",
+    // oxlint-disable-next-line design-tokens/no-arbitrary-size
     price: "text-[22px] font-semibold leading-[1.3]",
     priceRow: "items-center",
-    perPerson: "shrink-0",
+    perNight: "shrink-0",
     sizes: "288px",
   },
   popup: {
@@ -34,9 +37,9 @@ const LAYOUT = {
     image: "h-45 w-full rounded-t-2xl md:h-auto md:w-74 md:rounded-tr-none md:rounded-bl-2xl",
     body: "px-4 pb-4 md:min-w-0 md:flex-1 md:py-6 md:pr-4 md:pl-0",
     name: "text-xl font-bold md:text-2xl md:font-semibold",
-    price: "text-[32px] font-bold leading-[1.1]",
+    price: "text-h4 font-bold",
     priceRow: "items-center md:flex-col md:items-stretch",
-    perPerson: "shrink-0 md:shrink",
+    perNight: "shrink-0 md:shrink",
     sizes: "(min-width: 768px) 296px, 288px",
   },
 } as const;
@@ -59,7 +62,8 @@ export type MapBoatCardProps = {
    * holds words: the presenter withholds it wherever it withholds the price itself.
    */
   listPrice?: string;
-  perPerson: string;
+  /** The nightly rate, the same figure the results list is ordered by. */
+  perNight: string;
   note: CardNoteData | null;
   detailHref?: AppPathname;
   layout?: keyof typeof LAYOUT;
@@ -79,7 +83,7 @@ export default function MapBoatCard({
   priceLabel,
   price,
   listPrice,
-  perPerson,
+  perNight,
   note,
   detailHref,
   layout = "list",
@@ -170,10 +174,8 @@ export default function MapBoatCard({
                 ) : null}
               </span>
             </div>
-            <p
-              className={cn("text-sm font-medium leading-[1.3] text-natural-500", style.perPerson)}
-            >
-              {perPerson}
+            <p className={cn("text-sm font-medium leading-[1.3] text-natural-500", style.perNight)}>
+              {perNight}
             </p>
           </div>
 

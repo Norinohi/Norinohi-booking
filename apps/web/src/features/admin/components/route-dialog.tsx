@@ -57,16 +57,14 @@ function toDraft(route: RouteRow | null): Draft {
   };
 }
 
-export default function RouteDialog({
-  route,
-  open,
-  onOpenChange,
-}: {
+interface RouteDialogProps {
   /** Null opens the dialog in create mode. */
   route: RouteRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export default function RouteDialog({ route, open, onOpenChange }: RouteDialogProps) {
   const t = useTranslations("Admin.Routes.dialog");
   const tKinds = useTranslations("Admin.Routes.kinds");
   const titleId = useId();

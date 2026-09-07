@@ -3,28 +3,37 @@ import { TripCard } from "@yacht-charter/ui/components/data-display/card-trip";
 import { Activity, Clock } from "lucide-react";
 import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
+import { serializeSearch } from "@/features/yachts";
 import { Link } from "@/i18n/navigation";
 
 import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
+/*
+ * There are no route pages yet, so each card lands on the catalogue filtered to its own
+ * cruising ground and length. All three pointing at a bare `/yachts` made the three cards
+ * one button: whichever route was clicked, the same unfiltered 18,000 boats came back.
+ */
 const ROUTES = [
   {
     key: "dalmatianCoast",
     image: "/assets/home/sailing-routes/dalmatian-coast.webp",
     days: 7,
     level: "easy",
+    href: serializeSearch("/yachts", { country: ["croatia"], duration: "7" }),
   },
   {
     key: "greekCyclades",
     image: "/assets/home/sailing-routes/greek-cyclades.webp",
     days: 5,
     level: "advanced",
+    href: serializeSearch("/yachts", { country: ["greece"], duration: "7" }),
   },
   {
     key: "amalfiCoast",
     image: "/assets/home/sailing-routes/amalfi-coast.webp",
     days: 6,
     level: "moderate",
+    href: serializeSearch("/yachts", { country: ["italy"], duration: "7" }),
   },
 ] as const;
 
@@ -52,7 +61,7 @@ export default function SailingRoutes() {
                 imageAlt={t(`items.${route.key}.imageAlt`)}
                 title={
                   <Link
-                    href="/yachts"
+                    href={route.href}
                     className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
                   >
                     {t(`items.${route.key}.title`)}
@@ -60,7 +69,7 @@ export default function SailingRoutes() {
                 }
                 description={t(`items.${route.key}.description`)}
                 actionLabel={t("exploreRoute")}
-                actionRender={<Link href="/yachts" />}
+                actionRender={<Link href={route.href} />}
                 meta={[
                   { label: t("days", { count: route.days }), icon: <Clock /> },
                   { label: t(`levels.${route.level}`), icon: <Activity /> },

@@ -41,7 +41,7 @@ export function useListingCards() {
       priceLabel: card.priceLabel,
       price: card.price,
       listPrice: card.listPrice,
-      perPerson: card.perPerson,
+      perNight: card.perNight ?? "",
       note: card.note,
     };
   }

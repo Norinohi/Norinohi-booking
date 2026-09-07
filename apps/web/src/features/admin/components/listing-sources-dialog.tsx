@@ -48,17 +48,19 @@ const FIELD_ORDER: readonly ListingFieldGroup[] = [
   "pets",
 ];
 
+interface ListingSourcesDialogProps {
+  listingId: string;
+  listingTitle: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
 export default function ListingSourcesDialog({
   listingId,
   listingTitle,
   open,
   onOpenChange,
-}: {
-  listingId: string;
-  listingTitle: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+}: ListingSourcesDialogProps) {
   const t = useTranslations("Admin.Listings.sources");
 
   return (
