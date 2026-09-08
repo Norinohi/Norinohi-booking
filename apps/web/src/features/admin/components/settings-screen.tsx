@@ -34,6 +34,7 @@ interface FormState {
   leadTimeDays: string;
   /* Provider codes, most preferred first. Saved whole; the radios only move the winner. */
   preference: ProviderCode[];
+  offerRankingUsesBasePrice: boolean;
   nameSearchEnabled: boolean;
 }
 
@@ -91,6 +92,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       enforceLeadTime: data.payment.enforceLeadTime,
       leadTimeDays: String(data.payment.leadTimeDays),
       preference: data.transactingPreference,
+      offerRankingUsesBasePrice: data.offerRankingUsesBasePrice,
       nameSearchEnabled: data.nameSearchEnabled,
     });
   }, [data?.updatedAt, data]);
@@ -121,6 +123,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
           leadTimeDays: days,
         },
         transactingPreference: form.preference,
+        offerRankingUsesBasePrice: form.offerRankingUsesBasePrice,
         nameSearchEnabled: form.nameSearchEnabled,
       },
       {
@@ -343,6 +346,27 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                   <p className="text-xs leading-4 font-medium text-natural-500">
                     {t("preference.rebuildNote")}
                   </p>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("ranking.legend")}
+                  </legend>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("ranking.toggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("ranking.hint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.offerRankingUsesBasePrice}
+                      onCheckedChange={(checked) => set({ offerRankingUsesBasePrice: checked })}
+                    />
+                  </label>
                 </fieldset>
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">

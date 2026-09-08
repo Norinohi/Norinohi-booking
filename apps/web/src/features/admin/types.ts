@@ -31,6 +31,11 @@ export type DuplicateDetailListing = NonNullable<DuplicateDetailSide["listing"]>
 export type ProviderReliability = Awaited<ReturnType<AdminClient["provider"]["reliability"]>>;
 export type ProviderReliabilityRow = ProviderReliability["rows"][number];
 
+/* Commission rates: what we earn through each vendor. Entered by staff, read by nothing yet. */
+export type CommissionList = Awaited<ReturnType<AdminClient["commission"]["list"]>>;
+export type CommissionRow = CommissionList["items"][number];
+export type CommissionStatus = CommissionRow["status"];
+
 export type EnquiryList = Awaited<ReturnType<AdminClient["enquiry"]["list"]>>;
 export type EnquiryRow = EnquiryList["items"][number];
 export type EnquiryStatus = EnquiryRow["status"];

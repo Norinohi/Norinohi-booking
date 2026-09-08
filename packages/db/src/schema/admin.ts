@@ -152,6 +152,16 @@ export const marketplaceSetting = pgTable(
       .default(["booking_manager", "nausys", "mock"])
       .notNull(),
     /**
+     * Whether the offer ranking compares charter rates instead of all-in totals.
+     *
+     * Off, which is what the marketplace has always done: the vendor whose total the guest
+     * actually pays is the cheaper one. On, it compares the rate a visitor sees quoted on other
+     * sites and settles a tie on the obligatory extras -- the order the client agreed, and one
+     * that can pick the dearer charter when a vendor's mandatory fees are heavier. A switch
+     * rather than a release, so the choice can be seen against the real catalogue and undone.
+     */
+    offerRankingUsesBasePrice: boolean("offer_ranking_uses_base_price").default(false).notNull(),
+    /**
      * Whether the search bar offers the free-text field.
      *
      * A testing affordance rather than a product feature: the design has no such field, so it

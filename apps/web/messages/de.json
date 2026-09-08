@@ -1019,6 +1019,7 @@
       "credits": "Guthaben & Saldo",
       "discount": "Rabattverwaltung",
       "logout": "Abmelden",
+      "commission": "Provisionssätze",
       "duplicates": "Duplikatprüfung",
       "sync": "Sync-Verlauf",
       "audit": "Audit-Log",
@@ -1507,6 +1508,10 @@
     "nextBoat": "Nächste Yacht"
   },
   "Seo": {
+    "Commissions": {
+      "title": "Provisionssätze",
+      "description": "Was CharterNavi über jeden Anbieter verdient."
+    },
     "Yachts": {
       "title": "Yachtcharter-Suche",
       "description": "Suchen Sie Yachten und Katamarane zum Chartern im Mittelmeer und darüber hinaus. Filtern Sie nach Reiseziel, Terminen, Gästen und Preis."
@@ -2049,6 +2054,68 @@
     }
   },
   "Admin": {
+    "Commissions": {
+      "title": "Provisionssätze",
+      "subtitle": "Was CharterNavi über jeden Anbieter verdient, und ab wann.",
+      "add": "Satz hinzufügen",
+      "edit": "Bearbeiten",
+      "switchOff": "Deaktivieren",
+      "switchOn": "Aktivieren",
+      "switchedOff": "Satz deaktiviert",
+      "switchedOn": "Satz aktiviert",
+      "created": "Satz hinzugefügt",
+      "updated": "Satz gespeichert",
+      "error": "Provisionssätze konnten nicht geladen werden",
+      "empty": "Noch keine Sätze. Solange keiner erfasst ist, spielt die Provision bei der Auswahl des Angebots keine Rolle.",
+      "emptyFiltered": "Keine Sätze passen zu diesen Filtern.",
+      "allOperators": "Alle Vercharterer",
+      "openEnded": "Kein Enddatum",
+      "fromDate": "Ab {date}",
+      "untilDate": "Bis {date}",
+      "note": "Ein Satz entscheidet nur zwischen zwei Angeboten, die bei Preis und Pflichtzuschlägen bereits gleich sind. Er darf nie der Grund sein, warum ein Gast ein teureres Boot sieht. Bisher liest kein Schritt des Verkaufs diese Sätze.",
+      "filters": {
+        "provider": "Anbieter",
+        "anyProvider": "Alle Anbieter",
+        "status": "Status",
+        "anyStatus": "Beliebiger Status"
+      },
+      "status": {
+        "active": "Aktiv",
+        "scheduled": "Geplant",
+        "expired": "Abgelaufen",
+        "inactive": "Deaktiviert"
+      },
+      "table": {
+        "provider": "Anbieter",
+        "operator": "Vercharterer",
+        "rate": "Satz",
+        "window": "Gültig",
+        "status": "Status",
+        "added": "Erfasst",
+        "actions": "Aktionen"
+      },
+      "dialog": {
+        "createTitle": "Provisionssatz hinzufügen",
+        "editTitle": "Provisionssatz bearbeiten",
+        "description": "Was wir an einem Verkauf über diesen Anbieter verdienen. Ohne Vercharterer gilt der Satz für alle Charterfirmen dieses Anbieters.",
+        "provider": "Anbieter",
+        "operator": "Vercharterer",
+        "operatorSearch": "Vercharterer suchen",
+        "allOperators": "Alle Vercharterer dieses Anbieters",
+        "ratePct": "Satz (%)",
+        "startsAt": "Beginn",
+        "endsAt": "Ende",
+        "windowHint": "Beide Daten sind optional und einschließlich. Leer lassen für eine Vereinbarung, die bis zur Neuverhandlung gilt.",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "errors": {
+          "rateRequired": "Satz eingeben",
+          "rateRange": "Zahl zwischen 0 und 100 verwenden",
+          "endsBeforeStarts": "Das Enddatum darf nicht vor dem Startdatum liegen"
+        }
+      }
+    },
     "Bookings": {
       "title": "Buchungen",
       "subtitle": "Alle Buchungen auf der Plattform, neueste zuerst. Öffnen Sie eine, um sie abzuwickeln.",
@@ -3087,6 +3154,11 @@
         "legend": "Bevorzugter Anbieter",
         "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+      },
+      "ranking": {
+        "legend": "Angebotsauswahl",
+        "toggle": "Nach Charterpreis vergleichen",
+        "hint": "Aus gewinnt der Anbieter mit dem niedrigeren Gesamtpreis, also mit dem Betrag, den der Gast tatsächlich zahlt. An entscheidet der reine Charterpreis, und die Pflichtzuschläge lösen nur einen Gleichstand auf. Der Vergleich nach Charterpreis kann den Törn wählen, der den Gast insgesamt mehr kostet."
       },
       "nameSearch": {
         "legend": "Freitextsuche",

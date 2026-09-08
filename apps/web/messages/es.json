@@ -1019,6 +1019,7 @@
       "credits": "Créditos y saldo",
       "discount": "Gestión de descuentos",
       "logout": "Cerrar sesión",
+      "commission": "Tasas de comisión",
       "duplicates": "Revisión de duplicados",
       "sync": "Historial de sincronización",
       "audit": "Registro de auditoría",
@@ -1507,6 +1508,10 @@
     "nextBoat": "Yate siguiente"
   },
   "Seo": {
+    "Commissions": {
+      "title": "Tasas de comisión",
+      "description": "Lo que CharterNavi gana a través de cada proveedor."
+    },
     "Yachts": {
       "title": "Buscador de alquiler de yates",
       "description": "Busca yates y catamaranes de alquiler por el Mediterráneo y otros destinos. Filtra por destino, fechas, huéspedes y precio."
@@ -2049,6 +2054,68 @@
     }
   },
   "Admin": {
+    "Commissions": {
+      "title": "Tasas de comisión",
+      "subtitle": "Lo que CharterNavi gana a través de cada proveedor, y desde cuándo.",
+      "add": "Añadir tasa",
+      "edit": "Editar",
+      "switchOff": "Desactivar",
+      "switchOn": "Activar",
+      "switchedOff": "Tasa desactivada",
+      "switchedOn": "Tasa activada",
+      "created": "Tasa añadida",
+      "updated": "Tasa guardada",
+      "error": "No se pudieron cargar las tasas de comisión",
+      "empty": "Aún no hay tasas. Mientras no se introduzca ninguna, la comisión no interviene en la elección de la oferta.",
+      "emptyFiltered": "Ninguna tasa coincide con estos filtros.",
+      "allOperators": "Todos los operadores",
+      "openEnded": "Sin fecha de fin",
+      "fromDate": "Desde {date}",
+      "untilDate": "Hasta {date}",
+      "note": "Una tasa solo desempata entre dos ofertas ya iguales en precio y en suplementos obligatorios. Nunca puede ser el motivo por el que un cliente vea un barco más caro. Por ahora ningún paso de la venta lee estas tasas.",
+      "filters": {
+        "provider": "Proveedor",
+        "anyProvider": "Todos los proveedores",
+        "status": "Estado",
+        "anyStatus": "Cualquier estado"
+      },
+      "status": {
+        "active": "Activa",
+        "scheduled": "Programada",
+        "expired": "Caducada",
+        "inactive": "Desactivada"
+      },
+      "table": {
+        "provider": "Proveedor",
+        "operator": "Operador",
+        "rate": "Tasa",
+        "window": "Vigencia",
+        "status": "Estado",
+        "added": "Añadida",
+        "actions": "Acciones"
+      },
+      "dialog": {
+        "createTitle": "Añadir tasa de comisión",
+        "editTitle": "Editar tasa de comisión",
+        "description": "Lo que ganamos en una venta a través de este proveedor. Deja el operador vacío para cubrir todas las empresas de chárter de este proveedor.",
+        "provider": "Proveedor",
+        "operator": "Operador",
+        "operatorSearch": "Buscar operadores",
+        "allOperators": "Todos los operadores de este proveedor",
+        "ratePct": "Tasa (%)",
+        "startsAt": "Inicio",
+        "endsAt": "Fin",
+        "windowHint": "Ambas fechas son opcionales e inclusivas. Déjalas vacías para un acuerdo vigente hasta que se renegocie.",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "errors": {
+          "rateRequired": "Introduce una tasa",
+          "rateRange": "Usa un número entre 0 y 100",
+          "endsBeforeStarts": "La fecha de fin no puede ser anterior a la de inicio"
+        }
+      }
+    },
     "Bookings": {
       "title": "Reservas",
       "subtitle": "Todas las reservas de la plataforma, las más recientes primero. Abre una para gestionarla.",
@@ -3087,6 +3154,11 @@
         "legend": "Proveedor preferido",
         "hint": "Quién gana cuando la disponibilidad, el precio y los suplementos obligatorios coinciden. Nunca sustituye a una oferta más barata: solo resuelve un empate.",
         "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
+      },
+      "ranking": {
+        "legend": "Elección de la oferta",
+        "toggle": "Comparar por el precio del chárter",
+        "hint": "Desactivado gana el proveedor con el total más bajo, que es lo que el cliente paga de verdad. Activado decide el precio del chárter y los suplementos obligatorios solo desempatan. Comparar por el precio del chárter puede elegir la reserva que en total le cuesta más al cliente."
       },
       "nameSearch": {
         "legend": "Búsqueda por texto libre",

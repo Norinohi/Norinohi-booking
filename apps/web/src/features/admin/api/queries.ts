@@ -8,6 +8,7 @@ import type {
   FaqScope,
   RouteKind,
   BookingStatus,
+  CommissionStatus,
   DuplicateConfidenceFilter,
   DuplicateDecision,
   EnquiryStatus,
@@ -36,6 +37,7 @@ export const LISTINGS_PAGE_SIZE = 20;
 export const BOOKINGS_PAGE_SIZE = 20;
 export const ROUTES_PAGE_SIZE = 20;
 export const FAQ_PAGE_SIZE = 20;
+export const COMMISSIONS_PAGE_SIZE = 20;
 
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
@@ -198,6 +200,30 @@ export const providerCapabilitiesQueryOptions = () =>
  */
 export const providerReliabilityQueryOptions = (windowDays: number) =>
   orpc.admin.provider.reliability.queryOptions({ input: { windowDays }, staleTime: 60_000 });
+
+/*
+ * The commission rates staff have entered. Short staleTime for the reason the other staff
+ * queues have one: two people can be editing the same agreements, and a rate a colleague has
+ * just switched off must not stay listed as active here.
+ */
+export const commissionListQueryOptions = (input: {
+  provider?: ProviderKey;
+  status?: CommissionStatus;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.commission.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? COMMISSIONS_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+/* The rate form's operator picker. Operators are written by the catalogue sync and effectively
+   fixed between runs, so a search result keeps for a minute. */
+export const commissionOperatorOptionsQueryOptions = (query: string) =>
+  orpc.admin.commission.operatorOptions.queryOptions({
+    input: { query: query || undefined },
+    staleTime: 60_000,
+  });
 
 export const syncRunsQueryOptions = (input: {
   provider?: ProviderKey;

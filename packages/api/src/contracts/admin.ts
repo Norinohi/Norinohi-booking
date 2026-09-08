@@ -488,6 +488,91 @@ export const auditRowSchema = z.object({
 
 export const auditListSchema = paginatedSchema(auditRowSchema);
 
+/* -------------------------------------------------------------- commissions */
+
+/*
+ * What CharterNavi earns through each vendor. Entered by staff, read by nothing yet: the
+ * agreed ranking uses it only to separate two offers already equal on price and on obligatory
+ * extras, and an empty table is that step switched off.
+ */
+
+/** Derived from `active` plus the window, never stored — the same four the discounts use. */
+export const commissionStatusSchema = z.enum(["active", "scheduled", "expired", "inactive"]);
+
+export const commissionSchema = z.object({
+  id: z.string(),
+  provider: providerKeyOutputSchema,
+  /** Translated in the console; carried so the table need not resolve the code itself. */
+  providerName: z.string(),
+  operatorId: z.string().nullable(),
+  /** Null for a rate that covers every operator at this vendor. */
+  operatorName: z.string().nullable(),
+  /** A percentage: 15 is fifteen percent. */
+  ratePct: z.number(),
+  startsAt: z.string().nullable(),
+  endsAt: z.string().nullable(),
+  active: z.boolean(),
+  status: commissionStatusSchema,
+  createdAt: z.string(),
+});
+
+const COMMISSION_PAGE_SIZE = 20;
+
+export const commissionListInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema.optional(),
+    status: commissionStatusSchema.optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: COMMISSION_PAGE_SIZE }),
+  })
+  .default(paginationInputDefault(COMMISSION_PAGE_SIZE));
+
+export const commissionListSchema = paginatedSchema(commissionSchema);
+
+export const commissionIdInputSchema = z.object({ id: idSchema });
+
+const commissionFieldsSchema = z.object({
+  provider: providerKeyOutputSchema,
+  /** Omit or null for every operator at this vendor. */
+  operatorId: z.string().min(1).nullable().optional(),
+  ratePct: z.number().min(0).max(100),
+  startsAt: isoDateSchema.nullable().optional(),
+  endsAt: isoDateSchema.nullable().optional(),
+});
+
+/*
+ * Only the window needs checking. The rate's bounds are on the field and the database repeats
+ * them as a check constraint, because a rate outside 0-100 would be a silent mispricing rather
+ * than a visible error.
+ */
+const validateCommissionFields = (
+  value: { startsAt?: string | null; endsAt?: string | null },
+  ctx: z.RefinementCtx,
+) => {
+  endsAtNotBeforeStartsAt(value, ctx);
+};
+
+export const commissionCreateInputSchema =
+  commissionFieldsSchema.superRefine(validateCommissionFields);
+
+export const commissionUpdateInputSchema = commissionFieldsSchema
+  .partial()
+  .extend({ id: z.string().min(1) })
+  .superRefine(validateCommissionFields);
+
+export const commissionSetActiveInputSchema = z.object({
+  id: z.string().min(1),
+  active: z.boolean(),
+});
+
+/** Backs the operator picker in the commission form. */
+export const operatorOptionsInputSchema = z
+  .object({ query: z.string().trim().max(200).optional() })
+  .default({});
+
+export const operatorOptionsSchema = z.object({
+  items: z.array(z.object({ id: z.string(), name: z.string() })),
+});
+
 /* ---------------------------------------------------------------- discounts */
 
 export const discountTypeSchema = z.enum(["percentage", "fixed_amount"]);
@@ -933,6 +1018,12 @@ export const transactingPreferenceSchema = z
  * particular boat up. The search endpoint takes `name` either way — this hides the input, it does
  * not close the filter.
  */
+export const offerRankingUsesBasePriceSchema = z
+  .boolean()
+  .describe(
+    "Whether the offer ranking compares charter rates rather than all-in totals. Off by default, which is what the marketplace has always done. On, the rate a visitor compares between sites decides and the obligatory extras only settle a tie on it, which can pick the charter that costs the guest more overall.",
+  );
+
 export const nameSearchEnabledSchema = z
   .boolean()
   .describe(
@@ -942,6 +1033,7 @@ export const nameSearchEnabledSchema = z
 export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
+  offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
   nameSearchEnabled: nameSearchEnabledSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
@@ -950,6 +1042,7 @@ export const marketplaceSettingsSchema = z.object({
 export const marketplaceSettingsUpdateInputSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
+  offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
   nameSearchEnabled: nameSearchEnabledSchema,
 });
 

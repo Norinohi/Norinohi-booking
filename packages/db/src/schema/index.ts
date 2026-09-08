@@ -12,6 +12,7 @@ export * from "./content";
 export * from "./route";
 export * from "./account";
 export * from "./admin";
+export * from "./commission";
 export * from "./discount";
 export * from "./availability";
 export * from "./quote";

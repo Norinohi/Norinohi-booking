@@ -1019,6 +1019,7 @@
       "credits": "Credits & Balance",
       "discount": "Discount Manager",
       "logout": "Log Out",
+      "commission": "Commission Rates",
       "duplicates": "Duplicate Review",
       "sync": "Sync History",
       "audit": "Audit Log",
@@ -1507,6 +1508,10 @@
     "nextBoat": "Next yacht"
   },
   "Seo": {
+    "Commissions": {
+      "title": "Commission Rates",
+      "description": "What CharterNavi earns through each provider."
+    },
     "Yachts": {
       "title": "Yacht Charter Search",
       "description": "Search yachts and catamarans for charter across the Mediterranean and beyond. Filter by destination, dates, guests and price."
@@ -2049,6 +2054,68 @@
     }
   },
   "Admin": {
+    "Commissions": {
+      "title": "Commission Rates",
+      "subtitle": "What CharterNavi earns through each provider, and from when.",
+      "add": "Add rate",
+      "edit": "Edit",
+      "switchOff": "Switch off",
+      "switchOn": "Switch on",
+      "switchedOff": "Rate switched off",
+      "switchedOn": "Rate switched on",
+      "created": "Rate added",
+      "updated": "Rate saved",
+      "error": "Couldn't load the commission rates",
+      "empty": "No rates yet. Until one is entered, commission plays no part in choosing which offer a visitor sees.",
+      "emptyFiltered": "No rates match these filters.",
+      "allOperators": "All operators",
+      "openEnded": "No end date",
+      "fromDate": "From {date}",
+      "untilDate": "Until {date}",
+      "note": "A rate only breaks a tie between two offers already equal on price and on obligatory extras. It can never be the reason a visitor is shown a dearer boat. Nothing in the sale reads these rates yet.",
+      "filters": {
+        "provider": "Provider",
+        "anyProvider": "All providers",
+        "status": "Status",
+        "anyStatus": "Any status"
+      },
+      "status": {
+        "active": "Active",
+        "scheduled": "Scheduled",
+        "expired": "Expired",
+        "inactive": "Switched off"
+      },
+      "table": {
+        "provider": "Provider",
+        "operator": "Operator",
+        "rate": "Rate",
+        "window": "Valid",
+        "status": "Status",
+        "added": "Added",
+        "actions": "Actions"
+      },
+      "dialog": {
+        "createTitle": "Add a commission rate",
+        "editTitle": "Edit commission rate",
+        "description": "What we earn on a sale through this provider. Leave the operator blank to cover every charter company at this vendor.",
+        "provider": "Provider",
+        "operator": "Operator",
+        "operatorSearch": "Search operators",
+        "allOperators": "All operators at this provider",
+        "ratePct": "Rate (%)",
+        "startsAt": "Starts",
+        "endsAt": "Ends",
+        "windowHint": "Both dates are optional and inclusive. Leave them empty for an agreement that runs until it is renegotiated.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…",
+        "errors": {
+          "rateRequired": "Enter a rate",
+          "rateRange": "Use a number between 0 and 100",
+          "endsBeforeStarts": "The end date cannot be before the start date"
+        }
+      }
+    },
     "Bookings": {
       "title": "Bookings",
       "subtitle": "Every booking on the platform, newest first. Open one to settle it.",
@@ -3087,6 +3154,11 @@
         "legend": "Preferred provider",
         "hint": "Which vendor wins when availability, price and mandatory fees are equal. It never overrides a cheaper offer: it only settles a tie.",
         "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
+      },
+      "ranking": {
+        "legend": "Offer ranking",
+        "toggle": "Rank on the charter rate",
+        "hint": "Off, the vendor whose all-in total is lower wins, which is what the guest actually pays. On, the charter rate decides and the obligatory extras only settle a tie on it. Ranking on the rate can pick the charter that costs the guest more overall."
       },
       "nameSearch": {
         "legend": "Free-text search",

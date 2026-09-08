@@ -41,6 +41,11 @@ export interface MarketplaceSettings {
   payment: MarketplacePaymentSettings;
   /** Provider codes, most preferred first. A code absent from it sorts after every code in it. */
   transactingPreference: ProviderCode[];
+  /**
+   * Whether the ranking compares charter rates rather than all-in totals. Off is what the
+   * marketplace has always done; the client's agreed order is the other setting.
+   */
+  offerRankingUsesBasePrice: boolean;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
   updatedAt: string | null;
@@ -65,6 +70,7 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     return {
       payment: DEFAULT_PAYMENT_SETTINGS,
       transactingPreference: [...DEFAULT_TRANSACTING_PREFERENCE],
+      offerRankingUsesBasePrice: false,
       nameSearchEnabled: false,
       updatedAt: null,
       updatedByUserId: null,
@@ -84,6 +90,7 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     /* An empty array would rank every vendor equally and leave the sale to the offer id, which
        is not a preference anybody meant to express. */
     transactingPreference: parsePreference(row.transactingPreference),
+    offerRankingUsesBasePrice: row.offerRankingUsesBasePrice,
     nameSearchEnabled: row.nameSearchEnabled,
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
@@ -93,6 +100,7 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
 export interface UpdateMarketplaceSettingsInput {
   payment: MarketplacePaymentSettings;
   transactingPreference: ProviderCode[];
+  offerRankingUsesBasePrice: boolean;
   nameSearchEnabled: boolean;
   actorUserId: string | null;
 }
@@ -119,6 +127,7 @@ export async function updateMarketplaceSettings(
     enforceDepositLeadTime: input.payment.enforceLeadTime,
     depositLeadTimeDays: input.payment.leadTimeDays,
     transactingPreference: input.transactingPreference,
+    offerRankingUsesBasePrice: input.offerRankingUsesBasePrice,
     nameSearchEnabled: input.nameSearchEnabled,
     updatedByUserId: input.actorUserId,
   };

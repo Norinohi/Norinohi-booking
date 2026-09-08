@@ -11,7 +11,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-import { id, timestamps } from "./_shared";
+import { id, pct, timestamps } from "./_shared";
 import { user } from "./auth";
 import { priceAdjustmentType } from "./admin";
 import { listing } from "./listing";
@@ -214,6 +214,18 @@ export const quoteOfferAttempt = pgTable(
     outcome: quoteOfferOutcome("outcome").notNull(),
     /** All-in comparable total, on the offers that answered with a price. */
     totalMinor: integer("total_minor"),
+    /**
+     * The two halves of that total, and the rate the winner was chosen on.
+     *
+     * Recorded for the same reason `total_minor` is: the choice has to be replayable. Once the
+     * ranking can be told to compare charter rates rather than all-in totals, "we picked the
+     * cheaper base" is a claim about a number that appears nowhere else -- the quote keeps only
+     * what the customer pays. `commission_pct` is the rate that applied on the day, since the
+     * agreement it came from can be edited or lapse afterwards.
+     */
+    baseMinor: integer("base_minor"),
+    obligatoryExtrasMinor: integer("obligatory_extras_minor"),
+    commissionPct: pct("commission_pct"),
     currency: text("currency"),
     latencyMs: integer("latency_ms"),
     /** The `RangeVerdict` for `ineligible`, the provider error class otherwise. */

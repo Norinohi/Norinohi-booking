@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace_setting" ADD COLUMN "offer_ranking_uses_base_price" boolean DEFAULT false NOT NULL;
