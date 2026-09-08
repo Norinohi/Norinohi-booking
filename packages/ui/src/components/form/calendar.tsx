@@ -28,6 +28,16 @@ type CalendarCommonProps = {
   onMonthChange?: (month: Date) => void;
   /** Return true to render a day as non-selectable. */
   disabled?: (date: Date) => boolean;
+  /**
+   * Extra treatment for one day: classes to merge onto the cell, and a phrase that becomes both
+   * the cell's hover tooltip and the tail of its accessible name.
+   *
+   * Kept as raw classes and a caller-written phrase rather than a set of named states, because
+   * why a day stands out is the caller's domain and this component has no business knowing it.
+   * A marked day is still only selectable if `disabled` says so: this adds to the treatment, it
+   * does not replace it.
+   */
+  dayModifier?: (date: Date) => { className?: string; label?: string } | undefined;
   /** BCP 47 tag for month and weekday names. Defaults to the browser's locale. */
   locale?: string;
   previousMonthLabel?: string;
@@ -154,6 +164,7 @@ function Calendar(props: CalendarProps) {
     className,
     weekStartsOn = 0,
     disabled,
+    dayModifier,
     locale,
     previousMonthLabel: previousMonthProp,
     nextMonthLabel: nextMonthProp,
@@ -305,13 +316,19 @@ function Calendar(props: CalendarProps) {
 
                 const isDisabled = disabled?.(date) ?? false;
                 const isToday = isSameDay(date, today);
+                const modifier = dayModifier?.(date);
 
                 return (
                   <button
                     key={key}
                     type="button"
                     disabled={isDisabled}
-                    aria-label={dayFormatter.format(date)}
+                    aria-label={
+                      modifier?.label
+                        ? `${dayFormatter.format(date)}, ${modifier.label}`
+                        : dayFormatter.format(date)
+                    }
+                    title={modifier?.label}
                     aria-pressed={pressed}
                     aria-current={isToday ? "date" : undefined}
                     data-outside={outside || undefined}
@@ -320,7 +337,10 @@ function Calendar(props: CalendarProps) {
                     onMouseEnter={
                       pendingSecondPick ? () => setHovered(startOfDay(date)) : undefined
                     }
-                    className={dayClassName({ outside, single, start, middle, end })}
+                    className={cn(
+                      dayClassName({ outside, single, start, middle, end }),
+                      modifier?.className,
+                    )}
                   >
                     {date.getDate()}
                   </button>

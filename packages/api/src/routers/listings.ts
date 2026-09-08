@@ -6,6 +6,7 @@ import {
   listListingReviews,
   listListingsByIds,
   listSimilarListings,
+  type PriceBasis,
 } from "@yacht-charter/db/search";
 import { z } from "zod";
 
@@ -15,9 +16,11 @@ import {
   listingsByIdsInputSchema,
   recordListingViewInputSchema,
 } from "../contracts/catalog";
+import type { Context } from "../context";
 import { publicProcedure } from "../index";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
 import { presentListingDetail, presentListingSummary } from "../presenters/listing";
+import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { recordListingView } from "../services/listing-view";
 
 const idInputSchema = z.object({
@@ -26,6 +29,18 @@ const idInputSchema = z.object({
   locale: z.string().min(2).max(10).default("en"),
 });
 const listingIdInputSchema = z.object({ listingId: z.string() });
+
+/**
+ * Which price the detail page and the cards beside it lead with.
+ *
+ * The same read the catalogue does, so a listing's own page and the card that led here quote
+ * the same figure. Nothing here caches it: one settings row per request is not what makes a
+ * page slow, and a stale copy would be a page arguing with the one before it.
+ */
+async function catalogueBasis(db: Context["db"]): Promise<PriceBasis> {
+  const { catalogueShowsBasePrice } = await getMarketplaceSettings(db);
+  return catalogueShowsBasePrice ? "base" : "all_in";
+}
 
 export const listingsRouter = {
   get: publicProcedure
@@ -50,7 +65,7 @@ export const listingsRouter = {
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
-      return presentListingDetail(listing);
+      return presentListingDetail(listing, await catalogueBasis(context.db));
     }),
   redirectTarget: publicProcedure
     .route({
@@ -91,7 +106,8 @@ export const listingsRouter = {
     .output(z.array(listingSummarySchema))
     .handler(async ({ context, input }) => {
       const docs = await listListingsByIds(context.db, input.listingIds);
-      return docs.map((doc) => presentListingSummary(doc));
+      const basis = await catalogueBasis(context.db);
+      return docs.map((doc) => presentListingSummary(doc, basis));
     }),
   recordView: publicProcedure
     .route({
@@ -168,7 +184,8 @@ export const listingsRouter = {
     .input(listingIdInputSchema)
     .output(z.array(listingSummarySchema))
     .handler(async ({ context, input }) => {
-      const listings = await listSimilarListings(context.db, input.listingId);
-      return listings.map((listing) => presentListingSummary(listing));
+      const basis = await catalogueBasis(context.db);
+      const listings = await listSimilarListings(context.db, input.listingId, undefined, basis);
+      return listings.map((listing) => presentListingSummary(listing, basis));
     }),
 };

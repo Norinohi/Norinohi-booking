@@ -8,6 +8,7 @@ import {
   BOOKINGS_PAGE_SIZE,
   bookingDetailQueryOptions,
   bookingQueueQueryOptions,
+  commissionListQueryOptions,
   duplicateQueueQueryOptions,
   enquiryListQueryOptions,
   invoiceListQueryOptions,
@@ -20,6 +21,11 @@ import {
 /** Server prefetch for /duplicates — the first page of the pending queue. */
 export function prefetchDuplicateQueue(queryClient: QueryClient) {
   return queryClient.prefetchQuery(duplicateQueueQueryOptions({ decision: "pending", page: 1 }));
+}
+
+/** Server prefetch for /commissions — the first page of rates, unfiltered. */
+export function prefetchCommissions(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(commissionListQueryOptions({ page: 1 }));
 }
 
 /** Server prefetch for /inbox — the first page of open booking questions. */

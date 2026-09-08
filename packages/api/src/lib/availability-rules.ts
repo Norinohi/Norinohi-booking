@@ -32,10 +32,23 @@ export type CharterRule = {
 
 export type DatePeriod = { startDate: string; endDate: string };
 
+/**
+ * Why a period is not on sale, as the provider's own calendar records it.
+ *
+ * `occupied` is sold, `option` is held and may come back, `blocked` is everything the operator
+ * withheld — service weeks, owner weeks, regattas. Nothing in this module reads it: all three
+ * refuse a charter equally, and the distinction exists for the one caller that shows a person
+ * why a day is greyed out.
+ */
+export type OccupiedStatus = "option" | "occupied" | "blocked";
+
+/** Optional because a caller that only asks whether a day is free need never carry it. */
+export type OccupiedPeriod = DatePeriod & { status?: OccupiedStatus };
+
 export type CharterConstraints = {
   /** Alternatives: a period is legal if any one rule admits it. */
   rules: readonly CharterRule[];
-  occupied: readonly DatePeriod[];
+  occupied: readonly OccupiedPeriod[];
   /** Periods carrying a published rate. Used as a season-open signal, not to price. */
   priced: readonly DatePeriod[];
   /**
@@ -100,7 +113,9 @@ function overlaps(checkIn: string, checkOut: string, period: DatePeriod): boolea
   return checkIn < period.endDate && period.startDate < checkOut;
 }
 
-function covers(period: DatePeriod, day: string): boolean {
+/* Exported so the multi-offer module asks the same half-open question of a day that the
+   single-offer rules do, rather than restating the boundary and drifting from it. */
+export function covers(period: DatePeriod, day: string): boolean {
   return period.startDate <= day && day < period.endDate;
 }
 

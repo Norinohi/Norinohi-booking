@@ -76,6 +76,7 @@
       "payment": "Pago"
     },
     "payment": {
+      "chargedIn": "Se cobrarán {amount} en {currency}. Los precios mostrados en otra moneda se convierten a tipos de referencia y son aproximados.",
       "heading": "Elige cómo quieres continuar",
       "submitFailed": "Algo salió mal. Inténtalo de nuevo.",
       "tabs": {
@@ -485,6 +486,10 @@
       "priceFor": "Precio del chárter · {days, plural, one {# día} other {# días}}",
       "priceIndicative": "Precio del chárter · mínimo de temporada",
       "priceFromLabel": "Desde",
+      "plusObligatory": "más {amount} de suplementos obligatorios",
+      "approximatePrice": "aprox.",
+      "chargedIn": "Cobro en {currency}: {amount}",
+      "currencyLabel": "Moneda",
       "priceOnRequest": "Bajo petición",
       "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
@@ -587,6 +592,10 @@
       }
     },
     "charterPeriod": {
+      "day": {
+        "booked": "Reservado",
+        "held": "Retenido temporalmente"
+      },
       "or": ", o ",
       "daysAndNights": "{days}, {nights}",
       "weekdayRange": "de {from} a {to}",
@@ -603,6 +612,7 @@
     },
     "countryPicker": {
       "search": "Buscar países",
+      "loading": "Cargando países…",
       "empty": "Ningún país coincide"
     },
     "errors": {
@@ -1015,6 +1025,7 @@
       "credits": "Créditos y saldo",
       "discount": "Gestión de descuentos",
       "logout": "Cerrar sesión",
+      "commission": "Tasas de comisión",
       "duplicates": "Revisión de duplicados",
       "sync": "Historial de sincronización",
       "audit": "Registro de auditoría",
@@ -1503,6 +1514,10 @@
     "nextBoat": "Yate siguiente"
   },
   "Seo": {
+    "Commissions": {
+      "title": "Tasas de comisión",
+      "description": "Lo que CharterNavi gana a través de cada proveedor."
+    },
     "Yachts": {
       "title": "Buscador de alquiler de yates",
       "description": "Busca yates y catamaranes de alquiler por el Mediterráneo y otros destinos. Filtra por destino, fechas, huéspedes y precio."
@@ -2045,6 +2060,68 @@
     }
   },
   "Admin": {
+    "Commissions": {
+      "title": "Tasas de comisión",
+      "subtitle": "Lo que CharterNavi gana a través de cada proveedor, y desde cuándo.",
+      "add": "Añadir tasa",
+      "edit": "Editar",
+      "switchOff": "Desactivar",
+      "switchOn": "Activar",
+      "switchedOff": "Tasa desactivada",
+      "switchedOn": "Tasa activada",
+      "created": "Tasa añadida",
+      "updated": "Tasa guardada",
+      "error": "No se pudieron cargar las tasas de comisión",
+      "empty": "Aún no hay tasas. Mientras no se introduzca ninguna, la comisión no interviene en la elección de la oferta.",
+      "emptyFiltered": "Ninguna tasa coincide con estos filtros.",
+      "allOperators": "Todos los operadores",
+      "openEnded": "Sin fecha de fin",
+      "fromDate": "Desde {date}",
+      "untilDate": "Hasta {date}",
+      "note": "Una tasa solo desempata entre dos ofertas ya iguales en precio y en suplementos obligatorios. Nunca puede ser el motivo por el que un cliente vea un barco más caro. Por ahora ningún paso de la venta lee estas tasas.",
+      "filters": {
+        "provider": "Proveedor",
+        "anyProvider": "Todos los proveedores",
+        "status": "Estado",
+        "anyStatus": "Cualquier estado"
+      },
+      "status": {
+        "active": "Activa",
+        "scheduled": "Programada",
+        "expired": "Caducada",
+        "inactive": "Desactivada"
+      },
+      "table": {
+        "provider": "Proveedor",
+        "operator": "Operador",
+        "rate": "Tasa",
+        "window": "Vigencia",
+        "status": "Estado",
+        "added": "Añadida",
+        "actions": "Acciones"
+      },
+      "dialog": {
+        "createTitle": "Añadir tasa de comisión",
+        "editTitle": "Editar tasa de comisión",
+        "description": "Lo que ganamos en una venta a través de este proveedor. Deja el operador vacío para cubrir todas las empresas de chárter de este proveedor.",
+        "provider": "Proveedor",
+        "operator": "Operador",
+        "operatorSearch": "Buscar operadores",
+        "allOperators": "Todos los operadores de este proveedor",
+        "ratePct": "Tasa (%)",
+        "startsAt": "Inicio",
+        "endsAt": "Fin",
+        "windowHint": "Ambas fechas son opcionales e inclusivas. Déjalas vacías para un acuerdo vigente hasta que se renegocie.",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "errors": {
+          "rateRequired": "Introduce una tasa",
+          "rateRange": "Usa un número entre 0 y 100",
+          "endsBeforeStarts": "La fecha de fin no puede ser anterior a la de inicio"
+        }
+      }
+    },
     "Bookings": {
       "title": "Reservas",
       "subtitle": "Todas las reservas de la plataforma, las más recientes primero. Abre una para gestionarla.",
@@ -2087,6 +2164,24 @@
     "Duplicates": {
       "title": "Revisión de duplicados",
       "subtitle": "Fusiona los anuncios que dos proveedores enviaron para el mismo yate.",
+      "metrics": {
+        "title": "Precisión del emparejador",
+        "subtitle": "Con qué frecuencia ha acertado cada regla hasta ahora.",
+        "decided": "{count, plural, =0 {Aún no se ha revisado ningún par} one {# par revisado detrás de estas cifras} other {# pares revisados detrás de estas cifras}}",
+        "error": "No se pudieron cargar las cifras de precisión",
+        "empty": "Todavía no se ha propuesto nada.",
+        "noSample": "Pocas decisiones",
+        "note": "La precisión son los pares confirmados sobre los confirmados y rechazados juntos. Las fusiones que después se deshicieron cuentan en contra de la regla. Los pares aplazados quedan fuera: nadie pudo decidirlos, y contarlos como fallos subestimaría una regla que funciona bien en los casos que sí resuelve.",
+        "table": {
+          "rule": "Regla",
+          "band": "Confianza",
+          "proposed": "Propuestos",
+          "confirmed": "Fusionados",
+          "rejected": "No son duplicados",
+          "undone": "Deshechos",
+          "precision": "Precisión"
+        }
+      },
       "filter": {
         "label": "Decisión",
         "pending": "Pendientes",
@@ -2240,6 +2335,25 @@
       "noteWas": "Nota: {note}"
     },
     "Sync": {
+      "reliability": {
+        "title": "Fiabilidad de los proveedores",
+        "subtitle": "Con qué frecuencia respondió cada proveedor mientras un cliente estaba pagando.",
+        "window": "Periodo de medición",
+        "windowValue": "Últimos {days} días",
+        "error": "No se pudieron cargar las cifras de fiabilidad",
+        "empty": "En este periodo no se pidió precio a ningún proveedor.",
+        "noSample": "Sin muestra",
+        "milliseconds": "{value} ms",
+        "note": "Una negativa cuenta como respuesta: se llegó al proveedor y dijo que el periodo está ocupado, lo cual es un hecho sobre el barco y no un conector roto. Solo un error o un tiempo de espera agotado cuentan en contra. Las peticiones que nuestro propio calendario rechazó antes de llamar a ningún proveedor quedan fuera de la tasa. Por ahora ningún paso de la venta lee estas cifras.",
+        "table": {
+          "provider": "Proveedor",
+          "asked": "Peticiones",
+          "answered": "Respondidas",
+          "failed": "Sin respuesta",
+          "successRatio": "Tasa de respuesta",
+          "latency": "Respuesta mediana"
+        }
+      },
       "title": "Historial de sincronización",
       "subtitle": "Todas las ejecuciones de catálogo y disponibilidad, de la más reciente a la más antigua.",
       "controls": {
@@ -3046,6 +3160,22 @@
         "legend": "Proveedor preferido",
         "hint": "Quién gana cuando la disponibilidad, el precio y los suplementos obligatorios coinciden. Nunca sustituye a una oferta más barata: solo resuelve un empate.",
         "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
+      },
+      "currency": {
+        "legend": "Moneda de visualización",
+        "toggle": "Mostrar los precios en la moneda del visitante",
+        "hint": "Solo visualización. Una reserva se liquida en la moneda en que se calculó, y la pantalla de pago indica el importe que se cobrará realmente en cuanto ambas difieran. Las cifras convertidas se marcan como aproximadas: los tipos de referencia no son los que aplica una red de tarjetas. Si los tipos han caducado, los precios se quedan en la moneda del proveedor.",
+        "fallback": "Cuando el país es desconocido"
+      },
+      "ranking": {
+        "reliabilityToggle": "Desempatar por la frecuencia de respuesta del proveedor",
+        "reliabilityHint": "Solo cuando el precio, los suplementos obligatorios y la comisión coinciden. Se omite si alguno de los dos proveedores tiene pocas peticiones en el periodo para medirlo, así un proveedor recién conectado nunca baja por su silencio. Las cifras están en la página de historial de sincronización.",
+        "windowDays": "Medido sobre los últimos (días)",
+        "catalogueToggle": "Mostrar el precio del chárter en las tarjetas",
+        "catalogueHint": "Desactivado, la tarjeta muestra el total. Activado, muestra el precio del chárter con los suplementos obligatorios debajo, y el orden, el filtro de precio y el deslizador leen la misma cifra. Independiente del interruptor anterior: lo que anuncia una tarjeta y a través de quién vendemos son decisiones distintas.",
+        "legend": "Elección de la oferta",
+        "toggle": "Comparar por el precio del chárter",
+        "hint": "Desactivado gana el proveedor con el total más bajo, que es lo que el cliente paga de verdad. Activado decide el precio del chárter y los suplementos obligatorios solo desempatan. Comparar por el precio del chárter puede elegir la reserva que en total le cuesta más al cliente."
       },
       "nameSearch": {
         "legend": "Búsqueda por texto libre",

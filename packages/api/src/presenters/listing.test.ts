@@ -56,6 +56,8 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   listPriceFromMinor: null,
   currency: "EUR",
   priceFromMinorEur: 1_240_000,
+  basePriceFromMinor: 1_000_000,
+  basePriceFromMinorEur: 1_000_000,
   availableFrom: "2026-06-13",
   availableTo: "2026-08-29",
   bookableFrom: null,
@@ -202,6 +204,7 @@ describe("badgesFor", () => {
       petsAllowed: false,
       depositInsuranceIncluded: false,
       rating: 4,
+      ratingCount: 12,
       bestValue: false,
     }).map((badge) => badge.code);
 
@@ -213,6 +216,7 @@ describe("badgesFor", () => {
       petsAllowed: false,
       depositInsuranceIncluded: false,
       rating: 4,
+      ratingCount: 12,
       bestValue: true,
     }).map((badge) => badge.code);
 
@@ -225,8 +229,48 @@ describe("badgesFor", () => {
       petsAllowed: false,
       depositInsuranceIncluded: false,
       rating: 5,
+      ratingCount: 12,
     }).map((badge) => badge.code);
 
     expect(codes).toEqual(["top-rated"]);
+  });
+
+  /*
+   * A provider may publish an aggregate with no count behind it, and the read model passes that
+   * through: Auszeit Dufour 430 sits at a flat 5.00 off zero ratings. The page justifies the
+   * number with "the score comes from N guest ratings", so at zero there is nothing to justify.
+   */
+  it("withholds top rated from a score nobody gave", () => {
+    const codes = badgesFor({
+      petsAllowed: false,
+      depositInsuranceIncluded: false,
+      rating: 5,
+      ratingCount: 0,
+    }).map((badge) => badge.code);
+
+    expect(codes).not.toContain("top-rated");
+  });
+});
+
+describe("presentListingSummary on the charter rate", () => {
+  it("headlines the all-in total by default and still names both figures", () => {
+    const card = presentListingSummary(doc());
+    expect(card.priceFrom?.amountMinor).toBe(1_240_000);
+    expect(card.allInPriceFrom?.amountMinor).toBe(1_240_000);
+    expect(card.basePriceFrom?.amountMinor).toBe(1_000_000);
+  });
+
+  it("headlines the rate when the catalogue is set to it, without hiding the total", () => {
+    const card = presentListingSummary(doc(), "base");
+    expect(card.priceFrom?.amountMinor).toBe(1_000_000);
+    /* The client's condition for showing the rate: the extras move out of the headline, not
+       out of the card. */
+    expect(card.allInPriceFrom?.amountMinor).toBe(1_240_000);
+  });
+
+  it("falls back to the total where the rate is missing, rather than dropping the price", () => {
+    const card = presentListingSummary(doc({ basePriceFromMinor: null }), "base");
+    expect(card.priceFrom?.amountMinor).toBe(1_240_000);
+    expect(card.basePriceFrom).toBeNull();
   });
 });

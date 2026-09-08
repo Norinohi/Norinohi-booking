@@ -42,7 +42,7 @@ export default function WishlistScreen() {
     <div className="flex flex-col">
       <AppBreadcrumbs items={[]} backLabel="Wishlist.back" backHref="/" />
 
-      <div className="px-4 py-6 md:px-13.5 md:py-10">
+      <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 md:py-10 xl:px-17.5">
         <div className="mx-auto max-w-349">
           <section className="overflow-hidden rounded-2xl border border-natural-100 bg-card">
             <div className="flex flex-wrap items-center justify-between gap-5 border-b border-natural-100 p-4 md:p-5">

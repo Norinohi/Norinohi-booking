@@ -86,6 +86,21 @@ const reviewSchema = z.object({
   body: z.string(),
 });
 
+/**
+ * The reference rates a browser converts displayed prices with.
+ *
+ * `rate` is units of that currency per one euro, which is how the ECB publishes them, and
+ * `asOf` is the publishing bank's own stamp rather than our fetch time -- per rate, because two
+ * banks write these on two schedules and one of them can stop while the other keeps answering.
+ * `maxAgeDays` is how far past that stamp this marketplace will still convert; beyond it a
+ * price stays in the currency it was quoted in.
+ */
+export const fxSnapshotSchema = z.object({
+  base: z.string(),
+  maxAgeDays: z.number().int(),
+  rates: z.record(z.string(), z.object({ rate: z.number(), asOf: z.string() })),
+});
+
 export const listingSummarySchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -157,6 +172,16 @@ export const listingSummarySchema = z.object({
   amenities: z.array(z.string()),
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
+  /**
+   * The two figures behind the headline, always both filled where a price exists.
+   *
+   * `priceFrom` is one of these, chosen by a marketplace setting: the all-in total the guest
+   * pays, or the charter rate alone as other charter sites advertise it. Both are sent so a
+   * card showing the rate can also say what the obligatory extras add, which is the condition
+   * the extras are allowed to leave the headline under.
+   */
+  allInPriceFrom: moneySchema.nullable(),
+  basePriceFrom: moneySchema.nullable(),
   /**
    * True where `priceFrom` is the cheapest week of the operator's season rather than the price
    * of the charter beside it, so the card reads "From €X" instead of pricing those dates.

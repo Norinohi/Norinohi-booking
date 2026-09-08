@@ -90,6 +90,14 @@ export type BoatCardProps = {
    */
   listPrice?: string;
   /**
+   * What the obligatory extras add, where the amount above is the charter rate without them.
+   *
+   * Sits under the price rather than beside it: it is the second half of one figure, not a
+   * second figure, and a card that showed a rate with no hint of what rides on top would be
+   * quoting a number the guest cannot pay.
+   */
+  priceExtras?: string;
+  /**
    * Whether the label reads into the amount ("From €1,690") rather than captioning it
    * ("Price for 7 days").
    *
@@ -328,6 +336,7 @@ function Action({
   priceLabel,
   price,
   listPrice,
+  priceExtras,
   priceLabelLeads,
   priceIsLabel,
   perPerson,
@@ -344,6 +353,7 @@ function Action({
   | "priceLabel"
   | "price"
   | "listPrice"
+  | "priceExtras"
   | "priceLabelLeads"
   | "priceIsLabel"
   | "perPerson"
@@ -421,6 +431,9 @@ function Action({
         <p className="text-sm font-medium leading-[1.3] text-natural-500">
           {perNight ?? perPerson}
         </p>
+        {priceExtras ? (
+          <p className="text-sm font-medium leading-[1.3] text-natural-500">{priceExtras}</p>
+        ) : null}
         {note ? <CardNote backdrop note={note} className="flex md:hidden" /> : null}
       </div>
 
@@ -482,6 +495,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           priceLabel={boat.priceLabel}
           price={boat.price}
           listPrice={boat.listPrice}
+          priceExtras={boat.priceExtras}
           priceLabelLeads={boat.priceLabelLeads}
           priceIsLabel={boat.priceIsLabel}
           perPerson={boat.perPerson}

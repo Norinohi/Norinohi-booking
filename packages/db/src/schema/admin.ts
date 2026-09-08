@@ -152,6 +152,67 @@ export const marketplaceSetting = pgTable(
       .default(["booking_manager", "nausys", "mock"])
       .notNull(),
     /**
+     * Whether the offer ranking compares charter rates instead of all-in totals.
+     *
+     * Off, which is what the marketplace has always done: the vendor whose total the guest
+     * actually pays is the cheaper one. On, it compares the rate a visitor sees quoted on other
+     * sites and settles a tie on the obligatory extras -- the order the client agreed, and one
+     * that can pick the dearer charter when a vendor's mandatory fees are heavier. A switch
+     * rather than a release, so the choice can be seen against the real catalogue and undone.
+     */
+    offerRankingUsesBasePrice: boolean("offer_ranking_uses_base_price").default(false).notNull(),
+    /**
+     * Whether a catalogue card shows the charter rate instead of the all-in total.
+     *
+     * Display and comparison move together: the sort, the price filter, the slider bounds and
+     * every "from" aggregate read whichever figure the card shows, because a page whose first
+     * card is not the cheapest of the ones on it is worse than either basis alone. Both figures
+     * are written on every rebuild, so this costs a cache purge rather than a reprojection.
+     *
+     * Independent of `offer_ranking_uses_base_price` on purpose: what a card advertises and
+     * which vendor we transact with are separate decisions, and the client may want the rate on
+     * the card long before agreeing to sell on it.
+     */
+    catalogueShowsBasePrice: boolean("catalogue_shows_base_price").default(false).notNull(),
+    /**
+     * Whether a vendor's recent answer rate breaks a tie the steps above it could not.
+     *
+     * Off until somebody has looked at the numbers on the sync screen, which is the whole point
+     * of measuring them in the open first. It only ever separates offers already equal on
+     * price, on obligatory extras and on commission -- a vendor is never preferred for being
+     * reliable while it is also dearer.
+     */
+    offerRankingUsesReliability: boolean("offer_ranking_uses_reliability").default(false).notNull(),
+    /**
+     * How many days of asks the answer rate is measured over.
+     *
+     * Thirty by default, matching what the dashboard opens on: long enough to survive one bad
+     * night, short enough that a connector fixed last week stops being punished for it.
+     */
+    reliabilityWindowDays: integer("reliability_window_days").default(30).notNull(),
+    /**
+     * Whether prices are shown in the visitor's own currency rather than the vendor's.
+     *
+     * Display only. A quote holds one currency and is settled in it, so nothing here changes
+     * what is charged -- the payment screen states the actual currency and amount whenever the
+     * two differ. Conversion happens in the browser after mount, because a cached page cannot
+     * vary by visitor without giving up the prerendered shell (docs/adr/0002).
+     */
+    displayCurrencyEnabled: boolean("display_currency_enabled").default(false).notNull(),
+    /** Where a visitor's country is unknown or unlisted. The catalogue's own base currency. */
+    displayCurrencyDefault: text("display_currency_default").default("EUR").notNull(),
+    /**
+     * Country to currency, overriding the code-level list for named countries only.
+     *
+     * Empty by default, which leaves the client's own list in force: USD for the United States,
+     * GBP for the United Kingdom, PLN for Poland, UAH for Ukraine, EUR across the euro area.
+     * Here so a country can be moved without a release, not so the list can be rebuilt.
+     */
+    displayCurrencyByCountry: jsonb("display_currency_by_country")
+      .$type<Record<string, string>>()
+      .default({})
+      .notNull(),
+    /**
      * Whether the search bar offers the free-text field.
      *
      * A testing affordance rather than a product feature: the design has no such field, so it

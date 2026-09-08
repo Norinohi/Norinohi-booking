@@ -13,6 +13,7 @@ import { listAvailabilityConstraints } from "@yacht-charter/db/search";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
+import { providerCommission } from "@yacht-charter/db/schema/commission";
 import { quoteOfferAttempt } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
@@ -22,7 +23,9 @@ import { env } from "@yacht-charter/env/server";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { rangeStatus } from "../lib/availability-rules";
+import { type CommissionRule, resolveCommissionRate } from "./commission";
 import { getMarketplaceSettings } from "./marketplace-settings";
+import { reliabilityByProvider } from "./provider-reliability";
 import { type OfferQuoteResult, pickWinner } from "./offer-choice";
 import { providerByKey } from "./provider-routing";
 
@@ -63,6 +66,8 @@ type OfferRow = {
   offerId: string;
   providerCode: string;
   currency: string | null;
+  /** Whose fleet this offer sells, where the vendor named one. Commission is negotiated on it. */
+  operatorId: string | null;
   /* Carried only so a persisted refusal can name the source row the sweep would have named. */
   listingSourceId: string | null;
 };
@@ -103,20 +108,49 @@ export async function selectBestOffer(
   }
 
   const eligible = await filterEligible(db, offers, input);
-  const results = await Promise.all(eligible.map((offer) => askOffer(fallback, offer, input)));
+  /*
+   * Read once for the whole selection rather than per offer: it is one small table, and the
+   * rate that applies is a question about the charter's own dates, which do not change between
+   * the offers being compared.
+   */
+  const commissionRules = await listCommissionRules(db, eligible);
+
+  const { transactingPreference, offerRankingUsesBasePrice, offerRankingUsesReliability } =
+    await getMarketplaceSettings(db);
+
+  /* Read only when the step is switched on, so an aggregate over every quote of the last month
+     is not run on a marketplace that has not asked for it. */
+  const reliability = offerRankingUsesReliability ? await cachedReliability(db) : null;
+
+  const results = await Promise.all(
+    eligible.map((offer) =>
+      askOffer(
+        fallback,
+        offer,
+        input,
+        resolveCommissionRate(commissionRules, {
+          providerCode: offer.providerCode,
+          operatorId: offer.operatorId,
+          on: input.checkIn,
+        }),
+        reliability?.get(offer.providerCode) ?? null,
+      ),
+    ),
+  );
 
   const attempts: OfferAttempt[] = [
     ...results.map((result) => result.attempt),
     ...ineligibleAttempts(offers, eligible),
   ];
 
-  /* Read per quote rather than cached in a module: an admin who reorders the vendors expects the
-     next sale to follow, and a singleton lookup is not what makes a quote slow. */
-  const { transactingPreference } = await getMarketplaceSettings(db);
-
   const { winner, currencyMismatch } = pickWinner(
     results.map((result): OfferQuoteResult => result.attempt),
-    { preferredCurrency: offers[0]?.currency ?? null, preference: transactingPreference },
+    {
+      preferredCurrency: offers[0]?.currency ?? null,
+      preference: transactingPreference,
+      rankOn: offerRankingUsesBasePrice ? "base" : "all_in",
+      useReliability: offerRankingUsesReliability,
+    },
   );
 
   if (!winner) {
@@ -140,12 +174,72 @@ export async function selectBestOffer(
   };
 }
 
+/**
+ * Every active rate that could apply to the vendors being asked, flattened for the resolver.
+ *
+ * Loaded whole rather than filtered per offer: the table holds one row per negotiated
+ * agreement, and narrowing it in SQL would cost a query per vendor to save reading a handful
+ * of rows. An empty table -- how this ships -- makes the resolver answer zero for everyone,
+ * which is the commission step switched off.
+ */
+/**
+ * The answer rates, kept for a few minutes.
+ *
+ * Unlike the settings row beside it, this is a window aggregate over every quote attempt of the
+ * last month, and running it per quote would put a scan in front of a visitor waiting on a
+ * price. Five minutes is far shorter than the window it summarises, so nothing here can be
+ * wrong for long -- a vendor that starts failing is ranked down within the same session, and
+ * the sale it wins meanwhile is one it was measured as able to serve.
+ *
+ * Per process rather than per deployment, and deliberately not invalidated when the setting
+ * changes: switching the step on reads it fresh on the next quote either way.
+ */
+const RELIABILITY_TTL_MS = 5 * 60 * 1000;
+
+let reliabilityCache: { at: number; rates: Map<string, number> } | null = null;
+
+async function cachedReliability(db: Database): Promise<Map<string, number>> {
+  const now = Date.now();
+  if (reliabilityCache && now - reliabilityCache.at < RELIABILITY_TTL_MS) {
+    return reliabilityCache.rates;
+  }
+
+  const { reliabilityWindowDays } = await getMarketplaceSettings(db);
+  const rates = await reliabilityByProvider(db, reliabilityWindowDays);
+  reliabilityCache = { at: now, rates };
+  return rates;
+}
+
+async function listCommissionRules(
+  db: Database,
+  offers: readonly OfferRow[],
+): Promise<CommissionRule[]> {
+  if (offers.length < 2) return [];
+
+  const rows = await db
+    .select({
+      id: providerCommission.id,
+      providerCode: providerTable.code,
+      operatorId: providerCommission.operatorId,
+      ratePct: providerCommission.ratePct,
+      startsAt: providerCommission.startsAt,
+      endsAt: providerCommission.endsAt,
+      active: providerCommission.active,
+    })
+    .from(providerCommission)
+    .innerJoin(providerTable, eq(providerTable.id, providerCommission.providerId))
+    .where(eq(providerCommission.active, true));
+
+  return rows.map((row) => ({ ...row, ratePct: Number(row.ratePct) }));
+}
+
 async function listOffersForListing(db: Database, listingId: string): Promise<OfferRow[]> {
   return db
     .select({
       offerId: listingOffer.id,
       providerCode: providerTable.code,
       currency: listingOffer.defaultCurrency,
+      operatorId: listingOffer.operatorId,
       listingSourceId: listingOffer.listingSourceId,
     })
     .from(listingOffer)
@@ -187,6 +281,8 @@ async function askOffer(
   fallback: InventoryProvider,
   offer: OfferRow,
   input: QuoteRequest,
+  commissionPct: number,
+  reliability: number | null,
 ): Promise<{ attempt: OfferAttempt; provider: InventoryProvider; priced: ProviderQuote | null }> {
   const started = Date.now();
   const provider = await providerByKey(fallback, offer.providerCode);
@@ -199,6 +295,8 @@ async function askOffer(
      * alone reverses the order whenever one vendor's mandatory fee is heavier, and taking the
      * quote's own figure is what keeps the comparison identical to the number we then show.
      */
+    const baseMinor = baseLineOf(priced);
+
     return {
       provider,
       priced,
@@ -207,7 +305,14 @@ async function askOffer(
         offerId: offer.offerId,
         providerCode: offer.providerCode,
         totalMinor: priced.total.amountMinor,
+        baseMinor,
+        /* Derived rather than summed from the mandatory lines, so the two halves always add
+           back to the total the customer is shown. `group` is optional on a line, and a
+           vendor that omits it would otherwise leave part of the bill in neither half. */
+        obligatoryMinor: priced.total.amountMinor - baseMinor,
         currency: priced.currency,
+        commissionPct,
+        reliability,
         latencyMs: Date.now() - started,
       },
     };
@@ -230,6 +335,20 @@ async function askOffer(
 
     return { provider, priced: null, attempt: { ...failure, latencyMs: Date.now() - started } };
   }
+}
+
+/**
+ * The charter rate out of a vendor's quote.
+ *
+ * The contract says an adapter marks exactly one line `base`, and every connector does. A
+ * quote without one still has to be sellable, so it falls back to the whole total: the rate
+ * then equals the all-in figure, both price comparators agree, and the offer is ranked the way
+ * it was before the two were told apart. Losing a sale over a missing label would be a worse
+ * answer than ranking it as we always did.
+ */
+function baseLineOf(priced: ProviderQuote): number {
+  const base = priced.lines.find((line) => line.kind === "base");
+  return base ? base.amount.amountMinor : priced.total.amountMinor;
 }
 
 function ineligibleAttempts(
@@ -398,6 +517,9 @@ export async function recordOfferAttempts(
           : ("lost" as const)
         : attempt.outcome,
     totalMinor: attempt.outcome === "priced" ? attempt.totalMinor : null,
+    baseMinor: attempt.outcome === "priced" ? attempt.baseMinor : null,
+    obligatoryExtrasMinor: attempt.outcome === "priced" ? attempt.obligatoryMinor : null,
+    commissionPct: attempt.outcome === "priced" ? attempt.commissionPct.toFixed(4) : null,
     currency: attempt.outcome === "priced" ? attempt.currency : null,
     latencyMs: attempt.latencyMs,
     reason: attempt.outcome === "priced" ? null : attempt.reason,

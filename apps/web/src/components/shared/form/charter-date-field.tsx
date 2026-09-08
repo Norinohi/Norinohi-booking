@@ -6,10 +6,12 @@ import {
   combinedCanCheckOut,
   combinedLegalCheckOuts,
   firstCombinedCheckInDay,
+  occupancyStatusOn,
   type OfferConstraints,
 } from "@yacht-charter/api/lib/offer-availability";
 import type { DateRange } from "@yacht-charter/ui/components/form/calendar";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 
 import DatePicker from "@/components/shared/form/date-picker";
@@ -17,6 +19,27 @@ import { useCharterPeriodLabel } from "@/hooks/use-charter-period";
 import { dayFromNative, dayToNative } from "@/lib/date";
 
 export type CharterPeriod = { checkIn: string; checkOut: string };
+
+/*
+ * The two reasons a greyed day is worth explaining, and how each is tinted.
+ *
+ * Only these two: a day the operator withheld for a service week or a regatta is its own
+ * business and stays plain grey. The tint sits on top of the disabled treatment rather than
+ * replacing it, so a marked day still reads as unclickable.
+ */
+const OCCUPANCY_TINT = {
+  booked: "bg-error-50 text-error-500",
+  held: "bg-warning-50 text-warning-600",
+} as const;
+
+/*
+ * The cell keeps its hover, so the tooltip naming the reason can actually be reached: the
+ * calendar takes pointer events off every disabled day, and a tint nobody can hover over says
+ * only that something is different about this date. Important because the rule it overrides is
+ * a `disabled:` variant, which the cascade would otherwise apply last whatever the class order.
+ * The cursor goes back to an arrow so the day still reads as unclickable, which it is.
+ */
+const MARKED_DAY = "pointer-events-auto! cursor-default";
 
 /*
  * The date control for a charter, driven by what the listing's offers will sell rather than by
@@ -50,6 +73,7 @@ export default function CharterDateField({
   className,
   triggerClassName,
 }: CharterDateFieldProps) {
+  const t = useTranslations("Common.charterPeriod");
   const [pending, setPending] = useState<DateRange | undefined>(undefined);
   const [open, setOpen] = useState(false);
   /* Read once per mount: a clock read during render would differ between server and client. */
@@ -99,6 +123,18 @@ export default function CharterDateField({
     return !combinedCanCheckIn(day, offers);
   }
 
+  /*
+   * Why this particular day is unavailable, where we are willing to say. Read from the vendors'
+   * calendars rather than from `isDayDisabled`, which refuses far more days than are actually
+   * taken - a turnaround weekday is not a booking, and marking it as one would be a lie about
+   * the boat.
+   */
+  function dayModifier(date: Date) {
+    const status = occupancyStatusOn(dayFromNative(date), offers);
+    if (!status) return undefined;
+    return { className: cn(OCCUPANCY_TINT[status], MARKED_DAY), label: t(`day.${status}`) };
+  }
+
   function handleChange(next: DateRange | undefined) {
     if (next?.from && !next.to) {
       /*
@@ -133,6 +169,8 @@ export default function CharterDateField({
         value={range}
         onValueChange={handleChange}
         disabled={disabled ? alwaysDisabled : isDayDisabled}
+        dayModifier={disabled ? undefined : dayModifier}
+        legend={<OccupancyLegend />}
         defaultMonth={openMonth ? dayToNative(openMonth) : undefined}
         hint={periodLabel ?? undefined}
         open={open}
@@ -149,6 +187,22 @@ export default function CharterDateField({
       */}
       {periodLabel ? <p className="text-sm leading-[1.3] text-natural-500">{periodLabel}</p> : null}
     </div>
+  );
+}
+
+/* Under the grid rather than beside each cell: two colours need saying once, not thirty times. */
+function OccupancyLegend() {
+  const t = useTranslations("Common.charterPeriod");
+
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 rounded-lg bg-natural-50 px-3 py-2 text-sm leading-[1.3] text-natural-600">
+      {(["booked", "held"] as const).map((status) => (
+        <li key={status} className="flex items-center gap-2">
+          <span aria-hidden className={cn("size-3 rounded-xs", OCCUPANCY_TINT[status])} />
+          {t(`day.${status}`)}
+        </li>
+      ))}
+    </ul>
   );
 }
 

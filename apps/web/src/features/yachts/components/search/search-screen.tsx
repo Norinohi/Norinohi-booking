@@ -35,6 +35,10 @@ import SearchBar from "./search-bar";
 
 const YACHTS_MAP_HREF = "/yachts/map";
 
+/* The page container every other screen uses — the navigation bar and footer included, which is
+   what keeps the search bar and the results grid on the same edges as the header at every width. */
+const CONTAINER = "mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5";
+
 /*
  * This screen is split three ways on purpose.
  *
@@ -257,17 +261,20 @@ export default function SearchScreen({
 
   return (
     <div className="flex flex-col">
-      <div className="border-b border-natural-50 px-4 py-6 md:px-13.5">
-        {/* Screen-reader only: the design has no slot for a page heading here. Outside the
-            boundary all the same, or it never reaches the HTML a crawler receives. */}
-        <h1 className="sr-only">{heading ?? t("heading")}</h1>
-        <Suspense fallback={null}>
-          <SearchBarSection locked={locked} />
-        </Suspense>
+      {/* The rule spans the viewport; only what sits on it lines up with the page container. */}
+      <div className="border-b border-natural-50">
+        <div className={CONTAINER}>
+          {/* Screen-reader only: the design has no slot for a page heading here. Outside the
+              boundary all the same, or it never reaches the HTML a crawler receives. */}
+          <h1 className="sr-only">{heading ?? t("heading")}</h1>
+          <Suspense fallback={null}>
+            <SearchBarSection locked={locked} />
+          </Suspense>
+        </div>
       </div>
 
-      <div className=" w-full md:px-13.5 px-4 py-6">
-        <div className="max-w-349  mx-auto grid w-full gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)]">
+      <div className={CONTAINER}>
+        <div className="grid w-full gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)]">
           <aside className="flex flex-col gap-5">
             {/* Static: no URL or query dependency, so it prerenders and is the shell's anchor. */}
             <div

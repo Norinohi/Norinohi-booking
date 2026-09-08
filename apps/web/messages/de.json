@@ -76,6 +76,7 @@
       "payment": "Zahlung"
     },
     "payment": {
+      "chargedIn": "Abgebucht werden {amount} in {currency}. In einer anderen Währung angezeigte Preise sind zu Referenzkursen umgerechnet und ungefähr.",
       "heading": "Wählen Sie, wie Sie fortfahren möchten",
       "submitFailed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
       "tabs": {
@@ -485,6 +486,10 @@
       "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
       "priceIndicative": "Charterpreis · Saisonminimum",
       "priceFromLabel": "Ab",
+      "plusObligatory": "zzgl. {amount} Pflichtzuschläge",
+      "approximatePrice": "ca.",
+      "chargedIn": "Abbuchung in {currency}: {amount}",
+      "currencyLabel": "Währung",
       "priceOnRequest": "Auf Anfrage",
       "priceUnavailable": "Nicht verfügbar",
       "perPerson": "{price} pro Person",
@@ -587,6 +592,10 @@
       }
     },
     "charterPeriod": {
+      "day": {
+        "booked": "Gebucht",
+        "held": "Vorübergehend reserviert"
+      },
       "or": " oder ",
       "daysAndNights": "{days}, {nights}",
       "weekdayRange": "{from} bis {to}",
@@ -603,6 +612,7 @@
     },
     "countryPicker": {
       "search": "Länder suchen",
+      "loading": "Länder werden geladen…",
       "empty": "Keine passenden Länder"
     },
     "errors": {
@@ -1015,6 +1025,7 @@
       "credits": "Guthaben & Saldo",
       "discount": "Rabattverwaltung",
       "logout": "Abmelden",
+      "commission": "Provisionssätze",
       "duplicates": "Duplikatprüfung",
       "sync": "Sync-Verlauf",
       "audit": "Audit-Log",
@@ -1503,6 +1514,10 @@
     "nextBoat": "Nächste Yacht"
   },
   "Seo": {
+    "Commissions": {
+      "title": "Provisionssätze",
+      "description": "Was CharterNavi über jeden Anbieter verdient."
+    },
     "Yachts": {
       "title": "Yachtcharter-Suche",
       "description": "Suchen Sie Yachten und Katamarane zum Chartern im Mittelmeer und darüber hinaus. Filtern Sie nach Reiseziel, Terminen, Gästen und Preis."
@@ -2045,6 +2060,68 @@
     }
   },
   "Admin": {
+    "Commissions": {
+      "title": "Provisionssätze",
+      "subtitle": "Was CharterNavi über jeden Anbieter verdient, und ab wann.",
+      "add": "Satz hinzufügen",
+      "edit": "Bearbeiten",
+      "switchOff": "Deaktivieren",
+      "switchOn": "Aktivieren",
+      "switchedOff": "Satz deaktiviert",
+      "switchedOn": "Satz aktiviert",
+      "created": "Satz hinzugefügt",
+      "updated": "Satz gespeichert",
+      "error": "Provisionssätze konnten nicht geladen werden",
+      "empty": "Noch keine Sätze. Solange keiner erfasst ist, spielt die Provision bei der Auswahl des Angebots keine Rolle.",
+      "emptyFiltered": "Keine Sätze passen zu diesen Filtern.",
+      "allOperators": "Alle Vercharterer",
+      "openEnded": "Kein Enddatum",
+      "fromDate": "Ab {date}",
+      "untilDate": "Bis {date}",
+      "note": "Ein Satz entscheidet nur zwischen zwei Angeboten, die bei Preis und Pflichtzuschlägen bereits gleich sind. Er darf nie der Grund sein, warum ein Gast ein teureres Boot sieht. Bisher liest kein Schritt des Verkaufs diese Sätze.",
+      "filters": {
+        "provider": "Anbieter",
+        "anyProvider": "Alle Anbieter",
+        "status": "Status",
+        "anyStatus": "Beliebiger Status"
+      },
+      "status": {
+        "active": "Aktiv",
+        "scheduled": "Geplant",
+        "expired": "Abgelaufen",
+        "inactive": "Deaktiviert"
+      },
+      "table": {
+        "provider": "Anbieter",
+        "operator": "Vercharterer",
+        "rate": "Satz",
+        "window": "Gültig",
+        "status": "Status",
+        "added": "Erfasst",
+        "actions": "Aktionen"
+      },
+      "dialog": {
+        "createTitle": "Provisionssatz hinzufügen",
+        "editTitle": "Provisionssatz bearbeiten",
+        "description": "Was wir an einem Verkauf über diesen Anbieter verdienen. Ohne Vercharterer gilt der Satz für alle Charterfirmen dieses Anbieters.",
+        "provider": "Anbieter",
+        "operator": "Vercharterer",
+        "operatorSearch": "Vercharterer suchen",
+        "allOperators": "Alle Vercharterer dieses Anbieters",
+        "ratePct": "Satz (%)",
+        "startsAt": "Beginn",
+        "endsAt": "Ende",
+        "windowHint": "Beide Daten sind optional und einschließlich. Leer lassen für eine Vereinbarung, die bis zur Neuverhandlung gilt.",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert…",
+        "errors": {
+          "rateRequired": "Satz eingeben",
+          "rateRange": "Zahl zwischen 0 und 100 verwenden",
+          "endsBeforeStarts": "Das Enddatum darf nicht vor dem Startdatum liegen"
+        }
+      }
+    },
     "Bookings": {
       "title": "Buchungen",
       "subtitle": "Alle Buchungen auf der Plattform, neueste zuerst. Öffnen Sie eine, um sie abzuwickeln.",
@@ -2087,6 +2164,24 @@
     "Duplicates": {
       "title": "Duplikatprüfung",
       "subtitle": "Führen Sie ähnliche Inserate zusammen, die zwei Anbieter für dieselbe Yacht gesendet haben.",
+      "metrics": {
+        "title": "Treffergenauigkeit",
+        "subtitle": "Wie oft jede Regel bisher richtig lag.",
+        "decided": "{count, plural, =0 {Noch keine Paare geprüft} one {# geprüftes Paar hinter diesen Werten} other {# geprüfte Paare hinter diesen Werten}}",
+        "error": "Genauigkeitswerte konnten nicht geladen werden",
+        "empty": "Es wurde noch nichts vorgeschlagen.",
+        "noSample": "Zu wenige Entscheidungen",
+        "note": "Die Genauigkeit sind die bestätigten Paare geteilt durch bestätigte und abgelehnte zusammen. Zusammenführungen, die später wieder getrennt wurden, zählen gegen die Regel. Zurückgestellte Paare bleiben außen vor: Sie waren nicht zu entscheiden, und sie als Fehler zu zählen würde eine Regel unterschätzen, die bei den entschiedenen Fällen gut arbeitet.",
+        "table": {
+          "rule": "Regel",
+          "band": "Konfidenz",
+          "proposed": "Vorgeschlagen",
+          "confirmed": "Zusammengeführt",
+          "rejected": "Keine Duplikate",
+          "undone": "Rückgängig",
+          "precision": "Genauigkeit"
+        }
+      },
       "filter": {
         "label": "Entscheidung",
         "pending": "Ausstehend",
@@ -2240,6 +2335,25 @@
       "noteWas": "Notiz: {note}"
     },
     "Sync": {
+      "reliability": {
+        "title": "Zuverlässigkeit der Anbieter",
+        "subtitle": "Wie oft jeder Anbieter geantwortet hat, während ein Gast an der Kasse stand.",
+        "window": "Messzeitraum",
+        "windowValue": "Letzte {days} Tage",
+        "error": "Zuverlässigkeitswerte konnten nicht geladen werden",
+        "empty": "In diesem Zeitraum wurde kein Anbieter nach einem Preis gefragt.",
+        "noSample": "Keine Stichprobe",
+        "milliseconds": "{value} ms",
+        "note": "Eine Absage zählt als Antwort: Der Anbieter war erreichbar und hat gesagt, dass der Zeitraum vergeben ist, was eine Aussage über die Yacht ist und nicht über einen defekten Konnektor. Nur Fehler und Zeitüberschreitungen zählen gegen einen Anbieter. Anfragen, die unser eigener Kalender abgelehnt hat, bevor überhaupt ein Anbieter gefragt wurde, fließen gar nicht in die Quote ein. Bisher liest kein Schritt des Verkaufs diese Zahlen.",
+        "table": {
+          "provider": "Anbieter",
+          "asked": "Anfragen",
+          "answered": "Beantwortet",
+          "failed": "Keine Antwort",
+          "successRatio": "Antwortquote",
+          "latency": "Mittlere Antwortzeit"
+        }
+      },
       "title": "Synchronisierungsverlauf",
       "subtitle": "Alle Katalog- und Verfügbarkeitsläufe, neueste zuerst.",
       "controls": {
@@ -3046,6 +3160,22 @@
         "legend": "Bevorzugter Anbieter",
         "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+      },
+      "currency": {
+        "legend": "Anzeigewährung",
+        "toggle": "Preise in der Währung des Besuchers zeigen",
+        "hint": "Nur zur Anzeige. Eine Buchung wird in der Währung abgerechnet, in der sie kalkuliert wurde, und der Zahlungsbildschirm nennt den Betrag, der tatsächlich abgebucht wird, sobald beide auseinandergehen. Umgerechnete Beträge sind als ungefähr gekennzeichnet: Referenzkurse sind nicht die Kurse der Kartennetze. Sind die Kurse veraltet, bleiben die Preise in der Währung des Anbieters.",
+        "fallback": "Wenn das Land unbekannt ist"
+      },
+      "ranking": {
+        "reliabilityToggle": "Gleichstand über die Antwortquote lösen",
+        "reliabilityHint": "Nur wenn Preis, Pflichtzuschläge und Provision gleich sind. Übersprungen, sobald einer der beiden Anbieter im Zeitraum zu wenige Anfragen für eine Messung hat, damit ein neu angebundener Anbieter nie für sein Schweigen zurückgestuft wird. Die Zahlen stehen auf der Seite Sync-Verlauf.",
+        "windowDays": "Gemessen über die letzten (Tage)",
+        "catalogueToggle": "Charterpreis auf den Karten zeigen",
+        "catalogueHint": "Aus zeigt eine Karte den Gesamtpreis. An zeigt sie den reinen Charterpreis mit den Pflichtzuschlägen darunter, und Sortierung, Preisfilter und Schieberegler folgen derselben Zahl. Unabhängig vom Schalter darüber: was eine Karte bewirbt und über wen wir verkaufen, sind zwei Entscheidungen.",
+        "legend": "Angebotsauswahl",
+        "toggle": "Nach Charterpreis vergleichen",
+        "hint": "Aus gewinnt der Anbieter mit dem niedrigeren Gesamtpreis, also mit dem Betrag, den der Gast tatsächlich zahlt. An entscheidet der reine Charterpreis, und die Pflichtzuschläge lösen nur einen Gleichstand auf. Der Vergleich nach Charterpreis kann den Törn wählen, der den Gast insgesamt mehr kostet."
       },
       "nameSearch": {
         "legend": "Freitextsuche",

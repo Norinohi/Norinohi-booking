@@ -39,10 +39,28 @@ export interface BookingManagerClientOptions {
  * error indistinguishable from one that was never permitted, and nothing on the
  * reservation can be read back to tell them apart.
  *
+ * `POST /reservation` is the same hazard with a booking behind it. There is no
+ * idempotency key: an `Idempotency-Key` header is accepted, never echoed and has
+ * no effect, and `myReservationId` is refused for the slot rather than for the
+ * value, so it does not dedupe either. Measured 2026-08-20, resubmitting the same
+ * yacht, period and minute answered `201` with an undocumented `status 9` record
+ * that carries no `expirationDate` and appears in neither `/reservations/{year}`
+ * nor `/availability/{year}`. A retry after a lost response therefore leaves an
+ * orphaned second reservation nobody can see. The endpoint times out often enough
+ * for that to be reachable: 504s with an HTML body under load, and a cold start
+ * near 30 s on each of the vendor's six servers.
+ *
+ * So a create is attempted once and a timeout surfaces as an indeterminate state
+ * for `reservation-reconcile` to settle against the vendor's own record, which is
+ * the only place the truth exists.
+ *
  * This is enforced here rather than left to the call site because the hazard is
  * precisely that someone wires the endpoint up and does not know about it.
  */
-const NON_IDEMPOTENT_ENDPOINTS = new Set<string>([bookingManagerEndpoints.requests]);
+const NON_IDEMPOTENT_ENDPOINTS = new Set<string>([
+  bookingManagerEndpoints.requests,
+  bookingManagerEndpoints.reservation,
+]);
 
 function retryOptionsFor(endpoint: string): ProviderRequestOptions | undefined {
   return NON_IDEMPOTENT_ENDPOINTS.has(endpoint) ? { retry: { maxAttempts: 1 } } : undefined;

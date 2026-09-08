@@ -8,6 +8,7 @@ import type {
   FaqScope,
   RouteKind,
   BookingStatus,
+  CommissionStatus,
   DuplicateConfidenceFilter,
   DuplicateDecision,
   EnquiryStatus,
@@ -36,6 +37,7 @@ export const LISTINGS_PAGE_SIZE = 20;
 export const BOOKINGS_PAGE_SIZE = 20;
 export const ROUTES_PAGE_SIZE = 20;
 export const FAQ_PAGE_SIZE = 20;
+export const COMMISSIONS_PAGE_SIZE = 20;
 
 /** The bookings whose money is owed back — the refund tab's entire filter. */
 export const REFUND_QUEUE_STATUSES: readonly BookingStatus[] = ["REFUND_PENDING"];
@@ -75,6 +77,14 @@ export const duplicateQueueQueryOptions = (input: {
  */
 export const duplicateDetailQueryOptions = (candidateId: string) =>
   orpc.admin.match.detail.queryOptions({ input: { candidateId }, staleTime: 300_000 });
+
+/*
+ * Precision per rule and band. Cached longer than the queue because it only moves as pairs are
+ * reviewed, and it still refreshes on a verdict: the mutations invalidate the whole
+ * `admin.match` segment, which is right here — a decision is exactly what changes these rates.
+ */
+export const duplicateMetricsQueryOptions = () =>
+  orpc.admin.match.metrics.queryOptions({ input: {}, staleTime: 300_000 });
 
 /*
  * The staff inbox reads two unrelated queues side by side: questions about existing bookings
@@ -183,6 +193,37 @@ export const listingAdminListQueryOptions = (input: {
  */
 export const providerCapabilitiesQueryOptions = () =>
   orpc.admin.provider.capabilities.queryOptions({ staleTime: Number.POSITIVE_INFINITY });
+
+/*
+ * How each vendor has been answering, over a window the reader picks. Cached for a minute: it
+ * is an aggregate over every quote of the last month, and one more attempt cannot move it.
+ */
+export const providerReliabilityQueryOptions = (windowDays: number) =>
+  orpc.admin.provider.reliability.queryOptions({ input: { windowDays }, staleTime: 60_000 });
+
+/*
+ * The commission rates staff have entered. Short staleTime for the reason the other staff
+ * queues have one: two people can be editing the same agreements, and a rate a colleague has
+ * just switched off must not stay listed as active here.
+ */
+export const commissionListQueryOptions = (input: {
+  provider?: ProviderKey;
+  status?: CommissionStatus;
+  page: number;
+  pageSize?: number;
+}) =>
+  orpc.admin.commission.list.queryOptions({
+    input: { ...input, pageSize: input.pageSize ?? COMMISSIONS_PAGE_SIZE },
+    staleTime: 15_000,
+  });
+
+/* The rate form's operator picker. Operators are written by the catalogue sync and effectively
+   fixed between runs, so a search result keeps for a minute. */
+export const commissionOperatorOptionsQueryOptions = (query: string) =>
+  orpc.admin.commission.operatorOptions.queryOptions({
+    input: { query: query || undefined },
+    staleTime: 60_000,
+  });
 
 export const syncRunsQueryOptions = (input: {
   provider?: ProviderKey;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseEcbEnvelope } from "./rates";
+import { parseEcbEnvelope, parseNbuRate } from "./rates";
 
 /* Trimmed to the three nested Cubes and two currencies; the live feed carries about thirty. */
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
@@ -48,5 +48,41 @@ describe("parseEcbEnvelope", () => {
 
   it("rejects a rate that is not a number", () => {
     expect(() => parseEcbEnvelope(FEED.replace("rate='1.1643'", "rate='n/a'"))).toThrow();
+  });
+});
+
+describe("parseNbuRate", () => {
+  /* The bank's own shape, as it answers today. */
+  const quote = {
+    r030: 978,
+    txt: "Євро",
+    rate: 51.6817,
+    cc: "EUR",
+    exchangedate: "08.09.2026",
+    special: null,
+  };
+  const payload = JSON.stringify([quote]);
+
+  it("reads the euro rate and turns the bank's date into an ISO one", () => {
+    /* dd.mm.yyyy sorts and compares as nothing at all, and `as_of` is compared on every write. */
+    expect(parseNbuRate(payload)).toEqual({ rate: 51.6817, asOf: "2026-09-08" });
+  });
+
+  it("refuses an answer about some other currency", () => {
+    expect(() => parseNbuRate(JSON.stringify([{ ...quote, cc: "USD" }]))).toThrow();
+  });
+
+  it("refuses a rate that cannot be divided by", () => {
+    expect(() => parseNbuRate(JSON.stringify([{ ...quote, rate: 0 }]))).toThrow();
+  });
+
+  it("refuses an empty answer rather than writing nothing quietly", () => {
+    expect(() => parseNbuRate("[]")).toThrow();
+  });
+
+  it("refuses a date it cannot read", () => {
+    expect(() =>
+      parseNbuRate(JSON.stringify([{ ...quote, exchangedate: "2026-09-08" }])),
+    ).toThrow();
   });
 });

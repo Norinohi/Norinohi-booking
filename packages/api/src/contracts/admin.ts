@@ -42,6 +42,51 @@ export const syncRunOutcomeSchema = z.discriminatedUnion("started", [
 
 export const syncRunsStartedSchema = z.object({ runs: z.array(syncRunOutcomeSchema) });
 
+/* ------------------------------------------------- provider reliability */
+
+/** Thirty days by default: long enough to survive one bad night, short enough to still be news. */
+export const providerReliabilityInputSchema = z
+  .object({
+    windowDays: z
+      .number()
+      .int()
+      .min(1)
+      .max(365)
+      .default(30)
+      .describe("How many days back to measure, ending now."),
+  })
+  .default({ windowDays: 30 });
+
+export const providerReliabilityRowSchema = z.object({
+  /** Stored as text on the attempt, so a connector this build no longer ships still reports. */
+  provider: z.string(),
+  asked: z.number().int().describe("Every offer put to this vendor, answered or not."),
+  answered: z
+    .number()
+    .int()
+    .describe("Priced, lost, or refused. A refusal is an answer: the vendor was reached."),
+  failed: z.number().int().describe("Errored or ran out of time, so the vendor said nothing."),
+  ineligible: z
+    .number()
+    .int()
+    .describe(
+      "Never put to the vendor: our own cached calendar had already refused the period. Counted separately because it scores our data rather than the vendor's service.",
+    ),
+  /**
+   * Answered over answered-plus-failed. Null until the vendor has been reached about something,
+   * because a rate computed from nothing reads as a verdict on a vendor nobody asked.
+   */
+  successRatio: z.number().nullable(),
+  /** Median over answers alone: a timeout reports our own ceiling rather than their speed. */
+  p50LatencyMs: z.number().int().nullable(),
+});
+
+export const providerReliabilitySchema = z.object({
+  windowDays: z.number().int(),
+  /** Least reliable first, so the vendor worth worrying about leads. */
+  rows: z.array(providerReliabilityRowSchema),
+});
+
 export const syncRunStatusInputSchema = z
   .object({
     /** Defaults to the provider's most recent run. */
@@ -442,6 +487,91 @@ export const auditRowSchema = z.object({
 });
 
 export const auditListSchema = paginatedSchema(auditRowSchema);
+
+/* -------------------------------------------------------------- commissions */
+
+/*
+ * What CharterNavi earns through each vendor. Entered by staff, read by nothing yet: the
+ * agreed ranking uses it only to separate two offers already equal on price and on obligatory
+ * extras, and an empty table is that step switched off.
+ */
+
+/** Derived from `active` plus the window, never stored — the same four the discounts use. */
+export const commissionStatusSchema = z.enum(["active", "scheduled", "expired", "inactive"]);
+
+export const commissionSchema = z.object({
+  id: z.string(),
+  provider: providerKeyOutputSchema,
+  /** Translated in the console; carried so the table need not resolve the code itself. */
+  providerName: z.string(),
+  operatorId: z.string().nullable(),
+  /** Null for a rate that covers every operator at this vendor. */
+  operatorName: z.string().nullable(),
+  /** A percentage: 15 is fifteen percent. */
+  ratePct: z.number(),
+  startsAt: z.string().nullable(),
+  endsAt: z.string().nullable(),
+  active: z.boolean(),
+  status: commissionStatusSchema,
+  createdAt: z.string(),
+});
+
+const COMMISSION_PAGE_SIZE = 20;
+
+export const commissionListInputSchema = z
+  .object({
+    provider: providerKeyOutputSchema.optional(),
+    status: commissionStatusSchema.optional(),
+    ...paginationInputSchema({ maxPageSize: 100, defaultPageSize: COMMISSION_PAGE_SIZE }),
+  })
+  .default(paginationInputDefault(COMMISSION_PAGE_SIZE));
+
+export const commissionListSchema = paginatedSchema(commissionSchema);
+
+export const commissionIdInputSchema = z.object({ id: idSchema });
+
+const commissionFieldsSchema = z.object({
+  provider: providerKeyOutputSchema,
+  /** Omit or null for every operator at this vendor. */
+  operatorId: z.string().min(1).nullable().optional(),
+  ratePct: z.number().min(0).max(100),
+  startsAt: isoDateSchema.nullable().optional(),
+  endsAt: isoDateSchema.nullable().optional(),
+});
+
+/*
+ * Only the window needs checking. The rate's bounds are on the field and the database repeats
+ * them as a check constraint, because a rate outside 0-100 would be a silent mispricing rather
+ * than a visible error.
+ */
+const validateCommissionFields = (
+  value: { startsAt?: string | null; endsAt?: string | null },
+  ctx: z.RefinementCtx,
+) => {
+  endsAtNotBeforeStartsAt(value, ctx);
+};
+
+export const commissionCreateInputSchema =
+  commissionFieldsSchema.superRefine(validateCommissionFields);
+
+export const commissionUpdateInputSchema = commissionFieldsSchema
+  .partial()
+  .extend({ id: z.string().min(1) })
+  .superRefine(validateCommissionFields);
+
+export const commissionSetActiveInputSchema = z.object({
+  id: z.string().min(1),
+  active: z.boolean(),
+});
+
+/** Backs the operator picker in the commission form. */
+export const operatorOptionsInputSchema = z
+  .object({ query: z.string().trim().max(200).optional() })
+  .default({});
+
+export const operatorOptionsSchema = z.object({
+  items: z.array(z.object({ id: z.string(), name: z.string() })),
+});
 
 /* ---------------------------------------------------------------- discounts */
 
@@ -888,6 +1018,47 @@ export const transactingPreferenceSchema = z
  * particular boat up. The search endpoint takes `name` either way — this hides the input, it does
  * not close the filter.
  */
+export const offerRankingUsesBasePriceSchema = z
+  .boolean()
+  .describe(
+    "Whether the offer ranking compares charter rates rather than all-in totals. Off by default, which is what the marketplace has always done. On, the rate a visitor compares between sites decides and the obligatory extras only settle a tie on it, which can pick the charter that costs the guest more overall.",
+  );
+
+export const catalogueShowsBasePriceSchema = z
+  .boolean()
+  .describe(
+    "Whether catalogue cards show the charter rate instead of the all-in total. The sort, the price filter and the slider bounds follow whatever the cards show, so the page stays coherent. Off by default.",
+  );
+
+export const offerRankingUsesReliabilitySchema = z
+  .boolean()
+  .describe(
+    "Whether a provider's recent answer rate breaks a tie between offers already equal on price, obligatory extras and commission. Off by default. Skipped for any pair where either provider has too few asks in the window to measure.",
+  );
+
+export const reliabilityWindowDaysSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(365)
+  .describe("How many days of quote attempts the answer rate is measured over.");
+
+export const displayCurrencyEnabledSchema = z
+  .boolean()
+  .describe(
+    "Whether prices are shown in the visitor's own currency. Display only: a quote is settled in the currency it was priced in, and the payment screen states the amount that will actually be charged whenever the two differ. Off by default.",
+  );
+
+export const displayCurrencyDefaultSchema = z
+  .enum(["EUR", "USD", "GBP", "PLN", "UAH"])
+  .describe("The currency shown where a visitor's country is unknown or not on the list.");
+
+export const displayCurrencyByCountrySchema = z
+  .record(z.string().length(2).toUpperCase(), z.enum(["EUR", "USD", "GBP", "PLN", "UAH"]))
+  .describe(
+    "Per-country overrides on top of the built-in list, keyed by ISO country code. Empty leaves the built-in list in force.",
+  );
+
 export const nameSearchEnabledSchema = z
   .boolean()
   .describe(
@@ -897,6 +1068,13 @@ export const nameSearchEnabledSchema = z
 export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
+  offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
+  catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
+  offerRankingUsesReliability: offerRankingUsesReliabilitySchema,
+  reliabilityWindowDays: reliabilityWindowDaysSchema,
+  displayCurrencyEnabled: displayCurrencyEnabledSchema,
+  displayCurrencyDefault: displayCurrencyDefaultSchema,
+  displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
@@ -905,10 +1083,25 @@ export const marketplaceSettingsSchema = z.object({
 export const marketplaceSettingsUpdateInputSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
+  offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
+  catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
+  offerRankingUsesReliability: offerRankingUsesReliabilitySchema,
+  reliabilityWindowDays: reliabilityWindowDaysSchema,
+  displayCurrencyEnabled: displayCurrencyEnabledSchema,
+  displayCurrencyDefault: displayCurrencyDefaultSchema,
+  displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
 });
 
 /** The slice of the settings a public page is allowed to read. */
 export const publicSearchSettingsSchema = z.object({
   nameSearchEnabled: nameSearchEnabledSchema,
+  /* The currency layer's own public slice: the browser has to know whether it may convert,
+     and what to fall back to, before it renders a price. */
+  displayCurrencyEnabled: displayCurrencyEnabledSchema,
+  displayCurrencyDefault: displayCurrencyDefaultSchema,
+  displayCurrencyByCountry: displayCurrencyByCountrySchema,
+  /* Public because the slider's own label and the client-side sort have to name the same
+     figure the server ordered by. */
+  catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
 });

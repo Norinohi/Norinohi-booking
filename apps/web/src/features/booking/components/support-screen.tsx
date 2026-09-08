@@ -65,7 +65,7 @@ export default function SupportScreen() {
   const waiting = Boolean(bookingId) && (access === null || isLoading);
 
   return (
-    <div className="flex flex-1 flex-col justify-center px-4 py-8 md:px-13.5 md:py-15">
+    <div className="mx-auto flex w-full max-w-384 flex-1 flex-col justify-center px-4 py-8 md:px-13.5 md:py-15 xl:px-17.5">
       <div className="mx-auto flex w-full max-w-175 flex-col gap-6 rounded-3xl bg-card p-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:gap-8 md:p-10">
         <div className="flex flex-col items-center gap-3 text-center">
           <span className="flex size-12 items-center justify-center rounded-xl bg-brand-50 text-brand">

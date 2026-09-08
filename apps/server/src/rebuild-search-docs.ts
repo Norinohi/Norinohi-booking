@@ -37,8 +37,19 @@ const stats = await readListingSearchDocStats(db);
 const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
 console.log(
   `Rebuilt ${stats.docs} search documents in ${seconds}s ` +
-    `(${stats.priced} priced, ${stats.bookable} with a bookable period)`,
+    `(${stats.priced} priced, ${stats.basePriced} with a charter rate, ` +
+    `${stats.bookable} with a bookable period)`,
 );
+
+/* A rate above the all-in total it belongs to cannot happen and would silently reverse the
+   ordering wherever the cards are set to compare rates, so it is shouted about rather than
+   left for somebody to notice in the ranking. */
+if (stats.baseAboveAllIn > 0) {
+  console.warn(
+    `${stats.baseAboveAllIn} documents carry a charter rate above their all-in total — ` +
+      "the two are assembled separately and one of them is wrong",
+  );
+}
 
 /* The web app caches the catalog for hours to days, so without this the rebuild is
    invisible until that window rolls over — which is the same wait this exists to end. */

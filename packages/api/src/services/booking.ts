@@ -1030,6 +1030,7 @@ function presentSummary(
         petsAllowed: snapshot.petsAllowed ?? false,
         depositInsuranceIncluded: snapshot.depositInsuranceIncluded ?? false,
         rating: snapshot.rating,
+        ratingCount: snapshot.reviewCount,
       }),
     },
     base: {

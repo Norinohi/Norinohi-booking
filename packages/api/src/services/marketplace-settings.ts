@@ -5,7 +5,7 @@ import type { z } from "zod";
 
 import { marketplaceSetting } from "@yacht-charter/db/schema/admin";
 
-import { providerKeyOutputSchema } from "../contracts/admin";
+import { displayCurrencyDefaultSchema, providerKeyOutputSchema } from "../contracts/admin";
 import type { Database, DatabaseExecutor } from "../context";
 import { DEFAULT_PAYMENT_SETTINGS, type MarketplacePaymentSettings } from "./pricing";
 
@@ -18,9 +18,39 @@ const SINGLETON_ID = "singleton";
  * reads are the same one. `TRANSACTING_PREFERENCE` there is now only the fallback for a database
  * that has never been configured, and for the pure decision function's own tests.
  */
+/** Restated here so an unwritten settings row prices exactly as a written default one does. */
+export const DEFAULT_RELIABILITY_WINDOW_DAYS = 30;
+
 export const DEFAULT_TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
 
 export type ProviderCode = z.infer<typeof providerKeyOutputSchema>;
+export type DisplayCurrency = z.infer<typeof displayCurrencyDefaultSchema>;
+
+/** Country code to currency. Open by nature: the keys are whatever countries someone names. */
+export type CurrencyOverrides = Record<string, DisplayCurrency>;
+
+/**
+ * The stored default, narrowed to a currency this build can actually render.
+ *
+ * The column is plain text, so a value written before a currency was retired -- or by hand --
+ * would otherwise reach a formatter that throws on it. Falling back to the base is the same
+ * answer an unconfigured marketplace gets.
+ */
+function parseDisplayCurrency(stored: string): DisplayCurrency {
+  const parsed = displayCurrencyDefaultSchema.safeParse(stored);
+  return parsed.success ? parsed.data : "EUR";
+}
+
+/** The overrides, keeping only the pairs both sides of which this build understands. */
+function parseCurrencyOverrides(stored: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(stored).flatMap(([country, currency]) => {
+      const parsed = displayCurrencyDefaultSchema.safeParse(currency);
+      if (!parsed.success || !/^[A-Za-z]{2}$/.test(country)) return [];
+      return [[country.toUpperCase(), parsed.data] as const];
+    }),
+  );
+}
 
 /**
  * The stored order, keeping only codes this build knows.
@@ -41,6 +71,21 @@ export interface MarketplaceSettings {
   payment: MarketplacePaymentSettings;
   /** Provider codes, most preferred first. A code absent from it sorts after every code in it. */
   transactingPreference: ProviderCode[];
+  /**
+   * Whether the ranking compares charter rates rather than all-in totals. Off is what the
+   * marketplace has always done; the client's agreed order is the other setting.
+   */
+  offerRankingUsesBasePrice: boolean;
+  /** Whether catalogue cards show, sort and filter on the charter rate. Off by default. */
+  catalogueShowsBasePrice: boolean;
+  /** Whether a vendor's answer rate breaks a tie nothing above it could. Off by default. */
+  offerRankingUsesReliability: boolean;
+  /** The window that rate is measured over, in days. */
+  reliabilityWindowDays: number;
+  /** Whether prices are shown in the visitor's currency. Display only; off by default. */
+  displayCurrencyEnabled: boolean;
+  displayCurrencyDefault: DisplayCurrency;
+  displayCurrencyByCountry: CurrencyOverrides;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
   updatedAt: string | null;
@@ -65,6 +110,13 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     return {
       payment: DEFAULT_PAYMENT_SETTINGS,
       transactingPreference: [...DEFAULT_TRANSACTING_PREFERENCE],
+      offerRankingUsesBasePrice: false,
+      catalogueShowsBasePrice: false,
+      offerRankingUsesReliability: false,
+      reliabilityWindowDays: DEFAULT_RELIABILITY_WINDOW_DAYS,
+      displayCurrencyEnabled: false,
+      displayCurrencyDefault: "EUR",
+      displayCurrencyByCountry: {},
       nameSearchEnabled: false,
       updatedAt: null,
       updatedByUserId: null,
@@ -84,6 +136,13 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     /* An empty array would rank every vendor equally and leave the sale to the offer id, which
        is not a preference anybody meant to express. */
     transactingPreference: parsePreference(row.transactingPreference),
+    offerRankingUsesBasePrice: row.offerRankingUsesBasePrice,
+    catalogueShowsBasePrice: row.catalogueShowsBasePrice,
+    offerRankingUsesReliability: row.offerRankingUsesReliability,
+    reliabilityWindowDays: row.reliabilityWindowDays,
+    displayCurrencyEnabled: row.displayCurrencyEnabled,
+    displayCurrencyDefault: parseDisplayCurrency(row.displayCurrencyDefault),
+    displayCurrencyByCountry: parseCurrencyOverrides(row.displayCurrencyByCountry),
     nameSearchEnabled: row.nameSearchEnabled,
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
@@ -93,6 +152,13 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
 export interface UpdateMarketplaceSettingsInput {
   payment: MarketplacePaymentSettings;
   transactingPreference: ProviderCode[];
+  offerRankingUsesBasePrice: boolean;
+  catalogueShowsBasePrice: boolean;
+  offerRankingUsesReliability: boolean;
+  reliabilityWindowDays: number;
+  displayCurrencyEnabled: boolean;
+  displayCurrencyDefault: DisplayCurrency;
+  displayCurrencyByCountry: CurrencyOverrides;
   nameSearchEnabled: boolean;
   actorUserId: string | null;
 }
@@ -119,6 +185,13 @@ export async function updateMarketplaceSettings(
     enforceDepositLeadTime: input.payment.enforceLeadTime,
     depositLeadTimeDays: input.payment.leadTimeDays,
     transactingPreference: input.transactingPreference,
+    offerRankingUsesBasePrice: input.offerRankingUsesBasePrice,
+    catalogueShowsBasePrice: input.catalogueShowsBasePrice,
+    offerRankingUsesReliability: input.offerRankingUsesReliability,
+    reliabilityWindowDays: input.reliabilityWindowDays,
+    displayCurrencyEnabled: input.displayCurrencyEnabled,
+    displayCurrencyDefault: input.displayCurrencyDefault,
+    displayCurrencyByCountry: input.displayCurrencyByCountry,
     nameSearchEnabled: input.nameSearchEnabled,
     updatedByUserId: input.actorUserId,
   };
@@ -135,6 +208,16 @@ export async function updateMarketplaceSettings(
 
   if (!sameOrder(before.transactingPreference, saved.transactingPreference)) {
     startPreferenceRebuild(db);
+  }
+
+  /*
+   * The price basis needs no rebuild, only a cache drop: both figures are written on every
+   * projection, so flipping this changes which column the reads pick rather than what the
+   * documents hold. Worth stating beside the neighbour that does the opposite -- the two look
+   * like the same kind of switch and are not.
+   */
+  if (before.catalogueShowsBasePrice !== saved.catalogueShowsBasePrice) {
+    void revalidateCatalogCache();
   }
 
   return saved;

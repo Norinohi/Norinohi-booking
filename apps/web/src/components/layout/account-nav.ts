@@ -15,6 +15,7 @@ const ADMIN_ITEM_NAMES = [
   "routes",
   "faq",
   "discount",
+  "commission",
   "duplicates",
   "sync",
   "audit",
@@ -58,6 +59,7 @@ export const ADMIN_NAV: readonly NavEntry[] = [
   group("fleet", ["listings", "duplicates", "sync"]),
   group("content", ["routes", "faq"]),
   row("discount"),
+  row("commission"),
   row("audit"),
   row("settings"),
 ];
@@ -74,6 +76,7 @@ export const ACCOUNT_NAV_HREFS = new Map<AccountNavItem, AppPathname>([
   ["referrals", "/profile/referrals"],
   ["credits", "/profile/credits"],
   ["discount", "/profile/discounts"],
+  ["commission", "/commissions"],
   /* The (admin) route group is URL-invisible, so these sit at the root, not under /profile. */
   ["inbox", "/inbox"],
   /* Not "bookings": that key is the customer's own /profile/bookings, and both rows are on

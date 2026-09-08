@@ -5,13 +5,14 @@ import type { StripeElementsOptions } from "@stripe/stripe-js";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import { useMutation } from "@tanstack/react-query";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { type ReactNode, useMemo } from "react";
 import { type Path, useFormContext, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
+import { useDisplayCurrency } from "@/components/layout/currency-provider";
 import { useMoney } from "@/hooks/use-money";
 
 import {
@@ -120,6 +121,12 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const money = useMoney();
+  const format = useFormatter();
+  const { display } = useDisplayCurrency();
+
+  /* Unconverted on purpose: this is the vendor's own figure in the vendor's own currency. */
+  const formatCharge = (amount: number, currency: string) =>
+    format.number(amount, { style: "currency", currency, maximumFractionDigits: 0 });
   const { control, trigger, getValues, setValue } = useFormContext<BookingValues>();
   const { quote, bookingId } = useBooking();
   /* Undefined for a signed-in customer, whose session cookie authorises these calls instead. */
@@ -137,6 +144,21 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
 
   /* Due-now, straight from the quote — the same figure `checkout.confirm` would charge. */
   const amount = quote ? money(quote.deposit.amountMinor, quote.deposit.currency) : "";
+  /*
+   * What will actually leave the account, whenever the visitor is reading prices in a currency
+   * the booking is not priced in.
+   *
+   * The button above it is converted like everything else, and a converted figure is a
+   * reference rate rather than a charge. This line is the one place the two are put side by
+   * side, because it is the last screen before the money moves.
+   */
+  const charged =
+    quote && display && display !== quote.deposit.currency
+      ? t("chargedIn", {
+          currency: quote.deposit.currency,
+          amount: formatCharge(quote.deposit.amountMinor / 100, quote.deposit.currency),
+        })
+      : null;
   const pending = requestInvoice.isPending || askQuestion.isPending;
 
   const cta = {
@@ -225,7 +247,10 @@ function PaymentMethods({ cardEnabled }: { cardEnabled: boolean }) {
 
       <span aria-hidden className="block h-px w-full bg-border" />
 
-      <div className="p-5">
+      <div className="flex flex-col gap-3 p-5">
+        {charged ? (
+          <p className="text-sm leading-[1.3] font-medium text-natural-500">{charged}</p>
+        ) : null}
         {method === "card" && cardEnabled ? (
           <CardPayButton label={cta} />
         ) : (

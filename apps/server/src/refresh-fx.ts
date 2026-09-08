@@ -17,7 +17,10 @@ import { refreshFxRates } from "@yacht-charter/db/fx/rates";
 
 const result = await refreshFxRates(db);
 
-console.log(`Stored ${result.currencies} reference rates published ${result.asOf}`);
+console.log(
+  `Stored ${result.currencies} reference rates published ${result.asOf}` +
+    `, hryvnia ${result.uahAsOf ?? "unavailable"}`,
+);
 
 // An idle pool client holds the event loop open. See apps/server/AGENTS.md.
 await db.$client.end();

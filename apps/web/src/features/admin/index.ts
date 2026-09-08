@@ -2,6 +2,7 @@ export {
   prefetchAdminBooking,
   prefetchAdminBookings,
   prefetchAuditLog,
+  prefetchCommissions,
   prefetchDuplicateQueue,
   prefetchFaq,
   prefetchInbox,
@@ -14,6 +15,7 @@ export {
 export { getAdminUser, isStaff, requireStaffPage } from "./api/session";
 export { default as AuditScreen } from "./components/audit-screen";
 export { default as BookingsScreen } from "./components/bookings-screen";
+export { default as CommissionsScreen } from "./components/commissions-screen";
 export { default as DuplicateReviewScreen } from "./components/duplicate-review-screen";
 export { default as FaqScreen } from "./components/faq-screen";
 export { default as InboxScreen } from "./components/inbox-screen";

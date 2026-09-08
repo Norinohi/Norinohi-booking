@@ -136,9 +136,15 @@ export async function prefetchListingDetail(id: string, locale: string) {
       berths: listing.specs.berths,
       base: listing.base.name,
       country: listing.base.country,
-      priceFromMinor: listing.priceFrom?.amountMinor ?? null,
+      /*
+       * The all-in figure whatever the cards are set to show. This one reaches the meta
+       * description and the Product node, where the price has to be what the guest pays: a
+       * structured-data figure that excludes mandatory fees is a rich result promising a price
+       * the checkout will not honour, and search engines police exactly that.
+       */
+      priceFromMinor: listing.allInPriceFrom?.amountMinor ?? null,
       /* Carried beside the amount: the catalogue is not priced in one currency. */
-      currency: listing.priceFrom?.currency ?? null,
+      currency: listing.allInPriceFrom?.currency ?? null,
       /*
        * What the amount buys, so the sentence built from it can say so. The generated copy read
        * "From EUR 1,370 per week" off a figure that prices whatever charter the listing was

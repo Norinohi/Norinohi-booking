@@ -7,6 +7,7 @@ import {
   combinedLegalCheckOuts,
   combinedOfferedCheckOut,
   combinedRangeStatus,
+  occupancyStatusOn,
   type OfferConstraints,
 } from "./offer-availability";
 
@@ -154,5 +155,70 @@ describe("combinedFirstBookablePeriod", () => {
 
   it("is null when nothing is on sale", () => {
     expect(combinedFirstBookablePeriod(SATURDAY, [offer({ priced: [] })])).toBeNull();
+  });
+});
+
+describe("occupancyStatusOn", () => {
+  const week = (status: "option" | "occupied" | "blocked") => [
+    { startDate: SATURDAY, endDate: NEXT_SATURDAY, status },
+  ];
+  /* Wednesday: inside the week both vendors sold, and a check-in day for neither. */
+  const MIDWEEK = "2026-08-12";
+
+  it("says nothing while one vendor still has the day free", () => {
+    expect(
+      occupancyStatusOn(SATURDAY, [
+        offer({ offerId: "loff_busy", occupied: week("occupied") }),
+        offer({ offerId: "loff_free", providerCode: "booking_manager" }),
+      ]),
+    ).toBeNull();
+  });
+
+  it("reports a day both vendors sold as booked", () => {
+    const offers = [
+      offer({ offerId: "loff_a", occupied: week("occupied") }),
+      offer({ offerId: "loff_b", providerCode: "booking_manager", occupied: week("occupied") }),
+    ];
+    expect(occupancyStatusOn(SATURDAY, offers)).toBe("booked");
+  });
+
+  it("labels midweek days too, which no rule would let a charter start on", () => {
+    expect(occupancyStatusOn(MIDWEEK, [offer({ occupied: week("occupied") })])).toBe("booked");
+  });
+
+  it("reports a day held everywhere as held, since it may still come back", () => {
+    const offers = [
+      offer({ offerId: "loff_a", occupied: week("option") }),
+      offer({ offerId: "loff_b", providerCode: "booking_manager", occupied: week("option") }),
+    ];
+    expect(occupancyStatusOn(SATURDAY, offers)).toBe("held");
+  });
+
+  it("prefers the sale over the hold when the two vendors disagree", () => {
+    const offers = [
+      offer({ offerId: "loff_a", occupied: week("option") }),
+      offer({ offerId: "loff_b", providerCode: "booking_manager", occupied: week("occupied") }),
+    ];
+    expect(occupancyStatusOn(SATURDAY, offers)).toBe("booked");
+  });
+
+  it("says nothing about a blocked day, so an owner week is never named", () => {
+    const offers = [
+      offer({ offerId: "loff_a", occupied: week("blocked") }),
+      offer({ offerId: "loff_b", providerCode: "booking_manager", occupied: week("occupied") }),
+    ];
+    expect(occupancyStatusOn(SATURDAY, offers)).toBeNull();
+  });
+
+  it("says nothing when the period carries no status, as an older caller's would not", () => {
+    expect(
+      occupancyStatusOn(SATURDAY, [
+        offer({ occupied: [{ startDate: SATURDAY, endDate: NEXT_SATURDAY }] }),
+      ]),
+    ).toBeNull();
+  });
+
+  it("says nothing about a day no calendar covers, whatever the rules refuse", () => {
+    expect(occupancyStatusOn(MIDWEEK, [offer()])).toBeNull();
   });
 });

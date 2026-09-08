@@ -12,6 +12,7 @@ type PricedRow = Parameters<typeof nightlyPriceOf>[0];
 function doc(over: Partial<PricedRow>): PricedRow {
   return {
     priceFromMinorEur: null,
+    basePriceFromMinorEur: null,
     priceIsFrom: false,
     bookableFrom: null,
     bookableTo: null,
@@ -63,5 +64,43 @@ describe("nightlyPriceOf", () => {
       Math.round(price / 7),
     );
     expect(nightlyPriceOf(doc({ priceFromMinorEur: price }))).toBe(Math.round(price / 7));
+  });
+});
+
+describe("nightlyPriceOf on the charter rate", () => {
+  /*
+   * The basis has to reach this function as well as the ORDER BY. It did not at first, and the
+   * failure is invisible in a page of results: the SQL orders on one column while the cursor
+   * carries the other, so the boundary between page one and page two lands in the wrong place.
+   */
+  const row = doc({
+    priceFromMinorEur: 2_100_000,
+    basePriceFromMinorEur: 1_400_000,
+    bookableFrom: inDays(12),
+    bookableTo: inDays(19),
+  });
+
+  it("divides the all-in figure by default", () => {
+    expect(nightlyPriceOf(row)).toBe(300_000);
+  });
+
+  it("divides the rate when asked for it", () => {
+    expect(nightlyPriceOf(row, "base")).toBe(200_000);
+  });
+
+  it("falls back to the total where the rate is missing, as the card does", () => {
+    const unconverted = doc({ priceFromMinorEur: 700_000, basePriceFromMinorEur: null });
+    expect(nightlyPriceOf(unconverted, "base")).toBe(100_000);
+  });
+
+  it("treats a rate of nought as no rate rather than as a free boat", () => {
+    /* Two vendors publish real obligatory fees against a rate of zero. Read literally they
+       sorted to the top of "cheapest first" while their cards showed what they actually cost. */
+    const noRate = doc({ priceFromMinorEur: 700_000, basePriceFromMinorEur: 0 });
+    expect(nightlyPriceOf(noRate, "base")).toBe(100_000);
+  });
+
+  it("has no answer at all where neither figure is comparable", () => {
+    expect(nightlyPriceOf(doc({ priceFromMinorEur: null }), "base")).toBeNull();
   });
 });

@@ -14,6 +14,7 @@ import { Suspense, useRef, useState } from "react";
 
 import AnimatedNumber from "@/components/shared/data-display/animated-number";
 import DatePicker from "@/components/shared/form/date-picker";
+import SearchableSelect from "@/components/shared/form/searchable-select";
 import {
   EMPTY_OPTIONS,
   type FilterOptions,
@@ -38,6 +39,7 @@ const STATS = [
  */
 function SearchCardView({ options, isPending }: { options: FilterOptions; isPending: boolean }) {
   const t = useTranslations("Home.Hero");
+  const tPicker = useTranslations("Common.countryPicker");
   /* `null`, not `undefined`: these selects are controlled from the first render — see `Select`. */
   const [country, setCountry] = useState<string | null>(null);
   const [boatType, setBoatType] = useState<string | null>(null);
@@ -58,14 +60,17 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
       className="mx-auto w-full max-w-122.25 shrink-0 rounded-2xl bg-card p-4 shadow-[0_10px_40px_rgba(0,0,0,0.18)] xl:mx-0 xl:w-109.5"
     >
       <div className="flex flex-col gap-4">
-        <Select
+        {/* Searchable, unlike its two neighbours: this list is 56 countries, theirs are a
+            dozen boat types and three crew options. */}
+        <SearchableSelect
           className="h-12 min-w-0"
           icon={<MapPin className="size-6 shrink-0 text-foreground" />}
           placeholder={t("wherePlaceholder")}
+          searchPlaceholder={tPicker("search")}
+          emptyLabel={isPending ? tPicker("loading") : tPicker("empty")}
           options={options.countries}
           value={country}
           onValueChange={setCountry}
-          isLoading={isPending}
         />
 
         <DatePicker

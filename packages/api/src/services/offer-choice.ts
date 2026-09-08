@@ -1,9 +1,17 @@
 /*
  * Which of a listing's offers the customer is shown and sold.
  *
- * The rule the client settled on: among the offers that can actually deliver the requested
- * dates, the cheapest all-in total, with Booking Manager taking a tie. Availability comes
- * first because a lower price on a boat that cannot be delivered is not a lower price.
+ * The order the client settled on, most decisive first: can the vendor deliver these dates at
+ * all, then price, then obligatory extras, then which vendor pays us more, then which one
+ * answers more reliably, and only then a configured preference. Availability comes first
+ * because a lower price on a boat that cannot be delivered is not a lower price.
+ *
+ * What "price" means is the one part that is switchable. The charter rate is the number a
+ * visitor compares against other sites; the all-in total is the number they actually pay. The
+ * client asked for the first and we shipped the second, so `rankOn` decides and the default
+ * keeps today's behaviour. Ranking on the rate can pick the dearer charter: a vendor 100
+ * cheaper on the rate and 250 heavier on mandatory fees wins, and that is the trade being
+ * asked for rather than a bug in it.
  *
  * Kept apart from the orchestration that quotes the vendors so the decision itself has no
  * database and no network in it, and can be tested against the cases that actually happen:
@@ -12,6 +20,15 @@
 
 /** Architecture §3, and the client's answer to §3.4 item 6: Booking Manager wins a tie. */
 export const TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
+
+/**
+ * Which figure price is compared on.
+ *
+ * `all_in` is what the marketplace has always done and stays the default: nothing changes for
+ * anyone who does not ask for it. `base` is the client's agreed order, where the charter rate
+ * decides and obligatory extras only settle a tie on it.
+ */
+export type PriceBasis = "all_in" | "base";
 
 /**
  * What one offer answered.
@@ -27,7 +44,18 @@ export type OfferQuoteResult =
       providerCode: string;
       /** Everything the customer must pay to sail: the rate plus the unavoidable extras. */
       totalMinor: number;
+      /** The charter rate alone, as the vendor's own base line stated it. */
+      baseMinor: number;
+      /** What sits on top of the rate. Derived, so the two always add up to the total. */
+      obligatoryMinor: number;
       currency: string;
+      /** What we earn through this vendor on the day, as a percentage. Zero when unpriced. */
+      commissionPct: number;
+      /**
+       * The vendor's recent answer rate, nought to one, or null where it is not measured yet.
+       * Read only when the caller asks for it, so an unmeasured vendor is never ranked on noise.
+       */
+      reliability?: number | null;
     }
   | {
       outcome: "ineligible" | "unavailable" | "error" | "timeout";
@@ -58,6 +86,10 @@ export type PickWinnerOptions = {
    */
   preferredCurrency?: string | null;
   preference?: readonly string[];
+  /** Defaults to `all_in`, which is what the marketplace did before the rate was an option. */
+  rankOn?: PriceBasis;
+  /** Off by default: reliability decides nothing until somebody has looked at the numbers. */
+  useReliability?: boolean;
 };
 
 /**
@@ -68,9 +100,9 @@ export type PickWinnerOptions = {
  * costing the customer the boat.
  *
  * On a currency mismatch the comparison narrows to the listing's own currency where any
- * offer quotes it; where none does, price is abandoned rather than faked, and the preference
- * order decides. Converting at some rate of our own would put a number in front of the
- * customer that neither vendor agreed to.
+ * offer quotes it; where none does, every money comparison is abandoned rather than faked and
+ * the steps below money decide. Converting at some rate of our own would put a number in
+ * front of the customer that neither vendor agreed to.
  */
 export function pickWinner(
   results: readonly OfferQuoteResult[],
@@ -87,19 +119,74 @@ export function pickWinner(
     ? narrowToOneCurrency(priced, options.preferredCurrency)
     : priced;
 
-  /* Price only orders offers quoted in the same money. Otherwise it is left out entirely. */
+  /*
+   * Price only orders offers quoted in the same money, and so does everything derived from it.
+   * The gate covers every money comparator rather than just the first: a pair left in two
+   * currencies would otherwise fall past the rate into the extras, which are just as
+   * incomparable, and be settled on a number nobody can add up.
+   */
   const oneCurrency = new Set(comparable.map((offer) => offer.currency)).size === 1;
+  const comparators = comparatorsFor(options, oneCurrency, preference);
 
   const ranked = [...comparable].sort((left, right) => {
-    if (oneCurrency && left.totalMinor !== right.totalMinor) {
-      return left.totalMinor - right.totalMinor;
+    for (const compare of comparators) {
+      const verdict = compare(left, right);
+      if (verdict !== 0) return verdict;
     }
-    const byPreference = rank(left, preference) - rank(right, preference);
-    if (byPreference !== 0) return byPreference;
-    return left.offerId < right.offerId ? -1 : left.offerId > right.offerId ? 1 : 0;
+    return 0;
   });
 
   return { winner: ranked[0] ?? null, currencyMismatch };
+}
+
+type Comparator = (left: PricedOffer, right: PricedOffer) => number;
+
+/**
+ * The agreed order, assembled for this particular call.
+ *
+ * Built rather than written out as one function so each step is separable: the money steps
+ * drop out together when the currencies disagree, and reliability stays out until it is asked
+ * for. The last two always run, which is what makes the result stable for identical requests.
+ */
+function comparatorsFor(
+  options: PickWinnerOptions,
+  oneCurrency: boolean,
+  preference: readonly string[],
+): Comparator[] {
+  const comparators: Comparator[] = [];
+
+  if (oneCurrency) {
+    /* Rate first and extras as its tie-break, or the all-in total alone, which already
+       contains both and cannot be separated back into them by a second step. */
+    if (options.rankOn === "base") {
+      comparators.push(
+        (left, right) => left.baseMinor - right.baseMinor,
+        (left, right) => left.obligatoryMinor - right.obligatoryMinor,
+      );
+    } else {
+      comparators.push((left, right) => left.totalMinor - right.totalMinor);
+    }
+
+    /* Higher earns more, so it sorts first. Zero on both sides while the rates table is
+       empty, which is that step switched off. */
+    comparators.push((left, right) => right.commissionPct - left.commissionPct);
+  }
+
+  if (options.useReliability) {
+    /* Skipped for a pair where either side is unmeasured: ranking a new connector against a
+       measured one would read its silence as a failure. */
+    comparators.push((left, right) => {
+      if (left.reliability == null || right.reliability == null) return 0;
+      return right.reliability - left.reliability;
+    });
+  }
+
+  comparators.push(
+    (left, right) => rank(left, preference) - rank(right, preference),
+    (left, right) => (left.offerId < right.offerId ? -1 : left.offerId > right.offerId ? 1 : 0),
+  );
+
+  return comparators;
 }
 
 /**

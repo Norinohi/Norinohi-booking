@@ -24,6 +24,7 @@ import {
 type PaymentSource = "vendor" | "marketplace";
 type PaymentMode = "deposit" | "full";
 type ProviderCode = "booking_manager" | "nausys" | "mock";
+type DisplayCurrency = "EUR" | "USD" | "GBP" | "PLN" | "UAH";
 
 interface FormState {
   source: PaymentSource;
@@ -34,8 +35,18 @@ interface FormState {
   leadTimeDays: string;
   /* Provider codes, most preferred first. Saved whole; the radios only move the winner. */
   preference: ProviderCode[];
+  offerRankingUsesBasePrice: boolean;
+  catalogueShowsBasePrice: boolean;
+  offerRankingUsesReliability: boolean;
+  /* Typed as an operator enters it, like the deposit percentage; parsed at the edges only. */
+  reliabilityWindowDays: string;
+  displayCurrencyEnabled: boolean;
+  displayCurrencyDefault: DisplayCurrency;
   nameSearchEnabled: boolean;
 }
+
+/** The currencies the client named. The overrides map is edited in the database for now. */
+const DISPLAY_CURRENCIES: readonly DisplayCurrency[] = ["EUR", "USD", "GBP", "PLN", "UAH"];
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
 
@@ -91,6 +102,12 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       enforceLeadTime: data.payment.enforceLeadTime,
       leadTimeDays: String(data.payment.leadTimeDays),
       preference: data.transactingPreference,
+      offerRankingUsesBasePrice: data.offerRankingUsesBasePrice,
+      catalogueShowsBasePrice: data.catalogueShowsBasePrice,
+      offerRankingUsesReliability: data.offerRankingUsesReliability,
+      reliabilityWindowDays: String(data.reliabilityWindowDays),
+      displayCurrencyEnabled: data.displayCurrencyEnabled,
+      displayCurrencyDefault: data.displayCurrencyDefault,
       nameSearchEnabled: data.nameSearchEnabled,
     });
   }, [data?.updatedAt, data]);
@@ -99,6 +116,11 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
 
   const percent = Number(form?.depositPercent);
   const days = Number(form?.leadTimeDays);
+  const reliabilityDays = Number(form?.reliabilityWindowDays);
+  /* Bounded the same way the contract is: a window of nought days measures nothing, and one
+     past a year is a claim about connectors that have since been rewritten. */
+  const reliabilityDaysValid =
+    Number.isInteger(reliabilityDays) && reliabilityDays >= 1 && reliabilityDays <= 365;
   const percentValid = Number.isFinite(percent) && percent >= 1 && percent <= 100;
   const daysValid = Number.isInteger(days) && days >= 0 && days <= 365;
   /* A percentage only has to be valid when it is the one in force; an unused field left blank
@@ -106,6 +128,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
   const canSave =
     form !== null &&
     daysValid &&
+    reliabilityDaysValid &&
     (form.source === "vendor" || form.mode === "full" || percentValid) &&
     !update.isPending;
 
@@ -121,6 +144,15 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
           leadTimeDays: days,
         },
         transactingPreference: form.preference,
+        offerRankingUsesBasePrice: form.offerRankingUsesBasePrice,
+        catalogueShowsBasePrice: form.catalogueShowsBasePrice,
+        offerRankingUsesReliability: form.offerRankingUsesReliability,
+        reliabilityWindowDays: reliabilityDays,
+        displayCurrencyEnabled: form.displayCurrencyEnabled,
+        displayCurrencyDefault: form.displayCurrencyDefault,
+        /* Not editable here: a country map wants a table of its own, and leaving it out of the
+           payload would clear it. Sent back exactly as it was read. */
+        displayCurrencyByCountry: data?.displayCurrencyByCountry ?? {},
         nameSearchEnabled: form.nameSearchEnabled,
       },
       {
@@ -145,7 +177,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
     <div className="flex flex-col">
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
-      <div className="px-4 py-6 md:px-13.5">
+      <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
         <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}
@@ -343,6 +375,117 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                   <p className="text-xs leading-4 font-medium text-natural-500">
                     {t("preference.rebuildNote")}
                   </p>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("ranking.legend")}
+                  </legend>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("ranking.toggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("ranking.hint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.offerRankingUsesBasePrice}
+                      onCheckedChange={(checked) => set({ offerRankingUsesBasePrice: checked })}
+                    />
+                  </label>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("ranking.catalogueToggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("ranking.catalogueHint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.catalogueShowsBasePrice}
+                      onCheckedChange={(checked) => set({ catalogueShowsBasePrice: checked })}
+                    />
+                  </label>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("ranking.reliabilityToggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("ranking.reliabilityHint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.offerRankingUsesReliability}
+                      onCheckedChange={(checked) => set({ offerRankingUsesReliability: checked })}
+                    />
+                  </label>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="reliability-window-days">{t("ranking.windowDays")}</Label>
+                    <Input
+                      id="reliability-window-days"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={365}
+                      value={form.reliabilityWindowDays}
+                      disabled={!form.offerRankingUsesReliability}
+                      onChange={(event) => set({ reliabilityWindowDays: event.target.value })}
+                      className="w-28"
+                      aria-invalid={!reliabilityDaysValid}
+                    />
+                  </div>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("currency.legend")}
+                  </legend>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("currency.toggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("currency.hint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.displayCurrencyEnabled}
+                      onCheckedChange={(checked) => set({ displayCurrencyEnabled: checked })}
+                    />
+                  </label>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="display-currency-default">{t("currency.fallback")}</Label>
+                    <RadioGroup
+                      id="display-currency-default"
+                      className="flex flex-wrap gap-4"
+                      value={form.displayCurrencyDefault}
+                      onValueChange={(next) => {
+                        const picked = DISPLAY_CURRENCIES.find((option) => option === next);
+                        if (picked) set({ displayCurrencyDefault: picked });
+                      }}
+                    >
+                      {DISPLAY_CURRENCIES.map((option) => (
+                        <label
+                          key={option}
+                          className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground"
+                        >
+                          <Radio value={option} />
+                          {option}
+                        </label>
+                      ))}
+                    </RadioGroup>
+                  </div>
                 </fieldset>
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">

@@ -11,6 +11,7 @@ import {
 import {
   boatCardIdentity,
   boatCardListPrice,
+  boatCardExtras,
   boatCardPrice,
   type MoneyFormatter,
 } from "@/lib/boat-card-fields";
@@ -98,6 +99,9 @@ export function toBoatCard(
     priceLabel: priceCaption(t, listing),
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),
+    /* Only ever present where the headline is the charter rate, which is what makes the line
+       self-explanatory: it appears exactly when there is something the price does not include. */
+    priceExtras: boatCardExtras(t, listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
     /*
      * The nightly rate, which is what "Price: low to high" orders on. The amounts above it price

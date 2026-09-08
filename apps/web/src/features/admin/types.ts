@@ -17,10 +17,24 @@ export type DuplicateSideListing = NonNullable<DuplicateSide["listing"]>;
 
 export type DuplicatePhoto = DuplicateSideListing["photos"][number];
 
+/** How often each matcher rule was right, per band. Nothing acts on it: it is the read
+    auto-approval would have to be argued from. */
+export type DuplicateMetrics = Awaited<ReturnType<AdminClient["match"]["metrics"]>>;
+export type DuplicateMetricRow = DuplicateMetrics["rows"][number];
+
 /** The on-demand second read: the long tail of specs behind a pair, per side. */
 export type DuplicateDetail = Awaited<ReturnType<AdminClient["match"]["detail"]>>;
 export type DuplicateDetailSide = DuplicateDetail["sideA"];
 export type DuplicateDetailListing = NonNullable<DuplicateDetailSide["listing"]>;
+
+/** How each vendor has been answering quote requests. Measured, shown, and acted on by nothing. */
+export type ProviderReliability = Awaited<ReturnType<AdminClient["provider"]["reliability"]>>;
+export type ProviderReliabilityRow = ProviderReliability["rows"][number];
+
+/* Commission rates: what we earn through each vendor. Entered by staff, read by nothing yet. */
+export type CommissionList = Awaited<ReturnType<AdminClient["commission"]["list"]>>;
+export type CommissionRow = CommissionList["items"][number];
+export type CommissionStatus = CommissionRow["status"];
 
 export type EnquiryList = Awaited<ReturnType<AdminClient["enquiry"]["list"]>>;
 export type EnquiryRow = EnquiryList["items"][number];
