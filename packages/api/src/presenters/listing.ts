@@ -105,6 +105,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
       petsAllowed: doc.petsAllowed,
       depositInsuranceIncluded: doc.depositInsuranceIncluded,
       rating: Number(doc.rating),
+      ratingCount: doc.reviewCount,
       bestValue: doc.bestValue,
     }),
     builder: doc.builder ?? "Unknown builder",
@@ -240,6 +241,15 @@ export type BadgeInput = {
   depositInsuranceIncluded: boolean;
   rating: number;
   /**
+   * How many guests scored it, which is what makes the score a score.
+   *
+   * The read model falls back to the provider's own aggregate where nobody has reviewed the boat
+   * here, and a provider may publish a rating with no count behind it at all -- Auszeit Dufour
+   * 430 carries a flat 5.00 off zero. The page says "the score comes from N guest ratings" under
+   * the number, so at N of zero there is no sentence to write and no claim to badge.
+   */
+  ratingCount: number;
+  /**
    * Earned in the read model: the cheapest quarter of this hull's own model.
    *
    * Absent on the booking snapshot, which froze before the flag existed and has no cohort to
@@ -257,6 +267,8 @@ export function badgesFor(input: BadgeInput) {
   if (input.depositInsuranceIncluded) {
     badges.push({ code: "deposit-insurance", label: "Deposit insurance included" });
   }
-  if (input.rating >= 4.8) badges.push({ code: "top-rated", label: "Top rated" });
+  if (input.rating >= 4.8 && input.ratingCount > 0) {
+    badges.push({ code: "top-rated", label: "Top rated" });
+  }
   return badges;
 }
