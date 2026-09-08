@@ -123,7 +123,7 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
     <div className="flex flex-col">
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
-      <div className="px-4 py-6 md:px-13.5">
+      <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
         <div className="mx-auto grid max-w-349 grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[--spacing(83.5)_minmax(0,1fr)] lg:items-start">
           <Sidebar
             name={user.name}

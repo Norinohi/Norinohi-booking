@@ -46,7 +46,7 @@ export default function DiscountManagerScreen({ user }: { user: { name: string; 
     <div className="flex flex-col">
       <AppBreadcrumbs items={[]} backLabel="Profile.home" backHref="/" />
 
-      <div className="px-4 py-6 md:px-13.5">
+      <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
         {/* minmax(0,1fr) also below lg — otherwise the tables' min-width propagates through
             the single implicit column and stretches the page (and the fixed dialogs) on
             tablet/mobile. */}

@@ -612,6 +612,7 @@
     },
     "countryPicker": {
       "search": "Search countries",
+      "loading": "Loading countries…",
       "empty": "No countries match that"
     },
     "errors": {

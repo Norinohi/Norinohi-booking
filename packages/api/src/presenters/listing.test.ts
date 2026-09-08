@@ -204,6 +204,7 @@ describe("badgesFor", () => {
       petsAllowed: false,
       depositInsuranceIncluded: false,
       rating: 4,
+      ratingCount: 12,
       bestValue: false,
     }).map((badge) => badge.code);
 
@@ -215,6 +216,7 @@ describe("badgesFor", () => {
       petsAllowed: false,
       depositInsuranceIncluded: false,
       rating: 4,
+      ratingCount: 12,
       bestValue: true,
     }).map((badge) => badge.code);
 
@@ -227,9 +229,26 @@ describe("badgesFor", () => {
       petsAllowed: false,
       depositInsuranceIncluded: false,
       rating: 5,
+      ratingCount: 12,
     }).map((badge) => badge.code);
 
     expect(codes).toEqual(["top-rated"]);
+  });
+
+  /*
+   * A provider may publish an aggregate with no count behind it, and the read model passes that
+   * through: Auszeit Dufour 430 sits at a flat 5.00 off zero ratings. The page justifies the
+   * number with "the score comes from N guest ratings", so at zero there is nothing to justify.
+   */
+  it("withholds top rated from a score nobody gave", () => {
+    const codes = badgesFor({
+      petsAllowed: false,
+      depositInsuranceIncluded: false,
+      rating: 5,
+      ratingCount: 0,
+    }).map((badge) => badge.code);
+
+    expect(codes).not.toContain("top-rated");
   });
 });
 

@@ -29,7 +29,11 @@ function BoatCard({
   ...props
 }: BoatCardProps) {
   return (
-    <Card variant="ghost" className={cn("w-83.5 max-w-full gap-5", className)} {...props}>
+    <Card
+      variant="ghost"
+      className={cn("w-83.5 max-w-full gap-5 drop-shadow-[0_1px_1px_rgba(0,0,0,0.05)]", className)}
+      {...props}
+    >
       <CardMedia className="h-56 rounded-xl">
         <ImageWithFallback src={image} alt={imageAlt} />
       </CardMedia>
