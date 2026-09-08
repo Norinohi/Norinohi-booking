@@ -49,7 +49,7 @@ export default function BookingScreen() {
         backHref={backHref}
       />
 
-      <div className="w-full px-4 py-6 md:px-13.5">
+      <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
         <Form {...form}>
           <BookingProvider quoteId={quoteId}>
             <SplitPanels

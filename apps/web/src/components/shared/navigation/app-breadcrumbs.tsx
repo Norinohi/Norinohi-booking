@@ -48,8 +48,8 @@ export default function AppBreadcrumbs({
   const label = (crumb: AppBreadcrumb) => (crumb.dynamic ? crumb.name : translate(crumb.name));
 
   return (
-    <div className={cn("border-b border-natural-50 px-4 py-3 md:px-13.5", className)}>
-      <div className="mx-auto flex max-w-349 items-center gap-5">
+    <div className={cn("border-b border-natural-50", className)}>
+      <div className="mx-auto flex w-full max-w-384 items-center gap-5 px-4 py-3 md:px-13.5 xl:px-17.5">
         {backLabel && backHref ? (
           <Button variant="subtle" size="sm" nativeButton={false} render={<Link href={backHref} />}>
             <ArrowLeft />

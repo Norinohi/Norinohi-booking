@@ -26,8 +26,25 @@ import { RISE, VIEWPORT } from "@/lib/motion";
  */
 const LUXURY_MIN_FEET = Math.round(15 / 0.3048);
 
-/* Four across at the widest, with the next one peeking past the edge as the cue that it scrolls. */
-const SLIDE = "basis-[85%] pr-5 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4";
+/*
+ * The gap belongs to the track, so no slide carries a trailing gutter and each basis just
+ * subtracts the gaps its own row spans. Mobile stays at 85% so the next card keeps peeking
+ * past the edge as the cue that the row scrolls.
+ */
+const SLIDE =
+  "basis-[85%] sm:basis-[calc((100%_-_--spacing(5))/2)] lg:basis-[calc((100%_-_--spacing(10))/3)] xl:basis-[calc((100%_-_--spacing(15))/4)]";
+
+/*
+ * Gutters are margins, not padding: `overflow-hidden` clips at the padding box, so a right
+ * padding would hand the next slide exactly that strip to render in rather than hide it.
+ * `w-auto` drops the `size-full` width the viewport ships with, which margins would push
+ * past the container. Figma 530:3160 wants four 334px cards in a 1396px frame, the last
+ * flush with the gutter and no fifth card showing.
+ *
+ * `-my-2 py-2` buys back the vertical strip the same clip would shave off the hover lift
+ * and the card's shadow; the negative margin cancels it, so the section's rhythm is unchanged.
+ */
+const VIEWPORT_FRAME = "-my-2 mx-4 w-auto py-2 md:mx-13.5 xl:mx-17.5";
 
 /*
  * The only part of this section that reads facets. Isolated so `useQuery`'s clock read stays out
@@ -135,7 +152,7 @@ export default function BoatTypes() {
             />
           </motion.div>
 
-          <CarouselViewport className="pl-4 md:pl-13.5 xl:pl-17.5">
+          <CarouselViewport className={VIEWPORT_FRAME} trackClassName="gap-5">
             <Suspense fallback={null}>
               <BoatTypeCards />
             </Suspense>

@@ -77,7 +77,15 @@ function Carousel({
   );
 }
 
-function CarouselViewport({ className, children, ...props }: React.ComponentProps<"div">) {
+function CarouselViewport({
+  className,
+  trackClassName,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  /** Styles the track that holds the slides — a row's `gap` lives here, not on each slide. */
+  trackClassName?: string;
+}) {
   const { viewportRef } = useCarousel();
   return (
     <div
@@ -86,7 +94,7 @@ function CarouselViewport({ className, children, ...props }: React.ComponentProp
       className={cn("size-full overflow-hidden", className)}
       {...props}
     >
-      <div className="flex size-full">{children}</div>
+      <div className={cn("flex size-full", trackClassName)}>{children}</div>
     </div>
   );
 }
