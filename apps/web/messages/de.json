@@ -603,6 +603,7 @@
     },
     "countryPicker": {
       "search": "Länder suchen",
+      "loading": "Länder werden geladen…",
       "empty": "Keine passenden Länder"
     },
     "errors": {

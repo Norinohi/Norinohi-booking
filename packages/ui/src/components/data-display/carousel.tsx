@@ -164,6 +164,10 @@ function CarouselBars({
             tabIndex={outside ? -1 : undefined}
             onClick={() => api?.scrollTo(index)}
             className={cn(
+              /* The bar stays 4px; the tap target is a pseudo-element 44px tall over it, which is
+                 the smallest a finger reliably hits. Sideways it grows only by the gap, or two
+                 neighbouring dots would overlap and each would steal the other's taps. */
+              "relative before:absolute before:-inset-y-5 before:-inset-x-0.5 before:content-['']",
               "pointer-events-auto h-1 shrink-0 cursor-pointer rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.45)] transition-[width,margin,background-color] duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-white/70",
               index === selected ? "bg-white" : "bg-white/50 hover:bg-white/80",
               barClassName,
@@ -196,6 +200,8 @@ function CarouselArrow({
       onClick={() => (isPrev ? api?.scrollPrev() : api?.scrollNext())}
       className={cn(
         "absolute top-1/2 z-10 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)] transition-colors outline-none hover:bg-white focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-0",
+        /* The circle is 32px by design; the tap target around it is 44px. */
+        "before:absolute before:-inset-1.5 before:content-['']",
         isPrev ? "left-3" : "right-3",
         className,
       )}
