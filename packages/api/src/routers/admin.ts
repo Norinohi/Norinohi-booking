@@ -44,6 +44,8 @@ import {
   listingSetStatusSchema,
   syncRunListInputSchema,
   syncRunListSchema,
+  providerReliabilityInputSchema,
+  providerReliabilitySchema,
   syncRunsStartedSchema,
   syncRunStatusInputSchema,
   syncRunStatusSchema,
@@ -164,6 +166,7 @@ import {
   updateListingPrice,
 } from "../services/listing-price";
 import { providerForBooking, providerForListing } from "../services/provider-routing";
+import { providerReliability } from "../services/provider-reliability";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /**
@@ -298,6 +301,22 @@ export const adminRouter = {
         provider: context.provider.key,
         ...context.provider.capabilities(),
       })),
+    reliability: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/provider/reliability",
+        operationId: "getProviderReliability",
+        summary: "How each vendor has been answering quote requests",
+        description:
+          "The share of asks each provider actually answered over the window, and how fast. An answer includes a refusal: the vendor was reached and said the period is gone, which is a fact about the boat rather than a failure of the connector. Only a connection that errored or ran out of time counts against it. Asks our own cached calendar refused before any vendor was called are reported separately, because they measure our data rather than their service. Read-only: nothing in the sale reads these numbers yet.",
+        tags: ["Admin"],
+        successDescription:
+          "One row per provider seen in the window, least reliable first, with the sample each rate rests on.",
+        spec: withJsonBodyExample({ windowDays: 30 }),
+      })
+      .input(providerReliabilityInputSchema)
+      .output(providerReliabilitySchema)
+      .handler(({ context, input }) => providerReliability(context.db, input)),
     syncCatalogue: adminProcedure
       .route({
         method: "POST",

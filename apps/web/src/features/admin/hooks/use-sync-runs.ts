@@ -6,6 +6,7 @@ import { orpc } from "@/utils/orpc";
 
 import {
   providerCapabilitiesQueryOptions,
+  providerReliabilityQueryOptions,
   syncRunStatusQueryOptions,
   syncRunsQueryOptions,
 } from "../api/queries";
@@ -25,6 +26,16 @@ export function useSyncRuns(input: {
 /** One run's errors. Only called from an expanded row, so it never runs speculatively. */
 export function useSyncRunStatus(syncRunId: string, provider: ProviderKey) {
   return useQuery(syncRunStatusQueryOptions({ syncRunId, provider }));
+}
+
+/**
+ * How reliably each vendor has answered over the last `windowDays`.
+ *
+ * Read-only: nothing in the sale consults these numbers, and showing them is what has to come
+ * before anything does.
+ */
+export function useProviderReliability(windowDays: number) {
+  return useQuery(providerReliabilityQueryOptions(windowDays));
 }
 
 /** What the active connector supports. Read once; the answer is compiled in, not stored. */

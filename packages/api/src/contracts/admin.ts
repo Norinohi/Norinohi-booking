@@ -42,6 +42,51 @@ export const syncRunOutcomeSchema = z.discriminatedUnion("started", [
 
 export const syncRunsStartedSchema = z.object({ runs: z.array(syncRunOutcomeSchema) });
 
+/* ------------------------------------------------- provider reliability */
+
+/** Thirty days by default: long enough to survive one bad night, short enough to still be news. */
+export const providerReliabilityInputSchema = z
+  .object({
+    windowDays: z
+      .number()
+      .int()
+      .min(1)
+      .max(365)
+      .default(30)
+      .describe("How many days back to measure, ending now."),
+  })
+  .default({ windowDays: 30 });
+
+export const providerReliabilityRowSchema = z.object({
+  /** Stored as text on the attempt, so a connector this build no longer ships still reports. */
+  provider: z.string(),
+  asked: z.number().int().describe("Every offer put to this vendor, answered or not."),
+  answered: z
+    .number()
+    .int()
+    .describe("Priced, lost, or refused. A refusal is an answer: the vendor was reached."),
+  failed: z.number().int().describe("Errored or ran out of time, so the vendor said nothing."),
+  ineligible: z
+    .number()
+    .int()
+    .describe(
+      "Never put to the vendor: our own cached calendar had already refused the period. Counted separately because it scores our data rather than the vendor's service.",
+    ),
+  /**
+   * Answered over answered-plus-failed. Null until the vendor has been reached about something,
+   * because a rate computed from nothing reads as a verdict on a vendor nobody asked.
+   */
+  successRatio: z.number().nullable(),
+  /** Median over answers alone: a timeout reports our own ceiling rather than their speed. */
+  p50LatencyMs: z.number().int().nullable(),
+});
+
+export const providerReliabilitySchema = z.object({
+  windowDays: z.number().int(),
+  /** Least reliable first, so the vendor worth worrying about leads. */
+  rows: z.array(providerReliabilityRowSchema),
+});
+
 export const syncRunStatusInputSchema = z
   .object({
     /** Defaults to the provider's most recent run. */

@@ -27,6 +27,10 @@ export type DuplicateDetail = Awaited<ReturnType<AdminClient["match"]["detail"]>
 export type DuplicateDetailSide = DuplicateDetail["sideA"];
 export type DuplicateDetailListing = NonNullable<DuplicateDetailSide["listing"]>;
 
+/** How each vendor has been answering quote requests. Measured, shown, and acted on by nothing. */
+export type ProviderReliability = Awaited<ReturnType<AdminClient["provider"]["reliability"]>>;
+export type ProviderReliabilityRow = ProviderReliability["rows"][number];
+
 export type EnquiryList = Awaited<ReturnType<AdminClient["enquiry"]["list"]>>;
 export type EnquiryRow = EnquiryList["items"][number];
 export type EnquiryStatus = EnquiryRow["status"];

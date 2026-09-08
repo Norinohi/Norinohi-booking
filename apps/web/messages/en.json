@@ -2262,6 +2262,25 @@
       "noteWas": "Note: {note}"
     },
     "Sync": {
+      "reliability": {
+        "title": "Provider reliability",
+        "subtitle": "How often each vendor answered when a visitor was standing at the checkout.",
+        "window": "Measurement window",
+        "windowValue": "Last {days} days",
+        "error": "Couldn't load the reliability figures",
+        "empty": "No vendor has been asked for a quote in this window.",
+        "noSample": "No sample",
+        "milliseconds": "{value} ms",
+        "note": "A refusal counts as an answer: the vendor was reached and said the period is gone, which is a fact about the boat rather than a broken connector. Only an error or a timeout counts against a vendor. Asks our own cached calendar refused before any vendor was called are left out of the rate entirely. Nothing in the sale reads these numbers yet.",
+        "table": {
+          "provider": "Provider",
+          "asked": "Asked",
+          "answered": "Answered",
+          "failed": "No answer",
+          "successRatio": "Answered",
+          "latency": "Median reply"
+        }
+      },
       "title": "Sync History",
       "subtitle": "Every catalogue and availability run, newest first.",
       "controls": {

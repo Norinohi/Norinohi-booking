@@ -192,6 +192,13 @@ export const listingAdminListQueryOptions = (input: {
 export const providerCapabilitiesQueryOptions = () =>
   orpc.admin.provider.capabilities.queryOptions({ staleTime: Number.POSITIVE_INFINITY });
 
+/*
+ * How each vendor has been answering, over a window the reader picks. Cached for a minute: it
+ * is an aggregate over every quote of the last month, and one more attempt cannot move it.
+ */
+export const providerReliabilityQueryOptions = (windowDays: number) =>
+  orpc.admin.provider.reliability.queryOptions({ input: { windowDays }, staleTime: 60_000 });
+
 export const syncRunsQueryOptions = (input: {
   provider?: ProviderKey;
   kind?: SyncRunKind;

@@ -2262,6 +2262,25 @@
       "noteWas": "Nota: {note}"
     },
     "Sync": {
+      "reliability": {
+        "title": "Fiabilidad de los proveedores",
+        "subtitle": "Con qué frecuencia respondió cada proveedor mientras un cliente estaba pagando.",
+        "window": "Periodo de medición",
+        "windowValue": "Últimos {days} días",
+        "error": "No se pudieron cargar las cifras de fiabilidad",
+        "empty": "En este periodo no se pidió precio a ningún proveedor.",
+        "noSample": "Sin muestra",
+        "milliseconds": "{value} ms",
+        "note": "Una negativa cuenta como respuesta: se llegó al proveedor y dijo que el periodo está ocupado, lo cual es un hecho sobre el barco y no un conector roto. Solo un error o un tiempo de espera agotado cuentan en contra. Las peticiones que nuestro propio calendario rechazó antes de llamar a ningún proveedor quedan fuera de la tasa. Por ahora ningún paso de la venta lee estas cifras.",
+        "table": {
+          "provider": "Proveedor",
+          "asked": "Peticiones",
+          "answered": "Respondidas",
+          "failed": "Sin respuesta",
+          "successRatio": "Tasa de respuesta",
+          "latency": "Respuesta mediana"
+        }
+      },
       "title": "Historial de sincronización",
       "subtitle": "Todas las ejecuciones de catálogo y disponibilidad, de la más reciente a la más antigua.",
       "controls": {

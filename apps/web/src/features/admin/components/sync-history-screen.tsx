@@ -8,6 +8,7 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { authClient } from "@/lib/auth-client";
 
 import MaintenanceControls from "./maintenance-controls";
+import ProviderReliabilityPanel from "./provider-reliability-panel";
 import SyncControls from "./sync-controls";
 import SyncRunsTable from "./sync-runs-table";
 
@@ -52,6 +53,10 @@ export default function SyncHistoryScreen({ user }: { user: { name: string; emai
 
             <div className="border-b border-natural-50 p-4 md:p-5">
               <MaintenanceControls />
+            </div>
+
+            <div className="border-b border-natural-50 p-4 md:p-5">
+              <ProviderReliabilityPanel />
             </div>
 
             <div className="p-4 md:p-5">

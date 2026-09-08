@@ -2262,6 +2262,25 @@
       "noteWas": "Notiz: {note}"
     },
     "Sync": {
+      "reliability": {
+        "title": "Zuverlässigkeit der Anbieter",
+        "subtitle": "Wie oft jeder Anbieter geantwortet hat, während ein Gast an der Kasse stand.",
+        "window": "Messzeitraum",
+        "windowValue": "Letzte {days} Tage",
+        "error": "Zuverlässigkeitswerte konnten nicht geladen werden",
+        "empty": "In diesem Zeitraum wurde kein Anbieter nach einem Preis gefragt.",
+        "noSample": "Keine Stichprobe",
+        "milliseconds": "{value} ms",
+        "note": "Eine Absage zählt als Antwort: Der Anbieter war erreichbar und hat gesagt, dass der Zeitraum vergeben ist, was eine Aussage über die Yacht ist und nicht über einen defekten Konnektor. Nur Fehler und Zeitüberschreitungen zählen gegen einen Anbieter. Anfragen, die unser eigener Kalender abgelehnt hat, bevor überhaupt ein Anbieter gefragt wurde, fließen gar nicht in die Quote ein. Bisher liest kein Schritt des Verkaufs diese Zahlen.",
+        "table": {
+          "provider": "Anbieter",
+          "asked": "Anfragen",
+          "answered": "Beantwortet",
+          "failed": "Keine Antwort",
+          "successRatio": "Antwortquote",
+          "latency": "Mittlere Antwortzeit"
+        }
+      },
       "title": "Synchronisierungsverlauf",
       "subtitle": "Alle Katalog- und Verfügbarkeitsläufe, neueste zuerst.",
       "controls": {

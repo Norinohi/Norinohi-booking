@@ -223,5 +223,15 @@ export const quoteOfferAttempt = pgTable(
   (t) => [
     index("quote_offer_attempt_quote_idx").on(t.quoteId),
     index("quote_offer_attempt_listing_idx").on(t.listingId, t.createdAt),
+    /*
+     * How a vendor has been answering lately, which the listing index cannot serve: that one
+     * leads on a boat, and the question here spans every boat one vendor was asked about.
+     *
+     * Built under a write lock rather than concurrently, which is what drizzle emits and what
+     * the migrator's own transaction allows. The table holds one row per vendor asked per
+     * quote, so it is small and its only writer is the quote path, which waits rather than
+     * fails. Worth revisiting as its own migration if this ever reaches millions of rows.
+     */
+    index("quote_offer_attempt_provider_idx").on(t.provider, t.createdAt),
   ],
 );
