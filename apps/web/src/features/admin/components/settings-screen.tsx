@@ -36,6 +36,9 @@ interface FormState {
   preference: ProviderCode[];
   offerRankingUsesBasePrice: boolean;
   catalogueShowsBasePrice: boolean;
+  offerRankingUsesReliability: boolean;
+  /* Typed as an operator enters it, like the deposit percentage; parsed at the edges only. */
+  reliabilityWindowDays: string;
   nameSearchEnabled: boolean;
 }
 
@@ -95,6 +98,8 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       preference: data.transactingPreference,
       offerRankingUsesBasePrice: data.offerRankingUsesBasePrice,
       catalogueShowsBasePrice: data.catalogueShowsBasePrice,
+      offerRankingUsesReliability: data.offerRankingUsesReliability,
+      reliabilityWindowDays: String(data.reliabilityWindowDays),
       nameSearchEnabled: data.nameSearchEnabled,
     });
   }, [data?.updatedAt, data]);
@@ -103,6 +108,11 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
 
   const percent = Number(form?.depositPercent);
   const days = Number(form?.leadTimeDays);
+  const reliabilityDays = Number(form?.reliabilityWindowDays);
+  /* Bounded the same way the contract is: a window of nought days measures nothing, and one
+     past a year is a claim about connectors that have since been rewritten. */
+  const reliabilityDaysValid =
+    Number.isInteger(reliabilityDays) && reliabilityDays >= 1 && reliabilityDays <= 365;
   const percentValid = Number.isFinite(percent) && percent >= 1 && percent <= 100;
   const daysValid = Number.isInteger(days) && days >= 0 && days <= 365;
   /* A percentage only has to be valid when it is the one in force; an unused field left blank
@@ -110,6 +120,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
   const canSave =
     form !== null &&
     daysValid &&
+    reliabilityDaysValid &&
     (form.source === "vendor" || form.mode === "full" || percentValid) &&
     !update.isPending;
 
@@ -127,6 +138,8 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
         transactingPreference: form.preference,
         offerRankingUsesBasePrice: form.offerRankingUsesBasePrice,
         catalogueShowsBasePrice: form.catalogueShowsBasePrice,
+        offerRankingUsesReliability: form.offerRankingUsesReliability,
+        reliabilityWindowDays: reliabilityDays,
         nameSearchEnabled: form.nameSearchEnabled,
       },
       {
@@ -385,6 +398,37 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                       onCheckedChange={(checked) => set({ catalogueShowsBasePrice: checked })}
                     />
                   </label>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("ranking.reliabilityToggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("ranking.reliabilityHint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.offerRankingUsesReliability}
+                      onCheckedChange={(checked) => set({ offerRankingUsesReliability: checked })}
+                    />
+                  </label>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="reliability-window-days">{t("ranking.windowDays")}</Label>
+                    <Input
+                      id="reliability-window-days"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={365}
+                      value={form.reliabilityWindowDays}
+                      disabled={!form.offerRankingUsesReliability}
+                      onChange={(event) => set({ reliabilityWindowDays: event.target.value })}
+                      className="w-28"
+                      aria-invalid={!reliabilityDaysValid}
+                    />
+                  </div>
                 </fieldset>
 
                 <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">

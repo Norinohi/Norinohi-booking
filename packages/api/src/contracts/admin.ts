@@ -1030,6 +1030,19 @@ export const catalogueShowsBasePriceSchema = z
     "Whether catalogue cards show the charter rate instead of the all-in total. The sort, the price filter and the slider bounds follow whatever the cards show, so the page stays coherent. Off by default.",
   );
 
+export const offerRankingUsesReliabilitySchema = z
+  .boolean()
+  .describe(
+    "Whether a provider's recent answer rate breaks a tie between offers already equal on price, obligatory extras and commission. Off by default. Skipped for any pair where either provider has too few asks in the window to measure.",
+  );
+
+export const reliabilityWindowDaysSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(365)
+  .describe("How many days of quote attempts the answer rate is measured over.");
+
 export const nameSearchEnabledSchema = z
   .boolean()
   .describe(
@@ -1041,6 +1054,8 @@ export const marketplaceSettingsSchema = z.object({
   transactingPreference: transactingPreferenceSchema,
   offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
   catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
+  offerRankingUsesReliability: offerRankingUsesReliabilitySchema,
+  reliabilityWindowDays: reliabilityWindowDaysSchema,
   nameSearchEnabled: nameSearchEnabledSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
@@ -1051,6 +1066,8 @@ export const marketplaceSettingsUpdateInputSchema = z.object({
   transactingPreference: transactingPreferenceSchema,
   offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
   catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
+  offerRankingUsesReliability: offerRankingUsesReliabilitySchema,
+  reliabilityWindowDays: reliabilityWindowDaysSchema,
   nameSearchEnabled: nameSearchEnabledSchema,
 });
 

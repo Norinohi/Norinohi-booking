@@ -3157,6 +3157,9 @@
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
       },
       "ranking": {
+        "reliabilityToggle": "Gleichstand über die Antwortquote lösen",
+        "reliabilityHint": "Nur wenn Preis, Pflichtzuschläge und Provision gleich sind. Übersprungen, sobald einer der beiden Anbieter im Zeitraum zu wenige Anfragen für eine Messung hat, damit ein neu angebundener Anbieter nie für sein Schweigen zurückgestuft wird. Die Zahlen stehen auf der Seite Sync-Verlauf.",
+        "windowDays": "Gemessen über die letzten (Tage)",
         "catalogueToggle": "Charterpreis auf den Karten zeigen",
         "catalogueHint": "Aus zeigt eine Karte den Gesamtpreis. An zeigt sie den reinen Charterpreis mit den Pflichtzuschlägen darunter, und Sortierung, Preisfilter und Schieberegler folgen derselben Zahl. Unabhängig vom Schalter darüber: was eine Karte bewirbt und über wen wir verkaufen, sind zwei Entscheidungen.",
         "legend": "Angebotsauswahl",

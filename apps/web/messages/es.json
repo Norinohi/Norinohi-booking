@@ -3157,6 +3157,9 @@
         "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
       },
       "ranking": {
+        "reliabilityToggle": "Desempatar por la frecuencia de respuesta del proveedor",
+        "reliabilityHint": "Solo cuando el precio, los suplementos obligatorios y la comisión coinciden. Se omite si alguno de los dos proveedores tiene pocas peticiones en el periodo para medirlo, así un proveedor recién conectado nunca baja por su silencio. Las cifras están en la página de historial de sincronización.",
+        "windowDays": "Medido sobre los últimos (días)",
         "catalogueToggle": "Mostrar el precio del chárter en las tarjetas",
         "catalogueHint": "Desactivado, la tarjeta muestra el total. Activado, muestra el precio del chárter con los suplementos obligatorios debajo, y el orden, el filtro de precio y el deslizador leen la misma cifra. Independiente del interruptor anterior: lo que anuncia una tarjeta y a través de quién vendemos son decisiones distintas.",
         "legend": "Elección de la oferta",

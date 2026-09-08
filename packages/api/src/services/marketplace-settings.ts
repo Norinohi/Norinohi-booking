@@ -18,6 +18,9 @@ const SINGLETON_ID = "singleton";
  * reads are the same one. `TRANSACTING_PREFERENCE` there is now only the fallback for a database
  * that has never been configured, and for the pure decision function's own tests.
  */
+/** Restated here so an unwritten settings row prices exactly as a written default one does. */
+export const DEFAULT_RELIABILITY_WINDOW_DAYS = 30;
+
 export const DEFAULT_TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
 
 export type ProviderCode = z.infer<typeof providerKeyOutputSchema>;
@@ -48,6 +51,10 @@ export interface MarketplaceSettings {
   offerRankingUsesBasePrice: boolean;
   /** Whether catalogue cards show, sort and filter on the charter rate. Off by default. */
   catalogueShowsBasePrice: boolean;
+  /** Whether a vendor's answer rate breaks a tie nothing above it could. Off by default. */
+  offerRankingUsesReliability: boolean;
+  /** The window that rate is measured over, in days. */
+  reliabilityWindowDays: number;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
   updatedAt: string | null;
@@ -74,6 +81,8 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
       transactingPreference: [...DEFAULT_TRANSACTING_PREFERENCE],
       offerRankingUsesBasePrice: false,
       catalogueShowsBasePrice: false,
+      offerRankingUsesReliability: false,
+      reliabilityWindowDays: DEFAULT_RELIABILITY_WINDOW_DAYS,
       nameSearchEnabled: false,
       updatedAt: null,
       updatedByUserId: null,
@@ -95,6 +104,8 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     transactingPreference: parsePreference(row.transactingPreference),
     offerRankingUsesBasePrice: row.offerRankingUsesBasePrice,
     catalogueShowsBasePrice: row.catalogueShowsBasePrice,
+    offerRankingUsesReliability: row.offerRankingUsesReliability,
+    reliabilityWindowDays: row.reliabilityWindowDays,
     nameSearchEnabled: row.nameSearchEnabled,
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
@@ -106,6 +117,8 @@ export interface UpdateMarketplaceSettingsInput {
   transactingPreference: ProviderCode[];
   offerRankingUsesBasePrice: boolean;
   catalogueShowsBasePrice: boolean;
+  offerRankingUsesReliability: boolean;
+  reliabilityWindowDays: number;
   nameSearchEnabled: boolean;
   actorUserId: string | null;
 }
@@ -134,6 +147,8 @@ export async function updateMarketplaceSettings(
     transactingPreference: input.transactingPreference,
     offerRankingUsesBasePrice: input.offerRankingUsesBasePrice,
     catalogueShowsBasePrice: input.catalogueShowsBasePrice,
+    offerRankingUsesReliability: input.offerRankingUsesReliability,
+    reliabilityWindowDays: input.reliabilityWindowDays,
     nameSearchEnabled: input.nameSearchEnabled,
     updatedByUserId: input.actorUserId,
   };

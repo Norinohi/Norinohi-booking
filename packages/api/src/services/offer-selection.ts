@@ -25,6 +25,7 @@ import type { Database, DatabaseExecutor } from "../context";
 import { rangeStatus } from "../lib/availability-rules";
 import { type CommissionRule, resolveCommissionRate } from "./commission";
 import { getMarketplaceSettings } from "./marketplace-settings";
+import { reliabilityByProvider } from "./provider-reliability";
 import { type OfferQuoteResult, pickWinner } from "./offer-choice";
 import { providerByKey } from "./provider-routing";
 
@@ -114,6 +115,13 @@ export async function selectBestOffer(
    */
   const commissionRules = await listCommissionRules(db, eligible);
 
+  const { transactingPreference, offerRankingUsesBasePrice, offerRankingUsesReliability } =
+    await getMarketplaceSettings(db);
+
+  /* Read only when the step is switched on, so an aggregate over every quote of the last month
+     is not run on a marketplace that has not asked for it. */
+  const reliability = offerRankingUsesReliability ? await cachedReliability(db) : null;
+
   const results = await Promise.all(
     eligible.map((offer) =>
       askOffer(
@@ -125,6 +133,7 @@ export async function selectBestOffer(
           operatorId: offer.operatorId,
           on: input.checkIn,
         }),
+        reliability?.get(offer.providerCode) ?? null,
       ),
     ),
   );
@@ -134,16 +143,13 @@ export async function selectBestOffer(
     ...ineligibleAttempts(offers, eligible),
   ];
 
-  /* Read per quote rather than cached in a module: an admin who reorders the vendors expects the
-     next sale to follow, and a singleton lookup is not what makes a quote slow. */
-  const { transactingPreference, offerRankingUsesBasePrice } = await getMarketplaceSettings(db);
-
   const { winner, currencyMismatch } = pickWinner(
     results.map((result): OfferQuoteResult => result.attempt),
     {
       preferredCurrency: offers[0]?.currency ?? null,
       preference: transactingPreference,
       rankOn: offerRankingUsesBasePrice ? "base" : "all_in",
+      useReliability: offerRankingUsesReliability,
     },
   );
 
@@ -176,6 +182,34 @@ export async function selectBestOffer(
  * of rows. An empty table -- how this ships -- makes the resolver answer zero for everyone,
  * which is the commission step switched off.
  */
+/**
+ * The answer rates, kept for a few minutes.
+ *
+ * Unlike the settings row beside it, this is a window aggregate over every quote attempt of the
+ * last month, and running it per quote would put a scan in front of a visitor waiting on a
+ * price. Five minutes is far shorter than the window it summarises, so nothing here can be
+ * wrong for long -- a vendor that starts failing is ranked down within the same session, and
+ * the sale it wins meanwhile is one it was measured as able to serve.
+ *
+ * Per process rather than per deployment, and deliberately not invalidated when the setting
+ * changes: switching the step on reads it fresh on the next quote either way.
+ */
+const RELIABILITY_TTL_MS = 5 * 60 * 1000;
+
+let reliabilityCache: { at: number; rates: Map<string, number> } | null = null;
+
+async function cachedReliability(db: Database): Promise<Map<string, number>> {
+  const now = Date.now();
+  if (reliabilityCache && now - reliabilityCache.at < RELIABILITY_TTL_MS) {
+    return reliabilityCache.rates;
+  }
+
+  const { reliabilityWindowDays } = await getMarketplaceSettings(db);
+  const rates = await reliabilityByProvider(db, reliabilityWindowDays);
+  reliabilityCache = { at: now, rates };
+  return rates;
+}
+
 async function listCommissionRules(
   db: Database,
   offers: readonly OfferRow[],
@@ -248,6 +282,7 @@ async function askOffer(
   offer: OfferRow,
   input: QuoteRequest,
   commissionPct: number,
+  reliability: number | null,
 ): Promise<{ attempt: OfferAttempt; provider: InventoryProvider; priced: ProviderQuote | null }> {
   const started = Date.now();
   const provider = await providerByKey(fallback, offer.providerCode);
@@ -277,6 +312,7 @@ async function askOffer(
         obligatoryMinor: priced.total.amountMinor - baseMinor,
         currency: priced.currency,
         commissionPct,
+        reliability,
         latencyMs: Date.now() - started,
       },
     };

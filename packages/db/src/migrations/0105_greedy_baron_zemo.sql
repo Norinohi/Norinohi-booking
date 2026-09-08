@@ -1,0 +1,2 @@
+ALTER TABLE "marketplace_setting" ADD COLUMN "offer_ranking_uses_reliability" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "marketplace_setting" ADD COLUMN "reliability_window_days" integer DEFAULT 30 NOT NULL;

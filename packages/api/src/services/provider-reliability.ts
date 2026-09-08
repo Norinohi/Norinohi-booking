@@ -60,6 +60,41 @@ function round4(value: number): number {
   return Math.round(value * 10_000) / 10_000;
 }
 
+/**
+ * How few asks is too few to rank a vendor on.
+ *
+ * A connector switched on last week has answered a handful of times, and a rate off five asks
+ * says nothing about the sixth. Below this the vendor reports no rate at all rather than a
+ * confident-looking one, and the comparator skips the step for that pair -- silence is not
+ * evidence of unreliability.
+ */
+const MIN_RANKING_SAMPLE = 50;
+
+/**
+ * The answer rate per provider, for the ranking rather than for a screen.
+ *
+ * Only providers with enough asks to measure appear. A caller reading a code that is absent
+ * has its answer: this vendor is not rankable on reliability today.
+ */
+export async function reliabilityByProvider(
+  db: DatabaseExecutor,
+  windowDays: number,
+): Promise<Map<string, number>> {
+  const report = await providerReliability(db, { windowDays });
+  return rankableRates(report.rows);
+}
+
+/** The measured half of the report, separated so the sample floor can be tested. */
+export function rankableRates(rows: readonly Row[]): Map<string, number> {
+  const rankable = rows.flatMap((row) => {
+    if (row.successRatio === null) return [];
+    if (row.answered + row.failed < MIN_RANKING_SAMPLE) return [];
+    return [[row.provider, row.successRatio] as const];
+  });
+
+  return new Map(rankable);
+}
+
 export async function providerReliability(
   db: DatabaseExecutor,
   input: { windowDays: number },

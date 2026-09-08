@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { type ProviderCounts, reliabilityOf } from "./provider-reliability";
+import { type ProviderCounts, rankableRates, reliabilityOf } from "./provider-reliability";
 
 const counts = (over: Partial<ProviderCounts> = {}): ProviderCounts => ({
   provider: "nausys",
@@ -41,5 +41,29 @@ describe("reliabilityOf", () => {
 
   it("rounds the rate to four places, as the duplicate metrics do", () => {
     expect(reliabilityOf(counts({ answered: 2, failed: 1 })).successRatio).toBe(0.6667);
+  });
+});
+
+describe("rankableRates", () => {
+  const measured = (provider: string, answered: number, failed: number) =>
+    reliabilityOf(counts({ provider, answered, failed }));
+
+  it("offers a rate for a vendor with enough asks behind it", () => {
+    expect(rankableRates([measured("nausys", 990, 10)]).get("nausys")).toBe(0.99);
+  });
+
+  it("withholds one for a vendor nobody has asked much", () => {
+    /* A connector switched on last week has answered a handful of times, and the comparator
+       reads an absent rate as "not rankable" rather than as a bad one. */
+    expect(rankableRates([measured("mock", 9, 1)]).has("mock")).toBe(false);
+  });
+
+  it("withholds one for a vendor reached only by our own cache's refusals", () => {
+    const untouched = reliabilityOf(counts({ provider: "mock", ineligible: 900 }));
+    expect(rankableRates([untouched]).has("mock")).toBe(false);
+  });
+
+  it("counts failures toward the sample, since a vendor that broke was still asked", () => {
+    expect(rankableRates([measured("nausys", 30, 30)]).get("nausys")).toBe(0.5);
   });
 });

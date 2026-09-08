@@ -175,6 +175,22 @@ export const marketplaceSetting = pgTable(
      */
     catalogueShowsBasePrice: boolean("catalogue_shows_base_price").default(false).notNull(),
     /**
+     * Whether a vendor's recent answer rate breaks a tie the steps above it could not.
+     *
+     * Off until somebody has looked at the numbers on the sync screen, which is the whole point
+     * of measuring them in the open first. It only ever separates offers already equal on
+     * price, on obligatory extras and on commission -- a vendor is never preferred for being
+     * reliable while it is also dearer.
+     */
+    offerRankingUsesReliability: boolean("offer_ranking_uses_reliability").default(false).notNull(),
+    /**
+     * How many days of asks the answer rate is measured over.
+     *
+     * Thirty by default, matching what the dashboard opens on: long enough to survive one bad
+     * night, short enough that a connector fixed last week stops being punished for it.
+     */
+    reliabilityWindowDays: integer("reliability_window_days").default(30).notNull(),
+    /**
      * Whether the search bar offers the free-text field.
      *
      * A testing affordance rather than a product feature: the design has no such field, so it

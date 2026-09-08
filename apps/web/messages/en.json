@@ -3157,6 +3157,9 @@
         "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
       },
       "ranking": {
+        "reliabilityToggle": "Break a tie on how often a provider answers",
+        "reliabilityHint": "Only where price, obligatory extras and commission are all equal. Skipped for any pair where either provider has too few asks in the window to measure, so a newly connected vendor is never ranked down for its silence. The figures are on the Sync History page.",
+        "windowDays": "Measured over the last (days)",
         "catalogueToggle": "Show the charter rate on cards",
         "catalogueHint": "Off, a card shows the all-in total. On, it shows the charter rate with the obligatory extras named beneath it, and the sort, the price filter and the slider all follow the same figure. Independent of the switch above: what a card advertises and which vendor we sell through are separate decisions.",
         "legend": "Offer ranking",
