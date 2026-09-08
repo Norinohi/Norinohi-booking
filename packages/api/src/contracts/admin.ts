@@ -1043,6 +1043,22 @@ export const reliabilityWindowDaysSchema = z
   .max(365)
   .describe("How many days of quote attempts the answer rate is measured over.");
 
+export const displayCurrencyEnabledSchema = z
+  .boolean()
+  .describe(
+    "Whether prices are shown in the visitor's own currency. Display only: a quote is settled in the currency it was priced in, and the payment screen states the amount that will actually be charged whenever the two differ. Off by default.",
+  );
+
+export const displayCurrencyDefaultSchema = z
+  .enum(["EUR", "USD", "GBP", "PLN", "UAH"])
+  .describe("The currency shown where a visitor's country is unknown or not on the list.");
+
+export const displayCurrencyByCountrySchema = z
+  .record(z.string().length(2).toUpperCase(), z.enum(["EUR", "USD", "GBP", "PLN", "UAH"]))
+  .describe(
+    "Per-country overrides on top of the built-in list, keyed by ISO country code. Empty leaves the built-in list in force.",
+  );
+
 export const nameSearchEnabledSchema = z
   .boolean()
   .describe(
@@ -1056,6 +1072,9 @@ export const marketplaceSettingsSchema = z.object({
   catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
   offerRankingUsesReliability: offerRankingUsesReliabilitySchema,
   reliabilityWindowDays: reliabilityWindowDaysSchema,
+  displayCurrencyEnabled: displayCurrencyEnabledSchema,
+  displayCurrencyDefault: displayCurrencyDefaultSchema,
+  displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
@@ -1068,12 +1087,20 @@ export const marketplaceSettingsUpdateInputSchema = z.object({
   catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
   offerRankingUsesReliability: offerRankingUsesReliabilitySchema,
   reliabilityWindowDays: reliabilityWindowDaysSchema,
+  displayCurrencyEnabled: displayCurrencyEnabledSchema,
+  displayCurrencyDefault: displayCurrencyDefaultSchema,
+  displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
 });
 
 /** The slice of the settings a public page is allowed to read. */
 export const publicSearchSettingsSchema = z.object({
   nameSearchEnabled: nameSearchEnabledSchema,
+  /* The currency layer's own public slice: the browser has to know whether it may convert,
+     and what to fall back to, before it renders a price. */
+  displayCurrencyEnabled: displayCurrencyEnabledSchema,
+  displayCurrencyDefault: displayCurrencyDefaultSchema,
+  displayCurrencyByCountry: displayCurrencyByCountrySchema,
   /* Public because the slider's own label and the client-side sort have to name the same
      figure the server ordered by. */
   catalogueShowsBasePrice: catalogueShowsBasePriceSchema,

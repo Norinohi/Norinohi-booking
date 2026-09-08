@@ -86,6 +86,21 @@ const reviewSchema = z.object({
   body: z.string(),
 });
 
+/**
+ * The reference rates a browser converts displayed prices with.
+ *
+ * `rate` is units of that currency per one euro, which is how the ECB publishes them, and
+ * `asOf` is the publishing bank's own stamp rather than our fetch time -- per rate, because two
+ * banks write these on two schedules and one of them can stop while the other keeps answering.
+ * `maxAgeDays` is how far past that stamp this marketplace will still convert; beyond it a
+ * price stays in the currency it was quoted in.
+ */
+export const fxSnapshotSchema = z.object({
+  base: z.string(),
+  maxAgeDays: z.number().int(),
+  rates: z.record(z.string(), z.object({ rate: z.number(), asOf: z.string() })),
+});
+
 export const listingSummarySchema = z.object({
   id: z.string(),
   slug: z.string(),

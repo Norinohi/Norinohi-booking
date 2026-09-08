@@ -7,6 +7,8 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { MotionConfig } from "motion/react";
 import { useTranslations } from "next-intl";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+
+import { CurrencyProvider } from "./currency-provider";
 import { useMemo } from "react";
 
 import { WishlistProvider } from "@/features/wishlist";
@@ -51,7 +53,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <NuqsAdapter>
         <QueryClientProvider client={queryClient}>
           <UiLabelsProvider labels={uiLabels}>
-            <WishlistProvider>{children}</WishlistProvider>
+            {/* Inside the query client, which it reads the rates and the setting through, and
+                above everything that prints a price. */}
+            <CurrencyProvider>
+              <WishlistProvider>{children}</WishlistProvider>
+            </CurrencyProvider>
           </UiLabelsProvider>
           <ReactQueryDevtools />
         </QueryClientProvider>

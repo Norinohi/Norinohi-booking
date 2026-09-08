@@ -76,6 +76,7 @@
       "payment": "Pago"
     },
     "payment": {
+      "chargedIn": "Se cobrarán {amount} en {currency}. Los precios mostrados en otra moneda se convierten a tipos de referencia y son aproximados.",
       "heading": "Elige cómo quieres continuar",
       "submitFailed": "Algo salió mal. Inténtalo de nuevo.",
       "tabs": {
@@ -486,6 +487,9 @@
       "priceIndicative": "Precio del chárter · mínimo de temporada",
       "priceFromLabel": "Desde",
       "plusObligatory": "más {amount} de suplementos obligatorios",
+      "approximatePrice": "aprox.",
+      "chargedIn": "Cobro en {currency}: {amount}",
+      "currencyLabel": "Moneda",
       "priceOnRequest": "Bajo petición",
       "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
@@ -3155,6 +3159,12 @@
         "legend": "Proveedor preferido",
         "hint": "Quién gana cuando la disponibilidad, el precio y los suplementos obligatorios coinciden. Nunca sustituye a una oferta más barata: solo resuelve un empate.",
         "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
+      },
+      "currency": {
+        "legend": "Moneda de visualización",
+        "toggle": "Mostrar los precios en la moneda del visitante",
+        "hint": "Solo visualización. Una reserva se liquida en la moneda en que se calculó, y la pantalla de pago indica el importe que se cobrará realmente en cuanto ambas difieran. Las cifras convertidas se marcan como aproximadas: los tipos de referencia no son los que aplica una red de tarjetas. Si los tipos han caducado, los precios se quedan en la moneda del proveedor.",
+        "fallback": "Cuando el país es desconocido"
       },
       "ranking": {
         "reliabilityToggle": "Desempatar por la frecuencia de respuesta del proveedor",

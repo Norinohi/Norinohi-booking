@@ -191,6 +191,28 @@ export const marketplaceSetting = pgTable(
      */
     reliabilityWindowDays: integer("reliability_window_days").default(30).notNull(),
     /**
+     * Whether prices are shown in the visitor's own currency rather than the vendor's.
+     *
+     * Display only. A quote holds one currency and is settled in it, so nothing here changes
+     * what is charged -- the payment screen states the actual currency and amount whenever the
+     * two differ. Conversion happens in the browser after mount, because a cached page cannot
+     * vary by visitor without giving up the prerendered shell (docs/adr/0002).
+     */
+    displayCurrencyEnabled: boolean("display_currency_enabled").default(false).notNull(),
+    /** Where a visitor's country is unknown or unlisted. The catalogue's own base currency. */
+    displayCurrencyDefault: text("display_currency_default").default("EUR").notNull(),
+    /**
+     * Country to currency, overriding the code-level list for named countries only.
+     *
+     * Empty by default, which leaves the client's own list in force: USD for the United States,
+     * GBP for the United Kingdom, PLN for Poland, UAH for Ukraine, EUR across the euro area.
+     * Here so a country can be moved without a release, not so the list can be rebuilt.
+     */
+    displayCurrencyByCountry: jsonb("display_currency_by_country")
+      .$type<Record<string, string>>()
+      .default({})
+      .notNull(),
+    /**
      * Whether the search bar offers the free-text field.
      *
      * A testing affordance rather than a product feature: the design has no such field, so it

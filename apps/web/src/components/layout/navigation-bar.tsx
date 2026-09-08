@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 
 import { useWishlist } from "@/features/wishlist";
 
+import CurrencySwitcher from "./currency-switcher";
 import LanguageSwitcher from "./language-switcher";
 import UserMenu from "./user-menu";
 
@@ -129,6 +130,7 @@ export default function NavigationBar() {
               )}
             </motion.div>
             <UserMenu />
+            <CurrencySwitcher />
             <LanguageSwitcher />
           </div>
 

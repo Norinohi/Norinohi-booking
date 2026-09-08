@@ -34,6 +34,13 @@ export const suggestionsQueryOptions = (query: string) =>
 export const searchUiSettingsQueryOptions = () =>
   orpc.charterSearch.uiSettings.queryOptions({ input: {}, staleTime: 5 * 60 * 1000 });
 
+/*
+ * The reference rates the browser converts displayed prices with. Cached for an hour: the ECB
+ * publishes once a working day, so anything shorter is polling a number that has not moved.
+ */
+export const fxRatesQueryOptions = () =>
+  orpc.charterSearch.fxRates.queryOptions({ input: {}, staleTime: 60 * 60 * 1000 });
+
 export type MarinasInput = Parameters<AppRouterClient["charterSearch"]["mapMarinas"]>[0];
 
 export type MapMarinaData = Awaited<

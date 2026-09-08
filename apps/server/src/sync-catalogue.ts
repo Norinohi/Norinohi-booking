@@ -90,10 +90,17 @@ if (providers.size === 0) {
  * far better than losing the night's import because a public feed was down.
  */
 let fxAsOf = "none";
+/* Tracked apart from the ECB date because it comes from a different bank on a different
+   schedule: one of the two can go stale while the other keeps answering. */
+let uahAsOf = "none";
 try {
   const rates = await refreshFxRates(db);
   fxAsOf = rates.asOf;
-  console.log(`[fx] ${rates.currencies} reference rates published ${rates.asOf}`);
+  uahAsOf = rates.uahAsOf ?? "none";
+  console.log(
+    `[fx] ${rates.currencies} reference rates published ${rates.asOf}` +
+      `, hryvnia ${rates.uahAsOf ?? "unavailable"}`,
+  );
 } catch (error) {
   console.warn(
     `[fx] Could not refresh reference rates: ${error instanceof Error ? error.message : error}`,
@@ -203,7 +210,7 @@ if (skipped > 0) console.warn(`${skipped} provider(s) skipped: a sync of theirs 
  * same stale date. That failure is invisible in a success/failure flag and silently drops every
  * non-EUR listing out of the catalogue's price comparisons once it passes MAX_RATE_AGE_DAYS.
  */
-const metrics = { providers: providers.size, failed, skipped, fxAsOf };
+const metrics = { providers: providers.size, failed, skipped, fxAsOf, uahAsOf };
 if (failed > 0) {
   await job.failed(`${failed} provider sync(s) failed`, metrics);
   process.exit(1);

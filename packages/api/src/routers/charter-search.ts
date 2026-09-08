@@ -6,6 +6,7 @@ import {
   searchListings,
 } from "@yacht-charter/db/search";
 import type { ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
+import { readFxSnapshot } from "@yacht-charter/db/fx/rates";
 import { z } from "zod";
 
 import {
@@ -18,6 +19,7 @@ import {
   suggestionSchema,
 } from "../contracts/catalog";
 import { publicSearchSettingsSchema } from "../contracts/admin";
+import { fxSnapshotSchema } from "../contracts/catalog";
 import { emptyInputSchema } from "../contracts/primitives";
 import type { Context } from "../context";
 import { publicProcedure } from "../index";
@@ -267,6 +269,20 @@ export const charterSearchRouter = {
     .input(z.object({ locale: z.string().min(2).max(10).default("en") }))
     .output(z.array(catalogPageSchema))
     .handler(({ context, input }) => listCatalogPages(context.db, { locale: input.locale })),
+  fxRates: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/fx-rates",
+      operationId: "getFxRates",
+      summary: "Reference rates for displaying prices in another currency",
+      description:
+        "The ECB daily reference rates, quoted against the euro, with the day the source stamped them and how old this marketplace will let a rate get. Display only: a quote is settled in the currency it was priced in, and nothing converted here reaches a charge. The browser reads this because a page cached for every visitor cannot hold one visitor's currency.",
+      tags: ["Charter Search"],
+      successDescription: "Every stored rate, and the date the source published them.",
+    })
+    .input(emptyInputSchema)
+    .output(fxSnapshotSchema)
+    .handler(({ context }) => readFxSnapshot(context.db)),
   uiSettings: publicProcedure
     .route({
       method: "GET",
@@ -285,6 +301,9 @@ export const charterSearchRouter = {
       return {
         nameSearchEnabled: settings.nameSearchEnabled,
         catalogueShowsBasePrice: settings.catalogueShowsBasePrice,
+        displayCurrencyEnabled: settings.displayCurrencyEnabled,
+        displayCurrencyDefault: settings.displayCurrencyDefault,
+        displayCurrencyByCountry: settings.displayCurrencyByCountry,
       };
     }),
 };

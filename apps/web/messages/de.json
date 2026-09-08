@@ -76,6 +76,7 @@
       "payment": "Zahlung"
     },
     "payment": {
+      "chargedIn": "Abgebucht werden {amount} in {currency}. In einer anderen Währung angezeigte Preise sind zu Referenzkursen umgerechnet und ungefähr.",
       "heading": "Wählen Sie, wie Sie fortfahren möchten",
       "submitFailed": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
       "tabs": {
@@ -486,6 +487,9 @@
       "priceIndicative": "Charterpreis · Saisonminimum",
       "priceFromLabel": "Ab",
       "plusObligatory": "zzgl. {amount} Pflichtzuschläge",
+      "approximatePrice": "ca.",
+      "chargedIn": "Abbuchung in {currency}: {amount}",
+      "currencyLabel": "Währung",
       "priceOnRequest": "Auf Anfrage",
       "priceUnavailable": "Nicht verfügbar",
       "perPerson": "{price} pro Person",
@@ -3155,6 +3159,12 @@
         "legend": "Bevorzugter Anbieter",
         "hint": "Wer gewinnt, wenn Verfügbarkeit, Preis und Pflichtgebühren gleich sind. Ein günstigeres Angebot wird dadurch nie übergangen: es entscheidet nur den Gleichstand.",
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
+      },
+      "currency": {
+        "legend": "Anzeigewährung",
+        "toggle": "Preise in der Währung des Besuchers zeigen",
+        "hint": "Nur zur Anzeige. Eine Buchung wird in der Währung abgerechnet, in der sie kalkuliert wurde, und der Zahlungsbildschirm nennt den Betrag, der tatsächlich abgebucht wird, sobald beide auseinandergehen. Umgerechnete Beträge sind als ungefähr gekennzeichnet: Referenzkurse sind nicht die Kurse der Kartennetze. Sind die Kurse veraltet, bleiben die Preise in der Währung des Anbieters.",
+        "fallback": "Wenn das Land unbekannt ist"
       },
       "ranking": {
         "reliabilityToggle": "Gleichstand über die Antwortquote lösen",

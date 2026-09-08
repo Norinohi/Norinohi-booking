@@ -5,7 +5,7 @@ import type { z } from "zod";
 
 import { marketplaceSetting } from "@yacht-charter/db/schema/admin";
 
-import { providerKeyOutputSchema } from "../contracts/admin";
+import { displayCurrencyDefaultSchema, providerKeyOutputSchema } from "../contracts/admin";
 import type { Database, DatabaseExecutor } from "../context";
 import { DEFAULT_PAYMENT_SETTINGS, type MarketplacePaymentSettings } from "./pricing";
 
@@ -24,6 +24,33 @@ export const DEFAULT_RELIABILITY_WINDOW_DAYS = 30;
 export const DEFAULT_TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
 
 export type ProviderCode = z.infer<typeof providerKeyOutputSchema>;
+export type DisplayCurrency = z.infer<typeof displayCurrencyDefaultSchema>;
+
+/** Country code to currency. Open by nature: the keys are whatever countries someone names. */
+export type CurrencyOverrides = Record<string, DisplayCurrency>;
+
+/**
+ * The stored default, narrowed to a currency this build can actually render.
+ *
+ * The column is plain text, so a value written before a currency was retired -- or by hand --
+ * would otherwise reach a formatter that throws on it. Falling back to the base is the same
+ * answer an unconfigured marketplace gets.
+ */
+function parseDisplayCurrency(stored: string): DisplayCurrency {
+  const parsed = displayCurrencyDefaultSchema.safeParse(stored);
+  return parsed.success ? parsed.data : "EUR";
+}
+
+/** The overrides, keeping only the pairs both sides of which this build understands. */
+function parseCurrencyOverrides(stored: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(stored).flatMap(([country, currency]) => {
+      const parsed = displayCurrencyDefaultSchema.safeParse(currency);
+      if (!parsed.success || !/^[A-Za-z]{2}$/.test(country)) return [];
+      return [[country.toUpperCase(), parsed.data] as const];
+    }),
+  );
+}
 
 /**
  * The stored order, keeping only codes this build knows.
@@ -55,6 +82,10 @@ export interface MarketplaceSettings {
   offerRankingUsesReliability: boolean;
   /** The window that rate is measured over, in days. */
   reliabilityWindowDays: number;
+  /** Whether prices are shown in the visitor's currency. Display only; off by default. */
+  displayCurrencyEnabled: boolean;
+  displayCurrencyDefault: DisplayCurrency;
+  displayCurrencyByCountry: CurrencyOverrides;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
   updatedAt: string | null;
@@ -83,6 +114,9 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
       catalogueShowsBasePrice: false,
       offerRankingUsesReliability: false,
       reliabilityWindowDays: DEFAULT_RELIABILITY_WINDOW_DAYS,
+      displayCurrencyEnabled: false,
+      displayCurrencyDefault: "EUR",
+      displayCurrencyByCountry: {},
       nameSearchEnabled: false,
       updatedAt: null,
       updatedByUserId: null,
@@ -106,6 +140,9 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     catalogueShowsBasePrice: row.catalogueShowsBasePrice,
     offerRankingUsesReliability: row.offerRankingUsesReliability,
     reliabilityWindowDays: row.reliabilityWindowDays,
+    displayCurrencyEnabled: row.displayCurrencyEnabled,
+    displayCurrencyDefault: parseDisplayCurrency(row.displayCurrencyDefault),
+    displayCurrencyByCountry: parseCurrencyOverrides(row.displayCurrencyByCountry),
     nameSearchEnabled: row.nameSearchEnabled,
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
@@ -119,6 +156,9 @@ export interface UpdateMarketplaceSettingsInput {
   catalogueShowsBasePrice: boolean;
   offerRankingUsesReliability: boolean;
   reliabilityWindowDays: number;
+  displayCurrencyEnabled: boolean;
+  displayCurrencyDefault: DisplayCurrency;
+  displayCurrencyByCountry: CurrencyOverrides;
   nameSearchEnabled: boolean;
   actorUserId: string | null;
 }
@@ -149,6 +189,9 @@ export async function updateMarketplaceSettings(
     catalogueShowsBasePrice: input.catalogueShowsBasePrice,
     offerRankingUsesReliability: input.offerRankingUsesReliability,
     reliabilityWindowDays: input.reliabilityWindowDays,
+    displayCurrencyEnabled: input.displayCurrencyEnabled,
+    displayCurrencyDefault: input.displayCurrencyDefault,
+    displayCurrencyByCountry: input.displayCurrencyByCountry,
     nameSearchEnabled: input.nameSearchEnabled,
     updatedByUserId: input.actorUserId,
   };

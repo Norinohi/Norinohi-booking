@@ -24,6 +24,7 @@ import {
 type PaymentSource = "vendor" | "marketplace";
 type PaymentMode = "deposit" | "full";
 type ProviderCode = "booking_manager" | "nausys" | "mock";
+type DisplayCurrency = "EUR" | "USD" | "GBP" | "PLN" | "UAH";
 
 interface FormState {
   source: PaymentSource;
@@ -39,8 +40,13 @@ interface FormState {
   offerRankingUsesReliability: boolean;
   /* Typed as an operator enters it, like the deposit percentage; parsed at the edges only. */
   reliabilityWindowDays: string;
+  displayCurrencyEnabled: boolean;
+  displayCurrencyDefault: DisplayCurrency;
   nameSearchEnabled: boolean;
 }
+
+/** The currencies the client named. The overrides map is edited in the database for now. */
+const DISPLAY_CURRENCIES: readonly DisplayCurrency[] = ["EUR", "USD", "GBP", "PLN", "UAH"];
 
 const PRESET_PERCENTS = ["30", "50", "100"] as const;
 
@@ -100,6 +106,8 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       catalogueShowsBasePrice: data.catalogueShowsBasePrice,
       offerRankingUsesReliability: data.offerRankingUsesReliability,
       reliabilityWindowDays: String(data.reliabilityWindowDays),
+      displayCurrencyEnabled: data.displayCurrencyEnabled,
+      displayCurrencyDefault: data.displayCurrencyDefault,
       nameSearchEnabled: data.nameSearchEnabled,
     });
   }, [data?.updatedAt, data]);
@@ -140,6 +148,11 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
         catalogueShowsBasePrice: form.catalogueShowsBasePrice,
         offerRankingUsesReliability: form.offerRankingUsesReliability,
         reliabilityWindowDays: reliabilityDays,
+        displayCurrencyEnabled: form.displayCurrencyEnabled,
+        displayCurrencyDefault: form.displayCurrencyDefault,
+        /* Not editable here: a country map wants a table of its own, and leaving it out of the
+           payload would clear it. Sent back exactly as it was read. */
+        displayCurrencyByCountry: data?.displayCurrencyByCountry ?? {},
         nameSearchEnabled: form.nameSearchEnabled,
       },
       {
@@ -428,6 +441,50 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                       className="w-28"
                       aria-invalid={!reliabilityDaysValid}
                     />
+                  </div>
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("currency.legend")}
+                  </legend>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("currency.toggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("currency.hint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.displayCurrencyEnabled}
+                      onCheckedChange={(checked) => set({ displayCurrencyEnabled: checked })}
+                    />
+                  </label>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="display-currency-default">{t("currency.fallback")}</Label>
+                    <RadioGroup
+                      id="display-currency-default"
+                      className="flex flex-wrap gap-4"
+                      value={form.displayCurrencyDefault}
+                      onValueChange={(next) => {
+                        const picked = DISPLAY_CURRENCIES.find((option) => option === next);
+                        if (picked) set({ displayCurrencyDefault: picked });
+                      }}
+                    >
+                      {DISPLAY_CURRENCIES.map((option) => (
+                        <label
+                          key={option}
+                          className="flex cursor-pointer items-center gap-2 text-sm leading-4.5 font-medium text-foreground"
+                        >
+                          <Radio value={option} />
+                          {option}
+                        </label>
+                      ))}
+                    </RadioGroup>
                   </div>
                 </fieldset>
 

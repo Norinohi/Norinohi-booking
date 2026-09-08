@@ -76,6 +76,7 @@
       "payment": "Payment"
     },
     "payment": {
+      "chargedIn": "You will be charged {amount} in {currency}. Prices shown in another currency are converted at reference rates and are approximate.",
       "heading": "Choose how you'd like to proceed",
       "submitFailed": "Something went wrong. Please try again.",
       "tabs": {
@@ -486,6 +487,9 @@
       "priceIndicative": "Charter price · seasonal minimum",
       "priceFromLabel": "From",
       "plusObligatory": "plus {amount} obligatory extras",
+      "approximatePrice": "approx.",
+      "chargedIn": "Charged in {currency}: {amount}",
+      "currencyLabel": "Currency",
       "priceOnRequest": "On request",
       "priceUnavailable": "Unavailable",
       "perPerson": "{price} per person",
@@ -3155,6 +3159,12 @@
         "legend": "Preferred provider",
         "hint": "Which vendor wins when availability, price and mandatory fees are equal. It never overrides a cheaper offer: it only settles a tie.",
         "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
+      },
+      "currency": {
+        "legend": "Display currency",
+        "toggle": "Show prices in the visitor's own currency",
+        "hint": "Display only. A booking is settled in the currency it was priced in, and the payment screen states the amount that will actually be charged whenever the two differ. Converted figures are marked as approximate: reference rates are not what a card network applies. Prices stay in the vendor's currency whenever the rates have gone stale.",
+        "fallback": "Where the country is unknown"
       },
       "ranking": {
         "reliabilityToggle": "Break a tie on how often a provider answers",
