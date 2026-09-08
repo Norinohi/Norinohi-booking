@@ -21,6 +21,7 @@ import type {
   DuplicateDecision,
 } from "../types";
 import DuplicateCandidateCard from "./duplicate-candidate-card";
+import DuplicateMetricsPanel from "./duplicate-metrics-panel";
 
 /*
  * DuplicateReviewScreen — /duplicates: the admin Sidebar beside the review queue, matching
@@ -141,6 +142,8 @@ export default function DuplicateReviewScreen({ user }: { user: { name: string; 
             </div>
 
             <div className="flex flex-col gap-4 p-4 md:p-5">
+              <DuplicateMetricsPanel matchTypeLabel={matchTypeLabel} />
+
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <Tabs value={decision} onValueChange={changeDecision}>
                   <TabsList>

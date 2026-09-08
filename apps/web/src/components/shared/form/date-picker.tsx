@@ -10,6 +10,7 @@ import {
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useFormatter, useLocale } from "next-intl";
+import type { ReactNode } from "react";
 
 import { dayFromNative, dayToDisplay, isBeforeToday } from "@/lib/date";
 
@@ -26,6 +27,10 @@ type CommonProps = {
   hugContent?: boolean;
   /** Greys out days the caller will not accept; re-read on every render, so it may depend on `value`. */
   disabled?: (date: Date) => boolean;
+  /** Extra treatment for individual days, passed straight to the calendar. */
+  dayModifier?: (date: Date) => { className?: string; label?: string } | undefined;
+  /** A key to what the marked days mean, printed under the grid. */
+  legend?: ReactNode;
   /*
    * Opens the past up for selection. Off by default because every picker but one is choosing a
    * charter, and a charter cannot start yesterday: left open, the home page search happily
@@ -74,6 +79,8 @@ export default function DatePicker({
   clearLabel,
   hugContent,
   disabled,
+  dayModifier,
+  legend,
   allowPast = false,
   hint,
   defaultMonth,
@@ -156,6 +163,7 @@ export default function DatePicker({
               locale={locale}
               defaultMonth={defaultMonth}
               disabled={isDayDisabled}
+              dayModifier={dayModifier}
               selected={props.value}
               onSelect={props.onValueChange}
             />
@@ -165,10 +173,12 @@ export default function DatePicker({
               locale={locale}
               defaultMonth={defaultMonth}
               disabled={isDayDisabled}
+              dayModifier={dayModifier}
               selected={props.value}
               onSelect={props.onValueChange}
             />
           )}
+          {legend ? <div className="mt-2">{legend}</div> : null}
         </PopoverContent>
       </Popover>
 

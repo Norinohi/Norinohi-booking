@@ -5,7 +5,11 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { orpc } from "@/utils/orpc";
 
-import { duplicateDetailQueryOptions, duplicateQueueQueryOptions } from "../api/queries";
+import {
+  duplicateDetailQueryOptions,
+  duplicateMetricsQueryOptions,
+  duplicateQueueQueryOptions,
+} from "../api/queries";
 import type { DuplicateConfidenceFilter, DuplicateDecision } from "../types";
 
 /*
@@ -25,6 +29,17 @@ export function useDuplicateQueue(input: {
    * reverts to a value its popup can still see and the selection appears not to take.
    */
   return useQuery({ ...duplicateQueueQueryOptions(input), placeholderData: keepPreviousData });
+}
+
+/**
+ * How often each rule has been right so far.
+ *
+ * Read-only, and deliberately so: nothing merges automatically, and this is the measurement
+ * that would have to justify letting it. Mounted with the queue rather than behind the open
+ * panel, so the header can say how many decisions the rates rest on before anyone expands it.
+ */
+export function useDuplicateMetrics() {
+  return useQuery(duplicateMetricsQueryOptions());
 }
 
 /** Callers mount this only once a pair is opened, which is what keeps the queue cheap. */

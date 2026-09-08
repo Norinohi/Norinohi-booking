@@ -77,6 +77,14 @@ export const duplicateDetailQueryOptions = (candidateId: string) =>
   orpc.admin.match.detail.queryOptions({ input: { candidateId }, staleTime: 300_000 });
 
 /*
+ * Precision per rule and band. Cached longer than the queue because it only moves as pairs are
+ * reviewed, and it still refreshes on a verdict: the mutations invalidate the whole
+ * `admin.match` segment, which is right here — a decision is exactly what changes these rates.
+ */
+export const duplicateMetricsQueryOptions = () =>
+  orpc.admin.match.metrics.queryOptions({ input: {}, staleTime: 300_000 });
+
+/*
  * The staff inbox reads two unrelated queues side by side: questions about existing bookings
  * (booking_enquiry) and pre-booking enquiries (lead). Both are worked through by hand, so both
  * go stale as soon as a colleague touches one — hence the short staleTime.

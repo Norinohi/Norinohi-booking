@@ -14,8 +14,10 @@ import {
   addDays,
   type CharterConstraints,
   type DatePeriod,
+  type OccupiedPeriod,
   type RangeVerdict,
   canCheckIn,
+  covers,
   firstBookablePeriod,
   legalCheckOuts,
   offeredCheckOut,
@@ -162,6 +164,46 @@ export function combinedOfferedCheckOut(
     if (day !== null && (earliest === null || day < earliest)) earliest = day;
   }
   return earliest;
+}
+
+/**
+ * What to tell a visitor about a day the calendar has greyed out, or null to say nothing.
+ *
+ * Only two of the vendors' three reasons are the visitor's business. `booked` and `held` are
+ * facts about the boat that explain the gap and hint at whether it may reopen; `blocked` covers
+ * service weeks, owner weeks and regattas, which are the operator's own arrangements and are
+ * shown as plain unavailability rather than named.
+ *
+ * The cross-offer rule is the same one the rest of this module follows and it is easy to get
+ * backwards: a day one vendor has sold is not a gap at all while another is free, so a day is
+ * only labelled once every offer covering it is unavailable. A single `blocked` among them
+ * silences the label rather than being outvoted, because the honest answer about that day is
+ * one we do not disclose.
+ */
+export function occupancyStatusOn(
+  day: string,
+  offers: readonly OfferConstraints[],
+): "held" | "booked" | null {
+  if (offers.length === 0) return null;
+
+  const covering: OccupiedPeriod[] = [];
+
+  for (const offer of offers) {
+    const period = offer.occupied.find((entry) => covers(entry, day));
+    /*
+     * This vendor's calendar has the day free, so whatever else greys it out is a rule -- a
+     * turnaround weekday, a closed season, a minimum length -- and none of those is a fact
+     * about the boat worth a badge. Read from the calendars alone rather than from
+     * `canCheckIn`, which is false on every midweek day of a Saturday-to-Saturday fleet and
+     * would have left the label on turnaround days only.
+     */
+    if (!period) return null;
+    covering.push(period);
+  }
+
+  if (covering.some((period) => period.status === "blocked")) return null;
+  if (covering.some((period) => period.status === "occupied")) return "booked";
+  return covering.every((period) => period.status === "option") ? "held" : null;
 }
 
 /** Whether any offer would close a charter that began on `checkIn` on this day. */

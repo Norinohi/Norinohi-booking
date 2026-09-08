@@ -75,6 +75,20 @@ describe("BookingManagerClient retries", () => {
     expect(attempts).toBe(1);
   });
 
+  it("does not replay POST /reservation, which would open a second booking", async () => {
+    let attempts = 0;
+    const client = clientWith(async () => {
+      attempts += 1;
+      throw new Error("fetch failed");
+    });
+
+    await expect(
+      client.post(bookingManagerEndpoints.reservation, z.unknown(), {}),
+    ).rejects.toThrow();
+
+    expect(attempts).toBe(1);
+  });
+
   it("still retries an ordinary POST", async () => {
     let attempts = 0;
     const client = clientWith(async () => {
@@ -88,7 +102,7 @@ describe("BookingManagerClient retries", () => {
       });
     });
 
-    await client.post(bookingManagerEndpoints.reservation, z.unknown(), {});
+    await client.post(bookingManagerEndpoints.offers, z.unknown(), {});
 
     expect(attempts).toBe(3);
   });

@@ -587,6 +587,10 @@
       }
     },
     "charterPeriod": {
+      "day": {
+        "booked": "Gebucht",
+        "held": "Vorübergehend reserviert"
+      },
       "or": " oder ",
       "daysAndNights": "{days}, {nights}",
       "weekdayRange": "{from} bis {to}",
@@ -2087,6 +2091,24 @@
     "Duplicates": {
       "title": "Duplikatprüfung",
       "subtitle": "Führen Sie ähnliche Inserate zusammen, die zwei Anbieter für dieselbe Yacht gesendet haben.",
+      "metrics": {
+        "title": "Treffergenauigkeit",
+        "subtitle": "Wie oft jede Regel bisher richtig lag.",
+        "decided": "{count, plural, =0 {Noch keine Paare geprüft} one {# geprüftes Paar hinter diesen Werten} other {# geprüfte Paare hinter diesen Werten}}",
+        "error": "Genauigkeitswerte konnten nicht geladen werden",
+        "empty": "Es wurde noch nichts vorgeschlagen.",
+        "noSample": "Zu wenige Entscheidungen",
+        "note": "Die Genauigkeit sind die bestätigten Paare geteilt durch bestätigte und abgelehnte zusammen. Zusammenführungen, die später wieder getrennt wurden, zählen gegen die Regel. Zurückgestellte Paare bleiben außen vor: Sie waren nicht zu entscheiden, und sie als Fehler zu zählen würde eine Regel unterschätzen, die bei den entschiedenen Fällen gut arbeitet.",
+        "table": {
+          "rule": "Regel",
+          "band": "Konfidenz",
+          "proposed": "Vorgeschlagen",
+          "confirmed": "Zusammengeführt",
+          "rejected": "Keine Duplikate",
+          "undone": "Rückgängig",
+          "precision": "Genauigkeit"
+        }
+      },
       "filter": {
         "label": "Entscheidung",
         "pending": "Ausstehend",

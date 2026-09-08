@@ -587,6 +587,10 @@
       }
     },
     "charterPeriod": {
+      "day": {
+        "booked": "Reservado",
+        "held": "Retenido temporalmente"
+      },
       "or": ", o ",
       "daysAndNights": "{days}, {nights}",
       "weekdayRange": "de {from} a {to}",
@@ -2087,6 +2091,24 @@
     "Duplicates": {
       "title": "Revisión de duplicados",
       "subtitle": "Fusiona los anuncios que dos proveedores enviaron para el mismo yate.",
+      "metrics": {
+        "title": "Precisión del emparejador",
+        "subtitle": "Con qué frecuencia ha acertado cada regla hasta ahora.",
+        "decided": "{count, plural, =0 {Aún no se ha revisado ningún par} one {# par revisado detrás de estas cifras} other {# pares revisados detrás de estas cifras}}",
+        "error": "No se pudieron cargar las cifras de precisión",
+        "empty": "Todavía no se ha propuesto nada.",
+        "noSample": "Pocas decisiones",
+        "note": "La precisión son los pares confirmados sobre los confirmados y rechazados juntos. Las fusiones que después se deshicieron cuentan en contra de la regla. Los pares aplazados quedan fuera: nadie pudo decidirlos, y contarlos como fallos subestimaría una regla que funciona bien en los casos que sí resuelve.",
+        "table": {
+          "rule": "Regla",
+          "band": "Confianza",
+          "proposed": "Propuestos",
+          "confirmed": "Fusionados",
+          "rejected": "No son duplicados",
+          "undone": "Deshechos",
+          "precision": "Precisión"
+        }
+      },
       "filter": {
         "label": "Decisión",
         "pending": "Pendientes",

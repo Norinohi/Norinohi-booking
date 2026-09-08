@@ -587,6 +587,10 @@
       }
     },
     "charterPeriod": {
+      "day": {
+        "booked": "Booked",
+        "held": "Temporarily held"
+      },
       "or": ", or ",
       "daysAndNights": "{days}, {nights}",
       "weekdayRange": "{from} to {to}",
@@ -2087,6 +2091,24 @@
     "Duplicates": {
       "title": "Duplicate Review",
       "subtitle": "Merge the look-alike listings two providers sent for the same yacht.",
+      "metrics": {
+        "title": "Matcher accuracy",
+        "subtitle": "How often each rule has been right so far.",
+        "decided": "{count, plural, =0 {No reviewed pairs yet} one {# reviewed pair behind these rates} other {# reviewed pairs behind these rates}}",
+        "error": "Couldn't load the accuracy figures",
+        "empty": "Nothing has been proposed yet.",
+        "noSample": "Not enough decisions",
+        "note": "Precision is confirmed pairs over confirmed and rejected together. Merges a split later undid count against the rule. Set-aside pairs are left out: nobody could call them, and counting them as failures would understate a rule that is doing fine on the ones it does settle.",
+        "table": {
+          "rule": "Rule",
+          "band": "Confidence",
+          "proposed": "Proposed",
+          "confirmed": "Merged",
+          "rejected": "Not duplicates",
+          "undone": "Undone",
+          "precision": "Precision"
+        }
+      },
       "filter": {
         "label": "Decision",
         "pending": "Pending",

@@ -17,6 +17,11 @@ export type DuplicateSideListing = NonNullable<DuplicateSide["listing"]>;
 
 export type DuplicatePhoto = DuplicateSideListing["photos"][number];
 
+/** How often each matcher rule was right, per band. Nothing acts on it: it is the read
+    auto-approval would have to be argued from. */
+export type DuplicateMetrics = Awaited<ReturnType<AdminClient["match"]["metrics"]>>;
+export type DuplicateMetricRow = DuplicateMetrics["rows"][number];
+
 /** The on-demand second read: the long tail of specs behind a pair, per side. */
 export type DuplicateDetail = Awaited<ReturnType<AdminClient["match"]["detail"]>>;
 export type DuplicateDetailSide = DuplicateDetail["sideA"];
