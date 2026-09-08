@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace_setting" ADD COLUMN "catalogue_shows_base_price" boolean DEFAULT false NOT NULL;

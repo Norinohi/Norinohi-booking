@@ -485,6 +485,7 @@
       "priceFor": "Precio del chárter · {days, plural, one {# día} other {# días}}",
       "priceIndicative": "Precio del chárter · mínimo de temporada",
       "priceFromLabel": "Desde",
+      "plusObligatory": "más {amount} de suplementos obligatorios",
       "priceOnRequest": "Bajo petición",
       "priceUnavailable": "No disponible",
       "perPerson": "{price} por persona",
@@ -3156,6 +3157,8 @@
         "rebuildNote": "Se aplica de inmediato a las nuevas cotizaciones y al calendario de disponibilidad. Las tarjetas del catálogo se reconstruyen en segundo plano justo después de guardar, en menos de un minuto."
       },
       "ranking": {
+        "catalogueToggle": "Mostrar el precio del chárter en las tarjetas",
+        "catalogueHint": "Desactivado, la tarjeta muestra el total. Activado, muestra el precio del chárter con los suplementos obligatorios debajo, y el orden, el filtro de precio y el deslizador leen la misma cifra. Independiente del interruptor anterior: lo que anuncia una tarjeta y a través de quién vendemos son decisiones distintas.",
         "legend": "Elección de la oferta",
         "toggle": "Comparar por el precio del chárter",
         "hint": "Desactivado gana el proveedor con el total más bajo, que es lo que el cliente paga de verdad. Activado decide el precio del chárter y los suplementos obligatorios solo desempatan. Comparar por el precio del chárter puede elegir la reserva que en total le cuesta más al cliente."

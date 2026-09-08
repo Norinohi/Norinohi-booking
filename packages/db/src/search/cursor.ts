@@ -3,6 +3,13 @@ import { z } from "zod";
 export type SearchCursor = {
   value: string | number;
   listingId: string;
+  /**
+   * Which price the sort value was computed from, on a price cursor.
+   *
+   * Absent on every other sort, and on cursors minted before the catalogue could show either
+   * figure: the reader treats a missing basis as the all-in one, which is what those were.
+   */
+  basis?: "all_in" | "base";
 };
 
 /*
@@ -15,6 +22,9 @@ export type SearchCursor = {
 const decodedCursorSchema = z.object({
   listingId: z.string().min(1),
   value: z.json(),
+  /* Validated, unlike `value`: an unrecognised basis must not be read as a matching one, and
+     dropping the cursor is the safe answer either way. */
+  basis: z.enum(["all_in", "base"]).optional(),
 });
 
 export type DecodedSearchCursor = z.infer<typeof decodedCursorSchema>;

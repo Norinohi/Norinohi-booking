@@ -485,6 +485,7 @@
       "priceFor": "Charter price · {days, plural, one {# day} other {# days}}",
       "priceIndicative": "Charter price · seasonal minimum",
       "priceFromLabel": "From",
+      "plusObligatory": "plus {amount} obligatory extras",
       "priceOnRequest": "On request",
       "priceUnavailable": "Unavailable",
       "perPerson": "{price} per person",
@@ -3156,6 +3157,8 @@
         "rebuildNote": "Applies to new quotes and the availability calendar immediately. Catalogue cards are rebuilt in the background right after the save, which takes well under a minute."
       },
       "ranking": {
+        "catalogueToggle": "Show the charter rate on cards",
+        "catalogueHint": "Off, a card shows the all-in total. On, it shows the charter rate with the obligatory extras named beneath it, and the sort, the price filter and the slider all follow the same figure. Independent of the switch above: what a card advertises and which vendor we sell through are separate decisions.",
         "legend": "Offer ranking",
         "toggle": "Rank on the charter rate",
         "hint": "Off, the vendor whose all-in total is lower wins, which is what the guest actually pays. On, the charter rate decides and the obligatory extras only settle a tie on it. Ranking on the rate can pick the charter that costs the guest more overall."

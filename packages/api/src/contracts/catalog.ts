@@ -158,6 +158,16 @@ export const listingSummarySchema = z.object({
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
   /**
+   * The two figures behind the headline, always both filled where a price exists.
+   *
+   * `priceFrom` is one of these, chosen by a marketplace setting: the all-in total the guest
+   * pays, or the charter rate alone as other charter sites advertise it. Both are sent so a
+   * card showing the rate can also say what the obligatory extras add, which is the condition
+   * the extras are allowed to leave the headline under.
+   */
+  allInPriceFrom: moneySchema.nullable(),
+  basePriceFrom: moneySchema.nullable(),
+  /**
    * True where `priceFrom` is the cheapest week of the operator's season rather than the price
    * of the charter beside it, so the card reads "From €X" instead of pricing those dates.
    */

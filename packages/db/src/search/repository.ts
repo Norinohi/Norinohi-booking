@@ -27,6 +27,7 @@ import type {
   ListingPricedItem,
   ListingReview,
   ListingSearchDoc,
+  PriceBasis,
   ListingSearchInput,
   ListingSearchPagination,
   ListingSearchResult,
@@ -137,13 +138,18 @@ export async function searchListings(
 ): Promise<ListingSearchResult> {
   if (!input.cursor) return searchListingsByPage(db, input);
 
+  const basis = input.priceBasis ?? "all_in";
+  /* A price cursor from the other basis is a boundary in a sequence this query is not walking,
+     so it is dropped and the reader starts again rather than being served a scrambled page. */
+  const cursor = usableCursor(decodeSearchCursor(input.cursor), input.sort, basis);
+
   const limit = normalizedLimit(input.limit);
   const rows = await db.execute<SearchRow>(sql`
     select ${searchColumns}${sellsRequestedPeriodColumn(input)}
     from listing_search_doc doc
     where ${whereClause(input)}
-      and ${cursorClause(input.sort, decodeSearchCursor(input.cursor))}
-    order by ${orderClause(input.sort)}
+      and ${cursorClause(input.sort, cursor, basis)}
+    order by ${orderClause(input.sort, basis)}
     limit ${limit + 1}
   `);
 
@@ -157,7 +163,8 @@ export async function searchListings(
 
   return {
     items,
-    nextCursor: hasNext && last ? encodeSearchCursor(cursorFor(last, input.sort)) : undefined,
+    nextCursor:
+      hasNext && last ? encodeSearchCursor(cursorFor(last, input.sort, basis)) : undefined,
   };
 }
 
@@ -175,7 +182,7 @@ async function searchListingsByPage(
       select ${searchColumns}${sellsRequestedPeriodColumn(input)}
       from listing_search_doc doc
       where ${filters}
-      order by ${orderClause(input.sort)}
+      order by ${orderClause(input.sort, input.priceBasis)}
       limit ${pageSize}
       offset ${offset}
     `),
@@ -685,12 +692,18 @@ export async function listSearchFacets(
         max(doc.berths) as "maxBerths",
         min(doc.heads) as "minBathrooms",
         max(doc.heads) as "maxBathrooms",
-        min(doc.price_from_minor_eur) as "minMinor",
+        /* Filtered the same way the cap below is, and for the reason stated there: a
+           non-positive figure is a vendor saying "no price", never "free". Two listings publish
+           a zero charter rate beside real fees, and an unfiltered minimum put a EUR 0 end on
+           the slider the moment the catalogue started comparing rates. */
+        min(${comparablePrice(input.priceBasis)}) filter (
+          where ${comparablePrice(input.priceBasis)} > 0
+        ) as "minMinor",
         /* Capped rather than maxed -- see PRICE_CAP_PERCENTILE. A non-positive figure is a
            vendor saying "no price", never "free", so it is left out of the ordering. */
         percentile_disc(${PRICE_CAP_PERCENTILE}::double precision) within group (
-          order by doc.price_from_minor_eur
-        ) filter (where doc.price_from_minor_eur > 0) as "maxMinor",
+          order by ${comparablePrice(input.priceBasis)}
+        ) filter (where ${comparablePrice(input.priceBasis)} > 0) as "maxMinor",
         /* Zero is how a vendor writes a build year it does not know, and it reached the range as
            a real one: the age slider then offered "up to 2026 years old". Filtered rather than
            coalesced, because a fleet where nobody stated a year has no range to show.
@@ -784,6 +797,7 @@ export async function listMapMarinas(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
 ): Promise<MapMarinaMarker[]> {
+  const basis = input.priceBasis;
   const rows = await db.execute<MapMarinaMarker>(sql`
     select
       doc.base_id as "baseId",
@@ -793,9 +807,9 @@ export async function listMapMarinas(
       count(*)::integer as count,
       /* The cheapest boat's own price, picked in a single currency so the comparison holds, then
          reported in the currency it was actually priced in. */
-      (array_agg(doc.price_from_minor order by doc.price_from_minor_eur asc nulls last))[1]::integer
+      (array_agg(${publishedPrice(basis)} order by ${comparablePrice(basis)} asc nulls last))[1]::integer
         as "priceFromMinor",
-      (array_agg(doc.currency order by doc.price_from_minor_eur asc nulls last))[1] as currency
+      (array_agg(doc.currency order by ${comparablePrice(basis)} asc nulls last))[1] as currency
     from listing_search_doc doc
     where ${whereClause(input)}
       and doc.base_id is not null
@@ -1198,6 +1212,7 @@ export async function listSimilarListings(
   db: NodePgDatabase<typeof schema>,
   listingId: string,
   limit = 3,
+  basis?: PriceBasis,
 ): Promise<ListingSearchDoc[]> {
   const listing = await getListingByIdOrSlug(db, listingId);
   if (!listing) return [];
@@ -1211,7 +1226,7 @@ export async function listSimilarListings(
         or doc.country = ${listing.country}
         or doc.region = ${listing.region}
       )
-    order by ${recommendedSortValue} desc, doc.price_from_minor_eur asc nulls last, doc.listing_id asc
+    order by ${recommendedSortValue} desc, ${comparablePrice(basis)} asc nulls last, doc.listing_id asc
     limit ${limit}
   `);
 
@@ -1428,6 +1443,8 @@ const searchColumns = sql`
   doc.price_is_from as "priceIsFrom",
   doc.list_price_from_minor as "listPriceFromMinor",
   doc.price_from_minor_eur as "priceFromMinorEur",
+  doc.base_price_from_minor as "basePriceFromMinor",
+  doc.base_price_from_minor_eur as "basePriceFromMinorEur",
   doc.best_offer_id as "bestOfferId",
   doc.offer_count as "offerCount",
   doc.currency,
@@ -1597,10 +1614,10 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
    * currency it does not share.
    */
   if (!skip.has("minPriceMinor") && input.minPriceMinor) {
-    parts.push(sql`doc.price_from_minor_eur >= ${input.minPriceMinor}`);
+    parts.push(sql`${comparablePrice(input.priceBasis)} >= ${input.minPriceMinor}`);
   }
   if (!skip.has("maxPriceMinor") && input.maxPriceMinor) {
-    parts.push(sql`doc.price_from_minor_eur <= ${input.maxPriceMinor}`);
+    parts.push(sql`${comparablePrice(input.priceBasis)} <= ${input.maxPriceMinor}`);
   }
   if (!skip.has("withoutAvailabilityConfirmation") && input.withoutAvailabilityConfirmation) {
     parts.push(sql`doc.has_unconfirmed_availability = true`);
@@ -1779,14 +1796,15 @@ function checkinRuleClause(nights: number, range: CandidateRange | undefined): S
 function cursorClause(
   sort: SearchSort = "recommended",
   cursor: DecodedSearchCursor | undefined,
+  basis?: PriceBasis,
 ): SQL {
   if (!cursor) return sql`true`;
 
   switch (sort) {
     case "price-asc":
-      return sql`(${priceAscSortValue}, doc.listing_id) > (${Number(cursor.value)}, ${cursor.listingId})`;
+      return sql`(${priceAscSortValue(basis)}, doc.listing_id) > (${Number(cursor.value)}, ${cursor.listingId})`;
     case "price-desc":
-      return sql`(${priceDescSortValue}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
+      return sql`(${priceDescSortValue(basis)}, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
     case "rating":
       return sql`(doc.rating, doc.listing_id) < (${Number(cursor.value)}, ${cursor.listingId})`;
     case "recommended":
@@ -1796,12 +1814,12 @@ function cursorClause(
   }
 }
 
-function orderClause(sort: SearchSort = "recommended"): SQL {
+function orderClause(sort: SearchSort = "recommended", basis?: PriceBasis): SQL {
   switch (sort) {
     case "price-asc":
-      return sql`${priceAscSortValue} asc, doc.listing_id asc`;
+      return sql`${priceAscSortValue(basis)} asc, doc.listing_id asc`;
     case "price-desc":
-      return sql`${priceDescSortValue} desc, doc.listing_id desc`;
+      return sql`${priceDescSortValue(basis)} desc, doc.listing_id desc`;
     case "rating":
       return sql`doc.rating desc, doc.listing_id desc`;
     case "recommended":
@@ -1820,9 +1838,17 @@ function orderClause(sort: SearchSort = "recommended"): SQL {
  * positive, so the two land on the same integer.
  */
 export function nightlyPriceOf(
-  item: Pick<ListingSearchDoc, "priceFromMinorEur" | "priceIsFrom" | "bookableFrom" | "bookableTo">,
+  item: Pick<
+    ListingSearchDoc,
+    "priceFromMinorEur" | "basePriceFromMinorEur" | "priceIsFrom" | "bookableFrom" | "bookableTo"
+  >,
+  basis: PriceBasis = "all_in",
 ): number | null {
-  if (item.priceFromMinorEur === null) return null;
+  /* The SQL's `coalesce(nullif(...))`, restated: a zero rate is not a price, and the cursor has
+     to divide the same figure the ORDER BY did or the page boundary lands in the wrong place. */
+  const rate = item.basePriceFromMinorEur;
+  const comparable = basis === "base" && rate !== null && rate > 0 ? rate : item.priceFromMinorEur;
+  if (comparable === null) return null;
 
   const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
   const sellable = !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
@@ -1836,15 +1862,35 @@ export function nightlyPriceOf(
         )
       : ASSUMED_PRICED_NIGHTS;
 
-  return Math.round(item.priceFromMinorEur / Math.max(nights, 1));
+  return Math.round(comparable / Math.max(nights, 1));
 }
 
-function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): SearchCursor {
+/**
+ * The cursor for the last row of a page.
+ *
+ * A price cursor carries the basis it was minted under. The two bases order the catalogue
+ * differently, so a cursor from one is a boundary in the wrong sequence for the other: read
+ * blind it would skip rows or serve them twice, exactly for the reader who happened to be
+ * paging while an admin flipped the switch.
+ */
+function cursorFor(
+  item: ListingSearchDoc,
+  sort: SearchSort = "recommended",
+  basis: PriceBasis = "all_in",
+): SearchCursor {
   switch (sort) {
     case "price-asc":
-      return { value: nightlyPriceOf(item) ?? NULL_PRICE_ASC, listingId: item.listingId };
+      return {
+        value: nightlyPriceOf(item, basis) ?? NULL_PRICE_ASC,
+        listingId: item.listingId,
+        basis,
+      };
     case "price-desc":
-      return { value: nightlyPriceOf(item) ?? NULL_PRICE_DESC, listingId: item.listingId };
+      return {
+        value: nightlyPriceOf(item, basis) ?? NULL_PRICE_DESC,
+        listingId: item.listingId,
+        basis,
+      };
     case "newest":
       return { value: item.yearBuilt ?? NULL_YEAR_DESC, listingId: item.listingId };
     case "rating":
@@ -1856,6 +1902,17 @@ function cursorFor(item: ListingSearchDoc, sort: SearchSort = "recommended"): Se
         listingId: item.listingId,
       };
   }
+}
+
+/** A cursor is usable unless it was minted for a price ordering this request is not using. */
+function usableCursor(
+  cursor: DecodedSearchCursor | undefined,
+  sort: SearchSort | undefined,
+  basis: PriceBasis,
+): DecodedSearchCursor | undefined {
+  if (!cursor) return undefined;
+  if (sort !== "price-asc" && sort !== "price-desc") return cursor;
+  return (cursor.basis ?? "all_in") === basis ? cursor : undefined;
 }
 
 function normalizedLimit(limit: number | undefined): number {
@@ -1888,12 +1945,20 @@ function paginationFor(input: {
   };
 }
 
-/* Destination prices share the catalogue's EUR comparison currency. Missing FX or a
- * non-positive amount is not a price: keep the destination but omit its price label. */
-const facetComparablePrice = sql`case when doc.currency = ${FX_BASE_CURRENCY}
-  then doc.price_from_minor else doc.price_from_minor_eur end`;
-const facetPriceColumns = sql`
-      min(${facetComparablePrice}) filter (where ${facetComparablePrice} > 0)
+/*
+ * Destination prices share the catalogue's EUR comparison currency, preferring the published
+ * integer where the listing already publishes in it -- an unconverted figure is exact, and the
+ * converted one only exists to make the rest comparable with it.
+ *
+ * Mirrored for the charter rate rather than left on the all-in pair: a "from" price on a
+ * destination card that quoted the total while every listing card beside it quoted the rate
+ * would put two different questions under the same heading.
+ */
+const facetComparablePrice = (basis?: PriceBasis): SQL =>
+  sql`case when doc.currency = ${FX_BASE_CURRENCY}
+  then ${publishedPrice(basis)} else ${comparablePrice(basis)} end`;
+const facetPriceColumns = (basis?: PriceBasis): SQL => sql`
+      min(${facetComparablePrice(basis)}) filter (where ${facetComparablePrice(basis)} > 0)
         as "priceFromMinor",
       ${FX_BASE_CURRENCY}::text as currency`;
 
@@ -1907,7 +1972,7 @@ async function listFacetOptions(
   const rows = await db.execute<FacetOptionRow>(sql`
     select
       ${modalLabel(expression)} as label,
-      count(*)::integer as count,${facetPriceColumns}
+      count(*)::integer as count,${facetPriceColumns(input.priceBasis)}
     from listing_search_doc doc
     where ${whereClause(input, ignored)}
       and ${expression} is not null
@@ -1925,7 +1990,7 @@ async function listEquipmentFacetOptions(
   const rows = await db.execute<FacetOptionRow>(sql`
     select
       ${modalLabel(sql`amenity.value`)} as label,
-      count(distinct doc.listing_id)::integer as count,${facetPriceColumns}
+      count(distinct doc.listing_id)::integer as count,${facetPriceColumns(input.priceBasis)}
     from listing_search_doc doc
     cross join lateral jsonb_array_elements_text(doc.amenities) amenity(value)
     where ${whereClause(input, ["equipment"])}
@@ -2597,8 +2662,35 @@ const pricedNights = sql`greatest(
  * the sort value as the integer it compares -- `cursorFor` computes the identical number in JS.
  * Both round half away from zero, and every value here is positive.
  */
-const nightlyPriceValue = sql`round(doc.price_from_minor_eur::numeric / ${pricedNights})`;
+/**
+ * Which of the document's two prices every comparison reads, and the rule that keeps a page
+ * coherent: whichever figure the cards show, the sort, the filter and the "from" aggregates
+ * read the same one.
+ *
+ * Split them and the first card is not the cheapest of the ones on screen, and the slider hides
+ * boats whose visible price is inside the range it names -- both true of every page at once,
+ * which is why the basis travels with the request rather than being decided per query.
+ *
+ * A zero rate falls back to the all-in figure, which is what the card does with it: two vendors
+ * publish real fees against a rate of nought, and read literally they sorted to the top of
+ * "cheapest first" as free boats while their cards showed the price they actually charge.
+ */
+export const comparablePrice = (basis: PriceBasis = "all_in"): SQL =>
+  basis === "base"
+    ? sql`coalesce(nullif(doc.base_price_from_minor_eur, 0), doc.price_from_minor_eur)`
+    : sql`doc.price_from_minor_eur`;
 
-const priceAscSortValue = sql`coalesce(${nightlyPriceValue}, ${NULL_PRICE_ASC})`;
-const priceDescSortValue = sql`coalesce(${nightlyPriceValue}, ${NULL_PRICE_DESC})`;
+/** The published figure, in whatever currency the vendor quoted. Rendered, never compared. */
+const publishedPrice = (basis: PriceBasis = "all_in"): SQL =>
+  basis === "base"
+    ? sql`coalesce(nullif(doc.base_price_from_minor, 0), doc.price_from_minor)`
+    : sql`doc.price_from_minor`;
+
+const nightlyPriceValue = (basis?: PriceBasis): SQL =>
+  sql`round(${comparablePrice(basis)}::numeric / ${pricedNights})`;
+
+const priceAscSortValue = (basis?: PriceBasis): SQL =>
+  sql`coalesce(${nightlyPriceValue(basis)}, ${NULL_PRICE_ASC})`;
+const priceDescSortValue = (basis?: PriceBasis): SQL =>
+  sql`coalesce(${nightlyPriceValue(basis)}, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

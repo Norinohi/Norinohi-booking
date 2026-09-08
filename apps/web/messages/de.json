@@ -485,6 +485,7 @@
       "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
       "priceIndicative": "Charterpreis · Saisonminimum",
       "priceFromLabel": "Ab",
+      "plusObligatory": "zzgl. {amount} Pflichtzuschläge",
       "priceOnRequest": "Auf Anfrage",
       "priceUnavailable": "Nicht verfügbar",
       "perPerson": "{price} pro Person",
@@ -3156,6 +3157,8 @@
         "rebuildNote": "Gilt sofort für neue Angebote und den Verfügbarkeitskalender. Katalogkarten werden direkt nach dem Speichern im Hintergrund neu aufgebaut, das dauert deutlich unter einer Minute."
       },
       "ranking": {
+        "catalogueToggle": "Charterpreis auf den Karten zeigen",
+        "catalogueHint": "Aus zeigt eine Karte den Gesamtpreis. An zeigt sie den reinen Charterpreis mit den Pflichtzuschlägen darunter, und Sortierung, Preisfilter und Schieberegler folgen derselben Zahl. Unabhängig vom Schalter darüber: was eine Karte bewirbt und über wen wir verkaufen, sind zwei Entscheidungen.",
         "legend": "Angebotsauswahl",
         "toggle": "Nach Charterpreis vergleichen",
         "hint": "Aus gewinnt der Anbieter mit dem niedrigeren Gesamtpreis, also mit dem Betrag, den der Gast tatsächlich zahlt. An entscheidet der reine Charterpreis, und die Pflichtzuschläge lösen nur einen Gleichstand auf. Der Vergleich nach Charterpreis kann den Törn wählen, der den Gast insgesamt mehr kostet."

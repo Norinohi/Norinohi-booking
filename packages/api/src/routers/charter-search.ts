@@ -5,7 +5,7 @@ import {
   listSearchSuggestions,
   searchListings,
 } from "@yacht-charter/db/search";
-import type { ListingSearchDoc } from "@yacht-charter/db/search";
+import type { ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
 import { z } from "zod";
 
 import {
@@ -19,6 +19,7 @@ import {
 } from "../contracts/catalog";
 import { publicSearchSettingsSchema } from "../contracts/admin";
 import { emptyInputSchema } from "../contracts/primitives";
+import type { Context } from "../context";
 import { publicProcedure } from "../index";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { withParameterExamples } from "./openapi-examples";
@@ -99,8 +100,9 @@ function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: str
 function pricedForShownPeriod(
   item: ListingSearchDoc,
   shown: { checkIn: string | null; checkOut: string | null },
+  basis: PriceBasis,
 ) {
-  const listing = presentListingSummary(item);
+  const listing = presentListingSummary(item, basis);
   if (listing.priceIsFrom || shown.checkIn === null) return listing;
 
   /*
@@ -122,6 +124,19 @@ function pricedForShownPeriod(
 }
 
 /** A map viewport shows every match at once, so it is not paged like the results list. */
+/**
+ * Which figure the catalogue compares on for this request.
+ *
+ * Read per request rather than cached in the module: an admin who flips the switch expects the
+ * next page to follow, and one settings row is not what makes a search slow. The same read
+ * feeds the sort, the filter, the facet bounds and the card, which is what keeps a page from
+ * disagreeing with itself.
+ */
+async function priceBasisFor(db: Context["db"]): Promise<PriceBasis> {
+  const { catalogueShowsBasePrice } = await getMarketplaceSettings(db);
+  return catalogueShowsBasePrice ? "base" : "all_in";
+}
+
 export const charterSearchRouter = {
   results: publicProcedure
     .route({
@@ -152,11 +167,12 @@ export const charterSearchRouter = {
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
     .handler(async ({ context, input }) => {
-      const results = await searchListings(context.db, input);
+      const priceBasis = await priceBasisFor(context.db);
+      const results = await searchListings(context.db, { ...input, priceBasis });
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
-          listing: pricedForShownPeriod(item, periodFor(item, period, input.startDate)),
+          listing: pricedForShownPeriod(item, periodFor(item, period, input.startDate), priceBasis),
           /* One `periodFor` per item would do; it is called twice because the spread below is
              the card's own dates and the call above only reads them. Pure and cheap. */
           /*
@@ -192,7 +208,9 @@ export const charterSearchRouter = {
     })
     .input(partialListingSearchInputSchema)
     .output(facetsSchema)
-    .handler(({ context, input }) => listSearchFacets(context.db, input)),
+    .handler(async ({ context, input }) =>
+      listSearchFacets(context.db, { ...input, priceBasis: await priceBasisFor(context.db) }),
+    ),
   mapMarinas: publicProcedure
     .route({
       method: "GET",
@@ -212,7 +230,10 @@ export const charterSearchRouter = {
     .input(partialListingSearchInputSchema)
     .output(mapMarinaResultSchema)
     .handler(async ({ context, input }) => ({
-      marinas: await listMapMarinas(context.db, input),
+      marinas: await listMapMarinas(context.db, {
+        ...input,
+        priceBasis: await priceBasisFor(context.db),
+      }),
     })),
   suggestions: publicProcedure
     .route({
@@ -253,7 +274,7 @@ export const charterSearchRouter = {
       operationId: "getCharterSearchUiSettings",
       summary: "Read the search bar's configurable controls",
       description:
-        "Which optional controls the yacht search bar shows. Only the free-text field is configurable today, and it is a testing aid that is off unless an admin turns it on — the search endpoint accepts `name` either way.",
+        "Which optional controls the yacht search bar shows, and which of the two prices the catalogue is currently comparing on. The free-text field is a testing aid that is off unless an admin turns it on; the search endpoint accepts `name` either way. The price basis is here so the slider label and any client-side ordering name the same figure the server sorted by.",
       tags: ["Charter Search"],
       successDescription: "The search controls currently enabled.",
     })
@@ -261,6 +282,9 @@ export const charterSearchRouter = {
     .output(publicSearchSettingsSchema)
     .handler(async ({ context }) => {
       const settings = await getMarketplaceSettings(context.db);
-      return { nameSearchEnabled: settings.nameSearchEnabled };
+      return {
+        nameSearchEnabled: settings.nameSearchEnabled,
+        catalogueShowsBasePrice: settings.catalogueShowsBasePrice,
+      };
     }),
 };

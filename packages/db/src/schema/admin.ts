@@ -162,6 +162,19 @@ export const marketplaceSetting = pgTable(
      */
     offerRankingUsesBasePrice: boolean("offer_ranking_uses_base_price").default(false).notNull(),
     /**
+     * Whether a catalogue card shows the charter rate instead of the all-in total.
+     *
+     * Display and comparison move together: the sort, the price filter, the slider bounds and
+     * every "from" aggregate read whichever figure the card shows, because a page whose first
+     * card is not the cheapest of the ones on it is worse than either basis alone. Both figures
+     * are written on every rebuild, so this costs a cache purge rather than a reprojection.
+     *
+     * Independent of `offer_ranking_uses_base_price` on purpose: what a card advertises and
+     * which vendor we transact with are separate decisions, and the client may want the rate on
+     * the card long before agreeing to sell on it.
+     */
+    catalogueShowsBasePrice: boolean("catalogue_shows_base_price").default(false).notNull(),
+    /**
      * Whether the search bar offers the free-text field.
      *
      * A testing affordance rather than a product feature: the design has no such field, so it

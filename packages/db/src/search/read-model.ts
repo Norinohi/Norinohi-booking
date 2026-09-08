@@ -167,7 +167,17 @@ export async function rebuildListingSearchDocs(
          * the best offer immediately below. See the price_from_minor_eur column comment.
          */
         ${toBaseMinorSql(sql`money.all_in_minor`, sql`money.price_currency`, sql`fx.rate`)}
-          as all_in_minor_eur
+          as all_in_minor_eur,
+        /*
+         * The charter rate on its own, which is the figure a visitor compares between sites.
+         * Already computed for the lateral above and discarded until now; both are projected so
+         * the display switch costs a cache purge rather than a rebuild of the fleet.
+         */
+        chosen.base_minor,
+        /* On the same rate as its all-in twin: one lateral, so the two can never disagree
+           about the day's conversion. */
+        ${toBaseMinorSql(sql`chosen.base_minor`, sql`money.price_currency`, sql`fx.rate`)}
+          as base_minor_eur
       from listing_offer o
       join provider p on p.id = o.provider_id
       /*
@@ -762,7 +772,15 @@ export async function rebuildListingSearchDocs(
        */
       order by
         listing_id,
-        all_in_minor_eur asc nulls last,
+        /*
+         * The client's agreed order, and deliberately not behind the display setting: this
+         * decides which offer's row is projected, not which of its two figures a card shows.
+         * Gating it would be the one thing that made the switch cost a rebuild -- and the order
+         * itself was agreed unconditionally, cheapest rate first with the obligatory extras
+         * settling a tie on it.
+         */
+        base_minor_eur asc nulls last,
+        (all_in_minor_eur - base_minor_eur) asc nulls last,
         all_in_minor asc nulls last,
         provider_rank,
         offer_id
@@ -831,6 +849,8 @@ export async function rebuildListingSearchDocs(
       list_price_from_minor,
       currency,
       price_from_minor_eur,
+      base_price_from_minor,
+      base_price_from_minor_eur,
       best_offer_id,
       offer_count,
       available_from,
@@ -973,6 +993,8 @@ export async function rebuildListingSearchDocs(
       best.list_all_in_minor,
       coalesce(best.price_currency, best.currency, best.default_currency, l.default_currency),
       best.all_in_minor_eur,
+      best.base_minor,
+      best.base_minor_eur,
       best.offer_id,
       coalesce(spread.offer_count, 0),
       spread.available_from,
@@ -1134,6 +1156,8 @@ export async function rebuildListingSearchDocs(
       price_is_from = excluded.price_is_from,
       list_price_from_minor = excluded.list_price_from_minor,
       price_from_minor_eur = excluded.price_from_minor_eur,
+      base_price_from_minor = excluded.base_price_from_minor,
+      base_price_from_minor_eur = excluded.base_price_from_minor_eur,
       best_offer_id = excluded.best_offer_id,
       offer_count = excluded.offer_count,
       currency = excluded.currency,
@@ -1183,6 +1207,13 @@ export async function rebuildListingSearchDocs(
 const BEST_VALUE_MIN_PEERS = 5;
 const BEST_VALUE_QUANTILE = 0.25;
 
+/*
+ * Left on the all-in figure whatever the cards are set to show.
+ *
+ * "Best value" is a claim about what a guest pays, not about how a rate reads beside other
+ * sites -- and it is written at rebuild time, so following the display switch would be the one
+ * thing that made flipping it cost a reprojection of the fleet.
+ */
 async function markBestValue(
   db: NodePgDatabase<typeof schema>,
   listingIds: readonly string[] | undefined,
@@ -1228,17 +1259,30 @@ async function markBestValue(
 export async function readListingSearchDocStats(db: NodePgDatabase<typeof schema>): Promise<{
   docs: number;
   priced: number;
+  basePriced: number;
+  /* Rows breaking the invariant that a charter rate cannot exceed the all-in total it is part
+     of. Reported rather than assumed: the two are assembled by different laterals, and a vendor
+     answering its fees in another currency is exactly the case that would separate them. */
+  baseAboveAllIn: number;
   bookable: number;
 }> {
-  const { rows } = await db.execute<{ docs: number; priced: number; bookable: number }>(sql`
+  const { rows } = await db.execute<{
+    docs: number;
+    priced: number;
+    basePriced: number;
+    baseAboveAllIn: number;
+    bookable: number;
+  }>(sql`
     select
       count(*)::int as docs,
       count(price_from_minor)::int as priced,
+      count(base_price_from_minor)::int as "basePriced",
+      count(*) filter (where base_price_from_minor > price_from_minor)::int as "baseAboveAllIn",
       count(bookable_from)::int as bookable
     from listing_search_doc
   `);
 
-  return rows[0] ?? { docs: 0, priced: 0, bookable: 0 };
+  return rows[0] ?? { docs: 0, priced: 0, basePriced: 0, baseAboveAllIn: 0, bookable: 0 };
 }
 
 /**

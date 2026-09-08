@@ -46,6 +46,8 @@ export interface MarketplaceSettings {
    * marketplace has always done; the client's agreed order is the other setting.
    */
   offerRankingUsesBasePrice: boolean;
+  /** Whether catalogue cards show, sort and filter on the charter rate. Off by default. */
+  catalogueShowsBasePrice: boolean;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
   updatedAt: string | null;
@@ -71,6 +73,7 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
       payment: DEFAULT_PAYMENT_SETTINGS,
       transactingPreference: [...DEFAULT_TRANSACTING_PREFERENCE],
       offerRankingUsesBasePrice: false,
+      catalogueShowsBasePrice: false,
       nameSearchEnabled: false,
       updatedAt: null,
       updatedByUserId: null,
@@ -91,6 +94,7 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
        is not a preference anybody meant to express. */
     transactingPreference: parsePreference(row.transactingPreference),
     offerRankingUsesBasePrice: row.offerRankingUsesBasePrice,
+    catalogueShowsBasePrice: row.catalogueShowsBasePrice,
     nameSearchEnabled: row.nameSearchEnabled,
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
@@ -101,6 +105,7 @@ export interface UpdateMarketplaceSettingsInput {
   payment: MarketplacePaymentSettings;
   transactingPreference: ProviderCode[];
   offerRankingUsesBasePrice: boolean;
+  catalogueShowsBasePrice: boolean;
   nameSearchEnabled: boolean;
   actorUserId: string | null;
 }
@@ -128,6 +133,7 @@ export async function updateMarketplaceSettings(
     depositLeadTimeDays: input.payment.leadTimeDays,
     transactingPreference: input.transactingPreference,
     offerRankingUsesBasePrice: input.offerRankingUsesBasePrice,
+    catalogueShowsBasePrice: input.catalogueShowsBasePrice,
     nameSearchEnabled: input.nameSearchEnabled,
     updatedByUserId: input.actorUserId,
   };
@@ -144,6 +150,16 @@ export async function updateMarketplaceSettings(
 
   if (!sameOrder(before.transactingPreference, saved.transactingPreference)) {
     startPreferenceRebuild(db);
+  }
+
+  /*
+   * The price basis needs no rebuild, only a cache drop: both figures are written on every
+   * projection, so flipping this changes which column the reads pick rather than what the
+   * documents hold. Worth stating beside the neighbour that does the opposite -- the two look
+   * like the same kind of switch and are not.
+   */
+  if (before.catalogueShowsBasePrice !== saved.catalogueShowsBasePrice) {
+    void revalidateCatalogCache();
   }
 
   return saved;

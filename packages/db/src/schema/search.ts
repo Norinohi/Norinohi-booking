@@ -132,6 +132,21 @@ export const listingSearchDoc = pgTable(
      */
     priceFromMinorEur: integer("price_from_minor_eur"),
     /**
+     * The charter rate alone, without the obligatory extras, crew and percentage fees that
+     * `price_from_minor` folds in -- and the same figure converted, on the same terms.
+     *
+     * The number a visitor compares against other charter sites, where a rate is what is
+     * advertised. Which of the two a card shows is `catalogue_shows_base_price`, and both are
+     * written on every rebuild so that switch costs a cache purge rather than a reprojection of
+     * the fleet.
+     *
+     * Invariants worth knowing before reading either: this is never above `price_from_minor`,
+     * both are in `currency`, and both describe the same charter and share `price_is_from`.
+     * `readListingSearchDocStats` counts any row that breaks the first.
+     */
+    basePriceFromMinor: integer("base_price_from_minor"),
+    basePriceFromMinorEur: integer("base_price_from_minor_eur"),
+    /**
      * The offer the card's price, dates and terms describe, and the one a quote should be
      * asked of first.
      *
@@ -182,6 +197,10 @@ export const listingSearchDoc = pgTable(
     ),
     index("listing_search_doc_price_idx").on(t.priceFromMinor),
     index("listing_search_doc_price_eur_idx").on(t.priceFromMinorEur),
+    /* The base-price twins of the three indexes above and below. Four more on a table of
+       18.6k rows is cheap; what they buy is a display switch that does not also change which
+       comparisons are indexed. */
+    index("listing_search_doc_base_price_eur_idx").on(t.basePriceFromMinorEur),
     index("listing_search_doc_rating_idx").on(t.rating),
     index("listing_search_doc_available_idx").on(t.availableFrom, t.availableTo),
     index("listing_search_doc_rating_cursor_idx").on(t.rating.desc(), t.listingId.desc()),
@@ -192,6 +211,14 @@ export const listingSearchDoc = pgTable(
     ),
     index("listing_search_doc_price_desc_cursor_idx").on(
       sql`coalesce(${t.priceFromMinorEur}, -1) desc`,
+      t.listingId.desc(),
+    ),
+    index("listing_search_doc_base_price_cursor_idx").on(
+      sql`coalesce(${t.basePriceFromMinorEur}, 2147483647)`,
+      t.listingId,
+    ),
+    index("listing_search_doc_base_price_desc_cursor_idx").on(
+      sql`coalesce(${t.basePriceFromMinorEur}, -1) desc`,
       t.listingId.desc(),
     ),
     index("listing_search_doc_year_cursor_idx").on(

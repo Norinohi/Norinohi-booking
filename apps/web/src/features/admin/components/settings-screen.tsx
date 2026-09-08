@@ -35,6 +35,7 @@ interface FormState {
   /* Provider codes, most preferred first. Saved whole; the radios only move the winner. */
   preference: ProviderCode[];
   offerRankingUsesBasePrice: boolean;
+  catalogueShowsBasePrice: boolean;
   nameSearchEnabled: boolean;
 }
 
@@ -93,6 +94,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       leadTimeDays: String(data.payment.leadTimeDays),
       preference: data.transactingPreference,
       offerRankingUsesBasePrice: data.offerRankingUsesBasePrice,
+      catalogueShowsBasePrice: data.catalogueShowsBasePrice,
       nameSearchEnabled: data.nameSearchEnabled,
     });
   }, [data?.updatedAt, data]);
@@ -124,6 +126,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
         },
         transactingPreference: form.preference,
         offerRankingUsesBasePrice: form.offerRankingUsesBasePrice,
+        catalogueShowsBasePrice: form.catalogueShowsBasePrice,
         nameSearchEnabled: form.nameSearchEnabled,
       },
       {
@@ -365,6 +368,21 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                     <Switch
                       checked={form.offerRankingUsesBasePrice}
                       onCheckedChange={(checked) => set({ offerRankingUsesBasePrice: checked })}
+                    />
+                  </label>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span className="flex flex-col gap-1">
+                      <span className="text-sm leading-4.5 font-medium text-foreground">
+                        {t("ranking.catalogueToggle")}
+                      </span>
+                      <span className="text-xs leading-4 font-medium text-natural-500">
+                        {t("ranking.catalogueHint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={form.catalogueShowsBasePrice}
+                      onCheckedChange={(checked) => set({ catalogueShowsBasePrice: checked })}
                     />
                   </label>
                 </fieldset>

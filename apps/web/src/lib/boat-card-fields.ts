@@ -124,6 +124,9 @@ type PricedListing = {
   priceFrom: { amountMinor: number; currency: string } | null;
   /* Absent on a My Bookings card: a booked charter has one price, the one that was paid. */
   listPriceFrom?: { amountMinor: number; currency: string } | null;
+  /* The pair behind the headline, present on catalogue cards only. See the presenter. */
+  allInPriceFrom?: { amountMinor: number; currency: string } | null;
+  basePriceFrom?: { amountMinor: number; currency: string } | null;
   availability: { hasAvailableDates: boolean };
 };
 
@@ -173,6 +176,34 @@ export function boatCardListPrice(listing: PricedListing, formatMoney: MoneyForm
   if (listPriceMinor <= priceMinor) return undefined;
 
   return formatMoney(listPriceMinor, listPriceFrom.currency);
+}
+
+/**
+ * What the obligatory extras add, where the headline is the charter rate without them.
+ *
+ * Undefined whenever the headline is already the all-in figure, which is how it is read: the
+ * two are compared rather than the setting being passed down, so the line appears exactly when
+ * there is a difference the guest would otherwise not see.
+ *
+ * This is the condition the client attached to advertising the rate. Extras leave the headline
+ * so the number compares with other charter sites; they do not leave the card.
+ */
+export function boatCardExtras(
+  t: BoatCardTranslator,
+  listing: PricedListing,
+  formatMoney: MoneyFormatter,
+  parts = 1,
+) {
+  const { priceFrom, allInPriceFrom } = listing;
+  if (!priceFrom || !allInPriceFrom) return undefined;
+
+  /* Split the same way the headline is, so a per-night card does not add a whole charter's
+     worth of fees to a single night's rate. */
+  const extrasMinor =
+    Math.round(allInPriceFrom.amountMinor / parts) - Math.round(priceFrom.amountMinor / parts);
+  if (extrasMinor <= 0) return undefined;
+
+  return t("plusObligatory", { amount: formatMoney(extrasMinor, allInPriceFrom.currency) });
 }
 
 /**

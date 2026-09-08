@@ -5,6 +5,16 @@ export type FaqCategory = (typeof faqCategory)["enumValues"][number];
 
 export type SearchSort = "recommended" | "price-asc" | "price-desc" | "rating" | "newest";
 
+/**
+ * Which of a document's two prices a request compares on.
+ *
+ * `all_in` is everything the guest pays and is what the catalogue has always used. `base` is
+ * the charter rate alone, the figure quoted on other charter sites. Carried on the request
+ * rather than read here, because the setting that decides it lives in `packages/api` and this
+ * package sits below it.
+ */
+export type PriceBasis = "all_in" | "base";
+
 export type ListingSearchInput = {
   destination?: string;
   query?: string;
@@ -63,6 +73,14 @@ export type ListingSearchInput = {
    * value falls back to its default-locale label.
    */
   locale?: string;
+  /**
+   * Which price to compare on, defaulting to the all-in total.
+   *
+   * Whatever the cards show, the sort, the filter and the "from" aggregates read the same
+   * figure -- a page whose first card is not the cheapest of the ones on it is worse than
+   * either basis on its own.
+   */
+  priceBasis?: PriceBasis;
   cursor?: string;
   limit?: number;
   page?: number;
@@ -142,6 +160,9 @@ export type ListingSearchDoc = {
    * column comment in schema/search.ts.
    */
   priceFromMinorEur: number | null;
+  /** The charter rate alone, and its comparable twin. See the base-price columns in schema. */
+  basePriceFromMinor: number | null;
+  basePriceFromMinorEur: number | null;
   /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
   bestOfferId: string | null;
   /** How many vendors sell this hull. */

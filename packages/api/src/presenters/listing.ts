@@ -1,5 +1,5 @@
 import { MIN_LEAD_DAYS } from "@yacht-charter/db/search";
-import type { ListingDetail, ListingSearchDoc } from "@yacht-charter/db/search";
+import type { ListingDetail, ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
 
 const EMPTY_IMAGE = "";
 
@@ -85,14 +85,28 @@ export function pricedPeriodDays(doc: ListingSearchDoc): number {
     : WEEKLY_RATE_DAYS;
 }
 
-export function presentListingSummary(doc: ListingSearchDoc) {
+/**
+ * One card, priced on whichever figure the catalogue is set to show.
+ *
+ * `priceFrom` is the headline, and it is the only field the basis moves: `allInPriceFrom` and
+ * `basePriceFrom` are always both filled, so a page showing the rate can also say what the
+ * obligatory extras add without asking a second question. That disclosure is the client's own
+ * condition for showing the rate at all -- extras are not to be hidden, only moved out of the
+ * headline.
+ */
+export function presentListingSummary(doc: ListingSearchDoc, basis: PriceBasis = "all_in") {
   const currency = doc.currency ?? "EUR";
   const bookablePeriod = bookablePeriodOf(doc);
   const periodDays = pricedPeriodDays(doc);
   // A non-positive price is a provider saying "no price", not "free", so it is
   // treated the same as a missing one rather than quoted as 0.
-  const amountMinor =
+  const allInMinor =
     doc.priceFromMinor !== null && doc.priceFromMinor > 0 ? doc.priceFromMinor : null;
+  const baseMinor =
+    doc.basePriceFromMinor !== null && doc.basePriceFromMinor > 0 ? doc.basePriceFromMinor : null;
+  /* The rate is never shown without the total it belongs to: a card that lost one of the two
+     would advertise a figure with no way to say what sits on top of it. */
+  const amountMinor = basis === "base" && baseMinor !== null ? baseMinor : allInMinor;
 
   return {
     id: doc.listingId,
@@ -162,6 +176,12 @@ export function presentListingSummary(doc: ListingSearchDoc) {
     amenities: doc.amenities,
     priceFrom: amountMinor === null ? null : { amountMinor, currency },
     /*
+     * Both figures, whatever the headline is, so a card can disclose the difference and a
+     * detail page can break it down without a second read.
+     */
+    allInPriceFrom: allInMinor === null ? null : { amountMinor: allInMinor, currency },
+    basePriceFrom: baseMinor === null ? null : { amountMinor: baseMinor, currency },
+    /*
      * Whether that figure prices the charter beside it or merely starts from the season, which
      * is what the card's caption turns on: an indicative floor captioned "Price for 7 days"
      * claims to price a week nobody has quoted.
@@ -183,7 +203,7 @@ export function presentListingSummary(doc: ListingSearchDoc) {
      * nothing to strike, and the projection never writes a figure that does not exceed it.
      */
     listPriceFrom:
-      amountMinor === null || doc.listPriceFromMinor === null
+      allInMinor === null || doc.listPriceFromMinor === null
         ? null
         : { amountMinor: doc.listPriceFromMinor, currency },
     priceDetails: {
@@ -217,9 +237,9 @@ export function presentListingSummary(doc: ListingSearchDoc) {
   };
 }
 
-export function presentListingDetail(detail: ListingDetail) {
+export function presentListingDetail(detail: ListingDetail, basis: PriceBasis = "all_in") {
   return {
-    ...presentListingSummary(detail),
+    ...presentListingSummary(detail, basis),
     description: detail.description,
     overview: detail.overview,
     media: detail.media,

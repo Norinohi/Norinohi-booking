@@ -279,6 +279,7 @@ export const adminRouter = {
           },
           transactingPreference: ["booking_manager", "nausys", "mock"],
           offerRankingUsesBasePrice: false,
+          catalogueShowsBasePrice: false,
           nameSearchEnabled: false,
         }),
       })
@@ -289,6 +290,7 @@ export const adminRouter = {
           payment: input.payment,
           transactingPreference: input.transactingPreference,
           offerRankingUsesBasePrice: input.offerRankingUsesBasePrice,
+          catalogueShowsBasePrice: input.catalogueShowsBasePrice,
           nameSearchEnabled: input.nameSearchEnabled,
           actorUserId: context.session.user.id,
         }),

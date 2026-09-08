@@ -1024,6 +1024,12 @@ export const offerRankingUsesBasePriceSchema = z
     "Whether the offer ranking compares charter rates rather than all-in totals. Off by default, which is what the marketplace has always done. On, the rate a visitor compares between sites decides and the obligatory extras only settle a tie on it, which can pick the charter that costs the guest more overall.",
   );
 
+export const catalogueShowsBasePriceSchema = z
+  .boolean()
+  .describe(
+    "Whether catalogue cards show the charter rate instead of the all-in total. The sort, the price filter and the slider bounds follow whatever the cards show, so the page stays coherent. Off by default.",
+  );
+
 export const nameSearchEnabledSchema = z
   .boolean()
   .describe(
@@ -1034,6 +1040,7 @@ export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
   offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
+  catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
   nameSearchEnabled: nameSearchEnabledSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
@@ -1043,10 +1050,14 @@ export const marketplaceSettingsUpdateInputSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
   offerRankingUsesBasePrice: offerRankingUsesBasePriceSchema,
+  catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
   nameSearchEnabled: nameSearchEnabledSchema,
 });
 
 /** The slice of the settings a public page is allowed to read. */
 export const publicSearchSettingsSchema = z.object({
   nameSearchEnabled: nameSearchEnabledSchema,
+  /* Public because the slider's own label and the client-side sort have to name the same
+     figure the server ordered by. */
+  catalogueShowsBasePrice: catalogueShowsBasePriceSchema,
 });
