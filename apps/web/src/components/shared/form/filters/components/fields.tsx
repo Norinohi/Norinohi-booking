@@ -177,10 +177,16 @@ interface RangeFieldProps {
   icon?: ReactNode;
   showScale?: boolean;
   /*
-   * Suppresses the "+" on the top of the track, for a scale whose end is a real ceiling
+   * Suppresses the "+" on the open end of the track, for a scale whose end is a real ceiling
    * rather than a percentile cut. A guest rating stops at five, so "5+" promises a sixth star.
    */
   boundedMax?: boolean;
+  /*
+   * Which end of the track is the percentile cut, and so carries the "+". Left, for a scale that
+   * counts down: the Boat Age track runs oldest to newest so its "from" thumb pairs with the
+   * Year From select, which puts "24 years and older" on the low end of the track.
+   */
+  openEnd?: "start" | "end";
 }
 
 export function RangeField({
@@ -193,6 +199,7 @@ export function RangeField({
   icon,
   showScale = true,
   boundedMax = false,
+  openEnd = "end",
 }: RangeFieldProps) {
   const t = useTranslations("Filters");
   const formatValue = (n: number) => (format ? format(n) : String(n));
@@ -203,8 +210,10 @@ export function RangeField({
    * then reads as a promise the results break: a 49 m hull comes back under a 61 ft filter. The
    * suffix is what makes the end of the track mean what the query already means.
    */
-  const formatUpper = (n: number) =>
-    !boundedMax && n === limits[1] ? t("andAbove", { value: formatValue(n) }) : formatValue(n);
+  const formatOpen = (n: number, end: "start" | "end") =>
+    !boundedMax && end === openEnd && n === limits[end === "start" ? 0 : 1]
+      ? t("andAbove", { value: formatValue(n) })
+      : formatValue(n);
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -214,11 +223,11 @@ export function RangeField({
       <div className="flex items-center gap-4">
         <span className="flex min-w-0 flex-1 items-center gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {formatValue(value[0])}
+          {formatOpen(value[0], "start")}
         </span>
         <span className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {formatUpper(value[1])}
+          {formatOpen(value[1], "end")}
         </span>
         {unit ? (
           <UnitSelect
