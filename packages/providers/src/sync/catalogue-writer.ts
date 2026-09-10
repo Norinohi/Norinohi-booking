@@ -447,6 +447,9 @@ export async function writeCanonicalCatalogue(
         outOfFleetDate: item.outOfFleetDate ?? null,
         videoUrl: item.videoUrl ?? null,
         tourUrl: item.tourUrl ?? null,
+        /* Whether this vendor lets us sell the boat unattended; null where it does not say. */
+        optionApprovalRequired: item.optionApprovalRequired ?? null,
+        fixedBookingSupported: item.fixedBookingSupported ?? null,
         securityDepositMinor: item.securityDepositMinor ?? null,
         /* Only published where it differs from the ordinary deposit, which is the vendor's
            rule; a charter carrying deposit insurance is held to this one instead. */
@@ -1224,6 +1227,8 @@ async function writeListingOffers(
           defaultCurrency: sql`excluded.default_currency`,
           crewType: sql`excluded.crew_type`,
           outOfFleetDate: sql`excluded.out_of_fleet_date`,
+          optionApprovalRequired: sql`excluded.option_approval_required`,
+          fixedBookingSupported: sql`excluded.fixed_booking_supported`,
           videoUrl: sql`excluded.video_url`,
           tourUrl: sql`excluded.tour_url`,
           securityDepositMinor: sql`excluded.security_deposit_minor`,

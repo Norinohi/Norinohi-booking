@@ -103,9 +103,11 @@ import {
   outboxDrainResultSchema,
   reminderResultSchema,
   sweepResultSchema,
+  unreleasedOptionsSchema,
   waitingOptionsInputSchema,
   waitingOptionsSchema,
 } from "../contracts/maintenance";
+import { listUnreleasedOptions } from "../services/provider-option";
 import {
   leadAnswerInputSchema,
   leadListInputSchema,
@@ -800,6 +802,23 @@ export const adminRouter = {
           sweepExpiries(context.db, context.provider),
         ),
       ),
+    unreleasedOptions: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/unreleasedOptions",
+        operationId: "listUnreleasedOptions",
+        summary: "Slots a vendor refused to take back",
+        description:
+          "Every booking whose last word from the vendor was a refusal to release the option. The slot is still blocked upstream while our own row calls the booking over, so the week sells to nobody until someone frees it. Retryable failures are already queued on the outbox and clear themselves; what lands here usually needs a phone call. Read-only.",
+        tags: ["Admin"],
+        successDescription: "The options still held against us.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(unreleasedOptionsSchema)
+      .handler(async ({ context }) => ({
+        items: await listUnreleasedOptions(context.db),
+      })),
     waitingOptions: adminProcedure
       .route({
         method: "POST",

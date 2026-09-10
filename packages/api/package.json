@@ -25,6 +25,7 @@
     "@yacht-charter/transactional": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
+    "evlog": "catalog:",
     "stripe": "catalog:",
     "zod": "catalog:"
   },

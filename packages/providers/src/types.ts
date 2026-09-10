@@ -816,6 +816,13 @@ const canonicalListingSchema = z.object({
    * stops selling it.
    */
   outOfFleetDate: z.string().optional(),
+  /**
+   * Whether the vendor lets us hold and then commit this hull without a human of theirs in the
+   * loop. Unset means it does not say, which is the answer for every vendor but NauSYS; only an
+   * explicit refusal takes the boat out of the catalogue, at the publish step rather than here.
+   */
+  optionApprovalRequired: z.boolean().optional(),
+  fixedBookingSupported: z.boolean().optional(),
   /** A walkthrough the operator filmed, and a 360 tour of the same boat. Both are links. */
   videoUrl: z.url().optional(),
   tourUrl: z.url().optional(),

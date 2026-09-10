@@ -771,6 +771,13 @@
       "when": 1789031332616,
       "tag": "0109_boring_mongu",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1789036581302,
+      "tag": "0110_wealthy_loki",
+      "breakpoints": true
     }
   ]
 }

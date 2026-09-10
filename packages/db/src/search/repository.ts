@@ -1464,6 +1464,28 @@ function nearestSellableColumns(
   return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
 }
 
+/*
+ * The advertised charter, minus the weeks our own live checkouts have already taken.
+ *
+ * `bookable_from`/`bookable_to` are projected from what the provider last said and refreshed on
+ * the sync's own cycle, so a period somebody is mid-checkout on keeps its place on the card for
+ * up to an hour after the option was taken. The booking sidebar subtracts those holds at read
+ * time (`slotHoldsAsOccupancy`), which is how a card came to advertise Oct 31 - Nov 7 while the
+ * calendar one click away painted that same week as temporarily held.
+ *
+ * The period is dropped rather than moved on to the next one. Choosing the next candidate is the
+ * scan `read-model.ts` runs over every offer's slots, free periods and check-in rules, and a
+ * search page cannot pay for it per card. Without a period the price reverts to the season floor
+ * and the chip reads "on request", which is what the listing honestly is until the hold resolves.
+ *
+ * This only ever narrows what a card claims, the same guarantee `slot-holds.ts` carries.
+ */
+const heldByLiveBooking = overlapsSlotHold(
+  sql`doc.listing_id`,
+  sql`doc.bookable_from`,
+  sql`doc.bookable_to`,
+);
+
 export const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
@@ -1519,8 +1541,8 @@ export const searchColumns = sql`
   doc.currency,
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
-  doc.bookable_from as "bookableFrom",
-  doc.bookable_to as "bookableTo",
+  case when ${heldByLiveBooking} then null else doc.bookable_from end as "bookableFrom",
+  case when ${heldByLiveBooking} then null else doc.bookable_to end as "bookableTo",
   doc.has_unconfirmed_availability as "hasUnconfirmedAvailability",
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;

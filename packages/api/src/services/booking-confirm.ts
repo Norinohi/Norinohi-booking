@@ -1,4 +1,8 @@
-import { describeProviderFailure, type ProviderFailure } from "../lib/provider-failure";
+import {
+  describeProviderFailure,
+  type ProviderFailure,
+  reportProviderRefusal,
+} from "../lib/provider-failure";
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
@@ -108,10 +112,9 @@ export async function confirmBookingWithProvider(
     // Two messages, not one: the vendor's text goes to the event log, and the
     // customer-facing wording is what the invoice screen and the confirmation
     // poll are allowed to print.
-    const failure = describeProviderFailure(
-      error instanceof Error ? error : null,
-      "Provider rejected the booking",
-    );
+    const refusal = error instanceof Error ? error : null;
+    const failure = describeProviderFailure(refusal, "Provider rejected the booking");
+    reportProviderRefusal("confirm", refusal, { bookingId, provider: row.provider });
     await markRejected(db, bookingId, row.provider, failure);
 
     return { outcome: "rejected", message: failure.customer };

@@ -1,4 +1,4 @@
-import { describeProviderFailure } from "../lib/provider-failure";
+import { describeProviderFailure, reportProviderRefusal } from "../lib/provider-failure";
 import { placeLine } from "../lib/place-line";
 import { ORPCError } from "@orpc/server";
 import {
@@ -581,10 +581,12 @@ async function holdOption(
     // `cancelReason` is read back by the booking screens and by the idempotent
     // replay above, so it carries the customer wording; the vendor's own text
     // stays on the event, where support and Sentry look for it.
-    const failure = describeProviderFailure(
-      error instanceof Error ? error : null,
-      "Provider rejected the option",
-    );
+    const refusal = error instanceof Error ? error : null;
+    const failure = describeProviderFailure(refusal, "Provider rejected the option");
+    reportProviderRefusal("hold", refusal, {
+      bookingId: pending.id,
+      provider: pending.provider,
+    });
     const rejected = await transition(db, pending, "PROVIDER_REJECTED", {
       cancelReason: failure.customer,
     });

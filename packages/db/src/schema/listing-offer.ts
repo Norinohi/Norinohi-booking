@@ -87,6 +87,20 @@ export const listingOffer = pgTable(
      * listing -- a charter already booked on it still has to be readable.
      */
     outOfFleetDate: date("out_of_fleet_date"),
+    /**
+     * Whether this vendor will let us take the boat on our own authority.
+     *
+     * NauSYS publishes `needsOptionApproval` and `canMakeBookingFixed` per hull and we sold
+     * every one of them as an instant hold, so a boat the operator vets by hand reached
+     * `createOption` and came back `OPERATION_NOT_ALLOWED` at the last step of checkout. Read
+     * the same way `out_of_fleet_date` is: the search document skips the offer rather than the
+     * sync deleting anything, so an existing booking on it stays readable.
+     *
+     * Null is "the vendor does not say", which is every Booking Manager offer and is sellable.
+     * Only an explicit refusal withholds the boat.
+     */
+    optionApprovalRequired: boolean("option_approval_required"),
+    fixedBookingSupported: boolean("fixed_booking_supported"),
     /** A walkthrough the operator filmed, and a 360 tour of the same boat. */
     videoUrl: text("video_url"),
     tourUrl: text("tour_url"),

@@ -902,12 +902,16 @@ function reducedDepositOf(yacht: RestYacht, currency: string): number | undefine
 }
 
 /**
- * The retirement date and the two links the vendor added in May 2025.
+ * The retirement date, the two links the vendor added in May 2025, and the pair of flags that
+ * say whether the boat can be sold without one of the operator's staff approving it.
  *
  * The video fields carry a bare platform id rather than a URL, so this is where they become
  * one; a value that already looks like a link is passed through, because operators paste both.
  * The 360 tour is whatever the operator typed and is only kept when it is really a link --
  * `linkFor360tour` holds a YouTube id on some fleets, which is not a tour.
+ *
+ * The two booking flags are passed through as the vendor sent them, absent included: a hull
+ * that says nothing is sellable, and only an explicit refusal withholds it.
  */
 function fleetAndFilmOf(yacht: RestYacht) {
   const outOfFleetDate = nausysDayOrUndefined(yacht.outOfFleetDate);
@@ -920,6 +924,12 @@ function fleetAndFilmOf(yacht: RestYacht) {
     ...(outOfFleetDate === undefined ? null : { outOfFleetDate }),
     ...(videoUrl === undefined ? null : { videoUrl }),
     ...(tourUrl === undefined ? null : { tourUrl }),
+    ...(yacht.needsOptionApproval === undefined
+      ? null
+      : { optionApprovalRequired: yacht.needsOptionApproval }),
+    ...(yacht.canMakeBookingFixed === undefined
+      ? null
+      : { fixedBookingSupported: yacht.canMakeBookingFixed }),
   };
 }
 

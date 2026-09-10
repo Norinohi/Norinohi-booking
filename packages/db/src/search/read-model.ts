@@ -753,6 +753,15 @@ export async function rebuildListingSearchDocs(
          * booked on it still has to be readable.
          */
         and (o.out_of_fleet_date is null or o.out_of_fleet_date > current_date)
+        /*
+         * A hull the vendor will not let us sell on our own authority. NauSYS publishes
+         * needsOptionApproval and canMakeBookingFixed per boat, and selling one of those as
+         * an instant hold puts the refusal at the end of checkout, where the customer has
+         * already filled in the guest details: createOption answers OPERATION_NOT_ALLOWED.
+         * Null is "the vendor does not say", which is every Booking Manager offer.
+         */
+        and o.option_approval_required is not true
+        and o.fixed_booking_supported is not false
         and ${listingScope(sql`o.listing_id`, listingIds)}
     ),
     /*
