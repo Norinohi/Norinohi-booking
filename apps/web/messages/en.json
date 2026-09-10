@@ -798,26 +798,21 @@
     "BoatTypes": {
       "heading": "Choose Your Boat Type",
       "previous": "Previous boat types",
-      "next": "Next boat types",
-      "luxury": {
-        "title": "Luxury yacht",
-        "description": "The largest boats in the fleet, crewed and specified to hotel standard.",
-        "imageAlt": "Luxury yacht at anchor"
-      }
+      "next": "Next boat types"
     },
     "BudgetFinder": {
       "heading": "Find Yachts By Your Budget",
       "viewResults": "View Results",
       "labels": {
-        "budget": "Budget per charter",
+        "budget": "Budget Per Person",
         "people": "People",
         "skipper": "Skipper",
         "destinations": "Destinations (Optional)"
       },
       "options": {
         "any": "Any",
-        "budgetUpTo": "Up to {to}",
         "budgetFrom": "{from}+",
+        "peopleNotSure": "Not sure",
         "skipperYes": "Yes",
         "skipperNo": "No",
         "destinationsAll": "All Destinations"

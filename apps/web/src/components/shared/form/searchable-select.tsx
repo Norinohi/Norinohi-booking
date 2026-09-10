@@ -27,7 +27,7 @@ import { type ComponentProps, type ReactNode, useState } from "react";
  */
 export interface SearchableSelectGroup {
   key: string;
-  label: string;
+  label?: string;
   options: SelectOption[];
 }
 
@@ -49,7 +49,7 @@ interface SearchableSelectProps extends Omit<
 
 interface OptionGroupItems {
   value: string;
-  label: string;
+  label?: string;
   items: SelectOption[];
 }
 
@@ -108,7 +108,7 @@ export default function SearchableSelect({
           {groups
             ? (group: OptionGroupItems) => (
                 <ComboboxGroup key={group.value} items={group.items}>
-                  <ComboboxGroupLabel>{group.label}</ComboboxGroupLabel>
+                  {group.label ? <ComboboxGroupLabel>{group.label}</ComboboxGroupLabel> : null}
                   <ComboboxCollection>{renderOption}</ComboboxCollection>
                 </ComboboxGroup>
               )

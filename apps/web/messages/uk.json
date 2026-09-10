@@ -798,26 +798,21 @@
     "BoatTypes": {
       "heading": "Оберіть тип човна",
       "previous": "Попередні типи човнів",
-      "next": "Наступні типи човнів",
-      "luxury": {
-        "title": "Люксова яхта",
-        "description": "Найбільші човни флоту, з екіпажем та оснащенням готельного рівня.",
-        "imageAlt": "Люксова яхта на якорі"
-      }
+      "next": "Наступні типи човнів"
     },
     "BudgetFinder": {
       "heading": "Знайдіть яхту за своїм бюджетом",
       "viewResults": "Переглянути результати",
       "labels": {
-        "budget": "Бюджет на чартер",
+        "budget": "Бюджет на людину",
         "people": "Осіб",
         "skipper": "Шкіпер",
         "destinations": "Напрямки (необовʼязково)"
       },
       "options": {
         "any": "Будь-який",
-        "budgetUpTo": "До {to}",
         "budgetFrom": "Від {from}",
+        "peopleNotSure": "Ще не визначились",
         "skipperYes": "Так",
         "skipperNo": "Ні",
         "destinationsAll": "Усі напрямки"

@@ -23,7 +23,7 @@ const SelectRoot = SelectPrimitive.Root;
 export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 /** A labelled run of options. Opt-in: without `groups` the list stays flat. */
-export type SelectOptionGroup = { key: string; label: string; options: SelectOption[] };
+export type SelectOptionGroup = { key: string; label?: string; options: SelectOption[] };
 
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
@@ -268,7 +268,7 @@ function Select({
         ) : groups ? (
           groups.map((group) => (
             <SelectGroup key={group.key}>
-              <SelectGroupLabel>{group.label}</SelectGroupLabel>
+              {group.label ? <SelectGroupLabel>{group.label}</SelectGroupLabel> : null}
               {group.options.map(renderSelectItem)}
             </SelectGroup>
           ))
