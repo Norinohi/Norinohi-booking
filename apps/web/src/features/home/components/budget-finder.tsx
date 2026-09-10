@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Suspense, useState } from "react";
 
+import SearchableSelect from "@/components/shared/form/searchable-select";
 import {
   EMPTY_OPTIONS,
   type FilterOptions,
@@ -73,6 +74,7 @@ function BudgetFinderForm({
 }) {
   const t = useTranslations("Home.BudgetFinder");
   const tGroups = useTranslations("Filters.groups");
+  const tPicker = useTranslations("Common.countryPicker");
   const money = useMoney();
 
   const [budget, setBudget] = useState<string | null>(null);
@@ -127,6 +129,7 @@ function BudgetFinderForm({
     key: "budget" | "people" | "skipper" | "destinations";
     options: { value: string; label: string }[];
     groups?: SelectOptionGroup[];
+    searchable?: boolean;
     value: string | null;
     placeholder?: string;
     onValueChange: (value: string) => void;
@@ -159,6 +162,7 @@ function BudgetFinderForm({
       key: "destinations",
       options: destinationOptions,
       groups: destinationGroups,
+      searchable: true,
       value: destination,
       onValueChange: setDestination,
       isLoading: isPending,
@@ -176,16 +180,30 @@ function BudgetFinderForm({
             <span className="text-sm leading-[1.2] font-semibold text-natural-700">
               {t(`labels.${field.key}`)}
             </span>
-            <Select
-              className="h-12 bg-card"
-              ariaLabel={t(`labels.${field.key}`)}
-              options={field.options}
-              groups={field.groups}
-              value={field.value}
-              placeholder={field.placeholder}
-              onValueChange={field.onValueChange}
-              isLoading={field.isLoading}
-            />
+            {field.searchable ? (
+              <SearchableSelect
+                className="h-12 min-w-0 bg-card"
+                aria-label={t(`labels.${field.key}`)}
+                placeholder={field.placeholder ?? ""}
+                searchPlaceholder={tPicker("search")}
+                emptyLabel={field.isLoading ? tPicker("loading") : tPicker("empty")}
+                options={field.options}
+                groups={field.groups}
+                value={field.value}
+                onValueChange={(next) => field.onValueChange(next ?? ALL)}
+              />
+            ) : (
+              <Select
+                className="h-12 bg-card"
+                ariaLabel={t(`labels.${field.key}`)}
+                options={field.options}
+                groups={field.groups}
+                value={field.value}
+                placeholder={field.placeholder}
+                onValueChange={field.onValueChange}
+                isLoading={field.isLoading}
+              />
+            )}
           </div>
         ))}
       </motion.div>
