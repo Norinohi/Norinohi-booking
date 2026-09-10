@@ -3183,11 +3183,13 @@
       },
       "surfaces": {
         "popular": "Filter-Pins",
-        "featured": "Startseite"
+        "featured": "Startseite",
+        "filter": "Filterliste"
       },
       "surfaceHint": {
         "popular": "Erscheint als Gruppe „Beliebt“ oben in den Suchfiltern.",
-        "featured": "Die Reihenfolge für die Slider und Raster der Startseite."
+        "featured": "Die Reihenfolge für die Slider und Raster der Startseite.",
+        "filter": "Die einzigen Werte, die der Suchfilter anbietet. Leer bietet er jeden Wert des Katalogs an."
       },
       "filters": {
         "kind": "Facette",
@@ -3206,6 +3208,7 @@
         "remove": "Entfernen"
       },
       "empty": "Noch nichts ausgewählt. Wählen Sie oben Werte aus.",
+      "emptyFilter": "Nichts ausgewählt, daher bietet der Filter jeden Wert an. Wählen Sie oben Werte aus, um die Liste zu kürzen.",
       "error": "Die Reihenfolge konnte nicht gespeichert werden.",
       "saved": "Reihenfolge gespeichert.",
       "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",

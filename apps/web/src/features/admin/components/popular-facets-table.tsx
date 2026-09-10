@@ -21,6 +21,7 @@ import { usePopularFacets, useSetPopularFacets } from "../hooks/use-popular-face
 import {
   POPULAR_FACET_KINDS,
   POPULAR_FACET_SURFACES,
+  popularFacetSurfaceIsOrdered,
   type PopularFacetKind,
   type PopularFacetSurface,
   type PopularFacetValue,
@@ -38,11 +39,14 @@ import {
  * Below them, a picker over the live catalogue vocabulary, and the chosen values in the order
  * they will appear. Ticking, unticking and the arrows all do the same thing: state the whole
  * ordered list. There is no partial save, so no moment exists where two values claim one place.
+ *
+ * The third surface, the filter allowlist, is the same list with the order taken away: it says
+ * which values the search panel offers at all, and an empty one offers every value there is.
  */
 
-const COLUMN_COUNT = 4;
 const SKELETON_ROWS = 5;
-const SKELETON_WIDTHS = ["w-8", "w-40", "w-20", "w-24"];
+const ORDER_SKELETON_WIDTH = "w-8";
+const SKELETON_WIDTHS = ["w-40", "w-20", "w-24"];
 
 export default function PopularFacetsTable() {
   const t = useTranslations("Admin.Popular");
@@ -55,6 +59,10 @@ export default function PopularFacetsTable() {
 
   const { data, isPending, isError } = usePopularFacets({ kind, surface, locale });
   const save = useSetPopularFacets();
+  /* The allowlist surface is a set, not an order. See `popularFacetSurfaceIsOrdered`. */
+  const ordered = popularFacetSurfaceIsOrdered(surface);
+  const columnCount = ordered ? 4 : 3;
+  const skeletonWidths = ordered ? [ORDER_SKELETON_WIDTH, ...SKELETON_WIDTHS] : SKELETON_WIDTHS;
 
   /* A different kind or surface is a different list, so the local copy is dropped and the
      server's answer takes over again. */
@@ -110,7 +118,7 @@ export default function PopularFacetsTable() {
 
   const messageRow = (message: string) => (
     <TableRow>
-      <TableCell colSpan={COLUMN_COUNT} className="py-8 text-center text-sm text-natural-500">
+      <TableCell colSpan={columnCount} className="py-8 text-center text-sm text-natural-500">
         {message}
       </TableCell>
     </TableRow>
@@ -175,7 +183,7 @@ export default function PopularFacetsTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-32">{t("table.order")}</TableHead>
+            {ordered ? <TableHead className="w-32">{t("table.order")}</TableHead> : null}
             <TableHead>{t("table.value")}</TableHead>
             <TableHead className="w-28">{t("table.count")}</TableHead>
             <TableHead className="w-24">{t("table.actions")}</TableHead>
@@ -185,7 +193,7 @@ export default function PopularFacetsTable() {
           {isPending
             ? Array.from({ length: SKELETON_ROWS }, (_, row) => (
                 <TableRow key={row}>
-                  {SKELETON_WIDTHS.map((width) => (
+                  {skeletonWidths.map((width) => (
                     <TableCell key={width}>
                       <Skeleton className={`h-4 rounded-md ${width}`} />
                     </TableCell>
@@ -195,36 +203,38 @@ export default function PopularFacetsTable() {
             : isError
               ? messageRow(t("error"))
               : values.length === 0
-                ? messageRow(t("empty"))
+                ? messageRow(t(ordered ? "empty" : "emptyFilter"))
                 : values.map((value, index) => {
                     const option = byValue.get(value);
                     return (
                       <TableRow key={value}>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <span className="w-6 text-sm text-natural-500">{index + 1}</span>
-                            <Button
-                              variant="subtle"
-                              size="sm"
-                              aria-label={t("actions.moveUp")}
-                              title={t("actions.moveUp")}
-                              disabled={index === 0 || save.isPending}
-                              onClick={() => move(index, -1)}
-                            >
-                              <ArrowUp className="size-4" />
-                            </Button>
-                            <Button
-                              variant="subtle"
-                              size="sm"
-                              aria-label={t("actions.moveDown")}
-                              title={t("actions.moveDown")}
-                              disabled={index === values.length - 1 || save.isPending}
-                              onClick={() => move(index, 1)}
-                            >
-                              <ArrowDown className="size-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {ordered ? (
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <span className="w-6 text-sm text-natural-500">{index + 1}</span>
+                              <Button
+                                variant="subtle"
+                                size="sm"
+                                aria-label={t("actions.moveUp")}
+                                title={t("actions.moveUp")}
+                                disabled={index === 0 || save.isPending}
+                                onClick={() => move(index, -1)}
+                              >
+                                <ArrowUp className="size-4" />
+                              </Button>
+                              <Button
+                                variant="subtle"
+                                size="sm"
+                                aria-label={t("actions.moveDown")}
+                                title={t("actions.moveDown")}
+                                disabled={index === values.length - 1 || save.isPending}
+                                onClick={() => move(index, 1)}
+                              >
+                                <ArrowDown className="size-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        ) : null}
                         <TableCell>
                           <span className="font-medium text-foreground">
                             {option?.label ?? value}

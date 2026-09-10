@@ -29,6 +29,7 @@ import { CONTENT_LOCALES, normalizedKey } from "@yacht-charter/db/search/localiz
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
+import { canonicalAmenityName } from "../shared/amenity-names";
 import { canonicalCategoryName } from "../shared/category-groups";
 import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
@@ -343,10 +344,21 @@ export async function writeCanonicalCatalogue(
     const code = item.code ?? `${providerKey}:${item.externalId}`;
     const [row] = await db
       .insert(amenity)
-      .values({ amenityCategoryId: categoryId, code, name: item.name })
+      .values({
+        amenityCategoryId: categoryId,
+        code,
+        name: item.name,
+        canonicalName: canonicalAmenityName(code),
+      })
       .onConflictDoUpdate({
         target: amenity.code,
-        set: { name: sql`excluded.name`, amenityCategoryId: sql`excluded.amenity_category_id` },
+        set: {
+          name: sql`excluded.name`,
+          amenityCategoryId: sql`excluded.amenity_category_id`,
+          /* Written on every sync, like the category's, so an edit to the map reaches rows that
+             were imported before it. A row the map drops goes back to naming itself. */
+          canonicalName: sql`excluded.canonical_name`,
+        },
       })
       .returning({ id: amenity.id });
     if (row) amenityIds.set(item.externalId, row.id);

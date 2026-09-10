@@ -355,13 +355,13 @@ export async function getListingDetailByIdOrSlug(
        *
        * The two providers keep separate amenity taxonomies — their codes are scoped per
        * provider, so Autopilot exists once as each vendor's own row — and a listing both of
-       * them sell carries both. Folded on the name the same way the facet dictionary folds it,
-       * because that is the only thing the two rows have in common. An included row wins over
-       * a priced one: the list answers "what does this yacht have".
+       * them sell carries both. Folded on the amenity's canonical name the same way the search
+       * documents fold it, so a hull sold by both does not list "Bimini" above "Bimini top".
+       * An included row wins over a priced one: the list answers "what does this yacht have".
        */
       select distinct on (key.folded)
         a.code,
-        a.name as label,
+        coalesce(a.canonical_name, a.name) as label,
         a.crew,
         la.obligatory,
         la.price_minor as "priceMinor",
@@ -384,7 +384,7 @@ export async function getListingDetailByIdOrSlug(
          ORDER BY are two expressions over the same columns but different bind parameters, and
          Postgres compares them before it knows the values: "DISTINCT ON expressions must match
          initial ORDER BY expressions". */
-      cross join lateral (select ${normalizedKeySql(sql`a.name`)} as folded) key
+      cross join lateral (select ${normalizedKeySql(sql`coalesce(a.canonical_name, a.name)`)} as folded) key
       where la.listing_id = ${listing.listingId}
       order by key.folded, la.price_minor nulls first, a.name asc
     `),
@@ -2124,6 +2124,7 @@ async function decorateFacetOptions(
     description: string | null;
     popularRank: number | null;
     featuredRank: number | null;
+    filterVisible: boolean;
   }>(sql`
     select
       ${normalizedSql(sql`media.value`)} as key,
@@ -2132,7 +2133,8 @@ async function decorateFacetOptions(
       translation.label,
       coalesce(translation.description, media.description) as description,
       media.popular_rank as "popularRank",
-      media.featured_rank as "featuredRank"
+      media.featured_rank as "featuredRank",
+      media.filter_visible as "filterVisible"
     from facet_media media
     left join facet_media_translation translation
       on translation.facet_media_id = media.id
@@ -2141,7 +2143,26 @@ async function decorateFacetOptions(
   `);
   const byKey = new Map(media.rows.map((row) => [row.key, row]));
 
-  return options.map((option) => {
+  /*
+   * The curated allowlist, when the kind has one.
+   *
+   * Applied here rather than in each facet query because this is the one place that already
+   * holds both halves -- the grouped options and the facet_media rows -- so restricting the
+   * list costs nothing more than it already spends. Counts are computed before the cut, which
+   * is what we want: a removed option was never a filter anyone applied, so nothing it counted
+   * moves anywhere else.
+   *
+   * An empty allowlist means the kind is uncurated and every option stands. That is the state
+   * eight of the nine kinds are in, and the state a fresh database starts in, so the check is
+   * against the marked rows rather than against a flag somewhere else.
+   */
+  const allowed = new Set(media.rows.filter((row) => row.filterVisible).map((row) => row.key));
+  const visible =
+    allowed.size === 0
+      ? options
+      : options.filter((option) => allowed.has(normalizedFilterValue(option.label)));
+
+  return visible.map((option) => {
     /*
      * Matched on the untranslated label, and `value` above was derived from it too:
      * `value` is what the search filters compare against doc.country / doc.category,

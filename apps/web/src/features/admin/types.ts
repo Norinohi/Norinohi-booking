@@ -170,7 +170,22 @@ export const POPULAR_FACET_KINDS: readonly PopularFacetKind[] = [
   "sail_type",
 ];
 
-export const POPULAR_FACET_SURFACES: readonly PopularFacetSurface[] = ["popular", "featured"];
+export const POPULAR_FACET_SURFACES: readonly PopularFacetSurface[] = [
+  "popular",
+  "featured",
+  "filter",
+];
+
+/**
+ * The surfaces whose list is an order rather than a set.
+ *
+ * `filter` decides which values the search panel offers and nothing more, so the screen drops
+ * its arrows and its position column: a control that moves a row and changes nothing reads as
+ * one that is broken.
+ */
+export function popularFacetSurfaceIsOrdered(surface: PopularFacetSurface): boolean {
+  return surface !== "filter";
+}
 
 /**
  * How one locale of one question stands.

@@ -33,20 +33,44 @@ type SetResult = z.infer<typeof popularFacetSetSchema>;
 const ENTITY_TYPE = "facet_media_rank";
 const DEFAULT_LOCALE = "en";
 
-/** The two curated orders, as Drizzle columns. Nothing else in this file names them directly. */
-const COLUMN_BY_SURFACE = {
-  popular: facetMedia.popularRank,
-  featured: facetMedia.featuredRank,
+/*
+ * Each surface's membership, read back as a rank.
+ *
+ * `filter` is a boolean column and the other two are ranks, so it reports 1 for a member and
+ * null for everything else. That is the whole of the difference between the surfaces on the
+ * read side: below this line the three are one list of values in one order.
+ */
+const RANK_BY_SURFACE = {
+  popular: sql<number | null>`${facetMedia.popularRank}`,
+  featured: sql<number | null>`${facetMedia.featuredRank}`,
+  filter: sql<number | null>`case when ${facetMedia.filterVisible} then 1 else null end`,
+} as const;
+
+/** What "already curated" means per surface, for the statement that clears the list. */
+const CURATED_BY_SURFACE = {
+  popular: isNotNull(facetMedia.popularRank),
+  featured: isNotNull(facetMedia.featuredRank),
+  filter: eq(facetMedia.filterVisible, true),
+} as const;
+
+/** The columns the clearing statement resets, per surface. */
+const CLEARED_BY_SURFACE = {
+  popular: { popularRank: null },
+  featured: { featuredRank: null },
+  filter: { filterVisible: false },
 } as const;
 
 /*
- * The same column, as raw SQL. Both spellings are needed because the ranks are written by one
- * `update ... from (values ...)`, which Drizzle's builder cannot express, and read back through
- * the ordinary query builder.
+ * How a surface records one member, given the row of the `(values ...)` list it matched.
+ *
+ * Raw SQL because the ranks are written by one `update ... from (values ...)`, which Drizzle's
+ * builder cannot express. `filter` ignores the position it was handed: being in the list is the
+ * whole statement it makes.
  */
-const SQL_BY_SURFACE = {
-  popular: sql.raw("popular_rank"),
-  featured: sql.raw("featured_rank"),
+const ASSIGN_BY_SURFACE = {
+  popular: sql`popular_rank = ranked.rank`,
+  featured: sql`featured_rank = ranked.rank`,
+  filter: sql`filter_visible = true`,
 } as const;
 
 type MediaRow = {
@@ -71,7 +95,7 @@ async function readMedia(db: Database, kind: Kind, surface: Surface, locale: str
       id: facetMedia.id,
       value: facetMedia.value,
       label: facetMediaTranslation.label,
-      rank: COLUMN_BY_SURFACE[surface],
+      rank: RANK_BY_SURFACE[surface],
       imageUrl: facetMedia.imageUrl,
       cloudinaryId: facetMedia.cloudinaryId,
     })
@@ -85,7 +109,26 @@ async function readMedia(db: Database, kind: Kind, surface: Surface, locale: str
     )
     .where(eq(facetMedia.kind, kind));
 
-  return new Map<string, MediaRow>(rows.map((row) => [normalizedFilterValue(row.value), row]));
+  /*
+   * Keyed by the fold, so two spellings of one facet are one entry -- and the curated one is the
+   * entry that survives.
+   *
+   * Two rows really do share a key: the translations pipeline writes a row per catalogue
+   * spelling while the seed and this screen write the editorial one, so "Teak Cockpit" and
+   * "Teak cockpit" are both here. Taking whichever the scan reached last dropped the curated
+   * value out of `selected`, and the screen then saved the list it could see -- one value
+   * shorter than the one it loaded.
+   */
+  const byKey = new Map<string, MediaRow>();
+  for (const row of rows) {
+    const key = normalizedFilterValue(row.value);
+    const existing = byKey.get(key);
+    if (existing === undefined || (existing.rank === null && row.rank !== null)) {
+      byKey.set(key, row);
+    }
+  }
+
+  return byKey;
 }
 
 function toValue(label: string, count: number | null, media: MediaRow | undefined): Value {
@@ -132,9 +175,12 @@ export async function listPopularFacets(db: Database, input: ListInput): Promise
 
   available.sort((left, right) => left.label.localeCompare(right.label));
 
+  /* Ties break on the label so the `filter` surface, whose members all carry 1, reads as the
+     alphabetical list the search panel will show rather than as whatever order the rows came
+     back in. */
   const selected = available
     .filter((option): option is Value & { rank: number } => option.rank !== null)
-    .sort((left, right) => left.rank - right.rank);
+    .sort((left, right) => left.rank - right.rank || left.label.localeCompare(right.label));
 
   return { kind: input.kind, surface: input.surface, selected, available };
 }
@@ -151,6 +197,10 @@ export async function listPopularFacets(db: Database, input: ListInput): Promise
  * A value with no facet_media row yet is inserted first. That is the ordinary case for anything
  * outside the seed: `facet_media` holds editorial copy, and a country being pinned may have
  * none.
+ *
+ * On the `filter` surface the order carries no meaning and the same three statements stand: the
+ * allowlist is cleared and re-marked, so an editor's list is what the search panel offers and
+ * clearing it hands the panel back every value the catalogue carries.
  */
 export async function setPopularFacets(
   db: Database,
@@ -163,7 +213,6 @@ export async function setPopularFacets(
   }
 
   const before = await listPopularFacets(db, { kind: input.kind, surface: input.surface });
-  const column = SQL_BY_SURFACE[input.surface];
 
   /*
    * Which values need a facet_media row, and what to call it.
@@ -197,8 +246,8 @@ export async function setPopularFacets(
 
     await tx
       .update(facetMedia)
-      .set(input.surface === "popular" ? { popularRank: null } : { featuredRank: null })
-      .where(and(eq(facetMedia.kind, input.kind), isNotNull(COLUMN_BY_SURFACE[input.surface])));
+      .set(CLEARED_BY_SURFACE[input.surface])
+      .where(and(eq(facetMedia.kind, input.kind), CURATED_BY_SURFACE[input.surface]));
 
     if (input.values.length > 0) {
       const ranked = sql.join(
@@ -210,7 +259,7 @@ export async function setPopularFacets(
 
       await tx.execute(sql`
         update facet_media as media
-        set ${column} = ranked.rank
+        set ${ASSIGN_BY_SURFACE[input.surface]}
         from (values ${ranked}) as ranked(key, rank)
         where media.kind = ${input.kind}
           and ${normalizedKeySql(sql`media.value`)} = ranked.key

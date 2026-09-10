@@ -11,6 +11,8 @@ export default defineConfig({
     "./src/payment-reminders.ts",
     "./src/drain-outbox.ts",
     "./src/seed-facets.ts",
+    "./src/seed-equipment-filter.ts",
+    "./src/apply-amenity-names.ts",
     "./src/publish-listings.ts",
     "./src/repair-bm-ids.ts",
     "./src/rebuild-search-docs.ts",

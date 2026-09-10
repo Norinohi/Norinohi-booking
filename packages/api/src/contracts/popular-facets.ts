@@ -22,19 +22,30 @@ export const popularFacetKindSchema = z.enum([
 ]);
 
 /**
- * Which of the two curated orders is being edited.
+ * Which curated list is being edited.
  *
  * `popular` pins values into the "Popular" group at the top of a picker; `featured` orders the
  * home page's sliders and grids. They are independent lists over the same values, because the
  * client's own two country lists are not prefixes of each other.
+ *
+ * `filter` is the odd one and reads as membership rather than order: it is the allowlist of
+ * values the search filter offers at all, and an empty one means every value is offered. It
+ * shares this contract because an editor does the same thing to it -- tick values, untick
+ * values, save the whole list -- and a screen of its own would differ only in the arrows.
  */
-export const popularFacetSurfaceSchema = z.enum(["popular", "featured"]);
+export const popularFacetSurfaceSchema = z.enum(["popular", "featured", "filter"]);
 
 export const popularFacetValueSchema = z.object({
   /** The filter value, identical to the matching search facet option's. */
   value: z.string(),
   label: z.string(),
-  /** Position in the curated list, 1-based. Null for a value that is not in it. */
+  /**
+   * Position in the curated list, 1-based. Null for a value that is not in it.
+   *
+   * On the `filter` surface there is no order to hold, so a member carries 1 and everything
+   * else null: the field still answers the only question that surface asks of it, which is
+   * whether the value is in the list.
+   */
   rank: z.number().int().positive().nullable(),
   /**
    * How many listings currently carry this value, or null when nothing does. A curated value
@@ -74,7 +85,11 @@ export const popularFacetListSchema = z.object({
 export const popularFacetSetInputSchema = z.object({
   kind: popularFacetKindSchema,
   surface: popularFacetSurfaceSchema,
-  values: z.array(z.string().min(1)).max(50),
+  /*
+   * Wide enough for the equipment allowlist, which runs to about fifty values out of the eight
+   * hundred spellings the two providers publish between them. The pinned lists use a dozen.
+   */
+  values: z.array(z.string().min(1)).max(200),
 });
 
 export const popularFacetSetSchema = z.object({

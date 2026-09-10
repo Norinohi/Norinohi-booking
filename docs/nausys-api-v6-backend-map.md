@@ -125,7 +125,8 @@ Persist the provider record and map these groups:
 optional Cloudinary asset ID. NauSYS confirmed (Sep 2026) that catalogue data,
 images included, may be held and served from our own infrastructure; the cache
 must be deleted when the contract ends and the data may not be resold. Booking
-Manager has not confirmed the equivalent, so their media still stays hotlinked.
+Manager confirmed the equivalent in Sep 2026, verbally, so both providers' media
+may be mirrored into our own storage.
 
 ### 2.2 Reservation and availability - PDF pages 72-117
 

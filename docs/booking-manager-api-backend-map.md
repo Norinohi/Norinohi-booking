@@ -468,6 +468,7 @@ now answered; these are not.
 - **Option expiry and cancellation windows.** Exact hold duration, cancellation
   deadlines, penalties, and who may cancel. Drives whether
   `optionExpiryOwnedByProvider` can be `true`.
-- **Media and image rights.** May we cache and transform photos through our own
-  image pipeline, or must we hotlink? Which terms document governs it?
+- ~~**Media and image rights.**~~ **Answered (Sep 2026, verbally):** we may cache,
+  copy and transform their photos and serve them from our own storage. Still to be
+  confirmed by email, with the governing T&C clause, before the contract is signed.
 - **Pricing semantics** - see the callout in §6.

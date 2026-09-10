@@ -3183,11 +3183,13 @@
       },
       "surfaces": {
         "popular": "Filter pins",
-        "featured": "Home page"
+        "featured": "Home page",
+        "filter": "Filter list"
       },
       "surfaceHint": {
         "popular": "Shown as a “Popular” group at the top of the search filters.",
-        "featured": "The order the home page's sliders and grids use."
+        "featured": "The order the home page's sliders and grids use.",
+        "filter": "The only values the search filter offers. Empty, it offers every value the catalogue carries."
       },
       "filters": {
         "kind": "Facet",
@@ -3206,6 +3208,7 @@
         "remove": "Remove"
       },
       "empty": "Nothing curated yet. Pick values above to pin them.",
+      "emptyFilter": "Nothing chosen, so the filter offers every value. Pick values above to shorten the list.",
       "error": "Could not save the order.",
       "saved": "Order saved.",
       "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",

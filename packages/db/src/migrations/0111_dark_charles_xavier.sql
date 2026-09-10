@@ -1,0 +1,2 @@
+ALTER TABLE "facet_media" ADD COLUMN "filter_visible" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE INDEX "facet_media_filter_idx" ON "facet_media" USING btree ("kind") WHERE filter_visible;

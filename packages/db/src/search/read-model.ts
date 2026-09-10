@@ -1081,21 +1081,28 @@ export async function rebuildListingSearchDocs(
      * the card and twice in the searchable text. Folded on the name the same way the facet
      * dictionary folds it, since that is the only thing the two rows share.
      *
+     * The amenity's canonical name is what makes the fold reach the pairs that are spelled
+     * differently rather than merely cased differently: NauSYS's "Bimini top" carries "Bimini"
+     * there, so it groups with Booking Manager's own row instead of standing beside it as a
+     * second facet option. The vendor's wording is kept in the searchable text, so a charterer
+     * who types what one vendor calls it still finds the boat.
+     *
      * Included by any vendor counts as included: the array answers what the yacht has, and the
      * priced crew roles are read from their own table.
      */
     left join lateral (
       select
         jsonb_agg(folded.name order by folded.name) filter (where folded.included) as amenities,
-        string_agg(folded.name, ' ') as amenity_text
+        string_agg(folded.text, ' ') as amenity_text
       from (
         select
-          min(a.name) as name,
+          min(coalesce(a.canonical_name, a.name)) as name,
+          string_agg(distinct a.name, ' ') as text,
           bool_or(la.obligatory = false and la.price_minor is null) as included
         from listing_amenity la
         join amenity a on a.id = la.amenity_id
         where la.listing_id = l.id
-        group by ${normalizedKeySql(sql`a.name`)}
+        group by ${normalizedKeySql(sql`coalesce(a.canonical_name, a.name)`)}
       ) folded
     ) amn on true
     left join best on best.listing_id = l.id

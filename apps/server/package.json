@@ -17,6 +17,8 @@
     "remind:payments": "node dist/payment-reminders.mjs",
     "drain:outbox": "node dist/drain-outbox.mjs",
     "seed:facets": "node dist/seed-facets.mjs",
+    "seed:equipment-filter": "node dist/seed-equipment-filter.mjs",
+    "apply:amenity-names": "node dist/apply-amenity-names.mjs",
     "publish:listings": "node dist/publish-listings.mjs",
     "rebuild:search-docs": "node dist/rebuild-search-docs.mjs",
     "confirm:period": "node dist/confirm-one-period.mjs",
