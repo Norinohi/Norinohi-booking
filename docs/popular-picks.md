@@ -18,16 +18,21 @@ seven and eight.
 
 Seeded out of the box, from `packages/db/src/seed.ts`:
 
-| Kind                                          | Pinned | Home page |
-| --------------------------------------------- | ------ | --------- |
-| Countries                                     | 8      | 12        |
-| Boat types                                    | 7      | —         |
-| Amenities                                     | 18     | —         |
-| Sailing areas                                 | 12     | —         |
-| Marinas                                       | 16     | —         |
-| Models, locations, crew types, mainsail types | none   | —         |
+| Kind                                          | Pinned in filters | Ordered on home page |
+| --------------------------------------------- | ----------------- | -------------------- |
+| Countries                                     | 8                 | 12                   |
+| Boat types                                    | 7                 | 7                    |
+| Amenities                                     | 18                | —                    |
+| Sailing areas                                 | 12                | —                    |
+| Marinas                                       | 16                | —                    |
+| Models, locations, crew types, mainsail types | none              | —                    |
 
-Models and the rest are curatable and simply have nothing pinned yet.
+Countries and boat types are the only kinds with a home page section of their own, so they are
+the only ones carrying a featured rank. The rest are pinned in the filters only — a featured rank
+on a kind nothing renders would read as curation that has stopped working. Add one the day such a
+section exists; the admin screen already offers it.
+
+Models and the remaining kinds are curatable and simply have nothing pinned yet.
 
 ## Deploying
 
@@ -77,7 +82,7 @@ only add.
 
 ## Wiring the home page
 
-Four jobs. Three need no backend work; the fourth is called out.
+Five jobs. Four need no backend work; the fifth is called out.
 
 ### The endpoints
 
@@ -146,7 +151,18 @@ everything the card reads today.
 `partitionByPopularity` in `@/components/shared/form/filters` splits on `popularRank`, not
 `featuredRank`. Do not reach for it here; sort inline.
 
-### 2. Popular Sailing Routes — `components/sailing-routes.tsx`
+### 2. Boat Types — `components/boat-types.tsx`
+
+Same shape as the destinations job, one line of work.
+
+- [ ] Sort `options.boatTypes` by `featuredRank`, dropping the entries without one. Seven come
+      back, in the client's order.
+- [ ] The slider renders every boat type alphabetically today, so Jet Ski and Motorsailer sit
+      among the ones that sell.
+
+The "luxury" card beside them is editorial and not a facet — leave it where it is.
+
+### 3. Popular Sailing Routes — `components/sailing-routes.tsx`
 
 Replaces the hard-coded `ROUTES` array outright.
 
@@ -169,7 +185,7 @@ files, so moving to this endpoint moves their copy into the database. Staff writ
 `/routes`, including the four-locale panes and the featured order. Until then the slider is
 empty, which is correct behaviour rather than a bug in your wiring.
 
-### 3. Popular Yachts — `components/popular-yachts.tsx`
+### 4. Popular Yachts — `components/popular-yachts.tsx`
 
 Currently `charterSearch.results` with `sort: "rating", pageSize: 5`. Swap the endpoint.
 
@@ -192,7 +208,7 @@ catamarans. `config` comes back alongside `items` if you need to show what was a
 
 Composition is edited on `/settings` — count, maximum age, caps, and the per-type mix.
 
-### 4. Amenity chips on a yacht card — needs backend work first
+### 5. Amenity chips on a yacht card — needs backend work first
 
 The four chips should be the boat's best amenities by curated priority rather than the first four
 it happens to list. `boat-card-fields.ts` currently takes the first three (`AMENITY_LIMIT = 3`).

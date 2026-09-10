@@ -798,6 +798,7 @@ const facetMediaEntries = [
     description: "Stable, wide, and shallow-draft. The family and group default.",
     sortOrder: 1,
     popularRank: 1,
+    featuredRank: 1,
   },
   {
     id: "fcm_category_sailing",
@@ -807,6 +808,7 @@ const facetMediaEntries = [
     description: "The classic monohull charter. Best value per cabin under sail.",
     sortOrder: 2,
     popularRank: 2,
+    featuredRank: 2,
   },
   {
     id: "fcm_category_motor",
@@ -816,6 +818,7 @@ const facetMediaEntries = [
     description: "Cover more coast per day, with no sailing experience required.",
     sortOrder: 3,
     popularRank: 4,
+    featuredRank: 4,
   },
   {
     id: "fcm_category_luxury",
@@ -864,6 +867,12 @@ const facetMediaEntries = [
  * A row here may carry no image and no copy. The ranks are the point, and a country the client
  * wants pinned should not wait for a photograph; the admin screen writes rows exactly like these.
  *
+ * Boat types carry both ranks, in the same order. They are the only kind besides countries with
+ * a home page section of its own -- the boat-type slider, which renders every type alphabetically
+ * today -- so a featured rank there orders something real. Sailing areas, marinas, amenities and
+ * models are pinned in the filters only, because no home page section reads them and a rank that
+ * orders nothing is worse than an absent one: it reads as curation that has stopped working.
+ *
  * Two of the boat types -- "Motor boat" and "Motor catamaran" -- name nothing the catalogue
  * currently carries, and several amenity spellings are near-duplicates of their neighbour
  * ("Air condition" beside "Air Conditioning", "Bathing platform" beside "Swimming platform"). Both are deliberate. Facets group on a normalized
@@ -878,10 +887,10 @@ const curatedFacetRanks = [
   { kind: "country" as const, value: "Caribbean", featuredRank: 8 },
   { kind: "country" as const, value: "Montenegro", featuredRank: 11 },
   { kind: "country" as const, value: "French Polynesia", featuredRank: 12 },
-  { kind: "category" as const, value: "Motor boat", popularRank: 3 },
-  { kind: "category" as const, value: "House boat", popularRank: 5 },
-  { kind: "category" as const, value: "Gulet", popularRank: 6 },
-  { kind: "category" as const, value: "Motor catamaran", popularRank: 7 },
+  { kind: "category" as const, value: "Motor boat", popularRank: 3, featuredRank: 3 },
+  { kind: "category" as const, value: "House boat", popularRank: 5, featuredRank: 5 },
+  { kind: "category" as const, value: "Gulet", popularRank: 6, featuredRank: 6 },
+  { kind: "category" as const, value: "Motor catamaran", popularRank: 7, featuredRank: 7 },
   /*
    * Sailing areas, in the client's country order: Croatia, Greece, Spain, Italy, Turkey.
    *
