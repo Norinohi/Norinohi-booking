@@ -8,6 +8,7 @@ import {
   CarouselViewport,
 } from "@yacht-charter/ui/components/data-display/carousel";
 import { DestinationCard } from "@yacht-charter/ui/components/data-display/card-destination";
+import { Image } from "@/components/shared/data-display/image";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
@@ -41,8 +42,17 @@ function DestinationSlides() {
             className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             <DestinationCard
-              image={country.imageUrl ?? undefined}
-              imageAlt={country.label}
+              imageRender={
+                country.imageUrl ? (
+                  <Image
+                    src={country.imageUrl}
+                    alt={country.label}
+                    fill
+                    sizes="(min-width: 768px) 420px, (min-width: 640px) 48vw, 85vw"
+                    className="object-cover"
+                  />
+                ) : undefined
+              }
               title={country.label}
               subtitle={
                 country.priceFromMinor != null && country.priceFromMinor > 0

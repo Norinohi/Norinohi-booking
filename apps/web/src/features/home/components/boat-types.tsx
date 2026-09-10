@@ -12,6 +12,7 @@ import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 
+import { Image } from "@/components/shared/data-display/image";
 import { useFilterOptions, useFilterRanges } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { RISE, VIEWPORT } from "@/lib/motion";
@@ -74,8 +75,17 @@ function BoatTypeCard({
         className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
       >
         <BoatCard
-          image={image}
-          imageAlt={imageAlt}
+          imageRender={
+            image ? (
+              <Image
+                src={image}
+                alt={imageAlt}
+                fill
+                sizes="(min-width: 1280px) 334px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 85vw"
+                className="object-cover"
+              />
+            ) : undefined
+          }
           title={title}
           description={description}
           className="w-full transition-transform duration-200 group-hover:-translate-y-1"

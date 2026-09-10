@@ -19,6 +19,7 @@ import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
 import { buildConsultationHref } from "../lib/build-consultation-href";
 import type { PlannerAnswers } from "../lib/search-params";
 import { toBoatCardProps } from "../lib/to-boat-card";
+import { Image } from "@/components/shared/data-display/image";
 
 /** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
 const DEFAULT_DESTINATION_IMAGE = "/assets/home/destinations/greece.webp";
@@ -184,8 +185,15 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
           {boatCard ? (
             <BoatSmallCard
               className="relative z-10 w-full max-w-83.5"
-              image={boatCard.image}
-              imageAlt={boatCard.imageAlt}
+              imageRender={
+                <Image
+                  src={boatCard.image}
+                  alt={boatCard.imageAlt}
+                  fill
+                  sizes="334px"
+                  className="object-cover"
+                />
+              }
               location={boatCard.location}
               title={
                 <Link

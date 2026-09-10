@@ -17,8 +17,14 @@ import { ArrowRight } from "lucide-react";
  * footer with meta chips beside an "Explore Route →" action.
  */
 type TripCardProps = Omit<React.ComponentProps<"div">, "title"> & {
-  image: string;
+  image?: string;
   imageAlt?: string;
+  /*
+   * Photo element the card renders as — the app passes its optimized image here. `packages/ui`
+   * cannot reach the app's CDN loader, so without this slot the card served a full-size original
+   * straight from the origin. Overrides `image` / `imageAlt`.
+   */
+  imageRender?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
   meta?: { label: string; icon?: React.ReactNode }[];
@@ -31,6 +37,7 @@ type TripCardProps = Omit<React.ComponentProps<"div">, "title"> & {
 function TripCard({
   image,
   imageAlt = "",
+  imageRender,
   title,
   description,
   meta = [],
@@ -43,7 +50,7 @@ function TripCard({
   return (
     <Card variant="ghost" className={cn("w-113 max-w-full gap-4", className)} {...props}>
       <CardMedia className="h-60 rounded-xl">
-        <ImageWithFallback src={image} alt={imageAlt} />
+        {imageRender ?? <ImageWithFallback src={image} alt={imageAlt} />}
       </CardMedia>
       <CardContent className="gap-3 p-0">
         <CardTitle className="text-xl leading-[1.1] md:text-2xl">{title}</CardTitle>

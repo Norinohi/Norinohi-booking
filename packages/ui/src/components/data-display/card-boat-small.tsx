@@ -18,8 +18,15 @@ import { Star } from "lucide-react";
  * live in the sections that use them.
  */
 type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
-  image: string;
+  image?: string;
   imageAlt?: string;
+  /*
+   * Photo element the card renders as — the app passes its optimized image here, the way it passes
+   * its own control to `saveRender`. `packages/ui` cannot reach the app's CDN loader, so without
+   * this slot every card served a full-size original straight from the operator's origin.
+   * Overrides `image` / `imageAlt`.
+   */
+  imageRender?: React.ReactNode;
   location?: React.ReactNode;
   title: React.ReactNode;
   rating?: number;
@@ -39,6 +46,7 @@ type BoatSmallCardProps = Omit<React.ComponentProps<"div">, "title"> & {
 function BoatSmallCard({
   image,
   imageAlt = "",
+  imageRender,
   location,
   title,
   rating,
@@ -56,7 +64,7 @@ function BoatSmallCard({
   return (
     <Card className={cn("h-full w-83.5 max-w-full", className)} {...props}>
       <CardMedia className="aspect-334/200">
-        <ImageWithFallback src={image} alt={imageAlt} />
+        {imageRender ?? <ImageWithFallback src={image} alt={imageAlt} />}
         {saveRender && <div className="absolute top-4 right-4">{saveRender}</div>}
       </CardMedia>
       <CardContent className="gap-3">

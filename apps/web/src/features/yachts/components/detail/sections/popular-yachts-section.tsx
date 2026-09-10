@@ -24,6 +24,7 @@ import { useListingDetail } from "../../../hooks/use-listing-detail";
 import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { crewLabel } from "@/lib/crew-label";
 import DetailSection from "./detail-section";
+import { Image } from "@/components/shared/data-display/image";
 
 function CarouselNav() {
   const t = useTranslations("YachtDetail");
@@ -74,8 +75,15 @@ export default function PopularYachtsSection() {
             <CarouselSlide key={yacht.id} className="basis-87.5 pr-4">
               <BoatSmallCard
                 className="w-full"
-                image={yacht.mainImage}
-                imageAlt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
+                imageRender={
+                  <Image
+                    src={yacht.mainImage}
+                    alt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
+                    fill
+                    sizes="334px"
+                    className="object-cover"
+                  />
+                }
                 location={placeLine(yacht.base.location, yacht.base.country)}
                 title={
                   <Link
