@@ -86,9 +86,9 @@ export interface ProviderHttpClientOptions {
 export type QueryValue = string | number | boolean | Array<string | number>;
 
 /**
- * Per-call overrides. Today only the serialization lane.
+ * Per-call overrides: the serialization lane, the retry policy, the timeout.
  *
- * Two callers vary it, for opposite reasons. NauSYS gives a live call a key nothing
+ * Two callers vary the lane, for opposite reasons. NauSYS gives a live call a key nothing
  * else uses so it is not queued behind a sweep; Booking Manager's catalogue sweep
  * spreads itself over a fixed set of keys so several of its reads run at once. Both
  * still pay the queue's spacing - per lane, which is what makes the second one a
@@ -106,6 +106,15 @@ export interface ProviderRequestOptions {
    * would file the vendor-side effect twice.
    */
   retry?: Partial<RetryPolicy>;
+  /**
+   * Overrides the client's per-attempt timeout for this one call.
+   *
+   * NauSYS picks its ceiling once, at construction, because its lane is a property
+   * of the client. Booking Manager chooses a lane per call from a single client, so
+   * the ceiling has to travel with the call or the sweep and the guest-facing quote
+   * are stuck sharing one value.
+   */
+  timeoutMs?: number;
 }
 
 export interface ProviderHttpClient {
@@ -206,6 +215,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     endpoint: string,
     body: JsonRequestValue,
     hasBody: boolean,
+    attemptTimeoutMs: number,
   ): Promise<ProviderHttpResult> {
     const requestId = newRequestId();
     const startedAt = now();
@@ -221,7 +231,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     const init: ProviderHttpRequestInit = {
       method,
       headers: requestHeaders,
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(attemptTimeoutMs),
     };
     if (hasBody) init.body = JSON.stringify(body);
 
@@ -294,16 +304,28 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
     hasBody: boolean,
     lane = queueKey,
     retry?: Partial<RetryPolicy>,
+    callTimeoutMs = timeoutMs,
   ): Promise<ProviderHttpResult> {
-    return withRetry(() => queue.run(lane, () => attempt(method, endpoint, body, hasBody)), {
-      ...options.retry,
-      ...retry,
-    });
+    return withRetry(
+      () => queue.run(lane, () => attempt(method, endpoint, body, hasBody, callTimeoutMs)),
+      {
+        ...options.retry,
+        ...retry,
+      },
+    );
   }
 
   return {
     post(endpoint, body, requestOptions) {
-      return send("POST", endpoint, body, true, requestOptions?.queueKey, requestOptions?.retry);
+      return send(
+        "POST",
+        endpoint,
+        body,
+        true,
+        requestOptions?.queueKey,
+        requestOptions?.retry,
+        requestOptions?.timeoutMs,
+      );
     },
     get(endpoint, query, requestOptions) {
       return send(
@@ -313,6 +335,7 @@ export function createProviderHttpClient(options: ProviderHttpClientOptions): Pr
         false,
         requestOptions?.queueKey,
         requestOptions?.retry,
+        requestOptions?.timeoutMs,
       );
     },
     del(endpoint) {

@@ -233,6 +233,7 @@ function source(overrides: Partial<AvailabilitySource> & { scopes?: Availability
   // has to fall back to the shared default rather than to `undefined`.
   if (overrides.searchConfirmed) built.searchConfirmed = overrides.searchConfirmed;
   if (overrides.isFatal) built.isFatal = overrides.isFatal;
+  if (overrides.warmUp) built.warmUp = overrides.warmUp;
   return built;
 }
 
@@ -1010,6 +1011,73 @@ describe("runAvailabilitySync", () => {
    * rule is: never state what is free from a calendar we only partly have, and
    * never delete what we already hold from it either.
    */
+  /*
+   * The cold start this absorbs is what ended a confirmation pass after one page on
+   * 2026-09-10, so it has to happen before the run reads anything, and it has to be
+   * unable to cost the run more than it saves.
+   */
+  describe("warm-up", () => {
+    it("warms before the first read rather than between passes", async () => {
+      const store = fakeStore();
+      const order: string[] = [];
+
+      await runAvailabilitySync({
+        store: store.store,
+        source: source({
+          warmUp: () => {
+            order.push("warmUp");
+            return Promise.resolve();
+          },
+          listScopes: () => {
+            order.push("listScopes");
+            return Promise.resolve([{ scopeKey: "102701", year: 2026 }]);
+          },
+          fetchOccupancy: () => {
+            order.push("fetchOccupancy");
+            return Promise.resolve([]);
+          },
+        }),
+        now: () => RUN_AT,
+      });
+
+      expect(order).toEqual(["warmUp", "listScopes", "fetchOccupancy"]);
+    });
+
+    it("reports a failed warm-up without spending the run on it", async () => {
+      const store = fakeStore({
+        yachts: { "4711001": MARLIN },
+        listings: { "102701": [MARLIN] },
+      });
+
+      const summary = await runAvailabilitySync({
+        store: store.store,
+        source: source({
+          warmUp: () => Promise.reject(new Error("every warm-up call failed")),
+          fetchOccupancy: () => Promise.resolve([occupied()]),
+        }),
+        now: () => RUN_AT,
+      });
+
+      expect(summary.aborted).toBe(false);
+      expect(summary.occupiedSlots).toBe(1);
+      expect(store.errors.map((error) => error.context?.phase)).toContain("warmup");
+    });
+
+    it("runs nothing extra for a source that has nothing to warm", async () => {
+      const store = fakeStore();
+      const seen: AvailabilitySyncProgress[] = [];
+
+      await runAvailabilitySync({
+        store: store.store,
+        source: source(),
+        onProgress: (progress) => seen.push({ ...progress }),
+        now: () => RUN_AT,
+      });
+
+      expect(seen.map((progress) => progress.phase)).not.toContain("warmup");
+    });
+  });
+
   describe("quarantined yachts", () => {
     const seed = () =>
       fakeStore({ yachts: { "4711001": MARLIN }, listings: { "102701": [MARLIN] } });

@@ -10,7 +10,8 @@ import type { QueryValue } from "../shared/http-client";
 import { ACCOUNT_WIDE_SCOPE } from "../sync/availability-writer";
 import type { BookingManagerClient } from "./client";
 import { type BookingManagerConfig, resolveBookingManagerConfig } from "./config";
-import { BM_RESERVATION_STATUS, type RestAvailability } from "./endpoints";
+import { BM_RESERVATION_STATUS, bookingManagerEndpoints, type RestAvailability } from "./endpoints";
+import { BM_WARMUP_CALLS } from "./warmup";
 import {
   createBookingManagerAvailabilitySource,
   fetchBookingManagerOccupancy,
@@ -22,6 +23,7 @@ const config: BookingManagerConfig = resolveBookingManagerConfig({
   BOOKING_MANAGER_BASE_URL: "https://www.booking-manager.com/api/v2",
   BOOKING_MANAGER_API_KEY: "t0ken",
   BOOKING_MANAGER_TIMEOUT_MS: 30_000,
+  BOOKING_MANAGER_SYNC_TIMEOUT_MS: 180_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 0,
   BOOKING_MANAGER_SWEEP_CONCURRENCY: 4,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
@@ -242,6 +244,31 @@ describe("createBookingManagerAvailabilitySource", () => {
       { scopeKey: ACCOUNT_WIDE_SCOPE, year: 2026 },
       { scopeKey: ACCOUNT_WIDE_SCOPE, year: 2027 },
     ]);
+  });
+
+  /*
+   * The vendor pays an undocumented cold start on each of its six servers after their
+   * nightly restart, and on an hourly cadence this pass is usually the first traffic
+   * they see. Unwarmed, its first `/offers` week timed out on 2026-09-10 and ended the
+   * confirmation pass after a single page.
+   */
+  it("warms the vendor's servers before it reads anything", async () => {
+    const calls: string[] = [];
+    // SAFETY: same stub-with-nothing-behind-it bargain as `recordingClient`.
+    const client = Object.assign({} as BookingManagerClient, {
+      get: (endpoint: string) => {
+        calls.push(endpoint);
+        return Promise.resolve([]);
+      },
+      sweepLane: (name: string, slot: number) => ({ queueKey: `${name}#${slot}` }),
+    });
+    const source = createBookingManagerAvailabilitySource({ client, config, years: [2026] });
+
+    await source.warmUp?.();
+
+    expect(calls).toEqual(
+      Array.from({ length: BM_WARMUP_CALLS }, () => bookingManagerEndpoints.yachtTypes),
+    );
   });
 
   it("narrows to one scope per company and year when an allowlist is configured", async () => {

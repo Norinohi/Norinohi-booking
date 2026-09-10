@@ -110,9 +110,20 @@ export class BookingManagerClient {
     return this.parse(endpoint, schema, response.body);
   }
 
-  /** Lane `slot` of the sweep's fan-out, spaced by `minIntervalMs` like any other. */
+  /**
+   * Lane `slot` of the sweep's fan-out, spaced by `minIntervalMs` like any other.
+   *
+   * It carries `syncTimeoutMs` as well as the lane, because for this vendor the lane
+   * is the only thing that distinguishes a bulk read from a guest-facing one: unlike
+   * NauSYS, one client serves both, so a ceiling chosen at construction would have to
+   * be wrong for one of them. Every caller that reaches for a sweep lane is asking the
+   * account-wide question, so they all want the same longer ceiling.
+   */
   sweepLane(name: string, slot: number): ProviderRequestOptions {
-    return { queueKey: `${this.config.queueKey}:${name}#${slot}` };
+    return {
+      queueKey: `${this.config.queueKey}:${name}#${slot}`,
+      timeoutMs: this.config.syncTimeoutMs,
+    };
   }
 
   /**

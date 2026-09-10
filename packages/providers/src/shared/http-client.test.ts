@@ -222,6 +222,36 @@ describe("createProviderHttpClient", () => {
     await expect(client.post("/slow", {})).rejects.toBeInstanceOf(TransientError);
   });
 
+  /*
+   * Booking Manager's bulk reads and its guest-facing quotes share one client, so the
+   * lane the call picks is the only place a ceiling can be chosen. Without the override
+   * they share the live ceiling, which ended an availability sync's confirmation pass
+   * after a single page on 2026-09-10.
+   */
+  it("lets one call raise the ceiling above the client's own", async () => {
+    const client = createProviderHttpClient({
+      baseUrl: "https://provider.test",
+      queueKey: "k",
+      timeoutMs: 5,
+      queue: new SequentialQueue(),
+      retry: noRetry,
+      fetchImpl: (_url, init) =>
+        new Promise((resolve, reject) => {
+          init.signal.addEventListener("abort", () => {
+            reject(init.signal.reason);
+          });
+          setTimeout(() => {
+            resolve(new Response("[]", { status: 200 }));
+          }, 30);
+        }),
+    });
+
+    await expect(client.get("/slow", undefined, { timeoutMs: 10_000 })).resolves.toMatchObject({
+      httpStatus: 200,
+    });
+    await expect(client.get("/slow")).rejects.toBeInstanceOf(TransientError);
+  });
+
   it("hands the untouched body to onRawResponse before classifying it", async () => {
     const seen: unknown[] = [];
     const client = createProviderHttpClient({

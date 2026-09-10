@@ -9,6 +9,8 @@ export interface BookingManagerConfig {
   baseUrl: string;
   apiToken: string;
   timeoutMs: number;
+  /** Per-attempt ceiling for sweep reads; see `sweepLane` and the env note. */
+  syncTimeoutMs: number;
   minIntervalMs: number;
   /** Reads the catalogue and price sweeps keep in flight; see the env note. */
   sweepConcurrency: number;
@@ -38,6 +40,7 @@ export interface BookingManagerEnvSource {
   BOOKING_MANAGER_COMPANY_IDS?: string | undefined;
   BOOKING_MANAGER_EXCLUDED_COMPANY_IDS?: string | undefined;
   BOOKING_MANAGER_TIMEOUT_MS: number;
+  BOOKING_MANAGER_SYNC_TIMEOUT_MS: number;
   BOOKING_MANAGER_MIN_INTERVAL_MS: number;
   BOOKING_MANAGER_SWEEP_CONCURRENCY: number;
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: number;
@@ -104,6 +107,7 @@ export function resolveBookingManagerConfig(
       source.BOOKING_MANAGER_EXCLUDED_COMPANY_IDS,
     ),
     timeoutMs: source.BOOKING_MANAGER_TIMEOUT_MS,
+    syncTimeoutMs: source.BOOKING_MANAGER_SYNC_TIMEOUT_MS,
     minIntervalMs: source.BOOKING_MANAGER_MIN_INTERVAL_MS,
     sweepConcurrency: source.BOOKING_MANAGER_SWEEP_CONCURRENCY,
     optionSafetyMarginMinutes: source.BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES,
