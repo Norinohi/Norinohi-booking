@@ -34,8 +34,17 @@ Models and the rest are curatable and simply have nothing pinned yet.
 Push, and the schema takes care of itself: `apps/server`'s pre-deploy step runs
 `pnpm --filter server migrate`, which applies migrations `0107` and `0108`. Both are additive —
 new nullable columns, one new table, one new enum value — so there is no downtime and no data to
-lose. Deploy the server before the web app; the web app reads two new contract fields that the
-old server does not send.
+lose.
+
+**Deploy order does not matter for this change.** The two new facet fields are optional in the
+contract, and the web app already reads a missing rank as "not curated": the pickers render flat
+until the server catches up, then the groups appear. Nothing errors and nothing needs a redeploy.
+
+Railway deploys the two services in parallel and has no way to make one wait for the other, so
+the repo handles the general case in `apps/web/scripts/check-api.mjs` instead. It probes the API
+before `next build` and fails fast with an actionable message when the server is older than the
+build. That matters when a change adds a procedure the catalog routes prerender against — which
+this one does not.
 
 Then, **once per environment**, bootstrap the curated lists from the deployed container:
 

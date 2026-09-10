@@ -3,6 +3,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
 import { DEFAULT_LOCALE } from "./localize";
+import { normalizedKey } from "./normalize";
 
 /**
  * The parts of a priced line this reads.
@@ -115,10 +116,4 @@ async function labelsByName(
 }
 
 /** Mirrors extraNameKeySql in repository.ts and extraNameKey in apply-translations.ts. */
-function normalizedName(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
-}
+const normalizedName = normalizedKey;

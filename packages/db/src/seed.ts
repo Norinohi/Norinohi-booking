@@ -906,11 +906,12 @@ const curatedFacetRanks = [
   /*
    * The charter bases the client named, one row per base, same country order.
    *
-   * Several of these marinas reach the catalogue under two vendor spellings that do not
-   * normalize to the same key -- "Sukošan / D-Marin Dalmacija Marina" and "Sukosan, D-Marin
-   * Dalmacija Marina" differ by one diacritic, and Lavrion arrives three ways. They are
-   * therefore separate facet options, and pinning one leaves the other's boats behind it in
-   * the long list. The larger spelling is pinned here; reconciling the spellings is a
+   * Several of these marinas reach the catalogue under more than one vendor spelling. The ones
+   * that differed only by a diacritic are one option again -- `normalizedKey` folds accents, so
+   * "Sukošan / D-Marin Dalmacija Marina" and "Sukosan, D-Marin Dalmacija Marina" group together
+   * and this row pins both. The ones that are different names for one base still do not:
+   * Lavrion arrives as a main port and twice as an Olympic marina, and pinning one leaves the
+   * others' boats behind it in the long list. Reconciling those needs a base alias, which is a
    * catalogue job rather than a curation one.
    */
   { kind: "marina" as const, value: "ACI Marina Split", popularRank: 1 },

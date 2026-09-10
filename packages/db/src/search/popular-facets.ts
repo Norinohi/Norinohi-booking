@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema/index";
+import { normalizedKeySql } from "./normalize";
 import type { FacetMediaKind } from "./types";
 
 /**
@@ -60,7 +61,7 @@ export async function listCuratableFacetValues(
       count(distinct doc.listing_id)::integer as count
     from ${source}
     where ${column} is not null and ${column} <> ''
-    group by regexp_replace(replace(lower(${column}), '&', 'and'), '[^a-z0-9]+', '', 'g')
+    group by ${normalizedKeySql(column)}
     order by label asc
   `);
 

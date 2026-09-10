@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 import type * as schema from "../schema/index";
+import { normalizedKey, normalizedKeySql } from "./normalize";
 import {
   normalizeSearchRow,
   recommendedSortValue,
@@ -67,8 +68,7 @@ export async function listPopularYachts(
       join facet_media country
         on country.kind = 'country'
         and country.popular_rank is not null
-        and regexp_replace(replace(lower(country.value), '&', 'and'), '[^a-z0-9]+', '', 'g')
-          = regexp_replace(replace(lower(doc.country), '&', 'and'), '[^a-z0-9]+', '', 'g')
+        and ${normalizedKeySql(sql`country.value`)} = ${normalizedKeySql(sql`doc.country`)}
       /* Rating is not a filter here, only the first sort key. Reviews are thin on the newest
          hulls -- the catalogue has 196 rated boats and none of them is also under three years
          old -- so requiring one emptied the slider entirely. Unrated boats sort last instead,
@@ -101,7 +101,7 @@ export async function listPopularYachts(
       select
         per_base.*,
         row_number() over (
-          partition by regexp_replace(replace(lower(per_base.country), '&', 'and'), '[^a-z0-9]+', '', 'g')
+          partition by ${normalizedKeySql(sql`per_base.country`)}
           order by position
         ) as country_rn
       from per_base
@@ -111,10 +111,10 @@ export async function listPopularYachts(
       select
         per_country.*,
         row_number() over (
-          partition by regexp_replace(replace(lower(coalesce(per_country.category, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')
+          partition by ${normalizedKeySql(sql`per_country.category`)}
           order by position
         ) as type_rn,
-        regexp_replace(replace(lower(coalesce(per_country.category, '')), '&', 'and'), '[^a-z0-9]+', '', 'g') as category_key
+        ${normalizedKeySql(sql`per_country.category`)} as category_key
       from per_country
       where country_rn <= ${config.maxPerCountry}
     )
@@ -135,7 +135,7 @@ export async function listPopularYachts(
  */
 function select(rows: RankedCandidate[], config: PopularYachtsConfig): ListingSearchDoc[] {
   const quota = new Map(
-    Object.entries(config.mix).map(([category, count]) => [normalizeKey(category), count]),
+    Object.entries(config.mix).map(([category, count]) => [normalizedKey(category), count]),
   );
 
   const picked: typeof rows = [];
@@ -151,14 +151,4 @@ function select(rows: RankedCandidate[], config: PopularYachtsConfig): ListingSe
      same ranking rather than restarting it. */
   const filled = [...picked, ...rest].slice(0, config.limit);
   return filled.map((row) => normalizeSearchRow(row));
-}
-
-/* The same normalization the facets and the query above use, so a mix keyed "sailing-yacht"
-   matches a category stored "Sailing yacht". */
-function normalizeKey(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
 }

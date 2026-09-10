@@ -12,7 +12,12 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs, normalizedKeySql } from "./localize";
+import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
+import {
+  normalizedKey as normalizedFilterValue,
+  normalizedKeySql,
+  normalizedKeySql as normalizedSql,
+} from "./normalize";
 import { placeLine, placeLineExcept } from "./place-line";
 import { coveredBySlotHold, overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
@@ -285,7 +290,7 @@ async function providerDescription(
 /**
  * Folds an extra's name the way `extra_label_translation.name_key` is written.
  *
- * Mirrors normalizedKey in localize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
+ * Mirrors normalizedKey in normalize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
  * Case and punctuation only: "Beach towel" and "Beach towels" stay separate entries, because
  * collapsing a plural is a judgement the dictionary should make explicitly rather than the
  * join make silently.
@@ -2441,10 +2446,11 @@ async function suggestedRouteFor(
 /**
  * The value a facet option is selected by, which is not `toSlug`.
  *
- * Diacritics are left alone here on purpose: the filter match normalizes both sides by stripping
- * non-alphanumerics, so "Mali Lošinj" folds to `maliloinj` on the column and this has to fold the
- * same way. Folding the accent instead would produce `malilosinj` and match nothing. Catalogue
- * page URLs use `toSlug`, which does fold, because a URL is read by people.
+ * Diacritics survive here, and no longer have to: `normalizedKey` folds them on both sides of the
+ * match now, so "Mali Lošinj" and "Mali Losinj" reach the same key whichever spelling the value
+ * carries. Left as it is so the values already sitting in saved filter URLs and in `facet_media`
+ * stay byte-identical to the ones this produces. Catalogue page URLs use `toSlug`, which does
+ * fold, because a URL is read by people.
  */
 export function valueForLabel(label: string): string {
   return label
@@ -2466,19 +2472,6 @@ function normalizedIn(column: SQL, values: string[]): SQL {
 }
 
 /**
- * A label reduced to the letters and digits both sides of a filter can agree on.
- *
- * `&` becomes "and" first, matching `normalizedFilterValue` and `valueForLabel`. Without that
- * step the two normalisations disagreed on every name carrying one: the facet offered "Wi-Fi &
- * Internet" as `wi-fi-and-internet`, the filter reduced that to `wifiandinternet`, and the
- * column reduced itself to `wifiinternet`. Forty options across the catalogue answered with
- * nothing, 1,417 listings' worth of them behind that one equipment filter alone.
- */
-function normalizedSql(value: SQL): SQL {
-  return sql`regexp_replace(replace(lower(coalesce(${value}, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
-}
-
-/**
  * The spelling most of a facet group's listings use, for a group keyed on `normalizedSql`.
  *
  * Facets are grouped the way `normalizedIn` filters, or the two disagree about what one value
@@ -2494,13 +2487,7 @@ function modalLabel(value: SQL): SQL {
   return sql`mode() within group (order by ${value})`;
 }
 
-export function normalizedFilterValue(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
-}
+export { normalizedKey as normalizedFilterValue } from "./normalize";
 
 /*
  * How much of the calendar a start date with no length claims. A week is what the vendors sell

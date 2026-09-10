@@ -2,6 +2,7 @@ import { facetMedia, facetMediaTranslation } from "@yacht-charter/db/schema/face
 import {
   listCuratableFacetValues,
   normalizedFilterValue,
+  normalizedKeySql,
   valueForLabel,
 } from "@yacht-charter/db/search/index";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
@@ -212,8 +213,7 @@ export async function setPopularFacets(
         set ${column} = ranked.rank
         from (values ${ranked}) as ranked(key, rank)
         where media.kind = ${input.kind}
-          and regexp_replace(replace(lower(media.value), '&', 'and'), '[^a-z0-9]+', '', 'g')
-            = ranked.key
+          and ${normalizedKeySql(sql`media.value`)} = ranked.key
       `);
     }
 
