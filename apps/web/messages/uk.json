@@ -33,7 +33,9 @@
       "optional": "Додаткові опції",
       "included": "Включено",
       "arrangeAtBase": "Домовитися з базою",
-      "notOnTheseDates": "Недоступно на ці дати"
+      "notOnTheseDates": "Недоступно на ці дати",
+      "notOnTheseDatesAsk": "Недоступно на ці дати — можна запитати базу",
+      "requestedAtBase": "Запит до бази, оплата на місці"
     },
     "guestDetails": {
       "notice": "Ми використаємо ці дані, щоб підтвердити бронювання та узгодити його з менеджером бази.",
@@ -1334,6 +1336,10 @@
     "addToWishlist": "Додати в обране",
     "removeFromWishlist": "Видалити з обраного",
     "included": "Включено",
+    "amenities": {
+      "showAll": "Показати всі зручності ({count})",
+      "showFewer": "Показати менше"
+    },
     "importantInfo": {
       "charterCompany": "Чартерна компанія",
       "pickUpAddress": "Адреса отримання яхти",

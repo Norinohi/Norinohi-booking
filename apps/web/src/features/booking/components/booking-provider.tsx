@@ -100,6 +100,15 @@ type BookingContextValue = {
   selectExtras: (extras: string[]) => void;
   /** Commits a selection now and waits for the quote, for a step that is being left. */
   setExtras: (extras: string[]) => Promise<void>;
+  /**
+   * Extras the customer is asking the base for, which no vendor sells through us. They cost
+   * nothing and appear on no line, so a tick here changes the quote's record of what was asked
+   * and not its price; `createHold` writes them into the booking's special requests.
+   */
+  requestedExtras: readonly string[];
+  requestExtras: (extras: string[]) => void;
+  /** Commits the asked-for list now and waits for the quote, the way `setExtras` does. */
+  setRequestedExtras: (extras: string[]) => Promise<void>;
   /** Applies a promo code to the live quote, or clears it with `null`. */
   applyPromo: (code: string | null) => void;
   /** Spends the caller's referral credit on the live quote, or takes it back off. */
@@ -132,6 +141,7 @@ export function BookingProvider({
   const [crewChoice, setCrewChoice] = useState<CrewType | undefined>();
   const [guests, setGuestsState] = useState(DEFAULT_GUESTS);
   const [extras, setExtrasState] = useState<string[]>([]);
+  const [requestedExtras, setRequestedExtrasState] = useState<string[]>([]);
   const [bookingId, setBookingId] = useState<string | null>(null);
   /* Defaulted synchronously off the prefetched listing so the crew Select stays controlled. */
   const crewType = crewChoice ?? listing?.crew.options[0];
@@ -275,6 +285,9 @@ export function BookingProvider({
     setExtrasState(
       quote.lines.filter((line) => line.group === "optional").map((line) => line.code),
     );
+    /* Read back from the quote for the same reason, except that these have no line to be read
+       off: nothing prices them, so the quote carries the list itself. */
+    setRequestedExtrasState(quote.requestedExtras);
   }, [quote]);
 
   /*
@@ -369,7 +382,14 @@ export function BookingProvider({
     void (
       quote
         ? repriceWith(period)
-        : quoteFor({ ...period, guests, crewType, extras, currency: listingCurrency })
+        : quoteFor({
+            ...period,
+            guests,
+            crewType,
+            extras,
+            requestedExtras,
+            currency: listingCurrency,
+          })
     ).catch((error: Error) => {
       const dates = `${period.checkIn}..${period.checkOut}`;
       if (!isSlotConflict(error)) {
@@ -463,6 +483,35 @@ export function BookingProvider({
   }
 
   /*
+   * The same debounce, on the list that is not priced. Kept apart from `selectExtras` rather
+   * than folded into it because the two answer different questions and a reprice that carried
+   * both would let a mistake in either one refuse the other: a code the catalogue stopped
+   * offering rejects the whole call.
+   */
+  const requestDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  function requestExtras(next: string[]) {
+    setRequestedExtrasState(next);
+    if (!quote) return;
+    clearTimeout(requestDebounceRef.current);
+    requestDebounceRef.current = setTimeout(
+      () => void repriceWith({ requestedExtras: next }),
+      REPRICE_DEBOUNCE_MS,
+    );
+  }
+
+  /*
+   * The flush, for a step being left inside the debounce window. Compared against the quote's
+   * own list rather than a priced line, because nothing prices these.
+   */
+  async function setRequestedExtras(next: string[]) {
+    clearTimeout(requestDebounceRef.current);
+    setRequestedExtrasState(next);
+    if (!quote || sameSelection(quote.requestedExtras, next)) return;
+    await repriceWith({ requestedExtras: next });
+  }
+
+  /*
    * Reprice carries the previous quote's code forward when `discountCode` is omitted, so this
    * is the only place it moves: a code passed here sticks across every later date, guest and
    * extras change, and `null` is what removes it.
@@ -498,6 +547,9 @@ export function BookingProvider({
     setDropOff,
     setGuests,
     extras,
+    requestedExtras,
+    requestExtras,
+    setRequestedExtras,
     selectExtras,
     setExtras,
     applyPromo,

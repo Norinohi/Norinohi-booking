@@ -79,6 +79,20 @@ export const quote = pgTable(
     checkOut: date("check_out").notNull(),
     guests: integer("guests").notNull(),
     extras: jsonb("extras").$type<string[]>().default([]).notNull(),
+    /**
+     * Extras the customer asked for that no vendor will sell through us.
+     *
+     * Booking Manager publishes optional extras in its catalogue and exposes none on the offer
+     * it quotes from; NauSYS prices its `service` id space and not its `equipment` one. Ticking
+     * one of those as an ordinary extra would send a code the adapter drops -- billed nothing,
+     * told nobody -- so they are carried here instead, priced by nothing and settled with the
+     * base. `createBooking` writes them into the booking's special requests, which is the one
+     * place a human on the other end reads.
+     *
+     * Separate from `extras` rather than a flag inside it, because everything downstream of
+     * `extras` is arithmetic: the lines, the deposit, the hash checkout re-validates against.
+     */
+    requestedExtras: jsonb("requested_extras").$type<string[]>().default([]).notNull(),
     // Null when the customer never touched the crew control; a reprice that omits
     // it keeps whatever the superseded quote was priced with.
     crewType: text("crew_type"),

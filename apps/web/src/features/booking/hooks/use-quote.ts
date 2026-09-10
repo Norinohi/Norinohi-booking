@@ -13,6 +13,8 @@ export type QuoteSelection = {
   guests: number;
   crewType?: QuoteInput["crewType"];
   extras?: string[];
+  /** Asked of the base rather than bought here; priced by nothing. */
+  requestedExtras?: string[];
   /*
    * The listing's own currency, so the sidebar quotes the money the card advertised.
    *

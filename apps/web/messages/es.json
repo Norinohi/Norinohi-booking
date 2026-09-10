@@ -33,7 +33,9 @@
       "optional": "Extras opcionales",
       "included": "Incluido",
       "arrangeAtBase": "Acordar con la base",
-      "notOnTheseDates": "No disponible en estas fechas"
+      "notOnTheseDates": "No disponible en estas fechas",
+      "notOnTheseDatesAsk": "No disponible en estas fechas — puedes preguntar a la base",
+      "requestedAtBase": "Solicitado a la base, se paga allí"
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
@@ -1334,6 +1336,10 @@
     "addToWishlist": "Añadir a favoritos",
     "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
+    "amenities": {
+      "showAll": "Ver todas las comodidades ({count})",
+      "showFewer": "Ver menos"
+    },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",
       "pickUpAddress": "Dirección de recogida del yate",

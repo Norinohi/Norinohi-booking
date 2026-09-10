@@ -13,6 +13,7 @@ import { base } from "@yacht-charter/db/schema/geography";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
+import { listRequestableExtras } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import type { z } from "zod";
@@ -38,6 +39,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
 import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { enqueueOutbox, kickOutbox } from "./outbox";
@@ -316,7 +318,7 @@ export async function createHold(
     guestEmail: guest.email,
     guestPhone: guest.phone,
     guestCountryCode: guest.countryCode,
-    specialRequests: guest.specialRequests ?? null,
+    specialRequests: await withRequestedExtras(db, priced, guest.specialRequests),
     userId,
     listingId: priced.listingId,
     /* Carried from the quote, so cancel and refund reach the vendor that took the money. */
@@ -435,6 +437,35 @@ async function recordConsents(db: Database, bookingId: string, consents: Consent
       { bookingId, kind: "cancellation_policy" as const, policyVersion: POLICY_VERSION },
     ])
     .onConflictDoNothing();
+}
+
+/**
+ * The guest's own note, with the extras they asked the base for appended to it.
+ *
+ * Special requests is the one field on a booking a human at the base reads, so it is where an
+ * extra nobody can sell through us has to land. Booking Manager exposes no optional extras on
+ * the offer it quotes from and NauSYS prices only its services, so the alternative was a
+ * checkbox that took the tick and did nothing.
+ *
+ * Names come from the catalogue rather than from the customer's locale, because the person
+ * reading them works at the base. A code the catalogue no longer carries is dropped rather than
+ * written out raw: the quote was validated when it was made, and a resync between then and now
+ * is not the customer's to explain.
+ */
+async function withRequestedExtras(
+  db: DatabaseExecutor,
+  priced: { listingId: string; listingOfferId: string | null; requestedExtras: string[] },
+  note: string | undefined,
+): Promise<string | null> {
+  if (priced.requestedExtras.length === 0) return note?.trim() || null;
+
+  const catalogue = await listRequestableExtras(db, priced.listingId, priced.listingOfferId);
+  return appendRequestedExtras(
+    note,
+    priced.requestedExtras
+      .map((code) => catalogue.get(code))
+      .filter((name): name is string => name !== undefined),
+  );
 }
 
 /**

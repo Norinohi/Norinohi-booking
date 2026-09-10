@@ -21,6 +21,12 @@ import DetailSection from "./detail-section";
  * catalogue lists everything the operator sells across every season, and a given period prices
  * only part of it. Both used to render as ordinary checkboxes that quietly cost nothing.
  *
+ * All three are tickable, but only the first is bought. The other two go through `requestExtras`,
+ * which puts them on the quote as a record of what was asked and adds nothing to the total: at
+ * Confirm they are written into the booking's special requests, which is the field somebody at
+ * the base actually reads. That is the honest version of the checkbox they used to be -- the
+ * caption says the price is settled there, and no figure moves when the box is ticked.
+ *
  * Nothing renders as a choice until the first quote lands. Every answer on this list — the
  * price, whether it is settled at the base, whether it can be bought at all — is the offer's,
  * and painting the catalogue's answers first would show prices that then move and checkboxes
@@ -35,7 +41,7 @@ export default function OptionalExtrasSection() {
   const t = useTranslations("YachtDetail");
   const tBooking = useTranslations("Booking.extras");
   const { data } = useListingDetail();
-  const { extras, selectExtras, quote, isPending } = useBooking();
+  const { extras, selectExtras, requestedExtras, requestExtras, quote, isPending } = useBooking();
 
   if (!data) return null;
 
@@ -94,18 +100,26 @@ export default function OptionalExtrasSection() {
         ))}
 
         {[
-          { items: notOnTheseDates, note: tBooking("notOnTheseDates") },
+          { items: notOnTheseDates, note: tBooking("notOnTheseDatesAsk") },
           { items: arrangeAtBase, note: tBooking("arrangeAtBase") },
         ].map(({ items, note }) =>
           items.map((item) => (
-            <div
+            <label
               key={item.code}
-              className="flex items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
+              className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
             >
-              {/* Keeps the label column aligned with the checkbox rows above. */}
-              <span aria-hidden className="size-4 shrink-0" />
+              <Checkbox
+                checked={requestedExtras.includes(item.code)}
+                onCheckedChange={(checked) =>
+                  requestExtras(
+                    checked
+                      ? [...requestedExtras, item.code]
+                      : requestedExtras.filter((code) => code !== item.code),
+                  )
+                }
+              />
               <ExtraRow item={item} offered={null} note={note} />
-            </div>
+            </label>
           )),
         )}
       </div>

@@ -348,6 +348,7 @@ export async function getListingDetailByIdOrSlug(
         crew: boolean;
         priceMinor: number | null;
         priceCurrency: string | null;
+        popularRank: number | null;
       }>(sql`
       /*
        * One row per piece of equipment, however each vendor spells it.
@@ -358,17 +359,34 @@ export async function getListingDetailByIdOrSlug(
        * because that is the only thing the two rows have in common. An included row wins over
        * a priced one: the list answers "what does this yacht have".
        */
-      select distinct on (${normalizedKeySql(sql`a.name`)})
+      select distinct on (key.folded)
         a.code,
         a.name as label,
         a.crew,
         la.obligatory,
         la.price_minor as "priceMinor",
-        la.price_currency as "priceCurrency"
+        la.price_currency as "priceCurrency",
+        /*
+         * The curated order the amenity list is shown in, off the same facet_media rank the
+         * search cards read. A subquery rather than a join because the row above already
+         * de-duplicates, and because two vendor spellings of one amenity carry one rank
+         * between them -- the lowest wins, whichever of the two this listing published.
+         */
+        (
+          select min(fm.popular_rank)
+          from facet_media fm
+          where fm.kind = 'equipment'
+            and ${normalizedKeySql(sql`fm.value`)} = key.folded
+        ) as "popularRank"
       from listing_amenity la
       join amenity a on a.id = la.amenity_id
+      /* Folded once and referred to by name. Spelled out twice instead, the DISTINCT ON and the
+         ORDER BY are two expressions over the same columns but different bind parameters, and
+         Postgres compares them before it knows the values: "DISTINCT ON expressions must match
+         initial ORDER BY expressions". */
+      cross join lateral (select ${normalizedKeySql(sql`a.name`)} as folded) key
       where la.listing_id = ${listing.listingId}
-      order by ${normalizedKeySql(sql`a.name`)}, la.price_minor nulls first, a.name asc
+      order by key.folded, la.price_minor nulls first, a.name asc
     `),
       db.execute<{
         source: string;
@@ -499,11 +517,30 @@ export async function getListingDetailByIdOrSlug(
     ...item,
     code: item.code ?? valueForLabel(item.label),
   }));
-  /* Translated after the code is derived, never before: the code is what the amenity filter
-     matches on, and a Spanish one matches nothing. */
+  /*
+   * Translated after the code is derived, never before: the code is what the amenity filter
+   * matches on, and a Spanish one matches nothing.
+   *
+   * Curated amenities first, in the editor's order, because the page shows the first few and
+   * folds the rest away: which ones survive that fold is an editorial decision, not whichever
+   * the vendor happened to list first. Air conditioning sells a charter and a bilge pump handle
+   * does not. Unranked amenities keep the vendor's own order behind them rather than being
+   * dropped -- the section still lists everything the boat has.
+   */
   const includedAmenities = amenities
     .filter((item) => !item.crew && item.priceMinor === null)
-    .map((item) => ({
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftRank = left.item.popularRank;
+      const rightRank = right.item.popularRank;
+      if (leftRank !== rightRank) {
+        if (leftRank === null) return 1;
+        if (rightRank === null) return -1;
+        return leftRank - rightRank;
+      }
+      return left.index - right.index;
+    })
+    .map(({ item }) => ({
       code: item.code,
       label: translate ? translate("equipment", item.label) : item.label,
     }));
@@ -2109,6 +2146,39 @@ async function decorateFacetOptions(
 
 function labelsFromOptions(options: ListingFacetOption[]): string[] {
   return options.map((option) => option.label);
+}
+
+/**
+ * The optional extras this listing lists but no vendor will price, code to vendor name.
+ *
+ * The complement of `listSelectableExtraCodes` over the same catalogue rows. These are the ones
+ * settled with the base: the booking flow lets a customer ask for them, carries the codes on the
+ * quote, and writes their names into the booking's special requests. The vendor's own name is
+ * what comes back rather than a translated label, because the person who reads that field works
+ * at the base.
+ */
+export async function listRequestableExtras(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+  listingOfferId?: string | null,
+): Promise<Map<string, string>> {
+  const rows = await db.execute<{
+    source: string;
+    kind: string;
+    externalId: string;
+    name: string;
+  }>(sql`
+    select source, kind, external_id as "externalId", name
+    from provider_extra_catalogue
+    where obligatory = false
+      and ${listingOfferId ? sql`listing_offer_id = ${listingOfferId}` : sql`listing_id = ${listingId}`}
+  `);
+
+  return new Map(
+    rows.rows
+      .filter((row) => !isSelectableExtra(row.source, row.kind))
+      .map((row) => [`${row.kind}:${row.externalId}`, row.name]),
+  );
 }
 
 /**

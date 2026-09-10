@@ -1,0 +1,1 @@
+ALTER TABLE "quote" ADD COLUMN "requested_extras" jsonb DEFAULT '[]'::jsonb NOT NULL;

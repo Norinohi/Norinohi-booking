@@ -84,7 +84,7 @@ export default function ExtrasStep() {
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
   const { control } = useFormContext<BookingValues>();
-  const { listing, quote, selectExtras } = useBooking();
+  const { listing, quote, selectExtras, requestedExtras, requestExtras } = useBooking();
 
   /*
    * What the operator will bill on top of the charter, off the quote rather than off the
@@ -191,25 +191,38 @@ export default function ExtrasStep() {
               ))}
 
               {/*
-                Shown but not offered: a checkbox would take a choice and silently charge
-                nothing for it. Two separate reasons, and the note says which — the provider
-                cannot price this id space at all, or the operator did not put this extra on
-                the offer for these dates. Either way the customer still needs to know the
-                extra exists and roughly what it costs.
+                Shown and tickable, but asked for rather than bought: nothing here can be
+                priced, so a box that reprices would take a choice and charge nothing for it.
+                Two separate reasons, and the note says which — the provider cannot price this
+                id space at all, or the operator did not put this extra on the offer for these
+                dates. Either way the tick is recorded on the quote and reaches the base as
+                special-request text when the booking is made.
+
+                Off the booking context rather than the form: these never reach `createHold`
+                as a field, and giving them one would put a second, unpriced list into a
+                schema whose whole job is what the customer is paying for.
               */}
               {[
-                { items: notOnTheseDates, note: t("notOnTheseDates") },
+                { items: notOnTheseDates, note: t("notOnTheseDatesAsk") },
                 { items: arrangeAtBase, note: t("arrangeAtBase") },
               ].map(({ items, note }) =>
                 items.map((item) => (
-                  <div
+                  <label
                     key={item.code}
-                    className="flex items-start gap-2 border-b border-dashed border-border py-3"
+                    className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border py-3"
                   >
-                    {/* Keeps the label column aligned with the checkbox rows above. */}
-                    <span aria-hidden className="size-4 shrink-0" />
+                    <Checkbox
+                      checked={requestedExtras.includes(item.code)}
+                      onCheckedChange={(checked) =>
+                        requestExtras(
+                          checked
+                            ? [...requestedExtras, item.code]
+                            : requestedExtras.filter((code) => code !== item.code),
+                        )
+                      }
+                    />
                     <ExtraRow item={item} note={note} />
-                  </div>
+                  </label>
                 )),
               )}
             </div>

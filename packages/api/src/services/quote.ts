@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { listSelectableExtraCodes } from "@yacht-charter/db/search";
+import { listRequestableExtras, listSelectableExtraCodes } from "@yacht-charter/db/search";
 import { rebuildListingSearchDocs } from "@yacht-charter/db/search/read-model";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
@@ -47,6 +47,8 @@ import {
 import { getMarketplaceSettings } from "./marketplace-settings";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
+  /** Asked of the base rather than bought here; priced by nothing. See the quote schema. */
+  requestedExtras: string[];
   /** The trip split across the party; null when the guest count is unusable. */
   perPerson: { amountMinor: number; currency: string } | null;
   /** Derived instalments, in the order the customer meets them. */
@@ -74,6 +76,8 @@ export type RepriceChanges = {
   checkOut?: string;
   guests?: number;
   extras?: string[];
+  /** Extras settled with the base rather than bought here; see the quote schema. */
+  requestedExtras?: string[];
   crewType?: CrewType;
   /** Null clears a one-way and prices the charter back to its own base. */
   endBaseId?: string | null;
@@ -90,7 +94,11 @@ export type RepriceChanges = {
 export async function createQuote(
   db: Database,
   provider: InventoryProvider,
-  input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
+  input: QuoteRequest & {
+    discountCode?: string;
+    applyCredit?: boolean;
+    requestedExtras?: string[];
+  },
   userId: string | null,
 ): Promise<PersistedQuote> {
   /*
@@ -105,10 +113,17 @@ export async function createQuote(
     input.extras ?? [],
     selection.selected.listingOfferId,
   );
+  await assertRequestableExtras(
+    db,
+    input.listingId,
+    input.requestedExtras ?? [],
+    selection.selected.listingOfferId,
+  );
 
   const quote = await persistPricedQuote(db, selection.selected.priced, {
     userId,
     extras: input.extras ?? [],
+    requestedExtras: input.requestedExtras ?? [],
     crewType: input.crewType ?? null,
     discountCode: input.discountCode ?? null,
     applyCredit: input.applyCredit ?? false,
@@ -361,7 +376,8 @@ export async function repriceQuote(
 
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
-  const requestedExtras = changes.extras ?? existing.extras;
+  const selectedExtras = changes.extras ?? existing.extras;
+  const requestedExtras = changes.requestedExtras ?? existing.requestedExtras;
 
   // Only what the caller actually sent. A value carried forward is already-written
   // history, and refusing to re-price a date change because a quote from before
@@ -369,6 +385,14 @@ export async function repriceQuote(
   // strand the customer on a quote they cannot edit.
   if (changes.extras !== undefined) {
     await assertSelectableExtras(db, existing.listingId, changes.extras, existing.listingOfferId);
+  }
+  if (changes.requestedExtras !== undefined) {
+    await assertRequestableExtras(
+      db,
+      existing.listingId,
+      changes.requestedExtras,
+      existing.listingOfferId,
+    );
   }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
   /*
@@ -387,7 +411,7 @@ export async function repriceQuote(
     checkIn: changes.checkIn ?? existing.checkIn,
     checkOut: changes.checkOut ?? existing.checkOut,
     guests: changes.guests ?? existing.guests,
-    extras: requestedExtras,
+    extras: selectedExtras,
     currency: existing.currency,
   };
 
@@ -405,7 +429,8 @@ export async function repriceQuote(
        */
       listingOfferId: existing.listingOfferId,
       userId: userId ?? existing.userId,
-      extras: requestedExtras,
+      extras: selectedExtras,
+      requestedExtras,
       crewType: requestedCrewType ?? null,
       discountCode,
       applyCredit: changes.applyCredit ?? existing.creditAppliedMinor > 0,
@@ -479,6 +504,33 @@ async function assertSelectableExtras(
   throw new ORPCError("BAD_REQUEST", {
     message: `This listing does not sell: ${unsold.join(", ")}`,
     data: { code: "EXTRA_NOT_SELECTABLE", extras: unsold },
+  });
+}
+
+/**
+ * Refuses a request for something this listing does not list at all.
+ *
+ * The mirror of `assertSelectableExtras`, and just as unforgiving for the same reason: a code
+ * nobody recognises would reach the base as a line of special-request text naming an extra the
+ * catalogue never carried. Deliberately narrower than "not selectable" -- an extra that can be
+ * bought must be bought, not asked for, or the customer would be quoted nothing for something
+ * the vendor would have charged for.
+ */
+async function assertRequestableExtras(
+  db: Database,
+  listingId: string,
+  requested: readonly string[],
+  listingOfferId?: string | null,
+): Promise<void> {
+  if (requested.length === 0) return;
+
+  const requestable = await listRequestableExtras(db, listingId, listingOfferId);
+  const unknown = [...new Set(requested)].filter((code) => !requestable.has(code));
+  if (unknown.length === 0) return;
+
+  throw new ORPCError("BAD_REQUEST", {
+    message: `This listing does not offer: ${unknown.join(", ")}`,
+    data: { code: "EXTRA_NOT_REQUESTABLE", extras: unknown },
   });
 }
 
@@ -723,6 +775,7 @@ async function persistPricedQuote(
   options: {
     userId: string | null;
     extras: string[];
+    requestedExtras: string[];
     crewType: CrewType | null;
     discountCode: string | null;
     applyCredit: boolean;
@@ -809,6 +862,7 @@ async function persistPricedQuote(
     paymentPolicy,
     userId: options.userId,
     extras: options.extras,
+    requestedExtras: options.requestedExtras,
     crewType,
     discountId: promo?.discountId ?? null,
     discountCode: appliedDiscount?.code ?? null,
@@ -821,6 +875,7 @@ async function persistPricedQuote(
   return {
     ...priced,
     quoteId,
+    requestedExtras: options.requestedExtras,
     crewType,
     lines: lines.map((line) => {
       const mapped: PersistedQuote["lines"][number] = {
@@ -889,6 +944,7 @@ async function insertQuote(
     paymentPolicy: QuotePaymentPolicy;
     userId: string | null;
     extras: string[];
+    requestedExtras: string[];
     crewType: CrewType | null;
     discountId: string | null;
     discountCode: string | null;
@@ -910,6 +966,7 @@ async function insertQuote(
       checkOut: input.priced.checkOut,
       guests: input.priced.guests,
       extras: input.extras,
+      requestedExtras: input.requestedExtras,
       crewType: input.crewType,
       currency: input.priced.currency,
       lines: input.lines,

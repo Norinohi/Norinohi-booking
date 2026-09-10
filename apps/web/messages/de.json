@@ -33,7 +33,9 @@
       "optional": "Optionale Extras",
       "included": "Inklusive",
       "arrangeAtBase": "Mit der Basis vereinbaren",
-      "notOnTheseDates": "In diesem Zeitraum nicht verfügbar"
+      "notOnTheseDates": "In diesem Zeitraum nicht verfügbar",
+      "notOnTheseDatesAsk": "An diesen Daten nicht verfügbar — Sie können die Basis fragen",
+      "requestedAtBase": "Bei der Basis angefragt, dort zu zahlen"
     },
     "guestDetails": {
       "notice": "Mit diesen Angaben bestätigen wir Ihre Buchung und stimmen uns mit dem Basismanager ab.",
@@ -1334,6 +1336,10 @@
     "addToWishlist": "Zur Wunschliste",
     "removeFromWishlist": "Von Wunschliste entfernen",
     "included": "Inklusive",
+    "amenities": {
+      "showAll": "Alle Ausstattungen anzeigen ({count})",
+      "showFewer": "Weniger anzeigen"
+    },
     "importantInfo": {
       "charterCompany": "Charterunternehmen",
       "pickUpAddress": "Übernahmeadresse der Yacht",
