@@ -145,6 +145,32 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
   "cancellation",
 ];
 
+/* Curated facet order, inferred from the oRPC contract. */
+export type PopularFacetList = Awaited<ReturnType<AdminClient["popularFacets"]["list"]>>;
+export type PopularFacetValue = PopularFacetList["available"][number];
+export type PopularFacetKind = PopularFacetList["kind"];
+export type PopularFacetSurface = PopularFacetList["surface"];
+
+/**
+ * The curatable facet kinds, in the order the picker offers them.
+ *
+ * Countries and boat types first because they are the two the client actually asked for and the
+ * two that show on the search page; equipment next because it decides which four amenities a
+ * card carries. The rest are curatable and rarely curated.
+ */
+export const POPULAR_FACET_KINDS: readonly PopularFacetKind[] = [
+  "country",
+  "category",
+  "equipment",
+  "region",
+  "marina",
+  "location",
+  "crew",
+  "sail_type",
+];
+
+export const POPULAR_FACET_SURFACES: readonly PopularFacetSurface[] = ["popular", "featured"];
+
 /**
  * How one locale of one question stands.
  *

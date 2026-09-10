@@ -1043,7 +1043,8 @@
         "fleet": "Yates",
         "content": "Contenido del sitio"
       },
-      "settings": "Ajustes de pago"
+      "settings": "Ajustes de pago",
+      "popular": "Selección popular"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1668,6 +1669,10 @@
     "Faq": {
       "title": "Preguntas frecuentes",
       "description": "Escribe y traduce las preguntas que aparecen en las páginas de yates."
+    },
+    "Popular": {
+      "title": "Selección popular",
+      "description": "Elija qué valores encabezan los filtros y la página de inicio."
     }
   },
   "Profile": {
@@ -3128,6 +3133,49 @@
           "answerTooLong": "La respuesta no puede pasar de 8000 caracteres"
         }
       }
+    },
+    "Popular": {
+      "title": "Selección popular",
+      "subtitle": "Qué valores encabezan la lista de un filtro y cuáles lideran la página de inicio.",
+      "kinds": {
+        "country": "Países",
+        "category": "Tipos de barco",
+        "equipment": "Equipamiento",
+        "region": "Zonas de navegación",
+        "marina": "Puertos",
+        "location": "Localidades",
+        "crew": "Tipos de tripulación",
+        "sail_type": "Tipos de vela mayor"
+      },
+      "surfaces": {
+        "popular": "Fijados en filtros",
+        "featured": "Página de inicio"
+      },
+      "surfaceHint": {
+        "popular": "Se muestra como grupo «Populares» al principio de los filtros de búsqueda.",
+        "featured": "El orden que usan los carruseles y las cuadrículas de la página de inicio."
+      },
+      "filters": {
+        "kind": "Faceta",
+        "surface": "Dónde aparece",
+        "search": "Buscar valores"
+      },
+      "table": {
+        "order": "Orden",
+        "value": "Valor",
+        "count": "Yates",
+        "actions": "Acciones"
+      },
+      "actions": {
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "remove": "Quitar"
+      },
+      "empty": "Todavía no hay nada seleccionado. Elija valores arriba.",
+      "error": "No se pudo guardar el orden.",
+      "saved": "Orden guardado.",
+      "cacheWarning": "Guardado, pero aún no se pudieron actualizar las páginas en caché.",
+      "noListings": "Sin yates"
     },
     "Settings": {
       "title": "Ajustes del marketplace",

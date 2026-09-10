@@ -1043,7 +1043,8 @@
         "fleet": "Yachts",
         "content": "Website Content"
       },
-      "settings": "Payment Settings"
+      "settings": "Payment Settings",
+      "popular": "Popular picks"
     },
     "UserMenu": {
       "account": "Account",
@@ -1668,6 +1669,10 @@
     "Faq": {
       "title": "FAQ",
       "description": "Write and translate the questions shown on yacht pages."
+    },
+    "Popular": {
+      "title": "Popular picks",
+      "description": "Curate which facet values head the filters and the home page."
     }
   },
   "Profile": {
@@ -3128,6 +3133,49 @@
           "answerTooLong": "Keep the answer under 8000 characters"
         }
       }
+    },
+    "Popular": {
+      "title": "Popular picks",
+      "subtitle": "Which values head a filter's list, and which lead the home page.",
+      "kinds": {
+        "country": "Countries",
+        "category": "Boat types",
+        "equipment": "Amenities",
+        "region": "Sailing areas",
+        "marina": "Marinas",
+        "location": "Locations",
+        "crew": "Crew types",
+        "sail_type": "Mainsail types"
+      },
+      "surfaces": {
+        "popular": "Filter pins",
+        "featured": "Home page"
+      },
+      "surfaceHint": {
+        "popular": "Shown as a “Popular” group at the top of the search filters.",
+        "featured": "The order the home page's sliders and grids use."
+      },
+      "filters": {
+        "kind": "Facet",
+        "surface": "Where it shows",
+        "search": "Search values"
+      },
+      "table": {
+        "order": "Order",
+        "value": "Value",
+        "count": "Yachts",
+        "actions": "Actions"
+      },
+      "actions": {
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "remove": "Remove"
+      },
+      "empty": "Nothing curated yet. Pick values above to pin them.",
+      "error": "Could not save the order.",
+      "saved": "Order saved.",
+      "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
+      "noListings": "No yachts"
     },
     "Settings": {
       "title": "Marketplace settings",

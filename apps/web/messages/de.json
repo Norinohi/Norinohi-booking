@@ -1043,7 +1043,8 @@
         "fleet": "Yachten",
         "content": "Website-Inhalte"
       },
-      "settings": "Zahlungseinstellungen"
+      "settings": "Zahlungseinstellungen",
+      "popular": "Beliebte Auswahl"
     },
     "UserMenu": {
       "account": "Konto",
@@ -1668,6 +1669,10 @@
     "Faq": {
       "title": "FAQ",
       "description": "Die Fragen auf den Yachtseiten schreiben und übersetzen."
+    },
+    "Popular": {
+      "title": "Beliebte Auswahl",
+      "description": "Legen Sie fest, welche Werte die Filter und die Startseite anführen."
     }
   },
   "Profile": {
@@ -3128,6 +3133,49 @@
           "answerTooLong": "Die Antwort darf höchstens 8000 Zeichen haben"
         }
       }
+    },
+    "Popular": {
+      "title": "Beliebte Auswahl",
+      "subtitle": "Welche Werte eine Filterliste anführen und welche die Startseite.",
+      "kinds": {
+        "country": "Länder",
+        "category": "Bootstypen",
+        "equipment": "Ausstattung",
+        "region": "Segelgebiete",
+        "marina": "Marinas",
+        "location": "Orte",
+        "crew": "Crew-Typen",
+        "sail_type": "Großsegeltypen"
+      },
+      "surfaces": {
+        "popular": "Filter-Pins",
+        "featured": "Startseite"
+      },
+      "surfaceHint": {
+        "popular": "Erscheint als Gruppe „Beliebt“ oben in den Suchfiltern.",
+        "featured": "Die Reihenfolge für die Slider und Raster der Startseite."
+      },
+      "filters": {
+        "kind": "Facette",
+        "surface": "Wo es erscheint",
+        "search": "Werte suchen"
+      },
+      "table": {
+        "order": "Reihenfolge",
+        "value": "Wert",
+        "count": "Yachten",
+        "actions": "Aktionen"
+      },
+      "actions": {
+        "moveUp": "Nach oben",
+        "moveDown": "Nach unten",
+        "remove": "Entfernen"
+      },
+      "empty": "Noch nichts ausgewählt. Wählen Sie oben Werte aus.",
+      "error": "Die Reihenfolge konnte nicht gespeichert werden.",
+      "saved": "Reihenfolge gespeichert.",
+      "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
+      "noListings": "Keine Yachten"
     },
     "Settings": {
       "title": "Marktplatz-Einstellungen",
