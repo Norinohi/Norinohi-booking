@@ -91,8 +91,8 @@ function BoatSmallCard({
           </div>
         )}
       </CardContent>
-      <CardFooter className="mt-auto">
-        <div className="flex flex-col">
+      <CardFooter className="mt-auto flex-wrap">
+        <div className="flex min-w-0 flex-col wrap-break-word">
           <span className="text-sm text-natural-500">{priceLabel}</span>
           <span className="text-base text-natural-500">
             <span className="text-lg font-bold text-foreground">{price}</span>{" "}
@@ -104,7 +104,13 @@ function BoatSmallCard({
             {priceSuffix}
           </span>
         </div>
-        <Button variant="neutral" size="sm" nativeButton={!actionRender} render={actionRender}>
+        <Button
+          variant="neutral"
+          size="sm"
+          className="h-auto min-h-8 max-w-full py-1 whitespace-normal"
+          nativeButton={!actionRender}
+          render={actionRender}
+        >
           {actionLabel}
         </Button>
       </CardFooter>

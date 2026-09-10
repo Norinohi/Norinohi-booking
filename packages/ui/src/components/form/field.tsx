@@ -24,13 +24,13 @@ function Field({
   return (
     <FieldPrimitive.Root
       data-slot="field"
-      className={cn("flex w-full flex-col gap-1.5", className)}
+      className={cn("flex w-full min-w-0 flex-col gap-1.5", className)}
       {...props}
     >
       {label != null && (
         <FieldPrimitive.Label
           className={cn(
-            "text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground capitalize",
+            "text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground wrap-break-word",
             labelClassName,
           )}
         >

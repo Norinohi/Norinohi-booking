@@ -10,12 +10,13 @@ export function toBoatCardProps(
   tBadge: BadgeTranslator,
   listing: RecommendedListing,
   priceText: string,
+  countryLabel: string,
 ) {
   return {
     id: listing.id,
     image: listing.mainImage,
     imageAlt: listing.title,
-    location: placeLine(listing.base.name, listing.base.country),
+    location: placeLine(listing.base.name, countryLabel),
     title: listing.title,
     // Same rule as the catalogue card: an unrated listing shows no star, not a gold zero.
     rating: listing.rating > 0 ? listing.rating : undefined,

@@ -201,6 +201,16 @@ export function RangeField({
   const t = useTranslations("Filters");
   const formatValue = (n: number) => (format ? format(n) : String(n));
 
+  if (limits[0] === limits[1]) {
+    return (
+      <Field label={label}>
+        <span className="text-sm wrap-break-word text-natural-500">
+          {limits[0] > 0 ? formatValue(limits[0]) : t("rangeUnavailable")}
+        </span>
+      </Field>
+    );
+  }
+
   /*
    * The sliders end on the 95th percentile of the fleet, and a thumb resting on that end sends
    * no upper bound at all, so everything above it is still in the results. Printed bare, "61 ft"
@@ -214,7 +224,7 @@ export function RangeField({
 
   return (
     <div className="flex w-full flex-col gap-1.5">
-      <span className="text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground capitalize">
+      <span className="text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground">
         {label}
       </span>
       <div className="flex items-center gap-4">
@@ -248,8 +258,8 @@ export function RangeField({
         showTicks
       />
       {showScale && (
-        <div aria-hidden className="relative h-4.5 w-full">
-          <span className="absolute left-2 -translate-x-1/2 text-sm leading-[1.3] tracking-[0.04em] text-foreground uppercase">
+        <div aria-hidden className="min-h-4.5 w-full">
+          <span className="text-sm leading-[1.3] tracking-[0.04em] text-foreground uppercase">
             {formatValue(limits[0])}
           </span>
         </div>

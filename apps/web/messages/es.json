@@ -779,7 +779,9 @@
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
       "bestValue": "Mejor relación calidad-precio",
-      "guestRating": "Valoración: {value}"
+      "guestRating": "Valoración: {value}",
+      "guests": "Capacidad: {count, plural, one {# huésped} other {# huéspedes}}",
+      "minBerths": "Al menos {count, plural, one {# litera} other {# literas}}"
     },
     "options": {
       "duration": "{days, plural, one {# día} other {# días}}",
@@ -792,7 +794,8 @@
         "2-weeks": "En 2 semanas",
         "1-month": "En 1 mes"
       }
-    }
+    },
+    "rangeUnavailable": "No hay un intervalo disponible"
   },
   "Home": {
     "BoatTypes": {
@@ -1254,7 +1257,9 @@
       "yachtType": {
         "sailing": "Velero",
         "catamaran": "Catamarán",
-        "gulet": "Gulet"
+        "gulet": "Gulet",
+        "motor": "Yate a motor",
+        "luxury": "Yate de lujo"
       },
       "skipper": {
         "yes": "Sí",
@@ -1531,6 +1536,8 @@
     "paginationSummary": "Mostrando {from}-{to} de {total}"
   },
   "YachtsMap": {
+    "loading": "Cargando yates…",
+    "noResults": "Ningún yate coincide con estos filtros. Prueba a cambiarlos.",
     "title": "Yates en el mapa",
     "backToSearch": "Volver a la búsqueda",
     "showAllList": "Mostrar toda la lista",

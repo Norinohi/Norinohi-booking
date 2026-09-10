@@ -111,7 +111,7 @@ export default function FiltersPanel({
       {scrollable ? <ScrollArea className="min-h-0 flex-1">{body}</ScrollArea> : body}
 
       <div className="shrink-0 border-t border-border bg-background p-4 shadow-[4px_-4px_10px_rgba(0,0,0,0.1)]">
-        <Button type="submit" variant="brand" size="md" className="w-full capitalize">
+        <Button type="submit" variant="brand" size="md" className="w-full">
           {t("apply", { count: draftCount })}
         </Button>
       </div>

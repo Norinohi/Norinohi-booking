@@ -779,7 +779,9 @@
       "depositInsurance": "Страхування застави",
       "petsAllowed": "Можна з тваринами",
       "bestValue": "Вигідна пропозиція",
-      "guestRating": "Оцінка: {value}"
+      "guestRating": "Оцінка: {value}",
+      "guests": "Місткість: {count, plural, one {# гість} few {# гості} many {# гостей} other {# гостя}}",
+      "minBerths": "Щонайменше {count, plural, one {# спальне місце} few {# спальні місця} many {# спальних місць} other {# спального місця}}"
     },
     "options": {
       "duration": "{days, plural, one {# день} few {# дні} many {# днів} other {# днів}}",
@@ -792,7 +794,8 @@
         "2-weeks": "У межах 2 тижнів",
         "1-month": "У межах місяця"
       }
-    }
+    },
+    "rangeUnavailable": "Немає даних для діапазону"
   },
   "Home": {
     "BoatTypes": {
@@ -1254,7 +1257,9 @@
       "yachtType": {
         "sailing": "Вітрильна яхта",
         "catamaran": "Катамаран",
-        "gulet": "Гулет"
+        "gulet": "Гулет",
+        "motor": "Моторна яхта",
+        "luxury": "Люкс-яхта"
       },
       "skipper": {
         "yes": "Так",
@@ -1531,6 +1536,8 @@
     "paginationSummary": "Показано {from}–{to} з {total}"
   },
   "YachtsMap": {
+    "loading": "Завантажуємо яхти…",
+    "noResults": "За цими фільтрами яхт не знайдено. Спробуйте змінити їх.",
     "title": "Яхти на карті",
     "backToSearch": "Назад до пошуку",
     "showAllList": "Показати весь список",

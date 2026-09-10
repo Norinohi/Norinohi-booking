@@ -39,7 +39,7 @@ export default function FiltersPopover({
     <Button
       variant={variant}
       className={cn(
-        "w-full capitalize md:w-auto md:self-start",
+        "w-full md:w-auto md:self-start",
         variant === "neutral" &&
           "data-popup-open:border-natural-300 data-popup-open:bg-natural-100",
         className,

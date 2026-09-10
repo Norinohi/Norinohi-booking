@@ -79,11 +79,21 @@ const DATE_FLEXIBILITY_VALUES = ["on-day", "1-3-days", "1-week", "2-weeks", "1-m
 
 const multi = () => parseAsArrayOf(parseAsString).withDefault([]);
 
+const capacityParser = createParser({
+  parse: (query: string) => {
+    const value = Number(query);
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  },
+  serialize: (value: number) => String(value),
+});
+
 export const filterParsers = {
   /** Free-text destination search (the location typeahead). */
   query: parseAsString.withDefault(""),
   /* Free text over a boat's name and card. Written only by the search bar's optional field. */
   name: parseAsString.withDefault(""),
+  guests: capacityParser,
+  minBerths: capacityParser,
   country: multi(),
   sailingArea: multi(),
   city: multi(),

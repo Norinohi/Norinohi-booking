@@ -36,5 +36,5 @@ export function useSearchFilters() {
     });
   }
 
-  return { filters, setFilters, defaults };
+  return { filters, setFilters, defaults, searchParams: raw };
 }

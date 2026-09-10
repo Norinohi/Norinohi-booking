@@ -779,7 +779,9 @@
       "depositInsurance": "Kautionsversicherung",
       "petsAllowed": "Haustiere erlaubt",
       "bestValue": "Bestes Preis-Leistungs-Verhältnis",
-      "guestRating": "Bewertung: {value}"
+      "guestRating": "Bewertung: {value}",
+      "guests": "Kapazität: {count, plural, one {# Gast} other {# Gäste}}",
+      "minBerths": "Mindestens {count, plural, one {# Koje} other {# Kojen}}"
     },
     "options": {
       "duration": "{days, plural, one {# Tag} other {# Tage}}",
@@ -792,7 +794,8 @@
         "2-weeks": "In 2 Wochen",
         "1-month": "In 1 Monat"
       }
-    }
+    },
+    "rangeUnavailable": "Kein Bereich verfügbar"
   },
   "Home": {
     "BoatTypes": {
@@ -1254,7 +1257,9 @@
       "yachtType": {
         "sailing": "Segelyacht",
         "catamaran": "Katamaran",
-        "gulet": "Gulet"
+        "gulet": "Gulet",
+        "motor": "Motoryacht",
+        "luxury": "Luxusyacht"
       },
       "skipper": {
         "yes": "Ja",
@@ -1531,6 +1536,8 @@
     "paginationSummary": "{from}–{to} von {total}"
   },
   "YachtsMap": {
+    "loading": "Yachten werden geladen…",
+    "noResults": "Keine Yachten entsprechen diesen Filtern. Bitte passen Sie sie an.",
     "title": "Yachten auf der Karte",
     "backToSearch": "Zurück zur Suche",
     "showAllList": "Ganze Liste anzeigen",

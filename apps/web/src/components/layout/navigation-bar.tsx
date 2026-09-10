@@ -7,8 +7,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { Bookmark, Menu, X } from "lucide-react";
 import { motion, useAnimationControls } from "motion/react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { usePathname } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 
 import { useWishlist } from "@/features/wishlist";
@@ -20,7 +19,7 @@ import UserMenu from "./user-menu";
 /** The wordmark is a logo, not a heading: it holds its size at every density. */
 const WORDMARK_CLASS =
   // oxlint-disable-next-line design-tokens/no-arbitrary-size
-  "cursor-pointer text-xl leading-tight font-bold text-foreground md:text-[28px] 2xl:text-[28px]";
+  "shrink-0 cursor-pointer text-xl leading-tight font-bold max-[360px]:text-lg text-foreground md:text-[28px] 2xl:text-[28px]";
 
 const NAV_LINKS = [
   { key: "destinations", hash: "destinations", chip: false },
@@ -59,10 +58,15 @@ export default function NavigationBar() {
   }, [addSignal, bump, flash]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-natural-50 bg-background">
-      <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 md:px-13.5 xl:px-17.5 2xl:h-20">
+    <header
+      className={cn(
+        "sticky top-0 z-40 border-b border-natural-50 bg-background",
+        pathname === "/yachts/map" && "max-md:hidden",
+      )}
+    >
+      <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 max-[360px]:gap-1 max-[360px]:px-3 md:px-13.5 xl:px-17.5 2xl:h-20">
         {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
-        <div className="flex items-center gap-4 2xl:gap-16">
+        <div className="flex min-w-0 items-center gap-4 max-[360px]:gap-1 2xl:gap-6">
           <IconButton
             variant="subtle"
             aria-label={open ? t("closeMenu") : t("openMenu")}
@@ -76,12 +80,12 @@ export default function NavigationBar() {
             YachtSkanner
           </Link>
 
-          <nav className="hidden items-center gap-6 min-[1360px]:flex">
+          <nav className="hidden min-w-0 items-center gap-6 min-[1360px]:flex">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.key}
                 href={{ pathname: "/", hash: link.hash }}
-                className="flex cursor-pointer items-center gap-1.5 p-1 text-base font-normal whitespace-nowrap text-foreground transition-colors hover:text-brand"
+                className="flex cursor-pointer items-center gap-1.5 p-1 text-base font-normal leading-snug text-foreground transition-colors hover:text-brand"
               >
                 {t(link.key)}
                 {link.chip && (
@@ -95,8 +99,8 @@ export default function NavigationBar() {
         </div>
 
         {/* Right group: icon cluster (always) + CTAs (2xl+) */}
-        <div className="flex items-center gap-1.5 2xl:gap-5">
-          <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5 2xl:gap-5">
+          <div className="flex items-center gap-1.5 max-[360px]:gap-0">
             <motion.div animate={bump} className="relative inline-flex">
               <IconButton
                 variant="subtle"

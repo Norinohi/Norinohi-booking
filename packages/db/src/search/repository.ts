@@ -1533,9 +1533,9 @@ export const searchColumns = sql`
   doc.price_from_minor as "priceFromMinor",
   doc.price_is_from as "priceIsFrom",
   doc.list_price_from_minor as "listPriceFromMinor",
-  doc.price_from_minor_eur as "priceFromMinorEur",
+  ${comparablePrice()} as "priceFromMinorEur",
   doc.base_price_from_minor as "basePriceFromMinor",
-  doc.base_price_from_minor_eur as "basePriceFromMinorEur",
+  ${basePriceInEur()} as "basePriceFromMinorEur",
   doc.best_offer_id as "bestOfferId",
   doc.offer_count as "offerCount",
   doc.currency,
@@ -2793,10 +2793,18 @@ const pricedNights = sql`greatest(
  * publish real fees against a rate of nought, and read literally they sorted to the top of
  * "cheapest first" as free boats while their cards showed the price they actually charge.
  */
-export const comparablePrice = (basis: PriceBasis = "all_in"): SQL =>
-  basis === "base"
-    ? sql`coalesce(nullif(doc.base_price_from_minor_eur, 0), doc.price_from_minor_eur)`
-    : sql`doc.price_from_minor_eur`;
+export function comparablePrice(basis: PriceBasis = "all_in"): SQL {
+  // Native EUR needs no conversion. Seeded or older rows may not have the derived EUR column.
+  // Other currencies still require that column; an unavailable rate must never be guessed.
+  const allIn = sql`coalesce(doc.price_from_minor_eur,
+    case when doc.currency = 'EUR' then doc.price_from_minor end)`;
+  return basis === "base" ? sql`coalesce(${basePriceInEur()}, ${allIn})` : allIn;
+}
+
+function basePriceInEur(): SQL {
+  return sql`coalesce(nullif(doc.base_price_from_minor_eur, 0),
+    case when doc.currency = 'EUR' then nullif(doc.base_price_from_minor, 0) end)`;
+}
 
 /** The published figure, in whatever currency the vendor quoted. Rendered, never compared. */
 const publishedPrice = (basis: PriceBasis = "all_in"): SQL =>

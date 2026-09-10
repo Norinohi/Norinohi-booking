@@ -4,7 +4,7 @@ import { Button, buttonVariants } from "@yacht-charter/ui/components/actions/but
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, List, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { throttle, useQueryStates } from "nuqs";
@@ -33,7 +33,7 @@ import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
 import { boundsOf, paddingOf } from "../../lib/map-camera";
-import { mapCameraParsers } from "../../lib/search-params";
+import { mapCameraParsers, serializeSearch } from "../../lib/search-params";
 import MapBoatPopup from "./map-boat-popup";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
 import MapClusterMarker from "./map-cluster-marker";
@@ -168,7 +168,7 @@ export default function MapScreen() {
   const focusListingId = useSearchParams().get("selected");
   /* The same URL state the list screen runs on, so filters survive a reload and travel with a link
      instead of dying with the component. */
-  const { filters, setFilters, defaults } = useSearchFilters();
+  const { filters, setFilters, defaults, searchParams } = useSearchFilters();
   const [camera, setCamera] = useQueryStates(mapCameraParsers, {
     limitUrlUpdates: throttle(CAMERA_WRITE_MS),
   });
@@ -209,7 +209,14 @@ export default function MapScreen() {
   const chips = useFilterChips(filters);
 
   const input = useSearchInput(filters, defaults, { sort: "recommended", page: 1 });
-  const { data } = useQuery(mapMarinasQueryOptions(input));
+  const { data, isPending, isError, refetch } = useQuery(mapMarinasQueryOptions(input));
+  const searchKey = JSON.stringify(input);
+  const framedSearch = useRef<{
+    map: MapInstance;
+    key: string;
+    done: boolean;
+    preserve: boolean;
+  } | null>(null);
   const marinas = data?.marinas ?? [];
 
   const { clusters, supercluster } = useMapClusters(marinas, map);
@@ -301,6 +308,35 @@ export default function MapScreen() {
     observer.observe(shell);
     return () => observer.disconnect();
   }, [map, listOpen]);
+
+  // Fit each new search once; panning and background refetches keep the visitor's camera.
+  useEffect(() => {
+    if (!map) return;
+    const previous = framedSearch.current;
+    const newVisit = previous?.map !== map;
+    if (newVisit || previous.key !== searchKey) {
+      framedSearch.current = {
+        map,
+        key: searchKey,
+        done: false,
+        preserve: newVisit && Boolean((camera.zoom != null && camera.centre) || focusListingId),
+      };
+      if (!newVisit) {
+        setSelectedListingId(null);
+        setOpenMarina(null);
+        setSelectedDescent(null);
+      }
+    }
+    const frame = framedSearch.current;
+    if (!frame || frame.done || !data) return;
+    frame.done = true;
+    if (frame.preserve || data.marinas.length === 0) return;
+    map.fitBounds(boundsOf(data.marinas), {
+      padding: paddingOf(map),
+      maxZoom: MAP_MARINA_ZOOM,
+      duration: newVisit ? 0 : CLUSTER_FLIGHT_MS,
+    });
+  }, [map, data, searchKey, camera.zoom, camera.centre, focusListingId]);
 
   // Written once the camera settles, so a reload — or a link sent to somebody — opens on the same
   // water. Replaced rather than pushed, or every nudge of the map is a step of the back button.
@@ -456,9 +492,12 @@ export default function MapScreen() {
   }
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="px-4 py-3 md:px-13.5 2xl:px-17.5">
-        <Link href="/yachts" className={buttonVariants({ variant: "subtle", size: "sm" })}>
+    <div className="flex h-dvh min-h-0 flex-col md:h-[calc(100dvh-var(--header-h))]">
+      <div className="hidden px-4 py-3 md:block md:px-13.5 2xl:px-17.5">
+        <Link
+          href={serializeSearch("/yachts", searchParams)}
+          className={buttonVariants({ variant: "subtle", size: "sm" })}
+        >
           <ArrowLeft />
           {t("backToSearch")}
         </Link>
@@ -555,15 +594,40 @@ export default function MapScreen() {
           ) : null}
         </MapCanvas>
 
-        <div className="pointer-events-none absolute inset-0 flex flex-col gap-4 px-4 pt-6 pb-8 md:gap-5 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
+        {!popupOpen && (isPending || isError || data?.marinas.length === 0) && (
+          <div
+            role="status"
+            className="absolute inset-x-3 top-28 mx-auto w-fit max-w-full rounded-xl bg-card p-3 text-center text-sm shadow-md md:top-auto md:bottom-24"
+          >
+            {isError ? common("errors.requestFailed") : isPending ? t("loading") : t("noResults")}
+            {isError && (
+              <Button variant="subtle" size="sm" onClick={() => refetch()}>
+                {common("errors.retry")}
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div className="pointer-events-none absolute inset-0 flex flex-col gap-3 px-3 pt-3 pb-8 md:gap-5 md:pt-6 md:px-13.5 2xl:flex-row 2xl:items-start 2xl:px-17.5 2xl:pb-17.5">
           <div
             className={cn(
-              "flex flex-col gap-4 transition-opacity duration-200 md:flex-row md:items-start md:gap-5 2xl:contents",
+              "flex flex-wrap items-start gap-2 transition-opacity duration-200 md:flex-nowrap md:gap-5 2xl:contents",
               // Popup covers these on phones (< 768px): fade out and disable there, keep them from md up.
               popupOpen &&
                 "pointer-events-none opacity-0 **:pointer-events-none md:pointer-events-auto md:opacity-100 md:**:pointer-events-auto",
             )}
           >
+            <Link
+              href={serializeSearch("/yachts", searchParams)}
+              aria-label={t("backToSearch")}
+              className={buttonVariants({
+                variant: "neutral",
+                size: "icon",
+                className: "pointer-events-auto shrink-0 md:hidden",
+              })}
+            >
+              <ArrowLeft />
+            </Link>
             <FiltersPanel
               ref={filtersRef}
               scrollable
@@ -575,12 +639,12 @@ export default function MapScreen() {
               variant="primary"
               value={filters}
               onApply={setFilters}
-              className="pointer-events-auto 2xl:hidden"
+              className="pointer-events-auto w-auto 2xl:hidden"
             />
 
             <div
               className={cn(
-                "grid items-start gap-4 md:contents",
+                "ml-auto grid items-start gap-2 md:contents",
                 listOpen ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1",
               )}
             >
@@ -589,11 +653,12 @@ export default function MapScreen() {
                 variant="neutral"
                 onClick={() => setListOpen((open) => !open)}
                 className={cn(
-                  "pointer-events-auto w-full capitalize shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:w-auto",
+                  "pointer-events-auto w-auto shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
                   listOpen && "2xl:hidden",
                 )}
               >
-                {t("showAllList")}
+                <List className="md:hidden" />
+                <span className="sr-only md:not-sr-only">{t("showAllList")}</span>
               </Button>
               {listOpen ? (
                 <CloseListButton
@@ -605,7 +670,7 @@ export default function MapScreen() {
             </div>
 
             {chips.length > 0 && (
-              <div className="flex flex-wrap items-start justify-end gap-2 md:min-w-0 md:flex-1 2xl:order-last 2xl:justify-start *:pointer-events-auto">
+              <div className="flex w-full items-start gap-2 overflow-x-auto pb-1 md:w-auto md:min-w-0 md:flex-1 md:flex-wrap md:justify-end 2xl:order-last 2xl:justify-start *:pointer-events-auto *:shrink-0">
                 {chips.map((chip) => (
                   <Chip
                     key={chip.id}

@@ -19,7 +19,7 @@ const fold = (segment: string) =>
     .replace(/[̀-ͯ]/g, "")
     .replace(/['’]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 
 export function placeLine(...parts: (string | null | undefined)[]): string {

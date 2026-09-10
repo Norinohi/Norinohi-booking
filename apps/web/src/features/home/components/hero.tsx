@@ -233,7 +233,7 @@ export default function Hero() {
             className="flex w-full max-w-164.75 flex-col gap-3 text-center text-white xl:w-auto xl:max-w-112.5 xl:text-left"
           >
             <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
-            <h1 data-testid="home-shell-marker" className="text-h1">
+            <h1 data-testid="home-shell-marker" className="text-h1 max-[360px]:text-h3">
               {t("heading")}
             </h1>
           </motion.div>

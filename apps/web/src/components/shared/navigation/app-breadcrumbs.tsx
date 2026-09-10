@@ -20,7 +20,7 @@ export type AppBreadcrumb = {
   dynamic?: boolean;
 };
 
-type AppBreadcrumbsProps = {
+interface AppBreadcrumbsProps {
   items: AppBreadcrumb[];
   /** Message key for the back button; omit it (or `backHref`) to drop the button. */
   backLabel?: string;
@@ -29,7 +29,7 @@ type AppBreadcrumbsProps = {
   /** Plain string, like `AppBreadcrumb.url` — `typedRoutes` can only check a literal at the `Link` itself. */
   backHref?: string;
   className?: string;
-};
+}
 
 export default function AppBreadcrumbs({
   items,
@@ -51,9 +51,15 @@ export default function AppBreadcrumbs({
     <div className={cn("border-b border-natural-50", className)}>
       <div className="mx-auto flex w-full max-w-384 items-center gap-5 px-4 py-3 md:px-13.5 xl:px-17.5">
         {backLabel && backHref ? (
-          <Button variant="subtle" size="sm" nativeButton={false} render={<Link href={backHref} />}>
+          <Button
+            variant="subtle"
+            size="sm"
+            className="h-auto min-h-8 min-w-0 max-w-full shrink py-1.5 whitespace-normal"
+            nativeButton={false}
+            render={<Link href={backHref} />}
+          >
             <ArrowLeft />
-            {translate(backLabel, backValues)}
+            <span className="min-w-0 wrap-break-word">{translate(backLabel, backValues)}</span>
           </Button>
         ) : null}
 

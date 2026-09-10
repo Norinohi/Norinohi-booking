@@ -779,7 +779,9 @@
       "depositInsurance": "Deposit insurance",
       "petsAllowed": "Pets allowed",
       "bestValue": "Best value",
-      "guestRating": "Rating: {value}"
+      "guestRating": "Rating: {value}",
+      "guests": "Capacity: {count, plural, one {# guest} other {# guests}}",
+      "minBerths": "At least {count, plural, one {# berth} other {# berths}}"
     },
     "options": {
       "duration": "{days, plural, one {# day} other {# days}}",
@@ -792,7 +794,8 @@
         "2-weeks": "In 2 weeks",
         "1-month": "In 1 month"
       }
-    }
+    },
+    "rangeUnavailable": "No range available"
   },
   "Home": {
     "BoatTypes": {
@@ -1254,7 +1257,9 @@
       "yachtType": {
         "sailing": "Sailing yacht",
         "catamaran": "Catamaran",
-        "gulet": "Gulet"
+        "gulet": "Gulet",
+        "motor": "Motor yacht",
+        "luxury": "Luxury yacht"
       },
       "skipper": {
         "yes": "Yes",
@@ -1531,6 +1536,8 @@
     "paginationSummary": "Showing {from}-{to} of {total}"
   },
   "YachtsMap": {
+    "loading": "Loading yachts…",
+    "noResults": "No yachts match these filters. Try changing them.",
     "title": "Yachts on the map",
     "backToSearch": "Back To Search",
     "showAllList": "Show all list",
