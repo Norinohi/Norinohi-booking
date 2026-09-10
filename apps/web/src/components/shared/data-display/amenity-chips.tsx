@@ -1,16 +1,15 @@
 "use client";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@yacht-charter/ui/components/overlay/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@yacht-charter/ui/components/overlay/popover";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 
 import type { BoatCardAmenity } from "./boat-card";
 
-/* One amenity, icon and name. Shared by the row and the overflow tooltip so the two cannot drift. */
+/* One amenity, icon and name. Shared by the row and the overflow list so the two cannot drift. */
 export function AmenityChip({ amenity }: { amenity: BoatCardAmenity }) {
   return (
     <div className="flex items-center gap-2">
@@ -23,43 +22,42 @@ export function AmenityChip({ amenity }: { amenity: BoatCardAmenity }) {
 }
 
 /**
- * The curated amenities that did not fit, behind a "+N".
+ * The curated amenities that did not fit, behind a "+N" button.
  *
- * A button rather than a hover-only affordance: base-ui opens a tooltip on focus and on touch
- * from a focusable trigger, so this reaches a keyboard and a phone. The list scrolls because the
- * curated set runs to eighteen and a boat can carry most of it, and `max-h` is what stops the
- * popup growing past the card it belongs to.
+ * A popover rather than a tooltip, though the content looks like one. A tooltip opens on hover,
+ * and these sit in a grid of cards a pointer crosses on its way anywhere -- the list would keep
+ * flicking open at boats nobody asked about. A popover opens on click, closes on Escape and on
+ * an outside click, and moves focus, which is also the only version of this a keyboard or a
+ * phone can use.
+ *
+ * The list scrolls because the curated set runs to eighteen and a well-equipped boat carries
+ * most of it; `max-h` is what stops the popup growing past the card it belongs to.
  */
 export function AmenityOverflow({ amenities }: { amenities: BoatCardAmenity[] }) {
   const t = useTranslations("Common.boatCard");
-  const [open, setOpen] = useState(false);
 
   return (
-    <Tooltip open={open} onOpenChange={setOpen}>
-      <TooltipTrigger
+    <Popover>
+      <PopoverTrigger
         render={
           <button
             type="button"
-            /* Controlled and opened on click, matching CardNote: the card is a link, so hover
-               alone would leave this unreachable on a phone, and the click must not navigate. */
-            onClick={(event) => {
-              event.preventDefault();
-              setOpen(true);
-            }}
+            /* The whole card is a link, so without this the trigger's click navigates instead. */
+            onClick={(event) => event.preventDefault()}
             aria-label={t("moreAmenities", { count: amenities.length })}
-            className="cursor-pointer rounded-lg px-2 py-1 text-xs leading-[1.3] font-semibold text-brand outline-none hover:bg-brand-50 focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="flex h-8 cursor-pointer items-center rounded-lg border border-natural-100 bg-card px-2.5 text-xs leading-[1.3] font-semibold text-brand transition-colors outline-none hover:border-brand hover:bg-brand-50 focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:border-brand data-popup-open:bg-brand-50"
           />
         }
       >
         {t("moreAmenitiesShort", { count: amenities.length })}
-      </TooltipTrigger>
-      <TooltipContent className="max-w-64">
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3">
         <div className="flex max-h-56 flex-col gap-2 overflow-y-auto overscroll-contain">
           {amenities.map((amenity) => (
             <AmenityChip key={amenity.label} amenity={amenity} />
           ))}
         </div>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   );
 }
