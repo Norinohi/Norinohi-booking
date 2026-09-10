@@ -148,7 +148,7 @@ function MultiSelect({
               {emptyMessage ?? uiLabels.noMatches}
             </Combobox.Empty>
 
-            <Combobox.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <Combobox.List className="max-h-100 min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {groups
                 ? (group: { value: string; items: string[] }) => (
                     <Combobox.Group

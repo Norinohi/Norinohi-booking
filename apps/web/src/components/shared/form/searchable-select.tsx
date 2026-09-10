@@ -2,8 +2,11 @@
 
 import {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxGroupLabel,
   ComboboxItem,
   ComboboxList,
   ComboboxSearch,
@@ -22,11 +25,19 @@ import { type ComponentProps, type ReactNode, useState } from "react";
  * Extra props land on the trigger, which is what `FormControl` clones its `id` and `aria-*` onto,
  * `aria-invalid` included — the trigger paints its error border from that.
  */
+export interface SearchableSelectGroup {
+  key: string;
+  label: string;
+  options: SelectOption[];
+}
+
 interface SearchableSelectProps extends Omit<
   ComponentProps<typeof ComboboxTrigger>,
   "value" | "onValueChange" | "children"
 > {
   options: SelectOption[];
+  /** Renders the list under headings instead of flat. Leave unset for the plain picker. */
+  groups?: SearchableSelectGroup[];
   /** The chosen option's `value`, or null for nothing chosen. */
   value: string | null;
   onValueChange: (value: string | null) => void;
@@ -36,8 +47,23 @@ interface SearchableSelectProps extends Omit<
   icon?: ReactNode;
 }
 
+interface OptionGroupItems {
+  value: string;
+  label: string;
+  items: SelectOption[];
+}
+
+function renderOption(option: SelectOption) {
+  return (
+    <ComboboxItem key={option.value} value={option}>
+      <span className="truncate">{option.label}</span>
+    </ComboboxItem>
+  );
+}
+
 export default function SearchableSelect({
   options,
+  groups,
   value,
   onValueChange,
   placeholder,
@@ -49,9 +75,18 @@ export default function SearchableSelect({
   const [search, setSearch] = useState("");
   const selected = options.find((option) => option.value === value) ?? null;
 
+  const optionsByValue = new Map(options.map((option) => [option.value, option]));
+  const items: SelectOption[] | OptionGroupItems[] = groups
+    ? groups.map((group) => ({
+        value: group.key,
+        label: group.label,
+        items: group.options.map((option) => optionsByValue.get(option.value) ?? option),
+      }))
+    : options;
+
   return (
     <Combobox
-      items={options}
+      items={items}
       value={selected}
       onValueChange={(option: SelectOption | null) => onValueChange(option?.value ?? null)}
       inputValue={search}
@@ -70,11 +105,14 @@ export default function SearchableSelect({
         <ComboboxSearch placeholder={searchPlaceholder} />
         <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
         <ComboboxList>
-          {(option: SelectOption) => (
-            <ComboboxItem key={option.value} value={option}>
-              <span className="truncate">{option.label}</span>
-            </ComboboxItem>
-          )}
+          {groups
+            ? (group: OptionGroupItems) => (
+                <ComboboxGroup key={group.value} items={group.items}>
+                  <ComboboxGroupLabel>{group.label}</ComboboxGroupLabel>
+                  <ComboboxCollection>{renderOption}</ComboboxCollection>
+                </ComboboxGroup>
+              )
+            : renderOption}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

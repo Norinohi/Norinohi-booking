@@ -112,11 +112,31 @@ function ComboboxEmpty({ className, ...props }: ComponentProps<typeof Base.Empty
 function ComboboxList({ className, ...props }: ComponentProps<typeof Base.List>) {
   return (
     <Base.List
-      className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", className)}
+      className={cn("max-h-100 min-h-0 flex-1 overflow-y-auto overscroll-contain", className)}
       {...props}
     />
   );
 }
+
+function ComboboxGroup({ className, ...props }: ComponentProps<typeof Base.Group>) {
+  return (
+    <Base.Group
+      className={cn("border-t border-natural-50 first:border-t-0", className)}
+      {...props}
+    />
+  );
+}
+
+function ComboboxGroupLabel({ className, ...props }: ComponentProps<typeof Base.GroupLabel>) {
+  return (
+    <Base.GroupLabel
+      className={cn("px-4 pt-3 pb-1 text-sm font-medium text-natural-500", className)}
+      {...props}
+    />
+  );
+}
+
+const ComboboxCollection = Base.Collection;
 
 function ComboboxItem({ className, ...props }: ComponentProps<typeof Base.Item>) {
   return (
@@ -132,8 +152,11 @@ function ComboboxItem({ className, ...props }: ComponentProps<typeof Base.Item>)
 
 export {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxGroupLabel,
   ComboboxItem,
   ComboboxList,
   ComboboxSearch,
