@@ -13,19 +13,9 @@ import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 
 import { Image } from "@/components/shared/data-display/image";
-import { useFilterOptions, useFilterRanges } from "@/components/shared/form/filters";
+import { useFilterOptions } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
 import { RISE, VIEWPORT } from "@/lib/motion";
-
-/*
- * The luxury card is editorial, not a facet: no provider category means "luxury", and the
- * ones that sound like it ("Luxury sailing yacht") are folded into their base type by the
- * canonical grouping in packages/providers. Length is the stand-in, so the card links to a
- * size filter rather than a boat type.
- *
- * Feet, because that is the unit `filterParsers.length` carries — see `toSearchInput`.
- */
-const LUXURY_MIN_FEET = Math.round(15 / 0.3048);
 
 /*
  * The gap belongs to the track, so no slide carries a trailing gutter and each basis just
@@ -96,15 +86,20 @@ function BoatTypeCard({
 }
 
 function BoatTypeCards() {
-  const t = useTranslations("Home.BoatTypes.luxury");
   const { options } = useFilterOptions();
-  const { ranges } = useFilterRanges();
 
-  const maxLengthFeet = ranges.length[1];
+  const featuredBoatTypes = options.boatTypes
+    .flatMap((boatType) =>
+      boatType.featuredRank === null || boatType.featuredRank === undefined
+        ? []
+        : [{ ...boatType, featuredRank: boatType.featuredRank }],
+    )
+    .sort((left, right) => left.featuredRank - right.featuredRank);
+  const boatTypes = featuredBoatTypes.length > 0 ? featuredBoatTypes : options.boatTypes;
 
   return (
     <>
-      {options.boatTypes.map((boatType) => (
+      {boatTypes.map((boatType) => (
         <BoatTypeCard
           key={boatType.value}
           href={buildSearchHref({ boatType: [boatType.value] })}
@@ -114,21 +109,6 @@ function BoatTypeCards() {
           description={boatType.description}
         />
       ))}
-
-      {/*
-       * Held back until the fleet's own maximum has arrived: the upper bound comes from the
-       * facets, and linking with a zero max before then would send the visitor to a filter
-       * that matches nothing.
-       */}
-      {maxLengthFeet > LUXURY_MIN_FEET && (
-        <BoatTypeCard
-          href={buildSearchHref({ length: [LUXURY_MIN_FEET, maxLengthFeet] })}
-          image="/assets/home/boat-types/luxury-yacht.webp"
-          imageAlt={t("imageAlt")}
-          title={t("title")}
-          description={t("description")}
-        />
-      )}
     </>
   );
 }

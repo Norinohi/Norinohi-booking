@@ -796,26 +796,21 @@
     "BoatTypes": {
       "heading": "Wählen Sie Ihren Bootstyp",
       "previous": "Vorherige Bootstypen",
-      "next": "Nächste Bootstypen",
-      "luxury": {
-        "title": "Luxusyacht",
-        "description": "Die größten Boote der Flotte, mit Crew und Ausstattung auf Hotelniveau.",
-        "imageAlt": "Luxusyacht vor Anker"
-      }
+      "next": "Nächste Bootstypen"
     },
     "BudgetFinder": {
       "heading": "Yachten nach Budget finden",
       "viewResults": "Ergebnisse anzeigen",
       "labels": {
-        "budget": "Budget pro Charter",
+        "budget": "Budget pro Person",
         "people": "Personen",
         "skipper": "Skipper",
         "destinations": "Reiseziele (optional)"
       },
       "options": {
         "any": "Beliebig",
-        "budgetUpTo": "Bis {to}",
         "budgetFrom": "Ab {from}",
+        "peopleNotSure": "Noch unsicher",
         "skipperYes": "Ja",
         "skipperNo": "Nein",
         "destinationsAll": "Alle Reiseziele"
