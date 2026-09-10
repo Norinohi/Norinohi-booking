@@ -38,7 +38,11 @@ import type {
 } from "./types";
 
 /* The column is selected only by the two searches that have a period to compare against. */
-type SearchRow = Omit<
+/*
+ * Exported for `popular-yachts.ts`, which selects the same columns and normalizes the same way.
+ * The alternative was a second projection of listing_search_doc that would drift from this one.
+ */
+export type SearchRow = Omit<
   ListingSearchDoc,
   "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut"
 > & {
@@ -740,7 +744,11 @@ export async function listSearchFacets(
    * entries to pick a build year from, and the two controls over one constraint disagreed
    * about where it started.
    */
-  const yearsInRange = years.filter((option) => Number(option.value) >= yearRange.min);
+  const yearsInRange = years
+    .filter((option) => Number(option.value) >= yearRange.min)
+    /* Newest first: the current year is the one people reach for, and the facet read hands them
+       back in ascending order, which buried it at the bottom of a twenty-odd entry list. */
+    .sort((a, b) => Number(b.value) - Number(a.value));
 
   return {
     destinations: labelsFromOptions(countries),
@@ -821,21 +829,40 @@ export async function listMapMarinas(
   return rows.rows;
 }
 
+/*
+ * How many countries the empty typeahead offers. Eight rather than the five it used to show,
+ * because that is the length of the curated list it now leads with.
+ */
+const POPULAR_SUGGESTION_LIMIT = 8;
+
 export async function listSearchSuggestions(
   db: NodePgDatabase<typeof schema>,
   query: string,
 ): Promise<ListingSuggestion[]> {
-  // Empty field: seed the typeahead with the most-stocked countries so the user has somewhere to
-  // start, instead of an alphabetical slice that means nothing. Data-driven, so it never lists a
-  // country with no listings.
+  /*
+   * Empty field: seed the typeahead with the popular countries so the user has somewhere to
+   * start, instead of an alphabetical slice that means nothing.
+   *
+   * Curated order first, then the most-stocked, and the fallback is the point of the join being
+   * a left one: until somebody opens the admin screen no country carries a rank, and this
+   * answers exactly what it always did. Grouped off listing_search_doc either way, so a curated
+   * country with nothing in stock is not offered.
+   */
   if (query.trim() === "") {
     const popular = await db.execute<Omit<ListingSuggestion, "value">>(sql`
-      select doc.country as label, 'country' as kind
+      select
+        doc.country as label,
+        'country' as kind,
+        bool_or(media.popular_rank is not null) as popular
       from listing_search_doc doc
+      left join facet_media media
+        on media.kind = 'country'
+        and ${normalizedSql(sql`media.value`)} = ${normalizedSql(sql`doc.country`)}
+        and media.popular_rank is not null
       where doc.country is not null
       group by doc.country
-      order by count(*) desc, doc.country asc
-      limit 5
+      order by min(media.popular_rank) asc nulls last, count(*) desc, doc.country asc
+      limit ${POPULAR_SUGGESTION_LIMIT}
     `);
     return popular.rows.map(withFilterValue);
   }
@@ -1395,7 +1422,7 @@ function nearestSellableColumns(
   return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
 }
 
-const searchColumns = sql`
+export const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
   doc.name,
@@ -2031,13 +2058,17 @@ async function decorateFacetOptions(
     cloudinaryId: string | null;
     label: string | null;
     description: string | null;
+    popularRank: number | null;
+    featuredRank: number | null;
   }>(sql`
     select
       ${normalizedSql(sql`media.value`)} as key,
       media.image_url as "imageUrl",
       media.cloudinary_id as "cloudinaryId",
       translation.label,
-      coalesce(translation.description, media.description) as description
+      coalesce(translation.description, media.description) as description,
+      media.popular_rank as "popularRank",
+      media.featured_rank as "featuredRank"
     from facet_media media
     left join facet_media_translation translation
       on translation.facet_media_id = media.id
@@ -2059,6 +2090,14 @@ async function decorateFacetOptions(
       imageUrl: match?.imageUrl ?? null,
       cloudinaryId: match?.cloudinaryId ?? null,
       description: match?.description ?? null,
+      /*
+       * The rank rides along rather than reordering the group. Options stay label-ascending
+       * because a facet list is also the source for the panel's chips and its active-filter
+       * count, both of which compare against option order; the caller that wants a pinned
+       * "Popular" group partitions on this field instead.
+       */
+      popularRank: match?.popularRank ?? null,
+      featuredRank: match?.featuredRank ?? null,
     };
   });
 }
@@ -2583,7 +2622,7 @@ function boatAgeRange(yearRange: NumericRange): NumericRange {
   };
 }
 
-function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
+export function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
   return {
     ...row,
     gallery: row.gallery ?? [],
@@ -2611,7 +2650,7 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
  * Folded into one number rather than added as a second key so the keyset cursor stays a single
  * comparable value; the +10 clears the 0..5 rating range with room to spare.
  */
-const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
+export const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
 /**
  * The charter length assumed where the row names no sellable one.

@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
@@ -53,11 +53,37 @@ export const facetMedia = pgTable(
     /* Default-locale (en) copy. Other locales live in facet_media_translation. */
     description: text("description"),
     sortOrder: integer("sort_order").default(0).notNull(),
+    /*
+     * The two curated orders. `popular_rank` pins a value to the top of a picker — the
+     * "Popular countries" group above the full list — and `featured_rank` orders the
+     * homepage sliders and grids. Both null means the value is neither.
+     *
+     * Two columns rather than one ranked list with a limit because the client's two lists
+     * are not prefixes of each other: the filter pins eight countries ending in Seychelles
+     * and Thailand, the homepage runs to twelve and takes France and the Caribbean at
+     * seven and eight. Taking the first eight of the longer list would pin the wrong four.
+     *
+     * These are the read columns. `sort_order` above predates them and nothing queries it.
+     */
+    popularRank: integer("popular_rank"),
+    featuredRank: integer("featured_rank"),
     ...timestamps,
   },
   (t) => [
     unique("facet_media_kind_value_key").on(t.kind, t.value),
     index("facet_media_kind_idx").on(t.kind),
+    /*
+     * Partial, so the index holds only the handful of curated rows rather than a null per
+     * facet value. Not unique: a rank is unique because the writer rewrites the whole
+     * ordered list in one statement, and a non-alphabetical unique constraint is the thing
+     * that breaks db:push on this schema (packages/db/AGENTS.md).
+     */
+    index("facet_media_popular_idx")
+      .on(t.kind, t.popularRank)
+      .where(sql`popular_rank is not null`),
+    index("facet_media_featured_idx")
+      .on(t.kind, t.featuredRank)
+      .where(sql`featured_rank is not null`),
   ],
 );
 

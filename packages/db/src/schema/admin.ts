@@ -219,6 +219,20 @@ export const marketplaceSetting = pgTable(
      * stays off until somebody turns it on to look a particular boat up.
      */
     nameSearchEnabled: boolean("name_search_enabled").default(false).notNull(),
+    /**
+     * How the "Popular yachts" slider is composed: how many boats, how many of each type, how
+     * old a boat may be, and how many may share a country or a base.
+     *
+     * One jsonb column rather than five scalars because these are one editorial policy that is
+     * always retuned together -- asking for more catamarans and asking for a looser country cap
+     * is the same decision -- and five columns would be five migrations' worth of surface for
+     * one slider. Null means the defaults in marketplace-settings.ts, so an unwritten row
+     * composes the slider exactly as a written default one does.
+     *
+     * Deliberately untyped here: the reader zod-parses it, because a shape asserted by the
+     * driver is not a shape the database promised.
+     */
+    popularYachtsConfig: jsonb("popular_yachts_config"),
     updatedByUserId: text("updated_by_user_id").references(() => user.id, { onDelete: "set null" }),
     ...timestamps,
   },

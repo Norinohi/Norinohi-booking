@@ -747,6 +747,8 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/destinations/croatia.webp",
     description: "A thousand islands, short hops between them, and marinas everywhere you look.",
     sortOrder: 1,
+    popularRank: 1,
+    featuredRank: 1,
   },
   {
     id: "fcm_country_gr",
@@ -755,6 +757,8 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/destinations/greece.webp",
     description: "Cyclades meltemi sailing, Ionian calm, and a taverna at every anchorage.",
     sortOrder: 2,
+    popularRank: 2,
+    featuredRank: 2,
   },
   {
     id: "fcm_country_it",
@@ -763,6 +767,8 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/destinations/italy.webp",
     description: "The Amalfi coastline, Sardinia's coves, and Sicily's volcanic islands.",
     sortOrder: 3,
+    popularRank: 4,
+    featuredRank: 4,
   },
   {
     id: "fcm_country_es",
@@ -771,6 +777,8 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/destinations/caribbean.webp",
     description: "Balearic beach clubs and quiet Menorcan bays within a day's sail.",
     sortOrder: 4,
+    popularRank: 3,
+    featuredRank: 3,
   },
   {
     id: "fcm_country_th",
@@ -779,6 +787,8 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/destinations/caribbean.webp",
     description: "Limestone islands off Phuket, warm water, and year-round sailing.",
     sortOrder: 5,
+    popularRank: 8,
+    featuredRank: 10,
   },
   {
     id: "fcm_category_catamaran",
@@ -787,6 +797,7 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/boat-types/catamaran.webp",
     description: "Stable, wide, and shallow-draft. The family and group default.",
     sortOrder: 1,
+    popularRank: 1,
   },
   {
     id: "fcm_category_sailing",
@@ -795,6 +806,7 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/boat-types/sailing-yacht.webp",
     description: "The classic monohull charter. Best value per cabin under sail.",
     sortOrder: 2,
+    popularRank: 2,
   },
   {
     id: "fcm_category_motor",
@@ -803,6 +815,7 @@ const facetMediaEntries = [
     imageUrl: "/assets/home/boat-types/motor-yacht.webp",
     description: "Cover more coast per day, with no sailing experience required.",
     sortOrder: 3,
+    popularRank: 4,
   },
   {
     id: "fcm_category_luxury",
@@ -836,6 +849,58 @@ const facetMediaEntries = [
     description: "Capri, Positano, and the Amalfi cliffs from the water.",
     sortOrder: 3,
   },
+];
+
+/*
+ * The rest of the curated lists, carrying a rank and nothing else.
+ *
+ * Separate from `facetMediaEntries` because these rows are identified by what they name rather
+ * than by an id this file chose. Every facet value already has a facet_media row -- the
+ * translations pipeline writes one per value with a generated id -- so seeding these with fixed
+ * ids collided on (kind, value) against rows that were already there. Upserting on the natural
+ * key instead is also the honest statement: what makes two of these the same row is that they
+ * are the same country, not that they share an id.
+ *
+ * A row here may carry no image and no copy. The ranks are the point, and a country the client
+ * wants pinned should not wait for a photograph; the admin screen writes rows exactly like these.
+ *
+ * Two of the boat types -- "Motor boat" and "Motor catamaran" -- name nothing the catalogue
+ * currently carries, and several amenity spellings are near-duplicates of their neighbour
+ * ("Air condition" beside "Air Conditioning"). Both are deliberate. Facets group on a normalized
+ * value, so the variants really are separate options, and a rank on a value no listing carries
+ * simply never surfaces until one does.
+ */
+const curatedFacetRanks = [
+  { kind: "country" as const, value: "Turkey", popularRank: 5, featuredRank: 5 },
+  { kind: "country" as const, value: "Norway", popularRank: 6, featuredRank: 6 },
+  { kind: "country" as const, value: "Seychelles", popularRank: 7, featuredRank: 9 },
+  { kind: "country" as const, value: "France", featuredRank: 7 },
+  { kind: "country" as const, value: "Caribbean", featuredRank: 8 },
+  { kind: "country" as const, value: "Montenegro", featuredRank: 11 },
+  { kind: "country" as const, value: "French Polynesia", featuredRank: 12 },
+  { kind: "category" as const, value: "Motor boat", popularRank: 3 },
+  { kind: "category" as const, value: "House boat", popularRank: 5 },
+  { kind: "category" as const, value: "Gulet", popularRank: 6 },
+  { kind: "category" as const, value: "Motor catamaran", popularRank: 7 },
+  { kind: "equipment" as const, value: "Air Conditioning", popularRank: 1 },
+  { kind: "equipment" as const, value: "Air condition", popularRank: 2 },
+  { kind: "equipment" as const, value: "Generator", popularRank: 3 },
+  { kind: "equipment" as const, value: "Water maker", popularRank: 4 },
+  { kind: "equipment" as const, value: "Bow thruster", popularRank: 5 },
+  { kind: "equipment" as const, value: "Inverter", popularRank: 6 },
+  { kind: "equipment" as const, value: "Wi-Fi Internet", popularRank: 7 },
+  { kind: "equipment" as const, value: "Wi-Fi & Internet", popularRank: 8 },
+  { kind: "equipment" as const, value: "Outboard engine", popularRank: 9 },
+  { kind: "equipment" as const, value: "Teak Cockpit", popularRank: 10 },
+  { kind: "equipment" as const, value: "Teak cockpit", popularRank: 11 },
+  { kind: "equipment" as const, value: "Barbecue grill in cockpit", popularRank: 12 },
+  { kind: "equipment" as const, value: "Swimming platform", popularRank: 13 },
+  { kind: "equipment" as const, value: "Bathing platform", popularRank: 14 },
+  { kind: "equipment" as const, value: "Refrigerator", popularRank: 15 },
+  { kind: "equipment" as const, value: "Freezer", popularRank: 16 },
+  { kind: "equipment" as const, value: "Chart plotter in cockpit", popularRank: 17 },
+  { kind: "equipment" as const, value: "Autopilot", popularRank: 18 },
+  { kind: "equipment" as const, value: "Bimini", popularRank: 19 },
 ];
 
 /*
@@ -2007,8 +2072,23 @@ export async function insertFacetMedia(): Promise<FacetMediaSeedResult> {
         imageUrl: sql`excluded.image_url`,
         description: sql`excluded.description`,
         sortOrder: sql`excluded.sort_order`,
+        /* Or a re-run against a database seeded before these existed leaves every row
+           unranked, and the curated lists silently stay empty. */
+        popularRank: sql`excluded.popular_rank`,
+        featuredRank: sql`excluded.featured_rank`,
       },
     });
+  await db
+    .insert(facetMedia)
+    .values(curatedFacetRanks)
+    .onConflictDoUpdate({
+      target: [facetMedia.kind, facetMedia.value],
+      set: {
+        popularRank: sql`excluded.popular_rank`,
+        featuredRank: sql`excluded.featured_rank`,
+      },
+    });
+
   await db
     .insert(facetMediaTranslation)
     .values(facetMediaTranslations)
@@ -2021,7 +2101,7 @@ export async function insertFacetMedia(): Promise<FacetMediaSeedResult> {
     });
 
   return {
-    facetsSeeded: facetMediaEntries.length,
+    facetsSeeded: facetMediaEntries.length + curatedFacetRanks.length,
     translationsSeeded: facetMediaTranslations.length,
   };
 }
