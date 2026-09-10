@@ -82,7 +82,8 @@ only add.
 
 ## Wiring the home page
 
-Five jobs. Four need no backend work; the fifth is called out.
+Six jobs. Five need no backend work; the fifth is called out. The sixth touches two
+shared controls rather than the home page alone.
 
 ### The endpoints
 
@@ -229,6 +230,45 @@ Either way, raise `AMENITY_LIMIT` to 4.
 There is an open question from the client on this one: whether the preview should show _all_ of a
 boat's main amenities rather than the top four. That is a design decision, not a technical limit —
 the full ordered list is available either way.
+
+### 6. Hero search pickers — `components/hero.tsx`, plus two shared controls
+
+The two pickers in the home page's search card: "Where to?" and the boat type. This is the one
+the client's first screenshot is of — the country dropdown with «Популярні країни» at the top.
+
+The data is already there. `options.countries` and `options.boatTypes` carry `popularRank` on the
+same facets payload the hero already reads. What is missing is that neither control can render a
+group yet.
+
+The hero uses single-selects, not the multi-select the search page uses:
+
+| Field     | Control            | File                                                        |
+| --------- | ------------------ | ----------------------------------------------------------- |
+| Where to? | `SearchableSelect` | `apps/web/src/components/shared/form/searchable-select.tsx` |
+| Boat type | `Select`           | `packages/ui/src/components/form/select.tsx`                |
+
+So it is three changes, in this order:
+
+- [ ] Add an optional `groups` prop to `Select`. It renders `options.map()` straight into
+      `SelectContent` today; base-ui ships `Select.Group` and `Select.GroupLabel` for this.
+- [ ] Add the same to `SearchableSelect`. It wraps `Combobox` with object items, so it needs
+      `Combobox.Group` with an `items` prop plus `Combobox.Collection`.
+- [ ] Pass the groups in `hero.tsx` for the country and boat fields. Leave the crew field alone —
+      three options do not need a heading.
+
+`MultiSelect` in `packages/ui/src/components/form/multi-select.tsx` already does exactly this for
+the combobox case; copy its shape. In both, `groups` must be opt-in and the flat path untouched,
+or every other select in the app inherits a heading it never asked for.
+
+Two things to keep consistent with the search page:
+
+- Reuse `partitionByPopularity` from `@/components/shared/form/filters`. It is what decides the
+  split, it sorts by rank, and it returns null when nothing is curated so the control falls back
+  to a flat list.
+- Reuse the existing labels — `Filters.groups.popularCountries` / `allCountries` and
+  `Filters.groups.popularBoatTypes` / `allBoatTypes`. They are already translated in all four
+  locales, and the Ukrainian boat-type pair is the client's own wording, «Популярні судна». Do not
+  mint a second set under `Home.Hero`.
 
 ## Where things live
 
