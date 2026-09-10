@@ -115,6 +115,7 @@ import {
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
 import { faqAdminRouter } from "./admin-faq";
+import { popularFacetsAdminRouter } from "./admin-popular-facets";
 import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
@@ -286,6 +287,13 @@ export const adminRouter = {
           displayCurrencyDefault: "EUR",
           displayCurrencyByCountry: {},
           nameSearchEnabled: false,
+          popularYachts: {
+            limit: 12,
+            maxAgeYears: 3,
+            maxPerCountry: 2,
+            maxPerBase: 1,
+            mix: { catamaran: 3, "sailing-yacht": 3, "motor-yacht": 2 },
+          },
         }),
       })
       .input(marketplaceSettingsUpdateInputSchema)
@@ -302,6 +310,7 @@ export const adminRouter = {
           displayCurrencyDefault: input.displayCurrencyDefault,
           displayCurrencyByCountry: input.displayCurrencyByCountry,
           nameSearchEnabled: input.nameSearchEnabled,
+          popularYachts: input.popularYachts,
           actorUserId: context.session.user.id,
         }),
       ),
@@ -313,6 +322,9 @@ export const adminRouter = {
   /* The FAQ editor, likewise its own module: it speaks in translation groups rather than rows
      and none of that shape is shared with anything else in here. */
   faq: faqAdminRouter,
+  /* The curated order of the facet values, likewise its own module: two procedures over one
+     pair of rank columns, sharing nothing with the screens above. */
+  popularFacets: popularFacetsAdminRouter,
   provider: {
     capabilities: adminProcedure
       .route({

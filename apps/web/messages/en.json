@@ -3182,6 +3182,16 @@
         "toggle": "Show the free-text field in the search bar",
         "hint": "A testing aid rather than part of the design. Switched on, the yacht search bar gains a field that matches a boat's name, model, builder, charter company or base, word by word and in any order."
       },
+      "popularYachts": {
+        "legend": "Popular yachts slider",
+        "hint": "How the home page's popular-yachts slider is composed. The type mix is a target: when the caps leave a type short, the remaining places go to the next best boats.",
+        "limit": "Boats shown",
+        "maxAgeYears": "Max age (years)",
+        "maxPerCountry": "Max per country",
+        "maxPerBase": "Max per base",
+        "mix": "Boats per type",
+        "mixHint": "Only the curated popular countries are drawn from. A type set to zero is left out."
+      },
       "save": "Save changes",
       "saving": "Saving...",
       "saved": "Settings saved.",

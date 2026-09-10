@@ -4,6 +4,8 @@ import {
   geographyOptionsInputSchema,
   geographyOptionsSchema,
   routeCreateInputSchema,
+  routeFeaturedReorderInputSchema,
+  routeFeaturedSchema,
   routeIdInputSchema,
   routeListInputSchema,
   routeListSchema,
@@ -23,7 +25,9 @@ import {
   deleteRoute,
   deleteRouteStop,
   getRoute,
+  listFeaturedRoutes,
   listRoutes,
+  reorderFeaturedRoutes,
   reorderRouteStops,
   setRouteActive,
   updateRoute,
@@ -106,6 +110,38 @@ export const routeAdminRouter = {
     .input(routeUpdateInputSchema)
     .output(routeSchema)
     .handler(({ context, input }) => updateRoute(context.db, context.session.user.id, input)),
+  listFeatured: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/route/list-featured",
+      operationId: "listFeaturedRoutes",
+      summary: "List the site-wide featured routes",
+      description:
+        "The routes on the popular-routes list, in the order they appear, with their stops and every translation. Drafts are left out: `active` is what says a route has an itinerary worth linking to, so a featured route that has been unpublished keeps its rank but is not listed until it is published again.",
+      tags: ["Admin"],
+      successDescription: "The featured routes in rank order.",
+      spec: withJsonBodyExample({}),
+    })
+    .input(z.object({}).optional())
+    .output(routeFeaturedSchema)
+    .handler(({ context }) => listFeaturedRoutes(context.db)),
+  reorderFeatured: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/route/reorder-featured",
+      operationId: "reorderFeaturedRoutes",
+      summary: "Replace the featured-route list",
+      description:
+        "Replaces the whole featured list with the routes given, in the order given; ranks come out 1-based and contiguous. A partial order is refused, because the routes left out would keep ranks the reordered ones now want. An empty list clears the selection. Writes an audit log entry holding the old and new order.",
+      tags: ["Admin"],
+      successDescription: "The featured routes in their new order.",
+      spec: withJsonBodyExample({ ids: ["srt_dalmatia", "srt_ionian"] }),
+    })
+    .input(routeFeaturedReorderInputSchema)
+    .output(routeFeaturedSchema)
+    .handler(({ context, input }) =>
+      reorderFeaturedRoutes(context.db, context.session.user.id, input),
+    ),
   setActive: adminProcedure
     .route({
       method: "POST",

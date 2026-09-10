@@ -3182,6 +3182,16 @@
         "toggle": "Mostrar el campo de texto libre en la barra de búsqueda",
         "hint": "Una ayuda para pruebas, ajena al diseño. Activado, la barra de búsqueda de yates añade un campo que busca por nombre, modelo, astillero, empresa chárter o base, palabra por palabra y en cualquier orden."
       },
+      "popularYachts": {
+        "legend": "Carrusel de yates populares",
+        "hint": "Cómo se compone el carrusel de yates populares de la página de inicio. La mezcla por tipo es un objetivo: si los límites dejan un tipo corto, las plazas restantes van a los siguientes mejores barcos.",
+        "limit": "Barcos mostrados",
+        "maxAgeYears": "Antigüedad máx. (años)",
+        "maxPerCountry": "Máx. por país",
+        "maxPerBase": "Máx. por base",
+        "mix": "Barcos por tipo",
+        "mixHint": "Solo se toman los países populares seleccionados. Un tipo en cero se omite."
+      },
       "save": "Guardar cambios",
       "saving": "Guardando...",
       "saved": "Ajustes guardados.",

@@ -3182,6 +3182,16 @@
         "toggle": "Freitextfeld in der Suchleiste anzeigen",
         "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht — Wort für Wort und in beliebiger Reihenfolge."
       },
+      "popularYachts": {
+        "legend": "Slider „Beliebte Yachten“",
+        "hint": "Wie der Slider mit beliebten Yachten auf der Startseite zusammengestellt wird. Die Typverteilung ist ein Richtwert: Fehlen einem Typ Boote, gehen die freien Plätze an die nächstbesten.",
+        "limit": "Angezeigte Boote",
+        "maxAgeYears": "Max. Alter (Jahre)",
+        "maxPerCountry": "Max. pro Land",
+        "maxPerBase": "Max. pro Basis",
+        "mix": "Boote je Typ",
+        "mixHint": "Es werden nur die ausgewählten beliebten Länder berücksichtigt. Ein Typ mit null bleibt außen vor."
+      },
       "save": "Anderungen speichern",
       "saving": "Wird gespeichert...",
       "saved": "Einstellungen gespeichert.",

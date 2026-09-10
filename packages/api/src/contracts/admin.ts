@@ -1065,6 +1065,26 @@ export const nameSearchEnabledSchema = z
     "Whether the yacht search bar shows the free-text field. A testing aid, off by default.",
   );
 
+/**
+ * How the home page's popular-yachts slider is composed.
+ *
+ * Every figure is bounded rather than merely typed, because this is stored as jsonb and read
+ * back through the same schema: a limit of a million would be a slider that tried to select the
+ * whole catalogue, and the parse is the only thing standing between the two.
+ *
+ * `mix` is open-keyed on purpose. The keys are boat-type filter values, and which of those exist
+ * is a property of the fleet rather than of this build -- pinning them to an enum would mean a
+ * release every time a vendor brought a new hull type. A key that matches no category simply
+ * contributes nothing.
+ */
+export const popularYachtsConfigSchema = z.object({
+  limit: z.number().int().min(1).max(48),
+  maxAgeYears: z.number().int().min(0).max(50),
+  maxPerCountry: z.number().int().min(1).max(48),
+  maxPerBase: z.number().int().min(1).max(48),
+  mix: z.record(z.string().min(1), z.number().int().min(0).max(48)),
+});
+
 export const marketplaceSettingsSchema = z.object({
   payment: marketplacePaymentSettingsSchema,
   transactingPreference: transactingPreferenceSchema,
@@ -1076,6 +1096,7 @@ export const marketplaceSettingsSchema = z.object({
   displayCurrencyDefault: displayCurrencyDefaultSchema,
   displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
+  popularYachts: popularYachtsConfigSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
 });
@@ -1091,6 +1112,7 @@ export const marketplaceSettingsUpdateInputSchema = z.object({
   displayCurrencyDefault: displayCurrencyDefaultSchema,
   displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
+  popularYachts: popularYachtsConfigSchema,
 });
 
 /** The slice of the settings a public page is allowed to read. */
