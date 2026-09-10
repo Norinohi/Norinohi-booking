@@ -22,17 +22,29 @@ const CONTACT_US =
   "We could not complete this booking with the operator. Our team has been notified, so please try again shortly or contact us.";
 
 /**
+ * Whether the vendor said the charter itself is gone, rather than failing to answer.
+ *
+ * The difference decides what is written down about the boat, so it is a taxonomy question
+ * and not a wording one: only a refusal that means "sold" may take a week off the calendar,
+ * while a vendor having a bad night must never look like a boat that no longer exists. Kept
+ * beside `customerMessage`, and read by it, so the sentence a customer sees and the fact we
+ * record cannot come to disagree.
+ */
+export function saysSlotIsGone(error: Error | null): boolean {
+  if (error instanceof SlotUnavailableError) return true;
+  return error instanceof ProviderError && error.errorType === "not_found";
+}
+
+/**
  * Classified off the taxonomy rather than the vendor's own code, so a provider we
  * add later needs no entry here: whatever `packages/providers` maps a status to
  * already decides which of the three a customer sees.
  */
 function customerMessage(error: Error | null): string {
-  if (error instanceof SlotUnavailableError) return UNAVAILABLE;
+  if (saysSlotIsGone(error)) return UNAVAILABLE;
   if (!(error instanceof ProviderError)) return CONTACT_US;
 
   switch (error.errorType) {
-    case "not_found":
-      return UNAVAILABLE;
     case "rate_limited":
     case "transient":
       return TRY_AGAIN;

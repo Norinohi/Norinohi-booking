@@ -9,7 +9,7 @@ import {
   TransientError,
 } from "@yacht-charter/providers/shared/errors";
 
-import { describeProviderFailure } from "./provider-failure";
+import { describeProviderFailure, saysSlotIsGone } from "./provider-failure";
 
 describe("describeProviderFailure", () => {
   it("keeps the vendor text out of what the customer reads", () => {
@@ -48,5 +48,26 @@ describe("describeProviderFailure", () => {
       customer: expect.stringMatching(/contact us/i),
       detail: "Provider rejected the option",
     });
+  });
+});
+
+describe("saysSlotIsGone", () => {
+  /* This is what decides whether a week is written off as sold, so it has to be narrower than
+     "the vendor said no": a boat that is merely unreachable must stay on sale. */
+  it("is true only where the vendor said the charter itself is gone", () => {
+    expect(saysSlotIsGone(new SlotUnavailableError("gone"))).toBe(true);
+    expect(saysSlotIsGone(new NotFoundError("gone"))).toBe(true);
+  });
+
+  it("is false for a vendor that failed to answer, and for a thrown non-error", () => {
+    for (const error of [
+      new TransientError("boom"),
+      new RateLimitedError("slow down"),
+      new AuthError("no access", { providerCode: "OPERATION_NOT_ALLOWED" }),
+      new ContractError("bad payload"),
+    ]) {
+      expect(saysSlotIsGone(error)).toBe(false);
+    }
+    expect(saysSlotIsGone(null)).toBe(false);
   });
 });

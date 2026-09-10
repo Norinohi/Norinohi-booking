@@ -29,6 +29,7 @@ import {
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 
 import { classifyRefusal } from "../lib/refusal-report";
+import { saysSlotIsGone } from "../lib/provider-failure";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
@@ -354,6 +355,55 @@ async function learnFromRefusal(
 }
 
 /**
+ * The same lesson from a refused booking call as from a refused quote.
+ *
+ * Both calls that name a real customer end here. A refused hold is the deepest anyone gets
+ * before paying: they picked the boat, filled in the guest details, pressed Confirm, and only
+ * then did the vendor say the week was gone. A refused confirmation is worse still, because
+ * the money has already moved and the booking is on its way to a refund. Neither taught the
+ * catalogue anything -- the booking went to PROVIDER_REJECTED, that customer was told to pick
+ * new dates, and the week stayed on the card for everyone behind them until the next sync.
+ * Those are the refusals most worth keeping, because reaching one costs a customer.
+ *
+ * Only a vendor saying the charter is gone. A timeout or an auth failure is our own trouble
+ * wearing the vendor's answer, and writing it down would retire a week nobody has sold.
+ *
+ * Everything else -- the smaller-party probe that keeps a party too large for the boat from
+ * reading as a dead week, the guard that only writes where our own constraints said yes, the
+ * immediate rebuild of this one listing -- is `learnFromRefusal`'s, deliberately: one policy
+ * for what a refusal teaches, whichever call heard it.
+ */
+export async function learnFromProviderRefusal(
+  db: Database,
+  provider: InventoryProvider,
+  priced: typeof quote.$inferSelect,
+  error: Error | null,
+): Promise<void> {
+  if (!saysSlotIsGone(error) || !priced.listingOfferId) return;
+
+  const input: QuoteRequest = {
+    listingId: priced.listingId,
+    checkIn: priced.checkIn,
+    checkOut: priced.checkOut,
+    guests: priced.guests,
+    extras: priced.extras,
+    currency: priced.currency,
+  };
+  const crewType = asCrewType(priced.crewType);
+  if (crewType) input.crewType = crewType;
+
+  await learnFromRefusal(db, provider, input, [
+    {
+      outcome: "unavailable",
+      offerId: priced.listingOfferId,
+      providerCode: provider.key,
+      reason: error?.name ?? "SlotUnavailableError",
+      latencyMs: null,
+    },
+  ]);
+}
+
+/**
  * Re-prices an existing quote. The old row is marked `consumed` and points at its
  * replacement rather than being edited, so the chain of what was offered when stays
  * intact (§1.5 — immutable, supersede rather than mutate).
@@ -406,7 +456,7 @@ export async function repriceQuote(
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
-  const request: Parameters<typeof priceOrConflict>[1] = {
+  const request: QuoteRequest = {
     listingId: existing.listingId,
     checkIn: changes.checkIn ?? existing.checkIn,
     checkOut: changes.checkOut ?? existing.checkOut,
@@ -418,7 +468,7 @@ export async function repriceQuote(
   if (requestedCrewType) request.crewType = requestedCrewType;
   if (requestedEndBaseId) request.endBaseId = requestedEndBaseId;
 
-  const priced = await priceOrConflict(provider, request);
+  const priced = await priceOrConflict(db, provider, request, existing.listingOfferId);
 
   const replacement = await db.transaction(async (tx) => {
     const result = await persistPricedQuote(tx, priced, {
@@ -535,8 +585,10 @@ async function assertRequestableExtras(
 }
 
 async function priceOrConflict(
+  db: Database,
   provider: InventoryProvider,
   input: QuoteRequest,
+  listingOfferId: string | null,
 ): Promise<ProviderQuote> {
   try {
     return await provider.getQuote(input);
@@ -550,15 +602,31 @@ async function priceOrConflict(
        * available" with nothing written down anywhere. The vendor is the only thing that can
        * refuse on this path -- anything else rethrows above -- so it is always its answer.
        */
-      reportRefusal(input, [
+      const attempts: OfferAttempt[] = [
         {
           outcome: "unavailable",
-          offerId: "",
+          /*
+           * The quote's own offer, which is the one that just refused: a reprice never
+           * changes seller. It was written as an empty string, and `recordLiveRefusals`
+           * matches attempts to published constraints by offer id, so every refusal on this
+           * path was dropped on the floor -- learned from only when the same week was asked
+           * about again through `createQuote`.
+           */
+          offerId: listingOfferId ?? "",
           providerCode: provider.key,
           reason: error.name,
           latencyMs: null,
         },
-      ]);
+      ];
+      reportRefusal(input, attempts);
+      /*
+       * And learned from, like the first quote's refusal. Reloading a checkout re-prices its
+       * quote, so this is where a week booked away from us since the last sync is discovered
+       * -- the one moment the vendor contradicts our calendar about the exact charter someone
+       * is paying for. Logging it and moving on left the card advertising that week until the
+       * sync came round, and the next visitor met the same refusal.
+       */
+      if (listingOfferId) await learnFromRefusal(db, provider, input, attempts);
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;

@@ -50,7 +50,7 @@ import { paginatedQuery, totalFrom } from "./pagination";
 import { recordEvent, releaseProviderOption, type ProviderRelease } from "./provider-option";
 import { isUniqueViolation, violatedConstraint } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
-import { asCrewType, assertQuoteIsFresh } from "./quote";
+import { asCrewType, assertQuoteIsFresh, learnFromProviderRefusal } from "./quote";
 import type { GuestAccessToken } from "./guest-access";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
@@ -593,6 +593,16 @@ async function holdOption(
     await recordEvent(db, rejected.id, "confirm_failed", rejected.provider, null, {
       message: failure.detail,
     });
+    /*
+     * And take the week off the card, where the vendor said it is the week that is gone.
+     *
+     * The customer has already been answered by everything above; this is for the ones behind
+     * them, who would otherwise keep finding the same charter advertised and keep reaching this
+     * same refusal. It costs a vendor call when the party is large enough to be the reason for
+     * the refusal, which is the probe that stops a boat too small from reading as a boat that
+     * is booked.
+     */
+    await learnFromProviderRefusal(db, provider, priced, refusal);
     throw new ORPCError("CONFLICT", { message: failure.customer });
   }
 }

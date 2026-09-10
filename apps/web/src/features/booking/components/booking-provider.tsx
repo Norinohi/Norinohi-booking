@@ -263,7 +263,26 @@ export function BookingProvider({
     startedRef.current = attempt;
 
     setLoadError(false);
-    load(quoteId).catch(() => setLoadError(true));
+    load(quoteId).catch((error: Error) => {
+      /*
+       * A vendor refusing the quote's own period is not this page failing to load.
+       *
+       * Reloading a checkout re-prices its quote live, so a week booked away from us since it
+       * was quoted comes back here as a CONFLICT -- and every one of them read as "We couldn't
+       * load this booking's price", above a Try again that asks the vendor the same question
+       * and gets the same no. The visitor was told we were broken about a boat that was simply
+       * sold, and handed the one control that cannot help.
+       *
+       * `slotError` is the answer the listing page already gives to exactly this refusal, and
+       * it points at the date picker, which is the control that can. The picker reads the
+       * published constraints rather than the quote, so it is usable with no quote at all.
+       */
+      if (isSlotConflict(error)) {
+        setSlotError(true);
+        return;
+      }
+      setLoadError(true);
+    });
   }, [quoteId, load, loadAttempt]);
 
   function retryLoad() {

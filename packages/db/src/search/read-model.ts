@@ -1,4 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { sellableOffer } from "../sellable-offer";
 import { and, eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
@@ -747,21 +748,16 @@ export async function rebuildListingSearchDocs(
       ) fx on true
       where o.status = 'active'
         /*
-         * A hull the operator has retired. NauSYS keeps it in the catalogue dump with the date
-         * it left the fleet, so nothing about the sync notices; the boat simply cannot be
-         * chartered any more. Dropped here rather than deleted, because a charter already
-         * booked on it still has to be readable.
+         * A hull the operator has retired, or one the vendor will not let us sell unattended.
+         * Dropped here rather than deleted, because a charter already booked on it still has to
+         * be readable. Offer selection applies the same predicate, so the search page and the
+         * listing page cannot disagree about what is for sale.
          */
-        and (o.out_of_fleet_date is null or o.out_of_fleet_date > current_date)
-        /*
-         * A hull the vendor will not let us sell on our own authority. NauSYS publishes
-         * needsOptionApproval and canMakeBookingFixed per boat, and selling one of those as
-         * an instant hold puts the refusal at the end of checkout, where the customer has
-         * already filled in the guest details: createOption answers OPERATION_NOT_ALLOWED.
-         * Null is "the vendor does not say", which is every Booking Manager offer.
-         */
-        and o.option_approval_required is not true
-        and o.fixed_booking_supported is not false
+        and ${sellableOffer({
+          outOfFleetDate: sql`o.out_of_fleet_date`,
+          optionApprovalRequired: sql`o.option_approval_required`,
+          fixedBookingSupported: sql`o.fixed_booking_supported`,
+        })}
         and ${listingScope(sql`o.listing_id`, listingIds)}
     ),
     /*

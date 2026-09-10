@@ -13,7 +13,7 @@ import { notifyBookingConfirmed } from "./booking-email";
 import { canTransition, type BookingStatus } from "./booking-state";
 import { outstandingMinor } from "./checkout-amounts";
 import { awardReferralCredit } from "./loyalty";
-import { asCrewType } from "./quote";
+import { asCrewType, learnFromProviderRefusal } from "./quote";
 
 type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
 
@@ -116,6 +116,19 @@ export async function confirmBookingWithProvider(
     const failure = describeProviderFailure(refusal, "Provider rejected the booking");
     reportProviderRefusal("confirm", refusal, { bookingId, provider: row.provider });
     await markRejected(db, bookingId, row.provider, failure);
+    /*
+     * And take the week off the card, where the vendor said it is the week that is gone.
+     *
+     * Nothing here can help this customer -- they have paid, and the row above has already
+     * started the refund. It is for whoever comes next: a week the vendor refused after taking
+     * the money is the strongest evidence we ever get that it is not for sale, and leaving it
+     * advertised sends the next person down the same road.
+     *
+     * Best-effort by construction, which matters more on this path than on the others: the
+     * callers are a Stripe webhook and an admin settling an invoice, and neither may fail over
+     * bookkeeping about the catalogue.
+     */
+    await learnFromProviderRefusal(db, provider, priced, refusal);
 
     return { outcome: "rejected", message: failure.customer };
   }
