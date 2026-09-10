@@ -725,7 +725,9 @@
       "popularMarinas": "Popular marinas",
       "allMarinas": "All marinas",
       "popularBoatTypes": "Popular boat types",
-      "allBoatTypes": "All boat types"
+      "allBoatTypes": "All boat types",
+      "popularModels": "Popular models",
+      "allModels": "All models"
     },
     "aria": {
       "builtFrom": "Built from year",
@@ -3156,6 +3158,7 @@
         "equipment": "Amenities",
         "region": "Sailing areas",
         "marina": "Marinas",
+        "model": "Models",
         "location": "Locations",
         "crew": "Crew types",
         "sail_type": "Mainsail types"

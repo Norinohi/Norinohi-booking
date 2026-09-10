@@ -56,8 +56,8 @@ export default function PopularFacetsTable() {
   const { data, isPending, isError } = usePopularFacets({ kind, surface, locale });
   const save = useSetPopularFacets();
 
-  /* The server's order is the truth whenever the pairing changes or a save comes back, and the
-     local copy exists only to survive the round trip between an arrow and the refetch. */
+  /* A different kind or surface is a different list, so the local copy is dropped and the
+     server's answer takes over again. */
   useEffect(() => {
     setOrder(null);
   }, [kind, surface]);
@@ -66,19 +66,29 @@ export default function PopularFacetsTable() {
   const values = order ?? savedOrder;
   const byValue = new Map((data?.available ?? []).map((option) => [option.value, option]));
 
+  /*
+   * Saves the whole ordered list and keeps the local copy as what the screen shows.
+   *
+   * The local copy is deliberately *not* dropped when the save succeeds. Doing that fell back
+   * to the query's list, which has not refetched yet, so ticking three values quickly saved
+   * only the last: each tick rebuilt its list from a copy that still predated the tick before
+   * it. Keeping it means the next tick builds on what was actually just saved, and the query's
+   * answer takes over again only when the kind or surface changes.
+   */
   const commit = (next: string[]) => {
     setOrder(next);
     save.mutate(
       { kind, surface, values: next },
       {
         onSuccess: (result) => {
-          setOrder(null);
           /* A save reaches the database before it reaches the web app's cache, and only the
              second half can fail. Saying so beats a bare success on a page that has not moved. */
           toast[result.cache.ok || !result.cache.attempted ? "success" : "warning"](
             result.cache.ok || !result.cache.attempted ? t("saved") : t("cacheWarning"),
           );
         },
+        /* The server kept whatever it had, so the local copy is now a lie; drop it and show
+           what the refetch brings back. */
         onError: () => {
           setOrder(null);
           toast.error(t("error"));

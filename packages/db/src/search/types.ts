@@ -1,4 +1,5 @@
 import type { faqCategory } from "../schema/content";
+import type { facetMediaKind } from "../schema/facet-media";
 import type { CrewType } from "./crew";
 
 export type FaqCategory = (typeof faqCategory)["enumValues"][number];
@@ -376,15 +377,12 @@ export type ListingFacetOption = {
   featuredRank?: number | null;
 };
 
-export type FacetMediaKind =
-  | "country"
-  | "region"
-  | "location"
-  | "marina"
-  | "category"
-  | "crew"
-  | "sail_type"
-  | "equipment";
+/*
+ * Derived from the column rather than restated, because a hand-written copy of it drifted the
+ * moment a kind was added: the enum gained "model" and this union did not, so the facet query
+ * could not ask to be decorated as one.
+ */
+export type FacetMediaKind = (typeof facetMediaKind.enumValues)[number];
 
 export type ListingFacets = {
   destinations: string[];

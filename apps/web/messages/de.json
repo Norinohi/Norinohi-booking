@@ -725,7 +725,9 @@
       "popularMarinas": "Beliebte Marinas",
       "allMarinas": "Alle Marinas",
       "popularBoatTypes": "Beliebte Bootstypen",
-      "allBoatTypes": "Alle Bootstypen"
+      "allBoatTypes": "Alle Bootstypen",
+      "popularModels": "Beliebte Modelle",
+      "allModels": "Alle Modelle"
     },
     "aria": {
       "builtFrom": "Baujahr ab",
@@ -3156,6 +3158,7 @@
         "equipment": "Ausstattung",
         "region": "Segelgebiete",
         "marina": "Marinas",
+        "model": "Modelle",
         "location": "Orte",
         "crew": "Crew-Typen",
         "sail_type": "Großsegeltypen"

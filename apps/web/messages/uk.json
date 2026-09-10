@@ -725,7 +725,9 @@
       "popularMarinas": "Популярні марини",
       "allMarinas": "Усі марини",
       "popularBoatTypes": "Популярні судна",
-      "allBoatTypes": "Усі судна"
+      "allBoatTypes": "Усі судна",
+      "popularModels": "Популярні моделі",
+      "allModels": "Усі моделі"
     },
     "aria": {
       "builtFrom": "Рік побудови від",
@@ -3156,6 +3158,7 @@
         "equipment": "Зручності",
         "region": "Райони плавання",
         "marina": "Марини",
+        "model": "Моделі",
         "location": "Локації",
         "crew": "Типи екіпажу",
         "sail_type": "Типи грота"

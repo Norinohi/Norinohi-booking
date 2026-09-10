@@ -20,6 +20,9 @@ const COLUMN_BY_KIND = {
   category: sql`doc.category`,
   crew: sql`doc.crew_type`,
   sail_type: sql`doc.sail_type`,
+  /* The same coalesce the facet groups on, or the admin screen would offer models the filter
+     cannot match and hide the builder-only hulls the filter does. */
+  model: sql`coalesce(doc.model, doc.builder)`,
   /* Amenities are a jsonb array, so this one is unnested rather than selected. See below. */
   equipment: sql`amenity.value`,
 } satisfies Record<FacetMediaKind, SQL>;

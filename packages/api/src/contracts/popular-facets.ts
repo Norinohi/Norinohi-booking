@@ -18,6 +18,7 @@ export const popularFacetKindSchema = z.enum([
   "crew",
   "sail_type",
   "equipment",
+  "model",
 ]);
 
 /**

@@ -725,7 +725,9 @@
       "popularMarinas": "Puertos populares",
       "allMarinas": "Todos los puertos",
       "popularBoatTypes": "Tipos de barco populares",
-      "allBoatTypes": "Todos los tipos de barco"
+      "allBoatTypes": "Todos los tipos de barco",
+      "popularModels": "Modelos populares",
+      "allModels": "Todos los modelos"
     },
     "aria": {
       "builtFrom": "Año de construcción desde",
@@ -3156,6 +3158,7 @@
         "equipment": "Equipamiento",
         "region": "Zonas de navegación",
         "marina": "Puertos",
+        "model": "Modelos",
         "location": "Localidades",
         "crew": "Tipos de tripulación",
         "sail_type": "Tipos de vela mayor"

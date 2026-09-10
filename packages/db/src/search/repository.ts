@@ -654,7 +654,7 @@ export async function listSearchFacets(
     listFacetOptions(db, input, sql`doc.operator`, ["charterCompany"]),
     listFacetOptions(db, input, sql`doc.base_name`, ["marina", "destination"], "marina"),
     listFacetOptions(db, input, sql`doc.category`, ["boatType", "category"], "category"),
-    listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"]),
+    listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"], "model"),
     listFacetOptions(db, input, sql`doc.crew_type`, ["crew"], "crew"),
     listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"], "sail_type"),
     listEquipmentFacetOptions(db, input),

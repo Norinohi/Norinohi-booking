@@ -1,0 +1,1 @@
+ALTER TYPE "public"."facet_media_kind" ADD VALUE 'model';

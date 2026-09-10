@@ -31,6 +31,9 @@ export const facetMediaKind = pgEnum("facet_media_kind", [
   "crew",
   "sail_type",
   "equipment",
+  /* Boat model, which the facet derives as `coalesce(model, builder)` -- so a value here may
+     name a model ("Sun Odyssey 380") or, for a hull with no model recorded, a builder. */
+  "model",
 ]);
 
 /*

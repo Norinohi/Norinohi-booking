@@ -164,6 +164,7 @@ export const POPULAR_FACET_KINDS: readonly PopularFacetKind[] = [
   "equipment",
   "region",
   "marina",
+  "model",
   "location",
   "crew",
   "sail_type",
