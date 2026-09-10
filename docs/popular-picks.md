@@ -77,92 +77,116 @@ only add.
 
 ## Wiring the home page
 
-Everything below is already served. No backend work is needed except where this says so.
+Four jobs. Three need no backend work; the fourth is called out.
 
-Run locally with three commands, in this order — the web build calls the API, so the server has
-to be up first:
+### Run it locally first
 
 ```bash
-pnpm db:start
-pnpm dev:server
-pnpm dev:web
+pnpm db:start          # Postgres on 5434
+pnpm dev:server        # API on :3000 — start before web, the build calls it
+pnpm dev:web           # http://localhost:3001
 ```
 
-Then `pnpm --filter @yacht-charter/db seed -- --facets-only` once, to get the curated lists into
-your local database.
+Once, to get the curated lists into your database:
 
-Types flow from `AppRouterClient` with no codegen. Never hand-write a request or response type;
-infer it, the way `apps/web/src/features/home/types.ts` already does.
+```bash
+pnpm --filter @yacht-charter/db seed -- --facets-only
+```
 
-### Popular destinations
+Check it worked at `/popular` (staff login needed): Countries should show 8 pinned, and switching
+the second selector to "Home page" should show 12. If both are empty, the seed did not run.
 
-No new endpoint. `charterSearch.facets` already carries what the cards need, and the home page
-already fetches it through `useFilterOptions()`.
+Change a curated list there and the search filters change on reload — that is the loop you are
+wiring the home page into.
 
-Take `options.countries`, keep the entries whose `featuredRank` is not null, sort by it ascending.
-Twelve come back. Each option carries `label`, `count`, `imageUrl`, `cloudinaryId`,
-`priceFromMinor` and `currency`, which is everything `popular-destinations.tsx` reads today — it
-currently renders the same list alphabetically.
+Types come from `AppRouterClient` by inference. Never hand-write a request or response type.
 
-Slider shows the first six; the "View All Popular" grid shows all twelve in three columns by four
-rows.
+### 1. Popular Destinations — `components/popular-destinations.tsx`
 
-`partitionByPopularity` in `@/components/shared/form/filters` does the popular/rest split for
-`popularRank`. It does **not** handle `featuredRank`; the home page sorts on that itself.
+No new endpoint and no new fetch. The component already reads `useFilterOptions()`, and the
+countries it lists now carry the curated order.
 
-### Popular sailing routes
+- [ ] Filter `options.countries` to entries whose `featuredRank` is not null, sort ascending.
+      Twelve come back.
+- [ ] Slider renders the first six. Today it renders every country, alphabetically.
+- [ ] Change the "See All Destinations" button to "View All Popular" and point it at a grid of
+      all twelve, three columns by four rows.
+- [ ] Card price reads `from $$$ per person/week`. `priceFromMinor` and `currency` are on the
+      option already; per-person is a division the card does, not a field.
 
-`charterSearch.popularRoutes({ locale, limit })`. Replaces the hard-coded `ROUTES` array in
-`sailing-routes.tsx`.
+Each option carries `label`, `count`, `imageUrl`, `cloudinaryId`, `priceFromMinor`, `currency` —
+everything the card reads today.
+
+`partitionByPopularity` in `@/components/shared/form/filters` splits on `popularRank`, not
+`featuredRank`. Do not reach for it here; sort inline.
+
+### 2. Popular Sailing Routes — `components/sailing-routes.tsx`
+
+Replaces the hard-coded `ROUTES` array outright.
+
+- [ ] Add `charterSearch.popularRoutes({ locale, limit })` to `features/home/api/queries.ts` as a
+      query-options factory, and prefetch it in `api/server.ts` beside the other two.
+- [ ] Pin the client `staleTime` to the server tier you cache it on, or every visitor refetches
+      on hydration. The comment in `prefetchHome` explains why.
+- [ ] Slider shows six, then a "View All Popular" grid of twelve, three by four.
+- [ ] Card shows country on the image, direction and description below it.
+- [ ] Drop the local `/assets/home/sailing-routes/*.webp` imports — `imageUrl` and `cloudinaryId`
+      come from the route.
 
 Each route carries `title`, `description`, `nights`, `difficulty` (`easy` / `moderate` /
 `advanced`, or null), `imageUrl`, `cloudinaryId`, `placeLabel` ("Dalmatia · Croatia"),
-`countryValue` for building the card's search link, and `stops` with coordinates.
+`countryValue` for the card's search link, and `stops` with coordinates for the detail map.
 
-Copy comes back in the requested language, falling back to the route's own text where that
-language has none. Only published routes are returned. Staff author them on `/routes`, including
-the four-locale panes and the featured order.
+**Blocked until someone authors the routes.** Only published, featured routes come back, and
+today the database has one. The three on the page are hard-coded and translated through message
+files, so moving to this endpoint moves their copy into the database. Staff write them on
+`/routes`, including the four-locale panes and the featured order. Until then the slider is
+empty, which is correct behaviour rather than a bug in your wiring.
 
-The three routes on the page today are hard-coded with local images and translated through
-message files. Moving to this endpoint means their copy moves into the database, so somebody has
-to author them on `/routes` first or the slider comes back empty.
+### 3. Popular Yachts — `components/popular-yachts.tsx`
 
-### Popular yachts
+Currently `charterSearch.results` with `sort: "rating", pageSize: 5`. Swap the endpoint.
 
-`charterSearch.popularYachts({ locale, currency, seed })`.
+- [ ] Replace `popularYachtsQueryOptions` in `features/home/api/queries.ts` with
+      `charterSearch.popularYachts({ locale, currency })`.
+- [ ] Update `getPopularYachts()` in `api/server.ts` to match, keeping the `hours` tier and the
+      `staleTime` pinned to it.
+- [ ] Render twelve instead of five. `items` are ordinary listing summaries — the same shape the
+      card takes today, so the card itself does not change.
 
-Returns `items` as ordinary listing summaries — the same shape `popular-yachts.tsx` already
-renders — plus the `config` the selection was made under.
+Two traps.
 
-Composition is edited on `/settings`: how many boats, maximum age, maximum per country, maximum
-per base, and the per-type mix. Only the curated popular countries are drawn from.
+**Leave `seed` off.** The server buckets the clock by the day, so the slider rotates daily and is
+stable inside a cache window. Passing your own unstable value fails the build with
+`blocking-prerender-current-time`.
 
-**The mix is a target, not a guarantee.** When the caps starve a type, the remaining places go to
-the next best boats rather than leaving the slider short. Do not assume exactly three catamarans.
+**The type mix is a target, not a guarantee.** When the per-country and per-base caps starve a
+type, the free places go to the next best boats. Do not write a layout that assumes exactly three
+catamarans. `config` comes back alongside `items` if you need to show what was asked for.
 
-Leave `seed` off. The server buckets the clock by the day, so the selection rotates daily and is
-stable inside a cache window. Passing an unstable value would break the prerender — see the
-comment in `prefetchHome`.
+Composition is edited on `/settings` — count, maximum age, caps, and the per-type mix.
 
-### Amenity chips on a yacht card
+### 4. Amenity chips on a yacht card — needs backend work first
 
-This one needs a small backend change first, so read before starting.
+The four chips should be the boat's best amenities by curated priority rather than the first four
+it happens to list. `boat-card-fields.ts` currently takes the first three (`AMENITY_LIMIT = 3`).
 
-The four chips should be the boat's best amenities by curated priority, not the first four it
-happens to list. The ranks exist: `options.equipment` from the facets read carries `popularRank`,
-and `topAmenities` in `packages/db/src/search/amenity-priority.ts` does the ordering.
+The ranks exist and the ordering function is written — `topAmenities` in
+`packages/db/src/search/amenity-priority.ts` — but `apps/web` cannot import it. The web app does
+not depend on `@yacht-charter/db` and should not start; it talks to the server over oRPC only.
 
-`apps/web` cannot import that helper — it does not depend on `@yacht-charter/db` and should not
-start. Two ways forward, and the first is better:
+- [ ] **Backend, preferred:** apply `topAmenities` in `presentListingSummary`
+      (`packages/api/src/presenters/listing.ts`) so every card and every consumer gets the same
+      four. Nothing changes in the web app afterwards except the limit.
+- [ ] **Frontend fallback:** sort in `boat-card-fields.ts` against `popularRank` on
+      `options.equipment` from the facets read. Works, but every surface showing a card has to
+      remember to do it.
 
-1. **Apply it server-side** in `presentListingSummary` (`packages/api/src/presenters/listing.ts`),
-   so every card and every consumer gets the same four. One backend change, nothing for the web
-   app to do.
-2. Sort client-side in `apps/web/src/lib/boat-card-fields.ts` against the ranks from the equipment
-   facet. Works, but every surface that shows a card has to remember to do it.
+Either way, raise `AMENITY_LIMIT` to 4.
 
-`boat-card-fields.ts` currently takes the first three (`AMENITY_LIMIT = 3`); the client asked for
-four.
+There is an open question from the client on this one: whether the preview should show _all_ of a
+boat's main amenities rather than the top four. That is a design decision, not a technical limit —
+the full ordered list is available either way.
 
 ## Where things live
 
