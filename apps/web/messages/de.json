@@ -34,7 +34,7 @@
       "included": "Inklusive",
       "arrangeAtBase": "Mit der Basis vereinbaren",
       "notOnTheseDates": "In diesem Zeitraum nicht verfügbar",
-      "notOnTheseDatesAsk": "An diesen Daten nicht verfügbar — Sie können die Basis fragen",
+      "notOnTheseDatesAsk": "An diesen Daten nicht verfügbar - Sie können die Basis fragen",
       "requestedAtBase": "Bei der Basis angefragt, dort zu zahlen"
     },
     "guestDetails": {
@@ -450,6 +450,8 @@
       "dueWithPrepayment": "Mit der Anzahlung fällig",
       "payNow": "In der Anzahlung enthalten",
       "includedInPrice": "Im Preis enthalten",
+      "priceOnRequest": "Preis auf Anfrage",
+      "confirmWithBase": "Kein Preis angegeben, bei der Basis erfragen",
       "percentageOfCharter": "{percent}% des Charterpreises",
       "measure": {
         "booking": "{price} pro Buchung",

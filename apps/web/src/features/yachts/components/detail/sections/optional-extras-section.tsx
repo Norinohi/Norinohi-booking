@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useBooking } from "@/features/booking";
 import { useExtraPrice } from "@/hooks/use-extra-price";
 import { useMoney } from "@/hooks/use-money";
+import { extraPriceKind } from "@/lib/extra-price-kind";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
@@ -156,19 +157,24 @@ function ExtraRow({
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
   const extraPrice = useExtraPrice();
-  /*
-   * An extra the charter price already covers is collected nowhere and costs nothing, so it
-   * carries neither caption nor figure: the offer prices it at zero, and the catalogue's own
-   * list value would read as a charge the customer is not being asked for.
-   */
-  const included =
-    item.percentage === null && (item.pricingType === "included" || item.price.amountMinor === 0);
+  const kind = extraPriceKind(item, offered);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered
     ? offered.payWhen === "at_check_in"
     : item.pricingType === "pay_at_check_in";
-  const caption = note ?? (atCheckIn && !included ? tExtras("payAtCheckIn") : null);
+  /*
+   * An extra the charter price already covers is collected nowhere, so it carries no caption.
+   * One with no published rate carries the opposite: the figure beside it is not a price, and
+   * saying when to pay a price nobody has named would be the more confusing half.
+   */
+  const caption =
+    note ??
+    (kind === "unpriced"
+      ? tExtras("confirmWithBase")
+      : atCheckIn && kind !== "included"
+        ? tExtras("payAtCheckIn")
+        : null);
 
   return (
     <>
@@ -182,13 +188,20 @@ function ExtraRow({
         <Skeleton className="h-5.5 w-24 shrink-0" />
       ) : (
         <p className="shrink-0 text-base font-bold text-foreground">
-          {item.percentage !== null
+          {kind === "percentage" && item.percentage !== null
             ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
-            : included
+            : kind === "included"
               ? tExtras("includedInPrice")
-              : offered
-                ? money(offered.amount.amountMinor, offered.amount.currency)
-                : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
+              : kind === "unpriced"
+                ? tExtras("priceOnRequest")
+                : offered
+                  ? money(offered.amount.amountMinor, offered.amount.currency)
+                  : extraPrice(
+                      item.price.amountMinor,
+                      item.priceMeasure,
+                      null,
+                      item.price.currency,
+                    )}
         </p>
       )}
     </>

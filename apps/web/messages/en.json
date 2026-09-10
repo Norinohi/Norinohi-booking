@@ -34,7 +34,7 @@
       "included": "Included",
       "arrangeAtBase": "Arrange with the base",
       "notOnTheseDates": "Not available on these dates",
-      "notOnTheseDatesAsk": "Not available on these dates — you can ask the base",
+      "notOnTheseDatesAsk": "Not available on these dates - you can ask the base",
       "requestedAtBase": "Requested from the base, paid there"
     },
     "guestDetails": {
@@ -450,6 +450,8 @@
       "dueWithPrepayment": "Due with the prepayment",
       "payNow": "Included in prepayment",
       "includedInPrice": "Included in the price",
+      "priceOnRequest": "Price on request",
+      "confirmWithBase": "Price not published, confirm with the base",
       "percentageOfCharter": "{percent}% of the charter price",
       "oneWayOnly": "One-way charters only",
       "measure": {

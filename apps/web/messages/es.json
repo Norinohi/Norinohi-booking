@@ -34,7 +34,7 @@
       "included": "Incluido",
       "arrangeAtBase": "Acordar con la base",
       "notOnTheseDates": "No disponible en estas fechas",
-      "notOnTheseDatesAsk": "No disponible en estas fechas — puedes preguntar a la base",
+      "notOnTheseDatesAsk": "No disponible en estas fechas - puedes preguntar a la base",
       "requestedAtBase": "Solicitado a la base, se paga allí"
     },
     "guestDetails": {
@@ -450,6 +450,8 @@
       "dueWithPrepayment": "Se paga con el anticipo",
       "payNow": "Incluido en el pago inicial",
       "includedInPrice": "Incluido en el precio",
+      "priceOnRequest": "Precio a consultar",
+      "confirmWithBase": "Precio no publicado, confirma con la base",
       "percentageOfCharter": "{percent}% del precio del chárter",
       "oneWayOnly": "Solo en trayectos de ida",
       "measure": {

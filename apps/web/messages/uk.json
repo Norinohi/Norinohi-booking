@@ -34,7 +34,7 @@
       "included": "Включено",
       "arrangeAtBase": "Домовитися з базою",
       "notOnTheseDates": "Недоступно на ці дати",
-      "notOnTheseDatesAsk": "Недоступно на ці дати — можна запитати базу",
+      "notOnTheseDatesAsk": "Недоступно на ці дати - можна запитати базу",
       "requestedAtBase": "Запит до бази, оплата на місці"
     },
     "guestDetails": {
@@ -450,6 +450,8 @@
       "dueWithPrepayment": "Сплачується разом із передоплатою",
       "payNow": "Входить у передоплату",
       "includedInPrice": "Включено у ціну",
+      "priceOnRequest": "Ціна за запитом",
+      "confirmWithBase": "Ціну не вказано, уточніть на базі",
       "percentageOfCharter": "{percent}% від вартості чартеру",
       "oneWayOnly": "Лише для рейсів в один бік",
       "measure": {
