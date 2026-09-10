@@ -256,9 +256,13 @@ export function presentListingSummary(
   };
 }
 
-export function presentListingDetail(detail: ListingDetail, basis: PriceBasis = "all_in") {
+export function presentListingDetail(
+  detail: ListingDetail,
+  basis: PriceBasis = "all_in",
+  amenityRanks?: ReadonlyMap<string, number>,
+) {
   return {
-    ...presentListingSummary(detail, basis),
+    ...presentListingSummary(detail, basis, amenityRanks),
     description: detail.description,
     overview: detail.overview,
     media: detail.media,

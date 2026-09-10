@@ -66,7 +66,11 @@ export const listingsRouter = {
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
-      return presentListingDetail(listing, await catalogueBasis(context.db));
+      const [basis, amenityRanks] = await Promise.all([
+        catalogueBasis(context.db),
+        getAmenityRanks(context.db),
+      ]);
+      return presentListingDetail(listing, basis, amenityRanks);
     }),
   redirectTarget: publicProcedure
     .route({
