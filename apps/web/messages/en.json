@@ -820,7 +820,13 @@
     "EarnCta": {
       "heading": "Earn With Your Yacht",
       "description": "List your yacht on our platform and start receiving bookings from travelers worldwide. We handle visibility, demand, and tools — you stay in control of your schedule and pricing.",
-      "cta": "List Your Yacht"
+      "cta": "List Your Yacht",
+      "dialog": {
+        "title": "Send a request",
+        "description": "Leave your details and our team will get in touch about listing your yacht.",
+        "submit": "Send request",
+        "success": "Thanks! We'll be in touch shortly."
+      }
     },
     "Hero": {
       "tagline": "Over 30,000 yachts in 1,200 destinations. Charters from €120/day",

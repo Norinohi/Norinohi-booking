@@ -32,8 +32,8 @@
    Mobile and tablet were drawn tight already, so they stay at 1. */
 @media (width >= 80rem) {
   :root {
-    --density: 0.875;
-    --density-type: 0.875;
+    --density: 0.85;
+    --density-type: 0.85;
   }
 }
 

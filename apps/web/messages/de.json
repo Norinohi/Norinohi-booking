@@ -820,7 +820,13 @@
     "EarnCta": {
       "heading": "Verdienen Sie mit Ihrer Yacht",
       "description": "Listen Sie Ihre Yacht auf unserer Plattform und erhalten Sie Buchungen von Reisenden aus aller Welt. Wir sorgen für Sichtbarkeit, Nachfrage und Tools – Sie behalten die Kontrolle über Termine und Preise.",
-      "cta": "Yacht inserieren"
+      "cta": "Yacht inserieren",
+      "dialog": {
+        "title": "Anfrage senden",
+        "description": "Hinterlassen Sie Ihre Daten und unser Team meldet sich wegen des Inserats Ihrer Yacht bei Ihnen.",
+        "submit": "Anfrage senden",
+        "success": "Danke! Wir melden uns in Kürze."
+      }
     },
     "Hero": {
       "tagline": "Über 30.000 Yachten in 1.200 Reisezielen. Charter ab 120 €/Tag",
