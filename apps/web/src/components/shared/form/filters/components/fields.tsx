@@ -14,7 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
-import { type Option, orderedValues } from "../lib/options";
+import { type Option, orderedValues, partitionByPopularity } from "../lib/options";
 import type { FiltersState, Range } from "../lib/state";
 
 export interface SectionProps {
@@ -51,6 +51,13 @@ interface MultiSelectFieldProps {
   onChange: (value: string[]) => void;
   placeholder: string;
   searchPlaceholder?: string;
+  /**
+   * Headings for the curated group and the remainder. Both are needed to group at all, and
+   * grouping only happens when some option is actually curated -- otherwise the list is flat,
+   * which is what every facet looks like until somebody curates it.
+   */
+  popularLabel?: string;
+  allLabel?: string;
   className?: string;
 }
 
@@ -62,14 +69,25 @@ export function MultiSelectField({
   onChange,
   placeholder,
   searchPlaceholder,
+  popularLabel,
+  allLabel,
   className,
 }: MultiSelectFieldProps) {
+  const partitioned = popularLabel && allLabel ? partitionByPopularity(options) : null;
+  const groups = partitioned
+    ? [
+        { key: "popular", label: popularLabel ?? "", options: partitioned.popular },
+        { key: "all", label: allLabel ?? "", options: partitioned.rest },
+      ].filter((group) => group.options.length > 0)
+    : undefined;
+
   return (
     <Field label={label} className={className}>
       <MultiSelect
         aria-label={ariaLabel}
         className="min-w-0"
         options={options}
+        groups={groups}
         value={value}
         // Written back in option order so comparing against the defaults never
         // depends on the order the boxes were ticked.

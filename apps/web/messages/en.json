@@ -717,6 +717,12 @@
       "searchEquipment": "Search equipment...",
       "anyDate": "Any date"
     },
+    "groups": {
+      "popularCountries": "Popular countries",
+      "allCountries": "All countries",
+      "popularBoatTypes": "Popular boat types",
+      "allBoatTypes": "All boat types"
+    },
     "aria": {
       "builtFrom": "Built from year",
       "builtTo": "Built to year"
@@ -1499,6 +1505,7 @@
       "anyBoat": "Any boat",
       "search": "Search",
       "noLocations": "No matching destinations",
+      "popularCountries": "Popular countries",
       "clearLocation": "Clear location",
       "freeText": "Name, model or company"
     },

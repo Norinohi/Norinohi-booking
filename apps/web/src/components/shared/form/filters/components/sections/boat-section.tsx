@@ -17,6 +17,8 @@ export default function BoatSection({ value, set }: SectionProps) {
         value={value.boatType}
         onChange={(next) => set("boatType", next)}
         placeholder={t("placeholders.allBoats")}
+        popularLabel={t("groups.popularBoatTypes")}
+        allLabel={t("groups.allBoatTypes")}
       />
       <MultiSelectField
         label={t("labels.model")}

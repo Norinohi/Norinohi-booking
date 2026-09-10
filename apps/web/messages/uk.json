@@ -717,6 +717,12 @@
       "searchEquipment": "Пошук обладнання...",
       "anyDate": "Будь-яка дата"
     },
+    "groups": {
+      "popularCountries": "Популярні країни",
+      "allCountries": "Усі країни",
+      "popularBoatTypes": "Популярні типи суден",
+      "allBoatTypes": "Усі типи суден"
+    },
     "aria": {
       "builtFrom": "Рік побудови від",
       "builtTo": "Рік побудови до"
@@ -1499,6 +1505,7 @@
       "anyBoat": "Будь-який човен",
       "search": "Пошук",
       "noLocations": "Немає збігів за напрямком",
+      "popularCountries": "Популярні країни",
       "clearLocation": "Очистити напрямок",
       "freeText": "Назва, модель або компанія"
     },

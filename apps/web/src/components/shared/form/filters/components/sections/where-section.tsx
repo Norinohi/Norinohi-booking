@@ -65,6 +65,8 @@ export default function WhereSection({ value, set }: SectionProps) {
         onChange={(next) => set("country", next)}
         placeholder={t("placeholders.allCountries")}
         searchPlaceholder={t("placeholders.searchCountries")}
+        popularLabel={t("groups.popularCountries")}
+        allLabel={t("groups.allCountries")}
       />
       <MultiSelectField
         label={t("labels.sailingArea")}

@@ -51,6 +51,13 @@ export default function LocationSearch({ value, onSelect, placeholder }: Locatio
 
   const { data } = useQuery(suggestionsQueryOptions(debounced));
   const items = data ?? [];
+  /*
+   * The empty field answers with the curated countries and marks every one of them; a typeahead
+   * result is never marked. So the heading is a property of the whole list rather than of a run
+   * inside it, and it renders above the list rather than as a base-ui Group -- a group would
+   * have to partition items the server has already told us are all of one kind.
+   */
+  const showPopularHeading = items.length > 0 && items.every((item) => item.popular);
 
   return (
     <Combobox
@@ -75,6 +82,11 @@ export default function LocationSearch({ value, onSelect, placeholder }: Locatio
       <ComboboxContent>
         <ComboboxSearch placeholder={t("startTyping")} />
         <ComboboxEmpty>{debounced.trim().length >= 1 ? t("noLocations") : ""}</ComboboxEmpty>
+        {showPopularHeading ? (
+          <div className="shrink-0 px-4 pt-3 pb-1 text-sm font-medium text-natural-500">
+            {t("popularCountries")}
+          </div>
+        ) : null}
         <ComboboxList>
           {(item: Suggestion) => (
             <ComboboxItem key={`${item.kind}:${item.value}`} value={item}>

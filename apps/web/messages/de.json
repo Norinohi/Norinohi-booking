@@ -717,6 +717,12 @@
       "searchEquipment": "Ausstattung suchen...",
       "anyDate": "Beliebiges Datum"
     },
+    "groups": {
+      "popularCountries": "Beliebte Länder",
+      "allCountries": "Alle Länder",
+      "popularBoatTypes": "Beliebte Bootstypen",
+      "allBoatTypes": "Alle Bootstypen"
+    },
     "aria": {
       "builtFrom": "Baujahr ab",
       "builtTo": "Baujahr bis"
@@ -1499,6 +1505,7 @@
       "anyBoat": "Beliebiges Boot",
       "search": "Suchen",
       "noLocations": "Keine passenden Reiseziele",
+      "popularCountries": "Beliebte Länder",
       "clearLocation": "Ort löschen",
       "freeText": "Name, Modell oder Firma"
     },
