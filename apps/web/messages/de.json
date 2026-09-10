@@ -720,6 +720,10 @@
     "groups": {
       "popularCountries": "Beliebte Länder",
       "allCountries": "Alle Länder",
+      "popularRegions": "Beliebte Segelgebiete",
+      "allRegions": "Alle Segelgebiete",
+      "popularMarinas": "Beliebte Marinas",
+      "allMarinas": "Alle Marinas",
       "popularBoatTypes": "Beliebte Bootstypen",
       "allBoatTypes": "Alle Bootstypen"
     },

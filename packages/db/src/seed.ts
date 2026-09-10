@@ -882,6 +882,53 @@ const curatedFacetRanks = [
   { kind: "category" as const, value: "House boat", popularRank: 5 },
   { kind: "category" as const, value: "Gulet", popularRank: 6 },
   { kind: "category" as const, value: "Motor catamaran", popularRank: 7 },
+  /*
+   * Sailing areas, in the client's country order: Croatia, Greece, Spain, Italy, Turkey.
+   *
+   * Deliberately not the largest regions. "Southern Europe" alone holds 7,504 listings and
+   * "Western Asia" 650, because one provider files region as a UN subregion rather than as a
+   * cruising ground -- pinning by volume would put a continent at the top of a sailing-area
+   * picker. These are the grounds the client named, and Šibenik (746 listings) is left out
+   * while Dubrovnik (83) is in for the same reason: the list is editorial, not a ranking.
+   */
+  { kind: "region" as const, value: "Split region", popularRank: 1 },
+  { kind: "region" as const, value: "Ionian Islands", popularRank: 2 },
+  { kind: "region" as const, value: "Balearic Islands", popularRank: 3 },
+  { kind: "region" as const, value: "Sardinia", popularRank: 4 },
+  { kind: "region" as const, value: "Aegean", popularRank: 5 },
+  { kind: "region" as const, value: "Zadar region", popularRank: 6 },
+  { kind: "region" as const, value: "Athens area/Saronic/Peloponese", popularRank: 7 },
+  { kind: "region" as const, value: "Sicily", popularRank: 8 },
+  { kind: "region" as const, value: "Dubrovnik region", popularRank: 9 },
+  { kind: "region" as const, value: "Dodecanese", popularRank: 10 },
+  { kind: "region" as const, value: "Istra", popularRank: 11 },
+  { kind: "region" as const, value: "Campania", popularRank: 12 },
+  /*
+   * The charter bases the client named, one row per base, same country order.
+   *
+   * Several of these marinas reach the catalogue under two vendor spellings that do not
+   * normalize to the same key -- "Sukošan / D-Marin Dalmacija Marina" and "Sukosan, D-Marin
+   * Dalmacija Marina" differ by one diacritic, and Lavrion arrives three ways. They are
+   * therefore separate facet options, and pinning one leaves the other's boats behind it in
+   * the long list. The larger spelling is pinned here; reconciling the spellings is a
+   * catalogue job rather than a curation one.
+   */
+  { kind: "marina" as const, value: "ACI Marina Split", popularRank: 1 },
+  { kind: "marina" as const, value: "Athens / Alimos Marina", popularRank: 2 },
+  { kind: "marina" as const, value: "Palma de Mallorca / La Lonja Marina Charter", popularRank: 3 },
+  { kind: "marina" as const, value: "Marina di Portisco", popularRank: 4 },
+  { kind: "marina" as const, value: "Fethiye / Ece Marina", popularRank: 5 },
+  { kind: "marina" as const, value: "ACI Marina Trogir", popularRank: 6 },
+  { kind: "marina" as const, value: "Lefkada / D-Marin Marina Lefkas", popularRank: 7 },
+  { kind: "marina" as const, value: "Furnari / Marina Portorosa", popularRank: 8 },
+  { kind: "marina" as const, value: "Bodrum Marina", popularRank: 9 },
+  { kind: "marina" as const, value: "Sukošan / D-Marin Dalmacija Marina", popularRank: 10 },
+  { kind: "marina" as const, value: "Lavrion Main Port", popularRank: 11 },
+  { kind: "marina" as const, value: "Salerno / Marina d'Arechi", popularRank: 12 },
+  { kind: "marina" as const, value: "Marmaris / Albatros Marina", popularRank: 13 },
+  { kind: "marina" as const, value: "ACI Marina Dubrovnik", popularRank: 14 },
+  { kind: "marina" as const, value: "Marina Kos", popularRank: 15 },
+  { kind: "marina" as const, value: "Göcek", popularRank: 16 },
   { kind: "equipment" as const, value: "Air Conditioning", popularRank: 1 },
   { kind: "equipment" as const, value: "Air condition", popularRank: 2 },
   { kind: "equipment" as const, value: "Generator", popularRank: 3 },

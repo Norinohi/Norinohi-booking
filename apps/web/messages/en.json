@@ -720,6 +720,10 @@
     "groups": {
       "popularCountries": "Popular countries",
       "allCountries": "All countries",
+      "popularRegions": "Popular sailing areas",
+      "allRegions": "All sailing areas",
+      "popularMarinas": "Popular marinas",
+      "allMarinas": "All marinas",
       "popularBoatTypes": "Popular boat types",
       "allBoatTypes": "All boat types"
     },

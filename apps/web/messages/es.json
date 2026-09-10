@@ -720,6 +720,10 @@
     "groups": {
       "popularCountries": "Países populares",
       "allCountries": "Todos los países",
+      "popularRegions": "Zonas de navegación populares",
+      "allRegions": "Todas las zonas de navegación",
+      "popularMarinas": "Puertos populares",
+      "allMarinas": "Todos los puertos",
       "popularBoatTypes": "Tipos de barco populares",
       "allBoatTypes": "Todos los tipos de barco"
     },

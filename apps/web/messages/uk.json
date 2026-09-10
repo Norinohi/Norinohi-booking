@@ -720,6 +720,10 @@
     "groups": {
       "popularCountries": "Популярні країни",
       "allCountries": "Усі країни",
+      "popularRegions": "Популярні райони плавання",
+      "allRegions": "Усі райони плавання",
+      "popularMarinas": "Популярні марини",
+      "allMarinas": "Усі марини",
       "popularBoatTypes": "Популярні типи суден",
       "allBoatTypes": "Усі типи суден"
     },
