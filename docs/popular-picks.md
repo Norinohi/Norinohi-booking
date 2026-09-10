@@ -79,6 +79,32 @@ only add.
 
 Four jobs. Three need no backend work; the fourth is called out.
 
+### The endpoints
+
+All public reads are on `charterSearch`. Call them through `orpc` from
+`apps/web/src/utils/orpc.ts`; the REST paths are there for `/api-reference` and curl.
+
+| Section                | Procedure                     | REST                                 | Input                           | Gives you                                                                                                                            |
+| ---------------------- | ----------------------------- | ------------------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Popular Destinations   | `charterSearch.facets`        | `GET /charter-search/facets`         | the search filters, or `{}`     | `options.countries[]` with `featuredRank`, `popularRank`, `label`, `count`, `imageUrl`, `cloudinaryId`, `priceFromMinor`, `currency` |
+| Popular Sailing Routes | `charterSearch.popularRoutes` | `GET /charter-search/popular-routes` | `{ locale?, limit? }`           | `routes[]`                                                                                                                           |
+| Popular Yachts         | `charterSearch.popularYachts` | `GET /charter-search/popular-yachts` | `{ locale?, currency?, seed? }` | `items[]` listing summaries, plus `config`                                                                                           |
+| Amenity chips          | `charterSearch.facets`        | `GET /charter-search/facets`         | as above                        | `options.equipment[]` with `popularRank`                                                                                             |
+
+Nothing else is new. Boat types and the country pins come off the same `facets` payload the page
+already fetches, under `popularRank`.
+
+Try any of them without writing code:
+
+```bash
+curl -s "http://localhost:3000/api-reference/charter-search/popular-yachts" | jq '.items | length'
+curl -s "http://localhost:3000/api-reference/charter-search/popular-routes?limit=6" | jq
+```
+
+The staff screens use two more, for reference rather than for wiring:
+`admin.popularFacets.list` / `.set` behind `/popular`, and `admin.route.listFeatured` /
+`.reorderFeatured` behind `/routes`.
+
 ### Run it locally first
 
 ```bash
