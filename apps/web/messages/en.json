@@ -545,7 +545,9 @@
       "crews": {
         "fullCrew": "Full crew",
         "skipperOptional": "Skipper optional"
-      }
+      },
+      "moreAmenities": "Show {count} more amenities",
+      "moreAmenitiesShort": "+{count}"
     },
     "gallery": {
       "close": "Close",

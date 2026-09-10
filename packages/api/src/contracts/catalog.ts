@@ -182,6 +182,15 @@ export const listingSummarySchema = z.object({
   mainImage: z.string(),
   gallery: z.array(z.string()),
   amenities: z.array(z.string()),
+  /*
+   * The curated amenities this boat has, in the editor's order — the ones worth advertising,
+   * not everything it carries. The card shows the first few and hides the rest behind a count,
+   * which is only honest because this holds nothing but curated entries.
+   *
+   * Falls back to the first few of `amenities` when nothing is curated, so a fresh database
+   * shows the chips it always showed rather than none.
+   */
+  highlightAmenities: z.array(z.string()),
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
   /**

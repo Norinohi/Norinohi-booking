@@ -31,6 +31,7 @@ import {
 import { emptyInputSchema } from "../contracts/primitives";
 import type { Context } from "../context";
 import { publicProcedure } from "../index";
+import { getAmenityRanks } from "../services/amenity-ranks";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { withParameterExamples } from "./openapi-examples";
 import { type CharterPeriod, effectivePeriod } from "../lib/dates";
@@ -111,8 +112,9 @@ function pricedForShownPeriod(
   item: ListingSearchDoc,
   shown: { checkIn: string | null; checkOut: string | null },
   basis: PriceBasis,
+  amenityRanks: ReadonlyMap<string, number>,
 ) {
-  const listing = presentListingSummary(item, basis);
+  const listing = presentListingSummary(item, basis, amenityRanks);
   if (listing.priceIsFrom || shown.checkIn === null) return listing;
 
   /*
@@ -191,12 +193,20 @@ export const charterSearchRouter = {
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
     .handler(async ({ context, input }) => {
-      const priceBasis = await priceBasisFor(context.db);
+      const [priceBasis, amenityRanks] = await Promise.all([
+        priceBasisFor(context.db),
+        getAmenityRanks(context.db),
+      ]);
       const results = await searchListings(context.db, { ...input, priceBasis });
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
-          listing: pricedForShownPeriod(item, periodFor(item, period, input.startDate), priceBasis),
+          listing: pricedForShownPeriod(
+            item,
+            periodFor(item, period, input.startDate),
+            priceBasis,
+            amenityRanks,
+          ),
           /* One `periodFor` per item would do; it is called twice because the spread below is
              the card's own dates and the call above only reads them. Pure and cheap. */
           /*
@@ -251,13 +261,19 @@ export const charterSearchRouter = {
     .output(popularYachtsSchema)
     .handler(async ({ context, input }) => {
       const { popularYachts: config } = await getMarketplaceSettings(context.db);
-      const basis = await priceBasisFor(context.db);
+      const [basis, amenityRanks] = await Promise.all([
+        priceBasisFor(context.db),
+        getAmenityRanks(context.db),
+      ]);
       const items = await listPopularYachts(context.db, {
         config,
         seed: input.seed ?? defaultSeed(),
       });
 
-      return { items: items.map((item) => presentListingSummary(item, basis)), config };
+      return {
+        items: items.map((item) => presentListingSummary(item, basis, amenityRanks)),
+        config,
+      };
     }),
   popularRoutes: publicProcedure
     .route({

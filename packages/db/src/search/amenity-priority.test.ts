@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { topAmenities } from "./amenity-priority";
+import { highlightAmenities, topAmenities } from "./amenity-priority";
 
 const key = (value: string) =>
   value
@@ -57,5 +57,28 @@ describe("topAmenities", () => {
 
   it("returns nothing for a limit of zero", () => {
     expect(topAmenities(["Generator"], ranks, key, 0)).toEqual([]);
+  });
+});
+
+describe("highlightAmenities", () => {
+  it("returns only curated amenities, in the editor's order", () => {
+    expect(
+      highlightAmenities(["Bimini", "Anchor", "Generator", "Air conditioning"], ranks, key),
+    ).toEqual(["Air conditioning", "Generator", "Bimini"]);
+  });
+
+  it("returns every curated one it has, not a fixed number", () => {
+    const all = ["Air conditioning", "Generator", "Watermaker", "Bow thruster", "Bimini"];
+    expect(highlightAmenities(all, ranks, key)).toHaveLength(5);
+  });
+
+  it("falls back to the boat's own first few when nothing is curated", () => {
+    expect(
+      highlightAmenities(["Anchor", "Radar", "AIS", "Fridge", "Oven"], new Map(), key),
+    ).toEqual(["Anchor", "Radar", "AIS", "Fridge"]);
+  });
+
+  it("returns nothing for a boat with no amenities at all", () => {
+    expect(highlightAmenities([], ranks, key)).toEqual([]);
   });
 });

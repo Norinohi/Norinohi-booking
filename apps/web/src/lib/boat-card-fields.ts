@@ -49,14 +49,27 @@ const AMENITY_ICONS = new Map<string, ReactNode>([
   ["Dinghy", createElement(Anchor)],
 ]);
 const FALLBACK_AMENITY_ICON = createElement(Check);
-const AMENITY_LIMIT = 3;
+/* Four, per the client's spec. The rest of the curated list goes behind the card's "+N". */
+const AMENITY_LIMIT = 4;
 
-/** The card shows the first three amenities, each with its glyph (or a generic check). */
+function amenityItem(label: string): BoatCardAmenity {
+  return { icon: AMENITY_ICONS.get(label) ?? FALLBACK_AMENITY_ICON, label };
+}
+
+/**
+ * The amenities a card shows, and the ones it hides behind a count.
+ *
+ * `labels` is `highlightAmenities` from the API: the curated amenities this boat has, already in
+ * the editor's priority order, and nothing else. So the four shown are the four most worth
+ * advertising, and the overflow is the rest of that list rather than the forty-odd fittings the
+ * vendor also happens to publish — which is what makes a "+3" honest.
+ */
 export function amenityItems(labels: string[]): BoatCardAmenity[] {
-  return labels.slice(0, AMENITY_LIMIT).map((label) => ({
-    icon: AMENITY_ICONS.get(label) ?? FALLBACK_AMENITY_ICON,
-    label,
-  }));
+  return labels.slice(0, AMENITY_LIMIT).map(amenityItem);
+}
+
+export function amenityOverflow(labels: string[]): BoatCardAmenity[] {
+  return labels.slice(AMENITY_LIMIT).map(amenityItem);
 }
 
 export type BoatSpecs = {
@@ -114,6 +127,12 @@ export type BoatCardListing = {
   crewType: string | null;
   specs: BoatSpecs;
   amenities: string[];
+  /*
+   * The curated amenities this boat has, in the editor's priority order. Optional because a
+   * booking card is built from a booking rather than from a search result and carries no facet
+   * data; it falls back to `amenities`, which is what every card used before this existed.
+   */
+  highlightAmenities?: string[];
   /* Absent on a My Bookings card: the counts describe a boat someone is still choosing. */
   bookingStats?: { bookedThisMonth: number; viewedToday: number };
   /* `code` is what the label is chosen by; the label itself is the presenter's English. */
@@ -243,7 +262,15 @@ export function boatCardIdentity(
     charterType: listing.category ?? "",
     crew: listing.crewType ? crewLabel(tCrew, listing.crewType) : "",
     specs: boatSpecs(t, listing.specs),
-    amenities: amenityItems(listing.amenities),
+    amenities: amenityItems(listing.highlightAmenities ?? listing.amenities),
+    /*
+     * Only where the curated list is present. Falling back to `amenities` here would count the
+     * sixty-odd fittings a vendor publishes and offer "+62", which is not what the card means by
+     * "more" -- the overflow is the rest of the shortlist worth advertising, not an inventory.
+     */
+    amenitiesOverflow: listing.highlightAmenities
+      ? amenityOverflow(listing.highlightAmenities)
+      : undefined,
     stats: boatCardStats(t, listing.bookingStats),
   } satisfies Partial<BoatCardProps>;
 }

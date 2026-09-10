@@ -545,7 +545,9 @@
       "crews": {
         "fullCrew": "Tripulación completa",
         "skipperOptional": "Patrón opcional"
-      }
+      },
+      "moreAmenities": "Ver {count} equipamientos más",
+      "moreAmenitiesShort": "+{count}"
     },
     "gallery": {
       "close": "Cerrar",

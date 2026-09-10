@@ -12,6 +12,7 @@ import { dayToDisplay } from "@/lib/date";
 import { type Marina, MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
 
+import { AmenityChip, AmenityOverflow } from "./amenity-chips";
 import CardNote from "./card-note";
 import type { CardNote as CardNoteData } from "./card-note";
 import CardPhotos from "./card-photos";
@@ -68,6 +69,11 @@ export type BoatCardProps = {
   crew: string;
   specs: BoatCardSpec[];
   amenities?: BoatCardAmenity[];
+  /**
+   * The curated amenities that did not fit, revealed behind a "+N". Separate from `amenities`
+   * rather than a count, because the tooltip lists them by name and icon.
+   */
+  amenitiesOverflow?: BoatCardAmenity[];
   stats?: BoatCardStat[];
   /**
    * The charter the dates describe: the one that was searched for, or, on an undated search,
@@ -191,6 +197,7 @@ function Details({
   crew,
   specs,
   amenities,
+  amenitiesOverflow,
   detailHref,
   summary,
   summaryAction,
@@ -204,6 +211,7 @@ function Details({
   | "crew"
   | "specs"
   | "amenities"
+  | "amenitiesOverflow"
   | "detailHref"
   | "summary"
   | "summaryAction"
@@ -294,15 +302,9 @@ function Details({
       {amenities?.length ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {amenities.map((amenity) => (
-            <div key={amenity.label} className="flex items-center gap-2">
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand [&_svg]:size-4">
-                {amenity.icon}
-              </span>
-              <span className="text-xs font-semibold leading-[1.3] text-foreground">
-                {amenity.label}
-              </span>
-            </div>
+            <AmenityChip key={amenity.label} amenity={amenity} />
           ))}
+          {amenitiesOverflow?.length ? <AmenityOverflow amenities={amenitiesOverflow} /> : null}
         </div>
       ) : null}
 
@@ -481,6 +483,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         crew={boat.crew}
         specs={boat.specs}
         amenities={boat.amenities}
+        amenitiesOverflow={boat.amenitiesOverflow}
         detailHref={boat.detailHref}
         summary={boat.summary}
         summaryAction={boat.summary ? boat.summaryAction : undefined}

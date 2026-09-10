@@ -82,8 +82,8 @@ only add.
 
 ## Wiring the home page
 
-Six jobs. Five need no backend work; the fifth is called out. The sixth touches two
-shared controls rather than the home page alone.
+Six jobs. The fifth is already built. The sixth touches two shared controls rather than the
+home page alone; the rest are home-page components only.
 
 ### The endpoints
 
@@ -209,27 +209,23 @@ catamarans. `config` comes back alongside `items` if you need to show what was a
 
 Composition is edited on `/settings` — count, maximum age, caps, and the per-type mix.
 
-### 5. Amenity chips on a yacht card — needs backend work first
+### 5. Amenity chips on a yacht card — done
 
-The four chips should be the boat's best amenities by curated priority rather than the first four
-it happens to list. `boat-card-fields.ts` currently takes the first three (`AMENITY_LIMIT = 3`).
+Built, not left for you. Noted here because it changes the card contract.
 
-The ranks exist and the ordering function is written — `topAmenities` in
-`packages/db/src/search/amenity-priority.ts` — but `apps/web` cannot import it. The web app does
-not depend on `@yacht-charter/db` and should not start; it talks to the server over oRPC only.
+The card shows the four highest-priority amenities the boat has, then a `+N` that opens a
+scrollable tooltip with the rest. The overflow is the rest of the _curated_ shortlist, not the
+sixty-odd fittings a vendor publishes, which is what makes the count honest.
 
-- [ ] **Backend, preferred:** apply `topAmenities` in `presentListingSummary`
-      (`packages/api/src/presenters/listing.ts`) so every card and every consumer gets the same
-      four. Nothing changes in the web app afterwards except the limit.
-- [ ] **Frontend fallback:** sort in `boat-card-fields.ts` against `popularRank` on
-      `options.equipment` from the facets read. Works, but every surface showing a card has to
-      remember to do it.
+`listingSummarySchema` gained `highlightAmenities`: the curated amenities this boat has, already
+in the editor's order and nothing else. Ordering happens server-side in `presentListingSummary`,
+so every consumer gets the same four - search cards, the detail page's similar yachts, the
+popular-yachts slider. Ordering it in the search SQL was the alternative and measured ~10ms per
+twenty-row page on the hottest query in the app; reading the eighteen ranked values once per
+request costs one indexed lookup instead.
 
-Either way, raise `AMENITY_LIMIT` to 4.
-
-There is an open question from the client on this one: whether the preview should show _all_ of a
-boat's main amenities rather than the top four. That is a design decision, not a technical limit —
-the full ordered list is available either way.
+A boat with no curated amenities falls back to its own first four, so a fresh database shows the
+chips it always showed rather than none.
 
 ### 6. Hero search pickers — `components/hero.tsx`, plus two shared controls
 

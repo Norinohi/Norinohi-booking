@@ -545,7 +545,9 @@
       "crews": {
         "fullCrew": "Повний екіпаж",
         "skipperOptional": "Шкіпер за бажанням"
-      }
+      },
+      "moreAmenities": "Показати ще {count} зручностей",
+      "moreAmenitiesShort": "+{count}"
     },
     "gallery": {
       "close": "Закрити",
