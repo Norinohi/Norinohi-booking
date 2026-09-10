@@ -866,7 +866,7 @@ const facetMediaEntries = [
  *
  * Two of the boat types -- "Motor boat" and "Motor catamaran" -- name nothing the catalogue
  * currently carries, and several amenity spellings are near-duplicates of their neighbour
- * ("Air condition" beside "Air Conditioning"). Both are deliberate. Facets group on a normalized
+ * ("Air condition" beside "Air Conditioning", "Bathing platform" beside "Swimming platform"). Both are deliberate. Facets group on a normalized
  * value, so the variants really are separate options, and a rank on a value no listing carries
  * simply never surfaces until one does.
  */
@@ -892,15 +892,14 @@ const curatedFacetRanks = [
   { kind: "equipment" as const, value: "Wi-Fi & Internet", popularRank: 8 },
   { kind: "equipment" as const, value: "Outboard engine", popularRank: 9 },
   { kind: "equipment" as const, value: "Teak Cockpit", popularRank: 10 },
-  { kind: "equipment" as const, value: "Teak cockpit", popularRank: 11 },
-  { kind: "equipment" as const, value: "Barbecue grill in cockpit", popularRank: 12 },
-  { kind: "equipment" as const, value: "Swimming platform", popularRank: 13 },
-  { kind: "equipment" as const, value: "Bathing platform", popularRank: 14 },
-  { kind: "equipment" as const, value: "Refrigerator", popularRank: 15 },
-  { kind: "equipment" as const, value: "Freezer", popularRank: 16 },
-  { kind: "equipment" as const, value: "Chart plotter in cockpit", popularRank: 17 },
-  { kind: "equipment" as const, value: "Autopilot", popularRank: 18 },
-  { kind: "equipment" as const, value: "Bimini", popularRank: 19 },
+  { kind: "equipment" as const, value: "Barbecue grill in cockpit", popularRank: 11 },
+  { kind: "equipment" as const, value: "Swimming platform", popularRank: 12 },
+  { kind: "equipment" as const, value: "Bathing platform", popularRank: 13 },
+  { kind: "equipment" as const, value: "Refrigerator", popularRank: 14 },
+  { kind: "equipment" as const, value: "Freezer", popularRank: 15 },
+  { kind: "equipment" as const, value: "Chart plotter in cockpit", popularRank: 16 },
+  { kind: "equipment" as const, value: "Autopilot", popularRank: 17 },
+  { kind: "equipment" as const, value: "Bimini", popularRank: 18 },
 ];
 
 /*
