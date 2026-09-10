@@ -14,6 +14,7 @@ import {
   type FiltersState,
   labelOf,
   orderedValues,
+  partitionByPopularity,
   useDraft,
   useFilterOptions,
 } from "@/components/shared/form/filters";
@@ -100,6 +101,16 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const [pending, setPending] = useState<DateRange | null>(null);
   const nameSearchEnabled = useNameSearchEnabled();
 
+  /* The curated types head the list, the rest follow. Null until somebody curates the boat-type
+     facet, and the picker then renders flat exactly as it did before. */
+  const partitioned = partitionByPopularity(options.boatTypes);
+  const boatTypeGroups = partitioned
+    ? [
+        { key: "popular", label: t("popularBoatTypes"), options: partitioned.popular },
+        { key: "all", label: t("allBoatTypes"), options: partitioned.rest },
+      ].filter((group) => group.options.length > 0)
+    : undefined;
+
   const range = pending ?? toRange(draft);
 
   function handleRange(next: DateRange | undefined) {
@@ -155,6 +166,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
       <div className="md:col-span-2 xl:col-span-1">
         <MultiSelect
           options={options.boatTypes}
+          groups={boatTypeGroups}
           value={draft.boatType}
           onValueChange={(next) =>
             setDraft((current) => ({

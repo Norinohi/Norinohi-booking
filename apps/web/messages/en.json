@@ -1510,6 +1510,8 @@
       "search": "Search",
       "noLocations": "No matching destinations",
       "popularCountries": "Popular countries",
+      "popularBoatTypes": "Popular boat types",
+      "allBoatTypes": "All boat types",
       "clearLocation": "Clear location",
       "freeText": "Name, model or company"
     },

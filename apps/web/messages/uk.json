@@ -724,8 +724,8 @@
       "allRegions": "Усі райони плавання",
       "popularMarinas": "Популярні марини",
       "allMarinas": "Усі марини",
-      "popularBoatTypes": "Популярні типи суден",
-      "allBoatTypes": "Усі типи суден"
+      "popularBoatTypes": "Популярні судна",
+      "allBoatTypes": "Усі судна"
     },
     "aria": {
       "builtFrom": "Рік побудови від",
@@ -1510,6 +1510,8 @@
       "search": "Пошук",
       "noLocations": "Немає збігів за напрямком",
       "popularCountries": "Популярні країни",
+      "popularBoatTypes": "Популярні судна",
+      "allBoatTypes": "Усі судна",
       "clearLocation": "Очистити напрямок",
       "freeText": "Назва, модель або компанія"
     },

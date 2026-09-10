@@ -1510,6 +1510,8 @@
       "search": "Suchen",
       "noLocations": "Keine passenden Reiseziele",
       "popularCountries": "Beliebte Länder",
+      "popularBoatTypes": "Beliebte Bootstypen",
+      "allBoatTypes": "Alle Bootstypen",
       "clearLocation": "Ort löschen",
       "freeText": "Name, Modell oder Firma"
     },
