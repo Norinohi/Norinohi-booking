@@ -18,7 +18,7 @@ import SearchableSelect from "@/components/shared/form/searchable-select";
 import {
   EMPTY_OPTIONS,
   type FilterOptions,
-  partitionByPopularity,
+  groupByPopularity,
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
@@ -42,17 +42,14 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
   const t = useTranslations("Home.Hero");
   const tPicker = useTranslations("Common.countryPicker");
   const tGroups = useTranslations("Filters.groups");
-  const partitionedCountries = partitionByPopularity(options.countries);
-  const countryGroups = partitionedCountries
-    ? [
-        {
-          key: "popular",
-          label: tGroups("popularCountries"),
-          options: partitionedCountries.popular,
-        },
-        { key: "all", label: tGroups("allCountries"), options: partitionedCountries.rest },
-      ].filter((group) => group.options.length > 0)
-    : undefined;
+  const countryGroups = groupByPopularity(options.countries, {
+    popular: tGroups("popularCountries"),
+    all: tGroups("allCountries"),
+  });
+  const boatTypeGroups = groupByPopularity(options.boatTypes, {
+    popular: tGroups("popularBoatTypes"),
+    all: tGroups("allBoatTypes"),
+  });
   /* `null`, not `undefined`: these selects are controlled from the first render — see `Select`. */
   const [country, setCountry] = useState<string | null>(null);
   const [boatType, setBoatType] = useState<string | null>(null);
@@ -100,6 +97,7 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
           icon={<Ship className="size-6 shrink-0 text-foreground" />}
           placeholder={t("boatPlaceholder")}
           options={options.boatTypes}
+          groups={boatTypeGroups}
           value={boatType}
           onValueChange={setBoatType}
           isLoading={isPending}

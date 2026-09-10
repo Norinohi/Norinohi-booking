@@ -13,8 +13,8 @@ import {
   type FilterOptions,
   type FiltersState,
   labelOf,
+  groupByPopularity,
   orderedValues,
-  partitionByPopularity,
   useDraft,
   useFilterOptions,
 } from "@/components/shared/form/filters";
@@ -103,13 +103,10 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
 
   /* The curated types head the list, the rest follow. Null until somebody curates the boat-type
      facet, and the picker then renders flat exactly as it did before. */
-  const partitioned = partitionByPopularity(options.boatTypes);
-  const boatTypeGroups = partitioned
-    ? [
-        { key: "popular", label: t("popularBoatTypes"), options: partitioned.popular },
-        { key: "all", label: t("allBoatTypes"), options: partitioned.rest },
-      ].filter((group) => group.options.length > 0)
-    : undefined;
+  const boatTypeGroups = groupByPopularity(options.boatTypes, {
+    popular: t("popularBoatTypes"),
+    all: t("allBoatTypes"),
+  });
 
   const range = pending ?? toRange(draft);
 

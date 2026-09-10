@@ -44,6 +44,20 @@ export function partitionByPopularity(
   return { popular, rest: options.filter((option) => !pinned.has(option.value)) };
 }
 
+/** The "Popular" and "All" headings a grouped picker renders, or undefined for a flat list. */
+export function groupByPopularity(
+  options: Option[],
+  labels: { popular: string; all: string },
+): { key: string; label: string; options: Option[] }[] | undefined {
+  const partitioned = partitionByPopularity(options);
+  if (!partitioned) return undefined;
+
+  return [
+    { key: "popular", label: labels.popular, options: partitioned.popular },
+    { key: "all", label: labels.all, options: partitioned.rest },
+  ].filter((group) => group.options.length > 0);
+}
+
 /**
  * A value with no option behind it is un-slugged rather than printed raw.
  *

@@ -14,7 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
-import { type Option, orderedValues, partitionByPopularity } from "../lib/options";
+import { groupByPopularity, type Option, orderedValues } from "../lib/options";
 import type { FiltersState, Range } from "../lib/state";
 
 export interface SectionProps {
@@ -73,13 +73,10 @@ export function MultiSelectField({
   allLabel,
   className,
 }: MultiSelectFieldProps) {
-  const partitioned = popularLabel && allLabel ? partitionByPopularity(options) : null;
-  const groups = partitioned
-    ? [
-        { key: "popular", label: popularLabel ?? "", options: partitioned.popular },
-        { key: "all", label: allLabel ?? "", options: partitioned.rest },
-      ].filter((group) => group.options.length > 0)
-    : undefined;
+  const groups =
+    popularLabel && allLabel
+      ? groupByPopularity(options, { popular: popularLabel, all: allLabel })
+      : undefined;
 
   return (
     <Field label={label} className={className}>
