@@ -808,7 +808,13 @@
     "EarnCta": {
       "heading": "Gana con tu yate",
       "description": "Publica tu yate en nuestra plataforma y empieza a recibir reservas de viajeros de todo el mundo. Nosotros nos ocupamos de la visibilidad, la demanda y las herramientas; tú mantienes el control de tu calendario y tus precios.",
-      "cta": "Publicar mi yate"
+      "cta": "Publicar mi yate",
+      "dialog": {
+        "title": "Enviar solicitud",
+        "description": "Déjanos tus datos y nuestro equipo se pondrá en contacto contigo para publicar tu yate.",
+        "submit": "Enviar solicitud",
+        "success": "¡Gracias! Nos pondremos en contacto pronto."
+      }
     },
     "Hero": {
       "tagline": "Más de 30.000 yates en 1.200 destinos. Chárter desde 120 €/día",
