@@ -18,6 +18,7 @@ import SearchableSelect from "@/components/shared/form/searchable-select";
 import {
   EMPTY_OPTIONS,
   type FilterOptions,
+  groupByPopularity,
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
@@ -40,6 +41,15 @@ const STATS = [
 function SearchCardView({ options, isPending }: { options: FilterOptions; isPending: boolean }) {
   const t = useTranslations("Home.Hero");
   const tPicker = useTranslations("Common.countryPicker");
+  const tGroups = useTranslations("Filters.groups");
+  const countryGroups = groupByPopularity(options.countries, {
+    popular: tGroups("popularCountries"),
+    all: tGroups("allCountries"),
+  });
+  const boatTypeGroups = groupByPopularity(options.boatTypes, {
+    popular: tGroups("popularBoatTypes"),
+    all: tGroups("allBoatTypes"),
+  });
   /* `null`, not `undefined`: these selects are controlled from the first render — see `Select`. */
   const [country, setCountry] = useState<string | null>(null);
   const [boatType, setBoatType] = useState<string | null>(null);
@@ -69,6 +79,7 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
           searchPlaceholder={tPicker("search")}
           emptyLabel={isPending ? tPicker("loading") : tPicker("empty")}
           options={options.countries}
+          groups={countryGroups}
           value={country}
           onValueChange={setCountry}
         />
@@ -86,6 +97,7 @@ function SearchCardView({ options, isPending }: { options: FilterOptions; isPend
           icon={<Ship className="size-6 shrink-0 text-foreground" />}
           placeholder={t("boatPlaceholder")}
           options={options.boatTypes}
+          groups={boatTypeGroups}
           value={boatType}
           onValueChange={setBoatType}
           isLoading={isPending}
@@ -221,7 +233,7 @@ export default function Hero() {
             className="flex w-full max-w-164.75 flex-col gap-3 text-center text-white xl:w-auto xl:max-w-112.5 xl:text-left"
           >
             <p className="text-base leading-[1.4] md:text-xl">{t("tagline")}</p>
-            <h1 data-testid="home-shell-marker" className="text-h1">
+            <h1 data-testid="home-shell-marker" className="text-h1 max-[360px]:text-h3">
               {t("heading")}
             </h1>
           </motion.div>

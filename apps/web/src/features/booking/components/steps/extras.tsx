@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import { useExtraPrice } from "@/hooks/use-extra-price";
+import { extraPriceKind } from "@/lib/extra-price-kind";
 import { useMoney } from "@/hooks/use-money";
 
 import type { BookingValues } from "../../lib/booking-form";
@@ -44,19 +45,24 @@ function ExtraRow({
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
   const extraPrice = useExtraPrice();
-  /*
-   * An extra the charter price already covers is collected nowhere and costs nothing, so it
-   * carries neither caption nor figure: the offer prices it at zero, and the catalogue's own
-   * list value would read as a charge the customer is not being asked for.
-   */
-  const included =
-    item.percentage === null && (item.pricingType === "included" || item.price.amountMinor === 0);
+  const kind = extraPriceKind(item, offered);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered
     ? offered.payWhen === "at_check_in"
     : item.pricingType === "pay_at_check_in";
-  const caption = note ?? (atCheckIn && !included ? tExtras("payAtCheckIn") : null);
+  /*
+   * An extra the charter price already covers is collected nowhere, so it carries no caption.
+   * One with no published rate carries the opposite: the figure beside it is not a price, and
+   * saying when to pay a price nobody has named would be the more confusing half.
+   */
+  const caption =
+    note ??
+    (kind === "unpriced"
+      ? tExtras("confirmWithBase")
+      : atCheckIn && kind !== "included"
+        ? tExtras("payAtCheckIn")
+        : null);
 
   return (
     <>
@@ -67,13 +73,15 @@ function ExtraRow({
         )}
       </span>
       <span className="shrink-0 text-base leading-[1.4] font-bold text-foreground">
-        {item.percentage !== null
+        {kind === "percentage" && item.percentage !== null
           ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
-          : included
+          : kind === "included"
             ? tExtras("includedInPrice")
-            : offered
-              ? money(offered.amount.amountMinor, offered.amount.currency)
-              : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
+            : kind === "unpriced"
+              ? tExtras("priceOnRequest")
+              : offered
+                ? money(offered.amount.amountMinor, offered.amount.currency)
+                : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
       </span>
     </>
   );
@@ -84,7 +92,7 @@ export default function ExtrasStep() {
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
   const { control } = useFormContext<BookingValues>();
-  const { listing, quote, selectExtras } = useBooking();
+  const { listing, quote, selectExtras, requestedExtras, requestExtras } = useBooking();
 
   /*
    * What the operator will bill on top of the charter, off the quote rather than off the
@@ -191,25 +199,38 @@ export default function ExtrasStep() {
               ))}
 
               {/*
-                Shown but not offered: a checkbox would take a choice and silently charge
-                nothing for it. Two separate reasons, and the note says which — the provider
-                cannot price this id space at all, or the operator did not put this extra on
-                the offer for these dates. Either way the customer still needs to know the
-                extra exists and roughly what it costs.
+                Shown and tickable, but asked for rather than bought: nothing here can be
+                priced, so a box that reprices would take a choice and charge nothing for it.
+                Two separate reasons, and the note says which — the provider cannot price this
+                id space at all, or the operator did not put this extra on the offer for these
+                dates. Either way the tick is recorded on the quote and reaches the base as
+                special-request text when the booking is made.
+
+                Off the booking context rather than the form: these never reach `createHold`
+                as a field, and giving them one would put a second, unpriced list into a
+                schema whose whole job is what the customer is paying for.
               */}
               {[
-                { items: notOnTheseDates, note: t("notOnTheseDates") },
+                { items: notOnTheseDates, note: t("notOnTheseDatesAsk") },
                 { items: arrangeAtBase, note: t("arrangeAtBase") },
               ].map(({ items, note }) =>
                 items.map((item) => (
-                  <div
+                  <label
                     key={item.code}
-                    className="flex items-start gap-2 border-b border-dashed border-border py-3"
+                    className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border py-3"
                   >
-                    {/* Keeps the label column aligned with the checkbox rows above. */}
-                    <span aria-hidden className="size-4 shrink-0" />
+                    <Checkbox
+                      checked={requestedExtras.includes(item.code)}
+                      onCheckedChange={(checked) =>
+                        requestExtras(
+                          checked
+                            ? [...requestedExtras, item.code]
+                            : requestedExtras.filter((code) => code !== item.code),
+                        )
+                      }
+                    />
                     <ExtraRow item={item} note={note} />
-                  </div>
+                  </label>
                 )),
               )}
             </div>

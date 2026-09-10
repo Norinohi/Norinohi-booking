@@ -103,9 +103,11 @@ import {
   outboxDrainResultSchema,
   reminderResultSchema,
   sweepResultSchema,
+  unreleasedOptionsSchema,
   waitingOptionsInputSchema,
   waitingOptionsSchema,
 } from "../contracts/maintenance";
+import { listUnreleasedOptions } from "../services/provider-option";
 import {
   leadAnswerInputSchema,
   leadListInputSchema,
@@ -115,6 +117,7 @@ import {
 } from "../contracts/lead";
 import { adminProcedure } from "../index";
 import { faqAdminRouter } from "./admin-faq";
+import { popularFacetsAdminRouter } from "./admin-popular-facets";
 import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
@@ -286,6 +289,13 @@ export const adminRouter = {
           displayCurrencyDefault: "EUR",
           displayCurrencyByCountry: {},
           nameSearchEnabled: false,
+          popularYachts: {
+            limit: 12,
+            maxAgeYears: 3,
+            maxPerCountry: 2,
+            maxPerBase: 1,
+            mix: { catamaran: 3, "sailing-yacht": 3, "motor-yacht": 2 },
+          },
         }),
       })
       .input(marketplaceSettingsUpdateInputSchema)
@@ -302,6 +312,7 @@ export const adminRouter = {
           displayCurrencyDefault: input.displayCurrencyDefault,
           displayCurrencyByCountry: input.displayCurrencyByCountry,
           nameSearchEnabled: input.nameSearchEnabled,
+          popularYachts: input.popularYachts,
           actorUserId: context.session.user.id,
         }),
       ),
@@ -313,6 +324,9 @@ export const adminRouter = {
   /* The FAQ editor, likewise its own module: it speaks in translation groups rather than rows
      and none of that shape is shared with anything else in here. */
   faq: faqAdminRouter,
+  /* The curated order of the facet values, likewise its own module: two procedures over one
+     pair of rank columns, sharing nothing with the screens above. */
+  popularFacets: popularFacetsAdminRouter,
   provider: {
     capabilities: adminProcedure
       .route({
@@ -788,6 +802,23 @@ export const adminRouter = {
           sweepExpiries(context.db, context.provider),
         ),
       ),
+    unreleasedOptions: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/unreleasedOptions",
+        operationId: "listUnreleasedOptions",
+        summary: "Slots a vendor refused to take back",
+        description:
+          "Every booking whose last word from the vendor was a refusal to release the option. The slot is still blocked upstream while our own row calls the booking over, so the week sells to nobody until someone frees it. Retryable failures are already queued on the outbox and clear themselves; what lands here usually needs a phone call. Read-only.",
+        tags: ["Admin"],
+        successDescription: "The options still held against us.",
+        spec: withJsonBodyExample({}),
+      })
+      .input(emptyInputSchema)
+      .output(unreleasedOptionsSchema)
+      .handler(async ({ context }) => ({
+        items: await listUnreleasedOptions(context.db),
+      })),
     waitingOptions: adminProcedure
       .route({
         method: "POST",

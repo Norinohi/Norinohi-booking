@@ -17,6 +17,31 @@ export const suggestedRouteKindSchema = z.enum([
   "active_sailing",
 ]);
 
+export const routeDifficultySchema = z.enum(["easy", "moderate", "advanced"]);
+
+/**
+ * The languages a route is authored in.
+ *
+ * The same four `apps/web/src/i18n/config.ts` declares, restated the way `contracts/faq.ts`
+ * restates them. The duplication is deliberate and shallow: adding a language is then two edits
+ * that fail loudly rather than one that quietly leaves a screen with three panes.
+ */
+export const routeLocaleSchema = z.enum(["en", "de", "es", "uk"]);
+export const ROUTE_LOCALES = routeLocaleSchema.options;
+
+/**
+ * One language's copy for a route.
+ *
+ * Both fields are nullable because a half-translated route is a real state -- the editor writes
+ * English first -- and the read falls back to the route's own columns rather than blanking the
+ * card.
+ */
+export const routeTranslationSchema = z.object({
+  locale: routeLocaleSchema,
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+});
+
 export const routeStopSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -40,6 +65,14 @@ export const routeSchema = z.object({
   description: z.string().nullable(),
   sortOrder: z.number().int(),
   active: z.boolean(),
+  /** Position in the site-wide popular list, or null for a route that is not in it. */
+  featuredRank: z.number().int().positive().nullable(),
+  imageUrl: z.string().nullable(),
+  cloudinaryId: z.string().nullable(),
+  difficulty: routeDifficultySchema.nullable(),
+  translations: z.array(routeTranslationSchema),
+  /** The languages this route has no copy in yet, so the table can flag the gap. */
+  missingLocales: z.array(routeLocaleSchema),
   stops: z.array(routeStopSchema),
   createdAt: z.string(),
 });
@@ -94,6 +127,38 @@ const routeFieldsSchema = z.object({
   description: z.string().trim().max(4000).nullable().optional(),
   sortOrder: z.number().int().min(0).max(9999).optional(),
   active: z.boolean().optional(),
+  imageUrl: z.string().trim().max(2000).nullable().optional(),
+  cloudinaryId: z.string().trim().max(500).nullable().optional(),
+  difficulty: routeDifficultySchema.nullable().optional(),
+  /*
+   * Absent leaves the stored copy alone; a supplied list replaces the locales it names and
+   * leaves the rest. Nulling both fields of a locale removes that language's row, which is how
+   * a translation is withdrawn without deleting the route.
+   */
+  translations: z
+    .array(
+      z.object({
+        locale: routeLocaleSchema,
+        title: z.string().trim().max(200).nullable().optional(),
+        description: z.string().trim().max(4000).nullable().optional(),
+      }),
+    )
+    .max(ROUTE_LOCALES.length)
+    .optional(),
+});
+
+/**
+ * The whole featured list in its new order, most prominent first.
+ *
+ * A partial order is refused for the reason `faq.reorder` refuses one: the routes left out would
+ * keep ranks the reordered ones now want. An empty list clears the featured selection.
+ */
+export const routeFeaturedReorderInputSchema = z.object({
+  ids: z.array(idSchema).max(50),
+});
+
+export const routeFeaturedSchema = z.object({
+  routes: z.array(routeSchema),
 });
 
 export const routeCreateInputSchema = routeFieldsSchema.superRefine(exactlyOneTarget);

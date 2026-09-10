@@ -16,6 +16,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 
+import { Image } from "@/components/shared/data-display/image";
 import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
@@ -43,8 +44,15 @@ function PopularYachtSlides() {
         <CarouselSlide key={listing.id} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
           <BoatSmallCard
             className="w-full"
-            image={listing.gallery[0] ?? listing.mainImage}
-            imageAlt={listing.title}
+            imageRender={
+              <Image
+                src={listing.gallery[0] ?? listing.mainImage}
+                alt={listing.title}
+                fill
+                sizes="354px"
+                className="object-cover"
+              />
+            }
             location={placeLine(listing.base.location, listing.base.country)}
             title={
               <Link

@@ -85,7 +85,16 @@ export default function BookingSteps() {
    */
   const consents = useWatch({ control, name: "reviewAndBook" });
   const consented = Boolean(consents?.terms && consents.cancellation);
-  const { listing, quote, extras, bookingId, setBookingId, setExtras } = useBooking();
+  const {
+    listing,
+    quote,
+    extras,
+    bookingId,
+    setBookingId,
+    setExtras,
+    requestedExtras,
+    setRequestedExtras,
+  } = useBooking();
   const createHold = useMutation(createHoldMutationOptions());
   const [openStep, setOpenStep] = useQueryState("step", stepParser);
   /*
@@ -159,6 +168,10 @@ export default function BookingSteps() {
   }, [extras, setValue]);
 
   async function commitExtras() {
+    /* The asked-for list lives on the context rather than the form, and its own debounce needs
+       the same flush: a Continue pressed inside the window must not leave a tick behind. */
+    await setRequestedExtras([...requestedExtras]);
+
     const picks = getValues("extras.optional");
     const key = [...picks].sort().join("|");
     if (committedExtras.current === key) return;
@@ -288,7 +301,10 @@ export default function BookingSteps() {
         toast.error(t("errors.holdInProgress"));
         return;
       }
-      toast.error(error instanceof Error ? error.message : t("errors.confirmFailed"));
+      /* Only a server-authored refusal is worth showing: an ORPCError message is written for
+         the customer, while anything else here is a transport failure whose text ("Failed to
+         fetch", a provider's own endpoint name) means nothing to them. */
+      toast.error(error instanceof ORPCError ? error.message : t("errors.confirmFailed"));
     }
   }
 

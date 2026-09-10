@@ -27,7 +27,9 @@ export default function PlanTrip() {
       >
         {/* Left — headline, checklist, CTA */}
         <motion.div variants={RISE} className="flex flex-col gap-6 xl:max-w-136">
-          <h2 className="text-h2 text-center text-foreground md:text-left">{t("heading")}</h2>
+          <h2 className="text-h2 text-center wrap-break-word text-foreground md:text-left">
+            {t("heading")}
+          </h2>
 
           <ul className="flex flex-col gap-1.5">
             {CHECKLIST.map((item) => (
@@ -44,7 +46,7 @@ export default function PlanTrip() {
           <Button
             variant="brand"
             size="md"
-            className="w-full self-start md:w-auto xl:mt-2"
+            className="h-auto min-h-12 w-full self-start py-3 whitespace-normal md:w-auto xl:mt-2"
             nativeButton={false}
             render={<Link href={PLAN_MY_TRIP_HREF} />}
           >

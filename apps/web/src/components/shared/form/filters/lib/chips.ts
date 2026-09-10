@@ -9,6 +9,8 @@ export type FilterChip = { id: ChipId; label: string; keys: (keyof FiltersState)
 export const CHIP_DEFS = [
   /* Only ever active while the free-text field is switched on, which is where it is written. */
   { id: "name", keys: ["name"] },
+  { id: "guests", keys: ["guests"] },
+  { id: "minBerths", keys: ["minBerths"] },
   { id: "country", keys: ["country"] },
   { id: "sailingArea", keys: ["sailingArea"] },
   { id: "city", keys: ["city"] },

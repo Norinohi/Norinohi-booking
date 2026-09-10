@@ -85,3 +85,26 @@ export const waitingOptionsSchema = z.object({
   /** False when this vendor publishes no queue at all, which is not the same as an empty one. */
   supported: z.boolean(),
 });
+
+/**
+ * Slots the vendor would not take back.
+ *
+ * Every entry is a week some operator is still holding against every future customer while our
+ * own row calls the booking over. The retry outbox covers the failures a retry can fix; this is
+ * what is left, and freeing it means a phone call rather than a call to the API.
+ */
+export const unreleasedOptionSchema = z.object({
+  bookingId: z.string(),
+  reference: z.string(),
+  status: z.string(),
+  provider: z.string(),
+  providerOptionId: z.string().nullable(),
+  /** When the last release attempt was refused. */
+  failedAt: z.string(),
+  /** The vendor's own words, which is what support quotes back at them. */
+  reason: z.string(),
+});
+
+export const unreleasedOptionsSchema = z.object({
+  items: z.array(unreleasedOptionSchema),
+});

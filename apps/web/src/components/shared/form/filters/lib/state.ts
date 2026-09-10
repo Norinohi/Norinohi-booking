@@ -9,6 +9,9 @@ export type FiltersState = {
    * setting is on, which is a testing aid rather than a feature.
    */
   name: string;
+  /** Capacity constraints carried from the trip planner; removable through their chips. */
+  guests: number | null;
+  minBerths: number | null;
   country: string[];
   sailingArea: string[];
   /** Town, from a catalogue page's path. No control of its own; it arrives locked. */
@@ -81,6 +84,8 @@ export const EMPTY_RANGES: FilterRanges = {
 export const DEFAULT_FILTERS: FiltersState = {
   query: "",
   name: "",
+  guests: null,
+  minBerths: null,
   country: [],
   sailingArea: [],
   city: [],

@@ -10,7 +10,7 @@ import {
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useFormatter, useLocale } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 import { dayFromNative, dayToDisplay, isBeforeToday } from "@/lib/date";
 
@@ -94,6 +94,25 @@ export default function DatePicker({
 }: DatePickerProps) {
   const format = useFormatter();
   const locale = useLocale();
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isOpen = open ?? uncontrolledOpen;
+
+  function setOpen(next: boolean) {
+    if (open === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  }
+
+  function selectRange(next: DateRange | undefined) {
+    if (props.mode !== "range") return;
+    props.onValueChange(next);
+    if (next?.from && next.to) setOpen(false);
+  }
+
+  function selectDay(next: Date | undefined) {
+    if (props.mode === "range") return;
+    props.onValueChange(next);
+    if (next) setOpen(false);
+  }
 
   /* The caller's own rule still applies on top of the floor, so both can refuse a day. */
   const isDayDisabled = (date: Date) =>
@@ -130,7 +149,7 @@ export default function DatePicker({
 
   return (
     <div className={cn("relative", className)}>
-      <Popover open={open} onOpenChange={onOpenChange}>
+      <Popover open={isOpen} onOpenChange={setOpen}>
         <PopoverTrigger className={cn(TRIGGER, triggerClassName)}>
           <CalendarIcon className="size-6 shrink-0 text-foreground" />
           <span
@@ -165,7 +184,7 @@ export default function DatePicker({
               disabled={isDayDisabled}
               dayModifier={dayModifier}
               selected={props.value}
-              onSelect={props.onValueChange}
+              onSelect={selectRange}
             />
           ) : (
             <Calendar
@@ -175,7 +194,7 @@ export default function DatePicker({
               disabled={isDayDisabled}
               dayModifier={dayModifier}
               selected={props.value}
-              onSelect={props.onValueChange}
+              onSelect={selectDay}
             />
           )}
           {legend ? <div className="mt-2">{legend}</div> : null}

@@ -1,4 +1,4 @@
-import { searchListings } from "@yacht-charter/db/search";
+import { searchListings, valueForLabel } from "@yacht-charter/db/search";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -140,8 +140,13 @@ function resolveBrief(answers: PlannerAnswers): TripBrief {
 async function findMatches(
   db: Database,
   brief: TripBrief,
-): Promise<Awaited<ReturnType<typeof searchListings>> | null> {
+  locale: string | undefined,
+): Promise<{
+  result: Awaited<ReturnType<typeof searchListings>>;
+  filters: Parameters<typeof searchListings>[1];
+} | null> {
   const baseFilters = {
+    locale,
     country: [brief.destination.country],
     crew: brief.crew,
     guests: brief.group?.guests,
@@ -153,7 +158,7 @@ async function findMatches(
     page: 1,
   };
 
-  const attempts = [
+  const attempts: Parameters<typeof searchListings>[1][] = [
     {
       ...baseFilters,
       category: brief.category ?? undefined,
@@ -163,6 +168,7 @@ async function findMatches(
     { ...baseFilters },
     {
       country: [brief.destination.country],
+      locale,
       duration: brief.durationDays,
       currency: CURRENCY,
       pageSize: 24,
@@ -171,7 +177,7 @@ async function findMatches(
 
   for (const attempt of attempts) {
     const result = await searchListings(db, attempt);
-    if (result.items.length > 0) return result;
+    if (result.items.length > 0) return { result, filters: attempt };
   }
 
   return null;
@@ -189,11 +195,11 @@ export async function recommendTrip(
   answers: PlannerAnswers,
 ): Promise<Recommendation> {
   const brief = resolveBrief(answers);
-  const { destination, category, durationDays, crew, style, skipperRequired } = brief;
-  const { difficulty, budget, guestsForMath, maxPriceMinor, group } = brief;
+  const { destination, category, durationDays, style, skipperRequired } = brief;
+  const { difficulty, budget, guestsForMath } = brief;
 
-  const matched = await findMatches(db, brief);
-  const items = matched?.items ?? [];
+  const matched = await findMatches(db, brief, answers.locale);
+  const items = matched?.result.items ?? [];
   /*
    * Only the yachts priced by the week take part, both in the range and in the pick.
    *
@@ -227,14 +233,16 @@ export async function recommendTrip(
     estimatedPrice: estimatePrice(comparable, guestsForMath, budget),
     listing: top ? presentListingSummary(top) : null,
     recommendedPerPerson: top ? perPersonOf(top, guestsForMath) : null,
-    matchCount: matched?.pagination?.totalItems ?? items.length,
+    matchCount: matched?.result.pagination?.totalItems ?? items.length,
+    // Carry the successful search forward: a fallback must not restore the rejected budget.
     searchParams: {
-      country: [destination.country],
-      category,
-      guests: group?.guests ?? null,
+      country: [valueForLabel(destination.country)],
+      category: matched?.filters.category ? valueForLabel(matched.filters.category) : null,
+      guests: matched?.filters.guests ?? null,
+      minBerths: matched?.filters.minBerths ?? null,
       duration: durationDays,
-      crew,
-      maxPriceMinor,
+      crew: matched?.filters.crew ?? [],
+      maxPriceMinor: matched?.filters.maxPriceMinor ?? null,
       currency: CURRENCY,
     },
   };

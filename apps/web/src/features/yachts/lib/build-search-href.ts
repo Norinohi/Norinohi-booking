@@ -5,6 +5,8 @@ import type { AppPathname } from "@/i18n/navigation";
 import { serializeSearch } from "./search-params";
 
 export type SearchCriteria = {
+  guests?: number | null;
+  minBerths?: number | null;
   country?: string[];
   sailingArea?: string[];
   boatType?: string[];

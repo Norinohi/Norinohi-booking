@@ -1,5 +1,8 @@
-import { MIN_LEAD_DAYS } from "@yacht-charter/db/search";
+import { highlightAmenities, MIN_LEAD_DAYS, normalizedFilterValue } from "@yacht-charter/db/search";
 import type { ListingDetail, ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
+
+/* Shared so the no-ranks path allocates nothing per card. */
+const EMPTY_AMENITY_RANKS: ReadonlyMap<string, number> = new Map();
 
 const EMPTY_IMAGE = "";
 
@@ -94,7 +97,17 @@ export function pricedPeriodDays(doc: ListingSearchDoc): number {
  * condition for showing the rate at all -- extras are not to be hidden, only moved out of the
  * headline.
  */
-export function presentListingSummary(doc: ListingSearchDoc, basis: PriceBasis = "all_in") {
+/**
+ * @param amenityRanks Curated amenity order, from `getAmenityRanks`. Optional because four of
+ *   the six callers present cards nobody advertises amenities on — a booking summary, a planner
+ *   result — and making them all fetch it would buy nothing. Omitted, the card falls back to the
+ *   boat's own first few, which is what it showed before any of this existed.
+ */
+export function presentListingSummary(
+  doc: ListingSearchDoc,
+  basis: PriceBasis = "all_in",
+  amenityRanks?: ReadonlyMap<string, number>,
+) {
   const currency = doc.currency ?? "EUR";
   const bookablePeriod = bookablePeriodOf(doc);
   const periodDays = pricedPeriodDays(doc);
@@ -175,6 +188,11 @@ export function presentListingSummary(doc: ListingSearchDoc, basis: PriceBasis =
     mainImage: doc.mainImage ?? doc.gallery[0] ?? EMPTY_IMAGE,
     gallery: doc.gallery,
     amenities: doc.amenities,
+    highlightAmenities: highlightAmenities(
+      doc.amenities,
+      amenityRanks ?? EMPTY_AMENITY_RANKS,
+      normalizedFilterValue,
+    ),
     priceFrom: amountMinor === null ? null : { amountMinor, currency },
     /*
      * Both figures, whatever the headline is, so a card can disclose the difference and a
@@ -238,9 +256,13 @@ export function presentListingSummary(doc: ListingSearchDoc, basis: PriceBasis =
   };
 }
 
-export function presentListingDetail(detail: ListingDetail, basis: PriceBasis = "all_in") {
+export function presentListingDetail(
+  detail: ListingDetail,
+  basis: PriceBasis = "all_in",
+  amenityRanks?: ReadonlyMap<string, number>,
+) {
   return {
-    ...presentListingSummary(detail, basis),
+    ...presentListingSummary(detail, basis, amenityRanks),
     description: detail.description,
     overview: detail.overview,
     media: detail.media,

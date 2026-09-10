@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import Sidebar from "@/components/layout/sidebar";
+import { useFilterOptions } from "@/components/shared/form/filters";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -43,6 +44,14 @@ interface FormState {
   displayCurrencyEnabled: boolean;
   displayCurrencyDefault: DisplayCurrency;
   nameSearchEnabled: boolean;
+  /* The slider's four numbers, typed as an operator enters them; parsed at the edges only. */
+  popularLimit: string;
+  popularMaxAgeYears: string;
+  popularMaxPerCountry: string;
+  popularMaxPerBase: string;
+  /* Boat-type filter value to how many of that type the slider aims for. A type at nought is
+     kept rather than dropped, so an operator can zero one out and put it back. */
+  popularMix: Record<string, number>;
 }
 
 /** The currencies the client named. The overrides map is edited in the database for now. */
@@ -109,10 +118,18 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       displayCurrencyEnabled: data.displayCurrencyEnabled,
       displayCurrencyDefault: data.displayCurrencyDefault,
       nameSearchEnabled: data.nameSearchEnabled,
+      popularLimit: String(data.popularYachts.limit),
+      popularMaxAgeYears: String(data.popularYachts.maxAgeYears),
+      popularMaxPerCountry: String(data.popularYachts.maxPerCountry),
+      popularMaxPerBase: String(data.popularYachts.maxPerBase),
+      popularMix: data.popularYachts.mix,
     });
   }, [data?.updatedAt, data]);
 
   const logout = () => authClient.signOut({ fetchOptions: { onSuccess: () => router.push("/") } });
+
+  const { options: facetOptions } = useFilterOptions();
+  const boatTypes = facetOptions.boatTypes;
 
   const percent = Number(form?.depositPercent);
   const days = Number(form?.leadTimeDays);
@@ -121,6 +138,28 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
      past a year is a claim about connectors that have since been rewritten. */
   const reliabilityDaysValid =
     Number.isInteger(reliabilityDays) && reliabilityDays >= 1 && reliabilityDays <= 365;
+  /* Bounded exactly as `popularYachtsConfigSchema` is, so a figure this screen accepts is one
+     the save will accept -- an out-of-range number reaching the contract comes back as an
+     unlabelled validation error rather than beside the field that caused it. */
+  const popular = {
+    limit: Number(form?.popularLimit),
+    maxAgeYears: Number(form?.popularMaxAgeYears),
+    maxPerCountry: Number(form?.popularMaxPerCountry),
+    maxPerBase: Number(form?.popularMaxPerBase),
+  };
+  const popularValid =
+    Number.isInteger(popular.limit) &&
+    popular.limit >= 1 &&
+    popular.limit <= 48 &&
+    Number.isInteger(popular.maxAgeYears) &&
+    popular.maxAgeYears >= 0 &&
+    popular.maxAgeYears <= 50 &&
+    Number.isInteger(popular.maxPerCountry) &&
+    popular.maxPerCountry >= 1 &&
+    popular.maxPerCountry <= 48 &&
+    Number.isInteger(popular.maxPerBase) &&
+    popular.maxPerBase >= 1 &&
+    popular.maxPerBase <= 48;
   const percentValid = Number.isFinite(percent) && percent >= 1 && percent <= 100;
   const daysValid = Number.isInteger(days) && days >= 0 && days <= 365;
   /* A percentage only has to be valid when it is the one in force; an unused field left blank
@@ -129,6 +168,7 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
     form !== null &&
     daysValid &&
     reliabilityDaysValid &&
+    popularValid &&
     (form.source === "vendor" || form.mode === "full" || percentValid) &&
     !update.isPending;
 
@@ -154,6 +194,13 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
            payload would clear it. Sent back exactly as it was read. */
         displayCurrencyByCountry: data?.displayCurrencyByCountry ?? {},
         nameSearchEnabled: form.nameSearchEnabled,
+        popularYachts: {
+          limit: popular.limit,
+          maxAgeYears: popular.maxAgeYears,
+          maxPerCountry: popular.maxPerCountry,
+          maxPerBase: popular.maxPerBase,
+          mix: form.popularMix,
+        },
       },
       {
         onSuccess: () => toast.success(t("saved")),
@@ -161,6 +208,28 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
       },
     );
   };
+
+  /*
+   * The boat types a mix may name: whatever the catalogue currently carries, plus any type
+   * already in the saved mix.
+   *
+   * Both halves matter. Offering only the live vocabulary would hide a quota for a type the
+   * fleet has temporarily none of, and editing the config would then silently drop it; offering
+   * only the saved keys would mean a new hull type could never be given one. Free text is not an
+   * option at all -- a mistyped key is a quota that matches nothing and says nothing.
+   */
+  const mixRows = (() => {
+    const seen = new Set<string>();
+    const rows: { value: string; label: string }[] = [];
+    for (const option of boatTypes) {
+      seen.add(option.value);
+      rows.push({ value: option.value, label: option.label });
+    }
+    for (const value of Object.keys(form?.popularMix ?? {})) {
+      if (!seen.has(value)) rows.push({ value, label: value });
+    }
+    return rows;
+  })();
 
   const set = (patch: Partial<FormState>) =>
     setForm((current) => (current ? { ...current, ...patch } : current));
@@ -509,6 +578,64 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
                   </label>
                 </fieldset>
 
+                <fieldset className="flex flex-col gap-4 rounded-xl border border-natural-100 p-4">
+                  <legend className="px-1 text-sm leading-4.5 font-bold text-foreground">
+                    {t("popularYachts.legend")}
+                  </legend>
+                  <p className="text-xs leading-4 font-medium text-natural-500">
+                    {t("popularYachts.hint")}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <NumberField
+                      label={t("popularYachts.limit")}
+                      value={form.popularLimit}
+                      onChange={(next) => set({ popularLimit: next })}
+                    />
+                    <NumberField
+                      label={t("popularYachts.maxAgeYears")}
+                      value={form.popularMaxAgeYears}
+                      onChange={(next) => set({ popularMaxAgeYears: next })}
+                    />
+                    <NumberField
+                      label={t("popularYachts.maxPerCountry")}
+                      value={form.popularMaxPerCountry}
+                      onChange={(next) => set({ popularMaxPerCountry: next })}
+                    />
+                    <NumberField
+                      label={t("popularYachts.maxPerBase")}
+                      value={form.popularMaxPerBase}
+                      onChange={(next) => set({ popularMaxPerBase: next })}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm leading-4.5 font-medium text-foreground">
+                      {t("popularYachts.mix")}
+                    </span>
+                    <p className="text-xs leading-4 font-medium text-natural-500">
+                      {t("popularYachts.mixHint")}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {mixRows.map((row) => (
+                        <NumberField
+                          key={row.value}
+                          label={row.label}
+                          value={String(form.popularMix[row.value] ?? 0)}
+                          onChange={(next) =>
+                            set({
+                              popularMix: {
+                                ...form.popularMix,
+                                [row.value]: Math.max(0, Math.trunc(Number(next) || 0)),
+                              },
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </fieldset>
+
                 <div className="flex items-center gap-3">
                   <Button type="button" onClick={save} disabled={!canSave}>
                     {update.isPending ? t("saving") : t("save")}
@@ -523,6 +650,30 @@ export default function SettingsScreen({ user }: { user: { name: string; email: 
         </div>
       </div>
     </div>
+  );
+}
+
+/* A labelled whole-number box. The four caps and every mix quota are the same control. */
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs leading-4 font-medium text-natural-500">{label}</span>
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
   );
 }
 

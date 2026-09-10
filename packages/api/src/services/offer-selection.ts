@@ -11,6 +11,7 @@
  */
 import { listAvailabilityConstraints } from "@yacht-charter/db/search";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
+import { sellableOffer } from "@yacht-charter/db/sellable-offer";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
 import { providerCommission } from "@yacht-charter/db/schema/commission";
@@ -89,6 +90,16 @@ export async function selectBestOffer(
   input: QuoteRequest,
 ): Promise<OfferSelection> {
   const offers = await listOffersForListing(db, input.listingId);
+
+  /*
+   * An empty list has two meanings and they need opposite answers, so the withheld case is
+   * asked about separately. A listing whose offers all exist but none may be sold -- a retired
+   * hull, or one the vendor vets by hand -- must not fall through to the configured adapter,
+   * which would quote it happily and then be refused at the hold.
+   */
+  if (offers.length === 0 && (await hasWithheldOffer(db, input.listingId))) {
+    throw new NoSellableOfferError("This boat is not available to book online", []);
+  }
 
   /*
    * No offer at all means a listing no sync produced — a seeded demo row, or one whose sources
@@ -233,6 +244,30 @@ async function listCommissionRules(
   return rows.map((row) => ({ ...row, ratePct: Number(row.ratePct) }));
 }
 
+/**
+ * Whether this listing has offers and every one of them is withheld.
+ *
+ * Only asked when the sellable list came back empty, which is rare, so it costs a query on the
+ * path that is about to refuse rather than on every quote.
+ */
+async function hasWithheldOffer(db: Database, listingId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ offerId: listingOffer.id })
+    .from(listingOffer)
+    .where(and(eq(listingOffer.listingId, listingId), eq(listingOffer.status, "active")))
+    .limit(1);
+
+  return Boolean(row);
+}
+
+/**
+ * Every offer this listing may be sold through.
+ *
+ * `sellableOffer` is the same predicate the search document is built on, imported rather than
+ * restated: it lived only in the read model, so a retired hull or one the vendor vets by hand
+ * was absent from search and still quotable from its own page. The refusal then arrived from
+ * the provider at the end of checkout, which is the worst place to learn it.
+ */
 async function listOffersForListing(db: Database, listingId: string): Promise<OfferRow[]> {
   return db
     .select({
@@ -244,7 +279,17 @@ async function listOffersForListing(db: Database, listingId: string): Promise<Of
     })
     .from(listingOffer)
     .innerJoin(providerTable, eq(providerTable.id, listingOffer.providerId))
-    .where(and(eq(listingOffer.listingId, listingId), eq(listingOffer.status, "active")))
+    .where(
+      and(
+        eq(listingOffer.listingId, listingId),
+        eq(listingOffer.status, "active"),
+        sellableOffer({
+          outOfFleetDate: listingOffer.outOfFleetDate,
+          optionApprovalRequired: listingOffer.optionApprovalRequired,
+          fixedBookingSupported: listingOffer.fixedBookingSupported,
+        }),
+      ),
+    )
     .orderBy(listingOffer.id);
 }
 

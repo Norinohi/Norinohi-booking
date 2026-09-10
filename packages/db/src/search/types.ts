@@ -1,4 +1,5 @@
 import type { faqCategory } from "../schema/content";
+import type { facetMediaKind } from "../schema/facet-media";
 import type { CrewType } from "./crew";
 
 export type FaqCategory = (typeof faqCategory)["enumValues"][number];
@@ -366,17 +367,22 @@ export type ListingFacetOption = {
   /* Lowest positive comparable price in EUR; null when the group has no comparable price. */
   priceFromMinor?: number | null;
   currency?: string | null;
+  /*
+   * Curated order, from facet_media. `popularRank` pins the value to the top of a picker,
+   * `featuredRank` orders the home page's sliders and grids; null means neither, which is
+   * every value until somebody curates the kind. Only groups decorated from facet_media
+   * carry them at all, so charter companies, models and years are always null.
+   */
+  popularRank?: number | null;
+  featuredRank?: number | null;
 };
 
-export type FacetMediaKind =
-  | "country"
-  | "region"
-  | "location"
-  | "marina"
-  | "category"
-  | "crew"
-  | "sail_type"
-  | "equipment";
+/*
+ * Derived from the column rather than restated, because a hand-written copy of it drifted the
+ * moment a kind was added: the enum gained "model" and this union did not, so the facet query
+ * could not ask to be decorated as one.
+ */
+export type FacetMediaKind = (typeof facetMediaKind.enumValues)[number];
 
 export type ListingFacets = {
   destinations: string[];
@@ -453,6 +459,11 @@ export type ListingSuggestion = {
    */
   value: string;
   kind: "country" | "region" | "location" | "base";
+  /**
+   * Whether this row came from the curated popular list rather than from matching what was
+   * typed. Only the empty field produces them, so a typeahead result is never marked.
+   */
+  popular?: boolean;
 };
 
 export type AvailabilityCalendarInput = {

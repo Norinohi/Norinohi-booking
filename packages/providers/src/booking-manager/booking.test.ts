@@ -30,6 +30,7 @@ const config: BookingManagerConfig = {
   baseUrl: "https://www.booking-manager.com/api/v2",
   apiToken: "t0ken",
   timeoutMs: 1000,
+  syncTimeoutMs: 5000,
   minIntervalMs: 0,
   sweepConcurrency: 1,
   optionSafetyMarginMinutes: 15,

@@ -187,6 +187,19 @@ export const env = createEnv({
     BOOKING_MANAGER_EXCLUDED_COMPANY_IDS: z.string().optional(),
     BOOKING_MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
     /*
+     * The sweep lane's own ceiling, for the same reason NAUSYS_SYNC_TIMEOUT_MS exists:
+     * one `/offers` answers for the whole account for a week and one `/yachts` page for
+     * a whole company, while BOOKING_MANAGER_TIMEOUT_MS governs the quote a guest is
+     * sitting in front of.
+     *
+     * 30s was measurably too low. The vendor pays an undocumented cold start on each of
+     * its six servers (see `warmup.ts`), which produced a 29.7s `/offers` against a
+     * median near 1s; on 2026-09-10 the availability sync's first grid week timed out
+     * every attempt and ended the confirmation pass after one page, reported only as
+     * `budgetExhausted` on a run that had used a third of its budget.
+     */
+    BOOKING_MANAGER_SYNC_TIMEOUT_MS: z.coerce.number().int().positive().default(180_000),
+    /*
      * How long one vendor is waited on for a price before the sale goes to whoever else
      * answered. A ceiling on the customer's wait, not a vendor limit -- those are the
      * `*_TIMEOUT_MS` above and are far longer.

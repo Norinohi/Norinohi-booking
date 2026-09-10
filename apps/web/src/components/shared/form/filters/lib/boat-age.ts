@@ -5,9 +5,12 @@ import type { FilterRanges, FiltersState, Range } from "./state";
  * Year From / Year To selects. The selects are the state (`yearFrom` / `yearTo`); the slider is a
  * view over them, so moving either moves the other and nothing is stored twice.
  *
- * age = currentYear − buildYear, so the older bound (`yearFrom`) is the slider's upper thumb and
- * the newer bound (`yearTo`) its lower one. "any" sits on the slider's end, and a thumb pushed to
- * the end writes "any" back — a cleared select and a thumb at its limit read the same.
+ * age = currentYear − buildYear, so the two run in opposite directions. The slider is laid out on
+ * build year rather than on age: its left thumb is the "from" side of both controls at once, the
+ * older bound, and writes `yearFrom`; its right thumb is `yearTo`. The track therefore counts
+ * years of age down from left to right, so the thumb somebody drags fills the select beside it
+ * instead of the other one. "any" sits on the slider's end, and a thumb pushed to the end writes
+ * "any" back — a cleared select and a thumb at its limit read the same.
  *
  * "Now" is anchored on the facets rather than the clock: the server derives the age range from
  * the build years with its own clock, so `year.min + boatAge.max` is exactly its current year and
@@ -29,7 +32,21 @@ function yearOf(bound: string): number | null {
   return YEAR.test(bound) ? Number(bound) : null;
 }
 
-export function toAgeRange(bounds: YearBounds, limits: BoatAgeLimits): Range {
+/*
+ * Age to track position and back. The track spans the same numbers the age range does, so a
+ * position is still an age — it is only which end of the track an age sits on that is mirrored.
+ */
+function flip(age: number, [minAge, maxAge]: Range): number {
+  return minAge + maxAge - age;
+}
+
+/** The age a track position stands for, for the labels above the two thumbs. */
+export function ageAt(position: number, limits: BoatAgeLimits): number {
+  return flip(position, limits.boatAge);
+}
+
+/** The two ages a pair of year bounds stands for, oldest first, clamped onto the age range. */
+function agesOf(bounds: YearBounds, limits: BoatAgeLimits): Range {
   const [minAge, maxAge] = limits.boatAge;
   const now = currentYear(limits);
   const clamp = (age: number) => Math.min(Math.max(age, minAge), maxAge);
@@ -38,7 +55,12 @@ export function toAgeRange(bounds: YearBounds, limits: BoatAgeLimits): Range {
   const oldest = from === null ? maxAge : clamp(now - from);
   const newest = to === null ? minAge : clamp(now - to);
   // A crossed pair (a hand-edited URL) still has to render its two thumbs in order.
-  return newest <= oldest ? [newest, oldest] : [oldest, newest];
+  return newest <= oldest ? [oldest, newest] : [newest, oldest];
+}
+
+export function toAgeRange(bounds: YearBounds, limits: BoatAgeLimits): Range {
+  const [oldest, newest] = agesOf(bounds, limits);
+  return [flip(oldest, limits.boatAge), flip(newest, limits.boatAge)];
 }
 
 /*
@@ -48,11 +70,13 @@ export function toAgeRange(bounds: YearBounds, limits: BoatAgeLimits): Range {
  */
 export function withAgeRange(
   bounds: YearBounds,
-  [newest, oldest]: Range,
+  [fromPosition, toPosition]: Range,
   limits: BoatAgeLimits,
 ): YearBounds {
   const [minAge, maxAge] = limits.boatAge;
-  const [wasNewest, wasOldest] = toAgeRange(bounds, limits);
+  const oldest = flip(fromPosition, limits.boatAge);
+  const newest = flip(toPosition, limits.boatAge);
+  const [wasOldest, wasNewest] = agesOf(bounds, limits);
   const now = currentYear(limits);
   return {
     yearFrom:

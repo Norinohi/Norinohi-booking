@@ -66,11 +66,33 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
   const overlayRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [revealed, setRevealed] = useState(false);
+  /*
+   * Whether the CDN has already failed for this source. Once it has, `unoptimized` makes Next skip
+   * the loader entirely and render the origin URL. Cloudinary sits in front of every remote photo,
+   * so anything that takes the whole cloud down — an exhausted quota disables it and answers 401
+   * on every asset — leaves the site photoless while the origins are still serving fine.
+   * Unoptimized bytes are the cheap degradation; a grey placeholder is not.
+   */
+  const [cdnFailed, setCdnFailed] = useState(false);
 
   useEffect(() => {
+    setCdnFailed(false);
+    setStatus("loading");
+    setRevealed(false);
+  }, [src]);
+
+  /*
+   * An image that finished before hydration never replays its load or error event, so its outcome
+   * has to be read off the element. Kept separate from the reset above because it feeds `cdnFailed`
+   * back in as a dependency, and resetting on that would loop.
+   */
+  useEffect(() => {
     const img = ref.current;
-    if (img?.complete) setStatus(img.naturalWidth > 0 ? "loaded" : "error");
-  }, []);
+    if (!img?.complete) return;
+    if (img.naturalWidth > 0) setStatus("loaded");
+    else if (dynamic && !cdnFailed) setCdnFailed(true);
+    else setStatus("error");
+  }, [src, dynamic, cdnFailed]);
 
   /*
    * Fade the loader out once the image is ready. A cached/priority image flips to loaded
@@ -87,7 +109,14 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
     setStatus("loaded");
     onLoad?.(event);
   };
+  // The first CDN failure is a retry, not an outcome, so `onError` stays unfired until the origin
+  // has failed too — a consumer counting broken photos should not count the ones that recovered.
   const handleError: ComponentProps<typeof NextImage>["onError"] = (event) => {
+    if (dynamic && !cdnFailed) {
+      setCdnFailed(true);
+      setStatus("loading");
+      return;
+    }
     setStatus("error");
     onError?.(event);
   };
@@ -102,6 +131,7 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
         onError={handleError}
         className={className}
         {...rest}
+        unoptimized={rest.unoptimized || cdnFailed}
       />
       {overlay ? (
         <div

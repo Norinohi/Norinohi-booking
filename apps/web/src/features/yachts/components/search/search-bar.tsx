@@ -13,6 +13,7 @@ import {
   type FilterOptions,
   type FiltersState,
   labelOf,
+  groupByPopularity,
   orderedValues,
   useDraft,
   useFilterOptions,
@@ -100,6 +101,13 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
   const [pending, setPending] = useState<DateRange | null>(null);
   const nameSearchEnabled = useNameSearchEnabled();
 
+  /* The curated types head the list, the rest follow. Null until somebody curates the boat-type
+     facet, and the picker then renders flat exactly as it did before. */
+  const boatTypeGroups = groupByPopularity(options.boatTypes, {
+    popular: t("popularBoatTypes"),
+    all: t("allBoatTypes"),
+  });
+
   const range = pending ?? toRange(draft);
 
   function handleRange(next: DateRange | undefined) {
@@ -155,6 +163,7 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
       <div className="md:col-span-2 xl:col-span-1">
         <MultiSelect
           options={options.boatTypes}
+          groups={boatTypeGroups}
           value={draft.boatType}
           onValueChange={(next) =>
             setDraft((current) => ({

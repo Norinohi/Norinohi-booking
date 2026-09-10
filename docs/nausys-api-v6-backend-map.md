@@ -122,8 +122,10 @@ Persist the provider record and map these groups:
 
 `listing_media` needs source provider, external media URL, role (`main`,
 `layout`, `gallery`), sort order, dimensions if known, import time and an
-optional Cloudinary asset ID. Do not assume rights to copy/hotlink media until
-the provider terms confirm it.
+optional Cloudinary asset ID. NauSYS confirmed (Sep 2026) that catalogue data,
+images included, may be held and served from our own infrastructure; the cache
+must be deleted when the contract ends and the data may not be resold. Booking
+Manager has not confirmed the equivalent, so their media still stays hotlinked.
 
 ### 2.2 Reservation and availability - PDF pages 72-117
 
@@ -611,6 +613,7 @@ code it justifies.
 | Must every call on one credential be serial? | No — live booking-flow calls are exempt; the restriction covers the background sweeps.                                                                                                      | §1 constraint 1, `nausys/client.ts`                 |
 | Is `countryId` in `createInfo` a NauSYS id?  | Yes, the `catalogue/v6/countries` id, matched via `code2` — not an ISO code.                                                                                                                | `nausys/booking.ts`, `shared/catalogue-resolver.ts` |
 | Must we build crew lists ourselves?          | No, but we do. The base collects it on arrival if it is incomplete, and forwarding `crewlistlink` is acceptable; we collect it on our own page and file it with `crewlist/v6/set2` instead. | §2.4                                                |
+| May we cache and transform their images?     | Yes — catalogue data belongs on our own server. The cache must be deleted once the contract ends, resale of the data is forbidden, and the remaining terms sit in the service contract.     | §2.1, `catalogue-writer.ts`                         |
 
 ### Still open
 
@@ -632,7 +635,6 @@ code it justifies.
   documentation update).
 - **Stable yacht/operator IDs** sufficient to safely match records with Booking
   Manager.
-- **Rights and caching rules** for images, descriptions, ratings and invoices.
 - **Retention and data-processing terms** for the customer data we do send
   (`createInfo`: name, email, phone, country) and invoice ownership.
 

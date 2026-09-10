@@ -22,6 +22,9 @@ const SelectRoot = SelectPrimitive.Root;
 
 export type SelectOption = { value: string; label: string; disabled?: boolean };
 
+/** A labelled run of options. Opt-in: without `groups` the list stays flat. */
+export type SelectOptionGroup = { key: string; label?: string; options: SelectOption[] };
+
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
@@ -132,6 +135,34 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
   );
 }
 
+function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
+  return (
+    <SelectPrimitive.Group
+      data-slot="select-group"
+      className={cn("border-t border-natural-50 pt-3 first:border-t-0 first:pt-0", className)}
+      {...props}
+    />
+  );
+}
+
+function SelectGroupLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) {
+  return (
+    <SelectPrimitive.GroupLabel
+      data-slot="select-group-label"
+      className={cn("pb-1 text-sm font-medium text-natural-500", className)}
+      {...props}
+    />
+  );
+}
+
+function renderSelectItem(option: SelectOption) {
+  return (
+    <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+      {option.label}
+    </SelectItem>
+  );
+}
+
 const LOADING_ROWS = 4;
 
 function optionLabel(options: SelectOption[], value: string) {
@@ -147,6 +178,7 @@ function optionLabel(options: SelectOption[], value: string) {
  */
 function Select({
   options,
+  groups,
   value,
   defaultValue,
   onValueChange,
@@ -163,6 +195,8 @@ function Select({
   disabled,
 }: {
   options: SelectOption[];
+  /** Renders the list under headings instead of flat. `options` still resolves the trigger label. */
+  groups?: SelectOptionGroup[];
   /**
    * Controlled value; pair with `onValueChange`. Use `null` for controlled-but-empty — `undefined`
    * is how Base UI is told the select is uncontrolled, so a caller whose state starts out
@@ -231,16 +265,28 @@ function Select({
           <p className="py-2 text-center text-sm font-medium text-natural-500">
             {emptyLabel ?? labels.noOptions}
           </p>
-        ) : (
-          options.map((option) => (
-            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-              {option.label}
-            </SelectItem>
+        ) : groups ? (
+          groups.map((group) => (
+            <SelectGroup key={group.key}>
+              {group.label ? <SelectGroupLabel>{group.label}</SelectGroupLabel> : null}
+              {group.options.map(renderSelectItem)}
+            </SelectGroup>
           ))
+        ) : (
+          options.map(renderSelectItem)
         )}
       </SelectContent>
     </SelectRoot>
   );
 }
 
-export { Select, SelectContent, SelectItem, SelectRoot, SelectTrigger, SelectValue };
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectGroupLabel,
+  SelectItem,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+};

@@ -1083,6 +1083,36 @@ describe("the fields the vendor added in May 2025", () => {
 });
 
 /*
+ * Two flags we imported for a year and never read, which is how a boat the operator vets by
+ * hand came to be sold as an instant hold: createOption answered OPERATION_NOT_ALLOWED with
+ * the customer already at the last step of checkout.
+ */
+describe("whether the vendor lets us sell the boat unattended", () => {
+  it("carries both flags as the operator set them", () => {
+    const yacht = maria();
+    yacht.needsOptionApproval = true;
+    yacht.canMakeBookingFixed = false;
+
+    const listing = listingOf(yacht);
+
+    expect(listing?.optionApprovalRequired).toBe(true);
+    expect(listing?.fixedBookingSupported).toBe(false);
+  });
+
+  /* Absent is not a refusal: an operator that says nothing is sold as before. */
+  it("leaves them unset where the dump omits them", () => {
+    const yacht = maria();
+    delete yacht.needsOptionApproval;
+    delete yacht.canMakeBookingFixed;
+
+    const listing = listingOf(yacht);
+
+    expect(listing?.optionApprovalRequired).toBeUndefined();
+    expect(listing?.fixedBookingSupported).toBeUndefined();
+  });
+});
+
+/*
  * Undocumented and on the wire: an operator can withhold a priced extra from named agencies.
  * 62 of 140,543 rows carry a list and every one of them is a deny list; none names us today,
  * which is exactly why the reading is narrow rather than clever.

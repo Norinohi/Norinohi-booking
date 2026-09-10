@@ -185,6 +185,14 @@ export interface ConfirmedOfferPage {
 }
 
 export interface AvailabilitySource {
+  /**
+   * Cheap reads issued before the first real one, for a vendor that pays a cold start.
+   *
+   * Optional and best-effort: a source that has nothing to warm omits it, and one that
+   * does must not fail the run over it, since the cost of skipping is a slow first read
+   * the pass would have paid anyway.
+   */
+  warmUp?(): Promise<void>;
   listScopes(): Promise<AvailabilityScope[]>;
   /**
    * Resolves only for a dump that arrived whole. A throw is what stops this scope
@@ -476,7 +484,7 @@ export interface AvailabilitySyncSummary {
  * hung one look identical from the database. The catalogue run has the same problem
  * and solves it the same way, with `CatalogueSyncJobOptions.onPhase`.
  */
-export type AvailabilitySyncPhase = "occupancy" | "confirmation" | "rebuild-search";
+export type AvailabilitySyncPhase = "warmup" | "occupancy" | "confirmation" | "rebuild-search";
 
 export interface AvailabilitySyncProgress {
   phase: AvailabilitySyncPhase;
@@ -575,6 +583,25 @@ export async function runAvailabilitySync(
     options.onProgress?.({ phase, scopeIndex, scopeTotal });
 
   try {
+    /*
+     * Before `listScopes`, which for Booking Manager is local and for NauSYS is the
+     * run's first vendor call: whichever it is, nothing has been read yet, so this is
+     * where a cold start would otherwise land. The catalogue sync warms itself at the
+     * same point; the availability sync did not, and on 2026-09-10 its first `/offers`
+     * week timed out against six servers no traffic had touched since their nightly
+     * restart, ending the confirmation pass after one page.
+     */
+    if (source.warmUp) {
+      emitProgress("warmup");
+      try {
+        await source.warmUp();
+      } catch (error) {
+        // Never fatal: the pass simply pays the cold start itself, which is what it
+        // did before any of this existed.
+        await report(error, { phase: "warmup" });
+      }
+    }
+
     emitProgress("occupancy");
     const scopes = await source.listScopes();
     const yearsByScope = new Map<string, number[]>();

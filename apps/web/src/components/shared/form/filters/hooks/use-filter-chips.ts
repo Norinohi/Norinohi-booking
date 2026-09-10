@@ -36,6 +36,10 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
 
   function label(id: ChipId): string {
     switch (id) {
+      case "guests":
+        return t("guests", { count: state.guests ?? 0 });
+      case "minBerths":
+        return t("minBerths", { count: state.minBerths ?? 0 });
       case "name":
         return t("name", { value: state.name });
       case "country":

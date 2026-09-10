@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { listSelectableExtraCodes } from "@yacht-charter/db/search";
+import { listRequestableExtras, listSelectableExtraCodes } from "@yacht-charter/db/search";
 import { rebuildListingSearchDocs } from "@yacht-charter/db/search/read-model";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
@@ -29,6 +29,7 @@ import {
 import { and, eq, gt, isNull, or } from "drizzle-orm";
 
 import { classifyRefusal } from "../lib/refusal-report";
+import { saysSlotIsGone } from "../lib/provider-failure";
 
 import type { Database, DatabaseExecutor } from "../context";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
@@ -47,6 +48,8 @@ import {
 import { getMarketplaceSettings } from "./marketplace-settings";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
+  /** Asked of the base rather than bought here; priced by nothing. See the quote schema. */
+  requestedExtras: string[];
   /** The trip split across the party; null when the guest count is unusable. */
   perPerson: { amountMinor: number; currency: string } | null;
   /** Derived instalments, in the order the customer meets them. */
@@ -74,6 +77,8 @@ export type RepriceChanges = {
   checkOut?: string;
   guests?: number;
   extras?: string[];
+  /** Extras settled with the base rather than bought here; see the quote schema. */
+  requestedExtras?: string[];
   crewType?: CrewType;
   /** Null clears a one-way and prices the charter back to its own base. */
   endBaseId?: string | null;
@@ -90,7 +95,11 @@ export type RepriceChanges = {
 export async function createQuote(
   db: Database,
   provider: InventoryProvider,
-  input: QuoteRequest & { discountCode?: string; applyCredit?: boolean },
+  input: QuoteRequest & {
+    discountCode?: string;
+    applyCredit?: boolean;
+    requestedExtras?: string[];
+  },
   userId: string | null,
 ): Promise<PersistedQuote> {
   /*
@@ -105,10 +114,17 @@ export async function createQuote(
     input.extras ?? [],
     selection.selected.listingOfferId,
   );
+  await assertRequestableExtras(
+    db,
+    input.listingId,
+    input.requestedExtras ?? [],
+    selection.selected.listingOfferId,
+  );
 
   const quote = await persistPricedQuote(db, selection.selected.priced, {
     userId,
     extras: input.extras ?? [],
+    requestedExtras: input.requestedExtras ?? [],
     crewType: input.crewType ?? null,
     discountCode: input.discountCode ?? null,
     applyCredit: input.applyCredit ?? false,
@@ -339,6 +355,55 @@ async function learnFromRefusal(
 }
 
 /**
+ * The same lesson from a refused booking call as from a refused quote.
+ *
+ * Both calls that name a real customer end here. A refused hold is the deepest anyone gets
+ * before paying: they picked the boat, filled in the guest details, pressed Confirm, and only
+ * then did the vendor say the week was gone. A refused confirmation is worse still, because
+ * the money has already moved and the booking is on its way to a refund. Neither taught the
+ * catalogue anything -- the booking went to PROVIDER_REJECTED, that customer was told to pick
+ * new dates, and the week stayed on the card for everyone behind them until the next sync.
+ * Those are the refusals most worth keeping, because reaching one costs a customer.
+ *
+ * Only a vendor saying the charter is gone. A timeout or an auth failure is our own trouble
+ * wearing the vendor's answer, and writing it down would retire a week nobody has sold.
+ *
+ * Everything else -- the smaller-party probe that keeps a party too large for the boat from
+ * reading as a dead week, the guard that only writes where our own constraints said yes, the
+ * immediate rebuild of this one listing -- is `learnFromRefusal`'s, deliberately: one policy
+ * for what a refusal teaches, whichever call heard it.
+ */
+export async function learnFromProviderRefusal(
+  db: Database,
+  provider: InventoryProvider,
+  priced: typeof quote.$inferSelect,
+  error: Error | null,
+): Promise<void> {
+  if (!saysSlotIsGone(error) || !priced.listingOfferId) return;
+
+  const input: QuoteRequest = {
+    listingId: priced.listingId,
+    checkIn: priced.checkIn,
+    checkOut: priced.checkOut,
+    guests: priced.guests,
+    extras: priced.extras,
+    currency: priced.currency,
+  };
+  const crewType = asCrewType(priced.crewType);
+  if (crewType) input.crewType = crewType;
+
+  await learnFromRefusal(db, provider, input, [
+    {
+      outcome: "unavailable",
+      offerId: priced.listingOfferId,
+      providerCode: provider.key,
+      reason: error?.name ?? "SlotUnavailableError",
+      latencyMs: null,
+    },
+  ]);
+}
+
+/**
  * Re-prices an existing quote. The old row is marked `consumed` and points at its
  * replacement rather than being edited, so the chain of what was offered when stays
  * intact (§1.5 — immutable, supersede rather than mutate).
@@ -361,7 +426,8 @@ export async function repriceQuote(
 
   // Anything the caller did not send keeps the previous quote's value, so the
   // sidebar can change one control at a time without restating the whole trip.
-  const requestedExtras = changes.extras ?? existing.extras;
+  const selectedExtras = changes.extras ?? existing.extras;
+  const requestedExtras = changes.requestedExtras ?? existing.requestedExtras;
 
   // Only what the caller actually sent. A value carried forward is already-written
   // history, and refusing to re-price a date change because a quote from before
@@ -369,6 +435,14 @@ export async function repriceQuote(
   // strand the customer on a quote they cannot edit.
   if (changes.extras !== undefined) {
     await assertSelectableExtras(db, existing.listingId, changes.extras, existing.listingOfferId);
+  }
+  if (changes.requestedExtras !== undefined) {
+    await assertRequestableExtras(
+      db,
+      existing.listingId,
+      changes.requestedExtras,
+      existing.listingOfferId,
+    );
   }
   const requestedCrewType = changes.crewType ?? asCrewType(existing.crewType);
   /*
@@ -382,19 +456,19 @@ export async function repriceQuote(
   const discountCode =
     changes.discountCode === undefined ? existing.discountCode : changes.discountCode;
 
-  const request: Parameters<typeof priceOrConflict>[1] = {
+  const request: QuoteRequest = {
     listingId: existing.listingId,
     checkIn: changes.checkIn ?? existing.checkIn,
     checkOut: changes.checkOut ?? existing.checkOut,
     guests: changes.guests ?? existing.guests,
-    extras: requestedExtras,
+    extras: selectedExtras,
     currency: existing.currency,
   };
 
   if (requestedCrewType) request.crewType = requestedCrewType;
   if (requestedEndBaseId) request.endBaseId = requestedEndBaseId;
 
-  const priced = await priceOrConflict(provider, request);
+  const priced = await priceOrConflict(db, provider, request, existing.listingOfferId);
 
   const replacement = await db.transaction(async (tx) => {
     const result = await persistPricedQuote(tx, priced, {
@@ -405,7 +479,8 @@ export async function repriceQuote(
        */
       listingOfferId: existing.listingOfferId,
       userId: userId ?? existing.userId,
-      extras: requestedExtras,
+      extras: selectedExtras,
+      requestedExtras,
       crewType: requestedCrewType ?? null,
       discountCode,
       applyCredit: changes.applyCredit ?? existing.creditAppliedMinor > 0,
@@ -482,9 +557,38 @@ async function assertSelectableExtras(
   });
 }
 
+/**
+ * Refuses a request for something this listing does not list at all.
+ *
+ * The mirror of `assertSelectableExtras`, and just as unforgiving for the same reason: a code
+ * nobody recognises would reach the base as a line of special-request text naming an extra the
+ * catalogue never carried. Deliberately narrower than "not selectable" -- an extra that can be
+ * bought must be bought, not asked for, or the customer would be quoted nothing for something
+ * the vendor would have charged for.
+ */
+async function assertRequestableExtras(
+  db: Database,
+  listingId: string,
+  requested: readonly string[],
+  listingOfferId?: string | null,
+): Promise<void> {
+  if (requested.length === 0) return;
+
+  const requestable = await listRequestableExtras(db, listingId, listingOfferId);
+  const unknown = [...new Set(requested)].filter((code) => !requestable.has(code));
+  if (unknown.length === 0) return;
+
+  throw new ORPCError("BAD_REQUEST", {
+    message: `This listing does not offer: ${unknown.join(", ")}`,
+    data: { code: "EXTRA_NOT_REQUESTABLE", extras: unknown },
+  });
+}
+
 async function priceOrConflict(
+  db: Database,
   provider: InventoryProvider,
   input: QuoteRequest,
+  listingOfferId: string | null,
 ): Promise<ProviderQuote> {
   try {
     return await provider.getQuote(input);
@@ -498,15 +602,31 @@ async function priceOrConflict(
        * available" with nothing written down anywhere. The vendor is the only thing that can
        * refuse on this path -- anything else rethrows above -- so it is always its answer.
        */
-      reportRefusal(input, [
+      const attempts: OfferAttempt[] = [
         {
           outcome: "unavailable",
-          offerId: "",
+          /*
+           * The quote's own offer, which is the one that just refused: a reprice never
+           * changes seller. It was written as an empty string, and `recordLiveRefusals`
+           * matches attempts to published constraints by offer id, so every refusal on this
+           * path was dropped on the floor -- learned from only when the same week was asked
+           * about again through `createQuote`.
+           */
+          offerId: listingOfferId ?? "",
           providerCode: provider.key,
           reason: error.name,
           latencyMs: null,
         },
-      ]);
+      ];
+      reportRefusal(input, attempts);
+      /*
+       * And learned from, like the first quote's refusal. Reloading a checkout re-prices its
+       * quote, so this is where a week booked away from us since the last sync is discovered
+       * -- the one moment the vendor contradicts our calendar about the exact charter someone
+       * is paying for. Logging it and moving on left the card advertising that week until the
+       * sync came round, and the next visitor met the same refusal.
+       */
+      if (listingOfferId) await learnFromRefusal(db, provider, input, attempts);
       throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
     }
     throw error;
@@ -723,6 +843,7 @@ async function persistPricedQuote(
   options: {
     userId: string | null;
     extras: string[];
+    requestedExtras: string[];
     crewType: CrewType | null;
     discountCode: string | null;
     applyCredit: boolean;
@@ -809,6 +930,7 @@ async function persistPricedQuote(
     paymentPolicy,
     userId: options.userId,
     extras: options.extras,
+    requestedExtras: options.requestedExtras,
     crewType,
     discountId: promo?.discountId ?? null,
     discountCode: appliedDiscount?.code ?? null,
@@ -821,6 +943,7 @@ async function persistPricedQuote(
   return {
     ...priced,
     quoteId,
+    requestedExtras: options.requestedExtras,
     crewType,
     lines: lines.map((line) => {
       const mapped: PersistedQuote["lines"][number] = {
@@ -889,6 +1012,7 @@ async function insertQuote(
     paymentPolicy: QuotePaymentPolicy;
     userId: string | null;
     extras: string[];
+    requestedExtras: string[];
     crewType: CrewType | null;
     discountId: string | null;
     discountCode: string | null;
@@ -910,6 +1034,7 @@ async function insertQuote(
       checkOut: input.priced.checkOut,
       guests: input.priced.guests,
       extras: input.extras,
+      requestedExtras: input.requestedExtras,
       crewType: input.crewType,
       currency: input.priced.currency,
       lines: input.lines,

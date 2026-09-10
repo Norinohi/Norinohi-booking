@@ -1,7 +1,8 @@
-import { sql, type SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import type * as schema from "../schema";
+import { normalizedKey, normalizedKeySql } from "./normalize";
 import type { FacetMediaKind, ListingSearchDoc } from "./types";
 
 export const DEFAULT_LOCALE = "en";
@@ -64,7 +65,7 @@ export async function facetTranslator(
   const rows = await db.execute<TranslationRow>(sql`
     select
       media.kind as kind,
-      regexp_replace(replace(lower(coalesce(media.value, '')), '&', 'and'), '[^a-z0-9]+', '', 'g') as key,
+      ${normalizedKeySql(sql`media.value`)} as key,
       translation.label as label
     from facet_media media
     join facet_media_translation translation
@@ -118,28 +119,9 @@ export async function localizeSearchDocs<T extends ListingSearchDoc>(
   }));
 }
 
-/**
- * Mirrors normalizedSql in repository.ts, so "Sailing yacht" and "sailing-yacht" match.
- *
- * Exported because the catalogue sync writes `facet_media.value` and has to fold two
- * spellings of one label into one row; the query above folds the same way, and a writer
- * normalizing differently would insert rows this join can never reach.
+/*
+ * Re-exported rather than defined here: the fold moved to ./normalize once it had to reconcile
+ * two vendors' accents as well as their punctuation, and every caller of this pair still reaches
+ * it through the module that reads facet copy.
  */
-export function normalizedKey(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
-}
-
-/**
- * `normalizedKey` as SQL, for the reads that have to fold a name they never loaded.
- *
- * Lives here so the two cannot drift: a writer folding one way and a read join folding the
- * other produces rows the join can never reach, which is the failure this pairing exists to
- * prevent.
- */
-export function normalizedKeySql(column: SQL): SQL {
-  return sql`regexp_replace(replace(lower(coalesce(${column}, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
-}
+export { normalizedKey, normalizedKeySql } from "./normalize";

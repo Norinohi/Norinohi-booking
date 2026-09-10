@@ -33,7 +33,9 @@
       "optional": "Extras opcionales",
       "included": "Incluido",
       "arrangeAtBase": "Acordar con la base",
-      "notOnTheseDates": "No disponible en estas fechas"
+      "notOnTheseDates": "No disponible en estas fechas",
+      "notOnTheseDatesAsk": "No disponible en estas fechas - puedes preguntar a la base",
+      "requestedAtBase": "Solicitado a la base, se paga allí"
     },
     "guestDetails": {
       "notice": "Usaremos estos datos para confirmar tu reserva y coordinarla con el responsable de la base.",
@@ -448,6 +450,8 @@
       "dueWithPrepayment": "Se paga con el anticipo",
       "payNow": "Incluido en el pago inicial",
       "includedInPrice": "Incluido en el precio",
+      "priceOnRequest": "Precio a consultar",
+      "confirmWithBase": "Precio no publicado, confirma con la base",
       "percentageOfCharter": "{percent}% del precio del chárter",
       "oneWayOnly": "Solo en trayectos de ida",
       "measure": {
@@ -545,7 +549,9 @@
       "crews": {
         "fullCrew": "Tripulación completa",
         "skipperOptional": "Patrón opcional"
-      }
+      },
+      "moreAmenities": "Ver {count} equipamientos más",
+      "moreAmenitiesShort": "+{count}"
     },
     "gallery": {
       "close": "Cerrar",
@@ -717,6 +723,18 @@
       "searchEquipment": "Buscar equipamiento...",
       "anyDate": "Cualquier fecha"
     },
+    "groups": {
+      "popularCountries": "Países populares",
+      "allCountries": "Todos los países",
+      "popularRegions": "Zonas de navegación populares",
+      "allRegions": "Todas las zonas de navegación",
+      "popularMarinas": "Puertos populares",
+      "allMarinas": "Todos los puertos",
+      "popularBoatTypes": "Tipos de barco populares",
+      "allBoatTypes": "Todos los tipos de barco",
+      "popularModels": "Modelos populares",
+      "allModels": "Todos los modelos"
+    },
     "aria": {
       "builtFrom": "Año de construcción desde",
       "builtTo": "Año de construcción hasta"
@@ -761,7 +779,9 @@
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
       "bestValue": "Mejor relación calidad-precio",
-      "guestRating": "Valoración: {value}"
+      "guestRating": "Valoración: {value}",
+      "guests": "Capacidad: {count, plural, one {# huésped} other {# huéspedes}}",
+      "minBerths": "Al menos {count, plural, one {# litera} other {# literas}}"
     },
     "options": {
       "duration": "{days, plural, one {# día} other {# días}}",
@@ -774,32 +794,28 @@
         "2-weeks": "En 2 semanas",
         "1-month": "En 1 mes"
       }
-    }
+    },
+    "rangeUnavailable": "No hay un intervalo disponible"
   },
   "Home": {
     "BoatTypes": {
       "heading": "Elige tu tipo de barco",
       "previous": "Tipos de barco anteriores",
-      "next": "Tipos de barco siguientes",
-      "luxury": {
-        "title": "Yate de lujo",
-        "description": "Los barcos más grandes de la flota, con tripulación y equipados con estándar hotelero.",
-        "imageAlt": "Yate de lujo fondeado"
-      }
+      "next": "Tipos de barco siguientes"
     },
     "BudgetFinder": {
       "heading": "Encuentra yates según tu presupuesto",
       "viewResults": "Ver resultados",
       "labels": {
-        "budget": "Presupuesto por chárter",
+        "budget": "Presupuesto por persona",
         "people": "Personas",
         "skipper": "Patrón",
         "destinations": "Destinos (opcional)"
       },
       "options": {
         "any": "Cualquiera",
-        "budgetUpTo": "Hasta {to}",
         "budgetFrom": "Desde {from}",
+        "peopleNotSure": "No estoy seguro",
         "skipperYes": "Sí",
         "skipperNo": "No",
         "destinationsAll": "Todos los destinos"
@@ -808,7 +824,13 @@
     "EarnCta": {
       "heading": "Gana con tu yate",
       "description": "Publica tu yate en nuestra plataforma y empieza a recibir reservas de viajeros de todo el mundo. Nosotros nos ocupamos de la visibilidad, la demanda y las herramientas; tú mantienes el control de tu calendario y tus precios.",
-      "cta": "Publicar mi yate"
+      "cta": "Publicar mi yate",
+      "dialog": {
+        "title": "Enviar solicitud",
+        "description": "Déjanos tus datos y nuestro equipo se pondrá en contacto contigo para publicar tu yate.",
+        "submit": "Enviar solicitud",
+        "success": "¡Gracias! Nos pondremos en contacto pronto."
+      }
     },
     "Hero": {
       "tagline": "Más de 30.000 yates en 1.200 destinos. Chárter desde 120 €/día",
@@ -1043,7 +1065,8 @@
         "fleet": "Yates",
         "content": "Contenido del sitio"
       },
-      "settings": "Ajustes de pago"
+      "settings": "Ajustes de pago",
+      "popular": "Selección popular"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1234,7 +1257,9 @@
       "yachtType": {
         "sailing": "Velero",
         "catamaran": "Catamarán",
-        "gulet": "Gulet"
+        "gulet": "Gulet",
+        "motor": "Yate a motor",
+        "luxury": "Yate de lujo"
       },
       "skipper": {
         "yes": "Sí",
@@ -1313,6 +1338,10 @@
     "addToWishlist": "Añadir a favoritos",
     "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
+    "amenities": {
+      "showAll": "Ver todas las comodidades ({count})",
+      "showFewer": "Ver menos"
+    },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",
       "pickUpAddress": "Dirección de recogida del yate",
@@ -1498,12 +1527,17 @@
       "anyBoat": "Cualquier barco",
       "search": "Buscar",
       "noLocations": "No hay destinos coincidentes",
+      "popularCountries": "Países populares",
+      "popularBoatTypes": "Tipos de barco populares",
+      "allBoatTypes": "Todos los tipos de barco",
       "clearLocation": "Borrar destino",
       "freeText": "Nombre, modelo o empresa"
     },
     "paginationSummary": "Mostrando {from}-{to} de {total}"
   },
   "YachtsMap": {
+    "loading": "Cargando yates…",
+    "noResults": "Ningún yate coincide con estos filtros. Prueba a cambiarlos.",
     "title": "Yates en el mapa",
     "backToSearch": "Volver a la búsqueda",
     "showAllList": "Mostrar toda la lista",
@@ -1668,6 +1702,10 @@
     "Faq": {
       "title": "Preguntas frecuentes",
       "description": "Escribe y traduce las preguntas que aparecen en las páginas de yates."
+    },
+    "Popular": {
+      "title": "Selección popular",
+      "description": "Elija qué valores encabezan los filtros y la página de inicio."
     }
   },
   "Profile": {
@@ -3129,6 +3167,50 @@
         }
       }
     },
+    "Popular": {
+      "title": "Selección popular",
+      "subtitle": "Qué valores encabezan la lista de un filtro y cuáles lideran la página de inicio.",
+      "kinds": {
+        "country": "Países",
+        "category": "Tipos de barco",
+        "equipment": "Equipamiento",
+        "region": "Zonas de navegación",
+        "marina": "Puertos",
+        "model": "Modelos",
+        "location": "Localidades",
+        "crew": "Tipos de tripulación",
+        "sail_type": "Tipos de vela mayor"
+      },
+      "surfaces": {
+        "popular": "Fijados en filtros",
+        "featured": "Página de inicio"
+      },
+      "surfaceHint": {
+        "popular": "Se muestra como grupo «Populares» al principio de los filtros de búsqueda.",
+        "featured": "El orden que usan los carruseles y las cuadrículas de la página de inicio."
+      },
+      "filters": {
+        "kind": "Faceta",
+        "surface": "Dónde aparece",
+        "search": "Buscar valores"
+      },
+      "table": {
+        "order": "Orden",
+        "value": "Valor",
+        "count": "Yates",
+        "actions": "Acciones"
+      },
+      "actions": {
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "remove": "Quitar"
+      },
+      "empty": "Todavía no hay nada seleccionado. Elija valores arriba.",
+      "error": "No se pudo guardar el orden.",
+      "saved": "Orden guardado.",
+      "cacheWarning": "Guardado, pero aún no se pudieron actualizar las páginas en caché.",
+      "noListings": "Sin yates"
+    },
     "Settings": {
       "title": "Ajustes del marketplace",
       "subtitle": "Cuánto del chárter se cobra por adelantado y a través de qué proveedor vendemos cuando las ofertas son iguales.",
@@ -3181,6 +3263,16 @@
         "legend": "Búsqueda por texto libre",
         "toggle": "Mostrar el campo de texto libre en la barra de búsqueda",
         "hint": "Una ayuda para pruebas, ajena al diseño. Activado, la barra de búsqueda de yates añade un campo que busca por nombre, modelo, astillero, empresa chárter o base, palabra por palabra y en cualquier orden."
+      },
+      "popularYachts": {
+        "legend": "Carrusel de yates populares",
+        "hint": "Cómo se compone el carrusel de yates populares de la página de inicio. La mezcla por tipo es un objetivo: si los límites dejan un tipo corto, las plazas restantes van a los siguientes mejores barcos.",
+        "limit": "Barcos mostrados",
+        "maxAgeYears": "Antigüedad máx. (años)",
+        "maxPerCountry": "Máx. por país",
+        "maxPerBase": "Máx. por base",
+        "mix": "Barcos por tipo",
+        "mixHint": "Solo se toman los países populares seleccionados. Un tipo en cero se omite."
       },
       "save": "Guardar cambios",
       "saving": "Guardando...",

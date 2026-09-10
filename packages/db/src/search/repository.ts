@@ -12,7 +12,12 @@ import {
   type DecodedSearchCursor,
   type SearchCursor,
 } from "./cursor";
-import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs, normalizedKeySql } from "./localize";
+import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
+import {
+  normalizedKey as normalizedFilterValue,
+  normalizedKeySql,
+  normalizedKeySql as normalizedSql,
+} from "./normalize";
 import { placeLine, placeLineExcept } from "./place-line";
 import { coveredBySlotHold, overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
@@ -38,7 +43,11 @@ import type {
 } from "./types";
 
 /* The column is selected only by the two searches that have a period to compare against. */
-type SearchRow = Omit<
+/*
+ * Exported for `popular-yachts.ts`, which selects the same columns and normalizes the same way.
+ * The alternative was a second projection of listing_search_doc that would drift from this one.
+ */
+export type SearchRow = Omit<
   ListingSearchDoc,
   "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut"
 > & {
@@ -281,7 +290,7 @@ async function providerDescription(
 /**
  * Folds an extra's name the way `extra_label_translation.name_key` is written.
  *
- * Mirrors normalizedKey in localize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
+ * Mirrors normalizedKey in normalize.ts, so "Boat Cleaning" and "boat cleaning" are one fee.
  * Case and punctuation only: "Beach towel" and "Beach towels" stay separate entries, because
  * collapsing a plural is a judgement the dictionary should make explicitly rather than the
  * join make silently.
@@ -339,6 +348,7 @@ export async function getListingDetailByIdOrSlug(
         crew: boolean;
         priceMinor: number | null;
         priceCurrency: string | null;
+        popularRank: number | null;
       }>(sql`
       /*
        * One row per piece of equipment, however each vendor spells it.
@@ -349,17 +359,34 @@ export async function getListingDetailByIdOrSlug(
        * because that is the only thing the two rows have in common. An included row wins over
        * a priced one: the list answers "what does this yacht have".
        */
-      select distinct on (${normalizedKeySql(sql`a.name`)})
+      select distinct on (key.folded)
         a.code,
         a.name as label,
         a.crew,
         la.obligatory,
         la.price_minor as "priceMinor",
-        la.price_currency as "priceCurrency"
+        la.price_currency as "priceCurrency",
+        /*
+         * The curated order the amenity list is shown in, off the same facet_media rank the
+         * search cards read. A subquery rather than a join because the row above already
+         * de-duplicates, and because two vendor spellings of one amenity carry one rank
+         * between them -- the lowest wins, whichever of the two this listing published.
+         */
+        (
+          select min(fm.popular_rank)
+          from facet_media fm
+          where fm.kind = 'equipment'
+            and ${normalizedKeySql(sql`fm.value`)} = key.folded
+        ) as "popularRank"
       from listing_amenity la
       join amenity a on a.id = la.amenity_id
+      /* Folded once and referred to by name. Spelled out twice instead, the DISTINCT ON and the
+         ORDER BY are two expressions over the same columns but different bind parameters, and
+         Postgres compares them before it knows the values: "DISTINCT ON expressions must match
+         initial ORDER BY expressions". */
+      cross join lateral (select ${normalizedKeySql(sql`a.name`)} as folded) key
       where la.listing_id = ${listing.listingId}
-      order by ${normalizedKeySql(sql`a.name`)}, la.price_minor nulls first, a.name asc
+      order by key.folded, la.price_minor nulls first, a.name asc
     `),
       db.execute<{
         source: string;
@@ -490,11 +517,30 @@ export async function getListingDetailByIdOrSlug(
     ...item,
     code: item.code ?? valueForLabel(item.label),
   }));
-  /* Translated after the code is derived, never before: the code is what the amenity filter
-     matches on, and a Spanish one matches nothing. */
+  /*
+   * Translated after the code is derived, never before: the code is what the amenity filter
+   * matches on, and a Spanish one matches nothing.
+   *
+   * Curated amenities first, in the editor's order, because the page shows the first few and
+   * folds the rest away: which ones survive that fold is an editorial decision, not whichever
+   * the vendor happened to list first. Air conditioning sells a charter and a bilge pump handle
+   * does not. Unranked amenities keep the vendor's own order behind them rather than being
+   * dropped -- the section still lists everything the boat has.
+   */
   const includedAmenities = amenities
     .filter((item) => !item.crew && item.priceMinor === null)
-    .map((item) => ({
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const leftRank = left.item.popularRank;
+      const rightRank = right.item.popularRank;
+      if (leftRank !== rightRank) {
+        if (leftRank === null) return 1;
+        if (rightRank === null) return -1;
+        return leftRank - rightRank;
+      }
+      return left.index - right.index;
+    })
+    .map(({ item }) => ({
       code: item.code,
       label: translate ? translate("equipment", item.label) : item.label,
     }));
@@ -650,7 +696,7 @@ export async function listSearchFacets(
     listFacetOptions(db, input, sql`doc.operator`, ["charterCompany"]),
     listFacetOptions(db, input, sql`doc.base_name`, ["marina", "destination"], "marina"),
     listFacetOptions(db, input, sql`doc.category`, ["boatType", "category"], "category"),
-    listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"]),
+    listFacetOptions(db, input, sql`coalesce(doc.model, doc.builder)`, ["model", "query"], "model"),
     listFacetOptions(db, input, sql`doc.crew_type`, ["crew"], "crew"),
     listFacetOptions(db, input, sql`doc.sail_type`, ["mainsailType"], "sail_type"),
     listEquipmentFacetOptions(db, input),
@@ -740,7 +786,11 @@ export async function listSearchFacets(
    * entries to pick a build year from, and the two controls over one constraint disagreed
    * about where it started.
    */
-  const yearsInRange = years.filter((option) => Number(option.value) >= yearRange.min);
+  const yearsInRange = years
+    .filter((option) => Number(option.value) >= yearRange.min)
+    /* Newest first: the current year is the one people reach for, and the facet read hands them
+       back in ascending order, which buried it at the bottom of a twenty-odd entry list. */
+    .sort((a, b) => Number(b.value) - Number(a.value));
 
   return {
     destinations: labelsFromOptions(countries),
@@ -821,21 +871,40 @@ export async function listMapMarinas(
   return rows.rows;
 }
 
+/*
+ * How many countries the empty typeahead offers. Eight rather than the five it used to show,
+ * because that is the length of the curated list it now leads with.
+ */
+const POPULAR_SUGGESTION_LIMIT = 8;
+
 export async function listSearchSuggestions(
   db: NodePgDatabase<typeof schema>,
   query: string,
 ): Promise<ListingSuggestion[]> {
-  // Empty field: seed the typeahead with the most-stocked countries so the user has somewhere to
-  // start, instead of an alphabetical slice that means nothing. Data-driven, so it never lists a
-  // country with no listings.
+  /*
+   * Empty field: seed the typeahead with the popular countries so the user has somewhere to
+   * start, instead of an alphabetical slice that means nothing.
+   *
+   * Curated order first, then the most-stocked, and the fallback is the point of the join being
+   * a left one: until somebody opens the admin screen no country carries a rank, and this
+   * answers exactly what it always did. Grouped off listing_search_doc either way, so a curated
+   * country with nothing in stock is not offered.
+   */
   if (query.trim() === "") {
     const popular = await db.execute<Omit<ListingSuggestion, "value">>(sql`
-      select doc.country as label, 'country' as kind
+      select
+        doc.country as label,
+        'country' as kind,
+        bool_or(media.popular_rank is not null) as popular
       from listing_search_doc doc
+      left join facet_media media
+        on media.kind = 'country'
+        and ${normalizedSql(sql`media.value`)} = ${normalizedSql(sql`doc.country`)}
+        and media.popular_rank is not null
       where doc.country is not null
       group by doc.country
-      order by count(*) desc, doc.country asc
-      limit 5
+      order by min(media.popular_rank) asc nulls last, count(*) desc, doc.country asc
+      limit ${POPULAR_SUGGESTION_LIMIT}
     `);
     return popular.rows.map(withFilterValue);
   }
@@ -1395,7 +1464,29 @@ function nearestSellableColumns(
   return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
 }
 
-const searchColumns = sql`
+/*
+ * The advertised charter, minus the weeks our own live checkouts have already taken.
+ *
+ * `bookable_from`/`bookable_to` are projected from what the provider last said and refreshed on
+ * the sync's own cycle, so a period somebody is mid-checkout on keeps its place on the card for
+ * up to an hour after the option was taken. The booking sidebar subtracts those holds at read
+ * time (`slotHoldsAsOccupancy`), which is how a card came to advertise Oct 31 - Nov 7 while the
+ * calendar one click away painted that same week as temporarily held.
+ *
+ * The period is dropped rather than moved on to the next one. Choosing the next candidate is the
+ * scan `read-model.ts` runs over every offer's slots, free periods and check-in rules, and a
+ * search page cannot pay for it per card. Without a period the price reverts to the season floor
+ * and the chip reads "on request", which is what the listing honestly is until the hold resolves.
+ *
+ * This only ever narrows what a card claims, the same guarantee `slot-holds.ts` carries.
+ */
+const heldByLiveBooking = overlapsSlotHold(
+  sql`doc.listing_id`,
+  sql`doc.bookable_from`,
+  sql`doc.bookable_to`,
+);
+
+export const searchColumns = sql`
   doc.listing_id as "listingId",
   doc.slug,
   doc.name,
@@ -1442,16 +1533,16 @@ const searchColumns = sql`
   doc.price_from_minor as "priceFromMinor",
   doc.price_is_from as "priceIsFrom",
   doc.list_price_from_minor as "listPriceFromMinor",
-  doc.price_from_minor_eur as "priceFromMinorEur",
+  ${comparablePrice()} as "priceFromMinorEur",
   doc.base_price_from_minor as "basePriceFromMinor",
-  doc.base_price_from_minor_eur as "basePriceFromMinorEur",
+  ${basePriceInEur()} as "basePriceFromMinorEur",
   doc.best_offer_id as "bestOfferId",
   doc.offer_count as "offerCount",
   doc.currency,
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
-  doc.bookable_from as "bookableFrom",
-  doc.bookable_to as "bookableTo",
+  case when ${heldByLiveBooking} then null else doc.bookable_from end as "bookableFrom",
+  case when ${heldByLiveBooking} then null else doc.bookable_to end as "bookableTo",
   doc.has_unconfirmed_availability as "hasUnconfirmedAvailability",
   doc.has_temporary_booking as "hasTemporaryBooking"
 `;
@@ -2031,13 +2122,17 @@ async function decorateFacetOptions(
     cloudinaryId: string | null;
     label: string | null;
     description: string | null;
+    popularRank: number | null;
+    featuredRank: number | null;
   }>(sql`
     select
       ${normalizedSql(sql`media.value`)} as key,
       media.image_url as "imageUrl",
       media.cloudinary_id as "cloudinaryId",
       translation.label,
-      coalesce(translation.description, media.description) as description
+      coalesce(translation.description, media.description) as description,
+      media.popular_rank as "popularRank",
+      media.featured_rank as "featuredRank"
     from facet_media media
     left join facet_media_translation translation
       on translation.facet_media_id = media.id
@@ -2059,12 +2154,53 @@ async function decorateFacetOptions(
       imageUrl: match?.imageUrl ?? null,
       cloudinaryId: match?.cloudinaryId ?? null,
       description: match?.description ?? null,
+      /*
+       * The rank rides along rather than reordering the group. Options stay label-ascending
+       * because a facet list is also the source for the panel's chips and its active-filter
+       * count, both of which compare against option order; the caller that wants a pinned
+       * "Popular" group partitions on this field instead.
+       */
+      popularRank: match?.popularRank ?? null,
+      featuredRank: match?.featuredRank ?? null,
     };
   });
 }
 
 function labelsFromOptions(options: ListingFacetOption[]): string[] {
   return options.map((option) => option.label);
+}
+
+/**
+ * The optional extras this listing lists but no vendor will price, code to vendor name.
+ *
+ * The complement of `listSelectableExtraCodes` over the same catalogue rows. These are the ones
+ * settled with the base: the booking flow lets a customer ask for them, carries the codes on the
+ * quote, and writes their names into the booking's special requests. The vendor's own name is
+ * what comes back rather than a translated label, because the person who reads that field works
+ * at the base.
+ */
+export async function listRequestableExtras(
+  db: NodePgDatabase<typeof schema>,
+  listingId: string,
+  listingOfferId?: string | null,
+): Promise<Map<string, string>> {
+  const rows = await db.execute<{
+    source: string;
+    kind: string;
+    externalId: string;
+    name: string;
+  }>(sql`
+    select source, kind, external_id as "externalId", name
+    from provider_extra_catalogue
+    where obligatory = false
+      and ${listingOfferId ? sql`listing_offer_id = ${listingOfferId}` : sql`listing_id = ${listingId}`}
+  `);
+
+  return new Map(
+    rows.rows
+      .filter((row) => !isSelectableExtra(row.source, row.kind))
+      .map((row) => [`${row.kind}:${row.externalId}`, row.name]),
+  );
 }
 
 /**
@@ -2402,10 +2538,11 @@ async function suggestedRouteFor(
 /**
  * The value a facet option is selected by, which is not `toSlug`.
  *
- * Diacritics are left alone here on purpose: the filter match normalizes both sides by stripping
- * non-alphanumerics, so "Mali Lošinj" folds to `maliloinj` on the column and this has to fold the
- * same way. Folding the accent instead would produce `malilosinj` and match nothing. Catalogue
- * page URLs use `toSlug`, which does fold, because a URL is read by people.
+ * Diacritics survive here, and no longer have to: `normalizedKey` folds them on both sides of the
+ * match now, so "Mali Lošinj" and "Mali Losinj" reach the same key whichever spelling the value
+ * carries. Left as it is so the values already sitting in saved filter URLs and in `facet_media`
+ * stay byte-identical to the ones this produces. Catalogue page URLs use `toSlug`, which does
+ * fold, because a URL is read by people.
  */
 export function valueForLabel(label: string): string {
   return label
@@ -2427,19 +2564,6 @@ function normalizedIn(column: SQL, values: string[]): SQL {
 }
 
 /**
- * A label reduced to the letters and digits both sides of a filter can agree on.
- *
- * `&` becomes "and" first, matching `normalizedFilterValue` and `valueForLabel`. Without that
- * step the two normalisations disagreed on every name carrying one: the facet offered "Wi-Fi &
- * Internet" as `wi-fi-and-internet`, the filter reduced that to `wifiandinternet`, and the
- * column reduced itself to `wifiinternet`. Forty options across the catalogue answered with
- * nothing, 1,417 listings' worth of them behind that one equipment filter alone.
- */
-function normalizedSql(value: SQL): SQL {
-  return sql`regexp_replace(replace(lower(coalesce(${value}, '')), '&', 'and'), '[^a-z0-9]+', '', 'g')`;
-}
-
-/**
  * The spelling most of a facet group's listings use, for a group keyed on `normalizedSql`.
  *
  * Facets are grouped the way `normalizedIn` filters, or the two disagree about what one value
@@ -2455,13 +2579,7 @@ function modalLabel(value: SQL): SQL {
   return sql`mode() within group (order by ${value})`;
 }
 
-export function normalizedFilterValue(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
-}
+export { normalizedKey as normalizedFilterValue } from "./normalize";
 
 /*
  * How much of the calendar a start date with no length claims. A week is what the vendors sell
@@ -2583,7 +2701,7 @@ function boatAgeRange(yearRange: NumericRange): NumericRange {
   };
 }
 
-function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
+export function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
   return {
     ...row,
     gallery: row.gallery ?? [],
@@ -2611,7 +2729,7 @@ function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
  * Folded into one number rather than added as a second key so the keyset cursor stays a single
  * comparable value; the +10 clears the 0..5 rating range with room to spare.
  */
-const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
+export const recommendedSortValue = sql`case when doc.price_is_from then doc.rating else doc.rating + 10 end`;
 
 /**
  * The charter length assumed where the row names no sellable one.
@@ -2675,10 +2793,18 @@ const pricedNights = sql`greatest(
  * publish real fees against a rate of nought, and read literally they sorted to the top of
  * "cheapest first" as free boats while their cards showed the price they actually charge.
  */
-export const comparablePrice = (basis: PriceBasis = "all_in"): SQL =>
-  basis === "base"
-    ? sql`coalesce(nullif(doc.base_price_from_minor_eur, 0), doc.price_from_minor_eur)`
-    : sql`doc.price_from_minor_eur`;
+export function comparablePrice(basis: PriceBasis = "all_in"): SQL {
+  // Native EUR needs no conversion. Seeded or older rows may not have the derived EUR column.
+  // Other currencies still require that column; an unavailable rate must never be guessed.
+  const allIn = sql`coalesce(doc.price_from_minor_eur,
+    case when doc.currency = 'EUR' then doc.price_from_minor end)`;
+  return basis === "base" ? sql`coalesce(${basePriceInEur()}, ${allIn})` : allIn;
+}
+
+function basePriceInEur(): SQL {
+  return sql`coalesce(nullif(doc.base_price_from_minor_eur, 0),
+    case when doc.currency = 'EUR' then nullif(doc.base_price_from_minor, 0) end)`;
+}
 
 /** The published figure, in whatever currency the vendor quoted. Rendered, never compared. */
 const publishedPrice = (basis: PriceBasis = "all_in"): SQL =>

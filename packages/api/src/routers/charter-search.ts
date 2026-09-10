@@ -1,6 +1,8 @@
 import {
   listCatalogPages,
   listMapMarinas,
+  listPopularRoutes,
+  listPopularYachts,
   listSearchFacets,
   listSearchSuggestions,
   searchListings,
@@ -20,9 +22,16 @@ import {
 } from "../contracts/catalog";
 import { publicSearchSettingsSchema } from "../contracts/admin";
 import { fxSnapshotSchema } from "../contracts/catalog";
+import {
+  popularRoutesInputSchema,
+  popularRoutesSchema,
+  popularYachtsInputSchema,
+  popularYachtsSchema,
+} from "../contracts/popular-yachts";
 import { emptyInputSchema } from "../contracts/primitives";
 import type { Context } from "../context";
 import { publicProcedure } from "../index";
+import { getAmenityRanks } from "../services/amenity-ranks";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { withParameterExamples } from "./openapi-examples";
 import { type CharterPeriod, effectivePeriod } from "../lib/dates";
@@ -103,8 +112,9 @@ function pricedForShownPeriod(
   item: ListingSearchDoc,
   shown: { checkIn: string | null; checkOut: string | null },
   basis: PriceBasis,
+  amenityRanks: ReadonlyMap<string, number>,
 ) {
-  const listing = presentListingSummary(item, basis);
+  const listing = presentListingSummary(item, basis, amenityRanks);
   if (listing.priceIsFrom || shown.checkIn === null) return listing;
 
   /*
@@ -139,6 +149,20 @@ async function priceBasisFor(db: Context["db"]): Promise<PriceBasis> {
   return catalogueShowsBasePrice ? "base" : "all_in";
 }
 
+/**
+ * The day the popular-yachts rotation is on, when the caller names no seed.
+ *
+ * A day rather than a request: the home page's read is cached, and a value that changed per
+ * request would either be frozen into the cache with its first answer or refuse to prerender at
+ * all. Bucketing the clock means the seed is stable inside a cache window and different across
+ * days, which is what "periodically change the offer" asks for.
+ */
+const DAY_MS = 86_400_000;
+
+function defaultSeed(): number {
+  return Math.floor(Date.now() / DAY_MS);
+}
+
 export const charterSearchRouter = {
   results: publicProcedure
     .route({
@@ -169,12 +193,20 @@ export const charterSearchRouter = {
     .input(listingSearchInputSchema)
     .output(searchResultSchema)
     .handler(async ({ context, input }) => {
-      const priceBasis = await priceBasisFor(context.db);
+      const [priceBasis, amenityRanks] = await Promise.all([
+        priceBasisFor(context.db),
+        getAmenityRanks(context.db),
+      ]);
       const results = await searchListings(context.db, { ...input, priceBasis });
       const period = effectivePeriod(input);
       return {
         items: results.items.map((item) => ({
-          listing: pricedForShownPeriod(item, periodFor(item, period, input.startDate), priceBasis),
+          listing: pricedForShownPeriod(
+            item,
+            periodFor(item, period, input.startDate),
+            priceBasis,
+            amenityRanks,
+          ),
           /* One `periodFor` per item would do; it is called twice because the spread below is
              the card's own dates and the call above only reads them. Pure and cheap. */
           /*
@@ -213,6 +245,53 @@ export const charterSearchRouter = {
     .handler(async ({ context, input }) =>
       listSearchFacets(context.db, { ...input, priceBasis: await priceBasisFor(context.db) }),
     ),
+  popularYachts: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/popular-yachts",
+      operationId: "listPopularYachts",
+      summary: "List the popular-yachts selection",
+      description:
+        "A spread of well-rated, recent, available boats drawn from the curated popular countries, with at most one from any base and a capped number from any country, filled towards a per-boat-type mix. The mix is a target rather than a guarantee: when the caps starve a type, the remaining places go to the next boats in the same ranking rather than leaving the slider short. Composition is configured on the admin settings screen. `seed` rotates the selection deterministically and defaults to the current day, so the answer is stable within a day and safe to cache.",
+      tags: ["Charter Search"],
+      successDescription: "The selected listings and the configuration they were selected under.",
+      spec: withParameterExamples({ locale: "en", currency: "EUR" }),
+    })
+    .input(popularYachtsInputSchema)
+    .output(popularYachtsSchema)
+    .handler(async ({ context, input }) => {
+      const { popularYachts: config } = await getMarketplaceSettings(context.db);
+      const [basis, amenityRanks] = await Promise.all([
+        priceBasisFor(context.db),
+        getAmenityRanks(context.db),
+      ]);
+      const items = await listPopularYachts(context.db, {
+        config,
+        seed: input.seed ?? defaultSeed(),
+      });
+
+      return {
+        items: items.map((item) => presentListingSummary(item, basis, amenityRanks)),
+        config,
+      };
+    }),
+  popularRoutes: publicProcedure
+    .route({
+      method: "GET",
+      path: "/charter-search/popular-routes",
+      operationId: "listPopularRoutes",
+      summary: "List the curated sailing routes",
+      description:
+        "The site-wide popular sailing routes in their curated order, each with its stops, the place it sails from and the country a card should filter the catalogue by. Copy is returned in the requested language, falling back to the route's own text where that language has none — a slider showing six cards in English and three in German would read as a broken page rather than as a translation gap. Unpublished routes are omitted.",
+      tags: ["Charter Search"],
+      successDescription: "The curated routes in rank order.",
+      spec: withParameterExamples({ locale: "en", limit: 6 }),
+    })
+    .input(popularRoutesInputSchema)
+    .output(popularRoutesSchema)
+    .handler(async ({ context, input }) => ({
+      routes: await listPopularRoutes(context.db, input),
+    })),
   mapMarinas: publicProcedure
     .route({
       method: "GET",

@@ -12,6 +12,7 @@ import { moneySchema } from "./primitives";
  */
 export const plannerAnswersSchema = z
   .object({
+    locale: z.enum(["en", "uk", "de", "es"]).optional(),
     destination: z.enum(["croatia", "greece", "italy", "spain", "not-sure"]).optional(),
     groupSize: z.enum(["2-4", "5-8", "9-plus", "not-sure"]).optional(),
     experience: z.enum(["none", "some", "licensed"]).optional(),
@@ -68,12 +69,14 @@ export const plannerRecommendationSchema = z.object({
   matchCount: z.number().int(),
   /**
    * The equivalent search, so "see all matches" can deep-link into /yachts with the
-   * planner's answers already applied instead of re-deriving them client-side.
+   * successful filters applied, including any relaxed constraints used to find a match.
    */
   searchParams: z.object({
     country: z.array(z.string()),
+    /** Facet value, e.g. "sailing-yacht", ready for the search boatType filter. */
     category: z.string().nullable(),
     guests: z.number().int().nullable(),
+    minBerths: z.number().int().nullable(),
     duration: z.number().int(),
     crew: z.array(z.string()),
     maxPriceMinor: z.number().int().nullable(),

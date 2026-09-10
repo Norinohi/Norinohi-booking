@@ -26,6 +26,18 @@ const facetOptionSchema = z.object({
   /* Lowest positive comparable price in EUR, used by destination summaries. */
   priceFromMinor: z.number().int().nullish(),
   currency: z.string().length(3).nullish(),
+  /*
+   * Curated order, edited on the admin screen. `popularRank` pins the value into a picker's
+   * "Popular" group, `featuredRank` orders the home page's sliders and grids; null is either
+   * "not curated" or a facet group with no editorial rows behind it at all.
+   *
+   * Carried per option rather than as a second `popular` array because a facet group narrows
+   * to the current search: a curated country is absent from this list exactly when the other
+   * filters admit no boats there, and a separate array would have to choose between pinning a
+   * value that leads to nothing and duplicating every option it names.
+   */
+  popularRank: z.number().int().nullish(),
+  featuredRank: z.number().int().nullish(),
 });
 
 const numberRangeSchema = z.object({
@@ -170,6 +182,15 @@ export const listingSummarySchema = z.object({
   mainImage: z.string(),
   gallery: z.array(z.string()),
   amenities: z.array(z.string()),
+  /*
+   * The curated amenities this boat has, in the editor's order — the ones worth advertising,
+   * not everything it carries. The card shows the first few and hides the rest behind a count,
+   * which is only honest because this holds nothing but curated entries.
+   *
+   * Falls back to the first few of `amenities` when nothing is curated, so a fresh database
+   * shows the chips it always showed rather than none.
+   */
+  highlightAmenities: z.array(z.string()),
   /* Null when the listing has no usable price. The UI quotes on request rather than a number. */
   priceFrom: moneySchema.nullable(),
   /**
@@ -542,6 +563,8 @@ export const suggestionSchema = z.object({
   /* The filter value behind the label, identical to the matching facet option's. */
   value: z.string(),
   kind: z.enum(["country", "region", "location", "base"]),
+  /* Set on the curated countries the empty field opens with, so the list can head them. */
+  popular: z.boolean().optional(),
 });
 
 /*

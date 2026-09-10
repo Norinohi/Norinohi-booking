@@ -1,3 +1,8 @@
+import {
+  describeProviderFailure,
+  type ProviderFailure,
+  reportProviderRefusal,
+} from "../lib/provider-failure";
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
@@ -8,7 +13,7 @@ import { notifyBookingConfirmed } from "./booking-email";
 import { canTransition, type BookingStatus } from "./booking-state";
 import { outstandingMinor } from "./checkout-amounts";
 import { awardReferralCredit } from "./loyalty";
-import { asCrewType } from "./quote";
+import { asCrewType, learnFromProviderRefusal } from "./quote";
 
 type ConfirmRequest = Parameters<InventoryProvider["confirmBooking"]>[0];
 
@@ -104,10 +109,28 @@ export async function confirmBookingWithProvider(
       providerReservationId: reservation.providerReservationId ?? null,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Provider rejected the booking";
-    await markRejected(db, bookingId, row.provider, message);
+    // Two messages, not one: the vendor's text goes to the event log, and the
+    // customer-facing wording is what the invoice screen and the confirmation
+    // poll are allowed to print.
+    const refusal = error instanceof Error ? error : null;
+    const failure = describeProviderFailure(refusal, "Provider rejected the booking");
+    reportProviderRefusal("confirm", refusal, { bookingId, provider: row.provider });
+    await markRejected(db, bookingId, row.provider, failure);
+    /*
+     * And take the week off the card, where the vendor said it is the week that is gone.
+     *
+     * Nothing here can help this customer -- they have paid, and the row above has already
+     * started the refund. It is for whoever comes next: a week the vendor refused after taking
+     * the money is the strongest evidence we ever get that it is not for sale, and leaving it
+     * advertised sends the next person down the same road.
+     *
+     * Best-effort by construction, which matters more on this path than on the others: the
+     * callers are a Stripe webhook and an admin settling an invoice, and neither may fail over
+     * bookkeeping about the catalogue.
+     */
+    await learnFromProviderRefusal(db, provider, priced, refusal);
 
-    return { outcome: "rejected", message };
+    return { outcome: "rejected", message: failure.customer };
   }
 }
 
@@ -224,11 +247,11 @@ async function markRejected(
   db: Database,
   bookingId: string,
   provider: string,
-  message: string,
+  failure: ProviderFailure,
 ): Promise<void> {
   await db
     .update(booking)
-    .set({ status: "PROVIDER_REJECTED", cancelReason: message })
+    .set({ status: "PROVIDER_REJECTED", cancelReason: failure.customer })
     .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
 
   await db
@@ -240,6 +263,6 @@ async function markRejected(
     bookingId,
     kind: "confirm_failed",
     provider,
-    payload: { message },
+    payload: { message: failure.detail },
   });
 }

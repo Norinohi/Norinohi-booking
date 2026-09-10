@@ -17,8 +17,24 @@ import { useUiLabels } from "@yacht-charter/ui/components/ui-labels";
  */
 export type MultiSelectOption = { value: string; label: string };
 
+/**
+ * A labelled run of options, rendered under a heading.
+ *
+ * Opt-in: without `groups` the list is flat and nothing about the existing pickers changes.
+ * The options here are the ones that get rendered, so a value belongs to exactly one group --
+ * repeating it would draw two checkboxes for one selection.
+ */
+export type MultiSelectGroup = { key: string; label: string; options: MultiSelectOption[] };
+
 export type MultiSelectProps = {
+  /**
+   * Every selectable option. Still required when `groups` is set: it is what the trigger reads
+   * labels from and what the caller's own value handling is keyed on, and deriving it from the
+   * groups would let the two disagree.
+   */
   options: MultiSelectOption[];
+  /** Renders the list under headings instead of flat. Leave unset for the plain picker. */
+  groups?: MultiSelectGroup[];
   value: string[];
   onValueChange: (value: string[]) => void;
   placeholder: string;
@@ -37,6 +53,7 @@ export type MultiSelectProps = {
 
 function MultiSelect({
   options,
+  groups,
   value,
   onValueChange,
   placeholder,
@@ -51,14 +68,20 @@ function MultiSelect({
 }: MultiSelectProps) {
   const uiLabels = useUiLabels();
   const labels = new Map(options.map((option) => [option.value, option.label]));
+  const groupLabels = new Map((groups ?? []).map((group) => [group.key, group.label]));
   const selected = value.filter((item) => labels.has(item));
   const showClear = clearable && selected.length > 0 && !disabled;
+  /* base-ui reads grouped items as a list of `{ value, items }`, and the flat path as a list of
+     values. Both describe the same options; only the shape differs. */
+  const items = groups
+    ? groups.map((group) => ({ value: group.key, items: group.options.map((o) => o.value) }))
+    : options.map((option) => option.value);
 
   return (
     <Combobox.Root
       multiple
       disabled={disabled}
-      items={options.map((option) => option.value)}
+      items={items}
       value={selected}
       onValueChange={(next) => onValueChange(next)}
       itemToStringLabel={(item) => labels.get(item) ?? item}
@@ -125,26 +148,49 @@ function MultiSelect({
               {emptyMessage ?? uiLabels.noMatches}
             </Combobox.Empty>
 
-            <Combobox.List className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              {(item: string) => (
-                <Combobox.Item
-                  key={item}
-                  value={item}
-                  className="group flex cursor-pointer items-center gap-3 border-t border-natural-50 px-4 py-3 text-base text-foreground outline-none first:border-t-0 data-highlighted:bg-natural-50"
-                >
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] border-[1.2px] border-input transition-colors group-data-selected:border-brand group-data-selected:bg-brand group-data-selected:text-brand-foreground">
-                    <Combobox.ItemIndicator className="grid place-content-center text-current">
-                      <CheckIcon strokeWidth={2.5} className="size-4.5" />
-                    </Combobox.ItemIndicator>
-                  </span>
-                  <span className="truncate">{labels.get(item) ?? item}</span>
-                </Combobox.Item>
-              )}
+            <Combobox.List className="max-h-100 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {groups
+                ? (group: { value: string; items: string[] }) => (
+                    <Combobox.Group
+                      key={group.value}
+                      items={group.items}
+                      className="border-t border-natural-50 first:border-t-0"
+                    >
+                      <Combobox.GroupLabel className="px-4 pt-3 pb-1 text-sm font-medium text-natural-500">
+                        {groupLabels.get(group.value) ?? group.value}
+                      </Combobox.GroupLabel>
+                      <Combobox.Collection>
+                        {(item: string) => renderItem(item, labels)}
+                      </Combobox.Collection>
+                    </Combobox.Group>
+                  )
+                : (item: string) => renderItem(item, labels)}
             </Combobox.List>
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>
     </Combobox.Root>
+  );
+}
+
+/*
+ * One checkbox row. Shared rather than duplicated because the grouped and flat lists render the
+ * same item and a copy would drift the moment either is restyled.
+ */
+function renderItem(item: string, labels: Map<string, string>) {
+  return (
+    <Combobox.Item
+      key={item}
+      value={item}
+      className="group flex cursor-pointer items-center gap-3 border-t border-natural-50 px-4 py-3 text-base text-foreground outline-none first:border-t-0 data-highlighted:bg-natural-50"
+    >
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] border-[1.2px] border-input transition-colors group-data-selected:border-brand group-data-selected:bg-brand group-data-selected:text-brand-foreground">
+        <Combobox.ItemIndicator className="grid place-content-center text-current">
+          <CheckIcon strokeWidth={2.5} className="size-4.5" />
+        </Combobox.ItemIndicator>
+      </span>
+      <span className="truncate">{labels.get(item) ?? item}</span>
+    </Combobox.Item>
   );
 }
 

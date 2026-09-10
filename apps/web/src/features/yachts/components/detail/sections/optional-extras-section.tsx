@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useBooking } from "@/features/booking";
 import { useExtraPrice } from "@/hooks/use-extra-price";
 import { useMoney } from "@/hooks/use-money";
+import { extraPriceKind } from "@/lib/extra-price-kind";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import DetailSection from "./detail-section";
@@ -20,6 +21,12 @@ import DetailSection from "./detail-section";
  * has not learned, so those are arranged with the base. `offeredExtras` is about the week: the
  * catalogue lists everything the operator sells across every season, and a given period prices
  * only part of it. Both used to render as ordinary checkboxes that quietly cost nothing.
+ *
+ * All three are tickable, but only the first is bought. The other two go through `requestExtras`,
+ * which puts them on the quote as a record of what was asked and adds nothing to the total: at
+ * Confirm they are written into the booking's special requests, which is the field somebody at
+ * the base actually reads. That is the honest version of the checkbox they used to be -- the
+ * caption says the price is settled there, and no figure moves when the box is ticked.
  *
  * Nothing renders as a choice until the first quote lands. Every answer on this list — the
  * price, whether it is settled at the base, whether it can be bought at all — is the offer's,
@@ -35,7 +42,7 @@ export default function OptionalExtrasSection() {
   const t = useTranslations("YachtDetail");
   const tBooking = useTranslations("Booking.extras");
   const { data } = useListingDetail();
-  const { extras, selectExtras, quote, isPending } = useBooking();
+  const { extras, selectExtras, requestedExtras, requestExtras, quote, isPending } = useBooking();
 
   if (!data) return null;
 
@@ -94,18 +101,26 @@ export default function OptionalExtrasSection() {
         ))}
 
         {[
-          { items: notOnTheseDates, note: tBooking("notOnTheseDates") },
+          { items: notOnTheseDates, note: tBooking("notOnTheseDatesAsk") },
           { items: arrangeAtBase, note: tBooking("arrangeAtBase") },
         ].map(({ items, note }) =>
           items.map((item) => (
-            <div
+            <label
               key={item.code}
-              className="flex items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
+              className="flex cursor-pointer items-start gap-2 border-b border-dashed border-border pt-3 pb-2.75"
             >
-              {/* Keeps the label column aligned with the checkbox rows above. */}
-              <span aria-hidden className="size-4 shrink-0" />
+              <Checkbox
+                checked={requestedExtras.includes(item.code)}
+                onCheckedChange={(checked) =>
+                  requestExtras(
+                    checked
+                      ? [...requestedExtras, item.code]
+                      : requestedExtras.filter((code) => code !== item.code),
+                  )
+                }
+              />
               <ExtraRow item={item} offered={null} note={note} />
-            </div>
+            </label>
           )),
         )}
       </div>
@@ -142,19 +157,24 @@ function ExtraRow({
   const tExtras = useTranslations("Common.extras");
   const money = useMoney();
   const extraPrice = useExtraPrice();
-  /*
-   * An extra the charter price already covers is collected nowhere and costs nothing, so it
-   * carries neither caption nor figure: the offer prices it at zero, and the catalogue's own
-   * list value would read as a charge the customer is not being asked for.
-   */
-  const included =
-    item.percentage === null && (item.pricingType === "included" || item.price.amountMinor === 0);
+  const kind = extraPriceKind(item, offered);
   /* Whether it is settled at the base is the offer's answer where there is one; the two
      sources disagree on individual extras, and the offer is what will be charged. */
   const atCheckIn = offered
     ? offered.payWhen === "at_check_in"
     : item.pricingType === "pay_at_check_in";
-  const caption = note ?? (atCheckIn && !included ? tExtras("payAtCheckIn") : null);
+  /*
+   * An extra the charter price already covers is collected nowhere, so it carries no caption.
+   * One with no published rate carries the opposite: the figure beside it is not a price, and
+   * saying when to pay a price nobody has named would be the more confusing half.
+   */
+  const caption =
+    note ??
+    (kind === "unpriced"
+      ? tExtras("confirmWithBase")
+      : atCheckIn && kind !== "included"
+        ? tExtras("payAtCheckIn")
+        : null);
 
   return (
     <>
@@ -168,13 +188,20 @@ function ExtraRow({
         <Skeleton className="h-5.5 w-24 shrink-0" />
       ) : (
         <p className="shrink-0 text-base font-bold text-foreground">
-          {item.percentage !== null
+          {kind === "percentage" && item.percentage !== null
             ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
-            : included
+            : kind === "included"
               ? tExtras("includedInPrice")
-              : offered
-                ? money(offered.amount.amountMinor, offered.amount.currency)
-                : extraPrice(item.price.amountMinor, item.priceMeasure, null, item.price.currency)}
+              : kind === "unpriced"
+                ? tExtras("priceOnRequest")
+                : offered
+                  ? money(offered.amount.amountMinor, offered.amount.currency)
+                  : extraPrice(
+                      item.price.amountMinor,
+                      item.priceMeasure,
+                      null,
+                      item.price.currency,
+                    )}
         </p>
       )}
     </>

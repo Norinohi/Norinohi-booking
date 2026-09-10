@@ -65,6 +65,8 @@ export default function WhereSection({ value, set }: SectionProps) {
         onChange={(next) => set("country", next)}
         placeholder={t("placeholders.allCountries")}
         searchPlaceholder={t("placeholders.searchCountries")}
+        popularLabel={t("groups.popularCountries")}
+        allLabel={t("groups.allCountries")}
       />
       <MultiSelectField
         label={t("labels.sailingArea")}
@@ -73,6 +75,8 @@ export default function WhereSection({ value, set }: SectionProps) {
         onChange={(next) => set("sailingArea", next)}
         placeholder={t("placeholders.allRegions")}
         searchPlaceholder={t("placeholders.searchRegions")}
+        popularLabel={t("groups.popularRegions")}
+        allLabel={t("groups.allRegions")}
       />
       <MultiSelectField
         label={t("labels.charterCompany")}
@@ -89,6 +93,8 @@ export default function WhereSection({ value, set }: SectionProps) {
         onChange={(next) => set("marina", next)}
         placeholder={t("placeholders.allMarinas")}
         searchPlaceholder={t("placeholders.searchMarinas")}
+        popularLabel={t("groups.popularMarinas")}
+        allLabel={t("groups.allMarinas")}
       />
     </Section>
   );

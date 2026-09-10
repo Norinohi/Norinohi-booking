@@ -1,16 +1,18 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { Select } from "@yacht-charter/ui/components/form/select";
+import { Select, type SelectOptionGroup } from "@yacht-charter/ui/components/form/select";
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 
+import SearchableSelect from "@/components/shared/form/searchable-select";
 import {
   EMPTY_OPTIONS,
   type FilterOptions,
+  groupByPopularity,
   useFilterOptions,
 } from "@/components/shared/form/filters";
 import { buildSearchHref } from "@/features/yachts";
@@ -19,22 +21,24 @@ import { GROUP, RISE, VIEWPORT } from "@/lib/motion";
 
 const ANY = "any";
 const ALL = "all";
-/** A target, not a count: the step rounds up from here, so the list comes back this long or shorter. */
-const BUDGET_BUCKETS = 5;
+const NOT_SURE = "not-sure";
 
-/**
- * The nearest round step at or above `raw` — 1, 2 or 5 times a power of ten.
- *
- * Dividing the catalog's span by a bucket count lands on figures like 3,964, and a menu of
- * "€180 – €4,144" reads as a machine's arithmetic rather than a price the reader chose.
- */
-function niceStep(raw: number): number {
-  if (!Number.isFinite(raw) || raw <= 0) return 1;
-  const magnitude = 10 ** Math.floor(Math.log10(raw));
-  const scaled = raw / magnitude;
-  const factor = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
-  return factor * magnitude;
-}
+/** Per person for a week aboard, in whole euros. A listing's search price covers one week. */
+const BUDGETS = [
+  { value: "300-600", min: 300, max: 600 },
+  { value: "600-1000", min: 600, max: 1000 },
+  { value: "1000-1500", min: 1000, max: 1500 },
+  { value: "1500-2000", min: 1500, max: 2000 },
+  { value: "2000-plus", min: 2000, max: null },
+] as const;
+
+/** The planner's guest counts, so both turn a per-person budget into the same yacht price. */
+const GROUP_SIZES = [
+  { value: "2-4", label: "2–4", guests: 4, minBerths: 4 },
+  { value: "5-8", label: "5–8", guests: 8, minBerths: 8 },
+  { value: "9-plus", label: "9+", guests: 10, minBerths: 9 },
+] as const;
+const NEUTRAL_GUESTS = 6;
 
 /* Skipper Yes → crewed variants, No → bareboat — crew facet codes are bareboat | skipper | full-crew. */
 const CREWED = ["skipper", "full-crew"];
@@ -42,7 +46,16 @@ const BAREBOAT = ["bareboat"];
 
 type Facets = ReturnType<typeof useFilterOptions>["data"];
 
-type BudgetBucket = { value: string; label: string; price: [number, number] };
+/** An open end runs to the catalogue's ceiling, which is what leaves the upper bound unsent. */
+function priceRangeFor(
+  budget: (typeof BUDGETS)[number],
+  guests: number,
+  ceiling: number | undefined,
+): [number, number] | undefined {
+  const floor = budget.min * guests;
+  if (budget.max !== null) return [floor, budget.max * guests];
+  return ceiling === undefined ? undefined : [floor, Math.max(floor, ceiling)];
+}
 
 /*
  * The form, with its facet-derived inputs injected. Rendering this with no data and `isPending`
@@ -60,92 +73,65 @@ function BudgetFinderForm({
   isPending: boolean;
 }) {
   const t = useTranslations("Home.BudgetFinder");
+  const tGroups = useTranslations("Filters.groups");
+  const tPicker = useTranslations("Common.countryPicker");
   const money = useMoney();
 
-  const [budget, setBudget] = useState(ANY);
-  const [people, setPeople] = useState(ANY);
+  const [budget, setBudget] = useState<string | null>(null);
+  const [people, setPeople] = useState<string | null>(null);
   const [skipper, setSkipper] = useState(ANY);
   const [destination, setDestination] = useState(ALL);
 
-  const budgetBuckets = useMemo(() => {
-    const range = data?.priceRange;
-    if (!range) return [];
-
-    const min = Math.floor(range.minMinor / 100);
-    const max = Math.ceil(range.maxMinor / 100);
-    if (max <= min) return [];
-
-    /* Edges on a round step, so the list reads €5,000 rather than the catalog's €4,144. */
-    const step = niceStep((max - min) / BUDGET_BUCKETS);
-    const edges: number[] = [];
-    /* Strictly above `min`, or a catalog whose floor already sits on the step opens with an
-       empty "Up to €500" bucket that matches the single cheapest boat and nothing else. */
-    for (let edge = Math.floor(min / step) * step + step; edge < max; edge += step) {
-      edges.push(edge);
-    }
-
-    const lows = [min, ...edges];
-    const highs = [...edges, max];
-    return lows.map((lo, index): BudgetBucket => {
-      const isLast = index === lows.length - 1;
-      const hi = highs[index] ?? max;
-      /*
-       * The ends are named, not bounded: the first bucket starts at whatever the cheapest boat
-       * costs, which nobody needs to read, and the last runs to the catalog's ceiling the way
-       * the price slider does — printing that ceiling as a closing figure promised there was
-       * nothing above it.
-       */
-      const label = isLast
-        ? t("options.budgetFrom", { from: money(lo * 100, range.currency) })
-        : index === 0
-          ? t("options.budgetUpTo", { to: money(hi * 100, range.currency) })
-          : `${money(lo * 100, range.currency)} – ${money(hi * 100, range.currency)}`;
-
-      return { value: `${lo}-${hi}`, label, price: [lo, hi] };
-    });
-  }, [data?.priceRange, money, t]);
-
-  const berthsRange = data?.ranges.berths;
-
-  const budgetOptions = [
-    { value: ANY, label: t("options.any") },
-    ...budgetBuckets.map(({ value, label }) => ({ value, label })),
-  ];
-  /* From one, never from the catalog's floor: `berths.min` is 0 on listings the provider left
-     unfilled, and a charter for nobody is not a choice the reader can make. */
-  const peopleFrom = Math.max(1, berthsRange?.min ?? 1);
+  const budgetOptions = BUDGETS.map(({ value, min, max }) => ({
+    value,
+    label:
+      max === null
+        ? t("options.budgetFrom", { from: money(min * 100, "EUR") })
+        : `${money(min * 100, "EUR")} – ${money(max * 100, "EUR")}`,
+  }));
   const peopleOptions = [
-    { value: ANY, label: t("options.any") },
-    ...Array.from(
-      { length: berthsRange ? Math.max(0, berthsRange.max - peopleFrom + 1) : 0 },
-      (_, index) => {
-        const count = String(peopleFrom + index);
-        return { value: count, label: count };
-      },
-    ),
+    ...GROUP_SIZES.map(({ value, label }) => ({ value, label })),
+    { value: NOT_SURE, label: t("options.peopleNotSure") },
   ];
   const skipperOptions = [
     { value: ANY, label: t("options.any") },
     { value: "yes", label: t("options.skipperYes") },
     { value: "no", label: t("options.skipperNo") },
   ];
-  const destinationOptions = [
-    { value: ALL, label: t("options.destinationsAll") },
-    ...options.countries,
-  ];
+  const allDestinations = { value: ALL, label: t("options.destinationsAll") };
+  const destinationOptions = [allDestinations, ...options.countries];
+  const countryGroups = groupByPopularity(options.countries, {
+    popular: tGroups("popularCountries"),
+    all: tGroups("allCountries"),
+  });
+  const destinationGroups: SelectOptionGroup[] | undefined = countryGroups
+    ? [{ key: ALL, options: [allDestinations] }, ...countryGroups]
+    : undefined;
 
-  const selectedBudget = budgetBuckets.find((bucket) => bucket.value === budget);
+  const selectedBudget = BUDGETS.find((option) => option.value === budget);
+  const selectedGroup = GROUP_SIZES.find((option) => option.value === people);
+  const priceCeiling = data?.priceRange ? Math.ceil(data.priceRange.maxMinor / 100) : undefined;
+  const berthsCeiling = data?.ranges.berths.max;
+
   const href = buildSearchHref({
     country: destination !== ALL ? [destination] : undefined,
     crew: skipper === "yes" ? CREWED : skipper === "no" ? BAREBOAT : undefined,
-    price: selectedBudget?.price,
-    berths: people !== ANY && berthsRange ? [Number(people), berthsRange.max] : undefined,
+    price: selectedBudget
+      ? priceRangeFor(selectedBudget, selectedGroup?.guests ?? NEUTRAL_GUESTS, priceCeiling)
+      : undefined,
+    berths:
+      selectedGroup && berthsCeiling !== undefined
+        ? [selectedGroup.minBerths, Math.max(selectedGroup.minBerths, berthsCeiling)]
+        : undefined,
   });
 
   const fields: {
     key: "budget" | "people" | "skipper" | "destinations";
     options: { value: string; label: string }[];
-    value: string;
+    groups?: SelectOptionGroup[];
+    searchable?: boolean;
+    value: string | null;
+    placeholder?: string;
     onValueChange: (value: string) => void;
     isLoading: boolean;
   }[] = [
@@ -153,6 +139,7 @@ function BudgetFinderForm({
       key: "budget",
       options: budgetOptions,
       value: budget,
+      placeholder: t("options.any"),
       onValueChange: setBudget,
       isLoading: isPending,
     },
@@ -160,6 +147,7 @@ function BudgetFinderForm({
       key: "people",
       options: peopleOptions,
       value: people,
+      placeholder: t("options.any"),
       onValueChange: setPeople,
       isLoading: isPending,
     },
@@ -173,6 +161,8 @@ function BudgetFinderForm({
     {
       key: "destinations",
       options: destinationOptions,
+      groups: destinationGroups,
+      searchable: true,
       value: destination,
       onValueChange: setDestination,
       isLoading: isPending,
@@ -190,14 +180,30 @@ function BudgetFinderForm({
             <span className="text-sm leading-[1.2] font-semibold text-natural-700">
               {t(`labels.${field.key}`)}
             </span>
-            <Select
-              className="h-12 bg-card"
-              ariaLabel={t(`labels.${field.key}`)}
-              options={field.options}
-              value={field.value}
-              onValueChange={field.onValueChange}
-              isLoading={field.isLoading}
-            />
+            {field.searchable ? (
+              <SearchableSelect
+                className="h-12 min-w-0 bg-card"
+                aria-label={t(`labels.${field.key}`)}
+                placeholder={field.placeholder ?? ""}
+                searchPlaceholder={tPicker("search")}
+                emptyLabel={field.isLoading ? tPicker("loading") : tPicker("empty")}
+                options={field.options}
+                groups={field.groups}
+                value={field.value}
+                onValueChange={(next) => field.onValueChange(next ?? ALL)}
+              />
+            ) : (
+              <Select
+                className="h-12 bg-card"
+                ariaLabel={t(`labels.${field.key}`)}
+                options={field.options}
+                groups={field.groups}
+                value={field.value}
+                placeholder={field.placeholder}
+                onValueChange={field.onValueChange}
+                isLoading={field.isLoading}
+              />
+            )}
           </div>
         ))}
       </motion.div>

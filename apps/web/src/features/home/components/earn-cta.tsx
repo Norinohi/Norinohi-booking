@@ -1,14 +1,25 @@
+"use client";
+
 import { Button } from "@yacht-charter/ui/components/actions/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@yacht-charter/ui/components/overlay/dialog";
 import { ArrowUpRight } from "lucide-react";
-import * as motion from "motion/react-client";
+import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { Link } from "@/i18n/navigation";
+import { useState } from "react";
 
+import { LeadEnquiryForm } from "@/components/shared/form/lead-enquiry-form";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 export default function EarnCta() {
   const t = useTranslations("Home.EarnCta");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <section className="bg-background">
@@ -35,15 +46,10 @@ export default function EarnCta() {
               <p className="max-w-120.25 text-lg leading-[1.4] text-white md:text-xl">
                 {t("description")}
               </p>
-              {/* The contact form, not the catalogue. An operator who clicks "List Your Yacht"
-                  is offering a boat, and sending them to a page of other people's boats was the
-                  third button on this page to land on /yachts. There is no operator sign-up yet,
-                  so this is the enquiry form the team already answers. */}
               <Button
                 variant="neutral"
                 size="md"
-                nativeButton={false}
-                render={<Link href="/support" />}
+                onClick={() => setIsDialogOpen(true)}
                 className="w-full md:w-fit"
               >
                 {t("cta")}
@@ -53,6 +59,22 @@ export default function EarnCta() {
           </div>
         </motion.div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent showClose>
+          <DialogHeader>
+            <DialogTitle>{t("dialog.title")}</DialogTitle>
+            <DialogDescription>{t("dialog.description")}</DialogDescription>
+          </DialogHeader>
+          <LeadEnquiryForm
+            kind="charter_expert"
+            submitLabel={t("dialog.submit")}
+            successMessage={t("dialog.success")}
+            submitClassName="w-full"
+            onSuccess={() => setIsDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

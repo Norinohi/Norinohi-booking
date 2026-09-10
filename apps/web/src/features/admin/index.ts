@@ -5,6 +5,7 @@ export {
   prefetchCommissions,
   prefetchDuplicateQueue,
   prefetchFaq,
+  prefetchPopularFacets,
   prefetchInbox,
   prefetchListings,
   prefetchMarketplaceSettings,
@@ -18,6 +19,7 @@ export { default as BookingsScreen } from "./components/bookings-screen";
 export { default as CommissionsScreen } from "./components/commissions-screen";
 export { default as DuplicateReviewScreen } from "./components/duplicate-review-screen";
 export { default as FaqScreen } from "./components/faq-screen";
+export { default as PopularFacetsScreen } from "./components/popular-facets-screen";
 export { default as InboxScreen } from "./components/inbox-screen";
 export { default as ListingsScreen } from "./components/listings-screen";
 export { default as PaymentsScreen } from "./components/payments-screen";

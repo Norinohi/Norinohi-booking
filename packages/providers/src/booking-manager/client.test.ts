@@ -16,6 +16,7 @@ const source: BookingManagerEnvSource = {
   BOOKING_MANAGER_BASE_URL: "https://provider.test",
   BOOKING_MANAGER_API_KEY: "t0ken",
   BOOKING_MANAGER_TIMEOUT_MS: 30_000,
+  BOOKING_MANAGER_SYNC_TIMEOUT_MS: 180_000,
   BOOKING_MANAGER_MIN_INTERVAL_MS: 0,
   BOOKING_MANAGER_SWEEP_CONCURRENCY: 6,
   BOOKING_MANAGER_OPTION_SAFETY_MARGIN_MINUTES: 15,
@@ -53,6 +54,23 @@ describe("BookingManagerClient live lanes", () => {
     const lanes = new Set(Array.from({ length: 40 }, () => client.liveLane().queueKey));
 
     expect(lanes.size).toBe(4);
+  });
+});
+
+/*
+ * One `/offers` answers for the whole account for a week and one `/yachts` page for a
+ * whole company, so the sweep's calls are slow by nature; the live ceiling next to them
+ * governs a quote a guest is waiting on and has to stay short.
+ */
+describe("BookingManagerClient lane timeouts", () => {
+  const client = clientWith(async () => new Response("[]", { status: 200 }));
+
+  it("gives a sweep read the long ceiling", () => {
+    expect(client.sweepLane("offers", 0).timeoutMs).toBe(180_000);
+  });
+
+  it("leaves a customer call on the client's own short one", () => {
+    expect(client.liveLane().timeoutMs).toBeUndefined();
   });
 });
 

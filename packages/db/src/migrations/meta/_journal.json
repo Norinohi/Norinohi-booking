@@ -750,6 +750,34 @@
       "when": 1788857958912,
       "tag": "0106_numerous_ironclad",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1789024360202,
+      "tag": "0107_slippery_black_widow",
+      "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1789027342703,
+      "tag": "0108_skinny_mach_iv",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1789031332616,
+      "tag": "0109_boring_mongu",
+      "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1789036581302,
+      "tag": "0110_wealthy_loki",
+      "breakpoints": true
     }
   ]
 }

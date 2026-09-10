@@ -19,6 +19,7 @@ import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
 import { buildConsultationHref } from "../lib/build-consultation-href";
 import type { PlannerAnswers } from "../lib/search-params";
 import { toBoatCardProps } from "../lib/to-boat-card";
+import { Image } from "@/components/shared/data-display/image";
 
 /** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
 const DEFAULT_DESTINATION_IMAGE = "/assets/home/destinations/greece.webp";
@@ -28,10 +29,23 @@ const DESTINATION_IMAGES = new Map<string, string>([
   ["Italy", "/assets/home/destinations/italy.webp"],
 ]);
 
+const YACHT_TYPE_KEYS = new Map<string, "sailing" | "catamaran" | "gulet" | "motor" | "luxury">([
+  ["Sailing yacht", "sailing"],
+  ["Catamaran", "catamaran"],
+  ["Gulet", "gulet"],
+  ["Motor yacht", "motor"],
+  ["Luxury yacht", "luxury"],
+]);
+
 /** Result — "Your perfect yacht trip" (Figma node 959:344654), backed by `planner.recommend`. */
-export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
+interface ResultScreenProps {
+  answers: PlannerAnswers;
+}
+
+export function ResultScreen({ answers }: ResultScreenProps) {
   const t = useTranslations("PlanMyTrip.result");
   const tv = useTranslations("PlanMyTrip.steps.tripVibe");
+  const td = useTranslations("PlanMyTrip.steps.destination.options");
   const tCard = useTranslations("Common.boatCard");
   const tBadge = useTranslations("Common.boatCard.badges");
   const formatMoney = useMoney();
@@ -59,6 +73,14 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
   const difficulty = t(`difficulty.${recommendation.difficulty}`);
   const skipper = t(recommendation.skipperRequired ? "skipper.yes" : "skipper.no");
   const duration = t("durationDays", { days: recommendation.durationDays });
+  const destinationKey = (["croatia", "greece", "italy", "spain"] as const).find(
+    (key) => key === recommendation.searchParams.country[0],
+  );
+  const destinationLabel = destinationKey
+    ? td(`${destinationKey}.label`)
+    : recommendation.destination.country;
+  const yachtTypeKey = YACHT_TYPE_KEYS.get(recommendation.yachtType);
+  const yachtTypeLabel = yachtTypeKey ? t(`yachtType.${yachtTypeKey}`) : recommendation.yachtType;
 
   const { perPerson, fromBudgetAnswer } = recommendation.estimatedPrice;
   /** One money when both ends agree, so a fleet of one is not quoted as a range against itself. */
@@ -68,7 +90,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
       : `${formatMoney(range.min.amountMinor, range.min.currency)} – ${formatMoney(range.max.amountMinor, range.max.currency)}`;
 
   const stats = [
-    { label: t("labels.yachtType"), value: recommendation.yachtType },
+    { label: t("labels.yachtType"), value: yachtTypeLabel },
     { label: t("labels.skipper"), value: skipper },
     { label: t("labels.style"), value: style },
     { label: t("labels.duration"), value: duration },
@@ -76,7 +98,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
 
   const listing = recommendation.listing;
   const boatCard = listing
-    ? toBoatCardProps(tBadge, listing, boatCardPrice(tCard, listing, formatMoney))
+    ? toBoatCardProps(tBadge, listing, boatCardPrice(tCard, listing, formatMoney), destinationLabel)
     : null;
   /*
    * The charter this price covers, off the listing itself rather than off the trip length.
@@ -128,18 +150,21 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
       : null;
   const destinationImage =
     DESTINATION_IMAGES.get(recommendation.destination.country) ?? DEFAULT_DESTINATION_IMAGE;
-  /*
-   * The brief as a search, which is what `searchParams` is on the contract for.
-   *
-   * Country, crew, duration and the budget carry across exactly — the budget is already the
-   * whole boat's ceiling, multiplied by the group on the server. `guests` and `category` do not:
-   * `/yachts` filters berths as a range with no upper bound to give it, and takes boat type as a
-   * slug where the planner answers with a label. So the link lands on a slightly wider set than
-   * `matchCount`, which is the safe direction for a "see all" to be wrong in.
-   */
-  const { country, crew, duration: durationDays, maxPriceMinor } = recommendation.searchParams;
-  const matchesHref = buildSearchHref({
+  // Carry every successful constraint forward, including capacity and any relaxed filters.
+  const {
     country,
+    category,
+    crew,
+    guests,
+    minBerths,
+    duration: durationDays,
+    maxPriceMinor,
+  } = recommendation.searchParams;
+  const matchesHref = buildSearchHref({
+    guests,
+    minBerths,
+    country,
+    boatType: category ? [category] : [],
     crew,
     duration: String(durationDays),
     ...(maxPriceMinor === null ? null : { price: [0, Math.round(maxPriceMinor / 100)] as const }),
@@ -184,8 +209,15 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
           {boatCard ? (
             <BoatSmallCard
               className="relative z-10 w-full max-w-83.5"
-              image={boatCard.image}
-              imageAlt={boatCard.imageAlt}
+              imageRender={
+                <Image
+                  src={boatCard.image}
+                  alt={boatCard.imageAlt}
+                  fill
+                  sizes="334px"
+                  className="object-cover"
+                />
+              }
               location={boatCard.location}
               title={
                 <Link
@@ -211,6 +243,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
               <Button
                 variant="neutral"
                 size="sm"
+                className="h-auto min-h-8 py-1 whitespace-normal"
                 nativeButton={false}
                 render={<Link href={matchesHref} />}
               >
@@ -225,8 +258,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               <h2 className="text-h4 text-foreground">
-                <span aria-hidden>{recommendation.destination.flag}</span>{" "}
-                {recommendation.destination.country}
+                <span aria-hidden>{recommendation.destination.flag}</span> {destinationLabel}
               </h2>
               <div className="flex flex-wrap gap-3">
                 <SummaryChip icon={<Clock className="size-4" />}>{duration}</SummaryChip>
@@ -262,7 +294,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
           <div className="flex flex-col-reverse flex-wrap gap-3 md:flex-row">
             <Button
               variant="neutral"
-              className="w-full md:w-auto"
+              className="h-auto min-h-12 w-full py-3 whitespace-normal md:w-auto"
               nativeButton={false}
               render={<Link href={buildConsultationHref(answers)} />}
             >
@@ -273,7 +305,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
                 {/* One yacht is the recommendation; the rest of the brief's matches are a click away. */}
                 <Button
                   variant="neutral"
-                  className="w-full md:w-auto"
+                  className="h-auto min-h-12 w-full py-3 whitespace-normal md:w-auto"
                   nativeButton={false}
                   render={<Link href={matchesHref} />}
                 >
@@ -281,7 +313,7 @@ export function ResultScreen({ answers }: { answers: PlannerAnswers }) {
                 </Button>
                 <Button
                   variant="brand"
-                  className="w-full md:w-auto"
+                  className="h-auto min-h-12 w-full py-3 whitespace-normal md:w-auto"
                   nativeButton={false}
                   render={<Link href={boatCard.detailHref} />}
                 >

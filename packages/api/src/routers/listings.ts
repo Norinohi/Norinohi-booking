@@ -19,6 +19,7 @@ import {
 import type { Context } from "../context";
 import { publicProcedure } from "../index";
 import { withJsonBodyExample, withParameterExamples } from "./openapi-examples";
+import { getAmenityRanks } from "../services/amenity-ranks";
 import { presentListingDetail, presentListingSummary } from "../presenters/listing";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
 import { recordListingView } from "../services/listing-view";
@@ -65,7 +66,11 @@ export const listingsRouter = {
       if (!listing) {
         throw new ORPCError("NOT_FOUND", { message: "Listing not found" });
       }
-      return presentListingDetail(listing, await catalogueBasis(context.db));
+      const [basis, amenityRanks] = await Promise.all([
+        catalogueBasis(context.db),
+        getAmenityRanks(context.db),
+      ]);
+      return presentListingDetail(listing, basis, amenityRanks);
     }),
   redirectTarget: publicProcedure
     .route({
@@ -106,8 +111,11 @@ export const listingsRouter = {
     .output(z.array(listingSummarySchema))
     .handler(async ({ context, input }) => {
       const docs = await listListingsByIds(context.db, input.listingIds);
-      const basis = await catalogueBasis(context.db);
-      return docs.map((doc) => presentListingSummary(doc, basis));
+      const [basis, amenityRanks] = await Promise.all([
+        catalogueBasis(context.db),
+        getAmenityRanks(context.db),
+      ]);
+      return docs.map((doc) => presentListingSummary(doc, basis, amenityRanks));
     }),
   recordView: publicProcedure
     .route({
@@ -184,8 +192,11 @@ export const listingsRouter = {
     .input(listingIdInputSchema)
     .output(z.array(listingSummarySchema))
     .handler(async ({ context, input }) => {
-      const basis = await catalogueBasis(context.db);
+      const [basis, amenityRanks] = await Promise.all([
+        catalogueBasis(context.db),
+        getAmenityRanks(context.db),
+      ]);
       const listings = await listSimilarListings(context.db, input.listingId, undefined, basis);
-      return listings.map((listing) => presentListingSummary(listing, basis));
+      return listings.map((listing) => presentListingSummary(listing, basis, amenityRanks));
     }),
 };

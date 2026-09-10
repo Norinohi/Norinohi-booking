@@ -24,6 +24,14 @@ describe("placeLine", () => {
     expect(placeLine("Trogir", "Trogir", "Croatia")).toBe("Trogir, Croatia");
   });
 
+  it("keeps a translated country beside a Latin marina name", () => {
+    expect(placeLine("Lefkas Marina", "Греція")).toBe("Lefkas Marina, Греція");
+  });
+
+  it("preserves distinct Cyrillic places while folding repeated names", () => {
+    expect(placeLine("Київ", "Одеса", "КИЇВ", "Україна")).toBe("Київ, Одеса, Україна");
+  });
+
   it("drops blanks and absent parts rather than printing stray commas", () => {
     expect(placeLine("Marina Kastela", null, "  ", undefined, "Croatia")).toBe(
       "Marina Kastela, Croatia",
@@ -32,6 +40,10 @@ describe("placeLine", () => {
 });
 
 describe("placeLineExcept", () => {
+  it("keeps the translated surroundings of a marina", () => {
+    expect(placeLineExcept("Марина, Афіни", "Афіни", "Греція")).toBe("Греція");
+  });
+
   it("says nothing when the marina's name already covered it", () => {
     const path = "Bahamas, Abacos, Boat Harbour Marina";
     expect(placeLineExcept(path, path)).toBe("");

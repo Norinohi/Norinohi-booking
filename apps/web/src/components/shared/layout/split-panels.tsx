@@ -10,16 +10,14 @@ const PANELS = ["main", "aside"] as const;
 
 type Panel = (typeof PANELS)[number];
 
-export default function SplitPanels({
-  labels,
-  main,
-  aside,
-}: {
+interface SplitPanelsProps {
   /** Tab labels below `xl`, where the two panels share the screen. */
   labels: Record<Panel, ReactNode>;
   main: ReactNode;
   aside: ReactNode;
-}) {
+}
+
+export default function SplitPanels({ labels, main, aside }: SplitPanelsProps) {
   const [panel, setPanel] = useState<Panel>(PANELS[0]);
   const asideRef = useFillToFold<HTMLElement>("80rem");
 
@@ -31,9 +29,13 @@ export default function SplitPanels({
         onValueChange={(value) => setPanel(PANELS.find((id) => id === value) ?? PANELS[0])}
         className="sticky top-(--header-h) z-20 bg-background xl:hidden"
       >
-        <TabsList>
+        <TabsList className="items-stretch">
           {PANELS.map((id) => (
-            <TabsTab key={id} value={id} className="flex-1 py-3.5 leading-5.5">
+            <TabsTab
+              key={id}
+              value={id}
+              className="min-w-0 flex-1 px-2 py-3.5 leading-5.5 wrap-break-word whitespace-normal"
+            >
               {labels[id]}
             </TabsTab>
           ))}

@@ -1,3 +1,4 @@
+import { describeProviderFailure, reportProviderRefusal } from "../lib/provider-failure";
 import { placeLine } from "../lib/place-line";
 import { ORPCError } from "@orpc/server";
 import {
@@ -13,6 +14,7 @@ import { base } from "@yacht-charter/db/schema/geography";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
+import { listRequestableExtras } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import type { z } from "zod";
@@ -38,6 +40,7 @@ import {
   type BookingStatus,
 } from "./booking-state";
 import { readAnyBooking, readOwnedBooking } from "./booking-read";
+import { appendRequestedExtras } from "./requested-extras";
 import { notifyBookingCancelled } from "./booking-email";
 import { amountDue, atCheckInMinor, outstandingMinor, payableNowFor } from "./checkout-amounts";
 import { enqueueOutbox, kickOutbox } from "./outbox";
@@ -47,7 +50,7 @@ import { paginatedQuery, totalFrom } from "./pagination";
 import { recordEvent, releaseProviderOption, type ProviderRelease } from "./provider-option";
 import { isUniqueViolation, violatedConstraint } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
-import { asCrewType, assertQuoteIsFresh } from "./quote";
+import { asCrewType, assertQuoteIsFresh, learnFromProviderRefusal } from "./quote";
 import type { GuestAccessToken } from "./guest-access";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
@@ -316,7 +319,7 @@ export async function createHold(
     guestEmail: guest.email,
     guestPhone: guest.phone,
     guestCountryCode: guest.countryCode,
-    specialRequests: guest.specialRequests ?? null,
+    specialRequests: await withRequestedExtras(db, priced, guest.specialRequests),
     userId,
     listingId: priced.listingId,
     /* Carried from the quote, so cancel and refund reach the vendor that took the money. */
@@ -438,6 +441,35 @@ async function recordConsents(db: Database, bookingId: string, consents: Consent
 }
 
 /**
+ * The guest's own note, with the extras they asked the base for appended to it.
+ *
+ * Special requests is the one field on a booking a human at the base reads, so it is where an
+ * extra nobody can sell through us has to land. Booking Manager exposes no optional extras on
+ * the offer it quotes from and NauSYS prices only its services, so the alternative was a
+ * checkbox that took the tick and did nothing.
+ *
+ * Names come from the catalogue rather than from the customer's locale, because the person
+ * reading them works at the base. A code the catalogue no longer carries is dropped rather than
+ * written out raw: the quote was validated when it was made, and a resync between then and now
+ * is not the customer's to explain.
+ */
+async function withRequestedExtras(
+  db: DatabaseExecutor,
+  priced: { listingId: string; listingOfferId: string | null; requestedExtras: string[] },
+  note: string | undefined,
+): Promise<string | null> {
+  if (priced.requestedExtras.length === 0) return note?.trim() || null;
+
+  const catalogue = await listRequestableExtras(db, priced.listingId, priced.listingOfferId);
+  return appendRequestedExtras(
+    note,
+    priced.requestedExtras
+      .map((code) => catalogue.get(code))
+      .filter((name): name is string => name !== undefined),
+  );
+}
+
+/**
  * The quote's priced extras, copied onto the booking. booking.get reads this
  * table, and until now nothing wrote it, so every booking reported no extras.
  */
@@ -546,15 +578,32 @@ async function holdOption(
     // transition here would fail its compare-and-set and mask the real reason.
     if (error instanceof ORPCError) throw error;
 
+    // `cancelReason` is read back by the booking screens and by the idempotent
+    // replay above, so it carries the customer wording; the vendor's own text
+    // stays on the event, where support and Sentry look for it.
+    const refusal = error instanceof Error ? error : null;
+    const failure = describeProviderFailure(refusal, "Provider rejected the option");
+    reportProviderRefusal("hold", refusal, {
+      bookingId: pending.id,
+      provider: pending.provider,
+    });
     const rejected = await transition(db, pending, "PROVIDER_REJECTED", {
-      cancelReason: error instanceof Error ? error.message : "Provider rejected the option",
+      cancelReason: failure.customer,
     });
     await recordEvent(db, rejected.id, "confirm_failed", rejected.provider, null, {
-      message: rejected.cancelReason,
+      message: failure.detail,
     });
-    throw new ORPCError("CONFLICT", {
-      message: rejected.cancelReason ?? "Provider rejected the option",
-    });
+    /*
+     * And take the week off the card, where the vendor said it is the week that is gone.
+     *
+     * The customer has already been answered by everything above; this is for the ones behind
+     * them, who would otherwise keep finding the same charter advertised and keep reaching this
+     * same refusal. It costs a vendor call when the party is large enough to be the reason for
+     * the refusal, which is the probe that stops a boat too small from reading as a boat that
+     * is booked.
+     */
+    await learnFromProviderRefusal(db, provider, priced, refusal);
+    throw new ORPCError("CONFLICT", { message: failure.customer });
   }
 }
 

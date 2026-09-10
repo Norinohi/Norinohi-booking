@@ -96,7 +96,13 @@ export const availabilityRouter = {
         currency: "EUR",
       }),
     })
-    .input(quoteRequestWithDiscountSchema.extend({ locale: localeInputSchema }))
+    .input(
+      quoteRequestWithDiscountSchema.extend({
+        locale: localeInputSchema,
+        /* Ours, not the provider's: nothing downstream of the adapter has a use for it. */
+        requestedExtras: z.array(z.string().min(1)).optional(),
+      }),
+    )
     .output(persistedQuoteSchema)
     .handler(async ({ context, input }) => {
       /*
@@ -143,6 +149,7 @@ export const availabilityRouter = {
           checkOut: input.checkOut,
           guests: input.guests,
           extras: input.extras,
+          requestedExtras: input.requestedExtras,
           crewType: input.crewType,
           endBaseId: input.endBaseId,
           discountCode: input.discountCode,

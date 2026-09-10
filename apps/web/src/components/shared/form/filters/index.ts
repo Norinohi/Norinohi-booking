@@ -5,7 +5,13 @@ export { useFilterChips } from "./hooks/use-filter-chips";
 export { EMPTY_OPTIONS, type FilterOptions, useFilterOptions } from "./hooks/use-filter-options";
 export { useFilterRanges } from "./hooks/use-filter-ranges";
 export { clearFilterKeys, type FilterChip } from "./lib/chips";
-export { labelOf, type Option, orderedValues } from "./lib/options";
+export {
+  groupByPopularity,
+  labelOf,
+  type Option,
+  orderedValues,
+  partitionByPopularity,
+} from "./lib/options";
 export {
   countActiveFilters,
   DEFAULT_FILTERS,

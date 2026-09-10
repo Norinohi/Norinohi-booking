@@ -36,6 +36,7 @@ const quoteRow = (lines: QuoteLine[], over: Partial<QuoteRow> = {}): QuoteRow =>
     checkOut: "2026-08-15",
     guests: 2,
     extras: [],
+    requestedExtras: [],
     crewType: null,
     currency: "EUR",
     lines,

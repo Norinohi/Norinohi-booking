@@ -1,5 +1,6 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { TripCard } from "@yacht-charter/ui/components/data-display/card-trip";
+import { Image } from "@/components/shared/data-display/image";
 import { Activity, Clock } from "lucide-react";
 import * as motion from "motion/react-client";
 import { useTranslations } from "next-intl";
@@ -57,8 +58,15 @@ export default function SailingRoutes() {
           {ROUTES.map((route, i) => (
             <motion.div key={route.key} variants={RISE}>
               <TripCard
-                image={route.image}
-                imageAlt={t(`items.${route.key}.imageAlt`)}
+                imageRender={
+                  <Image
+                    src={route.image}
+                    alt={t(`items.${route.key}.imageAlt`)}
+                    fill
+                    sizes="(min-width: 1024px) 452px, 100vw"
+                    className="object-cover"
+                  />
+                }
                 title={
                   <Link
                     href={route.href}

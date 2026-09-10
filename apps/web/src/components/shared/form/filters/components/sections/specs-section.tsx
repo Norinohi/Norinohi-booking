@@ -9,6 +9,7 @@ import { RangeField, Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
 import { useFilterRanges } from "../../hooks/use-filter-ranges";
 import {
+  ageAt,
   toAgeRange,
   withAgeRange,
   withYearFrom,
@@ -81,13 +82,16 @@ export default function SpecsSection({ value, set }: SectionProps) {
       {/*
        * The slider is a view over `yearFrom` / `yearTo` (lib/boat-age.ts): dragging it rewrites the
        * years, picking a year moves it, and a thumb on its end is the same as a select on "Any".
+       * It runs oldest to newest, so its thumbs sit over the selects they write, which is why the
+       * age each position stands for is read back off the track rather than printed straight.
        */}
       <RangeField
         label={t("labels.boatAge")}
         limits={ranges.boatAge}
         value={toAgeRange(value, ranges)}
         onChange={(next) => setYears(withAgeRange(value, next, ranges))}
-        format={(n) => t("units.years", { count: n })}
+        format={(n) => t("units.years", { count: ageAt(n, ranges) })}
+        openEnd="start"
         showScale={false}
       />
 

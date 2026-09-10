@@ -6,6 +6,7 @@ import { reapStaleSyncRuns } from "@yacht-charter/providers/sync/run";
 import { and, eq, gt, inArray, isNotNull, lte, ne, notExists, sql } from "drizzle-orm";
 
 import type { Database } from "../context";
+import { reportProviderRefusal } from "../lib/provider-failure";
 import { providerByKey } from "./provider-routing";
 import {
   DEAD_QUOTE_SWEEP,
@@ -279,6 +280,7 @@ async function releaseOption(
   provider: InventoryProvider,
   candidate: {
     id: string;
+    providerName: string;
     providerOptionId: string | null;
     providerReservationId: string | null;
     providerReservationUuid: string | null;
@@ -294,7 +296,18 @@ async function releaseOption(
     });
     return null;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const refusal = error instanceof Error ? error : null;
+    const message = refusal?.message ?? String(error);
+    /*
+     * The sweep only reported these in its own return value, which lives as long as the cron
+     * request that produced it. A refusal here is the divergence that matters most -- we are
+     * about to call the booking expired while the vendor goes on holding the week -- so it is
+     * announced the same way a refused hold is.
+     */
+    reportProviderRefusal("release", refusal, {
+      bookingId: candidate.id,
+      provider: candidate.providerName,
+    });
     failures.push({ bookingId: candidate.id, message });
     return message;
   }

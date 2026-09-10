@@ -14,7 +14,7 @@ import {
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
-import { type Option, orderedValues } from "../lib/options";
+import { groupByPopularity, type Option, orderedValues } from "../lib/options";
 import type { FiltersState, Range } from "../lib/state";
 
 export interface SectionProps {
@@ -51,6 +51,13 @@ interface MultiSelectFieldProps {
   onChange: (value: string[]) => void;
   placeholder: string;
   searchPlaceholder?: string;
+  /**
+   * Headings for the curated group and the remainder. Both are needed to group at all, and
+   * grouping only happens when some option is actually curated -- otherwise the list is flat,
+   * which is what every facet looks like until somebody curates it.
+   */
+  popularLabel?: string;
+  allLabel?: string;
   className?: string;
 }
 
@@ -62,14 +69,22 @@ export function MultiSelectField({
   onChange,
   placeholder,
   searchPlaceholder,
+  popularLabel,
+  allLabel,
   className,
 }: MultiSelectFieldProps) {
+  const groups =
+    popularLabel && allLabel
+      ? groupByPopularity(options, { popular: popularLabel, all: allLabel })
+      : undefined;
+
   return (
     <Field label={label} className={className}>
       <MultiSelect
         aria-label={ariaLabel}
         className="min-w-0"
         options={options}
+        groups={groups}
         value={value}
         // Written back in option order so comparing against the defaults never
         // depends on the order the boxes were ticked.
@@ -159,10 +174,16 @@ interface RangeFieldProps {
   icon?: ReactNode;
   showScale?: boolean;
   /*
-   * Suppresses the "+" on the top of the track, for a scale whose end is a real ceiling
+   * Suppresses the "+" on the open end of the track, for a scale whose end is a real ceiling
    * rather than a percentile cut. A guest rating stops at five, so "5+" promises a sixth star.
    */
   boundedMax?: boolean;
+  /*
+   * Which end of the track is the percentile cut, and so carries the "+". Left, for a scale that
+   * counts down: the Boat Age track runs oldest to newest so its "from" thumb pairs with the
+   * Year From select, which puts "24 years and older" on the low end of the track.
+   */
+  openEnd?: "start" | "end";
 }
 
 export function RangeField({
@@ -175,9 +196,20 @@ export function RangeField({
   icon,
   showScale = true,
   boundedMax = false,
+  openEnd = "end",
 }: RangeFieldProps) {
   const t = useTranslations("Filters");
   const formatValue = (n: number) => (format ? format(n) : String(n));
+
+  if (limits[0] === limits[1]) {
+    return (
+      <Field label={label}>
+        <span className="text-sm wrap-break-word text-natural-500">
+          {limits[0] > 0 ? formatValue(limits[0]) : t("rangeUnavailable")}
+        </span>
+      </Field>
+    );
+  }
 
   /*
    * The sliders end on the 95th percentile of the fleet, and a thumb resting on that end sends
@@ -185,22 +217,24 @@ export function RangeField({
    * then reads as a promise the results break: a 49 m hull comes back under a 61 ft filter. The
    * suffix is what makes the end of the track mean what the query already means.
    */
-  const formatUpper = (n: number) =>
-    !boundedMax && n === limits[1] ? t("andAbove", { value: formatValue(n) }) : formatValue(n);
+  const formatOpen = (n: number, end: "start" | "end") =>
+    !boundedMax && end === openEnd && n === limits[end === "start" ? 0 : 1]
+      ? t("andAbove", { value: formatValue(n) })
+      : formatValue(n);
 
   return (
     <div className="flex w-full flex-col gap-1.5">
-      <span className="text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground capitalize">
+      <span className="text-sm font-semibold leading-[1.2] tracking-[0.02em] text-foreground">
         {label}
       </span>
       <div className="flex items-center gap-4">
         <span className="flex min-w-0 flex-1 items-center gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {formatValue(value[0])}
+          {formatOpen(value[0], "start")}
         </span>
         <span className="flex min-w-0 flex-1 items-center justify-end gap-1 text-sm font-medium leading-[1.3] text-natural-500">
           {icon}
-          {formatUpper(value[1])}
+          {formatOpen(value[1], "end")}
         </span>
         {unit ? (
           <UnitSelect
@@ -224,8 +258,8 @@ export function RangeField({
         showTicks
       />
       {showScale && (
-        <div aria-hidden className="relative h-4.5 w-full">
-          <span className="absolute left-2 -translate-x-1/2 text-sm leading-[1.3] tracking-[0.04em] text-foreground uppercase">
+        <div aria-hidden className="min-h-4.5 w-full">
+          <span className="text-sm leading-[1.3] tracking-[0.04em] text-foreground uppercase">
             {formatValue(limits[0])}
           </span>
         </div>

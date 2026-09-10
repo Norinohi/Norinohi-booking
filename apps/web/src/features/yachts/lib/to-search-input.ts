@@ -35,6 +35,7 @@ export function toSearchInput(
 
   if (filters.query) input.query = filters.query;
   if (filters.name) input.name = filters.name;
+  if (filters.guests !== null) input.guests = filters.guests;
   if (filters.country.length) input.country = filters.country;
   if (filters.sailingArea.length) input.sailingArea = filters.sailingArea;
   if (filters.city.length) input.city = filters.city;
@@ -95,9 +96,13 @@ export function toSearchInput(
     input.minCabins = lowerOf("cabins");
     input.maxCabins = upperOf("cabins");
   }
+  const minBerths = isActive("berths") ? lowerOf("berths") : undefined;
   if (isActive("berths")) {
-    input.minBerths = lowerOf("berths");
+    input.minBerths = minBerths;
     input.maxBerths = upperOf("berths");
+  }
+  if (filters.minBerths !== null) {
+    input.minBerths = Math.max(minBerths ?? 0, filters.minBerths);
   }
   if (isActive("bathrooms")) {
     input.minBathrooms = lowerOf("bathrooms");

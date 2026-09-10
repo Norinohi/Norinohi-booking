@@ -33,7 +33,9 @@
       "optional": "Optional extras",
       "included": "Included",
       "arrangeAtBase": "Arrange with the base",
-      "notOnTheseDates": "Not available on these dates"
+      "notOnTheseDates": "Not available on these dates",
+      "notOnTheseDatesAsk": "Not available on these dates - you can ask the base",
+      "requestedAtBase": "Requested from the base, paid there"
     },
     "guestDetails": {
       "notice": "We'll use this information to confirm your booking and coordinate with the base manager.",
@@ -448,6 +450,8 @@
       "dueWithPrepayment": "Due with the prepayment",
       "payNow": "Included in prepayment",
       "includedInPrice": "Included in the price",
+      "priceOnRequest": "Price on request",
+      "confirmWithBase": "Price not published, confirm with the base",
       "percentageOfCharter": "{percent}% of the charter price",
       "oneWayOnly": "One-way charters only",
       "measure": {
@@ -545,7 +549,9 @@
       "crews": {
         "fullCrew": "Full crew",
         "skipperOptional": "Skipper optional"
-      }
+      },
+      "moreAmenities": "Show {count} more amenities",
+      "moreAmenitiesShort": "+{count}"
     },
     "gallery": {
       "close": "Close",
@@ -717,6 +723,18 @@
       "searchEquipment": "Search equipment...",
       "anyDate": "Any date"
     },
+    "groups": {
+      "popularCountries": "Popular countries",
+      "allCountries": "All countries",
+      "popularRegions": "Popular sailing areas",
+      "allRegions": "All sailing areas",
+      "popularMarinas": "Popular marinas",
+      "allMarinas": "All marinas",
+      "popularBoatTypes": "Popular boat types",
+      "allBoatTypes": "All boat types",
+      "popularModels": "Popular models",
+      "allModels": "All models"
+    },
     "aria": {
       "builtFrom": "Built from year",
       "builtTo": "Built to year"
@@ -761,7 +779,9 @@
       "depositInsurance": "Deposit insurance",
       "petsAllowed": "Pets allowed",
       "bestValue": "Best value",
-      "guestRating": "Rating: {value}"
+      "guestRating": "Rating: {value}",
+      "guests": "Capacity: {count, plural, one {# guest} other {# guests}}",
+      "minBerths": "At least {count, plural, one {# berth} other {# berths}}"
     },
     "options": {
       "duration": "{days, plural, one {# day} other {# days}}",
@@ -774,32 +794,28 @@
         "2-weeks": "In 2 weeks",
         "1-month": "In 1 month"
       }
-    }
+    },
+    "rangeUnavailable": "No range available"
   },
   "Home": {
     "BoatTypes": {
       "heading": "Choose Your Boat Type",
       "previous": "Previous boat types",
-      "next": "Next boat types",
-      "luxury": {
-        "title": "Luxury yacht",
-        "description": "The largest boats in the fleet, crewed and specified to hotel standard.",
-        "imageAlt": "Luxury yacht at anchor"
-      }
+      "next": "Next boat types"
     },
     "BudgetFinder": {
       "heading": "Find Yachts By Your Budget",
       "viewResults": "View Results",
       "labels": {
-        "budget": "Budget per charter",
+        "budget": "Budget Per Person",
         "people": "People",
         "skipper": "Skipper",
         "destinations": "Destinations (Optional)"
       },
       "options": {
         "any": "Any",
-        "budgetUpTo": "Up to {to}",
         "budgetFrom": "{from}+",
+        "peopleNotSure": "Not sure",
         "skipperYes": "Yes",
         "skipperNo": "No",
         "destinationsAll": "All Destinations"
@@ -808,7 +824,13 @@
     "EarnCta": {
       "heading": "Earn With Your Yacht",
       "description": "List your yacht on our platform and start receiving bookings from travelers worldwide. We handle visibility, demand, and tools — you stay in control of your schedule and pricing.",
-      "cta": "List Your Yacht"
+      "cta": "List Your Yacht",
+      "dialog": {
+        "title": "Send a request",
+        "description": "Leave your details and our team will get in touch about listing your yacht.",
+        "submit": "Send request",
+        "success": "Thanks! We'll be in touch shortly."
+      }
     },
     "Hero": {
       "tagline": "Over 30,000 yachts in 1,200 destinations. Charters from €120/day",
@@ -1043,7 +1065,8 @@
         "fleet": "Yachts",
         "content": "Website Content"
       },
-      "settings": "Payment Settings"
+      "settings": "Payment Settings",
+      "popular": "Popular picks"
     },
     "UserMenu": {
       "account": "Account",
@@ -1234,7 +1257,9 @@
       "yachtType": {
         "sailing": "Sailing yacht",
         "catamaran": "Catamaran",
-        "gulet": "Gulet"
+        "gulet": "Gulet",
+        "motor": "Motor yacht",
+        "luxury": "Luxury yacht"
       },
       "skipper": {
         "yes": "Yes",
@@ -1313,6 +1338,10 @@
     "addToWishlist": "Add To Wishlist",
     "removeFromWishlist": "Remove From Wishlist",
     "included": "Included",
+    "amenities": {
+      "showAll": "Show all amenities ({count})",
+      "showFewer": "Show fewer"
+    },
     "importantInfo": {
       "charterCompany": "Charter company",
       "pickUpAddress": "Yacht pick-up address",
@@ -1498,12 +1527,17 @@
       "anyBoat": "Any boat",
       "search": "Search",
       "noLocations": "No matching destinations",
+      "popularCountries": "Popular countries",
+      "popularBoatTypes": "Popular boat types",
+      "allBoatTypes": "All boat types",
       "clearLocation": "Clear location",
       "freeText": "Name, model or company"
     },
     "paginationSummary": "Showing {from}-{to} of {total}"
   },
   "YachtsMap": {
+    "loading": "Loading yachts…",
+    "noResults": "No yachts match these filters. Try changing them.",
     "title": "Yachts on the map",
     "backToSearch": "Back To Search",
     "showAllList": "Show all list",
@@ -1668,6 +1702,10 @@
     "Faq": {
       "title": "FAQ",
       "description": "Write and translate the questions shown on yacht pages."
+    },
+    "Popular": {
+      "title": "Popular picks",
+      "description": "Curate which facet values head the filters and the home page."
     }
   },
   "Profile": {
@@ -3129,6 +3167,50 @@
         }
       }
     },
+    "Popular": {
+      "title": "Popular picks",
+      "subtitle": "Which values head a filter's list, and which lead the home page.",
+      "kinds": {
+        "country": "Countries",
+        "category": "Boat types",
+        "equipment": "Amenities",
+        "region": "Sailing areas",
+        "marina": "Marinas",
+        "model": "Models",
+        "location": "Locations",
+        "crew": "Crew types",
+        "sail_type": "Mainsail types"
+      },
+      "surfaces": {
+        "popular": "Filter pins",
+        "featured": "Home page"
+      },
+      "surfaceHint": {
+        "popular": "Shown as a “Popular” group at the top of the search filters.",
+        "featured": "The order the home page's sliders and grids use."
+      },
+      "filters": {
+        "kind": "Facet",
+        "surface": "Where it shows",
+        "search": "Search values"
+      },
+      "table": {
+        "order": "Order",
+        "value": "Value",
+        "count": "Yachts",
+        "actions": "Actions"
+      },
+      "actions": {
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "remove": "Remove"
+      },
+      "empty": "Nothing curated yet. Pick values above to pin them.",
+      "error": "Could not save the order.",
+      "saved": "Order saved.",
+      "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
+      "noListings": "No yachts"
+    },
     "Settings": {
       "title": "Marketplace settings",
       "subtitle": "How much of a charter is collected up front, and which provider we sell through when the offers are equal.",
@@ -3181,6 +3263,16 @@
         "legend": "Free-text search",
         "toggle": "Show the free-text field in the search bar",
         "hint": "A testing aid rather than part of the design. Switched on, the yacht search bar gains a field that matches a boat's name, model, builder, charter company or base, word by word and in any order."
+      },
+      "popularYachts": {
+        "legend": "Popular yachts slider",
+        "hint": "How the home page's popular-yachts slider is composed. The type mix is a target: when the caps leave a type short, the remaining places go to the next best boats.",
+        "limit": "Boats shown",
+        "maxAgeYears": "Max age (years)",
+        "maxPerCountry": "Max per country",
+        "maxPerBase": "Max per base",
+        "mix": "Boats per type",
+        "mixHint": "Only the curated popular countries are drawn from. A type set to zero is left out."
       },
       "save": "Save changes",
       "saving": "Saving...",

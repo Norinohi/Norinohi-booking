@@ -13,6 +13,7 @@ import {
   streamBookingManagerConfirmedOffers,
 } from "./confirmed-offers";
 import type { BookingManagerClient } from "./client";
+import { coldStartNotice, warmBookingManagerServers } from "./warmup";
 import type { BookingManagerConfig } from "./config";
 import type { SweepPeriod } from "../shared/sweep-periods";
 import { parseBookingManagerDate, parseBookingManagerDateTime } from "./dates";
@@ -289,6 +290,17 @@ export function createBookingManagerAvailabilitySource(
       : [ACCOUNT_WIDE_SCOPE];
 
   return {
+    /*
+     * The availability pass hits the same six servers the catalogue sweep does, and on
+     * an hourly cadence it is usually the first traffic they see after their nightly
+     * restart. `warmBookingManagerServers` never throws, so the notice is the only
+     * outcome worth acting on.
+     */
+    async warmUp() {
+      const notice = coldStartNotice(await warmBookingManagerServers(client));
+      if (notice) console.warn(notice);
+    },
+
     listScopes(): Promise<AvailabilityScope[]> {
       const scopes: AvailabilityScope[] = [];
       for (const scopeKey of scopeKeys) {

@@ -18,6 +18,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "./index";
+import { normalizedKey } from "./search/normalize";
 import { extraLabels } from "./translations/extra-labels";
 import { facetLabels } from "./translations/facet-labels";
 import { ukTranslations } from "./translations/uk";
@@ -149,13 +150,7 @@ async function extraRows(): Promise<(typeof providerExtraTranslation.$inferInser
  * Mirrors extraNameKeySql in search/repository.ts, which is what the read join folds with.
  * The two have to agree exactly or a curated label is written somewhere nothing reads it.
  */
-function extraNameKey(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
-}
+const extraNameKey = normalizedKey;
 
 function curatedRows(): (typeof extraLabelTranslation.$inferInsert)[] {
   const byKey = new Map<string, typeof extraLabelTranslation.$inferInsert>();

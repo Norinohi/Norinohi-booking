@@ -43,6 +43,20 @@ const warmupSchema = z.unknown();
  */
 export const BM_COLD_START_NOTICE_MS = 10_000;
 
+/**
+ * The line to print about a warm-up, or nothing.
+ *
+ * Shared by the catalogue and availability syncs so one policy decides what is worth
+ * saying: a warm server and a successful warm-up look identical from the caller, and
+ * the sweep's own timings already show the benefit when it worked.
+ */
+export function coldStartNotice(result: BookingManagerWarmupResult): string | null {
+  if (result.warmed === result.attempted && result.slowestMs < BM_COLD_START_NOTICE_MS) {
+    return null;
+  }
+  return `Booking Manager warm-up: ${result.warmed}/${result.attempted} answered, slowest ${result.slowestMs} ms; the sweep may still pay a cold start`;
+}
+
 export interface BookingManagerWarmupResult {
   /** Calls that answered, whatever they answered with. */
   warmed: number;

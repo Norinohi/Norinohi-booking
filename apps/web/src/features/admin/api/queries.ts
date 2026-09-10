@@ -6,6 +6,8 @@ import type {
   FaqGap,
   FaqLocale,
   FaqScope,
+  PopularFacetKind,
+  PopularFacetSurface,
   RouteKind,
   BookingStatus,
   CommissionStatus,
@@ -298,6 +300,20 @@ export const faqListQueryOptions = (input: {
     input: { ...input, pageSize: input.pageSize ?? FAQ_PAGE_SIZE },
     staleTime: 15_000,
   });
+
+/**
+ * The curated order for one facet kind and surface.
+ *
+ * Both keys are part of the query key because both change the answer rather than only its
+ * presentation: `kind` picks which vocabulary is listed, `surface` which of the two ranks is
+ * read. The same short staleTime as the FAQ, and for the same reason -- this moves only when a
+ * colleague edits it.
+ */
+export const popularFacetsQueryOptions = (input: {
+  kind: PopularFacetKind;
+  surface: PopularFacetSurface;
+  locale?: string;
+}) => orpc.admin.popularFacets.list.queryOptions({ input, staleTime: 15_000 });
 
 /**
  * The marketplace-wide settings. One row for the whole site, so no filters and no page: the
