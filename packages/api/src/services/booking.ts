@@ -1,3 +1,4 @@
+import { describeProviderFailure } from "../lib/provider-failure";
 import { placeLine } from "../lib/place-line";
 import { ORPCError } from "@orpc/server";
 import {
@@ -577,15 +578,20 @@ async function holdOption(
     // transition here would fail its compare-and-set and mask the real reason.
     if (error instanceof ORPCError) throw error;
 
+    // `cancelReason` is read back by the booking screens and by the idempotent
+    // replay above, so it carries the customer wording; the vendor's own text
+    // stays on the event, where support and Sentry look for it.
+    const failure = describeProviderFailure(
+      error instanceof Error ? error : null,
+      "Provider rejected the option",
+    );
     const rejected = await transition(db, pending, "PROVIDER_REJECTED", {
-      cancelReason: error instanceof Error ? error.message : "Provider rejected the option",
+      cancelReason: failure.customer,
     });
     await recordEvent(db, rejected.id, "confirm_failed", rejected.provider, null, {
-      message: rejected.cancelReason,
+      message: failure.detail,
     });
-    throw new ORPCError("CONFLICT", {
-      message: rejected.cancelReason ?? "Provider rejected the option",
-    });
+    throw new ORPCError("CONFLICT", { message: failure.customer });
   }
 }
 

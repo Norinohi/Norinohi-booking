@@ -1,3 +1,4 @@
+import { describeProviderFailure, type ProviderFailure } from "../lib/provider-failure";
 import { booking, payment, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
@@ -104,10 +105,16 @@ export async function confirmBookingWithProvider(
       providerReservationId: reservation.providerReservationId ?? null,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Provider rejected the booking";
-    await markRejected(db, bookingId, row.provider, message);
+    // Two messages, not one: the vendor's text goes to the event log, and the
+    // customer-facing wording is what the invoice screen and the confirmation
+    // poll are allowed to print.
+    const failure = describeProviderFailure(
+      error instanceof Error ? error : null,
+      "Provider rejected the booking",
+    );
+    await markRejected(db, bookingId, row.provider, failure);
 
-    return { outcome: "rejected", message };
+    return { outcome: "rejected", message: failure.customer };
   }
 }
 
@@ -224,11 +231,11 @@ async function markRejected(
   db: Database,
   bookingId: string,
   provider: string,
-  message: string,
+  failure: ProviderFailure,
 ): Promise<void> {
   await db
     .update(booking)
-    .set({ status: "PROVIDER_REJECTED", cancelReason: message })
+    .set({ status: "PROVIDER_REJECTED", cancelReason: failure.customer })
     .where(and(eq(booking.id, bookingId), eq(booking.status, "CONFIRMING")));
 
   await db
@@ -240,6 +247,6 @@ async function markRejected(
     bookingId,
     kind: "confirm_failed",
     provider,
-    payload: { message },
+    payload: { message: failure.detail },
   });
 }

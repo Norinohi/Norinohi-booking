@@ -301,7 +301,10 @@ export default function BookingSteps() {
         toast.error(t("errors.holdInProgress"));
         return;
       }
-      toast.error(error instanceof Error ? error.message : t("errors.confirmFailed"));
+      /* Only a server-authored refusal is worth showing: an ORPCError message is written for
+         the customer, while anything else here is a transport failure whose text ("Failed to
+         fetch", a provider's own endpoint name) means nothing to them. */
+      toast.error(error instanceof ORPCError ? error.message : t("errors.confirmFailed"));
     }
   }
 
