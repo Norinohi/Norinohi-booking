@@ -1340,7 +1340,16 @@
     "included": "Included",
     "amenities": {
       "showAll": "Show all amenities ({count})",
-      "showFewer": "Show fewer"
+      "showFewer": "Show fewer",
+      "groups": {
+        "navigation-and-safety": "Navigation and safety",
+        "deck-and-cockpit": "Deck and cockpit",
+        "interior-and-cabins": "Interior and cabins",
+        "galley": "Galley",
+        "entertainment-and-water-toys": "Entertainment and water toys",
+        "systems-and-power": "Systems and power",
+        "other": "Other equipment"
+      }
     },
     "importantInfo": {
       "charterCompany": "Charter company",

@@ -1340,7 +1340,16 @@
     "included": "Incluido",
     "amenities": {
       "showAll": "Ver todas las comodidades ({count})",
-      "showFewer": "Ver menos"
+      "showFewer": "Ver menos",
+      "groups": {
+        "navigation-and-safety": "Navegación y seguridad",
+        "deck-and-cockpit": "Cubierta y bañera",
+        "interior-and-cabins": "Salón y camarotes",
+        "galley": "Cocina",
+        "entertainment-and-water-toys": "Ocio y juguetes acuáticos",
+        "systems-and-power": "Sistemas y energía",
+        "other": "Otro equipamiento"
+      }
     },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",

@@ -1,3 +1,4 @@
+import { AMENITY_GROUPS } from "@yacht-charter/db/search";
 import { faqCategory } from "@yacht-charter/db/schema/content";
 import { crewTypeSchema } from "@yacht-charter/providers";
 import { z } from "zod";
@@ -260,7 +261,12 @@ export const listingDetailSchema = listingSummarySchema.extend({
    * Links rather than gallery entries: a visitor follows them off the page.
    */
   media: z.object({ videoUrl: z.string().nullable(), tourUrl: z.string().nullable() }),
-  includedAmenities: z.array(includedItemSchema),
+  /**
+   * What the yacht has, filed under the six headings the page groups them by. Ordered as the
+   * page reads: curated amenities first within each group, and the groups themselves in
+   * `AMENITY_GROUPS` order, so the client renders the array as it arrives.
+   */
+  includedAmenities: z.array(includedItemSchema.extend({ group: z.enum(AMENITY_GROUPS) })),
   mandatoryExtras: z.array(pricedItemSchema),
   optionalExtras: z.array(optionalItemSchema),
   /**

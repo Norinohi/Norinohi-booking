@@ -1,5 +1,6 @@
 import type { faqCategory } from "../schema/content";
 import type { facetMediaKind } from "../schema/facet-media";
+import type { AmenityGroup } from "./amenity-groups";
 import type { CrewType } from "./crew";
 
 export type FaqCategory = (typeof faqCategory)["enumValues"][number];
@@ -231,7 +232,7 @@ export type ListingDetail = ListingSearchDoc & {
    * one. Not in the gallery: these are links a visitor follows off the page, not images.
    */
   media: { videoUrl: string | null; tourUrl: string | null };
-  includedAmenities: { code: string; label: string }[];
+  includedAmenities: { code: string; label: string; group: AmenityGroup }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingOptionalItem[];
   /** What the sidebar's Crew control may offer, and what each role costs. */

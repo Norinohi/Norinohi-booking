@@ -1340,7 +1340,16 @@
     "included": "Включено",
     "amenities": {
       "showAll": "Показати всі зручності ({count})",
-      "showFewer": "Показати менше"
+      "showFewer": "Показати менше",
+      "groups": {
+        "navigation-and-safety": "Навігація і безпека",
+        "deck-and-cockpit": "Палуба і кокпіт",
+        "interior-and-cabins": "Салон і каюти",
+        "galley": "Камбуз",
+        "entertainment-and-water-toys": "Розваги і водні іграшки",
+        "systems-and-power": "Системи і живлення",
+        "other": "Інше обладнання"
+      }
     },
     "importantInfo": {
       "charterCompany": "Чартерна компанія",
