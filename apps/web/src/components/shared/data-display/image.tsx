@@ -12,21 +12,6 @@ type ImageSrc = ComponentProps<typeof NextImage>["src"];
 
 const srcUrlSchema = z.string();
 
-function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
-  if (!env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) return src;
-
-  const transforms = [
-    "f_auto",
-    `q_auto${quality ? `:${quality}` : ""}`,
-    "c_limit",
-    `w_${width}`,
-  ].join(",");
-  const remote = /^https?:\/\//.test(src);
-  const type = remote ? "fetch" : "upload";
-  const asset = remote ? encodeURIComponent(src) : src;
-  return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/${type}/${transforms}/${asset}`;
-}
-
 function bunnyLoader({ src, width, quality }: ImageLoaderProps): string {
   const url = new URL(src);
   url.searchParams.set("width", width.toString());
@@ -36,7 +21,7 @@ function bunnyLoader({ src, width, quality }: ImageLoaderProps): string {
 }
 
 function remoteLoader(props: ImageLoaderProps): string {
-  return isBunnyUrl(props.src) ? bunnyLoader(props) : cloudinaryLoader(props);
+  return isBunnyUrl(props.src) ? bunnyLoader(props) : props.src;
 }
 
 function isBunnyUrl(src: string): boolean {
@@ -86,11 +71,9 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
   const [revealed, setRevealed] = useState(false);
   /*
-   * Whether the CDN has already failed for this source. Once it has, `unoptimized` makes Next skip
-   * the loader entirely and render the origin URL. Cloudinary sits in front of every remote photo,
-   * so anything that takes the whole cloud down — an exhausted quota disables it and answers 401
-   * on every asset — leaves the site photoless while the origins are still serving fine.
-   * Unoptimized bytes are the cheap degradation; a grey placeholder is not.
+   * Whether the optimized URL has already failed for this source. Once it has, `unoptimized`
+   * makes Next skip the loader entirely and render the stored URL directly. That gives Bunny
+   * originals or provider fallback URLs a chance to load before we show the grey placeholder.
    */
   const [cdnFailed, setCdnFailed] = useState(false);
 

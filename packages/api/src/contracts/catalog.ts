@@ -21,7 +21,7 @@ const facetOptionSchema = z.object({
   count: z.number().int().nonnegative().optional(),
   /* Editorial fields, populated only for facet groups with facet_media rows. */
   imageUrl: z.string().nullish(),
-  /* Cloudinary public_id — prefer it over imageUrl and build the delivery URL client-side. */
+  /* Legacy media id kept for old admin data; public pages should use imageUrl/Bunny URLs. */
   cloudinaryId: z.string().nullish(),
   description: z.string().nullish(),
   /* Lowest positive comparable price in EUR, used by destination summaries. */
