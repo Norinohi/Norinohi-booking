@@ -1340,7 +1340,16 @@
     "included": "Incluido",
     "amenities": {
       "showAll": "Ver todas las comodidades ({count})",
-      "showFewer": "Ver menos"
+      "showFewer": "Ver menos",
+      "groups": {
+        "navigation-and-safety": "Navegación y seguridad",
+        "deck-and-cockpit": "Cubierta y bañera",
+        "interior-and-cabins": "Salón y camarotes",
+        "galley": "Cocina",
+        "entertainment-and-water-toys": "Ocio y juguetes acuáticos",
+        "systems-and-power": "Sistemas y energía",
+        "other": "Otro equipamiento"
+      }
     },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",
@@ -2442,7 +2451,8 @@
       "kind": {
         "catalogue": "Catálogo",
         "availability": "Disponibilidad",
-        "pricing": "Precios"
+        "pricing": "Precios",
+        "media": "Medios"
       },
       "status": {
         "pending": "Pendiente",
@@ -3183,11 +3193,13 @@
       },
       "surfaces": {
         "popular": "Fijados en filtros",
-        "featured": "Página de inicio"
+        "featured": "Página de inicio",
+        "filter": "Lista del filtro"
       },
       "surfaceHint": {
         "popular": "Se muestra como grupo «Populares» al principio de los filtros de búsqueda.",
-        "featured": "El orden que usan los carruseles y las cuadrículas de la página de inicio."
+        "featured": "El orden que usan los carruseles y las cuadrículas de la página de inicio.",
+        "filter": "Los únicos valores que ofrece el filtro de búsqueda. Vacía, ofrece todos los valores del catálogo."
       },
       "filters": {
         "kind": "Faceta",
@@ -3206,6 +3218,7 @@
         "remove": "Quitar"
       },
       "empty": "Todavía no hay nada seleccionado. Elija valores arriba.",
+      "emptyFilter": "No hay nada elegido, así que el filtro ofrece todos los valores. Elija valores arriba para acortar la lista.",
       "error": "No se pudo guardar el orden.",
       "saved": "Orden guardado.",
       "cacheWarning": "Guardado, pero aún no se pudieron actualizar las páginas en caché.",

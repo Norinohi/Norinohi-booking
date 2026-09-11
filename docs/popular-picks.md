@@ -5,16 +5,31 @@ Curated ordering for search facets, the home page and the popular-yachts slider.
 
 ## What is curated
 
-Two independent ranks on `facet_media`, per facet value:
+Three independent columns on `facet_media`, per facet value:
 
-| Column          | Means                                                         | Read by                    |
-| --------------- | ------------------------------------------------------------- | -------------------------- |
-| `popular_rank`  | Pin the value into the "Popular" group at the top of a picker | Search filters, search bar |
-| `featured_rank` | Order the home page's sliders and grids                       | Home page (not wired yet)  |
+| Column           | Means                                                         | Read by                    |
+| ---------------- | ------------------------------------------------------------- | -------------------------- |
+| `popular_rank`   | Pin the value into the "Popular" group at the top of a picker | Search filters, search bar |
+| `featured_rank`  | Order the home page's sliders and grids                       | Home page (not wired yet)  |
+| `filter_visible` | Offer the value in the filter at all                          | Every search filter panel  |
 
 They are separate because the client's two country lists are not prefixes of each other: the
 filter pins eight countries, the home page runs to twelve and takes France and the Caribbean at
 seven and eight.
+
+The third is an allowlist rather than an order, and it is opt-in per kind: while no value of a
+kind is marked, the filter offers every value the catalogue carries, which is what it did before
+the column existed. Mark one and the kind is curated from then on.
+
+Equipment is the kind that needs it. The two providers publish 844 amenity spellings between
+them, so the amenities filter listed "Bilge pump handle" and "Black conus" beside air
+conditioning; the seed marks the client's shortlist of 52 and the filter offers those.
+
+The shortlist is written in Booking Manager's vocabulary, and NauSYS words a good deal of it
+differently. Those pairs are joined one layer down, by `amenity.canonical_name`, so the option
+"Bimini" answers for NauSYS's "Bimini top" as well: see **Amenity grouping** below. What that
+layer deliberately does not join is entries naming a neighbouring thing, so a plain "Gangway"
+still answers no option while "Hydraulic gangway" is on the list.
 
 Seeded out of the box, from `packages/db/src/seed.ts`:
 
@@ -27,6 +42,8 @@ Seeded out of the box, from `packages/db/src/seed.ts`:
 | Marinas                                       | 16                | —                    |
 | Models, locations, crew types, mainsail types | none              | —                    |
 
+Plus the equipment filter allowlist: 52 amenities, and no allowlist on any other kind.
+
 Countries and boat types are the only kinds with a home page section of their own, so they are
 the only ones carrying a featured rank. The rest are pinned in the filters only — a featured rank
 on a kind nothing renders would read as curation that has stopped working. Add one the day such a
@@ -34,12 +51,49 @@ section exists; the admin screen already offers it.
 
 Models and the remaining kinds are curatable and simply have nothing pinned yet.
 
+## Amenity grouping
+
+The other half of the equipment filter, and the reason its options count what they do.
+
+The two providers keep separate amenity taxonomies. Roughly thirty entries name one fitting in
+different words - "Bimini top" against "Bimini", "GPS chart plotter" against "Chart plotter",
+"Bathing platform" against "Swimming platform" - and the facet fold reconciles spelling, not
+wording, so each pair was two options with the fleet split between them. Air conditioning stood
+as 4,002 boats beside 3,543 more of the same thing.
+
+`amenity.canonical_name` carries the marketplace's word for a vendor row, exactly as
+`builder.canonical_name` and `yacht_model.canonical_name` already do for brands and hulls. The
+map is `AMENITY_GROUPS` in `packages/providers/src/shared/amenity-names.ts`, keyed by
+`amenity.code` (`<provider>:<vendor id>`) because vendor display names get re-worded between
+syncs while the ids do not. The catalogue sync writes the column on every run.
+
+Both reads fold on `coalesce(canonical_name, name)`: the search documents, so the filter and its
+counts see one option, and the yacht page's equipment list, so a hull both vendors sell does not
+list "Bimini" above "Bimini top". The vendor's own wording stays in `amenity.name` and in the
+searchable text, so someone typing what one vendor calls it still finds the boat.
+
+What is left ungrouped matters as much. A "Gangway" is not a hydraulic one, a "Radar reflector"
+is not radar, an "Ice box" is not an ice maker, a "Washing machine" is not a washer/dryer, and a
+bare "Radio" is not a radio-CD player. Those boats answer no option rather than the wrong one.
+
+After a deploy that edits the map, apply it without waiting for a full sync:
+
+```bash
+pnpm --filter server apply:amenity-names            # dry run
+pnpm --filter server apply:amenity-names -- --apply
+```
+
+It writes the column, rebuilds the search documents of the listings it touched - about 7,400 for
+the first run, eleven seconds locally - and revalidates the web app's cache. Removing an entry
+from the map is as effective as adding one: a code the map no longer names goes back to naming
+itself.
+
 ## Deploying
 
 Push, and the schema takes care of itself: `apps/server`'s pre-deploy step runs
-`pnpm --filter server migrate`, which applies migrations `0107` and `0108`. Both are additive —
-new nullable columns, one new table, one new enum value — so there is no downtime and no data to
-lose.
+`pnpm --filter server migrate`, which applies migrations `0107`, `0108`, `0111` and `0112`. All
+are additive: new nullable columns, one boolean defaulting to false, one new table, one new enum
+value, so there is no downtime and no data to lose.
 
 **Deploy order does not matter for this change.** The two new facet fields are optional in the
 contract, and the web app already reads a missing rank as "not curated": the pickers render flat
@@ -73,6 +127,16 @@ client's staleTime matches, so an admin save that cannot reach the web app is li
 database and invisible on the site until tomorrow. When the variable is missing the save still
 succeeds and the screen says so — the toast reads "Saved, but the site's cached pages could not
 be refreshed yet" rather than claiming success.
+
+On an environment that is **already live**, run the allowlist on its own instead:
+
+```bash
+pnpm --filter server seed:equipment-filter
+```
+
+It writes `filter_visible` and nothing else, so it costs no curation. `seed:facets` would, which
+is why the allowlist has an entry point of its own. It is idempotent both ways: it marks the
+shortlist and unmarks anything else that was marked, so running it twice leaves the same list.
 
 Nothing else to run. The popular-yachts and popular-routes procedures ship live but unused, so
 they cost nothing until the home page calls them.
@@ -268,17 +332,19 @@ Two things to keep consistent with the search page:
 
 ## Where things live
 
-|                  |                                                                       |
-| ---------------- | --------------------------------------------------------------------- |
-| Ranks            | `packages/db/src/schema/facet-media.ts`                               |
-| Seed             | `packages/db/src/seed.ts` (`curatedFacetRanks`)                       |
-| Facet read       | `decorateFacetOptions` in `packages/db/src/search/repository.ts`      |
-| Slider selection | `packages/db/src/search/popular-yachts.ts`                            |
-| Curated routes   | `packages/db/src/search/popular-routes.ts`                            |
-| Admin contract   | `packages/api/src/contracts/popular-facets.ts`                        |
-| Admin service    | `packages/api/src/services/popular-facets-admin.ts`                   |
-| Admin screen     | `apps/web/src/features/admin/components/popular-facets-table.tsx`     |
-| Slider config    | `popularYachtsConfig` on `marketplace_setting`, edited on `/settings` |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| Ranks            | `packages/db/src/schema/facet-media.ts`                                     |
+| Seed             | `packages/db/src/seed.ts` (`curatedFacetRanks`, `equipmentFilterAllowlist`) |
+| Amenity grouping | `packages/providers/src/shared/amenity-names.ts`                            |
+| Allowlist entry  | `apps/server/src/seed-equipment-filter.ts`                                  |
+| Facet read       | `decorateFacetOptions` in `packages/db/src/search/repository.ts`            |
+| Slider selection | `packages/db/src/search/popular-yachts.ts`                                  |
+| Curated routes   | `packages/db/src/search/popular-routes.ts`                                  |
+| Admin contract   | `packages/api/src/contracts/popular-facets.ts`                              |
+| Admin service    | `packages/api/src/services/popular-facets-admin.ts`                         |
+| Admin screen     | `apps/web/src/features/admin/components/popular-facets-table.tsx`           |
+| Slider config    | `popularYachtsConfig` on `marketplace_setting`, edited on `/settings`       |
 
 ## Known issue
 

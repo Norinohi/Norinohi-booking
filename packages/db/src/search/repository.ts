@@ -4,6 +4,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../schema";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { FX_BASE_CURRENCY } from "../fx/rates";
+import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { crewOptionsFor } from "./crew";
 import { MIN_LEAD_DAYS } from "./read-model";
 import {
@@ -349,19 +350,20 @@ export async function getListingDetailByIdOrSlug(
         priceMinor: number | null;
         priceCurrency: string | null;
         popularRank: number | null;
+        categories: string[] | null;
       }>(sql`
       /*
        * One row per piece of equipment, however each vendor spells it.
        *
        * The two providers keep separate amenity taxonomies — their codes are scoped per
        * provider, so Autopilot exists once as each vendor's own row — and a listing both of
-       * them sell carries both. Folded on the name the same way the facet dictionary folds it,
-       * because that is the only thing the two rows have in common. An included row wins over
-       * a priced one: the list answers "what does this yacht have".
+       * them sell carries both. Folded on the amenity's canonical name the same way the search
+       * documents fold it, so a hull sold by both does not list "Bimini" above "Bimini top".
+       * An included row wins over a priced one: the list answers "what does this yacht have".
        */
       select distinct on (key.folded)
         a.code,
-        a.name as label,
+        coalesce(a.canonical_name, a.name) as label,
         a.crew,
         la.obligatory,
         la.price_minor as "priceMinor",
@@ -377,14 +379,29 @@ export async function getListingDetailByIdOrSlug(
           from facet_media fm
           where fm.kind = 'equipment'
             and ${normalizedKeySql(sql`fm.value`)} = key.folded
-        ) as "popularRank"
+        ) as "popularRank",
+        /*
+         * Every vendor category this listing files the amenity under, not just the one whose row
+         * won the DISTINCT ON above. A hull both providers sell publishes the fitting twice under
+         * two taxonomies, and which of the two survives the fold is decided by name order -- so
+         * reading the category off the surviving row alone would file one boat's autopilot under
+         * Navigation and the next boat's under the vendor's catch-all.
+         */
+        (
+          select array_agg(distinct ac2.name)
+          from listing_amenity la2
+          join amenity a2 on a2.id = la2.amenity_id
+          join amenity_category ac2 on ac2.id = a2.amenity_category_id
+          where la2.listing_id = la.listing_id
+            and ${normalizedKeySql(sql`coalesce(a2.canonical_name, a2.name)`)} = key.folded
+        ) as "categories"
       from listing_amenity la
       join amenity a on a.id = la.amenity_id
       /* Folded once and referred to by name. Spelled out twice instead, the DISTINCT ON and the
          ORDER BY are two expressions over the same columns but different bind parameters, and
          Postgres compares them before it knows the values: "DISTINCT ON expressions must match
          initial ORDER BY expressions". */
-      cross join lateral (select ${normalizedKeySql(sql`a.name`)} as folded) key
+      cross join lateral (select ${normalizedKeySql(sql`coalesce(a.canonical_name, a.name)`)} as folded) key
       where la.listing_id = ${listing.listingId}
       order by key.folded, la.price_minor nulls first, a.name asc
     `),
@@ -521,16 +538,31 @@ export async function getListingDetailByIdOrSlug(
    * Translated after the code is derived, never before: the code is what the amenity filter
    * matches on, and a Spanish one matches nothing.
    *
-   * Curated amenities first, in the editor's order, because the page shows the first few and
-   * folds the rest away: which ones survive that fold is an editorial decision, not whichever
-   * the vendor happened to list first. Air conditioning sells a charter and a bilge pump handle
-   * does not. Unranked amenities keep the vendor's own order behind them rather than being
-   * dropped -- the section still lists everything the boat has.
+   * Ordered by heading, then curated rank within it. The page groups a boat's two dozen fittings
+   * under six headings, and the fold that hides the tail runs down that same order, so the rank
+   * decides which navigation gear a visitor sees before expanding rather than which of all
+   * twenty-four. Air conditioning sells a charter and a bilge pump handle does not, but they are
+   * no longer competing for the same slot. Unranked amenities keep the vendor's own order behind
+   * the ranked ones rather than being dropped -- the section still lists everything the boat has.
    */
   const includedAmenities = amenities
     .filter((item) => !item.crew && item.priceMinor === null)
-    .map((item, index) => ({ item, index }))
+    .map((item, index) => ({
+      item,
+      index,
+      /*
+       * Grouped off the vendor's own label, never the translated one, for the same reason the
+       * code is derived before translation: the override table is keyed on the English spelling
+       * both providers publish, and a Ukrainian heading lookup would match nothing.
+       */
+      group: amenityGroupFor(item.label, item.categories ?? []),
+    }))
     .sort((left, right) => {
+      /* Heading order first: the page renders this array in order under six headings, so the
+         curated rank orders within a group rather than across the whole list. */
+      const byGroup = AMENITY_GROUPS.indexOf(left.group) - AMENITY_GROUPS.indexOf(right.group);
+      if (byGroup !== 0) return byGroup;
+
       const leftRank = left.item.popularRank;
       const rightRank = right.item.popularRank;
       if (leftRank !== rightRank) {
@@ -540,9 +572,10 @@ export async function getListingDetailByIdOrSlug(
       }
       return left.index - right.index;
     })
-    .map(({ item }) => ({
+    .map(({ item, group }) => ({
       code: item.code,
       label: translate ? translate("equipment", item.label) : item.label,
+      group,
     }));
   /*
    * Extras come from provider_extra_catalogue, not from listing_amenity. The two
@@ -2124,6 +2157,7 @@ async function decorateFacetOptions(
     description: string | null;
     popularRank: number | null;
     featuredRank: number | null;
+    filterVisible: boolean;
   }>(sql`
     select
       ${normalizedSql(sql`media.value`)} as key,
@@ -2132,7 +2166,8 @@ async function decorateFacetOptions(
       translation.label,
       coalesce(translation.description, media.description) as description,
       media.popular_rank as "popularRank",
-      media.featured_rank as "featuredRank"
+      media.featured_rank as "featuredRank",
+      media.filter_visible as "filterVisible"
     from facet_media media
     left join facet_media_translation translation
       on translation.facet_media_id = media.id
@@ -2141,7 +2176,26 @@ async function decorateFacetOptions(
   `);
   const byKey = new Map(media.rows.map((row) => [row.key, row]));
 
-  return options.map((option) => {
+  /*
+   * The curated allowlist, when the kind has one.
+   *
+   * Applied here rather than in each facet query because this is the one place that already
+   * holds both halves -- the grouped options and the facet_media rows -- so restricting the
+   * list costs nothing more than it already spends. Counts are computed before the cut, which
+   * is what we want: a removed option was never a filter anyone applied, so nothing it counted
+   * moves anywhere else.
+   *
+   * An empty allowlist means the kind is uncurated and every option stands. That is the state
+   * eight of the nine kinds are in, and the state a fresh database starts in, so the check is
+   * against the marked rows rather than against a flag somewhere else.
+   */
+  const allowed = new Set(media.rows.filter((row) => row.filterVisible).map((row) => row.key));
+  const visible =
+    allowed.size === 0
+      ? options
+      : options.filter((option) => allowed.has(normalizedFilterValue(option.label)));
+
+  return visible.map((option) => {
     /*
      * Matched on the untranslated label, and `value` above was derived from it too:
      * `value` is what the search filters compare against doc.country / doc.category,

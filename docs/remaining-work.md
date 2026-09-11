@@ -19,7 +19,7 @@ one list somebody can act on.
 | M7 availability as constraints | partly   | as documented; the open items in §2.4 are real                                                                                                                                  |
 
 Also shipped and not in that table: two live connectors (NauSYS and Booking Manager) with
-raw-payload retention and sync runs, five Railway cron services, a staff panel (bookings, payments,
+raw-payload retention and sync runs, seven Railway cron services, a staff panel (bookings, payments,
 invoices, listings, prices, discounts, duplicates, sync, audit, inbox), leads and enquiries,
 referrals, credits and loyalty, invoices, guest checkout with access tokens, and four locales
 (`en`, `es`, `uk`, `de`).

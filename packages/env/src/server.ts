@@ -115,6 +115,17 @@ export const env = createEnv({
     // Ties an error to the deploy that introduced it. Railway exposes the commit
     // as RAILWAY_GIT_COMMIT_SHA; map it to this in the service variables.
     OBSERVABILITY_RELEASE: z.string().min(1).optional(),
+    BUNNY_MEDIA_SYNC_ENABLED: z
+      .enum(["true", "false", "1", "0"])
+      .default("false")
+      .transform((value) => value === "true" || value === "1"),
+    BUNNY_STORAGE_HOST: z.url().default("https://storage.bunnycdn.com"),
+    BUNNY_STORAGE_ZONE_NAME: z.string().min(1).optional(),
+    BUNNY_STORAGE_ACCESS_KEY: z.string().min(1).optional(),
+    BUNNY_CDN_BASE_URL: z.url().optional(),
+    BUNNY_MEDIA_SYNC_CONCURRENCY: z.coerce.number().int().positive().default(4),
+    BUNNY_MEDIA_DOWNLOAD_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+    BUNNY_MEDIA_CLEANUP_GRACE_DAYS: z.coerce.number().int().nonnegative().default(60),
     NAUSYS_BASE_URL: z.url().default("https://ws.nausys.com"),
     // Optional like the Stripe pair: without both, PROVIDER_MODE=nausys refuses to
     // construct the adapter instead of the server failing to boot.

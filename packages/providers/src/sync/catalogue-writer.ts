@@ -29,11 +29,13 @@ import { CONTENT_LOCALES, normalizedKey } from "@yacht-charter/db/search/localiz
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type { Database } from "../registry";
+import { canonicalAmenityName } from "../shared/amenity-names";
 import { canonicalCategoryName } from "../shared/category-groups";
 import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
 import { resolveCanonicalListings } from "./canonical-listing-writer";
 import { scoreDuplicatePair, worthReviewing, yachtNameKey } from "./duplicate-score";
+import { syncMediaAssets, type MediaAssetRef } from "./media-assets";
 import type { DuplicatePairFacts, DuplicateSignals } from "./duplicate-score";
 import type {
   CanonicalCatalogue,
@@ -343,10 +345,21 @@ export async function writeCanonicalCatalogue(
     const code = item.code ?? `${providerKey}:${item.externalId}`;
     const [row] = await db
       .insert(amenity)
-      .values({ amenityCategoryId: categoryId, code, name: item.name })
+      .values({
+        amenityCategoryId: categoryId,
+        code,
+        name: item.name,
+        canonicalName: canonicalAmenityName(code),
+      })
       .onConflictDoUpdate({
         target: amenity.code,
-        set: { name: sql`excluded.name`, amenityCategoryId: sql`excluded.amenity_category_id` },
+        set: {
+          name: sql`excluded.name`,
+          amenityCategoryId: sql`excluded.amenity_category_id`,
+          /* Written on every sync, like the category's, so an edit to the map reaches rows that
+             were imported before it. A row the map drops goes back to naming itself. */
+          canonicalName: sql`excluded.canonical_name`,
+        },
       })
       .returning({ id: amenity.id });
     if (row) amenityIds.set(item.externalId, row.id);
@@ -372,6 +385,14 @@ export async function writeCanonicalCatalogue(
     rebuildListingIds: [],
   };
 
+  const mediaAssets = await syncMediaAssets({
+    db,
+    providerId,
+    providerKey,
+    mediaUrls: catalogue.listings.flatMap((item) => item.media.map((media) => media.externalUrl)),
+    now,
+  });
+
   /*
    * Listings in batches, the way the ingest walks provider records.
    *
@@ -392,6 +413,7 @@ export async function writeCanonicalCatalogue(
     providerId,
     providerKey,
     amenityIds,
+    mediaAssets,
     autoPublish: options.autoPublish === true,
     now,
   };
@@ -902,6 +924,7 @@ interface ListingWriteContext {
   providerId: string;
   providerKey: ProviderKey;
   amenityIds: Map<string, string>;
+  mediaAssets: Map<string, MediaAssetRef>;
   autoPublish: boolean;
   now: Date;
 }
@@ -1332,9 +1355,10 @@ async function writeListingChildren(
         listingId,
         listingOfferId,
         source: providerKey,
-        // Verbatim vendor URL, no Cloudinary id: we have no confirmed rights to
-        // copy or re-host provider media yet (Q-MEDIA).
+        // The provider URL stays as the fallback/audit trail; public reads prefer
+        // the Bunny asset once the media sync has uploaded it.
         externalUrl: media.externalUrl,
+        providerMediaAssetId: ctx.mediaAssets.get(media.externalUrl)?.id ?? null,
         role: media.role,
         sortOrder: media.sortOrder,
       })),

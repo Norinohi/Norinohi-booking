@@ -44,7 +44,7 @@ import SyncRunErrors from "./sync-run-errors";
 const ALL = "all";
 
 const PROVIDERS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
-const KINDS: readonly SyncRunKind[] = ["catalogue", "availability", "pricing"];
+const KINDS: readonly SyncRunKind[] = ["catalogue", "availability", "pricing", "media"];
 const STATUSES: readonly SyncRunState[] = ["pending", "running", "success", "failed", "partial"];
 
 const STATUS_VARIANTS = {

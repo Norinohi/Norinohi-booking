@@ -102,13 +102,25 @@ export const amenity = pgTable(
       .references(() => amenityCategory.id, { onDelete: "restrict" }),
     code: text("code").unique(),
     name: text("name").notNull(),
+    /*
+     * The amenity a charterer filters by, where two vendors name one fitting differently -
+     * "Bimini" for NauSYS's "Bimini top", "Swimming platform" for its "Bathing platform".
+     * Search, facets and the yacht page's equipment list group on this, so a fitting sold by
+     * both providers reads as one thing instead of two options with the fleet split between
+     * them. Written by the sync from `canonicalAmenityName`, like its namesakes above; `name`
+     * stays the vendor's wording because the yacht page still shows what was published.
+     */
+    canonicalName: text("canonical_name"),
     // A crew role rather than a thing aboard. Priced like any other extra, but the
     // booking sidebar offers it through the Crew control instead of the extras
     // list, and `quote.crew_type` decides which of them a quote includes.
     crew: boolean("crew").default(false).notNull(),
     ...timestamps,
   },
-  (t) => [index("amenity_category_idx").on(t.amenityCategoryId)],
+  (t) => [
+    index("amenity_category_idx").on(t.amenityCategoryId),
+    index("amenity_canonical_name_idx").on(t.canonicalName),
+  ],
 );
 
 export const builderRelations = relations(builder, ({ many }) => ({

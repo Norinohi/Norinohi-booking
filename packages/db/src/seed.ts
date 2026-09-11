@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "./index";
+import { normalizedKey, normalizedKeySql } from "./search/normalize";
 import { rebuildListingSearchDocs } from "./search";
 import { seedSiteFaq } from "./seed-site-faq";
 import {
@@ -958,6 +959,78 @@ const curatedFacetRanks = [
   { kind: "equipment" as const, value: "Autopilot", popularRank: 17 },
   { kind: "equipment" as const, value: "Bimini", popularRank: 18 },
 ];
+
+/*
+ * The amenities the equipment filter offers, and the only ones.
+ *
+ * The two providers publish 844 amenity spellings between them, and a filter that lists all of
+ * them lists "Bilge pump handle" and "Black conus" beside air conditioning. This is the client's
+ * shortlist: what a person picks a yacht by. Everything else still shows on the listing page,
+ * where the question is what the boat has rather than what to search for.
+ *
+ * Spelled as the catalogue spells them, or as the facet_media row already there spells them, so
+ * the seed marks the row that exists instead of adding a second one beside it. The read folds
+ * both sides anyway, which is why "Teak Cockpit" here reaches the catalogue's "Teak cockpit".
+ *
+ * One vendor's vocabulary, deliberately. The other spells a good deal of it differently, and
+ * those rows are joined a layer down by `amenity.canonical_name` rather than by adding both
+ * spellings here: "Bimini top" reaches this list's "Bimini" as the same option instead of
+ * standing beside it. See `AMENITY_GROUPS` in packages/providers/src/shared/amenity-names.ts.
+ */
+const equipmentFilterAllowlist = [
+  "Air condition",
+  "Autopilot",
+  "Barbecue grill in cockpit",
+  "Bimini",
+  "Bow thruster",
+  "Chart plotter",
+  "Chart plotter in cockpit",
+  "Cockpit cushions",
+  "Cockpit speakers",
+  "Coffee maker",
+  "Convertible table",
+  "Dinghy",
+  "Dishwasher",
+  "Diving equipment",
+  "DVD player",
+  "Electric toilet",
+  "Electric winches",
+  "Flybridge",
+  "Game console",
+  "Generator",
+  "Gennaker",
+  "Heating",
+  "Holding tank",
+  "Hydraulic gangway",
+  "Ice maker",
+  "Inverter",
+  "Lazy bag",
+  "Lazy jack",
+  "Outboard engine",
+  "Outside Steering Position",
+  "Racing sails",
+  "Radar",
+  "Radio CD player",
+  "Railing net",
+  "Refrigerator",
+  "Rudder blades",
+  "Snorkeling equipment",
+  "Solar panels",
+  "Spinnaker",
+  "Sprayhood",
+  "Stand up paddle",
+  "Swimming platform",
+  "Swimming pool",
+  "Teak Cockpit",
+  "Teak deck",
+  "Tender garage",
+  "Tenderlift platform",
+  "TV",
+  "Underwater lights",
+  "Washer/dryer",
+  "Water maker",
+  "Wi-Fi & Internet",
+].map((value) => ({ kind: "equipment" as const, value, filterVisible: true }));
 
 /*
  * uk and es copy for the cards above; en lives on the facet_media row itself.
@@ -2107,6 +2180,41 @@ export interface FacetMediaSeedResult {
 }
 
 /**
+ * Marks the amenities the equipment filter offers, and unmarks everything else.
+ *
+ * Split out of `insertFacetMedia` and exported because the two are needed at different times.
+ * `insertFacetMedia` is a once-per-environment bootstrap that writes the seed's ranks over
+ * whatever staff have curated since; this one touches a single column that no environment has
+ * curated yet, so it is the part that can be run on a live database without losing work.
+ *
+ * The clearing statement is what makes it idempotent rather than additive: run twice, the list
+ * is the list, not the list plus whatever a previous version of this file said.
+ */
+export async function insertEquipmentFilterAllowlist(): Promise<number> {
+  await db
+    .insert(facetMedia)
+    .values(equipmentFilterAllowlist)
+    .onConflictDoUpdate({
+      target: [facetMedia.kind, facetMedia.value],
+      set: { filterVisible: sql`excluded.filter_visible` },
+    });
+
+  const keys = sql.join(
+    equipmentFilterAllowlist.map((entry) => sql`${normalizedKey(entry.value)}`),
+    sql`, `,
+  );
+  await db.execute(sql`
+    update facet_media
+    set filter_visible = false
+    where kind = 'equipment'
+      and filter_visible
+      and ${normalizedKeySql(sql`value`)} not in (${keys})
+  `);
+
+  return equipmentFilterAllowlist.length;
+}
+
+/**
  * Editorial images/descriptions for search filter facets (country, category,
  * region cards). Keyed by (kind, value), not a foreign key against country/
  * yachtCategory/region — see facet-media.ts — so this is safe to run on its own
@@ -2145,6 +2253,8 @@ export async function insertFacetMedia(): Promise<FacetMediaSeedResult> {
       },
     });
 
+  await insertEquipmentFilterAllowlist();
+
   await db
     .insert(facetMediaTranslation)
     .values(facetMediaTranslations)
@@ -2157,7 +2267,8 @@ export async function insertFacetMedia(): Promise<FacetMediaSeedResult> {
     });
 
   return {
-    facetsSeeded: facetMediaEntries.length + curatedFacetRanks.length,
+    facetsSeeded:
+      facetMediaEntries.length + curatedFacetRanks.length + equipmentFilterAllowlist.length,
     translationsSeeded: facetMediaTranslations.length,
   };
 }

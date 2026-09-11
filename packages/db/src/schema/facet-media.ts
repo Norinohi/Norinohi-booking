@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 
@@ -70,6 +70,20 @@ export const facetMedia = pgTable(
      */
     popularRank: integer("popular_rank"),
     featuredRank: integer("featured_rank"),
+    /*
+     * Whether the search filter offers this value at all.
+     *
+     * An allowlist, and an opt-in one: while no row of a kind is marked, the filter offers
+     * every value the catalogue carries, which is what it did before this column existed. Mark
+     * one and the kind is curated from then on: only marked values appear. Equipment is the
+     * kind that needs it: the two providers publish 844 amenity spellings between them, of
+     * which about fifty are worth filtering by and the rest are bilge pump handles.
+     *
+     * Membership only, deliberately not a rank. The filter lists its options alphabetically and
+     * `popular_rank` above already pins the few that head that list, so a second order here
+     * would order nothing.
+     */
+    filterVisible: boolean("filter_visible").default(false).notNull(),
     ...timestamps,
   },
   (t) => [
@@ -87,6 +101,11 @@ export const facetMedia = pgTable(
     index("facet_media_featured_idx")
       .on(t.kind, t.featuredRank)
       .where(sql`featured_rank is not null`),
+    /* Partial for the same reason: the allowlisted rows are a small slice of the table, and
+       every read of this column asks for exactly that slice. */
+    index("facet_media_filter_idx")
+      .on(t.kind)
+      .where(sql`filter_visible`),
   ],
 );
 

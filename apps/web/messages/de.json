@@ -1340,7 +1340,16 @@
     "included": "Inklusive",
     "amenities": {
       "showAll": "Alle Ausstattungen anzeigen ({count})",
-      "showFewer": "Weniger anzeigen"
+      "showFewer": "Weniger anzeigen",
+      "groups": {
+        "navigation-and-safety": "Navigation und Sicherheit",
+        "deck-and-cockpit": "Deck und Cockpit",
+        "interior-and-cabins": "Salon und Kabinen",
+        "galley": "Pantry",
+        "entertainment-and-water-toys": "Unterhaltung und Wassersport",
+        "systems-and-power": "Technik und Stromversorgung",
+        "other": "Weitere Ausstattung"
+      }
     },
     "importantInfo": {
       "charterCompany": "Charterunternehmen",
@@ -2442,7 +2451,8 @@
       "kind": {
         "catalogue": "Katalog",
         "availability": "Verfügbarkeit",
-        "pricing": "Preise"
+        "pricing": "Preise",
+        "media": "Medien"
       },
       "status": {
         "pending": "Ausstehend",
@@ -3183,11 +3193,13 @@
       },
       "surfaces": {
         "popular": "Filter-Pins",
-        "featured": "Startseite"
+        "featured": "Startseite",
+        "filter": "Filterliste"
       },
       "surfaceHint": {
         "popular": "Erscheint als Gruppe „Beliebt“ oben in den Suchfiltern.",
-        "featured": "Die Reihenfolge für die Slider und Raster der Startseite."
+        "featured": "Die Reihenfolge für die Slider und Raster der Startseite.",
+        "filter": "Die einzigen Werte, die der Suchfilter anbietet. Leer bietet er jeden Wert des Katalogs an."
       },
       "filters": {
         "kind": "Facette",
@@ -3206,6 +3218,7 @@
         "remove": "Entfernen"
       },
       "empty": "Noch nichts ausgewählt. Wählen Sie oben Werte aus.",
+      "emptyFilter": "Nichts ausgewählt, daher bietet der Filter jeden Wert an. Wählen Sie oben Werte aus, um die Liste zu kürzen.",
       "error": "Die Reihenfolge konnte nicht gespeichert werden.",
       "saved": "Reihenfolge gespeichert.",
       "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",

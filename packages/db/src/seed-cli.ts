@@ -5,7 +5,7 @@
  * apps/server/src/seed-facets.ts does, to reuse insertFacetMedia from a compiled
  * ops script. This file is the one place that actually triggers the run.
  */
-import { insertFacetMedia, main } from "./seed";
+import { insertEquipmentFilterAllowlist, insertFacetMedia, main } from "./seed";
 import { seedSiteFaq } from "./seed-site-faq";
 
 const args = new Set(process.argv.slice(2));
@@ -19,6 +19,15 @@ async function run(): Promise<void> {
     console.log(
       `Seeded ${result.facetsSeeded} facet media entries and ${result.translationsSeeded} translations.`,
     );
+    return;
+  }
+
+  // The equipment filter allowlist, on its own. Unlike --facets-only this one
+  // overwrites nothing an editor has arranged, so it is the flag for a database
+  // that is already live.
+  if (args.has("--equipment-filter-only")) {
+    const marked = await insertEquipmentFilterAllowlist();
+    console.log(`Equipment filter now offers ${marked} amenities.`);
     return;
   }
 

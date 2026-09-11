@@ -13,6 +13,8 @@ type ImageSrc = ComponentProps<typeof NextImage>["src"];
 const srcUrlSchema = z.string();
 
 function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
+  if (!env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) return src;
+
   const transforms = [
     "f_auto",
     `q_auto${quality ? `:${quality}` : ""}`,
@@ -23,6 +25,23 @@ function cloudinaryLoader({ src, width, quality }: ImageLoaderProps): string {
   const type = remote ? "fetch" : "upload";
   const asset = remote ? encodeURIComponent(src) : src;
   return `https://res.cloudinary.com/${env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/${type}/${transforms}/${asset}`;
+}
+
+function bunnyLoader({ src, width, quality }: ImageLoaderProps): string {
+  const url = new URL(src);
+  url.searchParams.set("width", width.toString());
+  if (quality) url.searchParams.set("quality", quality.toString());
+  url.searchParams.set("format", "webp");
+  return url.toString();
+}
+
+function remoteLoader(props: ImageLoaderProps): string {
+  return isBunnyUrl(props.src) ? bunnyLoader(props) : cloudinaryLoader(props);
+}
+
+function isBunnyUrl(src: string): boolean {
+  const base = env.NEXT_PUBLIC_BUNNY_CDN_BASE_URL;
+  return base ? src.startsWith(base.replace(/\/+$/, "")) : false;
 }
 
 /** Anything that is not a URL is a bundled static import, which Next already serves locally. */
@@ -126,7 +145,7 @@ export function Image({ src, className, onLoad, onError, ...rest }: ImageProps) 
       <NextImage
         ref={ref}
         src={src}
-        loader={dynamic ? cloudinaryLoader : undefined}
+        loader={dynamic ? remoteLoader : undefined}
         onLoad={handleLoad}
         onError={handleError}
         className={className}

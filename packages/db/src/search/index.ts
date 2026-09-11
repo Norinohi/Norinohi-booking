@@ -1,3 +1,4 @@
+export * from "./amenity-groups";
 export * from "./amenity-priority";
 export * from "./catalog-pages";
 export * from "./localize";

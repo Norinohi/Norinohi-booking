@@ -1,19 +1,20 @@
 # Scheduled jobs
 
-Six jobs keep a live provider catalogue current, stop expired holds from
+Seven jobs keep a live provider catalogue current, stop expired holds from
 selling a slot twice, notice when an operator has changed a charter behind our back,
-tell a customer their balance is coming due, and deliver the mail checkout wrote down
-instead of sending. None of them run on the `server` service itself: that service
+tell a customer their balance is coming due, clean retired provider media, and deliver the mail
+checkout wrote down instead of sending. None of them run on the `server` service itself: that service
 answers requests, and a catalogue walk takes hours.
 
-| Job                   | Cadence          | Runs                                          | Config                                       |
-| --------------------- | ---------------- | --------------------------------------------- | -------------------------------------------- |
-| Catalogue sync        | daily, 01:00 UTC | `pnpm --filter server sync:catalogue`         | `apps/server/railway.cron-catalogue.json`    |
-| Availability sync     | hourly           | `pnpm --filter server sync:availability`      | `apps/server/railway.cron-availability.json` |
-| Expiry sweep          | every 10 min     | `pnpm --filter server sweep:expiries`         | `apps/server/railway.cron-sweep.json`        |
-| Reservation reconcile | every 6 hours    | `pnpm --filter server reconcile:reservations` | `apps/server/railway.cron-reconcile.json`    |
-| Payment reminders     | daily, 09:00 UTC | `pnpm --filter server remind:payments`        | `apps/server/railway.cron-reminders.json`    |
-| Outbox drain          | every 5 min      | `pnpm --filter server drain:outbox`           | `apps/server/railway.cron-outbox.json`       |
+| Job                   | Cadence          | Runs                                          | Config                                        |
+| --------------------- | ---------------- | --------------------------------------------- | --------------------------------------------- |
+| Catalogue sync        | daily, 01:00 UTC | `pnpm --filter server sync:catalogue`         | `apps/server/railway.cron-catalogue.json`     |
+| Media cleanup         | daily, 04:00 UTC | `pnpm --filter server sync:media-cleanup`     | `apps/server/railway.cron-media-cleanup.json` |
+| Availability sync     | hourly           | `pnpm --filter server sync:availability`      | `apps/server/railway.cron-availability.json`  |
+| Expiry sweep          | every 10 min     | `pnpm --filter server sweep:expiries`         | `apps/server/railway.cron-sweep.json`         |
+| Reservation reconcile | every 6 hours    | `pnpm --filter server reconcile:reservations` | `apps/server/railway.cron-reconcile.json`     |
+| Payment reminders     | daily, 09:00 UTC | `pnpm --filter server remind:payments`        | `apps/server/railway.cron-reminders.json`     |
+| Outbox drain          | every 5 min      | `pnpm --filter server drain:outbox`           | `apps/server/railway.cron-outbox.json`        |
 
 `0 1 * * *` is 02:00 CET in winter and 03:00 CEST in summer, both of which clear
 the NauSYS request for one full dump a day after 01:00 GMT+1. Railway's cron
@@ -91,10 +92,10 @@ mailed, so the daily tick is a floor rather than a deadline: a missed day catche
 the same booking tomorrow, and an extra run the same day sends nothing. 09:00 UTC
 puts it in the customer's morning across Europe rather than overnight.
 
-## The five cron services
+## The cron services
 
 Each is a Railway service in the same project, built from this repo, and all
-five are created the same way. Add the service in the dashboard, then point its
+scheduled services are created the same way. Add the service in the dashboard, then point its
 config-as-code path at its file above. Railway cannot create a service from a
 committed file, so that part is manual; everything else about the deployment is
 in the file.
@@ -284,7 +285,7 @@ unconfigured service would mark every pending message sent and mail nobody. The 
 `api` service only so a customer sees the same sender on every mail.
 
 Reference the `api` service rather than pasting values, so a rotated credential
-reaches all five services at once. `CRON_SECRET` is not needed anywhere here:
+reaches every scheduled service that needs it. `CRON_SECRET` is not needed anywhere here:
 these run the job directly rather than calling the HTTP route, so there is no
 request to authenticate.
 
@@ -307,13 +308,13 @@ something.
 further and exit non-zero on the failures that would otherwise pass unseen, so a red
 run in Railway is the signal.
 
-A red run is only a signal to whoever looks, though, and nobody looks at 03:00. So all
-five entry points call `startJob(name)` from `apps/server/src/job.ts` before they do
-anything and emit one wide event when they end — `action: job.<name>`, an outcome, the
-run's duration and its own counters — through the same Sentry drain the servers
-use (see the repo `AGENTS.md`). That event is what an alert fires on. It costs nothing
-until `SENTRY_DSN` is set, and it does not replace the console
-output, which is still what an operator running one of these by hand reads.
+A red run is only a signal to whoever looks, though, and nobody looks at 03:00. So the
+scheduled entry points call `startJob(name)` from `apps/server/src/job.ts` before they
+do anything and emit one wide event when they end — `action: job.<name>`, an outcome,
+the run's duration and its own counters — through the same Sentry drain the servers use
+(see the repo `AGENTS.md`). That event is what an alert fires on. It costs nothing until
+`SENTRY_DSN` is set, and it does not replace the console output, which is still what an
+operator running one of these by hand reads.
 
 `startJob` also installs `unhandledRejection` and `uncaughtException` handlers, so a job
 that throws past its top-level await reports before it dies — the failure most worth
@@ -322,7 +323,7 @@ because taking over from Node's default handler would otherwise swallow it.
 
 The by-hand scripts (`seed-facets.ts`, `publish-listings.ts`, `repair-bm-ids.ts`,
 `rebuild-search-docs.ts`) deliberately skip all of this: somebody is watching the
-terminal, which is the whole reason the event exists for the other five.
+terminal, which is the whole reason the event exists for scheduled runs.
 
 For the sweep that is a failed provider release. Our side of that booking expired
 either way; the vendor is still holding the option. Stale confirmations do not fail
