@@ -93,7 +93,7 @@ export const syncRunStatusInputSchema = z
     syncRunId: z.string().min(1).optional(),
     errorLimit: z.number().int().min(1).max(200).optional(),
     /** Without it, "latest" spans kinds and an availability run answers for the catalogue. */
-    kind: z.enum(["catalogue", "availability", "pricing"]).optional(),
+    kind: z.enum(["catalogue", "availability", "pricing", "media"]).optional(),
     /** Defaults to the transacting provider, which is the one PROVIDER_MODE names. */
     provider: providerKeyOutputSchema.optional(),
   })
@@ -102,7 +102,7 @@ export const syncRunStatusInputSchema = z
 export const syncRunStatusSchema = z.object({
   syncRunId: z.string(),
   provider: providerKeyOutputSchema,
-  kind: z.enum(["catalogue", "availability", "pricing"]),
+  kind: z.enum(["catalogue", "availability", "pricing", "media"]),
   status: z.enum(["pending", "running", "success", "failed", "partial"]),
   createdCount: z.number().int(),
   updatedCount: z.number().int(),
@@ -120,7 +120,7 @@ export const syncRunStatusSchema = z.object({
   ),
 });
 
-export const syncRunKindSchema = z.enum(["catalogue", "availability", "pricing"]);
+export const syncRunKindSchema = z.enum(["catalogue", "availability", "pricing", "media"]);
 
 export const syncRunStateSchema = z.enum(["pending", "running", "success", "failed", "partial"]);
 

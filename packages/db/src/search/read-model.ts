@@ -1058,17 +1058,28 @@ export async function rebuildListingSearchDocs(
     left join lateral (
       select
         (
-          select lm.external_url
+          select coalesce(
+            case when pma.status = 'uploaded' then pma.bunny_cdn_url end,
+            lm.external_url
+          )
           from listing_media lm
+          left join provider_media_asset pma
+            on pma.id = lm.provider_media_asset_id
           where lm.listing_id = l.id
           order by ${PINNED_MEDIA_FIRST}, ${MEDIA_SOURCE_RANK}, ${MEDIA_ROLE_RANK}, lm.sort_order
           limit 1
         ) as main_image,
         (
           select jsonb_agg(
-            lm.external_url order by ${PINNED_MEDIA_FIRST}, ${MEDIA_SOURCE_RANK}, lm.sort_order
+            coalesce(
+              case when pma.status = 'uploaded' then pma.bunny_cdn_url end,
+              lm.external_url
+            )
+            order by ${PINNED_MEDIA_FIRST}, ${MEDIA_SOURCE_RANK}, lm.sort_order
           )
           from listing_media lm
+          left join provider_media_asset pma
+            on pma.id = lm.provider_media_asset_id
           where lm.listing_id = l.id
         ) as gallery
     ) media on true

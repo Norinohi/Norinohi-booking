@@ -2451,7 +2451,8 @@
       "kind": {
         "catalogue": "Catálogo",
         "availability": "Disponibilidad",
-        "pricing": "Precios"
+        "pricing": "Precios",
+        "media": "Medios"
       },
       "status": {
         "pending": "Pendiente",

@@ -5,6 +5,7 @@ export default defineConfig({
     "./src/index.ts",
     "./src/migrate.ts",
     "./src/sync-catalogue.ts",
+    "./src/sync-media-cleanup.ts",
     "./src/sync-availability.ts",
     "./src/sweep-expiries.ts",
     "./src/reconcile-reservations.ts",

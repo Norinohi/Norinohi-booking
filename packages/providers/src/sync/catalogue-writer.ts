@@ -35,6 +35,7 @@ import { chunked, ID_CHUNK, ROW_CHUNK } from "../shared/chunks";
 import { canonicalModelName } from "../shared/model-names";
 import { resolveCanonicalListings } from "./canonical-listing-writer";
 import { scoreDuplicatePair, worthReviewing, yachtNameKey } from "./duplicate-score";
+import { syncMediaAssets, type MediaAssetRef } from "./media-assets";
 import type { DuplicatePairFacts, DuplicateSignals } from "./duplicate-score";
 import type {
   CanonicalCatalogue,
@@ -384,6 +385,14 @@ export async function writeCanonicalCatalogue(
     rebuildListingIds: [],
   };
 
+  const mediaAssets = await syncMediaAssets({
+    db,
+    providerId,
+    providerKey,
+    mediaUrls: catalogue.listings.flatMap((item) => item.media.map((media) => media.externalUrl)),
+    now,
+  });
+
   /*
    * Listings in batches, the way the ingest walks provider records.
    *
@@ -404,6 +413,7 @@ export async function writeCanonicalCatalogue(
     providerId,
     providerKey,
     amenityIds,
+    mediaAssets,
     autoPublish: options.autoPublish === true,
     now,
   };
@@ -914,6 +924,7 @@ interface ListingWriteContext {
   providerId: string;
   providerKey: ProviderKey;
   amenityIds: Map<string, string>;
+  mediaAssets: Map<string, MediaAssetRef>;
   autoPublish: boolean;
   now: Date;
 }
@@ -1344,9 +1355,10 @@ async function writeListingChildren(
         listingId,
         listingOfferId,
         source: providerKey,
-        // Verbatim vendor URL, no Cloudinary id: we have no confirmed rights to
-        // copy or re-host provider media yet (Q-MEDIA).
+        // The provider URL stays as the fallback/audit trail; public reads prefer
+        // the Bunny asset once the media sync has uploaded it.
         externalUrl: media.externalUrl,
+        providerMediaAssetId: ctx.mediaAssets.get(media.externalUrl)?.id ?? null,
         role: media.role,
         sortOrder: media.sortOrder,
       })),

@@ -21,6 +21,7 @@ import { base } from "./geography";
 import { listingText } from "./listing-text";
 import { listingOffer } from "./listing-offer";
 import { operator } from "./operator";
+import { provider } from "./provider";
 import { amenity, builder, yachtCategory, yachtModel } from "./taxonomy";
 
 /**
@@ -32,8 +33,43 @@ import { amenity, builder, yachtCategory, yachtModel } from "./taxonomy";
 export const listingStatus = pgEnum("listing_status", ["draft", "published", "hidden", "merged"]);
 
 export const mediaRole = pgEnum("media_role", ["main", "layout", "gallery"]);
+export const providerMediaAssetStatus = pgEnum("provider_media_asset_status", [
+  "pending",
+  "uploaded",
+  "failed",
+  "inactive",
+  "deleted",
+]);
 
 const measurement = (name: string) => numeric(name, { precision: 8, scale: 2 });
+
+export const providerMediaAsset = pgTable(
+  "provider_media_asset",
+  {
+    id: id("pmed"),
+    providerId: text("provider_id")
+      .notNull()
+      .references(() => provider.id, { onDelete: "restrict" }),
+    originalUrl: text("original_url").notNull(),
+    originalUrlHash: text("original_url_hash").notNull(),
+    bunnyStoragePath: text("bunny_storage_path").notNull(),
+    bunnyCdnUrl: text("bunny_cdn_url").notNull(),
+    contentType: text("content_type"),
+    byteSize: integer("byte_size"),
+    status: providerMediaAssetStatus("status").default("pending").notNull(),
+    uploadAttempts: integer("upload_attempts").default(0).notNull(),
+    lastUploadError: text("last_upload_error"),
+    lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+    inactiveAt: timestamp("inactive_at"),
+    deletedAt: timestamp("deleted_at"),
+    ...timestamps,
+  },
+  (t) => [
+    unique("provider_media_asset_original_url_uq").on(t.providerId, t.originalUrlHash),
+    index("provider_media_asset_status_idx").on(t.providerId, t.status, t.lastSeenAt),
+    index("provider_media_asset_cleanup_idx").on(t.providerId, t.status, t.inactiveAt),
+  ],
+);
 
 export const listing = pgTable(
   "listing",
@@ -158,6 +194,9 @@ export const listingMedia = pgTable(
       .references(() => listingOffer.id, { onDelete: "cascade" }),
     source: text("source"),
     externalUrl: text("external_url").notNull(),
+    providerMediaAssetId: text("provider_media_asset_id").references(() => providerMediaAsset.id, {
+      onDelete: "set null",
+    }),
     role: mediaRole("role").default("gallery").notNull(),
     sortOrder: integer("sort_order").default(0).notNull(),
     width: integer("width"),
@@ -280,6 +319,14 @@ export const listingRelations = relations(listing, ({ one, many }) => ({
   oneWayRules: many(listingOneWayRule),
 }));
 
+export const providerMediaAssetRelations = relations(providerMediaAsset, ({ one, many }) => ({
+  provider: one(provider, {
+    fields: [providerMediaAsset.providerId],
+    references: [provider.id],
+  }),
+  listingMedia: many(listingMedia),
+}));
+
 export const listingSpecificationRelations = relations(listingSpecification, ({ one }) => ({
   listing: one(listing, {
     fields: [listingSpecification.listingId],
@@ -291,6 +338,10 @@ export const listingMediaRelations = relations(listingMedia, ({ one }) => ({
   listing: one(listing, {
     fields: [listingMedia.listingId],
     references: [listing.id],
+  }),
+  providerMediaAsset: one(providerMediaAsset, {
+    fields: [listingMedia.providerMediaAssetId],
+    references: [providerMediaAsset.id],
   }),
 }));
 

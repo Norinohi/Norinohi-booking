@@ -2451,7 +2451,8 @@
       "kind": {
         "catalogue": "Каталог",
         "availability": "Доступність",
-        "pricing": "Ціни"
+        "pricing": "Ціни",
+        "media": "Медіа"
       },
       "status": {
         "pending": "Очікує",

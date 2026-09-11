@@ -47,6 +47,7 @@ export const syncKind = pgEnum("sync_kind", [
   "availability",
   "pricing",
   "reservations",
+  "media",
 ]);
 
 export const syncStatus = pgEnum("sync_status", [
