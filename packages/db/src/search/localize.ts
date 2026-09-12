@@ -116,6 +116,9 @@ export async function localizeSearchDocs<T extends ListingSearchDoc>(
     location: translate("location", doc.location),
     baseName: translate("marina", doc.baseName),
     amenities: doc.amenities.map((amenity) => translate("equipment", amenity)),
+    /* Kept beside the translated labels because curated rank, the amenity headings and the
+       equipment filter are all keyed on the English value. See `amenityKeys` on the doc. */
+    amenityKeys: doc.amenities,
   }));
 }
 

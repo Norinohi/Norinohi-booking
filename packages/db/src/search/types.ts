@@ -143,6 +143,15 @@ export type ListingSearchDoc = {
   mainImage: string | null;
   gallery: string[];
   amenities: string[];
+  /**
+   * The same amenities in the vendor's own English, set only where `amenities` was translated.
+   *
+   * Curated rank is keyed on the English facet value, so ranking the translated labels matched
+   * nothing: every non-English card fell back to the boat's first four fittings and lost the
+   * "+n" that discloses the rest. Display reads `amenities`; anything that looks a value up
+   * reads this.
+   */
+  amenityKeys?: string[];
   priceFromMinor: number | null;
   /**
    * Whether `priceFromMinor` prices the advertised charter or starts from the season. See the
