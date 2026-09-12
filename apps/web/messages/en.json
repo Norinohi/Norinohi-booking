@@ -2708,6 +2708,8 @@
         "provider": "Provider",
         "status": "Status",
         "allProviders": "All providers",
+        "operator": "Operator",
+        "allOperators": "All operators",
         "allStatuses": "All statuses",
         "search": "Search by title or slug"
       },

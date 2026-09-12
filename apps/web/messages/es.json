@@ -2708,6 +2708,8 @@
         "provider": "Proveedor",
         "status": "Estado",
         "allProviders": "Todos los proveedores",
+        "operator": "Operador",
+        "allOperators": "Todos los operadores",
         "allStatuses": "Todos los estados",
         "search": "Buscar por título o slug"
       },

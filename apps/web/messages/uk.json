@@ -2708,6 +2708,8 @@
         "provider": "Постачальник",
         "status": "Статус",
         "allProviders": "Усі постачальники",
+        "operator": "Оператор",
+        "allOperators": "Усі оператори",
         "allStatuses": "Усі статуси",
         "search": "Пошук за назвою або slug"
       },

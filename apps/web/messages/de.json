@@ -2708,6 +2708,8 @@
         "provider": "Anbieter",
         "status": "Status",
         "allProviders": "Alle Anbieter",
+        "operator": "Anbieter",
+        "allOperators": "Alle Anbieter",
         "allStatuses": "Alle Status",
         "search": "Suche nach Titel oder Slug"
       },

@@ -808,6 +808,11 @@ export const listingAdminListInputSchema = z
   .object({
     /** Narrows the page to listings carrying a `listing_source` from this provider. */
     provider: providerKeyOutputSchema.optional(),
+    /**
+     * The charter company the hull belongs to. Its own filter rather than something to type
+     * into the search box, which matches the title and the slug and so cannot find a fleet.
+     */
+    operatorId: z.string().min(1).optional(),
     status: listingStatusSchema.optional(),
     /** Case-insensitive substring of the title or the slug. */
     query: z.string().trim().max(200).optional(),

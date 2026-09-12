@@ -136,6 +136,7 @@ function providerScope(providerCode: string) {
 export async function listAdminListings(db: Database, input: ListInput): Promise<ListResult> {
   const filters = [];
   if (input.provider) filters.push(providerScope(input.provider));
+  if (input.operatorId) filters.push(eq(listing.operatorId, input.operatorId));
   if (input.status) filters.push(eq(listing.status, input.status));
   if (input.query) {
     const pattern = `%${input.query}%`;
