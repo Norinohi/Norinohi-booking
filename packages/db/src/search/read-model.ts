@@ -521,6 +521,18 @@ export async function rebuildListingSearchDocs(
             and extra.obligatory
             and not extra.one_way_only
             /*
+             * Never a row learned from a quote.
+             *
+             * The distinct-on-name above collapses a learned row onto the published one it
+             * repeats, but only where the operator spells them the same. Two variants of one
+             * fee are not: a hull here publishes a damage waiver "up to 2 weeks monohulls
+             * 2018-2023" and is billed "catamarans and over 46ft monohulls", so counting both
+             * would advertise 750 EUR of waiver against the 400 the charter pays. Nothing here
+             * can tell which published row a billed one supersedes, so the sum stays on what
+             * the vendor published and the detail page is where the real fee shows.
+             */
+            and extra.learned_at is null
+            /*
              * Only fees charged where this charter starts.
              *
              * The operator files a fee per base as well as per season, and most of them do:

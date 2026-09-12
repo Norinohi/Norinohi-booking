@@ -148,6 +148,23 @@ export const providerExtraCatalogue = pgTable(
     depositInsurance: boolean("deposit_insurance").default(false).notNull(),
     externalSeasonId: text("external_season_id"),
     externalBaseId: text("external_base_id"),
+    /**
+     * Set where the row came from a live quote rather than from the vendor's catalogue.
+     *
+     * A vendor bills obligatory extras its own yacht record does not publish: Booking Manager
+     * charged a 400 EUR damage waiver on a hull whose products list a 350 EUR one, so the page
+     * understated a mandatory fee until someone asked for a price. `learnExtrasFromQuote`
+     * writes what the quote actually charged.
+     *
+     * The catalogue sync still deletes these along with everything else for the offer, and the
+     * next quote re-learns them. That is deliberate: a vendor that starts publishing the row
+     * should win, and a learned row must never outlive the observation behind it.
+     *
+     * The price is what one real charter was billed, so a per-person fee is recorded at that
+     * party's size. It is a better answer than the wrong row or no row, and this column is what
+     * lets a reader tell the two apart.
+     */
+    learnedAt: timestamp("learned_at"),
     ...timestamps,
   },
   (t) => [

@@ -32,6 +32,7 @@ import { classifyRefusal } from "../lib/refusal-report";
 import { saysSlotIsGone } from "../lib/provider-failure";
 
 import type { Database, DatabaseExecutor } from "../context";
+import { learnExtrasFromQuote } from "./learn-extras";
 import { resolveDiscountForListing, type DiscountRejection } from "./discount-redemption";
 import { spendableCreditMinor, welcomeDiscountMinor } from "./loyalty";
 import {
@@ -148,6 +149,33 @@ export async function createQuote(
   } catch (error) {
     console.warn(
       "[quote] could not record offer attempts",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  /*
+   * And what the vendor actually billed, where our catalogue does not carry it.
+   *
+   * The quote is the only moment we see an operator's obligatory fees for a real charter, and
+   * both vendors charge ones their yacht records do not publish. Left unlearned, the listing
+   * page kept understating a mandatory fee for every visitor until someone asked for a price.
+   * Best-effort, and after the quote: the customer has their number either way.
+   */
+  const winningOfferId = selection.selected.listingOfferId;
+  try {
+    /* A row is keyed by the offer that sells it, so a selection without one has nowhere to
+       put what it learned. */
+    if (winningOfferId) {
+      await learnExtrasFromQuote(db, {
+        listingId: input.listingId,
+        listingOfferId: winningOfferId,
+        provider: provider.key,
+        lines: selection.selected.priced.lines,
+      });
+    }
+  } catch (error) {
+    console.warn(
+      "[quote] could not learn billed extras",
       error instanceof Error ? error.message : error,
     );
   }

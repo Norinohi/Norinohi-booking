@@ -4,6 +4,7 @@ import type { CatalogueResolver } from "../shared/catalogue-resolver";
 import { formatNausysDate, parseNausysDate } from "../shared/dates";
 import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { formatExtraCode, type ExtraKind } from "../shared/extra-code";
+import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import { decimalStringToMinor } from "../shared/money";
 import { toPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
@@ -38,9 +39,9 @@ const DEFAULT_QUOTE_TTL_MS = 15 * 60 * 1000;
 
 /** Labels are catalogue data; this is what a quote reads when nothing supplies them. */
 const DEFAULT_LABELS = {
-  base: "Charter price",
-  service: "Charter extra",
-  discount: "Charter discount",
+  base: DEFAULT_LINE_LABELS.base,
+  service: DEFAULT_LINE_LABELS.extra,
+  discount: DEFAULT_LINE_LABELS.discount,
 } as const;
 
 export type NausysLabelKind = "service" | "equipment" | "discount";

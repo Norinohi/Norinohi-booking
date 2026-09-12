@@ -1,0 +1,1 @@
+ALTER TABLE "provider_extra_catalogue" ADD COLUMN "learned_at" timestamp;
