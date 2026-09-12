@@ -173,8 +173,6 @@ export const listingSearchDoc = pgTable(
      */
     bookableFrom: date("bookable_from"),
     bookableTo: date("bookable_to"),
-    hasUnconfirmedAvailability: boolean("has_unconfirmed_availability").default(false).notNull(),
-    hasTemporaryBooking: boolean("has_temporary_booking").default(false).notNull(),
     searchableText: text("searchable_text").notNull(),
     ...timestamps,
   },
@@ -191,10 +189,6 @@ export const listingSearchDoc = pgTable(
     index("listing_search_doc_sail_type_idx").on(t.sailType),
     index("listing_search_doc_deposit_insurance_idx").on(t.depositInsuranceIncluded),
     index("listing_search_doc_pets_idx").on(t.petsAllowed),
-    index("listing_search_doc_availability_state_idx").on(
-      t.hasUnconfirmedAvailability,
-      t.hasTemporaryBooking,
-    ),
     index("listing_search_doc_price_idx").on(t.priceFromMinor),
     index("listing_search_doc_price_eur_idx").on(t.priceFromMinorEur),
     /* The base-price twins of the three indexes above and below. Four more on a table of

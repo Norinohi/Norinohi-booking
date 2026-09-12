@@ -20,6 +20,12 @@ export function useSearchFilters() {
       bathrooms: raw.bathrooms ?? defaults.bathrooms,
       price: raw.price ?? defaults.price,
       guestRating: raw.guestRating ?? defaults.guestRating,
+      /*
+       * The hold filter widens a dated search and nothing else, so without dates it is not a
+       * filter at all. Dropped here rather than at the request, so the panel, the chips and the
+       * active count all agree with what the search is actually doing.
+       */
+      underTemporaryBooking: raw.startDate !== null && raw.underTemporaryBooking,
     }),
     [raw, defaults],
   );

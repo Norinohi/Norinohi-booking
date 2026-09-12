@@ -27,6 +27,7 @@ import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
 import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
+import { useRememberSearch } from "../../hooks/use-remember-search";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { serializeSearch } from "../../lib/search-params";
@@ -181,6 +182,7 @@ function FiltersAside({ locked }: { locked?: LockedFilters }) {
 
 function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const t = useTranslations("Yachts");
+  useRememberSearch();
   const { filters, defaults, applyFilters } = useApplyFilters(locked);
   const { sort, setSort, page, setPage } = useResultOrder();
 

@@ -50,10 +50,12 @@ export function toBoatCard(
   listing: ResultListing,
   period?: CharterPeriod,
 ): BoatCardProps & { id: string } {
+  const heldUntil = listing.availability.temporarilyHeldUntil;
   const unavailable = !listing.availability.hasAvailableDates;
   const status = availabilityStatus({
     hasAvailableDates: listing.availability.hasAvailableDates,
     hasBookablePeriod: listing.availability.bookablePeriod !== null,
+    temporarilyHeld: heldUntil !== null,
   });
   const statusBadge = {
     label: availabilityLabel(tBadge, status),
@@ -96,6 +98,8 @@ export function toBoatCard(
      * Unlabelled, the card looks like it ignored the search.
      */
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
+    /* Says what the badge above it leaves out: how long the other customer's hold has left. */
+    heldUntil: heldUntil ?? undefined,
     priceLabel: priceCaption(t, listing),
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),

@@ -5,6 +5,7 @@ import { ContractError, SlotUnavailableError } from "../shared/errors";
 import { formatExtraCode } from "../shared/extra-code";
 import { toExactPositiveIntId } from "../shared/projection-helpers";
 import { stableSourceHash } from "../shared/raw-retention";
+import { DEFAULT_LINE_LABELS } from "../shared/generic-labels";
 import {
   providerQuoteSchema,
   quoteRequestSchema,
@@ -38,11 +39,7 @@ const DEFAULT_QUOTE_TTL_MS = 15 * 60 * 1000;
  */
 const EXTRA_KIND = "service" as const;
 
-const DEFAULT_LABELS = {
-  base: "Charter price",
-  extra: "Charter extra",
-  discount: "Charter discount",
-} as const;
+const DEFAULT_LABELS = DEFAULT_LINE_LABELS;
 
 type QuoteLine = ProviderQuote["lines"][number];
 type PaymentPolicy = ProviderQuote["paymentPolicy"];

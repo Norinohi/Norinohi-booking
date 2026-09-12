@@ -95,8 +95,6 @@ export function useFilterChips(state: FiltersState): FilterChip[] {
           from: state.yearFrom === "any" ? t("any") : state.yearFrom,
           to: state.yearTo === "any" ? t("any") : state.yearTo,
         });
-      case "withoutAvailabilityConfirmation":
-        return t("withoutAvailabilityConfirmation");
       case "underTemporaryBooking":
         return t("underTemporaryBooking");
       case "depositInsurance":

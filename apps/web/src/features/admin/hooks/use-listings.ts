@@ -18,6 +18,7 @@ import type { ListingStatus, ProviderKey } from "../types";
 
 export function useListings(input: {
   provider?: ProviderKey;
+  operatorId?: string;
   status?: ListingStatus;
   query?: string;
   page: number;

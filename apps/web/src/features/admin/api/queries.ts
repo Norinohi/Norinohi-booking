@@ -179,6 +179,7 @@ export const auditListQueryOptions = (input: {
  */
 export const listingAdminListQueryOptions = (input: {
   provider?: ProviderKey;
+  operatorId?: string;
   status?: ListingStatus;
   query?: string;
   page: number;

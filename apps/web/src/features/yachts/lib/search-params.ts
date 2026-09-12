@@ -121,7 +121,6 @@ export const filterParsers = {
   yearFrom: yearParser.withDefault("any"),
   yearTo: yearParser.withDefault("any"),
 
-  withoutAvailabilityConfirmation: parseAsBoolean.withDefault(false),
   underTemporaryBooking: parseAsBoolean.withDefault(false),
   depositInsurance: parseAsBoolean.withDefault(false),
   petsAllowed: parseAsBoolean.withDefault(false),

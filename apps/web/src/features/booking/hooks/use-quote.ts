@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useLocale } from "next-intl";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Quote, QuoteInput, RepriceInput } from "../api/queries";
 import { quoteMutationOptions, repriceMutationOptions } from "../api/queries";
@@ -70,6 +70,42 @@ export function useQuote(listingId: string) {
    */
   const [inFlight, setInFlight] = useState(0);
 
+  /*
+   * The id every reprice must be keyed on, in a ref rather than read off the `quote` state.
+   *
+   * A quote is superseded by the call that reprices it, so two calls started from the same id
+   * fork the chain: both supersede it, both come back, and whichever answers last wins while
+   * the other's change is silently gone. Read through the queue below, this is always the id
+   * the previous call minted.
+   */
+  const liveIdRef = useRef<string | null>(null);
+
+  /*
+   * Every call against the live quote, run one at a time.
+   *
+   * Overlapping reprices are not a rare race here: extras, requested extras and the guest
+   * slider each debounce on their own timer, and a single tick inside another's window used to
+   * produce two calls from the same id. Serialising is also what makes a stale answer
+   * impossible - the last call to start is the last to write - so a resolved reprice can no
+   * longer roll the panel back to a quote the customer has already moved past.
+   */
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+
+  function enqueue<T>(run: () => Promise<T>): Promise<T> {
+    const next = queueRef.current.then(run, run);
+    /* Swallowed on the chain only: a refused call must not refuse everything behind it, and
+       the caller still sees its own rejection through the promise returned here. */
+    queueRef.current = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  /*
+   * Counted from the moment the caller asks rather than from the moment the wire opens, so a
+   * control that is waiting its turn in the queue still reads as pending.
+   */
   async function tracked<T>(run: () => Promise<T>): Promise<T> {
     setInFlight((count) => count + 1);
     try {
@@ -79,25 +115,32 @@ export function useQuote(listingId: string) {
     }
   }
 
-  async function quoteFor(selection: QuoteSelection) {
-    const next = await tracked(() => create.mutateAsync({ listingId, locale, ...selection }));
+  function adopt(next: Quote): Quote {
+    liveIdRef.current = next.quoteId;
     setQuote(next);
     return next;
+  }
+
+  async function quoteFor(selection: QuoteSelection) {
+    return tracked(() =>
+      enqueue(async () => adopt(await create.mutateAsync({ listingId, locale, ...selection }))),
+    );
   }
 
   async function load(quoteId: string) {
-    const next = await tracked(() => reprice.mutateAsync({ quoteId, locale }));
-    setQuote(next);
-    return next;
+    return tracked(() =>
+      enqueue(async () => adopt(await reprice.mutateAsync({ quoteId, locale }))),
+    );
   }
 
   async function repriceWith(changes: Omit<RepriceInput, "quoteId">) {
-    if (!quote) return null;
-    const next = await tracked(() =>
-      reprice.mutateAsync({ quoteId: quote.quoteId, locale, ...changes }),
+    return tracked(() =>
+      enqueue(async () => {
+        const quoteId = liveIdRef.current;
+        if (!quoteId) return null;
+        return adopt(await reprice.mutateAsync({ quoteId, locale, ...changes }));
+      }),
     );
-    setQuote(next);
-    return next;
   }
 
   return {

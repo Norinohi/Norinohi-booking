@@ -121,7 +121,6 @@ export function toSearchInput(
   if (filters.yearFrom !== "any") input.yearFrom = Number(filters.yearFrom);
   if (filters.yearTo !== "any") input.yearTo = Number(filters.yearTo);
 
-  if (filters.withoutAvailabilityConfirmation) input.withoutAvailabilityConfirmation = true;
   if (filters.underTemporaryBooking) input.underTemporaryBooking = true;
   if (filters.depositInsurance) input.depositInsurance = true;
   if (filters.petsAllowed) input.petsAllowed = true;

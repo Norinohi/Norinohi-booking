@@ -10,7 +10,7 @@ answers requests, and a catalogue walk takes hours.
 | --------------------- | ---------------- | --------------------------------------------- | --------------------------------------------- |
 | Catalogue sync        | daily, 01:00 UTC | `pnpm --filter server sync:catalogue`         | `apps/server/railway.cron-catalogue.json`     |
 | Media cleanup         | daily, 04:00 UTC | `pnpm --filter server sync:media-cleanup`     | `apps/server/railway.cron-media-cleanup.json` |
-| Availability sync     | hourly           | `pnpm --filter server sync:availability`      | `apps/server/railway.cron-availability.json`  |
+| Availability sync     | every 30 min     | `pnpm --filter server sync:availability`      | `apps/server/railway.cron-availability.json`  |
 | Expiry sweep          | every 10 min     | `pnpm --filter server sweep:expiries`         | `apps/server/railway.cron-sweep.json`         |
 | Reservation reconcile | every 6 hours    | `pnpm --filter server reconcile:reservations` | `apps/server/railway.cron-reconcile.json`     |
 | Payment reminders     | daily, 09:00 UTC | `pnpm --filter server remind:payments`        | `apps/server/railway.cron-reminders.json`     |
@@ -346,5 +346,5 @@ Progress and failures land in `sync_run` and `sync_error` either way. Poll
 
 Overlap is safe. A provider with a run already in flight is reported as not
 started rather than failing, and the NauSYS queue serializes every call on one
-credential, so an hourly availability run colliding with a still-running nightly
-catalogue walk just skips that hour.
+credential, so a half-hourly availability run colliding with a still-running nightly
+catalogue walk just skips that run.

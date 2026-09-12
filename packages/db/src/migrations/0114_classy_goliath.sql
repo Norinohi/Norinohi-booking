@@ -1,0 +1,1 @@
+CREATE INDEX "provider_extra_catalogue_code_idx" ON "provider_extra_catalogue" USING btree ("source","kind","external_id","name");

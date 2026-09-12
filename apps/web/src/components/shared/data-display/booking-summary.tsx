@@ -29,6 +29,7 @@ import { Link } from "@/i18n/navigation";
 import { STAT_TONE } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import CharterDateField, { type CharterPeriod } from "@/components/shared/form/charter-date-field";
+import { useQuoteLineLabel } from "@/hooks/use-quote-line-label";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 import { dayToDisplay } from "@/lib/date";
@@ -294,26 +295,6 @@ function CreditField({
  * One row per line rather than a single summed "Discounts" — a provider discount, a promo code
  * and the referral welcome are different things, and the labels are the only place that shows.
  */
-/**
- * Our own line names, as opposed to the provider's.
- *
- * A discount the operator configured carries its own name and is data; these two are copy this
- * app writes, so they live in the message files. A code with no entry keeps the label the API
- * sent, which is what an operator-named promo needs.
- */
-const QUOTE_LINE_KEY = new Map<string, "referral-welcome" | "referral-credit">([
-  ["referral-welcome", "referral-welcome"],
-  ["referral-credit", "referral-credit"],
-]);
-
-function useQuoteLineLabel() {
-  const t = useTranslations("Common.quoteLines");
-  return (line: QuoteLine) => {
-    const key = QUOTE_LINE_KEY.get(line.code);
-    return key ? t(key) : line.label;
-  };
-}
-
 function DiscountRows({ lines }: { lines: QuoteLine[] }) {
   const t = useTranslations("YachtDetail");
   const money = useMoney();
@@ -617,6 +598,24 @@ export default function BookingSummary({
               })}
             </p>
           ) : null}
+          {/*
+           * A card reached without dates shows no price at all, and the empty price area is
+           * too far down to read as an instruction. Say it at the control instead.
+           *
+           * Only once the panel has settled. A page still fetching its constraints may yet
+           * open on a period of its own, so saying this over the spinner asks for something
+           * the page is in the middle of doing and then takes it back. An empty `offers` is
+           * that same wait seen from the other side: the constraints have not arrived, and a
+           * boat that really sells nothing is already `unavailable`.
+           */}
+          {!loading &&
+          offers.length > 0 &&
+          !slotError &&
+          !refusedPeriod &&
+          !selectedPeriod &&
+          !unavailable ? (
+            <p className="text-sm font-semibold text-error-600">{t("sidebar.selectDates")}</p>
+          ) : null}
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-4.25 font-semibold text-foreground">
@@ -911,9 +910,7 @@ export default function BookingSummary({
                       </Button>
                     ) : null}
                   </>
-                ) : (
-                  <p className="text-sm font-medium text-natural-500">{t("sidebar.selectDates")}</p>
-                )}
+                ) : null}
               </>
             )}
           </div>

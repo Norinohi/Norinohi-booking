@@ -162,9 +162,15 @@ export interface QuoteReservationEventInput {
 export type ReservationEventRecorder = (event: QuoteReservationEventInput) => Promise<void>;
 
 /**
- * `provider_reservation_event` is keyed by booking, and a `BookingDraft` carries
- * the quote instead. Neither vendor's pricing call produces a provider quote id,
- * so `draft.quoteId` is always ours and the join is exact.
+ * `provider_reservation_event` is keyed by booking, and a `BookingDraft` carries the quote
+ * instead, so this resolves one to the other.
+ *
+ * The id has to be ours. It was the vendor's until Sep 2026 -- the draft carried
+ * `providerQuoteId ?? quote.id` and both vendors always mint one -- so this join matched
+ * nothing, every adapter-side event was dropped by the silent return below, and no
+ * `info_created` was ever written. The events that did appear came from the checkout service,
+ * which has the booking id and never needed this. See `quoteId` on `bookingDraftSchema` for
+ * why resolving the vendor's id instead would be worse than dropping the row.
  */
 export function createReservationEventRecorder(
   db: Database,
@@ -177,9 +183,15 @@ export function createReservationEventRecorder(
       .where(eq(booking.quoteId, quoteId))
       .limit(1);
 
-    // Reconciliation and admin tooling can drive these calls with no booking
-    // behind them; that is not a reason to fail the provider call.
-    if (!row) return;
+    /*
+     * Reconciliation and admin tooling can drive these calls with no booking behind them, so
+     * this is not a reason to fail the provider call. It is said out loud, though: swallowing
+     * it in silence is what let a broken join go unnoticed for a month of checkouts.
+     */
+    if (!row) {
+      console.warn(`Dropped a ${providerKey} ${kind} event: no booking holds quote ${quoteId}.`);
+      return;
+    }
 
     await recordReservationEvent(db, {
       bookingId: row.id,

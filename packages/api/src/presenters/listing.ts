@@ -111,6 +111,11 @@ export function presentListingSummary(
   const currency = doc.currency ?? "EUR";
   const bookablePeriod = bookablePeriodOf(doc);
   const periodDays = pricedPeriodDays(doc);
+  /* English value -> the label this locale shows it as, by position. Empty on an untranslated
+     read, where the keys already are the labels. */
+  const amenityLabel = new Map(
+    (doc.amenityKeys ?? []).map((key, index) => [key, doc.amenities[index] ?? key]),
+  );
   // A non-positive price is a provider saying "no price", not "free", so it is
   // treated the same as a missing one rather than quoted as 0.
   const allInMinor =
@@ -167,11 +172,10 @@ export function presentListingSummary(
       termsAndConditions: doc.operatorTermsAndConditions,
     },
     availability: {
-      hasUnconfirmedAvailability: doc.hasUnconfirmedAvailability,
-      hasTemporaryBooking: doc.hasTemporaryBooking,
       // No projected window means the listing has no bookable slot at all, which
       // is a different state from having dates but no price.
       hasAvailableDates: doc.availableFrom !== null,
+      temporarilyHeldUntil: doc.temporarilyHeldUntil,
       bookablePeriod,
     },
     rating: Number(doc.rating),
@@ -188,11 +192,19 @@ export function presentListingSummary(
     mainImage: doc.mainImage ?? doc.gallery[0] ?? EMPTY_IMAGE,
     gallery: doc.gallery,
     amenities: doc.amenities,
+    /*
+     * Ranked on the vendor's English, shown in the visitor's language.
+     *
+     * Rank is keyed on the equipment facet's own value, so ranking the translated labels
+     * matched nothing outside English: every localized card fell through to the fallback of
+     * the boat's first four fittings, which is also why the "+n" that discloses the rest
+     * disappeared the moment the page changed language.
+     */
     highlightAmenities: highlightAmenities(
-      doc.amenities,
+      doc.amenityKeys ?? doc.amenities,
       amenityRanks ?? EMPTY_AMENITY_RANKS,
       normalizedFilterValue,
-    ),
+    ).map((key) => amenityLabel.get(key) ?? key),
     priceFrom: amountMinor === null ? null : { amountMinor, currency },
     /*
      * Both figures, whatever the headline is, so a card can disclose the difference and a

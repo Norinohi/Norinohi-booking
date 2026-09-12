@@ -5,6 +5,7 @@ import type * as schema from "../schema";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { FX_BASE_CURRENCY } from "../fx/rates";
 import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
+import { amenityIconFor } from "./amenity-icons";
 import { crewOptionsFor } from "./crew";
 import { MIN_LEAD_DAYS } from "./read-model";
 import {
@@ -50,11 +51,12 @@ import type {
  */
 export type SearchRow = Omit<
   ListingSearchDoc,
-  "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut"
+  "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut" | "temporarilyHeldUntil"
 > & {
   sellsRequestedPeriod?: boolean;
   nearestCheckIn?: string | null;
   nearestCheckOut?: string | null;
+  temporarilyHeldUntil?: string | null;
 };
 type FacetFilterKey = keyof ListingSearchInput;
 type FacetOptionRow = {
@@ -155,7 +157,7 @@ export async function searchListings(
 
   const limit = normalizedLimit(input.limit);
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}${sellsRequestedPeriodColumn(input)}
+    select ${searchColumns}${sellsRequestedPeriodColumn(input)}${temporaryHoldColumn(input)}
     from listing_search_doc doc
     where ${whereClause(input)}
       and ${cursorClause(input.sort, cursor, basis)}
@@ -189,7 +191,7 @@ async function searchListingsByPage(
 
   const [rows, countRows] = await Promise.all([
     db.execute<SearchRow>(sql`
-      select ${searchColumns}${sellsRequestedPeriodColumn(input)}
+      select ${searchColumns}${sellsRequestedPeriodColumn(input)}${temporaryHoldColumn(input)}
       from listing_search_doc doc
       where ${filters}
       order by ${orderClause(input.sort, input.priceBasis)}
@@ -576,6 +578,9 @@ export async function getListingDetailByIdOrSlug(
       code: item.code,
       label: translate ? translate("equipment", item.label) : item.label,
       group,
+      /* Resolved off the vendor's label for the same reason the group is, and null where no
+         icon has been drawn for this fitting yet -- the page falls back to the group's own. */
+      icon: amenityIconFor(item.label),
     }));
   /*
    * Extras come from provider_extra_catalogue, not from listing_amenity. The two
@@ -751,8 +756,6 @@ export async function listSearchFacets(
       maxYear: number | null;
       minRating: string | null;
       maxRating: string | null;
-      hasUnconfirmedAvailability: boolean | null;
-      hasTemporaryBooking: boolean | null;
       hasDepositInsurance: boolean | null;
       hasPetsAllowed: boolean | null;
       hasBestValue: boolean | null;
@@ -793,8 +796,6 @@ export async function listSearchFacets(
         max(doc.year_built) filter (where doc.year_built > 0) as "maxYear",
         min(doc.rating) as "minRating",
         max(doc.rating) as "maxRating",
-        bool_or(doc.has_unconfirmed_availability) as "hasUnconfirmedAvailability",
-        bool_or(doc.has_temporary_booking) as "hasTemporaryBooking",
         bool_or(doc.deposit_insurance_included) as "hasDepositInsurance",
         bool_or(doc.pets_allowed) as "hasPetsAllowed",
         bool_or(doc.best_value) as "hasBestValue"
@@ -855,8 +856,12 @@ export async function listSearchFacets(
       guestRating: numberRange(row?.minRating, row?.maxRating),
     },
     toggles: {
-      withoutAvailabilityConfirmation: row?.hasUnconfirmedAvailability ?? false,
-      underTemporaryBooking: row?.hasTemporaryBooking ?? false,
+      /*
+       * Whether the control has anything to widen, which is whether the search named dates at
+       * all. A `bool_or` over the results cannot answer it: the boats this toggle would add are
+       * the ones the same where clause has just excluded.
+       */
+      underTemporaryBooking: availabilityWindowFor(input) !== undefined,
       depositInsurance: row?.hasDepositInsurance ?? false,
       petsAllowed: row?.hasPetsAllowed ?? false,
       bestValue: row?.hasBestValue ?? false,
@@ -1462,6 +1467,93 @@ function sellableFilter(nights: number): SQL {
 }
 
 /*
+ * One free stretch wide enough for the whole charter, on an offer whose rules would sell it.
+ *
+ * Shared by the filter and by the card column that says a week is only held: the two have to
+ * ask the same question, or a card would announce a hold on a boat the filter admitted as free.
+ */
+function freeAcrossWindow(
+  range: CandidateRange,
+  windowNights: number,
+  nights: number | undefined,
+): SQL {
+  return sql`exists (
+    select 1
+    from listing_offer o
+    join listing_free_period free
+      on free.listing_offer_id = o.id
+     and free.start_date <= ${range.latestStart}
+     and free.end_date >= ${range.earliestEnd}
+     and free.end_date - free.start_date >= ${windowNights}
+    where o.listing_id = doc.listing_id
+      and o.status = 'active'
+      and ${nights ? checkinRuleClause(nights, range) : sql`true`}
+  )`;
+}
+
+/* Every slot overlapping the charter the visitor named, of one status or all the others. */
+function slotsOverWindow(window: { checkIn: string; checkOut: string }, option: boolean): SQL {
+  return sql`
+    select slot.end_date
+    from availability_slot slot
+    where slot.listing_id = doc.listing_id
+      and slot.status ${option ? sql`=` : sql`<>`} 'option'
+      and slot.start_date < ${window.checkOut}::date
+      and slot.end_date > ${window.checkIn}::date`;
+}
+
+/*
+ * The requested charter is held under a temporary booking, and that is the only thing in its way.
+ *
+ * Asked against the dates the visitor named rather than the range their flexibility opens, which
+ * the free branch already covers: this one answers "the week you asked for is on hold", and a
+ * hold three days either side of it is not that.
+ *
+ * The check-in rule is still applied -- a hull that turns around on Saturdays is no more an
+ * answer to a Wednesday when its Saturday is held -- but the free-period tests are not, because
+ * the hold is exactly why there is no free period to find. What stands in for them is the second
+ * half: nothing else overlaps the week, so releasing the hold leaves it free.
+ */
+function heldOnlyByOption(
+  window: { checkIn: string; checkOut: string },
+  nights: number | undefined,
+  range: CandidateRange,
+): SQL {
+  return sql`(
+    exists (${slotsOverWindow(window, true)})
+    and not exists (${slotsOverWindow(window, false)})
+    and exists (
+      select 1
+      from listing_offer o
+      where o.listing_id = doc.listing_id
+        and o.status = 'active'
+        and ${nights ? checkinRuleClause(nights, range) : sql`true`}
+    )
+  )`;
+}
+
+/*
+ * The day the hold over the searched week runs out, for the card to print.
+ *
+ * Null unless the hold is the whole story: a boat with a free stretch across those dates is
+ * available, whatever else its calendar holds elsewhere. Selected rather than filtered on, so
+ * it is computed for the rows a page returns and not for every candidate.
+ */
+function temporaryHoldColumn(input: ListingSearchInput): SQL {
+  const window = availabilityWindowFor(input);
+  if (!window) return sql`, null::date as "temporarilyHeldUntil"`;
+
+  const windowNights = nightsBetween(window);
+  const flex = FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"];
+  const range = candidateRange(window, windowNights, flex);
+  const nights = input.checkIn && input.checkOut ? windowNights : input.duration;
+  return sql`, case
+    when ${freeAcrossWindow(range, windowNights, nights)} then null
+    else (select max(held.end_date) from (${slotsOverWindow(window, true)}) held)
+  end as "temporarilyHeldUntil"`;
+}
+
+/*
  * Whether anything sellable falls inside the horizon. `exists` rather than the `min` below,
  * because this runs for every document the other filters admit and can stop at the first hit;
  * the `min` only has to run for the rows a page actually returns.
@@ -1575,9 +1667,7 @@ export const searchColumns = sql`
   doc.available_from as "availableFrom",
   doc.available_to as "availableTo",
   case when ${heldByLiveBooking} then null else doc.bookable_from end as "bookableFrom",
-  case when ${heldByLiveBooking} then null else doc.bookable_to end as "bookableTo",
-  doc.has_unconfirmed_availability as "hasUnconfirmedAvailability",
-  doc.has_temporary_booking as "hasTemporaryBooking"
+  case when ${heldByLiveBooking} then null else doc.bookable_to end as "bookableTo"
 `;
 
 /**
@@ -1743,12 +1833,6 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
   if (!skip.has("maxPriceMinor") && input.maxPriceMinor) {
     parts.push(sql`${comparablePrice(input.priceBasis)} <= ${input.maxPriceMinor}`);
   }
-  if (!skip.has("withoutAvailabilityConfirmation") && input.withoutAvailabilityConfirmation) {
-    parts.push(sql`doc.has_unconfirmed_availability = true`);
-  }
-  if (!skip.has("underTemporaryBooking") && input.underTemporaryBooking) {
-    parts.push(sql`doc.has_temporary_booking = true`);
-  }
   if (!skip.has("depositInsurance") && input.depositInsurance) {
     parts.push(sql`doc.deposit_insurance_included = true`);
   }
@@ -1807,20 +1891,19 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      *
      * Unbounded, this is what offered a September search a November week.
      */
-    parts.push(hasSellableStart(windowNights, range));
-
-    parts.push(sql`exists (
-      select 1
-      from listing_offer o
-      join listing_free_period free
-        on free.listing_offer_id = o.id
-       and free.start_date <= ${range.latestStart}
-       and free.end_date >= ${range.earliestEnd}
-       and free.end_date - free.start_date >= ${windowNights}
-      where o.listing_id = doc.listing_id
-        and o.status = 'active'
-        and ${nights ? checkinRuleClause(nights, range) : sql`true`}
-    )`);
+    const free = sql`(${hasSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights)})`;
+    /*
+     * A temporary booking is occupancy, so the week it covers is not among the free stretches
+     * and its boat is not an answer to this search. The toggle is the visitor saying they want
+     * to see those anyway: a hold is the one thing in the way that can still lapse, and a
+     * customer who would take the boat if it did is better served by a card that says so than
+     * by silence. Nothing else is relaxed -- a week somebody has actually booked stays gone.
+     */
+    parts.push(
+      !skip.has("underTemporaryBooking") && input.underTemporaryBooking
+        ? sql`(${free} or ${heldOnlyByOption(availabilityWindow, nights, range)})`
+        : free,
+    );
     /*
      * A free period is the provider's last word, which is up to a sync cycle old. Our own
      * live checkouts are current, so they come off here rather than waiting to be told.
@@ -2764,6 +2847,7 @@ export function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
     sellsRequestedPeriod: row.sellsRequestedPeriod ?? true,
     nearestCheckIn: row.nearestCheckIn ?? null,
     nearestCheckOut: row.nearestCheckOut ?? null,
+    temporarilyHeldUntil: row.temporarilyHeldUntil ?? null,
   };
 }
 

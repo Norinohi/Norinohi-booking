@@ -66,6 +66,7 @@ export async function createLead(
       name: input.name,
       email: input.email,
       phone: input.phone ?? null,
+      countryCode: input.countryCode ?? null,
       message: input.message ?? null,
       context: input.context ?? null,
     })
@@ -245,6 +246,7 @@ function present(row: typeof lead.$inferSelect, listingTitle: string | null): Le
     name: row.name,
     email: row.email,
     phone: row.phone,
+    countryCode: row.countryCode,
     message: row.message,
     context: row.context ?? null,
     answer: row.answer,

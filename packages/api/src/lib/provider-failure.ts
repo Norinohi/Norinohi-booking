@@ -8,18 +8,32 @@ import { log } from "evlog";
  * answers a refused hold with `NauSYS /CBMS-external/rest/booking/v6/createOption
  * failed with OPERATION_NOT_ALLOWED`, and that string was reaching the checkout
  * toast verbatim. `detail` keeps it for the event log and support; `customer` is
- * what the booking flow shows.
+ * what the booking flow shows, and `code` is what a translated surface shows
+ * instead of it.
  */
 export interface ProviderFailure {
+  /**
+   * Which of the three refusals this is, for a client that has to say it in its own language.
+   *
+   * The sentence below is English and stays English: it is written into `cancel_reason`, where
+   * support and the admin screens read it, and it is the fallback for anything that reaches a
+   * customer without going through a translated surface. A screen with a message catalogue
+   * answers off this code instead — see `holdRefusalSchema` in the web app.
+   */
+  code: ProviderFailureCode;
   customer: string;
   detail: string;
 }
 
-const UNAVAILABLE =
-  "That yacht is no longer available for these dates. Please pick new dates and try again.";
-const TRY_AGAIN = "The operator's system did not answer in time. Please try again in a moment.";
-const CONTACT_US =
-  "We could not complete this booking with the operator. Our team has been notified, so please try again shortly or contact us.";
+export type ProviderFailureCode = "SLOT_GONE" | "PROVIDER_TIMEOUT" | "PROVIDER_REFUSED";
+
+const CUSTOMER_MESSAGE = {
+  SLOT_GONE:
+    "That yacht is no longer available for these dates. Please pick new dates and try again.",
+  PROVIDER_TIMEOUT: "The operator's system did not answer in time. Please try again in a moment.",
+  PROVIDER_REFUSED:
+    "We could not complete this booking with the operator. Our team has been notified, so please try again shortly or contact us.",
+} satisfies Record<ProviderFailureCode, string>;
 
 /**
  * Whether the vendor said the charter itself is gone, rather than failing to answer.
@@ -40,16 +54,16 @@ export function saysSlotIsGone(error: Error | null): boolean {
  * add later needs no entry here: whatever `packages/providers` maps a status to
  * already decides which of the three a customer sees.
  */
-function customerMessage(error: Error | null): string {
-  if (saysSlotIsGone(error)) return UNAVAILABLE;
-  if (!(error instanceof ProviderError)) return CONTACT_US;
+function failureCode(error: Error | null): ProviderFailureCode {
+  if (saysSlotIsGone(error)) return "SLOT_GONE";
+  if (!(error instanceof ProviderError)) return "PROVIDER_REFUSED";
 
   switch (error.errorType) {
     case "rate_limited":
     case "transient":
-      return TRY_AGAIN;
+      return "PROVIDER_TIMEOUT";
     default:
-      return CONTACT_US;
+      return "PROVIDER_REFUSED";
   }
 }
 
@@ -61,8 +75,10 @@ export function describeProviderFailure(
   error: Error | null,
   fallbackDetail: string,
 ): ProviderFailure {
+  const code = failureCode(error);
   return {
-    customer: customerMessage(error),
+    code,
+    customer: CUSTOMER_MESSAGE[code],
     detail: error?.message ?? fallbackDetail,
   };
 }

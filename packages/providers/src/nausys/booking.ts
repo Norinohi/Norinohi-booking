@@ -59,6 +59,20 @@ export type SecurityTokenSink = (rotation: {
   securityToken: string;
 }) => Promise<void>;
 
+/**
+ * Writes down the reservation the INFO step just opened, against the quote that opened it.
+ *
+ * Separate from `SecurityTokenSink` because there is nothing to key a rotation on yet: the
+ * booking carries no `provider_reservation_id` until the hold succeeds, so a sink that matches
+ * on it updates no rows. This one finds the booking by our own quote id, the way the event
+ * recorder does.
+ */
+export type OpenedReservationSink = (opened: {
+  quoteId: string;
+  providerReservationId: string;
+  securityToken: string;
+}) => Promise<void>;
+
 export interface NausysBookingServiceDeps {
   client: NausysClient;
   resolver: CatalogueResolver;
@@ -67,6 +81,7 @@ export interface NausysBookingServiceDeps {
   verifyPrice: VerifyPrice;
   recordEvent?: ReservationEventRecorder;
   persistSecurityToken?: SecurityTokenSink;
+  persistOpenedReservation?: OpenedReservationSink;
   /**
    * Reads the reservation's current extras so a desired set can be diffed against them.
    *
@@ -115,6 +130,7 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
   const { client, resolver, config, db, verifyPrice } = deps;
   const recordEvent = deps.recordEvent ?? createReservationEventRecorder(db, PROVIDER);
   const persistSecurityToken = deps.persistSecurityToken ?? createSecurityTokenSink(db);
+  const persistOpenedReservation = deps.persistOpenedReservation ?? createOpenedReservationSink(db);
 
   /**
    * The uuid funnel: the only way this file issues a booking call.
@@ -208,6 +224,19 @@ export function createNausysBookingService(deps: NausysBookingServiceDeps): Naus
     // so it is logged and left alone: a compensating storno would be a second
     // provider call on an object that costs nothing to abandon.
     await logEvent(parsed.quoteId, "info_created", info);
+    /*
+     * And the handle it opened, before anything can fail.
+     *
+     * The uuid rotates on every change and is the only way back to a reservation, and it was
+     * stored only once the hold succeeded. A `createOption` refused after this point therefore
+     * left an INFO record at the vendor carrying the customer's name, email and phone, with no
+     * key on our side to reach it again -- not even to ask for it to be removed.
+     */
+    await persistOpenedReservation({
+      quoteId: parsed.quoteId,
+      providerReservationId: String(info.handle.id),
+      securityToken: info.handle.uuid,
+    });
 
     /*
      * `createWaitingOption` is a STRING on the vendor's side, not a boolean. A JSON `false`
@@ -724,6 +753,19 @@ async function quoteIdForReservation(
     .limit(1);
 
   return row?.quoteId ?? null;
+}
+
+/**
+ * Keyed on our own quote, because the booking has no vendor reservation id until this writes
+ * one. Both columns together: an id without its uuid is as unreachable as neither.
+ */
+export function createOpenedReservationSink(db: Database): OpenedReservationSink {
+  return async ({ quoteId, providerReservationId, securityToken }) => {
+    await db
+      .update(booking)
+      .set({ providerReservationId, providerReservationUuid: securityToken })
+      .where(and(eq(booking.provider, PROVIDER), eq(booking.quoteId, quoteId)));
+  };
 }
 
 export function createSecurityTokenSink(db: Database): SecurityTokenSink {

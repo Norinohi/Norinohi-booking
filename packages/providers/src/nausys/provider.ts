@@ -426,26 +426,52 @@ function parseResume(value: JsonField): NausysCatalogueCursor | null {
  * The listing's extras by canonical code, so a priced line can say what it is.
  * Both id spaces, because `freeYachts` prices out of both and the code carries
  * which one a row belongs to.
+ *
+ * Falls back to the name any other listing gives the same code, because the yacht record the
+ * catalogue is projected from is not a complete list of what an offer bills. `freeYachts`
+ * charges obligatory extras the vendor never published against the hull: every one of Nautic
+ * Alliance's 460 yachts omits service 52, "Final cleaning", and their offers carry it on every
+ * charter, so a Croatian checkout listed an unnamed "Charter extra" at zero euro.
+ *
+ * Safe because the id space is the vendor's own catalogue, not a per-listing one: all 654
+ * NauSYS codes we hold carry exactly one name across 7,456 listings. The listing's own row
+ * still wins where it has one -- prices and conditions are per listing even where names are
+ * not.
  */
 async function loadNausysExtraLabels(
   db: Database,
   listingId: string,
 ): Promise<ReadonlyMap<string, string>> {
-  const rows = await db
-    .select({
-      kind: providerExtraCatalogue.kind,
-      externalId: providerExtraCatalogue.externalId,
-      name: providerExtraCatalogue.name,
-    })
-    .from(providerExtraCatalogue)
-    .where(
-      and(
-        eq(providerExtraCatalogue.listingId, listingId),
-        eq(providerExtraCatalogue.source, "nausys"),
+  const [rows, catalogue] = await Promise.all([
+    db
+      .select({
+        kind: providerExtraCatalogue.kind,
+        externalId: providerExtraCatalogue.externalId,
+        name: providerExtraCatalogue.name,
+      })
+      .from(providerExtraCatalogue)
+      .where(
+        and(
+          eq(providerExtraCatalogue.listingId, listingId),
+          eq(providerExtraCatalogue.source, "nausys"),
+        ),
       ),
-    );
+    db
+      .selectDistinct({
+        kind: providerExtraCatalogue.kind,
+        externalId: providerExtraCatalogue.externalId,
+        name: providerExtraCatalogue.name,
+      })
+      .from(providerExtraCatalogue)
+      .where(eq(providerExtraCatalogue.source, "nausys")),
+  ]);
 
-  return new Map(rows.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]));
+  const labels = new Map(
+    catalogue.map((row) => [formatExtraCode(row.kind, row.externalId), row.name]),
+  );
+  for (const row of rows) labels.set(formatExtraCode(row.kind, row.externalId), row.name);
+
+  return labels;
 }
 
 /**

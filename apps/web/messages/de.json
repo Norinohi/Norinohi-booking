@@ -59,6 +59,13 @@
       "terms": "Akzeptieren Sie die Bedingungen, um fortzufahren",
       "cancellation": "Akzeptieren Sie die Stornierungsbedingungen, um fortzufahren",
       "paymentMessage": "Geben Sie Ihre Frage oder Anfrage ein",
+      "hold": {
+        "SLOT_GONE": "Diese Yacht ist für diese Daten nicht mehr verfügbar. Bitte wählen Sie neue Daten und versuchen Sie es erneut.",
+        "PROVIDER_TIMEOUT": "Das System des Anbieters hat nicht rechtzeitig geantwortet. Bitte versuchen Sie es gleich noch einmal.",
+        "PROVIDER_REFUSED": "Wir konnten diese Buchung beim Anbieter nicht abschließen. Unser Team ist informiert. Bitte versuchen Sie es in Kürze erneut oder kontaktieren Sie uns.",
+        "SLOT_TAKEN": "Diese Yacht wurde während Ihrer Buchung vergeben. Bitte wählen Sie neue Daten und versuchen Sie es erneut.",
+        "HOLD_NEVER_HELD": "Diese Buchung konnte nicht reserviert werden. Bitte wählen Sie Ihre Daten erneut, um einen neuen Preis zu erhalten."
+      },
       "confirmFailed": "Ihre Buchung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut.",
       "holdInProgress": "Ihr letzter Versuch wird noch abgeschlossen. Bitte warten Sie einen Moment und bestätigen Sie erneut.",
       "billingName": "Geben Sie den Rechnungsnamen ein",
@@ -517,6 +524,7 @@
       "battenMainsail": "Lattengroßsegel",
       "badges": {
         "available": "Verfügbar",
+        "temporarilyHeld": "Vorläufig reserviert",
         "onRequest": "Auf Anfrage",
         "unavailable": "Nicht verfügbar",
         "bestForFamilies": "Ideal für Familien",
@@ -551,7 +559,8 @@
         "skipperOptional": "Skipper optional"
       },
       "moreAmenities": "{count} weitere Ausstattungsmerkmale anzeigen",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "Reserviert bis {date}"
     },
     "gallery": {
       "close": "Schließen",
@@ -585,6 +594,10 @@
         "phone": {
           "label": "Telefon (optional)",
           "placeholder": "+49 170 1234567"
+        },
+        "country": {
+          "label": "Land",
+          "placeholder": "Land auswählen"
         },
         "message": {
           "label": "Nachricht (optional)",
@@ -658,7 +671,33 @@
     },
     "quoteLines": {
       "referral-welcome": "Willkommensrabatt über Empfehlung",
-      "referral-credit": "Empfehlungsguthaben"
+      "referral-credit": "Empfehlungsguthaben",
+      "provider-discount": "Charter-Rabatt"
+    }
+  },
+  "Contact": {
+    "title": "Kontakt aufnehmen",
+    "subtitle": "Buchen Sie ein Gespräch oder schreiben Sie uns, ganz wie es Ihnen passt.",
+    "options": {
+      "call": {
+        "title": "Kurzes Gespräch buchen",
+        "description": "Wählen Sie eine passende Zeit, ein kurzes Gespräch mit einem Charter-Experten."
+      },
+      "message": {
+        "title": "Nachricht senden",
+        "description": "Sagen Sie uns, wonach Sie suchen, und wir antworten per E-Mail."
+      }
+    },
+    "placeholder": {
+      "title": "Die Buchung kommt bald",
+      "description": "Die Online-Terminbuchung ist noch nicht fertig. Schreiben Sie uns, und wir finden eine Zeit, die Ihnen passt.",
+      "cta": "Stattdessen eine Nachricht senden"
+    },
+    "send": "Nachricht senden",
+    "sent": "Danke! Ein Charter-Experte meldet sich in Kürze bei Ihnen.",
+    "submitted": {
+      "title": "Danke, wir melden uns",
+      "description": "Einer unserer Charter-Experten meldet sich in Kürze."
     }
   },
   "Filters": {
@@ -697,7 +736,7 @@
       "length": "Länge",
       "cabins": "Kabinen",
       "berths": "Kojen (Schlafplätze)",
-      "bathrooms": "Bäder",
+      "bathrooms": "Toilette/Dusche",
       "price": "Preis (für gewählten Zeitraum)",
       "boatAge": "Bootsalter",
       "year": "Baujahr",
@@ -740,11 +779,14 @@
       "builtTo": "Baujahr bis"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Yachten ohne Verfügbarkeitsbestätigung anzeigen",
-      "underTemporaryBooking": "Yachten mit vorläufiger Buchung anzeigen",
+      "underTemporaryBooking": "Auch vorläufig gebuchte Yachten anzeigen",
       "depositInsurance": "Kautionsversicherung inklusive",
       "petsAllowed": "Haustiere erlaubt",
       "bestValue": "Nur bestes Preis-Leistungs-Verhältnis"
+    },
+    "hints": {
+      "underTemporaryBooking": "Diese Wochen sind für andere Kunden reserviert und können noch frei werden.",
+      "needsDates": "Wählen Sie ein Startdatum, um diesen Filter zu nutzen."
     },
     "units": {
       "years": "{count, plural, one {# Jahr} other {# Jahre}}"
@@ -771,11 +813,10 @@
       "length": "Länge: {value}",
       "cabins": "Kabinen: {value}",
       "berths": "Kojen: {value}",
-      "bathrooms": "Bäder: {value}",
+      "bathrooms": "Toilette/Dusche: {value}",
       "price": "Preis: {value}",
       "year": "Baujahr: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Ohne Verfügbarkeitsbestätigung",
-      "underTemporaryBooking": "Vorläufig gebucht",
+      "underTemporaryBooking": "Reservierte Wochen einbezogen",
       "depositInsurance": "Kautionsversicherung",
       "petsAllowed": "Haustiere erlaubt",
       "bestValue": "Bestes Preis-Leistungs-Verhältnis",
@@ -1019,7 +1060,8 @@
         "planTrip": "Reise planen lassen",
         "popularYachts": "Beliebte Yachten",
         "customerReviews": "Das sagen unsere Kunden",
-        "howItWorks": "So funktioniert's"
+        "howItWorks": "So funktioniert's",
+        "contact": "Kontakt"
       },
       "privacy": "Datenschutz",
       "terms": "Nutzungsbedingungen",
@@ -1339,8 +1381,6 @@
     "removeFromWishlist": "Von Wunschliste entfernen",
     "included": "Inklusive",
     "amenities": {
-      "showAll": "Alle Ausstattungen anzeigen ({count})",
-      "showFewer": "Weniger anzeigen",
       "groups": {
         "navigation-and-safety": "Navigation und Sicherheit",
         "deck-and-cockpit": "Deck und Cockpit",
@@ -1349,7 +1389,10 @@
         "entertainment-and-water-toys": "Unterhaltung und Wassersport",
         "systems-and-power": "Technik und Stromversorgung",
         "other": "Weitere Ausstattung"
-      }
+      },
+      "itemCount": "{count, plural, one {# Position} other {# Positionen}}",
+      "allIncluded": "Alle aufgeführten Ausstattungen sind im Charterpreis enthalten.",
+      "dismissNote": "Schließen"
     },
     "importantInfo": {
       "charterCompany": "Charterunternehmen",
@@ -1399,7 +1442,7 @@
       "crew": "Crew",
       "people": "Personen",
       "datesPlaceholder": "Daten wählen",
-      "selectDates": "Wählen Sie Ihre Daten, um den Preis zu sehen",
+      "selectDates": "Bitte wählen Sie Daten, um den Preis zu sehen",
       "unavailable": "Diese Yacht hat keine verfügbaren Termine",
       "unavailableHint": "Fragen Sie uns nach anderen Terminen oder einer ähnlichen Yacht.",
       "slotRefused": "Diese Daten sind nicht buchbar. Bitte wählen Sie einen anderen Zeitraum.",
@@ -1715,6 +1758,10 @@
     "Popular": {
       "title": "Beliebte Auswahl",
       "description": "Legen Sie fest, welche Werte die Filter und die Startseite anführen."
+    },
+    "Contact": {
+      "title": "Kontakt",
+      "description": "Sprechen Sie mit einem Charter-Experten über Ihre nächste Reise."
     }
   },
   "Profile": {
@@ -1724,6 +1771,8 @@
     "lastName": "Nachname",
     "email": "E-Mail-Adresse",
     "phone": "Telefonnummer",
+    "country": "Land",
+    "countryPlaceholder": "Land auswählen",
     "password": "Passwort",
     "changePassword": "Passwort ändern",
     "save": "Änderungen speichern",
@@ -2484,6 +2533,27 @@
         "auth": "Auth",
         "not_found": "Nicht gefunden",
         "contract": "Vertrag"
+      },
+      "unreleasedOptions": {
+        "title": "Vom Anbieter weiterhin blockierte Termine",
+        "subtitle": "Hier storniert, aber der Anbieter hat die Woche nicht zurückgenommen. Sie ist für niemanden buchbar, bis sie freigegeben wird oder die Option des Anbieters ausläuft.",
+        "empty": "Es ist nichts blockiert.",
+        "reference": "Buchung",
+        "yacht": "Yacht",
+        "dates": "Zeitraum",
+        "period": "{from} bis {to}",
+        "provider": "Anbieter",
+        "optionId": "Options-ID",
+        "hold": "Option",
+        "refusedAt": "Abgelehnt",
+        "reason": "Antwort des Anbieters",
+        "retry": "Erneut anfragen",
+        "holdUnknown": "Nicht angegeben",
+        "lapsed": "Abgelaufen",
+        "holdsUntil": "Gehalten bis {when}",
+        "released": "{reference}: Der Anbieter hat den Termin freigegeben.",
+        "refusedAgain": "{reference}: Der Anbieter hat erneut abgelehnt.",
+        "retryFailed": "{reference}: Der Anbieter war nicht erreichbar."
       }
     },
     "Audit": {
@@ -2638,6 +2708,8 @@
         "provider": "Anbieter",
         "status": "Status",
         "allProviders": "Alle Anbieter",
+        "operator": "Anbieter",
+        "allOperators": "Alle Anbieter",
         "allStatuses": "Alle Status",
         "search": "Suche nach Titel oder Slug"
       },

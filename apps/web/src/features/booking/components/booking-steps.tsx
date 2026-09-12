@@ -20,7 +20,8 @@ import { createHoldMutationOptions } from "../api/queries";
 import type { BookingValues } from "../lib/booking-form";
 import { canPay } from "../lib/checkout-status";
 import { rememberGuestAccess } from "../lib/guest-access";
-import { holdFailureSchema } from "../lib/hold";
+import { forgetGuestDraft } from "../lib/guest-draft";
+import { holdFailureSchema, holdRefusalSchema } from "../lib/hold";
 import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
 import GuestDetailsStep from "./steps/guest-details";
@@ -86,6 +87,7 @@ export default function BookingSteps() {
   const consents = useWatch({ control, name: "reviewAndBook" });
   const consented = Boolean(consents?.terms && consents.cancellation);
   const {
+    slug,
     listing,
     quote,
     extras,
@@ -290,6 +292,9 @@ export default function BookingSteps() {
       }
 
       rememberGuestAccess(hold.bookingId, hold.accessToken);
+      /* The booking now holds these details; the copy kept for a remount has nothing left to
+         restore and is the customer's own data, so it goes. */
+      forgetGuestDraft(slug);
       setBookingId(hold.bookingId);
       setCompleted((prev) => new Set(prev).add("reviewAndBook"));
       setOpen("payment");
@@ -301,9 +306,21 @@ export default function BookingSteps() {
         toast.error(t("errors.holdInProgress"));
         return;
       }
-      /* Only a server-authored refusal is worth showing: an ORPCError message is written for
-         the customer, while anything else here is a transport failure whose text ("Failed to
-         fetch", a provider's own endpoint name) means nothing to them. */
+      /*
+       * Said in the reader's language where the server named which refusal this is. The
+       * message on the error is the same sentence in English, kept for `cancel_reason` and
+       * for support, and it was what a Ukrainian checkout used to be answered with.
+       *
+       * Only a server-authored refusal is worth showing at all: anything else here is a
+       * transport failure whose text ("Failed to fetch", a provider's own endpoint name)
+       * means nothing to a customer.
+       */
+      const data = error instanceof ORPCError ? error.data : null;
+      const refusal = holdRefusalSchema.safeParse(data).data;
+      if (refusal) {
+        toast.error(t(`errors.hold.${refusal.code}`));
+        return;
+      }
       toast.error(error instanceof ORPCError ? error.message : t("errors.confirmFailed"));
     }
   }

@@ -72,7 +72,8 @@ export async function confirmBookingWithProvider(
   try {
     const request: ConfirmRequest = {
       listingId: row.listingId,
-      quoteId: priced.providerQuoteId ?? row.quoteId,
+      quoteId: row.quoteId,
+      ...(priced.providerQuoteId ? { providerQuoteId: priced.providerQuoteId } : null),
       checkIn: priced.checkIn,
       checkOut: priced.checkOut,
       guests: priced.guests,

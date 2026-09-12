@@ -88,6 +88,12 @@ export type BoatCardProps = {
    * this boat would actually sell; without a word here that reads as the wrong dates.
    */
   datesNote?: string;
+  /**
+   * The day a temporary booking over the searched week runs out. Present only on the boats the
+   * hold filter added to the results, where the dates above are the ones somebody else is
+   * holding, so the card has to say what the visitor would be waiting for.
+   */
+  heldUntil?: string;
   priceLabel: string;
   price: string;
   /**
@@ -334,6 +340,7 @@ function Action({
   stats,
   start,
   datesNote,
+  heldUntil,
   end,
   priceLabel,
   price,
@@ -351,6 +358,7 @@ function Action({
   | "stats"
   | "start"
   | "datesNote"
+  | "heldUntil"
   | "end"
   | "priceLabel"
   | "price"
@@ -365,6 +373,7 @@ function Action({
   | "footer"
 >) {
   const t = useTranslations("Common.boatCard");
+  const format = useFormatter();
 
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 p-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:p-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:pl-0">
@@ -382,11 +391,20 @@ function Action({
         </p>
       ) : null}
 
+      {heldUntil ? (
+        <p className="w-full text-center text-sm leading-[1.3] text-gold md:text-left">
+          {t("heldUntil", { date: format.dateTime(dayToDisplay(heldUntil), "dayShort") })}
+        </p>
+      ) : null}
+
+      {/* `min-w-0` throughout, and no `flex-none`: a longer locale writes the same date as
+          "10 жовт. 2026 р.", which overran the narrow price column when the dates could not
+          shrink. */}
       {start && end ? (
-        <div className="flex w-full items-center justify-center gap-3 md:justify-start ">
-          <CharterDate value={start} className="flex-1 items-center md:flex-none md:items-start" />
+        <div className="flex w-full min-w-0 items-center justify-center gap-3 md:justify-start">
+          <CharterDate value={start} className="min-w-0 flex-1 items-center md:items-start" />
           <ArrowRight className="size-4 shrink-0 text-foreground" />
-          <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
+          <CharterDate value={end} className="min-w-0 flex-1 items-center md:items-start" />
         </div>
       ) : null}
 
@@ -436,11 +454,11 @@ function Action({
         {priceExtras ? (
           <p className="text-sm font-medium leading-[1.3] text-natural-500">{priceExtras}</p>
         ) : null}
-        {note ? <CardNote backdrop note={note} className="flex md:hidden" /> : null}
+        {note ? <CardNote backdrop note={note} className="flex w-full md:hidden" /> : null}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">
-        {note ? <CardNote backdrop note={note} className="hidden md:flex" /> : null}
+        {note ? <CardNote backdrop note={note} className="hidden w-full md:flex" /> : null}
         <Button
           variant="neutral"
           size="md"
@@ -494,6 +512,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           stats={boat.stats}
           start={boat.start}
           datesNote={boat.datesNote}
+          heldUntil={boat.heldUntil}
           end={boat.end}
           priceLabel={boat.priceLabel}
           price={boat.price}

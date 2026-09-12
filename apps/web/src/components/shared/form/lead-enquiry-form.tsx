@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import {
@@ -14,11 +14,12 @@ import {
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import CountryCombobox from "@/components/shared/form/country-combobox";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
@@ -36,6 +37,7 @@ function useLeadSchema() {
         name: z.string().trim().min(1, t("nameRequired")).max(200),
         email: z.email(t("emailInvalid")),
         phone: z.string().trim().max(32).optional().or(z.literal("")),
+        countryCode: z.string().trim().optional().or(z.literal("")),
         message: z.string().trim().max(2000).optional().or(z.literal("")),
       }),
     [t],
@@ -54,6 +56,11 @@ interface LeadEnquiryFormProps {
   kind: LeadKind;
   listingId?: string;
   context?: LeadContext;
+  /**
+   * Adds the country field. Off by default: a quote has to be priced against where the customer
+   * travels from, while "contact an expert" is a conversation that can ask for itself.
+   */
+  askCountry?: boolean;
   submitLabel: string;
   successMessage: string;
   submitClassName?: string;
@@ -64,6 +71,7 @@ export function LeadEnquiryForm({
   kind,
   listingId,
   context,
+  askCountry = false,
   submitLabel,
   successMessage,
   submitClassName = "w-full md:w-auto",
@@ -71,6 +79,15 @@ export function LeadEnquiryForm({
 }: LeadEnquiryFormProps) {
   const t = useTranslations("Common.leadForm");
   const { data: session } = authClient.useSession();
+  /*
+   * The phone and the country the customer has already given us once. The session carries
+   * neither, so they come from the profile -- asked only of a signed-in visitor, because
+   * `profile.get` is protected and an enquiry is open to everyone.
+   */
+  const { data: profile } = useQuery({
+    ...orpc.profile.get.queryOptions({ staleTime: 30_000 }),
+    enabled: Boolean(session?.user),
+  });
   const createLead = useMutation(orpc.lead.create.mutationOptions());
 
   const schema = useLeadSchema();
@@ -80,10 +97,24 @@ export function LeadEnquiryForm({
       name: session?.user.name ?? "",
       email: session?.user.email ?? "",
       phone: "",
+      countryCode: "",
       message: "",
     },
     mode: "onTouched",
   });
+
+  /*
+   * In an effect because the profile is a fetch: the form is already mounted with its defaults
+   * by the time it lands. Only empty fields are filled, so a customer who has started typing
+   * keeps what they wrote.
+   */
+  const { getValues, setValue } = form;
+  const savedPhone = profile?.phone;
+  const savedCountry = profile?.countryCode;
+  useEffect(() => {
+    if (savedPhone && !getValues("phone")) setValue("phone", savedPhone);
+    if (savedCountry && !getValues("countryCode")) setValue("countryCode", savedCountry);
+  }, [savedPhone, savedCountry, getValues, setValue]);
 
   const onSubmit = async (values: Values) => {
     try {
@@ -93,6 +124,7 @@ export function LeadEnquiryForm({
         name: values.name,
         email: values.email,
         phone: values.phone || undefined,
+        countryCode: values.countryCode || undefined,
         message: values.message || undefined,
         context,
       });
@@ -160,6 +192,26 @@ export function LeadEnquiryForm({
               </FormItem>
             )}
           />
+          {askCountry ? (
+            <FormField
+              control={form.control}
+              name="countryCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("fields.country.label")}</FormLabel>
+                  <FormControl>
+                    <CountryCombobox
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder={t("fields.country.placeholder")}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
           <FormField
             control={form.control}
             name="message"

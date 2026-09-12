@@ -19,6 +19,8 @@ export const leadCreateInputSchema = z
     name: z.string().trim().min(1).max(200),
     email: z.email(),
     phone: z.string().trim().max(32).optional(),
+    /* ISO 3166-1 alpha-2. Only the quote form asks for it, so it is optional here. */
+    countryCode: z.string().trim().length(2).toUpperCase().optional(),
     message: z.string().trim().max(2000).optional(),
     context: z.record(z.string(), z.unknown()).optional(),
   })
@@ -47,6 +49,7 @@ export const leadSchema = leadCreatedSchema.extend({
   name: z.string(),
   email: z.string(),
   phone: z.string().nullable(),
+  countryCode: z.string().nullable(),
   message: z.string().nullable(),
   context: z.unknown().nullable(),
   answer: z.string().nullable(),

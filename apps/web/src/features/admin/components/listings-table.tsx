@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Image } from "@/components/shared/data-display/image";
 import { Link } from "@/i18n/navigation";
 
+import { useCommissionOperatorOptions } from "../hooks/use-commissions";
 import { useListings, useSetListingStatus } from "../hooks/use-listings";
 import {
   type ListingAdminRow,
@@ -77,6 +78,7 @@ export default function ListingsTable() {
   const tProviders = useTranslations("Admin.providers");
   const format = useFormatter();
   const [provider, setProvider] = useState(ALL);
+  const [operatorId, setOperatorId] = useState(ALL);
   const [status, setStatus] = useState(ALL);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -85,9 +87,14 @@ export default function ListingsTable() {
 
   const setStatusMutation = useSetListingStatus();
 
+  /* Every operator, not a search: the picker is a filter with a fixed, short list rather than
+     the rate form's type-ahead, and the catalogue sync is the only thing that writes them. */
+  const operators = useCommissionOperatorOptions("");
+
   const { data, isPending, isError } = useListings({
     /* The ALL sentinel is in neither list, so it drops out as `undefined`. */
     provider: PROVIDERS.find((option) => option === provider),
+    operatorId: operatorId === ALL ? undefined : operatorId,
     status: FILTER_STATUSES.find((option) => option === status),
     query: query.trim() || undefined,
     page,
@@ -157,6 +164,21 @@ export default function ListingsTable() {
               ...PROVIDERS.map((key) => ({
                 value: key,
                 label: tProviders(key),
+              })),
+            ]}
+          />
+        </div>
+        <div className="min-w-0 md:w-56">
+          <Select
+            className="h-12 min-w-0"
+            ariaLabel={t("filters.operator")}
+            value={operatorId}
+            onValueChange={onFilterChange(setOperatorId)}
+            options={[
+              { value: ALL, label: t("filters.allOperators") },
+              ...(operators.data?.items ?? []).map((item) => ({
+                value: item.id,
+                label: item.name,
               })),
             ]}
           />

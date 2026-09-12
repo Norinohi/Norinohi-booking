@@ -56,7 +56,15 @@ export type ListingSearchInput = {
   yearTo?: number;
   minGuestRating?: number;
   maxGuestRating?: number;
-  withoutAvailabilityConfirmation?: boolean;
+  /**
+   * Widens a dated search with the boats whose requested week is held under a temporary
+   * booking and nothing else. Those weeks are occupancy like any other, so the search hides
+   * them by default; a hold is the one kind of occupancy that can still fall through.
+   *
+   * Read only when the search carries dates. Without them there is no week to ask about, and
+   * the flag a listing used to carry -- an option anywhere in its calendar -- answered a
+   * question nobody asked.
+   */
   underTemporaryBooking?: boolean;
   depositInsurance?: boolean;
   petsAllowed?: boolean;
@@ -143,6 +151,15 @@ export type ListingSearchDoc = {
   mainImage: string | null;
   gallery: string[];
   amenities: string[];
+  /**
+   * The same amenities in the vendor's own English, set only where `amenities` was translated.
+   *
+   * Curated rank is keyed on the English facet value, so ranking the translated labels matched
+   * nothing: every non-English card fell back to the boat's first four fittings and lost the
+   * "+n" that discloses the rest. Display reads `amenities`; anything that looks a value up
+   * reads this.
+   */
+  amenityKeys?: string[];
   priceFromMinor: number | null;
   /**
    * Whether `priceFromMinor` prices the advertised charter or starts from the season. See the
@@ -174,8 +191,12 @@ export type ListingSearchDoc = {
   /** Both ends of the first sellable charter; see `bookableFrom` on the `listing_search_doc` schema. */
   bookableFrom: string | null;
   bookableTo: string | null;
-  hasUnconfirmedAvailability: boolean;
-  hasTemporaryBooking: boolean;
+  /**
+   * The day the temporary booking over the searched week runs out, when that hold is the only
+   * thing standing between this boat and the charter asked for. Null everywhere else: on an
+   * undated search, and on every boat whose week is genuinely free.
+   */
+  temporarilyHeldUntil: string | null;
   /*
    * Whether this listing's own rules would sell a charter starting on the day the search named.
    * Always true when the search carried no dates. False means the boat is free across the window
@@ -232,7 +253,7 @@ export type ListingDetail = ListingSearchDoc & {
    * one. Not in the gallery: these are links a visitor follows off the page, not images.
    */
   media: { videoUrl: string | null; tourUrl: string | null };
-  includedAmenities: { code: string; label: string; group: AmenityGroup }[];
+  includedAmenities: { code: string; label: string; group: AmenityGroup; icon: string | null }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingOptionalItem[];
   /** What the sidebar's Crew control may offer, and what each role costs. */
@@ -419,7 +440,7 @@ export type ListingFacets = {
     guestRating: { min: number; max: number };
   };
   toggles: {
-    withoutAvailabilityConfirmation: boolean;
+    /** Whether any boat in this search has the requested week held under a temporary booking. */
     underTemporaryBooking: boolean;
     depositInsurance: boolean;
     petsAllowed: boolean;

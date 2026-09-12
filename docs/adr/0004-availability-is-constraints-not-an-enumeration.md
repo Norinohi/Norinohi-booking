@@ -61,7 +61,9 @@ the calendar in the booking sidebar consumes them; `availability.quote` remains 
   cheapest published weekly rate: 109 of 109 listings carry one, where 8 did not.
 - **`has_unconfirmed_availability` changed meaning slightly.** It was "some available slot is not
   vendor-confirmed"; it is now "some free period is not covered by a confirmed offer". The filter it
-  backs behaves the same, and the column name still describes it.
+  backs behaves the same, and the column name still describes it. _Since removed:_ under this
+  reading 18,415 of 18,586 listings carried the flag, so the filter told a visitor nothing; the
+  column and its control are gone.
 - **Free periods are written per year, and only for years whose occupancy dump arrived whole.** The
   sync already refuses to sweep a year whose fetch failed; the same guard gates these writes.
   Without it a failed fetch would advertise a boat as free on the strength of not having looked.

@@ -15,8 +15,8 @@ import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
 import { Search } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
 
 import { useLeads, useSetLeadStatus } from "../hooks/use-inbox";
 import type { LeadKind, LeadRow, LeadStatus } from "../types";
@@ -46,6 +46,12 @@ const SKELETON_WIDTHS = ["w-20", "w-28", "w-24", "w-3/4", "w-16", "w-24"];
 export default function LeadsTable() {
   const t = useTranslations("Admin.Inbox.leads");
   const format = useFormatter();
+  const locale = useLocale();
+  /* The lead stores the ISO code the form collected; staff should read a country. */
+  const countryNames = useMemo(
+    () => new Intl.DisplayNames([locale], { type: "region", fallback: "code" }),
+    [locale],
+  );
   const [status, setStatus] = useState<string>("new");
   const [kind, setKind] = useState<string>(ALL);
   const [query, setQuery] = useState("");
@@ -169,6 +175,12 @@ export default function LeadsTable() {
                             >
                               {lead.phone}
                             </a>
+                          ) : null}
+                          {/* Only the quote form asks, and it is what the price depends on. */}
+                          {lead.countryCode ? (
+                            <span className="text-sm text-natural-500">
+                              {countryNames.of(lead.countryCode) ?? lead.countryCode}
+                            </span>
                           ) : null}
                         </div>
                       </TableCell>

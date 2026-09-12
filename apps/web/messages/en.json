@@ -59,6 +59,13 @@
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",
+      "hold": {
+        "SLOT_GONE": "That yacht is no longer available for these dates. Please pick new dates and try again.",
+        "PROVIDER_TIMEOUT": "The operator's system did not answer in time. Please try again in a moment.",
+        "PROVIDER_REFUSED": "We could not complete this booking with the operator. Our team has been notified, so please try again shortly or contact us.",
+        "SLOT_TAKEN": "This yacht was taken while you were checking out. Please pick new dates and try again.",
+        "HOLD_NEVER_HELD": "This booking could not be held. Please pick your dates again to get a new price."
+      },
       "confirmFailed": "Could not confirm your booking. Please try again.",
       "holdInProgress": "Still finishing your last attempt. Give it a moment, then confirm again.",
       "billingName": "Enter the name to bill",
@@ -517,6 +524,7 @@
       "battenMainsail": "Batten mainsail",
       "badges": {
         "available": "Available",
+        "temporarilyHeld": "Temporarily held",
         "onRequest": "On request",
         "unavailable": "Unavailable",
         "bestForFamilies": "Best for families",
@@ -551,7 +559,8 @@
         "skipperOptional": "Skipper optional"
       },
       "moreAmenities": "Show {count} more amenities",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "On hold until {date}"
     },
     "gallery": {
       "close": "Close",
@@ -585,6 +594,10 @@
         "phone": {
           "label": "Phone (optional)",
           "placeholder": "+1 234 567 8900"
+        },
+        "country": {
+          "label": "Country",
+          "placeholder": "Select your country"
         },
         "message": {
           "label": "Message (optional)",
@@ -658,7 +671,33 @@
     },
     "quoteLines": {
       "referral-welcome": "Referral welcome discount",
-      "referral-credit": "Referral credit"
+      "referral-credit": "Referral credit",
+      "provider-discount": "Charter discount"
+    }
+  },
+  "Contact": {
+    "title": "Get in touch",
+    "subtitle": "Book a call or send us a message, whichever suits you.",
+    "options": {
+      "call": {
+        "title": "Book a quick call",
+        "description": "Pick a time that works for you, a short call with a charter expert."
+      },
+      "message": {
+        "title": "Send a message",
+        "description": "Tell us what you are looking for and we'll get back to you by email."
+      }
+    },
+    "placeholder": {
+      "title": "Booking is coming soon",
+      "description": "Online scheduling isn't ready yet. Send us a message and we'll set up a time that works for you.",
+      "cta": "Send a message instead"
+    },
+    "send": "Send message",
+    "sent": "Thanks! A charter expert will be in touch shortly.",
+    "submitted": {
+      "title": "Thanks, we'll be in touch",
+      "description": "One of our charter experts will follow up shortly."
     }
   },
   "Filters": {
@@ -697,7 +736,7 @@
       "length": "Length",
       "cabins": "Cabins",
       "berths": "Berths (sleeping capacity)",
-      "bathrooms": "Bathrooms",
+      "bathrooms": "Toilet/shower",
       "price": "Price (for selected period)",
       "boatAge": "Boat age",
       "year": "Year",
@@ -740,11 +779,14 @@
       "builtTo": "Built to year"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Show yachts without availability confirmation",
-      "underTemporaryBooking": "Show yachts under temporary booking",
+      "underTemporaryBooking": "Also show yachts held under a temporary booking",
       "depositInsurance": "Security deposit insurance included",
       "petsAllowed": "Pets allowed",
       "bestValue": "Best value only"
+    },
+    "hints": {
+      "underTemporaryBooking": "These weeks are on hold for another customer and can still fall through.",
+      "needsDates": "Choose a start date to use this filter."
     },
     "units": {
       "years": "{count, plural, one {# year} other {# years}}"
@@ -771,11 +813,10 @@
       "length": "Length: {value}",
       "cabins": "Cabins: {value}",
       "berths": "Berths: {value}",
-      "bathrooms": "Bathrooms: {value}",
+      "bathrooms": "Toilet/shower: {value}",
       "price": "Price: {value}",
       "year": "Year: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Without availability confirmation",
-      "underTemporaryBooking": "Under temporary booking",
+      "underTemporaryBooking": "Held weeks included",
       "depositInsurance": "Deposit insurance",
       "petsAllowed": "Pets allowed",
       "bestValue": "Best value",
@@ -1019,7 +1060,8 @@
         "planTrip": "Help me plan my trip",
         "popularYachts": "Popular yachts",
         "customerReviews": "What our customers say",
-        "howItWorks": "How it works"
+        "howItWorks": "How it works",
+        "contact": "Contact us"
       },
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
@@ -1339,8 +1381,6 @@
     "removeFromWishlist": "Remove From Wishlist",
     "included": "Included",
     "amenities": {
-      "showAll": "Show all amenities ({count})",
-      "showFewer": "Show fewer",
       "groups": {
         "navigation-and-safety": "Navigation and safety",
         "deck-and-cockpit": "Deck and cockpit",
@@ -1349,7 +1389,10 @@
         "entertainment-and-water-toys": "Entertainment and water toys",
         "systems-and-power": "Systems and power",
         "other": "Other equipment"
-      }
+      },
+      "itemCount": "{count, plural, one {# item} other {# items}}",
+      "allIncluded": "All listed amenities are included in the charter price.",
+      "dismissNote": "Dismiss"
     },
     "importantInfo": {
       "charterCompany": "Charter company",
@@ -1399,7 +1442,7 @@
       "crew": "Crew",
       "people": "People",
       "datesPlaceholder": "Select dates",
-      "selectDates": "Select your dates to see the price",
+      "selectDates": "Please select dates to see the price",
       "unavailable": "This yacht has no available dates",
       "unavailableHint": "Ask us about other dates or a similar yacht.",
       "slotRefused": "Those dates are not bookable. Please choose another period.",
@@ -1715,6 +1758,10 @@
     "Popular": {
       "title": "Popular picks",
       "description": "Curate which facet values head the filters and the home page."
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "Talk to a charter expert about your next trip."
     }
   },
   "Profile": {
@@ -1724,6 +1771,8 @@
     "lastName": "Last Name",
     "email": "Email Address",
     "phone": "Phone Number",
+    "country": "Country",
+    "countryPlaceholder": "Select your country",
     "password": "Password",
     "changePassword": "Change Password",
     "save": "Save Changes",
@@ -2484,6 +2533,27 @@
         "auth": "Auth",
         "not_found": "Not found",
         "contract": "Contract"
+      },
+      "unreleasedOptions": {
+        "title": "Slots still held by a vendor",
+        "subtitle": "Cancelled here, but the operator refused to take the week back. It sells to nobody until it is freed or the vendor's own hold lapses.",
+        "empty": "Nothing is held against us.",
+        "reference": "Booking",
+        "yacht": "Yacht",
+        "dates": "Dates",
+        "period": "{from} to {to}",
+        "provider": "Vendor",
+        "optionId": "Option id",
+        "hold": "Hold",
+        "refusedAt": "Refused",
+        "reason": "What the vendor said",
+        "retry": "Ask again",
+        "holdUnknown": "Not published",
+        "lapsed": "Lapsed",
+        "holdsUntil": "Held until {when}",
+        "released": "{reference}: the vendor let the slot go.",
+        "refusedAgain": "{reference}: the vendor refused again.",
+        "retryFailed": "{reference}: could not reach the vendor."
       }
     },
     "Audit": {
@@ -2638,6 +2708,8 @@
         "provider": "Provider",
         "status": "Status",
         "allProviders": "All providers",
+        "operator": "Operator",
+        "allOperators": "All operators",
         "allStatuses": "All statuses",
         "search": "Search by title or slug"
       },

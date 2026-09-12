@@ -59,6 +59,13 @@
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
+      "hold": {
+        "SLOT_GONE": "Este yate ya no está disponible para estas fechas. Elige otras fechas e inténtalo de nuevo.",
+        "PROVIDER_TIMEOUT": "El sistema del operador no respondió a tiempo. Inténtalo de nuevo en un momento.",
+        "PROVIDER_REFUSED": "No pudimos completar esta reserva con el operador. Nuestro equipo ya está avisado, así que inténtalo de nuevo en breve o contacta con nosotros.",
+        "SLOT_TAKEN": "Este yate se reservó mientras completabas el pago. Elige otras fechas e inténtalo de nuevo.",
+        "HOLD_NEVER_HELD": "No se pudo retener esta reserva. Vuelve a elegir tus fechas para obtener un precio nuevo."
+      },
       "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo.",
       "holdInProgress": "Todavía estamos finalizando tu intento anterior. Espera un momento y vuelve a confirmar.",
       "billingName": "Introduce el nombre de facturación",
@@ -517,6 +524,7 @@
       "battenMainsail": "Mayor con sables",
       "badges": {
         "available": "Disponible",
+        "temporarilyHeld": "Retenido temporalmente",
         "onRequest": "Bajo petición",
         "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
@@ -551,7 +559,8 @@
         "skipperOptional": "Patrón opcional"
       },
       "moreAmenities": "Ver {count} equipamientos más",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "Retenido hasta el {date}"
     },
     "gallery": {
       "close": "Cerrar",
@@ -585,6 +594,10 @@
         "phone": {
           "label": "Teléfono (opcional)",
           "placeholder": "+1 234 567 8900"
+        },
+        "country": {
+          "label": "País",
+          "placeholder": "Selecciona tu país"
         },
         "message": {
           "label": "Mensaje (opcional)",
@@ -658,7 +671,33 @@
     },
     "quoteLines": {
       "referral-welcome": "Descuento de bienvenida por recomendación",
-      "referral-credit": "Crédito por recomendación"
+      "referral-credit": "Crédito por recomendación",
+      "provider-discount": "Descuento del chárter"
+    }
+  },
+  "Contact": {
+    "title": "Ponte en contacto",
+    "subtitle": "Reserva una llamada o envíanos un mensaje, lo que prefieras.",
+    "options": {
+      "call": {
+        "title": "Reservar una llamada breve",
+        "description": "Elige la hora que te venga bien, una charla corta con un experto en chárter."
+      },
+      "message": {
+        "title": "Enviar un mensaje",
+        "description": "Cuéntanos qué buscas y te responderemos por correo electrónico."
+      }
+    },
+    "placeholder": {
+      "title": "La reserva llegará pronto",
+      "description": "La programación en línea aún no está lista. Envíanos un mensaje y acordaremos una hora que te venga bien.",
+      "cta": "Enviar un mensaje en su lugar"
+    },
+    "send": "Enviar mensaje",
+    "sent": "¡Gracias! Un experto en chárter se pondrá en contacto contigo en breve.",
+    "submitted": {
+      "title": "Gracias, nos pondremos en contacto",
+      "description": "Uno de nuestros expertos en chárter te escribirá en breve."
     }
   },
   "Filters": {
@@ -697,7 +736,7 @@
       "length": "Eslora",
       "cabins": "Camarotes",
       "berths": "Literas (plazas para dormir)",
-      "bathrooms": "Baños",
+      "bathrooms": "Aseo/ducha",
       "price": "Precio (del periodo elegido)",
       "boatAge": "Antigüedad del barco",
       "year": "Año",
@@ -740,11 +779,14 @@
       "builtTo": "Año de construcción hasta"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Mostrar yates sin confirmación de disponibilidad",
-      "underTemporaryBooking": "Mostrar yates con reserva temporal",
+      "underTemporaryBooking": "Mostrar también yates con reserva temporal",
       "depositInsurance": "Seguro de fianza incluido",
       "petsAllowed": "Se admiten mascotas",
       "bestValue": "Solo la mejor relación calidad-precio"
+    },
+    "hints": {
+      "underTemporaryBooking": "Esas semanas están retenidas por otro cliente y aún pueden liberarse.",
+      "needsDates": "Elige una fecha de inicio para usar este filtro."
     },
     "units": {
       "years": "{count, plural, one {# año} other {# años}}"
@@ -771,11 +813,10 @@
       "length": "Eslora: {value}",
       "cabins": "Camarotes: {value}",
       "berths": "Literas: {value}",
-      "bathrooms": "Baños: {value}",
+      "bathrooms": "Aseo/ducha: {value}",
       "price": "Precio: {value}",
       "year": "Año: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Sin confirmación de disponibilidad",
-      "underTemporaryBooking": "Con reserva temporal",
+      "underTemporaryBooking": "Con semanas retenidas",
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
       "bestValue": "Mejor relación calidad-precio",
@@ -1019,7 +1060,8 @@
         "planTrip": "Ayúdame a planificar mi viaje",
         "popularYachts": "Yates populares",
         "customerReviews": "Lo que dicen nuestros clientes",
-        "howItWorks": "Cómo funciona"
+        "howItWorks": "Cómo funciona",
+        "contact": "Contacto"
       },
       "privacy": "Política de privacidad",
       "terms": "Términos del servicio",
@@ -1339,8 +1381,6 @@
     "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
     "amenities": {
-      "showAll": "Ver todas las comodidades ({count})",
-      "showFewer": "Ver menos",
       "groups": {
         "navigation-and-safety": "Navegación y seguridad",
         "deck-and-cockpit": "Cubierta y bañera",
@@ -1349,7 +1389,10 @@
         "entertainment-and-water-toys": "Ocio y juguetes acuáticos",
         "systems-and-power": "Sistemas y energía",
         "other": "Otro equipamiento"
-      }
+      },
+      "itemCount": "{count, plural, one {# elemento} other {# elementos}}",
+      "allIncluded": "Todo el equipamiento indicado está incluido en el precio del chárter.",
+      "dismissNote": "Cerrar"
     },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",
@@ -1399,7 +1442,7 @@
       "crew": "Tripulación",
       "people": "Personas",
       "datesPlaceholder": "Selecciona fechas",
-      "selectDates": "Selecciona tus fechas para ver el precio",
+      "selectDates": "Por favor, selecciona las fechas para ver el precio",
       "unavailable": "Este yate no tiene fechas disponibles",
       "unavailableHint": "Consúltanos por otras fechas o un yate similar.",
       "slotRefused": "Esas fechas no se pueden reservar. Elige otro periodo.",
@@ -1715,6 +1758,10 @@
     "Popular": {
       "title": "Selección popular",
       "description": "Elija qué valores encabezan los filtros y la página de inicio."
+    },
+    "Contact": {
+      "title": "Contacto",
+      "description": "Habla con un experto en chárter sobre tu próximo viaje."
     }
   },
   "Profile": {
@@ -1724,6 +1771,8 @@
     "lastName": "Apellido",
     "email": "Correo electrónico",
     "phone": "Número de teléfono",
+    "country": "País",
+    "countryPlaceholder": "Selecciona tu país",
     "password": "Contraseña",
     "changePassword": "Cambiar contraseña",
     "save": "Guardar cambios",
@@ -2484,6 +2533,27 @@
         "auth": "Autenticación",
         "not_found": "No encontrado",
         "contract": "Contrato"
+      },
+      "unreleasedOptions": {
+        "title": "Fechas que el operador sigue bloqueando",
+        "subtitle": "Canceladas aquí, pero el operador no liberó la semana. No se vende a nadie hasta que se libere o caduque su propia opción.",
+        "empty": "No hay nada bloqueado.",
+        "reference": "Reserva",
+        "yacht": "Yate",
+        "dates": "Fechas",
+        "period": "{from} a {to}",
+        "provider": "Operador",
+        "optionId": "ID de opción",
+        "hold": "Opción",
+        "refusedAt": "Rechazada",
+        "reason": "Respuesta del operador",
+        "retry": "Volver a pedir",
+        "holdUnknown": "No indicado",
+        "lapsed": "Caducada",
+        "holdsUntil": "Retenida hasta {when}",
+        "released": "{reference}: el operador liberó la fecha.",
+        "refusedAgain": "{reference}: el operador volvió a rechazar.",
+        "retryFailed": "{reference}: no se pudo contactar con el operador."
       }
     },
     "Audit": {
@@ -2638,6 +2708,8 @@
         "provider": "Proveedor",
         "status": "Estado",
         "allProviders": "Todos los proveedores",
+        "operator": "Operador",
+        "allOperators": "Todos los operadores",
         "allStatuses": "Todos los estados",
         "search": "Buscar por título o slug"
       },

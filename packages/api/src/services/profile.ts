@@ -19,6 +19,7 @@ export async function getProfile(db: Database, userId: string): Promise<Profile>
       firstName: profile.firstName,
       lastName: profile.lastName,
       profilePhone: profile.phone,
+      countryCode: profile.countryCode,
       locale: profile.locale,
       currency: profile.currency,
       marketingOptIn: profile.marketingOptIn,
@@ -44,6 +45,7 @@ export async function getProfile(db: Database, userId: string): Promise<Profile>
     email: row.email,
     // user.phone is what Better Auth writes at signup; the profile row wins once set.
     phone: row.profilePhone ?? row.userPhone,
+    countryCode: row.countryCode ?? null,
     locale: row.locale ?? DEFAULT_LOCALE,
     currency: row.currency ?? DEFAULT_CURRENCY,
     marketingOptIn: row.marketingOptIn ?? false,
@@ -60,11 +62,13 @@ export async function updateProfile(
   const firstName = input.firstName !== undefined ? input.firstName : current.firstName;
   const lastName = input.lastName !== undefined ? input.lastName : current.lastName;
   const phone = input.phone !== undefined ? input.phone : current.phone;
+  const countryCode = input.countryCode !== undefined ? input.countryCode : current.countryCode;
 
   const values = {
     firstName,
     lastName,
     phone,
+    countryCode,
     locale: input.locale ?? current.locale,
     currency: input.currency ?? current.currency,
     marketingOptIn: input.marketingOptIn ?? current.marketingOptIn,

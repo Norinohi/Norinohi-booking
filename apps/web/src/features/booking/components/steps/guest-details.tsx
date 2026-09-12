@@ -9,6 +9,7 @@ import {
   FormMessage,
 } from "@yacht-charter/ui/components/form/form";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
@@ -16,11 +17,21 @@ import { useFormContext } from "react-hook-form";
 import CountryCombobox from "@/components/shared/form/country-combobox";
 import { authClient } from "@/lib/auth-client";
 
+import { guestProfileQueryOptions } from "../../api/queries";
 import type { BookingValues } from "../../lib/booking-form";
 
 export default function GuestDetailsStep() {
   const t = useTranslations("Booking.guestDetails");
   const { data: session } = authClient.useSession();
+  /*
+   * The phone and the country are the fields the session cannot answer: better-auth keeps the
+   * name and the address, while these live on the profile. Asked only of a signed-in visitor,
+   * because `profile.get` is a protected procedure and a guest checkout would only earn a 401.
+   */
+  const { data: profile } = useQuery({
+    ...guestProfileQueryOptions(),
+    enabled: Boolean(session?.user),
+  });
   const { control, getValues, setValue } = useFormContext<BookingValues>();
 
   /* Prefill from the signed-in user, without clobbering anything already typed. */
@@ -30,6 +41,22 @@ export default function GuestDetailsStep() {
     if (!getValues("guestDetails.fullName")) setValue("guestDetails.fullName", user.name ?? "");
     if (!getValues("guestDetails.email")) setValue("guestDetails.email", user.email ?? "");
   }, [session, getValues, setValue]);
+
+  /*
+   * Separate from the block above because it arrives separately -- a fetch rather than a session
+   * the provider already holds -- and a profile with neither saved must leave both fields alone
+   * rather than write empty strings over a draft the customer restored.
+   */
+  const savedPhone = profile?.phone;
+  const savedCountry = profile?.countryCode;
+  useEffect(() => {
+    if (savedPhone && !getValues("guestDetails.phone")) {
+      setValue("guestDetails.phone", savedPhone);
+    }
+    if (savedCountry && !getValues("guestDetails.countryCode")) {
+      setValue("guestDetails.countryCode", savedCountry);
+    }
+  }, [savedPhone, savedCountry, getValues, setValue]);
 
   return (
     <div className="flex flex-col gap-4 p-5">

@@ -11,13 +11,18 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Fragment } from "react";
+import { Fragment, type ReactElement } from "react";
 
 /** `name` is a message key, or the literal label when `dynamic` is set. */
 export type AppBreadcrumb = {
   name: string;
   url?: string;
   dynamic?: boolean;
+  /**
+   * Renders the crumb's link, for a destination only the client knows — a remembered search, say.
+   * Given one, `url` is ignored and the element receives the crumb's own label and styling.
+   */
+  render?: ReactElement;
 };
 
 interface AppBreadcrumbsProps {
@@ -28,6 +33,8 @@ interface AppBreadcrumbsProps {
   backValues?: Record<string, string | number>;
   /** Plain string, like `AppBreadcrumb.url` — `typedRoutes` can only check a literal at the `Link` itself. */
   backHref?: string;
+  /** Renders the back button's link instead of a plain `Link` to `backHref`; see `AppBreadcrumb.render`. */
+  backRender?: ReactElement;
   className?: string;
 }
 
@@ -36,6 +43,7 @@ export default function AppBreadcrumbs({
   backLabel,
   backValues,
   backHref,
+  backRender,
   className,
 }: AppBreadcrumbsProps) {
   const t = useTranslations();
@@ -56,7 +64,7 @@ export default function AppBreadcrumbs({
             size="sm"
             className="h-auto min-h-8 min-w-0 max-w-full shrink py-1.5 whitespace-normal"
             nativeButton={false}
-            render={<Link href={backHref} />}
+            render={backRender ?? <Link href={backHref} />}
           >
             <ArrowLeft />
             <span className="min-w-0 wrap-break-word">{translate(backLabel, backValues)}</span>
@@ -71,10 +79,10 @@ export default function AppBreadcrumbs({
               return (
                 <Fragment key={`${crumb.name}-${index}`}>
                   <BreadcrumbItem>
-                    {isLast || !crumb.url ? (
+                    {isLast || !(crumb.url || crumb.render) ? (
                       <BreadcrumbPage>{label(crumb)}</BreadcrumbPage>
                     ) : (
-                      <BreadcrumbLink render={<Link href={crumb.url} />}>
+                      <BreadcrumbLink render={crumb.render ?? <Link href={crumb.url ?? "/"} />}>
                         {label(crumb)}
                       </BreadcrumbLink>
                     )}

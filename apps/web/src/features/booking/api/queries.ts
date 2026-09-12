@@ -132,3 +132,13 @@ export type InvoiceDocument = NonNullable<
 /** The printable invoice behind /bookings/[id]/invoice. Null for card bookings. */
 export const bookingInvoiceQueryOptions = (id: string, accessToken?: string) =>
   orpc.booking.invoice.queryOptions({ input: { id, accessToken } });
+
+/**
+ * The signed-in customer's saved profile, for the one field checkout cannot read off the session:
+ * better-auth holds the name and the address, the phone lives here.
+ *
+ * Declared in this feature rather than imported from Profile's, whose public index pulls in a
+ * `server-only` prefetch module and so cannot be reached from a client component at all. The key
+ * is oRPC's own, so both features read and invalidate the same cache entry regardless.
+ */
+export const guestProfileQueryOptions = () => orpc.profile.get.queryOptions({ staleTime: 30_000 });

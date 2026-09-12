@@ -103,11 +103,13 @@ import {
   outboxDrainResultSchema,
   reminderResultSchema,
   sweepResultSchema,
+  retryReleaseInputSchema,
+  retryReleaseSchema,
   unreleasedOptionsSchema,
   waitingOptionsInputSchema,
   waitingOptionsSchema,
 } from "../contracts/maintenance";
-import { listUnreleasedOptions } from "../services/provider-option";
+import { listUnreleasedOptions, retryReleaseForBooking } from "../services/provider-option";
 import {
   leadAnswerInputSchema,
   leadListInputSchema,
@@ -819,6 +821,25 @@ export const adminRouter = {
       .handler(async ({ context }) => ({
         items: await listUnreleasedOptions(context.db),
       })),
+    retryRelease: adminProcedure
+      .route({
+        method: "POST",
+        path: "/admin/maintenance/retryRelease",
+        operationId: "retryOptionRelease",
+        summary: "Ask the vendor again to take a slot back",
+        description:
+          "Re-runs the release for one booking the vendor refused to free. Answers with what the vendor said this time rather than throwing: a second refusal is an outcome the operator has to read, not a failure of this call. The booking is already cancelled either way -- this only decides whether the week goes back on sale upstream. Where the vendor's own hold has already lapsed there is nothing left to give back and it answers released.",
+        tags: ["Admin"],
+        successDescription: "What the vendor said.",
+        spec: withJsonBodyExample({ bookingId: "bkg_example" }),
+      })
+      .input(retryReleaseInputSchema)
+      .output(retryReleaseSchema)
+      .handler(async ({ context, input }) => {
+        const provider = await providerForBooking(context.db, context.provider, input.bookingId);
+        const release = await retryReleaseForBooking(context.db, provider, input.bookingId);
+        return { released: release.released, reason: release.reason };
+      }),
     waitingOptions: adminProcedure
       .route({
         method: "POST",

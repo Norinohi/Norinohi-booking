@@ -45,9 +45,28 @@ describe("describeProviderFailure", () => {
 
   it("falls back when the thrown value was not an error at all", () => {
     expect(describeProviderFailure(null, "Provider rejected the option")).toEqual({
+      code: "PROVIDER_REFUSED",
       customer: expect.stringMatching(/contact us/i),
       detail: "Provider rejected the option",
     });
+  });
+
+  /* The code is what a translated client says the refusal in its own language, so it has to
+     name the same three cases the English sentences do. */
+  it("names which refusal it is, beside the English sentence", () => {
+    expect(describeProviderFailure(new SlotUnavailableError("gone"), "fallback").code).toBe(
+      "SLOT_GONE",
+    );
+    expect(describeProviderFailure(new NotFoundError("gone"), "fallback").code).toBe("SLOT_GONE");
+    expect(describeProviderFailure(new TransientError("boom"), "fallback").code).toBe(
+      "PROVIDER_TIMEOUT",
+    );
+    expect(describeProviderFailure(new RateLimitedError("slow"), "fallback").code).toBe(
+      "PROVIDER_TIMEOUT",
+    );
+    expect(describeProviderFailure(new ContractError("bad payload"), "fallback").code).toBe(
+      "PROVIDER_REFUSED",
+    );
   });
 });
 
