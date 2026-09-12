@@ -6,6 +6,11 @@
  * countries and equipment arrive with none; and `sail_type` has no reference list behind it in
  * either provider, so it reaches the search document as a bare string.
  *
+ * The equipment set below is that first gap where it shows. `equipmentFilterAllowlist` in
+ * seed.ts and the canonical side of `AMENITY_GROUPS` are written in Booking Manager's
+ * vocabulary, so every value there that NauSYS does not also publish reached a translated page
+ * in English — in the filter, and on the cards, where the curated ranks put the same words.
+ *
  * Small on purpose. This is the exception list for what the sync cannot reach, not a second
  * catalogue — a value that a provider does translate belongs to the sync, which refreshes it
  * when the vendor renames it.
@@ -30,8 +35,58 @@ export const facetLabels = {
   },
   equipment: {
     "Air condition": { de: "Klimaanlage", es: "Aire acondicionado", uk: "Кондиціонер" },
+    "Barbecue grill in cockpit": {
+      de: "Grill im Cockpit",
+      es: "Barbacoa en la bañera",
+      uk: "Гриль у кокпіті",
+    },
     Bimini: { de: "Bimini-Verdeck", es: "Toldo bimini", uk: "Біміні-тент" },
+    "Chart plotter": { de: "Kartenplotter", es: "Plóter de cartas", uk: "Картплоттер" },
+    "Chart plotter in cockpit": {
+      de: "Kartenplotter im Cockpit",
+      es: "Plóter de cartas en la bañera",
+      uk: "Картплоттер у кокпіті",
+    },
+    "Cockpit speakers": {
+      de: "Cockpit-Lautsprecher",
+      es: "Altavoces en la bañera",
+      uk: "Динаміки в кокпіті",
+    },
     "Coffee maker": { de: "Kaffeemaschine", es: "Cafetera", uk: "Кавоварка" },
+    "Electric winches": {
+      de: "Elektrische Winschen",
+      es: "Winches eléctricos",
+      uk: "Електричні лебідки",
+    },
+    "Game console": { de: "Spielkonsole", es: "Consola de videojuegos", uk: "Ігрова консоль" },
+    "Holding tank": { de: "Fäkalientank", es: "Tanque de aguas negras", uk: "Фекальний бак" },
+    "Lazy jack": { de: "Lazy Jacks", es: "Lazy jacks", uk: "Лейзі-джек" },
+    "Outside Steering Position": {
+      de: "Außensteuerstand",
+      es: "Puesto de gobierno exterior",
+      uk: "Зовнішній пост керування",
+    },
+    "Railing net": { de: "Relingnetz", es: "Red de seguridad", uk: "Захисна сітка на леєрах" },
+    "Rudder blades": { de: "Ruderblätter", es: "Palas de timón", uk: "Пера керма" },
+    "Stand up paddle": { de: "Stand-up-Paddle", es: "Tabla de paddle surf", uk: "SUP-дошка" },
+    "Swimming platform": {
+      de: "Badeplattform",
+      es: "Plataforma de baño",
+      uk: "Купальна платформа",
+    },
+    "Swimming pool": { de: "Swimmingpool", es: "Piscina", uk: "Басейн" },
+    "Tender garage": { de: "Tendergarage", es: "Garaje para el auxiliar", uk: "Гараж для тендера" },
+    "Tenderlift platform": {
+      de: "Tenderlift-Plattform",
+      es: "Plataforma elevadora para el auxiliar",
+      uk: "Підйомна платформа для тендера",
+    },
+    "Water maker": { de: "Entsalzungsanlage", es: "Potabilizadora", uk: "Опріснювач" },
+    "Wi-Fi & Internet": {
+      de: "WLAN und Internet",
+      es: "Wi-Fi e Internet",
+      uk: "Wi-Fi та інтернет",
+    },
   },
   sail_type: {
     "classic/standard": {
