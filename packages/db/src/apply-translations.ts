@@ -29,6 +29,9 @@ import {
   providerExtraTranslation,
 } from "./schema/listing-source";
 
+/** Rows per insert, well inside the 65,535 parameters Postgres will bind at five per row. */
+const CURATED_BATCH = 5_000;
+
 /** The locale `translations/uk.ts` is written in; the other two files name their own. */
 const LOCALE = "uk";
 const apply = process.argv.slice(2).includes("--apply");
@@ -222,13 +225,21 @@ async function main(): Promise<void> {
       });
   }
 
-  await db
-    .insert(extraLabelTranslation)
-    .values(curated)
-    .onConflictDoUpdate({
-      target: [extraLabelTranslation.nameKey, extraLabelTranslation.locale],
-      set: { name: sql`excluded.name`, label: sql`excluded.label`, updatedAt: sql`now()` },
-    });
+  /*
+   * In batches, because Postgres binds at most 65,535 parameters per statement and this table
+   * is the one that grows: five columns times 17,409 rows is 87,045, and the whole run failed
+   * on a driver error naming none of that. The other two writes above are an order of
+   * magnitude smaller and are left as they are.
+   */
+  for (let from = 0; from < curated.length; from += CURATED_BATCH) {
+    await db
+      .insert(extraLabelTranslation)
+      .values(curated.slice(from, from + CURATED_BATCH))
+      .onConflictDoUpdate({
+        target: [extraLabelTranslation.nameKey, extraLabelTranslation.locale],
+        set: { name: sql`excluded.name`, label: sql`excluded.label`, updatedAt: sql`now()` },
+      });
+  }
 
   console.log(
     `\nWrote ${facets.length} facet labels, ${extras.length} id-keyed and ${curated.length} name-keyed extra labels.`,
