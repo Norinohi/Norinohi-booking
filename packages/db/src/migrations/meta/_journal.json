@@ -799,6 +799,13 @@
       "when": 1789065388389,
       "tag": "0113_stormy_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1789200491384,
+      "tag": "0114_classy_goliath",
+      "breakpoints": true
     }
   ]
 }

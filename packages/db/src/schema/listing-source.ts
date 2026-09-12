@@ -153,6 +153,17 @@ export const providerExtraCatalogue = pgTable(
   (t) => [
     unique("provider_extra_catalogue_uq").on(t.listingOfferId, t.kind, t.externalId),
     index("provider_extra_catalogue_listing_idx").on(t.listingId),
+    /*
+     * Names a code the listing's own rows do not carry.
+     *
+     * A vendor bills obligatory extras per offer and does not always list them on the yacht
+     * record the catalogue is projected from -- every one of Nautic Alliance's 460 hulls omits
+     * NauSYS service 52, "Final cleaning", which their offers charge on every charter. Without
+     * this the quote could only fall back to a generic "Charter extra". `name` is the last
+     * column rather than an INCLUDE, which drizzle-kit 0.31.10 cannot express, so the read
+     * still answers from the index; without it it was a 312k-row sequential scan per quote.
+     */
+    index("provider_extra_catalogue_code_idx").on(t.source, t.kind, t.externalId, t.name),
   ],
 );
 
