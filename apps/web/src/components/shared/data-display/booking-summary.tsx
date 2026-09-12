@@ -617,6 +617,11 @@ export default function BookingSummary({
               })}
             </p>
           ) : null}
+          {/* A card reached without dates shows no price at all, and the empty price area is
+              too far down to read as an instruction. Say it at the control instead. */}
+          {!slotError && !refusedPeriod && !selectedPeriod && !unavailable ? (
+            <p className="text-sm font-semibold text-error-600">{t("sidebar.selectDates")}</p>
+          ) : null}
 
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-4.25 font-semibold text-foreground">
@@ -911,9 +916,7 @@ export default function BookingSummary({
                       </Button>
                     ) : null}
                   </>
-                ) : (
-                  <p className="text-sm font-medium text-natural-500">{t("sidebar.selectDates")}</p>
-                )}
+                ) : null}
               </>
             )}
           </div>
