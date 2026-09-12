@@ -598,9 +598,22 @@ export default function BookingSummary({
               })}
             </p>
           ) : null}
-          {/* A card reached without dates shows no price at all, and the empty price area is
-              too far down to read as an instruction. Say it at the control instead. */}
-          {!slotError && !refusedPeriod && !selectedPeriod && !unavailable ? (
+          {/*
+           * A card reached without dates shows no price at all, and the empty price area is
+           * too far down to read as an instruction. Say it at the control instead.
+           *
+           * Only once the panel has settled. A page still fetching its constraints may yet
+           * open on a period of its own, so saying this over the spinner asks for something
+           * the page is in the middle of doing and then takes it back. An empty `offers` is
+           * that same wait seen from the other side: the constraints have not arrived, and a
+           * boat that really sells nothing is already `unavailable`.
+           */}
+          {!loading &&
+          offers.length > 0 &&
+          !slotError &&
+          !refusedPeriod &&
+          !selectedPeriod &&
+          !unavailable ? (
             <p className="text-sm font-semibold text-error-600">{t("sidebar.selectDates")}</p>
           ) : null}
 
