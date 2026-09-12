@@ -244,7 +244,10 @@ export class MockInventoryProvider implements InventoryProvider {
 
   async createOption(input: BookingDraft): Promise<ProviderReservation> {
     const draft = bookingDraftSchema.parse(input);
-    const reservationId = `res_${draft.quoteId}`;
+    /* This provider's reservation ids are parsed back into a fixture yacht and period, so
+       they are built from its own quote reference and not from ours. */
+    const reference = draft.providerQuoteId ?? draft.quoteId;
+    const reservationId = `res_${reference}`;
 
     return providerReservationSchema.parse({
       id: reservationId,
@@ -253,7 +256,7 @@ export class MockInventoryProvider implements InventoryProvider {
       quoteId: draft.quoteId,
       status: "option_held",
       providerReservationId: reservationId,
-      providerOptionId: `opt_${draft.quoteId}`,
+      providerOptionId: `opt_${reference}`,
       securityToken: securityTokenFor(reservationId, "option"),
       holdExpiresAt: new Date(Date.now() + holdMinutes * 60 * 1000).toISOString(),
     });
@@ -261,7 +264,8 @@ export class MockInventoryProvider implements InventoryProvider {
 
   async confirmBooking(input: BookingDraft): Promise<ProviderReservation> {
     const draft = bookingDraftSchema.parse(input);
-    const reservationId = draft.reservation?.providerReservationId ?? `res_${draft.quoteId}`;
+    const reservationId =
+      draft.reservation?.providerReservationId ?? `res_${draft.providerQuoteId ?? draft.quoteId}`;
 
     return providerReservationSchema.parse({
       id: reservationId,

@@ -665,6 +665,20 @@ describe("reservation events", () => {
     expect(events[0]).toMatchObject({ quoteId: "qte_1", providerReference: RESERVATION_ID });
   });
 
+  /*
+   * The regression: the checkout service used to fill `quoteId` with the vendor's reference,
+   * which both vendors always mint, so the recorder's join against `booking.quote_id` found
+   * nothing and every event here was dropped in silence.
+   */
+  it("logs our quote id, never the vendor's, when the draft carries both", async () => {
+    const { service, events } = build();
+
+    await service.createOption({ ...draft, providerQuoteId: "nausys_8228780_d11155dee" });
+
+    expect(events).not.toHaveLength(0);
+    for (const event of events) expect(event.quoteId).toBe("qte_1");
+  });
+
   it("keeps the leaked INFO record but attempts no compensation", async () => {
     const { service, transport, events } = build();
     transport.failWith("createOption", "error-100");

@@ -518,7 +518,10 @@ async function holdOption(
   try {
     const draft: Parameters<InventoryProvider["createOption"]>[0] = {
       listingId: priced.listingId,
-      quoteId: priced.providerQuoteId ?? priced.id,
+      /* Ours, so the adapter's reservation events can find this booking; the vendor's goes
+         beside it. See `quoteId` on `bookingDraftSchema`. */
+      quoteId: priced.id,
+      ...(priced.providerQuoteId ? { providerQuoteId: priced.providerQuoteId } : null),
       checkIn: priced.checkIn,
       checkOut: priced.checkOut,
       guests: priced.guests,

@@ -1,7 +1,9 @@
 import { providerReservationEvent } from "@yacht-charter/db/schema/booking";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import type { Database } from "../registry";
 import {
+  createReservationEventRecorder,
   recordReservationEvent,
   type ReservationEventWriter,
   sanitizeReservationPayload,
@@ -89,5 +91,75 @@ describe("recordReservationEvent", () => {
     });
 
     expect(rows[0]).toMatchObject({ providerReference: "55901234", payload: null });
+  });
+});
+
+/**
+ * Enough of the Drizzle executor for the recorder, with the booking lookup under the test's
+ * control: the bug this guards was a lookup that never matched, and a stub that always finds
+ * a booking cannot see it.
+ */
+function fakeDb(found: { id: string } | undefined) {
+  const rows: ReservationEventRow[] = [];
+  // SAFETY: a stub with nothing behind it. Only the two builders the recorder reaches for
+  // exist, so any other Drizzle call is a TypeError rather than a quietly wrong answer.
+  const db = Object.assign({} as Database, {
+    select: () => ({
+      from: () => ({ where: () => ({ limit: () => Promise.resolve(found ? [found] : []) }) }),
+    }),
+    insert: () => ({
+      values: (value: ReservationEventRow) => {
+        rows.push(value);
+        return Promise.resolve();
+      },
+    }),
+  });
+
+  return { db, rows };
+}
+
+describe("createReservationEventRecorder", () => {
+  it("writes the event against the booking that holds the quote", async () => {
+    const { db, rows } = fakeDb({ id: "bkg_1" });
+
+    await createReservationEventRecorder(
+      db,
+      "nausys",
+    )({
+      quoteId: "qte_1",
+      kind: "info_created",
+      providerReference: "921616844",
+    });
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        bookingId: "bkg_1",
+        kind: "info_created",
+        provider: "nausys",
+        providerReference: "921616844",
+      }),
+    ]);
+  });
+
+  /*
+   * Dropping the row stays correct -- reconciliation and admin tooling drive these with no
+   * booking behind them -- but it may not be quiet. A quote id from the wrong id space matched
+   * nothing for a month of checkouts and nothing anywhere said so.
+   */
+  it("says so when no booking holds the quote, rather than dropping it in silence", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { db, rows } = fakeDb(undefined);
+
+    await createReservationEventRecorder(
+      db,
+      "nausys",
+    )({
+      quoteId: "nausys_8228780_d11155dee",
+      kind: "info_created",
+    });
+
+    expect(rows).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("nausys_8228780_d11155dee"));
+    warn.mockRestore();
   });
 });

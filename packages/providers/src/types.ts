@@ -264,7 +264,25 @@ export type ProviderQuote = z.infer<typeof providerQuoteSchema>;
 
 export const bookingDraftSchema = z.object({
   listingId: z.string(),
+  /**
+   * Our own quote id, and the only thing that ties a reservation event back to a booking.
+   *
+   * This field used to hold the vendor's quote reference where the vendor minted one, which
+   * both of ours always do. `createReservationEventRecorder` joins it against
+   * `booking.quote_id`, so every event an adapter recorded found no booking and was dropped
+   * without a word: no `info_created` has ever been written. Resolving the vendor's id instead
+   * is not the fix -- it is a hash of the yacht and the period, and 58 bookings here share 42
+   * of them, so the join would attribute one customer's event to another's booking.
+   */
   quoteId: z.string(),
+  /**
+   * The vendor's own reference for the same quote, where it has one.
+   *
+   * Kept apart from `quoteId` rather than folded into it. The mock provider builds its
+   * reservation ids out of this and parses them back into a fixture yacht and period, so it
+   * is load-bearing there; the two live adapters only echo it.
+   */
+  providerQuoteId: z.string().optional(),
   /** ISO `yyyy-MM-dd`. The charter period every provider needs to open a reservation. */
   checkIn: z.iso.date(),
   checkOut: z.iso.date(),
