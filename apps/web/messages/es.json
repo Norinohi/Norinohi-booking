@@ -665,7 +665,8 @@
     },
     "quoteLines": {
       "referral-welcome": "Descuento de bienvenida por recomendación",
-      "referral-credit": "Crédito por recomendación"
+      "referral-credit": "Crédito por recomendación",
+      "provider-discount": "Descuento del chárter"
     }
   },
   "Contact": {

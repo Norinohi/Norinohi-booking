@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
 import { useMoney } from "@/hooks/use-money";
+import { useQuoteLineLabel } from "@/hooks/use-quote-line-label";
 import { dayToDisplay } from "@/lib/date";
 
 import type { BookingValues } from "../../lib/booking-form";
@@ -65,13 +66,14 @@ export default function ReviewAndBookStep() {
   const format = useFormatter();
   const { control } = useFormContext<BookingValues>();
   const { listing, quote } = useBooking();
+  const labelOf = useQuoteLineLabel();
 
   const day = (date: string) => format.dateTime(dayToDisplay(date), "dayShort");
 
   const base = quote?.lines.find((line) => line.kind === "base");
   const optionalNames = (quote?.lines ?? [])
     .filter((line) => line.group === "optional")
-    .map((line) => line.label)
+    .map((line) => labelOf(line))
     .join(", ");
 
   /*
@@ -117,7 +119,7 @@ export default function ReviewAndBookStep() {
           value: money((base ?? quote.lines[0])?.amount.amountMinor ?? 0, quote.total.currency),
         },
         ...priced.map((line) => ({
-          label: line.label,
+          label: labelOf(line),
           value: money(line.amount.amountMinor, line.amount.currency),
         })),
         {

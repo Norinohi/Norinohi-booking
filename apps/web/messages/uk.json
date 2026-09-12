@@ -665,7 +665,8 @@
     },
     "quoteLines": {
       "referral-welcome": "Вітальна знижка за рекомендацією",
-      "referral-credit": "Бонус за рекомендацією"
+      "referral-credit": "Бонус за рекомендацією",
+      "provider-discount": "Знижка на чартер"
     }
   },
   "Contact": {

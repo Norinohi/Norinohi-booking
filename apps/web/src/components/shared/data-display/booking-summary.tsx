@@ -29,6 +29,7 @@ import { Link } from "@/i18n/navigation";
 import { STAT_TONE } from "@/components/shared/data-display/boat-card";
 import { Image } from "@/components/shared/data-display/image";
 import CharterDateField, { type CharterPeriod } from "@/components/shared/form/charter-date-field";
+import { useQuoteLineLabel } from "@/hooks/use-quote-line-label";
 import Loader from "@/components/shared/feedback/loader";
 import { useMoney } from "@/hooks/use-money";
 import { dayToDisplay } from "@/lib/date";
@@ -294,26 +295,6 @@ function CreditField({
  * One row per line rather than a single summed "Discounts" — a provider discount, a promo code
  * and the referral welcome are different things, and the labels are the only place that shows.
  */
-/**
- * Our own line names, as opposed to the provider's.
- *
- * A discount the operator configured carries its own name and is data; these two are copy this
- * app writes, so they live in the message files. A code with no entry keeps the label the API
- * sent, which is what an operator-named promo needs.
- */
-const QUOTE_LINE_KEY = new Map<string, "referral-welcome" | "referral-credit">([
-  ["referral-welcome", "referral-welcome"],
-  ["referral-credit", "referral-credit"],
-]);
-
-function useQuoteLineLabel() {
-  const t = useTranslations("Common.quoteLines");
-  return (line: QuoteLine) => {
-    const key = QUOTE_LINE_KEY.get(line.code);
-    return key ? t(key) : line.label;
-  };
-}
-
 function DiscountRows({ lines }: { lines: QuoteLine[] }) {
   const t = useTranslations("YachtDetail");
   const money = useMoney();

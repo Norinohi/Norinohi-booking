@@ -665,7 +665,8 @@
     },
     "quoteLines": {
       "referral-welcome": "Referral welcome discount",
-      "referral-credit": "Referral credit"
+      "referral-credit": "Referral credit",
+      "provider-discount": "Charter discount"
     }
   },
   "Contact": {

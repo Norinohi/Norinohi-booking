@@ -665,7 +665,8 @@
     },
     "quoteLines": {
       "referral-welcome": "Willkommensrabatt über Empfehlung",
-      "referral-credit": "Empfehlungsguthaben"
+      "referral-credit": "Empfehlungsguthaben",
+      "provider-discount": "Charter-Rabatt"
     }
   },
   "Contact": {
