@@ -259,12 +259,18 @@ export function BookingProvider({
   useEffect(() => {
     if (!quoteId) return;
     /*
-     * The wizard writes the live quote back to the URL (`QuoteUrlSync`), so the id this just
-     * minted arrives here as a prop. Loading it would supersede it for another, write that
-     * one back, and never settle. `retryLoad` is unaffected: it only runs where the load
-     * failed, and there is no quote to match.
+     * The URL's id is read once, to enter the wizard with. After that this page holds the live
+     * quote and the URL follows it (`QuoteUrlSync`), never the other way round.
+     *
+     * Matching the ids instead was an endless loop, because the two move a render apart: a
+     * reprice adopts its replacement before the URL has caught up, so for one render the live
+     * quote was ahead of the prop, this fired against the id the reprice had just superseded,
+     * and that load minted another quote for the URL to chase. One tick in Extras put the
+     * wizard into a permanent reprice, a fresh `quoteId` every 400ms, and a sidebar that never
+     * came out of its skeletons. `retryLoad` is unaffected: it only runs where the load failed,
+     * and there is no quote then.
      */
-    if (quote?.quoteId === quoteId) return;
+    if (quote) return;
     const attempt = `${quoteId}#${loadAttempt}`;
     if (startedRef.current === attempt) return;
     startedRef.current = attempt;
@@ -290,11 +296,24 @@ export function BookingProvider({
       }
       setLoadError(true);
     });
-  }, [quoteId, quote?.quoteId, load, loadAttempt]);
+  }, [quoteId, quote, load, loadAttempt]);
 
   function retryLoad() {
     setLoadAttempt((attempt) => attempt + 1);
   }
+
+  /*
+   * The edit a control has made but no quote has answered yet, per list.
+   *
+   * The read-back below is the quote's answer overwriting the boxes, which is right for every
+   * quote that has seen the edit and wrong for any that has not: a guest-slider reprice landing
+   * between a tick and its own reprice carried the server's older list back, and the box the
+   * customer had just ticked went off under their hand. Held until the call that carries the
+   * edit settles, whichever way it settles - a refused selection is exactly when the quote
+   * should be allowed to correct the boxes.
+   */
+  const pendingExtrasRef = useRef<readonly string[] | null>(null);
+  const pendingRequestedRef = useRef<readonly string[] | null>(null);
 
   useEffect(() => {
     if (!quote) return;
@@ -308,12 +327,14 @@ export function BookingProvider({
      * changed date, usually — drops out on its own instead of standing ticked over
      * a charge that will never appear.
      */
-    setExtrasState(
-      quote.lines.filter((line) => line.group === "optional").map((line) => line.code),
-    );
+    if (!pendingExtrasRef.current) {
+      setExtrasState(
+        quote.lines.filter((line) => line.group === "optional").map((line) => line.code),
+      );
+    }
     /* Read back from the quote for the same reason, except that these have no line to be read
        off: nothing prices them, so the quote carries the list itself. */
-    setRequestedExtrasState(quote.requestedExtras);
+    if (!pendingRequestedRef.current) setRequestedExtrasState(quote.requestedExtras);
   }, [quote]);
 
   /*
@@ -343,7 +364,15 @@ export function BookingProvider({
    */
   const seededRef = useRef(false);
   useEffect(() => {
-    if (seededRef.current || quoteId || !published || !listingId) return;
+    /*
+     * `quote` is in the guard beside the id, because the id is only the usual reason there is
+     * already a price on screen and not the whole of it. This effect has no dependency list on
+     * purpose - it re-reads its own conditions every render - so a render where the URL has no
+     * `quoteId` is enough to run it, and a mounted wizard can reach one: any navigation that
+     * drops the parameter while the page stays alive. It then minted a second, bare quote over
+     * a live one, taking the extras, promo and credit off the sidebar with it.
+     */
+    if (seededRef.current || quoteId || quote || !published || !listingId) return;
     const period = searchedPeriod ?? suggestedPeriod;
     if (!period) return;
 
@@ -488,11 +517,18 @@ export function BookingProvider({
   function selectExtras(next: string[]) {
     setExtrasState(next);
     if (!quote) return;
+    pendingExtrasRef.current = next;
     clearTimeout(extrasDebounceRef.current);
-    extrasDebounceRef.current = setTimeout(
-      () => void repriceWith({ extras: next }),
-      REPRICE_DEBOUNCE_MS,
-    );
+    extrasDebounceRef.current = setTimeout(() => void commitExtras(next), REPRICE_DEBOUNCE_MS);
+  }
+
+  /** One reprice for one edit, and the edit stops being pending once that reprice has answered. */
+  async function commitExtras(next: readonly string[]) {
+    try {
+      await repriceWith({ extras: [...next] });
+    } finally {
+      if (pendingExtrasRef.current === next) pendingExtrasRef.current = null;
+    }
   }
 
   /*
@@ -504,8 +540,12 @@ export function BookingProvider({
   async function setExtras(next: string[]) {
     clearTimeout(extrasDebounceRef.current);
     setExtrasState(next);
-    if (!quote || sameSelection(pricedExtras(), next)) return;
-    await repriceWith({ extras: next });
+    if (!quote || sameSelection(pricedExtras(), next)) {
+      pendingExtrasRef.current = null;
+      return;
+    }
+    pendingExtrasRef.current = next;
+    await commitExtras(next);
   }
 
   /*
@@ -519,11 +559,20 @@ export function BookingProvider({
   function requestExtras(next: string[]) {
     setRequestedExtrasState(next);
     if (!quote) return;
+    pendingRequestedRef.current = next;
     clearTimeout(requestDebounceRef.current);
     requestDebounceRef.current = setTimeout(
-      () => void repriceWith({ requestedExtras: next }),
+      () => void commitRequestedExtras(next),
       REPRICE_DEBOUNCE_MS,
     );
+  }
+
+  async function commitRequestedExtras(next: readonly string[]) {
+    try {
+      await repriceWith({ requestedExtras: [...next] });
+    } finally {
+      if (pendingRequestedRef.current === next) pendingRequestedRef.current = null;
+    }
   }
 
   /*
@@ -533,8 +582,12 @@ export function BookingProvider({
   async function setRequestedExtras(next: string[]) {
     clearTimeout(requestDebounceRef.current);
     setRequestedExtrasState(next);
-    if (!quote || sameSelection(quote.requestedExtras, next)) return;
-    await repriceWith({ requestedExtras: next });
+    if (!quote || sameSelection(quote.requestedExtras, next)) {
+      pendingRequestedRef.current = null;
+      return;
+    }
+    pendingRequestedRef.current = next;
+    await commitRequestedExtras(next);
   }
 
   /*
