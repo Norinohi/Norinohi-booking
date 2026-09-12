@@ -38,6 +38,7 @@ export default function QuoteRequestDialog({ open, onOpenChange }: QuoteRequestD
         </DialogHeader>
         <LeadEnquiryForm
           kind="quote_request"
+          askCountry
           listingId={listing.id}
           context={{
             checkIn: quote?.checkIn,

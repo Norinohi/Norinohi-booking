@@ -22,6 +22,9 @@ export const profile = pgTable("profile", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   phone: text("phone"),
+  /* ISO 3166-1 alpha-2. The charter base asks for it on every reservation, so the profile
+     holds it once rather than making the customer type it into each checkout. */
+  countryCode: text("country_code"),
   locale: text("locale"),
   currency: text("currency"),
   marketingOptIn: boolean("marketing_opt_in").default(false).notNull(),

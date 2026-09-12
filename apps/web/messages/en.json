@@ -595,6 +595,10 @@
           "label": "Phone (optional)",
           "placeholder": "+1 234 567 8900"
         },
+        "country": {
+          "label": "Country",
+          "placeholder": "Select your country"
+        },
         "message": {
           "label": "Message (optional)",
           "placeholder": "Anything else we should know about your trip?"
@@ -1767,6 +1771,8 @@
     "lastName": "Last Name",
     "email": "Email Address",
     "phone": "Phone Number",
+    "country": "Country",
+    "countryPlaceholder": "Select your country",
     "password": "Password",
     "changePassword": "Change Password",
     "save": "Save Changes",

@@ -21,6 +21,9 @@ export const lead = pgTable(
     name: text("name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
+    /* ISO 3166-1 alpha-2. A quote has to be priced against where the customer is flying
+       from, and the base asks for it at reservation anyway. */
+    countryCode: text("country_code"),
     message: text("message"),
     // Search filters, planner answers or sidebar dates — shape varies per entry
     // point and is only ever read back.

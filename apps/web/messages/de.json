@@ -595,6 +595,10 @@
           "label": "Telefon (optional)",
           "placeholder": "+49 170 1234567"
         },
+        "country": {
+          "label": "Land",
+          "placeholder": "Land auswählen"
+        },
         "message": {
           "label": "Nachricht (optional)",
           "placeholder": "Gibt es noch etwas, das wir über Ihre Reise wissen sollten?"
@@ -1767,6 +1771,8 @@
     "lastName": "Nachname",
     "email": "E-Mail-Adresse",
     "phone": "Telefonnummer",
+    "country": "Land",
+    "countryPlaceholder": "Land auswählen",
     "password": "Passwort",
     "changePassword": "Passwort ändern",
     "save": "Änderungen speichern",

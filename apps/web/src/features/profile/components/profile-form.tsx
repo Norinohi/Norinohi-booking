@@ -28,6 +28,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
+import CountryCombobox from "@/components/shared/form/country-combobox";
 import { authClient } from "@/lib/auth-client";
 
 import deactivateIllustration from "../assets/deactivate-account.png";
@@ -54,6 +55,7 @@ function useProfileSchema() {
         lastName: z.string().trim().min(1, t("lastNameRequired")),
         email: z.email(t("emailInvalid")),
         phone: z.string(),
+        countryCode: z.string(),
       }),
     [t],
   );
@@ -67,6 +69,7 @@ function toValues(profile: Profile): Values {
     lastName: profile.lastName ?? "",
     email: profile.email,
     phone: profile.phone ?? "",
+    countryCode: profile.countryCode ?? "",
   };
 }
 
@@ -103,6 +106,8 @@ export default function ProfileForm({ profile, onSaved }: ProfileFormProps) {
         firstName: values.firstName,
         lastName: values.lastName,
         phone: phone === "" ? null : phone,
+        /* Empty clears the saved country; the contract reads it the same way it reads the phone. */
+        countryCode: values.countryCode === "" ? null : values.countryCode,
       });
     } catch {
       toast.error(t("errors.updateFailed"));
@@ -207,6 +212,29 @@ export default function ProfileForm({ profile, onSaved }: ProfileFormProps) {
                       autoComplete="tel"
                       className="leading-tight"
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Saved here so checkout can fill it in: the charter base asks for a country on every
+              reservation, and it is the same answer every time. */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="countryCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("country")}</FormLabel>
+                  <FormControl>
+                    <CountryCombobox
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder={t("countryPlaceholder")}
                     />
                   </FormControl>
                   <FormMessage />
