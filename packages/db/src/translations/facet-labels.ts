@@ -95,6 +95,7 @@ export const facetLabels = {
       uk: "Класичний / стандартний",
     },
     "full batten": { de: "Durchgelattet", es: "Sables pasantes", uk: "На повних латах" },
+    "half batten": { de: "Halbgelattet", es: "Sables cortos", uk: "На коротких латах" },
     "furling/roll": { de: "Rollgroß", es: "Enrollable", uk: "Закруточний" },
     "self tacking jib": {
       de: "Selbstwendefock",
