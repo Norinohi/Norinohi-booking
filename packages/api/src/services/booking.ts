@@ -289,6 +289,9 @@ export async function createHold(
     if (NEVER_HELD.includes(existing.status)) {
       throw new ORPCError("CONFLICT", {
         message: existing.cancelReason ?? "This slot could not be held — please reprice",
+        /* `cancelReason` is the English the first attempt stored; a client with a message
+           catalogue says the same thing in the reader's language off this. */
+        data: { code: "HOLD_NEVER_HELD" },
       });
     }
 
@@ -560,6 +563,7 @@ async function holdOption(
         });
         throw new ORPCError("CONFLICT", {
           message: "This slot was taken while you were checking out — please reprice",
+          data: { code: "SLOT_TAKEN" },
         });
       }
       throw error;
@@ -603,7 +607,7 @@ async function holdOption(
      * is booked.
      */
     await learnFromProviderRefusal(db, provider, priced, refusal);
-    throw new ORPCError("CONFLICT", { message: failure.customer });
+    throw new ORPCError("CONFLICT", { message: failure.customer, data: { code: failure.code } });
   }
 }
 

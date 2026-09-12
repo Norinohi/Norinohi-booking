@@ -59,6 +59,13 @@
       "terms": "Acepta los términos para continuar",
       "cancellation": "Acepta la política de cancelación para continuar",
       "paymentMessage": "Introduce tu pregunta o solicitud",
+      "hold": {
+        "SLOT_GONE": "Este yate ya no está disponible para estas fechas. Elige otras fechas e inténtalo de nuevo.",
+        "PROVIDER_TIMEOUT": "El sistema del operador no respondió a tiempo. Inténtalo de nuevo en un momento.",
+        "PROVIDER_REFUSED": "No pudimos completar esta reserva con el operador. Nuestro equipo ya está avisado, así que inténtalo de nuevo en breve o contacta con nosotros.",
+        "SLOT_TAKEN": "Este yate se reservó mientras completabas el pago. Elige otras fechas e inténtalo de nuevo.",
+        "HOLD_NEVER_HELD": "No se pudo retener esta reserva. Vuelve a elegir tus fechas para obtener un precio nuevo."
+      },
       "confirmFailed": "No se pudo confirmar tu reserva. Inténtalo de nuevo.",
       "holdInProgress": "Todavía estamos finalizando tu intento anterior. Espera un momento y vuelve a confirmar.",
       "billingName": "Introduce el nombre de facturación",

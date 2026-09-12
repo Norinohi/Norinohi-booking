@@ -59,6 +59,13 @@
       "terms": "Akzeptieren Sie die Bedingungen, um fortzufahren",
       "cancellation": "Akzeptieren Sie die Stornierungsbedingungen, um fortzufahren",
       "paymentMessage": "Geben Sie Ihre Frage oder Anfrage ein",
+      "hold": {
+        "SLOT_GONE": "Diese Yacht ist für diese Daten nicht mehr verfügbar. Bitte wählen Sie neue Daten und versuchen Sie es erneut.",
+        "PROVIDER_TIMEOUT": "Das System des Anbieters hat nicht rechtzeitig geantwortet. Bitte versuchen Sie es gleich noch einmal.",
+        "PROVIDER_REFUSED": "Wir konnten diese Buchung beim Anbieter nicht abschließen. Unser Team ist informiert. Bitte versuchen Sie es in Kürze erneut oder kontaktieren Sie uns.",
+        "SLOT_TAKEN": "Diese Yacht wurde während Ihrer Buchung vergeben. Bitte wählen Sie neue Daten und versuchen Sie es erneut.",
+        "HOLD_NEVER_HELD": "Diese Buchung konnte nicht reserviert werden. Bitte wählen Sie Ihre Daten erneut, um einen neuen Preis zu erhalten."
+      },
       "confirmFailed": "Ihre Buchung konnte nicht bestätigt werden. Bitte versuchen Sie es erneut.",
       "holdInProgress": "Ihr letzter Versuch wird noch abgeschlossen. Bitte warten Sie einen Moment und bestätigen Sie erneut.",
       "billingName": "Geben Sie den Rechnungsnamen ein",

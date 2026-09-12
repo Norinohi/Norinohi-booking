@@ -21,7 +21,7 @@ import type { BookingValues } from "../lib/booking-form";
 import { canPay } from "../lib/checkout-status";
 import { rememberGuestAccess } from "../lib/guest-access";
 import { forgetGuestDraft } from "../lib/guest-draft";
-import { holdFailureSchema } from "../lib/hold";
+import { holdFailureSchema, holdRefusalSchema } from "../lib/hold";
 import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
 import GuestDetailsStep from "./steps/guest-details";
@@ -306,9 +306,21 @@ export default function BookingSteps() {
         toast.error(t("errors.holdInProgress"));
         return;
       }
-      /* Only a server-authored refusal is worth showing: an ORPCError message is written for
-         the customer, while anything else here is a transport failure whose text ("Failed to
-         fetch", a provider's own endpoint name) means nothing to them. */
+      /*
+       * Said in the reader's language where the server named which refusal this is. The
+       * message on the error is the same sentence in English, kept for `cancel_reason` and
+       * for support, and it was what a Ukrainian checkout used to be answered with.
+       *
+       * Only a server-authored refusal is worth showing at all: anything else here is a
+       * transport failure whose text ("Failed to fetch", a provider's own endpoint name)
+       * means nothing to a customer.
+       */
+      const data = error instanceof ORPCError ? error.data : null;
+      const refusal = holdRefusalSchema.safeParse(data).data;
+      if (refusal) {
+        toast.error(t(`errors.hold.${refusal.code}`));
+        return;
+      }
       toast.error(error instanceof ORPCError ? error.message : t("errors.confirmFailed"));
     }
   }

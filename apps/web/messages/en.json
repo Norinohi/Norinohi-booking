@@ -59,6 +59,13 @@
       "terms": "Accept the terms to continue",
       "cancellation": "Accept the cancellation policy to continue",
       "paymentMessage": "Enter your question or request",
+      "hold": {
+        "SLOT_GONE": "That yacht is no longer available for these dates. Please pick new dates and try again.",
+        "PROVIDER_TIMEOUT": "The operator's system did not answer in time. Please try again in a moment.",
+        "PROVIDER_REFUSED": "We could not complete this booking with the operator. Our team has been notified, so please try again shortly or contact us.",
+        "SLOT_TAKEN": "This yacht was taken while you were checking out. Please pick new dates and try again.",
+        "HOLD_NEVER_HELD": "This booking could not be held. Please pick your dates again to get a new price."
+      },
       "confirmFailed": "Could not confirm your booking. Please try again.",
       "holdInProgress": "Still finishing your last attempt. Give it a moment, then confirm again.",
       "billingName": "Enter the name to bill",
