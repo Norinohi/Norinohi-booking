@@ -2533,6 +2533,24 @@
         "auth": "Auth",
         "not_found": "Not found",
         "contract": "Contract"
+      },
+      "unreleasedOptions": {
+        "title": "Slots still held by a vendor",
+        "subtitle": "Cancelled here, but the operator refused to take the week back. It sells to nobody until it is freed or the vendor's own hold lapses.",
+        "empty": "Nothing is held against us.",
+        "reference": "Booking",
+        "provider": "Vendor",
+        "optionId": "Option id",
+        "hold": "Hold",
+        "refusedAt": "Refused",
+        "reason": "What the vendor said",
+        "retry": "Ask again",
+        "holdUnknown": "Not published",
+        "lapsed": "Lapsed",
+        "holdsUntil": "Held until {when}",
+        "released": "{reference}: the vendor let the slot go.",
+        "refusedAgain": "{reference}: the vendor refused again.",
+        "retryFailed": "{reference}: could not reach the vendor."
       }
     },
     "Audit": {

@@ -99,6 +99,12 @@ export const unreleasedOptionSchema = z.object({
   status: z.string(),
   provider: z.string(),
   providerOptionId: z.string().nullable(),
+  /**
+   * When the vendor's own hold runs out, after which the week is free again whatever our rows
+   * say. Null where the vendor published none. It is the difference between a slot somebody
+   * has to telephone about today and one that has already let go of itself.
+   */
+  holdExpiresAt: z.string().nullable(),
   /** When the last release attempt was refused. */
   failedAt: z.string(),
   /** The vendor's own words, which is what support quotes back at them. */
@@ -107,4 +113,20 @@ export const unreleasedOptionSchema = z.object({
 
 export const unreleasedOptionsSchema = z.object({
   items: z.array(unreleasedOptionSchema),
+});
+
+/**
+ * One refused release, asked for again.
+ *
+ * A booking id rather than the vendor's option id: the release reads the reservation, the
+ * token and the status off our own row, and the vendor's id is what it looks up, not what
+ * identifies the job.
+ */
+export const retryReleaseInputSchema = z.object({ bookingId: z.string().min(1) });
+
+export const retryReleaseSchema = z.object({
+  /** Whether the vendor let the slot go this time. */
+  released: z.boolean(),
+  /** The vendor's words when it did not, for the operator to quote back. */
+  reason: z.string().nullable(),
 });

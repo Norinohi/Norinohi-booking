@@ -2533,6 +2533,24 @@
         "auth": "Autenticación",
         "not_found": "No encontrado",
         "contract": "Contrato"
+      },
+      "unreleasedOptions": {
+        "title": "Fechas que el operador sigue bloqueando",
+        "subtitle": "Canceladas aquí, pero el operador no liberó la semana. No se vende a nadie hasta que se libere o caduque su propia opción.",
+        "empty": "No hay nada bloqueado.",
+        "reference": "Reserva",
+        "provider": "Operador",
+        "optionId": "ID de opción",
+        "hold": "Opción",
+        "refusedAt": "Rechazada",
+        "reason": "Respuesta del operador",
+        "retry": "Volver a pedir",
+        "holdUnknown": "No indicado",
+        "lapsed": "Caducada",
+        "holdsUntil": "Retenida hasta {when}",
+        "released": "{reference}: el operador liberó la fecha.",
+        "refusedAgain": "{reference}: el operador volvió a rechazar.",
+        "retryFailed": "{reference}: no se pudo contactar con el operador."
       }
     },
     "Audit": {

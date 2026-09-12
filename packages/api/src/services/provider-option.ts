@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
 import { ProviderError } from "@yacht-charter/providers/shared/errors";
@@ -133,6 +134,25 @@ export async function releaseProviderOption(
 }
 
 /**
+ * One refused release, asked for again on an operator's say-so.
+ *
+ * Distinct from the outbox handler below, which throws so the drain backs off. This one
+ * answers: a second refusal is what the operator has to read and quote at the vendor, not an
+ * error for the screen to swallow. The booking is already cancelled either way; this decides
+ * only whether the week goes back on sale upstream.
+ */
+export async function retryReleaseForBooking(
+  db: Database,
+  provider: InventoryProvider,
+  bookingId: string,
+): Promise<ProviderRelease> {
+  const [row] = await db.select().from(booking).where(eq(booking.id, bookingId)).limit(1);
+  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+
+  return releaseProviderOption(db, provider, row);
+}
+
+/**
  * The outbox handler for a release that did not land. Throws on failure, which is how the drain
  * is told to back off and try again, and how it eventually gives up loudly rather than silently.
  */
@@ -190,6 +210,8 @@ export interface UnreleasedOption {
   status: BookingStatus;
   provider: string;
   providerOptionId: string | null;
+  /** When the vendor's own hold lapses; null where it published none. */
+  holdExpiresAt: string | null;
   failedAt: string;
   reason: string;
 }
@@ -215,6 +237,9 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
       status: booking.status,
       provider: booking.provider,
       providerOptionId: booking.providerOptionId,
+      /* What separates a week the operator is still sitting on from one that has lapsed. A
+         vendor option expires on its own, so a refused release is urgent only until then. */
+      holdExpiresAt: booking.holdExpiresAt,
       failedAt: latest.createdAt,
       reason: sql<string | null>`${latest.payload}->>'error'`,
     })
@@ -235,6 +260,7 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
     status: row.status,
     provider: row.provider,
     providerOptionId: row.providerOptionId,
+    holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
     failedAt: row.failedAt.toISOString(),
     reason: row.reason ?? "The vendor refused the release",
   }));

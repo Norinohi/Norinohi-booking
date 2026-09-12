@@ -11,6 +11,7 @@ import MaintenanceControls from "./maintenance-controls";
 import ProviderReliabilityPanel from "./provider-reliability-panel";
 import SyncControls from "./sync-controls";
 import SyncRunsTable from "./sync-runs-table";
+import UnreleasedOptionsPanel from "./unreleased-options-panel";
 
 /*
  * SyncHistoryScreen — /sync: the admin Sidebar beside the run-history card, in the same
@@ -57,6 +58,10 @@ export default function SyncHistoryScreen({ user }: { user: { name: string; emai
 
             <div className="border-b border-natural-50 p-4 md:p-5">
               <ProviderReliabilityPanel />
+            </div>
+
+            <div className="border-b border-natural-50 p-4 md:p-5">
+              <UnreleasedOptionsPanel />
             </div>
 
             <div className="p-4 md:p-5">

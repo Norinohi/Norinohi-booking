@@ -2533,6 +2533,24 @@
         "auth": "Auth",
         "not_found": "Nicht gefunden",
         "contract": "Vertrag"
+      },
+      "unreleasedOptions": {
+        "title": "Vom Anbieter weiterhin blockierte Termine",
+        "subtitle": "Hier storniert, aber der Anbieter hat die Woche nicht zurückgenommen. Sie ist für niemanden buchbar, bis sie freigegeben wird oder die Option des Anbieters ausläuft.",
+        "empty": "Es ist nichts blockiert.",
+        "reference": "Buchung",
+        "provider": "Anbieter",
+        "optionId": "Options-ID",
+        "hold": "Option",
+        "refusedAt": "Abgelehnt",
+        "reason": "Antwort des Anbieters",
+        "retry": "Erneut anfragen",
+        "holdUnknown": "Nicht angegeben",
+        "lapsed": "Abgelaufen",
+        "holdsUntil": "Gehalten bis {when}",
+        "released": "{reference}: Der Anbieter hat den Termin freigegeben.",
+        "refusedAgain": "{reference}: Der Anbieter hat erneut abgelehnt.",
+        "retryFailed": "{reference}: Der Anbieter war nicht erreichbar."
       }
     },
     "Audit": {
