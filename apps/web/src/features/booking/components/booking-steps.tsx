@@ -20,6 +20,7 @@ import { createHoldMutationOptions } from "../api/queries";
 import type { BookingValues } from "../lib/booking-form";
 import { canPay } from "../lib/checkout-status";
 import { rememberGuestAccess } from "../lib/guest-access";
+import { forgetGuestDraft } from "../lib/guest-draft";
 import { holdFailureSchema } from "../lib/hold";
 import { useBooking } from "./booking-provider";
 import ExtrasStep from "./steps/extras";
@@ -86,6 +87,7 @@ export default function BookingSteps() {
   const consents = useWatch({ control, name: "reviewAndBook" });
   const consented = Boolean(consents?.terms && consents.cancellation);
   const {
+    slug,
     listing,
     quote,
     extras,
@@ -290,6 +292,9 @@ export default function BookingSteps() {
       }
 
       rememberGuestAccess(hold.bookingId, hold.accessToken);
+      /* The booking now holds these details; the copy kept for a remount has nothing left to
+         restore and is the customer's own data, so it goes. */
+      forgetGuestDraft(slug);
       setBookingId(hold.bookingId);
       setCompleted((prev) => new Set(prev).add("reviewAndBook"));
       setOpen("payment");

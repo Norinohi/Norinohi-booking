@@ -13,11 +13,13 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useListingCards, useListingDetail } from "@/features/yachts";
 import type { AppPathname } from "@/i18n/navigation";
 
+import { useGuestDraft } from "../hooks/use-guest-draft";
 import { BOOKING_DEFAULTS, type BookingValues, useBookingSchema } from "../lib/booking-form";
 import { bookingParsers } from "../lib/search-params";
 import { BookingProvider } from "./booking-provider";
 import BookingSidebar from "./booking-sidebar";
 import BookingSteps from "./booking-steps";
+import QuoteUrlSync from "./quote-url-sync";
 
 export default function BookingScreen() {
   const t = useTranslations("Booking");
@@ -33,6 +35,8 @@ export default function BookingScreen() {
     resolver: zodResolver(useBookingSchema()),
     mode: "onTouched",
   });
+
+  useGuestDraft(form, slug);
 
   const boat = listing ? toCard(listing) : null;
 
@@ -52,6 +56,7 @@ export default function BookingScreen() {
       <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
         <Form {...form}>
           <BookingProvider quoteId={quoteId}>
+            <QuoteUrlSync />
             <SplitPanels
               labels={{ main: t("panels.main"), aside: t("panels.aside") }}
               main={

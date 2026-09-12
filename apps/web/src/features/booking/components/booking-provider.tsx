@@ -258,6 +258,13 @@ export function BookingProvider({
 
   useEffect(() => {
     if (!quoteId) return;
+    /*
+     * The wizard writes the live quote back to the URL (`QuoteUrlSync`), so the id this just
+     * minted arrives here as a prop. Loading it would supersede it for another, write that
+     * one back, and never settle. `retryLoad` is unaffected: it only runs where the load
+     * failed, and there is no quote to match.
+     */
+    if (quote?.quoteId === quoteId) return;
     const attempt = `${quoteId}#${loadAttempt}`;
     if (startedRef.current === attempt) return;
     startedRef.current = attempt;
@@ -283,7 +290,7 @@ export function BookingProvider({
       }
       setLoadError(true);
     });
-  }, [quoteId, load, loadAttempt]);
+  }, [quoteId, quote?.quoteId, load, loadAttempt]);
 
   function retryLoad() {
     setLoadAttempt((attempt) => attempt + 1);
