@@ -382,11 +382,14 @@ function Action({
         </p>
       ) : null}
 
+      {/* `min-w-0` throughout, and no `flex-none`: a longer locale writes the same date as
+          "10 жовт. 2026 р.", which overran the narrow price column when the dates could not
+          shrink. */}
       {start && end ? (
-        <div className="flex w-full items-center justify-center gap-3 md:justify-start ">
-          <CharterDate value={start} className="flex-1 items-center md:flex-none md:items-start" />
+        <div className="flex w-full min-w-0 items-center justify-center gap-3 md:justify-start">
+          <CharterDate value={start} className="min-w-0 flex-1 items-center md:items-start" />
           <ArrowRight className="size-4 shrink-0 text-foreground" />
-          <CharterDate value={end} className="flex-1 items-center md:flex-none md:items-start" />
+          <CharterDate value={end} className="min-w-0 flex-1 items-center md:items-start" />
         </div>
       ) : null}
 
