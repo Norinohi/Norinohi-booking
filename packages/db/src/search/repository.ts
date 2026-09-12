@@ -5,6 +5,7 @@ import type * as schema from "../schema";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { FX_BASE_CURRENCY } from "../fx/rates";
 import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
+import { amenityIconFor } from "./amenity-icons";
 import { crewOptionsFor } from "./crew";
 import { MIN_LEAD_DAYS } from "./read-model";
 import {
@@ -576,6 +577,9 @@ export async function getListingDetailByIdOrSlug(
       code: item.code,
       label: translate ? translate("equipment", item.label) : item.label,
       group,
+      /* Resolved off the vendor's label for the same reason the group is, and null where no
+         icon has been drawn for this fitting yet -- the page falls back to the group's own. */
+      icon: amenityIconFor(item.label),
     }));
   /*
    * Extras come from provider_extra_catalogue, not from listing_amenity. The two

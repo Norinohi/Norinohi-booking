@@ -1373,8 +1373,6 @@
     "removeFromWishlist": "Von Wunschliste entfernen",
     "included": "Inklusive",
     "amenities": {
-      "showAll": "Alle Ausstattungen anzeigen ({count})",
-      "showFewer": "Weniger anzeigen",
       "groups": {
         "navigation-and-safety": "Navigation und Sicherheit",
         "deck-and-cockpit": "Deck und Cockpit",
@@ -1383,7 +1381,10 @@
         "entertainment-and-water-toys": "Unterhaltung und Wassersport",
         "systems-and-power": "Technik und Stromversorgung",
         "other": "Weitere Ausstattung"
-      }
+      },
+      "itemCount": "{count, plural, one {# Position} other {# Positionen}}",
+      "allIncluded": "Alle aufgeführten Ausstattungen sind im Charterpreis enthalten.",
+      "dismissNote": "Schließen"
     },
     "importantInfo": {
       "charterCompany": "Charterunternehmen",

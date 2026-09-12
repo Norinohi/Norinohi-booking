@@ -1373,8 +1373,6 @@
     "removeFromWishlist": "Quitar de favoritos",
     "included": "Incluido",
     "amenities": {
-      "showAll": "Ver todas las comodidades ({count})",
-      "showFewer": "Ver menos",
       "groups": {
         "navigation-and-safety": "Navegación y seguridad",
         "deck-and-cockpit": "Cubierta y bañera",
@@ -1383,7 +1381,10 @@
         "entertainment-and-water-toys": "Ocio y juguetes acuáticos",
         "systems-and-power": "Sistemas y energía",
         "other": "Otro equipamiento"
-      }
+      },
+      "itemCount": "{count, plural, one {# elemento} other {# elementos}}",
+      "allIncluded": "Todo el equipamiento indicado está incluido en el precio del chárter.",
+      "dismissNote": "Cerrar"
     },
     "importantInfo": {
       "charterCompany": "Empresa de chárter",

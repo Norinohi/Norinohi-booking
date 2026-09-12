@@ -266,7 +266,13 @@ export const listingDetailSchema = listingSummarySchema.extend({
    * page reads: curated amenities first within each group, and the groups themselves in
    * `AMENITY_GROUPS` order, so the client renders the array as it arrives.
    */
-  includedAmenities: z.array(includedItemSchema.extend({ group: z.enum(AMENITY_GROUPS) })),
+  includedAmenities: z.array(
+    includedItemSchema.extend({
+      group: z.enum(AMENITY_GROUPS),
+      /** Icon slug, or null where the client falls back to the group's own icon. */
+      icon: z.string().nullable(),
+    }),
+  ),
   mandatoryExtras: z.array(pricedItemSchema),
   optionalExtras: z.array(optionalItemSchema),
   /**

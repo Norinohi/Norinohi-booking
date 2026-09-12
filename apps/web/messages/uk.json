@@ -1373,8 +1373,6 @@
     "removeFromWishlist": "Видалити з обраного",
     "included": "Включено",
     "amenities": {
-      "showAll": "Показати всі зручності ({count})",
-      "showFewer": "Показати менше",
       "groups": {
         "navigation-and-safety": "Навігація і безпека",
         "deck-and-cockpit": "Палуба і кокпіт",
@@ -1383,7 +1381,10 @@
         "entertainment-and-water-toys": "Розваги і водні іграшки",
         "systems-and-power": "Системи і живлення",
         "other": "Інше обладнання"
-      }
+      },
+      "itemCount": "{count, plural, one {# позиція} few {# позиції} many {# позицій} other {# позицій}}",
+      "allIncluded": "Усі перелічені зручності входять у вартість чартеру.",
+      "dismissNote": "Закрити"
     },
     "importantInfo": {
       "charterCompany": "Чартерна компанія",

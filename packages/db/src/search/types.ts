@@ -241,7 +241,7 @@ export type ListingDetail = ListingSearchDoc & {
    * one. Not in the gallery: these are links a visitor follows off the page, not images.
    */
   media: { videoUrl: string | null; tourUrl: string | null };
-  includedAmenities: { code: string; label: string; group: AmenityGroup }[];
+  includedAmenities: { code: string; label: string; group: AmenityGroup; icon: string | null }[];
   mandatoryExtras: ListingPricedItem[];
   optionalExtras: ListingOptionalItem[];
   /** What the sidebar's Crew control may offer, and what each role costs. */
