@@ -5,7 +5,11 @@ import { betterAuth, type BetterAuthAdvancedOptions } from "better-auth";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";
-import { sendResetPasswordEmail, sendSetPasswordEmail } from "@yacht-charter/transactional";
+import {
+  sendResetPasswordEmail,
+  sendSetPasswordEmail,
+  sendWelcomeEmail,
+} from "@yacht-charter/transactional";
 
 /*
  * better-auth has one reset-password token and one sender for it, but two audiences: someone
@@ -152,6 +156,27 @@ export function createAuth() {
       },
     },
     databaseHooks: {
+      user: {
+        create: {
+          after: async (created) => {
+            /*
+             * The welcome mail. This hook fires only for accounts better-auth itself creates —
+             * email/password sign-up and the Google callback — so the account guest checkout
+             * inserts directly (services/account-provisioning.ts) never reaches here, and keeps
+             * getting the set-password invitation instead of being welcomed to an account it
+             * cannot yet sign into.
+             *
+             * Best-effort on purpose: the account exists by the time this runs, and a Resend
+             * outage must not turn a successful sign-up into an error the customer sees.
+             */
+            try {
+              await sendWelcomeEmail({ to: created.email, name: created.name || undefined });
+            } catch (cause) {
+              console.error(`[auth] welcome email to ${created.email} failed`, cause);
+            }
+          },
+        },
+      },
       session: {
         create: {
           after: async (session) => {

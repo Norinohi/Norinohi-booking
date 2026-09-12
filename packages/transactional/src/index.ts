@@ -15,6 +15,7 @@ import { RefundIssuedEmail, type RefundIssuedEmailProps } from "./emails/refund-
 import { ResetPasswordEmail } from "./emails/reset-password";
 import { SetPasswordEmail } from "./emails/set-password";
 import { StaffAlertEmail, type StaffAlertEmailProps } from "./emails/staff-alert";
+import { WelcomeEmail } from "./emails/welcome";
 
 export type { RefundMethod } from "./emails/refund-issued";
 
@@ -211,6 +212,29 @@ export async function sendEnquiryAnswerEmail(
 export async function sendStaffAlertEmail(to: string, alert: Omit<StaffAlertEmailProps, "appUrl">) {
   const html = await render(createElement(StaffAlertEmail, { ...alert, appUrl: env.CORS_ORIGIN }));
   return sendHtml(to, alert.title, html, { replyable: false });
+}
+
+/**
+ * The first mail a new account gets. Sent after sign-up succeeded, so it promises nothing the
+ * account cannot already do: no link here has to work for the customer to get in. The account
+ * guest checkout opens is not a sign-up and gets `sendSetPasswordEmail` instead.
+ */
+export async function sendWelcomeEmail({ to, name }: { to: string; name?: string }) {
+  // Templates are English-only, so the links are too, rather than guessing a locale the
+  // sign-up never told us. Same constant the api services compose their links with.
+  const base = `${env.CORS_ORIGIN}/en`;
+  const html = await render(
+    createElement(WelcomeEmail, {
+      name,
+      email: to,
+      profileUrl: `${base}/profile`,
+      wishlistUrl: `${base}/wishlist`,
+      supportUrl: `${base}/support`,
+      replyable: isReplyable(),
+      appUrl: env.CORS_ORIGIN,
+    }),
+  );
+  return sendHtml(to, "Welcome to YachtSkanner", html);
 }
 
 export async function sendResetPasswordEmail({ to, url }: { to: string; url: string }) {
