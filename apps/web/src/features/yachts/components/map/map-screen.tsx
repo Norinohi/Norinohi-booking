@@ -29,6 +29,7 @@ import {
 } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
 import { useMapClusters } from "../../hooks/use-map-clusters";
+import { useRememberSearch } from "../../hooks/use-remember-search";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
 import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
@@ -165,6 +166,7 @@ function CloseListButton({
 }
 
 export default function MapScreen() {
+  useRememberSearch();
   const focusListingId = useSearchParams().get("selected");
   /* The same URL state the list screen runs on, so filters survive a reload and travel with a link
      instead of dying with the component. */

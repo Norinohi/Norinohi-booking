@@ -5,6 +5,7 @@ import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/navigation/app-breadcrumbs";
 
 import Gallery from "./gallery";
+import SearchReturnLink from "./search-return-link";
 import RecordView from "./record-view";
 import AmenitiesSection from "./sections/amenities-section";
 import DescriptionSection from "./sections/description-section";
@@ -42,7 +43,13 @@ export default function YachtDetailScreen({
 }) {
   const t = useTranslations("YachtDetail");
 
-  const breadcrumbs: AppBreadcrumb[] = [{ name: "YachtDetail.breadcrumbSearch", url: "/yachts" }];
+  /*
+   * Both ways back lead to the search the visitor actually ran, filters included, which only the
+   * browser knows: this page's URL carries the dates and nothing else. See `lib/last-search.ts`.
+   */
+  const breadcrumbs: AppBreadcrumb[] = [
+    { name: "YachtDetail.breadcrumbSearch", render: <SearchReturnLink /> },
+  ];
   if (title) breadcrumbs.push({ name: title, dynamic: true });
 
   return (
@@ -54,6 +61,7 @@ export default function YachtDetailScreen({
           items={breadcrumbs}
           backLabel="YachtDetail.backToSearch"
           backHref="/yachts"
+          backRender={<SearchReturnLink />}
         />
       </div>
 
