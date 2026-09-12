@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, date, index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
@@ -59,6 +60,10 @@ export const availabilitySlot = pgTable(
     unique("availability_slot_period_uq").on(t.listingOfferId, t.startDate, t.endDate),
     index("availability_slot_listing_idx").on(t.listingId),
     index("availability_slot_dates_idx").on(t.startDate, t.endDate),
+    /* Search asks this one per candidate listing: is the requested week held under option. */
+    index("availability_slot_option_idx")
+      .on(t.listingId, t.startDate, t.endDate)
+      .where(sql`status = 'option'`),
   ],
 );
 

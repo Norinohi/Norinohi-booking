@@ -11,6 +11,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@yacht-charter/ui/components/layout/accordion";
+import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
@@ -273,21 +274,45 @@ interface ToggleRowProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   control: "switch" | "checkbox";
+  /** Greys the row out and blocks the control; pair it with `hint`, which says why. */
+  disabled?: boolean;
+  /** A line under the label, for a filter that has to explain what turning it on does. */
+  hint?: string;
 }
 
-export function ToggleRow({ label, checked, onChange, control }: ToggleRowProps) {
+export function ToggleRow({ label, checked, onChange, control, disabled, hint }: ToggleRowProps) {
   const labelId = useId();
+  const hintId = useId();
 
   return (
-    <div className="flex w-full items-center gap-2">
+    <div className={cn("flex w-full items-start gap-2", disabled && "opacity-60")}>
       {control === "switch" ? (
-        <Switch aria-labelledby={labelId} checked={checked} onCheckedChange={onChange} />
+        <Switch
+          aria-labelledby={labelId}
+          aria-describedby={hint ? hintId : undefined}
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onChange}
+        />
       ) : (
-        <Checkbox aria-labelledby={labelId} checked={checked} onCheckedChange={onChange} />
+        <Checkbox
+          aria-labelledby={labelId}
+          aria-describedby={hint ? hintId : undefined}
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onChange}
+        />
       )}
-      <span id={labelId} className="flex-1 text-base leading-[1.4] text-foreground">
-        {label}
-      </span>
+      <div className="flex flex-1 flex-col gap-0.5">
+        <span id={labelId} className="text-base leading-[1.4] text-foreground">
+          {label}
+        </span>
+        {hint ? (
+          <span id={hintId} className="text-sm leading-[1.3] text-natural-500">
+            {hint}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

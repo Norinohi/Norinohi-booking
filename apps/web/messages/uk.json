@@ -524,6 +524,7 @@
       "battenMainsail": "Грот на латах",
       "badges": {
         "available": "Доступна",
+        "temporarilyHeld": "Тимчасово утримується",
         "onRequest": "За запитом",
         "unavailable": "Недоступна",
         "bestForFamilies": "Ідеально для родин",
@@ -558,7 +559,8 @@
         "skipperOptional": "Шкіпер за бажанням"
       },
       "moreAmenities": "Показати ще {count} зручностей",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "На утриманні до {date}"
     },
     "gallery": {
       "close": "Закрити",
@@ -773,11 +775,14 @@
       "builtTo": "Рік побудови до"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Показувати яхти без підтвердження доступності",
-      "underTemporaryBooking": "Показувати яхти з тимчасовим бронюванням",
+      "underTemporaryBooking": "Також показувати яхти з тимчасовим бронюванням",
       "depositInsurance": "Страхування застави включено",
       "petsAllowed": "Можна з тваринами",
       "bestValue": "Тільки вигідні пропозиції"
+    },
+    "hints": {
+      "underTemporaryBooking": "Ці тижні на утриманні в іншого клієнта і ще можуть звільнитися.",
+      "needsDates": "Оберіть дату початку, щоб скористатися фільтром."
     },
     "units": {
       "years": "{count, plural, one {# рік} few {# роки} many {# років} other {# року}}"
@@ -807,8 +812,7 @@
       "bathrooms": "Санвузол/душ: {value}",
       "price": "Ціна: {value}",
       "year": "Рік: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Без підтвердження доступності",
-      "underTemporaryBooking": "З тимчасовим бронюванням",
+      "underTemporaryBooking": "З утриманими тижнями",
       "depositInsurance": "Страхування застави",
       "petsAllowed": "Можна з тваринами",
       "bestValue": "Вигідна пропозиція",

@@ -179,7 +179,7 @@ export default function MapBoatCard({
             </p>
           </div>
 
-          {note ? <CardNote backdrop note={note} className="flex w-fit" /> : null}
+          {note ? <CardNote backdrop note={note} className="flex w-full" /> : null}
         </div>
 
         <Button

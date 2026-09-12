@@ -36,7 +36,6 @@ export const CHIP_DEFS = [
   /* Also the Boat Age slider's chip: the slider edits these two keys (lib/boat-age.ts). */
   { id: "year", keys: YEAR_KEYS },
 
-  { id: "withoutAvailabilityConfirmation", keys: ["withoutAvailabilityConfirmation"] },
   { id: "underTemporaryBooking", keys: ["underTemporaryBooking"] },
   { id: "depositInsurance", keys: ["depositInsurance"] },
   { id: "petsAllowed", keys: ["petsAllowed"] },

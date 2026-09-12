@@ -131,10 +131,8 @@ export async function rebuildListingSearchDocs(
         rate.currency,
         avail.available_from,
         avail.available_to,
-        avail.has_unconfirmed_availability,
         checkin.bookable_from,
         checkin.bookable_to,
-        held.has_temporary_booking,
         /*
          * The all-in weekly price, because that is what the customer is asked to pay and what
          * the detail page totals. The rate alone advertised EUR 809 beside a booking summary
@@ -216,26 +214,11 @@ export async function rebuildListingSearchDocs(
               and free.end_date > price.start_date
           )
       ) rate on true
-      /*
-       * Availability is the span of the free stretches, which are the complement of occupancy.
-       * A stretch counts as unconfirmed unless the provider priced that exact period on request,
-       * which is what has_unconfirmed_availability has always meant: we inferred this.
-       */
+      /* Availability is the span of the free stretches, which are the complement of occupancy. */
       left join lateral (
         select
           min(free.start_date) as available_from,
-          max(free.end_date) as available_to,
-          bool_or(
-            not exists (
-              select 1
-              from availability_slot confirmed
-              where confirmed.listing_offer_id = o.id
-                and confirmed.status = 'available'
-                and confirmed.availability_confirmed
-                and confirmed.start_date <= free.start_date
-                and confirmed.end_date >= free.end_date
-            )
-          ) as has_unconfirmed_availability
+          max(free.end_date) as available_to
         from listing_free_period free
         where free.listing_offer_id = o.id
       ) avail on true
@@ -652,11 +635,6 @@ export async function rebuildListingSearchDocs(
             extra.price_minor
         ) applicable
       ) crew on true
-      left join lateral (
-        select bool_or(slot.status = 'option') as has_temporary_booking
-        from availability_slot slot
-        where slot.listing_offer_id = o.id
-      ) held on true
       /*
        * In a lateral rather than the select list because the published figure and its converted
        * twin are both built from it, and repeating the expression is how the two drift apart.
@@ -812,8 +790,6 @@ export async function rebuildListingSearchDocs(
         listing_id,
         min(available_from) as available_from,
         max(available_to) as available_to,
-        bool_or(has_unconfirmed_availability) as has_unconfirmed_availability,
-        bool_or(has_temporary_booking) as has_temporary_booking,
         count(*)::int as offer_count
       from offer_doc
       group by listing_id
@@ -874,8 +850,6 @@ export async function rebuildListingSearchDocs(
       available_to,
       bookable_from,
       bookable_to,
-      has_unconfirmed_availability,
-      has_temporary_booking,
       searchable_text,
       created_at,
       updated_at
@@ -1018,8 +992,6 @@ export async function rebuildListingSearchDocs(
       spread.available_to,
       best.bookable_from,
       best.bookable_to,
-      coalesce(spread.has_unconfirmed_availability, false),
-      coalesce(spread.has_temporary_booking, false),
       concat_ws(
         ' ',
         l.title,
@@ -1200,8 +1172,6 @@ export async function rebuildListingSearchDocs(
       available_to = excluded.available_to,
       bookable_from = excluded.bookable_from,
       bookable_to = excluded.bookable_to,
-      has_unconfirmed_availability = excluded.has_unconfirmed_availability,
-      has_temporary_booking = excluded.has_temporary_booking,
       searchable_text = excluded.searchable_text,
       updated_at = now()
   `);

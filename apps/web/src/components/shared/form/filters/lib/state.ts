@@ -46,7 +46,6 @@ export type FiltersState = {
   yearFrom: string;
   yearTo: string;
 
-  withoutAvailabilityConfirmation: boolean;
   underTemporaryBooking: boolean;
   depositInsurance: boolean;
   petsAllowed: boolean;
@@ -111,7 +110,6 @@ export const DEFAULT_FILTERS: FiltersState = {
   yearFrom: "any",
   yearTo: "any",
 
-  withoutAvailabilityConfirmation: false,
   underTemporaryBooking: false,
   depositInsurance: false,
   petsAllowed: false,

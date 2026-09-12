@@ -524,6 +524,7 @@
       "battenMainsail": "Lattengroßsegel",
       "badges": {
         "available": "Verfügbar",
+        "temporarilyHeld": "Vorläufig reserviert",
         "onRequest": "Auf Anfrage",
         "unavailable": "Nicht verfügbar",
         "bestForFamilies": "Ideal für Familien",
@@ -558,7 +559,8 @@
         "skipperOptional": "Skipper optional"
       },
       "moreAmenities": "{count} weitere Ausstattungsmerkmale anzeigen",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "Reserviert bis {date}"
     },
     "gallery": {
       "close": "Schließen",
@@ -773,11 +775,14 @@
       "builtTo": "Baujahr bis"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Yachten ohne Verfügbarkeitsbestätigung anzeigen",
-      "underTemporaryBooking": "Yachten mit vorläufiger Buchung anzeigen",
+      "underTemporaryBooking": "Auch vorläufig gebuchte Yachten anzeigen",
       "depositInsurance": "Kautionsversicherung inklusive",
       "petsAllowed": "Haustiere erlaubt",
       "bestValue": "Nur bestes Preis-Leistungs-Verhältnis"
+    },
+    "hints": {
+      "underTemporaryBooking": "Diese Wochen sind für andere Kunden reserviert und können noch frei werden.",
+      "needsDates": "Wählen Sie ein Startdatum, um diesen Filter zu nutzen."
     },
     "units": {
       "years": "{count, plural, one {# Jahr} other {# Jahre}}"
@@ -807,8 +812,7 @@
       "bathrooms": "Toilette/Dusche: {value}",
       "price": "Preis: {value}",
       "year": "Baujahr: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Ohne Verfügbarkeitsbestätigung",
-      "underTemporaryBooking": "Vorläufig gebucht",
+      "underTemporaryBooking": "Reservierte Wochen einbezogen",
       "depositInsurance": "Kautionsversicherung",
       "petsAllowed": "Haustiere erlaubt",
       "bestValue": "Bestes Preis-Leistungs-Verhältnis",

@@ -524,6 +524,7 @@
       "battenMainsail": "Batten mainsail",
       "badges": {
         "available": "Available",
+        "temporarilyHeld": "Temporarily held",
         "onRequest": "On request",
         "unavailable": "Unavailable",
         "bestForFamilies": "Best for families",
@@ -558,7 +559,8 @@
         "skipperOptional": "Skipper optional"
       },
       "moreAmenities": "Show {count} more amenities",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "On hold until {date}"
     },
     "gallery": {
       "close": "Close",
@@ -773,11 +775,14 @@
       "builtTo": "Built to year"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Show yachts without availability confirmation",
-      "underTemporaryBooking": "Show yachts under temporary booking",
+      "underTemporaryBooking": "Also show yachts held under a temporary booking",
       "depositInsurance": "Security deposit insurance included",
       "petsAllowed": "Pets allowed",
       "bestValue": "Best value only"
+    },
+    "hints": {
+      "underTemporaryBooking": "These weeks are on hold for another customer and can still fall through.",
+      "needsDates": "Choose a start date to use this filter."
     },
     "units": {
       "years": "{count, plural, one {# year} other {# years}}"
@@ -807,8 +812,7 @@
       "bathrooms": "Toilet/shower: {value}",
       "price": "Price: {value}",
       "year": "Year: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Without availability confirmation",
-      "underTemporaryBooking": "Under temporary booking",
+      "underTemporaryBooking": "Held weeks included",
       "depositInsurance": "Deposit insurance",
       "petsAllowed": "Pets allowed",
       "bestValue": "Best value",

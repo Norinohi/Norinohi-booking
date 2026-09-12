@@ -164,9 +164,13 @@ export const listingSummarySchema = z.object({
     termsAndConditions: z.string().nullable(),
   }),
   availability: z.object({
-    hasUnconfirmedAvailability: z.boolean(),
     hasAvailableDates: z.boolean(),
-    hasTemporaryBooking: z.boolean(),
+    /**
+     * The day a temporary booking over the searched week runs out, when that hold is the only
+     * thing between this boat and the charter asked for. Null on an undated search and on every
+     * boat whose week is free; a card showing it is one the visitor asked to be shown.
+     */
+    temporarilyHeldUntil: z.string().nullable(),
     /**
      * The first charter this listing would sell, for a card with no period of its own. Both
      * ends or neither: a start day on its own proves no legal check-out follows it, which is
@@ -429,7 +433,7 @@ export const listingSearchInputBaseSchema = z.object({
   yearTo: z.coerce.number().int().optional(),
   minGuestRating: z.coerce.number().min(0).max(5).optional(),
   maxGuestRating: z.coerce.number().min(0).max(5).optional(),
-  withoutAvailabilityConfirmation: booleanParamSchema,
+  /** Widens a dated search with the boats whose requested week is held under option. */
   underTemporaryBooking: booleanParamSchema,
   depositInsurance: booleanParamSchema,
   petsAllowed: booleanParamSchema,
@@ -537,7 +541,7 @@ export const facetsSchema = z.object({
     guestRating: numberRangeSchema,
   }),
   toggles: z.object({
-    withoutAvailabilityConfirmation: z.boolean(),
+    /** False where the search named no dates, which is where the control has nothing to widen. */
     underTemporaryBooking: z.boolean(),
     depositInsurance: z.boolean(),
     petsAllowed: z.boolean(),

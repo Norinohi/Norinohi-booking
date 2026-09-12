@@ -172,11 +172,10 @@ export function presentListingSummary(
       termsAndConditions: doc.operatorTermsAndConditions,
     },
     availability: {
-      hasUnconfirmedAvailability: doc.hasUnconfirmedAvailability,
-      hasTemporaryBooking: doc.hasTemporaryBooking,
       // No projected window means the listing has no bookable slot at all, which
       // is a different state from having dates but no price.
       hasAvailableDates: doc.availableFrom !== null,
+      temporarilyHeldUntil: doc.temporarilyHeldUntil,
       bookablePeriod,
     },
     rating: Number(doc.rating),

@@ -51,6 +51,8 @@ export default function TitleBlock() {
   const status = availabilityStatus({
     hasAvailableDates: data.availability.hasAvailableDates,
     hasBookablePeriod: data.availability.bookablePeriod !== null,
+    /* Detail is one boat, not a search: it has a calendar of its own to show a hold on. */
+    temporarilyHeld: false,
   });
 
   /*

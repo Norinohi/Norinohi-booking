@@ -15,22 +15,24 @@ import type { useTranslations } from "next-intl";
  * - **Booked** is a fact about a date. The only listing-wide signal we hold is whether any date is
  *   free, and a hull with one booked week and fifty free ones is not "booked". The booking
  *   calendar is where a day says so.
- * - **Temporarily held** is a fact about a date too. `has_temporary_booking` is true when *any*
- *   slot of any offer is on option — 3,406 of the 18,655 listings in the local sync carry it while
- *   still holding a confirmed price for the charter their card advertises. Labelling those held
- *   would warn about a week the visitor is not looking at.
+ * - **Temporarily held** is a fact about a date, and it is only claimed where we hold that date:
+ *   a search that named a week, whose boat is free across it except for somebody else's hold.
+ *   The listing-wide flag it used to be read — any slot of any offer on option — labelled a
+ *   third of the fleet over a week the visitor was not looking at.
  *
  * A provider we could not reach is not in this list either. That is the state of our request
  * rather than of the yacht, and the booking sidebar reports it separately — conflating the two
  * would tell the visitor a boat needs confirming when in truth an API was down.
  */
-export type AvailabilityStatus = "available" | "onRequest" | "unavailable";
+export type AvailabilityStatus = "available" | "temporarilyHeld" | "onRequest" | "unavailable";
 
 export type AvailabilityFacts = {
   /** Any free dates at all, from the union of every offer's calendar. */
   hasAvailableDates: boolean;
   /** A charter we can name: the searched period, or the first one this boat would sell. */
   hasBookablePeriod: boolean;
+  /** Set only where the searched week is held under option and that hold is all that blocks it. */
+  temporarilyHeld: boolean;
 };
 
 /*
@@ -48,6 +50,12 @@ export type AvailabilityFacts = {
  * boat be chartered.
  */
 export function availabilityStatus(facts: AvailabilityFacts): AvailabilityStatus {
+  /*
+   * Ahead of the other two, because it is the most specific thing we know: this boat is in the
+   * results only because the visitor asked to see held weeks, and every other label would tell
+   * them the week is theirs to book.
+   */
+  if (facts.temporarilyHeld) return "temporarilyHeld";
   if (!facts.hasAvailableDates) return "unavailable";
   if (!facts.hasBookablePeriod) return "onRequest";
   return "available";
@@ -56,6 +64,7 @@ export function availabilityStatus(facts: AvailabilityFacts): AvailabilityStatus
 /** Chip colours: green for a boat that can be booked now, amber for a caveat, grey for a no. */
 export const AVAILABILITY_TONE = {
   available: "success",
+  temporarilyHeld: "warning",
   onRequest: "warning",
   unavailable: "neutral",
 } as const satisfies Record<AvailabilityStatus, "success" | "warning" | "neutral">;

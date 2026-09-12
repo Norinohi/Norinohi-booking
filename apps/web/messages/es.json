@@ -524,6 +524,7 @@
       "battenMainsail": "Mayor con sables",
       "badges": {
         "available": "Disponible",
+        "temporarilyHeld": "Retenido temporalmente",
         "onRequest": "Bajo petición",
         "unavailable": "No disponible",
         "bestForFamilies": "Ideal para familias",
@@ -558,7 +559,8 @@
         "skipperOptional": "Patrón opcional"
       },
       "moreAmenities": "Ver {count} equipamientos más",
-      "moreAmenitiesShort": "+{count}"
+      "moreAmenitiesShort": "+{count}",
+      "heldUntil": "Retenido hasta el {date}"
     },
     "gallery": {
       "close": "Cerrar",
@@ -773,11 +775,14 @@
       "builtTo": "Año de construcción hasta"
     },
     "toggles": {
-      "withoutAvailabilityConfirmation": "Mostrar yates sin confirmación de disponibilidad",
-      "underTemporaryBooking": "Mostrar yates con reserva temporal",
+      "underTemporaryBooking": "Mostrar también yates con reserva temporal",
       "depositInsurance": "Seguro de fianza incluido",
       "petsAllowed": "Se admiten mascotas",
       "bestValue": "Solo la mejor relación calidad-precio"
+    },
+    "hints": {
+      "underTemporaryBooking": "Esas semanas están retenidas por otro cliente y aún pueden liberarse.",
+      "needsDates": "Elige una fecha de inicio para usar este filtro."
     },
     "units": {
       "years": "{count, plural, one {# año} other {# años}}"
@@ -807,8 +812,7 @@
       "bathrooms": "Aseo/ducha: {value}",
       "price": "Precio: {value}",
       "year": "Año: {from}–{to}",
-      "withoutAvailabilityConfirmation": "Sin confirmación de disponibilidad",
-      "underTemporaryBooking": "Con reserva temporal",
+      "underTemporaryBooking": "Con semanas retenidas",
       "depositInsurance": "Seguro de fianza",
       "petsAllowed": "Se admiten mascotas",
       "bestValue": "Mejor relación calidad-precio",
