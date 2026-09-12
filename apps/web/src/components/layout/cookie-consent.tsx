@@ -27,6 +27,7 @@ import { CookiePreferencesDialog } from "./cookie-preferences-dialog";
  */
 type ConsentUpdate = (command: "consent", action: "update", signals: ConsentSignals) => void;
 
+
 declare global {
   interface Window {
     gtag?: ConsentUpdate;
