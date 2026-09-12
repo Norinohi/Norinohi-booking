@@ -668,6 +668,31 @@
       "referral-credit": "Empfehlungsguthaben"
     }
   },
+  "Contact": {
+    "title": "Kontakt aufnehmen",
+    "subtitle": "Buchen Sie ein Gespräch oder schreiben Sie uns, ganz wie es Ihnen passt.",
+    "options": {
+      "call": {
+        "title": "Kurzes Gespräch buchen",
+        "description": "Wählen Sie eine passende Zeit, ein kurzes Gespräch mit einem Charter-Experten."
+      },
+      "message": {
+        "title": "Nachricht senden",
+        "description": "Sagen Sie uns, wonach Sie suchen, und wir antworten per E-Mail."
+      }
+    },
+    "placeholder": {
+      "title": "Die Buchung kommt bald",
+      "description": "Die Online-Terminbuchung ist noch nicht fertig. Schreiben Sie uns, und wir finden eine Zeit, die Ihnen passt.",
+      "cta": "Stattdessen eine Nachricht senden"
+    },
+    "send": "Nachricht senden",
+    "sent": "Danke! Ein Charter-Experte meldet sich in Kürze bei Ihnen.",
+    "submitted": {
+      "title": "Danke, wir melden uns",
+      "description": "Einer unserer Charter-Experten meldet sich in Kürze."
+    }
+  },
   "Filters": {
     "title": "Alle Filter ({count})",
     "clearAll": "Alle löschen",
@@ -1026,7 +1051,8 @@
         "planTrip": "Reise planen lassen",
         "popularYachts": "Beliebte Yachten",
         "customerReviews": "Das sagen unsere Kunden",
-        "howItWorks": "So funktioniert's"
+        "howItWorks": "So funktioniert's",
+        "contact": "Kontakt"
       },
       "privacy": "Datenschutz",
       "terms": "Nutzungsbedingungen",
@@ -1722,6 +1748,10 @@
     "Popular": {
       "title": "Beliebte Auswahl",
       "description": "Legen Sie fest, welche Werte die Filter und die Startseite anführen."
+    },
+    "Contact": {
+      "title": "Kontakt",
+      "description": "Sprechen Sie mit einem Charter-Experten über Ihre nächste Reise."
     }
   },
   "Profile": {

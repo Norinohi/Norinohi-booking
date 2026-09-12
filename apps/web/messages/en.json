@@ -668,6 +668,31 @@
       "referral-credit": "Referral credit"
     }
   },
+  "Contact": {
+    "title": "Get in touch",
+    "subtitle": "Book a call or send us a message, whichever suits you.",
+    "options": {
+      "call": {
+        "title": "Book a quick call",
+        "description": "Pick a time that works for you, a short call with a charter expert."
+      },
+      "message": {
+        "title": "Send a message",
+        "description": "Tell us what you are looking for and we'll get back to you by email."
+      }
+    },
+    "placeholder": {
+      "title": "Booking is coming soon",
+      "description": "Online scheduling isn't ready yet. Send us a message and we'll set up a time that works for you.",
+      "cta": "Send a message instead"
+    },
+    "send": "Send message",
+    "sent": "Thanks! A charter expert will be in touch shortly.",
+    "submitted": {
+      "title": "Thanks, we'll be in touch",
+      "description": "One of our charter experts will follow up shortly."
+    }
+  },
   "Filters": {
     "title": "All filters ({count})",
     "clearAll": "Clear all",
@@ -1026,7 +1051,8 @@
         "planTrip": "Help me plan my trip",
         "popularYachts": "Popular yachts",
         "customerReviews": "What our customers say",
-        "howItWorks": "How it works"
+        "howItWorks": "How it works",
+        "contact": "Contact us"
       },
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
@@ -1722,6 +1748,10 @@
     "Popular": {
       "title": "Popular picks",
       "description": "Curate which facet values head the filters and the home page."
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "Talk to a charter expert about your next trip."
     }
   },
   "Profile": {

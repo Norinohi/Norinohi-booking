@@ -60,6 +60,7 @@ const COLUMNS = [
       { key: "popularYachts", href: "/#popular-yachts" },
       { key: "customerReviews", href: "/#testimonials" },
       { key: "howItWorks", href: "/#how-it-works" },
+      { key: "contact", href: "/contact" },
     ],
   },
 ] as const;

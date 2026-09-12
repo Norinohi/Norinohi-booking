@@ -20,7 +20,7 @@ import { publicClient } from "@/utils/orpc";
  * omitted: login, register, booking, confirmation, consultation, `/wishlist`, `/yachts/map`,
  * and everything under `/profile`.
  */
-export const STATIC_PATHS = ["/", "/yachts", "/plan-my-trip"] as const;
+export const STATIC_PATHS = ["/", "/yachts", "/plan-my-trip", "/contact"] as const;
 
 /** Page size is capped at 50 by `listingSearchInputSchema`; the bound stops a bad cursor looping. */
 const PAGE_SIZE = 50;

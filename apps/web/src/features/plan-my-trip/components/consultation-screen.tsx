@@ -11,12 +11,12 @@ import { useRouter } from "@/i18n/navigation";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
 
+import { CalendlyWidget } from "@/components/shared/data-display/calendly-widget";
 import EmptyState from "@/components/shared/feedback/empty-state";
 
 import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
 import { buildCalendlyUrl } from "../lib/build-calendly-url";
 import { plannerParsers } from "../lib/search-params";
-import { CalendlyWidget } from "./calendly-widget";
 import { ConsultationForm } from "./consultation-form";
 import { StepLegend } from "./step-legend";
 

@@ -668,6 +668,31 @@
       "referral-credit": "Crédito por recomendación"
     }
   },
+  "Contact": {
+    "title": "Ponte en contacto",
+    "subtitle": "Reserva una llamada o envíanos un mensaje, lo que prefieras.",
+    "options": {
+      "call": {
+        "title": "Reservar una llamada breve",
+        "description": "Elige la hora que te venga bien, una charla corta con un experto en chárter."
+      },
+      "message": {
+        "title": "Enviar un mensaje",
+        "description": "Cuéntanos qué buscas y te responderemos por correo electrónico."
+      }
+    },
+    "placeholder": {
+      "title": "La reserva llegará pronto",
+      "description": "La programación en línea aún no está lista. Envíanos un mensaje y acordaremos una hora que te venga bien.",
+      "cta": "Enviar un mensaje en su lugar"
+    },
+    "send": "Enviar mensaje",
+    "sent": "¡Gracias! Un experto en chárter se pondrá en contacto contigo en breve.",
+    "submitted": {
+      "title": "Gracias, nos pondremos en contacto",
+      "description": "Uno de nuestros expertos en chárter te escribirá en breve."
+    }
+  },
   "Filters": {
     "title": "Todos los filtros ({count})",
     "clearAll": "Borrar todo",
@@ -1026,7 +1051,8 @@
         "planTrip": "Ayúdame a planificar mi viaje",
         "popularYachts": "Yates populares",
         "customerReviews": "Lo que dicen nuestros clientes",
-        "howItWorks": "Cómo funciona"
+        "howItWorks": "Cómo funciona",
+        "contact": "Contacto"
       },
       "privacy": "Política de privacidad",
       "terms": "Términos del servicio",
@@ -1722,6 +1748,10 @@
     "Popular": {
       "title": "Selección popular",
       "description": "Elija qué valores encabezan los filtros y la página de inicio."
+    },
+    "Contact": {
+      "title": "Contacto",
+      "description": "Habla con un experto en chárter sobre tu próximo viaje."
     }
   },
   "Profile": {

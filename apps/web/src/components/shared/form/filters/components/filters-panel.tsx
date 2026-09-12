@@ -9,6 +9,8 @@ import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { FormEvent, Ref } from "react";
 
+import { Link } from "@/i18n/navigation";
+
 import { countActiveFilters, type FiltersState } from "../lib/state";
 import { useDraft } from "../hooks/use-draft";
 import { useFilterRanges } from "../hooks/use-filter-ranges";
@@ -71,12 +73,13 @@ export default function FiltersPanel({
         <p className="w-full text-center text-xl font-bold leading-[1.3] text-foreground">
           {t("needHelp")}
         </p>
-        <button
-          type="button"
-          className="w-full cursor-pointer rounded-lg px-1 py-1.5 font-bold leading-[1.4] text-natural-500 underline underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+        <Link
+          href="/contact"
+          onClick={onClose}
+          className="w-full rounded-lg px-1 py-1.5 text-center font-bold leading-[1.4] text-natural-500 underline underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           {t("contactExpert")}
-        </button>
+        </Link>
       </div>
     </>
   );
