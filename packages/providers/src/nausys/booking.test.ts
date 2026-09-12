@@ -134,6 +134,7 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
 
   const events: QuoteReservationEventInput[] = [];
   const rotations: { providerReservationId: string; securityToken: string }[] = [];
+  const opened: { quoteId: string; providerReservationId: string; securityToken: string }[] = [];
   const { db } = fakeDb();
 
   const service = createNausysBookingService({
@@ -150,10 +151,14 @@ function build(overrides: Partial<NausysBookingServiceDeps> = {}) {
       rotations.push(rotation);
       return Promise.resolve();
     },
+    persistOpenedReservation: (record) => {
+      opened.push(record);
+      return Promise.resolve();
+    },
     ...overrides,
   });
 
-  return { service, transport, events, rotations };
+  return { service, transport, events, rotations, opened };
 }
 
 const fixtureBodySchema = z.record(z.string(), z.json());
@@ -688,6 +693,27 @@ describe("reservation events", () => {
     expect(events.map((event) => event.kind)).toEqual(["info_created"]);
     expect(transport.callSequence()).toEqual(["createInfo", "createOption"]);
     expect(transport.callCount("stornoOption")).toBe(0);
+  });
+
+  /*
+   * The record it leaves carries the customer's name, email and phone. The uuid is the only
+   * way back to it, and it used to be stored only once the hold succeeded, so a refusal here
+   * left the vendor holding that data with no key on our side to reach it again.
+   */
+  it("writes down the handle before the step that can fail", async () => {
+    const { service, transport, opened } = build();
+    transport.failWith("createOption", "error-100");
+
+    await expect(service.createOption(draft)).rejects.toBeInstanceOf(AuthError);
+
+    expect(opened).toEqual([
+      {
+        quoteId: "qte_1",
+        providerReservationId: RESERVATION_ID,
+        securityToken: expect.any(String),
+      },
+    ]);
+    expect(opened[0]?.securityToken).not.toBe("");
   });
 
   it("writes a booking-scoped, PII-free row through the default recorder", async () => {
