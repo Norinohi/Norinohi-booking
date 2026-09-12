@@ -1,5 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
+import { listing } from "@yacht-charter/db/schema/listing";
+import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderReservation } from "@yacht-charter/providers";
 import { ProviderError } from "@yacht-charter/providers/shared/errors";
 
@@ -210,6 +212,12 @@ export interface UnreleasedOption {
   status: BookingStatus;
   provider: string;
   providerOptionId: string | null;
+  /** The boat, so the operator can open it rather than search the reference for it. */
+  yachtName: string;
+  yachtSlug: string;
+  /** The charter the blocked week is, as `yyyy-MM-dd`. */
+  checkIn: string;
+  checkOut: string;
   /** When the vendor's own hold lapses; null where it published none. */
   holdExpiresAt: string | null;
   failedAt: string;
@@ -237,6 +245,10 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
       status: booking.status,
       provider: booking.provider,
       providerOptionId: booking.providerOptionId,
+      yachtName: listing.title,
+      yachtSlug: listing.slug,
+      checkIn: quote.checkIn,
+      checkOut: quote.checkOut,
       /* What separates a week the operator is still sitting on from one that has lapsed. A
          vendor option expires on its own, so a refused release is urgent only until then. */
       holdExpiresAt: booking.holdExpiresAt,
@@ -245,6 +257,8 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
     })
     .from(latest)
     .innerJoin(booking, eq(booking.id, latest.bookingId))
+    .innerJoin(listing, eq(listing.id, booking.listingId))
+    .innerJoin(quote, eq(quote.id, booking.quoteId))
     .where(
       and(
         eq(latest.kind, "option_released"),
@@ -260,6 +274,10 @@ export async function listUnreleasedOptions(db: Database): Promise<UnreleasedOpt
     status: row.status,
     provider: row.provider,
     providerOptionId: row.providerOptionId,
+    yachtName: row.yachtName,
+    yachtSlug: row.yachtSlug,
+    checkIn: row.checkIn,
+    checkOut: row.checkOut,
     holdExpiresAt: row.holdExpiresAt?.toISOString() ?? null,
     failedAt: row.failedAt.toISOString(),
     reason: row.reason ?? "The vendor refused the release",

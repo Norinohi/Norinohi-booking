@@ -99,6 +99,12 @@ export const unreleasedOptionSchema = z.object({
   status: z.string(),
   provider: z.string(),
   providerOptionId: z.string().nullable(),
+  /** The boat the week belongs to, and the slug its page is reached by. */
+  yachtName: z.string(),
+  yachtSlug: z.string(),
+  /** The charter the blocked week is. */
+  checkIn: z.string(),
+  checkOut: z.string(),
   /**
    * When the vendor's own hold runs out, after which the week is free again whatever our rows
    * say. Null where the vendor published none. It is the difference between a slot somebody

@@ -14,6 +14,9 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { Link, type AppPathname } from "@/i18n/navigation";
+import { dayToDisplay } from "@/lib/date";
+
 import { useRetryRelease, useUnreleasedOptions } from "../hooks/use-maintenance";
 
 /*
@@ -73,6 +76,8 @@ export default function UnreleasedOptionsPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("reference")}</TableHead>
+                <TableHead>{t("yacht")}</TableHead>
+                <TableHead>{t("dates")}</TableHead>
                 <TableHead>{t("provider")}</TableHead>
                 <TableHead>{t("optionId")}</TableHead>
                 <TableHead>{t("hold")}</TableHead>
@@ -85,10 +90,24 @@ export default function UnreleasedOptionsPanel() {
               {items.map((item) => {
                 const lapsed =
                   item.holdExpiresAt !== null && new Date(item.holdExpiresAt).getTime() <= now;
+                // SAFETY: /yachts/[id] is a real route; typedRoutes only recognises it when the
+                // segment is a literal, and a slug is only known at read time.
+                const yachtHref = `/yachts/${item.yachtSlug}` as AppPathname;
 
                 return (
                   <TableRow key={item.bookingId}>
                     <TableCell className="font-semibold">{item.reference}</TableCell>
+                    <TableCell>
+                      <Link href={yachtHref} className="text-brand underline decoration-dotted">
+                        {item.yachtName}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {t("period", {
+                        from: format.dateTime(dayToDisplay(item.checkIn), "dayShort"),
+                        to: format.dateTime(dayToDisplay(item.checkOut), "dayShort"),
+                      })}
+                    </TableCell>
                     <TableCell>{item.provider}</TableCell>
                     <TableCell className="font-mono text-xs">
                       {item.providerOptionId ?? "-"}
