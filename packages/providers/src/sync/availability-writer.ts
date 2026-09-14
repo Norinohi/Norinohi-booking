@@ -63,6 +63,8 @@ export const occupiedIntervalSchema = z.object({
   startDate: isoDateSchema,
   endDate: isoDateSchema,
   status: z.enum(["occupied", "option", "blocked"]),
+  /** The vendor's deadline for an `option`, as an ISO instant. Unset where it states none. */
+  optionExpiresAt: z.iso.datetime().optional(),
   sourceHash: z.string().min(1),
 });
 export type OccupiedInterval = z.infer<typeof occupiedIntervalSchema>;
@@ -243,6 +245,7 @@ export interface AvailabilitySlotWrite {
   startDate: string;
   endDate: string;
   status: "available" | "option" | "occupied" | "blocked";
+  optionExpiresAt: Date | null;
   availabilityConfirmed: boolean;
   priceMinor: number | null;
   currency: string | null;
@@ -684,6 +687,10 @@ export async function runAvailabilitySync(
             startDate: interval.startDate,
             endDate: interval.endDate,
             status: interval.status,
+            optionExpiresAt:
+              interval.status === "option" && interval.optionExpiresAt
+                ? new Date(interval.optionExpiresAt)
+                : null,
             // The provider asserted this period is taken, so it is confirmed in the
             // only sense the column means: it is not our inference.
             availabilityConfirmed: true,
@@ -1155,6 +1162,7 @@ export function createDrizzleAvailabilitySyncStore(
               startDate: slot.startDate,
               endDate: slot.endDate,
               status: slot.status,
+              optionExpiresAt: slot.optionExpiresAt,
               availabilityConfirmed: slot.availabilityConfirmed,
               // The row asserts availability; the rate is a bonus it can go without.
               // Dropping the slot instead would leave the week looking unsynced.
@@ -1177,6 +1185,7 @@ export function createDrizzleAvailabilitySyncStore(
               listingId: sql`excluded.listing_id`,
               listingSourceId: sql`excluded.listing_source_id`,
               status: sql`excluded.status`,
+              optionExpiresAt: sql`excluded.option_expires_at`,
               // A re-synthesized slot drops back to unconfirmed on purpose: a
               // confirmation the vendor gave yesterday is not one it gives today, and
               // re-asserting it would be us confirming our own guess.

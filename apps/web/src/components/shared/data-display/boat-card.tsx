@@ -16,6 +16,7 @@ import { AmenityChip, AmenityOverflow } from "./amenity-chips";
 import CardNote from "./card-note";
 import type { CardNote as CardNoteData } from "./card-note";
 import CardPhotos from "./card-photos";
+import HoldCountdown from "./hold-countdown";
 
 export type BoatCardBadge = {
   label: string;
@@ -89,11 +90,12 @@ export type BoatCardProps = {
    */
   datesNote?: string;
   /**
-   * The day a temporary booking over the searched week runs out. Present only on the boats the
+   * Another customer's temporary booking over the searched week. Present only on the boats the
    * hold filter added to the results, where the dates above are the ones somebody else is
-   * holding, so the card has to say what the visitor would be waiting for.
+   * holding, so the card has to say what the visitor would be waiting for. `expiresAt` is null
+   * where the vendor stated no deadline.
    */
-  heldUntil?: string;
+  hold?: { expiresAt: string | null };
   priceLabel: string;
   price: string;
   /**
@@ -340,7 +342,7 @@ function Action({
   stats,
   start,
   datesNote,
-  heldUntil,
+  hold,
   end,
   priceLabel,
   price,
@@ -358,7 +360,7 @@ function Action({
   | "stats"
   | "start"
   | "datesNote"
-  | "heldUntil"
+  | "hold"
   | "end"
   | "priceLabel"
   | "price"
@@ -373,7 +375,6 @@ function Action({
   | "footer"
 >) {
   const t = useTranslations("Common.boatCard");
-  const format = useFormatter();
 
   return (
     <div className="flex flex-col gap-3 border-t border-natural-50 p-4 md:grid md:grid-cols-2 md:items-end md:gap-x-4 md:gap-y-3 md:p-6 xl:flex xl:min-w-0 xl:flex-col xl:items-stretch xl:border-t-0 xl:pl-0">
@@ -391,10 +392,8 @@ function Action({
         </p>
       ) : null}
 
-      {heldUntil ? (
-        <p className="w-full text-center text-sm leading-[1.3] text-gold md:text-left">
-          {t("heldUntil", { date: format.dateTime(dayToDisplay(heldUntil), "dayShort") })}
-        </p>
+      {hold ? (
+        <HoldCountdown expiresAt={hold.expiresAt} className="w-full text-center md:text-left" />
       ) : null}
 
       {/* `min-w-0` throughout, and no `flex-none`: a longer locale writes the same date as
@@ -512,7 +511,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           stats={boat.stats}
           start={boat.start}
           datesNote={boat.datesNote}
-          heldUntil={boat.heldUntil}
+          hold={boat.hold}
           end={boat.end}
           priceLabel={boat.priceLabel}
           price={boat.price}

@@ -560,7 +560,9 @@
       },
       "moreAmenities": "Ver {count} equipamientos más",
       "moreAmenitiesShort": "+{count}",
-      "heldUntil": "Retenido hasta el {date}"
+      "holdEndsIn": "La reserva vence en {time}",
+      "holdEnding": "La reserva está por vencer, vuelve a consultar en breve",
+      "holdNoDeadline": "Retenido hasta que el otro cliente confirme"
     },
     "gallery": {
       "close": "Cerrar",

@@ -524,7 +524,7 @@
       "battenMainsail": "Грот на латах",
       "badges": {
         "available": "Доступна",
-        "temporarilyHeld": "Тимчасово утримується",
+        "temporarilyHeld": "Тимчасово заброньовано",
         "onRequest": "За запитом",
         "unavailable": "Недоступна",
         "bestForFamilies": "Ідеально для родин",
@@ -560,7 +560,9 @@
       },
       "moreAmenities": "Показати ще {count} зручностей",
       "moreAmenitiesShort": "+{count}",
-      "heldUntil": "На утриманні до {date}"
+      "holdEndsIn": "Бронь спливає через {time}",
+      "holdEnding": "Бронь ось-ось спливе, перевірте трохи згодом",
+      "holdNoDeadline": "Заброньовано, доки інший клієнт не підтвердить"
     },
     "gallery": {
       "close": "Закрити",

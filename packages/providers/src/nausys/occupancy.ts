@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Database } from "../registry";
-import { parseNausysDate } from "../shared/dates";
+import { parseNausysDate, parseNausysDateTime } from "../shared/dates";
 import { ContractError } from "../shared/errors";
 import { nausysConfirmedCursorSchema, streamNausysConfirmedOffers } from "./confirmed-offers";
 import { decimalStringToMinor } from "../shared/money";
@@ -113,6 +113,7 @@ const MAX_REPORTED_ISSUES = 5;
  */
 export function mapOccupancyReservation(
   reservation: RestOccupancyReservation,
+  optionTimeZone: string,
 ): OccupiedInterval | null {
   const startDate = parseNausysDate(reservation.periodFrom);
   const endDate = parseNausysDate(reservation.periodTo);
@@ -126,7 +127,7 @@ export function mapOccupancyReservation(
 
   if (endDate === startDate) return null;
 
-  return {
+  const interval: OccupiedInterval = {
     externalYachtId: String(reservation.yachtId),
     startDate,
     endDate,
@@ -136,16 +137,33 @@ export function mapOccupancyReservation(
     status: OCCUPANCY_STATUS[reservation.reservationType],
     sourceHash: stableSourceHash(reservation),
   };
+  const optionExpiresAt = optionExpiry(reservation, optionTimeZone);
+  if (optionExpiresAt) interval.optionExpiresAt = optionExpiresAt;
+  return interval;
 }
 
-export function mapOccupancyDump(dump: NausysOccupancyDump): OccupancyDump {
+/*
+ * Dropped rather than thrown on when unreadable. The deadline only feeds the card's countdown;
+ * the week stays blocked either way, and quarantining a yacht over it would withdraw its free
+ * periods for the sake of a label.
+ */
+function optionExpiry(reservation: RestOccupancyReservation, timeZone: string): string | undefined {
+  if (reservation.reservationType !== "OPTION" || !reservation.optionValidTill) return undefined;
+  try {
+    return parseNausysDateTime(reservation.optionValidTill, timeZone).toISOString();
+  } catch {
+    return undefined;
+  }
+}
+
+export function mapOccupancyDump(dump: NausysOccupancyDump, optionTimeZone: string): OccupancyDump {
   const intervals: OccupiedInterval[] = [];
   const quarantinedYachtIds = new Set<string>();
   const issues: string[] = [];
 
   for (const reservation of dump.reservations) {
     try {
-      const interval = mapOccupancyReservation(reservation);
+      const interval = mapOccupancyReservation(reservation, optionTimeZone);
       if (interval) intervals.push(interval);
     } catch (error) {
       quarantinedYachtIds.add(String(reservation.yachtId));
@@ -246,6 +264,8 @@ export interface NausysAvailabilitySourceOptions {
   loadYachtIds?: () => Promise<readonly string[]>;
   currency?: string;
   resultsPerPage?: number;
+  /** The zone `optionValidTill` is written in; it carries none of its own. */
+  optionTimeZone: string;
 }
 
 export function createNausysAvailabilitySource(
@@ -272,7 +292,7 @@ export function createNausysAvailabilitySource(
         companyId: scope.scopeKey,
         year: scope.year,
       });
-      return mapOccupancyDump(dump);
+      return mapOccupancyDump(dump, options.optionTimeZone);
     },
   };
 

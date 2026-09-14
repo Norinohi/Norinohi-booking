@@ -52,7 +52,8 @@ import {
  * or delivery block, so it is `blocked` and never a sale; the NauSYS import had to
  * make exactly this distinction (0d9a822) after treating one as inventory sold.
  * `OPTION_IN_EXPIRATION` stays an option: it is still holding the week, and the
- * difference from `OPTION` is a countdown the slot row has nowhere to keep.
+ * difference from `OPTION` is how close its deadline is, which the slot keeps in
+ * `option_expires_at` anyway.
  */
 const OCCUPANCY_STATUS = new Map<number, OccupiedInterval["status"]>([
   [BM_RESERVATION_STATUS.RESERVATION, "occupied"],
@@ -172,8 +173,12 @@ export function mapBookingManagerAvailability(
   const endDate = rawEndDate === startDate ? addOneDay(startDate) : rawEndDate;
 
   const status = row.status ?? null;
+  const optionExpiresAt =
+    row.optionExpirationDate == null
+      ? null
+      : parseBookingManagerDateTime(row.optionExpirationDate, config.timeZone).toISOString();
 
-  return {
+  const interval: OccupiedInterval = {
     externalYachtId: String(row.yachtId),
     startDate,
     endDate,
@@ -190,12 +195,11 @@ export function mapBookingManagerAvailability(
       statusName: status === null ? null : (BM_RESERVATION_STATUS_NAMES.get(status) ?? null),
       baseFromId: row.baseFromId,
       baseToId: row.baseToId,
-      optionExpiresAt:
-        row.optionExpirationDate == null
-          ? null
-          : parseBookingManagerDateTime(row.optionExpirationDate, config.timeZone).toISOString(),
+      optionExpiresAt,
     }),
   };
+  if (optionExpiresAt !== null) interval.optionExpiresAt = optionExpiresAt;
+  return interval;
 }
 
 /** Enough to name the problem to the vendor without pasting a dump into a log line. */

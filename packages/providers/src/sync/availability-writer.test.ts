@@ -23,7 +23,8 @@ import {
 
 const RUN_AT = new Date("2026-06-01T02:00:00.000Z");
 
-interface StoredSlot extends Omit<AvailabilitySlotWrite, "seenAt"> {
+interface StoredSlot extends Omit<AvailabilitySlotWrite, "seenAt" | "optionExpiresAt"> {
+  optionExpiresAt?: Date | null;
   updatedAt: Date;
 }
 
@@ -352,8 +353,13 @@ describe("runAvailabilitySync", () => {
       source: source({
         fetchOccupancy: () =>
           Promise.resolve([
-            occupied(),
-            occupied({ startDate: "2026-07-18", endDate: "2026-07-25", status: "option" }),
+            occupied({ optionExpiresAt: "2026-06-03T16:00:00.000Z" }),
+            occupied({
+              startDate: "2026-07-18",
+              endDate: "2026-07-25",
+              status: "option",
+              optionExpiresAt: "2026-06-05T10:00:00.000Z",
+            }),
           ]),
       }),
       now: () => RUN_AT,
@@ -365,8 +371,11 @@ describe("runAvailabilitySync", () => {
       listingSourceId: "lsrc_marlin",
       listingOfferId: "loff_marlin",
       availabilityConfirmed: true,
+      optionExpiresAt: new Date("2026-06-05T10:00:00.000Z"),
       sourceHash: "hash-occupied",
     });
+    /* A deadline only means something on an option; a sold week carries none. */
+    expect(store.listOf("ylst_marlin", "occupied")[0]?.optionExpiresAt).toBeNull();
   });
 
   it("skips and counts a yacht that is not linked to a listing yet", async () => {
