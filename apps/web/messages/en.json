@@ -560,7 +560,9 @@
       },
       "moreAmenities": "Show {count} more amenities",
       "moreAmenitiesShort": "+{count}",
-      "heldUntil": "On hold until {date}"
+      "holdEndsIn": "Hold ends in {time}",
+      "holdEnding": "Hold is ending, check back shortly",
+      "holdNoDeadline": "On hold until the other customer confirms"
     },
     "gallery": {
       "close": "Close",

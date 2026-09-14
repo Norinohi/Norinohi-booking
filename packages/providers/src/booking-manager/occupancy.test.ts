@@ -113,6 +113,15 @@ describe("mapBookingManagerAvailability", () => {
     expect(base.sourceHash).not.toBe(moved.sourceHash);
   });
 
+  it("carries the option deadline as an instant in the configured zone", () => {
+    const interval = mapBookingManagerAvailability(
+      row({ optionExpirationDate: "2026-08-01 12:00:00" }),
+      { ...config, timeZone: "Europe/Zagreb" },
+    );
+    expect(interval.optionExpiresAt).toBe("2026-08-01T10:00:00.000Z");
+    expect(mapBookingManagerAvailability(row({}), config).optionExpiresAt).toBeUndefined();
+  });
+
   it("fails the scope on a malformed deadline rather than dropping it", () => {
     expect(() =>
       mapBookingManagerAvailability(row({ optionExpirationDate: "not a date" }), config),

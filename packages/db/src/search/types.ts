@@ -98,6 +98,11 @@ export type ListingSearchInput = {
   sort?: SearchSort;
 };
 
+export type TemporaryHold = {
+  /** When the vendor drops the hold, as an ISO instant; null where it stated no deadline. */
+  expiresAt: string | null;
+};
+
 export type ListingSearchDoc = {
   listingId: string;
   slug: string;
@@ -192,11 +197,11 @@ export type ListingSearchDoc = {
   bookableFrom: string | null;
   bookableTo: string | null;
   /**
-   * The day the temporary booking over the searched week runs out, when that hold is the only
-   * thing standing between this boat and the charter asked for. Null everywhere else: on an
-   * undated search, and on every boat whose week is genuinely free.
+   * The temporary booking over the searched week, when that hold is the only thing standing
+   * between this boat and the charter asked for. Null everywhere else: on an undated search, and
+   * on every boat whose week is genuinely free.
    */
-  temporarilyHeldUntil: string | null;
+  temporaryHold: TemporaryHold | null;
   /*
    * Whether this listing's own rules would sell a charter starting on the day the search named.
    * Always true when the search carried no dates. False means the boat is free across the window

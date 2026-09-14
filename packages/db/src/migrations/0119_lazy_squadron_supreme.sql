@@ -1,0 +1,1 @@
+ALTER TABLE "availability_slot" ADD COLUMN "option_expires_at" timestamp;

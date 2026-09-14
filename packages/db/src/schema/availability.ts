@@ -1,5 +1,15 @@
 import { sql } from "drizzle-orm";
-import { boolean, date, index, integer, pgEnum, pgTable, text, unique } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
 
 import { id, timestamps } from "./_shared";
 import { listing } from "./listing";
@@ -29,6 +39,14 @@ export const availabilitySlot = pgTable(
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     status: availabilitySlotStatus("status").notNull(),
+    /**
+     * When the vendor drops the option this slot stands for, unless it is confirmed first.
+     *
+     * Only an `option` row carries one, and only where the vendor stated it. It is the vendor's
+     * deadline as last synced, not a promise: an option can be confirmed or extended before it,
+     * and the week stays blocked until a sync says otherwise.
+     */
+    optionExpiresAt: timestamp("option_expires_at"),
     availabilityConfirmed: boolean("availability_confirmed").default(true).notNull(),
     priceMinor: integer("price_minor"),
     /**

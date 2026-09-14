@@ -62,7 +62,7 @@ const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => ({
   availableTo: "2026-08-29",
   bookableFrom: null,
   bookableTo: null,
-  temporarilyHeldUntil: null,
+  temporaryHold: null,
   sellsRequestedPeriod: true,
   nearestCheckIn: null,
   nearestCheckOut: null,

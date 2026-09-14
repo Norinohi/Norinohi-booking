@@ -50,12 +50,12 @@ export function toBoatCard(
   listing: ResultListing,
   period?: CharterPeriod,
 ): BoatCardProps & { id: string } {
-  const heldUntil = listing.availability.temporarilyHeldUntil;
+  const hold = listing.availability.temporaryHold;
   const unavailable = !listing.availability.hasAvailableDates;
   const status = availabilityStatus({
     hasAvailableDates: listing.availability.hasAvailableDates,
     hasBookablePeriod: listing.availability.bookablePeriod !== null,
-    temporarilyHeld: heldUntil !== null,
+    temporarilyHeld: hold !== null,
   });
   const statusBadge = {
     label: availabilityLabel(tBadge, status),
@@ -99,7 +99,7 @@ export function toBoatCard(
      */
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     /* Says what the badge above it leaves out: how long the other customer's hold has left. */
-    heldUntil: heldUntil ?? undefined,
+    hold: hold ?? undefined,
     priceLabel: priceCaption(t, listing),
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),

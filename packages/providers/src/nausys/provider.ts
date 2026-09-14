@@ -262,6 +262,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
     const build = async (): Promise<AvailabilitySource> =>
       createNausysAvailabilitySource({
         client: this.syncClient,
+        optionTimeZone: this.config.optionTimeZone,
         // Which companies to sweep is a database read, and the factory is
         // synchronous, so it is deferred into listScopes rather than passed as an
         // empty list. Passing [] here would make every availability run a

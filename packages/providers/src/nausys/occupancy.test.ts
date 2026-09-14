@@ -163,11 +163,14 @@ describe("fetchNausysOccupancy", () => {
 
 describe("mapOccupancyReservation", () => {
   it("maps RESERVATION to occupied and OPTION to option, on ISO dates", () => {
-    const { intervals } = mapOccupancyDump({
-      companyId: "102701",
-      year: 2026,
-      reservations: occupancyReservations(),
-    });
+    const { intervals } = mapOccupancyDump(
+      {
+        companyId: "102701",
+        year: 2026,
+        reservations: occupancyReservations(),
+      },
+      "Europe/Zagreb",
+    );
 
     expect(intervals.map((interval) => interval.status)).toEqual([
       "occupied",
@@ -179,17 +182,32 @@ describe("mapOccupancyReservation", () => {
       startDate: "2026-06-27",
       endDate: "2026-07-04",
     });
-    expect(intervals[1]).toMatchObject({ startDate: "2026-07-18", endDate: "2026-07-25" });
+    expect(intervals[1]).toMatchObject({
+      startDate: "2026-07-18",
+      endDate: "2026-07-25",
+      optionExpiresAt: "2026-02-12T17:00:00.000Z",
+    });
+    expect(intervals[0]?.optionExpiresAt).toBeUndefined();
     expect(intervals[2]).toMatchObject({ externalYachtId: "4711002", startDate: "2026-07-11" });
     for (const interval of intervals) {
       expect(() => occupiedIntervalSchema.parse(interval)).not.toThrow();
     }
   });
 
+  it("keeps an option whose deadline cannot be read, without the deadline", () => {
+    const reservation = occupancyReservations().find((r) => r.reservationType === "OPTION");
+    if (!reservation) throw new Error("fixture has no option");
+    reservation.optionValidTill = "not a date";
+
+    const interval = mapOccupancyReservation(reservation, "Europe/Zagreb");
+    expect(interval).toMatchObject({ status: "option", startDate: "2026-07-18" });
+    expect(interval?.optionExpiresAt).toBeUndefined();
+  });
+
   it("gives two identical reservations the same source hash", () => {
     const reservation = firstReservation();
-    const first = mapOccupancyReservation(reservation);
-    const second = mapOccupancyReservation(structuredClone(reservation));
+    const first = mapOccupancyReservation(reservation, "Europe/Zagreb");
+    const second = mapOccupancyReservation(structuredClone(reservation), "Europe/Zagreb");
 
     expect(first?.sourceHash).toBe(second?.sourceHash);
   });
@@ -199,14 +217,14 @@ describe("mapOccupancyReservation", () => {
     reservation.periodTo = "31.02.2026";
 
     // Dropping it would mean advertising a week the vendor has already sold.
-    expect(() => mapOccupancyReservation(reservation)).toThrow(ContractError);
+    expect(() => mapOccupancyReservation(reservation, "Europe/Zagreb")).toThrow(ContractError);
   });
 
   it("throws when a period ends before it starts", () => {
     const reservation = firstReservation();
     reservation.periodTo = "26.06.2026";
 
-    expect(() => mapOccupancyReservation(reservation)).toThrow(ContractError);
+    expect(() => mapOccupancyReservation(reservation, "Europe/Zagreb")).toThrow(ContractError);
   });
 
   it("drops a same-day reservation instead of refusing it", () => {
@@ -215,7 +233,7 @@ describe("mapOccupancyReservation", () => {
 
     // NauSYS publishes these routinely and they block no night, so the row is worth
     // nothing and its yacht is worth keeping.
-    expect(mapOccupancyReservation(reservation)).toBeNull();
+    expect(mapOccupancyReservation(reservation, "Europe/Zagreb")).toBeNull();
   });
 
   it("keeps the rest of the fleet when one yacht's period runs backwards", () => {
@@ -224,7 +242,10 @@ describe("mapOccupancyReservation", () => {
     if (!bad) throw new Error("fixture lost its first reservation");
     bad.periodTo = "26.06.2026";
 
-    const dump = mapOccupancyDump({ companyId: "102701", year: 2026, reservations });
+    const dump = mapOccupancyDump(
+      { companyId: "102701", year: 2026, reservations },
+      "Europe/Zagreb",
+    );
 
     expect(dump.quarantinedYachtIds).toEqual([String(bad.yachtId)]);
     expect(dump.issues).toHaveLength(1);
@@ -239,7 +260,10 @@ describe("mapOccupancyReservation", () => {
     if (!first) throw new Error("fixture lost its first reservation");
     first.periodTo = first.periodFrom;
 
-    const dump = mapOccupancyDump({ companyId: "102701", year: 2026, reservations });
+    const dump = mapOccupancyDump(
+      { companyId: "102701", year: 2026, reservations },
+      "Europe/Zagreb",
+    );
 
     expect(dump.quarantinedYachtIds).toBeUndefined();
     expect(dump.intervals).toHaveLength(reservations.length - 1);
@@ -352,6 +376,7 @@ describe("createNausysAvailabilitySource", () => {
   it("lists one scope per company and year", async () => {
     const { client } = build();
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701", "102702"],
       years: [2026, 2027],
@@ -368,6 +393,7 @@ describe("createNausysAvailabilitySource", () => {
   it("has no hot pass when no windows are configured", () => {
     const { client } = build();
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701"],
       years: [2026],
@@ -381,6 +407,7 @@ describe("createNausysAvailabilitySource", () => {
   it("has no hot pass when the fleet cannot be named", () => {
     const { client } = build();
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701"],
       years: [2026],
@@ -395,6 +422,7 @@ describe("createNausysAvailabilitySource", () => {
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701"],
       years: [],
@@ -428,6 +456,7 @@ describe("createNausysAvailabilitySource", () => {
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701"],
       years: [],
@@ -456,6 +485,7 @@ describe("createNausysAvailabilitySource", () => {
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701"],
       years: [],
@@ -478,6 +508,7 @@ describe("createNausysAvailabilitySource", () => {
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: ["102701"],
       years: [],
@@ -497,6 +528,7 @@ describe("createNausysAvailabilitySource", () => {
     transport.respondWith("freeYachts", { status: "OK", freeYachts: [] });
 
     const source = createNausysAvailabilitySource({
+      optionTimeZone: "Europe/Zagreb",
       client,
       companyIds: [],
       years: [],

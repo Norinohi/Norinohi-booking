@@ -560,7 +560,9 @@
       },
       "moreAmenities": "{count} weitere Ausstattungsmerkmale anzeigen",
       "moreAmenitiesShort": "+{count}",
-      "heldUntil": "Reserviert bis {date}"
+      "holdEndsIn": "Reservierung endet in {time}",
+      "holdEnding": "Reservierung endet in Kürze, bitte später erneut prüfen",
+      "holdNoDeadline": "Reserviert, bis der andere Kunde bestätigt"
     },
     "gallery": {
       "close": "Schließen",

@@ -834,6 +834,13 @@
       "when": 1789209405938,
       "tag": "0118_magical_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1789370271797,
+      "tag": "0119_lazy_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }

@@ -166,11 +166,14 @@ export const listingSummarySchema = z.object({
   availability: z.object({
     hasAvailableDates: z.boolean(),
     /**
-     * The day a temporary booking over the searched week runs out, when that hold is the only
-     * thing between this boat and the charter asked for. Null on an undated search and on every
-     * boat whose week is free; a card showing it is one the visitor asked to be shown.
+     * The temporary booking over the searched week, when that hold is the only thing between
+     * this boat and the charter asked for. Null on an undated search and on every boat whose
+     * week is free; a card showing it is one the visitor asked to be shown.
+     *
+     * `expiresAt` is the vendor's deadline as last synced, null where it stated none. It can
+     * already be past: the week stays held until a sync says the option lapsed.
      */
-    temporarilyHeldUntil: z.string().nullable(),
+    temporaryHold: z.object({ expiresAt: z.iso.datetime().nullable() }).nullable(),
     /**
      * The first charter this listing would sell, for a card with no period of its own. Both
      * ends or neither: a start day on its own proves no legal check-out follows it, which is

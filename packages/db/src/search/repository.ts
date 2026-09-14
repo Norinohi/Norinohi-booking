@@ -42,6 +42,7 @@ import type {
   MapMarinaMarker,
   SearchSort,
   SuggestedRoute,
+  TemporaryHold,
 } from "./types";
 
 /* The column is selected only by the two searches that have a period to compare against. */
@@ -51,12 +52,12 @@ import type {
  */
 export type SearchRow = Omit<
   ListingSearchDoc,
-  "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut" | "temporarilyHeldUntil"
+  "sellsRequestedPeriod" | "nearestCheckIn" | "nearestCheckOut" | "temporaryHold"
 > & {
   sellsRequestedPeriod?: boolean;
   nearestCheckIn?: string | null;
   nearestCheckOut?: string | null;
-  temporarilyHeldUntil?: string | null;
+  temporaryHold?: TemporaryHold | null;
 };
 type FacetFilterKey = keyof ListingSearchInput;
 type FacetOptionRow = {
@@ -1494,7 +1495,7 @@ function freeAcrossWindow(
 /* Every slot overlapping the charter the visitor named, of one status or all the others. */
 function slotsOverWindow(window: { checkIn: string; checkOut: string }, option: boolean): SQL {
   return sql`
-    select slot.end_date
+    select slot.end_date, slot.option_expires_at
     from availability_slot slot
     where slot.listing_id = doc.listing_id
       and slot.status ${option ? sql`=` : sql`<>`} 'option'
@@ -1533,15 +1534,23 @@ function heldOnlyByOption(
 }
 
 /*
- * The day the hold over the searched week runs out, for the card to print.
+ * The hold over the searched week, and when the vendor drops it, for the card to count down to.
  *
  * Null unless the hold is the whole story: a boat with a free stretch across those dates is
  * available, whatever else its calendar holds elsewhere. Selected rather than filtered on, so
  * it is computed for the rows a page returns and not for every candidate.
+ *
+ * The week reopens only once every option over it lapses, so the latest deadline is the one
+ * that counts, and a single option without a stated deadline leaves the answer unknown. It is
+ * not the held charter's end date, which is what this used to print: that is the day somebody
+ * else's week finishes, not the day this one might come free.
+ *
+ * Formatted in SQL because the column carries no zone and is written in UTC; left to the
+ * driver, it would be read back in the server's local time.
  */
 function temporaryHoldColumn(input: ListingSearchInput): SQL {
   const window = availabilityWindowFor(input);
-  if (!window) return sql`, null::date as "temporarilyHeldUntil"`;
+  if (!window) return sql`, null::json as "temporaryHold"`;
 
   const windowNights = nightsBetween(window);
   const flex = FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"];
@@ -1549,8 +1558,16 @@ function temporaryHoldColumn(input: ListingSearchInput): SQL {
   const nights = input.checkIn && input.checkOut ? windowNights : input.duration;
   return sql`, case
     when ${freeAcrossWindow(range, windowNights, nights)} then null
-    else (select max(held.end_date) from (${slotsOverWindow(window, true)}) held)
-  end as "temporarilyHeldUntil"`;
+    else (
+      select json_build_object(
+        'expiresAt',
+        case when bool_and(held.option_expires_at is not null)
+          then to_char(max(held.option_expires_at), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+        end
+      )
+      from (${slotsOverWindow(window, true)}) held
+    )
+  end as "temporaryHold"`;
 }
 
 /*
@@ -2847,7 +2864,7 @@ export function normalizeSearchRow(row: SearchRow): ListingSearchDoc {
     sellsRequestedPeriod: row.sellsRequestedPeriod ?? true,
     nearestCheckIn: row.nearestCheckIn ?? null,
     nearestCheckOut: row.nearestCheckOut ?? null,
-    temporarilyHeldUntil: row.temporarilyHeldUntil ?? null,
+    temporaryHold: row.temporaryHold ?? null,
   };
 }
 
