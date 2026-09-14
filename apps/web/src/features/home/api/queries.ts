@@ -13,14 +13,13 @@ import { orpc } from "@/utils/orpc";
  * card's category, country, region and the rest off `locale`, and the two sides have to build the
  * same input or hydration seeds a key the browser never reads.
  */
-export const popularYachtsInput = (locale: Locale) =>
-  ({ sort: "rating", pageSize: 5, currency: "EUR", locale }) as const;
+export const popularYachtsInput = (locale: Locale) => ({ locale }) as const;
 
 /** Matches the `hours` tier this is cached on server-side, so hydration does not refetch. */
 const ONE_HOUR = 60 * 60 * 1000;
 
 export const popularYachtsQueryOptions = (locale: Locale) =>
-  orpc.charterSearch.results.queryOptions({
+  orpc.charterSearch.popularYachts.queryOptions({
     input: popularYachtsInput(locale),
     staleTime: ONE_HOUR,
   });

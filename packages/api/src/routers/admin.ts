@@ -120,6 +120,7 @@ import {
 import { adminProcedure } from "../index";
 import { faqAdminRouter } from "./admin-faq";
 import { popularFacetsAdminRouter } from "./admin-popular-facets";
+import { popularYachtsAdminRouter } from "./admin-popular-yachts";
 import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
@@ -291,13 +292,6 @@ export const adminRouter = {
           displayCurrencyDefault: "EUR",
           displayCurrencyByCountry: {},
           nameSearchEnabled: false,
-          popularYachts: {
-            limit: 12,
-            maxAgeYears: 3,
-            maxPerCountry: 2,
-            maxPerBase: 1,
-            mix: { catamaran: 3, "sailing-yacht": 3, "motor-yacht": 2 },
-          },
         }),
       })
       .input(marketplaceSettingsUpdateInputSchema)
@@ -314,7 +308,6 @@ export const adminRouter = {
           displayCurrencyDefault: input.displayCurrencyDefault,
           displayCurrencyByCountry: input.displayCurrencyByCountry,
           nameSearchEnabled: input.nameSearchEnabled,
-          popularYachts: input.popularYachts,
           actorUserId: context.session.user.id,
         }),
       ),
@@ -329,6 +322,9 @@ export const adminRouter = {
   /* The curated order of the facet values, likewise its own module: two procedures over one
      pair of rank columns, sharing nothing with the screens above. */
   popularFacets: popularFacetsAdminRouter,
+  /* The home page's popular-yachts slider, beside the other website content rather than in
+     settings: it is editorial curation, and it writes one column of the settings row only. */
+  popularYachts: popularYachtsAdminRouter,
   provider: {
     capabilities: adminProcedure
       .route({

@@ -6,6 +6,7 @@ export {
   prefetchDuplicateQueue,
   prefetchFaq,
   prefetchPopularFacets,
+  prefetchPopularYachtsConfig,
   prefetchInbox,
   prefetchListings,
   prefetchMarketplaceSettings,
@@ -20,6 +21,7 @@ export { default as CommissionsScreen } from "./components/commissions-screen";
 export { default as DuplicateReviewScreen } from "./components/duplicate-review-screen";
 export { default as FaqScreen } from "./components/faq-screen";
 export { default as PopularFacetsScreen } from "./components/popular-facets-screen";
+export { default as PopularYachtsScreen } from "./components/popular-yachts-screen";
 export { default as InboxScreen } from "./components/inbox-screen";
 export { default as ListingsScreen } from "./components/listings-screen";
 export { default as PaymentsScreen } from "./components/payments-screen";

@@ -321,3 +321,6 @@ export const popularFacetsQueryOptions = (input: {
  * key is the procedure's own.
  */
 export const marketplaceSettingsQueryOptions = () => orpc.admin.settings.get.queryOptions({});
+
+/** How the home page's popular-yachts slider is composed. One row, like the settings. */
+export const popularYachtsConfigQueryOptions = () => orpc.admin.popularYachts.get.queryOptions({});

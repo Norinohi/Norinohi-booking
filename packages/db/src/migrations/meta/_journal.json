@@ -841,6 +841,13 @@
       "when": 1789370271797,
       "tag": "0119_lazy_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1789397366612,
+      "tag": "0120_split_motor_boat_categories",
+      "breakpoints": true
     }
   ]
 }

@@ -250,18 +250,11 @@ files, so moving to this endpoint moves their copy into the database. Staff writ
 `/routes`, including the four-locale panes and the featured order. Until then the slider is
 empty, which is correct behaviour rather than a bug in your wiring.
 
-### 4. Popular Yachts — `components/popular-yachts.tsx`
+### 4. Popular Yachts — done
 
-Currently `charterSearch.results` with `sort: "rating", pageSize: 5`. Swap the endpoint.
-
-- [ ] Replace `popularYachtsQueryOptions` in `features/home/api/queries.ts` with
-      `charterSearch.popularYachts({ locale, currency })`.
-- [ ] Update `getPopularYachts()` in `api/server.ts` to match, keeping the `hours` tier and the
-      `staleTime` pinned to it.
-- [ ] Render twelve instead of five. `items` are ordinary listing summaries — the same shape the
-      card takes today, so the card itself does not change.
-
-Two traps.
+`components/popular-yachts.tsx` reads `charterSearch.popularYachts({ locale })`, cached on the
+`hours` tier with the client `staleTime` pinned to it. `items` are plain listing summaries, not the
+`{ listing, checkIn, ... }` wrappers search returns.
 
 **Leave `seed` off.** The server buckets the clock by the day, so the slider rotates daily and is
 stable inside a cache window. Passing your own unstable value fails the build with
@@ -271,7 +264,14 @@ stable inside a cache window. Passing your own unstable value fails the build wi
 type, the free places go to the next best boats. Do not write a layout that assumes exactly three
 catamarans. `config` comes back alongside `items` if you need to show what was asked for.
 
-Composition is edited on `/settings` — count, maximum age, caps, and the per-type mix.
+**The client's figures give ten, not twelve.** Five countries at two boats each is ten, so the
+slider shows ten until the country cap, the country list or the count changes.
+
+Composition is edited on `/popular-yachts` under Website Content, through `admin.popularYachts.get` / `.update`: count, maximum age, caps, the per-type mix, and the
+destinations, one country per line (`Croatia: Split / Trogir; Zadar / Sukošan`). A place's
+spellings are separated by `/` and matched against the boat's marina, location, city and region,
+and each place counts as one base. An empty destination list falls back to the countries pinned
+on `/popular`.
 
 ### 5. Amenity chips on a yacht card — done
 
@@ -344,7 +344,7 @@ Two things to keep consistent with the search page:
 | Admin contract   | `packages/api/src/contracts/popular-facets.ts`                              |
 | Admin service    | `packages/api/src/services/popular-facets-admin.ts`                         |
 | Admin screen     | `apps/web/src/features/admin/components/popular-facets-table.tsx`           |
-| Slider config    | `popularYachtsConfig` on `marketplace_setting`, edited on `/settings`       |
+| Slider config    | `popularYachtsConfig` on `marketplace_setting`, edited on `/popular-yachts` |
 
 ## Known issue
 

@@ -2,7 +2,7 @@
  * Vendor yacht categories collapsed onto the categories the marketplace presents.
  *
  * NauSYS ships 19 categories, most of them near-synonyms of each other ("Luxury
- * catamaran" is a catamaran; "Motor boat" is a small motor yacht). Left as-is every
+ * catamaran" is a catamaran; "Wooden yacht" is a sailing yacht). Left as-is every
  * one of them becomes its own search facet, and the homepage renders a card per
  * facet — so a single listing in a rarely-used vendor category puts an imageless
  * card on the front page. Grouping happens here rather than by renaming the vendor
@@ -11,6 +11,10 @@
  * Keyed by `yacht_category.code` (`<provider>:<vendor id>`), because vendor display
  * names are localized and get re-worded between syncs while the ids do not.
  *
+ * "Motor boat" and "Motor catamaran" stay out of "Motor yacht" and "Catamaran" because the
+ * client names them as types of their own: the home page's popular-yachts mix gives each its own
+ * quota, and folded into the bigger group those quotas matched nothing.
+ *
  * A code that is absent from this map keeps its own name — a category we have not
  * classified stays visible and searchable rather than silently vanishing into a
  * bucket. It just will not have facet media until someone adds a row for it.
@@ -18,16 +22,16 @@
 const CATEGORY_GROUPS = new Map([
   ["nausys:51", "Catamaran"],
   ["nausys:4942740", "Catamaran"], // Luxury catamaran
-  ["nausys:112727", "Catamaran"], // Power catamaran
+  ["nausys:112727", "Motor catamaran"], // Power catamaran
 
   ["nausys:1", "Sailing yacht"],
   ["nausys:625371", "Sailing yacht"], // Luxury sailing yacht
   ["nausys:1505715", "Sailing yacht"], // Wooden yacht
 
   ["nausys:101", "Motor yacht"],
-  ["nausys:120895", "Motor yacht"], // Motor boat
+  ["nausys:120895", "Motor boat"],
   ["nausys:828326", "Motor yacht"], // Luxury motor yacht
-  ["nausys:1163407", "Motor yacht"], // Speed boat
+  ["nausys:1163407", "Motor boat"], // Speed boat
 
   ["nausys:126977", "Motorsailer"],
   ["nausys:565915", "Motorsailer"], // Fisherman
@@ -52,13 +56,13 @@ const CATEGORY_GROUPS = new Map([
    * re-pointed one, which is the safer of the two failures.
    */
   ["booking_manager:catamaran", "Catamaran"],
-  ["booking_manager:power-catamaran", "Catamaran"],
+  ["booking_manager:power-catamaran", "Motor catamaran"],
 
   ["booking_manager:sail-boat", "Sailing yacht"],
   ["booking_manager:wooden-boat", "Sailing yacht"],
 
   ["booking_manager:motoryacht", "Motor yacht"],
-  ["booking_manager:motor-boat", "Motor yacht"],
+  ["booking_manager:motor-boat", "Motor boat"],
   ["booking_manager:motor-cruiser", "Motor yacht"],
   ["booking_manager:cruiser", "Motor yacht"], // Three boats, all titled "… Motoryacht"
 

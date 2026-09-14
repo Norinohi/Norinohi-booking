@@ -17,6 +17,7 @@ import {
   routeListQueryOptions,
   syncRunsQueryOptions,
   marketplaceSettingsQueryOptions,
+  popularYachtsConfigQueryOptions,
 } from "./queries";
 
 /** Server prefetch for /duplicates — the first page of the pending queue. */
@@ -100,4 +101,8 @@ export function prefetchPopularFacets(queryClient: QueryClient) {
 
 export function prefetchMarketplaceSettings(queryClient: QueryClient) {
   return queryClient.prefetchQuery(marketplaceSettingsQueryOptions());
+}
+
+export function prefetchPopularYachtsConfig(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(popularYachtsConfigQueryOptions());
 }

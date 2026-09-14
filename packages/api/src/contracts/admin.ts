@@ -1082,12 +1082,27 @@ export const nameSearchEnabledSchema = z
  * release every time a vendor brought a new hull type. A key that matches no category simply
  * contributes nothing.
  */
+/**
+ * Countries in priority order, each with the places a boat may sail from. A place is a
+ * "/"-separated set of spellings ("Split / Trogir") matched against the boat's marina, location,
+ * city and region. Empty draws from the countries pinned in the search filter instead.
+ */
+export const popularDestinationsSchema = z
+  .array(
+    z.object({
+      country: z.string().trim().min(1).max(100),
+      places: z.array(z.string().trim().min(1).max(200)).max(48),
+    }),
+  )
+  .max(48);
+
 export const popularYachtsConfigSchema = z.object({
   limit: z.number().int().min(1).max(48),
   maxAgeYears: z.number().int().min(0).max(50),
   maxPerCountry: z.number().int().min(1).max(48),
   maxPerBase: z.number().int().min(1).max(48),
   mix: z.record(z.string().min(1), z.number().int().min(0).max(48)),
+  destinations: popularDestinationsSchema,
 });
 
 export const marketplaceSettingsSchema = z.object({
@@ -1101,7 +1116,6 @@ export const marketplaceSettingsSchema = z.object({
   displayCurrencyDefault: displayCurrencyDefaultSchema,
   displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
-  popularYachts: popularYachtsConfigSchema,
   updatedAt: z.string().nullable(),
   updatedByUserId: z.string().nullable(),
 });
@@ -1117,7 +1131,6 @@ export const marketplaceSettingsUpdateInputSchema = z.object({
   displayCurrencyDefault: displayCurrencyDefaultSchema,
   displayCurrencyByCountry: displayCurrencyByCountrySchema,
   nameSearchEnabled: nameSearchEnabledSchema,
-  popularYachts: popularYachtsConfigSchema,
 });
 
 /** The slice of the settings a public page is allowed to read. */
