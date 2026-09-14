@@ -964,8 +964,9 @@
       "heading": "Popular Destinations",
       "previous": "Previous destinations",
       "next": "Next destinations",
-      "seeAll": "Browse All Destinations",
-      "summary": "From {price} · {count, plural, one {# yacht} other {# yachts}}",
+      "seeAll": "View All Popular",
+      "showLess": "Show fewer",
+      "perPersonWeek": "From {price} per person/week",
       "yachtCount": "{count, plural, one {# yacht} other {# yachts}}"
     },
     "PopularYachts": {
@@ -979,32 +980,17 @@
     },
     "SailingRoutes": {
       "heading": "Popular Sailing Routes",
-      "allRoutes": "All Routes",
+      "previous": "Previous routes",
+      "next": "Next routes",
+      "seeAll": "View All Popular",
+      "showLess": "Show fewer",
       "exploreRoute": "Explore Route",
       "days": "{count, plural, one {# day} other {# days}}",
       "levels": {
         "easy": "Easy",
         "moderate": "Moderate",
         "advanced": "Advanced"
-      },
-      "items": {
-        "dalmatianCoast": {
-          "title": "Dalmatian Coast",
-          "description": "Discover the hidden bays of Brač, the vibrant nightlife of Hvar, and the peaceful beauty of Vis.",
-          "imageAlt": "Sailing yacht anchored in a forested Dalmatian bay"
-        },
-        "greekCyclades": {
-          "title": "Greek Cyclades",
-          "description": "Sail through the heart of the Aegean, from the cosmopolitan Mykonos to the breathtaking Santorini.",
-          "imageAlt": "Whitewashed chapel above a Greek island cove"
-        },
-        "amalfiCoast": {
-          "title": "Amalfi Coast",
-          "description": "Cruise past Positano's cliffs and Capri's grottoes along Italy's most glamorous shoreline.",
-          "imageAlt": "Positano cathedral dome above the Amalfi Coast"
-        }
-      },
-      "comingSoon": "Coming Soon"
+      }
     },
     "Testimonials": {
       "heading": "What Our Customers Say",
@@ -2874,7 +2860,13 @@
           "sortOrder": "Order",
           "sortOrderHint": "Lowest first when a base has several routes",
           "description": "Description",
-          "descriptionPlaceholder": "What this itinerary is like to sail, in a sentence or two."
+          "descriptionPlaceholder": "What this itinerary is like to sail, in a sentence or two.",
+          "defaultHint": "Shown in any language that has no translation below.",
+          "difficulty": "Difficulty",
+          "imageUrl": "Photo URL",
+          "imageUrlHint": "Shown on the home page card.",
+          "translations": "Translations",
+          "translationsHint": "Title and description per language. A blank language falls back to the default copy above."
         },
         "errors": {
           "target": "Choose a base or a region for this route",
@@ -2885,7 +2877,19 @@
         "create": "Create route",
         "save": "Save changes",
         "created": "{title} was created. Add its stops next.",
-        "updated": "{title} was saved."
+        "updated": "{title} was saved.",
+        "difficulty": {
+          "none": "Not set",
+          "easy": "Easy",
+          "moderate": "Moderate",
+          "advanced": "Advanced"
+        },
+        "locales": {
+          "en": "English",
+          "uk": "Ukrainian",
+          "de": "German",
+          "es": "Spanish"
+        }
       },
       "stops": {
         "subtitle": "{target} · {nights} nights",

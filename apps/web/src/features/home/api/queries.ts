@@ -23,3 +23,12 @@ export const popularYachtsQueryOptions = (locale: Locale) =>
     input: popularYachtsInput(locale),
     staleTime: ONE_HOUR,
   });
+
+/** Twelve: the slider shows six, and "View All Popular" opens a three-by-four grid of them all. */
+export const popularRoutesInput = (locale: Locale) => ({ locale, limit: 12 }) as const;
+
+export const popularRoutesQueryOptions = (locale: Locale) =>
+  orpc.charterSearch.popularRoutes.queryOptions({
+    input: popularRoutesInput(locale),
+    staleTime: ONE_HOUR,
+  });

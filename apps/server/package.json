@@ -23,7 +23,8 @@
     "publish:listings": "node dist/publish-listings.mjs",
     "rebuild:search-docs": "node dist/rebuild-search-docs.mjs",
     "confirm:period": "node dist/confirm-one-period.mjs",
-    "refresh:fx": "node dist/refresh-fx.mjs"
+    "refresh:fx": "node dist/refresh-fx.mjs",
+    "seed:routes": "node dist/seed-popular-routes.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",

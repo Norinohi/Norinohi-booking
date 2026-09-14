@@ -9,6 +9,7 @@ export type Option = {
   cloudinaryId?: string | null;
   description?: string | null;
   priceFromMinor?: number | null;
+  pricePerPersonWeekMinor?: number | null;
   currency?: string | null;
   /* Curated order. `popularRank` pins the value into a picker's "Popular" group; `featuredRank`
      orders the home page's sliders. Null on any value nobody has curated. */

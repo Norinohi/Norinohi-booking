@@ -393,6 +393,8 @@ export type ListingFacetOption = {
   description?: string | null;
   /* Lowest positive comparable price in EUR; null when the group has no comparable price. */
   priceFromMinor?: number | null;
+  /* The cheapest week per guest, each boat's price over a week and its `max_guests`. EUR. */
+  pricePerPersonWeekMinor?: number | null;
   currency?: string | null;
   /*
    * Curated order, from facet_media. `popularRank` pins the value to the top of a picker,
