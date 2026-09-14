@@ -19,6 +19,7 @@ export default defineConfig({
     "./src/rebuild-search-docs.ts",
     "./src/confirm-one-period.ts",
     "./src/refresh-fx.ts",
+    "./src/seed-popular-routes.ts",
   ],
   format: "esm",
   outDir: "./dist",

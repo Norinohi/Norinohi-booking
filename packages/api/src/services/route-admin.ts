@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import { base, country, location, region } from "@yacht-charter/db/schema/geography";
 import {
   suggestedRoute,
@@ -320,6 +321,16 @@ async function assertTargetExists(
   }
 }
 
+/*
+ * The home page's popular-routes slider and a listing's suggested routes are cached catalog reads,
+ * so an edit that could change a card drops them. Not awaited and not reported: the rows are
+ * committed before this runs, and an unreachable web app is a stale window rather than a failed
+ * save.
+ */
+function dropCachedRoutes() {
+  void revalidateCatalogCache();
+}
+
 export async function createRoute(
   db: Database,
   actorUserId: string,
@@ -361,6 +372,7 @@ export async function createRoute(
     return created.id;
   });
 
+  dropCachedRoutes();
   return getRoute(db, id);
 }
 
@@ -406,6 +418,7 @@ export async function updateRoute(
     });
   });
 
+  dropCachedRoutes();
   return getRoute(db, input.id);
 }
 
@@ -494,6 +507,7 @@ export async function reorderFeaturedRoutes(
     });
   });
 
+  dropCachedRoutes();
   return listFeaturedRoutes(db);
 }
 
@@ -522,6 +536,7 @@ export async function setRouteActive(
     });
   });
 
+  dropCachedRoutes();
   return getRoute(db, id);
 }
 
@@ -544,6 +559,7 @@ export async function deleteRoute(
     });
   });
 
+  dropCachedRoutes();
   return { id };
 }
 

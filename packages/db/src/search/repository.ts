@@ -64,6 +64,7 @@ type FacetOptionRow = {
   label: string;
   count: number;
   priceFromMinor: number | null;
+  pricePerPersonWeekMinor: number | null;
   currency: string | null;
 };
 
@@ -2181,9 +2182,19 @@ function paginationFor(input: {
 const facetComparablePrice = (basis?: PriceBasis): SQL =>
   sql`case when doc.currency = ${FX_BASE_CURRENCY}
   then ${publishedPrice(basis)} else ${comparablePrice(basis)} end`;
+/*
+ * "From X per person/week" is the cheapest boat once each is put on that footing, not the
+ * cheapest charter divided afterwards: the lowest charter price is usually a small boat's short
+ * stay, and dividing it by a big boat's guests would print a figure nobody can book. Each price is
+ * stretched to the week its nights cover (the same count the price sort divides by) and shared
+ * across the party the boat can actually take.
+ */
 const facetPriceColumns = (basis?: PriceBasis): SQL => sql`
       min(${facetComparablePrice(basis)}) filter (where ${facetComparablePrice(basis)} > 0)
         as "priceFromMinor",
+      min(round(${facetComparablePrice(basis)} * 7.0 / ${pricedNights} / doc.max_guests))
+        filter (where ${facetComparablePrice(basis)} > 0 and doc.max_guests > 0)::integer
+        as "pricePerPersonWeekMinor",
       ${FX_BASE_CURRENCY}::text as currency`;
 
 async function listFacetOptions(
@@ -2244,6 +2255,7 @@ async function decorateFacetOptions(
     label: row.label,
     count: row.count,
     priceFromMinor: row.priceFromMinor,
+    pricePerPersonWeekMinor: row.pricePerPersonWeekMinor,
     currency: row.currency,
   }));
 

@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 import type * as schema from "../schema/index";
+import { normalizedKeySql } from "./normalize";
 
 export type PopularRouteStop = {
   name: string;
@@ -22,6 +23,19 @@ export type PopularRoute = {
   placeLabel: string;
   /** The country a card's link filters the catalogue by, as a search filter value. */
   countryValue: string | null;
+  /** The same country as the card names it, in the requested language where one exists. */
+  countryLabel: string | null;
+  /**
+   * The sailing area a card's link filters the catalogue by, for a route drawn over a region. The
+   * search filter matches it against the boats' region, so it is the English name, not a label.
+   *
+   * Null for a route that starts from a base. A base's region is whatever its vendor filed, and
+   * Booking Manager files most of the Mediterranean as "Southern Europe": filtering Split's route
+   * by that region kept one vendor's boats across three countries and dropped the other's.
+   */
+  sailingAreaValue: string | null;
+  /** The base a card's link filters the catalogue by, for a route that starts from one. */
+  marinaValue: string | null;
   stops: PopularRouteStop[];
 };
 
@@ -61,6 +75,22 @@ export async function listPopularRoutes(
         coalesce(base_country.name, region_country.name)
       ) as "placeLabel",
       coalesce(base_country.name, region_country.name) as "countryValue",
+      target_region.name as "sailingAreaValue",
+      base.name as "marinaValue",
+      coalesce(
+        (
+          select nullif(trim(country_translation.label), '')
+          from facet_media country_media
+          join facet_media_translation country_translation
+            on country_translation.facet_media_id = country_media.id
+            and country_translation.locale = ${locale}
+          where country_media.kind = 'country'
+            and ${normalizedKeySql(sql`country_media.value`)}
+              = ${normalizedKeySql(sql`coalesce(base_country.name, region_country.name)`)}
+          limit 1
+        ),
+        coalesce(base_country.name, region_country.name)
+      ) as "countryLabel",
       coalesce(
         (
           select jsonb_agg(

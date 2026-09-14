@@ -26,6 +26,8 @@ const facetOptionSchema = z.object({
   description: z.string().nullish(),
   /* Lowest positive comparable price in EUR, used by destination summaries. */
   priceFromMinor: z.number().int().nullish(),
+  /* The cheapest week per guest in EUR, for "from X per person/week" on destination cards. */
+  pricePerPersonWeekMinor: z.number().int().nullish(),
   currency: z.string().length(3).nullish(),
   /*
    * Curated order, edited on the admin screen. `popularRank` pins the value into a picker's

@@ -9,6 +9,7 @@ export type SearchCriteria = {
   minBerths?: number | null;
   country?: string[];
   sailingArea?: string[];
+  marina?: string[];
   boatType?: string[];
   crew?: string[];
   startDate?: string | null;

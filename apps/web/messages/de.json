@@ -964,8 +964,9 @@
       "heading": "Beliebte Reiseziele",
       "previous": "Vorherige Reiseziele",
       "next": "Nächste Reiseziele",
-      "seeAll": "Alle Reiseziele ansehen",
-      "summary": "Ab {price} · {count, plural, one {# Yacht} other {# Yachten}}",
+      "seeAll": "Alle beliebten ansehen",
+      "showLess": "Weniger anzeigen",
+      "perPersonWeek": "Ab {price} pro Person/Woche",
       "yachtCount": "{count, plural, one {# Yacht} other {# Yachten}}"
     },
     "PopularYachts": {
@@ -979,32 +980,17 @@
     },
     "SailingRoutes": {
       "heading": "Beliebte Segelrouten",
-      "allRoutes": "Alle Routen",
+      "previous": "Vorherige Routen",
+      "next": "Nächste Routen",
+      "seeAll": "Alle beliebten ansehen",
+      "showLess": "Weniger anzeigen",
       "exploreRoute": "Route entdecken",
       "days": "{count, plural, one {# Tag} other {# Tage}}",
       "levels": {
         "easy": "Leicht",
         "moderate": "Mittel",
         "advanced": "Anspruchsvoll"
-      },
-      "items": {
-        "dalmatianCoast": {
-          "title": "Dalmatinische Küste",
-          "description": "Entdecken Sie die versteckten Buchten von Brač, das lebendige Nachtleben von Hvar und die ruhige Schönheit von Vis.",
-          "imageAlt": "Segelyacht vor Anker in einer bewaldeten dalmatinischen Bucht"
-        },
-        "greekCyclades": {
-          "title": "Griechische Kykladen",
-          "description": "Segeln Sie durch das Herz der Ägäis – vom kosmopolitischen Mykonos bis zum atemberaubenden Santorini.",
-          "imageAlt": "Weiß getünchte Kapelle über einer griechischen Inselbucht"
-        },
-        "amalfiCoast": {
-          "title": "Amalfiküste",
-          "description": "Kreuzen Sie entlang der Klippen von Positano und der Grotten von Capri an Italiens glamourösester Küste.",
-          "imageAlt": "Kathedralkuppel von Positano über der Amalfiküste"
-        }
-      },
-      "comingSoon": "Demnächst"
+      }
     },
     "Testimonials": {
       "heading": "Das sagen unsere Kunden",
@@ -2874,7 +2860,13 @@
           "sortOrder": "Reihenfolge",
           "sortOrderHint": "Niedrigste zuerst, wenn eine Basis mehrere Routen hat",
           "description": "Beschreibung",
-          "descriptionPlaceholder": "Wie sich diese Route segelt, in ein bis zwei Sätzen."
+          "descriptionPlaceholder": "Wie sich diese Route segelt, in ein bis zwei Sätzen.",
+          "defaultHint": "Wird in jeder Sprache ohne Übersetzung unten angezeigt.",
+          "difficulty": "Schwierigkeit",
+          "imageUrl": "Foto-URL",
+          "imageUrlHint": "Wird auf der Karte der Startseite angezeigt.",
+          "translations": "Übersetzungen",
+          "translationsHint": "Titel und Beschreibung je Sprache. Eine leere Sprache zeigt den Standardtext oben."
         },
         "errors": {
           "target": "Wählen Sie eine Basis oder ein Revier für diese Route",
@@ -2885,7 +2877,19 @@
         "create": "Route anlegen",
         "save": "Änderungen speichern",
         "created": "{title} wurde angelegt. Fügen Sie als Nächstes die Stopps hinzu.",
-        "updated": "{title} wurde gespeichert."
+        "updated": "{title} wurde gespeichert.",
+        "difficulty": {
+          "none": "Nicht festgelegt",
+          "easy": "Leicht",
+          "moderate": "Mittel",
+          "advanced": "Anspruchsvoll"
+        },
+        "locales": {
+          "en": "Englisch",
+          "uk": "Ukrainisch",
+          "de": "Deutsch",
+          "es": "Spanisch"
+        }
       },
       "stops": {
         "subtitle": "{target} · {nights} Nächte",

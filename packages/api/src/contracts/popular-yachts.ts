@@ -48,6 +48,12 @@ export const popularRouteSchema = z.object({
   placeLabel: z.string(),
   /** The country a card's link filters the catalogue by. Null where the target has no country. */
   countryValue: z.string().nullable(),
+  /** The country in the requested language, for the label on the card's photo. */
+  countryLabel: z.string().nullable(),
+  /** The sailing area a card's link filters the catalogue by, as a search filter value. */
+  sailingAreaValue: z.string().nullable(),
+  /** The base a card's link filters the catalogue by, for a route that starts from one. */
+  marinaValue: z.string().nullable(),
   stops: z.array(popularRouteStopSchema),
 });
 

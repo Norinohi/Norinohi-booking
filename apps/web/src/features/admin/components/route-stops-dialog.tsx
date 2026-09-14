@@ -162,7 +162,7 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] overflow-y-auto lg:grid-cols-[--spacing(95)_minmax(0,1fr)] lg:overflow-hidden">
-            <div className="flex min-h-0 flex-col gap-3 border-natural-50 p-5 lg:overflow-y-auto lg:border-r">
+            <div className="flex flex-col gap-3 border-natural-50 p-5 lg:min-h-0 lg:overflow-y-auto lg:border-r">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-bold text-foreground">
                   {t("listTitle", { count: stops.length })}
@@ -258,7 +258,7 @@ export default function RouteStopsDialog({ route, open, onOpenChange }: RouteSto
               )}
             </div>
 
-            <div className="flex min-h-0 flex-col gap-3 p-5 lg:overflow-y-auto">
+            <div className="flex flex-col gap-3 p-5 lg:min-h-0 lg:overflow-y-auto">
               <h2 className="text-base font-bold text-foreground">
                 {working.id ? t("form.editTitle") : t("form.addTitle")}
               </h2>

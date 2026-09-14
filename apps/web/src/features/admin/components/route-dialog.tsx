@@ -3,6 +3,7 @@
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,15 @@ import RouteTargetPicker, { type RouteTarget } from "./route-target-picker";
  * is a row action and an editor action; the server refuses to publish a route with none.
  */
 
+const ROUTE_LOCALES = ["en", "uk", "de", "es"] as const;
+type RouteLocale = (typeof ROUTE_LOCALES)[number];
+type Pane = { title: string; description: string };
+
+const DIFFICULTIES = ["easy", "moderate", "advanced"] as const;
+type Difficulty = (typeof DIFFICULTIES)[number];
+/* The select needs a value for "not set"; it never reaches the server as a difficulty. */
+const NO_DIFFICULTY = "none";
+
 type Draft = {
   target: RouteTarget;
   title: string;
@@ -34,7 +44,17 @@ type Draft = {
   nights: string;
   description: string;
   sortOrder: string;
+  difficulty: Difficulty | null;
+  imageUrl: string;
+  translations: Record<RouteLocale, Pane>;
 };
+
+const emptyPanes = () => ({
+  en: { title: "", description: "" },
+  uk: { title: "", description: "" },
+  de: { title: "", description: "" },
+  es: { title: "", description: "" },
+});
 
 const EMPTY: Draft = {
   target: { baseId: null, regionId: null },
@@ -43,10 +63,20 @@ const EMPTY: Draft = {
   nights: "7",
   description: "",
   sortOrder: "0",
+  difficulty: null,
+  imageUrl: "",
+  translations: emptyPanes(),
 };
 
 function toDraft(route: RouteRow | null): Draft {
-  if (!route) return EMPTY;
+  if (!route) return { ...EMPTY, translations: emptyPanes() };
+  const translations = emptyPanes();
+  for (const entry of route.translations) {
+    translations[entry.locale] = {
+      title: entry.title ?? "",
+      description: entry.description ?? "",
+    };
+  }
   return {
     target: { baseId: route.baseId, regionId: route.regionId },
     title: route.title,
@@ -54,6 +84,9 @@ function toDraft(route: RouteRow | null): Draft {
     nights: String(route.nights),
     description: route.description ?? "",
     sortOrder: String(route.sortOrder),
+    difficulty: route.difficulty,
+    imageUrl: route.imageUrl ?? "",
+    translations,
   };
 }
 
@@ -66,11 +99,13 @@ interface RouteDialogProps {
 
 export default function RouteDialog({ route, open, onOpenChange }: RouteDialogProps) {
   const t = useTranslations("Admin.Routes.dialog");
+  const [locale, setLocale] = useState<RouteLocale>("en");
   const tKinds = useTranslations("Admin.Routes.kinds");
   const titleId = useId();
   const nightsId = useId();
   const sortId = useId();
   const descriptionId = useId();
+  const imageId = useId();
 
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [targetError, setTargetError] = useState<string | null>(null);
@@ -82,6 +117,7 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
     if (open) {
       setDraft(toDraft(route));
       setTargetError(null);
+      setLocale("en");
     }
   }, [open, route]);
 
@@ -108,6 +144,15 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
       nights,
       description: draft.description.trim() || null,
       sortOrder,
+      difficulty: draft.difficulty,
+      imageUrl: draft.imageUrl.trim() || null,
+      /* Every language is sent: a pane left blank withdraws that translation, and the site then
+         falls back to the default copy above rather than showing an empty card. */
+      translations: ROUTE_LOCALES.map((code) => ({
+        locale: code,
+        title: draft.translations[code].title.trim() || null,
+        description: draft.translations[code].description.trim() || null,
+      })),
     };
 
     try {
@@ -149,6 +194,7 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
           <TextField
             id={titleId}
             label={t("fields.title")}
+            supportingText={t("fields.defaultHint")}
             fieldClassName="h-12"
             value={draft.title}
             placeholder={t("fields.titlePlaceholder")}
@@ -217,6 +263,108 @@ export default function RouteDialog({ route, open, onOpenChange }: RouteDialogPr
               setDraft((previous) => ({ ...previous, description: event.target.value }))
             }
           />
+
+          <div className="flex flex-col gap-4 md:flex-row">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span className="text-sm leading-4.25 font-semibold text-foreground">
+                {t("fields.difficulty")}
+              </span>
+              <Select
+                className="h-12 min-w-0"
+                ariaLabel={t("fields.difficulty")}
+                value={draft.difficulty ?? NO_DIFFICULTY}
+                onValueChange={(next) =>
+                  setDraft((previous) => ({
+                    ...previous,
+                    difficulty: DIFFICULTIES.find((level) => level === next) ?? null,
+                  }))
+                }
+                options={[
+                  { value: NO_DIFFICULTY, label: t("difficulty.none") },
+                  ...DIFFICULTIES.map((level) => ({
+                    value: level,
+                    label: t(`difficulty.${level}`),
+                  })),
+                ]}
+              />
+            </div>
+
+            <TextField
+              id={imageId}
+              containerClassName="min-w-0 flex-2"
+              fieldClassName="h-12"
+              label={t("fields.imageUrl")}
+              supportingText={t("fields.imageUrlHint")}
+              value={draft.imageUrl}
+              onChange={(event) =>
+                setDraft((previous) => ({ ...previous, imageUrl: event.target.value }))
+              }
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm leading-4.25 font-semibold text-foreground">
+              {t("fields.translations")}
+            </span>
+            <span className="text-xs text-natural-500">{t("fields.translationsHint")}</span>
+            <Tabs
+              value={locale}
+              onValueChange={(next) => {
+                const picked = ROUTE_LOCALES.find((code) => code === next);
+                if (picked) setLocale(picked);
+              }}
+            >
+              <TabsList>
+                {ROUTE_LOCALES.map((code) => (
+                  <TabsTab key={code} value={code} className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className={`size-2 shrink-0 rounded-full ${
+                        draft.translations[code].title.trim() ? "bg-positive-500" : "bg-natural-200"
+                      }`}
+                    />
+                    {t(`locales.${code}`)}
+                  </TabsTab>
+                ))}
+              </TabsList>
+
+              {ROUTE_LOCALES.map((code) => (
+                <TabsPanel key={code} value={code} className="flex flex-col gap-4 pt-2">
+                  <TextField
+                    fieldClassName="h-12"
+                    label={t("fields.title")}
+                    value={draft.translations[code].title}
+                    onChange={(event) =>
+                      setDraft((previous) => ({
+                        ...previous,
+                        translations: {
+                          ...previous.translations,
+                          [code]: { ...previous.translations[code], title: event.target.value },
+                        },
+                      }))
+                    }
+                  />
+                  <TextField
+                    multiline
+                    label={t("fields.description")}
+                    value={draft.translations[code].description}
+                    onChange={(event) =>
+                      setDraft((previous) => ({
+                        ...previous,
+                        translations: {
+                          ...previous.translations,
+                          [code]: {
+                            ...previous.translations[code],
+                            description: event.target.value,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </TabsPanel>
+              ))}
+            </Tabs>
+          </div>
         </div>
 
         <DialogFooter>

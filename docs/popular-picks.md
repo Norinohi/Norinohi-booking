@@ -197,24 +197,20 @@ wiring the home page into.
 
 Types come from `AppRouterClient` by inference. Never hand-write a request or response type.
 
-### 1. Popular Destinations — `components/popular-destinations.tsx`
+### 1. Popular Destinations — done
 
-No new endpoint and no new fetch. The component already reads `useFilterOptions()`, and the
-countries it lists now carry the curated order.
+`components/popular-destinations.tsx` sorts `options.countries` by `featuredRank`, dropping the
+uncurated ones, and falls back to every country only when nothing is curated. The slider shows
+the first six; "View All Popular" swaps it in place for a grid of the first twelve, three columns
+by four rows on desktop.
 
-- [ ] Filter `options.countries` to entries whose `featuredRank` is not null, sort ascending.
-      Twelve come back.
-- [ ] Slider renders the first six. Today it renders every country, alphabetically.
-- [ ] Change the "See All Destinations" button to "View All Popular" and point it at a grid of
-      all twelve, three columns by four rows.
-- [ ] Card price reads `from $$$ per person/week`. `priceFromMinor` and `currency` are on the
-      option already; per-person is a division the card does, not a field.
-
-Each option carries `label`, `count`, `imageUrl`, `cloudinaryId`, `priceFromMinor`, `currency` —
-everything the card reads today.
+The card reads `from $$$ per person/week` off `pricePerPersonWeekMinor`, a facet aggregate beside
+`priceFromMinor`: each boat's price stretched to a week over the nights it covers, divided by its
+`max_guests`, and the lowest of those. It is computed per boat rather than by dividing the
+country's cheapest charter, which is usually a small boat's short stay.
 
 `partitionByPopularity` in `@/components/shared/form/filters` splits on `popularRank`, not
-`featuredRank`. Do not reach for it here; sort inline.
+`featuredRank`, so it is not used here.
 
 ### 2. Boat Types — `components/boat-types.tsx`
 
@@ -227,28 +223,24 @@ Same shape as the destinations job, one line of work.
 
 The "luxury" card beside them is editorial and not a facet — leave it where it is.
 
-### 3. Popular Sailing Routes — `components/sailing-routes.tsx`
+### 3. Popular Sailing Routes — done, waiting on content
 
-Replaces the hard-coded `ROUTES` array outright.
+`components/sailing-routes.tsx` reads `charterSearch.popularRoutes({ locale, limit: 12 })`,
+prefetched in `api/server.ts` on the `hours` tier. The slider shows the first six; "View All
+Popular" swaps it for a grid of all twelve, three columns by four rows on desktop.
 
-- [ ] Add `charterSearch.popularRoutes({ locale, limit })` to `features/home/api/queries.ts` as a
-      query-options factory, and prefetch it in `api/server.ts` beside the other two.
-- [ ] Pin the client `staleTime` to the server tier you cache it on, or every visitor refetches
-      on hydration. The comment in `prefetchHome` explains why.
-- [ ] Slider shows six, then a "View All Popular" grid of twelve, three by four.
-- [ ] Card shows country on the image, direction and description below it.
-- [ ] Drop the local `/assets/home/sailing-routes/*.webp` imports — `imageUrl` and `cloudinaryId`
-      come from the route.
+The card puts the country on the photo (`countryLabel`, translated) and the route's title and
+description under it. It links to the catalogue filtered by country, length (`nights`) and either
+the route's sailing area (`sailingAreaValue`, for a route drawn over a region) or its starting
+marina (`marinaValue`, for a route from a base). A base's own region is not used: Booking Manager
+files most of the Mediterranean as "Southern Europe", which is no sailing area at all.
 
-Each route carries `title`, `description`, `nights`, `difficulty` (`easy` / `moderate` /
-`advanced`, or null), `imageUrl`, `cloudinaryId`, `placeLabel` ("Dalmatia · Croatia"),
-`countryValue` for the card's search link, and `stops` with coordinates for the detail map.
+Every route write on `/routes` drops the catalog cache, so a published or reordered route reaches
+the home page on the next request.
 
-**Blocked until someone authors the routes.** Only published, featured routes come back, and
-today the database has one. The three on the page are hard-coded and translated through message
-files, so moving to this endpoint moves their copy into the database. Staff write them on
-`/routes`, including the four-locale panes and the featured order. Until then the slider is
-empty, which is correct behaviour rather than a bug in your wiring.
+Only published, featured routes come back. The client's list is eleven routes; staff author
+them on `/routes`, including the four-locale copy, the stops and the featured order. A route
+meant for a sailing-area link should target the region rather than a base.
 
 ### 4. Popular Yachts — done
 

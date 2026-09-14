@@ -9,7 +9,12 @@ import { CATALOG_TAG } from "@/lib/cache-tags";
 import { getRootLocale } from "@/i18n/root-locale";
 import { publicClient } from "@/utils/orpc";
 
-import { popularYachtsInput, popularYachtsQueryOptions } from "./queries";
+import {
+  popularRoutesInput,
+  popularRoutesQueryOptions,
+  popularYachtsInput,
+  popularYachtsQueryOptions,
+} from "./queries";
 
 /*
  * The two catalog reads behind the home page sit on different tiers (docs/adr/0002), so they stay
@@ -27,6 +32,15 @@ async function getPopularYachts() {
   cacheTag(CATALOG_TAG);
 
   return publicClient.charterSearch.popularYachts(popularYachtsInput(await getRootLocale()));
+}
+
+/** The curated sailing routes. Editorial content, so the same `hours` tier as the yachts. */
+async function getPopularRoutes() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOG_TAG);
+
+  return publicClient.charterSearch.popularRoutes(popularRoutesInput(await getRootLocale()));
 }
 
 /**
@@ -57,14 +71,16 @@ export async function prefetchHome() {
   cacheTag(CATALOG_TAG);
 
   const queryClient = new QueryClient();
-  const [locale, facets, popularYachts] = await Promise.all([
+  const [locale, facets, popularYachts, popularRoutes] = await Promise.all([
     getRootLocale(),
     getFacets(),
     getPopularYachts(),
+    getPopularRoutes(),
   ]);
 
   queryClient.setQueryData(facetsQueryOptions(locale).queryKey, facets);
   queryClient.setQueryData(popularYachtsQueryOptions(locale).queryKey, popularYachts);
+  queryClient.setQueryData(popularRoutesQueryOptions(locale).queryKey, popularRoutes);
 
   return dehydrate(queryClient);
 }

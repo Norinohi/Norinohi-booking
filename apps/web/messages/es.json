@@ -964,8 +964,9 @@
       "heading": "Destinos populares",
       "previous": "Destinos anteriores",
       "next": "Destinos siguientes",
-      "seeAll": "Ver todos los destinos",
-      "summary": "Desde {price} · {count, plural, one {# yate} other {# yates}}",
+      "seeAll": "Ver todos los populares",
+      "showLess": "Ver menos",
+      "perPersonWeek": "Desde {price} por persona/semana",
       "yachtCount": "{count, plural, one {# yate} other {# yates}}"
     },
     "PopularYachts": {
@@ -979,32 +980,17 @@
     },
     "SailingRoutes": {
       "heading": "Rutas de navegación populares",
-      "allRoutes": "Todas las rutas",
+      "previous": "Rutas anteriores",
+      "next": "Rutas siguientes",
+      "seeAll": "Ver todos los populares",
+      "showLess": "Ver menos",
       "exploreRoute": "Explorar ruta",
       "days": "{count, plural, one {# día} other {# días}}",
       "levels": {
         "easy": "Fácil",
         "moderate": "Media",
         "advanced": "Avanzada"
-      },
-      "items": {
-        "dalmatianCoast": {
-          "title": "Costa dálmata",
-          "description": "Descubre las calas escondidas de Brač, la vida nocturna de Hvar y la belleza tranquila de Vis.",
-          "imageAlt": "Velero fondeado en una bahía dálmata rodeada de bosque"
-        },
-        "greekCyclades": {
-          "title": "Cícladas griegas",
-          "description": "Navega por el corazón del Egeo, del cosmopolita Miconos a la impresionante Santorini.",
-          "imageAlt": "Capilla encalada sobre una cala de una isla griega"
-        },
-        "amalfiCoast": {
-          "title": "Costa de Amalfi",
-          "description": "Navega junto a los acantilados de Positano y las grutas de Capri por el litoral más glamuroso de Italia.",
-          "imageAlt": "Cúpula de la catedral de Positano sobre la costa de Amalfi"
-        }
-      },
-      "comingSoon": "Próximamente"
+      }
     },
     "Testimonials": {
       "heading": "Lo que dicen nuestros clientes",
@@ -2874,7 +2860,13 @@
           "sortOrder": "Orden",
           "sortOrderHint": "El más bajo primero cuando una base tiene varias rutas",
           "description": "Descripción",
-          "descriptionPlaceholder": "Cómo se navega este itinerario, en una o dos frases."
+          "descriptionPlaceholder": "Cómo se navega este itinerario, en una o dos frases.",
+          "defaultHint": "Se muestra en los idiomas sin traducción abajo.",
+          "difficulty": "Dificultad",
+          "imageUrl": "URL de la foto",
+          "imageUrlHint": "Se muestra en la tarjeta de la página de inicio.",
+          "translations": "Traducciones",
+          "translationsHint": "Título y descripción por idioma. Un idioma vacío muestra el texto predeterminado de arriba."
         },
         "errors": {
           "target": "Elige una base o una región para esta ruta",
@@ -2885,7 +2877,19 @@
         "create": "Crear ruta",
         "save": "Guardar cambios",
         "created": "{title} se ha creado. Añade ahora sus paradas.",
-        "updated": "{title} se ha guardado."
+        "updated": "{title} se ha guardado.",
+        "difficulty": {
+          "none": "Sin indicar",
+          "easy": "Fácil",
+          "moderate": "Moderada",
+          "advanced": "Avanzada"
+        },
+        "locales": {
+          "en": "Inglés",
+          "uk": "Ucraniano",
+          "de": "Alemán",
+          "es": "Español"
+        }
       },
       "stops": {
         "subtitle": "{target} · {nights} noches",
