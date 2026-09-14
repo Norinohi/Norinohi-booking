@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { popularYachtsConfigSchema } from "./admin";
 import { listingSummarySchema } from "./catalog";
+import { faqCacheSchema } from "./faq";
 
 export const popularYachtsInputSchema = z.object({
   locale: z.string().min(2).max(10).optional(),
@@ -18,6 +19,12 @@ export const popularYachtsSchema = z.object({
   items: z.array(listingSummarySchema),
   /** The configuration the selection was made under, so a caller can say why it looks as it does. */
   config: popularYachtsConfigSchema,
+});
+
+/** A save from the admin screen: what was stored, and whether the home page cache was dropped. */
+export const popularYachtsConfigSavedSchema = z.object({
+  config: popularYachtsConfigSchema,
+  cache: faqCacheSchema,
 });
 
 /* --------------------------------------------------------------- popular routes */

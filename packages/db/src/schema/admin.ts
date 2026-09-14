@@ -226,7 +226,7 @@ export const marketplaceSetting = pgTable(
      * One jsonb column rather than five scalars because these are one editorial policy that is
      * always retuned together -- asking for more catamarans and asking for a looser country cap
      * is the same decision -- and five columns would be five migrations' worth of surface for
-     * one slider. Null means the defaults in marketplace-settings.ts, so an unwritten row
+     * one slider. Null means the defaults in popular-yachts-settings.ts, so an unwritten row
      * composes the slider exactly as a written default one does.
      *
      * Deliberately untyped here: the reader zod-parses it, because a shape asserted by the

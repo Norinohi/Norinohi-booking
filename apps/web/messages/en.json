@@ -1110,7 +1110,8 @@
         "content": "Website Content"
       },
       "settings": "Payment Settings",
-      "popular": "Popular picks"
+      "popular": "Popular picks",
+      "popularYachts": "Popular yachts"
     },
     "UserMenu": {
       "account": "Account",
@@ -1760,6 +1761,10 @@
     "Popular": {
       "title": "Popular picks",
       "description": "Curate which facet values head the filters and the home page."
+    },
+    "PopularYachts": {
+      "title": "Popular yachts",
+      "description": "Configure how the home page's popular-yachts slider is composed."
     },
     "Contact": {
       "title": "Contact",
@@ -3298,6 +3303,23 @@
       "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
       "noListings": "No yachts"
     },
+    "PopularYachts": {
+      "title": "Popular yachts slider",
+      "subtitle": "How the home page's popular-yachts slider is composed. The type mix is a target: when the caps leave a type short, the remaining places go to the next best boats.",
+      "limit": "Boats shown",
+      "maxAgeYears": "Max age (years)",
+      "maxPerCountry": "Max per country",
+      "maxPerBase": "Max per base",
+      "mix": "Boats per type",
+      "mixHint": "Only the destinations below are drawn from. A type set to zero is left out.",
+      "destinations": "Destinations",
+      "destinationsHint": "One country per line, in priority order: \"Croatia: Split / Trogir; Zadar / Sukošan\". Places are separated by \";\", and \"/\" separates spellings of one place, matched against the boat's marina, location and region. Each place counts as one base. A country with no places draws from the whole country; an empty list falls back to the curated popular countries.",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saved": "Slider saved.",
+      "saveFailed": "Could not save the slider.",
+      "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet."
+    },
     "Settings": {
       "title": "Marketplace settings",
       "subtitle": "How much of a charter is collected up front, and which provider we sell through when the offers are equal.",
@@ -3350,16 +3372,6 @@
         "legend": "Free-text search",
         "toggle": "Show the free-text field in the search bar",
         "hint": "A testing aid rather than part of the design. Switched on, the yacht search bar gains a field that matches a boat's name, model, builder, charter company or base, word by word and in any order."
-      },
-      "popularYachts": {
-        "legend": "Popular yachts slider",
-        "hint": "How the home page's popular-yachts slider is composed. The type mix is a target: when the caps leave a type short, the remaining places go to the next best boats.",
-        "limit": "Boats shown",
-        "maxAgeYears": "Max age (years)",
-        "maxPerCountry": "Max per country",
-        "maxPerBase": "Max per base",
-        "mix": "Boats per type",
-        "mixHint": "Only the curated popular countries are drawn from. A type set to zero is left out."
       },
       "save": "Save changes",
       "saving": "Saving...",

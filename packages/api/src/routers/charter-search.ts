@@ -33,6 +33,7 @@ import type { Context } from "../context";
 import { publicProcedure } from "../index";
 import { getAmenityRanks } from "../services/amenity-ranks";
 import { getMarketplaceSettings } from "../services/marketplace-settings";
+import { getPopularYachtsConfig } from "../services/popular-yachts-settings";
 import { withParameterExamples } from "./openapi-examples";
 import { type CharterPeriod, effectivePeriod } from "../lib/dates";
 import { bookablePeriodOf, presentListingSummary } from "../presenters/listing";
@@ -252,7 +253,7 @@ export const charterSearchRouter = {
       operationId: "listPopularYachts",
       summary: "List the popular-yachts selection",
       description:
-        "A spread of well-rated, recent, available boats drawn from the curated popular countries, with at most one from any base and a capped number from any country, filled towards a per-boat-type mix. The mix is a target rather than a guarantee: when the caps starve a type, the remaining places go to the next boats in the same ranking rather than leaving the slider short. Composition is configured on the admin settings screen. `seed` rotates the selection deterministically and defaults to the current day, so the answer is stable within a day and safe to cache.",
+        "A spread of well-rated, recent, available boats drawn from the configured destinations (or the curated popular countries when none are configured), with at most one from any base or named place and a capped number from any country, filled towards a per-boat-type mix. The mix is a target rather than a guarantee: when the caps starve a type, the remaining places go to the next boats in the same ranking rather than leaving the slider short. Composition is configured on the admin settings screen. `seed` rotates the selection deterministically and defaults to the current day, so the answer is stable within a day and safe to cache.",
       tags: ["Charter Search"],
       successDescription: "The selected listings and the configuration they were selected under.",
       spec: withParameterExamples({ locale: "en", currency: "EUR" }),
@@ -260,14 +261,15 @@ export const charterSearchRouter = {
     .input(popularYachtsInputSchema)
     .output(popularYachtsSchema)
     .handler(async ({ context, input }) => {
-      const { popularYachts: config } = await getMarketplaceSettings(context.db);
-      const [basis, amenityRanks] = await Promise.all([
+      const [config, basis, amenityRanks] = await Promise.all([
+        getPopularYachtsConfig(context.db),
         priceBasisFor(context.db),
         getAmenityRanks(context.db),
       ]);
       const items = await listPopularYachts(context.db, {
         config,
         seed: input.seed ?? defaultSeed(),
+        locale: input.locale,
       });
 
       return {

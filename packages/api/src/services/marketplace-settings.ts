@@ -5,38 +5,9 @@ import type { z } from "zod";
 
 import { marketplaceSetting } from "@yacht-charter/db/schema/admin";
 
-import {
-  displayCurrencyDefaultSchema,
-  popularYachtsConfigSchema,
-  providerKeyOutputSchema,
-} from "../contracts/admin";
+import { displayCurrencyDefaultSchema, providerKeyOutputSchema } from "../contracts/admin";
 import type { Database, DatabaseExecutor } from "../context";
 import { DEFAULT_PAYMENT_SETTINGS, type MarketplacePaymentSettings } from "./pricing";
-
-/**
- * How the home page's popular-yachts slider is composed when nothing has been configured.
- *
- * The client's own figures: twelve boats, none over three years old, at most two from a country
- * and one from any single base, split across the five types they named. The mix is keyed by the
- * category's filter value, which is what the boat-type facet offers -- a key that matches no
- * category contributes nothing and is not an error, because the catalogue's vocabulary changes
- * with the fleet.
- */
-export const DEFAULT_POPULAR_YACHTS: PopularYachtsConfig = {
-  limit: 12,
-  maxAgeYears: 3,
-  maxPerCountry: 2,
-  maxPerBase: 1,
-  mix: {
-    catamaran: 3,
-    "sailing-yacht": 3,
-    "motor-boat": 2,
-    "motor-yacht": 2,
-    "motor-catamaran": 2,
-  },
-};
-
-export type PopularYachtsConfig = z.infer<typeof popularYachtsConfigSchema>;
 
 const SINGLETON_ID = "singleton";
 
@@ -117,8 +88,6 @@ export interface MarketplaceSettings {
   displayCurrencyByCountry: CurrencyOverrides;
   /** Whether the yacht search bar offers the free-text field. A testing aid, off by default. */
   nameSearchEnabled: boolean;
-  /** How the home page's popular-yachts slider is composed. */
-  popularYachts: PopularYachtsConfig;
   updatedAt: string | null;
   updatedByUserId: string | null;
 }
@@ -149,7 +118,6 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
       displayCurrencyDefault: "EUR",
       displayCurrencyByCountry: {},
       nameSearchEnabled: false,
-      popularYachts: DEFAULT_POPULAR_YACHTS,
       updatedAt: null,
       updatedByUserId: null,
     };
@@ -176,14 +144,6 @@ export async function getMarketplaceSettings(db: DatabaseExecutor): Promise<Mark
     displayCurrencyDefault: parseDisplayCurrency(row.displayCurrencyDefault),
     displayCurrencyByCountry: parseCurrencyOverrides(row.displayCurrencyByCountry),
     nameSearchEnabled: row.nameSearchEnabled,
-    /*
-     * Parsed here rather than trusted: the column is jsonb, so what the driver returns is
-     * whatever was written, by a version of this code that may no longer exist. A shape that no
-     * longer parses falls back to the defaults -- the same answer an unconfigured marketplace
-     * gets -- rather than composing the slider from half-read numbers.
-     */
-    popularYachts:
-      popularYachtsConfigSchema.safeParse(row.popularYachtsConfig).data ?? DEFAULT_POPULAR_YACHTS,
     updatedAt: row.updatedAt.toISOString(),
     updatedByUserId: row.updatedByUserId,
   };
@@ -200,7 +160,6 @@ export interface UpdateMarketplaceSettingsInput {
   displayCurrencyDefault: DisplayCurrency;
   displayCurrencyByCountry: CurrencyOverrides;
   nameSearchEnabled: boolean;
-  popularYachts: PopularYachtsConfig;
   actorUserId: string | null;
 }
 
@@ -234,7 +193,6 @@ export async function updateMarketplaceSettings(
     displayCurrencyDefault: input.displayCurrencyDefault,
     displayCurrencyByCountry: input.displayCurrencyByCountry,
     nameSearchEnabled: input.nameSearchEnabled,
-    popularYachtsConfig: input.popularYachts,
     updatedByUserId: input.actorUserId,
   };
 

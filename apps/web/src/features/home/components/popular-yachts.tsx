@@ -40,7 +40,7 @@ function PopularYachtSlides() {
 
   return (
     <>
-      {yachts.map(({ listing }) => (
+      {yachts.map((listing) => (
         <CarouselSlide key={listing.id} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
           <BoatSmallCard
             className="w-full"

@@ -17,13 +17,16 @@ import { popularYachtsInput, popularYachtsQueryOptions } from "./queries";
  * rolled over. `getFacets` is shared with the search route so both fill one cache entry.
  */
 
-/** The five highest-rated listings. Catalog data: a slightly stale rating harms nobody. */
+/**
+ * The curated selection. Catalog data: a slightly stale rating harms nobody. No `seed` is sent,
+ * so the server rotates it by the day and the answer stays stable inside this cache window.
+ */
 async function getPopularYachts() {
   "use cache";
   cacheLife("hours");
   cacheTag(CATALOG_TAG);
 
-  return publicClient.charterSearch.results(popularYachtsInput(await getRootLocale()));
+  return publicClient.charterSearch.popularYachts(popularYachtsInput(await getRootLocale()));
 }
 
 /**

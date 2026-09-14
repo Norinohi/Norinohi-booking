@@ -1110,7 +1110,8 @@
         "content": "Contenido del sitio"
       },
       "settings": "Ajustes de pago",
-      "popular": "Selección popular"
+      "popular": "Selección popular",
+      "popularYachts": "Yates populares"
     },
     "UserMenu": {
       "account": "Cuenta",
@@ -1760,6 +1761,10 @@
     "Popular": {
       "title": "Selección popular",
       "description": "Elija qué valores encabezan los filtros y la página de inicio."
+    },
+    "PopularYachts": {
+      "title": "Yates populares",
+      "description": "Configura cómo se compone el carrusel de yates populares de la página de inicio."
     },
     "Contact": {
       "title": "Contacto",
@@ -3298,6 +3303,23 @@
       "cacheWarning": "Guardado, pero aún no se pudieron actualizar las páginas en caché.",
       "noListings": "Sin yates"
     },
+    "PopularYachts": {
+      "title": "Carrusel de yates populares",
+      "subtitle": "Cómo se compone el carrusel de yates populares de la página de inicio. La mezcla por tipo es un objetivo: si los límites dejan un tipo corto, las plazas restantes van a los siguientes mejores barcos.",
+      "limit": "Barcos mostrados",
+      "maxAgeYears": "Antigüedad máx. (años)",
+      "maxPerCountry": "Máx. por país",
+      "maxPerBase": "Máx. por base",
+      "mix": "Barcos por tipo",
+      "mixHint": "Solo se toman los destinos de abajo. Un tipo en cero se omite.",
+      "destinations": "Destinos",
+      "destinationsHint": "Un país por línea, por orden de prioridad: \"Croatia: Split / Trogir; Zadar / Sukošan\". Los lugares se separan con \";\" y \"/\" separa grafías de un mismo lugar, que se buscan en la marina, la ubicación y la región del barco. Cada lugar cuenta como una base. Un país sin lugares toma todo el país; una lista vacía vuelve a los países populares seleccionados.",
+      "save": "Guardar cambios",
+      "saving": "Guardando...",
+      "saved": "Carrusel guardado.",
+      "saveFailed": "No se pudo guardar el carrusel.",
+      "cacheWarning": "Guardado, pero las páginas en caché del sitio aún no se han podido actualizar."
+    },
     "Settings": {
       "title": "Ajustes del marketplace",
       "subtitle": "Cuánto del chárter se cobra por adelantado y a través de qué proveedor vendemos cuando las ofertas son iguales.",
@@ -3350,16 +3372,6 @@
         "legend": "Búsqueda por texto libre",
         "toggle": "Mostrar el campo de texto libre en la barra de búsqueda",
         "hint": "Una ayuda para pruebas, ajena al diseño. Activado, la barra de búsqueda de yates añade un campo que busca por nombre, modelo, astillero, empresa chárter o base, palabra por palabra y en cualquier orden."
-      },
-      "popularYachts": {
-        "legend": "Carrusel de yates populares",
-        "hint": "Cómo se compone el carrusel de yates populares de la página de inicio. La mezcla por tipo es un objetivo: si los límites dejan un tipo corto, las plazas restantes van a los siguientes mejores barcos.",
-        "limit": "Barcos mostrados",
-        "maxAgeYears": "Antigüedad máx. (años)",
-        "maxPerCountry": "Máx. por país",
-        "maxPerBase": "Máx. por base",
-        "mix": "Barcos por tipo",
-        "mixHint": "Solo se toman los países populares seleccionados. Un tipo en cero se omite."
       },
       "save": "Guardar cambios",
       "saving": "Guardando...",

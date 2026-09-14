@@ -1110,7 +1110,8 @@
         "content": "Website-Inhalte"
       },
       "settings": "Zahlungseinstellungen",
-      "popular": "Beliebte Auswahl"
+      "popular": "Beliebte Auswahl",
+      "popularYachts": "Beliebte Yachten"
     },
     "UserMenu": {
       "account": "Konto",
@@ -1760,6 +1761,10 @@
     "Popular": {
       "title": "Beliebte Auswahl",
       "description": "Legen Sie fest, welche Werte die Filter und die Startseite anführen."
+    },
+    "PopularYachts": {
+      "title": "Beliebte Yachten",
+      "description": "Legen Sie fest, wie der Slider mit beliebten Yachten auf der Startseite zusammengestellt wird."
     },
     "Contact": {
       "title": "Kontakt",
@@ -3298,6 +3303,23 @@
       "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
       "noListings": "Keine Yachten"
     },
+    "PopularYachts": {
+      "title": "Slider „Beliebte Yachten“",
+      "subtitle": "Wie der Slider mit beliebten Yachten auf der Startseite zusammengestellt wird. Die Typverteilung ist ein Richtwert: Fehlen einem Typ Boote, gehen die freien Plätze an die nächstbesten.",
+      "limit": "Angezeigte Boote",
+      "maxAgeYears": "Max. Alter (Jahre)",
+      "maxPerCountry": "Max. pro Land",
+      "maxPerBase": "Max. pro Basis",
+      "mix": "Boote je Typ",
+      "mixHint": "Es werden nur die Reiseziele unten berücksichtigt. Ein Typ mit null bleibt außen vor.",
+      "destinations": "Reiseziele",
+      "destinationsHint": "Ein Land pro Zeile, nach Priorität: \"Croatia: Split / Trogir; Zadar / Sukošan\". Orte werden mit \";\" getrennt, \"/\" trennt Schreibweisen eines Ortes, die in Marina, Standort und Region des Bootes gesucht werden. Jeder Ort zählt als eine Basis. Ein Land ohne Orte umfasst das ganze Land; eine leere Liste greift auf die ausgewählten beliebten Länder zurück.",
+      "save": "Änderungen speichern",
+      "saving": "Wird gespeichert...",
+      "saved": "Slider gespeichert.",
+      "saveFailed": "Der Slider konnte nicht gespeichert werden.",
+      "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden."
+    },
     "Settings": {
       "title": "Marktplatz-Einstellungen",
       "subtitle": "Wie viel eines Charters im Voraus eingezogen wird und über welchen Anbieter wir verkaufen, wenn die Angebote gleich sind.",
@@ -3350,16 +3372,6 @@
         "legend": "Freitextsuche",
         "toggle": "Freitextfeld in der Suchleiste anzeigen",
         "hint": "Eine Testhilfe, kein Teil des Designs. Eingeschaltet erhält die Yachtsuche ein Feld, das Name, Modell, Werft, Charterfirma oder Basis eines Bootes abgleicht — Wort für Wort und in beliebiger Reihenfolge."
-      },
-      "popularYachts": {
-        "legend": "Slider „Beliebte Yachten“",
-        "hint": "Wie der Slider mit beliebten Yachten auf der Startseite zusammengestellt wird. Die Typverteilung ist ein Richtwert: Fehlen einem Typ Boote, gehen die freien Plätze an die nächstbesten.",
-        "limit": "Angezeigte Boote",
-        "maxAgeYears": "Max. Alter (Jahre)",
-        "maxPerCountry": "Max. pro Land",
-        "maxPerBase": "Max. pro Basis",
-        "mix": "Boote je Typ",
-        "mixHint": "Es werden nur die ausgewählten beliebten Länder berücksichtigt. Ein Typ mit null bleibt außen vor."
       },
       "save": "Anderungen speichern",
       "saving": "Wird gespeichert...",
