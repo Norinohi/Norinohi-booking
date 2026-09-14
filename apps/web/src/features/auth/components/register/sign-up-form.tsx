@@ -68,7 +68,6 @@ export default function SignUpForm() {
   const passwordToggle = usePasswordToggleLabels();
   const router = useRouter();
   const { isPending } = authClient.useSession();
-  /* Referral invite links land here as /register?ref=NORI-... (referral.myCode's urlPath). */
   const [referralCode] = useQueryState("ref");
 
   const schema = useMemo(
