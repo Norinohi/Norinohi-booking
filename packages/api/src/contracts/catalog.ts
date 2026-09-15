@@ -182,6 +182,12 @@ export const listingSummarySchema = z.object({
      * how cards came to advertise dates the detail calendar then refused. Null once past.
      */
     bookablePeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
+    /**
+     * The next charter of the same length, where `bookablePeriod` has lapsed between availability
+     * syncs. Null whenever `bookablePeriod` stands, or where nothing sellable follows. Its price is
+     * not known here: the stored figure belonged to the lapsed charter.
+     */
+    nextPeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),

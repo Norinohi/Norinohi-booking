@@ -53,10 +53,17 @@ export function toBoatCard(
   basis?: "base" | "all_in",
 ): BoatCardProps & { id: string } {
   const hold = listing.availability.temporaryHold;
+  /* An undated search still sends a period, both ends null; that is no period at all. */
+  const searched = period?.checkIn && period.checkOut ? period : null;
   const unavailable = !listing.availability.hasAvailableDates;
   const status = availabilityStatus({
     hasAvailableDates: listing.availability.hasAvailableDates,
-    hasBookablePeriod: listing.availability.bookablePeriod !== null,
+    /* Dates on the card are a charter this boat sells: the searched one, or the nearest of the
+       searched length. They count even where the stored first charter has lapsed. */
+    hasBookablePeriod:
+      listing.availability.bookablePeriod !== null ||
+      listing.availability.nextPeriod !== null ||
+      searched !== null,
     temporarilyHeld: hold !== null,
   });
   const statusBadge = {
@@ -65,8 +72,6 @@ export function toBoatCard(
   };
   /* The currency the provider published in, which the per-person figure is a share of. */
   const currency = listing.priceFrom?.currency ?? listing.priceDetails.securityDeposit?.currency;
-  /* An undated search still sends a period, both ends null; that is no period at all. */
-  const searched = period?.checkIn && period.checkOut ? period : null;
 
   const identity = boatCardIdentity(t, tCrew, tBadge, listing);
 

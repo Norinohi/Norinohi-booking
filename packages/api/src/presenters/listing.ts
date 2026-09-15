@@ -177,6 +177,10 @@ export function presentListingSummary(
       hasAvailableDates: doc.availableFrom !== null,
       temporaryHold: doc.temporaryHold,
       bookablePeriod,
+      nextPeriod:
+        bookablePeriod === null && doc.nearestCheckIn && doc.nearestCheckOut
+          ? { checkIn: doc.nearestCheckIn, checkOut: doc.nearestCheckOut }
+          : null,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,

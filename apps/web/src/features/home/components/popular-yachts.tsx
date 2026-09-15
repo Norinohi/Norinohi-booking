@@ -18,6 +18,7 @@ import { Link } from "@/i18n/navigation";
 
 import { Image } from "@/components/shared/data-display/image";
 import { WishlistButton } from "@/features/wishlist";
+import { listingDetailHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
 import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { RISE, VIEWPORT } from "@/lib/motion";
@@ -56,7 +57,7 @@ function PopularYachtSlides() {
             location={placeLine(listing.base.location, listing.base.country)}
             title={
               <Link
-                href={`/yachts/${listing.slug}`}
+                href={listingDetailHref(listing)}
                 className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 {listing.title}
@@ -73,7 +74,7 @@ function PopularYachtSlides() {
             priceSuffix={t("perDay")}
             priceLabel={t("from")}
             actionLabel={t("viewDetails")}
-            actionRender={<Link href={`/yachts/${listing.slug}`} />}
+            actionRender={<Link href={listingDetailHref(listing)} />}
             saveRender={<WishlistButton listingId={listing.id} />}
           />
         </CarouselSlide>

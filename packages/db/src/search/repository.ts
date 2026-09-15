@@ -227,7 +227,7 @@ export async function getListingByIdOrSlug(
   idOrSlug: string,
 ): Promise<ListingSearchDoc | undefined> {
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}
+    select ${searchColumns}${nextCharterAfterLapseColumns()}
     from listing_search_doc doc
     where doc.listing_id = ${idOrSlug} or doc.slug = ${idOrSlug}
     limit 1
@@ -1337,7 +1337,7 @@ export async function listSimilarListings(
   if (!listing) return [];
 
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}
+    select ${searchColumns}${nextCharterAfterLapseColumns()}
     from listing_search_doc doc
     where doc.listing_id <> ${listing.listingId}
       and (
@@ -1417,7 +1417,7 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
     )}`;
   }
   if (!window) {
-    return sql`, true as "sellsRequestedPeriod", null::date as "nearestCheckIn", null::date as "nearestCheckOut"`;
+    return sql`, true as "sellsRequestedPeriod"${nextCharterAfterLapseColumns()}`;
   }
 
   const nights = nightsBetween(window);
@@ -1459,7 +1459,7 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
  * stretch the listing owns -- and start inside a published rate, so what comes back is free and
  * on sale on the one offer that would sell it.
  */
-function sellableStarts(nights: number, range: CandidateRange): SQL {
+function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
   return sql`
     select (
       greatest(free.start_date, ${range.earliestStart}::date)
@@ -1486,7 +1486,7 @@ function sellableStarts(nights: number, range: CandidateRange): SQL {
  * `listing_offer_id` lets the lookup ride `listing_price_period_uq` instead of scanning a
  * million-row table by listing.
  */
-function sellableFilter(nights: number): SQL {
+function sellableFilter(nights: number | SQL): SQL {
   return sql`
       c.start_date + ${nights}::integer <= c.end_date
       and exists (
@@ -1620,21 +1620,48 @@ function nearestSellableColumns(
   nights: number,
   range: CandidateRange,
 ): SQL {
-  /*
-   * Nearest to the day asked for, which the tolerance allows to fall either side of it -- the
-   * same reading `candidateRange` gives the free-period test. Ordered by distance rather than
-   * taken as a `min`, because the earliest start inside a fortnight's tolerance is not the one
-   * closest to the trip somebody described.
-   */
-  const nearest = sql`(
+  const nearest = nearestSellableStart(window.checkIn, nights, range);
+  return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
+}
+
+/*
+ * Nearest to the day asked for, which the tolerance allows to fall either side of it -- the
+ * same reading `candidateRange` gives the free-period test. Ordered by distance rather than
+ * taken as a `min`, because the earliest start inside a fortnight's tolerance is not the one
+ * closest to the trip somebody described.
+ */
+function nearestSellableStart(checkIn: string, nights: number | SQL, range: CandidateRange): SQL {
+  return sql`(
     select c.start_date
     from (${sellableStarts(nights, range)}) c
     where c.start_date <= ${range.latestStart}::date
       and ${sellableFilter(nights)}
-    order by abs(c.start_date - ${window.checkIn}::date), c.start_date
+    order by abs(c.start_date - ${checkIn}::date), c.start_date
     limit 1
   )`;
-  return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
+}
+
+/*
+ * The charter a card falls back to when the stored first one has lapsed.
+ *
+ * `bookable_from` is projected by the availability sync, so between runs the day it names can
+ * pass, and the card then had no dates, a "seasonal minimum" caption and an "On request" chip
+ * for a boat that sells the following week. The next charter of the same length from the
+ * earliest bookable day is what the next sync would store; computing it here only for the lapsed
+ * rows keeps the cost off the fleet whose stored charter still stands.
+ */
+export function nextCharterAfterLapseColumns(): SQL {
+  const earliest = shiftDays(todayUtc(), MIN_LEAD_DAYS);
+  const nights = sql`greatest(doc.bookable_to - doc.bookable_from, 1)`;
+  const lapsed = sql`doc.bookable_from is not null and doc.bookable_from < ${earliest}::date`;
+  const next = nearestSellableStart(earliest, nights, {
+    earliestStart: earliest,
+    latestStart: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+    earliestEnd: earliest,
+    latestEnd: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+  });
+  return sql`, case when ${lapsed} then ${next} end as "nearestCheckIn",
+    case when ${lapsed} then ${next} + ${nights} end as "nearestCheckOut"`;
 }
 
 /*
