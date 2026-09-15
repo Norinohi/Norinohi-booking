@@ -1,0 +1,1 @@
+ALTER TABLE "facet_media" ADD COLUMN "hover_image_url" text;

@@ -389,6 +389,8 @@ export type ListingFacetOption = {
   count?: number;
   /* Editorial fields, present only for facet groups backed by facet_media rows. */
   imageUrl?: string | null;
+  /* The photo a featured home page tile cross-fades to under the cursor. */
+  hoverImageUrl?: string | null;
   cloudinaryId?: string | null;
   description?: string | null;
   /* Lowest positive comparable price in EUR; null when the group has no comparable price. */

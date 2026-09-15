@@ -3329,6 +3329,8 @@
         "imageUrl": "URL de la foto",
         "imageHint": "Sube un archivo o pega una URL. JPEG, PNG, WebP o AVIF, hasta 10 MB.",
         "imageHintNoUpload": "Pega una URL. La subida de archivos no está configurada en este entorno.",
+        "hoverImageUrl": "Foto al pasar el cursor",
+        "hoverImageHint": "Se muestra en las tarjetas destacadas de la página de inicio al pasar el cursor, por ejemplo el lugar visto desde arriba. Déjalo vacío para mantener una sola foto.",
         "upload": "Subir foto",
         "uploading": "Subiendo...",
         "uploadFailed": "No se pudo subir la foto.",

@@ -2376,6 +2376,7 @@ async function decorateFacetOptions(
   const media = await db.execute<{
     key: string;
     imageUrl: string | null;
+    hoverImageUrl: string | null;
     cloudinaryId: string | null;
     label: string | null;
     description: string | null;
@@ -2386,6 +2387,7 @@ async function decorateFacetOptions(
     select
       ${normalizedSql(sql`media.value`)} as key,
       media.image_url as "imageUrl",
+      media.hover_image_url as "hoverImageUrl",
       media.cloudinary_id as "cloudinaryId",
       translation.label,
       coalesce(translation.description, media.description) as description,
@@ -2430,6 +2432,7 @@ async function decorateFacetOptions(
       ...option,
       label: match?.label ?? option.label,
       imageUrl: match?.imageUrl ?? null,
+      hoverImageUrl: match?.hoverImageUrl ?? null,
       cloudinaryId: match?.cloudinaryId ?? null,
       description: match?.description ?? null,
       /*

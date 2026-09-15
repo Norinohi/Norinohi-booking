@@ -21,6 +21,8 @@ const facetOptionSchema = z.object({
   count: z.number().int().nonnegative().optional(),
   /* Editorial fields, populated only for facet groups with facet_media rows. */
   imageUrl: z.string().nullish(),
+  /* The second photo a featured home page tile cross-fades to under the cursor. */
+  hoverImageUrl: z.string().nullish(),
   /* Legacy media id kept for old admin data; public pages should use imageUrl/Bunny URLs. */
   cloudinaryId: z.string().nullish(),
   description: z.string().nullish(),

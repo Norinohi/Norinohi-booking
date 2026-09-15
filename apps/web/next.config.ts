@@ -24,7 +24,8 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
   /*
-   * Prerendering enumerates ~3,900 catalog pages, and each one calls the API two or three times
+   * Prerendering once enumerated ~3,900 catalog pages (now capped, see `prerenderedCatalogPages`),
+   * and each one calls the API two or three times
    * (scoped facets, then results). At Next's defaults the export fleet sizes itself to the build
    * machine — 31 workers on Railway, 8 pages each — and puts several hundred concurrent requests
    * on a single server, so every render queues past the 60s page limit and the build dies having

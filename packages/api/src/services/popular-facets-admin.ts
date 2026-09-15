@@ -345,7 +345,7 @@ async function ensureMediaRow(db: Database, kind: Kind, value: string) {
 export async function getFacetMedia(db: Database, input: MediaInput): Promise<MediaResult> {
   const row = await ensureMediaRow(db, input.kind, input.value);
   const [media] = await db
-    .select({ description: facetMedia.description })
+    .select({ description: facetMedia.description, hoverImageUrl: facetMedia.hoverImageUrl })
     .from(facetMedia)
     .where(eq(facetMedia.id, row.id));
   const stored = await db
@@ -363,6 +363,7 @@ export async function getFacetMedia(db: Database, input: MediaInput): Promise<Me
     value: input.value,
     name: row.name,
     imageUrl: row.imageUrl,
+    hoverImageUrl: media?.hoverImageUrl ?? null,
     translations: MEDIA_LOCALES.map((locale) => {
       const entry = byLocale.get(locale);
       return {
@@ -401,6 +402,7 @@ export async function updateFacetMedia(
       .update(facetMedia)
       .set({
         imageUrl: input.imageUrl || null,
+        hoverImageUrl: input.hoverImageUrl || null,
         description: english?.description || null,
       })
       .where(eq(facetMedia.id, row.id));

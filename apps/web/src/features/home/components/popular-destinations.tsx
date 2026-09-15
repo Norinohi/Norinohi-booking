@@ -41,7 +41,20 @@ function useFeaturedCountries(): Option[] {
   return featured.length > 0 ? featured : options.countries;
 }
 
-function DestinationTile({ country }: { country: Option }) {
+const TILE_SIZES = "(min-width: 768px) 420px, (min-width: 640px) 48vw, 85vw";
+
+/*
+ * `withHoverImage` is the slider's six: they lead with the yacht under the flag and cross-fade to
+ * the place from above under the cursor, or on keyboard focus. The expanded grid keeps one photo,
+ * as the client asked, and so does a destination with no second photo set.
+ */
+function DestinationTile({
+  country,
+  withHoverImage = false,
+}: {
+  country: Option;
+  withHoverImage?: boolean;
+}) {
   const t = useTranslations("Home.PopularDestinations");
   const money = useMoney();
   const price = country.pricePerPersonWeekMinor;
@@ -54,13 +67,28 @@ function DestinationTile({ country }: { country: Option }) {
       <DestinationCard
         imageRender={
           country.imageUrl ? (
-            <Image
-              src={country.imageUrl}
-              alt={country.label}
-              fill
-              sizes="(min-width: 768px) 420px, (min-width: 640px) 48vw, 85vw"
-              className="object-cover"
-            />
+            <>
+              <Image
+                src={country.imageUrl}
+                alt={country.label}
+                fill
+                sizes={TILE_SIZES}
+                className="object-cover"
+              />
+              {withHoverImage && country.hoverImageUrl ? (
+                /* The wrapper fades, not the image: a remote photo draws its own loading layer
+                   above itself, and left visible that layer would cover the first photo. */
+                <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <Image
+                    src={country.hoverImageUrl}
+                    alt=""
+                    fill
+                    sizes={TILE_SIZES}
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
+            </>
           ) : undefined
         }
         title={country.label}
@@ -90,7 +118,7 @@ function DestinationSlides() {
           key={country.value}
           className="basis-[85%] pr-5 sm:basis-1/2 md:basis-105 lg:basis-1/3 xl:basis-105"
         >
-          <DestinationTile country={country} />
+          <DestinationTile country={country} withHoverImage />
         </CarouselSlide>
       ))}
     </>
