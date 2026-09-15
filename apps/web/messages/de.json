@@ -488,6 +488,15 @@
       "rating": "Gästebewertung",
       "newest": "Neueste zuerst"
     },
+    "priceBasis": {
+      "label": "Preis: {value}",
+      "aria": "Welchen Preis anzeigen",
+      "boat": "Nur Yacht",
+      "charter": "Ganzer Charter",
+      "hintLabel": "Was die Preise enthalten",
+      "boatHint": "der reine Mietpreis der Yacht, wie ihn andere Charterportale vergleichen. Pflichtextras wie Charterpaket oder Endreinigung kommen bei der Buchung hinzu.",
+      "charterHint": "die Yacht mit allen Pflichtextras (Charterpaket, Reinigung und weitere Pflichtgebühren): was der Charter tatsächlich kostet."
+    },
     "boatCard": {
       "save": "Zur Merkliste hinzufügen",
       "remove": "Von der Merkliste entfernen",
@@ -496,6 +505,8 @@
       "openGallery": "Fotogalerie öffnen",
       "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
       "priceIndicative": "Charterpreis · Saisonminimum",
+      "boatPriceFor": "Yachtpreis · {days, plural, one {# Tag} other {# Tage}}",
+      "boatPriceIndicative": "Yachtpreis · Saisonminimum",
       "priceFromLabel": "Ab",
       "plusObligatory": "zzgl. {amount} Pflichtzuschläge",
       "approximatePrice": "ca.",

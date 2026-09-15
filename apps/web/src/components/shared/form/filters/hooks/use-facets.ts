@@ -29,13 +29,13 @@ import type { FacetScope } from "../lib/state";
  * had been lost. The previous scope wins over it, so changing a country does not flash the global
  * list on the way to the narrower one.
  */
-export function useFacets(scope?: FacetScope) {
+export function useFacets(scope?: FacetScope, priceBasis?: "base" | "all_in" | null) {
   const locale = useLocale();
   const queryClient = useQueryClient();
   const unscopedKey = facetsQueryOptions(locale).queryKey;
 
   return useQuery({
-    ...facetsQueryOptions(locale, scope),
+    ...facetsQueryOptions(locale, scope, priceBasis),
     placeholderData: (previous) => previous ?? queryClient.getQueryData(unscopedKey),
   });
 }

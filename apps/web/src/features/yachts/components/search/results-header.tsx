@@ -2,10 +2,19 @@
 
 import { Chip } from "@yacht-charter/ui/components/data-display/chip";
 import { Select } from "@yacht-charter/ui/components/form/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@yacht-charter/ui/components/overlay/tooltip";
 import { cn } from "@yacht-charter/ui/lib/utils";
+import { Info } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import type { FilterChip } from "@/components/shared/form/filters";
+
+import { PRICE_BASIS_OPTIONS, type PriceBasisOption } from "@/components/shared/form/filters";
 
 /* Values only — sorting is query state, so a language change must never rewrite it. */
 export const SORT_OPTIONS = ["recommended", "price-asc", "price-desc", "rating", "newest"] as const;
@@ -23,6 +32,8 @@ export interface ResultsHeaderProps {
   total: number;
   sort: SortValue;
   onSortChange: (sort: SortValue) => void;
+  priceBasis: PriceBasisOption;
+  onPriceBasisChange: (basis: PriceBasisOption) => void;
   className?: string;
 }
 
@@ -32,9 +43,13 @@ export default function ResultsHeader({
   total,
   sort,
   onSortChange,
+  priceBasis,
+  onPriceBasisChange,
   className,
 }: ResultsHeaderProps) {
   const t = useTranslations("Common");
+  /* Controlled so a tap opens it too: hover alone never fires on a phone. */
+  const [hintOpen, setHintOpen] = useState(false);
 
   return (
     <div
@@ -61,7 +76,51 @@ export default function ResultsHeader({
         </p>
       </div>
 
-      <div className="md:shrink-0">
+      <div className="flex flex-col gap-2 sm:flex-row md:shrink-0">
+        <div className="flex items-center gap-1">
+          <Tooltip open={hintOpen} onOpenChange={setHintOpen}>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={t("priceBasis.hintLabel")}
+                  onClick={() => setHintOpen(true)}
+                  className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-natural-500 outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
+                />
+              }
+            >
+              <Info className="size-5" />
+            </TooltipTrigger>
+            <TooltipContent className="flex max-w-80 flex-col gap-2 text-left">
+              <span>
+                <strong>{t("priceBasis.boat")}:</strong> {t("priceBasis.boatHint")}
+              </span>
+              <span>
+                <strong>{t("priceBasis.charter")}:</strong> {t("priceBasis.charterHint")}
+              </span>
+            </TooltipContent>
+          </Tooltip>
+          <Select
+            className="h-12 w-full md:w-auto md:min-w-57"
+            ariaLabel={t("priceBasis.aria")}
+            options={PRICE_BASIS_OPTIONS.map((value) => ({
+              value,
+              label: t(`priceBasis.${value}`),
+            }))}
+            value={priceBasis}
+            onValueChange={(next) => {
+              const picked = PRICE_BASIS_OPTIONS.find((option) => option === next);
+              if (picked) onPriceBasisChange(picked);
+            }}
+            renderValue={(value) =>
+              t("priceBasis.label", {
+                value: t(
+                  `priceBasis.${PRICE_BASIS_OPTIONS.find((option) => option === value) ?? "boat"}`,
+                ),
+              })
+            }
+          />
+        </div>
         <Select
           className="h-12 w-full md:w-auto md:min-w-57"
           options={SORT_OPTIONS.map((value) => ({ value, label: t(`sorting.${value}`) }))}

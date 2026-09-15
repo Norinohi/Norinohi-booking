@@ -6,6 +6,7 @@ import type { FiltersState } from "@/components/shared/form/filters";
 
 import type { ResultsInput } from "../api/queries";
 import { toSearchInput } from "../lib/to-search-input";
+import { usePriceBasis } from "@/components/shared/form/filters";
 
 /**
  * The single search-input build behind every results read — the search list, the map list and the
@@ -21,9 +22,10 @@ import { toSearchInput } from "../lib/to-search-input";
 export function useSearchInput(
   filters: FiltersState,
   defaults: FiltersState,
-  opts: Omit<Parameters<typeof toSearchInput>[2], "locale">,
+  opts: Omit<Parameters<typeof toSearchInput>[2], "locale" | "priceBasis">,
 ): ResultsInput {
   const locale = useLocale();
+  const { explicit } = usePriceBasis();
 
-  return toSearchInput(filters, defaults, { ...opts, locale });
+  return toSearchInput(filters, defaults, { ...opts, locale, priceBasis: explicit });
 }

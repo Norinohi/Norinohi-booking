@@ -488,6 +488,15 @@
       "rating": "Valoración de huéspedes",
       "newest": "Más recientes primero"
     },
+    "priceBasis": {
+      "label": "Precio: {value}",
+      "aria": "Qué precio mostrar",
+      "boat": "Solo el barco",
+      "charter": "Chárter completo",
+      "hintLabel": "Qué incluyen los precios",
+      "boatHint": "el precio de alquiler del barco, la cifra que comparan otros portales de chárter. Los extras obligatorios, como el paquete de chárter o la limpieza final, se añaden al reservar.",
+      "charterHint": "el barco más todos los extras obligatorios (paquete de chárter, limpieza y otras tasas obligatorias): lo que cuesta realmente el chárter."
+    },
     "boatCard": {
       "save": "Guardar en favoritos",
       "remove": "Quitar de favoritos",
@@ -496,6 +505,8 @@
       "openGallery": "Abrir la galería de fotos",
       "priceFor": "Precio del chárter · {days, plural, one {# día} other {# días}}",
       "priceIndicative": "Precio del chárter · mínimo de temporada",
+      "boatPriceFor": "Precio del barco · {days, plural, one {# día} other {# días}}",
+      "boatPriceIndicative": "Precio del barco · mínimo de temporada",
       "priceFromLabel": "Desde",
       "plusObligatory": "más {amount} de suplementos obligatorios",
       "approximatePrice": "aprox.",

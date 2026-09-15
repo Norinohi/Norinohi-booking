@@ -488,6 +488,15 @@
       "rating": "Guest rating",
       "newest": "Newest first"
     },
+    "priceBasis": {
+      "label": "Price: {value}",
+      "aria": "Which price to show",
+      "boat": "Boat only",
+      "charter": "Whole charter",
+      "hintLabel": "What the prices include",
+      "boatHint": "the boat's own rental price, the figure other charter sites compare. Obligatory extras such as the charter pack or final cleaning are added at booking.",
+      "charterHint": "the boat plus every obligatory extra (charter pack, cleaning and other mandatory fees): what the charter actually costs."
+    },
     "boatCard": {
       "save": "Save to wishlist",
       "remove": "Remove from wishlist",
@@ -496,6 +505,8 @@
       "openGallery": "Open photo gallery",
       "priceFor": "Charter price · {days, plural, one {# day} other {# days}}",
       "priceIndicative": "Charter price · seasonal minimum",
+      "boatPriceFor": "Boat price · {days, plural, one {# day} other {# days}}",
+      "boatPriceIndicative": "Boat price · seasonal minimum",
       "priceFromLabel": "From",
       "plusObligatory": "plus {amount} obligatory extras",
       "approximatePrice": "approx.",

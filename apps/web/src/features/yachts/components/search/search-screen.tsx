@@ -27,6 +27,7 @@ import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
 import { resultsQueryOptions } from "../../api/queries";
 import { useListingCards } from "../../hooks/use-listing-cards";
+import { usePriceBasis } from "@/components/shared/form/filters";
 import { useRememberSearch } from "../../hooks/use-remember-search";
 import { useSearchFilters } from "../../hooks/use-search-filters";
 import { useSearchInput } from "../../hooks/use-search-input";
@@ -184,7 +185,8 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
   const t = useTranslations("Yachts");
   useRememberSearch();
   const { filters, defaults, applyFilters } = useApplyFilters(locked);
-  const { sort, setSort, page, setPage } = useResultOrder();
+  const { sort, setSort, page, setPage, firstPage } = useResultOrder();
+  const priceBasis = usePriceBasis();
 
   const { toCard } = useListingCards();
   const input = useSearchInput(filters, defaults, { sort, page });
@@ -207,6 +209,13 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
         total={pagination?.totalItems ?? 0}
         sort={sort}
         onSortChange={setSort}
+        priceBasis={priceBasis.option}
+        onPriceBasisChange={(next) => {
+          /* The order and the price filter both read the basis, so page 3 of one is not page 3
+             of the other. */
+          void priceBasis.setOption(next);
+          firstPage();
+        }}
       />
 
       {isLoading ? (

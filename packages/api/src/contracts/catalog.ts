@@ -406,6 +406,12 @@ export const listingSearchInputBaseSchema = z.object({
     ),
   checkIn: dateStringSchema.optional(),
   checkOut: dateStringSchema.optional(),
+  /*
+   * Which of a boat's two prices the cards show, sort and filter on, when the visitor has picked
+   * one: `base` is the boat alone, `all_in` adds the obligatory charter pack. Omitted, the boat
+   * alone.
+   */
+  priceBasis: z.enum(["base", "all_in"]).optional(),
   guests: z.coerce.number().int().positive().optional(),
   category: z.string().optional(),
   minCabins: z.coerce.number().int().positive().optional(),
