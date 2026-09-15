@@ -774,7 +774,9 @@
       "popularBoatTypes": "Популярні судна",
       "allBoatTypes": "Усі судна",
       "popularModels": "Популярні моделі",
-      "allModels": "Усі моделі"
+      "allModels": "Усі моделі",
+      "popularDurations": "Популярна тривалість",
+      "otherDurations": "Інша тривалість"
     },
     "aria": {
       "builtFrom": "Рік побудови від",

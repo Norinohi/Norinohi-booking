@@ -774,7 +774,9 @@
       "popularBoatTypes": "Tipos de barco populares",
       "allBoatTypes": "Todos los tipos de barco",
       "popularModels": "Modelos populares",
-      "allModels": "Todos los modelos"
+      "allModels": "Todos los modelos",
+      "popularDurations": "Duraciones populares",
+      "otherDurations": "Otras duraciones"
     },
     "aria": {
       "builtFrom": "Año de construcción desde",

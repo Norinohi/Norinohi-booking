@@ -124,13 +124,19 @@ const OLDEST_YEAR_PERCENTILE = 0.05;
  */
 const PRICE_CAP_PERCENTILE = 0.95;
 
+/* The lengths people ask for most, listed first; every other length up to a month follows. */
+const POPULAR_DURATIONS = [3, 7, 10, 14];
+const MAX_LISTED_DURATION = 31;
+
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   /* Leads the list so the field opens on "no length stated" and `clearTo` resets to it. */
   { value: "any", label: "Any duration" },
-  { value: "7", label: "7 days" },
-  { value: "3", label: "3 days" },
-  { value: "10", label: "10 days" },
-  { value: "14", label: "14 days" },
+  ...[
+    ...POPULAR_DURATIONS,
+    ...Array.from({ length: MAX_LISTED_DURATION }, (_, index) => index + 1).filter(
+      (days) => !POPULAR_DURATIONS.includes(days),
+    ),
+  ].map((days) => ({ value: String(days), label: days === 1 ? "1 day" : `${days} days` })),
 ];
 
 const DEFAULT_DATE_FLEXIBILITY: ListingFacetOption[] = [

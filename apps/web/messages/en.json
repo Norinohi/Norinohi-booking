@@ -774,7 +774,9 @@
       "popularBoatTypes": "Popular boat types",
       "allBoatTypes": "All boat types",
       "popularModels": "Popular models",
-      "allModels": "All models"
+      "allModels": "All models",
+      "popularDurations": "Popular durations",
+      "otherDurations": "Other durations"
     },
     "aria": {
       "builtFrom": "Built from year",

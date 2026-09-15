@@ -3,7 +3,7 @@
 import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { Field } from "@yacht-charter/ui/components/form/field";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
-import { Select } from "@yacht-charter/ui/components/form/select";
+import { Select, type SelectOptionGroup } from "@yacht-charter/ui/components/form/select";
 import { Slider } from "@yacht-charter/ui/components/form/slider";
 import { Switch } from "@yacht-charter/ui/components/form/switch";
 import {
@@ -106,6 +106,8 @@ interface SelectFieldProps {
   /** Shows a reset button while `value` differs from `clearTo`. */
   clearable?: boolean;
   clearTo?: string;
+  /** Headed runs of `options`, for a list long enough to need them. Flat when absent. */
+  groups?: SelectOptionGroup[];
   className?: string;
 }
 
@@ -117,6 +119,7 @@ export function SelectField({
   onChange,
   clearable = false,
   clearTo,
+  groups,
   className,
 }: SelectFieldProps) {
   const t = useTranslations("Filters");
@@ -129,6 +132,7 @@ export function SelectField({
         className="h-12 w-full min-w-0"
         ariaLabel={ariaLabel}
         options={options}
+        groups={groups}
         value={value}
         onValueChange={(next) => onChange(next ?? value)}
         clearable={canClear}

@@ -774,7 +774,9 @@
       "popularBoatTypes": "Beliebte Bootstypen",
       "allBoatTypes": "Alle Bootstypen",
       "popularModels": "Beliebte Modelle",
-      "allModels": "Alle Modelle"
+      "allModels": "Alle Modelle",
+      "popularDurations": "Beliebte Dauer",
+      "otherDurations": "Weitere Dauer"
     },
     "aria": {
       "builtFrom": "Baujahr ab",
