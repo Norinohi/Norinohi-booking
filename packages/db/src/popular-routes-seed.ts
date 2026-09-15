@@ -48,22 +48,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Central Dalmatia",
         description:
-          "A week among the islands off Split: Šolta's quiet coves, remote Vis, lively Hvar with the Pakleni Islands, and the beaches of Brač.",
+          "A popular yachting region with dozens of islands, beautiful bays, and historic towns. A great choice for your first charter.",
       },
       uk: {
         title: "Центральна Далмація",
         description:
-          "Тиждень серед островів біля Спліта: тихі бухти Шолти, віддалений Віс, жвавий Хвар із Пакленими островами та пляжі Брача.",
+          "Популярний яхтовий регіон із десятками островів, красивими бухтами та історичними містами. Чудовий вибір для першого чартеру.",
       },
       de: {
         title: "Mitteldalmatien",
         description:
-          "Eine Woche zwischen den Inseln vor Split: stille Buchten auf Šolta, das abgelegene Vis, das lebhafte Hvar mit den Pakleni-Inseln und die Strände von Brač.",
+          "Eine beliebte Yachtregion mit Dutzenden Inseln, wunderschönen Buchten und historischen Städten. Eine hervorragende Wahl für den ersten Charter.",
       },
       es: {
-        title: "Dalmacia central",
+        title: "Dalmacia Central",
         description:
-          "Una semana entre las islas frente a Split: las calas tranquilas de Šolta, la remota Vis, la animada Hvar con las islas Pakleni y las playas de Brač.",
+          "Una popular región náutica con decenas de islas, hermosas bahías y ciudades históricas. Una excelente opción para tu primer chárter.",
       },
     },
     stops: [
@@ -85,24 +85,24 @@ export const POPULAR_ROUTES: SeedRoute[] = [
     imageUrl: null,
     copy: {
       en: {
-        title: "Ionian",
+        title: "Ionian Islands",
         description:
-          "Short, sheltered hops from Lefkada to Meganisi, Ithaca and Kefalonia, with steady afternoon winds and turquoise anchorages. A gentle first week in Greece.",
+          "Calm seas, picturesque islands, and short passages between anchorages. Ideal for a comfortable family getaway.",
       },
       uk: {
-        title: "Іонічне море",
+        title: "Іонічні острови",
         description:
-          "Короткі переходи в захищених водах від Лефкади до Меганісі, Ітаки й Кефалонії, зі стабільним денним вітром і бірюзовими якірними стоянками. Спокійний перший тиждень у Греції.",
+          "Спокійне море, мальовничі острови та короткі переходи між стоянками. Ідеально для комфортного сімейного відпочинку.",
       },
       de: {
-        title: "Ionisches Meer",
+        title: "Ionische Inseln",
         description:
-          "Kurze, geschützte Schläge von Lefkada nach Meganisi, Ithaka und Kefalonia, mit verlässlichem Nachmittagswind und türkisfarbenen Ankerbuchten. Ein entspannter erster Törn in Griechenland.",
+          "Ruhige Gewässer, malerische Inseln und kurze Überfahrten zwischen den Ankerplätzen. Ideal für einen entspannten Familienurlaub.",
       },
       es: {
-        title: "Mar Jónico",
+        title: "Islas Jónicas",
         description:
-          "Travesías cortas y resguardadas de Lefkada a Meganisi, Ítaca y Cefalonia, con viento constante por la tarde y fondeaderos turquesa. Una primera semana tranquila en Grecia.",
+          "Mar tranquilo, islas pintorescas y cortas travesías entre fondeaderos. Ideal para unas vacaciones familiares y relajadas.",
       },
     },
     stops: [
@@ -129,22 +129,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Göcek & Gulf of Fethiye",
         description:
-          "Pine-fringed bays with restaurant jetties, the Twelve Islands of Göcek, and Lycian ruins on Gemiler Island, all within a short sail of each other.",
+          "Sheltered bays, crystal-clear waters, and lush green shores. An ideal region for leisurely sailing and relaxation.",
       },
       uk: {
         title: "Гьочек і затока Фетхіє",
         description:
-          "Бухти в соснах із ресторанними причалами, Дванадцять островів Гьочека та лікійські руїни на острові Гемілер, усе на відстані короткого переходу.",
+          "Захищені бухти, прозора вода та зелені береги. Ідеальний регіон для неспішного плавання та відпочинку.",
       },
       de: {
-        title: "Göcek und Golf von Fethiye",
+        title: "Göcek & Golf von Fethiye",
         description:
-          "Von Kiefern gesäumte Buchten mit Restaurantstegen, die Zwölf Inseln von Göcek und lykische Ruinen auf Gemiler, alles nur kurze Schläge voneinander entfernt.",
+          "Geschützte Buchten, kristallklares Wasser und üppig grüne Küsten. Eine ideale Region für entspanntes Segeln und Erholung.",
       },
       es: {
-        title: "Göcek y golfo de Fethiye",
+        title: "Göcek y Golfo de Fethiye",
         description:
-          "Bahías rodeadas de pinos con pantalanes de restaurantes, las Doce Islas de Göcek y las ruinas licias de la isla Gemiler, todo a poca distancia.",
+          "Bahías protegidas, aguas cristalinas y costas verdes y exuberantes. Una región ideal para navegar sin prisas y relajarse.",
       },
     },
     stops: [
@@ -166,22 +166,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Sardinia",
         description:
-          "The Costa Smeralda and the La Maddalena archipelago: granite islands, clear water and Porto Cervo's marina, with the Strait of Bonifacio on the horizon.",
+          "Turquoise waters, picturesque islands, and beautiful beaches. A destination for an unforgettable Mediterranean getaway.",
       },
       uk: {
         title: "Сардинія",
         description:
-          "Смарагдове узбережжя та архіпелаг Ла-Маддалена: гранітні острови, прозора вода й марина Порто-Черво, а на обрії протока Боніфачо.",
+          "Бірюзова вода, мальовничі острови та красиві пляжі. Напрямок для яскравого середземноморського відпочинку.",
       },
       de: {
         title: "Sardinien",
         description:
-          "Die Costa Smeralda und das Maddalena-Archipel: Granitinseln, klares Wasser und die Marina von Porto Cervo, mit der Straße von Bonifacio am Horizont.",
+          "Türkisfarbenes Wasser, malerische Inseln und wunderschöne Strände. Ein ideales Reiseziel für einen unvergesslichen Mittelmeerurlaub.",
       },
       es: {
         title: "Cerdeña",
         description:
-          "La Costa Esmeralda y el archipiélago de La Maddalena: islas de granito, aguas cristalinas y el puerto de Porto Cervo, con el estrecho de Bonifacio en el horizonte.",
+          "Aguas turquesas, islas pintorescas y hermosas playas. Un destino ideal para disfrutar de una inolvidable escapada mediterránea.",
       },
     },
     stops: [
@@ -204,22 +204,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Ibiza & Formentera",
         description:
-          "Caribbean-coloured water off Formentera and Espalmador, sunsets at Cala d'Hort facing Es Vedrà, and quieter coves on Ibiza's north coast.",
+          "Famous beaches and Ibiza’s vibrant nightlife combined with the peaceful lagoons of Formentera. The perfect balance of relaxation and atmosphere.",
       },
       uk: {
-        title: "Ібіца і Форментера",
+        title: "Ібіца та Форментера",
         description:
-          "Вода карибського кольору біля Форментери та Еспальмадора, захід сонця в Кала-д'Орт навпроти Ес-Ведра і тихіші бухти на півночі Ібіци.",
+          "Знамениті пляжі та яскраве життя Ібіци у поєднанні зі спокійними лагунами Форментери. Ідеальний баланс відпочинку та атмосфери.",
       },
       de: {
-        title: "Ibiza und Formentera",
+        title: "Ibiza & Formentera",
         description:
-          "Karibisch blaues Wasser vor Formentera und Espalmador, Sonnenuntergang in der Cala d'Hort mit Blick auf Es Vedrà und ruhigere Buchten an Ibizas Nordküste.",
+          "Berühmte Strände und das pulsierende Nachtleben Ibizas kombiniert mit den ruhigen Lagunen Formenteras. Die perfekte Balance aus Erholung und Atmosphäre.",
       },
       es: {
         title: "Ibiza y Formentera",
         description:
-          "Aguas de color caribeño en Formentera y Espalmador, puestas de sol en Cala d'Hort frente a Es Vedrà y calas más tranquilas en el norte de Ibiza.",
+          "Playas famosas y la vibrante vida nocturna de Ibiza, combinadas con las tranquilas lagunas de Formentera. El equilibrio perfecto entre relax y ambiente.",
       },
     },
     stops: [
@@ -243,22 +243,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Lofoten Islands",
         description:
-          "Arctic sailing between granite peaks and red fishing cabins, from Svolvær to Reine, under the midnight sun in summer. For crews at home in cool, changeable weather.",
+          "Fjords, majestic mountains, and Arctic landscapes. A unique yachting experience for nature lovers.",
       },
       uk: {
         title: "Лофотенські острови",
         description:
-          "Арктичне плавання між гранітними вершинами й червоними рибальськими будиночками, від Свольвера до Рейне, влітку під полярним сонцем. Для екіпажів із досвідом у прохолодну мінливу погоду.",
+          "Фіорди, величні гори та арктичні пейзажі. Унікальний формат яхтової подорожі для любителів природи.",
       },
       de: {
         title: "Lofoten",
         description:
-          "Arktisches Segeln zwischen Granitgipfeln und roten Fischerhütten, von Svolvær bis Reine, im Sommer unter der Mitternachtssonne. Für Crews mit Erfahrung bei kühlem, wechselhaftem Wetter.",
+          "Fjorde, majestätische Berge und arktische Landschaften. Ein einzigartiges Yacht-Erlebnis für Naturliebhaber.",
       },
       es: {
         title: "Islas Lofoten",
         description:
-          "Navegación ártica entre picos de granito y cabañas de pescadores rojas, de Svolvær a Reine, bajo el sol de medianoche en verano. Para tripulaciones con experiencia en tiempo fresco y cambiante.",
+          "Fiordos, majestuosas montañas y paisajes árticos. Una experiencia náutica única para los amantes de la naturaleza.",
       },
     },
     stops: [
@@ -281,22 +281,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Corsica / West Coast",
         description:
-          "Red cliffs of the Scandola reserve, the tiny village of Girolata reachable only by sea, and the citadel of Calvi. Open-water passages with a mistral to respect.",
+          "Rocky shores, turquoise bays, and picturesque coastal towns. A wonderful destination for a relaxed cruise.",
       },
       uk: {
-        title: "Корсика / західне узбережжя",
+        title: "Корсика / Західне узбережжя",
         description:
-          "Червоні скелі заповідника Скандола, крихітне село Жиролата, куди можна дістатися лише морем, і цитадель Кальві. Переходи відкритим морем, де слід зважати на містраль.",
+          "Скелясті береги, бірюзові бухти та мальовничі прибережні містечка. Чудовий напрямок для спокійного круїзу.",
       },
       de: {
         title: "Korsika / Westküste",
         description:
-          "Die roten Klippen des Scandola-Reservats, das nur vom Meer aus erreichbare Dorf Girolata und die Zitadelle von Calvi. Schläge über offenes Wasser, bei denen der Mistral Respekt verlangt.",
+          "Felsige Küsten, türkisfarbene Buchten und malerische Küstenorte. Ein wunderbares Reiseziel für eine entspannte Kreuzfahrt.",
       },
       es: {
-        title: "Córcega / costa oeste",
+        title: "Córcega / Costa Oeste",
         description:
-          "Los acantilados rojos de la reserva de Scandola, el pequeño pueblo de Girolata, accesible solo por mar, y la ciudadela de Calvi. Travesías en mar abierto donde hay que respetar el mistral.",
+          "Costas rocosas, bahías turquesas y pintorescos pueblos costeros. Un destino perfecto para un crucero tranquilo.",
       },
     },
     stops: [
@@ -322,22 +322,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "British Virgin Islands",
         description:
-          "Steady trade winds and line-of-sight sailing between islands: The Baths on Virgin Gorda, the Bight at Norman Island, Anegada's reefs and the beach bars of Jost Van Dyke.",
+          "Warm waters, tropical islands, and short passages between anchorages. One of the best regions for a catamaran charter.",
       },
       uk: {
         title: "Британські Віргінські острови",
         description:
-          "Стабільні пасати й плавання від острова до острова в межах видимості: The Baths на Вірджин-Горді, бухта Байт на Норман-Айленді, рифи Анегади та пляжні бари Джост-Ван-Дайка.",
+          "Тепла вода, тропічні острови та короткі переходи між стоянками. Один із найкращих регіонів для чартеру на катамарані.",
       },
       de: {
         title: "Britische Jungferninseln",
         description:
-          "Beständige Passatwinde und Segeln auf Sicht von Insel zu Insel: The Baths auf Virgin Gorda, die Bight vor Norman Island, die Riffe von Anegada und die Strandbars von Jost Van Dyke.",
+          "Warmes Wasser, tropische Inseln und kurze Überfahrten zwischen den Ankerplätzen. Eine der besten Regionen für einen Katamaran-Charter.",
       },
       es: {
         title: "Islas Vírgenes Británicas",
         description:
-          "Alisios constantes y navegación a la vista entre islas: The Baths en Virgin Gorda, la bahía Bight de Norman Island, los arrecifes de Anegada y los chiringuitos de Jost Van Dyke.",
+          "Aguas cálidas, islas tropicales y cortas travesías entre fondeaderos. Una de las mejores regiones para alquilar un catamarán.",
       },
     },
     stops: [
@@ -361,22 +361,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Inner Seychelles",
         description:
-          "From Mahé across to Praslin and La Digue: granite boulders on white beaches, giant tortoises on Curieuse and the bird reserve of Cousin.",
+          "Tropical beaches, granite islands, and crystal-clear waters. The perfect combination of yachting, snorkeling, and relaxation.",
       },
       uk: {
-        title: "Внутрішні Сейшели",
+        title: "Внутрішні Сейшельські острови",
         description:
-          "Від Мае до Праслена й Ла-Діга: гранітні валуни на білих пляжах, гігантські черепахи на Кюр'єзі та пташиний заповідник на острові Кузен.",
+          "Тропічні пляжі, гранітні острови та прозора вода. Ідеальне поєднання яхтингу, снорклінгу та відпочинку.",
       },
       de: {
         title: "Innere Seychellen",
         description:
-          "Von Mahé hinüber nach Praslin und La Digue: Granitfelsen an weißen Stränden, Riesenschildkröten auf Curieuse und das Vogelschutzgebiet auf Cousin.",
+          "Tropische Strände, Granitinseln und kristallklares Wasser. Die perfekte Kombination aus Yachting, Schnorcheln und Erholung.",
       },
       es: {
-        title: "Seychelles interiores",
+        title: "Islas Interiores de Seychelles",
         description:
-          "De Mahé a Praslin y La Digue: rocas de granito en playas blancas, tortugas gigantes en Curieuse y la reserva de aves de Cousin.",
+          "Playas tropicales, islas de granito y aguas cristalinas. La combinación perfecta de navegación, snorkel y relax.",
       },
     },
     stops: [
@@ -399,22 +399,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Phuket / Andaman Sea",
         description:
-          "Limestone karsts of Phang Nga Bay, Railay's cliffs and the Phi Phi islands, with calm seas and warm water in the dry season from November to April.",
+          "Exotic islands, limestone cliffs, and hidden lagoons. A vibrant tropical yachting experience.",
       },
       uk: {
         title: "Пхукет / Андаманське море",
         description:
-          "Вапнякові скелі затоки Пханг-Нга, клифи Райлі та острови Пхі-Пхі, зі спокійним морем і теплою водою в сухий сезон з листопада по квітень.",
+          "Екзотичні острови, вапнякові скелі та приховані лагуни. Яскравий яхтовий досвід у тропічному форматі.",
       },
       de: {
         title: "Phuket / Andamanensee",
         description:
-          "Die Kalksteinfelsen der Phang-Nga-Bucht, die Klippen von Railay und die Phi-Phi-Inseln, mit ruhiger See und warmem Wasser in der Trockenzeit von November bis April.",
+          "Exotische Inseln, Kalksteinfelsen und versteckte Lagunen. Ein faszinierendes Yacht-Erlebnis in tropischem Ambiente.",
       },
       es: {
-        title: "Phuket / mar de Andamán",
+        title: "Phuket / Mar de Andamán",
         description:
-          "Los farallones de caliza de la bahía de Phang Nga, los acantilados de Railay y las islas Phi Phi, con mar en calma y agua cálida en la estación seca, de noviembre a abril.",
+          "Islas exóticas, acantilados de piedra caliza y lagunas escondidas. Una experiencia náutica vibrante en un entorno tropical.",
       },
     },
     stops: [
@@ -438,22 +438,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Bay of Kotor & Adriatic Coast",
         description:
-          "Mountains dropping straight into the fjord-like Bay of Kotor, the island churches off Perast, then out to the open Adriatic past Budva and Sveti Stefan.",
+          "Mountains, historic towns, and picturesque bays of the Bay of Kotor. A blend of nature, history, and the Adriatic.",
       },
       uk: {
-        title: "Которська затока й Адріатичне узбережжя",
+        title: "Бока-Которська затока та Адріатичне узбережжя",
         description:
-          "Гори, що спускаються просто в схожу на фіорд Которську затоку, острівні церкви біля Пераста, а далі вихід у відкриту Адріатику повз Будву та Светі-Стефан.",
+          "Гори, старовинні міста та мальовничі бухти Боки-Которської. Поєднання природи, історії та Адріатики.",
       },
       de: {
-        title: "Bucht von Kotor und Adriaküste",
+        title: "Bucht von Kotor & Adriaküste",
         description:
-          "Berge, die direkt in die fjordartige Bucht von Kotor abfallen, die Inselkirchen vor Perast und dann hinaus auf die offene Adria vorbei an Budva und Sveti Stefan.",
+          "Berge, historische Städte und malerische Buchten der Bucht von Kotor. Eine einzigartige Verbindung aus Natur, Geschichte und Adria.",
       },
       es: {
-        title: "Bahía de Kotor y costa adriática",
+        title: "Bahía de Kotor y Costa Adriática",
         description:
-          "Montañas que caen directamente sobre la bahía de Kotor, parecida a un fiordo, las iglesias en islotes frente a Perast y después el Adriático abierto pasando por Budva y Sveti Stefan.",
+          "Montañas, ciudades históricas y pintorescas bahías de la bahía de Kotor. Una combinación de naturaleza, historia y el Adriático.",
       },
     },
     stops: [
@@ -483,22 +483,22 @@ export const POPULAR_ROUTES: SeedRoute[] = [
       en: {
         title: "Society Islands / Leeward Islands",
         description:
-          "From Raiatea across a shared lagoon to vanilla-scented Taha'a, on to Bora Bora's peaks and quiet Huahine, with warm trade winds and snorkelling in every anchorage.",
+          "Volcanic islands, coral reefs, and turquoise lagoons. An exotic destination for an unforgettable yachting journey.",
       },
       uk: {
         title: "Острови Товариства / Підвітряні острови",
         description:
-          "Від Раїатеа через спільну лагуну до ванільної Таха'а, далі до вершин Бора-Бора й тихого Хуахіне, з теплими пасатами й снорклінгом на кожній стоянці.",
+          "Вулканічні острови, коралові рифи та бірюзові лагуни. Екзотичний напрямок для незабутньої яхтової подорожі.",
       },
       de: {
         title: "Gesellschaftsinseln / Inseln unter dem Winde",
         description:
-          "Von Raiatea durch die gemeinsame Lagune zum nach Vanille duftenden Taha'a, weiter zu den Gipfeln von Bora Bora und ins ruhige Huahine, mit warmem Passat und Schnorcheln an jedem Ankerplatz.",
+          "Vulkanische Inseln, Korallenriffe und türkisfarbene Lagunen. Ein exotisches Reiseziel für eine unvergessliche Yacht-Reise.",
       },
       es: {
         title: "Islas de la Sociedad / Islas de Sotavento",
         description:
-          "De Raiatea, a través de una laguna compartida, a Taha'a y su aroma a vainilla, y después a los picos de Bora Bora y la tranquila Huahine, con alisios cálidos y buceo con tubo en cada fondeadero.",
+          "Islas volcánicas, arrecifes de coral y lagunas turquesas. Un destino exótico para una experiencia náutica inolvidable.",
       },
     },
     stops: [
@@ -516,6 +516,8 @@ export const POPULAR_ROUTES: SeedRoute[] = [
 export type PopularRoutesPlan = {
   created: { id: string; title: string; target: string }[];
   existing: { id: string; title: string }[];
+  /** Existing routes whose title and description are rewritten from the seed, under `refreshCopy`. */
+  refreshed: { id: string; title: string }[];
   unresolved: { id: string; title: string; target: string }[];
   /** Routes featured today that the new order leaves out, so a hand-curated one is not lost silently. */
   unfeatured: { id: string; title: string }[];
@@ -554,13 +556,23 @@ async function resolveTarget(db: Database, target: Target) {
  * back. A route whose region or base the environment does not have is skipped and reported rather
  * than anchored somewhere approximate.
  *
+ * `refreshCopy` is the one exception: it overwrites the title and description of existing routes, in
+ * every locale, with the seed's copy, for when the client sends a new text for the whole list. Stops,
+ * image, target and order stay as the editors left them.
+ *
  * Nothing is written unless `apply` is set.
  */
 export async function seedPopularRoutes(
   db: Database,
-  { apply }: { apply: boolean },
+  { apply, refreshCopy = false }: { apply: boolean; refreshCopy?: boolean },
 ): Promise<PopularRoutesPlan> {
-  const plan: PopularRoutesPlan = { created: [], existing: [], unresolved: [], unfeatured: [] };
+  const plan: PopularRoutesPlan = {
+    created: [],
+    existing: [],
+    refreshed: [],
+    unresolved: [],
+    unfeatured: [],
+  };
 
   const ids = POPULAR_ROUTES.map((route) => route.id);
   const existingRows = await db
@@ -572,7 +584,8 @@ export async function seedPopularRoutes(
   const toCreate: { route: SeedRoute; baseId: string | null; regionId: string | null }[] = [];
   for (const route of POPULAR_ROUTES) {
     if (existing.has(route.id)) {
-      plan.existing.push({ id: route.id, title: route.copy.en.title });
+      const entry = { id: route.id, title: route.copy.en.title };
+      (refreshCopy ? plan.refreshed : plan.existing).push(entry);
       continue;
     }
     const target = await resolveTarget(db, route.target);
@@ -634,6 +647,34 @@ export async function seedPopularRoutes(
           sortOrder: index,
         })),
       );
+    }
+
+    for (const { id } of plan.refreshed) {
+      const route = POPULAR_ROUTES.find((candidate) => candidate.id === id);
+      if (!route) continue;
+
+      await tx
+        .update(suggestedRoute)
+        .set({ title: route.copy.en.title, description: route.copy.en.description })
+        .where(eq(suggestedRoute.id, id));
+
+      await tx
+        .insert(suggestedRouteTranslation)
+        .values(
+          LOCALES.map((locale) => ({
+            routeId: id,
+            locale,
+            title: route.copy[locale].title,
+            description: route.copy[locale].description,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [suggestedRouteTranslation.routeId, suggestedRouteTranslation.locale],
+          set: {
+            title: sql`excluded.title`,
+            description: sql`excluded.description`,
+          },
+        });
     }
 
     await tx

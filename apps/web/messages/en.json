@@ -3298,14 +3298,42 @@
       "actions": {
         "moveUp": "Move up",
         "moveDown": "Move down",
-        "remove": "Remove"
+        "remove": "Remove",
+        "edit": "Edit photo and text"
       },
       "empty": "Nothing curated yet. Pick values above to pin them.",
       "emptyFilter": "Nothing chosen, so the filter offers every value. Pick values above to shorten the list.",
       "error": "Could not save the order.",
       "saved": "Order saved.",
       "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
-      "noListings": "No yachts"
+      "noListings": "No yachts",
+      "media": {
+        "title": "Edit {name}",
+        "description": "The photo and text this value's home page card shows. Saved text is never overwritten by a provider sync.",
+        "imageUrl": "Photo URL",
+        "imageHint": "Upload a file or paste a URL. JPEG, PNG, WebP or AVIF, up to 10 MB.",
+        "imageHintNoUpload": "Paste a URL. File upload is not configured in this environment.",
+        "upload": "Upload photo",
+        "uploading": "Uploading...",
+        "uploadFailed": "Could not upload the photo.",
+        "label": "Name",
+        "labelHint": "Leave blank to use the catalogue name, {name}, or the provider's translation.",
+        "descriptionField": "Description",
+        "descriptionHintEn": "Also shown in any language that has no description of its own.",
+        "descriptionHint": "Leave blank to show the English description.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "Saved.",
+        "saveFailed": "Could not save.",
+        "cacheWarning": "Saved, but the site's cached pages could not be refreshed yet.",
+        "locales": {
+          "en": "English",
+          "uk": "Ukrainian",
+          "de": "German",
+          "es": "Spanish"
+        }
+      }
     },
     "PopularYachts": {
       "title": "Popular yachts slider",

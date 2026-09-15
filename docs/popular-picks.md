@@ -3,6 +3,12 @@
 Curated ordering for search facets, the home page and the popular-yachts slider. Staff edit it on
 `/popular` under Website Content; nothing here needs a release.
 
+The same screen edits each value's card: the pencil on a row opens its photo and its name and
+description per language (`admin.popularFacets.media` / `.updateMedia`). The copy is written as
+`source = 'editorial'`, which neither the catalogue sync nor the translations pipeline overwrites,
+and only for languages that changed. A photo is either a pasted URL or an upload
+(`.uploadImage`), stored in the Bunny zone under `editorial/<kind>/` where storage is configured.
+
 ## What is curated
 
 Three independent columns on `facet_media`, per facet value:

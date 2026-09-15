@@ -98,3 +98,65 @@ export const popularFacetSetSchema = z.object({
   selected: z.array(popularFacetValueSchema),
   cache: faqCacheSchema,
 });
+
+/* --------------------------------------------------------------- editorial copy */
+
+export const facetMediaLocaleSchema = z.enum(["en", "uk", "de", "es"]);
+
+export const popularFacetMediaInputSchema = z.object({
+  kind: popularFacetKindSchema,
+  /** The filter value, as the list returns it. */
+  value: z.string().min(1),
+});
+
+/**
+ * A value's editorial card: the photo and copy the home page's sliders show for it.
+ *
+ * `label` per locale overrides the name the card and the filter print; left null, the value keeps
+ * its catalogue spelling or the provider's translation.
+ */
+export const popularFacetMediaSchema = z.object({
+  kind: popularFacetKindSchema,
+  value: z.string(),
+  /** The catalogue's own spelling, which every label falls back to. */
+  name: z.string(),
+  imageUrl: z.string().nullable(),
+  translations: z.array(
+    z.object({
+      locale: facetMediaLocaleSchema,
+      label: z.string().nullable(),
+      description: z.string().nullable(),
+    }),
+  ),
+  /** Whether this environment can take an uploaded file, or only a pasted URL. */
+  uploadEnabled: z.boolean(),
+});
+
+export const popularFacetMediaUpdateInputSchema = z.object({
+  kind: popularFacetKindSchema,
+  value: z.string().min(1),
+  imageUrl: z.string().trim().max(2000).nullable(),
+  translations: z
+    .array(
+      z.object({
+        locale: facetMediaLocaleSchema,
+        label: z.string().trim().max(200).nullable(),
+        description: z.string().trim().max(2000).nullable(),
+      }),
+    )
+    .max(4),
+});
+
+export const popularFacetMediaSavedSchema = popularFacetMediaSchema.extend({
+  cache: faqCacheSchema,
+});
+
+export const popularFacetImageUploadInputSchema = z.object({
+  kind: popularFacetKindSchema,
+  file: z
+    .file()
+    .max(10 * 1024 * 1024)
+    .mime(["image/jpeg", "image/png", "image/webp", "image/avif"]),
+});
+
+export const popularFacetImageUploadSchema = z.object({ url: z.string() });

@@ -3298,14 +3298,42 @@
       "actions": {
         "moveUp": "Nach oben",
         "moveDown": "Nach unten",
-        "remove": "Entfernen"
+        "remove": "Entfernen",
+        "edit": "Foto und Text bearbeiten"
       },
       "empty": "Noch nichts ausgewählt. Wählen Sie oben Werte aus.",
       "emptyFilter": "Nichts ausgewählt, daher bietet der Filter jeden Wert an. Wählen Sie oben Werte aus, um die Liste zu kürzen.",
       "error": "Die Reihenfolge konnte nicht gespeichert werden.",
       "saved": "Reihenfolge gespeichert.",
       "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
-      "noListings": "Keine Yachten"
+      "noListings": "Keine Yachten",
+      "media": {
+        "title": "{name} bearbeiten",
+        "description": "Foto und Text, die die Karte dieses Werts auf der Startseite zeigt. Gespeicherter Text wird von einer Anbieter-Synchronisierung nie überschrieben.",
+        "imageUrl": "Foto-URL",
+        "imageHint": "Datei hochladen oder URL einfügen. JPEG, PNG, WebP oder AVIF, bis 10 MB.",
+        "imageHintNoUpload": "URL einfügen. Datei-Upload ist in dieser Umgebung nicht eingerichtet.",
+        "upload": "Foto hochladen",
+        "uploading": "Wird hochgeladen...",
+        "uploadFailed": "Das Foto konnte nicht hochgeladen werden.",
+        "label": "Name",
+        "labelHint": "Leer lassen, um den Katalognamen {name} oder die Übersetzung des Anbieters zu verwenden.",
+        "descriptionField": "Beschreibung",
+        "descriptionHintEn": "Wird auch in Sprachen ohne eigene Beschreibung angezeigt.",
+        "descriptionHint": "Leer lassen, um die englische Beschreibung zu zeigen.",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert...",
+        "saved": "Gespeichert.",
+        "saveFailed": "Speichern fehlgeschlagen.",
+        "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
+        "locales": {
+          "en": "Englisch",
+          "uk": "Ukrainisch",
+          "de": "Deutsch",
+          "es": "Spanisch"
+        }
+      }
     },
     "PopularYachts": {
       "title": "Slider „Beliebte Yachten“",

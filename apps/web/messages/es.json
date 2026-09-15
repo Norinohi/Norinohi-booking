@@ -3298,14 +3298,42 @@
       "actions": {
         "moveUp": "Subir",
         "moveDown": "Bajar",
-        "remove": "Quitar"
+        "remove": "Quitar",
+        "edit": "Editar foto y texto"
       },
       "empty": "Todavía no hay nada seleccionado. Elija valores arriba.",
       "emptyFilter": "No hay nada elegido, así que el filtro ofrece todos los valores. Elija valores arriba para acortar la lista.",
       "error": "No se pudo guardar el orden.",
       "saved": "Orden guardado.",
       "cacheWarning": "Guardado, pero aún no se pudieron actualizar las páginas en caché.",
-      "noListings": "Sin yates"
+      "noListings": "Sin yates",
+      "media": {
+        "title": "Editar {name}",
+        "description": "La foto y el texto que muestra la tarjeta de este valor en la página de inicio. El texto guardado nunca se sobrescribe con la sincronización de proveedores.",
+        "imageUrl": "URL de la foto",
+        "imageHint": "Sube un archivo o pega una URL. JPEG, PNG, WebP o AVIF, hasta 10 MB.",
+        "imageHintNoUpload": "Pega una URL. La subida de archivos no está configurada en este entorno.",
+        "upload": "Subir foto",
+        "uploading": "Subiendo...",
+        "uploadFailed": "No se pudo subir la foto.",
+        "label": "Nombre",
+        "labelHint": "Déjalo vacío para usar el nombre del catálogo, {name}, o la traducción del proveedor.",
+        "descriptionField": "Descripción",
+        "descriptionHintEn": "También se muestra en los idiomas sin descripción propia.",
+        "descriptionHint": "Déjalo vacío para mostrar la descripción en inglés.",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "saved": "Guardado.",
+        "saveFailed": "No se pudo guardar.",
+        "cacheWarning": "Guardado, pero las páginas en caché del sitio aún no se han podido actualizar.",
+        "locales": {
+          "en": "Inglés",
+          "uk": "Ucraniano",
+          "de": "Alemán",
+          "es": "Español"
+        }
+      }
     },
     "PopularYachts": {
       "title": "Carrusel de yates populares",
