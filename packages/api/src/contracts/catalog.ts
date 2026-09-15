@@ -570,6 +570,8 @@ export const mapMarinaResultSchema = z.object({
     z.object({
       baseId: z.string(),
       name: z.string(),
+      /** The marina's value in the search's `marina` filter. */
+      value: z.string(),
       lat: z.number(),
       lng: z.number(),
       count: z.number().int(),

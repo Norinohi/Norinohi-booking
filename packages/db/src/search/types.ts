@@ -471,6 +471,8 @@ export type ListingFacets = {
 export type MapMarinaMarker = {
   baseId: string;
   name: string;
+  /** The marina's value in the search's `marina` filter, so the map can hand its boats to the catalogue. */
+  value: string;
   lat: number;
   lng: number;
   /** Boats at this base that match the search. */

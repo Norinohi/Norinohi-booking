@@ -1585,6 +1585,7 @@
     "noResults": "Keine Yachten entsprechen diesen Filtern. Bitte passen Sie sie an.",
     "title": "Yachten auf der Karte",
     "backToSearch": "Zurück zur Suche",
+    "viewInCatalogue": "Im Katalog ansehen",
     "showAllList": "Ganze Liste anzeigen",
     "closeList": "Liste schließen",
     "marker": "Marina {name}",

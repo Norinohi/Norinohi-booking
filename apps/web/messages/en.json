@@ -1585,6 +1585,7 @@
     "noResults": "No yachts match these filters. Try changing them.",
     "title": "Yachts on the map",
     "backToSearch": "Back To Search",
+    "viewInCatalogue": "View in catalogue",
     "showAllList": "Show all list",
     "closeList": "Close list",
     "marker": "Marina {name}",

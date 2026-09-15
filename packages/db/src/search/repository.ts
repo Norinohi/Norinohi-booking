@@ -886,20 +886,24 @@ export async function listSearchFacets(
  * limit that used to bound it is what left most of the map empty. Grouped it is one row per base,
  * of which there are hundreds, so nothing has to be left out.
  *
- * `base_id` alone carries the group; the name and coordinates are aggregated rather than grouped on
- * so that a base whose rows disagree by a decimal stays one pin instead of splitting into two.
+ * Grouped by the marina's name within its country rather than by `base_id`, because the two
+ * vendors each file their own base for the same marina: Pula's "Marina Polesana" was two pins, 43
+ * boats and 113, a kilometre and a half apart, and a visitor who opened one saw a third of the
+ * marina and a catalogue link that disagreed with it. Every same-name pair in the catalogue sits
+ * within 1.5 km, so the name is the marina. The coordinates are averaged over the boats, which
+ * lands the pin between the two vendors' readings of one quay.
  */
 export async function listMapMarinas(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
 ): Promise<MapMarinaMarker[]> {
   const basis = input.priceBasis;
-  const rows = await db.execute<MapMarinaMarker>(sql`
+  const rows = await db.execute<Omit<MapMarinaMarker, "value">>(sql`
     select
-      doc.base_id as "baseId",
+      min(doc.base_id) as "baseId",
       min(doc.base_name) as name,
-      min(doc.lat)::double precision as lat,
-      min(doc.lng)::double precision as lng,
+      avg(doc.lat)::double precision as lat,
+      avg(doc.lng)::double precision as lng,
       count(*)::integer as count,
       /* The cheapest boat's own price, picked in a single currency so the comparison holds, then
          reported in the currency it was actually priced in. */
@@ -911,10 +915,10 @@ export async function listMapMarinas(
       and doc.base_id is not null
       and doc.lat is not null
       and doc.lng is not null
-    group by doc.base_id
+    group by doc.country, ${normalizedSql(sql`doc.base_name`)}
   `);
 
-  return rows.rows;
+  return rows.rows.map((row) => ({ ...row, value: valueForLabel(row.name) }));
 }
 
 /*

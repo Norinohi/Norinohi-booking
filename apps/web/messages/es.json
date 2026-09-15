@@ -1585,6 +1585,7 @@
     "noResults": "Ningún yate coincide con estos filtros. Prueba a cambiarlos.",
     "title": "Yates en el mapa",
     "backToSearch": "Volver a la búsqueda",
+    "viewInCatalogue": "Ver en el catálogo",
     "showAllList": "Mostrar toda la lista",
     "closeList": "Cerrar lista",
     "marker": "Marina {name}",
