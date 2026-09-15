@@ -24,7 +24,8 @@
     "rebuild:search-docs": "node dist/rebuild-search-docs.mjs",
     "confirm:period": "node dist/confirm-one-period.mjs",
     "refresh:fx": "node dist/refresh-fx.mjs",
-    "seed:routes": "node dist/seed-popular-routes.mjs"
+    "seed:routes": "node dist/seed-popular-routes.mjs",
+    "seed:boat-types": "node dist/seed-boat-types.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",
