@@ -65,12 +65,12 @@ export default function NavigationBar() {
       )}
     >
       <div className="mx-auto flex h-18 max-w-384 items-center justify-between gap-4 px-4 max-[360px]:gap-1 max-[360px]:px-3 md:px-13.5 xl:px-17.5 2xl:h-20">
-        {/* Left group: hamburger (below 2xl) + wordmark + nav links (2xl+) */}
+        {/* Left group: hamburger (below xl) + wordmark + nav links (xl+). xl rather than wider so a 1366px laptop keeps the full nav with a browser sidebar open. */}
         <div className="flex min-w-0 items-center gap-4 max-[360px]:gap-1 2xl:gap-6">
           <IconButton
             variant="subtle"
             aria-label={open ? t("closeMenu") : t("openMenu")}
-            className="rounded-sm min-[1360px]:hidden"
+            className="rounded-sm xl:hidden"
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="size-6" /> : <Menu className="size-6" />}
@@ -80,7 +80,7 @@ export default function NavigationBar() {
             YachtSkanner
           </Link>
 
-          <nav className="hidden min-w-0 items-center gap-6 min-[1360px]:flex">
+          <nav className="hidden min-w-0 items-center gap-4 xl:flex 2xl:gap-6">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.key}
@@ -98,7 +98,7 @@ export default function NavigationBar() {
           </nav>
         </div>
 
-        {/* Right group: icon cluster (always) + CTAs (2xl+) */}
+        {/* Right group: icon cluster (always) + CTAs (xl+) */}
         <div className="flex shrink-0 items-center gap-1.5 2xl:gap-5">
           <div className="flex items-center gap-1.5 max-[360px]:gap-0">
             <motion.div animate={bump} className="relative inline-flex">
@@ -138,7 +138,7 @@ export default function NavigationBar() {
             <LanguageSwitcher />
           </div>
 
-          <div className="hidden items-center gap-3 min-[1360px]:flex">
+          <div className="hidden items-center gap-2 xl:flex 2xl:gap-3">
             <Link href={PLAN_MY_TRIP_HREF} className={buttonVariants({ variant: "neutral" })}>
               {t("helpPlan")}
             </Link>
@@ -149,10 +149,10 @@ export default function NavigationBar() {
         </div>
       </div>
 
-      {/* Collapsed sheet (below 2xl) — links + CTAs from the hamburger */}
+      {/* Collapsed sheet (below xl): links + CTAs from the hamburger */}
       <div
         className={cn(
-          "absolute inset-x-0 top-full origin-top border-b border-natural-50 bg-background shadow-[4px_4px_10px_rgba(0,0,0,0.1)] min-[1360px]:hidden",
+          "absolute inset-x-0 top-full origin-top border-b border-natural-50 bg-background shadow-[4px_4px_10px_rgba(0,0,0,0.1)] xl:hidden",
           open ? "block" : "hidden",
         )}
       >
