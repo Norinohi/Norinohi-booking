@@ -232,6 +232,10 @@ export async function recommendTrip(
     durationDays,
     estimatedPrice: estimatePrice(comparable, guestsForMath, budget),
     listing: top ? presentListingSummary(top) : null,
+    period:
+      top?.nearestCheckIn && top.nearestCheckOut
+        ? { checkIn: top.nearestCheckIn, checkOut: top.nearestCheckOut }
+        : null,
     recommendedPerPerson: top ? perPersonOf(top, guestsForMath) : null,
     matchCount: matched?.result.pagination?.totalItems ?? items.length,
     // Carry the successful search forward: a fallback must not restore the rejected budget.

@@ -1396,6 +1396,26 @@ const engagementColumns = sql`
  */
 function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
   const window = availabilityWindowFor(input);
+  if (!window && input.duration) {
+    /*
+     * A length with no date: the card still has to name a charter of that length. Left to the
+     * listing's own first sellable period, a "7 days" search captioned a boat "1 day, 15-16 Sep",
+     * because that was the shortest thing its operator happened to have free first. The nearest
+     * charter of the asked-for length from the earliest bookable day is the honest answer.
+     */
+    const earliest = shiftDays(todayUtc(), MIN_LEAD_DAYS);
+    const range: CandidateRange = {
+      earliestStart: earliest,
+      latestStart: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+      earliestEnd: shiftDays(earliest, input.duration),
+      latestEnd: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS + input.duration),
+    };
+    return sql`, true as "sellsRequestedPeriod"${nearestSellableColumns(
+      { checkIn: earliest, checkOut: shiftDays(earliest, input.duration) },
+      input.duration,
+      range,
+    )}`;
+  }
   if (!window) {
     return sql`, true as "sellsRequestedPeriod", null::date as "nearestCheckIn", null::date as "nearestCheckOut"`;
   }
@@ -2838,6 +2858,13 @@ function candidateRange(
     earliestEnd: shiftDays(window.checkIn, -flex + nights),
     latestEnd: shiftDays(window.checkOut, flex),
   };
+}
+
+/** How far ahead a length-only search looks for a charter of that length. */
+const UNDATED_SEARCH_HORIZON_DAYS = 365;
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function shiftDays(date: string, days: number): string {

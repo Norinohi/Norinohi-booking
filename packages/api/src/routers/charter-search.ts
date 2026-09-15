@@ -69,6 +69,15 @@ function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: str
    * after it, and it is what the filter admitted this listing for.
    */
   if (period.checkIn === undefined && startDate === undefined) {
+    /* A length with no date: the nearest charter of that length, which the search worked out
+       for exactly this case. Anything else stays undated. */
+    if (item.nearestCheckIn && item.nearestCheckOut) {
+      return {
+        checkIn: item.nearestCheckIn,
+        checkOut: item.nearestCheckOut,
+        periodIsAlternative: false,
+      };
+    }
     return { checkIn: null, checkOut: null, periodIsAlternative: false };
   }
 
