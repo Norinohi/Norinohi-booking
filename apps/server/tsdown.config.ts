@@ -20,6 +20,7 @@ export default defineConfig({
     "./src/confirm-one-period.ts",
     "./src/refresh-fx.ts",
     "./src/seed-popular-routes.ts",
+    "./src/seed-boat-types.ts",
   ],
   format: "esm",
   outDir: "./dist",

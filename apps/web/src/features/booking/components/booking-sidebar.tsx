@@ -1,6 +1,7 @@
 "use client";
 
 import BookingSummary from "@/components/shared/data-display/booking-summary";
+import { useReportLiveSellable } from "@/components/shared/data-display/live-availability";
 import type { AppPathname } from "@/i18n/navigation";
 import { useState } from "react";
 
@@ -42,6 +43,8 @@ export default function BookingSidebar({
     bookingId,
   } = useBooking();
   const [quoteRequestOpen, setQuoteRequestOpen] = useState(false);
+  /* A priced quote for the chosen dates is the strongest evidence the page has that it sells. */
+  useReportLiveSellable(quote !== null && !slotError);
 
   /* SAFETY: /yachts/[id]/booking is a real route; typedRoutes only recognises it when the
      segment is a literal, and nuqs serializes the query string back to a plain string. */
@@ -84,7 +87,9 @@ export default function BookingSidebar({
            free dates, but no published rate to open a season with. */
         datesOnRequest={
           listing
-            ? listing.availability.hasAvailableDates && listing.availability.bookablePeriod === null
+            ? listing.availability.hasAvailableDates &&
+              listing.availability.bookablePeriod === null &&
+              listing.availability.nextPeriod === null
             : false
         }
         actions={actions}

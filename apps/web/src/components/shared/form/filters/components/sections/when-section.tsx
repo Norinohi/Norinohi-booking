@@ -10,9 +10,31 @@ import { dayFromNative, dayToNative } from "@/lib/date";
 import { Section, type SectionProps, SelectField } from "../fields";
 import { useFilterOptions } from "../../hooks/use-filter-options";
 
+/*
+ * The lengths most charters are sold in, headed apart from the rest. The facets list every length
+ * up to a month, and flat that was thirty-two rows with the week buried among them.
+ */
+const POPULAR_DURATIONS = new Set(["3", "7", "10", "14"]);
+
 export default function WhenSection({ value, set }: SectionProps) {
   const t = useTranslations("Filters");
   const { options } = useFilterOptions();
+
+  const anyDuration = options.durations.filter((option) => option.value === "any");
+  const popularDurations = options.durations.filter((option) =>
+    POPULAR_DURATIONS.has(option.value),
+  );
+  const otherDurations = options.durations.filter(
+    (option) => option.value !== "any" && !POPULAR_DURATIONS.has(option.value),
+  );
+  const durationGroups =
+    popularDurations.length > 0 && otherDurations.length > 0
+      ? [
+          { key: "any", options: anyDuration },
+          { key: "popular", label: t("groups.popularDurations"), options: popularDurations },
+          { key: "other", label: t("groups.otherDurations"), options: otherDurations },
+        ]
+      : undefined;
 
   return (
     <Section value="when" title={t("sections.when")}>
@@ -28,6 +50,7 @@ export default function WhenSection({ value, set }: SectionProps) {
       <SelectField
         label={t("labels.duration")}
         options={options.durations}
+        groups={durationGroups}
         value={value.duration}
         onChange={(next) => set("duration", next)}
         clearable

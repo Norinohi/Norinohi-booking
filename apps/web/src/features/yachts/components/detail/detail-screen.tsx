@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { LiveAvailabilityProvider } from "@/components/shared/data-display/live-availability";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs, { type AppBreadcrumb } from "@/components/shared/navigation/app-breadcrumbs";
 
@@ -65,30 +66,32 @@ export default function YachtDetailScreen({
         />
       </div>
 
-      <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
-        <SplitPanels
-          labels={{ main: t("panels.details"), aside: t("panels.booking") }}
-          main={
-            <>
-              <TitleBlock />
-              <Gallery />
-              <DetailTabs />
-              <OverviewSection />
-              <AmenitiesSection />
-              <MandatoryExtrasSection />
-              <OptionalExtrasSection />
-              <DescriptionSection description={description} />
-              <MediaLinksSection />
-              <ImportantInfoSection />
-              <SuggestedRouteSection />
-              <ReviewSection />
-              <FaqSection />
-              <PopularYachtsSection />
-            </>
-          }
-          aside={aside}
-        />
-      </div>
+      <LiveAvailabilityProvider>
+        <div className="mx-auto w-full max-w-384 px-4 py-6 md:px-13.5 xl:px-17.5">
+          <SplitPanels
+            labels={{ main: t("panels.details"), aside: t("panels.booking") }}
+            main={
+              <>
+                <TitleBlock />
+                <Gallery />
+                <DetailTabs />
+                <OverviewSection />
+                <AmenitiesSection />
+                <MandatoryExtrasSection />
+                <OptionalExtrasSection />
+                <DescriptionSection description={description} />
+                <MediaLinksSection />
+                <ImportantInfoSection />
+                <SuggestedRouteSection />
+                <ReviewSection />
+                <FaqSection />
+                <PopularYachtsSection />
+              </>
+            }
+            aside={aside}
+          />
+        </div>
+      </LiveAvailabilityProvider>
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { useMoney } from "@/hooks/use-money";
 import { useListingDetail } from "../../../hooks/use-listing-detail";
 import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { crewLabel } from "@/lib/crew-label";
+import { listingDetailHref } from "../../../lib/detail-href";
 import DetailSection from "./detail-section";
 import { Image } from "@/components/shared/data-display/image";
 
@@ -87,7 +88,7 @@ export default function PopularYachtsSection() {
                 location={placeLine(yacht.base.location, yacht.base.country)}
                 title={
                   <Link
-                    href={`/yachts/${yacht.slug}`}
+                    href={listingDetailHref(yacht)}
                     className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
                   >
                     {yacht.title}
@@ -108,7 +109,7 @@ export default function PopularYachtsSection() {
                 priceSuffix={t("popular.perPeriod", { days: yacht.priceDetails.periodDays })}
                 priceLabel={t("popular.from")}
                 actionLabel={tCard("viewDetails")}
-                actionRender={<Link href={`/yachts/${yacht.slug}`} />}
+                actionRender={<Link href={listingDetailHref(yacht)} />}
                 saveRender={<WishlistButton listingId={yacht.id} />}
               />
             </CarouselSlide>

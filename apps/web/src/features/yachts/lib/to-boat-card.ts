@@ -49,12 +49,21 @@ export function toBoatCard(
   formatMoney: MoneyFormatter,
   listing: ResultListing,
   period?: CharterPeriod,
+  /** Which price `priceFrom` is. Inferred from the listing's two prices when not given. */
+  basis?: "base" | "all_in",
 ): BoatCardProps & { id: string } {
   const hold = listing.availability.temporaryHold;
+  /* An undated search still sends a period, both ends null; that is no period at all. */
+  const searched = period?.checkIn && period.checkOut ? period : null;
   const unavailable = !listing.availability.hasAvailableDates;
   const status = availabilityStatus({
     hasAvailableDates: listing.availability.hasAvailableDates,
-    hasBookablePeriod: listing.availability.bookablePeriod !== null,
+    /* Dates on the card are a charter this boat sells: the searched one, or the nearest of the
+       searched length. They count even where the stored first charter has lapsed. */
+    hasBookablePeriod:
+      listing.availability.bookablePeriod !== null ||
+      listing.availability.nextPeriod !== null ||
+      searched !== null,
     temporarilyHeld: hold !== null,
   });
   const statusBadge = {
@@ -63,8 +72,6 @@ export function toBoatCard(
   };
   /* The currency the provider published in, which the per-person figure is a share of. */
   const currency = listing.priceFrom?.currency ?? listing.priceDetails.securityDeposit?.currency;
-  /* An undated search still sends a period, both ends null; that is no period at all. */
-  const searched = period?.checkIn && period.checkOut ? period : null;
 
   const identity = boatCardIdentity(t, tCrew, tBadge, listing);
 
@@ -100,7 +107,7 @@ export function toBoatCard(
     datesNote: period?.periodIsAlternative ? t("datesAlternative") : undefined,
     /* Says what the badge above it leaves out: how long the other customer's hold has left. */
     hold: hold ?? undefined,
-    priceLabel: priceCaption(t, listing),
+    priceLabel: priceCaption(t, listing, basis),
     price: boatCardPrice(t, listing, formatMoney),
     listPrice: boatCardListPrice(listing, formatMoney),
     /* Only ever present where the headline is the charter rate, which is what makes the line
@@ -157,10 +164,34 @@ export function toBoatCard(
  * buys. With no published rate the slot holds a word instead — "On request" — and captioning
  * that produced "From / On request", which reads as a broken sentence rather than as a price.
  */
-function priceCaption(t: CardTranslator, listing: ResultListing): string {
+function priceCaption(
+  t: CardTranslator,
+  listing: ResultListing,
+  basis: "base" | "all_in" | undefined,
+): string {
   if (!listing.priceFrom) return "";
+  if (isBoatPrice(listing, basis)) {
+    if (listing.priceIsFrom) return t("boatPriceIndicative");
+    return t("boatPriceFor", { days: listing.priceDetails.periodDays });
+  }
   if (listing.priceIsFrom) return t("priceIndicative");
   return t("priceFor", { days: listing.priceDetails.periodDays });
+}
+
+/*
+ * A boat with no obligatory pack costs the same either way, so it keeps the basis it was asked
+ * for; only a server-rendered card with no basis to hand reads it off the two figures.
+ */
+function isBoatPrice(listing: ResultListing, basis: "base" | "all_in" | undefined): boolean {
+  /* No usable rate (none published, or a nominal one): the figure is the all-in price. */
+  if (!listing.basePriceFrom) return false;
+  if (basis) return basis === "base";
+  const base = listing.basePriceFrom?.amountMinor;
+  return (
+    base !== undefined &&
+    listing.priceFrom?.amountMinor === base &&
+    listing.allInPriceFrom?.amountMinor !== base
+  );
 }
 
 function charterDates(listing: ResultListing, period: CharterPeriod | null) {

@@ -62,6 +62,11 @@ export const plannerRecommendationSchema = z.object({
   /** The single recommended yacht, or null when nothing matched. */
   listing: listingSummarySchema.nullable(),
   /**
+   * The recommended yacht's nearest charter of the trip's length, so "details" opens its page on
+   * that charter rather than on whatever period the calendar would pick. Null when it sells none.
+   */
+  period: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
+  /**
    * The recommended yacht's own price divided by the group, in that listing's currency so it
    * sits beside the price on its card rather than beside the estimate's.
    */

@@ -71,6 +71,28 @@ type FacetOptionRow = {
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 500;
 const NULL_PRICE_ASC = 2_147_483_647;
+
+/**
+ * The smallest share of the all-in price a boat rate may be and still count as the boat's price.
+ *
+ * Some vendors put almost the whole charter into the obligatory pack and publish a nominal rate:
+ * the Angelmiles Maxus 35s read EUR 1 against EUR 386 all-in. Taken as the boat price that sorted
+ * them first in "cheapest first" and printed "Boat price EUR 1" on the card. Below this share the
+ * rate is treated like a missing one, and the all-in figure stands in everywhere a rate is read:
+ * the sort, the price filter and its bounds, and the card (`presentListingSummary`).
+ */
+export const MIN_BASE_SHARE_OF_ALL_IN = 0.25;
+
+/**
+ * How far "cheapest first" moves a boat with no charter priced for its own dates.
+ *
+ * Its figure is a seasonal floor, or a charter that has lapsed, and either can be far below what
+ * the boat actually sells for: Paxos' EUR 200 "week" with nothing to sell headed Greece. So the
+ * order is the priced charters, cheapest first, then those floors, cheapest first. One integer
+ * rather than a second sort column because the keyset cursor compares one value; nightly minor
+ * units stay far below the offset, and the sum below `NULL_PRICE_ASC`.
+ */
+export const UNPRICED_CHARTER_SORT_OFFSET = 1_000_000_000;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
 /*
@@ -124,13 +146,19 @@ const OLDEST_YEAR_PERCENTILE = 0.05;
  */
 const PRICE_CAP_PERCENTILE = 0.95;
 
+/* The lengths people ask for most, listed first; every other length up to a month follows. */
+const POPULAR_DURATIONS = [3, 7, 10, 14];
+const MAX_LISTED_DURATION = 31;
+
 const DEFAULT_DURATIONS: ListingFacetOption[] = [
   /* Leads the list so the field opens on "no length stated" and `clearTo` resets to it. */
   { value: "any", label: "Any duration" },
-  { value: "7", label: "7 days" },
-  { value: "3", label: "3 days" },
-  { value: "10", label: "10 days" },
-  { value: "14", label: "14 days" },
+  ...[
+    ...POPULAR_DURATIONS,
+    ...Array.from({ length: MAX_LISTED_DURATION }, (_, index) => index + 1).filter(
+      (days) => !POPULAR_DURATIONS.includes(days),
+    ),
+  ].map((days) => ({ value: String(days), label: days === 1 ? "1 day" : `${days} days` })),
 ];
 
 const DEFAULT_DATE_FLEXIBILITY: ListingFacetOption[] = [
@@ -221,7 +249,7 @@ export async function getListingByIdOrSlug(
   idOrSlug: string,
 ): Promise<ListingSearchDoc | undefined> {
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}
+    select ${searchColumns}${nextCharterAfterLapseColumns()}
     from listing_search_doc doc
     where doc.listing_id = ${idOrSlug} or doc.slug = ${idOrSlug}
     limit 1
@@ -531,7 +559,7 @@ export async function getListingDetailByIdOrSlug(
         localizeSearchDocs(db, docs, locale, translate),
       ),
       providerDescription(db, listing.listingId, locale),
-      suggestedRouteFor(db, listing.baseId),
+      suggestedRouteFor(db, listing.baseId, locale),
     ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
@@ -880,20 +908,24 @@ export async function listSearchFacets(
  * limit that used to bound it is what left most of the map empty. Grouped it is one row per base,
  * of which there are hundreds, so nothing has to be left out.
  *
- * `base_id` alone carries the group; the name and coordinates are aggregated rather than grouped on
- * so that a base whose rows disagree by a decimal stays one pin instead of splitting into two.
+ * Grouped by the marina's name within its country rather than by `base_id`, because the two
+ * vendors each file their own base for the same marina: Pula's "Marina Polesana" was two pins, 43
+ * boats and 113, a kilometre and a half apart, and a visitor who opened one saw a third of the
+ * marina and a catalogue link that disagreed with it. Every same-name pair in the catalogue sits
+ * within 1.5 km, so the name is the marina. The coordinates are averaged over the boats, which
+ * lands the pin between the two vendors' readings of one quay.
  */
 export async function listMapMarinas(
   db: NodePgDatabase<typeof schema>,
   input: ListingSearchInput,
 ): Promise<MapMarinaMarker[]> {
   const basis = input.priceBasis;
-  const rows = await db.execute<MapMarinaMarker>(sql`
+  const rows = await db.execute<Omit<MapMarinaMarker, "value">>(sql`
     select
-      doc.base_id as "baseId",
+      min(doc.base_id) as "baseId",
       min(doc.base_name) as name,
-      min(doc.lat)::double precision as lat,
-      min(doc.lng)::double precision as lng,
+      avg(doc.lat)::double precision as lat,
+      avg(doc.lng)::double precision as lng,
       count(*)::integer as count,
       /* The cheapest boat's own price, picked in a single currency so the comparison holds, then
          reported in the currency it was actually priced in. */
@@ -905,10 +937,10 @@ export async function listMapMarinas(
       and doc.base_id is not null
       and doc.lat is not null
       and doc.lng is not null
-    group by doc.base_id
+    group by doc.country, ${normalizedSql(sql`doc.base_name`)}
   `);
 
-  return rows.rows;
+  return rows.rows.map((row) => ({ ...row, value: valueForLabel(row.name) }));
 }
 
 /*
@@ -1327,7 +1359,7 @@ export async function listSimilarListings(
   if (!listing) return [];
 
   const rows = await db.execute<SearchRow>(sql`
-    select ${searchColumns}
+    select ${searchColumns}${nextCharterAfterLapseColumns()}
     from listing_search_doc doc
     where doc.listing_id <> ${listing.listingId}
       and (
@@ -1386,8 +1418,28 @@ const engagementColumns = sql`
  */
 function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
   const window = availabilityWindowFor(input);
+  if (!window && input.duration) {
+    /*
+     * A length with no date: the card still has to name a charter of that length. Left to the
+     * listing's own first sellable period, a "7 days" search captioned a boat "1 day, 15-16 Sep",
+     * because that was the shortest thing its operator happened to have free first. The nearest
+     * charter of the asked-for length from the earliest bookable day is the honest answer.
+     */
+    const earliest = shiftDays(todayUtc(), MIN_LEAD_DAYS);
+    const range: CandidateRange = {
+      earliestStart: earliest,
+      latestStart: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+      earliestEnd: shiftDays(earliest, input.duration),
+      latestEnd: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS + input.duration),
+    };
+    return sql`, true as "sellsRequestedPeriod"${nearestSellableColumns(
+      { checkIn: earliest, checkOut: shiftDays(earliest, input.duration) },
+      input.duration,
+      range,
+    )}`;
+  }
   if (!window) {
-    return sql`, true as "sellsRequestedPeriod", null::date as "nearestCheckIn", null::date as "nearestCheckOut"`;
+    return sql`, true as "sellsRequestedPeriod"${nextCharterAfterLapseColumns()}`;
   }
 
   const nights = nightsBetween(window);
@@ -1429,7 +1481,7 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
  * stretch the listing owns -- and start inside a published rate, so what comes back is free and
  * on sale on the one offer that would sell it.
  */
-function sellableStarts(nights: number, range: CandidateRange): SQL {
+function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
   return sql`
     select (
       greatest(free.start_date, ${range.earliestStart}::date)
@@ -1456,7 +1508,7 @@ function sellableStarts(nights: number, range: CandidateRange): SQL {
  * `listing_offer_id` lets the lookup ride `listing_price_period_uq` instead of scanning a
  * million-row table by listing.
  */
-function sellableFilter(nights: number): SQL {
+function sellableFilter(nights: number | SQL): SQL {
   return sql`
       c.start_date + ${nights}::integer <= c.end_date
       and exists (
@@ -1590,21 +1642,48 @@ function nearestSellableColumns(
   nights: number,
   range: CandidateRange,
 ): SQL {
-  /*
-   * Nearest to the day asked for, which the tolerance allows to fall either side of it -- the
-   * same reading `candidateRange` gives the free-period test. Ordered by distance rather than
-   * taken as a `min`, because the earliest start inside a fortnight's tolerance is not the one
-   * closest to the trip somebody described.
-   */
-  const nearest = sql`(
+  const nearest = nearestSellableStart(window.checkIn, nights, range);
+  return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
+}
+
+/*
+ * Nearest to the day asked for, which the tolerance allows to fall either side of it -- the
+ * same reading `candidateRange` gives the free-period test. Ordered by distance rather than
+ * taken as a `min`, because the earliest start inside a fortnight's tolerance is not the one
+ * closest to the trip somebody described.
+ */
+function nearestSellableStart(checkIn: string, nights: number | SQL, range: CandidateRange): SQL {
+  return sql`(
     select c.start_date
     from (${sellableStarts(nights, range)}) c
     where c.start_date <= ${range.latestStart}::date
       and ${sellableFilter(nights)}
-    order by abs(c.start_date - ${window.checkIn}::date), c.start_date
+    order by abs(c.start_date - ${checkIn}::date), c.start_date
     limit 1
   )`;
-  return sql`, ${nearest} as "nearestCheckIn", (${nearest} + ${nights}::integer) as "nearestCheckOut"`;
+}
+
+/*
+ * The charter a card falls back to when the stored first one has lapsed.
+ *
+ * `bookable_from` is projected by the availability sync, so between runs the day it names can
+ * pass, and the card then had no dates, a "seasonal minimum" caption and an "On request" chip
+ * for a boat that sells the following week. The next charter of the same length from the
+ * earliest bookable day is what the next sync would store; computing it here only for the lapsed
+ * rows keeps the cost off the fleet whose stored charter still stands.
+ */
+export function nextCharterAfterLapseColumns(): SQL {
+  const earliest = shiftDays(todayUtc(), MIN_LEAD_DAYS);
+  const nights = sql`greatest(doc.bookable_to - doc.bookable_from, 1)`;
+  const lapsed = sql`doc.bookable_from is not null and doc.bookable_from < ${earliest}::date`;
+  const next = nearestSellableStart(earliest, nights, {
+    earliestStart: earliest,
+    latestStart: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+    earliestEnd: earliest,
+    latestEnd: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+  });
+  return sql`, case when ${lapsed} then ${next} end as "nearestCheckIn",
+    case when ${lapsed} then ${next} + ${nights} end as "nearestCheckOut"`;
 }
 
 /*
@@ -2072,11 +2151,13 @@ export function nightlyPriceOf(
   /* The SQL's `coalesce(nullif(...))`, restated: a zero rate is not a price, and the cursor has
      to divide the same figure the ORDER BY did or the page boundary lands in the wrong place. */
   const rate = item.basePriceFromMinorEur;
-  const comparable = basis === "base" && rate !== null && rate > 0 ? rate : item.priceFromMinorEur;
+  const allIn = item.priceFromMinorEur;
+  const usableRate =
+    rate !== null && rate > 0 && (allIn === null || rate >= allIn * MIN_BASE_SHARE_OF_ALL_IN);
+  const comparable = basis === "base" && usableRate ? rate : allIn;
   if (comparable === null) return null;
 
-  const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
-  const sellable = !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
+  const sellable = hasPricedCharter(item);
 
   const nights =
     sellable && item.bookableFrom && item.bookableTo
@@ -2088,6 +2169,22 @@ export function nightlyPriceOf(
       : ASSUMED_PRICED_NIGHTS;
 
   return Math.round(comparable / Math.max(nights, 1));
+}
+
+/** The SQL's sellable test in `pricedNights` and `priceAscSortValue`, restated for the cursor. */
+function hasPricedCharter(item: Pick<ListingSearchDoc, "priceIsFrom" | "bookableFrom">): boolean {
+  const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
+  return !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
+}
+
+/** `priceAscSortValue` in the units the keyset cursor compares. */
+export function priceAscSortValueOf(
+  item: Parameters<typeof nightlyPriceOf>[0],
+  basis: PriceBasis = "all_in",
+): number {
+  const nightly = nightlyPriceOf(item, basis);
+  if (nightly === null) return NULL_PRICE_ASC;
+  return nightly + (hasPricedCharter(item) ? 0 : UNPRICED_CHARTER_SORT_OFFSET);
 }
 
 /**
@@ -2106,7 +2203,7 @@ function cursorFor(
   switch (sort) {
     case "price-asc":
       return {
-        value: nightlyPriceOf(item, basis) ?? NULL_PRICE_ASC,
+        value: priceAscSortValueOf(item, basis),
         listingId: item.listingId,
         basis,
       };
@@ -2183,18 +2280,33 @@ const facetComparablePrice = (basis?: PriceBasis): SQL =>
   sql`case when doc.currency = ${FX_BASE_CURRENCY}
   then ${publishedPrice(basis)} else ${comparablePrice(basis)} end`;
 /*
- * "From X per person/week" is the cheapest boat once each is put on that footing, not the
- * cheapest charter divided afterwards: the lowest charter price is usually a small boat's short
- * stay, and dividing it by a big boat's guests would print a figure nobody can book. Each price is
- * stretched to the week its nights cover (the same count the price sort divides by) and shared
- * across the party the boat can actually take.
+ * "From X per person/week" on a destination card: each boat's price put on that footing first --
+ * stretched to the week its nights cover (the count the price sort divides by) and shared across
+ * the party it can take -- rather than the cheapest charter divided afterwards.
+ *
+ * The 5th percentile of those, not the minimum. A country holds thousands of boats and the minimum
+ * is whichever row the vendor got wrong: Spain read "from EUR 0" off a boat rated at EUR 1 with its
+ * money in the charter pack, Greece "from EUR 25" off a EUR 200 placeholder with nothing to sell.
+ * Only boats that could back the figure take part: a charter priced for its own dates that has not
+ * lapsed. A boat rate below a quarter of the all-in price is already read as no rate at all (see
+ * `MIN_BASE_SHARE_OF_ALL_IN`), so the EUR 1 trick counts at its all-in price. The lapse matters because `pricedNights` reads a lapsed charter as a week: a
+ * one-night Caribbean rate that had passed was counted as a week's price and read "from EUR 38".
  */
+const PER_PERSON_WEEK_PERCENTILE = 0.05;
+
 const facetPriceColumns = (basis?: PriceBasis): SQL => sql`
       min(${facetComparablePrice(basis)}) filter (where ${facetComparablePrice(basis)} > 0)
         as "priceFromMinor",
-      min(round(${facetComparablePrice(basis)} * 7.0 / ${pricedNights} / doc.max_guests))
-        filter (where ${facetComparablePrice(basis)} > 0 and doc.max_guests > 0)::integer
-        as "pricePerPersonWeekMinor",
+      round(
+        (percentile_cont(${PER_PERSON_WEEK_PERCENTILE}::double precision) within group (
+          order by ${facetComparablePrice(basis)} * 7.0 / ${pricedNights} / doc.max_guests
+        ) filter (
+          where ${facetComparablePrice(basis)} > 0
+            and doc.max_guests > 0
+            and not doc.price_is_from
+            and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
+        ))::numeric
+      )::integer as "pricePerPersonWeekMinor",
       ${FX_BASE_CURRENCY}::text as currency`;
 
 async function listFacetOptions(
@@ -2654,6 +2766,7 @@ function metresValue(value: string | null | undefined): string | null {
 async function suggestedRouteFor(
   db: NodePgDatabase<typeof schema>,
   baseId: string,
+  locale: string,
 ): Promise<SuggestedRoute | null> {
   const rows = await db.execute<{
     title: string;
@@ -2679,8 +2792,14 @@ async function suggestedRouteFor(
       order by (r.base_id is null), r.sort_order asc, r.created_at asc
       limit 1
     )
-    select p.title, p.description, s.name, s.lat, s.lng, s.note
+    /* The route's copy in the page's language where an editor wrote one, its own columns
+       otherwise -- the same fallback the home page's popular-routes read uses. */
+    select
+      coalesce(nullif(trim(t.title), ''), p.title) as title,
+      coalesce(nullif(trim(t.description), ''), p.description) as description,
+      s.name, s.lat, s.lng, s.note
     from picked p
+    left join suggested_route_translation t on t.route_id = p.id and t.locale = ${locale}
     join suggested_route_stop s on s.route_id = p.id
     order by s.sort_order asc
   `);
@@ -2821,6 +2940,13 @@ function candidateRange(
     earliestEnd: shiftDays(window.checkIn, -flex + nights),
     latestEnd: shiftDays(window.checkOut, flex),
   };
+}
+
+/** How far ahead a length-only search looks for a charter of that length. */
+const UNDATED_SEARCH_HORIZON_DAYS = 365;
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function shiftDays(date: string, days: number): string {
@@ -2969,21 +3095,34 @@ export function comparablePrice(basis: PriceBasis = "all_in"): SQL {
 }
 
 function basePriceInEur(): SQL {
-  return sql`coalesce(nullif(doc.base_price_from_minor_eur, 0),
+  const base = sql`coalesce(nullif(doc.base_price_from_minor_eur, 0),
     case when doc.currency = 'EUR' then nullif(doc.base_price_from_minor, 0) end)`;
+  const allIn = sql`coalesce(doc.price_from_minor_eur,
+    case when doc.currency = 'EUR' then doc.price_from_minor end)`;
+  return sql`case when ${allIn} is null
+    or ${base} >= ${allIn} * ${MIN_BASE_SHARE_OF_ALL_IN}::numeric then ${base} end`;
 }
 
 /** The published figure, in whatever currency the vendor quoted. Rendered, never compared. */
 const publishedPrice = (basis: PriceBasis = "all_in"): SQL =>
   basis === "base"
-    ? sql`coalesce(nullif(doc.base_price_from_minor, 0), doc.price_from_minor)`
+    ? sql`coalesce(
+        case when doc.base_price_from_minor >= doc.price_from_minor * ${MIN_BASE_SHARE_OF_ALL_IN}::numeric
+          then nullif(doc.base_price_from_minor, 0) end,
+        doc.price_from_minor
+      )`
     : sql`doc.price_from_minor`;
 
 const nightlyPriceValue = (basis?: PriceBasis): SQL =>
   sql`round(${comparablePrice(basis)}::numeric / ${pricedNights})`;
 
 const priceAscSortValue = (basis?: PriceBasis): SQL =>
-  sql`coalesce(${nightlyPriceValue(basis)}, ${NULL_PRICE_ASC})`;
+  sql`coalesce(
+    ${nightlyPriceValue(basis)} + case
+      when not doc.price_is_from and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
+      then 0 else ${UNPRICED_CHARTER_SORT_OFFSET} end,
+    ${NULL_PRICE_ASC}
+  )`;
 const priceDescSortValue = (basis?: PriceBasis): SQL =>
   sql`coalesce(${nightlyPriceValue(basis)}, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

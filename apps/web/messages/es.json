@@ -488,6 +488,15 @@
       "rating": "Valoración de huéspedes",
       "newest": "Más recientes primero"
     },
+    "priceBasis": {
+      "label": "Precio: {value}",
+      "aria": "Qué precio mostrar",
+      "boat": "Solo el barco",
+      "charter": "Chárter completo",
+      "hintLabel": "Qué incluyen los precios",
+      "boatHint": "el precio de alquiler del barco, la cifra que comparan otros portales de chárter. Los extras obligatorios, como el paquete de chárter o la limpieza final, se añaden al reservar.",
+      "charterHint": "el barco más todos los extras obligatorios (paquete de chárter, limpieza y otras tasas obligatorias): lo que cuesta realmente el chárter."
+    },
     "boatCard": {
       "save": "Guardar en favoritos",
       "remove": "Quitar de favoritos",
@@ -496,6 +505,8 @@
       "openGallery": "Abrir la galería de fotos",
       "priceFor": "Precio del chárter · {days, plural, one {# día} other {# días}}",
       "priceIndicative": "Precio del chárter · mínimo de temporada",
+      "boatPriceFor": "Precio del barco · {days, plural, one {# día} other {# días}}",
+      "boatPriceIndicative": "Precio del barco · mínimo de temporada",
       "priceFromLabel": "Desde",
       "plusObligatory": "más {amount} de suplementos obligatorios",
       "approximatePrice": "aprox.",
@@ -629,7 +640,9 @@
       "nightsFrom": "desde {count, plural, one {# noche} other {# noches}}",
       "nightsUpTo": "hasta {count, plural, one {# noche} other {# noches}}",
       "nightsRange": "de {min} a {max} noches",
-      "label": "Periodo de chárter"
+      "label": "Periodo de chárter",
+      "rulesMore": "Ver todas las reglas del chárter",
+      "rulesLess": "Ver menos"
     },
     "countryPicker": {
       "search": "Buscar países",
@@ -774,7 +787,9 @@
       "popularBoatTypes": "Tipos de barco populares",
       "allBoatTypes": "Todos los tipos de barco",
       "popularModels": "Modelos populares",
-      "allModels": "Todos los modelos"
+      "allModels": "Todos los modelos",
+      "popularDurations": "Duraciones populares",
+      "otherDurations": "Otras duraciones"
     },
     "aria": {
       "builtFrom": "Año de construcción desde",
@@ -1581,6 +1596,7 @@
     "noResults": "Ningún yate coincide con estos filtros. Prueba a cambiarlos.",
     "title": "Yates en el mapa",
     "backToSearch": "Volver a la búsqueda",
+    "viewInCatalogue": "Ver en el catálogo",
     "showAllList": "Mostrar toda la lista",
     "closeList": "Cerrar lista",
     "marker": "Marina {name}",
@@ -3298,14 +3314,42 @@
       "actions": {
         "moveUp": "Subir",
         "moveDown": "Bajar",
-        "remove": "Quitar"
+        "remove": "Quitar",
+        "edit": "Editar foto y texto"
       },
       "empty": "Todavía no hay nada seleccionado. Elija valores arriba.",
       "emptyFilter": "No hay nada elegido, así que el filtro ofrece todos los valores. Elija valores arriba para acortar la lista.",
       "error": "No se pudo guardar el orden.",
       "saved": "Orden guardado.",
       "cacheWarning": "Guardado, pero aún no se pudieron actualizar las páginas en caché.",
-      "noListings": "Sin yates"
+      "noListings": "Sin yates",
+      "media": {
+        "title": "Editar {name}",
+        "description": "La foto y el texto que muestra la tarjeta de este valor en la página de inicio. El texto guardado nunca se sobrescribe con la sincronización de proveedores.",
+        "imageUrl": "URL de la foto",
+        "imageHint": "Sube un archivo o pega una URL. JPEG, PNG, WebP o AVIF, hasta 10 MB.",
+        "imageHintNoUpload": "Pega una URL. La subida de archivos no está configurada en este entorno.",
+        "upload": "Subir foto",
+        "uploading": "Subiendo...",
+        "uploadFailed": "No se pudo subir la foto.",
+        "label": "Nombre",
+        "labelHint": "Déjalo vacío para usar el nombre del catálogo, {name}, o la traducción del proveedor.",
+        "descriptionField": "Descripción",
+        "descriptionHintEn": "También se muestra en los idiomas sin descripción propia.",
+        "descriptionHint": "Déjalo vacío para mostrar la descripción en inglés.",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "saved": "Guardado.",
+        "saveFailed": "No se pudo guardar.",
+        "cacheWarning": "Guardado, pero las páginas en caché del sitio aún no se han podido actualizar.",
+        "locales": {
+          "en": "Inglés",
+          "uk": "Ucraniano",
+          "de": "Alemán",
+          "es": "Español"
+        }
+      }
     },
     "PopularYachts": {
       "title": "Carrusel de yates populares",

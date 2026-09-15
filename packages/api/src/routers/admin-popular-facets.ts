@@ -1,11 +1,23 @@
 import {
+  popularFacetImageUploadInputSchema,
+  popularFacetImageUploadSchema,
+  popularFacetMediaInputSchema,
+  popularFacetMediaSavedSchema,
+  popularFacetMediaSchema,
+  popularFacetMediaUpdateInputSchema,
   popularFacetListInputSchema,
   popularFacetListSchema,
   popularFacetSetInputSchema,
   popularFacetSetSchema,
 } from "../contracts/popular-facets";
 import { adminProcedure } from "../index";
-import { listPopularFacets, setPopularFacets } from "../services/popular-facets-admin";
+import {
+  getFacetMedia,
+  listPopularFacets,
+  setPopularFacets,
+  updateFacetMedia,
+  uploadFacetImage,
+} from "../services/popular-facets-admin";
 import { withJsonBodyExample } from "./openapi-examples";
 
 /*
@@ -55,4 +67,55 @@ export const popularFacetsAdminRouter = {
     .input(popularFacetSetInputSchema)
     .output(popularFacetSetSchema)
     .handler(({ context, input }) => setPopularFacets(context.db, context.session.user.id, input)),
+  media: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/popular-facets/media",
+      operationId: "getPopularFacetMedia",
+      summary: "Read a facet value's photo and copy",
+      description:
+        "The photo and the per-language label and description the home page's cards show for one facet value, such as a country or a boat type. A value with no editorial row yet gets one.",
+      tags: ["Admin"],
+      successDescription: "The value's photo and its copy in every site language.",
+      spec: withJsonBodyExample({ kind: "category", value: "catamaran" }),
+    })
+    .input(popularFacetMediaInputSchema)
+    .output(popularFacetMediaSchema)
+    .handler(({ context, input }) => getFacetMedia(context.db, input)),
+  updateMedia: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/popular-facets/update-media",
+      operationId: "updatePopularFacetMedia",
+      summary: "Change a facet value's photo and copy",
+      description:
+        "Saves the photo URL and the per-language label and description of one facet value as editorial copy, which provider syncs never overwrite. A language left blank removes only its editorial row. Writes an audit log entry and drops the cached catalog reads, reporting whether that worked.",
+      tags: ["Admin"],
+      successDescription: "The saved photo and copy, and what the cache drop did.",
+      spec: withJsonBodyExample({
+        kind: "category",
+        value: "catamaran",
+        imageUrl: "/assets/home/boat-types/catamaran.webp",
+        translations: [
+          { locale: "en", label: null, description: "Stable, wide, and shallow-draft." },
+        ],
+      }),
+    })
+    .input(popularFacetMediaUpdateInputSchema)
+    .output(popularFacetMediaSavedSchema)
+    .handler(({ context, input }) => updateFacetMedia(context.db, context.session.user.id, input)),
+  uploadImage: adminProcedure
+    .route({
+      method: "POST",
+      path: "/admin/popular-facets/upload-image",
+      operationId: "uploadPopularFacetImage",
+      summary: "Upload a photo for a facet value's card",
+      description:
+        "Stores a JPEG, PNG, WebP or AVIF of up to 10 MB in the CDN and answers its URL. Nothing is attached to a value until that URL is saved with updateMedia. Refused where CDN storage is not configured.",
+      tags: ["Admin"],
+      successDescription: "The URL the uploaded photo is served from.",
+    })
+    .input(popularFacetImageUploadInputSchema)
+    .output(popularFacetImageUploadSchema)
+    .handler(({ input }) => uploadFacetImage(input)),
 };

@@ -6,6 +6,7 @@ import { Map, Sailboat, Share, Star, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
+import { useLiveSellable } from "@/components/shared/data-display/live-availability";
 import { MarinaPopover } from "@/components/shared/overlay/marina-popover";
 import { WishlistButton } from "@/features/wishlist";
 import { Link } from "@/i18n/navigation";
@@ -45,12 +46,18 @@ export default function TitleBlock() {
   const tCrew = useTranslations("Common.crewTypes");
   const tBadge = useTranslations("Common.boatCard.badges");
   const { data } = useListingDetail();
+  const pricedLive = useLiveSellable();
 
   if (!data) return null;
 
   const status = availabilityStatus({
     hasAvailableDates: data.availability.hasAvailableDates,
-    hasBookablePeriod: data.availability.bookablePeriod !== null,
+    /* The stored first charter, or the dates the sidebar has just priced: a boat that quoted the
+       chosen week is not "on request" because its stored charter lapsed between syncs. */
+    hasBookablePeriod:
+      pricedLive ||
+      data.availability.bookablePeriod !== null ||
+      data.availability.nextPeriod !== null,
     /* Detail is one boat, not a search: it has a calendar of its own to show a hold on. */
     temporarilyHeld: false,
   });

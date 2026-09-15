@@ -163,7 +163,9 @@ export function BookingProvider({
   const listingCurrency =
     listing?.priceFrom?.currency ?? listing?.priceDetails.securityDeposit?.currency;
   /* The listing's own first sellable charter, which the undated result card shows as its dates. */
-  const bookablePeriod = listing?.availability.bookablePeriod ?? null;
+  /* The next charter where the stored one lapsed between syncs, so the panel still opens on one. */
+  const bookablePeriod =
+    listing?.availability.bookablePeriod ?? listing?.availability.nextPeriod ?? null;
   const bookableCheckOut = bookablePeriod?.checkOut;
 
   const calWindow = useMemo(() => {

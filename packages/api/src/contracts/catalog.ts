@@ -26,7 +26,8 @@ const facetOptionSchema = z.object({
   description: z.string().nullish(),
   /* Lowest positive comparable price in EUR, used by destination summaries. */
   priceFromMinor: z.number().int().nullish(),
-  /* The cheapest week per guest in EUR, for "from X per person/week" on destination cards. */
+  /* "From X per person/week" on destination cards, in EUR: the 5th percentile of each boat's
+     week per guest, so one mispriced row cannot set the figure for a whole country. */
   pricePerPersonWeekMinor: z.number().int().nullish(),
   currency: z.string().length(3).nullish(),
   /*
@@ -182,6 +183,12 @@ export const listingSummarySchema = z.object({
      * how cards came to advertise dates the detail calendar then refused. Null once past.
      */
     bookablePeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
+    /**
+     * The next charter of the same length, where `bookablePeriod` has lapsed between availability
+     * syncs. Null whenever `bookablePeriod` stands, or where nothing sellable follows. Its price is
+     * not known here: the stored figure belonged to the lapsed charter.
+     */
+    nextPeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),
@@ -406,6 +413,12 @@ export const listingSearchInputBaseSchema = z.object({
     ),
   checkIn: dateStringSchema.optional(),
   checkOut: dateStringSchema.optional(),
+  /*
+   * Which of a boat's two prices the cards show, sort and filter on, when the visitor has picked
+   * one: `base` is the boat alone, `all_in` adds the obligatory charter pack. Omitted, the boat
+   * alone.
+   */
+  priceBasis: z.enum(["base", "all_in"]).optional(),
   guests: z.coerce.number().int().positive().optional(),
   category: z.string().optional(),
   minCabins: z.coerce.number().int().positive().optional(),
@@ -570,6 +583,8 @@ export const mapMarinaResultSchema = z.object({
     z.object({
       baseId: z.string(),
       name: z.string(),
+      /** The marina's value in the search's `marina` filter. */
+      value: z.string(),
       lat: z.number(),
       lng: z.number(),
       count: z.number().int(),

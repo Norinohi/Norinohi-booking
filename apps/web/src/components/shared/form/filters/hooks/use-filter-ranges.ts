@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { useFacets } from "./use-facets";
+import { usePriceBasis } from "./use-price-basis";
 import {
   buildDefaultFilters,
   EMPTY_RANGES,
@@ -31,7 +32,9 @@ export function useFilterRanges(): {
   defaults: FiltersState;
   priceCurrency: string | undefined;
 } {
-  const facets = useFacets().data;
+  /* The price bounds follow the price the cards show, or the slider's ends name another figure. */
+  const { explicit } = usePriceBasis();
+  const facets = useFacets(undefined, explicit).data;
 
   return useMemo(() => {
     const r = facets?.ranges;

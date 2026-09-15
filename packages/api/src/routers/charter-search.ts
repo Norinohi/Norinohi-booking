@@ -69,6 +69,15 @@ function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: str
    * after it, and it is what the filter admitted this listing for.
    */
   if (period.checkIn === undefined && startDate === undefined) {
+    /* A length with no date: the nearest charter of that length, which the search worked out
+       for exactly this case. Anything else stays undated. */
+    if (item.nearestCheckIn && item.nearestCheckOut) {
+      return {
+        checkIn: item.nearestCheckIn,
+        checkOut: item.nearestCheckOut,
+        periodIsAlternative: false,
+      };
+    }
     return { checkIn: null, checkOut: null, periodIsAlternative: false };
   }
 
@@ -136,6 +145,13 @@ function pricedForShownPeriod(
   return { ...listing, priceIsFrom: true };
 }
 
+/**
+ * The price the catalogue, its filters and the map show when the visitor has not picked one: the
+ * boat alone. That is the figure other charter sites quote, so it is the one a visitor comparing
+ * us against them expects; the whole charter is a toggle away.
+ */
+const CATALOGUE_DEFAULT_BASIS: PriceBasis = "base";
+
 /** A map viewport shows every match at once, so it is not paged like the results list. */
 /**
  * Which figure the catalogue compares on for this request.
@@ -195,7 +211,7 @@ export const charterSearchRouter = {
     .output(searchResultSchema)
     .handler(async ({ context, input }) => {
       const [priceBasis, amenityRanks] = await Promise.all([
-        priceBasisFor(context.db),
+        input.priceBasis ?? CATALOGUE_DEFAULT_BASIS,
         getAmenityRanks(context.db),
       ]);
       const results = await searchListings(context.db, { ...input, priceBasis });
@@ -244,7 +260,10 @@ export const charterSearchRouter = {
     .input(partialListingSearchInputSchema)
     .output(facetsSchema)
     .handler(async ({ context, input }) =>
-      listSearchFacets(context.db, { ...input, priceBasis: await priceBasisFor(context.db) }),
+      listSearchFacets(context.db, {
+        ...input,
+        priceBasis: input.priceBasis ?? CATALOGUE_DEFAULT_BASIS,
+      }),
     ),
   popularYachts: publicProcedure
     .route({
@@ -315,7 +334,7 @@ export const charterSearchRouter = {
     .handler(async ({ context, input }) => ({
       marinas: await listMapMarinas(context.db, {
         ...input,
-        priceBasis: await priceBasisFor(context.db),
+        priceBasis: input.priceBasis ?? CATALOGUE_DEFAULT_BASIS,
       }),
     })),
   suggestions: publicProcedure

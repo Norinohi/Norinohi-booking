@@ -12,12 +12,15 @@ import {
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { MultiSelect } from "@yacht-charter/ui/components/form/multi-select";
 import { Select } from "@yacht-charter/ui/components/form/select";
-import { ArrowDown, ArrowUp, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ImageIcon, Pencil, TriangleAlert, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { Image } from "@/components/shared/data-display/image";
+
 import { usePopularFacets, useSetPopularFacets } from "../hooks/use-popular-facets";
+import FacetMediaDialog from "./facet-media-dialog";
 import {
   POPULAR_FACET_KINDS,
   POPULAR_FACET_SURFACES,
@@ -56,6 +59,11 @@ export default function PopularFacetsTable() {
   const [surface, setSurface] = useState<PopularFacetSurface>("popular");
   /* The order being edited, which is the saved order until an arrow or a tick moves it. */
   const [order, setOrder] = useState<string[] | null>(null);
+  const [editing, setEditing] = useState<{
+    kind: PopularFacetKind;
+    value: string;
+    label: string;
+  } | null>(null);
 
   const { data, isPending, isError } = usePopularFacets({ kind, surface, locale });
   const save = useSetPopularFacets();
@@ -186,7 +194,7 @@ export default function PopularFacetsTable() {
             {ordered ? <TableHead className="w-32">{t("table.order")}</TableHead> : null}
             <TableHead>{t("table.value")}</TableHead>
             <TableHead className="w-28">{t("table.count")}</TableHead>
-            <TableHead className="w-24">{t("table.actions")}</TableHead>
+            <TableHead className="w-28">{t("table.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -236,9 +244,24 @@ export default function PopularFacetsTable() {
                           </TableCell>
                         ) : null}
                         <TableCell>
-                          <span className="font-medium text-foreground">
-                            {option?.label ?? value}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-natural-100">
+                              {option?.imageUrl ? (
+                                <Image
+                                  src={option.imageUrl}
+                                  alt=""
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <ImageIcon className="size-4 text-natural-400" />
+                              )}
+                            </div>
+                            <span className="font-medium text-foreground">
+                              {option?.label ?? value}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {option?.count === null || option?.count === undefined ? (
@@ -254,22 +277,42 @@ export default function PopularFacetsTable() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="subtle"
-                            size="sm"
-                            aria-label={t("actions.remove")}
-                            title={t("actions.remove")}
-                            disabled={save.isPending}
-                            onClick={() => commit(values.filter((item) => item !== value))}
-                          >
-                            <X className="size-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="subtle"
+                              size="sm"
+                              aria-label={t("actions.edit")}
+                              title={t("actions.edit")}
+                              onClick={() =>
+                                setEditing({ kind, value, label: option?.label ?? value })
+                              }
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="subtle"
+                              size="sm"
+                              aria-label={t("actions.remove")}
+                              title={t("actions.remove")}
+                              disabled={save.isPending}
+                              onClick={() => commit(values.filter((item) => item !== value))}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
                   })}
         </TableBody>
       </Table>
+
+      <FacetMediaDialog
+        target={editing}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null);
+        }}
+      />
     </div>
   );
 }

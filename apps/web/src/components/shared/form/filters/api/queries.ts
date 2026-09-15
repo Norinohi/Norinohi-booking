@@ -24,5 +24,16 @@ const ONE_DAY = 24 * 60 * 60 * 1000;
  * What a scoped read shows while it is in flight is `useFacets`'s business, not this factory's:
  * the server prefetch calls this too, and it has nothing to fall back to.
  */
-export const facetsQueryOptions = (locale: Locale, scope: FacetScope = {}) =>
-  orpc.charterSearch.facets.queryOptions({ input: { locale, ...scope }, staleTime: ONE_DAY });
+/*
+ * `priceBasis` only when the visitor picked one: the price bounds are read off whichever price the
+ * cards show, and leaving the field off for the default keeps the key the route prefetched.
+ */
+export const facetsQueryOptions = (
+  locale: Locale,
+  scope: FacetScope = {},
+  priceBasis?: "base" | "all_in" | null,
+) =>
+  orpc.charterSearch.facets.queryOptions({
+    input: priceBasis ? { locale, ...scope, priceBasis } : { locale, ...scope },
+    staleTime: ONE_DAY,
+  });

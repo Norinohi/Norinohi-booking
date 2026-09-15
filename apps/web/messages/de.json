@@ -488,6 +488,15 @@
       "rating": "Gästebewertung",
       "newest": "Neueste zuerst"
     },
+    "priceBasis": {
+      "label": "Preis: {value}",
+      "aria": "Welchen Preis anzeigen",
+      "boat": "Nur Yacht",
+      "charter": "Ganzer Charter",
+      "hintLabel": "Was die Preise enthalten",
+      "boatHint": "der reine Mietpreis der Yacht, wie ihn andere Charterportale vergleichen. Pflichtextras wie Charterpaket oder Endreinigung kommen bei der Buchung hinzu.",
+      "charterHint": "die Yacht mit allen Pflichtextras (Charterpaket, Reinigung und weitere Pflichtgebühren): was der Charter tatsächlich kostet."
+    },
     "boatCard": {
       "save": "Zur Merkliste hinzufügen",
       "remove": "Von der Merkliste entfernen",
@@ -496,6 +505,8 @@
       "openGallery": "Fotogalerie öffnen",
       "priceFor": "Charterpreis · {days, plural, one {# Tag} other {# Tage}}",
       "priceIndicative": "Charterpreis · Saisonminimum",
+      "boatPriceFor": "Yachtpreis · {days, plural, one {# Tag} other {# Tage}}",
+      "boatPriceIndicative": "Yachtpreis · Saisonminimum",
       "priceFromLabel": "Ab",
       "plusObligatory": "zzgl. {amount} Pflichtzuschläge",
       "approximatePrice": "ca.",
@@ -629,7 +640,9 @@
       "nightsFrom": "ab {count, plural, one {# Nacht} other {# Nächten}}",
       "nightsUpTo": "bis zu {count, plural, one {# Nacht} other {# Nächten}}",
       "nightsRange": "{min} bis {max} Nächte",
-      "label": "Charterzeitraum"
+      "label": "Charterzeitraum",
+      "rulesMore": "Alle Charterregeln anzeigen",
+      "rulesLess": "Weniger anzeigen"
     },
     "countryPicker": {
       "search": "Länder suchen",
@@ -774,7 +787,9 @@
       "popularBoatTypes": "Beliebte Bootstypen",
       "allBoatTypes": "Alle Bootstypen",
       "popularModels": "Beliebte Modelle",
-      "allModels": "Alle Modelle"
+      "allModels": "Alle Modelle",
+      "popularDurations": "Beliebte Dauer",
+      "otherDurations": "Weitere Dauer"
     },
     "aria": {
       "builtFrom": "Baujahr ab",
@@ -1581,6 +1596,7 @@
     "noResults": "Keine Yachten entsprechen diesen Filtern. Bitte passen Sie sie an.",
     "title": "Yachten auf der Karte",
     "backToSearch": "Zurück zur Suche",
+    "viewInCatalogue": "Im Katalog ansehen",
     "showAllList": "Ganze Liste anzeigen",
     "closeList": "Liste schließen",
     "marker": "Marina {name}",
@@ -3298,14 +3314,42 @@
       "actions": {
         "moveUp": "Nach oben",
         "moveDown": "Nach unten",
-        "remove": "Entfernen"
+        "remove": "Entfernen",
+        "edit": "Foto und Text bearbeiten"
       },
       "empty": "Noch nichts ausgewählt. Wählen Sie oben Werte aus.",
       "emptyFilter": "Nichts ausgewählt, daher bietet der Filter jeden Wert an. Wählen Sie oben Werte aus, um die Liste zu kürzen.",
       "error": "Die Reihenfolge konnte nicht gespeichert werden.",
       "saved": "Reihenfolge gespeichert.",
       "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
-      "noListings": "Keine Yachten"
+      "noListings": "Keine Yachten",
+      "media": {
+        "title": "{name} bearbeiten",
+        "description": "Foto und Text, die die Karte dieses Werts auf der Startseite zeigt. Gespeicherter Text wird von einer Anbieter-Synchronisierung nie überschrieben.",
+        "imageUrl": "Foto-URL",
+        "imageHint": "Datei hochladen oder URL einfügen. JPEG, PNG, WebP oder AVIF, bis 10 MB.",
+        "imageHintNoUpload": "URL einfügen. Datei-Upload ist in dieser Umgebung nicht eingerichtet.",
+        "upload": "Foto hochladen",
+        "uploading": "Wird hochgeladen...",
+        "uploadFailed": "Das Foto konnte nicht hochgeladen werden.",
+        "label": "Name",
+        "labelHint": "Leer lassen, um den Katalognamen {name} oder die Übersetzung des Anbieters zu verwenden.",
+        "descriptionField": "Beschreibung",
+        "descriptionHintEn": "Wird auch in Sprachen ohne eigene Beschreibung angezeigt.",
+        "descriptionHint": "Leer lassen, um die englische Beschreibung zu zeigen.",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "saving": "Wird gespeichert...",
+        "saved": "Gespeichert.",
+        "saveFailed": "Speichern fehlgeschlagen.",
+        "cacheWarning": "Gespeichert, aber die zwischengespeicherten Seiten konnten noch nicht aktualisiert werden.",
+        "locales": {
+          "en": "Englisch",
+          "uk": "Ukrainisch",
+          "de": "Deutsch",
+          "es": "Spanisch"
+        }
+      }
     },
     "PopularYachts": {
       "title": "Slider „Beliebte Yachten“",

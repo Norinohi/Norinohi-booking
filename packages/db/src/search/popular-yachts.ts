@@ -7,6 +7,7 @@ import { normalizedKey, normalizedKeySql } from "./normalize";
 import {
   normalizeSearchRow,
   recommendedSortValue,
+  nextCharterAfterLapseColumns,
   searchColumns,
   type SearchRow,
 } from "./repository";
@@ -103,7 +104,7 @@ export async function listPopularYachts(
       order by doc.listing_id, destination.ordinal
     )
     select
-      ${searchColumns},
+      ${searchColumns}${nextCharterAfterLapseColumns()},
       doc.base_key as "baseKey",
       ${normalizedKeySql(sql`doc.country`)} as "countryKey",
       ${normalizedKeySql(sql`doc.category`)} as "categoryKey"

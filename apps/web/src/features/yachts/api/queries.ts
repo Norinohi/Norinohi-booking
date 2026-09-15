@@ -70,9 +70,9 @@ export const MARINA_PAGE_SIZE = 20;
  * `marina` matches a base by name *or* id, so the ids from the markers address them exactly.
  * Previous data is kept while the next page loads, so paging the card never blanks it.
  */
-export const marinaListingsQueryOptions = (input: ResultsInput, baseIds: string[], page: number) =>
+export const marinaListingsQueryOptions = (input: ResultsInput, marinas: string[], page: number) =>
   orpc.charterSearch.results.queryOptions({
-    input: { ...input, marina: baseIds, page, pageSize: MARINA_PAGE_SIZE },
+    input: { ...input, marina: marinas, page, pageSize: MARINA_PAGE_SIZE },
     placeholderData: keepPreviousData,
   });
 

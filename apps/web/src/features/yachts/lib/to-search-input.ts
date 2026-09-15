@@ -24,7 +24,13 @@ const DATE_FLEXIBILITY: readonly NonNullable<ResultsInput["dateFlexibility"]>[] 
 export function toSearchInput(
   filters: FiltersState,
   defaults: FiltersState,
-  opts: { sort: NonNullable<ResultsInput["sort"]>; page: number; locale: Locale },
+  opts: {
+    sort: NonNullable<ResultsInput["sort"]>;
+    page: number;
+    locale: Locale;
+    /** Only a basis the visitor picked; the server's own setting needs no field. */
+    priceBasis?: ResultsInput["priceBasis"] | null;
+  },
 ): ResultsInput {
   const input: ResultsInput = {
     currency: "EUR",
@@ -33,6 +39,7 @@ export function toSearchInput(
     locale: opts.locale,
   };
 
+  if (opts.priceBasis) input.priceBasis = opts.priceBasis;
   if (filters.query) input.query = filters.query;
   if (filters.name) input.name = filters.name;
   if (filters.guests !== null) input.guests = filters.guests;

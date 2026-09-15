@@ -5,15 +5,25 @@ import {
   normalizedKeySql,
   valueForLabel,
 } from "@yacht-charter/db/search/index";
+import {
+  editorialImageUploadEnabled,
+  uploadEditorialImage,
+} from "@yacht-charter/providers/media/editorial-images";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
 import type { z } from "zod";
 
 import type { Database } from "../context";
 import type {
+  facetMediaLocaleSchema,
+  popularFacetImageUploadInputSchema,
   popularFacetKindSchema,
   popularFacetListInputSchema,
+  popularFacetMediaInputSchema,
+  popularFacetMediaSavedSchema,
+  popularFacetMediaSchema,
+  popularFacetMediaUpdateInputSchema,
   popularFacetListSchema,
   popularFacetSetInputSchema,
   popularFacetSetSchema,
@@ -29,6 +39,14 @@ type ListInput = z.infer<typeof popularFacetListInputSchema>;
 type ListResult = z.infer<typeof popularFacetListSchema>;
 type SetInput = z.infer<typeof popularFacetSetInputSchema>;
 type SetResult = z.infer<typeof popularFacetSetSchema>;
+type MediaLocale = z.infer<typeof facetMediaLocaleSchema>;
+type MediaInput = z.infer<typeof popularFacetMediaInputSchema>;
+type MediaResult = z.infer<typeof popularFacetMediaSchema>;
+type MediaUpdateInput = z.infer<typeof popularFacetMediaUpdateInputSchema>;
+type MediaSaved = z.infer<typeof popularFacetMediaSavedSchema>;
+type ImageUploadInput = z.infer<typeof popularFacetImageUploadInputSchema>;
+
+const MEDIA_LOCALES: MediaLocale[] = ["en", "uk", "de", "es"];
 
 const ENTITY_TYPE = "facet_media_rank";
 const DEFAULT_LOCALE = "en";
@@ -288,4 +306,180 @@ export async function setPopularFacets(
   const cache = await revalidateCatalogCache(["catalog"]);
 
   return { kind: input.kind, surface: input.surface, selected: after.selected, cache };
+}
+
+/* ------------------------------------------------------------------ editorial copy */
+
+/**
+ * The facet_media row a filter value is edited through, created when the value has none yet.
+ *
+ * Found through the same fold `readMedia` keys on, so a value with two spellings edits the row the
+ * curation already uses rather than minting a third. A new row takes the catalogue's own spelling,
+ * which is what every read joins on.
+ */
+async function ensureMediaRow(db: Database, kind: Kind, value: string) {
+  const key = normalizedFilterValue(value);
+  const existing = (await readMedia(db, kind, "featured", DEFAULT_LOCALE)).get(key);
+  if (existing) return { id: existing.id, name: existing.value, imageUrl: existing.imageUrl };
+
+  const live = await listCuratableFacetValues(db, kind);
+  const name = live.find((row) => normalizedFilterValue(row.label) === key)?.label ?? value;
+
+  await db.insert(facetMedia).values({ kind, value: name }).onConflictDoNothing();
+  const [row] = await db
+    .select({ id: facetMedia.id, name: facetMedia.value, imageUrl: facetMedia.imageUrl })
+    .from(facetMedia)
+    .where(and(eq(facetMedia.kind, kind), eq(facetMedia.value, name)))
+    .limit(1);
+  if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  return row;
+}
+
+/**
+ * A value's photo and its copy in every language the site serves.
+ *
+ * English falls back to the row's own `description` column, which is where the seed wrote the
+ * boat-type copy before translations existed, so an editor opening one sees the text the home
+ * page is already showing rather than an empty field.
+ */
+export async function getFacetMedia(db: Database, input: MediaInput): Promise<MediaResult> {
+  const row = await ensureMediaRow(db, input.kind, input.value);
+  const [media] = await db
+    .select({ description: facetMedia.description })
+    .from(facetMedia)
+    .where(eq(facetMedia.id, row.id));
+  const stored = await db
+    .select({
+      locale: facetMediaTranslation.locale,
+      label: facetMediaTranslation.label,
+      description: facetMediaTranslation.description,
+    })
+    .from(facetMediaTranslation)
+    .where(eq(facetMediaTranslation.facetMediaId, row.id));
+
+  const byLocale = new Map(stored.map((entry) => [entry.locale, entry]));
+  return {
+    kind: input.kind,
+    value: input.value,
+    name: row.name,
+    imageUrl: row.imageUrl,
+    translations: MEDIA_LOCALES.map((locale) => {
+      const entry = byLocale.get(locale);
+      return {
+        locale,
+        label: entry?.label ?? null,
+        description:
+          entry?.description ?? (locale === DEFAULT_LOCALE ? (media?.description ?? null) : null),
+      };
+    }),
+    uploadEnabled: editorialImageUploadEnabled(),
+  };
+}
+
+/**
+ * Saves a value's photo and copy, then drops the cached catalog reads.
+ *
+ * Written as `source = 'editorial'`, which is the one source neither the catalogue sync nor the
+ * translations pipeline overwrites, and only for the languages that changed. A language left entirely blank removes only an editorial row:
+ * a provider's own translation for it stays, because clearing a field is not a request to lose
+ * the country's name in German.
+ *
+ * The English description is also written to the row's own column, the fallback every locale
+ * without copy reads.
+ */
+export async function updateFacetMedia(
+  db: Database,
+  actorUserId: string,
+  input: MediaUpdateInput,
+): Promise<MediaSaved> {
+  const before = await getFacetMedia(db, input);
+  const row = await ensureMediaRow(db, input.kind, input.value);
+  const english = input.translations.find((entry) => entry.locale === DEFAULT_LOCALE);
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(facetMedia)
+      .set({
+        imageUrl: input.imageUrl || null,
+        description: english?.description || null,
+      })
+      .where(eq(facetMedia.id, row.id));
+
+    /* Only languages the editor actually changed are written. The form arrives prefilled with the
+       provider's own labels, and re-saving those unchanged would mark them editorial and stop the
+       sync from ever correcting them. */
+    const previous = new Map(before.translations.map((entry) => [entry.locale, entry]));
+    const changed = input.translations.filter((entry) => {
+      const was = previous.get(entry.locale);
+      return (
+        (entry.label || null) !== was?.label || (entry.description || null) !== was?.description
+      );
+    });
+
+    const blank = changed
+      .filter((entry) => !entry.label && !entry.description)
+      .map((entry) => entry.locale);
+    if (blank.length > 0) {
+      await tx
+        .delete(facetMediaTranslation)
+        .where(
+          and(
+            eq(facetMediaTranslation.facetMediaId, row.id),
+            inArray(facetMediaTranslation.locale, blank),
+            eq(facetMediaTranslation.source, "editorial"),
+          ),
+        );
+    }
+
+    const filled = changed.filter((entry) => entry.label || entry.description);
+    if (filled.length > 0) {
+      await tx
+        .insert(facetMediaTranslation)
+        .values(
+          filled.map((entry) => ({
+            facetMediaId: row.id,
+            locale: entry.locale,
+            label: entry.label || null,
+            description: entry.description || null,
+            source: "editorial" as const,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [facetMediaTranslation.facetMediaId, facetMediaTranslation.locale],
+          set: {
+            label: sql`excluded.label`,
+            description: sql`excluded.description`,
+            source: sql`excluded.source`,
+          },
+        });
+    }
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      action: "update",
+      entityType: "facet_media",
+      entityId: row.id,
+      before,
+      after: input,
+    });
+  });
+
+  const cache = await revalidateCatalogCache(["catalog"]);
+  return { ...(await getFacetMedia(db, input)), cache };
+}
+
+/** Stores an uploaded photo and answers its URL; saving it onto a value is `updateFacetMedia`. */
+export async function uploadFacetImage(input: ImageUploadInput): Promise<{ url: string }> {
+  if (!editorialImageUploadEnabled()) {
+    throw new ORPCError("PRECONDITION_FAILED", {
+      message: "Image upload is not configured in this environment. Paste an image URL instead.",
+    });
+  }
+
+  const url = await uploadEditorialImage({
+    folder: input.kind,
+    body: await input.file.arrayBuffer(),
+    contentType: input.file.type,
+  });
+  return { url };
 }

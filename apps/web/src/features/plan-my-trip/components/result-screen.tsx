@@ -98,7 +98,13 @@ export function ResultScreen({ answers }: ResultScreenProps) {
 
   const listing = recommendation.listing;
   const boatCard = listing
-    ? toBoatCardProps(tBadge, listing, boatCardPrice(tCard, listing, formatMoney), destinationLabel)
+    ? toBoatCardProps(
+        tBadge,
+        listing,
+        boatCardPrice(tCard, listing, formatMoney),
+        destinationLabel,
+        recommendation.period,
+      )
     : null;
   /*
    * The charter this price covers, off the listing itself rather than off the trip length.

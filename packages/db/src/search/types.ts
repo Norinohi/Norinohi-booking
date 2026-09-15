@@ -393,7 +393,8 @@ export type ListingFacetOption = {
   description?: string | null;
   /* Lowest positive comparable price in EUR; null when the group has no comparable price. */
   priceFromMinor?: number | null;
-  /* The cheapest week per guest, each boat's price over a week and its `max_guests`. EUR. */
+  /* A realistic "from" week per guest: the 5th percentile of each boat's week over its
+     `max_guests`, among boats with a priced charter and a sane boat rate. EUR. */
   pricePerPersonWeekMinor?: number | null;
   currency?: string | null;
   /*
@@ -471,6 +472,8 @@ export type ListingFacets = {
 export type MapMarinaMarker = {
   baseId: string;
   name: string;
+  /** The marina's value in the search's `marina` filter, so the map can hand its boats to the catalogue. */
+  value: string;
   lat: number;
   lng: number;
   /** Boats at this base that match the search. */

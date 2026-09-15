@@ -124,6 +124,8 @@ function descentTo(map: MapInstance): Descent | null {
 type OpenMarina = {
   /** Every base under the pin. One usually; several where marinas sit a stone's throw apart. */
   baseIds: string[];
+  /** The same marinas as `marina` filter values, for handing them to the list and the catalogue. */
+  values: string[];
   lat: number;
   lng: number;
   /** Boats across all of them, which is the number the pin itself was showing. */
@@ -227,7 +229,8 @@ export default function MapScreen() {
      hundred costs the same as opening one of three. */
   const marinaPage = Math.floor(marinaIndex / MARINA_PAGE_SIZE) + 1;
   const { data: marinaBoats } = useQuery({
-    ...marinaListingsQueryOptions(input, openMarina?.baseIds ?? [], marinaPage),
+    /* By name, the way the pin was grouped: one marina can be two vendors' bases. */
+    ...marinaListingsQueryOptions(input, openMarina?.values ?? [], marinaPage),
     enabled: Boolean(openMarina),
   });
 
@@ -376,6 +379,7 @@ export default function MapScreen() {
 
     const opened: OpenMarina = {
       baseIds: bases.map((base) => base.baseId),
+      values: [...new Set(bases.map((base) => base.value))],
       lat,
       lng,
       count: bases.reduce((total, base) => total + base.count, 0),
@@ -489,6 +493,18 @@ export default function MapScreen() {
   /* One card, two ways of arriving at it: followed here by a link, or pressed on the map. */
   const selectedFocus = detailDescent ?? selectedDescent;
 
+  /*
+   * With a marina open, the list and the catalogue link narrow to its boats. "Show all list" used
+   * to answer with every boat in the search while the card beside it said 1/11, and the only way
+   * from the map to the catalogue dropped the marina the visitor had just chosen.
+   */
+  const listFilters = openMarina ? { ...filters, marina: openMarina.values } : filters;
+  const catalogueHref = serializeSearch(
+    "/yachts",
+    openMarina ? { ...searchParams, marina: openMarina.values } : searchParams,
+  );
+  const catalogueLabel = openMarina ? t("viewInCatalogue") : t("backToSearch");
+
   function removeChip(chip: FilterChip) {
     setFilters(clearFilterKeys(filters, chip.keys, defaults));
   }
@@ -496,12 +512,9 @@ export default function MapScreen() {
   return (
     <div className="flex h-dvh min-h-0 flex-col md:h-[calc(100dvh-var(--header-h))]">
       <div className="hidden px-4 py-3 md:block md:px-13.5 2xl:px-17.5">
-        <Link
-          href={serializeSearch("/yachts", searchParams)}
-          className={buttonVariants({ variant: "subtle", size: "sm" })}
-        >
+        <Link href={catalogueHref} className={buttonVariants({ variant: "subtle", size: "sm" })}>
           <ArrowLeft />
-          {t("backToSearch")}
+          {catalogueLabel}
         </Link>
       </div>
 
@@ -620,8 +633,8 @@ export default function MapScreen() {
             )}
           >
             <Link
-              href={serializeSearch("/yachts", searchParams)}
-              aria-label={t("backToSearch")}
+              href={catalogueHref}
+              aria-label={catalogueLabel}
               className={buttonVariants({
                 variant: "neutral",
                 size: "icon",
@@ -692,7 +705,7 @@ export default function MapScreen() {
             <div className="flex min-h-0 flex-1 items-start gap-4 2xl:contents">
               <MapListPanel
                 ref={listRef}
-                filters={filters}
+                filters={listFilters}
                 defaults={defaults}
                 className="pointer-events-auto max-h-full"
               />

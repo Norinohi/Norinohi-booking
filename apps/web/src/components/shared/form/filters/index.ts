@@ -4,6 +4,12 @@ export { useDraft } from "./hooks/use-draft";
 export { useFilterChips } from "./hooks/use-filter-chips";
 export { EMPTY_OPTIONS, type FilterOptions, useFilterOptions } from "./hooks/use-filter-options";
 export { useFilterRanges } from "./hooks/use-filter-ranges";
+export {
+  PRICE_BASIS_OPTIONS,
+  type PriceBasis,
+  type PriceBasisOption,
+  usePriceBasis,
+} from "./hooks/use-price-basis";
 export { clearFilterKeys, type FilterChip } from "./lib/chips";
 export {
   groupByPopularity,
