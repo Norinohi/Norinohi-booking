@@ -52,6 +52,12 @@ export const facetMedia = pgTable(
     value: text("value").notNull(),
     /* Mirrors listing_media: cloudinaryId wins when set, imageUrl covers local assets. */
     imageUrl: text("image_url"),
+    /* A second photo the home page's featured tiles cross-fade to under the cursor: the client
+       leads with a yacht under the flag and reveals the place from above. Null keeps one photo. */
+    hoverImageUrl: text("hover_image_url"),
+    /* Whether the expanded "View all" grid, which has no hover, shows that second photo instead of
+       the first. On by default: the client reads the grid as the gallery of places. */
+    gridUsesHoverImage: boolean("grid_uses_hover_image").default(true).notNull(),
     cloudinaryId: text("cloudinary_id"),
     /* Default-locale (en) copy. Other locales live in facet_media_translation. */
     description: text("description"),

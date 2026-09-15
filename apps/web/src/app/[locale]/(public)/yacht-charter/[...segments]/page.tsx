@@ -16,6 +16,7 @@ import {
   catalogPageHref,
   catalogPageSiblings,
   findCatalogPage,
+  prerenderedCatalogPages,
 } from "@/features/yachts/lib/catalog-page";
 import { facetScopeOf } from "@/components/shared/form/filters";
 import { Hydrated } from "@/components/layout/hydrated";
@@ -33,9 +34,9 @@ const PAGE_SIZE = 24;
 const ROOT = "yacht-charter";
 
 export async function generateStaticParams() {
-  /* Segments do not vary by locale, so one read enumerates the routes for all three. */
+  /* Segments do not vary by locale, so one read enumerates the routes for every locale. */
   const pages = await prefetchCatalogPages(defaultLocale);
-  return pages.filter((page) => page.root === ROOT).map((page) => ({ segments: page.segments }));
+  return prerenderedCatalogPages(pages, ROOT).map((page) => ({ segments: page.segments }));
 }
 
 /** The path's own facet, as the filter surfaces express it. Search normalizes the values. */

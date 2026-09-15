@@ -10,8 +10,35 @@ type CatalogPageTranslator = ReturnType<typeof useTranslations<"Seo.CatalogPage"
 /** How many sibling links a page carries. Enough to spread crawl depth, few enough to read. */
 const SIBLING_LIMIT = 8;
 
+/*
+ * How many catalog pages the build prerenders, counted across both roots and before the locale
+ * multiplies them. Prerendering the whole enumeration dominated the web deploy: every page costs
+ * several API reads at a concurrency of 3, and every one adds files to the standalone image.
+ */
+const PRERENDER_LIMIT = 300;
+
 export function catalogPageHref(page: CatalogPage): string {
   return `/${page.root}/${page.segments.join("/")}`;
+}
+
+/**
+ * The pages under one root that the build prerenders: the largest by listing count, since those
+ * carry the traffic. Every other page in the enumeration still exists and renders on its first
+ * request, its reads already cached on the catalog tag.
+ *
+ * Never empty for a root that has pages, because Cache Components fails the build when
+ * `generateStaticParams` returns nothing.
+ */
+export function prerenderedCatalogPages(
+  pages: CatalogPage[],
+  root: CatalogPage["root"],
+): CatalogPage[] {
+  const byCount = pages.toSorted((a, b) => b.count - a.count);
+  const selected = byCount.slice(0, PRERENDER_LIMIT).filter((page) => page.root === root);
+  if (selected.length > 0) return selected;
+
+  const largest = byCount.find((page) => page.root === root);
+  return largest ? [largest] : [];
 }
 
 /**

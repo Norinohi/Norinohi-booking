@@ -848,6 +848,20 @@
       "when": 1789397366612,
       "tag": "0120_split_motor_boat_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1789463800694,
+      "tag": "0121_facet_media_hover_image",
+      "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1789464348477,
+      "tag": "0122_facet_media_grid_hover_image",
+      "breakpoints": true
     }
   ]
 }

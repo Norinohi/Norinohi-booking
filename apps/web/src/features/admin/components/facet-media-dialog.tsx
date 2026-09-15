@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
+import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import {
@@ -50,8 +51,6 @@ interface FacetMediaDialogProps {
  */
 export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDialogProps) {
   const t = useTranslations("Admin.Popular.media");
-  const imageId = useId();
-  const fileInput = useRef<HTMLInputElement>(null);
 
   const { data, isPending } = useFacetMedia(target);
   const update = useUpdateFacetMedia();
@@ -59,6 +58,9 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
 
   const [locale, setLocale] = useState<Locale>("en");
   const [imageUrl, setImageUrl] = useState("");
+  const [hoverImageUrl, setHoverImageUrl] = useState("");
+  const [gridUsesHoverImage, setGridUsesHoverImage] = useState(true);
+  const [uploadingField, setUploadingField] = useState<"image" | "hover" | null>(null);
   const [panes, setPanes] = useState<Record<Locale, Pane>>(emptyPanes);
 
   useEffect(() => {
@@ -69,18 +71,22 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
     }
     setPanes(next);
     setImageUrl(data.imageUrl ?? "");
+    setHoverImageUrl(data.hoverImageUrl ?? "");
+    setGridUsesHoverImage(data.gridUsesHoverImage);
     setLocale("en");
   }, [data]);
 
   const setPane = (code: Locale, patch: Partial<Pane>) =>
     setPanes((previous) => ({ ...previous, [code]: { ...previous[code], ...patch } }));
 
-  const pickFile = (file: File | undefined) => {
+  const pickFile = (field: "image" | "hover", file: File | undefined) => {
     if (!file || !target) return;
+    setUploadingField(field);
     upload.mutate(
       { kind: target.kind, file },
       {
-        onSuccess: (result) => setImageUrl(result.url),
+        onSuccess: (result) => (field === "image" ? setImageUrl : setHoverImageUrl)(result.url),
+        onSettled: () => setUploadingField(null),
         onError: (error) => toast.error(error.message || t("uploadFailed")),
       },
     );
@@ -93,6 +99,8 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
         kind: target.kind,
         value: target.value,
         imageUrl: imageUrl.trim() || null,
+        hoverImageUrl: hoverImageUrl.trim() || null,
+        gridUsesHoverImage,
         translations: LOCALES.map((code) => ({
           locale: code,
           label: panes[code].label.trim() || null,
@@ -109,8 +117,6 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
       },
     );
   };
-
-  const preview = imageUrl.trim();
 
   return (
     <Dialog open={target !== null} onOpenChange={onOpenChange}>
@@ -130,54 +136,36 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
           </div>
         ) : (
           <div className="flex w-full flex-col gap-4 text-left">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start">
-              <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-xl bg-natural-100 md:w-56">
-                {preview ? (
-                  <Image
-                    src={preview}
-                    alt={target?.label ?? ""}
-                    fill
-                    sizes="224px"
-                    className="object-cover"
-                  />
-                ) : null}
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <TextField
-                  id={imageId}
-                  fieldClassName="h-12"
-                  label={t("imageUrl")}
-                  supportingText={data.uploadEnabled ? t("imageHint") : t("imageHintNoUpload")}
-                  value={imageUrl}
-                  onChange={(event) => setImageUrl(event.target.value)}
-                />
-                {data.uploadEnabled ? (
-                  <>
-                    <input
-                      ref={fileInput}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/avif"
-                      className="hidden"
-                      onChange={(event) => {
-                        pickFile(event.target.files?.[0]);
-                        event.target.value = "";
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="neutral"
-                      size="sm"
-                      className="w-fit"
-                      disabled={upload.isPending}
-                      onClick={() => fileInput.current?.click()}
-                    >
-                      <Upload className="size-4" />
-                      {upload.isPending ? t("uploading") : t("upload")}
-                    </Button>
-                  </>
-                ) : null}
-              </div>
-            </div>
+            <PhotoField
+              label={t("imageUrl")}
+              hint={data.uploadEnabled ? t("imageHint") : t("imageHintNoUpload")}
+              alt={target?.label ?? ""}
+              value={imageUrl}
+              onChange={setImageUrl}
+              uploading={uploadingField === "image"}
+              onUpload={data.uploadEnabled ? (file) => pickFile("image", file) : undefined}
+            />
+            <PhotoField
+              label={t("hoverImageUrl")}
+              hint={t("hoverImageHint")}
+              alt={target?.label ?? ""}
+              value={hoverImageUrl}
+              onChange={setHoverImageUrl}
+              uploading={uploadingField === "hover"}
+              onUpload={data.uploadEnabled ? (file) => pickFile("hover", file) : undefined}
+            />
+            <label className="flex cursor-pointer items-start gap-3">
+              <Checkbox
+                checked={gridUsesHoverImage}
+                onCheckedChange={(checked) => setGridUsesHoverImage(checked === true)}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-semibold text-foreground">
+                  {t("gridUsesHoverImage")}
+                </span>
+                <span className="text-xs text-natural-500">{t("gridUsesHoverImageHint")}</span>
+              </span>
+            </label>
 
             <Tabs
               value={locale}
@@ -239,5 +227,69 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface PhotoFieldProps {
+  label: string;
+  hint: string;
+  alt: string;
+  value: string;
+  onChange: (value: string) => void;
+  uploading: boolean;
+  /** Absent where this environment cannot store an upload, which leaves the URL field alone. */
+  onUpload?: (file: File | undefined) => void;
+}
+
+/* A photo slot: its preview, the URL it is served from, and an upload that fills that URL in. */
+function PhotoField({ label, hint, alt, value, onChange, uploading, onUpload }: PhotoFieldProps) {
+  const t = useTranslations("Admin.Popular.media");
+  const inputId = useId();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const preview = value.trim();
+
+  return (
+    <div className="flex flex-col gap-3 md:flex-row md:items-start">
+      <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-xl bg-natural-100 md:w-56">
+        {preview ? (
+          <Image src={preview} alt={alt} fill sizes="224px" className="object-cover" />
+        ) : null}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <TextField
+          id={inputId}
+          fieldClassName="h-12"
+          label={label}
+          supportingText={hint}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        {onUpload ? (
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              className="hidden"
+              onChange={(event) => {
+                onUpload(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              variant="neutral"
+              size="sm"
+              className="w-fit"
+              disabled={uploading}
+              onClick={() => fileInput.current?.click()}
+            >
+              <Upload className="size-4" />
+              {uploading ? t("uploading") : t("upload")}
+            </Button>
+          </>
+        ) : null}
+      </div>
+    </div>
   );
 }
