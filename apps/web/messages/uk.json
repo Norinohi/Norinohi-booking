@@ -629,7 +629,9 @@
       "nightsFrom": "від {count, plural, one {# ночі} few {# ночей} many {# ночей} other {# ночей}}",
       "nightsUpTo": "до {count, plural, one {# ночі} few {# ночей} many {# ночей} other {# ночей}}",
       "nightsRange": "від {min} до {max} ночей",
-      "label": "Період чартеру"
+      "label": "Період чартеру",
+      "rulesMore": "Показати всі правила чартеру",
+      "rulesLess": "Згорнути"
     },
     "countryPicker": {
       "search": "Пошук країн",

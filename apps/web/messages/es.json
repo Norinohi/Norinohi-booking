@@ -629,7 +629,9 @@
       "nightsFrom": "desde {count, plural, one {# noche} other {# noches}}",
       "nightsUpTo": "hasta {count, plural, one {# noche} other {# noches}}",
       "nightsRange": "de {min} a {max} noches",
-      "label": "Periodo de chárter"
+      "label": "Periodo de chárter",
+      "rulesMore": "Ver todas las reglas del chárter",
+      "rulesLess": "Ver menos"
     },
     "countryPicker": {
       "search": "Buscar países",

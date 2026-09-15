@@ -185,7 +185,43 @@ export default function CharterDateField({
         picker. Absent entirely when the listing constrains nothing, so a fully flexible boat
         does not carry a line that says so.
       */}
-      {periodLabel ? <p className="text-sm leading-[1.3] text-natural-500">{periodLabel}</p> : null}
+      {periodLabel ? <CharterRules text={periodLabel} /> : null}
+    </div>
+  );
+}
+
+/*
+ * Past this many characters the rules fold to two lines. One vendor publishes thirty start-day
+ * combinations for a single houseboat, and spelled out whole they pushed the price and the pay
+ * button below the fold of the booking card; "Saturday to Saturday" still reads in full.
+ */
+const RULES_FOLD_AT = 140;
+
+function CharterRules({ text }: { text: string }) {
+  const t = useTranslations("Common.charterPeriod");
+  const [expanded, setExpanded] = useState(false);
+  const long = text.length > RULES_FOLD_AT;
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p
+        className={cn(
+          "text-sm leading-[1.3] text-natural-500",
+          long && !expanded && "line-clamp-2",
+        )}
+      >
+        {text}
+      </p>
+      {long ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((open) => !open)}
+          className="cursor-pointer text-sm font-semibold leading-[1.3] text-brand outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/40"
+        >
+          {expanded ? t("rulesLess") : t("rulesMore")}
+        </button>
+      ) : null}
     </div>
   );
 }

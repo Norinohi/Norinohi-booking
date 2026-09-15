@@ -171,7 +171,8 @@ export default function DatePicker({
           )}
         >
           {hint ? (
-            <p className="mb-2 rounded-lg bg-natural-50 px-3 py-2 text-sm leading-[1.3] text-natural-600">
+            /* Scrolls past a few lines, so a long rule set never pushes the month off screen. */
+            <p className="mb-2 max-h-24 overflow-y-auto rounded-lg bg-natural-50 px-3 py-2 text-sm leading-[1.3] text-natural-600">
               {hint}
             </p>
           ) : null}

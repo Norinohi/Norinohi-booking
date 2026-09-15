@@ -629,7 +629,9 @@
       "nightsFrom": "ab {count, plural, one {# Nacht} other {# Nächten}}",
       "nightsUpTo": "bis zu {count, plural, one {# Nacht} other {# Nächten}}",
       "nightsRange": "{min} bis {max} Nächte",
-      "label": "Charterzeitraum"
+      "label": "Charterzeitraum",
+      "rulesMore": "Alle Charterregeln anzeigen",
+      "rulesLess": "Weniger anzeigen"
     },
     "countryPicker": {
       "search": "Länder suchen",

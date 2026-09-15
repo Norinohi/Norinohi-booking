@@ -629,7 +629,9 @@
       "nightsFrom": "from {count, plural, one {# night} other {# nights}}",
       "nightsUpTo": "up to {count, plural, one {# night} other {# nights}}",
       "nightsRange": "{min} to {max} nights",
-      "label": "Charter period"
+      "label": "Charter period",
+      "rulesMore": "Show all charter rules",
+      "rulesLess": "Show less"
     },
     "countryPicker": {
       "search": "Search countries",
