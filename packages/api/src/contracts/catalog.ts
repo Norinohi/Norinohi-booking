@@ -23,6 +23,8 @@ const facetOptionSchema = z.object({
   imageUrl: z.string().nullish(),
   /* The second photo a featured home page tile cross-fades to under the cursor. */
   hoverImageUrl: z.string().nullish(),
+  /* Whether the expanded home page grid shows that second photo instead of the first. */
+  gridUsesHoverImage: z.boolean().optional(),
   /* Legacy media id kept for old admin data; public pages should use imageUrl/Bunny URLs. */
   cloudinaryId: z.string().nullish(),
   description: z.string().nullish(),

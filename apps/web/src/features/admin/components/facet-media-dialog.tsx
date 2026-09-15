@@ -2,6 +2,7 @@
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
+import { Checkbox } from "@yacht-charter/ui/components/form/checkbox";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import {
@@ -58,6 +59,7 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
   const [locale, setLocale] = useState<Locale>("en");
   const [imageUrl, setImageUrl] = useState("");
   const [hoverImageUrl, setHoverImageUrl] = useState("");
+  const [gridUsesHoverImage, setGridUsesHoverImage] = useState(true);
   const [uploadingField, setUploadingField] = useState<"image" | "hover" | null>(null);
   const [panes, setPanes] = useState<Record<Locale, Pane>>(emptyPanes);
 
@@ -70,6 +72,7 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
     setPanes(next);
     setImageUrl(data.imageUrl ?? "");
     setHoverImageUrl(data.hoverImageUrl ?? "");
+    setGridUsesHoverImage(data.gridUsesHoverImage);
     setLocale("en");
   }, [data]);
 
@@ -97,6 +100,7 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
         value: target.value,
         imageUrl: imageUrl.trim() || null,
         hoverImageUrl: hoverImageUrl.trim() || null,
+        gridUsesHoverImage,
         translations: LOCALES.map((code) => ({
           locale: code,
           label: panes[code].label.trim() || null,
@@ -150,6 +154,18 @@ export default function FacetMediaDialog({ target, onOpenChange }: FacetMediaDia
               uploading={uploadingField === "hover"}
               onUpload={data.uploadEnabled ? (file) => pickFile("hover", file) : undefined}
             />
+            <label className="flex cursor-pointer items-start gap-3">
+              <Checkbox
+                checked={gridUsesHoverImage}
+                onCheckedChange={(checked) => setGridUsesHoverImage(checked === true)}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-semibold text-foreground">
+                  {t("gridUsesHoverImage")}
+                </span>
+                <span className="text-xs text-natural-500">{t("gridUsesHoverImageHint")}</span>
+              </span>
+            </label>
 
             <Tabs
               value={locale}

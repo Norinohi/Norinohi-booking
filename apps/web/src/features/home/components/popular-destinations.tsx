@@ -45,8 +45,8 @@ const TILE_SIZES = "(min-width: 768px) 420px, (min-width: 640px) 48vw, 85vw";
 
 /*
  * `withHoverImage` is the slider's six: they lead with the yacht under the flag and cross-fade to
- * the place from above under the cursor, or on keyboard focus. The expanded grid keeps one photo,
- * as the client asked, and so does a destination with no second photo set.
+ * the place from above under the cursor, or on keyboard focus. The expanded grid has no hover and
+ * shows one photo: the second one where an editor ticked "use in the grid", the first otherwise.
  */
 function DestinationTile({
   country,
@@ -58,6 +58,10 @@ function DestinationTile({
   const t = useTranslations("Home.PopularDestinations");
   const money = useMoney();
   const price = country.pricePerPersonWeekMinor;
+  const gridImage =
+    !withHoverImage && country.gridUsesHoverImage !== false && country.hoverImageUrl
+      ? country.hoverImageUrl
+      : country.imageUrl;
 
   return (
     <Link
@@ -66,10 +70,10 @@ function DestinationTile({
     >
       <DestinationCard
         imageRender={
-          country.imageUrl ? (
+          gridImage ? (
             <>
               <Image
-                src={country.imageUrl}
+                src={gridImage}
                 alt={country.label}
                 fill
                 sizes={TILE_SIZES}

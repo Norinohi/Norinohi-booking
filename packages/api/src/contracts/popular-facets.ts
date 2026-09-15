@@ -123,6 +123,8 @@ export const popularFacetMediaSchema = z.object({
   imageUrl: z.string().nullable(),
   /** The photo a featured home page tile cross-fades to under the cursor. Null keeps one photo. */
   hoverImageUrl: z.string().nullable(),
+  /** Whether the expanded "View all" grid shows the hover photo instead of the first one. */
+  gridUsesHoverImage: z.boolean(),
   translations: z.array(
     z.object({
       locale: facetMediaLocaleSchema,
@@ -139,6 +141,7 @@ export const popularFacetMediaUpdateInputSchema = z.object({
   value: z.string().min(1),
   imageUrl: z.string().trim().max(2000).nullable(),
   hoverImageUrl: z.string().trim().max(2000).nullable(),
+  gridUsesHoverImage: z.boolean(),
   translations: z
     .array(
       z.object({

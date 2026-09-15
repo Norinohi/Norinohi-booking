@@ -391,6 +391,8 @@ export type ListingFacetOption = {
   imageUrl?: string | null;
   /* The photo a featured home page tile cross-fades to under the cursor. */
   hoverImageUrl?: string | null;
+  /* Whether the expanded grid shows `hoverImageUrl` instead of `imageUrl`. */
+  gridUsesHoverImage?: boolean;
   cloudinaryId?: string | null;
   description?: string | null;
   /* Lowest positive comparable price in EUR; null when the group has no comparable price. */

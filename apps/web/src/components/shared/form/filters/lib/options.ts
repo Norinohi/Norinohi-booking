@@ -7,6 +7,7 @@ export type Option = {
   /* Editorial fields — present only for facet groups backed by facet_media rows. */
   imageUrl?: string | null;
   hoverImageUrl?: string | null;
+  gridUsesHoverImage?: boolean;
   cloudinaryId?: string | null;
   description?: string | null;
   priceFromMinor?: number | null;

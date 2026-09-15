@@ -1,0 +1,1 @@
+ALTER TABLE "facet_media" ADD COLUMN "grid_uses_hover_image" boolean DEFAULT true NOT NULL;
