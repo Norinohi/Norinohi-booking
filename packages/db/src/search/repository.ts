@@ -537,7 +537,7 @@ export async function getListingDetailByIdOrSlug(
         localizeSearchDocs(db, docs, locale, translate),
       ),
       providerDescription(db, listing.listingId, locale),
-      suggestedRouteFor(db, listing.baseId),
+      suggestedRouteFor(db, listing.baseId, locale),
     ]);
   const info = infoRows.rows[0];
   const amenities = amenityRows.rows.map((item) => ({
@@ -2664,6 +2664,7 @@ function metresValue(value: string | null | undefined): string | null {
 async function suggestedRouteFor(
   db: NodePgDatabase<typeof schema>,
   baseId: string,
+  locale: string,
 ): Promise<SuggestedRoute | null> {
   const rows = await db.execute<{
     title: string;
@@ -2689,8 +2690,14 @@ async function suggestedRouteFor(
       order by (r.base_id is null), r.sort_order asc, r.created_at asc
       limit 1
     )
-    select p.title, p.description, s.name, s.lat, s.lng, s.note
+    /* The route's copy in the page's language where an editor wrote one, its own columns
+       otherwise -- the same fallback the home page's popular-routes read uses. */
+    select
+      coalesce(nullif(trim(t.title), ''), p.title) as title,
+      coalesce(nullif(trim(t.description), ''), p.description) as description,
+      s.name, s.lat, s.lng, s.note
     from picked p
+    left join suggested_route_translation t on t.route_id = p.id and t.locale = ${locale}
     join suggested_route_stop s on s.route_id = p.id
     order by s.sort_order asc
   `);
