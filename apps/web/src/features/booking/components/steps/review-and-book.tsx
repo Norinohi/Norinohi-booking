@@ -107,6 +107,15 @@ export default function ReviewAndBookStep() {
     });
   };
 
+  const depositRows: SummaryRow[] = [];
+  if (quote?.securityDeposit && !schedule.some((entry) => entry.kind === "security_deposit")) {
+    depositRows.push({
+      label: t("deposit"),
+      value: money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency),
+      note: t("depositRefundable"),
+    });
+  }
+
   const rows: SummaryRow[] = quote
     ? [
         { label: t("yacht"), value: listing?.title ?? "" },
@@ -132,15 +141,10 @@ export default function ReviewAndBookStep() {
             : undefined,
           strong: true,
         },
-        ...(quote.securityDeposit
-          ? [
-              {
-                label: t("deposit"),
-                value: money(quote.securityDeposit.amountMinor, quote.securityDeposit.currency),
-                note: t("depositRefundable"),
-              },
-            ]
-          : []),
+        /* The deposit's own row only where the schedule does not already carry it: a schedule
+           with a `security_deposit` entry names the same money again with its due date, and the
+           client read the pair as two deposits. */
+        ...depositRows,
         ...schedule.map((entry) => ({
           label: scheduleLabel(entry),
           value: money(entry.amount.amountMinor, entry.amount.currency),
