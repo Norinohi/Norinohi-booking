@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { nightlyPriceOf } from "./repository";
+import { nightlyPriceOf, priceAscSortValueOf, UNPRICED_CHARTER_SORT_OFFSET } from "./repository";
 
 /**
  * `nightlyPriceOf` is the keyset cursor's copy of the `pricedNights` SQL, so these pin the two
@@ -102,5 +102,52 @@ describe("nightlyPriceOf on the charter rate", () => {
 
   it("has no answer at all where neither figure is comparable", () => {
     expect(nightlyPriceOf(doc({ priceFromMinorEur: null }), "base")).toBeNull();
+  });
+});
+
+describe("a nominal charter rate", () => {
+  /* Angelmiles Maxus 35: EUR 1 boat rate, EUR 386 all-in. Read as a price it sorted first. */
+  const nominal = doc({
+    priceFromMinorEur: 38_600,
+    basePriceFromMinorEur: 100,
+    bookableFrom: inDays(12),
+    bookableTo: inDays(19),
+  });
+
+  it("is ignored in favour of the all-in figure", () => {
+    expect(nightlyPriceOf(nominal, "base")).toBe(Math.round(38_600 / 7));
+  });
+
+  it("still counts when it is a real share of the total", () => {
+    const real = doc({ ...nominal, basePriceFromMinorEur: 30_000 });
+    expect(nightlyPriceOf(real, "base")).toBe(Math.round(30_000 / 7));
+  });
+});
+
+describe("priceAscSortValueOf", () => {
+  const priced = doc({
+    priceFromMinorEur: 700_000,
+    bookableFrom: inDays(12),
+    bookableTo: inDays(19),
+  });
+
+  it("orders a priced charter by its nightly price", () => {
+    expect(priceAscSortValueOf(priced)).toBe(100_000);
+  });
+
+  /* Paxos Bavaria 46: a EUR 200 "week" with nothing to sell headed "cheapest first" in Greece. */
+  it("moves a seasonal floor behind every priced charter", () => {
+    const floor = doc({ priceFromMinorEur: 20_000, priceIsFrom: true });
+    expect(priceAscSortValueOf(floor)).toBe(Math.round(20_000 / 7) + UNPRICED_CHARTER_SORT_OFFSET);
+    expect(priceAscSortValueOf(floor)).toBeGreaterThan(priceAscSortValueOf(priced));
+  });
+
+  it("moves a lapsed charter behind them too", () => {
+    const lapsed = doc({
+      priceFromMinorEur: 39_200,
+      bookableFrom: inDays(-2),
+      bookableTo: inDays(-1),
+    });
+    expect(priceAscSortValueOf(lapsed)).toBeGreaterThan(UNPRICED_CHARTER_SORT_OFFSET);
   });
 });

@@ -71,6 +71,28 @@ type FacetOptionRow = {
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 500;
 const NULL_PRICE_ASC = 2_147_483_647;
+
+/**
+ * The smallest share of the all-in price a boat rate may be and still count as the boat's price.
+ *
+ * Some vendors put almost the whole charter into the obligatory pack and publish a nominal rate:
+ * the Angelmiles Maxus 35s read EUR 1 against EUR 386 all-in. Taken as the boat price that sorted
+ * them first in "cheapest first" and printed "Boat price EUR 1" on the card. Below this share the
+ * rate is treated like a missing one, and the all-in figure stands in everywhere a rate is read:
+ * the sort, the price filter and its bounds, and the card (`presentListingSummary`).
+ */
+export const MIN_BASE_SHARE_OF_ALL_IN = 0.25;
+
+/**
+ * How far "cheapest first" moves a boat with no charter priced for its own dates.
+ *
+ * Its figure is a seasonal floor, or a charter that has lapsed, and either can be far below what
+ * the boat actually sells for: Paxos' EUR 200 "week" with nothing to sell headed Greece. So the
+ * order is the priced charters, cheapest first, then those floors, cheapest first. One integer
+ * rather than a second sort column because the keyset cursor compares one value; nightly minor
+ * units stay far below the offset, and the sum below `NULL_PRICE_ASC`.
+ */
+export const UNPRICED_CHARTER_SORT_OFFSET = 1_000_000_000;
 const NULL_PRICE_DESC = -1;
 const NULL_YEAR_DESC = 0;
 /*
@@ -2129,11 +2151,13 @@ export function nightlyPriceOf(
   /* The SQL's `coalesce(nullif(...))`, restated: a zero rate is not a price, and the cursor has
      to divide the same figure the ORDER BY did or the page boundary lands in the wrong place. */
   const rate = item.basePriceFromMinorEur;
-  const comparable = basis === "base" && rate !== null && rate > 0 ? rate : item.priceFromMinorEur;
+  const allIn = item.priceFromMinorEur;
+  const usableRate =
+    rate !== null && rate > 0 && (allIn === null || rate >= allIn * MIN_BASE_SHARE_OF_ALL_IN);
+  const comparable = basis === "base" && usableRate ? rate : allIn;
   if (comparable === null) return null;
 
-  const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
-  const sellable = !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
+  const sellable = hasPricedCharter(item);
 
   const nights =
     sellable && item.bookableFrom && item.bookableTo
@@ -2145,6 +2169,22 @@ export function nightlyPriceOf(
       : ASSUMED_PRICED_NIGHTS;
 
   return Math.round(comparable / Math.max(nights, 1));
+}
+
+/** The SQL's sellable test in `pricedNights` and `priceAscSortValue`, restated for the cursor. */
+function hasPricedCharter(item: Pick<ListingSearchDoc, "priceIsFrom" | "bookableFrom">): boolean {
+  const earliest = new Date(Date.now() + MIN_LEAD_DAYS * 86_400_000).toISOString().slice(0, 10);
+  return !item.priceIsFrom && item.bookableFrom !== null && item.bookableFrom >= earliest;
+}
+
+/** `priceAscSortValue` in the units the keyset cursor compares. */
+export function priceAscSortValueOf(
+  item: Parameters<typeof nightlyPriceOf>[0],
+  basis: PriceBasis = "all_in",
+): number {
+  const nightly = nightlyPriceOf(item, basis);
+  if (nightly === null) return NULL_PRICE_ASC;
+  return nightly + (hasPricedCharter(item) ? 0 : UNPRICED_CHARTER_SORT_OFFSET);
 }
 
 /**
@@ -2163,7 +2203,7 @@ function cursorFor(
   switch (sort) {
     case "price-asc":
       return {
-        value: nightlyPriceOf(item, basis) ?? NULL_PRICE_ASC,
+        value: priceAscSortValueOf(item, basis),
         listingId: item.listingId,
         basis,
       };
@@ -2240,18 +2280,33 @@ const facetComparablePrice = (basis?: PriceBasis): SQL =>
   sql`case when doc.currency = ${FX_BASE_CURRENCY}
   then ${publishedPrice(basis)} else ${comparablePrice(basis)} end`;
 /*
- * "From X per person/week" is the cheapest boat once each is put on that footing, not the
- * cheapest charter divided afterwards: the lowest charter price is usually a small boat's short
- * stay, and dividing it by a big boat's guests would print a figure nobody can book. Each price is
- * stretched to the week its nights cover (the same count the price sort divides by) and shared
- * across the party the boat can actually take.
+ * "From X per person/week" on a destination card: each boat's price put on that footing first --
+ * stretched to the week its nights cover (the count the price sort divides by) and shared across
+ * the party it can take -- rather than the cheapest charter divided afterwards.
+ *
+ * The 5th percentile of those, not the minimum. A country holds thousands of boats and the minimum
+ * is whichever row the vendor got wrong: Spain read "from EUR 0" off a boat rated at EUR 1 with its
+ * money in the charter pack, Greece "from EUR 25" off a EUR 200 placeholder with nothing to sell.
+ * Only boats that could back the figure take part: a charter priced for its own dates that has not
+ * lapsed. A boat rate below a quarter of the all-in price is already read as no rate at all (see
+ * `MIN_BASE_SHARE_OF_ALL_IN`), so the EUR 1 trick counts at its all-in price. The lapse matters because `pricedNights` reads a lapsed charter as a week: a
+ * one-night Caribbean rate that had passed was counted as a week's price and read "from EUR 38".
  */
+const PER_PERSON_WEEK_PERCENTILE = 0.05;
+
 const facetPriceColumns = (basis?: PriceBasis): SQL => sql`
       min(${facetComparablePrice(basis)}) filter (where ${facetComparablePrice(basis)} > 0)
         as "priceFromMinor",
-      min(round(${facetComparablePrice(basis)} * 7.0 / ${pricedNights} / doc.max_guests))
-        filter (where ${facetComparablePrice(basis)} > 0 and doc.max_guests > 0)::integer
-        as "pricePerPersonWeekMinor",
+      round(
+        (percentile_cont(${PER_PERSON_WEEK_PERCENTILE}::double precision) within group (
+          order by ${facetComparablePrice(basis)} * 7.0 / ${pricedNights} / doc.max_guests
+        ) filter (
+          where ${facetComparablePrice(basis)} > 0
+            and doc.max_guests > 0
+            and not doc.price_is_from
+            and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
+        ))::numeric
+      )::integer as "pricePerPersonWeekMinor",
       ${FX_BASE_CURRENCY}::text as currency`;
 
 async function listFacetOptions(
@@ -3040,21 +3095,34 @@ export function comparablePrice(basis: PriceBasis = "all_in"): SQL {
 }
 
 function basePriceInEur(): SQL {
-  return sql`coalesce(nullif(doc.base_price_from_minor_eur, 0),
+  const base = sql`coalesce(nullif(doc.base_price_from_minor_eur, 0),
     case when doc.currency = 'EUR' then nullif(doc.base_price_from_minor, 0) end)`;
+  const allIn = sql`coalesce(doc.price_from_minor_eur,
+    case when doc.currency = 'EUR' then doc.price_from_minor end)`;
+  return sql`case when ${allIn} is null
+    or ${base} >= ${allIn} * ${MIN_BASE_SHARE_OF_ALL_IN}::numeric then ${base} end`;
 }
 
 /** The published figure, in whatever currency the vendor quoted. Rendered, never compared. */
 const publishedPrice = (basis: PriceBasis = "all_in"): SQL =>
   basis === "base"
-    ? sql`coalesce(nullif(doc.base_price_from_minor, 0), doc.price_from_minor)`
+    ? sql`coalesce(
+        case when doc.base_price_from_minor >= doc.price_from_minor * ${MIN_BASE_SHARE_OF_ALL_IN}::numeric
+          then nullif(doc.base_price_from_minor, 0) end,
+        doc.price_from_minor
+      )`
     : sql`doc.price_from_minor`;
 
 const nightlyPriceValue = (basis?: PriceBasis): SQL =>
   sql`round(${comparablePrice(basis)}::numeric / ${pricedNights})`;
 
 const priceAscSortValue = (basis?: PriceBasis): SQL =>
-  sql`coalesce(${nightlyPriceValue(basis)}, ${NULL_PRICE_ASC})`;
+  sql`coalesce(
+    ${nightlyPriceValue(basis)} + case
+      when not doc.price_is_from and doc.bookable_from >= current_date + cast(${MIN_LEAD_DAYS} as int)
+      then 0 else ${UNPRICED_CHARTER_SORT_OFFSET} end,
+    ${NULL_PRICE_ASC}
+  )`;
 const priceDescSortValue = (basis?: PriceBasis): SQL =>
   sql`coalesce(${nightlyPriceValue(basis)}, ${NULL_PRICE_DESC})`;
 const yearDescSortValue = sql`coalesce(doc.year_built, ${NULL_YEAR_DESC})`;

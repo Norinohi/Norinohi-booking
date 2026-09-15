@@ -1,4 +1,9 @@
-import { highlightAmenities, MIN_LEAD_DAYS, normalizedFilterValue } from "@yacht-charter/db/search";
+import {
+  highlightAmenities,
+  MIN_BASE_SHARE_OF_ALL_IN,
+  MIN_LEAD_DAYS,
+  normalizedFilterValue,
+} from "@yacht-charter/db/search";
 import type { ListingDetail, ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
 
 /* Shared so the no-ranks path allocates nothing per card. */
@@ -120,8 +125,13 @@ export function presentListingSummary(
   // treated the same as a missing one rather than quoted as 0.
   const allInMinor =
     doc.priceFromMinor !== null && doc.priceFromMinor > 0 ? doc.priceFromMinor : null;
+  /* A nominal rate is no rate: see `MIN_BASE_SHARE_OF_ALL_IN`, which the sort and filter share. */
   const baseMinor =
-    doc.basePriceFromMinor !== null && doc.basePriceFromMinor > 0 ? doc.basePriceFromMinor : null;
+    doc.basePriceFromMinor !== null &&
+    doc.basePriceFromMinor > 0 &&
+    (allInMinor === null || doc.basePriceFromMinor >= allInMinor * MIN_BASE_SHARE_OF_ALL_IN)
+      ? doc.basePriceFromMinor
+      : null;
   /* The rate is never shown without the total it belongs to: a card that lost one of the two
      would advertise a figure with no way to say what sits on top of it. */
   const amountMinor = basis === "base" && baseMinor !== null ? baseMinor : allInMinor;

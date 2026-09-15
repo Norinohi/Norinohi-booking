@@ -212,8 +212,9 @@ by four rows on desktop.
 
 The card reads `from $$$ per person/week` off `pricePerPersonWeekMinor`, a facet aggregate beside
 `priceFromMinor`: each boat's price stretched to a week over the nights it covers, divided by its
-`max_guests`, and the lowest of those. It is computed per boat rather than by dividing the
-country's cheapest charter, which is usually a small boat's short stay.
+`max_guests`, and the 5th percentile of those. The minimum was whichever row a vendor got wrong
+(Spain read "from EUR 0" off a boat rated at EUR 1), so only boats with a priced charter and a boat
+rate of at least a quarter of the all-in price take part, and one outlier cannot set the figure.
 
 `partitionByPopularity` in `@/components/shared/form/filters` splits on `popularRank`, not
 `featuredRank`, so it is not used here.
