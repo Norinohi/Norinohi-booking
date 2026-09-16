@@ -14,7 +14,8 @@ const apply = process.argv.includes("--apply");
 const plan = await seedCatalogueRoutes(db, { apply });
 
 for (const route of plan.created) {
-  console.log(`${apply ? "created" : "would create"}  ${route.title}  (${route.target})`);
+  const state = route.draft ? " [draft, needs an operational check]" : "";
+  console.log(`${apply ? "created" : "would create"}  ${route.title}  (${route.target})${state}`);
 }
 for (const route of plan.existing) console.log(`exists        ${route.title}`);
 for (const route of plan.unresolved) {

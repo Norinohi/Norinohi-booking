@@ -2782,6 +2782,10 @@ async function suggestedRouteFor(
     note: string | null;
     lat: number;
     lng: number;
+    sortOrder: number;
+    baseName: string | null;
+    baseLat: number | null;
+    baseLng: number | null;
   }>(sql`
     with picked as (
       select r.id, r.title, r.description
@@ -2804,28 +2808,50 @@ async function suggestedRouteFor(
     select
       coalesce(nullif(trim(t.title), ''), p.title) as title,
       coalesce(nullif(trim(t.description), ''), p.description) as description,
-      s.name, s.lat, s.lng,
-      coalesce(nullif(trim(st.note), ''), s.note) as note
+      s.name, s.lat, s.lng, s.sort_order as "sortOrder",
+      coalesce(nullif(trim(st.note), ''), s.note) as note,
+      /* The yacht's own base, which the first and last day are rewritten to below. */
+      home.name as "baseName", home.lat as "baseLat", home.lng as "baseLng"
     from picked p
     left join suggested_route_translation t on t.route_id = p.id and t.locale = ${locale}
     join suggested_route_stop s on s.route_id = p.id
     left join suggested_route_stop_translation st on st.stop_id = s.id and st.locale = ${locale}
+    left join base home on home.id = ${baseId}
     order by s.sort_order asc
   `);
 
   const first = rows.rows[0];
   if (!first) return null;
 
+  const last = rows.rows.length - 1;
+  /*
+   * A route is written from the town it sails out of, and a listing is chartered from one marina
+   * in that town: the author's "Split" is this yacht's ACI Marina Split, three kilometres from the
+   * point the file carries. The itinerary in between is indicative and stays as written -- but the
+   * two days the visitor can actually check are the first and the last, and those are the base's.
+   *
+   * Only where the route comes back to where it started, which is every one the client wrote: a
+   * one-way delivery route would have its finish moved to the wrong end of the coast.
+   */
+  const roundTrip = last > 0 && first.name === rows.rows[last]?.name;
+  const home =
+    roundTrip && first.baseName && first.baseLat !== null && first.baseLng !== null
+      ? { name: first.baseName, lat: first.baseLat, lng: first.baseLng }
+      : null;
+
   return {
     title: first.title,
     description: first.description,
-    stops: rows.rows.map((stop, index) => ({
-      day: index + 1,
-      name: stop.name,
-      note: stop.note,
-      lat: stop.lat,
-      lng: stop.lng,
-    })),
+    stops: rows.rows.map((stop, index) => {
+      const atBase = home && (index === 0 || index === last);
+      return {
+        day: index + 1,
+        name: atBase ? home.name : stop.name,
+        note: stop.note,
+        lat: atBase ? home.lat : stop.lat,
+        lng: atBase ? home.lng : stop.lng,
+      };
+    }),
   };
 }
 
