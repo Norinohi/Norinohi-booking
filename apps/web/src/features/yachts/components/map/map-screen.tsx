@@ -605,6 +605,7 @@ export default function MapScreen() {
               map={map}
               focusZoom={openMarina.focusZoom}
               focusDurationMs={openMarina.focusDurationMs}
+              catalogueHref={catalogueHref}
             />
           ) : null}
         </MapCanvas>

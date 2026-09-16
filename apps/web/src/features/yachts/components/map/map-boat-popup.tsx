@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 
 import type { Coordinates } from "@/components/shared/overlay/marina-popover";
+import { Link } from "@/i18n/navigation";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
 import type { MapInstance } from "@/components/shared/data-display/map-canvas";
@@ -53,6 +54,14 @@ export interface MapBoatPopupProps {
    * to fly.
    */
   onFocusApplied?: () => void;
+  /**
+   * The catalogue narrowed to what this card pages through, for a marina's card.
+   *
+   * On the card rather than only above the map: the visitor is looking here, and on a phone the
+   * card covers the controls that carry the other link, so without it a marina had no way into
+   * the catalogue at all.
+   */
+  catalogueHref?: ComponentProps<typeof Link>["href"];
 }
 
 export default function MapBoatPopup({
@@ -65,6 +74,7 @@ export default function MapBoatPopup({
   focusZoom,
   focusDurationMs,
   onFocusApplied,
+  catalogueHref,
 }: MapBoatPopupProps) {
   const t = useTranslations("YachtsMap");
   const [index, setIndex] = useState(0);
@@ -141,34 +151,47 @@ export default function MapBoatPopup({
         </div>
       </div>
 
-      {many ? (
+      {many || catalogueHref ? (
         <div
-          // Keep the tap on the pager, not on the map underneath, or MapCanvas dismisses the popup.
+          // Keep the tap on the pager and the link, not on the map underneath, or MapCanvas dismisses the popup.
           onMouseDown={(event) => event.stopPropagation()}
           onTouchStart={(event) => event.stopPropagation()}
-          className="flex items-center gap-1 rounded-full bg-card p-1 shadow-[4px_4px_15px_rgba(0,0,0,0.1)]"
+          className="flex w-72 max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-2 md:w-auto md:max-w-none"
         >
-          <button
-            type="button"
-            aria-label={t("previousBoat")}
-            disabled={active === 0}
-            onClick={() => setIndex(active - 1)}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <ChevronLeft className="size-5" />
-          </button>
-          <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-foreground">
-            {active + 1} / {count}
-          </span>
-          <button
-            type="button"
-            aria-label={t("nextBoat")}
-            disabled={active === count - 1}
-            onClick={() => setIndex(active + 1)}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <ChevronRight className="size-5" />
-          </button>
+          {many ? (
+            <div className="flex items-center gap-1 rounded-full bg-card p-1 shadow-[4px_4px_15px_rgba(0,0,0,0.1)]">
+              <button
+                type="button"
+                aria-label={t("previousBoat")}
+                disabled={active === 0}
+                onClick={() => setIndex(active - 1)}
+                className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+              <span className="min-w-12 text-center text-sm font-semibold tabular-nums text-foreground">
+                {active + 1} / {count}
+              </span>
+              <button
+                type="button"
+                aria-label={t("nextBoat")}
+                disabled={active === count - 1}
+                onClick={() => setIndex(active + 1)}
+                className="flex size-8 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors outline-none hover:bg-natural-50 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ChevronRight className="size-5" />
+              </button>
+            </div>
+          ) : null}
+          {catalogueHref ? (
+            <Link
+              href={catalogueHref}
+              className="flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-[4px_4px_15px_rgba(47,128,237,0.15)] transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              {t("allInCatalogue", { count })}
+              <ArrowRight className="size-4" />
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </MapPopup>

@@ -1602,7 +1602,8 @@
     "marker": "Марина {name}",
     "clusterCount": "{count, plural, one {# яхта} few {# яхти} many {# яхт} other {# яхт}}",
     "previousBoat": "Попередня яхта",
-    "nextBoat": "Наступна яхта"
+    "nextBoat": "Наступна яхта",
+    "allInCatalogue": "{count, plural, one {# яхта в каталозі} few {Усі # яхти в каталозі} many {Усі # яхт у каталозі} other {Усі # яхти в каталозі}}"
   },
   "Seo": {
     "Commissions": {

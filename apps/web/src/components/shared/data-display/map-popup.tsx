@@ -53,9 +53,11 @@ export default function MapPopup({ coordinates, map, children, className, onOpen
   useEffect(() => {
     if (!map) return;
 
-    /* Measured a frame later: the card is laid out by then, and its height decides the nudge. */
+    /* Measured a frame later: the card is laid out by then, and its height decides the nudge.
+       `offsetHeight`, not the bounding box: the card is still mid `zoom-in-95` here, so the box
+       came back 5% short and a tall marina card landed its pager on the bottom edge of a phone. */
     const frame = requestAnimationFrame(() => {
-      const height = cardRef.current?.getBoundingClientRect().height ?? 0;
+      const height = cardRef.current?.offsetHeight ?? 0;
       const recentre = onOpenRef.current;
 
       if (recentre) {

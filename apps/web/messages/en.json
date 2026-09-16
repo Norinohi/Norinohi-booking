@@ -1602,7 +1602,8 @@
     "marker": "Marina {name}",
     "clusterCount": "{count, plural, one {# yacht} other {# yachts}}",
     "previousBoat": "Previous yacht",
-    "nextBoat": "Next yacht"
+    "nextBoat": "Next yacht",
+    "allInCatalogue": "{count, plural, one {# yacht in the catalogue} other {All # yachts in the catalogue}}"
   },
   "Seo": {
     "Commissions": {
