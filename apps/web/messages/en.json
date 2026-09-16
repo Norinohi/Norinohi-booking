@@ -628,7 +628,7 @@
     "charterPeriod": {
       "day": {
         "booked": "Booked",
-        "held": "Temporarily held"
+        "held": "On hold, may become available"
       },
       "or": ", or ",
       "daysAndNights": "{days}, {nights}",

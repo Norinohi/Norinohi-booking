@@ -628,7 +628,7 @@
     "charterPeriod": {
       "day": {
         "booked": "Заброньовано",
-        "held": "Тимчасово зарезервовано"
+        "held": "Під опцією, може звільнитися"
       },
       "or": ", або ",
       "daysAndNights": "{days}, {nights}",

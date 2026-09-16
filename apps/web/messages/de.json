@@ -628,7 +628,7 @@
     "charterPeriod": {
       "day": {
         "booked": "Gebucht",
-        "held": "Vorübergehend reserviert"
+        "held": "Optioniert, kann frei werden"
       },
       "or": " oder ",
       "daysAndNights": "{days}, {nights}",
