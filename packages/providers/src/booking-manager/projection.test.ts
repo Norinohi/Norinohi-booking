@@ -216,26 +216,37 @@ describe("check-in rules", () => {
     ).toEqual([{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined }]);
   });
 
-  it("narrows a yacht that claims every day to the turnaround we can price", () => {
-    /*
-     * The vendor writes this as defaultCheckInDay -1 plus a full list, and taking it
-     * literally is what broke listing five-o-sun-odyssey-509: seven paired rules, a
-     * charter-period line naming all seven, and mid-week starts on the calendar that
-     * /offers refused because /prices is only ever swept Saturday to Saturday.
-     */
+  /*
+   * The vendor writes "any day" as defaultCheckInDay -1 plus a full list. Measured against
+   * /offers, such a yacht sells from every day at its stated minimum, so it is one rule with no
+   * weekday rather than seven paired ones, or the Saturday this used to be narrowed to.
+   */
+  it("reads a yacht that takes every day as one rule with no weekday", () => {
     const rules = rulesOf({
       defaultCheckInDay: -1,
       allCheckInDays: [1, 2, 3, 4, 5, 6, 7],
-      minimumCharterDuration: 0,
+      minimumCharterDuration: 3,
     });
 
     expect(rules).toEqual([
-      { checkinWeekday: 6, checkoutWeekday: 6, minNights: undefined, maxNights: undefined },
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights: 3, maxNights: undefined },
     ]);
   });
 
-  it("keeps the days a yacht offers when none of them is the turnaround", () => {
-    // No rate behind either day, so inventing a Saturday would be a different lie.
+  it("keeps every listed day, Saturday among them, week to week", () => {
+    const rules = rulesOf({
+      defaultCheckInDay: 7,
+      allCheckInDays: [4, 7],
+      minimumCharterDuration: 7,
+    });
+
+    expect(rules).toEqual([
+      { checkinWeekday: 3, checkoutWeekday: 3, minNights: 7, maxNights: undefined },
+      { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+    ]);
+  });
+
+  it("keeps the days a yacht offers when none of them is Saturday", () => {
     const rules = rulesOf({ defaultCheckInDay: -1, allCheckInDays: [2, 5] });
 
     expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([1, 4]);

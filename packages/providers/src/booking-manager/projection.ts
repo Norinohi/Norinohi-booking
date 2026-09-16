@@ -1,7 +1,7 @@
 import type { z } from "zod";
 
 import type { JsonField } from "../shared/json";
-import { CHARTER_TURNAROUND_WEEKDAY, parseBookingManagerDate } from "./dates";
+import { parseBookingManagerDate } from "./dates";
 import { stripHtml } from "../shared/html-text";
 import { decimalStringToMinor } from "../shared/money";
 import { mergeYachtTitle } from "../shared/yacht-title";
@@ -551,20 +551,24 @@ function textKindOf(category: string | undefined): TextKind {
 }
 
 /**
- * One rule per day this integration will actually sell a check-in on.
+ * The check-in days and minimum stay the vendor publishes, as it publishes them.
  *
- * `allCheckInDays` is read first, but it is narrowed to `CHARTER_TURNAROUND_WEEKDAY` whenever
- * it offers that day, and that narrowing is the point. A yacht that takes any day sends
- * `[1..7]` with a default of `-1`, and taking it at its word produced two visible failures:
- * seven paired rules turned the detail page's charter-period line into "Sunday to Sunday, or
- * Monday to Monday, ..." through all seven days, and the calendar offered mid-week starts that
- * `/offers` then refused, because `/prices` is only ever swept Saturday to Saturday so no other
- * turnaround has a rate behind it. Widening this again means widening the sweep first.
+ * `allCheckInDays` is exact, measured against `/offers` on the live account (Sep 2026, see
+ * scripts/audit/bm-checkin-days.ts): a week starting on a listed day was offered 73-100% of the
+ * time inside a stretch the yacht was free, and on an unlisted day 0 of 28 times.
  *
- * A yacht whose days exclude the turnaround keeps them, unnarrowed: we have no price for it
- * either way, and inventing a Saturday it never offered would be a different lie.
+ * A yacht listing every day gets one rule with no weekday. The same probe sold such yachts from
+ * any day at their stated `minimumCharterDuration` and refused anything shorter (0 of 13), and
+ * sold the ones stating none (0) for two nights and up. Seven paired rules would say the same
+ * thing seven times, and the charter-period line on the detail page would read them out.
  *
- * Check-out is taken to fall on the same weekday, which is what a whole-week charter does.
+ * A yacht listing some days turns around on them, week to week: none of those sold three or
+ * four nights. So each listed day is a rule whose check-out falls on the same weekday.
+ *
+ * This used to narrow any list containing Saturday to Saturday alone, because `/prices` is swept
+ * Saturday to Saturday and `/offers` was thought to refuse the rest. The confirming sweep prices
+ * every week the cards advertise, whatever its weekday, and the narrowing hid 80,900 charters the
+ * vendor had priced as free: a Monday search found 606 yachts against 8,506 on the Saturday.
  */
 function checkinRulesOf(yacht: RestYacht) {
   const minNights = positiveInt(yacht.minimumCharterDuration);
@@ -572,25 +576,23 @@ function checkinRulesOf(yacht: RestYacht) {
   const days = Array.isArray(yacht.allCheckInDays)
     ? yacht.allCheckInDays.map(weekdayOf).filter((day): day is number => day !== undefined)
     : [];
-  const offered = days.length > 0 ? days : [weekdayOf(yacht.defaultCheckInDay)];
-  const weekdays = offered.includes(CHARTER_TURNAROUND_WEEKDAY)
-    ? [CHARTER_TURNAROUND_WEEKDAY]
-    : offered;
+  const offered = [
+    ...new Set(days.length > 0 ? days : [weekdayOf(yacht.defaultCheckInDay)]),
+  ].filter((day): day is number => day !== undefined);
 
-  const rules = weekdays
-    .filter((day): day is number => day !== undefined)
-    .map((day) => ({
-      checkinWeekday: day,
-      checkoutWeekday: day,
-      minNights,
-      maxNights: undefined,
-    }));
+  if (offered.length === 7 || offered.length === 0) {
+    if (offered.length === 0 && minNights === undefined) return [];
+    return [
+      { checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights: undefined },
+    ];
+  }
 
-  if (rules.length > 0) return rules;
-  if (minNights === undefined) return [];
-  return [
-    { checkinWeekday: undefined, checkoutWeekday: undefined, minNights, maxNights: undefined },
-  ];
+  return offered.map((day) => ({
+    checkinWeekday: day,
+    checkoutWeekday: day,
+    minNights,
+    maxNights: undefined,
+  }));
 }
 
 /**
