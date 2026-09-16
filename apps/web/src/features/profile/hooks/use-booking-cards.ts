@@ -1,10 +1,13 @@
 import { useTranslations } from "next-intl";
 
 import type {
-  BoatCardCharterDate,
-  BoatCardProps,
-} from "@/components/shared/data-display/boat-card";
-import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
+  YachtCardCharterDate,
+  YachtCardData,
+} from "@/components/shared/data-display/yacht-card/types";
+import {
+  bookingMarina,
+  yachtCardIdentity,
+} from "@/components/shared/data-display/yacht-card/view-model";
 import { useMoney } from "@/hooks/use-money";
 
 import type { BookingSummary } from "../types";
@@ -16,8 +19,8 @@ const days = (checkIn: string, checkOut: string) =>
   );
 
 /**
- * Maps a `booking.list` row to the shared BoatCard props. The boat identity comes from the frozen
- * `listing` snapshot (shared with the catalogue via `boatCardIdentity`); the dates, total, marina,
+ * Maps a `booking.list` row to the shared yacht card data. The boat identity comes from the frozen
+ * `listing` snapshot (shared with the catalogue via `yachtCardIdentity`); the dates, total, marina,
  * per-person and prepayment come from the booking itself.
  */
 /*
@@ -26,7 +29,7 @@ const days = (checkIn: string, checkOut: string) =>
  * wall-clock at the marina, never a real instant — the booking's `base.timeZone` is the
  * hardcoded "UTC" that keeps them from shifting.
  */
-function charterStamp(iso: string): BoatCardCharterDate {
+function charterStamp(iso: string): YachtCardCharterDate {
   return { day: iso.slice(0, 10), time: iso.slice(11, 16) || null };
 }
 
@@ -36,9 +39,9 @@ export function useBookingCards() {
   const tBadge = useTranslations("Common.boatCard.badges");
   const formatMoney = useMoney();
 
-  function toBookingCard(booking: BookingSummary): BoatCardProps {
+  function toBookingCard(booking: BookingSummary): YachtCardData {
     return {
-      ...boatCardIdentity(t, tCrew, tBadge, booking.listing),
+      ...yachtCardIdentity(t, tCrew, tBadge, booking.listing),
       imageAlt: t("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
       /* The booking, not the listing: this card is history, and the yacht page cannot say
          what was paid, what is owed, or where the invoice is. */

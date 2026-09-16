@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 
 import type { Coordinates } from "@/components/shared/map/geometry";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
+import type { YachtCardData } from "@/components/shared/data-display/yacht-card/types";
 import { Link } from "@/i18n/navigation";
 
-import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 import MapPopup, { PIN_CLEARANCE, RECENTRE_MS } from "@/components/shared/map/map-popup";
 import { paddingOf } from "@/components/shared/map/camera";
@@ -17,7 +18,7 @@ const BOTTOM_SAFE = 32;
 // Below this container width we treat the map as a phone and pin the popup to the bottom.
 const MOBILE_MAX = 768;
 
-type PopupBoat = Omit<MapBoatCardProps, "layout" | "className"> & { id: string };
+type PopupBoat = YachtCardData & { id: string };
 
 export interface MapBoatPopupProps {
   coordinates: Coordinates;
@@ -145,7 +146,7 @@ export default function MapBoatPopup({
         >
           {boats.map((item) => (
             <div key={item.id} className="w-full shrink-0">
-              <MapBoatCard layout="popup" {...item} openInNewTab className="border-0 shadow-none" />
+              <YachtCard layout="popup" {...item} openInNewTab className="border-0 shadow-none" />
             </div>
           ))}
         </div>

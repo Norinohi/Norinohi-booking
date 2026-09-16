@@ -6,7 +6,6 @@ import MapMarker from "@/components/shared/map/map-marker";
 
 import type { MapMarinaData } from "../../api/queries";
 import type { useMapClusters } from "../../hooks/use-map-clusters";
-import MapClusterMarker from "./map-cluster-marker";
 
 export interface MarinaLayerProps {
   clusters: ReturnType<typeof useMapClusters>["clusters"];
@@ -38,8 +37,9 @@ export default function MarinaLayer({
       /* A marina holding several boats keeps the count pill it wore when those boats were
          separate points; one holding a single boat stays a bare pin, as it always was. */
       return props.count > 1 ? (
-        <MapClusterMarker
+        <MapMarker
           key={props.baseId}
+          variant="cluster"
           coordinates={{ lat, lng }}
           count={props.count}
           label={t("clusterCount", { count: props.count })}
@@ -49,6 +49,7 @@ export default function MarinaLayer({
       ) : (
         <MapMarker
           key={props.baseId}
+          variant="pin"
           coordinates={{ lat, lng }}
           label={props.name}
           selected={openBaseIds.includes(props.baseId)}
@@ -60,8 +61,9 @@ export default function MarinaLayer({
 
     const { cluster_id: clusterId, count } = props;
     return (
-      <MapClusterMarker
+      <MapMarker
         key={`cluster-${clusterId}`}
+        variant="cluster"
         coordinates={{ lat, lng }}
         count={count}
         label={t("clusterCount", { count })}

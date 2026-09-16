@@ -18,7 +18,7 @@ pnpm --filter web check-types  # tsc --noEmit
 
 - `tsconfig.json` here does **not** extend `@yacht-charter/config/tsconfig.base.json` — it is Next's own config with the `next` plugin and `paths` for `@/*` and `@yacht-charter/ui/*`. Do not "fix" it to extend the base; the two disagree on `target`, `lib`, and `types` on purpose.
 - Component placement (see **Architecture** below): framework-agnostic primitives → `packages/ui`; cross-feature but Next/app-coupled → `src/components/shared`; app chrome → `src/components/layout`; feature-specific → `src/features/<name>/components`. The `packages/ui`-vs-`shared` test: _"could it live in `packages/ui` without pulling in `next`?"_ — yes → `packages/ui`, no → `src/components/shared`.
-- `src/components/shared` uses the **same category names as `packages/ui`** (`actions`, `data-display`, `feedback`, `form`, `layout`, `navigation`, `overlay`), so a component's category does not change when it is promoted between the two. Import with the full path: `@/components/shared/data-display/boat-card`. There is no barrel export.
+- `src/components/shared` uses the **same category names as `packages/ui`** (`actions`, `data-display`, `feedback`, `form`, `layout`, `navigation`, `overlay`), so a component's category does not change when it is promoted between the two. Import with the full path: `@/components/shared/data-display/yacht-card/yacht-card`. There is no barrel export.
 - Never edit `next-env.d.ts` — Next regenerates it and the file says so.
 - **An exported component's props go in an `interface`, never a `type` alias to an object literal and never an inline literal on the parameter.** Next's TS plugin warns `ts(71007)` on any exported component in a `"use client"` file whose props type is a _type literal_ carrying a function-typed member — it reads every `onChange`/`onOpenChange`/`set` as a Server Action that was named wrong. Every one of those is a false positive here: these are client-to-client callbacks that never cross an RSC boundary, and renaming them `onChangeAction` would assert something untrue. The rule tests for a type literal specifically (`rules/client-boundary.js` in `next/dist/server/typescript`), and an interface declaration is not one, so declaring the props as an interface silences it honestly. Generic components carry the parameter across: `interface QuizCardGridProps<T extends string>`.
 - Server data goes through `src/utils/orpc.ts` (`client`, `orpc`, `queryClient`). Do not construct an `RPCLink` or a second `QueryClient` elsewhere; `src/components/layout/providers.tsx` already mounts the singleton (and the `NuqsAdapter`).
@@ -56,7 +56,7 @@ src/
       lib/                #   optional — pure helpers (search-params, formatters, constants)
   components/
     shared/               # cross-feature components, grouped by purpose like packages/ui
-      data-display/       #   boat-card, prepayment-note, animated-number, image
+      data-display/       #   yacht-card, prepayment-note, animated-number, image
       feedback/           #   empty-state, loader
       form/               #   date-picker, filters/
       layout/             #   split-panels

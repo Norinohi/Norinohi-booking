@@ -9,7 +9,7 @@ import { dayToDisplay } from "@/lib/date";
 
 import type { Quote } from "../../api/queries";
 
-/** The marina's own wall-clock time sits under the day, unconverted — see `BoatCardCharterDate`. */
+/** The marina's own wall-clock time sits under the day, unconverted: see `YachtCardCharterDate`. */
 function CharterPoint({ date, time }: { date: string; time: string | null }) {
   const format = useFormatter();
   return (

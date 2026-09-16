@@ -22,7 +22,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { type ReactNode, useState } from "react";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import SplitPanels from "@/components/shared/layout/split-panels";
@@ -30,7 +30,10 @@ import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import CancelBookingDialog from "@/components/shared/overlay/cancel-booking-dialog";
 import { useMoney } from "@/hooks/use-money";
 import { authClient } from "@/lib/auth-client";
-import { boatCardIdentity, bookingMarina } from "@/lib/boat-card-fields";
+import {
+  bookingMarina,
+  yachtCardIdentity,
+} from "@/components/shared/data-display/yacht-card/view-model";
 
 import { type BookingDetail, bookingDetailQueryOptions } from "../api/queries";
 import CrewListPanel from "./crew-list-panel";
@@ -131,7 +134,7 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
    * after the listing is renamed, re-photographed or withdrawn by the provider.
    */
   const boat = {
-    ...boatCardIdentity(tCard, tCrew, tBadge, booking.listing),
+    ...yachtCardIdentity(tCard, tCrew, tBadge, booking.listing),
     imageAlt: tCard("imageAlt", { name: booking.listing.title, marina: booking.base.name }),
     marina: bookingMarina(booking.listing.id, booking.base),
     priceLabel: "",
@@ -153,9 +156,9 @@ export default function BookingDetailScreen({ bookingId }: { bookingId: string }
           labels={{ main: t("panels.main"), aside: t("panels.aside") }}
           main={
             <>
-              <BoatCard
+              <YachtCard
+                layout="summary"
                 {...boat}
-                summary
                 priority
                 summaryAction={
                   <Button

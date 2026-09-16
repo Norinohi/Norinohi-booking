@@ -10,7 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { type AppPathname, Link, useRouter } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import { Image } from "@/components/shared/data-display/image";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
@@ -242,7 +242,7 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
         <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
         boats.map((boat, index) => (
-          <BoatCard key={boat.id} {...boat} openInNewTab priority={index === 0} />
+          <YachtCard key={boat.id} layout="row" {...boat} openInNewTab priority={index === 0} />
         ))
       )}
 

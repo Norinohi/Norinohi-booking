@@ -1,8 +1,8 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 
-import { type ResultListing, toBoatCard } from "../../lib/to-boat-card";
+import { type ResultListing, toYachtCard } from "../../lib/to-yacht-card";
 
 /**
  * The page's boats, rendered on the server.
@@ -23,9 +23,10 @@ export default async function CatalogCards({ listings }: { listings: ResultListi
   return (
     <>
       {listings.map((listing, index) => (
-        <BoatCard
+        <YachtCard
           key={listing.id}
-          {...toBoatCard(t, tCrew, tBadge, formatMoney, listing)}
+          layout="row"
+          {...toYachtCard(t, tCrew, tBadge, formatMoney, listing)}
           openInNewTab
           priority={index === 0}
         />

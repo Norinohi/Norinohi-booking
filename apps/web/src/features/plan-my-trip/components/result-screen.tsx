@@ -1,26 +1,24 @@
 "use client";
 
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { ArrowRight, Clock, TrendingUp } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
+import { yachtCardPrice } from "@/components/shared/data-display/yacht-card/view-model";
 import EmptyState from "@/components/shared/feedback/empty-state";
-import { WishlistButton } from "@/features/wishlist";
 import { buildSearchHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
 import { dayToDisplay } from "@/lib/date";
-import { boatCardPrice } from "@/lib/boat-card-fields";
 import { DRAW, GROUP, RISE, SPARK_START, SPARKS } from "@/lib/motion";
 
 import { usePlannerRecommendation } from "../hooks/use-planner-recommendation";
 import { buildConsultationHref } from "../lib/build-consultation-href";
 import type { PlannerAnswers } from "../lib/search-params";
-import { toBoatCardProps } from "../lib/to-boat-card";
-import { Image } from "@/components/shared/data-display/image";
+import { toRecommendedTile } from "../lib/to-recommended-tile";
 
 /** No dedicated Spain photo exists yet — falls back to Greece, same as the backend's default. */
 const DEFAULT_DESTINATION_IMAGE = "/assets/home/destinations/greece.webp";
@@ -98,15 +96,6 @@ export function ResultScreen({ answers }: ResultScreenProps) {
   ];
 
   const listing = recommendation.listing;
-  const boatCard = listing
-    ? toBoatCardProps(
-        tBadge,
-        listing,
-        boatCardPrice(tCard, listing, formatMoney),
-        destinationLabel,
-        recommendation.period,
-      )
-    : null;
   /*
    * The charter this price covers, off the listing itself rather than off the trip length.
    * Most of the fleet sells the week the estimate is quoted in, but a few sell three days,
@@ -137,6 +126,14 @@ export function ResultScreen({ answers }: ResultScreenProps) {
         ),
       })
     : "";
+  const boatCard = listing
+    ? toRecommendedTile(tBadge, listing, destinationLabel, recommendation.period, {
+        price: yachtCardPrice(tCard, listing, formatMoney),
+        priceLabel: boatPriceLabel,
+        priceSuffix: <span className="block">{boatPerPerson}</span>,
+        actionLabel: t("viewDetails"),
+      })
+    : null;
   /*
    * Always a price per person, so it reads against the card's own second line rather than
    * against its total: the fleet's band where there is one, and the recommended charter's own
@@ -219,35 +216,7 @@ export function ResultScreen({ answers }: ResultScreenProps) {
           <img src={destinationImage} alt="" className="absolute inset-0 size-full object-cover" />
           <div className="absolute inset-0 bg-black/60" />
           {boatCard ? (
-            <BoatSmallCard
-              className="relative z-10 w-full max-w-83.5"
-              imageRender={
-                <Image
-                  src={boatCard.image}
-                  alt={boatCard.imageAlt}
-                  fill
-                  sizes="334px"
-                  className="object-cover"
-                />
-              }
-              location={boatCard.location}
-              title={
-                <Link
-                  href={boatCard.detailHref}
-                  className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
-                >
-                  {boatCard.title}
-                </Link>
-              }
-              rating={boatCard.rating}
-              tags={boatCard.tags}
-              price={boatCard.price}
-              priceLabel={boatPriceLabel}
-              priceSuffix={<span className="block">{boatPerPerson}</span>}
-              actionLabel={t("viewDetails")}
-              actionRender={<Link href={boatCard.detailHref} />}
-              saveRender={<WishlistButton listingId={boatCard.id} />}
-            />
+            <YachtCard layout="tile" className="relative z-10 w-full max-w-83.5" {...boatCard} />
           ) : (
             <div className="relative z-10 flex w-full max-w-83.5 flex-col gap-3 rounded-2xl bg-card p-5 text-center">
               <p className="text-base font-semibold text-foreground">{t("noMatch.title")}</p>

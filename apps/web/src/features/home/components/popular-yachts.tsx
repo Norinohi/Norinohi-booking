@@ -2,7 +2,6 @@
 
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import {
   Carousel,
   CarouselNav,
@@ -16,11 +15,14 @@ import { useLocale, useTranslations } from "next-intl";
 import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 
-import { Image } from "@/components/shared/data-display/image";
-import { WishlistButton } from "@/features/wishlist";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
+import {
+  toYachtTile,
+  yachtCardListPrice,
+  yachtCardPrice,
+} from "@/components/shared/data-display/yacht-card/view-model";
 import { listingDetailHref } from "@/features/yachts";
 import { useMoney } from "@/hooks/use-money";
-import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { RISE, VIEWPORT } from "@/lib/motion";
 
 import { popularYachtsQueryOptions } from "../api/queries";
@@ -43,39 +45,25 @@ function PopularYachtSlides() {
     <>
       {yachts.map((listing) => (
         <CarouselSlide key={listing.id} className="basis-85.5 pr-2 md:basis-88.5 md:pr-5">
-          <BoatSmallCard
+          <YachtCard
+            layout="tile"
             className="w-full"
-            imageRender={
-              <Image
-                src={listing.gallery[0] ?? listing.mainImage}
-                alt={listing.title}
-                fill
-                sizes="354px"
-                className="object-cover"
-              />
-            }
-            location={placeLine(listing.base.location, listing.base.country)}
-            title={
-              <Link
-                href={listingDetailHref(listing)}
-                className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
-              >
-                {listing.title}
-              </Link>
-            }
-            rating={listing.rating > 0 ? listing.rating : undefined}
-            tags={[{ label: listing.category, icon: <Anchor /> }]}
-            price={boatCardPrice(tCard, listing, (amountMinor, currency) =>
-              money(Math.round(amountMinor / listing.priceDetails.periodDays), currency),
-            )}
-            /* The same day of the same charter, before the discount; `parts` divides it the
-               way the price above is divided. */
-            listPrice={boatCardListPrice(listing, money, listing.priceDetails.periodDays)}
-            priceSuffix={t("perDay")}
-            priceLabel={t("from")}
-            actionLabel={t("viewDetails")}
-            actionRender={<Link href={listingDetailHref(listing)} />}
-            saveRender={<WishlistButton listingId={listing.id} />}
+            {...toYachtTile(listing, {
+              image: listing.gallery[0] ?? listing.mainImage,
+              imageSizes: "354px",
+              location: placeLine(listing.base.location, listing.base.country),
+              detailHref: listingDetailHref(listing),
+              tags: [{ label: listing.category, icon: <Anchor /> }],
+              price: yachtCardPrice(tCard, listing, (amountMinor, currency) =>
+                money(Math.round(amountMinor / listing.priceDetails.periodDays), currency),
+              ),
+              /* The same day of the same charter, before the discount; `parts` divides it the
+                 way the price above is divided. */
+              listPrice: yachtCardListPrice(listing, money, listing.priceDetails.periodDays),
+              priceSuffix: t("perDay"),
+              priceLabel: t("from"),
+              actionLabel: t("viewDetails"),
+            })}
           />
         </CarouselSlide>
       ))}

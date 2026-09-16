@@ -5,7 +5,7 @@ import { ScrollArea } from "@yacht-charter/ui/components/layout/scroll-area";
 import { cn } from "@yacht-charter/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
-import { STAT_TONE } from "@/components/shared/data-display/boat-card";
+import { STAT_TONE } from "@/components/shared/data-display/yacht-card/parts";
 import type { CharterPeriod } from "@/components/shared/form/charter-date-field";
 import type { AppPathname } from "@/i18n/navigation";
 

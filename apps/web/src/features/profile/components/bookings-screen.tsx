@@ -26,7 +26,7 @@ import BookingCard from "./booking-card";
  * BookingsScreen — the /profile/bookings layout: a "← Home" breadcrumb, then the account Sidebar
  * beside a "History" panel. The panel is a titled header (History + a date-range filter) over the
  * booking list and its pager, or the "No yachts yet" empty state. The list is `booking.list`; the
- * card is the shared BoatCard, fed by `booking.list`. Filter + page live in the URL (nuqs).
+ * card is the shared YachtCard, fed by `booking.list`. Filter + page live in the URL (nuqs).
  * Figma "My bookings" (972:54737).
  */
 

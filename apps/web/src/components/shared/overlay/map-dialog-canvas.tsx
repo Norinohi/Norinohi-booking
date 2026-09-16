@@ -39,7 +39,13 @@ export default function MapDialogCanvas({
       onReady={setMap}
       onBackgroundPress={() => setOpen(false)}
     >
-      <MapMarker coordinates={point} label={title} selected={open} onSelect={() => setOpen(true)} />
+      <MapMarker
+        variant="pin"
+        coordinates={point}
+        label={title}
+        selected={open}
+        onSelect={() => setOpen(true)}
+      />
 
       {popup && open ? (
         <MapPopup coordinates={point} map={map}>

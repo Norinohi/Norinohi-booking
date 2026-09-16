@@ -2,7 +2,6 @@
 
 import { placeLine } from "@yacht-charter/api/lib/place-line";
 import { Button } from "@yacht-charter/ui/components/actions/button";
-import { BoatSmallCard } from "@yacht-charter/ui/components/data-display/card-boat-small";
 import {
   Carousel,
   CarouselSlide,
@@ -17,15 +16,18 @@ import { Anchor, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-import { WishlistButton } from "@/features/wishlist";
 import { useMoney } from "@/hooks/use-money";
 
 import { useListingDetail } from "../../../hooks/use-listing-detail";
-import { boatCardListPrice, boatCardPrice } from "@/lib/boat-card-fields";
 import { crewLabel } from "@/lib/crew-label";
 import { listingDetailHref } from "../../../lib/detail-href";
 import DetailSection from "./detail-section";
-import { Image } from "@/components/shared/data-display/image";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
+import {
+  toYachtTile,
+  yachtCardListPrice,
+  yachtCardPrice,
+} from "@/components/shared/data-display/yacht-card/view-model";
 
 function CarouselNav() {
   const t = useTranslations("YachtDetail");
@@ -74,43 +76,29 @@ export default function PopularYachtsSection() {
         <CarouselViewport>
           {data.popularYachts.map((yacht) => (
             <CarouselSlide key={yacht.id} className="basis-87.5 pr-4">
-              <BoatSmallCard
+              <YachtCard
+                layout="tile"
                 className="w-full"
-                imageRender={
-                  <Image
-                    src={yacht.mainImage}
-                    alt={tCard("imageAlt", { name: yacht.title, marina: yacht.base.name })}
-                    fill
-                    sizes="334px"
-                    className="object-cover"
-                  />
-                }
-                location={placeLine(yacht.base.location, yacht.base.country)}
-                title={
-                  <Link
-                    href={listingDetailHref(yacht)}
-                    className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
-                  >
-                    {yacht.title}
-                  </Link>
-                }
-                rating={yacht.rating > 0 ? yacht.rating : undefined}
-                tags={[
-                  { label: yacht.category, icon: <Anchor /> },
-                  ...(yacht.crewType
-                    ? [{ label: crewLabel(tCrew, yacht.crewType), icon: <Users /> }]
-                    : []),
-                ]}
-                price={boatCardPrice(tCard, yacht, formatMoney)}
-                listPrice={boatCardListPrice(yacht, formatMoney)}
-                /* The charter this figure prices, not a share of it: the card prints the whole
-                   advertised period, which was labelled "per person" against a number no
-                   guest's share ever equalled. */
-                priceSuffix={t("popular.perPeriod", { days: yacht.priceDetails.periodDays })}
-                priceLabel={t("popular.from")}
-                actionLabel={tCard("viewDetails")}
-                actionRender={<Link href={listingDetailHref(yacht)} />}
-                saveRender={<WishlistButton listingId={yacht.id} />}
+                {...toYachtTile(yacht, {
+                  imageAlt: tCard("imageAlt", { name: yacht.title, marina: yacht.base.name }),
+                  imageSizes: "334px",
+                  location: placeLine(yacht.base.location, yacht.base.country),
+                  detailHref: listingDetailHref(yacht),
+                  tags: [
+                    { label: yacht.category, icon: <Anchor /> },
+                    ...(yacht.crewType
+                      ? [{ label: crewLabel(tCrew, yacht.crewType), icon: <Users /> }]
+                      : []),
+                  ],
+                  price: yachtCardPrice(tCard, yacht, formatMoney),
+                  listPrice: yachtCardListPrice(yacht, formatMoney),
+                  /* The charter this figure prices, not a share of it: the card prints the whole
+                     advertised period, which was labelled "per person" against a number no
+                     guest's share ever equalled. */
+                  priceSuffix: t("popular.perPeriod", { days: yacht.priceDetails.periodDays }),
+                  priceLabel: t("popular.from"),
+                  actionLabel: tCard("viewDetails"),
+                })}
               />
             </CarouselSlide>
           ))}

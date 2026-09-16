@@ -1,20 +1,20 @@
 import type { AppRouterClient } from "@yacht-charter/api/routers/index";
 import type { useTranslations } from "next-intl";
 
-import type { BoatCardProps } from "@/components/shared/data-display/boat-card";
 import type { AppPathname } from "@/i18n/navigation";
 import {
   AVAILABILITY_TONE,
   availabilityLabel,
   availabilityStatus,
 } from "@/lib/availability-status";
+import type { YachtCardData } from "@/components/shared/data-display/yacht-card/types";
 import {
-  boatCardIdentity,
-  boatCardListPrice,
-  boatCardExtras,
-  boatCardPrice,
   type MoneyFormatter,
-} from "@/lib/boat-card-fields";
+  yachtCardExtras,
+  yachtCardIdentity,
+  yachtCardListPrice,
+  yachtCardPrice,
+} from "@/components/shared/data-display/yacht-card/view-model";
 import type { BadgeTranslator } from "@/lib/badge-label";
 import type { CrewTranslator } from "@/lib/crew-label";
 import { dayToDisplay } from "@/lib/date";
@@ -40,10 +40,10 @@ type CardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
  *
  * Pure, and given its translator rather than calling a hook, because both a client screen and a
  * server-rendered facet page build the same card. A facet page has to put its boats in the
- * HTML itself — anything behind a Suspense boundary never reaches a crawler — so this could not
+ * HTML itself (anything behind a Suspense boundary never reaches a crawler), so this could not
  * stay inside `useListingCards`.
  */
-export function toBoatCard(
+export function toYachtCard(
   t: CardTranslator,
   tCrew: CrewTranslator,
   tBadge: BadgeTranslator,
@@ -52,7 +52,7 @@ export function toBoatCard(
   period?: CharterPeriod,
   /** Which price `priceFrom` is. Inferred from the listing's two prices when not given. */
   basis?: "base" | "all_in",
-): BoatCardProps & { id: string } {
+): YachtCardData & { id: string } {
   const hold = listing.availability.temporaryHold;
   /* An undated search still sends a period, both ends null; that is no period at all. */
   const searched = period?.checkIn && period.checkOut ? period : null;
@@ -74,7 +74,7 @@ export function toBoatCard(
   /* The currency the provider published in, which the per-person figure is a share of. */
   const currency = listing.priceFrom?.currency ?? listing.priceDetails.securityDeposit?.currency;
 
-  const identity = boatCardIdentity(t, tCrew, tBadge, listing);
+  const identity = yachtCardIdentity(t, tCrew, tBadge, listing);
 
   return {
     ...identity,
@@ -109,11 +109,11 @@ export function toBoatCard(
     /* Says what the badge above it leaves out: how long the other customer's hold has left. */
     hold: hold ?? undefined,
     priceLabel: priceCaption(t, listing, basis),
-    price: boatCardPrice(t, listing, formatMoney),
-    listPrice: boatCardListPrice(listing, formatMoney),
+    price: yachtCardPrice(t, listing, formatMoney),
+    listPrice: yachtCardListPrice(listing, formatMoney),
     /* Only ever present where the headline is the charter rate, which is what makes the line
        self-explanatory: it appears exactly when there is something the price does not include. */
-    priceExtras: boatCardExtras(t, listing, formatMoney),
+    priceExtras: yachtCardExtras(t, listing, formatMoney),
     priceIsLabel: !listing.priceFrom,
     /*
      * The nightly rate, which is what "Price: low to high" orders on. The amounts above it price
@@ -162,7 +162,7 @@ export function toBoatCard(
  * The caption above the amount, and nothing at all when there is no amount.
  *
  * Both captions introduce a figure: "From" reads into it, "Price for 7 days" names what it
- * buys. With no published rate the slot holds a word instead — "On request" — and captioning
+ * buys. With no published rate the slot holds a word instead, "On request", and captioning
  * that produced "From / On request", which reads as a broken sentence rather than as a price.
  */
 function priceCaption(

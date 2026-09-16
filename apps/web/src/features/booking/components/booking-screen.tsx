@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useQueryStates } from "nuqs";
 import { useForm } from "react-hook-form";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import SplitPanels from "@/components/shared/layout/split-panels";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 import { useListingCards, useListingDetail } from "@/features/yachts";
@@ -61,7 +61,7 @@ export default function BookingScreen() {
               labels={{ main: t("panels.main"), aside: t("panels.aside") }}
               main={
                 <>
-                  {boat ? <BoatCard {...boat} summary priority /> : null}
+                  {boat ? <YachtCard layout="summary" {...boat} priority /> : null}
                   <BookingSteps />
                 </>
               }

@@ -48,7 +48,7 @@ export default function MapScreen() {
 
   const t = useTranslations("YachtsMap");
   const common = useTranslations("Common");
-  const { toMapCard } = useListingCards();
+  const { toCard } = useListingCards();
 
   const { openingView, hasCamera, setCamera } = useMapCameraUrl();
 
@@ -130,7 +130,7 @@ export default function MapScreen() {
             <MapBoatPopup
               key={selected.id}
               coordinates={{ lat: selected.base.lat, lng: selected.base.lng }}
-              boats={[toMapCard(selected)]}
+              boats={[toCard(selected)]}
               map={map}
               focusZoom={selection.selectedFocus?.focusZoom}
               focusDurationMs={selection.selectedFocus?.focusDurationMs}
@@ -142,7 +142,7 @@ export default function MapScreen() {
             <MapBoatPopup
               key={openMarina.baseIds.join()}
               coordinates={{ lat: openMarina.lat, lng: openMarina.lng }}
-              boats={marinaBoats.items.map((item) => toMapCard(item.listing, item))}
+              boats={marinaBoats.items.map((item) => toCard(item.listing, item))}
               total={openMarina.count}
               pageStart={(marinaPage - 1) * MARINA_PAGE_SIZE}
               onActiveIndex={selection.setMarinaIndex}

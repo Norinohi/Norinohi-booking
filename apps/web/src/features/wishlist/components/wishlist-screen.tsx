@@ -4,12 +4,12 @@ import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagin
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-import BoatCard from "@/components/shared/data-display/boat-card";
+import YachtCard from "@/components/shared/data-display/yacht-card/yacht-card";
 import EmptyState from "@/components/shared/feedback/empty-state";
 import Loader from "@/components/shared/feedback/loader";
 import AppBreadcrumbs from "@/components/shared/navigation/app-breadcrumbs";
 
-import { useListingCards } from "@/features/yachts/hooks/use-listing-cards";
+import { useListingCards } from "@/features/yachts";
 
 import { useWishlistPage } from "../hooks/use-wishlist-page";
 
@@ -69,7 +69,12 @@ export default function WishlistScreen() {
                   ) : null}
 
                   {listings.map((listing, index) => (
-                    <BoatCard key={listing.id} {...toCard(listing)} priority={index === 0} />
+                    <YachtCard
+                      key={listing.id}
+                      layout="row"
+                      {...toCard(listing)}
+                      priority={index === 0}
+                    />
                   ))}
                 </div>
 

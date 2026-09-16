@@ -172,6 +172,7 @@ export default function RouteMap({ stops }: { stops: Stop[] }) {
       {points.map((point, index) => (
         <MapMarker
           key={`${point.lat},${point.lng}`}
+          variant="pin"
           coordinates={{ lat: point.lat, lng: point.lng }}
           label={pointLabel(point)}
           caption={routeCaption(point, stops, words)}

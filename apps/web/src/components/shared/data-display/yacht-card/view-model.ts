@@ -15,24 +15,25 @@ import {
 import type { useTranslations } from "next-intl";
 import { createElement, type ReactNode } from "react";
 
-import type {
-  BoatCardAmenity,
-  BoatCardProps,
-  BoatCardStat,
-  BoatCardSpec,
-} from "@/components/shared/data-display/boat-card";
 import type { Marina } from "@/components/shared/overlay/marina-popover";
 import { type BadgeTranslator, badgeLabel } from "@/lib/badge-label";
 import { type CrewTranslator, crewLabel } from "@/lib/crew-label";
 import { slugToLabel } from "@/lib/slug-to-label";
 
+import type {
+  YachtCardAmenity,
+  YachtCardData,
+  YachtCardSpec,
+  YachtCardStat,
+  YachtListing,
+  YachtTileData,
+} from "./types";
+
 /*
- * Mapping helpers for the shared BoatCard. Both card sources — the search catalogue
- * (useListingCards) and My Bookings (useBookingCards) — describe the same boat, so the fields that
- * come purely from a listing snapshot are assembled here once. Each source keeps only its own
- * context: the price, the schedule and the marina, which mean different things and come from
- * different shapes in each. The BoatCard prop types are referenced type-only, so this stays a leaf
- * utility with no runtime dependency on the component layer.
+ * The view model behind every `YachtCard` layout. The search catalogue (useListingCards), My
+ * Bookings (useBookingCards) and the carousel tiles describe the same boat, so the fields that come
+ * purely from a listing are assembled here once. Each source keeps only its own context: the price,
+ * the schedule and the marina, which mean different things and come from different data in each.
  */
 
 // Keyed by the amenity label the provider sent, so the key domain is open.
@@ -52,7 +53,7 @@ const FALLBACK_AMENITY_ICON = createElement(Check);
 /* Four, per the client's spec. The rest of the curated list goes behind the card's "+N". */
 const AMENITY_LIMIT = 4;
 
-function amenityItem(label: string): BoatCardAmenity {
+function amenityItem(label: string): YachtCardAmenity {
   return { icon: AMENITY_ICONS.get(label) ?? FALLBACK_AMENITY_ICON, label };
 }
 
@@ -62,13 +63,13 @@ function amenityItem(label: string): BoatCardAmenity {
  * `labels` is `highlightAmenities` from the API: the curated amenities this boat has, already in
  * the editor's priority order, and nothing else. So the four shown are the four most worth
  * advertising, and the overflow is the rest of that list rather than the forty-odd fittings the
- * vendor also happens to publish — which is what makes a "+3" honest.
+ * vendor also happens to publish, which is what makes a "+3" honest.
  */
-export function amenityItems(labels: string[]): BoatCardAmenity[] {
+export function amenityItems(labels: string[]): YachtCardAmenity[] {
   return labels.slice(0, AMENITY_LIMIT).map(amenityItem);
 }
 
-export function amenityOverflow(labels: string[]): BoatCardAmenity[] {
+export function amenityOverflow(labels: string[]): YachtCardAmenity[] {
   return labels.slice(AMENITY_LIMIT).map(amenityItem);
 }
 
@@ -82,9 +83,9 @@ export type BoatSpecs = {
   sailType: string | null;
 };
 
-type BoatCardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
+type YachtCardTranslator = ReturnType<typeof useTranslations<"Common.boatCard">>;
 
-export function boatSpecs(t: BoatCardTranslator, specs: BoatSpecs): BoatCardSpec[] {
+export function yachtSpecs(t: YachtCardTranslator, specs: BoatSpecs): YachtCardSpec[] {
   return [
     { label: t("specs.year"), value: String(specs.yearBuilt) },
     { label: t("specs.people"), value: String(specs.berths) },
@@ -117,7 +118,7 @@ export function boatSpecs(t: BoatCardTranslator, specs: BoatSpecs): BoatCardSpec
  * The intersection both card sources satisfy: a boat's listing snapshot. `booking.list.listing`
  * mirrors the search listing's card fields, so the same identity mapping serves both.
  */
-export type BoatCardListing = {
+export type YachtCardListing = {
   id: string;
   title: string;
   gallery: string[];
@@ -153,7 +154,7 @@ type PricedListing = {
  * Every amount on a card, formatted in the currency it was published in.
  *
  * The currency is an argument rather than a constant because the catalogue is not priced in
- * one: a Bahamas fleet publishes in USD, and a `price_from_minor` of 761900 is $7,619 — the
+ * one: a Bahamas fleet publishes in USD, and a `price_from_minor` of 761900 is $7,619, and the
  * same digits under a euro sign are a different, wrong number.
  */
 export type MoneyFormatter = (amountMinor: number, currency?: string) => string;
@@ -163,8 +164,8 @@ export type MoneyFormatter = (amountMinor: number, currency?: string) => string;
  * unavailable; one with dates but no price is quotable, so it reads as on request.
  * Callers pair this with `priceIsLabel` so the slot drops to text size for both.
  */
-export function boatCardPrice(
-  t: BoatCardTranslator,
+export function yachtCardPrice(
+  t: YachtCardTranslator,
   listing: PricedListing,
   formatMoney: MoneyFormatter,
 ) {
@@ -181,12 +182,12 @@ export function boatCardPrice(
  * at all. Both amounts are the same charter, so they print in one currency.
  *
  * `parts` splits both figures the way a card that prints a share of the charter splits its
- * price — the carousels quote a day of it. Splitting here rather than in the caller's formatter
+ * price: the carousels quote a day of it. Splitting here rather than in the caller's formatter
  * is what lets the two be compared after rounding: a discount worth less than a day's rounding
  * leaves the pair equal, and a struck figure identical to the price beside it reads as a
  * mistake rather than as an offer.
  */
-export function boatCardListPrice(listing: PricedListing, formatMoney: MoneyFormatter, parts = 1) {
+export function yachtCardListPrice(listing: PricedListing, formatMoney: MoneyFormatter, parts = 1) {
   const { priceFrom, listPriceFrom } = listing;
   if (!priceFrom || !listPriceFrom) return undefined;
 
@@ -207,8 +208,8 @@ export function boatCardListPrice(listing: PricedListing, formatMoney: MoneyForm
  * This is the condition the client attached to advertising the rate. Extras leave the headline
  * so the number compares with other charter sites; they do not leave the card.
  */
-export function boatCardExtras(
-  t: BoatCardTranslator,
+export function yachtCardExtras(
+  t: YachtCardTranslator,
   listing: PricedListing,
   formatMoney: MoneyFormatter,
   parts = 1,
@@ -230,10 +231,10 @@ export function boatCardExtras(
  * A zero line is dropped rather than rendered: "0 people viewed today" is true but
  * reads as a warning, and the card has nothing to say when nobody has looked yet.
  */
-function boatCardStats(t: BoatCardTranslator, stats: BoatCardListing["bookingStats"]) {
+function yachtCardStats(t: YachtCardTranslator, stats: YachtCardListing["bookingStats"]) {
   if (!stats) return undefined;
 
-  const lines: BoatCardStat[] = [];
+  const lines: YachtCardStat[] = [];
   if (stats.bookedThisMonth > 0) {
     lines.push({ kind: "booked", label: t("stats.booked", { count: stats.bookedThisMonth }) });
   }
@@ -243,12 +244,12 @@ function boatCardStats(t: BoatCardTranslator, stats: BoatCardListing["bookingSta
   return lines.length > 0 ? lines : undefined;
 }
 
-/** The BoatCard fields that depend only on the boat — shared by the catalogue and My Bookings. */
-export function boatCardIdentity(
-  t: BoatCardTranslator,
+/** The card fields that depend only on the boat, shared by the catalogue and My Bookings. */
+export function yachtCardIdentity(
+  t: YachtCardTranslator,
   tCrew: CrewTranslator,
   tBadge: BadgeTranslator,
-  listing: BoatCardListing,
+  listing: YachtCardListing,
 ) {
   return {
     id: listing.id,
@@ -261,7 +262,7 @@ export function boatCardIdentity(
     rating: listing.rating > 0 ? String(listing.rating) : undefined,
     charterType: listing.category ?? "",
     crew: listing.crewType ? crewLabel(tCrew, listing.crewType) : "",
-    specs: boatSpecs(t, listing.specs),
+    specs: yachtSpecs(t, listing.specs),
     amenities: amenityItems(listing.highlightAmenities ?? listing.amenities),
     /*
      * Only where the curated list is present. Falling back to `amenities` here would count the
@@ -271,8 +272,8 @@ export function boatCardIdentity(
     amenitiesOverflow: listing.highlightAmenities
       ? amenityOverflow(listing.highlightAmenities)
       : undefined,
-    stats: boatCardStats(t, listing.bookingStats),
-  } satisfies Partial<BoatCardProps>;
+    stats: yachtCardStats(t, listing.bookingStats),
+  } satisfies Partial<YachtCardData>;
 }
 
 /**
@@ -306,5 +307,25 @@ export function bookingMarina(
     website: base.website ?? undefined,
     email: base.email ?? undefined,
     coordinates: base.coordinates,
+  };
+}
+
+/**
+ * A catalogue listing as a carousel tile. Each carousel words its own price, caption and photo
+ * slot, so those arrive ready; what is true of the boat itself is read here once.
+ */
+export function toYachtTile(
+  listing: YachtListing,
+  presentation: Omit<YachtTileData, "id" | "name" | "rating" | "image" | "imageAlt"> &
+    Partial<Pick<YachtTileData, "image" | "imageAlt">>,
+): YachtTileData {
+  return {
+    id: listing.id,
+    name: listing.title,
+    image: listing.mainImage,
+    imageAlt: listing.title,
+    // Same rule as the catalogue card: an unrated listing shows no star, not a gold zero.
+    rating: listing.rating > 0 ? listing.rating : undefined,
+    ...presentation,
   };
 }
