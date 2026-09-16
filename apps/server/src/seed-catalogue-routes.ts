@@ -28,6 +28,12 @@ for (const entry of plan.stopsRefreshed) {
 for (const id of plan.missingRefreshTargets) {
   console.log(`no such route ${id}: run seed:routes first`);
 }
+for (const stop of plan.backfilled) {
+  console.log(`${apply ? "named" : "would name"}  ${stop.stop} (${stop.routeTitle})`);
+}
+for (const stop of plan.unnamed) {
+  console.log(`no words for ${stop.stop} (${stop.routeTitle}): write it on /routes`);
+}
 
 if (apply) {
   /* The home page caches its routes for hours; without this the seed would look like it failed. */
