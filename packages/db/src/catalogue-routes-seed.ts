@@ -16,8 +16,15 @@ type Locale = "en" | "uk" | "de" | "es";
 const LOCALES: Locale[] = ["en", "uk", "de", "es"];
 type Copy = { title: string; description: string };
 
-/** How far from a route's first stop a charter base may sit and still be its starting marina. */
-const BASE_RADIUS_KM = 60;
+/**
+ * How far from a route's first stop a charter base may sit and still be its starting marina.
+ *
+ * Tight on purpose. At 60 km the Seychelles route that starts at Praslin resolved to Eden Island
+ * on Mahé, 46 km and a different island away -- the client's own note on that route reads "publish
+ * only where there are yachts actually based at Praslin; do not attach it to Mahé". Every other
+ * route resolves within 16 km, so nothing else rides on the difference.
+ */
+const BASE_RADIUS_KM = 25;
 
 type SeedStop = {
   name: string;
@@ -30,6 +37,12 @@ type SeedStop = {
 type SeedRoute = {
   id: string;
   difficulty: "easy" | "moderate" | "advanced";
+  /*
+   * Created unpublished, because the client's file marks it as needing an operational check --
+   * distance, overnight stops or base availability. It shows on /routes with everything else and
+   * reaches the site the moment someone publishes it there.
+   */
+  draft?: boolean;
   /*
    * Where to anchor a route whose start has no base within `BASE_RADIUS_KM`. Only three have one;
    * the rest resolve to a marina, which is the better link because it filters to boats that
@@ -69,7 +82,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Коло Брач, Хвар, Корчула",
         description:
-          "Три великі острови біля Спліта за тиждень: пляжі Брача, міські мури Корчули й ніч на якорі біля Щедро дорогою назад.",
+          "Три великі острови біля Спліта за тиждень: пляжі Брача, міські мури Корчули й ніч на якорі біля Шчедро дорогою назад.",
       },
       de: {
         title: "Brač, Hvar und Korčula",
@@ -84,7 +97,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
     },
     stops: [
       {
-        name: "Split/Trogir",
+        name: "Split",
         lat: 43.5026,
         lng: 16.43,
         note: {
@@ -150,7 +163,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Split/Trogir",
+        name: "Split",
         lat: 43.5026,
         lng: 16.43,
         note: {
@@ -279,7 +292,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Південна Далмація",
         description:
-          "Від Дубровника до Елафітських островів, зелених озер Млєта та старого міста Корчули, а далі — до віддаленого Ластово.",
+          "Від Дубровника до Елафітських островів, зелених озер Мʼєта та старого міста Корчули, а Ластово лежить достатньо далеко, щоб здаватися віддаленим.",
       },
       de: {
         title: "Süddalmatien",
@@ -364,31 +377,33 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_hr_vis_and_bisevo_adventure",
     difficulty: "moderate",
+    /* Round trip; exact overnight stops and distance must be validated */
+    draft: true,
     copy: {
       en: {
         title: "Vis and Biševo Adventure",
         description:
-          "The outer islands: Vis, the last to open to visitors, and the Blue Cave on Biševo, with Brač and Hvar on the way out and back.",
+          "The outer islands: Vis, long isolated by its military history, and the Blue Cave on Biševo, with Brač and Hvar on the way out and back.",
       },
       uk: {
         title: "Віс і Бішево",
         description:
-          "Зовнішні острови: Віс, який відкрили для гостей останнім, і Блакитна печера на Бішеві, а Брач і Хвар лишаються по дорозі туди й назад.",
+          "Зовнішні острови: Віс, довгий час ізольований через військову історію, і Блакитна печера на Бішеві, а Брач і Хвар лишаються по дорозі туди й назад.",
       },
       de: {
         title: "Vis und Biševo",
         description:
-          "Die äußeren Inseln: Vis, das zuletzt für Gäste geöffnet wurde, und die Blaue Grotte auf Biševo, mit Brač und Hvar auf Hin- und Rückweg.",
+          "Die äußeren Inseln: Vis, durch seine Militärgeschichte lange isoliert, und die Blaue Grotte auf Biševo, mit Brač und Hvar auf Hin- und Rückweg.",
       },
       es: {
         title: "Vis y Biševo",
         description:
-          "Las islas exteriores: Vis, la última en abrirse a los visitantes, y la Cueva Azul de Biševo, con Brač y Hvar de ida y vuelta.",
+          "Las islas exteriores: Vis, aislada durante años por su historia militar, y la Cueva Azul de Biševo, con Brač y Hvar de ida y vuelta.",
       },
     },
     stops: [
       {
-        name: "Split/Trogir",
+        name: "Split",
         lat: 43.5026,
         lng: 16.43,
         note: {
@@ -454,7 +469,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Split/Trogir",
+        name: "Split",
         lat: 43.5026,
         lng: 16.43,
         note: {
@@ -530,10 +545,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 37.35,
         lng: 23.4667,
         note: {
-          en: "No cars on the island: goods move by mule from the harbour.",
-          uk: "На острові немає автомобілів: вантажі возять мулами від гавані.",
-          de: "Keine Autos auf der Insel: Waren werden vom Hafen per Maultier transportiert.",
-          es: "Sin coches en la isla: la carga se mueve en mula desde el puerto.",
+          en: "Motor traffic is tightly restricted on the island, and goods are traditionally moved by mule from the harbour.",
+          uk: "Автомобільний рух на острові суворо обмежений; у гавані вантажі традиційно перевозять мулами.",
+          de: "Der motorisierte Verkehr ist auf der Insel stark eingeschränkt; Waren werden vom Hafen traditionell mit Maultieren transportiert.",
+          es: "El tráfico motorizado está muy restringido en la isla y la carga se transporta tradicionalmente en mula desde el puerto.",
         },
       },
       {
@@ -552,10 +567,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 37.6975,
         lng: 23.3494,
         note: {
-          en: "The smallest of the Saronic islands, ringed by clear shallow water.",
-          uk: "Найменший із Саронічних островів, оточений прозорою мілкою водою.",
-          de: "Die kleinste der Saronischen Inseln, umgeben von klarem, flachem Wasser.",
-          es: "La más pequeña de las islas Sarónicas, rodeada de aguas claras y poco profundas.",
+          en: "A small, green Saronic island with clear water and several sheltered bays.",
+          uk: "Невеликий зелений острів Саронічної затоки з прозорою водою та кількома захищеними бухтами.",
+          de: "Eine kleine, grüne Insel im Saronischen Golf mit klarem Wasser und mehreren geschützten Buchten.",
+          es: "Una pequeña isla verde del golfo Sarónico, con aguas claras y varias bahías resguardadas.",
         },
       },
       {
@@ -762,6 +777,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_gr_sporades_classic",
     difficulty: "easy",
+    /* Validate Volos compatibility separately */
+    draft: true,
     copy: {
       en: {
         title: "Sporades Classic",
@@ -1206,7 +1223,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Dalyan/Kaunos",
+        name: "Kaunos (excursion from Ekincik)",
         lat: 36.83,
         lng: 28.63,
         note: {
@@ -1258,22 +1275,22 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       en: {
         title: "Aeolian Islands Classic",
         description:
-          "Seven volcanic islands north of Sicily, finishing under Stromboli after dark, when its frequent bursts of incandescent material are easiest to see.",
+          "Seven volcanic islands north of Sicily, finishing under Stromboli in the dark when the crater throws sparks every few minutes.",
       },
       uk: {
         title: "Еолійські острови",
         description:
-          "Сім вулканічних островів на північ від Сицилії, а фінал — під Стромболі в темряві, коли найкраще видно його регулярну вибухову активність.",
+          "Сім вулканічних островів на північ від Сицилії, а фінал під Стромболі в темряві, коли кратер щокілька хвилин викидає іскри.",
       },
       de: {
         title: "Äolische Inseln",
         description:
-          "Sieben Vulkaninseln nördlich Siziliens, zum Abschluss nach Einbruch der Dunkelheit unter dem Stromboli, wenn seine häufigen glühenden Auswürfe am besten zu sehen sind.",
+          "Sieben Vulkaninseln nördlich Siziliens, zum Abschluss im Dunkeln unter dem Stromboli, wenn der Krater alle paar Minuten Funken wirft.",
       },
       es: {
         title: "Islas Eolias",
         description:
-          "Siete islas volcánicas al norte de Sicilia, con final al anochecer bajo el Stromboli, cuando se aprecia mejor su frecuente actividad explosiva.",
+          "Siete islas volcánicas al norte de Sicilia, con final al anochecer bajo el Stromboli, cuando el cráter lanza chispas cada pocos minutos.",
       },
     },
     stops: [
@@ -1337,10 +1354,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 38.7947,
         lng: 15.2306,
         note: {
-          en: "Frequent bursts of incandescent material are easiest to see after dark.",
-          uk: "Часті вибухи й викиди розжареного матеріалу найкраще видно після настання темряви.",
-          de: "Häufige Auswürfe glühenden Materials sind nach Einbruch der Dunkelheit am besten zu sehen.",
-          es: "Las frecuentes explosiones de material incandescente se aprecian mejor de noche.",
+          en: "Volcanic activity can sometimes be seen from the sea after sunset; current restrictions must be checked before the passage.",
+          uk: "Активність вулкана іноді видно з моря після заходу сонця; актуальні обмеження потрібно перевіряти перед переходом.",
+          de: "Vulkanische Aktivität ist nach Sonnenuntergang manchmal vom Meer aus zu sehen; aktuelle Einschränkungen müssen vor dem Schlag geprüft werden.",
+          es: "La actividad volcánica puede verse a veces desde el mar después del atardecer; hay que comprobar las restricciones vigentes antes de la travesía.",
         },
       },
       {
@@ -1521,7 +1538,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Corsica/Bastia",
+        name: "Bastia",
         lat: 42.7,
         lng: 9.45,
         note: {
@@ -1558,6 +1575,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_it_western_aeolians",
     difficulty: "advanced",
+    /* близько 170 NM по прямих відрізках, з довгим поверненням Lipari → Palermo; не публікувати як стандартний легкий 7-денний маршрут без операційної перевірки */
+    draft: true,
     copy: {
       en: {
         title: "Western Aeolians",
@@ -1663,6 +1682,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_es_mallorca_circuit",
     difficulty: "moderate",
+    /* Full circuit distance and feasibility require validation */
+    draft: true,
     copy: {
       en: {
         title: "Mallorca Circuit",
@@ -1768,26 +1789,28 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_es_mallorca_ibiza_and_formentera",
     difficulty: "advanced",
+    /* Round trip with longer passages; distance and 7-day feasibility must be validated */
+    draft: true,
     copy: {
       en: {
         title: "Mallorca, Ibiza and Formentera",
         description:
-          "A Balearic crossing from Mallorca via Cabrera to Ibiza and Formentera, with a longer overnight passage. Plan it around the forecast rather than the calendar.",
+          "Two islands in one week, with an overnight passage from Cabrera across to Ibiza. Plan it around the forecast rather than the calendar.",
       },
       uk: {
         title: "Мальорка, Ібіца і Форментера",
         description:
-          "Балеарський перехід від Мальорки через Кабреру до Ібіци й Форментери, із довшим нічним переходом. Планувати варто за прогнозом, а не за календарем.",
+          "Два острови за тиждень, із нічним переходом від Кабрери до Ібіци. Планувати варто за прогнозом, а не за календарем.",
       },
       de: {
         title: "Mallorca, Ibiza und Formentera",
         description:
-          "Ein Balearen-Törn von Mallorca über Cabrera nach Ibiza und Formentera, mit einer längeren Nachtpassage. Planung nach dem Wetterbericht, nicht nach dem Kalender.",
+          "Zwei Inseln in einer Woche, mit einem Nachtschlag von Cabrera nach Ibiza. Planung nach dem Wetterbericht, nicht nach dem Kalender.",
       },
       es: {
         title: "Mallorca, Ibiza y Formentera",
         description:
-          "Una travesía balear desde Mallorca, vía Cabrera, hasta Ibiza y Formentera, con un tramo nocturno más largo. Se planifica con el parte meteorológico, no con el calendario.",
+          "Dos islas en una semana, con una travesía nocturna de Cabrera a Ibiza. Se planifica con el parte meteorológico, no con el calendario.",
       },
     },
     stops: [
@@ -1956,6 +1979,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_es_canary_islands_adventure",
     difficulty: "advanced",
+    /* Round trip with advanced Atlantic conditions; 7-day feasibility must be validated */
+    draft: true,
     copy: {
       en: {
         title: "Canary Islands Adventure",
@@ -2039,6 +2064,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_no_hardangerfjord_classic",
     difficulty: "advanced",
+    /* Validate 7-day distance and exact overnight stops */
+    draft: true,
     copy: {
       en: {
         title: "Hardangerfjord Classic",
@@ -2048,7 +2075,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Хардангер-фіорд",
         description:
-          "Сади, водоспади й рукав фіорду до Ейдфіорда, зі стартом у Бергені. Прохолодна вода, довгі літні дні й прогноз погоди, який перевіряють щоранку.",
+          "Сади, водоспади й рукав фіорду до Ейдфіорда, зі стартом у Бергені. Прохолодна вода, довге літнє світло й прогноз, який дивляться щоранку.",
       },
       de: {
         title: "Hardangerfjord",
@@ -2067,10 +2094,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 60.395,
         lng: 5.31,
         note: {
-          en: "A base for reaching the western fjords, with Bergen's Hanseatic Bryggen wharf among the city's main sights.",
-          uk: "База для виходу до західних фіордів, а ганзейська набережна Брюгген — одна з головних пам'яток Бергена.",
-          de: "Eine Basis für Törns in die Westfjorde, mit der hanseatischen Bryggen-Kaifront als einer der wichtigsten Sehenswürdigkeiten Bergens.",
-          es: "Una base para navegar hacia los fiordos occidentales, con el muelle hanseático de Bryggen entre los principales atractivos de Bergen.",
+          en: "Check-in beside the Hanseatic wharf, the gateway to the western fjords.",
+          uk: "Реєстрація біля ганзейської набережної, це брама до західних фіордів.",
+          de: "Check-in an der hanseatischen Kaifront, dem Tor zu den Westfjorden.",
+          es: "Check-in junto al muelle hanseático, la puerta a los fiordos occidentales.",
         },
       },
       {
@@ -2133,6 +2160,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_no_sognefjord_and_n_r_yfjord",
     difficulty: "advanced",
+    /* Validate 7-day distance and exact overnight stops */
+    draft: true,
     copy: {
       en: {
         title: "Sognefjord and Nærøyfjord",
@@ -2161,10 +2190,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 60.395,
         lng: 5.31,
         note: {
-          en: "A base for reaching the western fjords, with Bergen's Hanseatic Bryggen wharf among the city's main sights.",
-          uk: "База для виходу до західних фіордів, а ганзейська набережна Брюгген — одна з головних пам'яток Бергена.",
-          de: "Eine Basis für Törns in die Westfjorde, mit der hanseatischen Bryggen-Kaifront als einer der wichtigsten Sehenswürdigkeiten Bergens.",
-          es: "Una base para navegar hacia los fiordos occidentales, con el muelle hanseático de Bryggen entre los principales atractivos de Bergen.",
+          en: "Check-in beside the Hanseatic wharf, the gateway to the western fjords.",
+          uk: "Реєстрація біля ганзейської набережної, це брама до західних фіордів.",
+          de: "Check-in an der hanseatischen Kaifront, dem Tor zu den Westfjorden.",
+          es: "Check-in junto al muelle hanseático, la puerta a los fiordos occidentales.",
         },
       },
       {
@@ -2500,6 +2529,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_fr_south_corsica_and_lavezzi",
     difficulty: "moderate",
+    /* Round trip; validate route length and 7-day feasibility */
+    draft: true,
     copy: {
       en: {
         title: "South Corsica and Lavezzi",
@@ -2509,7 +2540,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Південна Корсика і Лавеці",
         description:
-          "Скелі під Боніфачо, гранітні острівці Лавеці та пляжі навколо Порто-Веккіо; час проходження протоки Боніфачо варто ретельно планувати.",
+          "Скелі під Боніфачо, гранітні острівці Лавеці та пляжі навколо Порто-Веккіо, а протоку Боніфачо варто проходити з розрахунком.",
       },
       de: {
         title: "Südkorsika und Lavezzi",
@@ -2550,10 +2581,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 41.3872,
         lng: 9.1592,
         note: {
-          en: "The harbour hides in a cleft under limestone cliffs, almost invisible from the sea.",
-          uk: "Гавань ховається в розколині під вапняковими скелями, з моря її майже не видно.",
-          de: "Der Hafen versteckt sich in einer Spalte unter Kalksteinfelsen und ist von See kaum zu erkennen.",
-          es: "El puerto se esconde en una grieta bajo acantilados de caliza y apenas se distingue desde el mar.",
+          en: "The harbour hides in a cleft under the chalk cliffs, invisible from the sea.",
+          uk: "Гавань ховається в розколині під крейдяними скелями, з моря її не видно.",
+          de: "Der Hafen versteckt sich in einer Spalte unter den Kreidefelsen, von See unsichtbar.",
+          es: "El puerto se esconde en una grieta bajo los acantilados de creta, invisible desde el mar.",
         },
       },
       {
@@ -3145,7 +3176,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Soufrière/Pitons",
+        name: "Soufrière",
         lat: 13.857,
         lng: -61.06,
         note: {
@@ -3254,10 +3285,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
-          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
-          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
-          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
+          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
+          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
+          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
+          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
         },
       },
       {
@@ -3280,22 +3311,22 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       en: {
         title: "Praslin and La Digue",
         description:
-          "A relaxed week around Praslin, La Digue and their smaller neighbouring islands: Anse Lazio, the reserves at Cousin and Curieuse, and the sandbanks off Coco and Félicité.",
+          "A short week around two islands, starting from Praslin: Anse Lazio, the reserves at Cousin and Curieuse, and the sandbanks off Coco and Félicité.",
       },
       uk: {
         title: "Праслен і Ла-Діг",
         description:
-          "Спокійний тиждень навколо Праслена, Ла-Діга та сусідніх менших островів: Анс-Лаціо, заповідники Кузен і Кюр'єз та піщані мілини біля Коко й Фелісіте.",
+          "Короткий тиждень навколо двох островів зі стартом на Праслені: Анс-Лаціо, заповідники Кузен і Кюр'єз та піщані мілини біля Коко й Фелісіте.",
       },
       de: {
         title: "Praslin und La Digue",
         description:
-          "Eine entspannte Woche rund um Praslin, La Digue und die kleineren Nachbarinseln: Anse Lazio, die Reservate Cousin und Curieuse und die Sandbänke vor Coco und Félicité.",
+          "Eine kurze Woche um zwei Inseln, ab Praslin: Anse Lazio, die Reservate Cousin und Curieuse und die Sandbänke vor Coco und Félicité.",
       },
       es: {
         title: "Praslin y La Digue",
         description:
-          "Una semana tranquila entre Praslin, La Digue y sus islas vecinas más pequeñas: Anse Lazio, las reservas de Cousin y Curieuse y los bancos de arena de Coco y Félicité.",
+          "Una semana corta entre dos islas, desde Praslin: Anse Lazio, las reservas de Cousin y Curieuse y los bancos de arena de Coco y Félicité.",
       },
     },
     stops: [
@@ -3337,10 +3368,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
-          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
-          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
-          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
+          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
+          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
+          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
+          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
         },
       },
       {
@@ -3453,10 +3484,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
-          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
-          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
-          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
+          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
+          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
+          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
+          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
         },
       },
       {
@@ -3700,22 +3731,22 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       en: {
         title: "Similan Islands",
         description:
-          "Offshore to the Similans and Koh Bon, the best diving and snorkelling in Thailand. The marine park is open from mid-October to mid-May only.",
+          "Offshore to the Similans and Koh Bon, one of Thailand's best-known diving and snorkelling areas. Access is seasonal and current park dates must be checked before departure.",
       },
       uk: {
         title: "Сімілан",
         description:
-          "Вихід у море до Сіміланів і Ко-Бон, це найкращий дайвінг і снорклінг у Таїланді. Морський парк відкритий лише з середини жовтня до середини травня.",
+          "Вихід у море до Сіміланів і Ко-Бон — одного з найвідоміших районів Таїланду для дайвінгу та снорклінгу. Доступ сезонний, тому актуальні дати роботи морського парку потрібно перевіряти перед виходом.",
       },
       de: {
         title: "Similan-Inseln",
         description:
-          "Hinaus zu den Similans und Koh Bon, das beste Tauchen und Schnorcheln Thailands. Der Meerespark ist nur von Mitte Oktober bis Mitte Mai geöffnet.",
+          "Hinaus zu den Similans und Koh Bon, einem der bekanntesten Tauch- und Schnorchelgebiete Thailands. Der Zugang ist saisonal; die aktuellen Öffnungszeiten des Meeresparks müssen vor der Abfahrt geprüft werden.",
       },
       es: {
         title: "Islas Similan",
         description:
-          "Mar adentro a las Similan y Koh Bon, el mejor buceo y snorkel de Tailandia. El parque marino solo abre de mediados de octubre a mediados de mayo.",
+          "Mar adentro a las Similan y Koh Bon, una de las zonas más conocidas de Tailandia para buceo y esnórquel. El acceso es estacional y las fechas actuales del parque deben comprobarse antes de salir.",
       },
     },
     stops: [
@@ -4199,6 +4230,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_me_kotor_herceg_novi_and_budva",
     difficulty: "easy",
+    /* Validate Kotor charter base availability */
+    draft: true,
     copy: {
       en: {
         title: "Kotor, Herceg Novi and Budva",
@@ -4304,6 +4337,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_me_montenegro_coast_explorer",
     difficulty: "moderate",
+    /* Round trip within Montenegro; exact overnight stops and distance must be validated */
+    draft: true,
     copy: {
       en: {
         title: "Montenegro Coast Explorer",
@@ -4481,10 +4516,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
-          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
-          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
-          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
+          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
+          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
+          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
+          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
         },
       },
       {
@@ -4553,10 +4588,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
-          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
-          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
-          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
+          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
+          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
+          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
+          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
         },
       },
       {
@@ -4575,10 +4610,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
-          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
-          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
-          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
+          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
+          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
+          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
+          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
         },
       },
       {
@@ -4597,6 +4632,8 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_pf_tahiti_and_moorea_round_trip",
     difficulty: "moderate",
+    /* Round trip; access and overnight conditions around Tetiaroa must be validated */
+    draft: true,
     copy: {
       en: {
         title: "Tahiti and Moorea Round Trip",
@@ -4691,40 +4728,42 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_pf_fakarava_atoll_round_trip",
     difficulty: "advanced",
+    /* Remote route; passes, weather, base availability and exact itinerary must be validated */
+    draft: true,
     /* No charter base within reach of the start, so the card links by region instead. */
     fallbackRegion: { country: "French Polynesia", names: ["Polynesia", "French Polynesia"] },
     copy: {
       en: {
         title: "Fakarava Atoll Round Trip",
         description:
-          "Inside one atoll in the Tuamotus, from Rotoava to the south pass at Tetamanu. Tidal passes, few services and a UNESCO biosphere reserve.",
+          "Inside one atoll in the Tuamotus, from Rotoava to the south pass at Tetamanu. Tidal passages, few services and a remote natural setting.",
       },
       uk: {
         title: "Атол Факарава",
         description:
-          "Усередині одного атола в архіпелазі Туамоту, від Ротоави до південного проходу Тетаману. Припливні проходи, майже жодного сервісу й біосферний заповідник ЮНЕСКО.",
+          "Усередині одного атола в архіпелазі Туамоту, від Ротоави до південного проходу Тетаману. Припливні течії, мінімум сервісів і віддалена природна акваторія.",
       },
       de: {
         title: "Atoll Fakarava",
         description:
-          "Im Inneren eines Atolls der Tuamotus, von Rotoava bis zum Südpass Tetamanu. Tidenpässe, kaum Versorgung und ein UNESCO-Biosphärenreservat.",
+          "Im Inneren eines Atolls der Tuamotus, von Rotoava bis zum Südpass Tetamanu. Gezeitenströmungen, wenig Versorgung und eine abgelegene Naturlandschaft.",
       },
       es: {
         title: "Atolón de Fakarava",
         description:
-          "Dentro de un atolón de las Tuamotu, de Rotoava al paso sur de Tetamanu. Pasos con corriente de marea, pocos servicios y reserva de biosfera de la UNESCO.",
+          "Dentro de un atolón de las Tuamotu, de Rotoava al paso sur de Tetamanu. Corrientes de marea, pocos servicios y un entorno natural remoto.",
       },
     },
     stops: [
       {
-        name: "Fakarava North/Rotoava",
+        name: "Rotoava",
         lat: -16.0553,
         lng: -145.6191,
         note: {
-          en: "The village and the north pass, a UNESCO biosphere reserve.",
-          uk: "Село й північний прохід, біосферний заповідник ЮНЕСКО.",
-          de: "Das Dorf und der Nordpass, ein UNESCO-Biosphärenreservat.",
-          es: "El pueblo y el paso norte, reserva de la biosfera de la UNESCO.",
+          en: "The village by the atoll's north pass; currents through the pass must be planned with tide information.",
+          uk: "Село біля північного проходу атола; течії в проході потрібно враховувати за припливними таблицями.",
+          de: "Das Dorf am Nordpass des Atolls; die Strömung im Pass muss anhand der Gezeiteninformationen geplant werden.",
+          es: "El pueblo junto al paso norte del atolón; las corrientes deben planificarse con información de mareas.",
         },
       },
       {
@@ -4761,7 +4800,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Fakarava North/Rotoava",
+        name: "Rotoava",
         lat: -16.0553,
         lng: -145.6191,
         note: {
@@ -4784,7 +4823,7 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
     routeId: "srt_popular_central_dalmatia",
     stops: [
       {
-        name: "Split/Trogir",
+        name: "Split",
         lat: 43.5026,
         lng: 16.43,
         note: {
@@ -4850,7 +4889,7 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         },
       },
       {
-        name: "Split/Trogir",
+        name: "Split",
         lat: 43.5026,
         lng: 16.43,
         note: {
@@ -4881,21 +4920,21 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 38.6664,
         lng: 20.7825,
         note: {
-          en: "Deep inlets on the south shore, with tavernas at the head of each one.",
-          uk: "Глибокі бухти на південному березі, у глибині кожної - таверна.",
-          de: "Tiefe Buchten an der Südküste, am Ende jeder eine Taverne.",
-          es: "Ensenadas profundas en la costa sur, con una taberna al fondo de cada una.",
+          en: "Sheltered bays and small harbours, several with tavernas and yacht moorings.",
+          uk: "Захищені бухти й невеликі гавані, у кількох із них є таверни та причали для яхт.",
+          de: "Geschützte Buchten und kleine Häfen, mehrere davon mit Tavernen und Liegeplätzen für Yachten.",
+          es: "Bahías resguardadas y pequeños puertos, varios con tabernas y amarres para yates.",
         },
       },
       {
-        name: "Kefalonia/Fiskardo",
+        name: "Fiskardo",
         lat: 38.4581,
         lng: 20.5761,
         note: {
-          en: "One of the few settlements on Kefalonia to remain largely intact after the 1953 earthquake.",
-          uk: "Одне з небагатьох поселень Кефалонії, що значною мірою вціліли після землетрусу 1953 року.",
-          de: "Eine der wenigen Siedlungen auf Kefalonia, die das Erdbeben von 1953 weitgehend unbeschadet überstanden.",
-          es: "Uno de los pocos asentamientos de Cefalonia que quedaron en gran parte intactos tras el terremoto de 1953.",
+          en: "A historic harbour in northern Kefalonia where much of the older architecture survived the 1953 earthquake.",
+          uk: "Історична гавань на півночі Кефалонії, де збереглася значна частина старої забудови після землетрусу 1953 року.",
+          de: "Ein historischer Hafen im Norden Kefalonias, in dem ein großer Teil der älteren Bebauung das Erdbeben von 1953 überstand.",
+          es: "Un puerto histórico del norte de Cefalonia donde gran parte de la arquitectura antigua sobrevivió al terremoto de 1953.",
         },
       },
       {
@@ -5045,10 +5084,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 41.1353,
         lng: 9.5378,
         note: {
-          en: "The most expensive marina in the Mediterranean, and worth one night for the view.",
-          uk: "Найдорожча марина Середземномор'я, але одна ніч заради краєвиду того варта.",
-          de: "Die teuerste Marina des Mittelmeers, eine Nacht für den Ausblick aber wert.",
-          es: "La marina más cara del Mediterráneo, y merece una noche solo por las vistas.",
+          en: "One of the Mediterranean's best-known and most expensive marinas, in the heart of the Costa Smeralda.",
+          uk: "Одна з найвідоміших і найдорожчих марин Середземномор'я, у центрі Смарагдового узбережжя.",
+          de: "Eine der bekanntesten und teuersten Marinas des Mittelmeers, im Herzen der Costa Smeralda.",
+          es: "Una de las marinas más conocidas y caras del Mediterráneo, en el corazón de la Costa Esmeralda.",
         },
       },
       {
@@ -5089,10 +5128,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 41.3872,
         lng: 9.1592,
         note: {
-          en: "The harbour hides in a cleft under limestone cliffs, almost invisible from the sea.",
-          uk: "Гавань ховається в розколині під вапняковими скелями, з моря її майже не видно.",
-          de: "Der Hafen versteckt sich in einer Spalte unter Kalksteinfelsen und ist von See kaum zu erkennen.",
-          es: "El puerto se esconde en una grieta bajo acantilados de caliza y apenas se distingue desde el mar.",
+          en: "The harbour hides in a cleft under the chalk cliffs, invisible from the sea.",
+          uk: "Гавань ховається в розколині під крейдяними скелями, з моря її не видно.",
+          de: "Der Hafen versteckt sich in einer Spalte unter den Kreidefelsen, von See unsichtbar.",
+          es: "El puerto se esconde en una grieta bajo los acantilados de creta, invisible desde el mar.",
         },
       },
       {
@@ -5138,10 +5177,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 38.7867,
         lng: 1.4308,
         note: {
-          en: "A private island with a protected lagoon, dunes and undeveloped beaches.",
-          uk: "Приватний острів із заповідною лагуною, дюнами й незабудованими пляжами.",
-          de: "Eine Privatinsel mit geschützter Lagune, Dünen und unbebauten Stränden.",
-          es: "Una isla privada con laguna protegida, dunas y playas sin urbanizar.",
+          en: "A private island with a mud pool behind the beach and no buildings.",
+          uk: "Приватний острів із грязьовою купіллю за пляжем і без жодної забудови.",
+          de: "Eine Privatinsel mit einem Schlammteich hinter dem Strand und ohne Bebauung.",
+          es: "Una isla privada con una charca de lodo tras la playa y ningún edificio.",
         },
       },
       {
@@ -5395,10 +5434,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 18.727,
         lng: -64.333,
         note: {
-          en: "The only coral island in the group, flat, ringed by reef and worth the crossing.",
-          uk: "Єдиний кораловий острів групи: плаский, оточений рифом і вартий переходу.",
-          de: "Die einzige Koralleninsel der Gruppe, flach, rifffumsäumt und den Schlag wert.",
-          es: "La única isla coralina del grupo: plana, rodeada de arrecife y digna de la travesía.",
+          en: "A low coral island ringed by reefs, with an approach that requires careful navigation.",
+          uk: "Низький кораловий острів, оточений рифами; підхід вимагає уважної навігації.",
+          de: "Eine flache Koralleninsel, von Riffen umgeben; die Ansteuerung verlangt sorgfältige Navigation.",
+          es: "Una isla coralina baja rodeada de arrecifes, cuyo acceso exige una navegación cuidadosa.",
         },
       },
       {
@@ -5477,21 +5516,21 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
-          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
-          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
-          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
+          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
+          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
+          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
+          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
         },
       },
       {
-        name: "Coco/Félicité",
+        name: "Félicité",
         lat: -4.32,
         lng: 55.86,
         note: {
-          en: "A snorkelling stop over coral, in the strait between the two islands.",
-          uk: "Зупинка для снорклінгу над коралами, у протоці між двома островами.",
-          de: "Ein Schnorchelstopp über Korallen, in der Passage zwischen beiden Inseln.",
-          es: "Una parada de snorkel sobre coral, en el paso entre las dos islas.",
+          en: "Granite slabs and clear water, with the Sisters islands close by.",
+          uk: "Гранітні плити й прозора вода, а поруч - острови Сестри.",
+          de: "Granitplatten und klares Wasser, die Sisters-Inseln ganz in der Nähe.",
+          es: "Losas de granito y agua clara, con las islas Sisters muy cerca.",
         },
       },
       {
@@ -5544,7 +5583,7 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         },
       },
       {
-        name: "Krabi/Railay",
+        name: "Railay",
         lat: 8.011,
         lng: 98.839,
         note: {
@@ -5712,10 +5751,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
-          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
-          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
-          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
+          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
+          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
+          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
+          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
         },
       },
       {
@@ -5860,7 +5899,7 @@ export type CatalogueRoutesPlan = {
   /** Stops on routes this seed does not own that it could still name, and the ones it could not. */
   backfilled: { routeTitle: string; stop: string }[];
   unnamed: { routeTitle: string; stop: string }[];
-  created: { id: string; title: string; target: string }[];
+  created: { id: string; title: string; target: string; draft: boolean }[];
   existing: { id: string; title: string }[];
   unresolved: { id: string; title: string }[];
   stopsRefreshed: { routeId: string; stops: number }[];
@@ -5955,6 +5994,7 @@ export async function seedCatalogueRoutes(
         id: route.id,
         title: route.copy.en.title,
         target: `base ${nearest.name} (${Math.round(nearest.km)} km)`,
+        draft: route.draft === true,
       });
       toCreate.push({ route, baseId: nearest.id, regionId: null });
       continue;
@@ -5968,6 +6008,7 @@ export async function seedCatalogueRoutes(
       id: route.id,
       title: route.copy.en.title,
       target: `region ${fallback.name}`,
+      draft: route.draft === true,
     });
     toCreate.push({ route, baseId: null, regionId: fallback.id });
   }
@@ -6065,7 +6106,8 @@ export async function seedCatalogueRoutes(
         kind: "seven_days",
         nights: 7,
         difficulty: route.difficulty,
-        active: true,
+        /* A route the client flagged for an operational check is created unpublished. */
+        active: route.draft !== true,
       });
 
       await tx.insert(suggestedRouteTranslation).values(

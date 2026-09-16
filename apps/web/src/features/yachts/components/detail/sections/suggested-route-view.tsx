@@ -12,7 +12,7 @@ import {
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 
-import { MapPin } from "lucide-react";
+import { Info, MapPin } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import MapPreview from "@/components/shared/overlay/map-preview";
@@ -389,6 +389,20 @@ export default function SuggestedRouteView({ title, description, stops }: Sugges
       {description ? <p className="text-base leading-5.5 text-natural-500">{description}</p> : null}
 
       <RouteStill route={{ title, stops: routeStops }} />
+
+      {/*
+       * Under the map rather than in the section's heading: the picture is what reads as a promise
+       * of exact positions, and the points on it are towns and islands the author named, not
+       * surveyed marinas. The first and last day are the yacht's own base -- see `routeForBase`.
+       *
+       * Carried on the same tinted row the amenities section uses for its footnote, because grey
+       * small print under a map is exactly what a reader skips -- and this is the line that says
+       * the map is indicative.
+       */}
+      <div className="flex items-start gap-2 rounded-xl bg-brand-50 px-4 py-2.5">
+        <Info className="mt-0.5 size-4 shrink-0 text-brand" />
+        <p className="min-w-0 flex-1 text-sm leading-[1.4] text-foreground">{t("disclaimer")}</p>
+      </div>
 
       <DayLists columns={columns} />
     </div>

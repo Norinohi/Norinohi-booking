@@ -1434,7 +1434,8 @@
       "start": "Inicio",
       "finish": "Fin",
       "day": "Día {day}",
-      "stopTitle": "Día {day} - {place}"
+      "stopTitle": "Día {day} - {place}",
+      "disclaimer": "Ruta orientativa. El itinerario final y los fondeos nocturnos dependen del tiempo, la disponibilidad y la decisión del patrón."
     },
     "review": {
       "count": "({count, plural, one {# opinión} other {# opiniones}})",
