@@ -14,7 +14,7 @@ import { Skeleton } from "@yacht-charter/ui/components/feedback/skeleton";
 import { Select } from "@yacht-charter/ui/components/form/select";
 import { TextField } from "@yacht-charter/ui/components/form/text-field";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import {
   useSetRouteActive,
 } from "../hooks/use-routes";
 import { ROUTE_KINDS, type RouteRow } from "../types";
+import FeaturedRoutesDialog from "./featured-routes-dialog";
 import RouteDialog from "./route-dialog";
 import RoutePreviewDialog from "./route-preview-dialog";
 import RouteStopsDialog from "./route-stops-dialog";
@@ -60,6 +61,7 @@ export default function RoutesTable() {
   const [editOpen, setEditOpen] = useState(false);
   const [stopsFor, setStopsFor] = useState<string | null>(null);
   const [previewFor, setPreviewFor] = useState<string | null>(null);
+  const [featuredOpen, setFeaturedOpen] = useState(false);
 
   const geography = useGeographyOptions();
   const setActive = useSetRouteActive();
@@ -185,6 +187,10 @@ export default function RoutesTable() {
             setPage(1);
           }}
         />
+        <Button variant="subtle" className="h-12 shrink-0" onClick={() => setFeaturedOpen(true)}>
+          <Star className="size-4" />
+          {t("actions.featured")}
+        </Button>
         <Button variant="brand" className="h-12 shrink-0" onClick={openCreate}>
           <Plus className="size-4" />
           {t("actions.create")}
@@ -310,6 +316,7 @@ export default function RoutesTable() {
       ) : null}
 
       <RouteDialog route={editing} open={editOpen} onOpenChange={setEditOpen} />
+      <FeaturedRoutesDialog open={featuredOpen} onOpenChange={setFeaturedOpen} />
       <RouteStopsDialog
         route={stopsRoute}
         open={stopsFor !== null}
