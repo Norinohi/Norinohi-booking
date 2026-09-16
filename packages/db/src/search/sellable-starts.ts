@@ -11,7 +11,7 @@ import {
   undatedRange,
   type CandidateRange,
 } from "./candidate-range";
-import { MIN_LEAD_DAYS, providerLeadDaysSql } from "./read-model";
+import { MIN_LEAD_DAYS, providerLeadDaysSql } from "./lead-time";
 import type { ListingSearchInput } from "./types";
 
 /*

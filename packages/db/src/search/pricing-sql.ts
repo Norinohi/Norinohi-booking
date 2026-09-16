@@ -2,7 +2,8 @@ import { getTableColumns, sql, type SQL } from "drizzle-orm";
 
 import { listingSearchDoc } from "../schema/search";
 import { availabilityWindowFor } from "./candidate-range";
-import { MIN_LEAD_DAYS, PERIOD_PRICE_COLUMNS } from "./read-model";
+import { MIN_LEAD_DAYS } from "./lead-time";
+import { PERIOD_PRICE_COLUMNS } from "./period-prices";
 import type { ListingSearchDoc, ListingSearchInput, PriceBasis } from "./types";
 
 const NULL_PRICE_ASC = 2_147_483_647;

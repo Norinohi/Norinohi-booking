@@ -4,7 +4,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type * as schema from "../schema";
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
 import { shiftDays, todayUtc } from "./candidate-range";
-import { MIN_LEAD_DAYS } from "./read-model";
+import { MIN_LEAD_DAYS } from "./lead-time";
 import { overlapsSlotHold, slotHoldsAsOccupancy } from "./slot-holds";
 import type {
   AvailabilityCalendar,

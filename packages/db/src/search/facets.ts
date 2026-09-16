@@ -17,7 +17,7 @@ import {
   publishedPrice,
   searchDocs,
 } from "./pricing-sql";
-import { MIN_LEAD_DAYS } from "./read-model";
+import { MIN_LEAD_DAYS } from "./lead-time";
 import type {
   FacetMediaKind,
   ListingFacets,

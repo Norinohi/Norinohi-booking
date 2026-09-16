@@ -1,4 +1,4 @@
-import { MIN_LEAD_DAYS } from "./read-model";
+import { MIN_LEAD_DAYS } from "./lead-time";
 import type { ListingSearchInput } from "./types";
 
 /*
