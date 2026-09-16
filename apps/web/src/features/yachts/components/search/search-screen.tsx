@@ -5,7 +5,7 @@ import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagin
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { type ReactNode, Suspense, useMemo } from "react";
+import { type ReactNode, type RefObject, Suspense, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { type AppPathname, Link, useRouter } from "@/i18n/navigation";
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
@@ -161,10 +161,28 @@ function FilteredMapCardLink({ locked }: { locked?: LockedFilters }) {
   return <MapCardLink href={query ? `${YACHTS_MAP_HREF}?${query}` : YACHTS_MAP_HREF} />;
 }
 
-function SearchBarSection({ locked }: { locked?: LockedFilters }) {
+/* Where the results column stops sitting beside the search bar and drops below the map card. */
+const RESULTS_BESIDE_BAR = "(min-width: 64rem)";
+
+function SearchBarSection({
+  locked,
+  resultsRef,
+}: {
+  locked?: LockedFilters;
+  resultsRef: RefObject<HTMLDivElement | null>;
+}) {
   const { filters, applyFilters } = useApplyFilters(locked);
 
-  return <SearchBar value={filters} onSearch={applyFilters} />;
+  /* Below `lg` the results start a screen further down, so a search changed nothing the visitor
+     could see and read as a button that did not work. */
+  function search(next: FiltersState) {
+    applyFilters(next);
+    if (!window.matchMedia(RESULTS_BESIDE_BAR).matches) {
+      resultsRef.current?.scrollIntoView({ block: "start" });
+    }
+  }
+
+  return <SearchBar value={filters} onSearch={search} />;
 }
 
 function FiltersAside({ locked }: { locked?: LockedFilters }) {
@@ -269,6 +287,7 @@ export default function SearchScreen({
   footer?: ReactNode;
 }) {
   const t = useTranslations("Yachts");
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="flex flex-col">
@@ -279,7 +298,7 @@ export default function SearchScreen({
               boundary all the same, or it never reaches the HTML a crawler receives. */}
           <h1 className="sr-only">{heading ?? t("heading")}</h1>
           <Suspense fallback={null}>
-            <SearchBarSection locked={locked} />
+            <SearchBarSection locked={locked} resultsRef={resultsRef} />
           </Suspense>
         </div>
       </div>
@@ -315,7 +334,7 @@ export default function SearchScreen({
             </Suspense>
           </aside>
 
-          <div className="flex min-w-0 flex-col gap-5">
+          <div ref={resultsRef} className="flex min-w-0 scroll-mt-(--header-h) flex-col gap-5">
             {/* `Loader` is the component's own pending UI, reused rather than a new skeleton. */}
             <Suspense fallback={resultsFallback ?? <Loader />}>
               <ResultsColumn locked={locked} />
