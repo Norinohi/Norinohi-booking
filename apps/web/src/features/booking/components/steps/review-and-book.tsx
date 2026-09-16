@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
+import { ScheduleBreakdown } from "@/components/shared/data-display/booking-summary";
 import { useMoney } from "@/hooks/use-money";
 import { useQuoteLineLabel } from "@/hooks/use-quote-line-label";
 import { dayToDisplay } from "@/lib/date";
@@ -147,7 +148,12 @@ export default function ReviewAndBookStep() {
         ...depositRows,
         ...schedule.map((entry) => ({
           label: scheduleLabel(entry),
-          value: money(entry.amount.amountMinor, entry.amount.currency),
+          value: (
+            <span className="inline-flex items-center gap-1.5">
+              {money(entry.amount.amountMinor, entry.amount.currency)}
+              <ScheduleBreakdown entry={entry} lines={quote.lines} />
+            </span>
+          ),
         })),
         {
           label: t("dueNow"),

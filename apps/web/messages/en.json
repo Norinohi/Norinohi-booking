@@ -1461,6 +1461,9 @@
       "boatPriceHint": "Full rental price",
       "deposit": "Refundable deposit",
       "howItWorks": "See how it works",
+      "scheduleDetails": "What this payment covers",
+      "scheduleIncludes": "Includes",
+      "scheduleSplit": "Split across both payments",
       "groups": {
         "mandatory": "Mandatory extras",
         "selectedExtras": "Selected extras",

@@ -1461,6 +1461,9 @@
       "boatPriceHint": "Повна вартість оренди",
       "deposit": "Поворотна застава",
       "howItWorks": "Як це працює",
+      "scheduleDetails": "Що входить у цей платіж",
+      "scheduleIncludes": "Що входить",
+      "scheduleSplit": "Розподілено між двома платежами",
       "groups": {
         "mandatory": "Обов'язкові доплати",
         "selectedExtras": "Вибрані опції",

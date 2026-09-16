@@ -23,7 +23,7 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { ArrowRight, Calendar, ChevronDown, CircleCheckBig, Info } from "lucide-react";
 import type { AppPathname } from "@/i18n/navigation";
 import { useFormatter, useTranslations } from "next-intl";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "@/i18n/navigation";
 
 import { STAT_TONE } from "@/components/shared/data-display/boat-card";
@@ -384,7 +384,77 @@ function PriceGroup({
   );
 }
 
-function PaymentSchedule({ entries }: { entries: Quote["paymentSchedule"] }) {
+type ScheduleEntry = Quote["paymentSchedule"][number];
+
+/*
+ * What one instalment is made of, read off the quote lines by when each is collected, so the
+ * breakdown adds up to the figure beside it. A split prepayment has no per-line allocation, so
+ * both halves list the whole set and say so rather than inventing one.
+ */
+export function ScheduleBreakdown({ entry, lines }: { entry: ScheduleEntry; lines: QuoteLine[] }) {
+  const t = useTranslations("YachtDetail");
+  const tCard = useTranslations("Common.boatCard");
+  const money = useMoney();
+  const labelOf = useQuoteLineLabel();
+  const [open, setOpen] = useState(false);
+
+  let content: ReactNode;
+  if (entry.kind === "security_deposit") {
+    content = tCard("securityDepositInfo");
+  } else {
+    const payWhen = entry.kind === "checkin_extras" ? "at_check_in" : "now";
+    const covered = lines.filter(
+      (line) => line.payWhen === payWhen && line.amount.amountMinor !== 0,
+    );
+    if (covered.length === 0) return null;
+    content = (
+      <div className="flex flex-col gap-2">
+        <p className="text-natural-500">
+          {t(
+            entry.kind === "deposit" || entry.kind === "balance"
+              ? "sidebar.scheduleSplit"
+              : "sidebar.scheduleIncludes",
+          )}
+        </p>
+        {covered.map((line) => (
+          <div key={line.code} className="flex items-start gap-3">
+            <span className="min-w-0 flex-1">{labelOf(line)}</span>
+            <span className="shrink-0 font-semibold">
+              {money(line.amount.amountMinor, line.amount.currency)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  /* Opened on click as well as hover: a phone has no hover, and this is where most of it is read. */
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={t("sidebar.scheduleDetails")}
+            onClick={() => setOpen(true)}
+            className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-brand outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          />
+        }
+      >
+        <Info className="size-4" />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-80">{content}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function PaymentSchedule({
+  entries,
+  lines,
+}: {
+  entries: Quote["paymentSchedule"];
+  lines: QuoteLine[];
+}) {
   const t = useTranslations("YachtDetail");
   const format = useFormatter();
   const money = useMoney();
@@ -413,11 +483,14 @@ function PaymentSchedule({ entries }: { entries: Quote["paymentSchedule"] }) {
               {entry.dueAt ? <Calendar className="shrink-0" /> : null}
               {when(entry)}
             </Chip>
-            <p className="text-base leading-5.5 font-bold text-foreground">
-              {t(`sidebar.${SCHEDULE_AMOUNT_KEY[entry.kind]}`, {
-                amount: money(entry.amount.amountMinor, entry.amount.currency),
-              })}
-            </p>
+            <div className="flex items-start gap-1.5">
+              <p className="text-base leading-5.5 font-bold text-foreground">
+                {t(`sidebar.${SCHEDULE_AMOUNT_KEY[entry.kind]}`, {
+                  amount: money(entry.amount.amountMinor, entry.amount.currency),
+                })}
+              </p>
+              <ScheduleBreakdown entry={entry} lines={lines} />
+            </div>
           </li>
         ))}
       </ol>
@@ -828,7 +901,7 @@ export default function BookingSummary({
 
             {quote.paymentSchedule.length ? (
               <div className={cn("transition-opacity", repricing && "opacity-40")}>
-                <PaymentSchedule entries={quote.paymentSchedule} />
+                <PaymentSchedule entries={quote.paymentSchedule} lines={quote.lines} />
               </div>
             ) : null}
 
