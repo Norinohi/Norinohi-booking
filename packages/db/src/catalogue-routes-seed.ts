@@ -48,6 +48,14 @@ type SeedRoute = {
  * Stop positions are marina and anchorage coordinates from that file. The copy is a first draft for
  * the client to edit on /routes, which is why a re-run never touches a route that already exists.
  */
+/** The last day of a round trip returns to the marina the first one checked in at. */
+export const RETURN_NOTE = {
+  en: "Back at the base: the boat is handed over in the morning.",
+  uk: "Повернення на базу: яхту здають уранці.",
+  de: "Zurück an der Basis: Das Boot wird am Morgen übergeben.",
+  es: "De vuelta en la base: el barco se entrega por la mañana.",
+} satisfies Record<Locale, string>;
+
 export const CATALOGUE_ROUTES: SeedRoute[] = [
   {
     id: "srt_route_hr_brac_hvar_and_korcula_loop",
@@ -61,7 +69,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Коло Брач, Хвар, Корчула",
         description:
-          "Три великі острови біля Спліта за тиждень: пляжі Брача, міські мури Корчули й ніч на якорі біля Шчедро дорогою назад.",
+          "Три великі острови біля Спліта за тиждень: пляжі Брача, міські мури Корчули й ніч на якорі біля Щедро дорогою назад.",
       },
       de: {
         title: "Brač, Hvar und Korčula",
@@ -120,7 +128,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Šćedro/Pakleni",
+        name: "Šćedro",
         lat: 43.0833,
         lng: 16.7,
         note: {
@@ -271,7 +279,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Південна Далмація",
         description:
-          "Від Дубровника до Елафітських островів, зелених озер Мʼєта та старого міста Корчули, а Ластово лежить достатньо далеко, щоб здаватися віддаленим.",
+          "Від Дубровника до Елафітських островів, зелених озер Млєта та старого міста Корчули, а далі — до віддаленого Ластово.",
       },
       de: {
         title: "Süddalmatien",
@@ -330,7 +338,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         },
       },
       {
-        name: "Lastovo/Šipan",
+        name: "Lastovo",
         lat: 42.7472,
         lng: 16.8306,
         note: {
@@ -1250,22 +1258,22 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       en: {
         title: "Aeolian Islands Classic",
         description:
-          "Seven volcanic islands north of Sicily, finishing under Stromboli in the dark when the crater throws sparks every few minutes.",
+          "Seven volcanic islands north of Sicily, finishing under Stromboli after dark, when its frequent bursts of incandescent material are easiest to see.",
       },
       uk: {
         title: "Еолійські острови",
         description:
-          "Сім вулканічних островів на північ від Сицилії, а фінал під Стромболі в темряві, коли кратер щокілька хвилин викидає іскри.",
+          "Сім вулканічних островів на північ від Сицилії, а фінал — під Стромболі в темряві, коли найкраще видно його регулярну вибухову активність.",
       },
       de: {
         title: "Äolische Inseln",
         description:
-          "Sieben Vulkaninseln nördlich Siziliens, zum Abschluss im Dunkeln unter dem Stromboli, wenn der Krater alle paar Minuten Funken wirft.",
+          "Sieben Vulkaninseln nördlich Siziliens, zum Abschluss nach Einbruch der Dunkelheit unter dem Stromboli, wenn seine häufigen glühenden Auswürfe am besten zu sehen sind.",
       },
       es: {
         title: "Islas Eolias",
         description:
-          "Siete islas volcánicas al norte de Sicilia, con final al anochecer bajo el Stromboli, cuando el cráter lanza chispas cada pocos minutos.",
+          "Siete islas volcánicas al norte de Sicilia, con final al anochecer bajo el Stromboli, cuando se aprecia mejor su frecuente actividad explosiva.",
       },
     },
     stops: [
@@ -1329,10 +1337,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 38.7947,
         lng: 15.2306,
         note: {
-          en: "The volcano erupts every twenty minutes or so; the show is best after dark.",
-          uk: "Вулкан вивергається приблизно щодвадцять хвилин, і найкраще це видно поночі.",
-          de: "Der Vulkan bricht etwa alle zwanzig Minuten aus; am eindrucksvollsten nach Einbruch der Dunkelheit.",
-          es: "El volcán entra en erupción cada veinte minutos; el espectáculo es mejor de noche.",
+          en: "Frequent bursts of incandescent material are easiest to see after dark.",
+          uk: "Часті вибухи й викиди розжареного матеріалу найкраще видно після настання темряви.",
+          de: "Häufige Auswürfe glühenden Materials sind nach Einbruch der Dunkelheit am besten zu sehen.",
+          es: "Las frecuentes explosiones de material incandescente se aprecian mejor de noche.",
         },
       },
       {
@@ -1764,22 +1772,22 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       en: {
         title: "Mallorca, Ibiza and Formentera",
         description:
-          "Two islands in one week, with an overnight passage from Cabrera across to Ibiza. Plan it around the forecast rather than the calendar.",
+          "A Balearic crossing from Mallorca via Cabrera to Ibiza and Formentera, with a longer overnight passage. Plan it around the forecast rather than the calendar.",
       },
       uk: {
         title: "Мальорка, Ібіца і Форментера",
         description:
-          "Два острови за тиждень, із нічним переходом від Кабрери до Ібіци. Планувати варто за прогнозом, а не за календарем.",
+          "Балеарський перехід від Мальорки через Кабреру до Ібіци й Форментери, із довшим нічним переходом. Планувати варто за прогнозом, а не за календарем.",
       },
       de: {
         title: "Mallorca, Ibiza und Formentera",
         description:
-          "Zwei Inseln in einer Woche, mit einem Nachtschlag von Cabrera nach Ibiza. Planung nach dem Wetterbericht, nicht nach dem Kalender.",
+          "Ein Balearen-Törn von Mallorca über Cabrera nach Ibiza und Formentera, mit einer längeren Nachtpassage. Planung nach dem Wetterbericht, nicht nach dem Kalender.",
       },
       es: {
         title: "Mallorca, Ibiza y Formentera",
         description:
-          "Dos islas en una semana, con una travesía nocturna de Cabrera a Ibiza. Se planifica con el parte meteorológico, no con el calendario.",
+          "Una travesía balear desde Mallorca, vía Cabrera, hasta Ibiza y Formentera, con un tramo nocturno más largo. Se planifica con el parte meteorológico, no con el calendario.",
       },
     },
     stops: [
@@ -2040,7 +2048,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Хардангер-фіорд",
         description:
-          "Сади, водоспади й рукав фіорду до Ейдфіорда, зі стартом у Бергені. Прохолодна вода, довге літнє світло й прогноз, який дивляться щоранку.",
+          "Сади, водоспади й рукав фіорду до Ейдфіорда, зі стартом у Бергені. Прохолодна вода, довгі літні дні й прогноз погоди, який перевіряють щоранку.",
       },
       de: {
         title: "Hardangerfjord",
@@ -2059,10 +2067,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 60.395,
         lng: 5.31,
         note: {
-          en: "Check-in beside the Hanseatic wharf, the gateway to the western fjords.",
-          uk: "Реєстрація біля ганзейської набережної, це брама до західних фіордів.",
-          de: "Check-in an der hanseatischen Kaifront, dem Tor zu den Westfjorden.",
-          es: "Check-in junto al muelle hanseático, la puerta a los fiordos occidentales.",
+          en: "A base for reaching the western fjords, with Bergen's Hanseatic Bryggen wharf among the city's main sights.",
+          uk: "База для виходу до західних фіордів, а ганзейська набережна Брюгген — одна з головних пам'яток Бергена.",
+          de: "Eine Basis für Törns in die Westfjorde, mit der hanseatischen Bryggen-Kaifront als einer der wichtigsten Sehenswürdigkeiten Bergens.",
+          es: "Una base para navegar hacia los fiordos occidentales, con el muelle hanseático de Bryggen entre los principales atractivos de Bergen.",
         },
       },
       {
@@ -2153,10 +2161,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 60.395,
         lng: 5.31,
         note: {
-          en: "Check-in beside the Hanseatic wharf, the gateway to the western fjords.",
-          uk: "Реєстрація біля ганзейської набережної, це брама до західних фіордів.",
-          de: "Check-in an der hanseatischen Kaifront, dem Tor zu den Westfjorden.",
-          es: "Check-in junto al muelle hanseático, la puerta a los fiordos occidentales.",
+          en: "A base for reaching the western fjords, with Bergen's Hanseatic Bryggen wharf among the city's main sights.",
+          uk: "База для виходу до західних фіордів, а ганзейська набережна Брюгген — одна з головних пам'яток Бергена.",
+          de: "Eine Basis für Törns in die Westfjorde, mit der hanseatischen Bryggen-Kaifront als einer der wichtigsten Sehenswürdigkeiten Bergens.",
+          es: "Una base para navegar hacia los fiordos occidentales, con el muelle hanseático de Bryggen entre los principales atractivos de Bergen.",
         },
       },
       {
@@ -2501,7 +2509,7 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       uk: {
         title: "Південна Корсика і Лавеці",
         description:
-          "Скелі під Боніфачо, гранітні острівці Лавеці та пляжі навколо Порто-Веккіо, а протоку Боніфачо варто проходити з розрахунком.",
+          "Скелі під Боніфачо, гранітні острівці Лавеці та пляжі навколо Порто-Веккіо; час проходження протоки Боніфачо варто ретельно планувати.",
       },
       de: {
         title: "Südkorsika und Lavezzi",
@@ -2542,10 +2550,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: 41.3872,
         lng: 9.1592,
         note: {
-          en: "The harbour hides in a cleft under the chalk cliffs, invisible from the sea.",
-          uk: "Гавань ховається в розколині під крейдяними скелями, з моря її не видно.",
-          de: "Der Hafen versteckt sich in einer Spalte unter den Kreidefelsen, von See unsichtbar.",
-          es: "El puerto se esconde en una grieta bajo los acantilados de creta, invisible desde el mar.",
+          en: "The harbour hides in a cleft under limestone cliffs, almost invisible from the sea.",
+          uk: "Гавань ховається в розколині під вапняковими скелями, з моря її майже не видно.",
+          de: "Der Hafen versteckt sich in einer Spalte unter Kalksteinfelsen und ist von See kaum zu erkennen.",
+          es: "El puerto se esconde en una grieta bajo acantilados de caliza y apenas se distingue desde el mar.",
         },
       },
       {
@@ -3246,10 +3254,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
-          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
-          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
-          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
+          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
+          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
+          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
+          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
         },
       },
       {
@@ -3272,22 +3280,22 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
       en: {
         title: "Praslin and La Digue",
         description:
-          "A short week around two islands, starting from Praslin: Anse Lazio, the reserves at Cousin and Curieuse, and the sandbanks off Coco and Félicité.",
+          "A relaxed week around Praslin, La Digue and their smaller neighbouring islands: Anse Lazio, the reserves at Cousin and Curieuse, and the sandbanks off Coco and Félicité.",
       },
       uk: {
         title: "Праслен і Ла-Діг",
         description:
-          "Короткий тиждень навколо двох островів зі стартом на Праслені: Анс-Лаціо, заповідники Кузен і Кюр'єз та піщані мілини біля Коко й Фелісіте.",
+          "Спокійний тиждень навколо Праслена, Ла-Діга та сусідніх менших островів: Анс-Лаціо, заповідники Кузен і Кюр'єз та піщані мілини біля Коко й Фелісіте.",
       },
       de: {
         title: "Praslin und La Digue",
         description:
-          "Eine kurze Woche um zwei Inseln, ab Praslin: Anse Lazio, die Reservate Cousin und Curieuse und die Sandbänke vor Coco und Félicité.",
+          "Eine entspannte Woche rund um Praslin, La Digue und die kleineren Nachbarinseln: Anse Lazio, die Reservate Cousin und Curieuse und die Sandbänke vor Coco und Félicité.",
       },
       es: {
         title: "Praslin y La Digue",
         description:
-          "Una semana corta entre dos islas, desde Praslin: Anse Lazio, las reservas de Cousin y Curieuse y los bancos de arena de Coco y Félicité.",
+          "Una semana tranquila entre Praslin, La Digue y sus islas vecinas más pequeñas: Anse Lazio, las reservas de Cousin y Curieuse y los bancos de arena de Coco y Félicité.",
       },
     },
     stops: [
@@ -3329,10 +3337,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
-          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
-          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
-          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
+          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
+          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
+          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
+          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
         },
       },
       {
@@ -3445,10 +3453,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
-          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
-          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
-          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
+          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
+          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
+          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
+          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
         },
       },
       {
@@ -4473,10 +4481,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
-          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
-          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
-          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
+          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
+          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
+          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
+          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
         },
       },
       {
@@ -4545,10 +4553,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
-          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
-          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
-          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
+          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
+          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
+          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
+          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
         },
       },
       {
@@ -4567,10 +4575,10 @@ export const CATALOGUE_ROUTES: SeedRoute[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
-          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
-          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
-          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
+          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
+          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
+          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
+          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
         },
       },
       {
@@ -4884,10 +4892,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 38.4581,
         lng: 20.5761,
         note: {
-          en: "The only village on Kefalonia the 1953 earthquake left standing.",
-          uk: "Єдине село на Кефалонії, яке пережило землетрус 1953 року.",
-          de: "Das einzige Dorf auf Kefalonia, das das Erdbeben von 1953 überstand.",
-          es: "El único pueblo de Cefalonia que quedó en pie tras el terremoto de 1953.",
+          en: "One of the few settlements on Kefalonia to remain largely intact after the 1953 earthquake.",
+          uk: "Одне з небагатьох поселень Кефалонії, що значною мірою вціліли після землетрусу 1953 року.",
+          de: "Eine der wenigen Siedlungen auf Kefalonia, die das Erdbeben von 1953 weitgehend unbeschadet überstanden.",
+          es: "Uno de los pocos asentamientos de Cefalonia que quedaron en gran parte intactos tras el terremoto de 1953.",
         },
       },
       {
@@ -5081,10 +5089,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 41.3872,
         lng: 9.1592,
         note: {
-          en: "The harbour hides in a cleft under the chalk cliffs, invisible from the sea.",
-          uk: "Гавань ховається в розколині під крейдяними скелями, з моря її не видно.",
-          de: "Der Hafen versteckt sich in einer Spalte unter den Kreidefelsen, von See unsichtbar.",
-          es: "El puerto se esconde en una grieta bajo los acantilados de creta, invisible desde el mar.",
+          en: "The harbour hides in a cleft under limestone cliffs, almost invisible from the sea.",
+          uk: "Гавань ховається в розколині під вапняковими скелями, з моря її майже не видно.",
+          de: "Der Hafen versteckt sich in einer Spalte unter Kalksteinfelsen und ist von See kaum zu erkennen.",
+          es: "El puerto se esconde en una grieta bajo acantilados de caliza y apenas se distingue desde el mar.",
         },
       },
       {
@@ -5130,10 +5138,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: 38.7867,
         lng: 1.4308,
         note: {
-          en: "A private island with a mud pool behind the beach and no buildings.",
-          uk: "Приватний острів із грязьовою купіллю за пляжем і без жодної забудови.",
-          de: "Eine Privatinsel mit einem Schlammteich hinter dem Strand und ohne Bebauung.",
-          es: "Una isla privada con una charca de lodo tras la playa y ningún edificio.",
+          en: "A private island with a protected lagoon, dunes and undeveloped beaches.",
+          uk: "Приватний острів із заповідною лагуною, дюнами й незабудованими пляжами.",
+          de: "Eine Privatinsel mit geschützter Lagune, Dünen und unbebauten Stränden.",
+          es: "Una isla privada con laguna protegida, dunas y playas sin urbanizar.",
         },
       },
       {
@@ -5469,10 +5477,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: -4.358,
         lng: 55.826,
         note: {
-          en: "Bicycles and ox carts instead of cars, and the granite of Anse Source d'Argent.",
-          uk: "Замість автомобілів - велосипеди й воли, а ще граніт Анс-Сурс-д'Аржан.",
-          de: "Fahrräder und Ochsenkarren statt Autos, dazu der Granit von Anse Source d'Argent.",
-          es: "Bicicletas y carros de bueyes en vez de coches, y el granito de Anse Source d'Argent.",
+          en: "Bicycles still outnumber motor vehicles, with the granite boulders of Anse Source d'Argent as the island's signature view.",
+          uk: "Велосипеди тут досі домінують над моторним транспортом, а ще — гранітні валуни Анс-Сурс-д'Аржан.",
+          de: "Fahrräder prägen die Insel noch immer stärker als Motorfahrzeuge, dazu die Granitfelsen von Anse Source d'Argent.",
+          es: "Las bicicletas siguen dominando sobre los vehículos a motor, junto con los bloques de granito de Anse Source d'Argent.",
         },
       },
       {
@@ -5704,10 +5712,10 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
         lat: -16.501,
         lng: -151.742,
         note: {
-          en: "A single peak inside a turquoise lagoon, the pass on the western side.",
-          uk: "Єдина вершина посеред бірюзової лагуни, а прохід - із західного боку.",
-          de: "Ein einzelner Gipfel in einer türkisfarbenen Lagune, der Pass liegt im Westen.",
-          es: "Un único pico dentro de una laguna turquesa, con el paso en el lado oeste.",
+          en: "Mount Otemanu rises above a turquoise lagoon, with the main pass on the western side.",
+          uk: "Гора Отеману здіймається над бірюзовою лагуною, а головний прохід лежить із західного боку.",
+          de: "Der Mount Otemanu erhebt sich über einer türkisfarbenen Lagune; der Hauptpass liegt im Westen.",
+          es: "El monte Otemanu se alza sobre una laguna turquesa, con el paso principal en el lado oeste.",
         },
       },
       {
@@ -5735,6 +5743,78 @@ export const STOP_REFRESH: { routeId: string; stops: SeedStop[] }[] = [
     ],
   },
 ];
+
+/*
+ * Every stop the seed has words for, by place name.
+ *
+ * A name that carries two places ("Kefalonia/Fiskardo") is filed under both, so a hand-written
+ * stop that names only one of them still finds it. A place two routes describe differently is
+ * dropped rather than guessed at -- the backfill wants one answer, not the first of several.
+ */
+function stopNoteLookup(): Map<string, Record<Locale, string> | null> {
+  const lookup = new Map<string, Record<Locale, string> | null>();
+  /* Without the last stop of each route: it carries the note about handing the boat back, which
+     says nothing about the place and would collide with that same marina's arrival note. */
+  const stops = [
+    ...CATALOGUE_ROUTES.flatMap((route) => route.stops.slice(0, -1)),
+    ...STOP_REFRESH.flatMap((entry) => entry.stops.slice(0, -1)),
+  ];
+
+  for (const stop of stops) {
+    for (const alias of stop.name.split("/")) {
+      const key = normalizeName(alias);
+      if (!key) continue;
+      const seen = lookup.get(key);
+      if (seen === undefined) {
+        lookup.set(key, stop.note);
+        continue;
+      }
+      if (seen === null || seen.en !== stop.note.en) lookup.set(key, null);
+    }
+  }
+
+  return lookup;
+}
+
+const normalizeName = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+/**
+ * Names a stop the seed does not own: one on a route staff wrote by hand.
+ *
+ * Matched on the place inside the name, because those routes are written the way a sailor says it
+ * -- "ACI Marina Split", "Maslinica, Šolta" -- while this file names the island. A stop whose name
+ * carries no place the seed knows, or several, is left alone and reported: a plausible wrong line
+ * under a day is worse than a blank one.
+ */
+function matchNote(lookup: Map<string, Record<Locale, string> | null>, stopName: string) {
+  const words = normalizeName(stopName);
+  if (!words) return null;
+
+  const direct = lookup.get(words);
+  if (direct) return direct;
+
+  const spoken = new Set(words.split(" "));
+  const hits: Record<Locale, string>[] = [];
+  for (const [key, note] of lookup) {
+    if (!note) continue;
+    /*
+     * The place named inside the stop's own name: "ACI Marina Split" is Split, "Palmižana,
+     * Pakleni" is the Pakleni islands. Words of three letters or fewer are ignored, because they
+     * are the ones that collide ("Bol" is a town, "bay" and "isla" are not names at all).
+     */
+    if (key.split(" ").some((word) => word.length > 3 && spoken.has(word))) hits.push(note);
+  }
+
+  const [first] = hits;
+  if (!first) return null;
+  return hits.every((note) => note.en === first.en) ? first : null;
+}
 
 /**
  * Writes a route's stops and their per-locale notes.
@@ -5777,6 +5857,9 @@ async function writeStops(
 }
 
 export type CatalogueRoutesPlan = {
+  /** Stops on routes this seed does not own that it could still name, and the ones it could not. */
+  backfilled: { routeTitle: string; stop: string }[];
+  unnamed: { routeTitle: string; stop: string }[];
   created: { id: string; title: string; target: string }[];
   existing: { id: string; title: string }[];
   unresolved: { id: string; title: string }[];
@@ -5843,6 +5926,8 @@ export async function seedCatalogueRoutes(
   { apply }: { apply: boolean },
 ): Promise<CatalogueRoutesPlan> {
   const plan: CatalogueRoutesPlan = {
+    backfilled: [],
+    unnamed: [],
     created: [],
     existing: [],
     unresolved: [],
@@ -5901,6 +5986,72 @@ export async function seedCatalogueRoutes(
     }
   }
 
+  /*
+   * Stops with no words under them, on routes this seed does not own. The client's list is only
+   * part of what /routes holds: the rest was written by hand, and a card there prints a bare
+   * "Day 3 - Vis" with nothing beneath it.
+   */
+  const ownIds = new Set([...ids, ...refreshIds]);
+  const orphanStops = await db
+    .select({
+      id: suggestedRouteStop.id,
+      routeId: suggestedRouteStop.routeId,
+      name: suggestedRouteStop.name,
+      sortOrder: suggestedRouteStop.sortOrder,
+      routeTitle: suggestedRoute.title,
+    })
+    .from(suggestedRouteStop)
+    .innerJoin(suggestedRoute, eq(suggestedRoute.id, suggestedRouteStop.routeId))
+    .where(sql`coalesce(nullif(trim(${suggestedRouteStop.note}), ''), null) is null`);
+
+  /* Which stop opens and which closes each of those routes, so a round trip's last day reads as
+     the return rather than as a second check-in at the same marina. */
+  const ends = new Map<string, { first: string; last: number }>();
+  const orphanRouteIds = [...new Set(orphanStops.map((stop) => stop.routeId))].filter(
+    (routeId) => !ownIds.has(routeId),
+  );
+  if (orphanRouteIds.length > 0) {
+    const rows = await db
+      .select({
+        routeId: suggestedRouteStop.routeId,
+        name: suggestedRouteStop.name,
+        sortOrder: suggestedRouteStop.sortOrder,
+      })
+      .from(suggestedRouteStop)
+      .where(inArray(suggestedRouteStop.routeId, orphanRouteIds));
+
+    for (const row of rows) {
+      const seen = ends.get(row.routeId);
+      if (!seen) {
+        ends.set(row.routeId, { first: row.name, last: row.sortOrder });
+        continue;
+      }
+      if (row.sortOrder > seen.last) seen.last = row.sortOrder;
+      if (row.sortOrder === 0) seen.first = row.name;
+    }
+  }
+
+  const lookup = stopNoteLookup();
+  const toName: { id: string; note: Record<Locale, string> }[] = [];
+  for (const stop of orphanStops) {
+    /* The seed rewrites its own routes' stops above, notes included. */
+    if (ownIds.has(stop.routeId)) continue;
+
+    const route = ends.get(stop.routeId);
+    const returning =
+      route !== undefined &&
+      stop.sortOrder === route.last &&
+      stop.sortOrder > 0 &&
+      stop.name === route.first;
+    const note = returning ? RETURN_NOTE : matchNote(lookup, stop.name);
+    if (!note) {
+      plan.unnamed.push({ routeTitle: stop.routeTitle, stop: stop.name });
+      continue;
+    }
+    plan.backfilled.push({ routeTitle: stop.routeTitle, stop: stop.name });
+    toName.push({ id: stop.id, note });
+  }
+
   if (!apply) return plan;
 
   await db.transaction(async (tx) => {
@@ -5933,6 +6084,27 @@ export async function seedCatalogueRoutes(
       if (!present.has(entry.routeId)) continue;
       await tx.delete(suggestedRouteStop).where(eq(suggestedRouteStop.routeId, entry.routeId));
       await writeStops(tx, entry.routeId, entry.stops);
+    }
+
+    for (const { id, note } of toName) {
+      await tx
+        .update(suggestedRouteStop)
+        .set({ note: note.en })
+        .where(eq(suggestedRouteStop.id, id));
+
+      await tx
+        .insert(suggestedRouteStopTranslation)
+        .values(
+          LOCALES.filter((locale) => locale !== "en").map((locale) => ({
+            stopId: id,
+            locale,
+            note: note[locale],
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [suggestedRouteStopTranslation.stopId, suggestedRouteStopTranslation.locale],
+          set: { note: sql`excluded.note`, updatedAt: new Date() },
+        });
     }
   });
 
