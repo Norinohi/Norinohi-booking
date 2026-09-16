@@ -269,7 +269,7 @@ export default function DiscountDialog({ open, onOpenChange, discountId }: Disco
         showClose
         mobileSheet
         backdropClassName="max-md:bg-transparent"
-        className="top-18 gap-0 overflow-y-auto rounded-none p-0 pb-0 shadow-none scrollbar-thin md:top-1/2 md:max-h-[calc(100dvh-53px)] md:max-w-[min(688px,calc(100vw-108px))] md:overflow-hidden md:rounded-2xl md:pb-0 md:shadow-[4px_4px_20px_rgba(0,0,0,0.1)] **:data-[slot=dialog-close]:top-2 **:data-[slot=dialog-close]:md:hidden"
+        className="top-18 gap-0 overflow-y-auto rounded-none p-0 pb-0 shadow-none scrollbar-thin md:top-1/2 md:max-h-[calc(100dvh-53px)] md:max-w-[min(688px,calc(100vw-108px))] md:overflow-hidden md:rounded-2xl md:pb-0 md:shadow-dialog **:data-[slot=dialog-close]:top-2 **:data-[slot=dialog-close]:md:hidden"
       >
         {/* Own header row: the mobile sheet centers the title under its X row and draws no
             band separators (973:99240); from md the title is left-aligned over a hairline. */}

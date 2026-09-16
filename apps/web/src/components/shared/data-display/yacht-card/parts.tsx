@@ -83,10 +83,7 @@ export function YachtCardBadgeRow({ id, badges, toned }: YachtCardBadgeRowProps)
           <Chip
             key={badge.label}
             variant={(toned ? badge.tone : undefined) ?? (badge.solid ? undefined : "brand")}
-            className={cn(
-              "shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
-              badge.solid && "bg-brand text-brand-foreground",
-            )}
+            className={cn("shadow-brand-glow", badge.solid && "bg-brand text-brand-foreground")}
           >
             {badge.icon}
             {badge.label}

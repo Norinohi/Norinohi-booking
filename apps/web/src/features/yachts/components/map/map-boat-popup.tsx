@@ -187,7 +187,7 @@ export default function MapBoatPopup({
           {catalogueHref ? (
             <Link
               href={catalogueHref}
-              className="flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-[4px_4px_15px_rgba(47,128,237,0.15)] transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="flex h-10 items-center gap-1.5 rounded-full bg-brand px-4 text-sm font-semibold text-brand-foreground shadow-brand-glow transition-colors outline-none hover:bg-brand/90 focus-visible:ring-2 focus-visible:ring-ring/40"
             >
               {t("allInCatalogue", { count })}
               <ArrowRight className="size-4" />

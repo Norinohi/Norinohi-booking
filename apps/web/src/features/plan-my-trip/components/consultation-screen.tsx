@@ -41,7 +41,7 @@ export function ConsultationScreen() {
     <div className="flex flex-1 flex-col justify-center px-4 py-8 md:px-13.5 md:py-15 2xl:px-17.5">
       {/* Narrower than the wizard's card: one channel at a time needs a column, not the full
           290 the result screen's two-up layout does. */}
-      <div className="relative mx-auto flex w-full max-w-175 shrink-0 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:px-10 md:pt-10 md:pb-10">
+      <div className="relative mx-auto flex w-full max-w-175 shrink-0 flex-col overflow-hidden rounded-3xl bg-card px-6 pt-18 pb-6 shadow-card md:px-10 md:pt-10 md:pb-10">
         <IconButton
           variant="subtle"
           size="sm"

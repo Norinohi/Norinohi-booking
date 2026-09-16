@@ -152,7 +152,7 @@ export default function NavigationBar() {
       {/* Collapsed sheet (below xl): links + CTAs from the hamburger */}
       <div
         className={cn(
-          "absolute inset-x-0 top-full origin-top border-b border-natural-50 bg-background shadow-[4px_4px_10px_rgba(0,0,0,0.1)] xl:hidden",
+          "absolute inset-x-0 top-full origin-top border-b border-natural-50 bg-background shadow-popover xl:hidden",
           open ? "block" : "hidden",
         )}
       >

@@ -94,7 +94,7 @@ export function CookieConsent() {
             transition={{ duration: BANNER_DURATION, ease: EASE }}
             className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 md:px-6 md:pb-6"
           >
-            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-[4px_4px_15px_rgba(0,0,0,0.03)] md:flex-row md:items-center md:gap-6 md:p-6">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-card md:flex-row md:items-center md:gap-6 md:p-6">
               <div className="flex flex-1 items-start gap-4">
                 <span
                   aria-hidden

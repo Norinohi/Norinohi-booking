@@ -77,7 +77,7 @@ export default function MapLayout({
   return (
     <article
       className={cn(
-        "flex gap-4 rounded-2xl border border-natural-50 bg-card shadow-[4px_4px_15px_rgba(0,0,0,0.03)]",
+        "flex gap-4 rounded-2xl border border-natural-50 bg-card shadow-card",
         style.card,
         className,
       )}

@@ -103,7 +103,7 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            "max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)] outline-none",
+            "max-h-(--available-height) min-w-(--anchor-width) overflow-y-auto rounded-lg border border-input bg-popover px-4 py-3 text-popover-foreground shadow-popover outline-none",
             className,
           )}
           {...props}

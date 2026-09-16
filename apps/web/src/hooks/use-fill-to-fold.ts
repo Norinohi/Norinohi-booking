@@ -1,5 +1,7 @@
 "use client";
 
+import { useBreakpoint } from "@yacht-charter/ui/hooks/use-breakpoint";
+import type { Breakpoint } from "@yacht-charter/ui/lib/breakpoints";
 import { useEffect, useRef } from "react";
 
 const GUTTER = 24;
@@ -8,21 +10,21 @@ const GUTTER = 24;
  * Keeps a sticky element's bottom on the fold, whatever its current offset is.
  * `from` must match the breakpoint at which the element becomes sticky.
  */
-export function useFillToFold<T extends HTMLElement = HTMLDivElement>(from: string) {
+export function useFillToFold<T extends HTMLElement = HTMLDivElement>(from: Breakpoint) {
   const ref = useRef<T>(null);
+  const sticky = useBreakpoint(from);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
-    const desktop = window.matchMedia(`(min-width: ${from})`);
+    if (!sticky) {
+      el.style.removeProperty("max-height");
+      return;
+    }
 
     let frame = 0;
     const measure = () => {
-      if (!desktop.matches) {
-        el.style.removeProperty("max-height");
-        return;
-      }
       const pinned = Number.parseFloat(getComputedStyle(el).top) || 0;
       const { top } = el.getBoundingClientRect();
       const fromHere = window.innerHeight - top - GUTTER;
@@ -37,14 +39,12 @@ export function useFillToFold<T extends HTMLElement = HTMLDivElement>(from: stri
     measure();
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
-    desktop.addEventListener("change", schedule);
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
-      desktop.removeEventListener("change", schedule);
     };
-  }, [from]);
+  }, [sticky]);
 
   return ref;
 }

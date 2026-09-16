@@ -19,7 +19,7 @@ interface SplitPanelsProps {
 
 export default function SplitPanels({ labels, main, aside }: SplitPanelsProps) {
   const [panel, setPanel] = useState<Panel>(PANELS[0]);
-  const asideRef = useFillToFold<HTMLElement>("80rem");
+  const asideRef = useFillToFold<HTMLElement>("xl");
   const rootRef = useRef<HTMLDivElement>(null);
   const returnToTop = useRef(false);
 

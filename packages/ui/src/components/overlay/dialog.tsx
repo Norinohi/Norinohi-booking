@@ -58,7 +58,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           // Common surface
-          "fixed z-50 flex flex-col items-center gap-6 bg-background p-6 shadow-[4px_4px_20px_rgba(0,0,0,0.1)] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          "fixed z-50 flex flex-col items-center gap-6 bg-background p-6 shadow-dialog data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
           // Positioning: `mobileSheet` docks to the bottom as a sheet on mobile and reverts to
           // the centered dialog from `md` up; the default stays centered at every width.
           mobileSheet

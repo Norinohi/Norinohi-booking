@@ -67,7 +67,7 @@ function ComboboxContent({ className, children, ...props }: ComponentProps<typeo
       <Base.Positioner sideOffset={6} align="start" className="z-50 outline-none">
         <Base.Popup
           className={cn(
-            "flex max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) flex-col overflow-hidden rounded-lg border border-input bg-popover text-popover-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)] outline-none",
+            "flex max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) flex-col overflow-hidden rounded-lg border border-input bg-popover text-popover-foreground shadow-popover outline-none",
             "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
             className,
           )}

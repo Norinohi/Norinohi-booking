@@ -247,7 +247,7 @@ function Calendar(props: CalendarProps) {
     <div
       data-slot="calendar"
       className={cn(
-        "flex w-fit flex-col gap-2 rounded-lg border border-border bg-card p-4 shadow-[4px_4px_10px_rgba(0,0,0,0.1)]",
+        "flex w-fit flex-col gap-2 rounded-lg border border-border bg-card p-4 shadow-popover",
         className,
       )}
     >

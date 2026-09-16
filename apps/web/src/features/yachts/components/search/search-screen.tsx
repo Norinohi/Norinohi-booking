@@ -2,6 +2,7 @@
 
 import { buttonVariants } from "@yacht-charter/ui/components/actions/button";
 import { PaginationControl } from "@yacht-charter/ui/components/navigation/pagination";
+import { useBreakpoint } from "@yacht-charter/ui/hooks/use-breakpoint";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -161,9 +162,6 @@ function FilteredMapCardLink({ locked }: { locked?: LockedFilters }) {
   return <MapCardLink href={query ? `${YACHTS_MAP_HREF}?${query}` : YACHTS_MAP_HREF} />;
 }
 
-/* Where the results column stops sitting beside the search bar and drops below the map card. */
-const RESULTS_BESIDE_BAR = "(min-width: 64rem)";
-
 function SearchBarSection({
   locked,
   resultsRef,
@@ -172,12 +170,14 @@ function SearchBarSection({
   resultsRef: RefObject<HTMLDivElement | null>;
 }) {
   const { filters, applyFilters } = useApplyFilters(locked);
+  /* Where the results column stops sitting beside the search bar and drops below the map card. */
+  const resultsBesideBar = useBreakpoint("lg");
 
   /* Below `lg` the results start a screen further down, so a search changed nothing the visitor
      could see and read as a button that did not work. */
   function search(next: FiltersState) {
     applyFilters(next);
-    if (!window.matchMedia(RESULTS_BESIDE_BAR).matches) {
+    if (!resultsBesideBar) {
       resultsRef.current?.scrollIntoView({ block: "start" });
     }
   }
@@ -187,7 +187,7 @@ function SearchBarSection({
 
 function FiltersAside({ locked }: { locked?: LockedFilters }) {
   const { filters, applyFilters } = useApplyFilters(locked);
-  const filtersRef = useFillToFold("64rem");
+  const filtersRef = useFillToFold("lg");
 
   return (
     <div

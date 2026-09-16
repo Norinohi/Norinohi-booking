@@ -199,7 +199,7 @@ function CarouselArrow({
       disabled={isPrev ? !canScrollPrev : !canScrollNext}
       onClick={() => (isPrev ? api?.scrollPrev() : api?.scrollNext())}
       className={cn(
-        "absolute top-1/2 z-10 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-[4px_4px_10px_rgba(0,0,0,0.1)] transition-colors outline-none hover:bg-white focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-0",
+        "absolute top-1/2 z-10 flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/80 text-foreground shadow-popover transition-colors outline-none hover:bg-white focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-0",
         /* The circle is 32px by design; the tap target around it is 44px. */
         "before:absolute before:-inset-1.5 before:content-['']",
         isPrev ? "left-3" : "right-3",

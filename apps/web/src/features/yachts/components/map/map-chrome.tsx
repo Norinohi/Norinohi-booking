@@ -35,10 +35,7 @@ function CloseListButton({
       size="icon"
       aria-label={label}
       onClick={onClick}
-      className={cn(
-        "pointer-events-auto size-12 shadow-[4px_4px_15px_rgba(47,128,237,0.15)] md:size-11",
-        className,
-      )}
+      className={cn("pointer-events-auto size-12 shadow-brand-glow md:size-11", className)}
     >
       <X />
     </Button>
@@ -129,10 +126,7 @@ export default function MapChrome({
             type="button"
             variant="neutral"
             onClick={() => onListOpenChange(!listOpen)}
-            className={cn(
-              "pointer-events-auto w-auto shadow-[4px_4px_15px_rgba(47,128,237,0.15)]",
-              listOpen && "2xl:hidden",
-            )}
+            className={cn("pointer-events-auto w-auto shadow-brand-glow", listOpen && "2xl:hidden")}
           >
             <List className="md:hidden" />
             <span className="sr-only md:not-sr-only">{t("showAllList")}</span>

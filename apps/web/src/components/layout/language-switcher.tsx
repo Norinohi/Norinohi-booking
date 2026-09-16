@@ -51,7 +51,7 @@ export default function LanguageSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-auto min-w-45 gap-2 rounded-lg border border-border bg-card px-4 py-3 shadow-[4px_4px_10px_rgba(0,0,0,0.1)] ring-0"
+        className="w-auto min-w-45 gap-2 rounded-lg border border-border bg-card px-4 py-3 shadow-popover ring-0"
       >
         {locales.map((locale) => (
           <DropdownMenuItem

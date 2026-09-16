@@ -32,6 +32,14 @@ pnpm --filter web check-types  # tsc --noEmit
 - `next.config.ts` imports `@yacht-charter/env/web` purely for its validation side effect — keep that import first.
 - Logging is split across `src/lib/evlog.ts`, `instrumentation.ts`, and `src/proxy.ts`. Edit `src/lib/evlog.ts`; the other two delegate to it.
 
+## Mobile and breakpoints
+
+- **Breakpoints are Tailwind's defaults**, and `globals.css` declares no `--breakpoint-*` of its own: `sm` 40rem (640px), `md` 48rem (768px), `lg` 64rem (1024px), `xl` 80rem (1280px), `2xl` 96rem (1536px). Styles are mobile-first: the bare class is the phone, a prefix adds from that width up. `md` is where the typography tokens switch to the desktop scale, `xl` is where the density dial and the desktop macro start. The only off-scale value in use is `max-[360px]:` for very narrow phones; do not add others without a design reason.
+- **Prefer CSS.** Show, hide and restyle per breakpoint with `md:` / `max-md:` classes, which render correctly on the server and never flash. Two trees toggled with `hidden md:block` beat a hook every time the markup is cheap.
+- **Reach for the hook only for behaviour CSS cannot express**: an imperative scroll, a measurement, a map offset. `useBreakpoint("lg")` from `@yacht-charter/ui/hooks/use-breakpoint` is the same test as `lg:` (`useMediaQuery(query)` for anything else). It answers `false` on the server and during hydration, then the real value, so never branch markup on it above the fold. `BREAKPOINTS` and `breakpointQuery` in `@yacht-charter/ui/lib/breakpoints` carry the values for code that needs a query string. Do not write `window.matchMedia` or `innerWidth` checks by hand.
+- **Sheets.** A panel docked to a screen edge is `Sheet` from `@yacht-charter/ui/components/overlay/sheet` (Base UI drawer: swipe to dismiss, `side` = `bottom` | `top` | `left` | `right`, `showHandle`, `showClose`). A dialog that only becomes a bottom sheet on phones and is centred from `md` up stays `DialogContent mobileSheet`.
+- **Shadows are tokens**, declared in the `@theme` block of `packages/ui/src/styles/globals.css`: `shadow-card` (cards, tooltip, banners), `shadow-popover` (menus, selects, popovers), `shadow-dialog` (dialogs and sheets), `shadow-brand-glow` (brand-blue map and route controls). Do not write a new `shadow-[...]` for one of these values. A new token also goes into the `extendTailwindMerge` list in `packages/ui/src/lib/utils.ts`, otherwise `cn()` treats it as a shadow colour and a `shadow-none` override stops working.
+
 ## Architecture (feature-module)
 
 `apps/web` follows a **feature-module** architecture. Full decision + rationale live in the project vault (`decisions/ADR-001-web-feature-module-architecture`); this is the working summary.

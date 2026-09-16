@@ -66,7 +66,7 @@ function RouteStopPopup({
 }) {
   return (
     <MapPopup coordinates={coordinates} map={map} className="w-72">
-      <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-[4px_4px_15px_rgba(47,128,237,0.15)]">
+      <div className="relative flex flex-col gap-1.5 rounded-2xl bg-card p-4 shadow-brand-glow">
         {stops.map((stop) => (
           <div key={stop.day} className="flex flex-col gap-1.5">
             <p className="text-base leading-5.5 font-bold text-foreground">{stop.title}</p>
