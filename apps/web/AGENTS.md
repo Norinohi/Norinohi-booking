@@ -12,7 +12,15 @@ The Next.js 16 App Router frontend (package name `web`), served on port 3001 wit
 pnpm dev:web                 # from repo root
 pnpm --filter web build      # next build
 pnpm --filter web check-types  # tsc --noEmit
+pnpm --filter web test         # vitest, unit tests only
+pnpm --filter web test:e2e     # playwright, against a production build (see playwright.config.ts)
 ```
+
+## Tests
+
+- **Unit (Vitest)**: `src/**/*.test.ts`, colocated with the module, node environment, `@/` alias from `vitest.config.ts`. Pure logic only: parsers, mappers, geometry, role checks. Root `pnpm test` runs them through turbo. The config supplies `NEXT_PUBLIC_SERVER_URL` and a `pk.test` Mapbox token, so modules that read `env` at import time load without `SKIP_ENV_VALIDATION`.
+- **Importing a barrel pulls its components.** `@/components/shared/form/filters` re-exports React components that drag `next/navigation` into node and fail to resolve, so a unit under test imports the `lib/` file it needs directly. Translators are real: `createTranslator({ locale: "en", messages, namespace })` over `messages/en`, not a hand-rolled stub.
+- **E2E (Playwright)**: `e2e/*.spec.ts`, desktop and mobile projects. Specs must hold on the CI seed and on a local provider sync alike, so they reach data through the UI (the first search card) rather than a seed slug where they can, and they never sign in. A spec that needs something CI does not have carries a tag and is dropped by `grepInvert` under `CI`: `@live-map` needs a real Mapbox token, which CI deliberately does not carry.
 
 ## Conventions
 

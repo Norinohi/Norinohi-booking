@@ -1,4 +1,4 @@
-import { type FiltersState, isSameValue } from "@/components/shared/form/filters";
+import { type FiltersState, isSameValue } from "@/components/shared/form/filters/lib/state";
 
 import type { Locale } from "@/i18n/config";
 
