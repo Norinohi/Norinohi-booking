@@ -1485,15 +1485,9 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
      * because that was the shortest thing its operator happened to have free first. The nearest
      * charter of the asked-for length from the earliest bookable day is the honest answer.
      */
-    const earliest = shiftDays(todayUtc(), MIN_LEAD_DAYS);
-    const range: CandidateRange = {
-      earliestStart: earliest,
-      latestStart: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
-      earliestEnd: shiftDays(earliest, input.duration),
-      latestEnd: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS + input.duration),
-    };
+    const range = undatedRange(input.duration);
     return sql`, true as "sellsRequestedPeriod"${nearestSellableColumns(
-      { checkIn: earliest, checkOut: shiftDays(earliest, input.duration) },
+      { checkIn: range.earliestStart, checkOut: range.earliestEnd },
       input.duration,
       range,
     )}`;
@@ -1540,23 +1534,42 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
  * 7) % 7)`. It has to fit inside that same stretch -- the stretch it was derived from, not any
  * stretch the listing owns -- and start inside a published rate, so what comes back is free and
  * on sale on the one offer that would sell it.
+ *
+ * Every shape of rule `checkinRuleClause` admits has to produce a start here too, or search and
+ * card disagree: this used to skip rules with no check-in weekday and offers with no rule at all,
+ * so "1 day" admitted exactly the boats it could never name a charter for, and each card fell
+ * back to its stored week. A rule fixing only the check-out day steps the start so the charter
+ * ends on it; a rule fixing neither, or no rule, starts on the stretch's first day. The start
+ * also has to fall inside the rule's own season, which is when that rule governs it.
  */
 function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
+  const opens = sql`greatest(free.start_date, ${range.earliestStart}::date, rule.season_start)`;
   return sql`
-    select (
-      greatest(free.start_date, ${range.earliestStart}::date)
-      + ((rule.checkin_weekday - extract(dow from greatest(free.start_date, ${range.earliestStart}::date))::integer + 7) % 7)
-    )::date as start_date, free.end_date, o.id as offer_id
+    select c.start_date, free.end_date, o.id as offer_id
     from listing_offer o
     join listing_free_period free on free.listing_offer_id = o.id
-    join listing_checkin_rule rule on rule.listing_offer_id = o.id
+    left join listing_checkin_rule rule on rule.listing_offer_id = o.id
+    cross join lateral (
+      select (case
+        when rule.checkin_weekday is not null then
+          ${opens} + ((rule.checkin_weekday - extract(dow from ${opens})::integer + 7) % 7)
+        when rule.checkout_weekday is not null then
+          ${opens} + ((rule.checkout_weekday - extract(dow from ${opens} + ${nights}::integer)::integer + 7) % 7)
+        else ${opens}
+      end)::date as start_date
+    ) c
     where o.listing_id = doc.listing_id
       and o.status = 'active'
-      and rule.checkin_weekday is not null
       and free.end_date >= ${range.earliestStart}::date
       and free.start_date <= ${range.latestStart}::date
+      and (rule.season_end is null or c.start_date <= rule.season_end)
       and (rule.min_nights is null or rule.min_nights <= ${nights})
       and (rule.max_nights is null or rule.max_nights >= ${nights})
+      and (
+        rule.checkin_weekday is null
+        or rule.checkout_weekday is null
+        or mod(${nights} - rule.checkout_weekday + rule.checkin_weekday + 70, 7) = 0
+      )
   `;
 }
 
@@ -2096,6 +2109,21 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
       where o.listing_id = doc.listing_id
         and o.status = 'active'
         and ${checkinRuleClause(nights, undefined)}
+    )`);
+    /*
+     * And a charter of that length the boat actually has free within the horizon, found the
+     * way the card finds the one it names. The rule test above says the operator sells three
+     * nights; it cannot say any three nights are free, so a boat booked solid or selling that
+     * length only in a lapsed season passed, and its card fell back to a week. The rule test
+     * stays in front as the cheap cut, and so does the stored charter: where the projection
+     * already found one of this length it is proof enough, and for a week that is nearly the
+     * whole fleet, which otherwise paid a second or more for the scan on every search.
+     */
+    const range = undatedRange(nights);
+    parts.push(sql`(
+      (doc.bookable_from >= ${range.earliestStart}::date
+        and doc.bookable_to - doc.bookable_from = ${nights})
+      or ${hasSellableStart(nights, range)}
     )`);
   }
   return sql.join(parts, sql` and `);
@@ -3059,6 +3087,17 @@ function candidateRange(
 
 /** How far ahead a length-only search looks for a charter of that length. */
 const UNDATED_SEARCH_HORIZON_DAYS = 365;
+
+/* Where a length with no date can start: from the earliest bookable day, a year out. */
+function undatedRange(nights: number): CandidateRange {
+  const earliest = shiftDays(todayUtc(), MIN_LEAD_DAYS);
+  return {
+    earliestStart: earliest,
+    latestStart: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS),
+    earliestEnd: shiftDays(earliest, nights),
+    latestEnd: shiftDays(earliest, UNDATED_SEARCH_HORIZON_DAYS + nights),
+  };
+}
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);

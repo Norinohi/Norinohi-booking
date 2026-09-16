@@ -114,9 +114,15 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     const from = next?.from;
     const to = next?.to;
 
+    /* The length came from the range being cleared, so it goes with it; one chosen in the
+       filters panel with no dates is left alone. */
     if (!from) {
       setPending(null);
-      setDraft((current) => ({ ...current, startDate: null }));
+      setDraft((current) => ({
+        ...current,
+        startDate: null,
+        duration: current.startDate ? "any" : current.duration,
+      }));
       return;
     }
 
@@ -129,13 +135,19 @@ export default function SearchBar({ value, onSearch }: SearchBarProps) {
     setDraft((current) => ({
       ...current,
       startDate: dayFromNative(from),
-      duration: String(daysBetween(from, to)),
+      /* The same day twice is a day's charter. As zero nights it failed the URL parser, which
+         turned it into "any" without a word. */
+      duration: String(Math.max(daysBetween(from, to), 1)),
     }));
   }
 
+  /* A check-in picked without a check-out still says when: searching on the old dates instead
+     ignored the last thing the visitor did. */
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    onSearch(draft);
+    const from = pending?.from;
+    setPending(null);
+    onSearch(from ? { ...draft, startDate: dayFromNative(from) } : draft);
   }
 
   return (
