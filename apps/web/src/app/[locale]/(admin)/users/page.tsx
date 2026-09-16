@@ -1,9 +1,10 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
+import { getSessionUser } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
-import { UsersScreen, getAdminUser, prefetchUsers } from "@/features/admin";
+import { UsersScreen, prefetchUsers } from "@/features/admin";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -23,7 +24,7 @@ export async function generateMetadata() {
 
 export default async function UsersPage() {
   /* The (admin) layout already redirected anyone without the staff role. */
-  const user = await getAdminUser();
+  const user = await getSessionUser();
 
   return (
     <Hydrated prefetch={prefetchUsers}>

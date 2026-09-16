@@ -15,7 +15,6 @@ export { prefetchCommissions } from "./finance/api/server";
 export { prefetchUsers } from "./users/api/server";
 export { prefetchAuditLog } from "./audit/api/server";
 export { prefetchMarketplaceSettings } from "./settings/api/server";
-export { getAdminUser, isStaff, requireStaffPage } from "./shared/api/session";
 export { default as AuditScreen } from "./audit/components/audit-screen";
 export { default as BookingsScreen } from "./bookings/components/bookings-screen";
 export { default as CommissionsScreen } from "./finance/components/commissions-screen";

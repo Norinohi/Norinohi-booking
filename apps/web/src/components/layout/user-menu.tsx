@@ -15,9 +15,15 @@ import {
 import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { Fragment } from "react";
 
-import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
-import { ACCOUNT_NAV_HREFS, ADMIN_NAV, type AccountNavItem } from "./account-nav";
+import { authClient } from "@/lib/auth-client";
+import {
+  ACCOUNT_NAV_HREFS,
+  type AccountNavItem,
+  canSeeNavSection,
+  NAV_SECTIONS,
+} from "./account-nav";
 
 /*
  * UserMenu — Figma "Dropdowns" account menu (972:53920). A bare User icon opens a white
@@ -58,7 +64,11 @@ export default function UserMenu() {
   const tAdmin = useTranslations("Layout.Sidebar");
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const isStaff = isStaffRole(userRole(session?.user));
+  /* The account rows are written out below with this menu's own labels, so only the
+   * role-gated sections come from the shared list. */
+  const roleSections = NAV_SECTIONS.filter(
+    (section) => section.key !== "account" && canSeeNavSection(section, session?.user),
+  );
 
   /* The trigger is the same icon signed in or out, so it must not wait on the session:
    * SSR renders with isPending true while the client resolves it from the cookie cache
@@ -87,10 +97,10 @@ export default function UserMenu() {
             <DropdownMenuItem className={ITEM} onClick={() => router.push("/profile/credits")}>
               {t("credits")}
             </DropdownMenuItem>
-            {isStaff ? (
-              <>
+            {roleSections.map((section) => (
+              <Fragment key={section.key}>
                 <DropdownMenuSeparator className="mx-0 my-0 bg-natural-100" />
-                {ADMIN_NAV.map((entry) =>
+                {section.entries.map((entry) =>
                   entry.kind === "group" ? (
                     <DropdownMenuSub key={entry.group}>
                       <DropdownMenuSubTrigger className={ITEM}>
@@ -106,8 +116,8 @@ export default function UserMenu() {
                     <AdminItem key={entry.item} item={entry.item} label={tAdmin(entry.item)} />
                   ),
                 )}
-              </>
-            ) : null}
+              </Fragment>
+            ))}
             <DropdownMenuItem
               className={`${ITEM} text-error-500 focus:text-error-600`}
               onClick={() =>

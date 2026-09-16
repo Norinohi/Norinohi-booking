@@ -7,14 +7,13 @@ import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useId, useState } from "react";
 
-import { authClient, isStaffRole, userRole } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import {
-  ACCOUNT_NAV,
   ACCOUNT_NAV_HREFS,
-  ADMIN_NAV,
   type AccountNavItem,
   type AdminGroupKey,
-  type NavEntry,
+  canSeeNavSection,
+  NAV_SECTIONS,
 } from "./account-nav";
 
 /*
@@ -54,13 +53,12 @@ export default function Sidebar({
   /* Staff/admin sessions see the admin rows on every profile page, not only where a screen
    * passes variant="admin". */
   const { data: session } = authClient.useSession();
-  const isStaffUser = isStaffRole(userRole(session?.user));
   /* Role-driven rows only after hydration: the session atom is empty during SSR but may
    * already be filled on the first client render, and that difference is a hydration
    * mismatch. variant="admin" comes from the server, so it needs no gate. */
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-  const isStaff = variant === "admin" || (hydrated && isStaffUser);
+  const reader = hydrated ? session?.user : null;
 
   /* Only the groups the reader has touched are recorded; the rest fall back to "open iff the
    * current page is inside it", so arriving on /listings shows where you are without a click
@@ -68,12 +66,10 @@ export default function Sidebar({
   const [toggled, setToggled] = useState<Partial<Record<AdminGroupKey, boolean>>>({});
 
   const headingId = useId();
-  const groups: readonly { key: "account" | "admin"; entries: readonly NavEntry[] }[] = isStaff
-    ? [
-        { key: "account", entries: ACCOUNT_NAV },
-        { key: "admin", entries: ADMIN_NAV },
-      ]
-    : [{ key: "account", entries: ACCOUNT_NAV }];
+  const groups = NAV_SECTIONS.filter(
+    (section) =>
+      (variant === "admin" && section.key === "admin") || canSeeNavSection(section, reader),
+  );
   const showHeadings = groups.length > 1;
 
   /* Longest match wins so /profile/bookings activates "bookings", not its /profile prefix. */

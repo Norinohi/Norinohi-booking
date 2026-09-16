@@ -1,9 +1,10 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Hydrated from "@/components/shared/layout/hydrated";
+import { STAFF_ROLES } from "@/lib/auth/roles";
+import { requireRole } from "@/lib/auth/server";
 import { buildMetadata } from "@/lib/seo";
 
-import { requireStaffPage } from "@/features/admin";
 import { DiscountManagerScreen, prefetchDiscountManager } from "@/features/profile";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -23,7 +24,7 @@ export async function generateMetadata() {
 }
 
 export default async function DiscountsPage() {
-  const user = await requireStaffPage();
+  const user = await requireRole(...STAFF_ROLES);
 
   return (
     <Hydrated prefetch={prefetchDiscountManager}>

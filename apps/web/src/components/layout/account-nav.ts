@@ -1,4 +1,6 @@
 import type { AppPathname } from "@/i18n/navigation";
+import type { SessionUser } from "@/lib/auth-client";
+import { hasRole, type Role, STAFF_ROLES } from "@/lib/auth/roles";
 
 /*
  * The account menu's rows, in Figma order. Both the sidebar and the header dropdown read this
@@ -67,6 +69,31 @@ export const ADMIN_NAV: readonly NavEntry[] = [
   row("audit"),
   row("settings"),
 ];
+
+export type NavSectionKey = "account" | "admin";
+
+export interface NavSection {
+  readonly key: NavSectionKey;
+  /** Absent for a section every signed-in reader gets. */
+  readonly roles?: readonly Role[];
+  readonly entries: readonly NavEntry[];
+}
+
+/*
+ * Every menu section and who sees it. A role-specific area (a skipper's cabinet) is one more entry
+ * here, and both the sidebar and the header dropdown pick it up without a new conditional.
+ */
+export const NAV_SECTIONS: readonly NavSection[] = [
+  { key: "account", entries: ACCOUNT_NAV },
+  { key: "admin", roles: STAFF_ROLES, entries: ADMIN_NAV },
+];
+
+export function canSeeNavSection(
+  section: NavSection,
+  user: SessionUser | null | undefined,
+): boolean {
+  return section.roles === undefined || hasRole(user, ...section.roles);
+}
 
 /* Flattened for the header dropdown, which has no room to nest and lists every row at once. */
 export const ADMIN_ITEMS: readonly AccountNavItem[] = ADMIN_NAV.flatMap((entry) =>
