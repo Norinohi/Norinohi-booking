@@ -47,6 +47,7 @@ export const doc = (over: Partial<ListingSearchDoc> = {}): ListingSearchDoc => (
   gallery: [],
   amenities: [],
   bestOfferId: "loff_1",
+  requiresOperatorConfirmation: false,
   offerCount: 1,
   priceFromMinor: 1_240_000,
   priceIsFrom: false,

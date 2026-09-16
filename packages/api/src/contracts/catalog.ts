@@ -193,6 +193,12 @@ export const listingSummarySchema = z.object({
      * not known here: the stored figure belonged to the lapsed charter.
      */
     nextPeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
+    /**
+     * The operator confirms each booking by hand, so the boat is quoted like any other but taken
+     * as a booking request: no online hold or payment, which the checkout refuses with
+     * OPERATOR_CONFIRMATION_REQUIRED.
+     */
+    requiresOperatorConfirmation: z.boolean(),
   }),
   rating: z.number(),
   reviewCount: z.number().int(),

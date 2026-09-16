@@ -11,14 +11,14 @@
  */
 import { listAvailabilityConstraints } from "@yacht-charter/db/search";
 import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
-import { sellableOffer } from "@yacht-charter/db/sellable-offer";
+import { listableOffer, requiresOperatorConfirmation } from "@yacht-charter/db/sellable-offer";
 import { provider as providerTable } from "@yacht-charter/db/schema/provider";
 import { listingRefusedPeriod } from "@yacht-charter/db/schema/availability";
 import { providerCommission } from "@yacht-charter/db/schema/commission";
 import { quoteOfferAttempt } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider, ProviderQuote, QuoteRequest } from "@yacht-charter/providers";
 import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@yacht-charter/env/server";
 
@@ -71,6 +71,8 @@ type OfferRow = {
   operatorId: string | null;
   /* Carried only so a persisted refusal can name the source row the sweep would have named. */
   listingSourceId: string | null;
+  /** The operator confirms each booking by hand; see `requiresOperatorConfirmation`. */
+  operatorConfirms: boolean;
 };
 
 /**
@@ -93,9 +95,9 @@ export async function selectBestOffer(
 
   /*
    * An empty list has two meanings and they need opposite answers, so the withheld case is
-   * asked about separately. A listing whose offers all exist but none may be sold -- a retired
-   * hull, or one the vendor vets by hand -- must not fall through to the configured adapter,
-   * which would quote it happily and then be refused at the hold.
+   * asked about separately. A listing whose offers all exist but none may be listed -- a retired
+   * hull -- must not fall through to the configured adapter, which would quote it happily and
+   * then be refused at the hold.
    */
   if (offers.length === 0 && (await hasWithheldOffer(db, input.listingId))) {
     throw new NoSellableOfferError("This boat is not available to book online", []);
@@ -154,8 +156,19 @@ export async function selectBestOffer(
     ...ineligibleAttempts(offers, eligible),
   ];
 
+  /*
+   * A vendor that books online wins over one whose operator confirms by hand whenever it priced
+   * the charter at all: the customer can pay for it now rather than wait on a stranger's inbox.
+   * Only a hull nobody sells online is quoted through the confirming one.
+   */
+  const confirming = new Set(
+    offers.filter((offer) => offer.operatorConfirms).map((o) => o.offerId),
+  );
+  const online = results.filter((result) => !confirming.has(result.attempt.offerId));
+  const contenders = online.some((result) => result.priced) ? online : results;
+
   const { winner, currencyMismatch } = pickWinner(
-    results.map((result): OfferQuoteResult => result.attempt),
+    contenders.map((result): OfferQuoteResult => result.attempt),
     {
       preferredCurrency: offers[0]?.currency ?? null,
       preference: transactingPreference,
@@ -261,12 +274,13 @@ async function hasWithheldOffer(db: Database, listingId: string): Promise<boolea
 }
 
 /**
- * Every offer this listing may be sold through.
+ * Every offer this listing may be quoted through.
  *
- * `sellableOffer` is the same predicate the search document is built on, imported rather than
- * restated: it lived only in the read model, so a retired hull or one the vendor vets by hand
- * was absent from search and still quotable from its own page. The refusal then arrived from
- * the provider at the end of checkout, which is the worst place to learn it.
+ * `listableOffer` is the same predicate the search document is built on, imported rather than
+ * restated: it lived only in the read model, so a retired hull was absent from search and still
+ * quotable from its own page. An operator that confirms bookings by hand is quoted like any
+ * other and marked, so the hold can refuse it (`assertOnlineBookable` in booking.ts) while the
+ * page takes a booking request instead.
  */
 async function listOffersForListing(db: Database, listingId: string): Promise<OfferRow[]> {
   return db
@@ -276,6 +290,10 @@ async function listOffersForListing(db: Database, listingId: string): Promise<Of
       currency: listingOffer.defaultCurrency,
       operatorId: listingOffer.operatorId,
       listingSourceId: listingOffer.listingSourceId,
+      operatorConfirms: sql<boolean>`${requiresOperatorConfirmation({
+        optionApprovalRequired: listingOffer.optionApprovalRequired,
+        fixedBookingSupported: listingOffer.fixedBookingSupported,
+      })}`,
     })
     .from(listingOffer)
     .innerJoin(providerTable, eq(providerTable.id, listingOffer.providerId))
@@ -283,11 +301,7 @@ async function listOffersForListing(db: Database, listingId: string): Promise<Of
       and(
         eq(listingOffer.listingId, listingId),
         eq(listingOffer.status, "active"),
-        sellableOffer({
-          outOfFleetDate: listingOffer.outOfFleetDate,
-          optionApprovalRequired: listingOffer.optionApprovalRequired,
-          fixedBookingSupported: listingOffer.fixedBookingSupported,
-        }),
+        listableOffer({ outOfFleetDate: listingOffer.outOfFleetDate }),
       ),
     )
     .orderBy(listingOffer.id);

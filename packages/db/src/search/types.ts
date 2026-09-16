@@ -189,6 +189,11 @@ export type ListingSearchDoc = {
   basePriceFromMinorEur: number | null;
   /** The offer this card's price, dates and terms describe. Null when nothing is sellable. */
   bestOfferId: string | null;
+  /**
+   * That offer's operator confirms each booking by hand, so the card is quoted and taken as a
+   * booking request rather than held and paid for online.
+   */
+  requiresOperatorConfirmation: boolean;
   /** How many vendors sell this hull. */
   offerCount: number;
   availableFrom: string | null;

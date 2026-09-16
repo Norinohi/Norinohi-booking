@@ -11,12 +11,14 @@ import {
 } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { base } from "@yacht-charter/db/schema/geography";
+import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
+import { requiresOperatorConfirmation } from "@yacht-charter/db/sellable-offer";
 import { user } from "@yacht-charter/db/schema/auth";
 import { quote, type QuoteLine } from "@yacht-charter/db/schema/quote";
 import { listRequestableExtras } from "@yacht-charter/db/search";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { and, count, desc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
@@ -303,6 +305,7 @@ export async function createHold(
   if (priced.userId && priced.userId !== userId) {
     throw new ORPCError("FORBIDDEN", { message: "Quote belongs to another user" });
   }
+  await assertOnlineBookable(db, priced.listingOfferId);
 
   const snapshot = await buildSnapshot(db, priced.listingId);
   const [account] = await db
@@ -1148,4 +1151,35 @@ const BASE_TIME_ZONE = "UTC";
 function combine(date: string, time: string | null): string {
   const clock = time && /^\d{2}:\d{2}/.test(time) ? time.slice(0, 5) : "00:00";
   return `${date}T${clock}:00.000Z`;
+}
+
+/**
+ * Refuses a hold on an offer whose operator confirms each booking by hand.
+ *
+ * Such an offer is quoted like any other, because the vendor prices it, but it cannot be held
+ * and paid for: NauSYS refuses the option outright where it needs approval, and where the
+ * operator fixes the booking we would take the money for a charter nobody has confirmed. The
+ * page offers a booking request instead; this is the guard behind it, so a stale page or a
+ * direct link cannot open a checkout. Before the booking row, so nothing is written.
+ */
+async function assertOnlineBookable(db: Database, listingOfferId: string | null): Promise<void> {
+  if (!listingOfferId) return;
+
+  const [offer] = await db
+    .select({
+      confirms: sql<boolean>`${requiresOperatorConfirmation({
+        optionApprovalRequired: listingOffer.optionApprovalRequired,
+        fixedBookingSupported: listingOffer.fixedBookingSupported,
+      })}`,
+    })
+    .from(listingOffer)
+    .where(eq(listingOffer.id, listingOfferId))
+    .limit(1);
+
+  if (offer?.confirms) {
+    throw new ORPCError("CONFLICT", {
+      message: "This yacht's operator confirms each booking, so it can only be requested",
+      data: { code: "OPERATOR_CONFIRMATION_REQUIRED" },
+    });
+  }
 }

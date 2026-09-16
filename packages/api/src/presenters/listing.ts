@@ -200,6 +200,7 @@ export function presentListingSummary(
         bookablePeriod === null && doc.nearestCheckIn && doc.nearestCheckOut
           ? { checkIn: doc.nearestCheckIn, checkOut: doc.nearestCheckOut }
           : null,
+      requiresOperatorConfirmation: doc.requiresOperatorConfirmation,
     },
     rating: Number(doc.rating),
     reviewCount: doc.reviewCount,

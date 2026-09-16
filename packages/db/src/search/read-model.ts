@@ -1,5 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { sellableOffer } from "../sellable-offer";
+import { listableOffer, requiresOperatorConfirmation } from "../sellable-offer";
 import { and, eq, sql, type SQL } from "drizzle-orm";
 
 import type * as schema from "../schema";
@@ -124,6 +124,7 @@ export async function rebuildListingSearchDocs(
         o.listing_id,
         o.id as offer_id,
         ${providerRank()} as provider_rank,
+        ${operatorConfirms()} as operator_confirms,
         o.default_currency,
         o.security_deposit_minor,
         o.security_deposit_currency,
@@ -463,6 +464,8 @@ export async function rebuildListingSearchDocs(
        */
       order by
         listing_id,
+        /* A vendor that books online outranks one whose operator confirms by hand. */
+        operator_confirms,
         /*
          * The client's agreed order, and deliberately not behind the display setting: this
          * decides which offer's row is projected, not which of its two figures a card shows.
@@ -961,6 +964,7 @@ async function rebuildListingPeriodPrices(
           o.listing_id,
           o.id as offer_id,
           ${providerRank()} as provider_rank,
+          ${operatorConfirms()} as operator_confirms,
           slot.start_date,
           slot.end_date,
           slot.price_minor,
@@ -989,6 +993,7 @@ async function rebuildListingPeriodPrices(
           s.listing_id,
           s.offer_id,
           s.provider_rank,
+          s.operator_confirms,
           s.start_date,
           s.end_date,
           money.price_currency,
@@ -1032,6 +1037,7 @@ async function rebuildListingPeriodPrices(
         listing_id,
         start_date,
         end_date,
+        operator_confirms,
         base_minor_eur asc nulls last,
         (all_in_minor_eur - base_minor_eur) asc nulls last,
         all_in_minor asc nulls last,
@@ -1672,15 +1678,18 @@ function sellableActiveOffer(): SQL {
   return sql`
       o.status = 'active'
         /*
-         * A hull the operator has retired, or one the vendor will not let us sell unattended.
-         * Dropped here rather than deleted, because a charter already booked on it still has to
-         * be readable. Offer selection applies the same predicate, so the search page and the
-         * listing page cannot disagree about what is for sale.
+         * A hull the operator has retired. Dropped here rather than deleted, because a charter
+         * already booked on it still has to be readable. An operator that confirms bookings by
+         * hand stays in: its boats are shown and priced, and only checkout withholds them.
          */
-        and ${sellableOffer({
-          outOfFleetDate: sql`o.out_of_fleet_date`,
-          optionApprovalRequired: sql`o.option_approval_required`,
-          fixedBookingSupported: sql`o.fixed_booking_supported`,
-        })}
+        and ${listableOffer({ outOfFleetDate: sql`o.out_of_fleet_date` })}
   `;
+}
+
+/* Whether offer o needs its operator to confirm, which ranks it behind one that books online. */
+function operatorConfirms(): SQL {
+  return requiresOperatorConfirmation({
+    optionApprovalRequired: sql`o.option_approval_required`,
+    fixedBookingSupported: sql`o.fixed_booking_supported`,
+  });
 }

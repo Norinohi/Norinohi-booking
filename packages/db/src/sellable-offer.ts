@@ -32,8 +32,36 @@ export interface SellabilityColumns {
  */
 export function sellableOffer(columns: SellabilityColumns): SQL {
   return sql`(
-    (${columns.outOfFleetDate} is null or ${columns.outOfFleetDate} > current_date)
-    and ${columns.optionApprovalRequired} is not true
-    and ${columns.fixedBookingSupported} is not false
+    ${listableOffer(columns)}
+    and not ${requiresOperatorConfirmation(columns)}
+  )`;
+}
+
+/**
+ * Whether the offer belongs in the catalogue at all, with its dates and prices.
+ *
+ * Only a retired hull is left out. One whose operator confirms each booking by hand is still
+ * for sale, just not online: NauSYS answered `FREE` with a price for all 24 such yachts asked
+ * in Sep 2026, and the API reference defines the two flags as the operator approving the option
+ * and the operator fixing the booking. So those boats are shown, quoted and taken as a booking
+ * request, and only checkout withholds them; see `requiresOperatorConfirmation`.
+ */
+export function listableOffer(columns: Pick<SellabilityColumns, "outOfFleetDate">): SQL {
+  return sql`(${columns.outOfFleetDate} is null or ${columns.outOfFleetDate} > current_date)`;
+}
+
+/**
+ * The operator confirms this charter by hand, so it cannot be held and paid for online.
+ *
+ * NauSYS `needsOptionApproval`: "if created option needs to be approved by charter company".
+ * `canMakeBookingFixed` false: the charter company converts the option into a reservation, not
+ * the agency (API v6 reference, `RestYacht`). Null on either is the vendor saying nothing.
+ */
+export function requiresOperatorConfirmation(
+  columns: Pick<SellabilityColumns, "optionApprovalRequired" | "fixedBookingSupported">,
+): SQL {
+  return sql`(
+    ${columns.optionApprovalRequired} is true
+    or ${columns.fixedBookingSupported} is false
   )`;
 }

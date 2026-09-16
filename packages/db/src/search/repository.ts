@@ -10,6 +10,7 @@ import { FX_BASE_CURRENCY } from "../fx/rates";
 import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { amenityIconFor } from "./amenity-icons";
 import { crewOptionsFor } from "./crew";
+import { requiresOperatorConfirmation } from "../sellable-offer";
 import { MIN_LEAD_DAYS, PERIOD_PRICE_COLUMNS, providerLeadDaysSql } from "./read-model";
 import {
   decodeSearchCursor,
@@ -2042,6 +2043,14 @@ export const searchColumns = sql`
   doc.base_price_from_minor as "basePriceFromMinor",
   ${basePriceInEur()} as "basePriceFromMinorEur",
   doc.best_offer_id as "bestOfferId",
+  exists (
+    select 1 from listing_offer bo
+    where bo.id = doc.best_offer_id
+      and ${requiresOperatorConfirmation({
+        optionApprovalRequired: sql`bo.option_approval_required`,
+        fixedBookingSupported: sql`bo.fixed_booking_supported`,
+      })}
+  ) as "requiresOperatorConfirmation",
   doc.offer_count as "offerCount",
   doc.currency,
   doc.available_from as "availableFrom",
