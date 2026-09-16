@@ -562,8 +562,10 @@ function textKindOf(category: string | undefined): TextKind {
  * sold the ones stating none (0) for two nights and up. Seven paired rules would say the same
  * thing seven times, and the charter-period line on the detail page would read them out.
  *
- * A yacht listing some days turns around on them, week to week: none of those sold three or
- * four nights. So each listed day is a rule whose check-out falls on the same weekday.
+ * A yacht listing some days turns around on them, at both ends: a charter from one listed day to
+ * another sold exactly as often as a whole week (19 of 25 each, the rest booked outright), and
+ * one ending on an unlisted day 4 of 25, all four from one operator. So every ordered pair of
+ * listed days is a rule, and `checkinRuleClause` reads the length each pair allows.
  *
  * This used to narrow any list containing Saturday to Saturday alone, because `/prices` is swept
  * Saturday to Saturday and `/offers` was thought to refuse the rest. The confirming sweep prices
@@ -587,12 +589,14 @@ function checkinRulesOf(yacht: RestYacht) {
     ];
   }
 
-  return offered.map((day) => ({
-    checkinWeekday: day,
-    checkoutWeekday: day,
-    minNights,
-    maxNights: undefined,
-  }));
+  return offered.flatMap((checkin) =>
+    offered.map((checkout) => ({
+      checkinWeekday: checkin,
+      checkoutWeekday: checkout,
+      minNights,
+      maxNights: undefined,
+    })),
+  );
 }
 
 /**

@@ -233,23 +233,25 @@ describe("check-in rules", () => {
     ]);
   });
 
-  it("keeps every listed day, Saturday among them, week to week", () => {
+  it("lets a charter start and end on any of the days a yacht lists", () => {
     const rules = rulesOf({
       defaultCheckInDay: 7,
       allCheckInDays: [4, 7],
-      minimumCharterDuration: 7,
+      minimumCharterDuration: 3,
     });
 
     expect(rules).toEqual([
-      { checkinWeekday: 3, checkoutWeekday: 3, minNights: 7, maxNights: undefined },
-      { checkinWeekday: 6, checkoutWeekday: 6, minNights: 7, maxNights: undefined },
+      { checkinWeekday: 3, checkoutWeekday: 3, minNights: 3, maxNights: undefined },
+      { checkinWeekday: 3, checkoutWeekday: 6, minNights: 3, maxNights: undefined },
+      { checkinWeekday: 6, checkoutWeekday: 3, minNights: 3, maxNights: undefined },
+      { checkinWeekday: 6, checkoutWeekday: 6, minNights: 3, maxNights: undefined },
     ]);
   });
 
   it("keeps the days a yacht offers when none of them is Saturday", () => {
     const rules = rulesOf({ defaultCheckInDay: -1, allCheckInDays: [2, 5] });
 
-    expect(rules?.map((rule) => rule.checkinWeekday)).toEqual([1, 4]);
+    expect([...new Set(rules?.map((rule) => rule.checkinWeekday))]).toEqual([1, 4]);
   });
 
   it("falls back to the default day when no list is sent", () => {
