@@ -49,12 +49,15 @@ const MEDIA_ROLE_RANK = sql`case lm.role when 'main' then 0 when 'gallery' then 
  * so excluding the ones that are too close advances to the next sellable charter, priced by the
  * laterals below against that period rather than against a charter nobody can buy.
  *
- * One day, because a charter checking in this afternoon is not on sale: the booking has to reach
- * the operator and come back confirmed, and the base has to hand the boat over. A day is a floor,
- * not the real answer -- each operator has its own notice period and neither vendor publishes
- * one, so this is the shortest lead time that is never wrong rather than the right one per base.
+ * Two days, because a charter checking in this afternoon is not on sale: the booking has to reach
+ * the operator and come back confirmed, and the base has to hand the boat over. It was one, and
+ * Booking Manager refuses that: asked for three nights from tomorrow, 0 of 20 yachts free then
+ * were offered, against 10 of 20 from two days out and the same from five or eight (Sep 2026,
+ * `/offers`). The cards were sending the length filter's nearest charter to exactly that day.
+ * Neither vendor publishes a notice period, so this is still a floor rather than the answer per
+ * base.
  */
-export const MIN_LEAD_DAYS = 1;
+export const MIN_LEAD_DAYS = 2;
 
 /** The earliest day a charter may check in on, as SQL, so every candidate branch shares it. */
 const EARLIEST_CHECKIN = sql`(current_date + cast(${MIN_LEAD_DAYS} as int))`;
