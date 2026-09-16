@@ -1,6 +1,7 @@
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { z } from "zod";
 
-export const providerKeySchema = z.enum(["mock", "booking_manager", "nausys"]);
+export const providerKeySchema = z.enum(PROVIDER_KEYS);
 export type ProviderKey = z.infer<typeof providerKeySchema>;
 
 export const moneySchema = z.object({

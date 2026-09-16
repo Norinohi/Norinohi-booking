@@ -1,3 +1,4 @@
+import { PROVIDER_KEYS } from "@yacht-charter/env/providers";
 import { z } from "zod";
 
 import {
@@ -13,7 +14,7 @@ import {
 
 /* ------------------------------------------------------------ provider sync */
 
-export const providerKeyOutputSchema = z.enum(["mock", "booking_manager", "nausys"]);
+export const providerKeyOutputSchema = z.enum(PROVIDER_KEYS);
 
 /** Returned the moment the run row exists; the work itself outlives the request. */
 export const syncRunStartedSchema = z.object({

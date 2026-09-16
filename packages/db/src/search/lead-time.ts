@@ -1,3 +1,4 @@
+import { PROVIDER_KEYS, type ProviderKey, providerMeta } from "@yacht-charter/env/providers";
 import { sql, type SQL } from "drizzle-orm";
 
 /**
@@ -22,12 +23,16 @@ import { sql, type SQL } from "drizzle-orm";
 export const MIN_LEAD_DAYS = 1;
 
 /*
- * The notice a vendor needs, where it is longer than the shared floor. Measured in Sep 2026 on
- * three nights among yachts our occupancy called free: Booking Manager offered none of 20 from
- * tomorrow and half of them from two days out, the same share as from five or eight, so it takes
- * two. NauSYS offered 55 of 60 from tomorrow against 57 of 60 from two days, so it keeps the floor.
+ * The notice a vendor needs, where it is longer than the shared floor. `leadDays` in the provider
+ * registry holds each figure and the measurement behind it.
  */
-export const PROVIDER_LEAD_DAYS = { booking_manager: 2 } as const satisfies Record<string, number>;
+export const PROVIDER_LEAD_DAYS: Readonly<Partial<Record<ProviderKey, number>>> =
+  Object.fromEntries(
+    PROVIDER_KEYS.flatMap((key) => {
+      const days = providerMeta(key).leadDays;
+      return days === null ? [] : [[key, days]];
+    }),
+  );
 
 /** The lead time for the provider whose code `code` evaluates to, as an integer expression. */
 export function providerLeadDaysSql(code: SQL): SQL {

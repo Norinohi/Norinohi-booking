@@ -10,6 +10,7 @@
  * This file only reads and writes rows.
  */
 import { ORPCError } from "@orpc/server";
+import { isProviderKey } from "@yacht-charter/env/providers";
 import { providerCommission } from "@yacht-charter/db/schema/commission";
 import { operator } from "@yacht-charter/db/schema/operator";
 import { provider } from "@yacht-charter/db/schema/provider";
@@ -234,12 +235,11 @@ function present(row: Row): Commission {
   };
 }
 
-const PROVIDER_KEYS: readonly ProviderKey[] = ["mock", "booking_manager", "nausys"];
-
 function asProviderKey(code: string): ProviderKey {
-  const key = PROVIDER_KEYS.find((candidate) => candidate === code);
-  if (!key) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: `Unknown provider ${code}` });
-  return key;
+  if (!isProviderKey(code)) {
+    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: `Unknown provider ${code}` });
+  }
+  return code;
 }
 
 function statusFor(row: Row, today: string): Commission["status"] {

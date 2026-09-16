@@ -1,3 +1,4 @@
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { rebuildSearchReadModelsAfterSync } from "@yacht-charter/db/search/read-model";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import { eq } from "drizzle-orm";
@@ -21,7 +22,7 @@ const SINGLETON_ID = "singleton";
 /** Restated here so an unwritten settings row prices exactly as a written default one does. */
 export const DEFAULT_RELIABILITY_WINDOW_DAYS = 30;
 
-export const DEFAULT_TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
+export { DEFAULT_TRANSACTING_PREFERENCE };
 
 export type ProviderCode = z.infer<typeof providerKeyOutputSchema>;
 export type DisplayCurrency = z.infer<typeof displayCurrencyDefaultSchema>;

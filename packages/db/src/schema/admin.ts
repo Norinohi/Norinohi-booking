@@ -1,3 +1,4 @@
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -149,7 +150,7 @@ export const marketplaceSetting = pgTable(
      */
     transactingPreference: text("transacting_preference")
       .array()
-      .default(["booking_manager", "nausys", "mock"])
+      .default([...DEFAULT_TRANSACTING_PREFERENCE])
       .notNull(),
     /**
      * Whether the offer ranking compares charter rates instead of all-in totals.

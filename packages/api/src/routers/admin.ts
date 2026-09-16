@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { type InventoryProvider, type ProviderKey } from "@yacht-charter/providers";
 
 import { type Database, getEnabledInventoryProviders } from "../context";
@@ -284,7 +285,7 @@ export const adminRouter = {
             enforceLeadTime: true,
             leadTimeDays: 60,
           },
-          transactingPreference: ["booking_manager", "nausys", "mock"],
+          transactingPreference: [...DEFAULT_TRANSACTING_PREFERENCE],
           offerRankingUsesBasePrice: false,
           catalogueShowsBasePrice: false,
           offerRankingUsesReliability: false,

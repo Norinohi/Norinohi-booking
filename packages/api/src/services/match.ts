@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { mediaRankOf } from "@yacht-charter/env/providers";
 import { base, location } from "@yacht-charter/db/schema/geography";
 import {
   listing,
@@ -59,17 +60,6 @@ type Metrics = z.infer<typeof duplicateMetricsSchema>;
 /** Every band, in the order the filter lists them, so an empty one is simply absent. */
 const BANDS: readonly ConfidenceBand[] = ["high", "medium", "low", "unknown"];
 
-/**
- * Media precedence from docs/backend-architecture.md §3: Booking Manager photos
- * win over NauSYS on a listing carrying both, everything else is a fallback.
- */
-const MEDIA_SOURCE_RANK = new Map([
-  ["booking_manager", 0],
-  ["nausys", 1],
-]);
-
-const UNRANKED_SOURCE = 2;
-
 export type MediaRow = {
   source: string | null;
   role: "main" | "layout" | "gallery";
@@ -91,8 +81,8 @@ export function pickPrimaryImage(media: readonly MediaRow[]): string | null {
 }
 
 function mediaOrder(row: MediaRow): number {
-  const sourceRank =
-    row.source === null ? UNRANKED_SOURCE : (MEDIA_SOURCE_RANK.get(row.source) ?? UNRANKED_SOURCE);
+  /* Media precedence from docs/backend-architecture.md §3, as the provider registry ranks it. */
+  const sourceRank = mediaRankOf(row.source);
   const roleRank = row.role === "main" ? 0 : row.role === "gallery" ? 1 : 2;
   return sourceRank * 1_000_000 + roleRank * 100_000 + Math.min(row.sortOrder, 99_999);
 }

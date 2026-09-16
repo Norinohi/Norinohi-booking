@@ -1,3 +1,5 @@
+import { CONTENT_PREFERENCE } from "@yacht-charter/env/providers";
+
 /*
  * Which offer each part of the canonical listing is taken from.
  *
@@ -36,7 +38,7 @@ export type FieldGroup = (typeof FIELD_GROUPS)[number];
  * transacting tie-break uses, so a merged listing does not read as one vendor and sell as
  * the other.
  */
-export const PROVIDER_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
+export const PROVIDER_PREFERENCE = CONTENT_PREFERENCE;
 
 export type OfferFieldCandidate = {
   offerId: string;

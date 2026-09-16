@@ -2,6 +2,8 @@ import "dotenv/config";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
+import { PROVIDER_KEYS } from "./providers";
+
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
@@ -41,7 +43,7 @@ export const env = createEnv({
     OPENAPI_SERVER_URL: z.url().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
-    PROVIDER_MODE: z.enum(["mock", "booking_manager", "nausys"]).default("mock"),
+    PROVIDER_MODE: z.enum(PROVIDER_KEYS).default("mock"),
     // Optional as a pair: the Google sign-in button only works when both are set,
     // and packages/auth registers the provider only when both are present.
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),

@@ -1,3 +1,4 @@
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
 import { sql, type SQL } from "drizzle-orm";
 
 import { REFUSAL_TRUST_DAYS } from "../schema/availability";
@@ -15,13 +16,18 @@ import { EARLIEST_CHECKIN } from "./lead-time";
  * array_position is 1-based and answers NULL for a code the list does not name, which
  * is the ranking we want: a provider nobody has configured sorts after every one who is.
  */
+/* Inlined like the literal it replaced; the keys are our own constants, never input. */
+const DEFAULT_PREFERENCE_ARRAY = sql.raw(
+  `array[${DEFAULT_TRANSACTING_PREFERENCE.map((key) => `'${key}'`).join(", ")}]`,
+);
+
 export function providerRank(): SQL {
   return sql`
         coalesce(
           array_position(
             coalesce(
               (select ms.transacting_preference from marketplace_setting ms where ms.id = 'singleton'),
-              array['booking_manager', 'nausys', 'mock']
+              ${DEFAULT_PREFERENCE_ARRAY}
             ),
             p.code
           ),

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { InventoryProvider } from "../provider";
+
 import {
   dedupePricePeriodRows,
   type OfferRef,
@@ -207,7 +209,8 @@ describe("supportsSeasonalPrices", () => {
   });
 
   it("rejects one that does not", () => {
-    expect(supportsSeasonalPrices({ key: "mock" })).toBe(false);
+    const mock: Partial<InventoryProvider> = { key: "mock" };
+    expect(supportsSeasonalPrices(mock)).toBe(false);
   });
 });
 

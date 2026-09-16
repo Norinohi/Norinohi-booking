@@ -14,7 +14,7 @@ import { z } from "zod";
 
 import { describeErrorChain } from "../shared/error-chain";
 
-import type { InventoryProvider } from "../provider";
+import { type InventoryProvider, supportsAvailabilitySync } from "../provider";
 import type { Database } from "../registry";
 import { AuthError, ContractError, ProviderError, toSyncErrorType } from "../shared/errors";
 import { chunked, ROW_CHUNK } from "../shared/chunks";
@@ -226,15 +226,7 @@ export interface AvailabilitySource {
  * Seasonal prices used to hang off this interface. They are catalogue data on a
  * catalogue cadence now - see `sync/price-writer.ts` for why.
  */
-export interface AvailabilitySyncProvider {
-  createAvailabilitySource(options: { resume?: JsonValue }): AvailabilitySource;
-}
-
-export function supportsAvailabilitySync(
-  provider: InventoryProvider,
-): provider is InventoryProvider & AvailabilitySyncProvider {
-  return "createAvailabilitySource" in provider;
-}
+export { type AvailabilitySyncProvider, supportsAvailabilitySync } from "../provider";
 
 /* ------------------------------------------------------------------- store */
 

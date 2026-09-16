@@ -1,3 +1,4 @@
+import { findProviderMeta } from "@yacht-charter/env/providers";
 import { providerMediaAsset } from "@yacht-charter/db/schema/listing";
 import { provider as providerTable, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
@@ -156,7 +157,7 @@ export async function cleanupEnabledProviderMediaAssets(
   let skipped = 0;
   let deleted = 0;
 
-  for (const provider of providers.filter((row) => row.code !== "mock")) {
+  for (const provider of providers.filter((row) => !findProviderMeta(row.code)?.fixture)) {
     let syncRunId: string;
     try {
       syncRunId = await openSyncRun(db, provider.id, "media");

@@ -1,3 +1,5 @@
+import { DEFAULT_TRANSACTING_PREFERENCE } from "@yacht-charter/env/providers";
+
 /*
  * Which of a listing's offers the customer is shown and sold.
  *
@@ -19,7 +21,7 @@
  */
 
 /** Architecture §3, and the client's answer to §3.4 item 6: Booking Manager wins a tie. */
-export const TRANSACTING_PREFERENCE = ["booking_manager", "nausys", "mock"] as const;
+export const TRANSACTING_PREFERENCE = DEFAULT_TRANSACTING_PREFERENCE;
 
 /**
  * Which figure price is compared on.

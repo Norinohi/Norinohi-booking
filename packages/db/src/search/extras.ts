@@ -1,3 +1,4 @@
+import { isSelectableExtraSource } from "@yacht-charter/env/providers";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
@@ -133,20 +134,11 @@ export async function listSelectableExtraCodes(
  * Whether the booking flow may offer this extra as a priced choice.
  *
  * This is provider knowledge sitting in the read model because the dependency runs
- * the other way: `packages/providers` imports this package. It mirrors what the
- * adapters can actually match a selection against, so it has to be revisited
- * whenever one of them learns a new id space.
- *
- * - mock keeps one flat code space and prices anything in it.
- * - NauSYS offers key on `serviceId`; no recorded offer has ever carried the
- *   `extraId` shape, so an `equipment` code has nothing to match against.
- * - Booking Manager publishes optional extras in its catalogue but exposes none on
- *   the offer it quotes from, so none of them can be priced.
+ * the other way: `packages/providers` imports this package. The per-provider answer,
+ * and why each provider gives it, is `selectableExtraKinds` in the provider registry.
  */
 export function isSelectableExtra(source: string, kind: string): boolean {
-  if (source === "mock") return true;
-  if (source === "nausys") return kind === "service";
-  return false;
+  return isSelectableExtraSource(source, kind);
 }
 
 /**

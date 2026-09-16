@@ -1,14 +1,19 @@
+import { MEDIA_RANKED_PROVIDERS, UNRANKED_MEDIA_RANK } from "@yacht-charter/env/providers";
 import { sql, type SQL } from "drizzle-orm";
 
 import { normalizedKeySql } from "./localize";
 
 /**
  * Booking Manager photographs better than NauSYS, so its rows front a listing
- * that carries both (architecture §3). Mirrors `pickPrimaryImage` in
+ * that carries both (architecture §3). Ranked by `mediaRank` in the provider
+ * registry and inlined, as the literal it replaced was, so the statement text
+ * does not change. Mirrors `pickPrimaryImage` in
  * packages/api/src/services/match.ts; the two must agree or the search card and
  * the duplicate-review screen show different boats.
  */
-const MEDIA_SOURCE_RANK = sql`case lm.source when 'booking_manager' then 0 when 'nausys' then 1 else 2 end`;
+const MEDIA_SOURCE_RANK = sql.raw(
+  `case lm.source ${MEDIA_RANKED_PROVIDERS.map(({ key, rank }) => `when '${key}' then ${rank}`).join(" ")} else ${UNRANKED_MEDIA_RANK} end`,
+);
 
 /**
  * An admin's pinned choice, ahead of the rule.

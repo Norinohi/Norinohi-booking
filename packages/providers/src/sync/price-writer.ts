@@ -62,15 +62,7 @@ export type SeasonalPrice = z.infer<typeof seasonalPriceSchema>;
  * catalogue-wide price dump at all, in which case its listings carry no seasonal
  * rates and the quote path is the only thing that prices them.
  */
-export interface SeasonalPriceProvider {
-  loadSeasonalPrices(listingIds: string[]): Promise<Map<string, SeasonalPrice[]>>;
-}
-
-export function supportsSeasonalPrices<T extends object>(
-  provider: T,
-): provider is T & SeasonalPriceProvider {
-  return "loadSeasonalPrices" in provider;
-}
+export { type SeasonalPriceProvider, supportsSeasonalPrices } from "../provider";
 
 /** Which offer a listing's rates belong to, and the source link behind it. */
 export interface OfferRef {
