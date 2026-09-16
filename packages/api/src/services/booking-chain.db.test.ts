@@ -321,14 +321,7 @@ describe("payment failure", () => {
     confirm.mockRestore();
   });
 
-  /*
-   * A known bug, pinned rather than fixed here. The retry reuses the declined intent (same amount,
-   * same idempotency key) and returns before the booking leaves PAYMENT_FAILED, so the next
-   * authorization finds a booking `confirmBookingWithProvider` may not move: the card stays held,
-   * nothing is captured, and the payment row stays `failed`, which the abandoned-payment sweep
-   * then reaps. `it.fails` turns red once that is fixed; make it a plain `it` then.
-   */
-  it.fails("confirms a retry that authorizes after a declined card", async () => {
+  it("confirms a retry that authorizes after a declined card", async () => {
     const { db } = test;
     const { userId, hold, pi } = await checkoutOn("retry");
 

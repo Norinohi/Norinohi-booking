@@ -328,9 +328,28 @@ async function reuseIntent(
 
   assertIntentIsResumable(intent.status);
 
+  /*
+   * A declined card leaves the intent confirmable, so the retry reuses it. The booking and the
+   * payment row have to leave `failed` with it: the webhook confirms only a PAYMENT_PENDING
+   * booking, and the abandoned-payment sweep reaps a `failed` row.
+   */
+  const reopened = status === "PAYMENT_FAILED";
+  if (reopened) {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(payment)
+        .set({ status: "requires_payment", failureReason: null })
+        .where(and(eq(payment.id, existing.id), eq(payment.status, "failed")));
+      await tx
+        .update(booking)
+        .set({ status: "PAYMENT_PENDING" })
+        .where(and(eq(booking.id, bookingId), eq(booking.status, "PAYMENT_FAILED")));
+    });
+  }
+
   return present({
     bookingId,
-    status,
+    status: reopened ? "PAYMENT_PENDING" : status,
     paymentId: existing.id,
     amountMinor: existing.amountMinor,
     currency: existing.currency,
