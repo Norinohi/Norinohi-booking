@@ -590,6 +590,11 @@ export type OfferConstraints = {
     /** The provider priced this exact period on request, rather than us inferring it. */
     confirmed: boolean;
   }[];
+  /**
+   * Exact charters the vendor priced as free, from today's notice floor on. `rangeStatus` lets
+   * these outrank the rules, which are our transcription of what the vendor sells.
+   */
+  confirmed: { startDate: string; endDate: string }[];
   /** Periods the boat may be dropped at a different base. Null dates mean "always". */
   oneWay: {
     startDate: string | null;

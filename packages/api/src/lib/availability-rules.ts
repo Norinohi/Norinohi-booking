@@ -60,6 +60,15 @@ export type CharterConstraints = {
    * week starting the same day with it, and the boat read as gone when it was not.
    */
   refused?: readonly DatePeriod[];
+  /**
+   * Exact charters the vendor itself priced as free, which outrank our copy of its rules.
+   *
+   * The rules are a transcription and can be wrong in ways the vendor's own answer is not: one
+   * Booking Manager operator lists Monday and Friday and sells every weekday, and 11,700 weeks it
+   * priced were refused here on the check-in day. Occupancy and refusals still apply, because
+   * both are newer word than the sweep that confirmed the charter.
+   */
+  confirmed?: readonly DatePeriod[];
 };
 
 export type RangeVerdict =
@@ -213,15 +222,18 @@ export function rangeStatus(
 ): RangeVerdict {
   if (checkOut <= checkIn) return "invalid-range";
 
-  const violation = violationAcrossRules(constraints.rules, checkIn, checkOut);
-  /* Out of season reads as a closed season, which is what it is; the other arms are rule
-     failures the customer can act on. */
-  if (violation === "out-of-season") return "season-closed";
-  if (violation !== null) return violation;
+  const vendorPriced = isConfirmed(constraints, checkIn, checkOut);
+  if (!vendorPriced) {
+    const violation = violationAcrossRules(constraints.rules, checkIn, checkOut);
+    /* Out of season reads as a closed season, which is what it is; the other arms are rule
+       failures the customer can act on. */
+    if (violation === "out-of-season") return "season-closed";
+    if (violation !== null) return violation;
+  }
 
   if (wasRefused(constraints.refused, checkIn, checkOut)) return "refused";
   if (constraints.occupied.some((period) => overlaps(checkIn, checkOut, period))) return "occupied";
-  if (!seasonOpen(constraints.priced, checkIn, checkOut)) return "season-closed";
+  if (!vendorPriced && !seasonOpen(constraints.priced, checkIn, checkOut)) return "season-closed";
 
   return "bookable";
 }
@@ -260,11 +272,21 @@ function wasRefused(
  * escape into `bookable_from` send a card's "available from" date to a calendar that refuses it.
  */
 export function canCheckIn(day: string, constraints: CharterConstraints): boolean {
-  if (!admitsWeekday(constraints.rules, day)) return false;
+  /* A charter the vendor priced from this day opens it whatever the rules say about the weekday. */
+  const vendorStart = constraints.confirmed?.some((period) => period.startDate === day) ?? false;
+  if (!vendorStart && !admitsWeekday(constraints.rules, day)) return false;
   if (constraints.occupied.some((period) => covers(period, day))) return false;
   if (!constraints.priced.some((period) => covers(period, day))) return false;
 
   return firstCheckOut(day, constraints) !== null;
+}
+
+function isConfirmed(constraints: CharterConstraints, checkIn: string, checkOut: string): boolean {
+  return (
+    constraints.confirmed?.some(
+      (period) => period.startDate === checkIn && period.endDate === checkOut,
+    ) ?? false
+  );
 }
 
 function admitsWeekday(allRules: readonly CharterRule[], day: string): boolean {

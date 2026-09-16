@@ -1349,6 +1349,7 @@ export async function listAvailabilityConstraints(
       priceMinor: number;
       currency: string;
       confirmed: boolean;
+      exact: boolean;
     }>(sql`
       /*
        * The provider's published rates, which is what makes a date sellable at all: it does
@@ -1370,7 +1371,8 @@ export async function listAvailabilityConstraints(
             and slot.availability_confirmed
             and slot.start_date >= price.start_date
             and slot.end_date <= price.end_date
-        ) as "confirmed"
+        ) as "confirmed",
+        false as "exact"
       from listing_price_period price
       join listing_offer o
         on o.id = price.listing_offer_id
@@ -1402,7 +1404,8 @@ export async function listAvailabilityConstraints(
         slot.end_date as "endDate",
         slot.price_minor as "priceMinor",
         slot.currency,
-        true as "confirmed"
+        true as "confirmed",
+        true as "exact"
       from availability_slot slot
       join listing_offer o
         on o.id = slot.listing_offer_id
@@ -1481,7 +1484,16 @@ export async function listAvailabilityConstraints(
 
   const rulesByOffer = byOffer(rules.rows);
   const occupiedByOffer = byOffer(occupied.rows);
-  const pricedByOffer = byOffer(priced.rows);
+  const pricedByOffer = byOffer(priced.rows.map(({ exact: _exact, ...row }) => row));
+  /*
+   * The exact charters the vendor priced as free, which `rangeStatus` lets outrank the rules.
+   * Read off the confirmed rows above rather than queried again: they are the same slots.
+   */
+  const confirmedByOffer = byOffer(
+    priced.rows
+      .filter((row) => row.exact && row.startDate >= shiftDays(todayUtc(), MIN_LEAD_DAYS))
+      .map(({ offerId, startDate, endDate }) => ({ offerId, startDate, endDate })),
+  );
   const refusedByOffer = byOffer(refused.rows);
   const oneWayByOffer = byOffer(oneWay.rows);
 
@@ -1494,6 +1506,7 @@ export async function listAvailabilityConstraints(
       rules: rulesByOffer.get(offer.offerId) ?? [],
       occupied: [...(occupiedByOffer.get(offer.offerId) ?? []), ...holds.rows],
       priced: pricedByOffer.get(offer.offerId) ?? [],
+      confirmed: confirmedByOffer.get(offer.offerId) ?? [],
       refused: refusedByOffer.get(offer.offerId) ?? [],
       oneWay: oneWayByOffer.get(offer.offerId) ?? [],
     })),
@@ -1661,6 +1674,7 @@ function sellsRequestedPeriodColumn(input: ListingSearchInput): SQL {
         and (rule.min_nights is null or rule.min_nights <= ${nights})
         and (rule.max_nights is null or rule.max_nights >= ${nights})
     )
+    or ${hasVendorCharter(nights, { earliestStart: window.checkIn, latestStart: window.checkIn, earliestEnd: window.checkOut, latestEnd: window.checkOut })}
   ) as "sellsRequestedPeriod"${nearestSellableColumns(window, nights, candidateRange(window, nights, FLEXIBILITY_DAYS[input.dateFlexibility ?? "on-day"]))}`;
 }
 
@@ -1689,7 +1703,7 @@ function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
   const notice = providerLeadDaysSql(sql`(select code from provider where id = o.provider_id)`);
   const opens = sql`greatest(free.start_date, ${range.earliestStart}::date, rule.season_start, current_date + ${notice})`;
   return sql`
-    select c.start_date, free.end_date, o.id as offer_id
+    select c.start_date, free.end_date, o.id as offer_id, false as vendor
     from listing_offer o
     join listing_free_period free on free.listing_offer_id = o.id
     left join listing_checkin_rule rule on rule.listing_offer_id = o.id
@@ -1714,7 +1728,59 @@ function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
         or rule.checkout_weekday is null
         or mod(${nights} - rule.checkout_weekday + rule.checkin_weekday + 70, 7) = 0
       )
+
+    union all
+
+    /*
+     * And every charter of this length the vendor itself priced as free, whatever our copy of its
+     * rules says, as the projection and rangeStatus both take it; see vendorCharterClause.
+     */
+    select slot.start_date, slot.end_date, o.id, true
+    from listing_offer o
+    join availability_slot slot on slot.listing_offer_id = o.id
+    where o.listing_id = doc.listing_id
+      and o.status = 'active'
+      and ${vendorCharterClause(nights, range, notice)}
   `;
+}
+
+/*
+ * A charter of `nights` on offer `o`, starting inside `range`, that the vendor priced as free and
+ * nothing has taken since.
+ *
+ * The check-in rules are not consulted. They are our transcription of what the vendor sells, and
+ * the vendor's own answer outranks it: one Booking Manager operator lists Monday and Friday and
+ * sells every weekday, and 11,700 weeks it priced were refused on the check-in day.
+ */
+function vendorCharterClause(nights: number | SQL, range: CandidateRange, notice: SQL): SQL {
+  return sql`(
+        slot.availability_confirmed
+        and slot.status = 'available'
+        and slot.price_minor is not null
+        and slot.end_date - slot.start_date = ${nights}::integer
+        and slot.start_date >= greatest(${range.earliestStart}::date, current_date + ${notice})
+        and slot.start_date <= ${range.latestStart}::date
+        and not exists (
+          select 1 from availability_slot taken
+          where taken.listing_offer_id = slot.listing_offer_id
+            and taken.status <> 'available'
+            and taken.start_date < slot.end_date
+            and taken.end_date > slot.start_date
+        )
+      )`;
+}
+
+/* Whether any offer of the listing holds such a charter, for the filters. */
+function hasVendorCharter(nights: number, range: CandidateRange): SQL {
+  const notice = providerLeadDaysSql(sql`(select code from provider where id = o.provider_id)`);
+  return sql`exists (
+    select 1
+    from listing_offer o
+    join availability_slot slot on slot.listing_offer_id = o.id
+    where o.listing_id = doc.listing_id
+      and o.status = 'active'
+      and ${vendorCharterClause(nights, range, notice)}
+  )`;
 }
 
 /*
@@ -1728,13 +1794,13 @@ function sellableStarts(nights: number | SQL, range: CandidateRange): SQL {
 function sellableFilter(nights: number | SQL): SQL {
   return sql`
       c.start_date + ${nights}::integer <= c.end_date
-      and exists (
+      and (c.vendor or exists (
         select 1
         from listing_price_period r3
         where r3.listing_offer_id = c.offer_id
           and r3.start_date <= c.start_date
           and r3.end_date >= c.start_date
-      )`;
+      ))`;
 }
 
 /*
@@ -2209,7 +2275,7 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      *
      * Unbounded, this is what offered a September search a November week.
      */
-    const free = sql`(${hasSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights)})`;
+    const free = sql`((${hasSellableStart(windowNights, range)} and ${freeAcrossWindow(range, windowNights, nights)}) or ${hasVendorCharter(windowNights, range)})`;
     /*
      * A temporary booking is occupancy, so the week it covers is not among the free stretches
      * and its boat is not an answer to this search. The toggle is the visitor saying they want
@@ -2247,13 +2313,14 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      * book: its season has to reach a stretch the boat is actually free. A relaxed week last
      * May is not an answer to "three days" when the boat is Saturday to Saturday from here on.
      */
-    parts.push(sql`exists (
+    const range = undatedRange(nights);
+    const ruled = sql`exists (
       select 1
       from listing_offer o
       where o.listing_id = doc.listing_id
         and o.status = 'active'
         and ${checkinRuleClause(nights, undefined)}
-    )`);
+    )`;
     /*
      * And a charter of that length the boat actually has free within the horizon, found the
      * way the card finds the one it names. The rule test above says the operator sells three
@@ -2263,11 +2330,13 @@ function whereClause(input: ListingSearchInput, ignored: readonly FacetFilterKey
      * already found one of this length it is proof enough, and for a week that is nearly the
      * whole fleet, which otherwise paid a second or more for the scan on every search.
      */
-    const range = undatedRange(nights);
     parts.push(sql`(
-      (doc.bookable_from >= ${range.earliestStart}::date
-        and doc.bookable_to - doc.bookable_from = ${nights})
-      or ${hasSellableStart(nights, range)}
+      (${ruled} and (
+        (doc.bookable_from >= ${range.earliestStart}::date
+          and doc.bookable_to - doc.bookable_from = ${nights})
+        or ${hasSellableStart(nights, range)}
+      ))
+      or ${hasVendorCharter(nights, range)}
     )`);
   }
   return sql.join(parts, sql` and `);

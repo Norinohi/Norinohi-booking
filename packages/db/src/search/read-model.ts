@@ -287,14 +287,10 @@ export async function rebuildListingSearchDocs(
          * what the sweep confirms, and it is why only a confirmed slot may print a price --
          * see the chosen lateral below. It is not a reason to advertise a later week than the hull has.
          *
-         * The turnaround rules still apply to them, which is not obvious and was wrong the
-         * first time. The vendor's word beats our copy of its rules on the merits -- it sold
-         * the week -- but the detail page will not open on a period rangeStatus refuses, and
-         * the calendar greys those days out, so a card advertising one sends the customer to a
-         * picker that disagrees with it. 21 of 150 sampled cards landed in that state:
-         * Friday and Sunday check-ins the vendor had priced against a rule copy that says
-         * Saturday. Until the calendar itself learns to trust a confirmed slot, the honest
-         * ceiling for a card is what both of them accept.
+         * The turnaround rules do not apply to them. They once did, because the calendar greyed
+         * out any period its rule copy refused and a card advertising one led to a picker that
+         * disagreed. The calendar now accepts a vendor-confirmed charter too (the confirmed list in
+         * availability-rules.ts), so the vendor's word stands on both surfaces.
          */
         select
           slot.start_date as bookable_from,
@@ -1382,31 +1378,12 @@ function sellableConfirmedSlot(): SQL {
            * calendar accepts these days too. Requiring a band as well hid 210 charters the
            * vendor had quoted us a price for.
            */
-          /* What rangeStatus asks of the same period: any rule in force on the check-in day
-             that admits this shape, or no published rule at all. */
-          and (
-            not exists (
-              select 1 from listing_checkin_rule any_rule
-              where any_rule.listing_offer_id = o.id
-            )
-            or exists (
-              select 1
-              from listing_checkin_rule rule
-              where rule.listing_offer_id = o.id
-                and (rule.season_start is null or slot.start_date >= rule.season_start)
-                and (rule.season_end is null or slot.start_date <= rule.season_end)
-                and (
-                  rule.checkin_weekday is null
-                  or extract(dow from slot.start_date)::int = rule.checkin_weekday
-                )
-                and (
-                  rule.checkout_weekday is null
-                  or extract(dow from slot.end_date)::int = rule.checkout_weekday
-                )
-                and (rule.min_nights is null or slot.end_date - slot.start_date >= rule.min_nights)
-                and (rule.max_nights is null or slot.end_date - slot.start_date <= rule.max_nights)
-            )
-          )
+          /*
+           * No check-in rule test either. The vendor's answer outranks our transcription of its
+           * rules, as it does in rangeStatus, which lets a confirmed charter through on the
+           * same terms: one Booking Manager operator lists Monday and Friday and sells every
+           * weekday, and 11,700 weeks it priced were dropped here on the check-in day.
+           */
   `;
 }
 

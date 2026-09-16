@@ -231,6 +231,7 @@ export function BookingProvider({
         rules: offer.rules,
         occupied: offer.occupied,
         priced: offer.priced,
+        confirmed: offer.confirmed,
         refused: [
           ...offer.refused,
           ...refusedPeriods.filter((period) => period.offerId === offer.offerId),

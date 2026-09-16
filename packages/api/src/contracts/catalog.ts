@@ -685,6 +685,8 @@ export const offerConstraintsSchema = z.object({
       confirmed: z.boolean(),
     }),
   ),
+  /** Exact charters the vendor priced as free; they outrank the rules above. */
+  confirmed: z.array(z.object({ startDate: z.string(), endDate: z.string() })),
   /** Exact periods this provider declined to sell; matched on both ends, never by overlap. */
   refused: z.array(z.object({ startDate: z.string(), endDate: z.string() })),
   oneWay: z.array(
