@@ -408,10 +408,10 @@ function Action({
       ) : null}
 
       <div className="flex flex-col items-center justify-center gap-1 md:items-start xl:flex-1">
-        <div className="flex flex-wrap items-center justify-center gap-2 md:flex-col md:items-start md:gap-1">
+        <div className="flex flex-col items-center gap-1 md:items-start">
           <span
             className={cn(
-              "text-sm font-medium leading-[1.3] text-natural-500 md:order-1",
+              "text-center text-sm font-medium leading-[1.3] text-natural-500 md:order-1 md:text-left",
               priceLabelLeads ? "order-1" : "order-2",
             )}
           >
@@ -422,7 +422,7 @@ function Action({
               holds words: there is nothing for a discount to be a discount from. */}
           <span
             className={cn(
-              "flex flex-wrap items-baseline gap-x-1.5 md:order-2",
+              "flex flex-wrap items-baseline justify-center gap-x-1.5 md:order-2 md:justify-start",
               priceLabelLeads ? "order-2" : "order-1",
             )}
           >
@@ -447,13 +447,15 @@ function Action({
         </div>
         {/* One derived figure, not two: a catalogue card shows the nightly rate the list is
             ordered by, a booking card the per-person share of a party that actually exists. */}
-        <p className="text-sm font-medium leading-[1.3] text-natural-500">
+        <p className="text-center text-sm font-medium leading-[1.3] text-natural-500 md:text-left">
           {perNight ?? perPerson}
         </p>
         {priceExtras ? (
-          <p className="text-sm font-medium leading-[1.3] text-natural-500">{priceExtras}</p>
+          <p className="text-center text-sm font-medium leading-[1.3] text-natural-500 md:text-left">
+            {priceExtras}
+          </p>
         ) : null}
-        {note ? <CardNote backdrop note={note} className="flex w-full md:hidden" /> : null}
+        {note ? <CardNote backdrop note={note} className="mt-1 flex max-w-full md:hidden" /> : null}
       </div>
 
       <div className="flex flex-col items-center justify-center gap-3 md:items-start">

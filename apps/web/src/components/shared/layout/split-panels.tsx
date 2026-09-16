@@ -2,7 +2,7 @@
 
 import { Tabs, TabsList, TabsTab } from "@yacht-charter/ui/components/navigation/tabs";
 import { cn } from "@yacht-charter/ui/lib/utils";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 
 import { useFillToFold } from "@/hooks/use-fill-to-fold";
 
@@ -20,13 +20,35 @@ interface SplitPanelsProps {
 export default function SplitPanels({ labels, main, aside }: SplitPanelsProps) {
   const [panel, setPanel] = useState<Panel>(PANELS[0]);
   const asideRef = useFillToFold<HTMLElement>("80rem");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const returnToTop = useRef(false);
+
+  /* Only one panel shows below `xl`, so the scroll offset belongs to the panel being left.
+     Kept as is, it lands deep inside the shorter panel, or past it in the footer. */
+  const selectPanel = (next: Panel) => {
+    const root = rootRef.current;
+    returnToTop.current =
+      root !== null &&
+      root.getBoundingClientRect().top < Number.parseFloat(getComputedStyle(root).scrollMarginTop);
+    setPanel(next);
+  };
+
+  /* After the swap, so the page it scrolls is the one the new panel produced. */
+  useLayoutEffect(() => {
+    if (!returnToTop.current) return;
+    returnToTop.current = false;
+    rootRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }, [panel]);
 
   return (
-    <div className="mx-auto flex w-full max-w-349 flex-col gap-6 md:gap-8">
+    <div
+      ref={rootRef}
+      className="mx-auto flex w-full max-w-349 scroll-mt-(--header-h) flex-col gap-6 md:gap-8"
+    >
       <Tabs
         variant="segmented"
         value={panel}
-        onValueChange={(value) => setPanel(PANELS.find((id) => id === value) ?? PANELS[0])}
+        onValueChange={(value) => selectPanel(PANELS.find((id) => id === value) ?? PANELS[0])}
         className="sticky top-(--header-h) z-20 bg-background xl:hidden"
       >
         <TabsList className="items-stretch">
@@ -42,7 +64,7 @@ export default function SplitPanels({ labels, main, aside }: SplitPanelsProps) {
         </TabsList>
       </Tabs>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_--spacing(83.5)]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_--spacing(83.5)]">
         <div className={cn("flex min-w-0 flex-col gap-6", panel !== "main" && "max-xl:hidden")}>
           {main}
         </div>

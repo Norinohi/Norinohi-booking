@@ -19,7 +19,7 @@
         "firstPayment": "1-й платіж ({when})",
         "fullPayment": "Повна оплата ({when})",
         "secondPayment": "2-й платіж ({when})",
-        "extrasPayment": "Додатки ({when})",
+        "extrasPayment": "Доплати на базі ({when})",
         "depositNote": "Поворотна застава ({when})"
       },
       "totalPrice": "Разом",
@@ -74,8 +74,8 @@
     },
     "backToYacht": "Назад до {name}",
     "panels": {
-      "main": "Деталі бронювання",
-      "aside": "Підсумок бронювання"
+      "main": "Деталі",
+      "aside": "Підсумок"
     },
     "continue": "Продовжити",
     "steps": {
@@ -1455,7 +1455,7 @@
       "loadFailed": "Не вдалося завантажити вартість цього бронювання.",
       "loadRetry": "Спробувати ще раз",
       "prepayment": "Передоплата {percent}%",
-      "boatPrice": "Ціна човна",
+      "boatPrice": "Ціна яхти",
       "boatPriceHint": "Повна вартість оренди",
       "deposit": "Поворотна застава",
       "howItWorks": "Як це працює",
@@ -1470,7 +1470,7 @@
       "firstPayment": "{amount} (1-й платіж)",
       "fullPayment": "{amount} (повна оплата)",
       "secondPayment": "{amount} (2-й платіж)",
-      "extrasPayment": "{amount} (додаткові опції)",
+      "extrasPayment": "{amount} (доплати на базі)",
       "depositNote": "+ {amount} (поворотна застава)",
       "totalPrice": "Загальна ціна",
       "discountsHeading": "Уже враховано у вартості вище",
@@ -1508,7 +1508,7 @@
     },
     "panels": {
       "details": "Деталі яхти",
-      "booking": "Підсумок бронювання"
+      "booking": "Бронювання"
     },
     "tabs": {
       "overview": "Огляд",

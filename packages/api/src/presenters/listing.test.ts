@@ -267,6 +267,12 @@ describe("presentListingSummary on the charter rate", () => {
     expect(card.allInPriceFrom?.amountMinor).toBe(1_240_000);
   });
 
+  it("strikes through the rate's own list price, not the all-in one", () => {
+    const card = presentListingSummary(doc({ listPriceFromMinor: 1_490_000 }), "base");
+    expect(card.priceFrom?.amountMinor).toBe(1_000_000);
+    expect(card.listPriceFrom?.amountMinor).toBe(1_250_000);
+  });
+
   it("falls back to the total where the rate is missing, rather than dropping the price", () => {
     const card = presentListingSummary(doc({ basePriceFromMinor: null }), "base");
     expect(card.priceFrom?.amountMinor).toBe(1_240_000);

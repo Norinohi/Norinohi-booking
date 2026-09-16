@@ -137,6 +137,27 @@ export default function RoutesTable() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 md:flex-row">
+        <TextField
+          containerClassName="min-w-0 md:flex-1"
+          fieldClassName="h-12"
+          value={query}
+          startIcon={<Search />}
+          placeholder={t("filters.search")}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+          }}
+        />
+        <Button variant="subtle" className="h-12 shrink-0" onClick={() => setFeaturedOpen(true)}>
+          <Star className="size-4" />
+          {t("actions.featured")}
+        </Button>
+        <Button variant="brand" className="h-12 shrink-0" onClick={openCreate}>
+          <Plus className="size-4" />
+          {t("actions.create")}
+        </Button>
+      </div>
+      <div className="flex flex-col gap-4 md:flex-row">
         <div className="min-w-0 md:w-52">
           <Select
             className="h-12 min-w-0"
@@ -176,25 +197,6 @@ export default function RoutesTable() {
             ]}
           />
         </div>
-        <TextField
-          containerClassName="min-w-0 md:flex-1"
-          fieldClassName="h-12"
-          value={query}
-          startIcon={<Search />}
-          placeholder={t("filters.search")}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setPage(1);
-          }}
-        />
-        <Button variant="subtle" className="h-12 shrink-0" onClick={() => setFeaturedOpen(true)}>
-          <Star className="size-4" />
-          {t("actions.featured")}
-        </Button>
-        <Button variant="brand" className="h-12 shrink-0" onClick={openCreate}>
-          <Plus className="size-4" />
-          {t("actions.create")}
-        </Button>
       </div>
 
       <Table className="min-w-275 [&_td]:py-3 [&_th]:h-12.5 [&_th]:py-0">

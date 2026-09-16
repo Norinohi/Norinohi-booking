@@ -135,6 +135,13 @@ export function presentListingSummary(
   /* The rate is never shown without the total it belongs to: a card that lost one of the two
      would advertise a figure with no way to say what sits on top of it. */
   const amountMinor = basis === "base" && baseMinor !== null ? baseMinor : allInMinor;
+  /* The stored list price is all-in, and the extras are never discounted, so beside a rate it
+     loses the same extras the headline did. Struck through as stored, EUR 15,050 sat beside a
+     EUR 7,500 rate whose own list price was EUR 10,000: a 25% discount advertised as 50%. */
+  const listMinor =
+    amountMinor === null || allInMinor === null || doc.listPriceFromMinor === null
+      ? null
+      : doc.listPriceFromMinor - (allInMinor - amountMinor);
 
   return {
     id: doc.listingId,
@@ -248,9 +255,9 @@ export function presentListingSummary(
      * nothing to strike, and the projection never writes a figure that does not exceed it.
      */
     listPriceFrom:
-      allInMinor === null || doc.listPriceFromMinor === null
+      listMinor === null || amountMinor === null || listMinor <= amountMinor
         ? null
-        : { amountMinor: doc.listPriceFromMinor, currency },
+        : { amountMinor: listMinor, currency },
     priceDetails: {
       periodDays,
       /*

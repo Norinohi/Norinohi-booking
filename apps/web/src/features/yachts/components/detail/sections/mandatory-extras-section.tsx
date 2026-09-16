@@ -56,7 +56,7 @@ export default function MandatoryExtrasSection() {
               </div>
               {/* The operator's own measure, where it gave one: a per-person extra quoted
                   as "per booking" understates what the charter will be billed. */}
-              <p className="shrink-0 text-right text-base leading-5.5 font-bold text-foreground max-md:max-w-18">
+              <p className="max-w-1/2 shrink-0 text-right text-base leading-5.5 font-bold text-foreground">
                 {item.percentage !== null
                   ? tExtras("percentageOfCharter", { percent: item.percentage * 100 })
                   : included
