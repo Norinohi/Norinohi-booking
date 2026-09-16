@@ -46,6 +46,7 @@
       "files": ["apps/web/src/**"],
       "excludeFiles": [
         "apps/web/src/features/*/api/**",
+        "apps/web/src/features/*/*/api/**",
         "apps/web/src/components/**/api/**",
         "apps/web/src/lib/api/**",
         "apps/web/src/utils/**"

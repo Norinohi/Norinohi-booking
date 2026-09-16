@@ -67,6 +67,11 @@ src/
   utils/                  # app-wide helpers
 ```
 
+A feature too big for one flat `components/` splits into domain subfolders, each shaped like a
+small feature (`components/`, `hooks/`, `api/`, `types.ts`) behind the one feature `index.ts`:
+`features/admin/{fleet,bookings,inbox,content,finance,users,audit,settings}`, with what two or more
+domains use in `features/admin/shared`. Domains import `shared`, never each other.
+
 Data path: a route (server) prefetches through a feature's `api/server.ts`, which reuses
 `api/queries.ts`; client leaves read the **same** `queries.ts` via a `hooks/` wrapper — one
 definition, so server-prefetched and client cache keys always match.
