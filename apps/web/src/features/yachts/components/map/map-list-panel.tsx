@@ -73,7 +73,11 @@ export default function MapListPanel({ filters, defaults, className, ref }: MapL
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex flex-col gap-3 p-4">
-          {isLoading ? <Loader /> : boats.map((boat) => <MapBoatCard key={boat.id} {...boat} />)}
+          {isLoading ? (
+            <Loader />
+          ) : (
+            boats.map((boat) => <MapBoatCard key={boat.id} {...boat} openInNewTab />)
+          )}
         </div>
       </ScrollArea>
 

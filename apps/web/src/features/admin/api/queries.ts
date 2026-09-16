@@ -21,6 +21,9 @@ import type {
   ProviderKey,
   SyncRunKind,
   SyncRunState,
+  UserAccountStatus,
+  UserAdminSort,
+  UserRole,
 } from "../types";
 
 /*
@@ -37,6 +40,7 @@ export const SYNC_RUNS_PAGE_SIZE = 20;
 export const PAYMENTS_PAGE_SIZE = 20;
 export const LISTINGS_PAGE_SIZE = 20;
 export const BOOKINGS_PAGE_SIZE = 20;
+export const USERS_PAGE_SIZE = 20;
 export const ROUTES_PAGE_SIZE = 20;
 export const FAQ_PAGE_SIZE = 20;
 export const COMMISSIONS_PAGE_SIZE = 20;
@@ -146,6 +150,19 @@ export const bookingQueueQueryOptions = (input: {
       includeExcluded: input.includeExcluded ?? false,
       pageSize: input.pageSize ?? PAYMENTS_PAGE_SIZE,
     },
+    staleTime: 15_000,
+  });
+
+export const userListQueryOptions = (input: {
+  query?: string;
+  role?: UserRole;
+  status?: UserAccountStatus;
+  hasBookings?: boolean;
+  sort?: UserAdminSort;
+  page: number;
+}) =>
+  orpc.admin.user.list.queryOptions({
+    input: { ...input, sort: input.sort ?? "newest", pageSize: USERS_PAGE_SIZE },
     staleTime: 15_000,
   });
 

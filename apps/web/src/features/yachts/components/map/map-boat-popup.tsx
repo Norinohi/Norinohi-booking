@@ -145,7 +145,7 @@ export default function MapBoatPopup({
         >
           {boats.map((item) => (
             <div key={item.id} className="w-full shrink-0">
-              <MapBoatCard layout="popup" {...item} className="border-0 shadow-none" />
+              <MapBoatCard layout="popup" {...item} openInNewTab className="border-0 shadow-none" />
             </div>
           ))}
         </div>

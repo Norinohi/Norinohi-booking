@@ -241,7 +241,9 @@ function ResultsColumn({ locked }: { locked?: LockedFilters }) {
       ) : boats.length === 0 ? (
         <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
-        boats.map((boat, index) => <BoatCard key={boat.id} {...boat} priority={index === 0} />)
+        boats.map((boat, index) => (
+          <BoatCard key={boat.id} {...boat} openInNewTab priority={index === 0} />
+        ))
       )}
 
       {pagination && pagination.totalItems > 0 ? (

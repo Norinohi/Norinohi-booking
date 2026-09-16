@@ -9,6 +9,7 @@ import {
   BOOKINGS_PAGE_SIZE,
   bookingDetailQueryOptions,
   bookingQueueQueryOptions,
+  userListQueryOptions,
   commissionListQueryOptions,
   duplicateQueueQueryOptions,
   enquiryListQueryOptions,
@@ -51,6 +52,11 @@ export function prefetchAdminBookings(queryClient: QueryClient) {
   return queryClient.prefetchQuery(
     bookingQueueQueryOptions({ page: 1, pageSize: BOOKINGS_PAGE_SIZE }),
   );
+}
+
+/** Server prefetch for /users: the first page of every account, newest first. */
+export function prefetchUsers(queryClient: QueryClient) {
+  return queryClient.prefetchQuery(userListQueryOptions({ page: 1 }));
 }
 
 /** Server prefetch for /staff/bookings/[id]. */

@@ -26,6 +26,7 @@ export default async function CatalogCards({ listings }: { listings: ResultListi
         <BoatCard
           key={listing.id}
           {...toBoatCard(t, tCrew, tBadge, formatMoney, listing)}
+          openInNewTab
           priority={index === 0}
         />
       ))}

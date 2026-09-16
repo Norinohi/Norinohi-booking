@@ -10,6 +10,7 @@ export const ACCOUNT_ITEMS = ["profile", "bookings", "referrals", "credits"] as 
 const ADMIN_ITEM_NAMES = [
   "inbox",
   "staffBookings",
+  "users",
   "payments",
   "listings",
   "routes",
@@ -57,6 +58,7 @@ export const ACCOUNT_NAV: readonly NavEntry[] = ACCOUNT_ITEMS.map(row);
 export const ADMIN_NAV: readonly NavEntry[] = [
   row("inbox"),
   row("staffBookings"),
+  row("users"),
   row("payments"),
   group("fleet", ["listings", "duplicates", "sync"]),
   group("content", ["routes", "faq", "popular", "popularYachts"]),
@@ -84,6 +86,7 @@ export const ACCOUNT_NAV_HREFS = new Map<AccountNavItem, AppPathname>([
   /* Not "bookings": that key is the customer's own /profile/bookings, and both rows are on
      screen at once for a staff session. */
   ["staffBookings", "/staff/bookings"],
+  ["users", "/users"],
   ["payments", "/payments"],
   ["listings", "/listings"],
   ["routes", "/routes"],

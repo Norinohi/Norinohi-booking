@@ -1100,6 +1100,7 @@
       "audit": "Audit-Log",
       "inbox": "Posteingang",
       "staffBookings": "Buchungen",
+      "users": "Benutzer",
       "payments": "Zahlungen",
       "listings": "Inserate",
       "routes": "Routenvorschläge",
@@ -1739,6 +1740,10 @@
       "title": "Buchungen (Mitarbeiter)",
       "description": "Alle Buchungen auf der Plattform, für Mitarbeiter."
     },
+    "Users": {
+      "title": "Benutzer",
+      "description": "Alle Konten der Plattform, für Mitarbeiter."
+    },
     "CatalogPage": {
       "country": "Yachtcharter in {place}",
       "geo": "Yachtcharter in {place}, {country}",
@@ -2271,6 +2276,51 @@
         "CANCELLED": "Storniert",
         "REFUND_PENDING": "Erstattung fällig",
         "REFUNDED": "Erstattet"
+      }
+    },
+    "Users": {
+      "title": "Benutzer",
+      "subtitle": "Alle Konten mit Kontaktdaten und Anzahl der Buchungen.",
+      "createdAt": "Registriert {at}",
+      "unverified": "E-Mail nicht bestätigt",
+      "confirmed": "{count, plural, =0 {keine bestätigt} one {# bestätigt} other {# bestätigt}}",
+      "total": "{count, plural, one {# Benutzer} other {# Benutzer}}",
+      "empty": "Kein Benutzer entspricht diesen Filtern.",
+      "error": "Die Benutzer konnten nicht geladen werden.",
+      "filters": {
+        "search": "Nach Name, E-Mail oder Telefon suchen",
+        "role": "Rolle",
+        "allRoles": "Alle Rollen",
+        "status": "Status",
+        "allStatuses": "Alle Status",
+        "bookings": "Buchungen",
+        "anyBookings": "Mit oder ohne Buchungen",
+        "withBookings": "Hat Buchungen",
+        "withoutBookings": "Keine Buchungen",
+        "sort": "Sortierung"
+      },
+      "sort": {
+        "newest": "Neueste zuerst",
+        "mostBookings": "Meiste Buchungen",
+        "name": "Name A-Z"
+      },
+      "table": {
+        "user": "Benutzer",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "bookings": "Buchungen",
+        "lastBooking": "Letzte Buchung",
+        "status": "Status"
+      },
+      "role": {
+        "customer": "Kunde",
+        "staff": "Mitarbeiter",
+        "admin": "Admin"
+      },
+      "status": {
+        "active": "Aktiv",
+        "guest": "Gast, nicht aktiviert",
+        "deactivated": "Deaktiviert"
       }
     },
     "Duplicates": {

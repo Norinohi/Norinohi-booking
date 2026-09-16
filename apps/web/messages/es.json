@@ -1100,6 +1100,7 @@
       "audit": "Registro de auditoría",
       "inbox": "Bandeja de entrada",
       "staffBookings": "Reservas",
+      "users": "Usuarios",
       "payments": "Pagos",
       "listings": "Anuncios",
       "routes": "Rutas sugeridas",
@@ -1739,6 +1740,10 @@
       "title": "Reservas (personal)",
       "description": "Todas las reservas de la plataforma, para el personal."
     },
+    "Users": {
+      "title": "Usuarios",
+      "description": "Todas las cuentas de la plataforma, para el personal."
+    },
     "CatalogPage": {
       "country": "Alquiler de yates en {place}",
       "geo": "Alquiler de yates en {place}, {country}",
@@ -2271,6 +2276,51 @@
         "CANCELLED": "Cancelada",
         "REFUND_PENDING": "Reembolso pendiente",
         "REFUNDED": "Reembolsada"
+      }
+    },
+    "Users": {
+      "title": "Usuarios",
+      "subtitle": "Todas las cuentas con sus datos de contacto y cuánto han reservado.",
+      "createdAt": "Registrado el {at}",
+      "unverified": "Email sin verificar",
+      "confirmed": "{count, plural, =0 {ninguna confirmada} one {# confirmada} other {# confirmadas}}",
+      "total": "{count, plural, one {# usuario} other {# usuarios}}",
+      "empty": "Ningún usuario coincide con estos filtros.",
+      "error": "No se pudieron cargar los usuarios.",
+      "filters": {
+        "search": "Buscar por nombre, email o teléfono",
+        "role": "Rol",
+        "allRoles": "Todos los roles",
+        "status": "Estado",
+        "allStatuses": "Todos los estados",
+        "bookings": "Reservas",
+        "anyBookings": "Con o sin reservas",
+        "withBookings": "Con reservas",
+        "withoutBookings": "Sin reservas",
+        "sort": "Orden"
+      },
+      "sort": {
+        "newest": "Más recientes",
+        "mostBookings": "Más reservas",
+        "name": "Nombre A-Z"
+      },
+      "table": {
+        "user": "Usuario",
+        "email": "Email",
+        "phone": "Teléfono",
+        "bookings": "Reservas",
+        "lastBooking": "Última reserva",
+        "status": "Estado"
+      },
+      "role": {
+        "customer": "Cliente",
+        "staff": "Personal",
+        "admin": "Admin"
+      },
+      "status": {
+        "active": "Activa",
+        "guest": "Invitado, sin reclamar",
+        "deactivated": "Desactivada"
       }
     },
     "Duplicates": {

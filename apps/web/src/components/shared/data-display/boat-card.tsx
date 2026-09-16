@@ -137,6 +137,11 @@ export type BoatCardProps = {
   /** Money footnote under the price, with the tooltip that explains that figure. */
   note: CardNoteData | null;
   detailHref?: AppPathname;
+  /**
+   * Opens the yacht page in a new tab. The catalogue sets it so a visitor comparing boats keeps
+   * their filters, scroll position and loaded pages instead of rebuilding them on the way back.
+   */
+  openInNewTab?: boolean;
   priority?: boolean;
   /** Drops the dates/price/action column — the booking flow only recaps the boat. */
   summary?: boolean;
@@ -207,6 +212,7 @@ function Details({
   amenities,
   amenitiesOverflow,
   detailHref,
+  openInNewTab,
   summary,
   summaryAction,
   unavailable,
@@ -221,6 +227,7 @@ function Details({
   | "amenities"
   | "amenitiesOverflow"
   | "detailHref"
+  | "openInNewTab"
   | "summary"
   | "summaryAction"
   | "unavailable"
@@ -244,6 +251,7 @@ function Details({
               {detailHref ? (
                 <Link
                   href={detailHref}
+                  target={openInNewTab ? "_blank" : undefined}
                   className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
                   {name}
@@ -354,6 +362,7 @@ function Action({
   perNight,
   note,
   detailHref,
+  openInNewTab,
   footer,
 }: Pick<
   BoatCardProps,
@@ -372,6 +381,7 @@ function Action({
   | "perNight"
   | "note"
   | "detailHref"
+  | "openInNewTab"
   | "footer"
 >) {
   const t = useTranslations("Common.boatCard");
@@ -464,7 +474,9 @@ function Action({
           variant="neutral"
           size="md"
           nativeButton={false}
-          render={<Link href={detailHref ?? DETAIL_HREF} />}
+          render={
+            <Link href={detailHref ?? DETAIL_HREF} target={openInNewTab ? "_blank" : undefined} />
+          }
           className="w-full capitalize"
         >
           {t("viewDetails")}
@@ -504,6 +516,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
         amenities={boat.amenities}
         amenitiesOverflow={boat.amenitiesOverflow}
         detailHref={boat.detailHref}
+        openInNewTab={boat.openInNewTab}
         summary={boat.summary}
         summaryAction={boat.summary ? boat.summaryAction : undefined}
         unavailable={boat.unavailable}
@@ -525,6 +538,7 @@ export default function BoatCard({ className, ...boat }: BoatCardProps) {
           perNight={boat.perNight}
           note={boat.note}
           detailHref={boat.detailHref}
+          openInNewTab={boat.openInNewTab}
           footer={boat.footer}
         />
       )}

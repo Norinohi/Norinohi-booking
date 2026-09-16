@@ -57,6 +57,14 @@ export type BookingStatus = BookingAdminRow["status"];
 /** What admin.booking.refund reports back — some of it needs a human, so it is shown. */
 export type RefundResult = Awaited<ReturnType<AdminClient["booking"]["refund"]>>;
 
+export type UserAdminList = Awaited<ReturnType<AdminClient["user"]["list"]>>;
+export type UserAdminRow = UserAdminList["items"][number];
+export type UserRole = UserAdminRow["role"];
+export type UserAccountStatus = UserAdminRow["status"];
+export type UserAdminSort = NonNullable<
+  NonNullable<Parameters<AdminClient["user"]["list"]>[0]>["sort"]
+>;
+
 export type ListingAdminList = Awaited<ReturnType<AdminClient["listing"]["list"]>>;
 export type ListingAdminRow = ListingAdminList["items"][number];
 export type ListingStatus = ListingAdminRow["status"];

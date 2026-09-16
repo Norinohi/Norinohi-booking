@@ -66,6 +66,8 @@ export type MapBoatCardProps = {
   perNight: string;
   note: CardNoteData | null;
   detailHref?: AppPathname;
+  /** Opens the yacht page in a new tab, so the map keeps its viewport and open popup. */
+  openInNewTab?: boolean;
   layout?: keyof typeof LAYOUT;
   className?: string;
 };
@@ -86,6 +88,7 @@ export default function MapBoatCard({
   perNight,
   note,
   detailHref,
+  openInNewTab,
   layout = "list",
   className,
 }: MapBoatCardProps) {
@@ -132,6 +135,7 @@ export default function MapBoatCard({
             <h3 className={cn("min-w-0 truncate leading-[1.3] text-foreground", style.name)}>
               <Link
                 href={detailHref ?? DETAIL_HREF}
+                target={openInNewTab ? "_blank" : undefined}
                 className="rounded-sm outline-none transition-colors hover:text-brand focus-visible:ring-2 focus-visible:ring-ring/40"
               >
                 {name}
@@ -186,7 +190,9 @@ export default function MapBoatCard({
           variant="neutral"
           size="md"
           nativeButton={false}
-          render={<Link href={detailHref ?? DETAIL_HREF} />}
+          render={
+            <Link href={detailHref ?? DETAIL_HREF} target={openInNewTab ? "_blank" : undefined} />
+          }
           className="w-full capitalize"
         >
           {t("viewDetails")}

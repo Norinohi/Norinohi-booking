@@ -122,6 +122,7 @@ import { faqAdminRouter } from "./admin-faq";
 import { popularFacetsAdminRouter } from "./admin-popular-facets";
 import { popularYachtsAdminRouter } from "./admin-popular-yachts";
 import { geographyAdminRouter, routeAdminRouter } from "./admin-route";
+import { userAdminRouter } from "./admin-user";
 import { listAuditLog, writeAuditLog } from "../services/audit";
 import {
   confirmDuplicateCandidate,
@@ -325,6 +326,7 @@ export const adminRouter = {
   /* The home page's popular-yachts slider, beside the other website content rather than in
      settings: it is editorial curation, and it writes one column of the settings row only. */
   popularYachts: popularYachtsAdminRouter,
+  user: userAdminRouter,
   provider: {
     capabilities: adminProcedure
       .route({

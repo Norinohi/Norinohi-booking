@@ -1100,6 +1100,7 @@
       "audit": "Audit Log",
       "inbox": "Inbox",
       "staffBookings": "Bookings",
+      "users": "Users",
       "payments": "Payments",
       "listings": "Listings",
       "routes": "Suggested Routes",
@@ -1739,6 +1740,10 @@
       "title": "Bookings (staff)",
       "description": "Every booking on the platform, for staff."
     },
+    "Users": {
+      "title": "Users",
+      "description": "Every account on the platform, for staff."
+    },
     "CatalogPage": {
       "country": "Yacht Charter in {place}",
       "geo": "Yacht Charter in {place}, {country}",
@@ -2271,6 +2276,51 @@
         "CANCELLED": "Cancelled",
         "REFUND_PENDING": "Refund due",
         "REFUNDED": "Refunded"
+      }
+    },
+    "Users": {
+      "title": "Users",
+      "subtitle": "Every account with its contact details and how much it has booked.",
+      "createdAt": "Joined {at}",
+      "unverified": "Email not verified",
+      "confirmed": "{count, plural, =0 {none confirmed} one {# confirmed} other {# confirmed}}",
+      "total": "{count, plural, one {# user} other {# users}}",
+      "empty": "No user matches these filters.",
+      "error": "The users could not be loaded.",
+      "filters": {
+        "search": "Search by name, email or phone",
+        "role": "Role",
+        "allRoles": "All roles",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "bookings": "Bookings",
+        "anyBookings": "With or without bookings",
+        "withBookings": "Has bookings",
+        "withoutBookings": "No bookings",
+        "sort": "Sort"
+      },
+      "sort": {
+        "newest": "Newest first",
+        "mostBookings": "Most bookings",
+        "name": "Name A-Z"
+      },
+      "table": {
+        "user": "User",
+        "email": "Email",
+        "phone": "Phone",
+        "bookings": "Bookings",
+        "lastBooking": "Last booking",
+        "status": "Status"
+      },
+      "role": {
+        "customer": "Customer",
+        "staff": "Staff",
+        "admin": "Admin"
+      },
+      "status": {
+        "active": "Active",
+        "guest": "Guest, unclaimed",
+        "deactivated": "Deactivated"
       }
     },
     "Duplicates": {

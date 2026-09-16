@@ -13,6 +13,7 @@ export {
   prefetchPayments,
   prefetchRoutes,
   prefetchSyncRuns,
+  prefetchUsers,
 } from "./api/server";
 export { getAdminUser, isStaff, requireStaffPage } from "./api/session";
 export { default as AuditScreen } from "./components/audit-screen";
@@ -29,3 +30,4 @@ export { default as RoutesScreen } from "./components/routes-screen";
 export { default as SettingsScreen } from "./components/settings-screen";
 export { default as StaffBookingScreen } from "./components/staff-booking-screen";
 export { default as SyncHistoryScreen } from "./components/sync-history-screen";
+export { default as UsersScreen } from "./components/users-screen";
