@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { wishlist, wishlistItem } from "@yacht-charter/db/schema/account";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listListingsByIds } from "@yacht-charter/db/search";
@@ -15,6 +14,7 @@ import type {
 } from "../contracts/wishlist";
 import { presentListingSummary } from "../presenters/listing";
 import { paginationFor } from "./pagination";
+import { InternalError, NotFoundError } from "../errors";
 type ListInput = z.infer<typeof wishlistListInputSchema>;
 
 type ListResult = z.infer<typeof wishlistListSchema>;
@@ -96,7 +96,7 @@ export async function addWishlistItem(
     .where(eq(listing.id, listingId))
     .limit(1);
 
-  if (!exists) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!exists) throw new NotFoundError({ message: "Unknown listing" });
 
   const wishlistId = await getOrCreateWishlistId(db, userId);
 
@@ -200,7 +200,7 @@ async function getOrCreateWishlistId(db: Database, userId: string): Promise<stri
   const raced = await findWishlistId(db, userId);
   if (raced) return raced;
 
-  throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not create a wishlist" });
+  throw new InternalError({ message: "Could not create a wishlist" });
 }
 
 function emptyPagination(input: ListInput) {

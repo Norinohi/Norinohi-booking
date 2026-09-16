@@ -1,7 +1,7 @@
-import { ORPCError } from "@orpc/server";
 import type Stripe from "stripe";
 
 import { canTransition, type BookingStatus } from "./booking-state";
+import { ConflictError } from "../errors";
 
 /*
  * The two checks `confirmCheckout` runs before it will open or resume a charge.
@@ -26,7 +26,7 @@ export function assertIntentIsResumable(status: Stripe.PaymentIntent.Status): vo
    * still held against their card.
    */
   if (status === "succeeded" || status === "processing" || status === "requires_capture") {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This payment has already gone through",
       data: { code: "ALREADY_PAID" },
     });
@@ -40,7 +40,7 @@ export function assertIntentIsResumable(status: Stripe.PaymentIntent.Status): vo
    * back, so the booking has to be repriced rather than silently retried.
    */
   if (status === "canceled") {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This payment expired — reprice before paying",
       data: { code: "QUOTE_EXPIRED" },
     });
@@ -61,7 +61,7 @@ export function assertIntentIsResumable(status: Stripe.PaymentIntent.Status): vo
 export function assertHoldStillValid(holdExpiresAt: Date | null, now: Date): void {
   if (!holdExpiresAt || holdExpiresAt > now) return;
 
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: "The hold on this slot has expired — reprice before paying",
     data: { code: "QUOTE_EXPIRED" },
   });
@@ -75,7 +75,7 @@ export function assertHoldStillValid(holdExpiresAt: Date | null, now: Date): voi
 export function assertPayable(current: BookingStatus): void {
   if (canTransition(current, "PAYMENT_PENDING")) return;
 
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: `A booking in ${current} cannot be paid for`,
     data: { code: "NOT_PAYABLE" },
   });

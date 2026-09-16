@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import {
   listRequestableExtraPrices,
   listRequestableExtras,
@@ -20,7 +19,10 @@ import type {
   ProviderQuote,
   QuoteRequest,
 } from "@yacht-charter/providers";
-import { NotFoundError, SlotUnavailableError } from "@yacht-charter/providers/shared/errors";
+import {
+  NotFoundError as ProviderNotFoundError,
+  SlotUnavailableError,
+} from "@yacht-charter/providers/shared/errors";
 
 import {
   NoSellableOfferError,
@@ -53,6 +55,13 @@ import {
   type QuotePaymentScheduleEntry,
 } from "./pricing";
 import { getMarketplaceSettings } from "./marketplace-settings";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+} from "../errors";
 export type PersistedQuote = ProviderQuote & {
   quoteId: string;
   /** Asked of the base rather than bought here; priced off the catalogue. See the quote schema. */
@@ -211,9 +220,9 @@ async function selectOrConflict(
       reportRefusal(input, error.attempts);
       await learnFromRefusal(db, provider, input, error.attempts);
     }
-    if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+    if (error instanceof SlotUnavailableError || error instanceof ProviderNotFoundError) {
       if (!(error instanceof NoSellableOfferError)) reportRefusal(input, []);
-      throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
+      throw new ConflictError({ message: "Requested slot is not available" });
     }
     throw error;
   }
@@ -455,7 +464,7 @@ export async function repriceQuote(
   // first signed-in user to reprice it, which is how the sign-in-at-checkout flow
   // carries an anonymous price forward.
   if (existing.userId && userId && existing.userId !== userId) {
-    throw new ORPCError("FORBIDDEN", { message: "Quote belongs to another user" });
+    throw new ForbiddenError({ message: "Quote belongs to another user" });
   }
 
   // Anything the caller did not send keeps the previous quote's value, so the
@@ -535,7 +544,7 @@ export async function repriceQuote(
 
 export async function readQuote(db: Database, quoteId: string) {
   const [row] = await db.select().from(quote).where(eq(quote.id, quoteId)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown quote" });
+  if (!row) throw new NotFoundError({ message: "Unknown quote" });
   return row;
 }
 
@@ -547,14 +556,14 @@ export async function assertQuoteIsFresh(db: Database, quoteId: string, now = ne
   const row = await readQuote(db, quoteId);
 
   if (row.status === "consumed") {
-    throw new ORPCError("CONFLICT", { message: "Quote has already been used" });
+    throw new ConflictError({ message: "Quote has already been used" });
   }
 
   if (row.status === "expired" || row.expiresAt <= now) {
     if (row.status !== "expired") {
       await db.update(quote).set({ status: "expired" }).where(eq(quote.id, quoteId));
     }
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "Quote has expired — reprice before continuing",
       data: { code: "QUOTE_EXPIRED", quoteId },
     });
@@ -585,7 +594,7 @@ async function assertSelectableExtras(
   const unsold = [...new Set(extras)].filter((code) => !selectable.has(code));
   if (unsold.length === 0) return;
 
-  throw new ORPCError("BAD_REQUEST", {
+  throw new BadRequestError({
     message: `This listing does not sell: ${unsold.join(", ")}`,
     data: { code: "EXTRA_NOT_SELECTABLE", extras: unsold },
   });
@@ -612,7 +621,7 @@ async function assertRequestableExtras(
   const unknown = [...new Set(requested)].filter((code) => !requestable.has(code));
   if (unknown.length === 0) return;
 
-  throw new ORPCError("BAD_REQUEST", {
+  throw new BadRequestError({
     message: `This listing does not offer: ${unknown.join(", ")}`,
     data: { code: "EXTRA_NOT_REQUESTABLE", extras: unknown },
   });
@@ -629,7 +638,7 @@ async function priceOrConflict(
   } catch (error) {
     // Matched on the type, not the wording: a provider rephrasing its message must
     // not silently turn a sold-out week into a 500.
-    if (error instanceof SlotUnavailableError || error instanceof NotFoundError) {
+    if (error instanceof SlotUnavailableError || error instanceof ProviderNotFoundError) {
       /*
        * Reported for the same reason the first quote is: this is every date, guest and crew
        * change a visitor makes on the listing, and a refusal here reaches them as "not
@@ -661,7 +670,7 @@ async function priceOrConflict(
        * sync came round, and the next visitor met the same refusal.
        */
       if (listingOfferId) await learnFromRefusal(db, provider, input, attempts);
-      throw new ORPCError("CONFLICT", { message: "Requested slot is not available" });
+      throw new ConflictError({ message: "Requested slot is not available" });
     }
     throw error;
   }
@@ -1138,7 +1147,7 @@ async function insertQuote(
     })
     .returning({ id: quote.id });
 
-  if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not persist quote" });
+  if (!row) throw new InternalError({ message: "Could not persist quote" });
 
   if (input.applied.length > 0) {
     await db.insert(priceAdjustmentSnapshot).values(

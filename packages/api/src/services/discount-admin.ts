@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { discount, discountRedemption, discountTarget } from "@yacht-charter/db/schema/discount";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { operator } from "@yacht-charter/db/schema/operator";
@@ -17,6 +16,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
+import { ConflictError, InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof discountListInputSchema>;
 type ListResult = z.infer<typeof discountListSchema>;
@@ -64,10 +64,10 @@ export async function listDiscounts(db: Database, input: ListInput): Promise<Lis
 
 export async function getDiscount(db: Database, id: string): Promise<Discount> {
   const [row] = await db.select().from(discount).where(eq(discount.id, id)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown discount" });
+  if (!row) throw new NotFoundError({ message: "Unknown discount" });
 
   const [hydrated] = await hydrate(db, [row]);
-  if (!hydrated) throw new ORPCError("NOT_FOUND", { message: "Unknown discount" });
+  if (!hydrated) throw new NotFoundError({ message: "Unknown discount" });
   return hydrated;
 }
 
@@ -96,7 +96,7 @@ export async function createDiscount(
       })
       .returning({ id: discount.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
     await tx.insert(discountTarget).values(
       input.targets.map((target) => ({
@@ -343,7 +343,7 @@ async function assertCodeIsFree(db: Database, code: string, exceptId: string | n
     .limit(1);
 
   if (clash && clash.id !== exceptId) {
-    throw new ORPCError("CONFLICT", { message: `Discount code ${code} is already in use` });
+    throw new ConflictError({ message: `Discount code ${code} is already in use` });
   }
 }
 
@@ -364,7 +364,7 @@ async function assertTargetsExist(
         .from(table)
         .where(eq(table.id, targetId))
         .limit(1);
-      if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown ${label} ${targetId}` });
+      if (!row) throw new NotFoundError({ message: `Unknown ${label} ${targetId}` });
     };
 
     if (target.targetType === "listing") checks.push(exists(listing, "listing"));

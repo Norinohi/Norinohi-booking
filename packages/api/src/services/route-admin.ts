@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import { base, country, location, region } from "@yacht-charter/db/schema/geography";
 import {
@@ -31,6 +30,7 @@ import type {
 } from "../contracts/route";
 import { writeAuditLog } from "./audit";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { ConflictError, InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof routeListInputSchema>;
 type ListResult = z.infer<typeof routeListSchema>;
@@ -367,7 +367,7 @@ export async function getRoute(db: Database, id: string): Promise<Route> {
     .where(eq(suggestedRoute.id, id))
     .limit(1);
 
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown route" });
+  if (!row) throw new NotFoundError({ message: "Unknown route" });
 
   const [stops, translations] = await Promise.all([
     stopsByRoute(db, [id]),
@@ -387,7 +387,7 @@ async function assertTargetExists(
       .from(base)
       .where(eq(base.id, input.baseId))
       .limit(1);
-    if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown base ${input.baseId}` });
+    if (!row) throw new NotFoundError({ message: `Unknown base ${input.baseId}` });
   }
 
   if (input.regionId) {
@@ -396,7 +396,7 @@ async function assertTargetExists(
       .from(region)
       .where(eq(region.id, input.regionId))
       .limit(1);
-    if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown region ${input.regionId}` });
+    if (!row) throw new NotFoundError({ message: `Unknown region ${input.regionId}` });
   }
 }
 
@@ -436,7 +436,7 @@ export async function createRoute(
       })
       .returning({ id: suggestedRoute.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
     if (input.translations) await writeTranslations(tx, created.id, input.translations);
 
@@ -549,7 +549,7 @@ export async function reorderFeaturedRoutes(
   input: FeaturedReorderInput,
 ): Promise<{ routes: Route[] }> {
   if (new Set(input.ids).size !== input.ids.length) {
-    throw new ORPCError("CONFLICT", { message: "A route may appear in the list only once" });
+    throw new ConflictError({ message: "A route may appear in the list only once" });
   }
 
   const before = await listFeaturedRoutes(db);
@@ -561,7 +561,7 @@ export async function reorderFeaturedRoutes(
       .where(inArray(suggestedRoute.id, input.ids));
     const known = new Set(found.map((row) => row.id));
     const missing = input.ids.find((id) => !known.has(id));
-    if (missing) throw new ORPCError("NOT_FOUND", { message: `Unknown route ${missing}` });
+    if (missing) throw new NotFoundError({ message: `Unknown route ${missing}` });
   }
 
   await db.transaction(async (tx) => {
@@ -600,7 +600,7 @@ export async function setRouteActive(
 
   /* Publishing a route with nothing on the map would draw a section with no itinerary in it. */
   if (active && before.stops.length === 0) {
-    throw new ORPCError("CONFLICT", { message: "Add at least one stop before publishing" });
+    throw new ConflictError({ message: "Add at least one stop before publishing" });
   }
 
   await db.transaction(async (tx) => {
@@ -650,7 +650,7 @@ async function loadStop(db: Database, id: string) {
     .from(suggestedRouteStop)
     .where(eq(suggestedRouteStop.id, id))
     .limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown stop" });
+  if (!row) throw new NotFoundError({ message: "Unknown stop" });
   return row;
 }
 
@@ -684,7 +684,7 @@ export async function createRouteStop(
       })
       .returning({ id: suggestedRouteStop.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
     if (input.noteTranslations) await writeStopNotes(tx, created.id, input.noteTranslations);
 
@@ -804,11 +804,11 @@ export async function reorderRouteStops(
   const submitted = new Set(input.stopIds);
   /* The whole list, or the rows left out would keep positions the reordered ones now want. */
   if (submitted.size !== input.stopIds.length || submitted.size !== known.size) {
-    throw new ORPCError("CONFLICT", { message: "Reorder must list every stop exactly once" });
+    throw new ConflictError({ message: "Reorder must list every stop exactly once" });
   }
   for (const id of input.stopIds) {
     if (!known.has(id)) {
-      throw new ORPCError("NOT_FOUND", { message: `Stop ${id} is not on this route` });
+      throw new NotFoundError({ message: `Stop ${id} is not on this route` });
     }
   }
 

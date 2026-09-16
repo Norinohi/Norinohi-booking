@@ -11,7 +11,6 @@ import {
 } from "@yacht-charter/providers/media/editorial-images";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { ORPCError } from "@orpc/server";
 import type { z } from "zod";
 
 import type { Database } from "../context";
@@ -31,6 +30,7 @@ import type {
   popularFacetValueSchema,
 } from "../contracts/popular-facets";
 import { writeAuditLog } from "./audit";
+import { ConflictError, InternalError, PreconditionFailedError } from "../errors";
 
 type Kind = z.infer<typeof popularFacetKindSchema>;
 type Surface = z.infer<typeof popularFacetSurfaceSchema>;
@@ -227,7 +227,7 @@ export async function setPopularFacets(
 ): Promise<SetResult> {
   const deduped = new Set(input.values.map(normalizedFilterValue));
   if (deduped.size !== input.values.length) {
-    throw new ORPCError("CONFLICT", { message: "A value may appear in the list only once" });
+    throw new ConflictError({ message: "A value may appear in the list only once" });
   }
 
   const before = await listPopularFacets(db, { kind: input.kind, surface: input.surface });
@@ -331,7 +331,7 @@ async function ensureMediaRow(db: Database, kind: Kind, value: string) {
     .from(facetMedia)
     .where(and(eq(facetMedia.kind, kind), eq(facetMedia.value, name)))
     .limit(1);
-  if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!row) throw new InternalError();
   return row;
 }
 
@@ -479,7 +479,7 @@ export async function updateFacetMedia(
 /** Stores an uploaded photo and answers its URL; saving it onto a value is `updateFacetMedia`. */
 export async function uploadFacetImage(input: ImageUploadInput): Promise<{ url: string }> {
   if (!editorialImageUploadEnabled()) {
-    throw new ORPCError("PRECONDITION_FAILED", {
+    throw new PreconditionFailedError({
       message: "Image upload is not configured in this environment. Paste an image URL instead.",
     });
   }

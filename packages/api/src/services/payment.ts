@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { env } from "@yacht-charter/env/server";
 import { and, eq } from "drizzle-orm";
@@ -12,6 +11,7 @@ import { isPreConfirmed, type BookingStatus } from "./booking-state";
 import { assertHoldStillValid, assertIntentIsResumable, assertPayable } from "./payment-guards";
 import { amountDue, outstandingMinor } from "./checkout-amounts";
 import { assertQuoteIsFresh } from "./quote";
+import { ConflictError, InternalError, NotImplementedError } from "../errors";
 
 type ConfirmResult = z.infer<typeof checkoutConfirmSchema>;
 
@@ -45,7 +45,7 @@ export async function confirmCheckout(
 ): Promise<ConfirmResult> {
   const stripe = stripeClient();
   if (!stripe) {
-    throw new ORPCError("NOT_IMPLEMENTED", {
+    throw new NotImplementedError({
       message: "Card payment is not configured — set STRIPE_SECRET_KEY to enable it",
     });
   }
@@ -101,7 +101,7 @@ export async function confirmCheckout(
     idempotencyKey,
   });
 
-  if (!paymentId) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!paymentId) throw new InternalError();
 
   return present({
     bookingId,
@@ -142,7 +142,7 @@ export async function payBalance(
 ): Promise<ConfirmResult> {
   const stripe = stripeClient();
   if (!stripe) {
-    throw new ORPCError("NOT_IMPLEMENTED", {
+    throw new NotImplementedError({
       message: "Card payment is not configured — set STRIPE_SECRET_KEY to enable it",
     });
   }
@@ -158,7 +158,7 @@ export async function payBalance(
   const outstanding = await outstandingBalance(db, bookingId, row.quote);
 
   if (outstanding <= 0) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This booking is already paid in full",
       data: { code: "ALREADY_PAID" },
     });
@@ -186,7 +186,7 @@ export async function payBalance(
     idempotencyKey,
   });
 
-  if (!paymentId) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!paymentId) throw new InternalError();
 
   return present({
     bookingId,
@@ -415,7 +415,7 @@ function present(input: {
 
 async function assertPriceStillValid(expiresAt: Date): Promise<void> {
   if (expiresAt > new Date()) return;
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: "Quote has expired — reprice before paying",
     data: { code: "QUOTE_EXPIRED" },
   });

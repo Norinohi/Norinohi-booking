@@ -1,6 +1,5 @@
 import { describeProviderFailure, reportProviderRefusal } from "../lib/provider-failure";
 import { placeLine } from "../lib/place-line";
-import { ORPCError } from "@orpc/server";
 import {
   booking,
   bookingConsent,
@@ -54,6 +53,13 @@ import { isUniqueViolation, violatedConstraint } from "./pg-errors";
 import { randomCode, withUniqueRetry } from "./random-code";
 import { asCrewType, assertQuoteIsFresh, learnFromProviderRefusal } from "./quote";
 import type { GuestAccessToken } from "./guest-access";
+import {
+  ConflictError,
+  DomainError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+} from "../errors";
 
 type ListInput = z.infer<typeof bookingListInputSchema>;
 
@@ -289,7 +295,7 @@ export async function createHold(
      * a reprice, which mints a new quote and with it a new key.
      */
     if (NEVER_HELD.includes(existing.status)) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: existing.cancelReason ?? "This slot could not be held — please reprice",
         /* `cancelReason` is the English the first attempt stored; a client with a message
            catalogue says the same thing in the reader's language off this. */
@@ -303,7 +309,7 @@ export async function createHold(
 
   const priced = await assertQuoteIsFresh(db, quoteId);
   if (priced.userId && priced.userId !== userId) {
-    throw new ORPCError("FORBIDDEN", { message: "Quote belongs to another user" });
+    throw new ForbiddenError({ message: "Quote belongs to another user" });
   }
   await assertOnlineBookable(db, priced.listingOfferId);
 
@@ -314,7 +320,7 @@ export async function createHold(
     .where(eq(user.id, userId))
     .limit(1);
 
-  if (!account) throw new ORPCError("NOT_FOUND", { message: "Unknown user" });
+  if (!account) throw new NotFoundError({ message: "Unknown user" });
 
   // Created from a validated quote, so the booking starts at QUOTED. DRAFT exists
   // in the §6 enum for a booking with no quote yet, which this flow never produces.
@@ -567,7 +573,7 @@ async function holdOption(
         await transition(db, pending, "PROVIDER_REJECTED", {
           cancelReason: "This slot was taken while you were checking out",
         });
-        throw new ORPCError("CONFLICT", {
+        throw new ConflictError({
           message: "This slot was taken while you were checking out — please reprice",
           data: { code: "SLOT_TAKEN" },
         });
@@ -586,7 +592,7 @@ async function holdOption(
   } catch (error) {
     // Already handled and already moved to a terminal state — re-running the
     // transition here would fail its compare-and-set and mask the real reason.
-    if (error instanceof ORPCError) throw error;
+    if (error instanceof DomainError) throw error;
 
     // `cancelReason` is read back by the booking screens and by the idempotent
     // replay above, so it carries the customer wording; the vendor's own text
@@ -613,7 +619,7 @@ async function holdOption(
      * is booked.
      */
     await learnFromProviderRefusal(db, provider, priced, refusal);
-    throw new ORPCError("CONFLICT", { message: failure.customer, data: { code: failure.code } });
+    throw new ConflictError({ message: failure.customer, data: { code: failure.code } });
   }
 }
 
@@ -634,7 +640,7 @@ export async function cancelBooking(
   const current = row.booking.status;
 
   if (!actor.isAdmin && !isUserCancellable(current)) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message:
         current === "CONFIRMED"
           ? "A confirmed booking has to be cancelled by our team"
@@ -699,7 +705,7 @@ export async function cancelBooking(
     };
   } catch (error) {
     if (error instanceof InvalidTransitionError) {
-      throw new ORPCError("CONFLICT", { message: error.message });
+      throw new ConflictError({ message: error.message });
     }
     throw error;
   }
@@ -871,7 +877,7 @@ async function transition(
     // Reachable when a webhook or a concurrent call already advanced the booking,
     // so this is a conflict for the caller rather than a server fault.
     if (error instanceof InvalidTransitionError) {
-      throw new ORPCError("CONFLICT", { message: error.message });
+      throw new ConflictError({ message: error.message });
     }
     throw error;
   }
@@ -885,7 +891,7 @@ async function transition(
   // The status guard in the WHERE makes this a compare-and-set: a concurrent
   // webhook that moved the booking first wins, and this caller is told so.
   if (!updated) {
-    throw new ORPCError("CONFLICT", { message: "Booking changed while it was being updated" });
+    throw new ConflictError({ message: "Booking changed while it was being updated" });
   }
 
   return updated;
@@ -897,7 +903,7 @@ async function transition(
  * here is the same key again in a moment, and the reprice refusals mean the opposite.
  */
 function holdInProgress(): never {
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: "This booking is still being confirmed — try again in a moment",
     data: { code: "HOLD_IN_PROGRESS" },
   });
@@ -929,7 +935,7 @@ async function insertBooking(
   });
 
   if (!row) {
-    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not allocate a booking" });
+    throw new InternalError({ message: "Could not allocate a booking" });
   }
   return row;
 }
@@ -972,7 +978,7 @@ async function buildSnapshot(db: Database, listingId: string): Promise<Commercia
     .where(eq(listingSearchDoc.listingId, listingId))
     .limit(1);
 
-  if (!doc) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!doc) throw new NotFoundError({ message: "Unknown listing" });
 
   const [baseRow] = await db
     .select({ checkInTime: base.checkInTime, checkOutTime: base.checkOutTime })
@@ -1177,7 +1183,7 @@ async function assertOnlineBookable(db: Database, listingOfferId: string | null)
     .limit(1);
 
   if (offer?.confirms) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This yacht's operator confirms each booking, so it can only be requested",
       data: { code: "OPERATOR_CONFIRMATION_REQUIRED" },
     });

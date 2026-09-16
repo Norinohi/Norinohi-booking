@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { provider as providerTable, syncError, syncRun } from "@yacht-charter/db/schema/provider";
 import type { InventoryProvider } from "@yacht-charter/providers";
 import {
@@ -25,6 +24,7 @@ import type {
   syncRunStartedSchema,
 } from "../contracts/admin";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { NotFoundError } from "../errors";
 
 type SyncRunStatus = z.infer<typeof syncRunStatusSchema>;
 type SyncRunStarted = z.infer<typeof syncRunStartedSchema>;
@@ -231,7 +231,7 @@ export async function getCatalogueSyncStatus(
     .limit(1);
 
   if (!run) {
-    throw new ORPCError("NOT_FOUND", { message: "No catalogue sync run found" });
+    throw new NotFoundError({ message: "No catalogue sync run found" });
   }
 
   const errors = await db

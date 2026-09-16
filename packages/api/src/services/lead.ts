@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { lead } from "@yacht-charter/db/schema/lead";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
@@ -18,6 +17,7 @@ import type {
 import { writeAuditLog } from "./audit";
 import { notifyLeadAnswered, notifyLeadReceived } from "./lead-email";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { InternalError, NotFoundError } from "../errors";
 type CreateInput = z.infer<typeof leadCreateInputSchema>;
 type AnswerInput = z.infer<typeof leadAnswerInputSchema>;
 
@@ -53,7 +53,7 @@ export async function createLead(
       .where(eq(listingSearchDoc.listingId, input.listingId))
       .limit(1);
 
-    if (!exists) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+    if (!exists) throw new NotFoundError({ message: "Unknown listing" });
     subject = exists;
   }
 
@@ -77,7 +77,7 @@ export async function createLead(
       createdAt: lead.createdAt,
     });
 
-  if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not save enquiry" });
+  if (!created) throw new InternalError({ message: "Could not save enquiry" });
 
   await notifyLeadReceived({
     to: input.email,
@@ -131,7 +131,7 @@ export async function setLeadStatus(
   status: Status,
 ): Promise<Lead> {
   const [before] = await db.select().from(lead).where(eq(lead.id, id)).limit(1);
-  if (!before) throw new ORPCError("NOT_FOUND", { message: "Unknown enquiry" });
+  if (!before) throw new NotFoundError({ message: "Unknown enquiry" });
 
   const updated = await db.transaction(async (tx) => {
     const [row] = await tx
@@ -158,7 +158,7 @@ export async function setLeadStatus(
     return row;
   });
 
-  if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!updated) throw new InternalError();
 
   const [listingRow] = updated.listingId
     ? await db
@@ -183,7 +183,7 @@ export async function answerLead(
   input: AnswerInput,
 ): Promise<Lead> {
   const [before] = await db.select().from(lead).where(eq(lead.id, input.id)).limit(1);
-  if (!before) throw new ORPCError("NOT_FOUND", { message: "Unknown enquiry" });
+  if (!before) throw new NotFoundError({ message: "Unknown enquiry" });
 
   // The yacht the enquiry named, for the email's link back into the site. The search doc is
   // where the slug lives, and a lead that named none is answered without a call to action.
@@ -222,7 +222,7 @@ export async function answerLead(
     return row;
   });
 
-  if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!updated) throw new InternalError();
 
   await notifyLeadAnswered({
     to: before.email,

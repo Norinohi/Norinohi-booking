@@ -1,9 +1,9 @@
-import { ORPCError } from "@orpc/server";
 import { booking } from "@yacht-charter/db/schema/booking";
 import { quote } from "@yacht-charter/db/schema/quote";
 import { type SQL, and, eq } from "drizzle-orm";
 
 import type { DatabaseExecutor } from "../context";
+import { NotFoundError } from "../errors";
 
 /*
  * A booking is never useful without the quote it was priced from — every caller
@@ -27,7 +27,7 @@ async function read(db: DatabaseExecutor, ...where: [SQL, ...SQL[]]): Promise<Bo
 
   // Deliberately NOT_FOUND rather than FORBIDDEN: another user's booking id should
   // not be confirmable by probing.
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  if (!row) throw new NotFoundError({ message: "Unknown booking" });
   return row;
 }
 

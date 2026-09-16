@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { priceAdjustmentRule, priceAdjustmentTarget } from "@yacht-charter/db/schema/admin";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { and, asc, count, eq, ilike, inArray, isNotNull } from "drizzle-orm";
@@ -15,6 +14,7 @@ import type {
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
 import { loadAdjustmentsForListings, type PriceAdjustment, resolveAdjustedPrice } from "./pricing";
+import { InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof listingPriceListInputSchema>;
 type ListResult = z.infer<typeof listingPriceListSchema>;
@@ -99,7 +99,7 @@ export async function getListingPrice(db: Database, listingId: string): Promise<
     .where(eq(listingSearchDoc.listingId, listingId))
     .limit(1);
 
-  if (!doc) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!doc) throw new NotFoundError({ message: "Unknown listing" });
 
   const adjustments = await loadAdjustmentsForListings(db, [doc.listingId]);
   return toRow(doc, adjustments.get(doc.listingId) ?? []);
@@ -186,7 +186,7 @@ export async function updateListingPrice(
     .where(eq(listingSearchDoc.listingId, input.listingId))
     .limit(1);
 
-  if (!doc) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!doc) throw new NotFoundError({ message: "Unknown listing" });
 
   const previous = await loadAdjustmentsForListings(db, [input.listingId]);
 
@@ -219,7 +219,7 @@ export async function updateListingPrice(
       })
       .returning({ id: priceAdjustmentRule.id });
 
-    if (!rule) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!rule) throw new InternalError();
 
     await tx.insert(priceAdjustmentTarget).values({
       ruleId: rule.id,
@@ -281,7 +281,7 @@ export async function clearListingPrice(
 
 async function readRow(db: Database, listingId: string): Promise<Row> {
   const row = await listOne(db, listingId);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown listing" });
+  if (!row) throw new NotFoundError({ message: "Unknown listing" });
   return row;
 }
 

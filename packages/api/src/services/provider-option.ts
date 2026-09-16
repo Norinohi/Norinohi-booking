@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, providerReservationEvent } from "@yacht-charter/db/schema/booking";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { quote } from "@yacht-charter/db/schema/quote";
@@ -12,6 +11,7 @@ import type { Database, DatabaseExecutor } from "../context";
 import { getEnabledInventoryProviders } from "../context";
 import type { BookingStatus } from "./booking-state";
 import { enqueueOutbox } from "./outbox";
+import { NotFoundError } from "../errors";
 
 type BookingRow = typeof booking.$inferSelect;
 
@@ -151,7 +151,7 @@ export async function retryReleaseForBooking(
   bookingId: string,
 ): Promise<ProviderRelease> {
   const [row] = await db.select().from(booking).where(eq(booking.id, bookingId)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  if (!row) throw new NotFoundError({ message: "Unknown booking" });
 
   /*
    * A hold that has already lapsed holds nothing, so there is nothing to ask for.

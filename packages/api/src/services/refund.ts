@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentRefund, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import type { RefundMethod } from "@yacht-charter/transactional";
 import { and, eq, inArray } from "drizzle-orm";
@@ -10,6 +9,14 @@ import { notifyRefundIssued } from "./booking-email";
 import { type BookingStatus, canTransition } from "./booking-state";
 import { stripeClient } from "./payment";
 import { allocate, type CardPaymentRow, type PaymentRow, planRefund } from "./refund-plan";
+import {
+  BadGatewayError,
+  BadRequestError,
+  ConflictError,
+  InternalError,
+  NotFoundError,
+  NotImplementedError,
+} from "../errors";
 
 export type RefundResult = {
   bookingId: string;
@@ -54,7 +61,7 @@ export async function refundBooking(
 ): Promise<RefundResult> {
   const [row] = await db.select().from(booking).where(eq(booking.id, bookingId)).limit(1);
 
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  if (!row) throw new NotFoundError({ message: "Unknown booking" });
 
   const current = row.status;
 
@@ -72,7 +79,7 @@ export async function refundBooking(
   }
 
   if (current !== "REFUND_PENDING") {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: `A booking in ${current} owes no refund — cancel it first`,
     });
   }
@@ -80,7 +87,7 @@ export async function refundBooking(
   const plan = await readPlan(db, bookingId);
 
   if (options.amountMinor !== undefined && options.amountMinor > plan.outstandingMinor) {
-    throw new ORPCError("BAD_REQUEST", {
+    throw new BadRequestError({
       message: `Only ${plan.outstandingMinor} is outstanding on this booking`,
     });
   }
@@ -106,7 +113,7 @@ export async function refundBooking(
   if (viaStripe.length > 0) {
     const stripe = stripeClient();
     if (!stripe) {
-      throw new ORPCError("NOT_IMPLEMENTED", {
+      throw new NotImplementedError({
         message: "Card refunds are not configured — set STRIPE_SECRET_KEY to enable them",
       });
     }
@@ -238,7 +245,7 @@ async function refundCard(
     })
     .returning({ id: paymentRefund.id });
 
-  if (!attempt) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!attempt) throw new InternalError();
 
   const metadata: Stripe.MetadataParam = { bookingId, paymentId: paid.id };
   if (reason) metadata.reason = reason;
@@ -288,7 +295,7 @@ async function refundCard(
     .set({ failureReason: refund.failure_reason ?? `Refund ${refund.status}` })
     .where(eq(payment.id, paid.id));
 
-  throw new ORPCError("BAD_GATEWAY", {
+  throw new BadGatewayError({
     message: `Stripe could not refund ${paid.id}: ${refund.failure_reason ?? refund.status}`,
   });
 }

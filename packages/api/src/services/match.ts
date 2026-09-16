@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { mediaRankOf } from "@yacht-charter/env/providers";
 import { base, location } from "@yacht-charter/db/schema/geography";
 import {
@@ -39,6 +38,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors";
 
 type QueueInput = z.infer<typeof duplicateQueueInputSchema>;
 type QueueResult = z.infer<typeof duplicateQueueSchema>;
@@ -426,7 +426,7 @@ export async function getDuplicateCandidateDetail(
     .where(eq(listingDuplicateCandidate.id, input.candidateId))
     .limit(1);
 
-  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
 
   const sides = await loadDetailSides(db, [candidate.sourceAId, candidate.sourceBId]);
 
@@ -665,14 +665,14 @@ export async function confirmDuplicateCandidate(
       sources.map((row) => row.listingId).filter((id): id is string => id !== null),
     );
     if (!listingIds.has(input.keepListingId)) {
-      throw new ORPCError("BAD_REQUEST", {
+      throw new BadRequestError({
         message: "keepListingId must be one of the two candidate listings",
       });
     }
 
     const losingListingId = [...listingIds].find((id) => id !== input.keepListingId) ?? null;
     if (!losingListingId) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: "Both sources are already on this listing",
       });
     }
@@ -803,7 +803,7 @@ async function moveOffers(
   `);
 
   if (Number(clash.rows[0]?.count ?? 0) > 0) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "Both listings are sold through the same provider, so they are not one yacht",
       data: { code: "MERGE_SAME_PROVIDER" },
     });
@@ -932,7 +932,7 @@ export async function splitListingOffer(
       .for("update")
       .limit(1);
 
-    if (!offer) throw new ORPCError("NOT_FOUND", { message: "Unknown offer" });
+    if (!offer) throw new NotFoundError({ message: "Unknown offer" });
 
     const siblings = await tx
       .select({ total: count() })
@@ -940,7 +940,7 @@ export async function splitListingOffer(
       .where(eq(listingOffer.listingId, offer.listingId));
 
     if ((siblings[0]?.total ?? 0) < 2) {
-      throw new ORPCError("CONFLICT", {
+      throw new ConflictError({
         message: "This listing has only one offer, so there is nothing to split off",
         data: { code: "NOTHING_TO_SPLIT" },
       });
@@ -1065,7 +1065,7 @@ async function createListingForOffer(
   },
 ): Promise<string> {
   if (!offer.operatorId || !offer.homeBaseId) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "This offer names no operator or base, so it cannot stand on its own listing",
       data: { code: "OFFER_INCOMPLETE" },
     });
@@ -1227,9 +1227,9 @@ async function lockReopenableCandidate(tx: DatabaseExecutor, candidateId: string
     .limit(1)
     .for("update");
 
-  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
   if (candidate.decision === "pending") {
-    throw new ORPCError("CONFLICT", { message: "This candidate is already in the queue" });
+    throw new ConflictError({ message: "This candidate is already in the queue" });
   }
   if (candidate.decision !== "confirmed") return candidate;
 
@@ -1243,7 +1243,7 @@ async function lockReopenableCandidate(tx: DatabaseExecutor, candidateId: string
     if (first.listingId !== second.listingId) return candidate;
   }
 
-  throw new ORPCError("CONFLICT", {
+  throw new ConflictError({
     message: "Take the merged offer back out of the listing before reopening this pair",
   });
 }
@@ -1305,7 +1305,7 @@ async function lockDecidableCandidate(tx: DatabaseExecutor, candidateId: string)
     .limit(1)
     .for("update");
 
-  if (!candidate) throw new ORPCError("NOT_FOUND", { message: "Unknown duplicate candidate" });
+  if (!candidate) throw new NotFoundError({ message: "Unknown duplicate candidate" });
   /*
    * `deferred` is not a verdict — it is a reviewer saying "not now", and the only way back to
    * the pair is this row, since nothing re-proposes a candidate that already exists. Closing it
@@ -1335,5 +1335,5 @@ async function lockDecidableCandidate(tx: DatabaseExecutor, candidateId: string)
     }
   }
 
-  throw new ORPCError("CONFLICT", { message: "This candidate has already been reviewed" });
+  throw new ConflictError({ message: "This candidate has already been reviewed" });
 }

@@ -63,6 +63,7 @@ Twelve pnpm workspace projects: two apps (`apps/web`, `apps/server`) and nine pa
 `packages/api` is the contract every other workspace depends on.
 
 - `packages/api/src/index.ts` defines `o` (the oRPC builder bound to `Context`), `publicProcedure`, and `protectedProcedure`. `protectedProcedure` applies a `requireAuth` middleware that throws `ORPCError("UNAUTHORIZED")` when `context.session?.user` is missing.
+- Services throw the domain errors in `packages/api/src/errors.ts` (`NotFoundError`, `ConflictError`, ...), never `ORPCError`. A middleware on every procedure (`packages/api/src/orpc-errors.ts`) turns them into the same `ORPCError` on the wire, so services stay callable from jobs and future agents without the HTTP layer. The vendored `orpc-contract` skill predates this and still shows `ORPCError` in services; follow this rule instead.
 - `packages/api/src/routers/index.ts` exports `appRouter` plus the `AppRouter` and `AppRouterClient` types.
 - `packages/api/src/context.ts` exports `createContext` and the `Context` type; it resolves the session via `auth.api.getSession`.
 - `apps/server/src/index.ts` mounts `RPCHandler` at prefix `/rpc` and `OpenAPIHandler` at `/api-reference`.

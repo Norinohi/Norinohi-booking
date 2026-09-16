@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { booking, payment, paymentSchedule } from "@yacht-charter/db/schema/booking";
 import { invoiceRequest } from "@yacht-charter/db/schema/checkout";
 import { user } from "@yacht-charter/db/schema/auth";
@@ -21,6 +20,7 @@ import type {
 import { type AuditEntry, writeAuditLog } from "./audit";
 import { readAnyBooking } from "./booking-read";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { NotFoundError } from "../errors";
 
 /*
  * The staff view of bookings.
@@ -151,7 +151,7 @@ export async function getBookingForAdmin(db: Database, id: string): Promise<Deta
   ]);
 
   const owner = customer[0];
-  if (!owner) throw new ORPCError("NOT_FOUND", { message: "Unknown booking" });
+  if (!owner) throw new NotFoundError({ message: "Unknown booking" });
 
   const paidMinor = payments
     .filter((entry) => entry.status === "succeeded")
@@ -261,7 +261,7 @@ export async function setBookingExcluded(
       .limit(1);
 
     if (!existing) {
-      throw new ORPCError("NOT_FOUND", { message: `Booking ${input.id} does not exist` });
+      throw new NotFoundError({ message: `Booking ${input.id} does not exist` });
     }
 
     const excludedAt = input.excluded ? new Date() : null;

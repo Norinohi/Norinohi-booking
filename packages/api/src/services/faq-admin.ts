@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { faq } from "@yacht-charter/db/schema/content";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { revalidateCatalogCache } from "@yacht-charter/providers/sync/revalidate";
@@ -23,6 +22,7 @@ import {
 } from "../contracts/faq";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
+import { BadRequestError, ConflictError, InternalError, NotFoundError } from "../errors";
 
 type FaqCategory = z.infer<typeof faqCategorySchema>;
 type FaqLocale = z.infer<typeof faqLocaleSchema>;
@@ -188,7 +188,7 @@ export async function listFaq(db: Database, input: ListInput): Promise<ListResul
   /* The input schema already refuses a listing scope with no listing; this is the type-level
      half of the same rule, and a wrong answer is worse than a refusal either way. */
   if (input.scope === "listing" && !input.listingId) {
-    throw new ORPCError("BAD_REQUEST", { message: "A listing scope needs a listing id" });
+    throw new BadRequestError({ message: "A listing scope needs a listing id" });
   }
 
   const filters = [input.listingId ? eq(faq.listingId, input.listingId) : isNull(faq.listingId)];
@@ -236,7 +236,7 @@ export async function listFaq(db: Database, input: ListInput): Promise<ListResul
 
 async function loadRow(db: DatabaseExecutor, id: string): Promise<FaqRow> {
   const [row] = await db.select().from(faq).where(eq(faq.id, id)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown FAQ entry" });
+  if (!row) throw new NotFoundError({ message: "Unknown FAQ entry" });
   return row;
 }
 
@@ -255,7 +255,7 @@ async function loadGroupRows(
 
 async function groupOf(db: Database, rows: FaqRow[]): Promise<FaqGroup> {
   const first = rows[0];
-  if (!first) throw new ORPCError("NOT_FOUND", { message: "Unknown FAQ entry" });
+  if (!first) throw new NotFoundError({ message: "Unknown FAQ entry" });
 
   const [owner] = first.listingId
     ? await db
@@ -266,7 +266,7 @@ async function groupOf(db: Database, rows: FaqRow[]): Promise<FaqGroup> {
     : [];
 
   const group = toGroups(rows.map((entry) => ({ entry, listingTitle: owner?.title ?? null })))[0];
-  if (!group) throw new ORPCError("NOT_FOUND", { message: "Unknown FAQ entry" });
+  if (!group) throw new NotFoundError({ message: "Unknown FAQ entry" });
   return group;
 }
 
@@ -283,7 +283,7 @@ async function assertListingExists(db: Database, listingId: string | null): Prom
     .from(listing)
     .where(eq(listing.id, listingId))
     .limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: `Unknown listing ${listingId}` });
+  if (!row) throw new NotFoundError({ message: `Unknown listing ${listingId}` });
 }
 
 /** Appends to the end of the (scope, category) list the entry is being filed under. */
@@ -406,7 +406,7 @@ export async function updateFaqEntry(
       }
 
       const [created] = await tx.insert(faq).values(after).returning({ id: faq.id });
-      if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+      if (!created) throw new InternalError();
       await writeAuditLog(tx, {
         actorUserId,
         action: "create",
@@ -523,7 +523,7 @@ export async function reorderFaq(
   const inLocale = rows.filter((row) => row.locale === input.locale);
   const submitted = new Set(input.ids);
   if (submitted.size !== input.ids.length || submitted.size !== inLocale.length) {
-    throw new ORPCError("CONFLICT", { message: "Reorder must list every entry exactly once" });
+    throw new ConflictError({ message: "Reorder must list every entry exactly once" });
   }
 
   const positionById = new Map(inLocale.map((row) => [row.id, row.sortOrder]));
@@ -531,7 +531,7 @@ export async function reorderFaq(
   for (const [index, id] of input.ids.entries()) {
     const previous = positionById.get(id);
     if (previous === undefined) {
-      throw new ORPCError("NOT_FOUND", { message: `Entry ${id} is not in this list` });
+      throw new NotFoundError({ message: `Entry ${id} is not in this list` });
     }
     placed.set(previous, index);
   }

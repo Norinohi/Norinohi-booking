@@ -3,12 +3,12 @@ import { listingOffer } from "@yacht-charter/db/schema/listing-offer";
 import { provider } from "@yacht-charter/db/schema/provider";
 import { quote } from "@yacht-charter/db/schema/quote";
 import type { InventoryProvider } from "@yacht-charter/providers";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import { getEnabledInventoryProviders } from "../context";
 import { getMarketplaceSettings } from "./marketplace-settings";
+import { ServiceUnavailableError } from "../errors";
 
 /**
  * Which vendor a sale is actually going through.
@@ -73,7 +73,7 @@ export async function providerByKey(
    * Refusing is recoverable, and it names the actual fault, which is a provider
    * left disabled while its listings are still published.
    */
-  throw new ORPCError("SERVICE_UNAVAILABLE", {
+  throw new ServiceUnavailableError({
     message: `Provider "${code}" is not enabled in this deployment`,
   });
 }

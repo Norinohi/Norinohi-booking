@@ -9,7 +9,6 @@
  * Deciding which rate applies to a charter lives in `commission.ts`, which is pure and tested.
  * This file only reads and writes rows.
  */
-import { ORPCError } from "@orpc/server";
 import { isProviderKey } from "@yacht-charter/env/providers";
 import { providerCommission } from "@yacht-charter/db/schema/commission";
 import { operator } from "@yacht-charter/db/schema/operator";
@@ -30,6 +29,7 @@ import type {
 } from "../contracts/admin";
 import { writeAuditLog } from "./audit";
 import { paginationFor } from "./pagination";
+import { ConflictError, InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof commissionListInputSchema>;
 type ListResult = z.infer<typeof commissionListSchema>;
@@ -77,7 +77,7 @@ export async function listCommissions(db: Database, input: ListInput): Promise<L
 
 export async function getCommission(db: Database, id: string): Promise<Commission> {
   const [row] = await selectRows(db).where(eq(providerCommission.id, id)).limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown commission rate" });
+  if (!row) throw new NotFoundError({ message: "Unknown commission rate" });
   return present(row);
 }
 
@@ -102,7 +102,7 @@ export async function createCommission(
       })
       .returning({ id: providerCommission.id });
 
-    if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+    if (!created) throw new InternalError();
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -237,7 +237,7 @@ function present(row: Row): Commission {
 
 function asProviderKey(code: string): ProviderKey {
   if (!isProviderKey(code)) {
-    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: `Unknown provider ${code}` });
+    throw new InternalError({ message: `Unknown provider ${code}` });
   }
   return code;
 }
@@ -255,7 +255,7 @@ async function providerIdFor(db: Database, code: ProviderKey): Promise<string> {
     .from(provider)
     .where(eq(provider.code, code))
     .limit(1);
-  if (!row) throw new ORPCError("NOT_FOUND", { message: `Provider ${code} is not registered` });
+  if (!row) throw new NotFoundError({ message: `Provider ${code} is not registered` });
   return row.id;
 }
 
@@ -299,7 +299,7 @@ async function warnOnOverlap(
 
   const clash = existing.find((row) => overlaps(row, input));
   if (clash) {
-    throw new ORPCError("CONFLICT", {
+    throw new ConflictError({
       message: "An active rate already covers these dates for this provider and operator",
     });
   }

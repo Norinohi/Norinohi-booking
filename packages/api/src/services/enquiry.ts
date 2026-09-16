@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { user } from "@yacht-charter/db/schema/auth";
 import { booking } from "@yacht-charter/db/schema/booking";
 import { bookingEnquiry } from "@yacht-charter/db/schema/checkout";
@@ -17,6 +16,7 @@ import type {
 import { writeAuditLog } from "./audit";
 import { notifyEnquiryAnswered, notifyStaff } from "./enquiry-email";
 import { paginatedQuery, totalFrom } from "./pagination";
+import { InternalError, NotFoundError } from "../errors";
 
 type ListInput = z.infer<typeof enquiryListInputSchema>;
 type ListResult = z.infer<typeof enquiryListSchema>;
@@ -119,7 +119,7 @@ export async function listEnquiries(db: Database, input: ListInput): Promise<Lis
 async function readOne(db: Database, id: string): Promise<SelectedRow> {
   const [row] = await selectEnquiries(db).where(eq(bookingEnquiry.id, id)).limit(1);
 
-  if (!row) throw new ORPCError("NOT_FOUND", { message: "Unknown enquiry" });
+  if (!row) throw new NotFoundError({ message: "Unknown enquiry" });
   return row;
 }
 
@@ -158,7 +158,7 @@ export async function answerEnquiry(
     return row;
   });
 
-  if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+  if (!updated) throw new InternalError();
 
   await notifyEnquiryAnswered({
     to: before.customerEmail,

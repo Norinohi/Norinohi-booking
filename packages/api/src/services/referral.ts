@@ -1,10 +1,10 @@
-import { ORPCError } from "@orpc/server";
 import { referral, referralRedemption } from "@yacht-charter/db/schema/account";
 import { and, eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import type { ReferralClaimResult, ReferralCode } from "../contracts/referral";
 import { randomCode, withUniqueRetry } from "./random-code";
+import { InternalError } from "../errors";
 
 const CODE_LENGTH = 8;
 const CODE_PREFIX = "NORI-";
@@ -95,7 +95,7 @@ async function issueCode(db: Database, userId: string): Promise<string> {
   });
 
   if (!row) {
-    throw new ORPCError("INTERNAL_SERVER_ERROR", {
+    throw new InternalError({
       message: "Could not allocate a unique referral code",
     });
   }

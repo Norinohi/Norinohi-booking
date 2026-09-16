@@ -1,10 +1,10 @@
-import { ORPCError } from "@orpc/server";
 import { profile } from "@yacht-charter/db/schema/account";
 import { session, user } from "@yacht-charter/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 import type { Database } from "../context";
 import type { Profile, ProfileUpdateInput } from "../contracts/profile";
+import { NotFoundError } from "../errors";
 
 const DEFAULT_LOCALE = "en";
 const DEFAULT_CURRENCY = "EUR";
@@ -30,7 +30,7 @@ export async function getProfile(db: Database, userId: string): Promise<Profile>
     .limit(1);
 
   if (!row) {
-    throw new ORPCError("NOT_FOUND");
+    throw new NotFoundError();
   }
 
   // Accounts created before the profile row exists (and every social sign-in) only

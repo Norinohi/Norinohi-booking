@@ -1,7 +1,7 @@
-import { ORPCError } from "@orpc/server";
 import { env } from "@yacht-charter/env/server";
 
 import { createPiiCodec, MissingEncryptionKeyError, type PiiCodec } from "./pii-codec";
+import { DomainError, InternalError, NotImplementedError } from "../errors";
 
 /**
  * The env-bound half of PII encryption: `pii-codec.ts` does the cryptography, this
@@ -21,7 +21,7 @@ function piiCodec(): PiiCodec {
     return codec;
   } catch (error) {
     if (error instanceof MissingEncryptionKeyError) {
-      throw new ORPCError("NOT_IMPLEMENTED", {
+      throw new NotImplementedError({
         message: `Traveller details are unavailable: ${error.message}`,
       });
     }
@@ -41,8 +41,8 @@ export function decryptOptionalPii(value: string | null): string | null {
     // A missing key already surfaced as NOT_IMPLEMENTED above; anything else here
     // is a row we cannot read — a rotated key, a restored backup — which the
     // caller cannot fix by asking differently.
-    if (error instanceof ORPCError) throw error;
-    throw new ORPCError("INTERNAL_SERVER_ERROR", {
+    if (error instanceof DomainError) throw error;
+    throw new InternalError({
       message: "Stored traveller details could not be decrypted",
     });
   }
