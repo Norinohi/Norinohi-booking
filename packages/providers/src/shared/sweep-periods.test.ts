@@ -146,11 +146,11 @@ describe("withShortCharterPeriods", () => {
 });
 
 describe("sweepRotation", () => {
-  /* One step per hour, which is the schedule the availability cron actually runs on. */
-  it("advances once an hour", () => {
+  /* One step per half hour, which is the schedule the availability cron actually runs on. */
+  it("advances once every half hour", () => {
     const at = (iso: string) => sweepRotation(new Date(iso));
 
-    expect(at("2026-09-07T10:59:59.000Z")).toBe(at("2026-09-07T10:00:00.000Z"));
-    expect(at("2026-09-07T11:00:00.000Z")).toBe(at("2026-09-07T10:00:00.000Z") + 1);
+    expect(at("2026-09-07T10:29:59.000Z")).toBe(at("2026-09-07T10:00:00.000Z"));
+    expect(at("2026-09-07T10:30:00.000Z")).toBe(at("2026-09-07T10:00:00.000Z") + 1);
   });
 });

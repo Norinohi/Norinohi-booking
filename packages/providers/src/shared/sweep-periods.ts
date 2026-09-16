@@ -101,7 +101,7 @@ export function withShortCharterPeriods(
  * The tail is a backlog, not a freshness surface: its periods carry one to five cards each, and
  * what they need is to be asked about at all rather than asked about hourly. So a run takes a
  * bounded slice and the next takes the following one, walking the whole 234-period NauSYS tail
- * in two runs and the 44-period Booking Manager one in a single run, on the hourly schedule in
+ * in two runs and the 44-period Booking Manager one in a single run, on the half-hourly schedule in
  * docs/scheduled-jobs.md.
  *
  * The size is set by what the grid can spare, because the grid queues behind this and the pass
@@ -126,7 +126,9 @@ export function withShortCharterPeriods(
 export const ADVERTISED_TAIL_PER_RUN = 120;
 
 /** The sweep's cadence, which is what one step of the tail rotation means. */
-const ROTATION_MS = 60 * 60 * 1000;
+/* Matches `cronSchedule` in apps/server/railway.cron-availability.json. At an hour, the two runs
+   inside each hour took the same slice of the tail and the second re-asked what the first had. */
+const ROTATION_MS = 30 * 60 * 1000;
 
 /**
  * Which slice of the tail this run takes, counted off the clock rather than off a cursor.
