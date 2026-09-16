@@ -75,6 +75,30 @@ which short charters `listShortCharterPeriods` hands the NauSYS sweep, and that 
 swept price of the charter it names.
 Shared seeding for these lives in `src/test-support/search-fixture.ts`.
 
+## Routes and geo modules
+
+Sailing-route data access lives in `src/routes/`, not in `src/search/`:
+
+- `suggested-route.ts` - `suggestedRouteFor`, the itinerary a listing detail page shows.
+- `popular-routes.ts` - `listPopularRoutes`, the home page slider (still re-exported through
+  `@yacht-charter/db/search`).
+- `library.ts` - the admin route library's reads and writes (target joins, stops, translations,
+  stop renumbering). `packages/api/src/services/route-admin.ts` keeps the orchestration: audit
+  log, domain errors, locale parsing and cache revalidation.
+- `types.ts` - `SuggestedRoute`, re-exported from `search/types.ts` for `ListingDetail`.
+
+Anything spatial goes in `src/geo/`, pure where it can be:
+
+- `distance.ts` - `distanceKm` (haversine in TypeScript) and `distanceKmSql`, the same formula
+  in SQL. Plain math functions: no PostGIS or earthdistance extension is installed, and adding
+  one is its own migration.
+- `bounds.ts` - `boundingBox` and `boundingBoxSql`, a cheap `lat`/`lng` prefilter that may keep
+  points outside the radius but never drops one inside it (handles the antimeridian and poles).
+- `nearest-marinas.ts` - `listNearestBases`, bounding box, then exact distance, then order.
+
+A new route or map query belongs in one of these folders; `search/` is for the listing catalogue.
+`geo/nearest-marinas.db.test.ts` pins the ordering, the `maxKm` cut and the listing counts.
+
 ## Conventions
 
 - Schema files live in `src/schema/` and must be re-exported from `src/schema/index.ts` — `src/index.ts` passes `* as schema` into `drizzle()`, so a table missing from that barrel is invisible to the ORM.

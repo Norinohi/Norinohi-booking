@@ -4,7 +4,7 @@ export * from "./catalog-pages";
 export * from "./localize";
 export * from "./localize-quote";
 export * from "./popular-facets";
-export * from "./popular-routes";
+export * from "../routes/popular-routes";
 export * from "./popular-yachts";
 export * from "./read-model";
 export * from "./repository";

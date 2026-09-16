@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
+import { suggestedRouteFor } from "../routes/suggested-route";
 import type * as schema from "../schema";
 import { AMENITY_GROUPS, amenityGroupFor } from "./amenity-groups";
 import { amenityIconFor } from "./amenity-icons";
@@ -12,7 +13,6 @@ import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize"
 import { normalizedKeySql } from "./normalize";
 import { placeLine, placeLineExcept } from "./place-line";
 import { comparablePrice, recommendedSortValue } from "./pricing-sql";
-import { suggestedRouteFor } from "./routes";
 import { nextCharterAfterLapseColumns } from "./sellable-starts";
 import type {
   FaqCategory,

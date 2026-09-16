@@ -2,7 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 import type * as schema from "../schema/index";
-import { normalizedKeySql } from "./normalize";
+import { normalizedKeySql } from "../search/normalize";
 
 export type PopularRouteStop = {
   name: string;
