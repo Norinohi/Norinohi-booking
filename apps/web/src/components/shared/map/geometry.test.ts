@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { type Padding, samePadding } from "./camera";
-import { boundsOf, toPosition } from "./geometry";
+import { boundsOf, medianOf, toPosition } from "./geometry";
 
 describe("boundsOf", () => {
   it("frames every point as west-south, east-north", () => {
@@ -53,5 +53,29 @@ describe("samePadding", () => {
 
   it.each(sides)("notices a change on %s", (side) => {
     expect(samePadding(padding, { ...padding, [side]: padding[side] + 1 })).toBe(false);
+  });
+});
+
+describe("medianOf", () => {
+  it("has no middle for no places", () => {
+    expect(medianOf([])).toBeUndefined();
+  });
+
+  it("stays with the bulk of a fleet despite far-off outliers", () => {
+    const med = [
+      { lat: 43.5, lng: 16.4 },
+      { lat: 37.9, lng: 23.7 },
+      { lat: 39.5, lng: 2.6 },
+      { lat: 40.6, lng: 14.2 },
+    ];
+    const outliers = [
+      { lat: 18.4, lng: -64.6 },
+      { lat: 7.9, lng: 98.3 },
+    ];
+
+    const middle = medianOf([...med, ...outliers]);
+
+    expect(middle?.lat).toBeCloseTo(38.7);
+    expect(middle?.lng).toBeCloseTo(15.3);
   });
 });

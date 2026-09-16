@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { paddingOf } from "@/components/shared/map/camera";
-import { boundsOf, type Coordinates } from "@/components/shared/map/geometry";
+import { boundsOf, medianOf, type Coordinates } from "@/components/shared/map/geometry";
 import type { MapInstance } from "@/components/shared/map/map-canvas";
 import { MAP_MARINA_ZOOM } from "@/lib/mapbox";
 
@@ -45,10 +45,20 @@ export function useFitSearchResults(
     if (!frame || frame.done || !places) return;
     frame.done = true;
     if (frame.preserve || places.length === 0) return;
-    map.fitBounds(boundsOf(places), {
-      padding: paddingOf(map),
-      maxZoom: MAP_MARINA_ZOOM,
-      duration: newVisit ? 0 : CLUSTER_FLIGHT_MS,
-    });
+    const duration = newVisit ? 0 : CLUSTER_FLIGHT_MS;
+    const options = { padding: paddingOf(map), maxZoom: MAP_MARINA_ZOOM };
+    const camera = map.cameraForBounds(boundsOf(places), options);
+    /*
+     * A search spread over the whole world needs a zoom below the map's minimum. Mapbox then clamps
+     * the zoom and puts the centre near the pole, so such a search opens on the fleet's middle at
+     * the widest zoom instead.
+     */
+    if (!camera?.zoom || camera.zoom < map.getMinZoom()) {
+      const middle = medianOf(places);
+      if (!middle) return;
+      map.easeTo({ center: [middle.lng, middle.lat], zoom: map.getMinZoom(), duration });
+      return;
+    }
+    map.fitBounds(boundsOf(places), { ...options, duration });
   }, [map, places, searchKey, arrivedWithView]);
 }
