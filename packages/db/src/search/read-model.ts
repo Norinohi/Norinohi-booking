@@ -84,27 +84,7 @@ export async function rebuildListingSearchDocs(
       select
         o.listing_id,
         o.id as offer_id,
-        /*
-         * Which vendor takes a tie, read from the admin setting so the card and the sale agree.
-         *
-         * Resolved here rather than passed in, because every caller of this rebuild would
-         * otherwise have to carry a value none of them has an opinion about. The consequence is
-         * that a change of preference reaches the catalogue only when these documents are next
-         * rebuilt -- the sale and the availability calendar follow it immediately.
-         *
-         * array_position is 1-based and answers NULL for a code the list does not name, which
-         * is the ranking we want: a provider nobody has configured sorts after every one who is.
-         */
-        coalesce(
-          array_position(
-            coalesce(
-              (select ms.transacting_preference from marketplace_setting ms where ms.id = 'singleton'),
-              array['booking_manager', 'nausys', 'mock']
-            ),
-            p.code
-          ),
-          1000
-        ) as provider_rank,
+        ${providerRank()} as provider_rank,
         o.default_currency,
         o.security_deposit_minor,
         o.security_deposit_currency,
@@ -283,59 +263,7 @@ export async function rebuildListingSearchDocs(
           0 as confirmed_first
         from availability_slot slot
         where slot.listing_offer_id = o.id
-          and slot.availability_confirmed
-          and slot.status = 'available'
-          and slot.price_minor is not null
-          and slot.start_date >= ${EARLIEST_CHECKIN}
-          /* A refusal is the later word, and occupancy from a newer dump outranks both. */
-          and not exists (
-            select 1
-            from listing_refused_period refused
-            where refused.listing_offer_id = o.id
-              and refused.start_date >= slot.start_date
-              and refused.end_date <= slot.end_date
-              and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
-          )
-          and not exists (
-            select 1
-            from availability_slot taken
-            where taken.listing_offer_id = o.id
-              and taken.status <> 'available'
-              and taken.start_date < slot.end_date
-              and taken.end_date > slot.start_date
-          )
-          /*
-           * No published-rate test here, unlike the inferred candidates below. seasonOpen asks
-           * whether anyone has priced the stretch, and this row is the vendor pricing it: the
-           * constraints endpoint reads confirmed slots as rates for exactly that reason, so the
-           * calendar accepts these days too. Requiring a band as well hid 210 charters the
-           * vendor had quoted us a price for.
-           */
-          /* What rangeStatus asks of the same period: any rule in force on the check-in day
-             that admits this shape, or no published rule at all. */
-          and (
-            not exists (
-              select 1 from listing_checkin_rule any_rule
-              where any_rule.listing_offer_id = o.id
-            )
-            or exists (
-              select 1
-              from listing_checkin_rule rule
-              where rule.listing_offer_id = o.id
-                and (rule.season_start is null or slot.start_date >= rule.season_start)
-                and (rule.season_end is null or slot.start_date <= rule.season_end)
-                and (
-                  rule.checkin_weekday is null
-                  or extract(dow from slot.start_date)::int = rule.checkin_weekday
-                )
-                and (
-                  rule.checkout_weekday is null
-                  or extract(dow from slot.end_date)::int = rule.checkout_weekday
-                )
-                and (rule.min_nights is null or slot.end_date - slot.start_date >= rule.min_nights)
-                and (rule.max_nights is null or slot.end_date - slot.start_date <= rule.max_nights)
-            )
-          )
+          and ${sellableConfirmedSlot()}
 
         union all
 
@@ -441,200 +369,8 @@ export async function rebuildListingSearchDocs(
         order by (slot.price_minor is null), slot.price_minor
         limit 1
       ) confirmed on true
-      /*
-       * What the advertised charter pays on top of the rate.
-       *
-       * One row per fee, choosing the variant that actually applies to the week on the card
-       * rather than the cheapest anywhere. Providers file a fee as a ladder - Le Boat's moorings
-       * fee is one row per night count, 60 EUR to six nights and 90 from seven - so the minimum
-       * is a one-night price, and taking it advertised a weekly charter 30 EUR under the quote.
-       *
-       * Scoped to seasons overlapping what we sell, and excluding route-conditional fees: a
-       * one-way fee is charged on a route the customer picks, and folding it in would inflate
-       * every card for a charter almost none of them book.
-       *
-       * The night count falls back to a week when no bookable period is known, which is the
-       * length the card's own label claims, and the price falls back to the cheapest variant
-       * when the provider files no ladder at all.
-       */
-      left join lateral (
-        select
-          /*
-           * Multiplied by what the operator prices the fee in, the same way the crew lateral
-           * below already does and for the same reason: the vendor bills per day, per night or
-           * per week and we were summing one of each. A catamaran advertised 4,960 EUR against
-           * a quote of 6,955 -- a comfort package at 60 EUR "per day" counted once instead of
-           * eight times, and a skipper at 225 the same.
-           *
-           * Per-person measures are left flat on purpose. The card is one figure for a listing
-           * and knows no party size; multiplying by the berth count would price a couple's week
-           * as if the boat were full, which is the wrong kind of wrong on a price somebody
-           * decides to click on. Those fees stay understated until the quote states them, and
-           * the quote is what anyone is asked to pay.
-           */
-          sum(
-            applicable.price_minor
-            * case
-                when applicable.measure like 'per day%' or applicable.measure like 'per_day%'
-                  then span.nights + 1
-                when applicable.measure like 'per night%' or applicable.measure like 'per_night%'
-                  then span.nights
-                when applicable.measure like 'per week%' or applicable.measure like 'per_week%'
-                  then ceil(span.nights::numeric / 7)
-                else 1
-              end
-          )::int as unavoidable_minor,
-          /*
-           * Fees the operator states as a share of the charter rather than as money, summed as
-           * rates and applied to the base in the money lateral below, which is the only place
-           * that base exists. A 35% service charge is 7,910.00 on one hull here and nothing at
-           * all on the catalogue row, so leaving it out is not the safe direction.
-           */
-          sum(applicable.percentage) as unavoidable_pct
-        from (
-          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
-        ) span
-        cross join lateral (
-          select distinct on (extra.name)
-            extra.price_minor,
-            extra.percentage,
-            coalesce(extra.price_measure, '') as measure
-          from provider_extra_catalogue extra
-          where extra.listing_offer_id = o.id
-            and extra.obligatory
-            and not extra.one_way_only
-            /*
-             * Never a row learned from a quote.
-             *
-             * The distinct-on-name above collapses a learned row onto the published one it
-             * repeats, but only where the operator spells them the same. Two variants of one
-             * fee are not: a hull here publishes a damage waiver "up to 2 weeks monohulls
-             * 2018-2023" and is billed "catamarans and over 46ft monohulls", so counting both
-             * would advertise 750 EUR of waiver against the 400 the charter pays. Nothing here
-             * can tell which published row a billed one supersedes, so the sum stays on what
-             * the vendor published and the detail page is where the real fee shows.
-             */
-            and extra.learned_at is null
-            /*
-             * Only fees charged where this charter starts.
-             *
-             * The operator files a fee per base as well as per season, and most of them do:
-             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
-             * row whose list does not include the base it was filed under is charged at some
-             * other base, and adding it here put fees on a card no charter from here pays.
-             */
-            and (
-              extra.valid_for_base_ids is null
-              or extra.external_base_id is null
-              or extra.external_base_id = any(extra.valid_for_base_ids)
-            )
-            and (extra.season_end is null or extra.season_end >= current_date)
-            and (
-              extra.season_start is null
-              or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
-            )
-          order by
-            extra.name,
-            /* A variant whose ladder covers this charter wins outright; otherwise cheapest. */
-            (
-              (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
-              and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
-            ) desc,
-            extra.price_minor
-        ) applicable
-      ) fees on true
-      /*
-       * The crew the customer cannot decline.
-       *
-       * A crewed listing is sold with people aboard, and the detail page opens on the listing's
-       * own first crew option rather than on a choice the visitor made -- so the sidebar prices
-       * the crew before they touch anything. The card was pricing the hull alone: Noe Sarnico
-       * 65 advertised EUR 41,142.85 beside a page that opened at EUR 43,542.85, the difference
-       * being a chef nobody could have declined.
-       *
-       * Which roles ride along mirrors crewServiceIdsFor in the NauSYS quote mapper, because
-       * that is what the sidebar will actually be quoted: everything for a full-crew charter,
-       * the skipper alone for a skippered one, nothing for a bareboat. Kept apart from the fees
-       * above rather than folded into them, because a vendor-confirmed offer brings its own
-       * obligatory-extras total and crew is not in it.
-       */
-      left join lateral (
-        select
-          sum(
-            applicable.price_minor
-            * case
-                /* What the vendor multiplies by, checked against its own arithmetic: a chef at
-                   EUR 300 "per day + food" on a seven-night charter was billed 2,400, which is
-                   the eight calendar days the boat is held, not the seven nights aboard. */
-                when applicable.measure like 'per day%' then span.nights + 1
-                when applicable.measure like 'per night%' then span.nights
-                when applicable.measure like 'per week%' then ceil(span.nights::numeric / 7)
-                else 1
-              end
-          )::int as crew_minor
-        from (
-          select coalesce(checkin.bookable_to - checkin.bookable_from, 7) as nights
-        ) span
-        cross join lateral (
-          /*
-           * One person per role, not one per row the operator named.
-           *
-           * Distinct on the name counted every differently-named row a role matched, and
-           * operators file plenty: beside "Skipper" sit "Skipper training practice", "Checkout
-           * Skipper", "Captain By Day", "Fun Pack skipper surcharge" and "Additional fee for
-           * Skipper in forepeak" -- 727 listings carry more than one. A charter is sold with
-           * one skipper aboard, so the card charges for one, and the cheapest row that covers
-           * the week is the closest thing to the plain rate among them.
-           */
-          select distinct on (extra.crew_role)
-            extra.price_minor,
-            coalesce(extra.price_measure, '') as measure
-          from provider_extra_catalogue extra
-          where extra.listing_offer_id = o.id
-            and extra.crew_role is not null
-            /*
-             * Only fees charged where this charter starts.
-             *
-             * The operator files a fee per base as well as per season, and most of them do:
-             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
-             * row whose list does not include the base it was filed under is charged at some
-             * other base, and adding it here put fees on a card no charter from here pays.
-             */
-            and (
-              extra.valid_for_base_ids is null
-              or extra.external_base_id is null
-              or extra.external_base_id = any(extra.valid_for_base_ids)
-            )
-            /*
-             * Only the crew nothing has counted yet. An operator that files its skipper as an
-             * obligatory extra has it in both fee totals already -- the catalogue sum beside
-             * this lateral, and the vendor's own subtotal on a confirmed offer -- so adding it
-             * here charged for the skipper twice: Sargantal advertised EUR 11,268 against a
-             * quote of EUR 9,268, the difference being one skipper.
-             */
-            and not extra.obligatory
-            and (
-              o.crew_type = 'full-crew'
-              or (o.crew_type = 'skipper' and extra.crew_role = 'skipper')
-            )
-            /* Priced by the hour or by the piece, this cannot be multiplied out from a
-               catalogue row: 97 of 13,518 crew rows, left out rather than guessed at. */
-            and coalesce(extra.price_measure, '') not like '%hour%'
-            and coalesce(extra.price_measure, '') not like '%piece%'
-            and (extra.season_end is null or extra.season_end >= current_date)
-            and (
-              extra.season_start is null
-              or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
-            )
-          order by
-            extra.crew_role,
-            (
-              (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
-              and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
-            ) desc,
-            extra.price_minor
-        ) applicable
-      ) crew on true
+      ${unavoidableFees(sql`coalesce(checkin.bookable_to - checkin.bookable_from, 7)`)}
+      ${unavoidableCrew(sql`coalesce(checkin.bookable_to - checkin.bookable_from, 7)`)}
       /*
        * In a lateral rather than the select list because the published figure and its converted
        * twin are both built from it, and repeating the expression is how the two drift apart.
@@ -671,83 +407,8 @@ export async function rebuildListingSearchDocs(
           coalesce(confirmed.price_minor, rate.price_from_minor) as base_minor,
           confirmed.price_minor is null as price_is_from
       ) chosen
-      cross join lateral (
-        select
-          chosen.price_currency,
-          case
-            when chosen.base_minor is null then null
-            else chosen.base_minor
-                 + coalesce(
-                     /*
-                      * The offer's own fee total, which prices the ladder the catalogue makes us
-                      * reassemble across season, length, party size, base and route -- dimensions
-                      * not all published on every account, and wrong by a night's band on the
-                      * Shannon fleet when rebuilt. Only where it is in the money being quoted:
-                      * otherwise it is a correct number in the wrong currency.
-                      */
-                     case
-                       when confirmed.currency is not distinct from chosen.price_currency
-                       then confirmed.obligatory_extras_minor
-                     end,
-                     fees.unavoidable_minor,
-                     0
-                   )
-                 /* Added to either source: a confirmed offer prices the charter and its
-                    obligatory extras, never the crew the page will select for the visitor. */
-                 + coalesce(crew.crew_minor, 0)
-                 /*
-                  * The percentage fees, against the charter this card is advertising. A
-                  * confirmed offer already counts them in its own subtotal, so they are added
-                  * only where the fees above were reconstructed from the catalogue.
-                  */
-                 + case
-                     when confirmed.currency is not distinct from chosen.price_currency
-                      and confirmed.obligatory_extras_minor is not null
-                     then 0
-                     else round(chosen.base_minor * coalesce(fees.unavoidable_pct, 0))::int
-                   end
-          end as all_in_minor
-      ) money
-      /*
-       * The same all-in figure before the operator's discount, which is the number the card
-       * strikes through.
-       *
-       * Built by adding the discount back rather than by totalling the list price afresh, so
-       * the gap between the two figures is exactly the reduction the vendor granted and the
-       * fees are counted once. The discount applies to the charter, not to the extras: adding
-       * a percentage fee to the list price instead would strike a figure the vendor never
-       * quoted anybody.
-       *
-       * Null unless the vendor priced this exact charter and its own discounts account for the
-       * whole difference -- see availability_slot.list_price_minor -- so a card strikes a
-       * figure only where the detail page beneath it strikes the same one.
-       */
-      cross join lateral (
-        select case
-          when money.all_in_minor is null then null
-          when confirmed.price_minor is null or confirmed.list_price_minor is null then null
-          when confirmed.list_price_minor <= confirmed.price_minor then null
-          /* No currency test: a confirmed price is what the figure above is denominated in, so
-             the list price beside it is already in the money being printed. */
-          else money.all_in_minor + (confirmed.list_price_minor - confirmed.price_minor)
-        end as list_all_in_minor
-      ) list_money
-      /* Resolved once per offer; the conversion reads it twice. */
-      left join lateral (
-        select ${usableRateSql(sql`money.price_currency`)} as rate
-      ) fx on true
-      where o.status = 'active'
-        /*
-         * A hull the operator has retired, or one the vendor will not let us sell unattended.
-         * Dropped here rather than deleted, because a charter already booked on it still has to
-         * be readable. Offer selection applies the same predicate, so the search page and the
-         * listing page cannot disagree about what is for sale.
-         */
-        and ${sellableOffer({
-          outOfFleetDate: sql`o.out_of_fleet_date`,
-          optionApprovalRequired: sql`o.option_approval_required`,
-          fixedBookingSupported: sql`o.fixed_booking_supported`,
-        })}
+      ${pricedMoney()}
+      where ${sellableActiveOffer()}
         and ${listingScope(sql`o.listing_id`, listingIds)}
     ),
     /*
@@ -1187,6 +848,128 @@ export async function rebuildListingSearchDocs(
   `);
 
   await markBestValue(db, listingIds);
+  await rebuildListingPeriodPrices(db, listingIds);
+}
+
+/**
+ * Every charter a vendor has priced, totalled the way the document totals its own week.
+ *
+ * The confirmed slots are the same ones the document's bookable week is chosen from, filtered by
+ * the same `sellableConfirmedSlot`, and priced by the same fee, crew and money laterals, so the
+ * row for a listing's own bookable week matches its document to the cent. Offers compete per
+ * charter on the document's order, since two vendors selling one hull can each win a different
+ * week.
+ *
+ * Fees and crew depend on the offer and the charter length alone, not on which week it is, so
+ * they are resolved once per offer and length: the fleet holds about 390,000 priced weeks and
+ * a handful of lengths, and running both laterals per week is what made this slow.
+ */
+async function rebuildListingPeriodPrices(
+  db: NodePgDatabase<typeof schema>,
+  listingIds: readonly string[] | undefined,
+) {
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`
+      delete from listing_period_price pp
+      where ${listingScope(sql`pp.listing_id`, listingIds)}
+    `);
+
+    await tx.execute(sql`
+      insert into listing_period_price (
+        listing_id,
+        start_date,
+        end_date,
+        offer_id,
+        currency,
+        all_in_minor,
+        all_in_minor_eur,
+        base_minor,
+        base_minor_eur,
+        list_all_in_minor
+      )
+      with sellable_slot as (
+        select
+          o.listing_id,
+          o.id as offer_id,
+          ${providerRank()} as provider_rank,
+          slot.start_date,
+          slot.end_date,
+          slot.price_minor,
+          slot.currency,
+          slot.obligatory_extras_minor,
+          slot.list_price_minor
+        from listing_offer o
+        join provider p on p.id = o.provider_id
+        join listing l on l.id = o.listing_id and l.status = 'published'
+        join availability_slot slot on slot.listing_offer_id = o.id
+        where ${sellableActiveOffer()}
+          and ${sellableConfirmedSlot()}
+          and ${listingScope(sql`o.listing_id`, listingIds)}
+      ),
+      span_cost as (
+        select spans.offer_id, spans.nights, fees.unavoidable_minor, fees.unavoidable_pct, crew.crew_minor
+        from (
+          select distinct offer_id, end_date - start_date as nights from sellable_slot
+        ) spans
+        join listing_offer o on o.id = spans.offer_id
+        ${unavoidableFees(sql`spans.nights`)}
+        ${unavoidableCrew(sql`spans.nights`)}
+      ),
+      priced as (
+        select
+          s.listing_id,
+          s.offer_id,
+          s.provider_rank,
+          s.start_date,
+          s.end_date,
+          money.price_currency,
+          money.all_in_minor,
+          list_money.list_all_in_minor,
+          ${toBaseMinorSql(sql`money.all_in_minor`, sql`money.price_currency`, sql`fx.rate`)}
+            as all_in_minor_eur,
+          chosen.base_minor,
+          ${toBaseMinorSql(sql`chosen.base_minor`, sql`money.price_currency`, sql`fx.rate`)}
+            as base_minor_eur
+        from sellable_slot s
+        join span_cost cost
+          on cost.offer_id = s.offer_id and cost.nights = s.end_date - s.start_date
+        cross join lateral (
+          select s.price_minor, s.currency, s.obligatory_extras_minor, s.list_price_minor
+        ) confirmed
+        cross join lateral (
+          select cost.unavoidable_minor, cost.unavoidable_pct
+        ) fees
+        cross join lateral (select cost.crew_minor) crew
+        cross join lateral (
+          select s.currency as price_currency, s.price_minor as base_minor, false as price_is_from
+        ) chosen
+        ${pricedMoney()}
+      )
+      select distinct on (listing_id, start_date, end_date)
+        listing_id,
+        start_date,
+        end_date,
+        offer_id,
+        price_currency,
+        all_in_minor,
+        all_in_minor_eur,
+        base_minor,
+        base_minor_eur,
+        list_all_in_minor
+      from priced
+      where all_in_minor is not null and price_currency is not null
+      /* The document's own order between offers; see \`best\` above. */
+      order by
+        listing_id,
+        start_date,
+        end_date,
+        base_minor_eur asc nulls last,
+        (all_in_minor_eur - base_minor_eur) asc nulls last,
+        all_in_minor asc nulls last,
+        provider_rank,
+        offer_id
+    `);
+  });
 }
 
 /**
@@ -1463,4 +1246,391 @@ function listingScope(column: SQL, listingIds: readonly string[] | undefined) {
     listingIds.map((id) => sql`${id}`),
     sql`, `,
   )})`;
+}
+
+/*
+ * Which vendor takes a tie, read from the admin setting so the card and the sale agree.
+ *
+ * Resolved here rather than passed in, because every caller of this rebuild would
+ * otherwise have to carry a value none of them has an opinion about. The consequence is
+ * that a change of preference reaches the catalogue only when these documents are next
+ * rebuilt -- the sale and the availability calendar follow it immediately.
+ *
+ * array_position is 1-based and answers NULL for a code the list does not name, which
+ * is the ranking we want: a provider nobody has configured sorts after every one who is.
+ */
+function providerRank(): SQL {
+  return sql`
+        coalesce(
+          array_position(
+            coalesce(
+              (select ms.transacting_preference from marketplace_setting ms where ms.id = 'singleton'),
+              array['booking_manager', 'nausys', 'mock']
+            ),
+            p.code
+          ),
+          1000
+        )
+  `;
+}
+
+/**
+ * A vendor-confirmed, priced slot the catalogue may advertise, as a predicate on `slot` for the
+ * offer `o`. Shared by the bookable-week pick and the per-period prices, so a week the one
+ * refuses is never priced by the other.
+ */
+function sellableConfirmedSlot(): SQL {
+  return sql`
+          slot.availability_confirmed
+          and slot.status = 'available'
+          and slot.price_minor is not null
+          and slot.start_date >= ${EARLIEST_CHECKIN}
+          /* A refusal is the later word, and occupancy from a newer dump outranks both. */
+          and not exists (
+            select 1
+            from listing_refused_period refused
+            where refused.listing_offer_id = o.id
+              and refused.start_date >= slot.start_date
+              and refused.end_date <= slot.end_date
+              and refused.updated_at > now() - make_interval(days => ${REFUSAL_TRUST_DAYS})
+          )
+          and not exists (
+            select 1
+            from availability_slot taken
+            where taken.listing_offer_id = o.id
+              and taken.status <> 'available'
+              and taken.start_date < slot.end_date
+              and taken.end_date > slot.start_date
+          )
+          /*
+           * No published-rate test here, unlike the inferred candidates below. seasonOpen asks
+           * whether anyone has priced the stretch, and this row is the vendor pricing it: the
+           * constraints endpoint reads confirmed slots as rates for exactly that reason, so the
+           * calendar accepts these days too. Requiring a band as well hid 210 charters the
+           * vendor had quoted us a price for.
+           */
+          /* What rangeStatus asks of the same period: any rule in force on the check-in day
+             that admits this shape, or no published rule at all. */
+          and (
+            not exists (
+              select 1 from listing_checkin_rule any_rule
+              where any_rule.listing_offer_id = o.id
+            )
+            or exists (
+              select 1
+              from listing_checkin_rule rule
+              where rule.listing_offer_id = o.id
+                and (rule.season_start is null or slot.start_date >= rule.season_start)
+                and (rule.season_end is null or slot.start_date <= rule.season_end)
+                and (
+                  rule.checkin_weekday is null
+                  or extract(dow from slot.start_date)::int = rule.checkin_weekday
+                )
+                and (
+                  rule.checkout_weekday is null
+                  or extract(dow from slot.end_date)::int = rule.checkout_weekday
+                )
+                and (rule.min_nights is null or slot.end_date - slot.start_date >= rule.min_nights)
+                and (rule.max_nights is null or slot.end_date - slot.start_date <= rule.max_nights)
+            )
+          )
+  `;
+}
+
+/** The obligatory fees for a charter of `nights`, as the `fees` lateral on offer `o`. */
+function unavoidableFees(nights: SQL): SQL {
+  return sql`
+      /*
+       * What the advertised charter pays on top of the rate.
+       *
+       * One row per fee, choosing the variant that actually applies to the week on the card
+       * rather than the cheapest anywhere. Providers file a fee as a ladder - Le Boat's moorings
+       * fee is one row per night count, 60 EUR to six nights and 90 from seven - so the minimum
+       * is a one-night price, and taking it advertised a weekly charter 30 EUR under the quote.
+       *
+       * Scoped to seasons overlapping what we sell, and excluding route-conditional fees: a
+       * one-way fee is charged on a route the customer picks, and folding it in would inflate
+       * every card for a charter almost none of them book.
+       *
+       * The night count falls back to a week when no bookable period is known, which is the
+       * length the card's own label claims, and the price falls back to the cheapest variant
+       * when the provider files no ladder at all.
+       */
+      left join lateral (
+        select
+          /*
+           * Multiplied by what the operator prices the fee in, the same way the crew lateral
+           * below already does and for the same reason: the vendor bills per day, per night or
+           * per week and we were summing one of each. A catamaran advertised 4,960 EUR against
+           * a quote of 6,955 -- a comfort package at 60 EUR "per day" counted once instead of
+           * eight times, and a skipper at 225 the same.
+           *
+           * Per-person measures are left flat on purpose. The card is one figure for a listing
+           * and knows no party size; multiplying by the berth count would price a couple's week
+           * as if the boat were full, which is the wrong kind of wrong on a price somebody
+           * decides to click on. Those fees stay understated until the quote states them, and
+           * the quote is what anyone is asked to pay.
+           */
+          sum(
+            applicable.price_minor
+            * case
+                when applicable.measure like 'per day%' or applicable.measure like 'per_day%'
+                  then span.nights + 1
+                when applicable.measure like 'per night%' or applicable.measure like 'per_night%'
+                  then span.nights
+                when applicable.measure like 'per week%' or applicable.measure like 'per_week%'
+                  then ceil(span.nights::numeric / 7)
+                else 1
+              end
+          )::int as unavoidable_minor,
+          /*
+           * Fees the operator states as a share of the charter rather than as money, summed as
+           * rates and applied to the base in the money lateral below, which is the only place
+           * that base exists. A 35% service charge is 7,910.00 on one hull here and nothing at
+           * all on the catalogue row, so leaving it out is not the safe direction.
+           */
+          sum(applicable.percentage) as unavoidable_pct
+        from (
+          select ${nights} as nights
+        ) span
+        cross join lateral (
+          select distinct on (extra.name)
+            extra.price_minor,
+            extra.percentage,
+            coalesce(extra.price_measure, '') as measure
+          from provider_extra_catalogue extra
+          where extra.listing_offer_id = o.id
+            and extra.obligatory
+            and not extra.one_way_only
+            /*
+             * Never a row learned from a quote.
+             *
+             * The distinct-on-name above collapses a learned row onto the published one it
+             * repeats, but only where the operator spells them the same. Two variants of one
+             * fee are not: a hull here publishes a damage waiver "up to 2 weeks monohulls
+             * 2018-2023" and is billed "catamarans and over 46ft monohulls", so counting both
+             * would advertise 750 EUR of waiver against the 400 the charter pays. Nothing here
+             * can tell which published row a billed one supersedes, so the sum stays on what
+             * the vendor published and the detail page is where the real fee shows.
+             */
+            and extra.learned_at is null
+            /*
+             * Only fees charged where this charter starts.
+             *
+             * The operator files a fee per base as well as per season, and most of them do:
+             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
+             * row whose list does not include the base it was filed under is charged at some
+             * other base, and adding it here put fees on a card no charter from here pays.
+             */
+            and (
+              extra.valid_for_base_ids is null
+              or extra.external_base_id is null
+              or extra.external_base_id = any(extra.valid_for_base_ids)
+            )
+            and (extra.season_end is null or extra.season_end >= current_date)
+            and (
+              extra.season_start is null
+              or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+            )
+          order by
+            extra.name,
+            /* A variant whose ladder covers this charter wins outright; otherwise cheapest. */
+            (
+              (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
+              and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
+            ) desc,
+            extra.price_minor
+        ) applicable
+      ) fees on true
+  `;
+}
+
+/** The crew nobody can decline for a charter of `nights`, as the `crew` lateral on offer `o`. */
+function unavoidableCrew(nights: SQL): SQL {
+  return sql`
+      /*
+       * The crew the customer cannot decline.
+       *
+       * A crewed listing is sold with people aboard, and the detail page opens on the listing's
+       * own first crew option rather than on a choice the visitor made -- so the sidebar prices
+       * the crew before they touch anything. The card was pricing the hull alone: Noe Sarnico
+       * 65 advertised EUR 41,142.85 beside a page that opened at EUR 43,542.85, the difference
+       * being a chef nobody could have declined.
+       *
+       * Which roles ride along mirrors crewServiceIdsFor in the NauSYS quote mapper, because
+       * that is what the sidebar will actually be quoted: everything for a full-crew charter,
+       * the skipper alone for a skippered one, nothing for a bareboat. Kept apart from the fees
+       * above rather than folded into them, because a vendor-confirmed offer brings its own
+       * obligatory-extras total and crew is not in it.
+       */
+      left join lateral (
+        select
+          sum(
+            applicable.price_minor
+            * case
+                /* What the vendor multiplies by, checked against its own arithmetic: a chef at
+                   EUR 300 "per day + food" on a seven-night charter was billed 2,400, which is
+                   the eight calendar days the boat is held, not the seven nights aboard. */
+                when applicable.measure like 'per day%' then span.nights + 1
+                when applicable.measure like 'per night%' then span.nights
+                when applicable.measure like 'per week%' then ceil(span.nights::numeric / 7)
+                else 1
+              end
+          )::int as crew_minor
+        from (
+          select ${nights} as nights
+        ) span
+        cross join lateral (
+          /*
+           * One person per role, not one per row the operator named.
+           *
+           * Distinct on the name counted every differently-named row a role matched, and
+           * operators file plenty: beside "Skipper" sit "Skipper training practice", "Checkout
+           * Skipper", "Captain By Day", "Fun Pack skipper surcharge" and "Additional fee for
+           * Skipper in forepeak" -- 727 listings carry more than one. A charter is sold with
+           * one skipper aboard, so the card charges for one, and the cheapest row that covers
+           * the week is the closest thing to the plain rate among them.
+           */
+          select distinct on (extra.crew_role)
+            extra.price_minor,
+            coalesce(extra.price_measure, '') as measure
+          from provider_extra_catalogue extra
+          where extra.listing_offer_id = o.id
+            and extra.crew_role is not null
+            /*
+             * Only fees charged where this charter starts.
+             *
+             * The operator files a fee per base as well as per season, and most of them do:
+             * 130,535 of NauSYS's 184,539 priced extras rows name the bases they apply at. A
+             * row whose list does not include the base it was filed under is charged at some
+             * other base, and adding it here put fees on a card no charter from here pays.
+             */
+            and (
+              extra.valid_for_base_ids is null
+              or extra.external_base_id is null
+              or extra.external_base_id = any(extra.valid_for_base_ids)
+            )
+            /*
+             * Only the crew nothing has counted yet. An operator that files its skipper as an
+             * obligatory extra has it in both fee totals already -- the catalogue sum beside
+             * this lateral, and the vendor's own subtotal on a confirmed offer -- so adding it
+             * here charged for the skipper twice: Sargantal advertised EUR 11,268 against a
+             * quote of EUR 9,268, the difference being one skipper.
+             */
+            and not extra.obligatory
+            and (
+              o.crew_type = 'full-crew'
+              or (o.crew_type = 'skipper' and extra.crew_role = 'skipper')
+            )
+            /* Priced by the hour or by the piece, this cannot be multiplied out from a
+               catalogue row: 97 of 13,518 crew rows, left out rather than guessed at. */
+            and coalesce(extra.price_measure, '') not like '%hour%'
+            and coalesce(extra.price_measure, '') not like '%piece%'
+            and (extra.season_end is null or extra.season_end >= current_date)
+            and (
+              extra.season_start is null
+              or extra.season_start <= make_date(extract(year from current_date)::int + 1, 12, 31)
+            )
+          order by
+            extra.crew_role,
+            (
+              (extra.valid_nights_from is null or extra.valid_nights_from <= span.nights)
+              and (extra.valid_nights_to is null or extra.valid_nights_to >= span.nights)
+            ) desc,
+            extra.price_minor
+        ) applicable
+      ) crew on true
+  `;
+}
+
+/**
+ * The `money`, `list_money` and `fx` laterals, over `confirmed`, `chosen`, `fees` and `crew`.
+ * One definition, so the document and `listing_period_price` total a charter identically.
+ */
+function pricedMoney(): SQL {
+  return sql`
+      cross join lateral (
+        select
+          chosen.price_currency,
+          case
+            when chosen.base_minor is null then null
+            else chosen.base_minor
+                 + coalesce(
+                     /*
+                      * The offer's own fee total, which prices the ladder the catalogue makes us
+                      * reassemble across season, length, party size, base and route -- dimensions
+                      * not all published on every account, and wrong by a night's band on the
+                      * Shannon fleet when rebuilt. Only where it is in the money being quoted:
+                      * otherwise it is a correct number in the wrong currency.
+                      */
+                     case
+                       when confirmed.currency is not distinct from chosen.price_currency
+                       then confirmed.obligatory_extras_minor
+                     end,
+                     fees.unavoidable_minor,
+                     0
+                   )
+                 /* Added to either source: a confirmed offer prices the charter and its
+                    obligatory extras, never the crew the page will select for the visitor. */
+                 + coalesce(crew.crew_minor, 0)
+                 /*
+                  * The percentage fees, against the charter this card is advertising. A
+                  * confirmed offer already counts them in its own subtotal, so they are added
+                  * only where the fees above were reconstructed from the catalogue.
+                  */
+                 + case
+                     when confirmed.currency is not distinct from chosen.price_currency
+                      and confirmed.obligatory_extras_minor is not null
+                     then 0
+                     else round(chosen.base_minor * coalesce(fees.unavoidable_pct, 0))::int
+                   end
+          end as all_in_minor
+      ) money
+      /*
+       * The same all-in figure before the operator's discount, which is the number the card
+       * strikes through.
+       *
+       * Built by adding the discount back rather than by totalling the list price afresh, so
+       * the gap between the two figures is exactly the reduction the vendor granted and the
+       * fees are counted once. The discount applies to the charter, not to the extras: adding
+       * a percentage fee to the list price instead would strike a figure the vendor never
+       * quoted anybody.
+       *
+       * Null unless the vendor priced this exact charter and its own discounts account for the
+       * whole difference -- see availability_slot.list_price_minor -- so a card strikes a
+       * figure only where the detail page beneath it strikes the same one.
+       */
+      cross join lateral (
+        select case
+          when money.all_in_minor is null then null
+          when confirmed.price_minor is null or confirmed.list_price_minor is null then null
+          when confirmed.list_price_minor <= confirmed.price_minor then null
+          /* No currency test: a confirmed price is what the figure above is denominated in, so
+             the list price beside it is already in the money being printed. */
+          else money.all_in_minor + (confirmed.list_price_minor - confirmed.price_minor)
+        end as list_all_in_minor
+      ) list_money
+      /* Resolved once per offer; the conversion reads it twice. */
+      left join lateral (
+        select ${usableRateSql(sql`money.price_currency`)} as rate
+      ) fx on true
+  `;
+}
+
+/** An offer the catalogue may sell, as a predicate on `o`. */
+function sellableActiveOffer(): SQL {
+  return sql`
+      o.status = 'active'
+        /*
+         * A hull the operator has retired, or one the vendor will not let us sell unattended.
+         * Dropped here rather than deleted, because a charter already booked on it still has to
+         * be readable. Offer selection applies the same predicate, so the search page and the
+         * listing page cannot disagree about what is for sale.
+         */
+        and ${sellableOffer({
+          outOfFleetDate: sql`o.out_of_fleet_date`,
+          optionApprovalRequired: sql`o.option_approval_required`,
+          fixedBookingSupported: sql`o.fixed_booking_supported`,
+        })}
+  `;
 }

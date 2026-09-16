@@ -37,6 +37,7 @@ import { getPopularYachtsConfig } from "../services/popular-yachts-settings";
 import { withParameterExamples } from "./openapi-examples";
 import { type CharterPeriod, effectivePeriod } from "../lib/dates";
 import { bookablePeriodOf, presentListingSummary } from "../presenters/listing";
+import { pricedForShownPeriod } from "../presenters/shown-period";
 
 /*
  * The dates a card carries, and whether they are the ones asked for.
@@ -104,45 +105,6 @@ function periodFor(item: ListingSearchDoc, period: CharterPeriod, startDate: str
     checkOut: nearest.checkOut,
     periodIsAlternative: period.checkIn !== undefined,
   };
-}
-
-/*
- * The card, with its price captioned for the charter the card actually names.
- *
- * `priceFrom` is the vendor's confirmed figure for one exact week -- the listing's own bookable
- * period -- and nothing here can reprice another one: the published rate list is the pre-discount
- * number both vendors sell below (EUR 5,111 against a quote of EUR 3,581.60 on one week), and no
- * arithmetic turns a week into a charter of another length. So when the card names a different
- * charter, the figure stops being that week's price and becomes what it honestly is, a floor.
- *
- * Measured before this: of 30 dated cards, 7 printed a definite price for a week they were not
- * quoted for, the worst off by EUR 8,332.
- */
-function pricedForShownPeriod(
-  item: ListingSearchDoc,
-  shown: { checkIn: string | null; checkOut: string | null },
-  basis: PriceBasis,
-  amenityRanks: ReadonlyMap<string, number>,
-) {
-  const listing = presentListingSummary(item, basis, amenityRanks);
-  if (listing.priceIsFrom || shown.checkIn === null) return listing;
-
-  /*
-   * Both ends, because a charter is a length as well as a start.
-   *
-   * Comparing the check-in alone let the commonest version of this through untouched: a hull
-   * whose shortest charter is three nights, free from the searched Saturday, was admitted for a
-   * seven-night search, shown the seven-night dates it can sell, and captioned with the price of
-   * the three nights it was quoted for. Star Elisabeth Oceanis 34 read "Charter price, 3 days
-   * EUR 819" under "Oct 3 -> Oct 10", against EUR 1,321 for the week on the sister listing. The
-   * start matched, so the guard passed, and the figure was 38% of the charter named above it.
-   */
-  const priced = bookablePeriodOf(item);
-  if (priced && priced.checkIn === shown.checkIn && priced.checkOut === shown.checkOut) {
-    return listing;
-  }
-
-  return { ...listing, priceIsFrom: true };
 }
 
 /**

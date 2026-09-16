@@ -17,6 +17,7 @@ import {
 } from "@/lib/boat-card-fields";
 import type { BadgeTranslator } from "@/lib/badge-label";
 import type { CrewTranslator } from "@/lib/crew-label";
+import { dayToDisplay } from "@/lib/date";
 
 import { serializeDetailPeriod } from "./search-params";
 import { toMarina } from "./to-marina";
@@ -170,6 +171,15 @@ function priceCaption(
   basis: "base" | "all_in" | undefined,
 ): string {
   if (!listing.priceFrom) return "";
+  /* A price for another week than the dates on the card says which week, rather than pass for
+     a price of these dates or for a seasonal floor. */
+  if (listing.pricedPeriod) {
+    const week = {
+      from: dayToDisplay(listing.pricedPeriod.checkIn),
+      to: dayToDisplay(listing.pricedPeriod.checkOut),
+    };
+    return t(isBoatPrice(listing, basis) ? "boatPriceForPeriod" : "priceForPeriod", week);
+  }
   if (isBoatPrice(listing, basis)) {
     if (listing.priceIsFrom) return t("boatPriceIndicative");
     return t("boatPriceFor", { days: listing.priceDetails.periodDays });

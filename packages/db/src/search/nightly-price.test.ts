@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { nightlyPriceOf, priceAscSortValueOf, UNPRICED_CHARTER_SORT_OFFSET } from "./repository";
+import {
+  nightlyPriceOf,
+  priceAscSortValueOf,
+  priceDescSortValueOf,
+  UNPRICED_CHARTER_SORT_OFFSET,
+} from "./repository";
 
 /**
  * `nightlyPriceOf` is the keyset cursor's copy of the `pricedNights` SQL, so these pin the two
  * rules the two sides have to agree on. A cursor computed from a different number than the
  * ORDER BY either skips rows at a page boundary or serves them twice.
  */
-type PricedRow = Parameters<typeof nightlyPriceOf>[0];
+type PricedRow = Parameters<typeof priceAscSortValueOf>[0];
 
 function doc(over: Partial<PricedRow>): PricedRow {
   return {
@@ -149,5 +154,23 @@ describe("priceAscSortValueOf", () => {
       bookableTo: inDays(-1),
     });
     expect(priceAscSortValueOf(lapsed)).toBeGreaterThan(UNPRICED_CHARTER_SORT_OFFSET);
+  });
+});
+
+describe("sort values on a dated search", () => {
+  const week = { bookableFrom: inDays(12), bookableTo: inDays(19) };
+  const forDates = doc({ ...week, priceFromMinorEur: 720_000, pricedForDates: true });
+  const otherWeek = doc({ ...week, priceFromMinorEur: 700_000, pricedForDates: false });
+
+  /* A EUR 7,000 week in September sorted above a EUR 7,200 quote for the dates asked for. */
+  it("puts every price for the searched dates ahead of a cheaper other week", () => {
+    expect(priceAscSortValueOf(forDates)).toBeLessThan(priceAscSortValueOf(otherWeek));
+    expect(priceDescSortValueOf(forDates)).toBeGreaterThan(priceDescSortValueOf(otherWeek));
+  });
+
+  it("leaves an undated search's values as they were", () => {
+    const undated = doc({ ...week, priceFromMinorEur: 700_000 });
+    expect(priceAscSortValueOf(undated)).toBe(100_000);
+    expect(priceDescSortValueOf(undated)).toBe(100_000);
   });
 });

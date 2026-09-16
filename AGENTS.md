@@ -17,6 +17,7 @@ pnpm build                   # turbo run build — next build + tsdown
 pnpm check-types             # turbo run check-types — 6 tasks: web, server, api, db, providers, @yacht-charter/ui
 pnpm check                   # oxlint && oxfmt --write — NOTE: --write mutates files
 pnpm test                    # turbo run test — vitest in api, db, providers
+pnpm test:db                 # database suites — needs `pnpm db:start`; see packages/db/AGENTS.md
 ```
 
 Database tasks all proxy to `@yacht-charter/db`; Postgres runs via `packages/db/docker-compose.yml`:
@@ -38,8 +39,8 @@ and fails trying to re-create them. Use `db:generate` + `db:migrate`. A database
 was built with `push` before this was understood has an empty migration ledger and
 needs `pnpm db:baseline --apply` once before `db:migrate` will run.
 
-**CI** runs on pull requests (`.github/workflows/ci.yml`): `check-types`, `oxlint`, `test`, and the
-instant-navigation e2e guards. A direct push to a Railway-watched branch still deploys without
+**CI** runs on pull requests (`.github/workflows/ci.yml`): `check-types`, `oxlint`, `test`, the
+database suites (`test:db`), and the instant-navigation e2e guards. A direct push to a Railway-watched branch still deploys without
 those checks, so the gate only protects work that goes through a PR.
 
 **The web build calls the API.** The public catalog routes cache their reads (docs/adr/0002), and a

@@ -116,6 +116,8 @@ export function presentListingSummary(
   const currency = doc.currency ?? "EUR";
   const bookablePeriod = bookablePeriodOf(doc);
   const periodDays = pricedPeriodDays(doc);
+  /* Set by a caller that shows this price beside other dates; see `pricedForShownPeriod`. */
+  const pricedPeriod: ReturnType<typeof bookablePeriodOf> = null;
   /* English value -> the label this locale shows it as, by position. Empty on an untranslated
      read, where the keys already are the labels. */
   const amenityLabel = new Map(
@@ -249,6 +251,7 @@ export function presentListingSummary(
      * charter is gone is a floor, not the price of a named week, so it is captioned as one.
      */
     priceIsFrom: doc.priceIsFrom || bookablePeriod === null,
+    pricedPeriod,
     /*
      * The same charter before the operator's discount, for the card to strike through. Only
      * ever beside a price and only ever above it: a listing whose price was withheld has

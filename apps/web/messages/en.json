@@ -507,6 +507,8 @@
       "priceIndicative": "Charter price · seasonal minimum",
       "boatPriceFor": "Boat price · {days, plural, one {# day} other {# days}}",
       "boatPriceIndicative": "Boat price · seasonal minimum",
+      "priceForPeriod": "Charter price · for {from, date, dayCompact} - {to, date, dayCompact}",
+      "boatPriceForPeriod": "Boat price · for {from, date, dayCompact} - {to, date, dayCompact}",
       "priceFromLabel": "From",
       "plusObligatory": "plus {amount} obligatory extras",
       "approximatePrice": "approx.",

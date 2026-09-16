@@ -507,6 +507,8 @@
       "priceIndicative": "Charterpreis · Saisonminimum",
       "boatPriceFor": "Yachtpreis · {days, plural, one {# Tag} other {# Tage}}",
       "boatPriceIndicative": "Yachtpreis · Saisonminimum",
+      "priceForPeriod": "Charterpreis · für {from, date, dayCompact} - {to, date, dayCompact}",
+      "boatPriceForPeriod": "Yachtpreis · für {from, date, dayCompact} - {to, date, dayCompact}",
       "priceFromLabel": "Ab",
       "plusObligatory": "zzgl. {amount} Pflichtzuschläge",
       "approximatePrice": "ca.",

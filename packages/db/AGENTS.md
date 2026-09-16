@@ -48,6 +48,28 @@ where the ledger has only ever been written by real migrations and marking one
 applied would skip it forever. It also warns when a recorded migration's SQL has
 changed since it ran, which a baseline cannot repair.
 
+## Database suites
+
+`*.db.test.ts` files run against a real Postgres, not mocks. Each suite calls
+`createTestDatabase()` (`src/test-support/database.ts`), which creates a throwaway database,
+applies the committed migrations from `src/migrations`, and drops it in `afterAll`. Building
+from migrations rather than from the Drizzle schema means a schema edit nobody generated SQL
+for fails here, not at deploy.
+
+```bash
+pnpm db:start   # the compose Postgres on 5434 is the default target
+pnpm test:db    # only *.db.test.ts; plain `pnpm test` excludes them
+```
+
+`TEST_DATABASE_URL` points it elsewhere and must name a database the user can connect to in
+order to create others (`.../postgres`). The server's `DATABASE_URL` is deliberately not read,
+so a run can never create or drop anything beside real data. Fixtures are built per suite with
+typed inserts; do not load `seed.ts`, which assumes an empty database with fixed ids.
+
+`src/search/period-price.db.test.ts` pins the dated-search price path: the
+`listing_period_price` projection, its agreement with `listing_search_doc`, and the sort, filter
+and slider that read it.
+
 ## Conventions
 
 - Schema files live in `src/schema/` and must be re-exported from `src/schema/index.ts` — `src/index.ts` passes `* as schema` into `drizzle()`, so a table missing from that barrel is invisible to the ORM.

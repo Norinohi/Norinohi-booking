@@ -19,6 +19,10 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "test:db": {
+      "env": ["TEST_DATABASE_URL"],
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

@@ -210,6 +210,11 @@ export type ListingSearchDoc = {
    */
   sellsRequestedPeriod: boolean;
   /*
+   * On a dated search, whether the price is the vendor's price for exactly those dates rather
+   * than for another week. Absent on an undated search and on every other read.
+   */
+  pricedForDates?: boolean;
+  /*
    * The charter nearest the searched dates that this listing would actually sell, when the
    * searched one is not it. Null on an undated search, and on a listing with no sellable
    * charter left in the horizon.

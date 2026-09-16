@@ -45,6 +45,45 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+  # Suites that need a real schema: each creates a throwaway database, applies the committed
+  # migrations to it, and drops it afterwards. Kept out of the fast job because that one has
+  # no Postgres, and out of e2e because these need no build.
+  database:
+    name: database suites
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:password@localhost:5434/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Database suites
+        run: pnpm test:db
+
   # The instant-navigation guards. Needs the whole stack: Postgres, the Hono API, and a
   # production web build with the testing API exposed. See instant-nav.rig.md.
   e2e:

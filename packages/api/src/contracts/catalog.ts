@@ -230,6 +230,14 @@ export const listingSummarySchema = z.object({
    */
   priceIsFrom: z.boolean(),
   /**
+   * The charter `priceFrom` was quoted for, where that is not the one the card shows.
+   *
+   * A dated search reads the vendor's price for the dates asked for. Where no vendor priced
+   * those dates the card still carries this listing's price for another week, and names that
+   * week rather than passing the figure off as a seasonal minimum. Null everywhere else.
+   */
+  pricedPeriod: z.object({ checkIn: z.string(), checkOut: z.string() }).nullable(),
+  /**
    * The same charter before the operator's own discount, to be rendered struck through beside
    * `priceFrom`. Null unless there is a discount the vendor's own figures account for, which is
    * the ordinary case.
