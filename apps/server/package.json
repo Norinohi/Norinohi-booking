@@ -25,7 +25,8 @@
     "confirm:period": "node dist/confirm-one-period.mjs",
     "refresh:fx": "node dist/refresh-fx.mjs",
     "seed:routes": "node dist/seed-popular-routes.mjs",
-    "seed:boat-types": "node dist/seed-boat-types.mjs"
+    "seed:boat-types": "node dist/seed-boat-types.mjs",
+    "seed:catalogue-routes": "node dist/seed-catalogue-routes.mjs"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.11",

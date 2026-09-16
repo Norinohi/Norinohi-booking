@@ -2926,6 +2926,8 @@
           "name": "Nombre de la parada",
           "namePlaceholder": "Vis pueblo",
           "note": "Nota",
+          "noteHint": "El inglés es el texto de reserva cuando un idioma no tiene nota propia.",
+          "noteFor": "Nota ({locale})",
           "notePlaceholder": "Qué ocurre aquí: el fondeadero, el paseo, el restaurante.",
           "placed": "Marcador en {lat}, {lng}. Arrástralo para mover la parada.",
           "unplaced": "Todavía sin posición. Busca un lugar o toca el mapa para colocar el marcador.",
@@ -2944,7 +2946,8 @@
         "saved": "{name} se ha guardado.",
         "added": "{name} se ha añadido.",
         "removed": "{name} se ha quitado.",
-        "failed": "No se pudo guardar la parada"
+        "failed": "No se pudo guardar la parada",
+        "missingNotes": "Sin nota en: {locales}"
       },
       "previewDialog": {
         "title": "Vista previa de la ruta",

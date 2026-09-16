@@ -2926,6 +2926,8 @@
           "name": "Name des Stopps",
           "namePlaceholder": "Stadt Vis",
           "note": "Notiz",
+          "noteHint": "Englisch greift dort, wo eine Sprache keine eigene Notiz hat.",
+          "noteFor": "Notiz ({locale})",
           "notePlaceholder": "Was hier passiert — die Ankerbucht, der Spaziergang, das Restaurant.",
           "placed": "Pin bei {lat}, {lng}. Ziehen Sie ihn, um den Stopp zu verschieben.",
           "unplaced": "Noch keine Position. Suchen Sie einen Ort oder tippen Sie auf die Karte, um den Pin zu setzen.",
@@ -2944,7 +2946,8 @@
         "saved": "{name} wurde gespeichert.",
         "added": "{name} wurde hinzugefügt.",
         "removed": "{name} wurde entfernt.",
-        "failed": "Stopp konnte nicht gespeichert werden"
+        "failed": "Stopp konnte nicht gespeichert werden",
+        "missingNotes": "Keine Notiz in: {locales}"
       },
       "previewDialog": {
         "title": "Routenvorschau",

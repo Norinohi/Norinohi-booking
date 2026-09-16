@@ -2926,6 +2926,8 @@
           "name": "Stop name",
           "namePlaceholder": "Vis town",
           "note": "Note",
+          "noteHint": "English is what a language with no note of its own falls back to.",
+          "noteFor": "Note ({locale})",
           "notePlaceholder": "What happens here — the anchorage, the walk, the restaurant.",
           "placed": "Pin at {lat}, {lng}. Drag it to move the stop.",
           "unplaced": "No position yet. Search for a place or tap the map to drop the pin.",
@@ -2944,7 +2946,8 @@
         "saved": "{name} was saved.",
         "added": "{name} was added.",
         "removed": "{name} was removed.",
-        "failed": "Couldn't save the stop"
+        "failed": "Couldn't save the stop",
+        "missingNotes": "No note in: {locales}"
       },
       "previewDialog": {
         "title": "Route preview",

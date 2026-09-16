@@ -42,13 +42,31 @@ export const routeTranslationSchema = z.object({
   description: z.string().nullable(),
 });
 
+/**
+ * The languages a stop's note is translated into.
+ *
+ * English is missing on purpose: it lives on the stop itself, in `note`, and is what every other
+ * language falls back to. Holding it in both places would leave the read no rule for which wins.
+ */
+export const routeStopNoteLocaleSchema = z.enum(["de", "es", "uk"]);
+export const ROUTE_STOP_NOTE_LOCALES = routeStopNoteLocaleSchema.options;
+
+export const routeStopNoteTranslationSchema = z.object({
+  locale: routeStopNoteLocaleSchema,
+  note: z.string().nullable(),
+});
+
 export const routeStopSchema = z.object({
   id: z.string(),
   name: z.string(),
   lat: z.number(),
   lng: z.number(),
   sortOrder: z.number().int(),
+  /** The English note, and the fallback for a language that has none. */
   note: z.string().nullable(),
+  noteTranslations: z.array(routeStopNoteTranslationSchema),
+  /** The languages this stop has no note in yet, so the editor can flag the gap. */
+  missingNoteLocales: z.array(routeStopNoteLocaleSchema),
 });
 
 export const routeSchema = z.object({
@@ -188,12 +206,27 @@ export const routeSetActiveInputSchema = z.object({ id: idSchema, active: z.bool
 const latSchema = z.number().min(-90).max(90);
 const lngSchema = z.number().min(-180).max(180);
 
+/*
+ * Absent leaves the stored notes alone; a supplied list replaces the locales it names and leaves
+ * the rest. An empty note removes that language's row, which is how a translation is withdrawn.
+ */
+const stopNoteTranslationsSchema = z
+  .array(
+    z.object({
+      locale: routeStopNoteLocaleSchema,
+      note: z.string().trim().max(2000).nullable().optional(),
+    }),
+  )
+  .max(ROUTE_STOP_NOTE_LOCALES.length)
+  .optional();
+
 export const routeStopCreateInputSchema = z.object({
   routeId: idSchema,
   name: z.string().trim().min(1).max(200),
   lat: latSchema,
   lng: lngSchema,
   note: z.string().trim().max(2000).nullable().optional(),
+  noteTranslations: stopNoteTranslationsSchema,
 });
 
 export const routeStopUpdateInputSchema = z.object({
@@ -202,6 +235,7 @@ export const routeStopUpdateInputSchema = z.object({
   lat: latSchema.optional(),
   lng: lngSchema.optional(),
   note: z.string().trim().max(2000).nullable().optional(),
+  noteTranslations: stopNoteTranslationsSchema,
 });
 
 export const routeStopIdInputSchema = z.object({ id: idSchema });

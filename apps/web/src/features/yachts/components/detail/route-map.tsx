@@ -26,10 +26,16 @@ import {
 type Stop = { day: number; title: string; description: string | null; lat: number; lng: number };
 
 const ROUTE_SOURCE = "route-curve";
-/* The marker's own colours — white ring, brand core — so the route reads as one piece with them. */
+/*
+ * The marker's own colours — white ring, brand core — so the route reads as one piece with them.
+ *
+ * Thin and dash-dotted, because the stops are the content and a solid line drew the eye along the
+ * water instead. `line-dasharray` is in multiples of the layer's own width, so the two patterns are
+ * scaled to land on the same pixels and the casing reads as a halo around each dash.
+ */
 const ROUTE_LAYERS = [
-  { id: "route-curve-casing", color: "#ffffff", opacity: 0.9, width: 6 },
-  { id: "route-curve-line", color: "#2f80ed", opacity: 1, width: 3 },
+  { id: "route-curve-casing", color: "#ffffff", opacity: 0.9, width: 3, dash: [3, 2, 0.5, 2] },
+  { id: "route-curve-line", color: "#2f80ed", opacity: 1, width: 1.5, dash: [6, 4, 1, 4] },
 ];
 const FIT_PADDING = 80;
 const ZOOM_OUT_LIMIT = 1;
@@ -128,6 +134,7 @@ function drawRoute(map: MapInstance, curve: RouteCurve, animate: boolean) {
         "line-color": layer.color,
         "line-opacity": layer.opacity,
         "line-width": layer.width,
+        "line-dasharray": layer.dash,
         "line-trim-offset": animate ? [0, 1] : [1, 1],
         "line-trim-fade-range": [0, 0.08],
       },

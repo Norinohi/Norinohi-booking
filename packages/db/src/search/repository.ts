@@ -16,6 +16,7 @@ import {
 } from "./cursor";
 import { DEFAULT_LOCALE, facetTranslator, localizeSearchDocs } from "./localize";
 import {
+  foldedLetters,
   normalizedKey as normalizedFilterValue,
   normalizedKeySql,
   normalizedKeySql as normalizedSql,
@@ -2803,10 +2804,12 @@ async function suggestedRouteFor(
     select
       coalesce(nullif(trim(t.title), ''), p.title) as title,
       coalesce(nullif(trim(t.description), ''), p.description) as description,
-      s.name, s.lat, s.lng, s.note
+      s.name, s.lat, s.lng,
+      coalesce(nullif(trim(st.note), ''), s.note) as note
     from picked p
     left join suggested_route_translation t on t.route_id = p.id and t.locale = ${locale}
     join suggested_route_stop s on s.route_id = p.id
+    left join suggested_route_stop_translation st on st.stop_id = s.id and st.locale = ${locale}
     order by s.sort_order asc
   `);
 
@@ -2829,17 +2832,13 @@ async function suggestedRouteFor(
 /**
  * The value a facet option is selected by, which is not `toSlug`.
  *
- * Diacritics survive here, and no longer have to: `normalizedKey` folds them on both sides of the
- * match now, so "Mali Lošinj" and "Mali Losinj" reach the same key whichever spelling the value
- * carries. Left as it is so the values already sitting in saved filter URLs and in `facet_media`
- * stay byte-identical to the ones this produces. Catalogue page URLs use `toSlug`, which does
- * fold, because a URL is read by people.
+ * Folds accents rather than dropping them, because the value has to survive `normalizedKey` on
+ * the way back in: a dropped letter leaves a key the column's own fold can never produce, and
+ * every accented base in the catalogue answered its own marina filter with nothing. "Dènia /
+ * Marina El Portet" was a pin counting nine boats above a list that found none of them.
  */
 export function valueForLabel(label: string): string {
-  return label
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, "and")
+  return foldedLetters(label)
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }

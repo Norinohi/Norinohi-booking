@@ -4,6 +4,7 @@ import { base, country, location, region } from "@yacht-charter/db/schema/geogra
 import {
   suggestedRoute,
   suggestedRouteStop,
+  suggestedRouteStopTranslation,
   suggestedRouteTranslation,
 } from "@yacht-charter/db/schema/route";
 import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
@@ -11,7 +12,11 @@ import { alias } from "drizzle-orm/pg-core";
 import type { z } from "zod";
 
 import type { Database, DatabaseExecutor } from "../context";
-import { ROUTE_LOCALES } from "../contracts/route";
+import {
+  ROUTE_LOCALES,
+  ROUTE_STOP_NOTE_LOCALES,
+  routeStopNoteLocaleSchema,
+} from "../contracts/route";
 import type {
   routeCreateInputSchema,
   routeFeaturedReorderInputSchema,
@@ -38,6 +43,8 @@ type StopUpdateInput = z.infer<typeof routeStopUpdateInputSchema>;
 type ReorderInput = z.infer<typeof routeStopReorderInputSchema>;
 type FeaturedReorderInput = z.infer<typeof routeFeaturedReorderInputSchema>;
 type RouteLocale = z.infer<typeof routeLocaleSchema>;
+type StopNoteLocale = z.infer<typeof routeStopNoteLocaleSchema>;
+type StopNoteTranslation = Stop["noteTranslations"][number];
 type Translation = Route["translations"][number];
 
 /*
@@ -203,8 +210,15 @@ async function stopsByRoute(db: Database, routeIds: string[]): Promise<Map<strin
     .where(inArray(suggestedRouteStop.routeId, routeIds))
     .orderBy(asc(suggestedRouteStop.sortOrder));
 
+  const notesByStop = await stopNotesByStop(
+    db,
+    rows.map((row) => row.id),
+  );
+
   for (const row of rows) {
     const list = byRoute.get(row.routeId) ?? [];
+    const noteTranslations = notesByStop.get(row.id) ?? [];
+    const written = new Set(noteTranslations.map((entry) => entry.locale));
     list.push({
       id: row.id,
       name: row.name,
@@ -212,11 +226,76 @@ async function stopsByRoute(db: Database, routeIds: string[]): Promise<Map<strin
       lng: row.lng,
       sortOrder: row.sortOrder,
       note: row.note,
+      noteTranslations,
+      missingNoteLocales: ROUTE_STOP_NOTE_LOCALES.filter((locale) => !written.has(locale)),
     });
     byRoute.set(row.routeId, list);
   }
 
   return byRoute;
+}
+
+async function stopNotesByStop(
+  db: Database,
+  stopIds: string[],
+): Promise<Map<string, StopNoteTranslation[]>> {
+  const byStop = new Map<string, StopNoteTranslation[]>();
+  if (stopIds.length === 0) return byStop;
+
+  const rows = await db
+    .select()
+    .from(suggestedRouteStopTranslation)
+    .where(inArray(suggestedRouteStopTranslation.stopId, stopIds));
+
+  for (const row of rows) {
+    /* The column is text, so a language the admin does not edit -- one a later import adds --
+       is skipped rather than widening the contract's enum. */
+    const parsed = routeStopNoteLocaleSchema.safeParse(row.locale);
+    if (!parsed.success || !row.note) continue;
+
+    const list = byStop.get(row.stopId) ?? [];
+    list.push({ locale: parsed.data, note: row.note });
+    byStop.set(row.stopId, list);
+  }
+
+  return byStop;
+}
+
+/**
+ * Writes the stop notes the caller named, leaving the rest alone.
+ *
+ * An empty note is deleted rather than stored blank, for the reason `writeTranslations` gives:
+ * the read falls back to the stop's English note either way, so a blank row would only make
+ * `missingNoteLocales` lie.
+ */
+async function writeStopNotes(
+  tx: DatabaseExecutor,
+  stopId: string,
+  entries: { locale: StopNoteLocale; note?: string | null }[],
+): Promise<void> {
+  for (const entry of entries) {
+    const note = entry.note?.trim() || null;
+
+    if (note === null) {
+      await tx
+        .delete(suggestedRouteStopTranslation)
+        .where(
+          and(
+            eq(suggestedRouteStopTranslation.stopId, stopId),
+            eq(suggestedRouteStopTranslation.locale, entry.locale),
+          ),
+        );
+      continue;
+    }
+
+    await tx
+      .insert(suggestedRouteStopTranslation)
+      .values({ stopId, locale: entry.locale, note })
+      .onConflictDoUpdate({
+        target: [suggestedRouteStopTranslation.stopId, suggestedRouteStopTranslation.locale],
+        set: { note, updatedAt: new Date() },
+      });
+  }
 }
 
 export async function listRoutes(db: Database, input: ListInput): Promise<ListResult> {
@@ -607,6 +686,8 @@ export async function createRouteStop(
 
     if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
+    if (input.noteTranslations) await writeStopNotes(tx, created.id, input.noteTranslations);
+
     await writeAuditLog(tx, {
       actorUserId,
       action: "create",
@@ -636,6 +717,8 @@ export async function updateRouteStop(
     if (Object.keys(patch).length > 0) {
       await tx.update(suggestedRouteStop).set(patch).where(eq(suggestedRouteStop.id, input.id));
     }
+
+    if (input.noteTranslations) await writeStopNotes(tx, input.id, input.noteTranslations);
 
     await writeAuditLog(tx, {
       actorUserId,

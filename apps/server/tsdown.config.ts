@@ -21,6 +21,7 @@ export default defineConfig({
     "./src/refresh-fx.ts",
     "./src/seed-popular-routes.ts",
     "./src/seed-boat-types.ts",
+    "./src/seed-catalogue-routes.ts",
   ],
   format: "esm",
   outDir: "./dist",

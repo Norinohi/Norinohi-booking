@@ -94,7 +94,21 @@ export async function listPopularRoutes(
       coalesce(
         (
           select jsonb_agg(
-            jsonb_build_object('name', stop.name, 'lat', stop.lat, 'lng', stop.lng, 'note', stop.note)
+            jsonb_build_object(
+              'name', stop.name,
+              'lat', stop.lat,
+              'lng', stop.lng,
+              /* Same fallback the route's own copy takes: the locale's note, else what the stop
+                 was written with. */
+              'note', coalesce(
+                nullif(trim((
+                  select stop_translation.note
+                  from suggested_route_stop_translation stop_translation
+                  where stop_translation.stop_id = stop.id and stop_translation.locale = ${locale}
+                )), ''),
+                stop.note
+              )
+            )
             order by stop.sort_order
           )
           from suggested_route_stop stop
