@@ -239,8 +239,14 @@ export async function* streamBookingManagerConfirmedOffers(
     /* Only the grid moves it; an advertised period is re-walked next run by design. */
     if (period.source === "grid") weekIndex += 1;
 
+    const offers = foldOffersToConfirmed(rows, checkIn, checkOut, options.currency);
+    /* A period asked about only to price it prices what came back and refuses nobody. */
+    if (period.judgesSilence === false) {
+      yield { offers, cursor: { weekIndex } };
+      continue;
+    }
     yield {
-      offers: foldOffersToConfirmed(rows, checkIn, checkOut, options.currency),
+      offers,
       cursor: { weekIndex },
       swept: {
         startDate: checkIn,
