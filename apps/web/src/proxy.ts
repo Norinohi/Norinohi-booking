@@ -2,7 +2,7 @@ import { evlogMiddleware } from "evlog/next";
 import createMiddleware from "next-intl/middleware";
 import type { NextRequest } from "next/server";
 
-import { routing } from "@/i18n/routing";
+import { LOCALE_COOKIE, routing } from "@/i18n/routing";
 
 /*
  * Three concerns share one proxy because Next allows only one.
@@ -31,6 +31,8 @@ const COUNTRY_HEADERS = ["x-vercel-ip-country", "cf-ipcountry", "x-country-code"
 const COUNTRY_COOKIE = "cn_country";
 const COUNTRY_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
+const MIDDLEWARE_COOKIES = "x-middleware-set-cookie";
+
 export function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api")) {
     return logApiRequest(request);
@@ -47,7 +49,33 @@ export function proxy(request: NextRequest) {
     });
   }
 
+  keepSavedLocale(response);
+
   return response;
+}
+
+/*
+ * next-intl syncs its locale cookie to whatever locale the URL carries, so one visit to a shared
+ * `/en/...` link would replace a saved Ukrainian choice for a year. The switcher already writes
+ * the cookie itself, so the middleware's write is removed here.
+ *
+ * This edits the raw headers rather than calling `response.cookies.delete`, which would emit an
+ * expiring cookie and erase the saved choice instead of leaving it alone. NextResponse mirrors
+ * its cookies into `x-middleware-set-cookie`, and Next reads that copy too, so both are filtered.
+ * It has to run last: `response.cookies.set` rewrites both headers from its own map.
+ */
+function keepSavedLocale(response: Response) {
+  const cookies = response.headers.getSetCookie();
+  const kept = cookies.filter((cookie) => !cookie.startsWith(`${LOCALE_COOKIE}=`));
+  if (kept.length === cookies.length) return;
+
+  response.headers.delete("set-cookie");
+  for (const cookie of kept) response.headers.append("set-cookie", cookie);
+
+  if (response.headers.has(MIDDLEWARE_COOKIES)) {
+    if (kept.length > 0) response.headers.set(MIDDLEWARE_COOKIES, kept.join(","));
+    else response.headers.delete(MIDDLEWARE_COOKIES);
+  }
 }
 
 function countryOf(request: NextRequest): string | null {
