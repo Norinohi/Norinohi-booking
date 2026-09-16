@@ -3,7 +3,7 @@ import { lead } from "@yacht-charter/db/schema/lead";
 import { listing } from "@yacht-charter/db/schema/listing";
 import { listingSearchDoc } from "@yacht-charter/db/schema/search";
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
-import type { z } from "zod";
+import { z } from "zod";
 
 import type { Database } from "../context";
 import type {
@@ -85,6 +85,7 @@ export async function createLead(
     kind: input.kind,
     message: input.message,
     yacht: subject,
+    charter: charterOf(input.context),
   });
 
   return {
@@ -252,5 +253,28 @@ function present(row: typeof lead.$inferSelect, listingTitle: string | null): Le
     answer: row.answer,
     answeredAt: row.answeredAt?.toISOString() ?? null,
     handledAt: row.handledAt?.toISOString() ?? null,
+  };
+}
+
+const charterContextSchema = z.object({
+  checkIn: z.iso.date(),
+  checkOut: z.iso.date(),
+  guests: z.number().int().positive().optional(),
+  total: z.object({ amountMinor: z.number().int(), currency: z.string().length(3) }).optional(),
+});
+
+/*
+ * The dates the sidebar sent, parsed at the boundary because `context` is free-form per entry
+ * point. Staff need them in the alert: a booking request is a charter to arrange, not a question.
+ */
+function charterOf(context: CreateInput["context"]) {
+  const parsed = charterContextSchema.safeParse(context);
+  if (!parsed.success) return undefined;
+  const { checkIn, checkOut, guests, total } = parsed.data;
+  return {
+    checkIn,
+    checkOut,
+    guests,
+    totalLabel: total ? `${(total.amountMinor / 100).toFixed(2)} ${total.currency}` : undefined,
   };
 }

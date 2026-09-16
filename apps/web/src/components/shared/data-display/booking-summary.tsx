@@ -135,6 +135,11 @@ export interface BookingSummaryProps {
   /** Opens the Request Quote enquiry dialog — supplied by the sidebar container (detail page only). */
   onRequestQuote?: () => void;
   /**
+   * Set when this yacht's operator confirms each booking by hand: Pay Now becomes a booking
+   * request for the quoted charter, since the checkout would refuse the hold.
+   */
+  onRequestBooking?: () => void;
+  /**
    * Applies a promo code to the current quote, or clears it with `null`. Omitted when there is
    * nothing to apply one to — before a quote exists, and once a booking has been held off it.
    */
@@ -531,6 +536,7 @@ export default function BookingSummary({
   shaded = false,
   payNowHref,
   onRequestQuote,
+  onRequestBooking,
   onApplyPromo,
   onApplyCredit,
 }: BookingSummaryProps) {
@@ -1026,19 +1032,31 @@ export default function BookingSummary({
           <Separator />
 
           <div className="flex w-full flex-col gap-3 p-4 xl:gap-2 xl:py-3">
-            <div className="flex flex-col items-center gap-1">
-              <p className="text-sm leading-4.5 font-medium text-natural-500">
-                {t("sidebar.dueNow")}
-              </p>
-              {repricing ? (
-                <Skeleton className="h-14 w-40" />
-              ) : (
-                <p className="text-h3 leading-14 text-foreground">
-                  {money(quote.deposit.amountMinor, quote.deposit.currency)}
+            {/* Nothing is due on a request: the operator has not confirmed the charter yet. */}
+            {onRequestBooking ? null : (
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-sm leading-4.5 font-medium text-natural-500">
+                  {t("sidebar.dueNow")}
                 </p>
-              )}
-            </div>
-            {actions ? (
+                {repricing ? (
+                  <Skeleton className="h-14 w-40" />
+                ) : (
+                  <p className="text-h3 leading-14 text-foreground">
+                    {money(quote.deposit.amountMinor, quote.deposit.currency)}
+                  </p>
+                )}
+              </div>
+            )}
+            {actions && onRequestBooking ? (
+              <>
+                <Button variant="brand" loading={repricing} onClick={onRequestBooking}>
+                  {t("sidebar.requestBookingCta")}
+                </Button>
+                <p className="text-sm leading-[1.3] text-natural-500">
+                  {t("sidebar.requestBookingHint")}
+                </p>
+              </>
+            ) : actions ? (
               <>
                 <Button
                   variant="brand"

@@ -43,13 +43,16 @@ export default function BookingSidebar({
     bookingId,
   } = useBooking();
   const [quoteRequestOpen, setQuoteRequestOpen] = useState(false);
+  const [bookingRequestOpen, setBookingRequestOpen] = useState(false);
+  /* The operator confirms each booking by hand, so the quote is requested rather than paid. */
+  const confirmsByHand = listing?.availability.requiresOperatorConfirmation ?? false;
   /* A priced quote for the chosen dates is the strongest evidence the page has that it sells. */
   useReportLiveSellable(quote !== null && !slotError);
 
   /* SAFETY: /yachts/[id]/booking is a real route; typedRoutes only recognises it when the
      segment is a literal, and nuqs serializes the query string back to a plain string. */
   const payNowHref =
-    actions && quote
+    actions && quote && !confirmsByHand
       ? (serializeBooking(`/yachts/${slug}/booking`, { quoteId: quote.quoteId }) as AppPathname)
       : undefined;
 
@@ -102,9 +105,17 @@ export default function BookingSidebar({
            and the credit that backs it has already been counted against the balance. */
         onApplyCredit={quote && !bookingId ? applyCredit : undefined}
         onRequestQuote={actions ? () => setQuoteRequestOpen(true) : undefined}
+        onRequestBooking={actions && confirmsByHand ? () => setBookingRequestOpen(true) : undefined}
       />
       {actions ? (
-        <QuoteRequestDialog open={quoteRequestOpen} onOpenChange={setQuoteRequestOpen} />
+        <>
+          <QuoteRequestDialog open={quoteRequestOpen} onOpenChange={setQuoteRequestOpen} />
+          <QuoteRequestDialog
+            kind="booking_request"
+            open={bookingRequestOpen}
+            onOpenChange={setBookingRequestOpen}
+          />
+        </>
       ) : null}
     </>
   );

@@ -1481,6 +1481,8 @@
       "discountsHeading": "Bereits im Charterpreis oben enthalten",
       "dueNow": "Jetzt fällig",
       "payNowCta": "Jetzt {amount} zahlen",
+      "requestBookingCta": "Buchungsanfrage senden",
+      "requestBookingHint": "Der Betreiber dieser Yacht bestätigt jede Buchung persönlich. Wir klären Ihre Termine mit ihm und melden uns. Es wird jetzt nichts belastet.",
       "requestQuote": "Angebot anfordern",
       "promo": {
         "label": "Promo-Code",
@@ -1563,6 +1565,12 @@
       "engine": "Motor",
       "showers": "Duschen",
       "notSpecified": "Keine Angabe"
+    },
+    "bookingRequestDialog": {
+      "title": "Diese Buchung anfragen",
+      "description": "Der Betreiber bestätigt jeden Charter dieser Yacht persönlich. Hinterlassen Sie Ihre Kontaktdaten, und ein Charterexperte klärt diese Termine mit ihm und meldet sich innerhalb eines Werktags.",
+      "submit": "Buchungsanfrage senden",
+      "success": "Danke! Ihre Anfrage ist unterwegs, wir melden uns in Kürze."
     },
     "quoteDialog": {
       "title": "Angebot anfordern",
@@ -2720,6 +2728,7 @@
         },
         "kind": {
           "quote_request": "Angebotsanfrage",
+          "booking_request": "Buchungsanfrage",
           "charter_expert": "Charter-Experte",
           "consultation": "Beratung"
         },

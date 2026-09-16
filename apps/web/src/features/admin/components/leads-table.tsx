@@ -31,7 +31,12 @@ import AnswerLeadDialog from "./answer-lead-dialog";
 const ALL = "all";
 
 const STATUSES: readonly LeadStatus[] = ["new", "contacted", "closed"];
-const KINDS: readonly LeadKind[] = ["quote_request", "charter_expert", "consultation"];
+const KINDS: readonly LeadKind[] = [
+  "booking_request",
+  "quote_request",
+  "charter_expert",
+  "consultation",
+];
 
 const STATUS_VARIANTS = {
   new: "warning",

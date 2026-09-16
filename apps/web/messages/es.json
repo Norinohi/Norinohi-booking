@@ -1481,6 +1481,8 @@
       "discountsHeading": "Ya incluido en el precio de arriba",
       "dueNow": "A pagar ahora",
       "payNowCta": "Pagar {amount}",
+      "requestBookingCta": "Enviar solicitud de reserva",
+      "requestBookingHint": "El operador de este yate confirma cada reserva personalmente. Le consultaremos tus fechas y te responderemos. No se cobra nada ahora.",
       "requestQuote": "Solicitar presupuesto",
       "promo": {
         "label": "Código promocional",
@@ -1563,6 +1565,12 @@
       "engine": "Motor",
       "showers": "Duchas",
       "notSpecified": "Sin especificar"
+    },
+    "bookingRequestDialog": {
+      "title": "Solicitar esta reserva",
+      "description": "El operador confirma personalmente cada chárter de este yate. Déjanos tus datos y un experto en chárter confirmará estas fechas con él y te responderá en un día laborable.",
+      "submit": "Enviar solicitud de reserva",
+      "success": "¡Gracias! Hemos enviado tu solicitud y te contactaremos pronto."
     },
     "quoteDialog": {
       "title": "Solicita un presupuesto",
@@ -2720,6 +2728,7 @@
         },
         "kind": {
           "quote_request": "Solicitud de precio",
+          "booking_request": "Solicitud de reserva",
           "charter_expert": "Experto en chárter",
           "consultation": "Consulta"
         },

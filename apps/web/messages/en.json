@@ -1481,6 +1481,8 @@
       "discountsHeading": "Included in the rental price above",
       "dueNow": "Due Now",
       "payNowCta": "Pay {amount} Now",
+      "requestBookingCta": "Send booking request",
+      "requestBookingHint": "This yacht's operator confirms every booking personally. We'll ask them for your dates and come back to you. Nothing is charged now.",
       "requestQuote": "Request Quote",
       "promo": {
         "label": "Promo code",
@@ -1563,6 +1565,12 @@
       "engine": "Engine",
       "showers": "Showers",
       "notSpecified": "Not specified"
+    },
+    "bookingRequestDialog": {
+      "title": "Request this booking",
+      "description": "The operator confirms each charter of this yacht personally. Leave your details and a charter expert will confirm these dates with them and get back to you within one working day.",
+      "submit": "Send booking request",
+      "success": "Thanks! We've sent your request and will be in touch shortly."
     },
     "quoteDialog": {
       "title": "Request a quote",
@@ -2720,6 +2728,7 @@
         },
         "kind": {
           "quote_request": "Quote request",
+          "booking_request": "Booking request",
           "charter_expert": "Charter expert",
           "consultation": "Consultation"
         },
