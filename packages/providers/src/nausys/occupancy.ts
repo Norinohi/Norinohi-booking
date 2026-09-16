@@ -204,6 +204,8 @@ export interface NausysHotWindow {
    * hull, so a window that names them is asked about those alone; see `SweepPeriod.yachtIds`.
    */
   yachtIds?: readonly string[];
+  /** See `SweepPeriod.judgesSilence`. */
+  judgesSilence?: boolean;
   countries?: number[];
   regions?: number[];
   locations?: number[];
@@ -319,6 +321,7 @@ export function createNausysAvailabilitySource(
         endDate: window.periodTo,
         source,
         ...(window.yachtIds ? { yachtIds: window.yachtIds } : null),
+        ...(window.judgesSilence === false ? { judgesSilence: false } : null),
       });
 
       yield* streamNausysConfirmedOffers(

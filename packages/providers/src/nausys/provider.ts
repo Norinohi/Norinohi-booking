@@ -51,7 +51,14 @@ import {
   listAdvertisedCharterPeriods,
   listUnadvertisedYachtIds,
 } from "@yacht-charter/db/search/read-model";
-import { ADVERTISED_PERIOD_LIMIT, sweepRotation } from "../shared/sweep-periods";
+import { listShortCharterPeriods } from "@yacht-charter/db/search/repository";
+import {
+  ADVERTISED_PERIOD_LIMIT,
+  SHORT_CHARTER_LENGTHS,
+  SHORT_PERIODS_PER_LENGTH,
+  sweepRotation,
+  withShortCharterPeriods,
+} from "../shared/sweep-periods";
 import { DEFAULT_HOT_WINDOW_COUNT, sweepWindows, upcomingCharterWeeks } from "./sweep-windows";
 import { and, eq, isNotNull } from "drizzle-orm";
 
@@ -291,10 +298,16 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
           ? { hotWindows: this.hotWindowOverride }
           : {
               loadHotWindows: async () => {
-                const [advertised, gridYachtIds] = await Promise.all([
+                const [advertised, short, gridYachtIds] = await Promise.all([
                   listAdvertisedCharterPeriods(this.db, {
                     providerCode: this.key,
                     limit: ADVERTISED_PERIOD_LIMIT,
+                  }),
+                  /* The charters a length filter shows, which no stored week covers. */
+                  listShortCharterPeriods(this.db, {
+                    providerCode: this.key,
+                    lengths: SHORT_CHARTER_LENGTHS,
+                    perLength: SHORT_PERIODS_PER_LENGTH,
                   }),
                   /* Read beside the periods, from the same rebuilt documents: a hull counts as
                      unadvertised precisely when it contributed no period above. */
@@ -302,7 +315,7 @@ export class NausysInventoryProvider implements InventoryProvider, AvailabilityS
                 ]);
 
                 return sweepWindows(
-                  advertised,
+                  withShortCharterPeriods(advertised, short),
                   this.fallbackWindows,
                   this.today,
                   gridYachtIds,

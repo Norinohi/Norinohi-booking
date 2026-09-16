@@ -31,6 +31,39 @@ describe("pricedForShownPeriod", () => {
     expect(card.pricedPeriod).toEqual({ checkIn: "2099-06-06", checkOut: "2099-06-13" });
   });
 
+  it("prices nothing beside a charter shorter than the week its price is for", () => {
+    const card = pricedForShownPeriod(
+      doc(priced),
+      { checkIn: "2099-06-20", checkOut: "2099-06-23" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).toBeNull();
+    expect(card.basePriceFrom).toBeNull();
+    expect(card.pricedPeriod).toBeNull();
+  });
+
+  it("keeps a short charter's own price beside it", () => {
+    const card = pricedForShownPeriod(
+      doc({ bookableFrom: "2099-06-20", bookableTo: "2099-06-23" }),
+      { checkIn: "2099-06-20", checkOut: "2099-06-23" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).not.toBeNull();
+    expect(card.pricedPeriod).toBeNull();
+  });
+
+  it("puts no season floor beside a charter shorter than a week", () => {
+    const card = pricedForShownPeriod(
+      doc({ ...priced, priceIsFrom: true }),
+      { checkIn: "2099-06-20", checkOut: "2099-06-23" },
+      "base",
+      ranks,
+    );
+    expect(card.priceFrom).toBeNull();
+  });
+
   it("still reads as a floor where the price never priced a week", () => {
     const card = pricedForShownPeriod(
       doc({ ...priced, priceIsFrom: true }),

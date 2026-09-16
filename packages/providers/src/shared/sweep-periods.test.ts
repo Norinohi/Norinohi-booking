@@ -6,6 +6,7 @@ import {
   sweepPlan,
   sweepRotation,
   type SweepPeriod,
+  withShortCharterPeriods,
 } from "./sweep-periods";
 
 const TODAY = "2026-08-31";
@@ -106,6 +107,41 @@ describe("sweepPlan", () => {
     });
 
     expect(plan.advertised).toEqual([]);
+  });
+});
+
+describe("withShortCharterPeriods", () => {
+  const week = { startDate: "2026-10-03", endDate: "2026-10-10" };
+  const quiet = { startDate: "2026-10-17", endDate: "2026-10-24" };
+  const threeNights = { startDate: "2026-10-06", endDate: "2026-10-09" };
+
+  /* A short charter fifty cards name outranks a week two cards name, so it lands in the head. */
+  it("ranks short charters among the weeks by how many cards name them", () => {
+    const merged = withShortCharterPeriods(
+      [
+        { ...week, listings: 80 },
+        { ...quiet, listings: 2 },
+      ],
+      [{ ...threeNights, listings: 50 }],
+    );
+
+    expect(starts(merged)).toEqual([week.startDate, threeNights.startDate, quiet.startDate]);
+    expect(merged[0]).not.toHaveProperty("listings");
+  });
+
+  it("marks only the short charters as judging nobody, and the plan keeps the mark", () => {
+    const merged = withShortCharterPeriods(
+      [{ ...week, listings: 1 }],
+      [{ ...threeNights, listings: 1 }],
+    );
+    const plan = sweepPlan(merged, [], { today: TODAY });
+
+    expect(plan.advertised.find((p) => p.startDate === week.startDate)).not.toHaveProperty(
+      "judgesSilence",
+    );
+    expect(plan.advertised.find((p) => p.startDate === threeNights.startDate)).toMatchObject({
+      judgesSilence: false,
+    });
   });
 });
 

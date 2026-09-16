@@ -10,7 +10,7 @@ import {
   shiftIso,
 } from "../test-support/search-fixture";
 import { rebuildListingSearchDocs } from "./read-model";
-import { searchListings } from "./repository";
+import { listShortCharterPeriods, searchListings } from "./repository";
 import type { ListingSearchInput } from "./types";
 
 /*
@@ -37,7 +37,26 @@ beforeAll(async () => {
     free: { from: SAT, to: END },
     rules: [{ checkinWeekday: 6, checkoutWeekday: 6, minNights: 7 }],
   });
-  await seedListing(db, "anyday", { free: { from: SAT, to: END }, rules: [{ minNights: 1 }] });
+  const anyday = await seedListing(db, "anyday", {
+    free: { from: SAT, to: END },
+    rules: [{ minNights: 1 }],
+  });
+  /* The vendor priced both the night its card stores and the three nights a "3 days" card names. */
+  await db.insert(availabilitySlot).values(
+    [
+      [1, 100_000],
+      [3, 250_000],
+    ].map(([nights, price]) => ({
+      listingId: anyday.listingId,
+      listingOfferId: anyday.offerId,
+      startDate: SAT,
+      endDate: shiftIso(SAT, nights!),
+      status: "available" as const,
+      priceMinor: price!,
+      obligatoryExtrasMinor: 0,
+      currency: "EUR",
+    })),
+  );
   await seedListing(db, "norule", { free: { from: SAT, to: END } });
   const booked = await seedListing(db, "booked", {
     free: { from: SAT, to: shiftIso(SAT, 2) },
@@ -85,5 +104,57 @@ describe("a length with a date", () => {
       "anyday",
       "norule",
     ]);
+  });
+});
+
+describe("the short charters the sweep is asked to price", () => {
+  it("groups the charters those cards name, with the hulls naming each", async () => {
+    const periods = await listShortCharterPeriods(test.db, {
+      providerCode: "nausys",
+      lengths: [1, 3],
+      perLength: 10,
+    });
+
+    expect(periods.map((period) => ({ ...period, yachtIds: [...period.yachtIds].sort() }))).toEqual(
+      [
+        {
+          startDate: SAT,
+          endDate: shiftIso(SAT, 1),
+          listings: 3,
+          yachtIds: ["anyday", "booked", "norule"],
+        },
+        { startDate: SAT, endDate: shiftIso(SAT, 3), listings: 2, yachtIds: ["anyday", "norule"] },
+      ],
+    );
+  });
+
+  it("names nothing for a vendor none of those cards are priced from", async () => {
+    expect(
+      await listShortCharterPeriods(test.db, {
+        providerCode: "booking_manager",
+        lengths: [1],
+        perLength: 10,
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe("the price on a card a length names", () => {
+  it("is the vendor's price for that charter where the sweep priced it", async () => {
+    const card = async (duration: number) =>
+      (await searchListings(test.db, { locale: "en", priceBasis: "base", duration })).items.find(
+        (item) => item.slug === "anyday",
+      );
+
+    expect(await card(1)).toMatchObject({
+      basePriceFromMinor: 100_000,
+      bookableTo: shiftIso(SAT, 1),
+    });
+    expect(await card(3)).toMatchObject({
+      basePriceFromMinor: 250_000,
+      priceIsFrom: false,
+      bookableFrom: SAT,
+      bookableTo: shiftIso(SAT, 3),
+    });
   });
 });

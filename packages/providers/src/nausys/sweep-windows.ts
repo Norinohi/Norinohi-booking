@@ -89,6 +89,7 @@ export function sweepWindows(
     periodFrom: period.startDate,
     periodTo: period.endDate,
     ...(period.yachtIds ? { yachtIds: period.yachtIds } : null),
+    ...(period.judgesSilence === false ? { judgesSilence: false } : null),
   });
 
   const toGridWindow = (period: SweepPeriod): NausysHotWindow => ({

@@ -1,6 +1,11 @@
 import type { ListingSearchDoc, PriceBasis } from "@yacht-charter/db/search";
 
-import { bookablePeriodOf, presentListingSummary } from "./listing";
+import {
+  bookablePeriodOf,
+  nightsBetween,
+  presentListingSummary,
+  WEEKLY_RATE_DAYS,
+} from "./listing";
 
 /*
  * The card, with its price captioned for the charter the card actually names.
@@ -22,7 +27,16 @@ export function pricedForShownPeriod(
   amenityRanks: ReadonlyMap<string, number>,
 ) {
   const listing = presentListingSummary(item, basis, amenityRanks);
-  if (listing.priceIsFrom || shown.checkIn === null) return listing;
+  if (shown.checkIn === null || shown.checkOut === null) return listing;
+  const shownNights = nightsBetween(shown.checkIn, shown.checkOut);
+
+  /*
+   * A season floor is a week's rate, so it can stand beside a week and nothing shorter. Beside
+   * three nights it read as their price; the card says "on request" instead.
+   */
+  if (listing.priceIsFrom) {
+    return shownNights === WEEKLY_RATE_DAYS ? listing : withoutPrice(listing);
+  }
 
   /*
    * Both ends, because a charter is a length as well as a start.
@@ -39,5 +53,25 @@ export function pricedForShownPeriod(
     return listing;
   }
 
-  return priced ? { ...listing, pricedPeriod: priced } : { ...listing, priceIsFrom: true };
+  if (!priced) return { ...listing, priceIsFrom: true };
+  /*
+   * Another week of the same length is still worth naming. A charter of another length is not:
+   * a "3 days" card beside a week's price, captioned with that week, answered a question nobody
+   * asked, and the sweep prices the short charter itself where it can.
+   */
+  return nightsBetween(priced.checkIn, priced.checkOut) === shownNights
+    ? { ...listing, pricedPeriod: priced }
+    : withoutPrice(listing);
+}
+
+/* No figure at all, which the card renders as "on request". */
+function withoutPrice<T extends ReturnType<typeof presentListingSummary>>(listing: T): T {
+  return {
+    ...listing,
+    priceFrom: null,
+    allInPriceFrom: null,
+    basePriceFrom: null,
+    listPriceFrom: null,
+    pricedPeriod: null,
+  };
 }

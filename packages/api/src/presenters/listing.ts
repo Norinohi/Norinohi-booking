@@ -27,7 +27,7 @@ function daysFromTodayIso(days: number): string {
 }
 
 /** Whole days between two `yyyy-MM-dd` days, both read as UTC midnight. */
-function nightsBetween(checkIn: string, checkOut: string): number {
+export function nightsBetween(checkIn: string, checkOut: string): number {
   const ms = Date.parse(`${checkOut}T00:00:00.000Z`) - Date.parse(`${checkIn}T00:00:00.000Z`);
   return Math.round(ms / 86_400_000);
 }
