@@ -1,6 +1,6 @@
 "use client";
 
-import BookingSummary from "@/components/shared/data-display/booking-summary";
+import BookingSummary from "./summary/booking-summary";
 import { useReportLiveSellable } from "@/components/shared/data-display/live-availability";
 import type { AppPathname } from "@/i18n/navigation";
 import { useState } from "react";

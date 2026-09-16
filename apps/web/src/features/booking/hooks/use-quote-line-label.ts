@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import type { QuoteLine } from "@/features/booking/api/queries";
+import type { QuoteLine } from "../api/queries";
 
 /**
  * Our own line names, as opposed to the provider's.

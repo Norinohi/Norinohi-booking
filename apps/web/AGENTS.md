@@ -55,7 +55,7 @@ src/
       lib/                #   optional — pure helpers (search-params, formatters, constants)
   components/
     shared/               # cross-feature components, grouped by purpose like packages/ui
-      data-display/       #   boat-card, booking-summary, prepayment-note, animated-number, image
+      data-display/       #   boat-card, prepayment-note, animated-number, image
       feedback/           #   empty-state, loader
       form/               #   date-picker, filters/
       layout/             #   split-panels

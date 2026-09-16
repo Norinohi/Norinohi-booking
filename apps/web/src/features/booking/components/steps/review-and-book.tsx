@@ -6,13 +6,13 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 
-import { ScheduleBreakdown } from "@/components/shared/data-display/booking-summary";
 import { useMoney } from "@/hooks/use-money";
-import { useQuoteLineLabel } from "@/hooks/use-quote-line-label";
 import { dayToDisplay } from "@/lib/date";
 
+import { useQuoteLineLabel } from "../../hooks/use-quote-line-label";
 import type { BookingValues } from "../../lib/booking-form";
 import { useBooking } from "../booking-provider";
+import { ScheduleBreakdown } from "../summary/payment-schedule";
 
 const CONSENTS = ["terms", "cancellation"] as const;
 
