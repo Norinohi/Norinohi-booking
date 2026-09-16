@@ -32,8 +32,15 @@ describe("filterParsers", () => {
       expect(loadFilters(`?duration=${nights}`).duration).toBe(nights);
     });
 
-    it.each(["0", "366", "-7", "7.5", "seven", ""])("drops %j back to any", (nights) => {
-      expect(loadFilters(`?duration=${nights}`).duration).toBe("any");
+    it.each(["0", "366", "-7", "7.5", "seven", "", "0x10", "1e1", "7.0", " 7 "])(
+      "drops %j back to any",
+      (nights) => {
+        expect(loadFilters(`?duration=${nights}`).duration).toBe("any");
+      },
+    );
+
+    it("reads a zero-padded count as the plain number", () => {
+      expect(loadFilters("?duration=07").duration).toBe("7");
     });
 
     it("round-trips through the serializer", () => {
@@ -57,6 +64,18 @@ describe("filterParsers", () => {
       expect(loadFilters("?price=-1,100").price).toBeNull();
     });
 
+    it("rejects an empty side or an odd spelling instead of reading a zero", () => {
+      expect(loadFilters("?cabins=,").cabins).toBeNull();
+      expect(loadFilters("?cabins=,4").cabins).toBeNull();
+      expect(loadFilters("?berths= 2,4").berths).toBeNull();
+      expect(loadFilters("?price=0x10,100").price).toBeNull();
+      expect(loadFilters("?length=1e1,20").length).toBeNull();
+    });
+
+    it("keeps a real zero lower bound", () => {
+      expect(loadFilters("?price=0,500").price).toEqual([0, 500]);
+    });
+
     it("keeps fractional feet but not fractional cabins", () => {
       expect(loadFilters("?length=30.5,45").length).toEqual([30.5, 45]);
       expect(loadFilters("?cabins=2.5,4").cabins).toBeNull();
@@ -72,6 +91,8 @@ describe("filterParsers", () => {
     expect(loadFilters("?startDate=2026-07-04").startDate).toBe("2026-07-04");
     expect(loadFilters("?startDate=2026-13-40").startDate).toBeNull();
     expect(loadFilters("?startDate=4.7.2026").startDate).toBeNull();
+    expect(loadFilters("?startDate=2026-02-31").startDate).toBeNull();
+    expect(loadFilters("?startDate=2028-02-29").startDate).toBe("2028-02-29");
   });
 
   it("accepts a known date flexibility only", () => {
@@ -88,6 +109,7 @@ describe("filterParsers", () => {
     expect(loadFilters("?guests=6").guests).toBe(6);
     expect(loadFilters("?guests=0").guests).toBeNull();
     expect(loadFilters("?guests=2.5").guests).toBeNull();
+    expect(loadFilters("?guests=0x6").guests).toBeNull();
   });
 
   it("reads comma-separated multi-selects", () => {
@@ -115,6 +137,10 @@ describe("mapCameraParsers", () => {
     ["longitude past 180", "180.5,43"],
     ["a missing latitude", "16.44"],
     ["text", "split,croatia"],
+    ["empty parts", ","],
+    ["an empty longitude", ",43.5"],
+    ["a third part", "16,43,99"],
+    ["a hex spelling", "0x10,43"],
   ])("rejects %s", (_label, query) => {
     expect(loadCamera(`?centre=${query}`).centre).toBeNull();
   });

@@ -93,3 +93,15 @@ export function paginationInputSchema(options: { maxPageSize: number; defaultPag
 export function paginationInputDefault(defaultPageSize: number) {
   return { page: 1, pageSize: defaultPageSize };
 }
+
+export const dateStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(
+    (value) => {
+      const date = new Date(`${value}T00:00:00.000Z`);
+      /* `Date` rolls "2026-02-31" over to 3 March rather than rejecting it. */
+      return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+    },
+    { message: "Invalid date" },
+  );

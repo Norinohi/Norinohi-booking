@@ -3,7 +3,7 @@ import { faqCategory } from "@yacht-charter/db/schema/content";
 import { crewTypeSchema } from "@yacht-charter/providers";
 import { z } from "zod";
 
-import { currencySchema, moneySchema, paginationSchema } from "./primitives";
+import { currencySchema, dateStringSchema, moneySchema, paginationSchema } from "./primitives";
 
 const stringArrayParamSchema = z
   .union([z.string(), z.array(z.string())])
@@ -53,12 +53,7 @@ const numberRangeSchema = z.object({
   max: z.number(),
 });
 
-export const dateStringSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((value) => !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime()), {
-    message: "Invalid date",
-  });
+export { dateStringSchema };
 
 /** A hand-written itinerary for a charter base or its sailing region. */
 export const suggestedRouteSchema = z.object({

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { dateStringSchema } from "../../contracts/catalog";
+import { dateStringSchema } from "../../contracts/primitives";
 import { idSchema, moneySchema } from "../../contracts/primitives";
 import { nightsBetween, rangeStatus } from "../../lib/availability-rules";
 import { combinedRangeStatus } from "../../lib/offer-availability";
