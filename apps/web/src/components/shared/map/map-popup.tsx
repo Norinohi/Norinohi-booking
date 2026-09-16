@@ -4,8 +4,8 @@ import { cn } from "@yacht-charter/ui/lib/utils";
 import { type ReactNode, useEffect, useRef } from "react";
 import { Popup } from "react-map-gl/mapbox";
 
-import type { MapInstance } from "@/components/shared/data-display/map-canvas";
-import type { Coordinates } from "@/components/shared/overlay/marina-popover";
+import type { MapInstance } from "./map-canvas";
+import type { Coordinates } from "@/components/shared/map/geometry";
 
 const RESET_MAPBOX_CHROME =
   "[&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:hidden";

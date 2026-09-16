@@ -4,13 +4,13 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 
-import type { Coordinates } from "@/components/shared/overlay/marina-popover";
+import type { Coordinates } from "@/components/shared/map/geometry";
 import { Link } from "@/i18n/navigation";
 
 import MapBoatCard, { type MapBoatCardProps } from "./map-boat-card";
-import type { MapInstance } from "@/components/shared/data-display/map-canvas";
-import MapPopup, { PIN_CLEARANCE, RECENTRE_MS } from "@/components/shared/data-display/map-popup";
-import { paddingOf } from "../../lib/map-camera";
+import type { MapInstance } from "@/components/shared/map/map-canvas";
+import MapPopup, { PIN_CLEARANCE, RECENTRE_MS } from "@/components/shared/map/map-popup";
+import { paddingOf } from "@/components/shared/map/camera";
 
 // On a phone, leave just this gap under the popup so the pager clears the map attribution/edge.
 const BOTTOM_SAFE = 32;

@@ -13,11 +13,11 @@ import { ArrowUpRight, Globe, Mail, Smartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
+import type { Coordinates } from "@/components/shared/map/geometry";
+
 import MapPreview from "./map-preview";
 
 const withProtocol = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
-
-export type Coordinates = { lat: number; lng: number };
 
 export type Marina = {
   id: string;

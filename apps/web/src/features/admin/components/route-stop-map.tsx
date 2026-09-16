@@ -4,10 +4,7 @@ import { MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Marker } from "react-map-gl/mapbox";
 
-import MapCanvas, {
-  type MapInstance,
-  type MapViewState,
-} from "@/components/shared/data-display/map-canvas";
+import MapCanvas, { type MapInstance, type MapViewState } from "@/components/shared/map/map-canvas";
 
 /*
  * The coordinate input for one stop.

@@ -61,14 +61,6 @@ type MapCanvasProps = {
    * Pass `0` wherever the map itself is the thing being looked at.
    */
   dimOpacity?: number;
-  /**
-   * Called after every *later* style load, never the first.
-   *
-   * Switching styles throws away every source and layer added by hand, so anything a caller drew
-   * itself has to be drawn again. The first load is `onReady`'s, which also positions the camera —
-   * something a style change must not disturb.
-   */
-  onStyleChange?: (map: MapInstance) => void;
   /** Zoom buttons over the map. On wherever a visitor can drive the camera at all. */
   controls?: boolean;
   /** A "find my location" button above them. Only where the visitor's own position means something. */
@@ -83,7 +75,6 @@ function MapSurface({
   onBackgroundPress,
   initialViewState = DEFAULT_VIEW_STATE,
   dimOpacity = DIM_OPACITY,
-  onStyleChange,
   controls = true,
   locateControl = false,
   minZoom = MAP_MIN_ZOOM,
@@ -118,11 +109,10 @@ function MapSurface({
       onLoad={(event) => {
         const map = event.target;
 
-        /* Attached after the first style has loaded, so it only ever hears the later ones. */
-        map.on("style.load", () => {
-          styleBasemap(map, dimOpacity);
-          onStyleChange?.(map);
-        });
+        /* Attached after the first style has loaded, so it only ever hears the later ones. Switching
+           styles throws away every layer added by hand, the wash included; the app's own drawing
+           goes through `LineLayer` and `PointLayer`, which put themselves back. */
+        map.on("style.load", () => styleBasemap(map, dimOpacity));
 
         styleBasemap(map, dimOpacity);
         onReady?.(map);
