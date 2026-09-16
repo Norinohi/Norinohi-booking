@@ -29,6 +29,8 @@ const { values: args } = parseArgs({
     concurrency: { type: "string", default: "2" },
     guests: { type: "string", default: "2" },
     out: { type: "string" },
+    /* Only the scenarios whose name contains this, to re-run one without the rest. */
+    scenario: { type: "string" },
   },
 });
 
@@ -233,7 +235,10 @@ async function pool<T, R>(
 async function main(): Promise<void> {
   const results: Result[] = [];
 
-  for (const scenario of SCENARIOS) {
+  const chosen = SCENARIOS.filter(
+    (scenario) => !args.scenario || scenario.name.includes(args.scenario),
+  );
+  for (const scenario of chosen) {
     const cards = await sampleCards(scenario.query);
     console.log(`\n${scenario.name}: auditing ${cards.length} cards`);
     const scenarioResults = await pool(cards, CONCURRENCY, (card) =>
@@ -250,6 +255,8 @@ async function main(): Promise<void> {
       ),
     );
     results.push(...scenarioResults);
+    /* Written after every scenario, so a run that dies half way still leaves what it measured. */
+    if (args.out) await writeFile(args.out, JSON.stringify(results, null, 2));
 
     const counts = new Map<Verdict, number>();
     for (const result of scenarioResults)
