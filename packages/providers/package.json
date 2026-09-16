@@ -25,7 +25,12 @@
     "probe:booking-manager": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/probe-booking-manager.ts",
     "offers:backfill": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/backfill-listing-offers.ts",
     "offers:verify": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/verify-offers.ts",
-    "catalogue:reproject": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/reproject-catalogue.ts"
+    "catalogue:reproject": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/reproject-catalogue.ts",
+    "audit:unsellable": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/unsellable-listings.ts",
+    "audit:rule-rejects": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/rule-rejected-slots.ts",
+    "audit:coverage": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/catalogue-coverage.ts",
+    "audit:quotes": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/live-quotes.ts",
+    "audit:bm-checkin-days": "node --env-file-if-exists=../../apps/server/.env --import tsx src/scripts/audit/bm-checkin-days.ts"
   },
   "dependencies": {
     "@yacht-charter/db": "workspace:*",
