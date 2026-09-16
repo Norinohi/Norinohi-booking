@@ -23,3 +23,28 @@ Tests are co-located as `src/**/*.test.ts`. There is no `vitest.config.ts` anywh
 - Exports are subpath-based (`"./*": "./src/*.ts"`), so consumers import `@yacht-charter/api/routers/index` and `@yacht-charter/api/context` directly. There is no barrel — adding a file makes it importable with no manifest change.
 - `src/context.ts` is where request-scoped values belong. It currently returns `{ auth: null, session }`; extend the return type there rather than threading extra arguments through handlers.
 - `hono` is a **devDependency** here — the `Context` type is imported as `import type`. Keep it type-only; a runtime import from Hono would make this package depend on the server framework.
+
+## Tools layer
+
+`src/services/tools/` is the transport-free surface for callers that are not HTTP clients: a
+future AI assistant, jobs, scripts. One file per tool plus `index.ts`, which exports the `tools`
+registry, `invokeTool` and `toolManifest` (name, description and input JSON Schema per tool, in
+the form model tool-calling APIs take).
+
+- A tool is `defineTool({ name, description, input, output, run(ctx, input) })`. `ctx` is
+  `ToolContext` (`{ db }`) and nothing else: no session, no request, no oRPC types.
+- Call tools through `invokeTool(tool, ctx, input)`. It parses the input (a failure is a
+  `BadRequestError` with `data.code = "TOOL_INPUT_INVALID"`), runs, and parses the output (a
+  mismatch is an `InternalError`). `run` itself trusts its input.
+- Reuse contract schemas (`contracts/*`) for input and output where one exists, and wrap a
+  service rather than restating it. Services under a tool throw domain errors, like any other.
+- Tools are read-only. `quotePreview` exists because the live quote path (`createQuote`) calls
+  every vendor and writes quote, attempt, refusal and learned-extra rows; the preview reads the
+  synced calendar and rate list and applies only the internal price rules, and says so with
+  `binding: false`.
+- Current tools: `searchYachts` (the catalogue results service, `services/charter-search.ts`,
+  also behind `charterSearch.results`), `yachtAvailability`, `quotePreview`, `suggestRoutes`
+  (popular routes by country or region, plus the itinerary for a base) and `nearestMarinas`.
+- A new tool gets a line in `index.ts` and validation cases in `tools.test.ts`. That test
+  imports the registry after setting `SKIP_ENV_VALIDATION`, because the catalogue contract
+  reaches the provider registry, which validates the server env on load.

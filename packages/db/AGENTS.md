@@ -74,6 +74,9 @@ filter, dated or not, admits only listings with a free charter of that length an
 which short charters `listShortCharterPeriods` hands the NauSYS sweep, and that a card shows the
 swept price of the charter it names.
 Shared seeding for these lives in `src/test-support/search-fixture.ts`.
+`src/search/catalogue-countries.db.test.ts` pins `listCatalogueCountries` (boats per country, with
+the ISO code the planner builds its flag from) and the `country` and `region` filters on
+`listPopularRoutes`.
 
 ## Routes and geo modules
 

@@ -53,12 +53,27 @@ const numberRangeSchema = z.object({
   max: z.number(),
 });
 
-const dateStringSchema = z
+export const dateStringSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine((value) => !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime()), {
     message: "Invalid date",
   });
+
+/** A hand-written itinerary for a charter base or its sailing region. */
+export const suggestedRouteSchema = z.object({
+  title: z.string(),
+  description: z.string().nullable(),
+  stops: z.array(
+    z.object({
+      day: z.number().int(),
+      name: z.string(),
+      note: z.string().nullable(),
+      lat: z.number(),
+      lng: z.number(),
+    }),
+  ),
+});
 
 export const includedItemSchema = z.object({
   code: z.string(),
@@ -350,21 +365,7 @@ export const listingDetailSchema = listingSummarySchema.extend({
   }),
   /* Null on most listings: a route exists only where somebody wrote one for the charter base or
      its sailing region, and the detail page drops the section rather than showing an empty one. */
-  suggestedRoute: z
-    .object({
-      title: z.string(),
-      description: z.string().nullable(),
-      stops: z.array(
-        z.object({
-          day: z.number().int(),
-          name: z.string(),
-          note: z.string().nullable(),
-          lat: z.number(),
-          lng: z.number(),
-        }),
-      ),
-    })
-    .nullable(),
+  suggestedRoute: suggestedRouteSchema.nullable(),
   reviews: z.array(reviewSchema),
   /* Site-wide entries carry one of the six categories the page groups under; a listing's own
      entries carry none and render ahead of the groups. */

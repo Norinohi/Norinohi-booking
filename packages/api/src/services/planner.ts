@@ -1,7 +1,9 @@
+import { listCatalogueCountries } from "@yacht-charter/db/search/catalogue-countries";
 import { searchListings, valueForLabel } from "@yacht-charter/db/search";
 import type { z } from "zod";
 
 import type { Database } from "../context";
+import { countryFlag } from "../lib/country-flag";
 import type { PlannerAnswers, plannerRecommendationSchema } from "../contracts/planner";
 import { presentListingSummary, pricedPeriodDays, WEEKLY_RATE_DAYS } from "../presenters/listing";
 type Recommendation = z.infer<typeof plannerRecommendationSchema>;
@@ -27,12 +29,24 @@ type AnsweredKey<TAnswer extends keyof PlannerAnswers> = Exclude<
   "not-sure"
 >;
 
-const COUNTRIES = {
-  croatia: { country: "Croatia", flag: "🇭🇷" },
-  greece: { country: "Greece", flag: "🇬🇷" },
-  italy: { country: "Italy", flag: "🇮🇹" },
-  spain: { country: "Spain", flag: "🇪🇸" },
-} satisfies Record<AnsweredKey<"destination">, Destination>;
+/**
+ * The destination as the geography tables name it, flag included.
+ *
+ * The answer is a slug of the country's English name ("greece"), which is also how the search
+ * links filter by country, so the folded name is the whole lookup. Only the four slugs the
+ * contract accepts ever reach here; the list of them lives with the wizard's URL, not here.
+ */
+async function resolveDestination(
+  db: Database,
+  key: AnsweredKey<"destination">,
+): Promise<Destination> {
+  const [match] = await listCatalogueCountries(db, { name: key });
+  /* A catalogue without the country still gets a plan, only without a flag or boats in it. */
+  if (!match || valueForLabel(match.name) !== key) {
+    return { country: key.charAt(0).toUpperCase() + key.slice(1), flag: "" };
+  }
+  return { country: match.name, flag: countryFlag(match.code) };
+}
 
 const GROUP_SIZES = {
   "2-4": { guests: 4, minBerths: 4 },
@@ -81,14 +95,15 @@ type TripBrief = {
   maxPriceMinor: number | null;
 };
 
-/** Turns the quiz's nine optional answers into a complete brief, defaults filled. */
-function resolveBrief(answers: PlannerAnswers): TripBrief {
-  const destinationKey =
-    answers.destination && answers.destination !== "not-sure"
-      ? answers.destination
-      : DEFAULT_DESTINATION;
-  const destination: Destination = COUNTRIES[destinationKey];
+/** The destination the brief is for, "not sure" and unanswered resolving to the default. */
+function destinationKeyOf(answers: PlannerAnswers): AnsweredKey<"destination"> {
+  return answers.destination && answers.destination !== "not-sure"
+    ? answers.destination
+    : DEFAULT_DESTINATION;
+}
 
+/** Turns the quiz's nine optional answers into a complete brief, defaults filled. */
+function resolveBrief(answers: PlannerAnswers, destination: Destination): TripBrief {
   const group =
     answers.groupSize && answers.groupSize !== "not-sure"
       ? GROUP_SIZES[answers.groupSize]
@@ -194,7 +209,7 @@ export async function recommendTrip(
   db: Database,
   answers: PlannerAnswers,
 ): Promise<Recommendation> {
-  const brief = resolveBrief(answers);
+  const brief = resolveBrief(answers, await resolveDestination(db, destinationKeyOf(answers)));
   const { destination, category, durationDays, style, skipperRequired } = brief;
   const { difficulty, budget, guestsForMath } = brief;
 

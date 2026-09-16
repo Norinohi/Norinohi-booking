@@ -2,7 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { sql } from "drizzle-orm";
 
 import type * as schema from "../schema/index";
-import { normalizedKeySql } from "../search/normalize";
+import { normalizedKey, normalizedKeySql } from "../search/normalize";
 
 export type PopularRouteStop = {
   name: string;
@@ -52,10 +52,23 @@ export type PopularRoute = {
  */
 export async function listPopularRoutes(
   db: NodePgDatabase<typeof schema>,
-  input: { locale?: string; limit?: number } = {},
+  input: {
+    locale?: string;
+    limit?: number;
+    /** Keep routes in this country, matched on the folded English name. */
+    country?: string;
+    /** Keep routes in this sailing region, whether drawn over it or starting from a base in it. */
+    region?: string;
+  } = {},
 ): Promise<PopularRoute[]> {
   const locale = input.locale ?? "en";
   const limit = input.limit ?? 12;
+  const countryFilter = input.country
+    ? sql`and ${normalizedKeySql(sql`coalesce(base_country.name, region_country.name)`)} = ${normalizedKey(input.country)}`
+    : sql``;
+  const regionFilter = input.region
+    ? sql`and ${normalizedKeySql(sql`coalesce(target_region.name, base_region.name)`)} = ${normalizedKey(input.region)}`
+    : sql``;
 
   const rows = await db.execute<PopularRoute>(sql`
     select
@@ -126,6 +139,8 @@ export async function listPopularRoutes(
     left join region target_region on target_region.id = route.region_id
     left join country region_country on region_country.id = target_region.country_id
     where route.featured_rank is not null and route.active
+      ${countryFilter}
+      ${regionFilter}
     order by route.featured_rank asc
     limit ${limit}
   `);
